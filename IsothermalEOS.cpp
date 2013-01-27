@@ -1,5 +1,6 @@
 // ============================================================================
 // IsothermalEOS.cpp
+// Contains all function definitions for the Isothermal Equation of state.
 // ============================================================================
 
 
@@ -12,12 +13,15 @@
 
 // ============================================================================
 // Isothermal::Isothermal()
+// Default constructor for isothermal EOS.  Passes and sets important 
+// thermal physics variables.
 // ============================================================================
 Isothermal::Isothermal(float temp0aux, float mu_bar_aux, float gamma_aux)
 {
   temp0 = temp0aux;
   mu_bar = mu_bar_aux;
   gamma = gamma_aux;
+  gammam1 = gamma - 1.0;
 }
 
 
@@ -32,6 +36,7 @@ Isothermal::~Isothermal()
 
 // ============================================================================
 // Isothermal::Pressure
+// Calculates and returns thermal pressure of referenced particle
 // ============================================================================
 float Isothermal::Pressure(SphParticle &part)
 {
@@ -42,6 +47,8 @@ float Isothermal::Pressure(SphParticle &part)
 
 // ============================================================================
 // Isothermal::EntropicFunction
+// Calculates and returns value of Entropic function (= P/rho^gamma) for 
+// referenced particle
 // ============================================================================
 float Isothermal::EntropicFunction(SphParticle &part)
 {

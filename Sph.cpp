@@ -13,6 +13,7 @@
 #include "SphParticle.h"
 #include "Parameters.h"
 #include "EOS.h"
+#include "Debug.h"
 using namespace std;
 
 
@@ -22,7 +23,7 @@ using namespace std;
 // ============================================================================
 void Sph::AllocateMemory(int N)
 {
-  printf("[Sph::AllocateMemory]");
+  debug2("[Sph::AllocateMemory]");
 
   if (N > Nsphmax) {
     Nsph = N;
@@ -41,6 +42,8 @@ void Sph::AllocateMemory(int N)
 
 void Sph::DeallocateMemory(void)
 {
+  debug2("[Sph::DeallocateMemory]");
+
   return;
 }
 
@@ -52,6 +55,8 @@ void Sph::DeallocateMemory(void)
 // ============================================================================
 void Sph::SphBoundingBox(float rmax[ndimmax],float rmin[ndimmax])
 {
+  debug2("[Sph::SphBoundingBox]");
+
   for (int k=0; k<ndim; k++) rmin[k] = big_number; 
   for (int k=0; k<ndim; k++) rmax[k] = -big_number;
 
@@ -85,6 +90,8 @@ void Sph::InitialSmoothingLengthGuess(void)
   float rmin[ndimmax];
   float rmax[ndimmax];
   int Ngather;
+
+  debug2("[Sph::InitialSmoothingLengthGuess]");
 
   // Calculate bounding box containing all SPH particles
   SphBoundingBox(rmax,rmin);
@@ -124,3 +131,25 @@ void Sph::InitialSmoothingLengthGuess(void)
 }
 
 
+
+// ============================================================================
+// Sph::RandomBox
+// ============================================================================
+void Sph::RandomBox(void)
+{
+  debug2("[Sph::RandomBox]");
+
+  AllocateMemory(Nsph);
+
+  for (int i=0; i<Nsph; i++) {
+    for (int k=0; k<ndim; k++) {
+      sphdata[i].r[k] = (float)(rand()%RAND_MAX)/(float)RAND_MAX;
+      sphdata[i].v[k] = (float)(rand()%RAND_MAX)/(float)RAND_MAX;
+      sphdata[i].a[k] = 0.0f;
+    }
+    sphdata[i].m = 1.0f / (float) Nsph;
+    sphdata[i].invomega = 0.5f;
+  }
+
+  return;
+}

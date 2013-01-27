@@ -1,5 +1,5 @@
 // ============================================================================
-// SphSimulation.H
+// SphSimulation.h
 // ============================================================================
 
 
@@ -31,9 +31,12 @@ class SphSimulation
   SphSimulation();
   ~SphSimulation();
 
+  // Subroutine prototypes
+  // --------------------------------------------------------------------------
   void GenerateIC(int);
   void Setup(void);
   void MainLoop(void);
+  void Run(int,double);
   void ComputeBlockTimesteps(void);
 
 #if !defined(FIXED_DIMENSIONS)
@@ -42,21 +45,25 @@ class SphSimulation
   int bdim;
 #endif
 
+  // Integer and physical Timestep counters
+  // --------------------------------------------------------------------------
   int n;
   int Nsteps;
   double t;
   double timestep;
-  
-  string paramfile;
 
+  // Name of parameters file and Parameters object that reads all data
+  // --------------------------------------------------------------------------
+  string paramfile;
   Parameters simparams;
+
   SimUnits simunits;
   Sph *sph;
   SphNeighbourSearch *sphneib;
   SphIntegration *sphint;
+  SphSnapshot livesnap;
 
 };
-
 
 
 #endif

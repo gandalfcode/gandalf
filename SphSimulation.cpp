@@ -25,11 +25,31 @@ SphSimulation::SphSimulation()
 }
 
 
+
 // ============================================================================
 // SphSimulation::~SphSimulation
 // ============================================================================
 SphSimulation::~SphSimulation()
 {
+}
+
+
+
+// ============================================================================
+// SphSimulation::Run
+// ============================================================================
+void SphSimulation::Run(int Nstepsmax, double tmax)
+{
+
+  // --------------------------------------------------------------------------
+  do {
+
+    MainLoop();
+
+  } while (t < tmax && Nsteps < Nstepsmax);
+  // --------------------------------------------------------------------------
+
+  return;
 }
 
 
@@ -69,7 +89,7 @@ void SphSimulation::ComputeBlockTimesteps(void)
 {
   double dt;
 
-  printf("[SphSimulation::ComputeBlockTimesteps]\n");
+  debug2("[SphSimulation::ComputeBlockTimesteps]\n");
 
   timestep = big_number;
 
@@ -83,51 +103,54 @@ void SphSimulation::ComputeBlockTimesteps(void)
 
 
 
-
 // ============================================================================
 // SphSimulation::Setup
+// Main function for setting up a new SPH simulation.
 // ============================================================================
 void SphSimulation::Setup(void)
 {
   debug1("[SphSimulation::Setup]\n");
 
+  // Set-up all parameters and assign default values
   simparams.SetDefaultValues();
 
+  // Read parameters files assigning any contained variables
   simparams.ReadParamsFile(paramfile);
 
+  // Assign dimensionality variables here (for now)
 #if !defined(FIXED_DIMENSIONS)
   ndim = simparams.intparams["ndim"];
   vdim = simparams.intparams["ndim"];
   bdim = simparams.intparams["ndim"];
 #endif
 
+  // Create SPH object based on chosen method in params file
   if (simparams.stringparams["sph"] == "gradh") 
     sph = new GradhSph(ndim,vdim,bdim);
   else {
-    cout << "Unrecognised parameter : " << endl;
-    exit(0);
+    cout << "Unrecognised parameter : " << endl; exit(0);
   }
 
+  // Create kernel object based on params file
+  if (simparams.stringparams["kernel"] == "m4") {
+    sph->kern = new M4Kernel(ndim);
+    //sph->kern->Setup(ndim);
+  }
+  else {
+    cout << "Unrecognised parameter : " << endl; exit(0);
+  }
+
+  // Create neighbour searching object based on chosen method in params file
   if (simparams.stringparams["neib_search"] == "bruteforce")
     sphneib = new BruteForceSearch;
   else {
-    cout << "Unrecognised parameter : " << endl;
-    exit(0);
+    cout << "Unrecognised parameter : " << endl; exit(0);
   }
 
-  if (simparams.stringparams["kernel"] == "m4") {
-    sph->kern = new m4;
-    sph->kern->Setup(ndim);
-  }
+  if (simparams.stringparams["sph_integration"] == "lfkdk")
+    sphint = new SphLFKDK;
   else {
-    cout << "Unrecognised parameter : " << endl;
-    exit(0);
-  }
-
-  if (simparams.stringparams["sph_integration"] == "lfkdk") sphint = new SphLFKDK;
-  else {
-    cout << "Unrecognised parameter : " << endl;
-    exit(0);
+    cout << "Unrecognised parameter : " << endl; exit(0);
   }
 
 
@@ -136,24 +159,22 @@ void SphSimulation::Setup(void)
 		   simparams.floatparams["mu_bar"],
 		   simparams.floatparams["gamma_eos"]);
   else {
-    cout << "Unrecognised parameter : " << endl;
-    exit(0);
+    cout << "Unrecognised parameter : " << endl; exit(0);
   }
 
   sph->Nsph = simparams.intparams["Npart"];
 
 
   // Generate initial conditions
-  if (simparams.stringparams["ic"] == "random_cube") sph->RandomBox();
+  if (simparams.stringparams["ic"] == "random_cube")
+    sph->RandomBox();
   else {
-    cout << "Unrecognised parameter : " << endl;
-    exit(0);
+    cout << "Unrecognised parameter : " << endl; exit(0);
   }
 
 
 
-
-  
+  // Set initial smoothing lengths and create initial ghost particles
   // --------------------------------------------------------------------------
   if (sph->Nsph > 0) {
     
@@ -168,6 +189,7 @@ void SphSimulation::Setup(void)
   }
 
 
+  // Compute all SPH particle properties (if SPH particles exist)
   // --------------------------------------------------------------------------
   if (sph->Nsph > 0) {
 
@@ -177,8 +199,10 @@ void SphSimulation::Setup(void)
     // Copy data to ghosts
 
     // Zero accelerations (perhaps)
-    for (int i=0; i<sph->Nsph; i++) 
+    for (int i=0; i<sph->Nsph; i++) {
       for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = 0.0;
+      sph->sphdata[i].dudt = 0.0;
+    }
 
     // Calculate all hydro forces
     sphneib->UpdateAllSphForces(sph,simparams);
@@ -187,13 +211,9 @@ void SphSimulation::Setup(void)
 
   }
 
-  cout << "Got here!!" << endl;
-
   // Set r0,v0,a0 for initial step
   sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
   
-
-
 
   return;
 }

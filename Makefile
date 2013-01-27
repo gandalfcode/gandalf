@@ -50,10 +50,10 @@ endif
 
 
 SWIG_HEADERS = Parameters.i SimUnits.i Sph.i SphSnapshot.i SphSimulation.i
-
 WRAP_OBJ = Parameters_wrap.o SimUnits_wrap.o Sph_wrap.o SphSnapshot_wrap.o SphSimulation_wrap.o
 
-OBJ = Parameters.o SimUnits.o SphSnapshot.o SphSimulation.o SphKernel.o 
+OBJ = Parameters.o SimUnits.o SphSnapshot.o SphSimulation.o
+OBJ += M4Kernel.o
 OBJ += Sph.o GradhSph.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o
 OBJ += SphNeighbourSearch.o BruteForceSearch.o
@@ -77,8 +77,8 @@ OBJ += toymain.o
 # =============================================================================
 toy2 : $(WRAP_OBJ) $(OBJ)
 	@echo -e $(PYLIB)
-	ld -bundle -flat_namespace -undefined suppress $(OBJ) $(WRAP_OBJ) -o _SphSim.so
-	ld -bundle -flat_namespace -undefined suppress SphSnapshot.o SphSnapshot_wrap.o -o _SphSnap.so
+	g++ -bundle -flat_namespace -undefined suppress $(OBJ) $(WRAP_OBJ) -o _SphSim.so
+	g++ -bundle -flat_namespace -undefined suppress SphSnapshot.o SphSnapshot_wrap.o -o _SphSnap.so
 	$(CC) $(CFLAGS) -o toymain $(OBJ)
 
 
