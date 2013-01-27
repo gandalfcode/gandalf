@@ -143,8 +143,9 @@ void Parameters::SetParameter(std::string key, std::string value)
   std::cout << "@" << value << "@" << std::endl;
   std::cout << intparams.count(key) << "  " << stringparams.count(key) << std::endl;
   if (intparams.count(key) == 1) std::stringstream(value) >> intparams[key];
-  if (floatparams.count(key) == 1) std::stringstream(value) >> floatparams[key];
-  if (stringparams.count(key) == 1) stringparams[key] = value;
+  else if (floatparams.count(key) == 1) std::stringstream(value) >> floatparams[key];
+  else if (stringparams.count(key) == 1) stringparams[key] = value;
+  else cout << "Warning: parameter " << key << "was not recognized" << endl;
 
   return;
 }
