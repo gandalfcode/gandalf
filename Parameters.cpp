@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include "Parameters.h"
@@ -32,8 +33,23 @@ Parameters::~Parameters()
 // ============================================================================
 // PARAMETERS::PARSELINE
 // ============================================================================
-void Parameters::ReadParamsFile(std::string paramline)
+void Parameters::ReadParamsFile(std::string filename)
 {
+  ifstream inputfile;
+  std::string line;
+
+  inputfile.open(filename.c_str(), ios::in);
+  if (inputfile.is_open()) {
+    while ( inputfile.good() ) {
+      getline(inputfile, line);
+      ParseLine (line);
+    }
+  }
+  else {
+    cout << "The specified parameter file: " << filename << " does not exist, aborting" << endl;
+    exit(-1);
+  }
+  inputfile.close();
   return;
 }
 
