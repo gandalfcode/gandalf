@@ -206,7 +206,7 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
     // Calculate relative position vector and determine if particles
     // are neighbours or not. If not, skip to next potential neighbour.
     for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - sphdata[i].r[k];
-    drmag = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
+    drmag = DotProduct(dr,dr);
     if (drmag > hrangesqd && 
 	drmag > kern->kernrangesqd*sphdata[j].h*sphdata[j].h) continue;
 
@@ -214,7 +214,7 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
     drmag = sqrt(drmag);
     for (k=0; k<ndim; k++) dr[k] /= (drmag + small_number);
     for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - sphdata[i].v[k];
-    dvdr = dv[0]*dr[0] + dv[1]*dr[1] * dv[2]*dr[2];
+    dvdr = DotProduct (dv, dr);
 
     // Compute hydro acceleration
     for (k=0; k<ndim; k++) sphdata[i].a[k] += sphdata[j].m*dr[k]*
