@@ -58,6 +58,7 @@ OBJ += Sph.o GradhSph.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o
 OBJ += SphNeighbourSearch.o BruteForceSearch.o
 OBJ += IsothermalEOS.o
+OBJ += SimGhostParticles.o
 OBJ += toymain.o
 
 

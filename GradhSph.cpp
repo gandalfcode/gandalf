@@ -148,6 +148,7 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
   // --------------------------------------------------------------------------
 
   // Normalise all SPH sums correctly
+  sphdata[i].invrho = 1.0/sphdata[i].rho;
   sphdata[i].invomega = 1.0 + invndim*sphdata[i].h*
     sphdata[i].invomega*sphdata[i].invrho;
   sphdata[i].invomega = 1.0/sphdata[i].invomega;
@@ -163,10 +164,12 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
 // ============================================================================
 void GradhSph::ComputeSphProperties(int i, int Nneib,int *neiblist, Parameters &simparams)
 {
+  sphdata[i].hfactor = pow(sphdata[i].invh,ndim+1);
+  sphdata[i].u = eos->SpecificInternalEnergy(sphdata[i]);
+  sphdata[i].sound = eos->SoundSpeed(sphdata[i]);
   sphdata[i].pfactor = eos->Pressure(sphdata[i])*
     sphdata[i].invrho*sphdata[i].invrho;
-  sphdata[i].hfactor = pow(sphdata[i].invh,ndim+1);
-  sphdata[i].sound = eos->SoundSpeed(sphdata[i]);
+  cout << "SPH : " << i << "   " << sphdata[i].invrho << "   " << sphdata[i].pfactor << "   " << sphdata[i].hfactor << endl;
 
   return;
 }
@@ -225,10 +228,12 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
       invrhomean = 2. / (sphdata[i].rho+sphdata[j].rho);
       vsignal = sphdata[i].sound + sphdata[j].sound - beta_visc*dvdr;
       for (k=0; k<ndim; k++) sphdata[i].a[k] -= sphdata[j].m*alpha_visc*
-          vsignal*dvdr*dr[k]*wmean*invrhomean;
+         vsignal*dvdr*dr[k]*wmean*invrhomean;
     }
 
   }
+
+  cout << "Hydro accel : " << i << "   " << sphdata[i].a[0] << "  " << sphdata[i].a[1] << "  " << sphdata[i].a[2] << endl;
 
   return;
 }

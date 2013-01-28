@@ -30,14 +30,30 @@ sim1.Setup()
 buf.add_simulation(sim1)
 
 snap1 = SphSnap.SphSnapshot()
+
 snap1.CopyDataFromSimulation(3,sim1.sph.Nsph,sim1.sph.sphdata)
+x1 = copy.deepcopy(snap1.ExtractArray("x"))
+y1 = copy.deepcopy(snap1.ExtractArray("y"))
+ion()
+plt.scatter(x1,y1)
+plt.show()
 
-x1 = copy.deepcopy(snap1.ExtractArray("rho"));
-y1 = copy.deepcopy(snap1.ExtractArray("h"));
+sim1.MainLoop()
 
-plt.scatter(x1,y1);
-plt.show();
+snap1.CopyDataFromSimulation(3,sim1.sph.Nsph,sim1.sph.sphdata)
+x1 = copy.deepcopy(snap1.ExtractArray("x"))
+y1 = copy.deepcopy(snap1.ExtractArray("y"))
+plt.scatter(x1,y1,color="red")
+plt.show()
 
+sim1.MainLoop()
+
+snap1.CopyDataFromSimulation(3,sim1.sph.Nsph,sim1.sph.sphdata)
+x1 = copy.deepcopy(snap1.ExtractArray("x"))
+y1 = copy.deepcopy(snap1.ExtractArray("y"))
+plt.scatter(x1,y1,color="green")
+ioff()
+plt.show()
 
 
 exit()

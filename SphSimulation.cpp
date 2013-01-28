@@ -19,6 +19,7 @@ using namespace std;
 // ============================================================================
 SphSimulation::SphSimulation()
 {
+  paramfile = "params.dat";
   n = 0;
   Nsteps = 0;
   t = 0.0f;
@@ -98,6 +99,8 @@ void SphSimulation::ComputeBlockTimesteps(void)
     if (dt < timestep) timestep = dt;
   }
 
+  cout << "Global timestep : " << timestep << endl;
+
   return;
 }
 
@@ -148,6 +151,22 @@ void SphSimulation::Setup(void)
     cout << "Unrecognised parameter : " << endl; exit(0);
   }
 
+  // Boundary condition variables
+  simbox.x_boundary_lhs = stringparams["x_boundary_lhs"];
+  simbox.x_boundary_rhs = stringparams["x_boundary_rhs"];
+  simbox.y_boundary_lhs = stringparams["y_boundary_lhs"];
+  simbox.y_boundary_rhs = stringparams["y_boundary_rhs"];
+  simbox.z_boundary_lhs = stringparams["z_boundary_lhs"];
+  simbox.z_boundary_rhs = stringparams["z_boundary_rhs"];
+  simbox.boxmin[0] = floatparams["boxmin[0]"];
+  simbox.boxmin[1] = floatparams["boxmin[1]"];
+  simbox.boxmin[2] = floatparams["boxmin[2]"];
+  simbox.boxmax[0] = floatparams["boxmax[0]"];
+  simbox.boxmax[1] = floatparams["boxmax[1]"];
+  simbox.boxmax[2] = floatparams["boxmax[2]"];
+  for (int k=0; k<3; k++) 
+    simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
+
   // Create neighbour searching object based on chosen method in params file
   if (stringparams["neib_search"] == "bruteforce")
     sphneib = new BruteForceSearch;
@@ -192,6 +211,7 @@ void SphSimulation::Setup(void)
     // Reorder particles
 
     // Search ghost particles
+    SearchGhostParticles();
 
     // Update neighbour tree
 
@@ -206,6 +226,7 @@ void SphSimulation::Setup(void)
     sphneib->UpdateAllSphProperties(sph,simparams);
 
     // Copy data to ghosts
+    CopyDataToGhosts();
 
     // Zero accelerations (perhaps)
     for (int i=0; i<sph->Nsph; i++) {
@@ -253,6 +274,7 @@ void SphSimulation::MainLoop(void)
     // Reorder particles
 
     // Search ghost particles
+    SearchGhostParticles();
 
     // Update neighbour tree
 
@@ -266,6 +288,7 @@ void SphSimulation::MainLoop(void)
     sphneib->UpdateAllSphProperties(sph,simparams);
 
     // Copy data to ghosts
+    CopyDataToGhosts();
 
     // Zero accelerations (perhaps)
     for (int i=0; i<sph->Nsph; i++) 

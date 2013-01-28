@@ -62,6 +62,7 @@ class Sph
   int Nghost;                           // No. of ghost SPH particles
   int Ntot;                             // No. of real + ghost particles
   int Nsphmax;                          // Max. no. of SPH particles in array
+  int Nghostmax;                        // ..
   struct SphParticle *sphdata;          // Main SPH particle data array
 
   SphKernel *kern;                      // SPH kernel 

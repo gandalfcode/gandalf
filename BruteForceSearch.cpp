@@ -44,9 +44,9 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
   debug2("[BruteForceSearch::UpdateAllSphProperties]\n");
 
   // Allocate array to store local copy of potential neighbour ids
-  Nneib = sph->Nsph;
-  neiblist = new int[sph->Nsph];
-  for (int i=0; i<sph->Nsph; i++) neiblist[i] = i;
+  Nneib = sph->Ntot;
+  neiblist = new int[sph->Ntot];
+  for (int i=0; i<sph->Ntot; i++) neiblist[i] = i;
 
   // Compute smoothing lengths of all SPH particles
   for (int i=0; i<sph->Nsph; i++) 
@@ -75,9 +75,9 @@ void BruteForceSearch::UpdateAllSphForces(Sph *sph, Parameters &simparams)
   debug2("[BruteForceSearch::UpdateAllSphForces]\n");
 
   // Allocate array to store local copy of potential neighbour ids
-  Nneib = sph->Nsph;
-  neiblist = new int[sph->Nsph];
-  for (int i=0; i<sph->Nsph; i++) neiblist[i] = i;
+  Nneib = sph->Ntot;
+  neiblist = new int[sph->Ntot];
+  for (int i=0; i<sph->Ntot; i++) neiblist[i] = i;
 
   // Compute SPH hydro forces for all particles
   for (int i=0; i<sph->Nsph; i++)
