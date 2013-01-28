@@ -106,6 +106,8 @@ void Parameters::SetDefaultValues(void)
   floatparams["gamma_eos"]=1.6666666666666;
   floatparams["temp0"]=1.0;
   floatparams["mu_bar"]=1.0;
+  floatparams["accel_mult"]=0.3;
+  floatparams["courant_mult"]=0.15;
 
   stringparams["ic"]="random_cube";
 
