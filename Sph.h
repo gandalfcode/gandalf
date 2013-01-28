@@ -56,6 +56,9 @@ class Sph
   SphKernel *kern;
   EOS *eos;
 
+  double alpha_visc;
+  double beta_visc;
+
 };
 
 

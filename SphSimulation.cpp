@@ -74,7 +74,7 @@ void SphSimulation::ComputeBlockTimesteps(void)
   timestep = big_number;
 
   for (int i=0; i<sph->Nsph; i++) {
-    dt = sphint->Timestep(sph->sphdata[i],sph->eos);
+    dt = sphint->Timestep(sph->sphdata[i]);
     if (dt < timestep) timestep = dt;
   }
 
@@ -105,8 +105,11 @@ void SphSimulation::Setup(void)
   bdim = intparams["ndim"];
 #endif
 
-  if (stringparams["sph"] == "gradh")
+  if (stringparams["sph"] == "gradh") {
     sph = new GradhSph(ndim,vdim,bdim);
+    sph->alpha_visc = floatparams["alpha_visc"];
+    sph->beta_visc = floatparams["beta_visc"];
+  }
   else {
     cout << "Unrecognised parameter : " << endl;
     exit(0);

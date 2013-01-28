@@ -27,7 +27,7 @@ class SphIntegration
   virtual void AdvanceParticles(int,SphParticle *,double) = 0;
   virtual void CorrectionTerms(int,SphParticle *,double) = 0;
 
-  virtual double Timestep(SphParticle &, EOS *);
+  virtual double Timestep(SphParticle &);
   
   virtual void EndTimestep(int,int,SphParticle *) = 0;
 

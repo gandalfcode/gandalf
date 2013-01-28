@@ -140,6 +140,7 @@ void GradhSph::ComputeSphProperties(int i, int Nneib,int *neiblist, Parameters &
   sphdata[i].pfactor = eos->Pressure(sphdata[i])*
     sphdata[i].invrho*sphdata[i].invrho;
   sphdata[i].hfactor = pow(sphdata[i].invh,ndim+1);
+  sphdata[i].sound = eos->SoundSpeed(sphdata[i]);
 
   return;
 }
@@ -160,29 +161,46 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
   float dv[ndimmax];
   float dvdr;
   float drmag;
+  float invrhomean;
+  float wmean;
+  float vsignal;
 
   sphdata[i].dudt = 0.0;
   hrangesqd = kern->kernrangesqd*sphdata[i].h*sphdata[i].h;
 
+
+  // Loop over all potential neighbours in the list
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
     if (i == j) continue;
 
+    // Calculate relative position vector and determine if particles
+    // are neighbours or not. If not, skip to next potential neighbour.
     for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - sphdata[i].r[k];
     drmag = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
-      
-    // Skip particle if not a neighbour
     if (drmag > hrangesqd && 
 	drmag > kern->kernrangesqd*sphdata[j].h*sphdata[j].h) continue;
 
+    // If particles are neighbours, continue computing hydro quantities
     drmag = sqrt(drmag);
     for (k=0; k<ndim; k++) dr[k] /= (drmag + small_number);
     for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - sphdata[i].v[k];
     dvdr = dv[0]*dr[0] + dv[1]*dr[1] * dv[2]*dr[2];
 
+    // Compute hydro acceleration
     for (k=0; k<ndim; k++) sphdata[i].a[k] += sphdata[j].m*dr[k]*
       (sphdata[i].pfactor*sphdata[i].hfactor*kern->w1(drmag*sphdata[i].invh) +
        sphdata[j].pfactor*sphdata[j].hfactor*kern->w1(drmag*sphdata[j].invh));
+
+    // Add dissipation terms
+    if (dvdr < 0.) {
+      wmean = 0.5*(kern->w1(drmag*sphdata[i].invh)*sphdata[i].hfactor +
+          kern->w1(drmag*sphdata[j].invh)*sphdata[j].hfactor);
+      invrhomean = 2. / (sphdata[i].rho+sphdata[j].rho);
+      vsignal = sphdata[i].sound + sphdata[j].sound - beta_visc*dvdr;
+      for (k=0; k<ndim; k++) sphdata[i].a[k] -= sphdata[j].m*alpha_visc*
+          vsignal*dvdr*dr[k]*wmean*invrhomean;
+    }
 
   }
 

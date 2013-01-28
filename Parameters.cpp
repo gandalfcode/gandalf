@@ -108,6 +108,8 @@ void Parameters::SetDefaultValues(void)
   floatparams["mu_bar"]=1.0;
   floatparams["accel_mult"]=0.3;
   floatparams["courant_mult"]=0.15;
+  floatparams["alpha_visc"]=0.1;
+  floatparams["beta_visc"]=0.2;
 
   stringparams["ic"]="random_cube";
 

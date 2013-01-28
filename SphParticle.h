@@ -32,6 +32,7 @@ struct SphParticle {
   float dudt;
   float invomega;
   float zeta;
+  float sound;
 };
 
 /*
