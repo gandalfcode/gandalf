@@ -21,7 +21,7 @@ class SphIntegration
 {
  public:
 
-  SphIntegration();
+  SphIntegration(double, double);
   ~SphIntegration();
 
   virtual void AdvanceParticles(int,SphParticle *,double) = 0;
@@ -30,6 +30,9 @@ class SphIntegration
   virtual double Timestep(SphParticle &, EOS *);
   
   virtual void EndTimestep(int,int,SphParticle *) = 0;
+
+  const double courant_mult;
+  const double accel_mult;
 
 };
 
@@ -42,7 +45,7 @@ class SphLFKDK: public SphIntegration
 {
  public:
 
-  SphLFKDK();
+  SphLFKDK(double, double);
   ~SphLFKDK();
 
   void AdvanceParticles(int,SphParticle *,double);

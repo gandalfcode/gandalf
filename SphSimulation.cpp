@@ -124,7 +124,9 @@ void SphSimulation::Setup(void)
     exit(0);
   }
 
-  if (simparams.stringparams["sph_integration"] == "lfkdk") sphint = new SphLFKDK;
+  if (simparams.stringparams["sph_integration"] == "lfkdk") {
+    sphint = new SphLFKDK(simparams.floatparams["accel_mult"],simparams.floatparams["courant_mult"]);
+  }
   else {
     cout << "Unrecognised parameter : " << endl;
     exit(0);

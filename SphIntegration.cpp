@@ -21,7 +21,9 @@ using namespace std;
 // ============================================================================
 // SphIntegration::SphIntegration
 // ============================================================================
-SphIntegration::SphIntegration()
+SphIntegration::SphIntegration(double accel_mult_aux, double courant_mult_aux):
+    accel_mult(accel_mult_aux),
+    courant_mult(courant_mult_aux)
 {
 }
 
@@ -49,7 +51,7 @@ double SphIntegration::Timestep(SphParticle &part, EOS *eos)
 
   //Acceleration condition
   amag = sqrt(part.a[0]*part.a[0] + part.a[1]*part.a[1] + part.a[2]*part.a[2]);
-  timestep = min(timestep, accel_mult*sqrt(part.h/(amag + small_number_dp));
+  timestep = min(timestep, accel_mult*sqrt(part.h/(amag + small_number_dp)));
 
   //TODO: implement energy condition (once we will be solving the energy equation)
 
