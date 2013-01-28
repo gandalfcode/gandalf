@@ -95,27 +95,31 @@ void SphSimulation::Setup(void)
 
   simparams.ReadParamsFile(paramfile);
 
+  map<string, int> &intparams = simparams.intparams;
+  map<string, float> &floatparams = simparams.floatparams;
+  map<string, string> &stringparams = simparams.stringparams;
+
 #if !defined(FIXED_DIMENSIONS)
-  ndim = simparams.intparams["ndim"];
-  vdim = simparams.intparams["ndim"];
-  bdim = simparams.intparams["ndim"];
+  ndim = intparams["ndim"];
+  vdim = intparams["ndim"];
+  bdim = intparams["ndim"];
 #endif
 
-  if (simparams.stringparams["sph"] == "gradh") 
+  if (stringparams["sph"] == "gradh")
     sph = new GradhSph(ndim,vdim,bdim);
   else {
     cout << "Unrecognised parameter : " << endl;
     exit(0);
   }
 
-  if (simparams.stringparams["neib_search"] == "bruteforce")
+  if (stringparams["neib_search"] == "bruteforce")
     sphneib = new BruteForceSearch;
   else {
     cout << "Unrecognised parameter : " << endl;
     exit(0);
   }
 
-  if (simparams.stringparams["kernel"] == "m4") {
+  if (stringparams["kernel"] == "m4") {
     sph->kern = new m4;
     sph->kern->Setup(ndim);
   }
@@ -124,8 +128,8 @@ void SphSimulation::Setup(void)
     exit(0);
   }
 
-  if (simparams.stringparams["sph_integration"] == "lfkdk") {
-    sphint = new SphLFKDK(simparams.floatparams["accel_mult"],simparams.floatparams["courant_mult"]);
+  if (stringparams["sph_integration"] == "lfkdk") {
+    sphint = new SphLFKDK(floatparams["accel_mult"],floatparams["courant_mult"]);
   }
   else {
     cout << "Unrecognised parameter : " << endl;
@@ -133,20 +137,20 @@ void SphSimulation::Setup(void)
   }
 
 
-  if (simparams.stringparams["gas_eos"] == "isothermal") sph->eos = 
-    new Isothermal(simparams.floatparams["temp0"],
-		   simparams.floatparams["mu_bar"],
-		   simparams.floatparams["gamma_eos"]);
+  if (stringparams["gas_eos"] == "isothermal") sph->eos =
+    new Isothermal(floatparams["temp0"],
+		   floatparams["mu_bar"],
+		   floatparams["gamma_eos"]);
   else {
     cout << "Unrecognised parameter : " << endl;
     exit(0);
   }
 
-  sph->Nsph = simparams.intparams["Npart"];
+  sph->Nsph = intparams["Npart"];
 
 
   // Generate initial conditions
-  if (simparams.stringparams["ic"] == "random_cube") sph->RandomBox();
+  if (stringparams["ic"] == "random_cube") sph->RandomBox();
   else {
     cout << "Unrecognised parameter : " << endl;
     exit(0);
