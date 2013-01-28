@@ -45,7 +45,7 @@ double SphIntegration::Timestep(SphParticle &part, EOS *eos)
   double amag;
 
   //Courant condition
-  timestep = 0.1*part.h/(eos->SoundSpeed(part) + );
+  timestep = courant_mult*part.h/(eos->SoundSpeed(part) + part.h*fabs(part.div_v) + small_number_dp);
 
   //Acceleration condition
   amag = sqrt(part.a[0]*part.a[0] + part.a[1]*part.a[1] + part.a[2]*part.a[2]);
