@@ -1,16 +1,15 @@
 // ============================================================================
-// KERNEL.H
+// SphKernel.h
 // ============================================================================
 
 
-#ifndef _KERNEL_H_
-#define _KERNEL_H_
-
+#ifndef _SPH_KERNEL_H_
+#define _SPH_KERNEL_H_
 
 
 
 // ============================================================================
-// CLASS KERNEL
+// Class SphKernel
 // ============================================================================
 class SphKernel
 {
@@ -18,34 +17,40 @@ class SphKernel
 
   virtual float w0(float) = 0;
   virtual float w1(float) = 0;
-  virtual void Setup(int) = 0;
+  virtual float womega(float) = 0;
+  //virtual void Setup(int) = 0;
 
   float kernrange;
   float invkernrange;
   float kernrangesqd;
   float kernnorm;
+#if !defined(FIXED_DIMENSIONS)
+  float ndimpr;
+#endif
 
 };
 
 
 
 // ============================================================================
-// CLASS M4
+// Class M4Kernel
 // ============================================================================
-class m4: public SphKernel
+class M4Kernel: public SphKernel
 {
  public:
 
-  m4();
-  ~m4();
+  M4Kernel(int);
+  ~M4Kernel();
 
-  // M4-kernel function prototypes
+  // M4 kernel function prototypes
   // --------------------------------------------------------------------------
   float w0(float);
   float w1(float);
+  float womega(float);
   //float w1_tc(float);
-  void Setup(int);
+  //void Setup(int);
 
 };
+
 
 #endif

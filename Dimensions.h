@@ -1,5 +1,5 @@
 // ============================================================================
-// DIMENSIONS.H
+// Dimensions.h
 // ============================================================================
 
 
@@ -8,6 +8,7 @@
 
 
 // Maximum allowed no. of dimensions chosen in Makefile
+// ----------------------------------------------------------------------------
 #if NDIM==1
 static const int ndimmax = 1;
 static const int bdimmax = 1;
@@ -33,21 +34,21 @@ static const int vdimmax = 3;
 #if NDIM==1
 static const int ndim = 1;
 static const int bdim = 1;
-static const float ndimpr = 1.0f;
-static const float invndim = 1.0f;
-static const float ndimplus1 = 2.0f;
+static const float ndimpr = 1.0;
+static const float invndim = 1.0;
+static const float ndimplus1 = 2.0;
 #elif NDIM==2
 static const int ndim = 2;
 static const int bdim = 2;
-static const float ndimpr = 2.0f;
-static const float invndim = 0.5f;
-static const float ndimplus1 = 3.0f;
+static const float ndimpr = 2.0;
+static const float invndim = 0.5;
+static const float ndimplus1 = 3.0;
 #elif NDIM==3
 static const int ndim = 3;
 static const int bdim = 3;
-static const float ndimpr = 3.0f;
+static const float ndimpr = 3.0;
 static const float invndim = onethird;
-static const float ndimplus1 = 4.0f;
+static const float ndimplus1 = 4.0;
 #endif
 #if VDIM==1
 static const int vdim = 1;
@@ -60,23 +61,6 @@ static const int ndimp1 = ndim + 1;
 static const int ndimm1 = ndim - 1;
 static const int vdimp1 = vdim + 1;
 static const int vdimm1 = vdim - 1;
-
-
-// Otherwise, allow dimensions to be changed (e.g. in python interface)
-// ----------------------------------------------------------------------------
-#else
-
-int ndim;
-int vdim;
-int bdim;
-//int ndimp1;
-//int ndimm1;
-//int vdimp1;
-//int vdimm1;
-//float ndimpr;
-//float invndim;
-//float ndimplus1;
-
 #endif
 // ----------------------------------------------------------------------------
 

@@ -1,5 +1,5 @@
 // ============================================================================
-// SNAPSHOT.CPP
+// SphSnapshot.cpp
 // ============================================================================
 
 
@@ -12,7 +12,7 @@ using namespace std;
 
 
 // ============================================================================
-// SNAPSHOT::SNAPSHOT
+// SphSnapshot::SphSnapshot
 // ============================================================================
 SphSnapshot::SphSnapshot()
 {
@@ -26,7 +26,7 @@ SphSnapshot::SphSnapshot()
 
 
 // ============================================================================
-// SNAPSHOT::~SNAPSHOT
+// SphSnapshot::~SphSnapshot
 // ============================================================================
 SphSnapshot::~SphSnapshot()
 {
@@ -35,7 +35,7 @@ SphSnapshot::~SphSnapshot()
 
 
 // ============================================================================
-// SNAPSHOT::ALLOCATEBUFFERMEMORY
+// SphSnapshot::AllocateBufferMemory
 // ============================================================================
 void SphSnapshot::AllocateBufferMemory(void)
 {
@@ -78,7 +78,7 @@ void SphSnapshot::AllocateBufferMemory(void)
 
 
 // ============================================================================
-// SNAPSHOT::DEALLOCATEBUFFERMEMORY
+// SphSnapshot::DeallocateBufferMemory
 // ============================================================================
 void SphSnapshot::DeallocateBufferMemory(void)
 {
@@ -121,7 +121,7 @@ void SphSnapshot::DeallocateBufferMemory(void)
 
 
 // ============================================================================
-// SNAPSHOT::CALCULATEMEMORYUSAGE
+// SphSnapshot::CalculateMemoryUsage
 // ============================================================================
 int SphSnapshot::CalculateMemoryUsage(void)
 {
@@ -131,7 +131,7 @@ int SphSnapshot::CalculateMemoryUsage(void)
 
 
 // ============================================================================
-// SNAPSHOT::COPYDATAFROMSIMULATION
+// SphSnapshot::CopyDataFromSimulation
 // ============================================================================
 void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux, 
 					 SphParticle *sphaux)
@@ -181,7 +181,7 @@ void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux,
 
 
 // ============================================================================
-// SphSnapshot::GETARRAY
+// SphSnapshot::ExtractArray
 // ============================================================================
 void SphSnapshot::ExtractArray(string name, float** out_array, 
 			       int* size_array)

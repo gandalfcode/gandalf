@@ -1,10 +1,10 @@
 // ============================================================================
-// SNAPSHOT.H
+// SphSnapshot.h
 // ============================================================================
 
 
-#ifndef _SphSnapshot_H_
-#define _SphSnapshot_H_
+#ifndef _SPH_SNAPSHOT_H_
+#define _SPH_SNAPSHOT_H_
 
 
 #include <iostream>
@@ -38,6 +38,9 @@ class SphSnapshot
   std::string filename;
   std::string fileform;
 
+  // Pointers for allocating memory required for storing all important
+  // snapshot data
+  // --------------------------------------------------------------------------
   float *x;
   float *y;
   float *z;

@@ -1,56 +1,63 @@
 // ============================================================================
-// KERNEL.CPP
+// M4Kernel.Cpp
 // ============================================================================
 
 
 #include <cmath>
 #include <iostream>
 #include "Constants.h"
+#include "Dimensions.h"
 #include "SphKernel.h"
 using namespace std;
 
 
+
 // ============================================================================
-// KERNEL::KERNEL
+// M4Kernel::M4Kernel
 // ============================================================================
-m4::m4()
+M4Kernel::M4Kernel(int ndimaux)
 {
   kernrange = 2.0;
   invkernrange = 0.5;
   kernrangesqd = 4.0;
+  if (ndimaux == 1) kernnorm = twothirds;
+  else if (ndimaux == 2) kernnorm = invpi*10.0/7.0;
+  else if (ndimaux == 3) kernnorm = invpi;
+#if !defined(FIXED_DIMENSIONS)
+  ndimpr = (float) ndimaux;
+#endif
 }
 
 
 
 // ============================================================================
-// ::~KERNEL
+// M4Kernel::~M4Kernel
 // ============================================================================
-m4::~m4()
+M4Kernel::~M4Kernel()
 {
 }
 
 
 
 // ============================================================================
-// M4::SETUP
+// M4Kernel::Setup
 // ============================================================================
-void m4::Setup(int ndim)
-{
-  if (ndim == 3) kernnorm = invpi;
-  return;
-}
+//void M4Kernel::Setup(int ndim)
+//{
+//  return;
+//}
 
 
 
 // ============================================================================
-// KERNEL::WO
+// M4Kernel::w0
 // ============================================================================
-float m4::w0(float s)
+float M4Kernel::w0(float s)
 {
   if (s < 1.0f)
-    return kernnorm*(1.0f - 1.5f*s*s + 0.75f*s*s*s);
-  else if (s < 2.0f)
-    return 0.25f*kernnorm*powf(2.0f - s,3.0f);
+    return kernnorm*(1.0 - 1.5*s*s + 0.75*s*s*s);
+  else if (s < 2.0)
+    return 0.25f*kernnorm*powf(2.0 - s,3.0);
   else
     return 0.0f;
 }
@@ -58,21 +65,39 @@ float m4::w0(float s)
 
 
 // ============================================================================
-// KERNEL::W1_M4
+// M4Kernel::w1
 // ============================================================================
-float m4::w1(float s)
+float M4Kernel::w1(float s)
 {
   if (s < 1.0f)
-    return kernnorm*(-3.0f*s + 2.25f*s*s);
-  else if (s < 2.0f)
-    return -0.75f*kernnorm*(2.0f - s)*(2.0f - s);
+    return kernnorm*(-3.0*s + 2.25*s*s);
+  else if (s < 2.0)
+    return -0.75*kernnorm*(2.0 - s)*(2.0 - s);
   else
-    return 0.0f;
+    return 0.0;
 }
 
 
+
 // ============================================================================
-// KERNEL::W1_M4_TC
+// M4Kernel::womega
+// ============================================================================
+float M4Kernel::womega(float s)
+{
+  if (s < 1.0)
+    return kernnorm*(-ndimpr + 1.5*(ndimpr + 2.0)*s*s - 
+		     0.75*(ndimpr + 3.0)*pow(s,3));
+  else if (s < 2.0)
+    return kernnorm*(-2.0*ndimpr + 3.0*(ndimpr + 1.0)*s - 1.50*
+		     (ndimpr + 2.0)*s*s + 0.25*(ndimpr + 3.0)*pow(s,3));
+  else
+    return 0.0;
+}
+
+
+
+// ============================================================================
+// KERNEL::W1_TC
 // ============================================================================
 /*float Kernel::w1_m4_tc(float s)
 {

@@ -16,20 +16,23 @@
 
 
 // ============================================================================
-// CLASS Sph
+// Class Sph
+// Main parent Sph class.  Different SPH implementations 
+// (e.g. grad-h SPH, Saitoh & Makino 2012) are derived from this class.
+// Each implementation requires defining its own version of each function 
+// (e.g. ComputeH for its own method of computing smoothing lengths).
 // ============================================================================
 class Sph
 {
  public:
 
   // SPH functions for computing SPH sums with neighbouring particles 
-  // (to be coded in each separate SPH implementation)
+  // (fully coded in each separate SPH implementation, and not in Sph.cpp)
   // --------------------------------------------------------------------------
-  virtual void ComputeH(int,int,int *,Parameters &) = 0;
+  virtual int ComputeH(int,int,int *,Parameters &) = 0;
   virtual void ComputeSphProperties(int,int,int *,Parameters &) = 0;
   virtual void ComputeHydroForces(int,int,int *,Parameters &) = 0;
   virtual void ComputeGravForce(int,int,float *) = 0;
-  virtual void RandomBox(void) = 0;
 
 
   // SPH array memory allocation functions
@@ -40,21 +43,29 @@ class Sph
   void InitialSmoothingLengthGuess(void);
 
 
+  // Initial conditions routines
+  // --------------------------------------------------------------------------
+  void RandomBox(void);
+
+
 #if !defined(FIXED_DIMENSIONS)
   int ndim;
   int vdim;
   int bdim;
+  float invndim;
 #endif
 
 
   // SPH particle counters and main particle data array
   // --------------------------------------------------------------------------
   int Nsph;                             // No. of SPH particles in simulation
+  int Nghost;                           // No. of ghost SPH particles
+  int Ntot;                             // No. of real + ghost particles
   int Nsphmax;                          // Max. no. of SPH particles in array
   struct SphParticle *sphdata;          // Main SPH particle data array
 
-  SphKernel *kern;
-  EOS *eos;
+  SphKernel *kern;                      // SPH kernel 
+  EOS *eos;                             // Equation-of-state 
 
   double alpha_visc;
   double beta_visc;
@@ -65,6 +76,9 @@ class Sph
 
 // ============================================================================
 // Class GradhSph
+// Class definition for conservative 'grad-h' SPH simulations (as derived 
+// from the parent Sph class).  Full code for each of these class functions 
+// written in 'GradhSph.cpp'.
 // ============================================================================
 class GradhSph: public Sph
 {
@@ -73,12 +87,10 @@ class GradhSph: public Sph
   GradhSph(int,int,int);
   ~GradhSph();
 
-  void ComputeH(int,int,int *,Parameters &);
+  int ComputeH(int,int,int *,Parameters &);
   void ComputeSphProperties(int,int,int *,Parameters &);
   void ComputeHydroForces(int,int,int *, Parameters &);
   void ComputeGravForce(int,int,float *);
-
-  void RandomBox(void);
 
 };
 

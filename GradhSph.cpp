@@ -13,6 +13,7 @@
 #include "SphParticle.h"
 #include "Parameters.h"
 #include "EOS.h"
+#include "InlineFuncs.h"
 using namespace std;
 
 
@@ -26,6 +27,7 @@ GradhSph::GradhSph(int ndimaux, int vdimaux, int bdimaux)
   ndim = ndimaux;
   vdim = vdimaux;
   bdim = bdimaux;
+  invndim = 1.0/(float)ndim;
 #endif
   Nsph = 0;
   Nsphmax = 0;
@@ -43,91 +45,115 @@ GradhSph::~GradhSph()
 
 
 // ============================================================================
-// Sph::RandomBox
-// ============================================================================
-void GradhSph::RandomBox(void)
-{
-  printf("[GradhSph::RandomBox]");
-
-  AllocateMemory(Nsph);
-
-  for (int i=0; i<Nsph; i++) {
-    for (int k=0; k<NDIM; k++) {
-      sphdata[i].r[k] = (float)(rand()%RAND_MAX)/(float)RAND_MAX;
-      sphdata[i].v[k] = (float)(rand()%RAND_MAX)/(float)RAND_MAX;
-      sphdata[i].a[k] = 0.0f;
-    }
-    sphdata[i].m = 1.0f / (float) Nsph;
-    sphdata[i].invomega = 0.5f;
-  }
-
-  return;
-}
-
-
-
-// ============================================================================
 // GradhSph::ComputeH
+// Compute the value of the smoothing length of particle 'i' by iterating  
+// the relation :  h = h_fac*(m/rho)^(1/ndim).
+// Uses the previous value of h as a starting guess and then uses either 
+// a Newton-Rhapson solver, or fixed-point iteration, to converge on the 
+// correct value of h.  The maximum tolerance used for deciding whether the 
+// iteration has converged is given by the 'h_converge' parameter.
 // ============================================================================
-void GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &simparams)
+int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
 {
-  int j;
-  int jj;
-  int k;
-  int iteration = 0;
-  float h_lower_bound = 0.0;
-  float h_upper_bound = big_number;
-  float hrangesqd;
-  float dr[ndimmax];
-  float drmag;
-  float h_fac = simparams.floatparams["h_fac"];
-  float h_converge = simparams.floatparams["h_converge"];
+  int j;                                      // Neighbour id
+  int jj;                                     // Aux. neighbour counter
+  int k;                                      // Dimension counter
+  int iteration = 0;                          // h-rho iteration counter
+  int iteration_max = 30;                     // Max. no of iterations
+  float h_lower_bound = 0.0;                  // Lower bound on h
+  float h_upper_bound = big_number;           // Upper bound on h
+  float h_max = big_number;                   // Max. allowed value of h
+  float hrangesqd;                            // Kernel extent (squared)
+  float dr[ndimmax];                          // Relative position vector
+  float dv[ndimmax];                          // Relative velocity vector
+  float drmag;                                // Neighbour distance
 
-  while (1) {
+  // Local copies of necessary input parameters
+  float h_fac = params.floatparams["h_fac"];
+  float h_converge = params.floatparams["h_converge"];
 
+
+  // Main smoothing length iteration loop
+  // --------------------------------------------------------------------------
+  do {
+
+    // Initialise all variables for this value of h
+    iteration++;
     hrangesqd = kern->kernrangesqd*sphdata[i].h*sphdata[i].h;
     sphdata[i].invh = 1.0/sphdata[i].h;
     sphdata[i].hfactor = pow(sphdata[i].invh,ndim);
     sphdata[i].rho = 0.0;
-    sphdata[i].div_v = 0.0;
     sphdata[i].invomega = 0.0;
+    sphdata[i].div_v = 0.0;
 
     // Loop over all neighbours in list
+    // ------------------------------------------------------------------------
     for (jj=0; jj<Nneib; jj++) {
       j = neiblist[jj];
 
       for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - sphdata[i].r[k];
-      drmag = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
+      drmag = DotProduct(dr,dr);
       
       // Skip particle if not a neighbour
       if (drmag > hrangesqd) continue;
 
       drmag = sqrt(drmag);
       for (k=0; k<ndim; k++) dr[k] /= (drmag + small_number);
+      for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - sphdata[i].v[k];
+      
+      sphdata[i].div_v -= sphdata[j].m*DotProduct(dv,dr)*
+	kern->w1(drmag*sphdata[i].invh)*sphdata[i].hfactor*sphdata[i].invh;
       sphdata[i].rho += sphdata[j].m*sphdata[i].hfactor*
 	kern->w0(drmag*sphdata[i].invh);
+      sphdata[i].invomega += sphdata[j].m*sphdata[i].hfactor*
+	sphdata[i].invh*kern->womega(drmag*sphdata[i].invh);
+
     }
+    // ------------------------------------------------------------------------
 
     if (sphdata[i].rho > 0.0) sphdata[i].invrho = 1.0/sphdata[i].rho;
-
-    cout << "h convergence : " << i << "   " << sphdata[i].h << "   " << 
-      sphdata[i].rho << "   " << 
-      fabs(sphdata[i].h - h_fac*pow(sphdata[i].m*sphdata[i].invrho,
-				    1.0/(float)ndim)) << endl;
 
     // If h changes below some fixed tolerance, exit iteration loop
     if (sphdata[i].rho > 0.0 && sphdata[i].h > h_lower_bound && 
 	fabs(sphdata[i].h - h_fac*pow(sphdata[i].m*sphdata[i].invrho,
-				     1.0/(float)ndim)) < h_converge) break;
+				      invndim)) < h_converge) break;
 
-    // Use fixed-point iteration for now
-    sphdata[i].h = h_fac*pow(sphdata[i].m*sphdata[i].invrho,1.0/(float)ndim);
+    // Use fixed-point iteration for now.  If this does not converge in a 
+    // reasonable number of iterations (iteration_max), then assume something 
+    // is wrong and switch to a bisection method, which should be guaranteed 
+    // to converge, albeit slowly.
+    // ------------------------------------------------------------------------
+    if (iteration < iteration_max)
+      sphdata[i].h = h_fac*pow(sphdata[i].m*sphdata[i].invrho,invndim);
 
-  }
+    else if (iteration == iteration_max)
+      sphdata[i].h = 0.5*(h_lower_bound + h_upper_bound);
 
-  sphdata[i].invomega = 1.0;
+    else if (iteration < 5*iteration_max) {
+      if (sphdata[i].rho < small_number || 
+	  sphdata[i].rho*pow(sphdata[i].h,ndim) > pow(h_fac,ndim)*sphdata[i].m)
+	h_upper_bound = sphdata[i].h;
+      else 
+	h_lower_bound = sphdata[i].h;
+      sphdata[i].h = 0.5*(h_lower_bound + h_upper_bound);
+    }
 
-  return;
+    // If the smoothing length is too large for the neighbour list, exit 
+    // routine and flag neighbour list error in order to generate a larger
+    // neighbour list
+    if (sphdata[i].h > h_max) return 0;
+    
+
+  } while (sphdata[i].h > h_lower_bound && sphdata[i].h < h_upper_bound);
+  // --------------------------------------------------------------------------
+
+  // Normalise all SPH sums correctly
+  sphdata[i].invomega = 1.0 + invndim*sphdata[i].h*
+    sphdata[i].invomega*sphdata[i].invrho;
+  sphdata[i].invomega = 1.0/sphdata[i].invomega;
+  sphdata[i].div_v *= sphdata[i].invrho;
+
+  return 1;
 }
 
 

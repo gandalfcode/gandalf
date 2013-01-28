@@ -13,6 +13,7 @@
 #include "SphParticle.h"
 
 
+
 // ============================================================================
 // CLASS EOS
 // ============================================================================
@@ -47,6 +48,7 @@ class Isothermal: public EOS
   float SpecificInternalEnergy(SphParticle &);
 
   float gamma;
+  float gammam1;
   float temp0;
   float mu_bar;
 
