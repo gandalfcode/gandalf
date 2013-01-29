@@ -71,7 +71,13 @@ class SphSimulation
   void AddRandomBox(int, float *, DomainBox);
   void AddRegularLattice(int, int *, float *, DomainBox);
 
+  // Input-output routines
+  // --------------------------------------------------------------------------
+  bool ReadSnapshotFile(string,string);
+  bool ReadColumnSnapshotFile(string);
 
+  bool WriteSnapshotFile(string,string);
+  bool WriteColumnSnapshotFile(string);
 
 
 #if !defined(FIXED_DIMENSIONS)
@@ -86,6 +92,11 @@ class SphSimulation
   int Nsteps;
   double t;
   double timestep;
+  double tsnapnext;
+  double tend;
+  double dt_snap;
+  int Noutsnap;
+  string run_id;
 
   // Name of parameters file and Parameters object that reads all data
   // --------------------------------------------------------------------------

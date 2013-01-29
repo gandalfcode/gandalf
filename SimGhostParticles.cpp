@@ -118,19 +118,19 @@ void SphSimulation::SearchGhostParticles(void)
       if (sphdata[i].r[1] < simbox.boxmin[1] + 
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.y_boundary_lhs == "periodic")
-	  CreateGhostParticle(i,0,sphdata[i].r[1] + simbox.boxsize[1],
+	  CreateGhostParticle(i,1,sphdata[i].r[1] + simbox.boxsize[1],
 			      sphdata[i].v[1]);
 	if (simbox.y_boundary_lhs == "mirror")
-	  CreateGhostParticle(i,0,2.0*simbox.boxmin[1] - 
+	  CreateGhostParticle(i,1,2.0*simbox.boxmin[1] - 
 			      sphdata[i].r[1],-sphdata[i].v[1]);
       }
       if (sphdata[i].r[1] > simbox.boxmax[1] - 
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.y_boundary_rhs == "periodic")
-	  CreateGhostParticle(i,0,sphdata[i].r[1] - simbox.boxsize[1],
+	  CreateGhostParticle(i,1,sphdata[i].r[1] - simbox.boxsize[1],
 			      sphdata[i].v[1]);
 	if (simbox.y_boundary_rhs == "mirror")
-	  CreateGhostParticle(i,0,2.0*simbox.boxmax[1] - 
+	  CreateGhostParticle(i,1,2.0*simbox.boxmax[1] - 
 			      sphdata[i].r[1],-sphdata[i].v[1]);
       }
     }
@@ -148,19 +148,19 @@ void SphSimulation::SearchGhostParticles(void)
       if (sphdata[i].r[2] < simbox.boxmin[2] + 
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.z_boundary_lhs == "periodic")
-	  CreateGhostParticle(i,0,sphdata[i].r[2] + simbox.boxsize[2],
+	  CreateGhostParticle(i,2,sphdata[i].r[2] + simbox.boxsize[2],
 			      sphdata[i].v[2]);
 	if (simbox.z_boundary_lhs == "mirror")
-	  CreateGhostParticle(i,0,2.0*simbox.boxmin[2] - 
+	  CreateGhostParticle(i,2,2.0*simbox.boxmin[2] - 
 			      sphdata[i].r[2],-sphdata[i].v[2]);
       }
       if (sphdata[i].r[2] > simbox.boxmax[2] - 
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.z_boundary_rhs == "periodic")
-	  CreateGhostParticle(i,0,sphdata[i].r[2] - simbox.boxsize[2],
+	  CreateGhostParticle(i,2,sphdata[i].r[2] - simbox.boxsize[2],
 			      sphdata[i].v[2]);
 	if (simbox.z_boundary_rhs == "mirror")
-	  CreateGhostParticle(i,0,2.0*simbox.boxmax[2] - 
+	  CreateGhostParticle(i,2,2.0*simbox.boxmax[2] - 
 			      sphdata[i].r[2],-sphdata[i].v[2]);
       }
     }

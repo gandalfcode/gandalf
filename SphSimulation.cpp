@@ -4,6 +4,7 @@
 
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <cstdio>
 #include <cstring>
@@ -41,11 +42,25 @@ SphSimulation::~SphSimulation()
 // ============================================================================
 void SphSimulation::Run(int Nstepsmax, double tmax)
 {
+  string filename;
+  string nostring;
+  stringstream ss;
 
   // --------------------------------------------------------------------------
   do {
 
     MainLoop();
+
+    if (t >= tsnapnext) {
+      Noutsnap++;
+      tsnapnext += dt_snap;
+      nostring = "";
+      ss << Noutsnap;
+      nostring = ss.str();
+      filename = run_id + '.' + nostring;
+      ss.str(std::string());
+      WriteSnapshotFile(filename,"column");
+    }
 
   } while (t < tmax && Nsteps < Nstepsmax);
   // --------------------------------------------------------------------------
@@ -203,6 +218,13 @@ void SphSimulation::Setup(void)
     cout << "Unrecognised parameter : " << endl; exit(0);
   }
 
+
+  // Set time variables here (for now)
+  Noutsnap = 0;
+  dt_snap = 0.05;
+  tsnapnext = dt_snap;
+  tend = 0.5;
+  run_id = "ISOSHOCK";
 
 
   // Set initial smoothing lengths and create initial ghost particles
