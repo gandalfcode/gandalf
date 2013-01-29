@@ -19,7 +19,7 @@ using namespace std;
 // ============================================================================
 SphSimulation::SphSimulation()
 {
-  paramfile = "isoshock.dat";  //"params.dat";
+  paramfile = "params.dat";
   n = 0;
   Nsteps = 0;
   t = 0.0f;
@@ -175,7 +175,8 @@ void SphSimulation::Setup(void)
   }
 
   if (stringparams["sph_integration"] == "lfkdk") {
-    sphint = new SphLFKDK(floatparams["accel_mult"],floatparams["courant_mult"]);
+    sphint = new SphLFKDK(floatparams["accel_mult"],
+			  floatparams["courant_mult"]);
   }
   else {
     cout << "Unrecognised parameter : " << endl; exit(0);
@@ -207,10 +208,12 @@ void SphSimulation::Setup(void)
   // Set initial smoothing lengths and create initial ghost particles
   // --------------------------------------------------------------------------
   if (sph->Nsph > 0) {
+
+    sph->Ntot = sph->Nsph;
     
     sph->InitialSmoothingLengthGuess();
 
-    // Reorder particles
+    sphneib->UpdateAllSphProperties(sph,simparams);
 
     // Search ghost particles
     SearchGhostParticles();
@@ -298,8 +301,10 @@ void SphSimulation::MainLoop(void)
     CopyDataToGhosts();
 
     // Zero accelerations (perhaps)
-    for (int i=0; i<sph->Nsph; i++) 
+    for (int i=0; i<sph->Nsph; i++) {
       for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = 0.0;
+      sph->sphdata[i].dudt = 0.0;
+    }
 
     // Calculate all hydro forces
     sphneib->UpdateAllSphForces(sph,simparams);

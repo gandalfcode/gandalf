@@ -110,7 +110,7 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
 
     }
     // ------------------------------------------------------------------------
-
+    
     if (sphdata[i].rho > 0.0) sphdata[i].invrho = 1.0/sphdata[i].rho;
 
     // If h changes below some fixed tolerance, exit iteration loop
@@ -149,6 +149,8 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
 
   // Normalise all SPH sums correctly
   sphdata[i].invrho = 1.0/sphdata[i].rho;
+  sphdata[i].h = h_fac*pow(sphdata[i].m*sphdata[i].invrho,invndim);
+  sphdata[i].invh = 1.0/sphdata[i].h;
   sphdata[i].invomega = 1.0 + invndim*sphdata[i].h*
     sphdata[i].invomega*sphdata[i].invrho;
   sphdata[i].invomega = 1.0/sphdata[i].invomega;
@@ -213,7 +215,7 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
     drmag = sqrt(drmag);
     for (k=0; k<ndim; k++) dr[k] /= (drmag + small_number);
     for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - sphdata[i].v[k];
-    dvdr = DotProduct (dv, dr);
+    dvdr = DotProduct (dv,dr);
 
     // Compute hydro acceleration
     for (k=0; k<ndim; k++) sphdata[i].a[k] += sphdata[j].m*dr[k]*
@@ -221,10 +223,10 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
        sphdata[j].pfactor*sphdata[j].hfactor*kern->w1(drmag*sphdata[j].invh));
 
     // Add dissipation terms
-    if (dvdr < 0.) {
+    if (dvdr < 0.0) {
       wmean = 0.5*(kern->w1(drmag*sphdata[i].invh)*sphdata[i].hfactor +
           kern->w1(drmag*sphdata[j].invh)*sphdata[j].hfactor);
-      invrhomean = 2. / (sphdata[i].rho+sphdata[j].rho);
+      invrhomean = 2.0 / (sphdata[i].rho + sphdata[j].rho);
       vsignal = sphdata[i].sound + sphdata[j].sound - beta_visc*dvdr;
       for (k=0; k<ndim; k++) sphdata[i].a[k] -= sphdata[j].m*alpha_visc*
          vsignal*dvdr*dr[k]*wmean*invrhomean;

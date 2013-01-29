@@ -65,8 +65,8 @@ void SphLFKDK::CorrectionTerms(int Nsph, SphParticle *sph, double dt)
   int k;
 
   for (i=0; i<Nsph; i++) {
-    for (k=0; k<ndim; k++) sph[i].v[k] = sph[i].v0[k] + 
-      0.5*(sph[i].a0[k] + sph[i].a[k])*dt;
+    for (k=0; k<ndim; k++) sph[i].v[k] += 
+      0.5*(sph[i].a[k] - sph[i].a0[k])*dt;
   }
 
   return;

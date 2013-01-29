@@ -35,12 +35,11 @@ snap1.CopyDataFromSimulation(3,sim1.sph.Nsph,sim1.sph.sphdata)
 x1 = copy.deepcopy(snap1.ExtractArray("x"))
 y1 = copy.deepcopy(snap1.ExtractArray("rho"))
 ion()
-plt.x
 plt.scatter(x1,y1)
 plt.show()
 
 
-for i in range(1000):
+for i in range(500):
     sim1.MainLoop()
 
 

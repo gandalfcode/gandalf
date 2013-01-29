@@ -13,6 +13,7 @@
 #include "SphIntegration.h"
 #include "SphParticle.h"
 #include "EOS.h"
+#include "InlineFuncs.h"
 #include "Debug.h"
 using namespace std;
 
@@ -47,10 +48,11 @@ double SphIntegration::Timestep(SphParticle &part)
   double amag;
 
   //Courant condition
-  timestep = courant_mult*part.h/(part.sound + part.h*fabs(part.div_v) + small_number_dp);
+  timestep = courant_mult*part.h/
+    (part.sound + part.h*fabs(part.div_v) + small_number_dp);
 
   //Acceleration condition
-  amag = sqrt(part.a[0]*part.a[0] + part.a[1]*part.a[1] + part.a[2]*part.a[2]);
+  amag = sqrt(DotProduct(part.a,part.a));
   timestep = min(timestep, accel_mult*sqrt(part.h/(amag + small_number_dp)));
 
 
