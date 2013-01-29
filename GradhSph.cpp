@@ -168,8 +168,7 @@ void GradhSph::ComputeSphProperties(int i, int Nneib,int *neiblist, Parameters &
   sphdata[i].u = eos->SpecificInternalEnergy(sphdata[i]);
   sphdata[i].sound = eos->SoundSpeed(sphdata[i]);
   sphdata[i].pfactor = eos->Pressure(sphdata[i])*
-    sphdata[i].invrho*sphdata[i].invrho;
-  cout << "SPH : " << i << "   " << sphdata[i].invrho << "   " << sphdata[i].pfactor << "   " << sphdata[i].hfactor << endl;
+    sphdata[i].invrho*sphdata[i].invrho*sphdata[i].invomega;
 
   return;
 }
@@ -232,8 +231,6 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
     }
 
   }
-
-  cout << "Hydro accel : " << i << "   " << sphdata[i].a[0] << "  " << sphdata[i].a[1] << "  " << sphdata[i].a[2] << endl;
 
   return;
 }

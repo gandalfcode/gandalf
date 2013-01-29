@@ -33,24 +33,20 @@ snap1 = SphSnap.SphSnapshot()
 
 snap1.CopyDataFromSimulation(3,sim1.sph.Nsph,sim1.sph.sphdata)
 x1 = copy.deepcopy(snap1.ExtractArray("x"))
-y1 = copy.deepcopy(snap1.ExtractArray("y"))
+y1 = copy.deepcopy(snap1.ExtractArray("rho"))
 ion()
+plt.x
 plt.scatter(x1,y1)
 plt.show()
 
-sim1.MainLoop()
+
+for i in range(1000):
+    sim1.MainLoop()
+
 
 snap1.CopyDataFromSimulation(3,sim1.sph.Nsph,sim1.sph.sphdata)
 x1 = copy.deepcopy(snap1.ExtractArray("x"))
-y1 = copy.deepcopy(snap1.ExtractArray("y"))
-plt.scatter(x1,y1,color="red")
-plt.show()
-
-sim1.MainLoop()
-
-snap1.CopyDataFromSimulation(3,sim1.sph.Nsph,sim1.sph.sphdata)
-x1 = copy.deepcopy(snap1.ExtractArray("x"))
-y1 = copy.deepcopy(snap1.ExtractArray("y"))
+y1 = copy.deepcopy(snap1.ExtractArray("rho"))
 plt.scatter(x1,y1,color="green")
 ioff()
 plt.show()

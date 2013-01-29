@@ -53,9 +53,6 @@ double SphIntegration::Timestep(SphParticle &part)
   amag = sqrt(part.a[0]*part.a[0] + part.a[1]*part.a[1] + part.a[2]*part.a[2]);
   timestep = min(timestep, accel_mult*sqrt(part.h/(amag + small_number_dp)));
 
-  cout << "Timestep : " << courant_mult << "   "
-       << part.h << "   " << amag << "    " << part.sound << "    " 
-       << part.div_v << "     " << accel_mult << "    " << timestep << endl;
 
   //TODO: implement energy condition (once we will be solving the energy equation)
 

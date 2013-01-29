@@ -27,7 +27,7 @@ void Sph::AllocateMemory(int N)
 
   if (N > Nsphmax) {
     Nsph = N;
-    Nsphmax = N;
+    Nsphmax = 10*N;
     sphdata = new struct SphParticle[Nsphmax];
   }
 
@@ -67,10 +67,10 @@ void Sph::SphBoundingBox(float rmax[ndimmax],float rmin[ndimmax])
       if (sphdata[i].r[k] > rmax[k]) rmax[k] = sphdata[i].r[k];
   }
 
-#if defined(DEBUG_ALL)
-  printf("rmin : %f %f %f\n",rmin[0],rmin[1],rmax[2]);
-  printf("rmax : %f %f %f\n",rmax[0],rmax[1],rmax[2]);
-#endif
+  //#if defined(DEBUG_ALL)
+  printf("rmin : %f\n",rmin[0]);
+  printf("rmax : %f\n",rmax[0]);
+  //#endif
 
   return;
 }
@@ -125,31 +125,8 @@ void Sph::InitialSmoothingLengthGuess(void)
     sphdata[i].invh = 1.0f/h_guess;
   }
 
+  printf ("Volume : %f\n",volume);
   printf ("Smoothing length : %f\n",h_guess);
-
-  return;
-}
-
-
-
-// ============================================================================
-// Sph::RandomBox
-// ============================================================================
-void Sph::RandomBox(void)
-{
-  debug2("[Sph::RandomBox]");
-
-  AllocateMemory(Nsph);
-
-  for (int i=0; i<Nsph; i++) {
-    for (int k=0; k<ndim; k++) {
-      sphdata[i].r[k] = (float)(rand()%RAND_MAX)/(float)RAND_MAX;
-      sphdata[i].v[k] = (float)(rand()%RAND_MAX)/(float)RAND_MAX;
-      sphdata[i].a[k] = 0.0f;
-    }
-    sphdata[i].m = 1.0f / (float) Nsph;
-    sphdata[i].invomega = 0.5f;
-  }
 
   return;
 }

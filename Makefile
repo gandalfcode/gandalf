@@ -11,7 +11,7 @@ OPT = -fPIC -g
 
 OUTPUT_LEVEL              = 1
 PRECISION                 = SINGLE
-NDIM                      = 3
+NDIM                      = 1
 DEBUG                     = 2
 
 #PYLIB = /sw/include/python2.7
@@ -53,6 +53,7 @@ SWIG_HEADERS = Parameters.i SimUnits.i Sph.i SphSnapshot.i SphSimulation.i
 WRAP_OBJ = Parameters_wrap.o SimUnits_wrap.o Sph_wrap.o SphSnapshot_wrap.o SphSimulation_wrap.o
 
 OBJ = Parameters.o SimUnits.o SphSnapshot.o SphSimulation.o
+OBJ += SphSimulationIC.o
 OBJ += M4Kernel.o
 OBJ += Sph.o GradhSph.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o

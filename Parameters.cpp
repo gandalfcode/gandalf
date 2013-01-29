@@ -46,7 +46,8 @@ void Parameters::ReadParamsFile(std::string filename)
     }
   }
   else {
-    cout << "The specified parameter file: " << filename << " does not exist, aborting" << endl;
+    cout << "The specified parameter file: " << filename 
+	 << " does not exist, aborting" << endl;
     exit(-1);
   }
   inputfile.close();
@@ -78,11 +79,13 @@ void Parameters::ParseLine(std::string paramline)
   trim2(var_name);
   trim2(var_value);
 
+  /*
   std::cout << "colon_pos : " << colon_pos << std::endl;
   std::cout << "equal_pos : " << equal_pos << std::endl;
   std::cout << "length    : " << length << std::endl;
   std::cout << "var_name  : " << var_name << std::endl;
   std::cout << "var_value : " << var_value << std::endl;
+  */
 
   SetParameter(var_name,var_value);
 
@@ -110,6 +113,20 @@ void Parameters::SetDefaultValues(void)
   floatparams["courant_mult"]=0.15;
   floatparams["alpha_visc"]=0.1;
   floatparams["beta_visc"]=0.2;
+
+  floatparams["boxmin[0]"]=0.0;
+  floatparams["boxmin[1]"]=0.0;
+  floatparams["boxmin[2]"]=0.0;
+  floatparams["boxmax[0]"]=0.0;
+  floatparams["boxmax[1]"]=0.0;
+  floatparams["boxmax[2]"]=0.0;
+
+  stringparams["x_boundary_lhs"]="open";
+  stringparams["x_boundary_rhs"]="open";
+  stringparams["y_boundary_lhs"]="open";
+  stringparams["y_boundary_rhs"]="open";
+  stringparams["z_boundary_lhs"]="open";
+  stringparams["z_boundary_rhs"]="open";
 
   stringparams["ic"]="random_cube";
 

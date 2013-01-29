@@ -19,7 +19,7 @@ using namespace std;
 // ============================================================================
 SphSimulation::SphSimulation()
 {
-  paramfile = "params.dat";
+  paramfile = "isoshock.dat";  //"params.dat";
   n = 0;
   Nsteps = 0;
   t = 0.0f;
@@ -71,7 +71,7 @@ void SphSimulation::GenerateIC(int N)
   sph->AllocateMemory(N);
   srand(1);*/
 
-  sph->RandomBox();
+  //sph->RandomBox();
 
   sph->InitialSmoothingLengthGuess();
   //CalculateSphProperties();
@@ -195,7 +195,9 @@ void SphSimulation::Setup(void)
 
   // Generate initial conditions
   if (stringparams["ic"] == "random_cube") 
-    sph->RandomBox();
+    RandomBox();
+  else if (stringparams["ic"] == "shocktube") 
+    ShockTube();
   else {
     cout << "Unrecognised parameter : " << endl; exit(0);
   }
@@ -221,6 +223,8 @@ void SphSimulation::Setup(void)
   // Compute all SPH particle properties (if SPH particles exist)
   // --------------------------------------------------------------------------
   if (sph->Nsph > 0) {
+
+    cout << "Ntot : " << sph->Ntot << endl;
 
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph,simparams);
@@ -267,6 +271,9 @@ void SphSimulation::MainLoop(void)
 
   // Advance SPH particles positions and velocities
   sphint->AdvanceParticles(sph->Nsph,sph->sphdata,timestep);
+
+  // Check all boundary conditions
+  CheckBoundaries();
 
   // --------------------------------------------------------------------------
   if (sph->Nsph > 0) {

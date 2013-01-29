@@ -59,6 +59,20 @@ class SphSimulation
   void SearchGhostParticles(void);
   void CreateGhostParticle(int,int,float,float);
   void CopyDataToGhosts(void);
+  void CheckBoundaries(void);
+
+  // Initial conditions routines
+  // --------------------------------------------------------------------------
+  void RandomBox(void);
+  void ShockTube(void);
+
+  // Initial conditions helper routines
+  // --------------------------------------------------------------------------
+  void AddRandomBox(int, float *, DomainBox);
+  void AddRegularLattice(int, int *, float *, DomainBox);
+
+
+
 
 #if !defined(FIXED_DIMENSIONS)
   int ndim;

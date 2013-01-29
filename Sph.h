@@ -43,11 +43,6 @@ class Sph
   void InitialSmoothingLengthGuess(void);
 
 
-  // Initial conditions routines
-  // --------------------------------------------------------------------------
-  void RandomBox(void);
-
-
 #if !defined(FIXED_DIMENSIONS)
   int ndim;
   int vdim;
