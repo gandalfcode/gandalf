@@ -150,6 +150,8 @@ void Parameters::SetDefaultValues(void)
   stringparams["moutunit"]="m_sun";
   stringparams["toutunit"]="myr";
 
+  stringparams["file_format"] = "sf";
+
   return;
 }
 
