@@ -53,7 +53,7 @@ class SphSimulation
   void GenerateIC(int);
   void Setup(void);
   void MainLoop(void);
-  void Run(int=-1,float=-1.0);
+  void Run(int=-1);
   void AdvanceSteps(int);
   void Output(void);
   void ComputeBlockTimesteps(void);
