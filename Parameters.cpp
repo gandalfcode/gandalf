@@ -113,8 +113,28 @@ void Parameters::SetDefaultValues(void)
   // Initial conditions parameters
   // --------------------------------------------------------------------------
   stringparams["ic"]="random_cube";
-  intparams["ndim"]=3;
   intparams["Npart"]=100;
+#if defined(FIXED_DIMENSIONS)
+  intparams["ndim"]=NDIM;
+#else
+  intparams["ndim"]=3;
+#endif
+  intparams["Nlattice1[0]"]=1;
+  intparams["Nlattice1[1]"]=1;
+  intparams["Nlattice1[2]"]=1;
+  intparams["Nlattice2[0]"]=1;
+  intparams["Nlattice2[1]"]=1;
+  intparams["Nlattice2[2]"]=1;
+  floatparams["vfluid1[0]"]=0.0;
+  floatparams["vfluid1[1]"]=0.0;
+  floatparams["vfluid1[2]"]=0.0;
+  floatparams["vfluid2[0]"]=0.0;
+  floatparams["vfluid2[1]"]=0.0;
+  floatparams["vfluid2[2]"]=0.0;
+  floatparams["rhofluid1"]=1.0;
+  floatparams["rhofluid2"]=1.0;
+  floatparams["press1"]=1.0;
+  floatparams["press2"]=1.0;
 
   // Integration scheme and timestep parameters
   // --------------------------------------------------------------------------

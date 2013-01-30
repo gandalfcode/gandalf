@@ -57,6 +57,7 @@ class SphSimulation
   void AdvanceSteps(int);
   void Output(void);
   void ComputeBlockTimesteps(void);
+  void ProcessParameters(void);
 
   void SearchGhostParticles(void);
   void CreateGhostParticle(int,int,float,float);

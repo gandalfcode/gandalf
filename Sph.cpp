@@ -26,9 +26,11 @@ void Sph::AllocateMemory(int N)
   debug2("[Sph::AllocateMemory]");
 
   if (N > Nsphmax) {
+    if (!allocated) DeallocateMemory();
     Nsph = N;
     Nsphmax = 10*N;
     sphdata = new struct SphParticle[Nsphmax];
+    allocated = true;
   }
 
   return;
@@ -43,6 +45,9 @@ void Sph::AllocateMemory(int N)
 void Sph::DeallocateMemory(void)
 {
   debug2("[Sph::DeallocateMemory]");
+
+  delete[] sphdata;
+  allocated = false;
 
   return;
 }

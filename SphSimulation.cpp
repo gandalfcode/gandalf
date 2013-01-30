@@ -164,18 +164,10 @@ void SphSimulation::ComputeBlockTimesteps(void)
 
 
 // ============================================================================
-// SphSimulation::Setup
-// Main function for setting up a new SPH simulation.
+// SphSimulation::ComputeBlockTimesteps
 // ============================================================================
-void SphSimulation::Setup(void)
+void SphSimulation::ProcessParameters(void)
 {
-  debug1("[SphSimulation::Setup]\n");
-
-  // Set-up all parameters and assign default values
-  simparams.SetDefaultValues();
-
-  // Read parameters files assigning any contained variables
-  simparams.ReadParamsFile(paramfile);
 
   map<string, int> &intparams = simparams.intparams;
   map<string, float> &floatparams = simparams.floatparams;
@@ -249,12 +241,37 @@ void SphSimulation::Setup(void)
   }
 
   sph->Nsph = intparams["Npart"];
+  Nstepsmax = intparams["Nstepsmax"];
+  run_id = stringparams["run_id"];
+  tend = floatparams["tend"];
+  dt_snap = floatparams["dt_snap"];
 
+  return;
+}
+
+
+
+// ============================================================================
+// SphSimulation::Setup
+// Main function for setting up a new SPH simulation.
+// ============================================================================
+void SphSimulation::Setup(void)
+{
+  debug1("[SphSimulation::Setup]\n");
+
+  // Set-up all parameters and assign default values
+  simparams.SetDefaultValues();
+
+  // Read parameters files assigning any contained variables
+  simparams.ReadParamsFile(paramfile);
+
+  // Process the parameters file setting up all simulation objects
+  ProcessParameters();
 
   // Generate initial conditions
-  if (stringparams["ic"] == "random_cube") 
+  if (simparams.stringparams["ic"] == "random_cube") 
     RandomBox();
-  else if (stringparams["ic"] == "shocktube") 
+  else if (simparams.stringparams["ic"] == "shocktube") 
     ShockTube();
   else {
     cout << "Unrecognised parameter : " << endl; exit(0);
@@ -263,10 +280,6 @@ void SphSimulation::Setup(void)
 
   // Set time variables here (for now)
   Noutsnap = 0;
-  Nstepsmax = intparams["Nstepsmax"];
-  run_id = stringparams["run_id"];
-  tend = floatparams["tend"];
-  dt_snap = floatparams["dt_snap"];
   tsnapnext = dt_snap;
 
 

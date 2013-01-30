@@ -29,23 +29,26 @@ void SphSimulation::ShockTube(void)
   float *r;
   DomainBox box1;
   DomainBox box2;
-
   int Nlattice1[ndimmax];
   int Nlattice2[ndimmax];
   float vfluid1[ndimmax];
   float vfluid2[ndimmax];
-  float rhofluid1 = 1.0;
-  float rhofluid2 = 1.0;
-  float press1 = 1.0;
-  float press2 = 1.0;
-
-  Nlattice1[0] = 128;
-  Nlattice2[0] = 128;
-  vfluid1[0] = 4.0;
-  vfluid2[0] = -4.0;
+  float rhofluid1 = simparams.floatparams["rhofluid1"];
+  float rhofluid2 = simparams.floatparams["rhofluid2"];
+  float press1 = simparams.floatparams["press1"];
+  float press2 = simparams.floatparams["press2"];
+  float temp0 = simparams.floatparams["temp0"];
+  float mu_bar = simparams.floatparams["mu_bar"];
+  float gammaone = simparams.floatparams["gamma_eos"] - 1.0;
+  Nlattice1[0] = simparams.intparams["Nlattice1[0]"];
+  Nlattice2[0] = simparams.intparams["Nlattice2[0]"];
+  vfluid1[0] = simparams.floatparams["vfluid1[0]"];
+  vfluid2[0] = simparams.floatparams["vfluid2[0]"];
 
   debug2("[SphSimulation::ShockTube]");
 
+  // Compute size and range of fluid bounding boxes
+  // --------------------------------------------------------------------------
   if (ndim == 1) {
     box1.boxmin[0] = simbox.boxmin[0];
     box1.boxmax[0] = 0.0;
@@ -56,13 +59,15 @@ void SphSimulation::ShockTube(void)
     Nbox2 = Nlattice2[0];
   }
 
+  // Allocate local and main particle memory
   sph->Nsph = Nbox1 + Nbox2;
   sph->AllocateMemory(sph->Nsph);
-  cout << "Allocating memory : " << sph->Nsph << endl;;
-
-
   r = new float[ndim*sph->Nsph];
+  cout << "Allocating memory : " << sph->Nsph << endl;
 
+
+  // Add particles for LHS of the shocktube
+  // --------------------------------------------------------------------------
   if (Nbox1 > 0) {
     AddRegularLattice(Nbox1,Nlattice1,r,box1);
 
@@ -71,10 +76,12 @@ void SphSimulation::ShockTube(void)
       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
       sph->sphdata[i].v[0] = vfluid1[0];
       sph->sphdata[i].m = rhofluid1*volume/(float) Nbox1;
-      sph->sphdata[i].u = 1.5; //temp0/gammaone/mu_bar;
+      sph->sphdata[i].u = temp0/gammaone/mu_bar;
     }
   }
 
+  // Add particles for RHS of the shocktube
+  // --------------------------------------------------------------------------
   if (Nbox2 > 0) {
     AddRegularLattice(Nbox2,Nlattice2,r,box2);
 
@@ -84,7 +91,7 @@ void SphSimulation::ShockTube(void)
       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
       sph->sphdata[i].v[0] = vfluid2[0];
       sph->sphdata[i].m = rhofluid2*volume/(float) Nbox2;
-      sph->sphdata[i].u = 1.5; //temp0/gammaone/mu_bar;
+      sph->sphdata[i].u = temp0/gammaone/mu_bar;
     }
   }
 

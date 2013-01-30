@@ -29,6 +29,7 @@ GradhSph::GradhSph(int ndimaux, int vdimaux, int bdimaux)
   bdim = bdimaux;
   invndim = 1.0/(float)ndim;
 #endif
+  allocated = false;
   Nsph = 0;
   Nsphmax = 0;
 }
