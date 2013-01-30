@@ -16,7 +16,7 @@ int main(int argc, char** argv)
 
   sim.Setup();
 
-  sim.MainLoop();
+  sim.Run();
 
   return 0;
 }
