@@ -1,0 +1,12 @@
+*.diag
+*.mod
+*.o
+*.param
+*.pyc
+*.cxx
+*.sf.*
+*.su.*
+*.restart
+*.timing
+*~
+*.so

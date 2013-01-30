@@ -53,7 +53,9 @@ class SphSimulation
   void GenerateIC(int);
   void Setup(void);
   void MainLoop(void);
-  void Run(int,double);
+  void Run(int=-1,float=-1.0);
+  void AdvanceSteps(int);
+  void Output(void);
   void ComputeBlockTimesteps(void);
 
   void SearchGhostParticles(void);
@@ -90,6 +92,7 @@ class SphSimulation
   // --------------------------------------------------------------------------
   int n;
   int Nsteps;
+  int Nstepsmax;
   double t;
   double timestep;
   double tsnapnext;

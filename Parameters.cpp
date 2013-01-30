@@ -1,5 +1,5 @@
 // ============================================================================
-// PARAMETERS.CPP
+// Parameters.CPP
 // ============================================================================
 
 
@@ -13,7 +13,7 @@ using namespace std;
 
 
 // ============================================================================
-// PARAMETERS::PARAMETERS
+// Parameters::Parameters
 // ============================================================================
 Parameters::Parameters()
 {
@@ -22,7 +22,7 @@ Parameters::Parameters()
 
 
 // ============================================================================
-// PARAMETERS::~PARAMETERS
+// Parameters::~Parameters
 // ============================================================================
 Parameters::~Parameters()
 {
@@ -31,7 +31,7 @@ Parameters::~Parameters()
 
 
 // ============================================================================
-// PARAMETERS::PARSELINE
+// Parameters::ReadParamsFile
 // ============================================================================
 void Parameters::ReadParamsFile(std::string filename)
 {
@@ -55,8 +55,9 @@ void Parameters::ReadParamsFile(std::string filename)
 }
 
 
+
 // ============================================================================
-// PARAMETERS::PARSELINE
+// Parameters::ParseLine
 // ============================================================================
 void Parameters::ParseLine(std::string paramline)
 {
@@ -95,25 +96,60 @@ void Parameters::ParseLine(std::string paramline)
 
 
 // ============================================================================
-// PARAMETERS::
+// Parameters::SetDefaultValues
 // ============================================================================
 void Parameters::SetDefaultValues(void)
 {
 
-  intparams["ndim"]=3;
+  // Simulation id, filename and output time parameters
+  // --------------------------------------------------------------------------
+  stringparams["run_id"]="TEST";
+  stringparams["file_format"] = "sf";
+  stringparams["out_file_form"]="sf";
+  floatparams["tend"]=10.0;
+  floatparams["dt_snap"]=0.1;
+  intparams["Nstepsmax"]=9999999;
 
+  // Initial conditions parameters
+  // --------------------------------------------------------------------------
+  stringparams["ic"]="random_cube";
+  intparams["ndim"]=3;
   intparams["Npart"]=100;
 
+  // Integration scheme and timestep parameters
+  // --------------------------------------------------------------------------
+  stringparams["sph_integration"]="lfkdk";
+  floatparams["accel_mult"]=0.3;
+  floatparams["courant_mult"]=0.15;
+
+  // SPH parameters
+  // --------------------------------------------------------------------------
+  stringparams["sph"]="gradh";
+  stringparams["kernel"]="m4";
+  stringparams["neib_search"]="bruteforce";
   floatparams["h_fac"]=1.2;
   floatparams["h_converge"]=0.005;
+
+  // Artificial viscosity parameters
+  // --------------------------------------------------------------------------
+  floatparams["alpha_visc"]=1.0;
+  floatparams["beta_visc"]=2.0;
+
+  // Thermal physics parameters
+  // --------------------------------------------------------------------------
+  stringparams["gas_eos"]="isothermal";
   floatparams["gamma_eos"]=1.6666666666666;
   floatparams["temp0"]=1.0;
   floatparams["mu_bar"]=1.0;
-  floatparams["accel_mult"]=0.3;
-  floatparams["courant_mult"]=0.15;
-  floatparams["alpha_visc"]=0.1;
-  floatparams["beta_visc"]=0.2;
 
+  // Boundary conditions parameters
+  // --------------------------------------------------------------------------
+  stringparams["x_boundary_lhs"]="open";
+  stringparams["x_boundary_rhs"]="open";
+  stringparams["y_boundary_lhs"]="open";
+  stringparams["y_boundary_rhs"]="open";
+  stringparams["z_boundary_lhs"]="open";
+  stringparams["z_boundary_rhs"]="open";
   floatparams["boxmin[0]"]=0.0;
   floatparams["boxmin[1]"]=0.0;
   floatparams["boxmin[2]"]=0.0;
@@ -121,36 +157,15 @@ void Parameters::SetDefaultValues(void)
   floatparams["boxmax[1]"]=0.0;
   floatparams["boxmax[2]"]=0.0;
 
-  stringparams["x_boundary_lhs"]="open";
-  stringparams["x_boundary_rhs"]="open";
-  stringparams["y_boundary_lhs"]="open";
-  stringparams["y_boundary_rhs"]="open";
-  stringparams["z_boundary_lhs"]="open";
-  stringparams["z_boundary_rhs"]="open";
-
-  stringparams["ic"]="random_cube";
-
-  stringparams["sph"]="gradh";
-
-  stringparams["neib_search"]="bruteforce";
-
-  stringparams["kernel"]="m4";
-
-  stringparams["sph_integration"]="lfkdk";
-
-  stringparams["gas_eos"]="isothermal";
-
-  stringparams["out_file_form"]="sf";
-
+  // Unit and scaling parameters
+  // --------------------------------------------------------------------------
   stringparams["rinunit"]="";
   stringparams["minunit"]="";
   stringparams["tinunit"]="";
-
   stringparams["routunit"]="pc";
   stringparams["moutunit"]="m_sun";
   stringparams["toutunit"]="myr";
 
-  stringparams["file_format"] = "sf";
 
   return;
 }
@@ -158,16 +173,19 @@ void Parameters::SetDefaultValues(void)
 
 
 // ============================================================================
-// PARAMETERS::
+// Parameters::SetParameter
 // ============================================================================
 void Parameters::SetParameter(std::string key, std::string value)
 {
-  std::cout << "@" << key << "@" << std::endl;
-  std::cout << "@" << value << "@" << std::endl;
-  std::cout << intparams.count(key) << "  " << stringparams.count(key) << std::endl;
-  if (intparams.count(key) == 1) std::stringstream(value) >> intparams[key];
-  else if (floatparams.count(key) == 1) std::stringstream(value) >> floatparams[key];
-  else if (stringparams.count(key) == 1) stringparams[key] = value;
+  //std::cout << "@" << key << "@" << std::endl;
+  //std::cout << "@" << value << "@" << std::endl;
+  //std::cout << intparams.count(key) << "  " << stringparams.count(key) << std::endl;
+  if (intparams.count(key) == 1)
+    std::stringstream(value) >> intparams[key];
+  else if (floatparams.count(key) == 1)
+    std::stringstream(value) >> floatparams[key];
+  else if (stringparams.count(key) == 1)
+    stringparams[key] = value;
   else cout << "Warning: parameter " << key << "was not recognized" << endl;
 
   return;
@@ -176,7 +194,7 @@ void Parameters::SetParameter(std::string key, std::string value)
 
 
 // ============================================================================
-// PARAMETERS::
+// Parameters::PrintParameters
 // ============================================================================
 void Parameters::PrintParameters(void)
 {

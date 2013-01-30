@@ -40,30 +40,70 @@ SphSimulation::~SphSimulation()
 // ============================================================================
 // SphSimulation::Run
 // ============================================================================
-void SphSimulation::Run(int Nstepsmax, double tmax)
+void SphSimulation::Run(int Nadvance)
+{
+  int Ntarget;
+
+  if (Nadvance < 0) Ntarget = Nstepsmax;
+  else Ntarget = Nsteps + Nadvance;
+
+  // Continue to run simulation until we reach the required time, or 
+  // exeeded the maximum allowed number of steps.
+  // --------------------------------------------------------------------------
+  while (t < tend && Nsteps < Ntarget) {
+
+    MainLoop();
+    Output();
+
+  }
+  // --------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+// ============================================================================
+// SphSimulation::AdvanceSteps
+// ============================================================================
+void SphSimulation::AdvanceSteps(int Nadvance)
+{
+
+  // Advance the simulation by 'Nadvance' integer steps.
+  // --------------------------------------------------------------------------
+  for (int i=0; i<Nadvance; i++) {
+
+    MainLoop();
+    Output();
+
+  }
+  // --------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+// ============================================================================
+// SphSimulation::Output
+// ============================================================================
+void SphSimulation::Output(void)
 {
   string filename;
   string nostring;
   stringstream ss;
 
-  // --------------------------------------------------------------------------
-  do {
-
-    MainLoop();
-
-    if (t >= tsnapnext) {
-      Noutsnap++;
-      tsnapnext += dt_snap;
-      nostring = "";
-      ss << Noutsnap;
-      nostring = ss.str();
-      filename = run_id + '.' + nostring;
-      ss.str(std::string());
-      WriteSnapshotFile(filename,"column");
-    }
-
-  } while (t < tmax && Nsteps < Nstepsmax);
-  // --------------------------------------------------------------------------
+  // Output a data snapshot if reached required time
+  if (t >= tsnapnext) {
+    Noutsnap++;
+    tsnapnext += dt_snap;
+    nostring = "";
+    ss << Noutsnap;
+    nostring = ss.str();
+    filename = run_id + '.' + nostring;
+    ss.str(std::string());
+    WriteSnapshotFile(filename,"column");
+  }
 
   return;
 }
@@ -221,10 +261,11 @@ void SphSimulation::Setup(void)
 
   // Set time variables here (for now)
   Noutsnap = 0;
-  dt_snap = 0.05;
+  Nstepsmax = intparams["Nstepsmax"];
+  run_id = stringparams["run_id"];
+  tend = floatparams["tend"];
+  dt_snap = floatparams["dt_snap"];
   tsnapnext = dt_snap;
-  tend = 0.5;
-  run_id = "ISOSHOCK";
 
 
   // Set initial smoothing lengths and create initial ghost particles
