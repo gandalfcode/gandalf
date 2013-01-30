@@ -93,6 +93,7 @@ void SphSimulation::Output(void)
   string filename;
   string nostring;
   stringstream ss;
+  string fileform = simparams.stringparams["out_file_form"];
 
   // Output a data snapshot if reached required time
   if (t >= tsnapnext) {
@@ -101,7 +102,7 @@ void SphSimulation::Output(void)
     nostring = "";
     ss << setfill('0') << setw(5) << Noutsnap;
     nostring = ss.str();
-    filename = run_id + '.' + nostring;
+    filename = run_id + '.' + fileform + '.' + nostring;
     ss.str(std::string());
     WriteSnapshotFile(filename,"column");
   }

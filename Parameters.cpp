@@ -104,8 +104,8 @@ void Parameters::SetDefaultValues(void)
   // Simulation id, filename and output time parameters
   // --------------------------------------------------------------------------
   stringparams["run_id"]="TEST";
-  stringparams["file_format"] = "sf";
-  stringparams["out_file_form"]="sf";
+  stringparams["in_file_form"]="ascii";
+  stringparams["out_file_form"]="ascii";
   floatparams["tend"]=10.0;
   floatparams["dt_snap"]=0.1;
   intparams["Nstepsmax"]=9999999;
