@@ -80,7 +80,7 @@ OBJ += toymain.o
 toy2 : $(WRAP_OBJ) $(OBJ)
 	@echo -e $(PYLIB)
 	g++ -bundle -flat_namespace -undefined suppress $(OBJ) $(WRAP_OBJ) -o _SphSim.so
-	g++ -bundle -flat_namespace -undefined suppress SphSnapshot.o SphSnapshot_wrap.o -o _SphSnap.so
+#	g++ -bundle -flat_namespace -undefined suppress SphSnapshot.o SphSnapshot_wrap.o -o _SphSnap.so
 	$(CC) $(CFLAGS) -o toymain $(OBJ)
 
 
