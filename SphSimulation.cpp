@@ -4,6 +4,7 @@
 
 
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <string>
 #include <cstdio>
@@ -98,7 +99,7 @@ void SphSimulation::Output(void)
     Noutsnap++;
     tsnapnext += dt_snap;
     nostring = "";
-    ss << Noutsnap;
+    ss << setfill('0') << setw(5) << Noutsnap;
     nostring = ss.str();
     filename = run_id + '.' + nostring;
     ss.str(std::string());
