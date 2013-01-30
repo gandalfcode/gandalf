@@ -30,7 +30,7 @@ ion()
 #plt.show()
 
 
-sim1.Run()
+sim1.Run(100)
 
 
 snap1.CopyDataFromSimulation(2,sim1.sph.Nsph,sim1.sph.sphdata)
