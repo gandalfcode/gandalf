@@ -8,6 +8,7 @@
 #include "SphSnapshot.h"
 #include "Sph.h"
 #include "SphParticle.h"
+#include "SphSimulation.h"
 using namespace std;
 
 
@@ -203,4 +204,14 @@ void SphSnapshot::ExtractArray(string name, float** out_array,
   *size_array = Nsph;
 
   return;
+}
+
+// ============================================================================
+// SphSnapshot::ReadSnapshot
+// ============================================================================
+void SphSnapshot::ReadSnapshot(string snapshotname, string format, SphSimulation * simulation) {
+
+  simulation->ReadSnapshotFile(snapshotname, format);
+  CopyDataFromSimulation(simulation->simparams.intparams["ndim"] , simulation->sph->Nsph , simulation->sph->sphdata );
+
 }

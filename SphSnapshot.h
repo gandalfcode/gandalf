@@ -11,6 +11,7 @@
 #include <map>
 #include <string>
 #include "Sph.h"
+#include "SphSimulation.h"
 using namespace std;
 
 
@@ -29,6 +30,7 @@ class SphSnapshot
   int CalculateMemoryUsage(void);
   void CopyDataFromSimulation(int,int,SphParticle*);
   void ExtractArray(std::string, float** out_array, int* size_array);
+  void ReadSnapshot(string, string, SphSimulation *);
 
   bool allocated;
   int nallocated;
