@@ -10,3 +10,4 @@
 *.timing
 *~
 *.so
+*.ascii.*

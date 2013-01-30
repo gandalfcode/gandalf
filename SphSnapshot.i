@@ -8,6 +8,7 @@
 %{
 #define SWIG_FILE_WITH_INIT
 #include "SphSnapshot.h"
+#include "SphSimulation.h"
 %}
 
 %include "numpy.i"
@@ -25,4 +26,5 @@ import_array();
  /* Applies Numpy black magic */
  %apply (float** ARGOUTVIEW_ARRAY1, int *DIM1) {(float** out_array, int* size_array)}
 
+%include "SphSimulation.h"
 %include "SphSnapshot.h"

@@ -9,6 +9,7 @@
 #include "Parameters.h"
 #include "SimUnits.h"
 #include "Sph.h"
+#include "SphSnapshot.h"
 %}
 
 %include "numpy.i"
@@ -32,3 +33,4 @@ import_array();
 %include "Parameters.h"
 %include "SimUnits.h"
 %include "Sph.h"
+%include "SphSnapshot.h"

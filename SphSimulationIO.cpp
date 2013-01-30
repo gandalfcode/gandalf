@@ -22,7 +22,7 @@ bool SphSimulation::ReadSnapshotFile(string filename, string fileform)
 {
   debug1("[SphSimulation::ReadSnapshotFile]");
 
-  if (fileform == "column")
+  if (fileform == "ascii")
     return ReadColumnSnapshotFile(filename);
   else {
     cout << "Unrecognised file format" << endl;

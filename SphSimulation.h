@@ -13,7 +13,6 @@
 #include "SimUnits.h"
 #include "SphKernel.h"
 #include "Sph.h"
-#include "SphSnapshot.h"
 #include "SphNeighbourSearch.h"
 #include "SphIntegration.h"
 using namespace std;
@@ -111,7 +110,7 @@ class SphSimulation
   Sph *sph;
   SphNeighbourSearch *sphneib;
   SphIntegration *sphint;
-  SphSnapshot livesnap;
+//  SphSnapshot livesnap;
   DomainBox simbox;
 
 };
