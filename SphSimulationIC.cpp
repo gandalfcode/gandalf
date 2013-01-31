@@ -186,6 +186,7 @@ void SphSimulation::AddRegularLattice(int Npart, int Nlattice[ndimmax],
 	  (box.boxmax[1] - box.boxmin[1])/(float)Nlattice[1];
       }
     }
+  }
   // --------------------------------------------------------------------------
   else if (ndim == 3) {
     for (kk=0; kk<Nlattice[1]; kk++) {
