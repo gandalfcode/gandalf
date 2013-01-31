@@ -161,14 +161,45 @@ void SphSimulation::AddRegularLattice(int Npart, int Nlattice[ndimmax],
 {
   int i;
   int ii;
+  int jj;
+  int kk;
 
   debug2("[SphSimulation::AddRegularLattice]");
   
+  // Create lattice depending on dimensionality
+  // --------------------------------------------------------------------------
   if (ndim == 1) {
     for (ii=0; ii<Nlattice[0]; ii++) {
       i = ii;
       r[i] = box.boxmin[0] + ((float)ii + 0.5)*
 	(box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
+    }
+  }
+  // --------------------------------------------------------------------------
+  else if (ndim == 2) {
+    for (jj=0; jj<Nlattice[1]; jj++) {
+      for (ii=0; ii<Nlattice[0]; ii++) {
+	i = jj*Nlattice[0] + ii;
+	r[ndim*i] = box.boxmin[0] + ((float)ii + 0.5)*
+	  (box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
+	r[ndim*i + 1] = box.boxmin[1] + ((float)jj + 0.5)*
+	  (box.boxmax[1] - box.boxmin[1])/(float)Nlattice[1];
+      }
+    }
+  // --------------------------------------------------------------------------
+  else if (ndim == 3) {
+    for (kk=0; kk<Nlattice[1]; kk++) {
+      for (jj=0; jj<Nlattice[1]; jj++) {
+	for (ii=0; ii<Nlattice[0]; ii++) {
+	  i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
+	  r[ndim*i] = box.boxmin[0] + ((float)ii + 0.5)*
+	    (box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
+	  r[ndim*i + 1] = box.boxmin[1] + ((float)jj + 0.5)*
+	    (box.boxmax[1] - box.boxmin[1])/(float)Nlattice[1];
+	  r[ndim*i + 2] = box.boxmin[2] + ((float)jj + 0.5)*
+	    (box.boxmax[2] - box.boxmin[2])/(float)Nlattice[2];
+	}
+      }
     }
   }
 

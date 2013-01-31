@@ -22,7 +22,7 @@ using namespace std;
 // SphLeapfrogKDK::SphLeapfrogKDK()
 // ============================================================================
 SphLFKDK::SphLFKDK(double accel_mult_aux, double courant_mult_aux) :
-    SphIntegration(accel_mult_aux, courant_mult_aux)
+  SphIntegration(accel_mult_aux, courant_mult_aux)
 {
 }
 

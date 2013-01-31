@@ -1,0 +1,21 @@
+     : boxmin[0] = -16.0
+     : boxmax[0] = 16.0
+     : Nlattice1[0] = 128
+     : Nlattice2[0] = 128
+     : vfluid1[0] = 4
+     : vfluid2[0] = -4
+     : ndim = 1
+
+     : ic = shocktube
+     : gas_eos = isothermal
+
+     : h_converge = 0.005
+
+     : alpha_visc = 1.0
+     : beta_visc = 2.0
+
+     : courant_mult = 0.075
+     : accel_mult = 0.15
+     : tend = 1.0
+
+ 

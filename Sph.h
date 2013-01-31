@@ -62,7 +62,7 @@ class Sph
   struct SphParticle *sphdata;          // Main SPH particle data array
 
   SphKernel *kern;                      // SPH kernel 
-  EOS *eos;                             // Equation-of-state 
+  EOS *eos;                             // Equation-of-state
 
   double alpha_visc;
   double beta_visc;
