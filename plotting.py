@@ -1,5 +1,6 @@
 from multiprocessing import Process
 from Queue import Empty
+import os
 
 class PlottingProcess (Process):
     def __init__(self, queue, commands):
@@ -12,22 +13,36 @@ class PlottingProcess (Process):
     def run(self):
         import matplotlib.pyplot as plt
         self.plt = plt
+        self.ppid = os.getppid()
         
         # Main loop
         while 1:
+            
+            if self.ppid != os.getppid():
+                break
+            
             self.mypause(0.01)
             
             #Reads data from the queue
             try:
-                command, data = self.queue.get(block = False)
+                jobs = []
+                while 1:
+                    job = self.queue.get(block = False)
+                    if job[0] == "STOP":
+                        return 
+                    jobs.append(job)
             except Empty:
-                continue
-            if command == "STOP":
-                break
+                pass
             
+            if len(jobs) == 0:
+                continue
+                        
             self.remove_closed_figures()
             
-            command.processCommand(self, data)
+            for job in jobs:
+                command, data = job
+                command.processCommand(self, data)
+                
                 
     def command_in_list (self, id):
         for command in self.commands:
@@ -50,6 +65,8 @@ class PlottingProcess (Process):
         import time
         time.sleep(interval)
     
+    #TODO: for efficiency reason, refactor this routine to be a callback
+    #of when a window is closed
     def remove_closed_figures(self):
         for index, commanddummy in enumerate(self.commands):
             fig, ax, line = self.commandsfigures[commanddummy.id]

@@ -11,15 +11,30 @@ class Command:
         self.id = Command.id
 
 class WindowCommand(Command):
-    def __init__(self):
+    def __init__(self, no = None):
         Command.__init__(self)
+        self.no = no
         
     def processCommand (self, plotting, data):
-        fig = plotting.plt.figure()
+        fig = plotting.plt.figure(self.no)
         fig.show()
+        fig.canvas.draw()
         
+class SubfigureCommand(Command):
+    def __init__(self, nx, ny, current):
+        Command.__init__(self)
+        self.nx = nx
+        self.ny = ny
+        self.current = current
+        
+    def processCommand (self, plotting, data):
+        ax = plotting.plt.subplot(self.nx, self.ny, self.current)
+        fig = ax.figure 
+        fig.show()
+        fig.canvas.draw()
+         
 class PlotCommand(Command):
-    def __init__(self, xquantity, yquantity, autoscale = True):
+    def __init__(self, xquantity, yquantity, autoscale):
         Command.__init__(self)
         self.xquantity = xquantity
         self.yquantity = yquantity
@@ -34,24 +49,22 @@ class PlotCommand(Command):
             if self.autoscale:
                 ax.relim()
                 ax.autoscale_view()
-            fig.canvas.draw()
         elif self.id > plotting.lastid:
             fig = plotting.plt.gcf()
-            if self.overplot:
-                ax = fig.gca()
-            else:
-                fig.clear()
-                ax = fig.add_subplot(111)
+            ax = fig.gca()
+            if not self.overplot:
+                ax.clear()
             product = self.execute(plotting, fig, ax, data)
             fig.show()
             plotting.commands.append(self)
             plotting.commandsfigures[self.id]= fig, ax, product
             plotting.lastid = self.id
+        fig.canvas.draw()
 
 class ParticlePlotCommand (PlotCommand):
     
-    def __init__(self, xquantity, yquantity):
-        PlotCommand.__init__(self, xquantity, yquantity)
+    def __init__(self, xquantity, yquantity, autoscale):
+        PlotCommand.__init__(self, xquantity, yquantity, autoscale)
         
     def update(self, plotting, fig, ax, line, data):
         line.set_data(data.x_data,data.y_data)
@@ -61,7 +74,10 @@ class ParticlePlotCommand (PlotCommand):
         return line
     
     def prepareData (self):
-        snap = SimBuffer.get_current_snapshot()
+        if self.snap == "current":
+            snap = SimBuffer.get_current_snapshot()
+        else:
+            snap = SimBuffer.get_snapshot_number(self.snap)
         x_data = snap.ExtractArray(self.xquantity)
         y_data = snap.ExtractArray(self.yquantity)
         data = Data(x_data, y_data)
