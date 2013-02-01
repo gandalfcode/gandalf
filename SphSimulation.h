@@ -15,6 +15,7 @@
 #include "Sph.h"
 #include "SphNeighbourSearch.h"
 #include "SphIntegration.h"
+#include "EnergyEquation.h"
 using namespace std;
 
 
@@ -31,8 +32,17 @@ struct DomainBox {
   //float boxhalf[ndimmax];
   //float rmin[ndimmax];
   //float rmax[ndimmax];
-
 };
+
+
+struct Diagnostics {
+  double Eerror;
+  double Etot;
+  double utot;
+  double ketot;
+  double mom[ndimmax];
+};
+
 
 
 // ============================================================================
@@ -57,6 +67,7 @@ class SphSimulation
   void Output(void);
   void ComputeBlockTimesteps(void);
   void ProcessParameters(void);
+  void CalculateDiagnostics(void);
 
   void SearchGhostParticles(void);
   void CreateGhostParticle(int,int,float,float);
@@ -98,20 +109,24 @@ class SphSimulation
   double tsnapnext;
   double tend;
   double dt_snap;
-  int Noutsnap;
-  string run_id;
+  int Noutsnap;                             // ..
+  string run_id;                            // Simulation id string
 
-  // Name of parameters file and Parameters object that reads all data
-  // --------------------------------------------------------------------------
-  string paramfile;
-  Parameters simparams;
+  string paramfile;                         // Name of parameters file
+  Parameters simparams;                     // Simulation parameters object
+  SimUnits simunits;                        // Simulation units object
 
-  SimUnits simunits;
-  Sph *sph;
-  SphNeighbourSearch *sphneib;
-  SphIntegration *sphint;
+  Sph *sph;                                 // SPH algorithm pointer
+  SphNeighbourSearch *sphneib;              // SPH Neighbour scheme pointer
+  SphIntegration *sphint;                   // SPH Integration scheme pointer
+  EnergyEquation *uint;                     // Energy equation pointer
+
 //  SphSnapshot livesnap;
-  DomainBox simbox;
+  DomainBox simbox;                         // Simulation boundary data
+
+  // Diagnostics
+  Diagnostics diag0;                        // Initial diagnostic state
+  Diagnostics diag;                         // Current diagnostic state
 
 };
 

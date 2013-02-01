@@ -158,9 +158,12 @@ void Parameters::SetDefaultValues(void)
   // Thermal physics parameters
   // --------------------------------------------------------------------------
   stringparams["gas_eos"]="isothermal";
+  stringparams["energy_integration"]="PEC";
+  floatparams["energy_mult"]=0.2;
   floatparams["gamma_eos"]=1.6666666666666;
   floatparams["temp0"]=1.0;
   floatparams["mu_bar"]=1.0;
+
 
   // Boundary conditions parameters
   // --------------------------------------------------------------------------

@@ -7,10 +7,12 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <math.h>
 #include <cstdio>
 #include <cstring>
 #include "SphSimulation.h"
 #include "Parameters.h"
+#include "InlineFuncs.h"
 #include "Debug.h"
 using namespace std;
 
@@ -21,7 +23,7 @@ using namespace std;
 // ============================================================================
 SphSimulation::SphSimulation()
 {
-  paramfile = "params.dat";
+  paramfile = "adshock.dat"; //"params.dat";
   n = 0;
   Nsteps = 0;
   t = 0.0f;
@@ -58,6 +60,9 @@ void SphSimulation::Run(int Nadvance)
 
   }
   // --------------------------------------------------------------------------
+
+  CalculateDiagnostics();
+  cout << "Energy error : " << fabs(diag.Etot - diag0.Etot)/diag0.Etot << endl;
 
   return;
 }
@@ -112,6 +117,30 @@ void SphSimulation::Output(void)
 
 
 
+
+
+// ============================================================================
+// SphSimulation::CalculateDiagnostics
+// ============================================================================
+void SphSimulation::CalculateDiagnostics(void)
+{
+  diag.Etot = 0.0;
+  diag.utot = 0.0;
+  diag.ketot = 0.0;
+
+  for (int i=0; i<sph->Nsph; i++) {
+    diag.ketot += sph->sphdata[i].m*
+      DotProduct(sph->sphdata[i].v,sph->sphdata[i].v);
+    diag.utot += sph->sphdata[i].m*sph->sphdata[i].u;
+  }
+
+  diag.ketot *= 0.5;
+  diag.Etot = diag.ketot + diag.utot;
+
+  return;
+}
+
+
 // ============================================================================
 // SphSimulation::GenerateIC
 // ============================================================================
@@ -154,6 +183,10 @@ void SphSimulation::ComputeBlockTimesteps(void)
   for (int i=0; i<sph->Nsph; i++) {
     dt = sphint->Timestep(sph->sphdata[i]);
     if (dt < timestep) timestep = dt;
+    if (simparams.stringparams["gas_eos"] == "energy_eqn") {
+      dt = uint->Timestep(sph->sphdata[i]);
+      if (dt < timestep) timestep = dt;
+    }      
   }
 
   cout << "Global timestep : " << timestep << endl;
@@ -231,14 +264,29 @@ void SphSimulation::ProcessParameters(void)
     cout << "Unrecognised parameter : " << endl; exit(0);
   }
 
-
-  if (stringparams["gas_eos"] == "isothermal") sph->eos =
-    new Isothermal(floatparams["temp0"],
-		   floatparams["mu_bar"],
-		   floatparams["gamma_eos"]);
+  // Thermal physics options
+  // --------------------------------------------------------------------------
+  if (stringparams["gas_eos"] == "energy_eqn") {
+    sph->eos = new Adiabatic(floatparams["temp0"],
+			     floatparams["mu_bar"],
+			     floatparams["gamma_eos"]);
+    if (stringparams["energy_integration"] == "PEC") {
+      uint = new EnergyPEC(floatparams["energy_mult"]);
+    }
+    else {
+      cout << "Unrecognised parameter : " 
+	   << stringparams["energy_integration"] << endl; exit(0);
+    }
+  }
+  // --------------------------------------------------------------------------
+  else if (stringparams["gas_eos"] == "isothermal") 
+    sph->eos = new Isothermal(floatparams["temp0"],
+			      floatparams["mu_bar"],
+			      floatparams["gamma_eos"]);
   else {
     cout << "Unrecognised parameter : " << endl; exit(0);
   }
+
 
   sph->Nsph = intparams["Npart"];
   Nstepsmax = intparams["Nstepsmax"];
@@ -328,7 +376,12 @@ void SphSimulation::Setup(void)
 
   // Set r0,v0,a0 for initial step
   sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
+  if (simparams.stringparams["gas_eos"] == "energy_eqn")
+    uint->EndTimestep(n,sph->Nsph,sph->sphdata);
   
+
+  CalculateDiagnostics();
+  diag0 = diag;
 
   return;
 }
@@ -352,6 +405,8 @@ void SphSimulation::MainLoop(void)
 
   // Advance SPH particles positions and velocities
   sphint->AdvanceParticles(sph->Nsph,sph->sphdata,timestep);
+  if (simparams.stringparams["gas_eos"] == "energy_eqn")
+    uint->EnergyIntegration(sph->Nsph,sph->sphdata,timestep);
 
   // Check all boundary conditions
   CheckBoundaries();
@@ -394,10 +449,13 @@ void SphSimulation::MainLoop(void)
 
   // Apply correction steps
   sphint->CorrectionTerms(sph->Nsph,sph->sphdata,timestep);
+  if (simparams.stringparams["gas_eos"] == "energy_eqn")
+    uint->EnergyCorrectionTerms(sph->Nsph,sph->sphdata,timestep);
 
   // End-of-step
   sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
-
+  if (simparams.stringparams["gas_eos"] == "energy_eqn")
+    uint->EndTimestep(n,sph->Nsph,sph->sphdata);
 
   return;
 }

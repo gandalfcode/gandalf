@@ -196,7 +196,8 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
   float wmean;
   float vsignal;
 
-  sphdata[i].dudt = 0.0;
+  sphdata[i].dudt = -eos->Pressure(sphdata[i])*sphdata[i].div_v*
+    sphdata[i].invrho*sphdata[i].invomega;
   hrangesqd = kern->kernrangesqd*sphdata[i].h*sphdata[i].h;
 
 
@@ -216,7 +217,7 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
     drmag = sqrt(drmag);
     for (k=0; k<ndim; k++) dr[k] /= (drmag + small_number);
     for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - sphdata[i].v[k];
-    dvdr = DotProduct (dv,dr);
+    dvdr = DotProduct(dv,dr);
 
     // Compute hydro acceleration
     for (k=0; k<ndim; k++) sphdata[i].a[k] += sphdata[j].m*dr[k]*
@@ -229,8 +230,10 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
           kern->w1(drmag*sphdata[j].invh)*sphdata[j].hfactor);
       invrhomean = 2.0 / (sphdata[i].rho + sphdata[j].rho);
       vsignal = sphdata[i].sound + sphdata[j].sound - beta_visc*dvdr;
-      for (k=0; k<ndim; k++) sphdata[i].a[k] -= sphdata[j].m*alpha_visc*
-         vsignal*dvdr*dr[k]*wmean*invrhomean;
+      for (k=0; k<ndim; k++) sphdata[i].a[k] -= 
+	sphdata[j].m*alpha_visc*vsignal*dvdr*dr[k]*wmean*invrhomean;
+      sphdata[i].dudt -= 0.5*sphdata[j].m*alpha_visc*
+	vsignal*wmean*invrhomean*dvdr*dvdr;
     }
 
   }

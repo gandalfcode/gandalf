@@ -55,4 +55,29 @@ class Isothermal: public EOS
 };
 
 
+
+// ============================================================================
+// Class Adiabatic
+// ============================================================================
+class Adiabatic: public EOS
+{
+ public:
+
+  Adiabatic(float,float,float);
+  ~Adiabatic();
+
+  float Pressure(SphParticle &);
+  float EntropicFunction(SphParticle &);
+  float SoundSpeed(SphParticle &);
+  float Temperature(SphParticle &);
+  float SpecificInternalEnergy(SphParticle &);
+
+  float gamma;
+  float gammam1;
+  float temp0;
+  float mu_bar;
+
+};
+
+
 #endif

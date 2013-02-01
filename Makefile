@@ -11,8 +11,8 @@ OPT = -fPIC -g
 
 OUTPUT_LEVEL              = 1
 PRECISION                 = SINGLE
-NDIM                      = 2
-DEBUG                     = 2
+NDIM                      = 1
+DEBUG                     = 1
 
 #PYLIB = /sw/include/python2.7
 #NUMPY = /sw/lib/python2.7/site-packages/numpy/core/include
@@ -56,9 +56,10 @@ OBJ = Parameters.o SimUnits.o SphSnapshot.o SphSimulation.o
 OBJ += SphSimulationIC.o SphSimulationIO.o
 OBJ += M4Kernel.o
 OBJ += Sph.o GradhSph.o
+OBJ += EnergyPEC.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o
 OBJ += SphNeighbourSearch.o BruteForceSearch.o
-OBJ += IsothermalEOS.o
+OBJ += AdiabaticEOS.o IsothermalEOS.o
 OBJ += SimGhostParticles.o
 OBJ += toymain.o
 

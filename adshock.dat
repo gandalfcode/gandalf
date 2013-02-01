@@ -1,0 +1,22 @@
+     : boxmin[0] = -32.0
+     : boxmax[0] = 32.0
+     : Nlattice1[0] = 256
+     : Nlattice2[0] = 256
+     : vfluid1[0] = 16
+     : vfluid2[0] = -16
+     : ndim = 1
+
+     : ic = shocktube
+     : gas_eos = energy_eqn
+     : energy_integration = PEC
+     : gamma_eos = 1.6666666666666
+
+     : h_converge = 0.00001
+
+     : alpha_visc = 1.0
+     : beta_visc = 2.0
+
+     : courant_mult = 0.15
+     : accel_mult = 0.3
+
+ 
