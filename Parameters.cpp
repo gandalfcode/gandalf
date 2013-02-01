@@ -119,12 +119,12 @@ void Parameters::SetDefaultValues(void)
 #else
   intparams["ndim"]=3;
 #endif
-  intparams["Nlattice1[0]"]=1;
-  intparams["Nlattice1[1]"]=1;
-  intparams["Nlattice1[2]"]=1;
-  intparams["Nlattice2[0]"]=1;
-  intparams["Nlattice2[1]"]=1;
-  intparams["Nlattice2[2]"]=1;
+  intparams["Nlattice1[0]"]=16;
+  intparams["Nlattice1[1]"]=16;
+  intparams["Nlattice1[2]"]=16;
+  intparams["Nlattice2[0]"]=16;
+  intparams["Nlattice2[1]"]=16;
+  intparams["Nlattice2[2]"]=16;
   floatparams["vfluid1[0]"]=0.0;
   floatparams["vfluid1[1]"]=0.0;
   floatparams["vfluid1[2]"]=0.0;
@@ -135,6 +135,8 @@ void Parameters::SetDefaultValues(void)
   floatparams["rhofluid2"]=1.0;
   floatparams["press1"]=1.0;
   floatparams["press2"]=1.0;
+  floatparams["amp"]=0.1;
+  floatparams["lambda"]=0.5;
 
   // Integration scheme and timestep parameters
   // --------------------------------------------------------------------------
@@ -152,11 +154,14 @@ void Parameters::SetDefaultValues(void)
 
   // Artificial viscosity parameters
   // --------------------------------------------------------------------------
+  stringparams["avisc"]="mon97";
+  stringparams["acond"]="none";
   floatparams["alpha_visc"]=1.0;
   floatparams["beta_visc"]=2.0;
 
   // Thermal physics parameters
   // --------------------------------------------------------------------------
+  intparams["hydro_forces"]=1;
   stringparams["gas_eos"]="isothermal";
   stringparams["energy_integration"]="PEC";
   floatparams["energy_mult"]=0.2;
@@ -164,6 +169,9 @@ void Parameters::SetDefaultValues(void)
   floatparams["temp0"]=1.0;
   floatparams["mu_bar"]=1.0;
 
+  // Gravity parameters
+  // --------------------------------------------------------------------------
+  intparams["self_gravity"]=0;
 
   // Boundary conditions parameters
   // --------------------------------------------------------------------------

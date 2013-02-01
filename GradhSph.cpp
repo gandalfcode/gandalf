@@ -192,16 +192,22 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
   float dv[ndimmax];
   float dvdr;
   float drmag;
+  float invhmean;
   float invrhomean;
   float wmean;
   float vsignal;
+  int self_gravity = params.intparams["self_gravity"];
+  string avisc = params.stringparams["avisc"];
+  string acond = params.stringparams["acond"];
 
   sphdata[i].dudt = -eos->Pressure(sphdata[i])*sphdata[i].div_v*
     sphdata[i].invrho*sphdata[i].invomega;
   hrangesqd = kern->kernrangesqd*sphdata[i].h*sphdata[i].h;
+  if (self_gravity == 1) sphdata[i].zeta = 0.0;
 
 
   // Loop over all potential neighbours in the list
+  // --------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
     if (i == j) continue;
@@ -224,19 +230,44 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
       (sphdata[i].pfactor*sphdata[i].hfactor*kern->w1(drmag*sphdata[i].invh) +
        sphdata[j].pfactor*sphdata[j].hfactor*kern->w1(drmag*sphdata[j].invh));
 
-    // Add dissipation terms
+    // Add dissipation terms (for approaching particle-pairs)
+    // ------------------------------------------------------------------------
     if (dvdr < 0.0) {
       wmean = 0.5*(kern->w1(drmag*sphdata[i].invh)*sphdata[i].hfactor +
           kern->w1(drmag*sphdata[j].invh)*sphdata[j].hfactor);
       invrhomean = 2.0 / (sphdata[i].rho + sphdata[j].rho);
-      vsignal = sphdata[i].sound + sphdata[j].sound - beta_visc*dvdr;
-      for (k=0; k<ndim; k++) sphdata[i].a[k] -= 
-	sphdata[j].m*alpha_visc*vsignal*dvdr*dr[k]*wmean*invrhomean;
-      sphdata[i].dudt -= 0.5*sphdata[j].m*alpha_visc*
-	vsignal*wmean*invrhomean*dvdr*dvdr;
+
+      // Artificial viscosity term
+      if (avisc == "mon97") {
+	vsignal = sphdata[i].sound + sphdata[j].sound - beta_visc*dvdr;
+	for (k=0; k<ndim; k++) sphdata[i].a[k] -= 
+	  sphdata[j].m*alpha_visc*vsignal*dvdr*dr[k]*wmean*invrhomean;
+	sphdata[i].dudt -= 0.5*sphdata[j].m*alpha_visc*
+	  vsignal*wmean*invrhomean*dvdr*dvdr;
+      }
+
+      // Artificial conductivity term
+      if (acond == "price2008") {
+	vsignal = sqrt(fabs(eos->Pressure(sphdata[i]) - 
+			    eos->Pressure(sphdata[j]))*invrhomean);
+	sphdata[i].dudt += sphdata[j].m*vsignal*
+	  (sphdata[i].u - sphdata[j].u)*wmean*invrhomean;
+      }
+    }
+    // ------------------------------------------------------------------------
+
+    // Calculate zeta term for mean-h gravity
+    if (self_gravity == 1) {
+      invhmean = 2.0/(sphdata[i].h + sphdata[j].h);
+      sphdata[i].zeta += sphdata[j].m*invhmean*invhmean*
+	kern->wzeta(drmag*invhmean);
     }
 
   }
+  // --------------------------------------------------------------------------
+
+  // Normalise zeta term
+  sphdata[i].zeta *= sphdata[i].invomega;
 
   return;
 }
@@ -245,8 +276,58 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
 
 // ============================================================================
 // GradhSph::ComputeGravForces
+// Compute the contribution to the total gravitational force of particle 'i' 
+// due to 'Nneib' neighbouring particles in the list 'neiblist'.
 // ============================================================================
-void GradhSph::ComputeGravForce(int i, int j, float *agrav)
+void GradhSph::ComputeGravForces(int i, int Nneib, int *neiblist)
 {
+  int j;
+  int jj;
+  int k;
+  float hrangesqd;
+  float dr[ndimmax];
+  float dv[ndimmax];
+  float dvdr;
+  float drmag;
+  float invdrmag;
+  float invhmean;
+
+  // ..
+  // --------------------------------------------------------------------------
+  for (jj=0; jj<Nneib; jj++) {
+    j = neiblist[jj];
+    if (i == j) continue;
+
+    for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - sphdata[i].r[k];
+    drmag = DotProduct(dr,dr);
+    drmag = sqrt(drmag);
+    for (k=0; k<ndim; k++) dr[k] /= (drmag + small_number);
+
+    if (2.0*drmag < kern->kernrange*(sphdata[i].h + sphdata[j].h)) {
+      invhmean = 2.0/(sphdata[i].h + sphdata[j].h);
+      for (k=0; k<ndim; k++) sphdata[i].a[k] += sphdata[j].m*dr[k]*
+	invdrmag*invhmean*invhmean*kern->wgrav(drmag*invhmean);
+      sphdata[i].gpot -= sphdata[j].m*invhmean*kern->wpot(drmag*invhmean);
+    }
+    else {
+      for (k=0; k<ndim; k++) sphdata[i].r[k] += 
+	sphdata[j].m*dr[k]*pow(invdrmag,3);
+      sphdata[i].gpot -= sphdata[j].m*invdrmag;
+    }
+
+    if (drmag*sphdata[i].invh < kern->kernrange) {
+      for (k=0; k<ndim; k++) 
+	sphdata[i].a[k] += 0.5*sphdata[j].m*dr[k]*invdrmag*sphdata[i].zeta*
+	kern->w1(drmag*sphdata[i].invh)*sphdata[i].hfactor;
+    }
+
+    if (drmag*sphdata[j].invh < kern->kernrange) {
+      for (k=0; k<ndim; k++) 
+	sphdata[i].a[k] += 0.5*sphdata[j].m*dr[k]*invdrmag*sphdata[j].zeta*
+	kern->w1(drmag*sphdata[j].invh)*sphdata[j].hfactor;
+    }
+
+  }
+
   return;
 }

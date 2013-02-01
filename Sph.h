@@ -32,7 +32,7 @@ class Sph
   virtual int ComputeH(int,int,int *,Parameters &) = 0;
   virtual void ComputeSphProperties(int,int,int *,Parameters &) = 0;
   virtual void ComputeHydroForces(int,int,int *,Parameters &) = 0;
-  virtual void ComputeGravForce(int,int,float *) = 0;
+  virtual void ComputeGravForces(int,int,int *) = 0;
 
 
   // SPH array memory allocation functions
@@ -64,8 +64,8 @@ class Sph
   SphKernel *kern;                      // SPH kernel 
   EOS *eos;                             // Equation-of-state
 
-  double alpha_visc;
-  double beta_visc;
+  float alpha_visc;
+  float beta_visc;
 
 };
 
@@ -86,8 +86,8 @@ class GradhSph: public Sph
 
   int ComputeH(int,int,int *,Parameters &);
   void ComputeSphProperties(int,int,int *,Parameters &);
-  void ComputeHydroForces(int,int,int *, Parameters &);
-  void ComputeGravForce(int,int,float *);
+  void ComputeHydroForces(int,int,int *,Parameters &);
+  void ComputeGravForces(int,int,int *);
 
 };
 

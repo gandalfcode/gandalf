@@ -29,7 +29,7 @@ struct DomainBox {
   float boxmin[3];
   float boxmax[3];
   float boxsize[3];
-  //float boxhalf[ndimmax];
+  float boxhalf[ndimmax];
   //float rmin[ndimmax];
   //float rmax[ndimmax];
 };
@@ -78,6 +78,7 @@ class SphSimulation
   // --------------------------------------------------------------------------
   void RandomBox(void);
   void ShockTube(void);
+  void KHI(void);
 
   // Initial conditions helper routines
   // --------------------------------------------------------------------------

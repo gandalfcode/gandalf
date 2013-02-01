@@ -88,3 +88,32 @@ void BruteForceSearch::UpdateAllSphForces(Sph *sph, Parameters &simparams)
 
   return;
 }
+
+
+
+// ============================================================================
+// BruteForceSearch::UpdateAllGravityForces
+// ============================================================================
+void BruteForceSearch::UpdateAllGravityForces(Sph *sph, Parameters &simparams)
+{
+  int *neiblist;
+  int Nneib;
+  float agrav[ndim];
+  float gpot;
+
+  debug2("[BruteForceSearch::UpdateAllGravityForces]\n");
+
+  // Allocate array to store local copy of potential neighbour ids
+  Nneib = sph->Nsph;
+  neiblist = new int[sph->Nsph];
+  for (int i=0; i<sph->Nsph; i++) neiblist[i] = i;
+
+  // Compute SPH hydro forces for all particles
+  for (int i=0; i<sph->Nsph; i++)
+    sph->ComputeGravForces(i,Nneib,neiblist);
+
+  // Free up memory from local array
+  delete[] neiblist;
+
+  return;
+}

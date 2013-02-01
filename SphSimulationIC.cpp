@@ -7,6 +7,7 @@
 #include <string>
 #include <cstdio>
 #include <cstring>
+#include <math.h>
 #include "SphSimulation.h"
 #include "Sph.h"
 #include "Parameters.h"
@@ -132,6 +133,124 @@ void SphSimulation::RandomBox(void)
 
   return;
 }
+
+
+
+// ============================================================================
+// SphSimulation::KHI
+// ============================================================================
+void SphSimulation::KHI(void)
+{
+  int i;
+  int j;
+  int k;
+  int Nbox1;
+  int Nbox2;
+  float volume;
+  float *r;
+  DomainBox box1;
+  DomainBox box2;
+  int Nlattice1[ndimmax];
+  int Nlattice2[ndimmax];
+  float vfluid1[ndimmax];
+  float vfluid2[ndimmax];
+  float rhofluid1 = simparams.floatparams["rhofluid1"];
+  float rhofluid2 = simparams.floatparams["rhofluid2"];
+  float press1 = simparams.floatparams["press1"];
+  float press2 = simparams.floatparams["press2"];
+  float temp0 = simparams.floatparams["temp0"];
+  float mu_bar = simparams.floatparams["mu_bar"];
+  float gammaone = simparams.floatparams["gamma_eos"] - 1.0;
+  float amp = simparams.floatparams["amp"];
+  float lambda = simparams.floatparams["lambda"];
+  Nlattice1[0] = simparams.intparams["Nlattice1[0]"];
+  Nlattice1[1] = simparams.intparams["Nlattice1[1]"];
+  Nlattice2[0] = simparams.intparams["Nlattice2[0]"];
+  Nlattice2[1] = simparams.intparams["Nlattice2[1]"];
+  vfluid1[0] = simparams.floatparams["vfluid1[0]"];
+  vfluid2[0] = simparams.floatparams["vfluid2[0]"];
+
+  debug2("[SphSimulation::ShockTube]");
+
+  if (ndim != 2) {
+    cout << "Kelvin-Helmholtz instability only in 2D" << endl;
+    exit(0);
+    return;
+  }
+
+  // Compute size and range of fluid bounding boxes
+  // --------------------------------------------------------------------------
+  box1.boxmin[0] = simbox.boxmin[0];
+  box1.boxmax[0] = simbox.boxmax[0];
+  box1.boxmin[1] = simbox.boxmin[1];
+  box1.boxmax[1] = simbox.boxmin[1] + simbox.boxhalf[1];
+  box2.boxmin[0] = simbox.boxmin[0];
+  box2.boxmax[0] = simbox.boxmax[0];
+  box2.boxmin[1] = simbox.boxmin[1] + simbox.boxhalf[1];
+  box2.boxmax[1] = simbox.boxmax[1];
+
+  volume = (box1.boxmax[0] - box1.boxmin[0])*(box1.boxmax[1] - box1.boxmin[1]);
+  Nbox1 = Nlattice1[0]*Nlattice1[1];
+  Nbox2 = Nlattice2[0]*Nlattice2[1];
+
+
+  // Allocate local and main particle memory
+  sph->Nsph = Nbox1 + Nbox2;
+  sph->AllocateMemory(sph->Nsph);
+  r = new float[ndim*sph->Nsph];
+  cout << "Nbox1 : " << Nbox1 << "    Nbox2 : " << Nbox2 << endl;
+  cout << "Allocating memory : " << sph->Nsph << endl;
+
+
+  // Add particles for LHS of the shocktube
+  // --------------------------------------------------------------------------
+  if (Nbox1 > 0) {
+    AddRegularLattice(Nbox1,Nlattice1,r,box1);
+
+    for (i=0; i<Nbox1; i++) {
+      for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r[ndim*i + k];
+      for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
+      sph->sphdata[i].r[1] -= 0.25*simbox.boxsize[1];
+      if (sph->sphdata[i].r[1] < simbox.boxmin[1]) 
+	sph->sphdata[i].r[1] += simbox.boxsize[1];
+      sph->sphdata[i].v[0] = vfluid1[0];
+      sph->sphdata[i].m = rhofluid1*volume/(float) Nbox1;
+      sph->sphdata[i].u = press1/rhofluid1/gammaone;
+    }
+  }
+
+  // Add particles for RHS of the shocktube
+  // --------------------------------------------------------------------------
+  if (Nbox2 > 0) {
+    AddRegularLattice(Nbox2,Nlattice2,r,box2);
+
+    for (j=0; j<Nbox2; j++) {
+      i = Nbox1 + j;
+      for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r[ndim*j + k];
+      for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
+      sph->sphdata[i].r[1] -= 0.25*simbox.boxsize[1];
+      if (sph->sphdata[i].r[1] < simbox.boxmin[1]) 
+	sph->sphdata[i].r[1] += simbox.boxsize[1];
+      sph->sphdata[i].v[0] = vfluid2[0];
+      sph->sphdata[i].m = rhofluid2*volume/(float) Nbox2;
+      sph->sphdata[i].u = press2/rhofluid2/gammaone;
+    }
+  }
+
+  // Add velocity perturbation here
+  // --------------------------------------------------------------------------
+  float sigmapert = 0.05/sqrt(2.0);
+  for (i=i; i<sph->Nsph; i++) {
+    sph->sphdata[i].v[1] = amp*sin(2.0*pi*sph->sphdata[i].r[0]/lambda)*
+      (exp(-pow(sph->sphdata[i].r[1] + 0.25,2)/2.0/sigmapert/sigmapert) +  
+       exp(-pow(sph->sphdata[i].r[1] - 0.25,2)/2.0/sigmapert/sigmapert));
+  }
+
+  delete[] r;
+
+  return;
+}
+
 
 
 // ============================================================================

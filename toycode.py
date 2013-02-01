@@ -21,21 +21,22 @@ sim1.Setup()
 
 snap1 = SphSim.SphSnapshot()
 
-snap1.CopyDataFromSimulation(2,sim1.sph.Nsph,sim1.sph.sphdata)
+snap1.CopyDataFromSimulation(1,sim1.sph.Nsph,sim1.sph.sphdata)
 x1 = copy.deepcopy(snap1.ExtractArray("x"))
 y1 = copy.deepcopy(snap1.ExtractArray("rho"))
 ion()
-plt.scatter(x1,y1)
-plt.show()
+#plt.scatter(x1,y1)
+#plt.show()
 
 
-sim1.Run(2000)
+sim1.tend = 0.4
+sim1.Run()
 
 
-snap1.CopyDataFromSimulation(2,sim1.sph.Nsph,sim1.sph.sphdata)
+snap1.CopyDataFromSimulation(1,sim1.sph.Nsph,sim1.sph.sphdata)
 x1 = copy.deepcopy(snap1.ExtractArray("x"))
 y1 = copy.deepcopy(snap1.ExtractArray("rho"))
-plt.scatter(x1,y1,color="green")
+plt.scatter(x1,y1,color="green",s=1)
 ioff()
 plt.show()
 

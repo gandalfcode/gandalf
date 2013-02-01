@@ -20,6 +20,7 @@ struct SphParticle {
   float r0[ndimmax];
   float v0[vdimmax];
   float a0[vdimmax];
+  float agrav[ndimmax];
   float u;
   float u0;
   float dudt;
@@ -35,6 +36,7 @@ struct SphParticle {
   float invomega;
   float zeta;
   float sound;
+  float gpot;
 };
 
 /*

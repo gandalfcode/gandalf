@@ -17,7 +17,7 @@
 
 
 // ============================================================================
-// CLASS SphNeighbourSearch
+// Class SphNeighbourSearch
 // ============================================================================
 class SphNeighbourSearch
 {
@@ -28,13 +28,14 @@ class SphNeighbourSearch
 
   virtual void UpdateAllSphProperties(Sph *, Parameters &) = 0;
   virtual void UpdateAllSphForces(Sph *, Parameters &) = 0;
+  virtual void UpdateAllGravityForces(Sph *, Parameters &) = 0;
 
 };
 
 
 
 // ============================================================================
-// CLASS BruteForceSearch
+// Class BruteForceSearch
 // ============================================================================
 class BruteForceSearch: public SphNeighbourSearch
 {
@@ -45,6 +46,7 @@ class BruteForceSearch: public SphNeighbourSearch
 
   void UpdateAllSphProperties(Sph *, Parameters &);
   void UpdateAllSphForces(Sph *, Parameters &);
+  void UpdateAllGravityForces(Sph *, Parameters &);
 
 };
 
