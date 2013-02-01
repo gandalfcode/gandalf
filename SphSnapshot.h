@@ -22,7 +22,7 @@ class SphSnapshot
 {
  public:
 
-  SphSnapshot();
+  SphSnapshot(string="");
   ~SphSnapshot();
 
   void AllocateBufferMemory(void);
@@ -30,7 +30,7 @@ class SphSnapshot
   int CalculateMemoryUsage(void);
   void CopyDataFromSimulation(int,int,SphParticle*);
   void ExtractArray(std::string, float** out_array, int* size_array);
-  void ReadSnapshot(string, string, SphSimulation *);
+  void ReadSnapshot(string, SphSimulation *);
 
   bool allocated;
   int nallocated;
