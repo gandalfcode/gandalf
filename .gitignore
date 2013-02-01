@@ -11,3 +11,9 @@
 *~
 *.so
 *.ascii.*
+Parameters.py
+SimUnits.py
+Sph.py
+SphSim.py
+SphSnap.py
+toymain

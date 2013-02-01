@@ -15,13 +15,15 @@ using namespace std;
 // ============================================================================
 // SphSnapshot::SphSnapshot
 // ============================================================================
-SphSnapshot::SphSnapshot()
+SphSnapshot::SphSnapshot(string auxfilename)
 {
   allocated = false;
   nallocated = 0;
   ndim = 3;
   Nsph = 0;
   t = 0.0f;
+  if (auxfilename != "")
+      filename = auxfilename;
 }
 
 
@@ -188,18 +190,19 @@ void SphSnapshot::ExtractArray(string name, float** out_array,
 			       int* size_array)
 {
   if (name == "x") *out_array = x;
-  if (name == "y") *out_array = y;
-  if (name == "z") *out_array = z;
-  if (name == "vx") *out_array = vx;
-  if (name == "vy") *out_array = vy;
-  if (name == "vz") *out_array = vz;
-  if (name == "ax") *out_array = ax;
-  if (name == "ay") *out_array = ay;
-  if (name == "az") *out_array = az;
-  if (name == "m") *out_array = m;
-  if (name == "h") *out_array = h;
-  if (name == "rho") *out_array = rho;
-  if (name == "u") *out_array = u;
+  else if (name == "y") *out_array = y;
+  else if (name == "z") *out_array = z;
+  else if (name == "vx") *out_array = vx;
+  else if (name == "vy") *out_array = vy;
+  else if (name == "vz") *out_array = vz;
+  else if (name == "ax") *out_array = ax;
+  else if (name == "ay") *out_array = ay;
+  else if (name == "az") *out_array = az;
+  else if (name == "m") *out_array = m;
+  else if (name == "h") *out_array = h;
+  else if (name == "rho") *out_array = rho;
+  else if (name == "u") *out_array = u;
+  else cout << "Warning: the selected array has not been recognized" << endl;
 
   *size_array = Nsph;
 
@@ -209,9 +212,9 @@ void SphSnapshot::ExtractArray(string name, float** out_array,
 // ============================================================================
 // SphSnapshot::ReadSnapshot
 // ============================================================================
-void SphSnapshot::ReadSnapshot(string snapshotname, string format, SphSimulation * simulation) {
+void SphSnapshot::ReadSnapshot(string format, SphSimulation * simulation) {
 
-  simulation->ReadSnapshotFile(snapshotname, format);
+  simulation->ReadSnapshotFile(filename, format);
   CopyDataFromSimulation(simulation->simparams.intparams["ndim"] , simulation->sph->Nsph , simulation->sph->sphdata );
 
 }
