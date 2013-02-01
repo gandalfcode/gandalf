@@ -215,11 +215,10 @@ class SimBuffer:
         return SimBuffer.get_next_snapshot_sim (sim)
     
     @staticmethod
-    def get_next_snapshot_current_no():
-        '''This function returns the number of the next snapshot'''
-        snap = SimBuffer.get_next_snapshot_current()
+    def get_no_next_snapshot():
+        '''This function returns the number of the next snapshot, without modifying it'''
         sim = SimBuffer.get_current_sim()
-        return sim.snapshots.index(sim.current)
+        return sim.snapshots.index(sim.current)+1
          
         
 

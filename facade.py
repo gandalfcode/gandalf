@@ -22,7 +22,7 @@ def addplot (x,y):
     plot(x,y, True)
     
 def next():
-    snap(SimBuffer.get_next_snapshot_current_no())
+    snap(SimBuffer.get_no_next_snapshot())
         
 def snap(no):
     SimBuffer.get_snapshot_number_current_sim(no)
