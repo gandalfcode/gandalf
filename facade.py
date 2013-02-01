@@ -40,14 +40,14 @@ if __name__=="__main__":
     plottingprocess.start()
     import time; time.sleep(1)
     loadsim('TEST')
-    plot("x","y")
+    plot("x","u")
     window()
-    plot("vx", "vy")
+    plot("x", "vx")
 #    plot("vx", "x")
     window()
     plot("x","rho")
     addplot("rho", "h")
-    for i in range(10):
+    for i in range(3):
         time.sleep(1)
         next()
     Singletons.queue.put(["STOP",None])

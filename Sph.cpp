@@ -127,7 +127,7 @@ void Sph::InitialSmoothingLengthGuess(void)
   // Set all smoothing lengths equal to average value
   for (int i=0; i<Nsph; i++) {
     sphdata[i].h = h_guess;
-    sphdata[i].invh = 1.0f/h_guess;
+    sphdata[i].invh = 1.0/h_guess;
   }
 
   printf ("Volume : %f\n",volume);

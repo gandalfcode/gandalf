@@ -267,7 +267,8 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
   // --------------------------------------------------------------------------
 
   // Normalise zeta term
-  sphdata[i].zeta *= sphdata[i].invomega;
+  sphdata[i].zeta *= -invndim*sphdata[i].h*
+    sphdata[i].invrho*sphdata[i].invomega;
 
   return;
 }
@@ -291,8 +292,9 @@ void GradhSph::ComputeGravForces(int i, int Nneib, int *neiblist)
   float drmag;
   float invdrmag;
   float invhmean;
+  float kernrange = kern->kernrange;
 
-  // ..
+  // Loop over all neighbouring particles in list
   // --------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
@@ -301,33 +303,44 @@ void GradhSph::ComputeGravForces(int i, int Nneib, int *neiblist)
     for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - sphdata[i].r[k];
     drmag = DotProduct(dr,dr);
     drmag = sqrt(drmag);
-    for (k=0; k<ndim; k++) dr[k] /= (drmag + small_number);
+    invdrmag = 1.0/(drmag + small_number);
+    //for (k=0; k<ndim; k++) dr[k] /= invdrmag;
 
-    if (2.0*drmag < kern->kernrange*(sphdata[i].h + sphdata[j].h)) {
+    //for (k=0; k<ndim; k++) sphdata[i].agrav[k] += 
+    //	sphdata[j].m*dr[k]*pow(invdrmag,3);
+    //sphdata[i].gpot -= sphdata[j].m*invdrmag;
+    //continue;
+
+    // Calculate kernel-softened gravity if within mean-h kernel.
+    // Otherwise, use point-mass Newton's law of gravitation.
+    if (2.0*drmag < kernrange*(sphdata[i].h + sphdata[j].h)) {
       invhmean = 2.0/(sphdata[i].h + sphdata[j].h);
-      for (k=0; k<ndim; k++) sphdata[i].a[k] += sphdata[j].m*dr[k]*
+      for (k=0; k<ndim; k++) sphdata[i].agrav[k] += sphdata[j].m*dr[k]*
 	invdrmag*invhmean*invhmean*kern->wgrav(drmag*invhmean);
       sphdata[i].gpot -= sphdata[j].m*invhmean*kern->wpot(drmag*invhmean);
     }
     else {
-      for (k=0; k<ndim; k++) sphdata[i].r[k] += 
+      for (k=0; k<ndim; k++) sphdata[i].agrav[k] += 
 	sphdata[j].m*dr[k]*pow(invdrmag,3);
       sphdata[i].gpot -= sphdata[j].m*invdrmag;
     }
 
-    if (drmag*sphdata[i].invh < kern->kernrange) {
+    if (drmag*sphdata[i].invh < kernrange) {
       for (k=0; k<ndim; k++) 
-	sphdata[i].a[k] += 0.5*sphdata[j].m*dr[k]*invdrmag*sphdata[i].zeta*
-	kern->w1(drmag*sphdata[i].invh)*sphdata[i].hfactor;
+	sphdata[i].agrav[k] += 0.5*sphdata[j].m*dr[k]*invdrmag*
+	  sphdata[i].zeta*kern->w1(drmag*sphdata[i].invh)*sphdata[i].hfactor;
     }
 
-    if (drmag*sphdata[j].invh < kern->kernrange) {
+    if (drmag*sphdata[j].invh < kernrange) {
       for (k=0; k<ndim; k++) 
-	sphdata[i].a[k] += 0.5*sphdata[j].m*dr[k]*invdrmag*sphdata[j].zeta*
-	kern->w1(drmag*sphdata[j].invh)*sphdata[j].hfactor;
+	sphdata[i].agrav[k] += 0.5*sphdata[j].m*dr[k]*invdrmag*
+	  sphdata[j].zeta*kern->w1(drmag*sphdata[j].invh)*sphdata[j].hfactor;
     }
 
   }
+
+  //cout << "Total grav forces : " << i << "   " 
+  //   << sphdata[i].agrav[0]/sphdata[i].r[0] << endl;
 
   return;
 }

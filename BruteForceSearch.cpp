@@ -98,8 +98,6 @@ void BruteForceSearch::UpdateAllGravityForces(Sph *sph, Parameters &simparams)
 {
   int *neiblist;
   int Nneib;
-  float agrav[ndim];
-  float gpot;
 
   debug2("[BruteForceSearch::UpdateAllGravityForces]\n");
 

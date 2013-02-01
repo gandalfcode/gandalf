@@ -11,7 +11,7 @@ OPT = -fPIC -O3
 
 OUTPUT_LEVEL              = 1
 PRECISION                 = SINGLE
-NDIM                      = 1
+NDIM                      = 3
 DEBUG                     = 1
 
 #PYLIB = /sw/include/python2.7

@@ -49,7 +49,6 @@ bool SphSimulation::WriteSnapshotFile(string filename, string fileform)
 
 
 
-
 // ============================================================================
 // SphSimulation::ReadColumnSnapshotFile
 // ============================================================================
@@ -68,6 +67,7 @@ bool SphSimulation::ReadColumnSnapshotFile(string filename)
   infile >> Npart;
   infile >> Nstar;
   infile >> ndimaux;
+  infile >> t;
 
   // Check dimensionality matches if using fixed dimensions
 #if defined(FIXED_DIMENSIONS)
@@ -129,6 +129,7 @@ bool SphSimulation::WriteColumnSnapshotFile(string filename)
   outfile << sph->Nsph << endl;
   outfile << 0 << endl;
   outfile << ndim << endl;
+  outfile << t << endl;
 
   // Write data
   // --------------------------------------------------------------------------

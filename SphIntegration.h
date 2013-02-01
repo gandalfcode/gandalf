@@ -6,10 +6,12 @@
 #ifndef _SPH_INTEGRATOR_H_
 #define _SPH_INTEGRATOR_H_
 
+
 #include "Constants.h"
 #include "Dimensions.h"
 #include "Sph.h"
 #include "EOS.h"
+#include "Parameters.h"
 #include "SphParticle.h"
 
 
@@ -30,7 +32,7 @@ class SphIntegration
   virtual void CorrectionTerms(int,SphParticle *,double) = 0;
   virtual void EndTimestep(int,int,SphParticle *) = 0;
 
-  virtual double Timestep(SphParticle &);
+  virtual double Timestep(SphParticle &, Parameters &);
   
   const double courant_mult;
   const double accel_mult;

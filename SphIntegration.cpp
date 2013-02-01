@@ -42,21 +42,21 @@ SphIntegration::~SphIntegration()
 // ============================================================================
 // ..
 // ============================================================================
-double SphIntegration::Timestep(SphParticle &part)
+double SphIntegration::Timestep(SphParticle &part, Parameters &params)
 {
   double timestep;
   double amag;
 
   //Courant condition
-  timestep = courant_mult*part.h/
-    (part.sound + part.h*fabs(part.div_v) + small_number_dp);
+  if (params.intparams["hydro_forces"] == 2)
+    timestep = courant_mult*part.h/
+      (part.sound + part.h*fabs(part.div_v) + small_number_dp);
+  else timestep = courant_mult*part.h/
+    (part.h*fabs(part.div_v) + small_number_dp);
 
   //Acceleration condition
   amag = sqrt(DotProduct(part.a,part.a));
   timestep = min(timestep, accel_mult*sqrt(part.h/(amag + small_number_dp)));
-
-
-  //TODO: implement energy condition (once we will be solving the energy equation)
 
   return timestep;
 }

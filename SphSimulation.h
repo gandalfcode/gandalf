@@ -40,7 +40,11 @@ struct Diagnostics {
   double Etot;
   double utot;
   double ketot;
+  double gpetot;
   double mom[ndimmax];
+  double angmom[3];
+  double force[ndimmax];
+  double force_grav[ndimmax];
 };
 
 
@@ -59,12 +63,11 @@ class SphSimulation
 
   // Subroutine prototypes
   // --------------------------------------------------------------------------
-  void GenerateIC(int);
   void Setup(void);
   void MainLoop(void);
   void Run(int=-1);
-  void AdvanceSteps(int);
   void Output(void);
+  void GenerateIC(void);
   void ComputeBlockTimesteps(void);
   void ProcessParameters(void);
   void CalculateDiagnostics(void);
@@ -77,12 +80,14 @@ class SphSimulation
   // Initial conditions routines
   // --------------------------------------------------------------------------
   void RandomBox(void);
+  void RandomSphere(void);
   void ShockTube(void);
   void KHI(void);
 
   // Initial conditions helper routines
   // --------------------------------------------------------------------------
   void AddRandomBox(int, float *, DomainBox);
+  void AddRandomSphere(int, float *, float *, float);
   void AddRegularLattice(int, int *, float *, DomainBox);
 
   // Input-output routines
@@ -102,14 +107,14 @@ class SphSimulation
 
   // Integer and physical Timestep counters
   // --------------------------------------------------------------------------
-  int n;
-  int Nsteps;
-  int Nstepsmax;
-  double t;
-  double timestep;
-  double tsnapnext;
-  double tend;
-  double dt_snap;
+  int n;                                    // ..
+  int Nsteps;                               // ..
+  int Nstepsmax;                            // ..
+  double t;                                 // ..
+  double timestep;                          // ..
+  double tsnapnext;                         // ..
+  double tend;                              // ..
+  double dt_snap;                           // ..
   int Noutsnap;                             // ..
   string run_id;                            // Simulation id string
 
@@ -122,7 +127,6 @@ class SphSimulation
   SphIntegration *sphint;                   // SPH Integration scheme pointer
   EnergyEquation *uint;                     // Energy equation pointer
 
-//  SphSnapshot livesnap;
   DomainBox simbox;                         // Simulation boundary data
 
   // Diagnostics

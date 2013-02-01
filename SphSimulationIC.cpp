@@ -11,6 +11,7 @@
 #include "SphSimulation.h"
 #include "Sph.h"
 #include "Parameters.h"
+#include "InlineFuncs.h"
 #include "Debug.h"
 using namespace std;
 
@@ -126,6 +127,45 @@ void SphSimulation::RandomBox(void)
     }
     sph->sphdata[i].m = 1.0f / (float) sph->Nsph;
     sph->sphdata[i].invomega = 0.5f;
+    sph->sphdata[i].iorig = i;
+  }
+
+  delete[] r;
+
+  return;
+}
+
+
+
+// ============================================================================
+// SphSimulation::RandomSphere
+// ============================================================================
+void SphSimulation::RandomSphere(void)
+{
+  float *r;
+  float rcentre[ndimmax];
+  float radius = 1.0;
+
+  debug2("[SphSimulation::RandomBox]");
+
+  sph->AllocateMemory(sph->Nsph);
+  r = new float[ndim*sph->Nsph];
+
+  for (int k=0; k<ndim; k++) rcentre[k] = 0.0;
+
+  // Add a cube of random particles defined by the simulation bounding box
+  AddRandomSphere(sph->Nsph,r,rcentre,radius);
+
+  // Initialise all other variables
+  for (int i=0; i<sph->Nsph; i++) {
+    for (int k=0; k<ndim; k++) {
+      sph->sphdata[i].r[k] = r[ndim*i + k];
+      sph->sphdata[i].v[k] = 0.0f;
+      sph->sphdata[i].a[k] = 0.0f;
+    }
+    sph->sphdata[i].m = 1.0f / (float) sph->Nsph;
+    sph->sphdata[i].invomega = 1.0;
+    sph->sphdata[i].zeta = 0.0;
     sph->sphdata[i].iorig = i;
   }
 
@@ -265,6 +305,31 @@ void SphSimulation::AddRandomBox(int Npart, float *r, DomainBox box)
       r[ndim*i + k] = box.boxmin[k] + (box.boxmax[k] - box.boxmin[k])*
 	(float)(rand()%RAND_MAX)/(float)RAND_MAX;
     }
+  }
+
+  return;
+}
+
+
+
+// ============================================================================
+// SphSimulation::AddRandomsphere
+// ============================================================================
+void SphSimulation::AddRandomSphere(int Npart, float *r, 
+				    float *rcentre, float radius)
+{
+  float rad;
+  float rpos[ndimmax];
+
+  debug2("[SphSimulation::AddRandomSphere]");
+
+  for (int i=0; i<Npart; i++) {
+    do {
+      for (int k=0; k<ndim; k++) 
+	rpos[k] = 1.0 - 2.0*(float)(rand()%RAND_MAX)/(float)RAND_MAX;
+      rad = DotProduct(rpos,rpos);
+    } while (rad > radius);
+    for (int k=0; k<ndim; k++) r[ndim*i + k] = rcentre[k] + rpos[k];
   }
 
   return;

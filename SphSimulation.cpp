@@ -23,10 +23,10 @@ using namespace std;
 // ============================================================================
 SphSimulation::SphSimulation()
 {
-  paramfile = "adshock.dat"; //"params.dat";
+  paramfile = "freefall.dat"; //"params.dat";
   n = 0;
   Nsteps = 0;
-  t = 0.0f;
+  t = 0.0;
 }
 
 
@@ -47,6 +47,8 @@ void SphSimulation::Run(int Nadvance)
 {
   int Ntarget;
 
+  debug1("[SphSimulation::Run]");
+
   if (Nadvance < 0) Ntarget = Nstepsmax;
   else Ntarget = Nsteps + Nadvance;
 
@@ -62,28 +64,7 @@ void SphSimulation::Run(int Nadvance)
   // --------------------------------------------------------------------------
 
   CalculateDiagnostics();
-  cout << "Energy error : " << fabs(diag.Etot - diag0.Etot)/diag0.Etot << endl;
-
-  return;
-}
-
-
-
-// ============================================================================
-// SphSimulation::AdvanceSteps
-// ============================================================================
-void SphSimulation::AdvanceSteps(int Nadvance)
-{
-
-  // Advance the simulation by 'Nadvance' integer steps.
-  // --------------------------------------------------------------------------
-  for (int i=0; i<Nadvance; i++) {
-
-    MainLoop();
-    Output();
-
-  }
-  // --------------------------------------------------------------------------
+  cout << "Eerror : " << fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot) << endl;
 
   return;
 }
@@ -99,6 +80,8 @@ void SphSimulation::Output(void)
   string nostring;
   stringstream ss;
   string fileform = simparams.stringparams["out_file_form"];
+
+  debug2("[SphSimulation::Output]");
 
   // Output a data snapshot if reached required time
   if (t >= tsnapnext) {
@@ -117,52 +100,88 @@ void SphSimulation::Output(void)
 
 
 
-
-
 // ============================================================================
 // SphSimulation::CalculateDiagnostics
 // ============================================================================
 void SphSimulation::CalculateDiagnostics(void)
 {
+  int k;
+
+  debug2("[SphSimulation::CalculateDiagnostics]");
+
   diag.Etot = 0.0;
   diag.utot = 0.0;
   diag.ketot = 0.0;
+  diag.gpetot = 0.0;
+  for (k=0; k<ndim; k++) diag.mom[k] = 0.0;
+  for (k=0; k<3; k++) diag.angmom[k] = 0.0;
+  for (k=0; k<ndim; k++) diag.force[k] = 0.0;
+  for (k=0; k<ndim; k++) diag.force_grav[k] = 0.0;
 
   for (int i=0; i<sph->Nsph; i++) {
     diag.ketot += sph->sphdata[i].m*
       DotProduct(sph->sphdata[i].v,sph->sphdata[i].v);
     diag.utot += sph->sphdata[i].m*sph->sphdata[i].u;
+    diag.gpetot += sph->sphdata[i].m*sph->sphdata[i].gpot;
+    for (k=0; k<ndim; k++) {
+      diag.mom[k] += sph->sphdata[i].m*sph->sphdata[i].v[k];
+      diag.force[k] += sph->sphdata[i].m*sph->sphdata[i].a[k];
+      diag.force_grav[k] += sph->sphdata[i].m*sph->sphdata[i].agrav[k];
+    }
   }
-
   diag.ketot *= 0.5;
-  diag.Etot = diag.ketot + diag.utot;
+  diag.gpetot *= 0.5;
+  diag.Etot = diag.ketot + diag.utot + diag.gpetot;
+
+  cout << "Printing out diagnostics" << endl;
+  cout << "Etot       : " << diag.Etot << endl;
+  cout << "utot       : " << diag.utot << endl;
+  cout << "ketot      : " << diag.ketot << endl;
+  cout << "gpetot     : " << diag.gpetot << endl;
+  if (ndim == 1) {
+    cout << "mom        : " << diag.mom[0] << endl;
+    cout << "force      : " << diag.force[0] << endl;
+    cout << "force_grav : " << diag.force_grav[0] << endl;
+  }
+  else if (ndim == 2) {
+    cout << "mom        : " << diag.mom[0] << "   " << diag.mom[1] << endl;
+    cout << "force      : " << diag.force[0] << "   " << diag.force[1] << endl;
+    cout << "force_grav : " << diag.force_grav[0] << "   " 
+	 << diag.force_grav[1] << endl;
+  }
+  else if (ndim == 3) {
+    cout << "mom        : " << diag.mom[0] << "   " 
+	 << diag.mom[1] << "   " << diag.mom[2] << endl;
+    cout << "force      : " << diag.force[0] << "   " 
+	 << diag.force[1] << "   " << diag.force[2] << endl;
+    cout << "force_grav : " << diag.force_grav[0] << "   " 
+	 << diag.force_grav[1] << "   " << diag.force_grav[2] << endl;
+  }
 
   return;
 }
 
 
+
 // ============================================================================
 // SphSimulation::GenerateIC
 // ============================================================================
-void SphSimulation::GenerateIC(int N) 
+void SphSimulation::GenerateIC(void) 
 {
-  debug2("[SphSimulation::GenerateIC]\n");
+  debug2("[SphSimulation::GenerateIC]");
 
-  /*sph = new GradhSph;
-  sph->kern = new m4;
-
-  sph->kern->Setup(ndim);
-  sph->Nsph = N;
-  
-  sph->AllocateMemory(N);
-  srand(1);*/
-
-  //sph->RandomBox();
-
-  sph->InitialSmoothingLengthGuess();
-  //CalculateSphProperties();
-
-  printf("Finished generating random box\n");
+  // Generate initial conditions
+  if (simparams.stringparams["ic"] == "random_cube") 
+    RandomBox();
+  else if (simparams.stringparams["ic"] == "random_sphere") 
+    RandomSphere();
+  else if (simparams.stringparams["ic"] == "shocktube") 
+    ShockTube();
+  else if (simparams.stringparams["ic"] == "khi") 
+    KHI();
+  else {
+    cout << "Unrecognised parameter : " << endl; exit(0);
+  }
 
   return;
 }
@@ -176,12 +195,12 @@ void SphSimulation::ComputeBlockTimesteps(void)
 {
   double dt;
 
-  debug2("[SphSimulation::ComputeBlockTimesteps]\n");
+  debug2("[SphSimulation::ComputeBlockTimesteps]");
 
   timestep = big_number;
 
   for (int i=0; i<sph->Nsph; i++) {
-    dt = sphint->Timestep(sph->sphdata[i]);
+    dt = sphint->Timestep(sph->sphdata[i],simparams);
     if (dt < timestep) timestep = dt;
     if (simparams.stringparams["gas_eos"] == "energy_eqn") {
       dt = uint->Timestep(sph->sphdata[i]);
@@ -197,14 +216,15 @@ void SphSimulation::ComputeBlockTimesteps(void)
 
 
 // ============================================================================
-// SphSimulation::ComputeBlockTimesteps
+// SphSimulation::ProcessParameters
 // ============================================================================
 void SphSimulation::ProcessParameters(void)
 {
-
   map<string, int> &intparams = simparams.intparams;
   map<string, float> &floatparams = simparams.floatparams;
   map<string, string> &stringparams = simparams.stringparams;
+
+  debug2("[SphSimulation::ProcessParameters]");
 
   // Assign dimensionality variables here (for now)
 #if !defined(FIXED_DIMENSIONS)
@@ -306,7 +326,7 @@ void SphSimulation::ProcessParameters(void)
 // ============================================================================
 void SphSimulation::Setup(void)
 {
-  debug1("[SphSimulation::Setup]\n");
+  debug1("[SphSimulation::Setup]");
 
   // Set-up all parameters and assign default values
   simparams.SetDefaultValues();
@@ -317,17 +337,8 @@ void SphSimulation::Setup(void)
   // Process the parameters file setting up all simulation objects
   ProcessParameters();
 
-  // Generate initial conditions
-  if (simparams.stringparams["ic"] == "random_cube") 
-    RandomBox();
-  else if (simparams.stringparams["ic"] == "shocktube") 
-    ShockTube();
-  else if (simparams.stringparams["ic"] == "khi") 
-    KHI();
-  else {
-    cout << "Unrecognised parameter : " << endl; exit(0);
-  }
-
+  // Generate initial conditions for simulation
+  GenerateIC();
 
   // Set time variables here (for now)
   Noutsnap = 0;
@@ -368,6 +379,7 @@ void SphSimulation::Setup(void)
     for (int i=0; i<sph->Nsph; i++) {
       for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = 0.0;
       for (int k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = 0.0;
+      sph->sphdata[i].gpot = 0.0;
       sph->sphdata[i].dudt = 0.0;
     }
 
@@ -375,9 +387,16 @@ void SphSimulation::Setup(void)
     if (simparams.intparams["hydro_forces"] == 1)
       sphneib->UpdateAllSphForces(sph,simparams);
 
+    cout << "self_gravity : " << simparams.intparams["self_gravity"] << endl;
     // Calculate all gravitational forces
     if (simparams.intparams["self_gravity"] == 1)
       sphneib->UpdateAllGravityForces(sph,simparams);
+
+    // Add accelerations
+    for (int i=0; i<sph->Nsph; i++) {
+      for (int k=0; k<ndim; k++) 
+	sph->sphdata[i].a[k] = sph->sphdata[i].agrav[k];
+    }
 
   }
 
@@ -400,7 +419,7 @@ void SphSimulation::Setup(void)
 // ============================================================================
 void SphSimulation::MainLoop(void)
 {
-  debug1("[SphSimulation::MainLoop]\n");
+  debug1("[SphSimulation::MainLoop]");
 
   // Compute timesteps for all particles
   ComputeBlockTimesteps();
@@ -443,6 +462,8 @@ void SphSimulation::MainLoop(void)
     // Zero accelerations (perhaps)
     for (int i=0; i<sph->Nsph; i++) {
       for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = 0.0;
+      for (int k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = 0.0;
+      sph->sphdata[i].gpot = 0.0;
       sph->sphdata[i].dudt = 0.0;
     }
 
@@ -453,6 +474,12 @@ void SphSimulation::MainLoop(void)
     // Calculate all gravitational forces
     if (simparams.intparams["self_gravity"] == 1)
       sphneib->UpdateAllGravityForces(sph,simparams);
+
+    // Add accelerations
+    for (int i=0; i<sph->Nsph; i++) {
+      for (int k=0; k<ndim; k++) 
+	sph->sphdata[i].a[k] = sph->sphdata[i].agrav[k];
+    }
 
   }
 

@@ -117,7 +117,7 @@ float M4Kernel::wzeta(float s)
 float M4Kernel::wgrav(float s)
 {
   if (s < 1.0)
-    return 1.33333333333333*s - 1.2*pow(s,3) + pow(s,4);
+    return 1.33333333333333*s - 1.2*pow(s,3) + 0.5*pow(s,4);
   else if (s < 2.0)
     return 2.66666666666667*s - 3.0*s*s + 1.2*pow(s,3) -
       0.1666666666666667*pow(s,4) - 0.06666666666667/(s*s);
