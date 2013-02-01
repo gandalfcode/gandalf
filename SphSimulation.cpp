@@ -189,7 +189,7 @@ void SphSimulation::ComputeBlockTimesteps(void)
     }      
   }
 
-  cout << "Global timestep : " << timestep << endl;
+  cout << "Global timestep : " << timestep << "   t : " << t << endl;
 
   return;
 }
@@ -207,7 +207,6 @@ void SphSimulation::ProcessParameters(void)
   map<string, string> &stringparams = simparams.stringparams;
 
   // Assign dimensionality variables here (for now)
-
 #if !defined(FIXED_DIMENSIONS)
   ndim = intparams["ndim"];
   vdim = intparams["ndim"];
@@ -246,8 +245,10 @@ void SphSimulation::ProcessParameters(void)
   simbox.boxmax[0] = floatparams["boxmax[0]"];
   simbox.boxmax[1] = floatparams["boxmax[1]"];
   simbox.boxmax[2] = floatparams["boxmax[2]"];
-  for (int k=0; k<3; k++) 
+  for (int k=0; k<3; k++) {
     simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
+    simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
+  }
 
   // Create neighbour searching object based on chosen method in params file
   if (stringparams["neib_search"] == "bruteforce")
@@ -321,6 +322,8 @@ void SphSimulation::Setup(void)
     RandomBox();
   else if (simparams.stringparams["ic"] == "shocktube") 
     ShockTube();
+  else if (simparams.stringparams["ic"] == "khi") 
+    KHI();
   else {
     cout << "Unrecognised parameter : " << endl; exit(0);
   }
@@ -364,13 +367,17 @@ void SphSimulation::Setup(void)
     // Zero accelerations (perhaps)
     for (int i=0; i<sph->Nsph; i++) {
       for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = 0.0;
+      for (int k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = 0.0;
       sph->sphdata[i].dudt = 0.0;
     }
 
     // Calculate all hydro forces
-    sphneib->UpdateAllSphForces(sph,simparams);
+    if (simparams.intparams["hydro_forces"] == 1)
+      sphneib->UpdateAllSphForces(sph,simparams);
 
     // Calculate all gravitational forces
+    if (simparams.intparams["self_gravity"] == 1)
+      sphneib->UpdateAllGravityForces(sph,simparams);
 
   }
 
@@ -440,9 +447,12 @@ void SphSimulation::MainLoop(void)
     }
 
     // Calculate all hydro forces
-    sphneib->UpdateAllSphForces(sph,simparams);
+    if (simparams.intparams["hydro_forces"] == 1)
+      sphneib->UpdateAllSphForces(sph,simparams);
 
     // Calculate all gravitational forces
+    if (simparams.intparams["self_gravity"] == 1)
+      sphneib->UpdateAllGravityForces(sph,simparams);
 
   }
 

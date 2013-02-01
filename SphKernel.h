@@ -7,7 +7,6 @@
 #define _SPH_KERNEL_H_
 
 
-
 // ============================================================================
 // Class SphKernel
 // ============================================================================
@@ -18,7 +17,9 @@ class SphKernel
   virtual float w0(float) = 0;
   virtual float w1(float) = 0;
   virtual float womega(float) = 0;
-  //virtual void Setup(int) = 0;
+  virtual float wzeta(float) = 0;
+  virtual float wgrav(float) = 0;
+  virtual float wpot(float) = 0;
 
   float kernrange;
   float invkernrange;
@@ -47,8 +48,9 @@ class M4Kernel: public SphKernel
   float w0(float);
   float w1(float);
   float womega(float);
-  //float w1_tc(float);
-  //void Setup(int);
+  float wzeta(float);
+  float wgrav(float);
+  float wpot(float);
 
 };
 

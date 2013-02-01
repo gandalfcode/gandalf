@@ -7,7 +7,7 @@
 CC = g++
 PYTHON = python2.7
 
-OPT = -fPIC -g
+OPT = -fPIC -O3
 
 OUTPUT_LEVEL              = 1
 PRECISION                 = SINGLE
