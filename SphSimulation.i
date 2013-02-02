@@ -2,6 +2,8 @@
 %module SphSim
 %include "std_string.i"
 %include "std_map.i"
+%include exception.i
+
 
 %{
 #define SWIG_FILE_WITH_INIT
@@ -10,11 +12,31 @@
 #include "SimUnits.h"
 #include "Sph.h"
 #include "SphSnapshot.h"
+#include <signal.h>
+void catch_alarm (int SIG) {
+signal(SIGINT, catch_alarm);
+throw 1;
+}
 %}
+
+%exception{
+    try{
+        $action
+    }
+    catch (int e){
+    	//printf("Got %i \n", e);
+    	//SWIG_exception(SWIG_RuntimeError, "Error error!");
+    	PyErr_SetString(PyExc_KeyboardInterrupt,"You pressed CTRL-C");
+    	return NULL;
+    	//exit(0);
+    	//SWIG_exception(KeyboardInterrupt, "You pressed CTRL-C");
+    }
+}
 
 %include "numpy.i"
 %init %{
 import_array();
+signal(SIGINT, catch_alarm);
 %}
 %numpy_typemaps(float, NPY_FLOAT, int)
  /* %include <boost_any.i> */
