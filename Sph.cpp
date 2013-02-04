@@ -39,7 +39,7 @@ void Sph::AllocateMemory(int N)
 
 
 // ============================================================================
-// Sph::AllocateMemory
+// Sph::DeallocateMemory
 // ============================================================================
 
 void Sph::DeallocateMemory(void)

@@ -1,5 +1,7 @@
 // ============================================================================
 // InlineFuncs.h
+// Contains definitions of any useful small utility functions that can be 
+// inlined to improve readability/performance of the code.
 // ============================================================================
 
 
@@ -7,13 +9,10 @@
 #define _INLINE_FUNCS_H_
 
 
-#include "Dimensions.h"
-
-
 // ============================================================================
 // DotProduct
 // Calculates the dot product between two vectors, v1 and v2.
-// For optimisation reasons, assuming both vectors are of length NDIM.
+// For optimisation reasons, assumes both vectors are of length NDIM.
 // ============================================================================
 template <typename T>
 static inline T DotProduct(T *v1, T *v2)

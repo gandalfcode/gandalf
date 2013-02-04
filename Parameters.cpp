@@ -1,5 +1,5 @@
 // ============================================================================
-// Parameters.CPP
+// Parameters.cpp
 // ============================================================================
 
 
@@ -19,6 +19,7 @@ Parameters::Parameters()
 {
   SetDefaultValues();
 }
+
 
 
 // ============================================================================
@@ -80,14 +81,6 @@ void Parameters::ParseLine(std::string paramline)
   trim2(var_name);
   trim2(var_value);
 
-  /*
-  std::cout << "colon_pos : " << colon_pos << std::endl;
-  std::cout << "equal_pos : " << equal_pos << std::endl;
-  std::cout << "length    : " << length << std::endl;
-  std::cout << "var_name  : " << var_name << std::endl;
-  std::cout << "var_value : " << var_value << std::endl;
-  */
-
   SetParameter(var_name,var_value);
 
   return;
@@ -103,100 +96,120 @@ void Parameters::SetDefaultValues(void)
 
   // Simulation id, filename and output time parameters
   // --------------------------------------------------------------------------
-  stringparams["run_id"]="TEST";
-  stringparams["in_file_form"]="ascii";
-  stringparams["out_file_form"]="ascii";
-  floatparams["tend"]=10.0;
-  floatparams["dt_snap"]=0.1;
-  intparams["Nstepsmax"]=9999999;
+  stringparams["run_id"] = "TEST";
+  stringparams["in_file_form"] = "ascii";
+  stringparams["out_file_form"] = "ascii";
+  floatparams["tend"] = 10.0;
+  floatparams["dt_snap"] = 0.1;
+  intparams["Nstepsmax"] = 9999999;
 
   // Initial conditions parameters
   // --------------------------------------------------------------------------
-  stringparams["ic"]="random_cube";
-  intparams["Npart"]=100;
+  stringparams["ic"] = "random_cube";
+  intparams["Npart"] = 100;
 #if defined(FIXED_DIMENSIONS)
-  intparams["ndim"]=NDIM;
+  intparams["ndim"] = NDIM;
 #else
-  intparams["ndim"]=3;
+  intparams["ndim"] = 3;
 #endif
-  intparams["Nlattice1[0]"]=16;
-  intparams["Nlattice1[1]"]=16;
-  intparams["Nlattice1[2]"]=16;
-  intparams["Nlattice2[0]"]=16;
-  intparams["Nlattice2[1]"]=16;
-  intparams["Nlattice2[2]"]=16;
-  floatparams["vfluid1[0]"]=0.0;
-  floatparams["vfluid1[1]"]=0.0;
-  floatparams["vfluid1[2]"]=0.0;
-  floatparams["vfluid2[0]"]=0.0;
-  floatparams["vfluid2[1]"]=0.0;
-  floatparams["vfluid2[2]"]=0.0;
-  floatparams["rhofluid1"]=1.0;
-  floatparams["rhofluid2"]=1.0;
-  floatparams["press1"]=1.0;
-  floatparams["press2"]=1.0;
-  floatparams["amp"]=0.1;
-  floatparams["lambda"]=0.5;
+  intparams["Nlattice1[0]"] = 16;
+  intparams["Nlattice1[1]"] = 16;
+  intparams["Nlattice1[2]"] = 16;
+  intparams["Nlattice2[0]"] = 16;
+  intparams["Nlattice2[1]"] = 16;
+  intparams["Nlattice2[2]"] = 16;
+  floatparams["vfluid1[0]"] = 0.0;
+  floatparams["vfluid1[1]"] = 0.0;
+  floatparams["vfluid1[2]"] = 0.0;
+  floatparams["vfluid2[0]"] = 0.0;
+  floatparams["vfluid2[1]"] = 0.0;
+  floatparams["vfluid2[2]"] = 0.0;
+  floatparams["rhofluid1"] = 1.0;
+  floatparams["rhofluid2"] = 1.0;
+  floatparams["press1"] = 1.0;
+  floatparams["press2"] = 1.0;
+  floatparams["amp"] = 0.1;
+  floatparams["lambda"] = 0.5;
 
   // Integration scheme and timestep parameters
   // --------------------------------------------------------------------------
-  stringparams["sph_integration"]="lfkdk";
-  floatparams["accel_mult"]=0.3;
-  floatparams["courant_mult"]=0.15;
+  stringparams["sph_integration"] = "lfkdk";
+  floatparams["accel_mult"] = 0.3;
+  floatparams["courant_mult"] = 0.15;
 
   // SPH parameters
   // --------------------------------------------------------------------------
-  stringparams["sph"]="gradh";
-  stringparams["kernel"]="m4";
-  stringparams["neib_search"]="bruteforce";
-  floatparams["h_fac"]=1.2;
-  floatparams["h_converge"]=0.005;
+  stringparams["sph"] = "gradh";
+  stringparams["kernel"] = "m4";
+  stringparams["neib_search"] = "bruteforce";
+  floatparams["h_fac"] = 1.2;
+  floatparams["h_converge"] = 0.005;
 
   // Artificial viscosity parameters
   // --------------------------------------------------------------------------
-  stringparams["avisc"]="mon97";
-  stringparams["acond"]="none";
-  floatparams["alpha_visc"]=1.0;
-  floatparams["beta_visc"]=2.0;
+  stringparams["avisc"] = "mon97";
+  stringparams["acond"] = "none";
+  floatparams["alpha_visc"] = 1.0;
+  floatparams["beta_visc"] = 2.0;
 
   // Thermal physics parameters
   // --------------------------------------------------------------------------
-  intparams["hydro_forces"]=1;
-  stringparams["gas_eos"]="isothermal";
-  stringparams["energy_integration"]="PEC";
-  floatparams["energy_mult"]=0.2;
-  floatparams["gamma_eos"]=1.6666666666666;
-  floatparams["temp0"]=1.0;
-  floatparams["mu_bar"]=1.0;
+  intparams["hydro_forces"] = 1;
+  stringparams["gas_eos"] = "isothermal";
+  stringparams["energy_integration"] = "PEC";
+  floatparams["energy_mult"] = 0.2;
+  floatparams["gamma_eos"] = 1.6666666666666;
+  floatparams["temp0"] = 1.0;
+  floatparams["mu_bar"] = 1.0;
 
   // Gravity parameters
   // --------------------------------------------------------------------------
-  intparams["self_gravity"]=0;
+  intparams["self_gravity"] = 0;
+  stringparams["grav_kernel"] = "mean_h";
 
   // Boundary conditions parameters
   // --------------------------------------------------------------------------
-  stringparams["x_boundary_lhs"]="open";
-  stringparams["x_boundary_rhs"]="open";
-  stringparams["y_boundary_lhs"]="open";
-  stringparams["y_boundary_rhs"]="open";
-  stringparams["z_boundary_lhs"]="open";
-  stringparams["z_boundary_rhs"]="open";
-  floatparams["boxmin[0]"]=0.0;
-  floatparams["boxmin[1]"]=0.0;
-  floatparams["boxmin[2]"]=0.0;
-  floatparams["boxmax[0]"]=0.0;
-  floatparams["boxmax[1]"]=0.0;
-  floatparams["boxmax[2]"]=0.0;
+  stringparams["x_boundary_lhs"] = "open";
+  stringparams["x_boundary_rhs"] = "open";
+  stringparams["y_boundary_lhs"] = "open";
+  stringparams["y_boundary_rhs"] = "open";
+  stringparams["z_boundary_lhs"] = "open";
+  stringparams["z_boundary_rhs"] = "open";
+  floatparams["boxmin[0]"] = 0.0;
+  floatparams["boxmin[1]"] = 0.0;
+  floatparams["boxmin[2]"] = 0.0;
+  floatparams["boxmax[0]"] = 0.0;
+  floatparams["boxmax[1]"] = 0.0;
+  floatparams["boxmax[2]"] = 0.0;
 
   // Unit and scaling parameters
   // --------------------------------------------------------------------------
-  stringparams["rinunit"]="";
-  stringparams["minunit"]="";
-  stringparams["tinunit"]="";
-  stringparams["routunit"]="pc";
-  stringparams["moutunit"]="m_sun";
-  stringparams["toutunit"]="myr";
-
+  stringparams["rinunit"] = "";
+  stringparams["minunit"] = "";
+  stringparams["tinunit"] = "";
+  stringparams["vinunit"] = "";
+  stringparams["ainunit"] = "";
+  stringparams["rhoinunit"] = "";
+  stringparams["Einunit"] = "";
+  stringparams["mominunit"] = "";
+  stringparams["angmominunit"] = "";
+  stringparams["angvelinunit"] = "";
+  stringparams["uinunit"] = "";
+  stringparams["dudtinunit"] = "";
+  stringparams["tempinunit"] = "";
+  stringparams["routunit"] = "pc";
+  stringparams["moutunit"] = "m_sun";
+  stringparams["toutunit"] = "myr";
+  stringparams["voutunit"] = "km_s";
+  stringparams["aoutunit"] = "km_s2";
+  stringparams["rhooutunit"] = "g_cm3";
+  stringparams["Eoutunit"] = "J";
+  stringparams["momoutunit"] = "m_sunkm_s";
+  stringparams["angmomoutunit"] = "m_sunkm2_s";
+  stringparams["angveloutunit"] = "rad_s";
+  stringparams["uoutunit"] = "J_kg";
+  stringparams["dudtoutunit"] = "J_kg_s";
+  stringparams["tempoutunit"] = "K";
 
   return;
 }
@@ -208,9 +221,6 @@ void Parameters::SetDefaultValues(void)
 // ============================================================================
 void Parameters::SetParameter(std::string key, std::string value)
 {
-  //std::cout << "@" << key << "@" << std::endl;
-  //std::cout << "@" << value << "@" << std::endl;
-  //std::cout << intparams.count(key) << "  " << stringparams.count(key) << std::endl;
   if (intparams.count(key) == 1)
     std::stringstream(value) >> intparams[key];
   else if (floatparams.count(key) == 1)
@@ -244,14 +254,16 @@ void Parameters::PrintParameters(void)
 
 
 
-
+// ============================================================================
+// Parameters::trim2
+// ============================================================================
 void Parameters::trim2(std::string& str)
 {
   std::string::size_type pos = str.find_last_not_of(' ');
-  if(pos != std::string::npos) {
+  if (pos != std::string::npos) {
     str.erase(pos + 1);
     pos = str.find_first_not_of(' ');
-    if(pos != std::string::npos) str.erase(0, pos);
+    if (pos != std::string::npos) str.erase(0, pos);
   }
   else str.erase(str.begin(), str.end());
 }

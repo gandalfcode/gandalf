@@ -304,12 +304,6 @@ void GradhSph::ComputeGravForces(int i, int Nneib, int *neiblist)
     drmag = DotProduct(dr,dr);
     drmag = sqrt(drmag);
     invdrmag = 1.0/(drmag + small_number);
-    //for (k=0; k<ndim; k++) dr[k] /= invdrmag;
-
-    //for (k=0; k<ndim; k++) sphdata[i].agrav[k] += 
-    //	sphdata[j].m*dr[k]*pow(invdrmag,3);
-    //sphdata[i].gpot -= sphdata[j].m*invdrmag;
-    //continue;
 
     // Calculate kernel-softened gravity if within mean-h kernel.
     // Otherwise, use point-mass Newton's law of gravitation.
@@ -339,8 +333,52 @@ void GradhSph::ComputeGravForces(int i, int Nneib, int *neiblist)
 
   }
 
-  //cout << "Total grav forces : " << i << "   " 
-  //   << sphdata[i].agrav[0]/sphdata[i].r[0] << endl;
+  return;
+}
+
+
+
+// ============================================================================
+// GradhSph::ComputeMeanhZeta
+// ============================================================================
+void GradhSph::ComputeMeanhZeta(int i, int Nneib, int *neiblist)
+{
+  int j;
+  int jj;
+  int k;
+  float dr[ndimmax];
+  float drmag;
+  float invhmean;
+  float invrhomean;
+  float kernrangesqd = kern->kernrangesqd;
+
+  sphdata[i].zeta = 0.0;
+
+  // Loop over all potential neighbours in the list
+  // --------------------------------------------------------------------------
+  for (jj=0; jj<Nneib; jj++) {
+    j = neiblist[jj];
+    if (i == j) continue;
+
+    // Calculate relative position vector and determine if particles
+    // are neighbours or not. If not, skip to next potential neighbour.
+    for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - sphdata[i].r[k];
+    drmag = DotProduct(dr,dr);
+    if (4.0*drmag > kernrangesqd*pow(sphdata[i].h + sphdata[j].h,2)) continue;
+
+    // If particles are neighbours, continue computing hydro quantities
+    drmag = sqrt(drmag);
+    for (k=0; k<ndim; k++) dr[k] /= (drmag + small_number);
+    invhmean = 2.0/(sphdata[i].h + sphdata[j].h);
+    sphdata[i].zeta += sphdata[j].m*invhmean*invhmean*
+      kern->wzeta(drmag*invhmean);
+
+  }
+  // --------------------------------------------------------------------------
+
+  // Normalise zeta term
+  sphdata[i].zeta *= -invndim*sphdata[i].h*
+    sphdata[i].invrho*sphdata[i].invomega;
 
   return;
 }

@@ -33,6 +33,7 @@ class Sph
   virtual void ComputeSphProperties(int,int,int *,Parameters &) = 0;
   virtual void ComputeHydroForces(int,int,int *,Parameters &) = 0;
   virtual void ComputeGravForces(int,int,int *) = 0;
+  virtual void ComputeMeanhZeta(int,int,int *) = 0;
 
 
   // SPH array memory allocation functions
@@ -64,8 +65,8 @@ class Sph
   SphKernel *kern;                      // SPH kernel 
   EOS *eos;                             // Equation-of-state
 
-  float alpha_visc;
-  float beta_visc;
+  float alpha_visc;                     // alpha artificial viscosity parameter
+  float beta_visc;                      // beta artificial viscosity parameter
 
 };
 
@@ -88,6 +89,7 @@ class GradhSph: public Sph
   void ComputeSphProperties(int,int,int *,Parameters &);
   void ComputeHydroForces(int,int,int *,Parameters &);
   void ComputeGravForces(int,int,int *);
+  void ComputeMeanhZeta(int,int,int *);
 
 };
 

@@ -1,0 +1,13 @@
+     : ndim = 3
+     : Npart = 512
+
+     : hydro_forces = 1
+     : self_gravity = 1
+
+     : ic = random_sphere
+     : h_converge = 0.0001
+
+     : courant_mult = 0.025
+     : accel_mult = 0.05
+
+ 

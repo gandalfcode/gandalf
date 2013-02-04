@@ -41,7 +41,7 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
   int *neiblist;
   int Nneib;
 
-  debug2("[BruteForceSearch::UpdateAllSphProperties]\n");
+  debug2("[BruteForceSearch::UpdateAllSphProperties]");
 
   // Allocate array to store local copy of potential neighbour ids
   Nneib = sph->Ntot;
@@ -67,21 +67,27 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
 // ============================================================================
 // BruteForceSearch::UpdateAllSphForces
 // ============================================================================
-void BruteForceSearch::UpdateAllSphForces(Sph *sph, Parameters &simparams)
+void BruteForceSearch::UpdateAllSphForces(Sph *sph, Parameters &params)
 {
   int *neiblist;
   int Nneib;
 
-  debug2("[BruteForceSearch::UpdateAllSphForces]\n");
+  debug2("[BruteForceSearch::UpdateAllSphForces]");
 
   // Allocate array to store local copy of potential neighbour ids
   Nneib = sph->Ntot;
   neiblist = new int[sph->Ntot];
   for (int i=0; i<sph->Ntot; i++) neiblist[i] = i;
+  cout << "self_gravity : " << params.intparams["self_gravity"] << endl;
+  // Compute SPH hydro forces for all particles
+  if (params.intparams["hydro_forces"] == 1)
+    for (int i=0; i<sph->Nsph; i++) 
+      sph->ComputeHydroForces(i,Nneib,neiblist,params);
 
   // Compute SPH hydro forces for all particles
-  for (int i=0; i<sph->Nsph; i++)
-    sph->ComputeHydroForces(i,Nneib,neiblist,simparams);
+  if (params.intparams["self_gravity"] == 1)
+    for (int i=0; i<sph->Nsph; i++)
+      sph->ComputeGravForces(i,Nneib,neiblist);
 
   // Free up memory from local array
   delete[] neiblist;
@@ -89,29 +95,3 @@ void BruteForceSearch::UpdateAllSphForces(Sph *sph, Parameters &simparams)
   return;
 }
 
-
-
-// ============================================================================
-// BruteForceSearch::UpdateAllGravityForces
-// ============================================================================
-void BruteForceSearch::UpdateAllGravityForces(Sph *sph, Parameters &simparams)
-{
-  int *neiblist;
-  int Nneib;
-
-  debug2("[BruteForceSearch::UpdateAllGravityForces]\n");
-
-  // Allocate array to store local copy of potential neighbour ids
-  Nneib = sph->Nsph;
-  neiblist = new int[sph->Nsph];
-  for (int i=0; i<sph->Nsph; i++) neiblist[i] = i;
-
-  // Compute SPH hydro forces for all particles
-  for (int i=0; i<sph->Nsph; i++)
-    sph->ComputeGravForces(i,Nneib,neiblist);
-
-  // Free up memory from local array
-  delete[] neiblist;
-
-  return;
-}
