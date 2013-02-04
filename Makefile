@@ -62,6 +62,7 @@ OBJ += SphNeighbourSearch.o BruteForceSearch.o
 OBJ += AdiabaticEOS.o IsothermalEOS.o
 OBJ += SimGhostParticles.o
 OBJ += toymain.o
+OBJ += Exception.o
 
 
 .SUFFIXES: .cpp .i .o
