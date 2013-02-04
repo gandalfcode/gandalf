@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstring>
 #include <math.h>
+#include "Exception.h"
 #include "SphSimulation.h"
 #include "Sph.h"
 #include "Parameters.h"
@@ -213,9 +214,8 @@ void SphSimulation::KHI(void)
   debug2("[SphSimulation::ShockTube]");
 
   if (ndim != 2) {
-    cout << "Kelvin-Helmholtz instability only in 2D" << endl;
-    exit(0);
-    return;
+    string message = "Kelvin-Helmholtz instability only in 2D";
+    ExceptionHandler::getIstance().raise(message);
   }
 
   // Compute size and range of fluid bounding boxes

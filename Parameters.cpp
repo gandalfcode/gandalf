@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include "Exception.h"
 #include "Parameters.h"
 using namespace std;
 
@@ -46,9 +47,8 @@ void Parameters::ReadParamsFile(std::string filename)
     }
   }
   else {
-    cout << "The specified parameter file: " << filename 
-	 << " does not exist, aborting" << endl;
-    exit(-1);
+    string message = "The specified parameter file: " + filename + " does not exist, aborting";
+    ExceptionHandler::getIstance().raise(message);
   }
   inputfile.close();
   return;

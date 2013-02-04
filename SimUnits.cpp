@@ -7,6 +7,7 @@
 #include <map>
 #include <string>
 #include "Constants.h"
+#include "Exception.h"
 #include "SimUnits.h"
 using namespace std;
 
@@ -52,8 +53,8 @@ double LengthUnit::SIUnit(string unit)
   else if (unit == "cm") return 0.01;
   else if (unit == "") return 1.0;
   else {
-    cout << "Parameter error : Unrecognised unit = " << unit << endl;
-    exit(0);
+    string message = "Parameter error : Unrecognised unit = " + unit;
+    ExceptionHandler::getIstance().raise(message);
   }
 }
 
@@ -71,8 +72,8 @@ double MassUnit::SIUnit(string unit_string)
   else if (unit_string == "g") return 1.0e-3;
   else if (unit_string == "") return 1.0;
   else if (unit_string != "") {
-    cout << "Parameter error : Unrecognised unit = " << unit_string << endl;
-    exit(0);
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
   }
 }
 
@@ -90,8 +91,8 @@ double TimeUnit::SIUnit(string unit_string)
   else if (unit_string == "s") return 1.0;
   else if (unit_string == "") return 1.0;
   else if (unit_string != "") {
-    cout << "Parameter error : Unrecognised unit = " << unit_string << endl;
-    exit(0);
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
   }
 }
 
@@ -107,8 +108,8 @@ double VelocityUnit::SIUnit(string unit_string)
   else if (unit_string == "m_s") return 1.0;
   else if (unit_string == "cm_s") return 0.01;
   else if (unit_string != "") {
-    cout << "Parameter error : Unrecognised unit = " << unit_string << endl;
-    exit(0);
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
   }
 }
 
@@ -123,8 +124,8 @@ double AccelerationUnit::SIUnit(string unit_string)
   else if (unit_string == "m_s2") return 1.0;
   else if (unit_string == "cm_s2") return 0.01;
   else if (unit_string != "") {
-    cout << "Parameter error : Unrecognised unit = " << unit_string << endl;
-    exit(0);
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
   }
 }
 
@@ -139,8 +140,8 @@ double DensityUnit::SIUnit(string unit_string)
   else if (unit_string == "kg_m3") return 1.0;
   else if (unit_string == "g_cm3") return 1.0;
   else if (unit_string != "") {
-    cout << "Parameter error : Unrecognised unit = " << unit_string << endl;
-    exit(0);
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
   }
 }
 
@@ -156,8 +157,8 @@ double EnergyUnit::SIUnit(string unit_string)
   else if (unit_string == "GJ") return 1.0e12;
   else if (unit_string == "10^40erg") return 1.0e33;
   else if (unit_string != "") {
-    cout << "Parameter error : Unrecognised unit = " << unit_string << endl;
-    exit(0);
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
   }
 }
 
@@ -173,8 +174,8 @@ double MomentumUnit::SIUnit(string unit_string)
   else if (unit_string == "kgm_s") return 1.0;
   else if (unit_string == "gcm_s") return 1.0e-5;
   else if (unit_string != "") {
-    cout << "Parameter error : Unrecognised unit = " << unit_string << endl;
-    exit(0);
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
   }
 }
 
@@ -190,8 +191,8 @@ double AngularMomentumUnit::SIUnit(string unit_string)
   else if (unit_string == "kgm2_s") return 1.0;
   else if (unit_string == "gcm2_s") return 1.0e-7;
   else if (unit_string != "") {
-    cout << "Parameter error : Unrecognised unit = " << unit_string << endl;
-    exit(0);
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
   }
 }
 
@@ -204,8 +205,8 @@ double AngularVelocityUnit::SIUnit(string unit_string)
 {
   if (unit_string == "rad_s") return 1.0;
   else if (unit_string != "") {
-    cout << "Parameter error : Unrecognised unit = " << unit_string << endl;
-    exit(0);
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
   }
 }
 
@@ -219,8 +220,8 @@ double SpecificEnergyUnit::SIUnit(string unit_string)
   if (unit_string == "J_kg") return 1.0;
   else if (unit_string == "erg_g") return 1.0e-4;
   else if (unit_string != "") {
-    cout << "Parameter error : Unrecognised unit = " << unit_string << endl;
-    exit(0);
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
   }
 }
 
@@ -234,8 +235,8 @@ double SpecificEnergyRateUnit::SIUnit(string unit_string)
   if (unit_string == "J_kg_s") return 1.0;
   else if (unit_string == "erg_g_s") return 1.0e-4;
   else if (unit_string != "") {
-    cout << "Parameter error : Unrecognised unit = " << unit_string << endl;
-    exit(0);
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
   }
 }
 
@@ -248,8 +249,8 @@ double TemperatureUnit::SIUnit(string unit_string)
 {
   if (unit_string == "K") return 1.0;
   else if (unit_string != "") {
-    cout << "Parameter error : Unrecognised unit = " << unit_string << endl;
-    exit(0);
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
   }
 }
 

@@ -2,6 +2,10 @@
 #include <string>
 using namespace std;
 
+#ifndef _EXCEPTION_H_
+#define _EXCEPTION_H_
+
+
 enum RunType {cplusplus, python};
 
 class SerenError {
@@ -31,3 +35,5 @@ public:
   static void makeExceptionHandler (RunType runtypeaux);
   static ExceptionHandler & getIstance() {return *istance;}
 };
+
+#endif // _EXCEPTION_H_
