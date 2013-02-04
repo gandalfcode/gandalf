@@ -7,12 +7,12 @@
 CC = g++
 PYTHON = python2.7
 
-OPT = -fPIC -O3
+OPT = -fPIC -g
 
 OUTPUT_LEVEL              = 1
 PRECISION                 = SINGLE
-NDIM                      = 3
-DEBUG                     = 1
+NDIM                      = 1
+DEBUG                     = 2
 
 #PYLIB = /sw/include/python2.7
 #NUMPY = /sw/lib/python2.7/site-packages/numpy/core/include
@@ -58,7 +58,7 @@ OBJ += M4Kernel.o
 OBJ += Sph.o GradhSph.o
 OBJ += EnergyPEC.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o
-OBJ += SphNeighbourSearch.o BruteForceSearch.o
+OBJ += SphNeighbourSearch.o BruteForceSearch.o GridSearch.o
 OBJ += AdiabaticEOS.o IsothermalEOS.o
 OBJ += SimGhostParticles.o
 OBJ += toymain.o

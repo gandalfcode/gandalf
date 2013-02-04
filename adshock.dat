@@ -11,7 +11,10 @@
      : energy_integration = PEC
      : gamma_eos = 1.6666666666666
 
-     : h_converge = 0.00001
+     : hydro_forces = 1
+     : self_gravity = 0
+
+     : h_converge = 0.0001
 
      : alpha_visc = 1.0
      : beta_visc = 2.0
@@ -19,4 +22,4 @@
      : courant_mult = 0.15
      : accel_mult = 0.3
 
- 
+     : neib_search = grid

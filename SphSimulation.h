@@ -107,31 +107,29 @@ class SphSimulation
 
   // Integer and physical Timestep counters
   // --------------------------------------------------------------------------
-  int n;                                    // ..
-  int Nsteps;                               // ..
-  int Nstepsmax;                            // ..
-  double t;                                 // ..
-  double timestep;                          // ..
-  double tsnapnext;                         // ..
-  double tend;                              // ..
-  double dt_snap;                           // ..
-  int Noutsnap;                             // ..
-  string run_id;                            // Simulation id string
+  int n;                                    // Integer time counter
+  int Nsteps;                               // Total no. of steps in simulation
+  int Nstepsmax;                            // Max. allowed no. of steps
+  double t;                                 // Current simulation time
+  double timestep;                          // Current timestep
+  double tsnapnext;                         // Time of next snapshot
+  double tend;                              // End time of simulation
+  double dt_snap;                           // Snapshot time interval
+  int Noutsnap;                             // No. of output snapshots
 
+  string run_id;                            // Simulation id string
   string paramfile;                         // Name of parameters file
+
   Parameters simparams;                     // Simulation parameters object
   SimUnits simunits;                        // Simulation units object
+  DomainBox simbox;                         // Simulation boundary data
+  Diagnostics diag0;                        // Initial diagnostic state
+  Diagnostics diag;                         // Current diagnostic state
 
   Sph *sph;                                 // SPH algorithm pointer
   SphNeighbourSearch *sphneib;              // SPH Neighbour scheme pointer
   SphIntegration *sphint;                   // SPH Integration scheme pointer
   EnergyEquation *uint;                     // Energy equation pointer
-
-  DomainBox simbox;                         // Simulation boundary data
-
-  // Diagnostics
-  Diagnostics diag0;                        // Initial diagnostic state
-  Diagnostics diag;                         // Current diagnostic state
 
 };
 

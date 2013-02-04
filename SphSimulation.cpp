@@ -1,5 +1,6 @@
 // ============================================================================
 // SphSimulation.cpp
+// Contains all main functions controlling the SPH simulation work-flow.
 // ============================================================================
 
 
@@ -24,7 +25,7 @@ using namespace std;
 // ============================================================================
 SphSimulation::SphSimulation()
 {
-  paramfile = "freefall.dat"; //"params.dat";
+  paramfile = "adshock.dat"; //"params.dat";
   n = 0;
   Nsteps = 0;
   t = 0.0;
@@ -43,13 +44,16 @@ SphSimulation::~SphSimulation()
 
 // ============================================================================
 // SphSimulation::Run
+// Controls the simulation main loop, including exit conditions.
+// If provided, will only advance the simulation by 'Nadvance' steps.
 // ============================================================================
 void SphSimulation::Run(int Nadvance)
 {
-  int Ntarget;
+  int Ntarget;                              // Selected integer timestep
 
   debug1("[SphSimulation::Run]");
 
+  // Set integer timestep exit condition if provided as parameter.
   if (Nadvance < 0) Ntarget = Nstepsmax;
   else Ntarget = Nsteps + Nadvance;
 
@@ -74,6 +78,7 @@ void SphSimulation::Run(int Nadvance)
 
 // ============================================================================
 // SphSimulation::Output
+// Controls when regular output snapshots are written by the code.
 // ============================================================================
 void SphSimulation::Output(void)
 {
@@ -103,6 +108,8 @@ void SphSimulation::Output(void)
 
 // ============================================================================
 // SphSimulation::CalculateDiagnostics
+// Calculates all diagnostic quantities (e.g. conserved quantities), 
+// saves to the diagnostic data structure and outputs to screen.
 // ============================================================================
 void SphSimulation::CalculateDiagnostics(void)
 {
@@ -166,6 +173,7 @@ void SphSimulation::CalculateDiagnostics(void)
 
 // ============================================================================
 // SphSimulation::GenerateIC
+// Generate initial conditions for SPH simulation chosen in parameters file.
 // ============================================================================
 void SphSimulation::GenerateIC(void) 
 {
@@ -192,10 +200,11 @@ void SphSimulation::GenerateIC(void)
 
 // ============================================================================
 // SphSimulation::ComputeBlockTimesteps
+// Computes global timestep for SPH simulation.
 // ============================================================================
 void SphSimulation::ComputeBlockTimesteps(void)
 {
-  double dt;
+  double dt;                                // Aux. timestep variable
 
   debug2("[SphSimulation::ComputeBlockTimesteps]");
 
@@ -219,6 +228,8 @@ void SphSimulation::ComputeBlockTimesteps(void)
 
 // ============================================================================
 // SphSimulation::ProcessParameters
+// Process all the options chosen in the parameters file, setting various 
+// simulation variables and creating important simulation objects.
 // ============================================================================
 void SphSimulation::ProcessParameters(void)
 {
@@ -236,6 +247,7 @@ void SphSimulation::ProcessParameters(void)
 #endif
 
   // Create SPH object based on chosen method in params file
+  // --------------------------------------------------------------------------
   if (stringparams["sph"] == "gradh") {
     sph = new GradhSph(ndim,vdim,bdim);
     sph->alpha_visc = floatparams["alpha_visc"];
@@ -257,6 +269,7 @@ void SphSimulation::ProcessParameters(void)
   }
 
   // Boundary condition variables
+  // --------------------------------------------------------------------------
   simbox.x_boundary_lhs = stringparams["x_boundary_lhs"];
   simbox.x_boundary_rhs = stringparams["x_boundary_rhs"];
   simbox.y_boundary_lhs = stringparams["y_boundary_lhs"];
@@ -275,8 +288,11 @@ void SphSimulation::ProcessParameters(void)
   }
 
   // Create neighbour searching object based on chosen method in params file
+  // --------------------------------------------------------------------------
   if (stringparams["neib_search"] == "bruteforce")
     sphneib = new BruteForceSearch;
+  else if (stringparams["neib_search"] == "grid")
+    sphneib = new GridSearch;
   else {
     string message = "Unrecognised parameter : neib_search = " + simparams.stringparams["neib_search"];
     ExceptionHandler::getIstance().raise(message);
@@ -305,7 +321,6 @@ void SphSimulation::ProcessParameters(void)
       ExceptionHandler::getIstance().raise(message);
     }
   }
-  // --------------------------------------------------------------------------
   else if (stringparams["gas_eos"] == "isothermal") 
     sph->eos = new Isothermal(floatparams["temp0"],
 			      floatparams["mu_bar"],
@@ -391,18 +406,12 @@ void SphSimulation::Setup(void)
     }
 
     // Calculate all hydro forces
-    if (simparams.intparams["hydro_forces"] == 1)
-      sphneib->UpdateAllSphForces(sph,simparams);
-
-    cout << "self_gravity : " << simparams.intparams["self_gravity"] << endl;
-    // Calculate all gravitational forces
-    if (simparams.intparams["self_gravity"] == 1)
-      sphneib->UpdateAllGravityForces(sph,simparams);
+    sphneib->UpdateAllSphForces(sph,simparams);
 
     // Add accelerations
     for (int i=0; i<sph->Nsph; i++) {
       for (int k=0; k<ndim; k++) 
-	sph->sphdata[i].a[k] = sph->sphdata[i].agrav[k];
+	sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
 
   }
@@ -474,18 +483,13 @@ void SphSimulation::MainLoop(void)
       sph->sphdata[i].dudt = 0.0;
     }
 
-    // Calculate all hydro forces
-    if (simparams.intparams["hydro_forces"] == 1)
-      sphneib->UpdateAllSphForces(sph,simparams);
-
-    // Calculate all gravitational forces
-    if (simparams.intparams["self_gravity"] == 1)
-      sphneib->UpdateAllGravityForces(sph,simparams);
+    // Calculate all hydro and gravitational forces
+    sphneib->UpdateAllSphForces(sph,simparams);
 
     // Add accelerations
     for (int i=0; i<sph->Nsph; i++) {
       for (int k=0; k<ndim; k++) 
-	sph->sphdata[i].a[k] = sph->sphdata[i].agrav[k];
+	sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
 
   }
