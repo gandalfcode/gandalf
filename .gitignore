@@ -17,3 +17,8 @@ Sph.py
 SphSim.py
 SphSnap.py
 toymain
+.cproject
+.project
+.pydevproject
+.settings
+Untitled.build
