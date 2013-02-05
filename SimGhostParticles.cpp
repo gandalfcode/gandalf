@@ -21,10 +21,7 @@ using namespace std;
 void SphSimulation::CheckBoundaries(void)
 {
   int i;
-  int k;
   SphParticle *part;
-  float rp[ndimmax];
-  float vp[ndimmax];
 
   // x-boundary conditions
   for (i=0; i<sph->Nsph; i++) {

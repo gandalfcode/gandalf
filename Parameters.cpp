@@ -102,6 +102,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["tend"] = 10.0;
   floatparams["dt_snap"] = 0.1;
   intparams["Nstepsmax"] = 9999999;
+  intparams["noutputstep"] = 16;
 
   // Initial conditions parameters
   // --------------------------------------------------------------------------

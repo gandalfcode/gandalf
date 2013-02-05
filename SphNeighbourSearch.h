@@ -7,13 +7,15 @@
 #define _SPH_NEIGHBOUR_SEARCH_H_
 
 
+#include <iostream>
+#include <string>
 #include "Constants.h"
 #include "Dimensions.h"
 #include "SphKernel.h"
 #include "SphParticle.h"
 #include "Sph.h"
 #include "Parameters.h"
-
+using namespace std;
 
 struct GridCell {
   int Nactive;
@@ -30,11 +32,12 @@ class SphNeighbourSearch
 {
  public:
 
-  SphNeighbourSearch();
-  ~SphNeighbourSearch();
+  //SphNeighbourSearch();
+  //~SphNeighbourSearch();
 
   virtual void UpdateAllSphProperties(Sph *, Parameters &) = 0;
   virtual void UpdateAllSphForces(Sph *, Parameters &) = 0;
+  virtual void UpdateTree(Sph *, Parameters &) = 0;
 
 };
 
@@ -47,11 +50,16 @@ class BruteForceSearch: public SphNeighbourSearch
 {
  public:
 
-  BruteForceSearch();
+  BruteForceSearch(int);
   ~BruteForceSearch();
 
   void UpdateAllSphProperties(Sph *, Parameters &);
   void UpdateAllSphForces(Sph *, Parameters &);
+  void UpdateTree(Sph *, Parameters &);
+
+#if !defined(FIXED_DIMENSIONS)
+  int ndim;
+#endif
 
 };
 
@@ -64,11 +72,12 @@ class GridSearch: public SphNeighbourSearch
 {
  public:
 
-  GridSearch();
+  GridSearch(int);
   ~GridSearch();
 
   void UpdateAllSphProperties(Sph *, Parameters &);
   void UpdateAllSphForces(Sph *, Parameters &);
+  void UpdateTree(Sph *, Parameters &);
 
   // Additional functions for grid neighbour search
   // --------------------------------------------------------------------------
@@ -80,6 +89,8 @@ class GridSearch: public SphNeighbourSearch
   int ComputeActiveCellList(int *);
   int ComputeActiveParticleList(int, int *);
   int ComputeNeighbourList(int, int *);
+  void CheckValidNeighbourList(Sph *,int,int,int *,string);
+  void ValidateGrid(void);
 
   // Additional variables for grid
   // --------------------------------------------------------------------------
@@ -96,6 +107,9 @@ class GridSearch: public SphNeighbourSearch
   float rmin[ndimmax];                      // Minimum extent of bounding box
   float rmax[ndimmax];                      // Maximum extent of bounding box
   GridCell *grid;                           // Main grid array
+#if !defined(FIXED_DIMENSIONS)
+  int ndim;
+#endif
 
 };
 

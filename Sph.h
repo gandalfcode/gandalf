@@ -43,15 +43,6 @@ class Sph
   void SphBoundingBox(float *, float *);
   void InitialSmoothingLengthGuess(void);
 
-
-#if !defined(FIXED_DIMENSIONS)
-  int ndim;
-  int vdim;
-  int bdim;
-  float invndim;
-#endif
-
-
   // SPH particle counters and main particle data array
   // --------------------------------------------------------------------------
   bool allocated;                       // Is SPH memory allocated?
@@ -67,6 +58,13 @@ class Sph
 
   float alpha_visc;                     // alpha artificial viscosity parameter
   float beta_visc;                      // beta artificial viscosity parameter
+
+#if !defined(FIXED_DIMENSIONS)
+  int ndim;
+  int vdim;
+  int bdim;
+  float invndim;
+#endif
 
 };
 

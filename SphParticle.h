@@ -11,7 +11,6 @@
 
 
 struct SphParticle {
-  //SphParticle();
   int iorig;
   int itype;
   float r[ndimmax];
@@ -37,30 +36,31 @@ struct SphParticle {
   float zeta;
   float sound;
   float gpot;
+
+  SphParticle()
+  {
+    iorig = -1;
+    itype = -1;
+    for (int k=0; k<ndimmax; k++) r[k] = 0.0;
+    for (int k=0; k<ndimmax; k++) v[k] = 0.0;
+    for (int k=0; k<ndimmax; k++) a[k] = 0.0;
+    for (int k=0; k<ndimmax; k++) r0[k] = 0.0;
+    for (int k=0; k<ndimmax; k++) v0[k] = 0.0;
+    for (int k=0; k<ndimmax; k++) a0[k] = 0.0;
+    for (int k=0; k<ndimmax; k++) agrav[k] = 0.0;
+    m = 0;
+    h = 0;
+    invh = 0.0;
+    rho = 0.0;
+    invrho = 0.0;
+    hfactor = 0.0;
+    u = 0.0;
+    dudt = 0.0;
+    invomega = 0.0;
+    zeta = 0.0;
+  } 
+
 };
 
-/*
-SphParticle::SphParticle()
-{
-  iorig = -1;
-  itype = -1;
-  for (int k=0; k<ndimmax; k++) r[k] = 0.0;
-  for (int k=0; k<ndimmax; k++) v[k] = 0.0;
-  for (int k=0; k<ndimmax; k++) a[k] = 0.0;
-  for (int k=0; k<ndimmax; k++) r0[k] = 0.0;
-  for (int k=0; k<ndimmax; k++) v0[k] = 0.0;
-  for (int k=0; k<ndimmax; k++) a0[k] = 0.0;
-  m = 0;
-  h = 0;
-  invh = 0.0;
-  rho = 0.0;
-  invrho = 0.0;
-  hfactor = 0.0;
-  u = 0.0;
-  dudt = 0.0;
-  invomega = 0.0;
-  zeta = 0.0;
-} 
-*/
 
 #endif

@@ -17,15 +17,16 @@ using namespace std;
 // ============================================================================
 M4Kernel::M4Kernel(int ndimaux)
 {
+#if !defined(FIXED_DIMENSIONS)
+  ndim = ndimaux;
+  ndimpr = (float) ndimaux;
+#endif
   kernrange = 2.0;
   invkernrange = 0.5;
   kernrangesqd = 4.0;
-  if (ndimaux == 1) kernnorm = twothirds;
-  else if (ndimaux == 2) kernnorm = invpi*10.0/7.0;
-  else if (ndimaux == 3) kernnorm = invpi;
-#if !defined(FIXED_DIMENSIONS)
-  ndimpr = (float) ndimaux;
-#endif
+  if (ndim == 1) kernnorm = twothirds;
+  else if (ndim == 2) kernnorm = invpi*10.0/7.0;
+  else if (ndim == 3) kernnorm = invpi;
 }
 
 
@@ -40,26 +41,16 @@ M4Kernel::~M4Kernel()
 
 
 // ============================================================================
-// M4Kernel::Setup
-// ============================================================================
-//void M4Kernel::Setup(int ndim)
-//{
-//  return;
-//}
-
-
-
-// ============================================================================
 // M4Kernel::w0
 // ============================================================================
 float M4Kernel::w0(float s)
 {
-  if (s < 1.0f)
+  if (s < 1.0)
     return kernnorm*(1.0 - 1.5*s*s + 0.75*s*s*s);
   else if (s < 2.0)
-    return 0.25f*kernnorm*powf(2.0 - s,3.0);
+    return 0.25*kernnorm*powf(2.0 - s,3.0);
   else
-    return 0.0f;
+    return 0.0;
 }
 
 
@@ -69,7 +60,7 @@ float M4Kernel::w0(float s)
 // ============================================================================
 float M4Kernel::w1(float s)
 {
-  if (s < 1.0f)
+  if (s < 1.0)
     return kernnorm*(-3.0*s + 2.25*s*s);
   else if (s < 2.0)
     return -0.75*kernnorm*(2.0 - s)*(2.0 - s);

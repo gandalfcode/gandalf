@@ -29,7 +29,7 @@ struct DomainBox {
   float boxmin[3];
   float boxmax[3];
   float boxsize[3];
-  float boxhalf[ndimmax];
+  float boxhalf[3];
   //float rmin[ndimmax];
   //float rmax[ndimmax];
 };
@@ -110,6 +110,7 @@ class SphSimulation
   int n;                                    // Integer time counter
   int Nsteps;                               // Total no. of steps in simulation
   int Nstepsmax;                            // Max. allowed no. of steps
+  int noutputstep;                          // ..
   double t;                                 // Current simulation time
   double timestep;                          // Current timestep
   double tsnapnext;                         // Time of next snapshot

@@ -26,6 +26,7 @@ class SphKernel
   float kernrangesqd;
   float kernnorm;
 #if !defined(FIXED_DIMENSIONS)
+  int ndim;
   float ndimpr;
 #endif
 

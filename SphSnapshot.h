@@ -16,7 +16,7 @@ using namespace std;
 
 
 // ============================================================================
-// CLASS SNAPSHOT
+// Class SphSnapshot
 // ============================================================================
 class SphSnapshot
 {
@@ -39,6 +39,7 @@ class SphSnapshot
   float t;
   std::string filename;
   std::string fileform;
+
 
   // Pointers for allocating memory required for storing all important
   // snapshot data

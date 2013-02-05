@@ -22,9 +22,13 @@ using namespace std;
 // ============================================================================
 // SphIntegration::SphIntegration
 // ============================================================================
-SphIntegration::SphIntegration(double accel_mult_aux, double courant_mult_aux):
-    accel_mult(accel_mult_aux),
-    courant_mult(courant_mult_aux)
+SphIntegration::SphIntegration(int ndimaux, int vdimaux, double accel_mult_aux, double courant_mult_aux):
+#if !defined(FIXED_DIMENSIONS)
+  ndim(ndimaux),
+  vdim(vdimaux),
+#endif
+  accel_mult(accel_mult_aux),
+  courant_mult(courant_mult_aux)
 {
 }
 

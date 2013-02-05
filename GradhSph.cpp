@@ -73,6 +73,8 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
   float h_fac = params.floatparams["h_fac"];
   float h_converge = params.floatparams["h_converge"];
 
+  for (int k=0; k<ndimmax; k++) dr[k] = 0.0;
+  for (int k=0; k<ndimmax; k++) dv[k] = 0.0;
 
   // Main smoothing length iteration loop
   // --------------------------------------------------------------------------
@@ -157,6 +159,8 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
   sphdata[i].invomega = 1.0/sphdata[i].invomega;
   sphdata[i].div_v *= sphdata[i].invrho;
 
+  //cout << "h[" << i << "] : " << sphdata[i].h << endl;
+
   return 1;
 }
 
@@ -205,6 +209,8 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
   hrangesqd = kern->kernrangesqd*sphdata[i].h*sphdata[i].h;
   if (self_gravity == 1) sphdata[i].zeta = 0.0;
 
+  for (int k=0; k<ndimmax; k++) dr[k] = 0.0;
+  for (int k=0; k<ndimmax; k++) dv[k] = 0.0;
 
   // Loop over all potential neighbours in the list
   // --------------------------------------------------------------------------
@@ -287,8 +293,6 @@ void GradhSph::ComputeGravForces(int i, int Nneib, int *neiblist)
   int k;
   float hrangesqd;
   float dr[ndimmax];
-  float dv[ndimmax];
-  float dvdr;
   float drmag;
   float invdrmag;
   float invhmean;
@@ -349,7 +353,6 @@ void GradhSph::ComputeMeanhZeta(int i, int Nneib, int *neiblist)
   float dr[ndimmax];
   float drmag;
   float invhmean;
-  float invrhomean;
   float kernrangesqd = kern->kernrangesqd;
 
   sphdata[i].zeta = 0.0;

@@ -28,7 +28,7 @@ void Sph::AllocateMemory(int N)
   if (N > Nsphmax) {
     if (allocated) DeallocateMemory();
     Nsph = N;
-    Nsphmax = 10*N;
+    Nsphmax = 5*N;
     sphdata = new struct SphParticle[Nsphmax];
     allocated = true;
   }
@@ -41,7 +41,6 @@ void Sph::AllocateMemory(int N)
 // ============================================================================
 // Sph::DeallocateMemory
 // ============================================================================
-
 void Sph::DeallocateMemory(void)
 {
   debug2("[Sph::DeallocateMemory]");
@@ -62,8 +61,8 @@ void Sph::SphBoundingBox(float rmax[ndimmax],float rmin[ndimmax])
 {
   debug2("[Sph::SphBoundingBox]");
 
-  for (int k=0; k<ndim; k++) rmin[k] = big_number; 
-  for (int k=0; k<ndim; k++) rmax[k] = -big_number;
+  for (int k=0; k<ndimmax; k++) rmin[k] = big_number; 
+  for (int k=0; k<ndimmax; k++) rmax[k] = -big_number;
 
   for (int i=0; i<Nsph; i++) {
     for (int k=0; k<ndim; k++) 
@@ -72,10 +71,10 @@ void Sph::SphBoundingBox(float rmax[ndimmax],float rmin[ndimmax])
       if (sphdata[i].r[k] > rmax[k]) rmax[k] = sphdata[i].r[k];
   }
 
-  //#if defined(DEBUG_ALL)
+#if defined(DEBUG_ALL)
   printf("rmin : %f\n",rmin[0]);
   printf("rmax : %f\n",rmax[0]);
-  //#endif
+#endif
 
   return;
 }
@@ -126,7 +125,7 @@ void Sph::InitialSmoothingLengthGuess(void)
 
   // Set all smoothing lengths equal to average value
   for (int i=0; i<Nsph; i++) {
-    sphdata[i].h = h_guess;
+    sphdata[i].h = 1.1*h_guess;
     sphdata[i].invh = 1.0/h_guess;
   }
 

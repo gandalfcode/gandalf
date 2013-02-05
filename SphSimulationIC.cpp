@@ -49,6 +49,11 @@ void SphSimulation::ShockTube(void)
 
   debug2("[SphSimulation::ShockTube]");
 
+  if (ndim != 1) {
+    cout << "Wrong dimensionality : " << ndim << endl;
+    exit(0);
+  }
+
   // Compute size and range of fluid bounding boxes
   // --------------------------------------------------------------------------
   if (ndim == 1) {

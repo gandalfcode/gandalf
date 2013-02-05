@@ -88,6 +88,9 @@ void SphSimulation::Output(void)
 
   debug2("[SphSimulation::Output]");
 
+  if (Nsteps%noutputstep == 0) cout << "t : " << t << "    Nsteps : " 
+				    << Nsteps << endl;
+
   // Output a data snapshot if reached required time
   if (t >= tsnapnext) {
     Noutsnap++;
@@ -217,7 +220,7 @@ void SphSimulation::ComputeBlockTimesteps(void)
     }      
   }
 
-  cout << "Global timestep : " << timestep << "   t : " << t << endl;
+  //cout << "Global timestep : " << timestep << "   t : " << t << endl;
 
   return;
 }
@@ -258,7 +261,6 @@ void SphSimulation::ProcessParameters(void)
   // Create kernel object based on params file
   if (stringparams["kernel"] == "m4") {
     sph->kern = new M4Kernel(ndim);
-    //sph->kern->Setup(ndim);
   }
   else {
     cout << "Unrecognised parameter : " << endl; exit(0);
@@ -286,15 +288,15 @@ void SphSimulation::ProcessParameters(void)
   // Create neighbour searching object based on chosen method in params file
   // --------------------------------------------------------------------------
   if (stringparams["neib_search"] == "bruteforce")
-    sphneib = new BruteForceSearch;
+    sphneib = new BruteForceSearch(ndim);
   else if (stringparams["neib_search"] == "grid")
-    sphneib = new GridSearch;
+    sphneib = new GridSearch(ndim);
   else {
     cout << "Unrecognised parameter : " << endl; exit(0);
   }
 
   if (stringparams["sph_integration"] == "lfkdk") {
-    sphint = new SphLFKDK(floatparams["accel_mult"],
+    sphint = new SphLFKDK(ndim,vdim,floatparams["accel_mult"],
 			  floatparams["courant_mult"]);
   }
   else {
@@ -329,6 +331,7 @@ void SphSimulation::ProcessParameters(void)
   run_id = stringparams["run_id"];
   tend = floatparams["tend"];
   dt_snap = floatparams["dt_snap"];
+  noutputstep = intparams["noutputstep"];
 
   return;
 }
@@ -367,14 +370,15 @@ void SphSimulation::Setup(void)
     sph->Ntot = sph->Nsph;
     
     sph->InitialSmoothingLengthGuess();
+    sphneib->UpdateTree(sph,simparams);
 
     sphneib->UpdateAllSphProperties(sph,simparams);
 
     // Search ghost particles
     SearchGhostParticles();
 
-    // Update neighbour tree
-
+    // Update neighbour tre
+    sphneib->UpdateTree(sph,simparams);
   }
 
 
@@ -428,7 +432,7 @@ void SphSimulation::Setup(void)
 // ============================================================================
 void SphSimulation::MainLoop(void)
 {
-  debug1("[SphSimulation::MainLoop]");
+  debug2("[SphSimulation::MainLoop]");
 
   // Compute timesteps for all particles
   ComputeBlockTimesteps();
@@ -455,7 +459,7 @@ void SphSimulation::MainLoop(void)
     SearchGhostParticles();
 
     // Update neighbour tree
-
+    sphneib->UpdateTree(sph,simparams);
   }
 
 

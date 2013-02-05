@@ -19,7 +19,6 @@ SphSnapshot::SphSnapshot(string auxfilename)
 {
   allocated = false;
   nallocated = 0;
-  ndim = 3;
   Nsph = 0;
   t = 0.0f;
   if (auxfilename != "")
@@ -139,8 +138,8 @@ int SphSnapshot::CalculateMemoryUsage(void)
 void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux, 
 					 SphParticle *sphaux)
 {
-  Nsph = Nsphaux;
   ndim = ndimaux;
+  Nsph = Nsphaux;
 
   AllocateBufferMemory();
 
@@ -215,6 +214,7 @@ void SphSnapshot::ExtractArray(string name, float** out_array,
 void SphSnapshot::ReadSnapshot(string format, SphSimulation * simulation) {
 
   simulation->ReadSnapshotFile(filename, format);
-  CopyDataFromSimulation(simulation->simparams.intparams["ndim"] , simulation->sph->Nsph , simulation->sph->sphdata );
+  CopyDataFromSimulation(simulation->simparams.intparams["ndim"],
+			 simulation->sph->Nsph , simulation->sph->sphdata );
 
 }

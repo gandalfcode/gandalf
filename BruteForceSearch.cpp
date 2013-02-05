@@ -17,8 +17,11 @@ using namespace std;
 // ============================================================================
 // BruteForceSearch::BruteForceSearch
 // ============================================================================
-BruteForceSearch::BruteForceSearch()
+BruteForceSearch::BruteForceSearch(int ndimaux)
 {
+#if !defined(FIXED_DIMENSIONS)
+  ndim = ndimaux;
+#endif
 }
 
 
@@ -28,6 +31,16 @@ BruteForceSearch::BruteForceSearch()
 // ============================================================================
 BruteForceSearch::~BruteForceSearch()
 {
+}
+
+
+
+// ============================================================================
+// BruteForceSearch::UpdateTree
+// ============================================================================
+void BruteForceSearch::UpdateTree(Sph *sph, Parameters &simparams)
+{
+  return;
 }
 
 

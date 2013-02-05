@@ -25,7 +25,7 @@ class SphIntegration
 
   //SphIntegration(double accel_mult_aux, double courant_mult_aux):
   //  accel_mult(accel_mult_aux),courant_mult(courant_mult_aux) {}
-  SphIntegration(double, double);
+  SphIntegration(int, int, double, double);
   ~SphIntegration();
 
   virtual void AdvanceParticles(int,SphParticle *,double) = 0;
@@ -36,6 +36,10 @@ class SphIntegration
   
   const double courant_mult;
   const double accel_mult;
+#if !defined(FIXED_DIMENSIONS)
+  const int ndim;
+  const int vdim;
+#endif
 
 };
 
@@ -48,13 +52,12 @@ class SphLFKDK: public SphIntegration
 {
  public:
 
-  SphLFKDK(double, double);
+  SphLFKDK(int, int, double, double);
   ~SphLFKDK();
 
   void AdvanceParticles(int,SphParticle *,double);
   void CorrectionTerms(int,SphParticle *,double);
   void EndTimestep(int,int,SphParticle *);
-
 
 };
 
