@@ -2,6 +2,7 @@
 // Dimensions.h
 // ============================================================================
 
+#include "Constants.h"
 
 #ifndef _DIMENSIONS_H_
 #define _DIMENSIONS_H_
