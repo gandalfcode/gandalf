@@ -74,10 +74,15 @@ class ParticlePlotCommand (PlotCommand):
         return line
     
     def prepareData (self):
+        sim = SimBuffer.simlist[self.sim]       
         if self.snap == "current":
-            snap = SimBuffer.get_current_snapshot()
+            snap = SimBuffer.get_current_snapshot_by_sim(sim)
+            if sim.snapshots == []:
+                self.snap = "live"
+        elif self.snap == "live":
+            snap = SimBuffer.get_live_snapshot_sim(sim)
         else:
-            snap = SimBuffer.get_snapshot_number(self.snap)
+            snap = SimBuffer.get_snapshot_number_sim(sim, self.snap)
         x_data = snap.ExtractArray(self.xquantity)
         y_data = snap.ExtractArray(self.yquantity)
         data = Data(x_data, y_data)

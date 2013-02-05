@@ -13,10 +13,16 @@ def loadsim(run_id):
     SimBuffer.loadsim(run_id)
     return SimBuffer.get_current_sim()
     
-def plot(x,y, overplot = False, snap="current", autoscale = True):
+def plot(x,y, overplot = False, snap="current", autoscale = True, sim="current"):
     command = commands.ParticlePlotCommand(x, y, autoscale)
     command.overplot = overplot
     command.snap = snap
+    if sim == "current":
+        simobject = SimBuffer.get_current_sim()
+        simno = SimBuffer.simlist.index(simobject)
+    else:
+        simno = sim 
+    command.sim = simno
     data = command.prepareData()
     Singletons.queue.put([command, data])
 
@@ -41,10 +47,8 @@ def snap(no):
     except BufferException as e:
         print str(e)
         return
-    for command in Singletons.commands:
-        if command.snap == "current": 
-            data = command.prepareData()
-            Singletons.queue.put([command, data])
+    
+    update("current")
         
 def window(no = None):
     command = commands.WindowCommand(no)
@@ -55,6 +59,46 @@ def subfigure(nx, ny, current):
     command = commands.SubfigureCommand(nx, ny, current)
     data = None
     Singletons.queue.put([command,data])
+
+def newsim(paramfile):
+    SimBuffer.newsim(paramfile)
+
+def run(no=None):
+    #gets the correct simulation object from the buffer
+    try:
+        if no is None:
+            sim = SimBuffer.get_current_sim()
+        else:
+            sim = SimBuffer.get_sim_no(no)
+    except BufferError as e:
+        print str(e)
+        return
+    if not sim.setup:
+        print "The selected simulation has not been set-up. Please set it up before running"
+        return
+    
+    sim.Run()
+    
+    SimBuffer.load_live_snapshot(sim)
+    
+    update("live")
+    
+    
+def update(type=None):
+    #updates the plots
+    for command in Singletons.commands:
+        updateplot=False
+        if type is None:
+            updateplot=True
+        else:
+            if command.snap == type:
+                updateplot=True
+        if updateplot:
+            data = command.prepareData()
+            Singletons.queue.put([command, data])
+
+
+
 
 def init():
     global plottingprocess
@@ -68,6 +112,7 @@ def sigint(signum, frame):
     
 def cleanup():
     Singletons.queue.put(["STOP",None])
+    print "Waiting for background processes to finish..."
     plottingprocess.join()
     import sys
     sys.exit()
@@ -78,31 +123,36 @@ signal.signal(signal.SIGSEGV, sigint)
 atexit.register(cleanup)
 
 if __name__=="__main__":
-    import time; time.sleep(1)
-    loadsim('TEST')
-    plot("x","y", snap=0)
-    addplot("x", "y")
-    window()
-    plot("vx", "vy")
-    plot("vx", "x")
-    window()
-    plot("x","rho")
-    window()
-    subfigure(2,2,1)
-    plot("x", "y")
-    subfigure(2,2,2)
-    plot("vx", "vy")
-    subfigure(2,2,3)
-    plot("x", "rho")
-    subfigure(2,2,4)
-    plot("rho", "h")
-    addplot("rho", "m")
-    window(3)
-    addplot("rho", "h")
-    snap(200)
-    for i in range(10):
-        time.sleep(1)
-        previous()
-    Singletons.queue.put(["STOP", None])
-    plottingprocess.join()
+    import time
+    newsim('TEST.param')
+    plot("x","y")
+    time.sleep(5)
+    run()
+    time.sleep(2)
+#    
+#    loadsim('TEST')
+#    plot("x","y", snap=0)
+#    addplot("x", "y")
+#    window()
+#    plot("vx", "vy")
+#    plot("vx", "x")
+#    window()
+#    plot("x","rho")
+#    window()
+#    subfigure(2,2,1)
+#    plot("x", "y")
+#    subfigure(2,2,2)
+#    plot("vx", "vy")
+#    subfigure(2,2,3)
+#    plot("x", "rho")
+#    subfigure(2,2,4)
+#    plot("rho", "h")
+#    addplot("rho", "m")
+#    window(3)
+#    addplot("rho", "h")
+#    snap(99)
+#    for i in range(10):
+#        time.sleep(1)
+#        previous()
+    import sys; sys.exit()
 
