@@ -119,6 +119,7 @@ class SphSimulation
 
   string run_id;                            // Simulation id string
   string paramfile;                         // Name of parameters file
+  bool setup;                               // Flags whether the simulation has been setup
 
   Parameters simparams;                     // Simulation parameters object
   SimUnits simunits;                        // Simulation units object

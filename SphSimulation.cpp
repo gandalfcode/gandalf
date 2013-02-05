@@ -29,6 +29,7 @@ SphSimulation::SphSimulation()
   n = 0;
   Nsteps = 0;
   t = 0.0;
+  setup = false;
 }
 
 
@@ -424,6 +425,8 @@ void SphSimulation::Setup(void)
 
   CalculateDiagnostics();
   diag0 = diag;
+
+  setup = true;
 
   return;
 }
