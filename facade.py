@@ -102,7 +102,11 @@ def update(type=None):
             data = command.prepareData()
             Singletons.queue.put([command, data])
 
-
+def savefig(name):
+    command = commands.SaveFigCommand(name)
+    data = None
+    Singletons.queue.put([command,data])
+    time.sleep(1e-3)
 
 
 def init():
@@ -131,6 +135,7 @@ if __name__=="__main__":
     import time
     newsim('adshock.dat')
     plot("x","rho")
+    savefig('xrho.pdf')
     run()
     block()
 #    
