@@ -50,6 +50,16 @@ throw SerenError("CTRL-C received");
 	}
 }
 
+%exception Parameters::ReadParamsFile {
+	try{
+		$action
+	}
+	catch (SerenError &e) {
+		PyErr_SetString(PyExc_Exception,e.msg.c_str());
+		return NULL;		
+	}
+}
+
 %include "numpy.i"
 %init %{
 import_array();

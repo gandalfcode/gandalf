@@ -82,8 +82,11 @@ def run(no=None):
     SimBuffer.load_live_snapshot(sim)
     
     update("live")
-    
-    
+
+def block():
+    print "Type enter to quit..."
+    raw_input()
+
 def update(type=None):
     #updates the plots
     for command in Singletons.commands:
