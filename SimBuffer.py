@@ -62,12 +62,10 @@ class SimBuffer:
     
     @staticmethod
     def _fillsnapshot(snapshot):
-        print "Inside fillsnapshot"
         snapshot.ReadSnapshot(snapshot.sim.simparams.stringparams["in_file_form"],snapshot.sim)
         snapshotsize = snapshot.CalculateMemoryUsage()
         if snapshotsize > SimBuffer.maxmemory:
-            print "Warning: the requested snapshot can't fit inside the buffer memory. It will not be cached"
-            raise BufferFull
+            raise BufferFull("The requested snapshot can't fit inside the buffer memory")
         while 1:
             available_memory = SimBuffer.maxmemory - SimBuffer.total_memory_usage()
             if snapshotsize > available_memory:
@@ -93,7 +91,30 @@ class SimBuffer:
                 snapshot.DeallocateBufferMemory()
         SimBuffer.snapshots = deque()
         SimBuffer.simlist = []
+    
+    @staticmethod
+    def newsim (paramfile):
+        '''
+        This method creates a new simulation from the specified parameter file. 
+        '''
+        sim = SphSimulation()
+        SimBuffer._add_simulation(sim)
+        sim.paramfile = paramfile
+        sim.Setup()
+        sim.snapshots = []
+        SimBuffer.load_live_snapshot(sim)
         
+    @staticmethod
+    def load_live_snapshot(sim):
+        ''' This method loads into memory the live snapshot of the simulation'''
+        try:
+            snap = sim.live
+        except AttributeError:
+            snap = SphSnapshot()
+        snap.CopyDataFromSimulation(sim.simparams.intparams["ndim"], sim.sph.Nsph, sim.sph.sphdata)
+        sim.live = snap
+        sim.current = sim.live
+    
     @staticmethod        
     def loadsim (run_id, fileformat = 'ascii', buffer_flag = 'cache'):
         '''
@@ -166,6 +187,11 @@ class SimBuffer:
         total_memory = 0
         for snapshot in SimBuffer.snapshots:
             total_memory += snapshot.CalculateMemoryUsage()
+        for sim in SimBuffer.simlist:
+            try:
+                total_memory += sim.live.CalculateMemoryUsage()
+            except AttributeError:
+                pass
         return total_memory
     
     #TODO: uniform the API below for accesing the buffer. Should distinguish between calls that change
@@ -175,6 +201,15 @@ class SimBuffer:
     def get_current_sim():
         '''This function returns the current simulation'''
         return SimBuffer.simlist[SimBuffer.currentsim]
+    
+    @staticmethod
+    def get_sim_no(no):
+        '''This function returns the simulation specified by the number'''
+        try:
+            sim = Simbuffer.simlist[no]
+        except IndexError:
+            raise BufferException ("The specified simulation number does not exist")
+        return sim
     
     @staticmethod  
     def get_current_snapshot_by_sim(sim):
@@ -186,6 +221,24 @@ class SimBuffer:
         '''This function returns the current snapshot of the current simulation'''
         sim = SimBuffer.get_current_sim()
         return SimBuffer.get_current_snapshot_by_sim(sim)
+    
+    @staticmethod
+    def get_live_snapshot_current():
+        '''This function returns the live snapshot of the current simulation, if existing'''
+        sim = SimBuffer.get_current_sim()
+        try:
+            return sim.live
+        except AttributeError:
+            raise BufferException("The current simulation does not have a live snapshot")
+        
+    @staticmethod
+    def get_live_snapshot_sim(sim):
+        '''This function returns the live snapshot of the specified simulation'''
+        try:
+            return sim.live
+        except AttributeError:
+            raise BufferException("The specified simulation does not have a live snapshot")
+    
     
     @staticmethod
     def get_snapshot_number_sim(sim, no):

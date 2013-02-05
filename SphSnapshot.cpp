@@ -41,6 +41,13 @@ SphSnapshot::~SphSnapshot()
 // ============================================================================
 void SphSnapshot::AllocateBufferMemory(void)
 {
+  if (allocated) {
+    if (Nsph > Nmax)
+      DeallocateBufferMemory();
+    else
+      return;
+  }
+
   if (ndim == 1) {
     x = new float[Nsph];
     vx = new float[Nsph];
@@ -73,6 +80,7 @@ void SphSnapshot::AllocateBufferMemory(void)
 
   allocated = true;
   nallocated = 3*ndim + 4;
+  Nmax = Nsph;
 
   return;
 }

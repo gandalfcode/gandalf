@@ -63,6 +63,7 @@ OBJ += BruteForceSearch.o GridSearch.o
 OBJ += AdiabaticEOS.o IsothermalEOS.o
 OBJ += SimGhostParticles.o
 OBJ += toymain.o
+OBJ += Exception.o
 
 
 .SUFFIXES: .cpp .i .o

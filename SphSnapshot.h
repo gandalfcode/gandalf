@@ -36,6 +36,7 @@ class SphSnapshot
   int nallocated;
   int ndim;
   int Nsph;
+  int Nmax;
   float t;
   std::string filename;
   std::string fileform;

@@ -11,6 +11,7 @@
 #include <math.h>
 #include <cstdio>
 #include <cstring>
+#include "Exception.h"
 #include "SphSimulation.h"
 #include "Parameters.h"
 #include "InlineFuncs.h"
@@ -28,6 +29,7 @@ SphSimulation::SphSimulation()
   n = 0;
   Nsteps = 0;
   t = 0.0;
+  setup = false;
 }
 
 
@@ -191,7 +193,8 @@ void SphSimulation::GenerateIC(void)
   else if (simparams.stringparams["ic"] == "khi") 
     KHI();
   else {
-    cout << "Unrecognised parameter : " << endl; exit(0);
+    string message = "Unrecognised parameter : ic = " + simparams.stringparams["ic"];
+    ExceptionHandler::getIstance().raise(message);
   }
 
   return;
@@ -255,7 +258,8 @@ void SphSimulation::ProcessParameters(void)
     sph->beta_visc = floatparams["beta_visc"];
   }
   else {
-    cout << "Unrecognised parameter : " << endl; exit(0);
+    string message = "Unrecognised parameter : sph = " + simparams.stringparams["sph"];
+    ExceptionHandler::getIstance().raise(message);
   }
 
   // Create kernel object based on params file
@@ -263,7 +267,8 @@ void SphSimulation::ProcessParameters(void)
     sph->kern = new M4Kernel(ndim);
   }
   else {
-    cout << "Unrecognised parameter : " << endl; exit(0);
+    string message = "Unrecognised parameter : kernel = " + simparams.stringparams["kernel"];
+    ExceptionHandler::getIstance().raise(message);
   }
 
   // Boundary condition variables
@@ -292,7 +297,8 @@ void SphSimulation::ProcessParameters(void)
   else if (stringparams["neib_search"] == "grid")
     sphneib = new GridSearch(ndim);
   else {
-    cout << "Unrecognised parameter : " << endl; exit(0);
+    string message = "Unrecognised parameter : neib_search = " + simparams.stringparams["neib_search"];
+    ExceptionHandler::getIstance().raise(message);
   }
 
   if (stringparams["sph_integration"] == "lfkdk") {
@@ -300,7 +306,8 @@ void SphSimulation::ProcessParameters(void)
 			  floatparams["courant_mult"]);
   }
   else {
-    cout << "Unrecognised parameter : " << endl; exit(0);
+    string message = "Unrecognised parameter : sph_integration = " + simparams.stringparams["sph_integration"];
+    ExceptionHandler::getIstance().raise(message);
   }
 
   // Thermal physics options
@@ -313,8 +320,8 @@ void SphSimulation::ProcessParameters(void)
       uint = new EnergyPEC(floatparams["energy_mult"]);
     }
     else {
-      cout << "Unrecognised parameter : " 
-	   << stringparams["energy_integration"] << endl; exit(0);
+      string message = "Unrecognised parameter : energy_integration = " + simparams.stringparams["energy_integration"];
+      ExceptionHandler::getIstance().raise(message);
     }
   }
   else if (stringparams["gas_eos"] == "isothermal") 
@@ -322,7 +329,8 @@ void SphSimulation::ProcessParameters(void)
 			      floatparams["mu_bar"],
 			      floatparams["gamma_eos"]);
   else {
-    cout << "Unrecognised parameter : " << endl; exit(0);
+    string message = "Unrecognised parameter : gas_eos = " + simparams.stringparams["gas_eos"];
+    ExceptionHandler::getIstance().raise(message);
   }
 
 
@@ -421,6 +429,8 @@ void SphSimulation::Setup(void)
 
   CalculateDiagnostics();
   diag0 = diag;
+
+  setup = true;
 
   return;
 }

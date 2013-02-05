@@ -1,3 +1,4 @@
+#include "Exception.h"
 #include <iostream>
 #include "SphSimulation.h"
 using namespace std;
@@ -5,6 +6,8 @@ using namespace std;
 int main(int argc, char** argv)
 {
   SphSimulation sim;
+
+  ExceptionHandler::makeExceptionHandler(cplusplus);
 
   if (argc >= 2){
     sim.paramfile = argv[1];
