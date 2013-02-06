@@ -10,6 +10,13 @@ class Command:
         Command.id += 1
         self.id = Command.id
 
+class SwitchNonGui(Command):
+    def __init__(self):
+        Command.__init__(self)
+        
+    def processCommand(self, plotting, data):
+        plotting.plt.switch_backend('Agg')
+        
 class SaveFigCommand(Command):
     def __init__(self, name):
         Command.__init__(self)

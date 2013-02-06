@@ -108,6 +108,11 @@ def savefig(name):
     Singletons.queue.put([command,data])
     time.sleep(1e-3)
 
+def switch_nongui():
+    command = commands.SwitchNonGui()
+    data = None
+    Singletons.queue.put([command,data])
+    time.sleep(1e-3)
 
 def init():
     global plottingprocess
@@ -137,7 +142,11 @@ if __name__=="__main__":
     plot("x","rho")
     savefig('xrho.pdf')
     run()
-    block()
+    time.sleep(2)
+    savefig('xrho2.pdf')
+    switch_nongui()
+    plot("x","vx")
+    savefig('xv.pdf')
 #    
 #    loadsim('TEST')
 #    plot("x","y", snap=0)
