@@ -7,7 +7,8 @@
 CC = g++
 PYTHON = python2.7
 
-OPT = -fPIC -O3 #-g -Wall -fbounds-check
+OPT = -O3
+#OPT = -g -Wall -fbounds-check
 
 OUTPUT_LEVEL              = 1
 PRECISION                 = SINGLE
@@ -66,7 +67,7 @@ SWIG_HEADERS = Parameters.i SimUnits.i Sph.i SphSnapshot.i SphSimulation.i
 WRAP_OBJ = Parameters_wrap.o SimUnits_wrap.o Sph_wrap.o SphSnapshot_wrap.o SphSimulation_wrap.o
 OBJ = Parameters.o SimUnits.o SphSnapshot.o SphSimulation.o
 OBJ += SphSimulationIC.o SphSimulationIO.o
-OBJ += M4Kernel.o
+OBJ += M4Kernel.o QuinticKernel.o
 OBJ += Sph.o GradhSph.o
 OBJ += EnergyPEC.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o
@@ -85,10 +86,10 @@ OBJ += Exception.o
 	swig -c++ -python $(CFLAGS) $<
 
 %.o: %.cxx
-	$(CC) $(OPT) $(CFLAGS) -c -fPIC $< -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY)
+	$(CC) $(OPT) $(CFLAGS) -c $< -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY)
 
 %.o: %.cpp
-	$(CC) $(OPT) $(CFLAGS) -c -fPIC $<
+	$(CC) $(OPT) $(CFLAGS) -c $<
 
 
 # =============================================================================

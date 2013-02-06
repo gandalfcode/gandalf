@@ -1,18 +1,23 @@
-
+xlhs : x_boundary_lhs = periodic
+xrhs : x_boundary_rhs = periodic
+xlhs : y_boundary_lhs = periodic
+xrhs : y_boundary_rhs = periodic
      : boxmin[0] = -0.5
      : boxmax[0] = 0.5
      : boxmin[1] = -0.5
      : boxmax[1] = 0.5
-     : Nlattice1[0] = 22
-     : Nlattice1[1] = 11
-     : Nlattice2[0] = 32
-     : Nlattice2[1] = 16
+     : Nlattice1[0] = 88
+     : Nlattice1[1] = 44
+     : Nlattice2[0] = 128
+     : Nlattice2[1] = 64
      : vfluid1[0] = 0.5
      : vfluid2[0] = -0.5
      : rhofluid1 = 1.0
      : rhofluid2 = 2.0
      : press1 = 2.5
      : press2 = 2.5
+     : amp = 0.1
+     : lambda = 0.5
      : ndim = 2
      : neib_search = grid
 
@@ -21,16 +26,17 @@
      : energy_integration = PEC
      : gamma_eos = 1.6666666666666
 
-     : h_converge = 0.0001
+     : h_converge = 0.01
+     : kernel = quintic
 
      : avisc = mon97
-     : acond = none
+     : acond = price2008
      : alpha_visc = 0.1
      : beta_visc = 0.2
 
      : courant_mult = 0.15
      : accel_mult = 0.3
-     : tend = 1.0
-     : dt_snap = 0.1
+     : tend = 1.59
+     : dt_snap = 0.159
 
  

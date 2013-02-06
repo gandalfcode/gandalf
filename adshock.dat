@@ -25,4 +25,5 @@
      : courant_mult = 0.15
      : accel_mult = 0.3
 
+     : kernel = quintic
      : neib_search = grid

@@ -113,7 +113,7 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
 
     }
     // ------------------------------------------------------------------------
-    
+
     if (sphdata[i].rho > 0.0) sphdata[i].invrho = 1.0/sphdata[i].rho;
 
     // If h changes below some fixed tolerance, exit iteration loop

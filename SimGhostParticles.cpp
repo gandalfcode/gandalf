@@ -62,7 +62,7 @@ void SphSimulation::SearchGhostParticles(void)
 {
   int i;
   int k;
-  const float ghost_range = 1.2;
+  const float ghost_range = 1.5;
   const float kernrange = sph->kern->kernrange;
   SphParticle *sphdata = sph->sphdata;
 

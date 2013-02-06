@@ -266,8 +266,12 @@ void SphSimulation::ProcessParameters(void)
   if (stringparams["kernel"] == "m4") {
     sph->kern = new M4Kernel(ndim);
   }
+  else if (stringparams["kernel"] == "quintic") {
+    sph->kern = new QuinticKernel(ndim);
+  }
   else {
-    string message = "Unrecognised parameter : kernel = " + simparams.stringparams["kernel"];
+    string message = "Unrecognised parameter : kernel = " + 
+      simparams.stringparams["kernel"];
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -288,6 +292,8 @@ void SphSimulation::ProcessParameters(void)
   for (int k=0; k<3; k++) {
     simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
     simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
+    cout << "SIMBOX : " << k << "  " << simbox.boxsize[k] << "   " 
+	 << simbox.boxhalf[k] << "   " << simbox.boxmin[k] << endl;
   }
 
   // Create neighbour searching object based on chosen method in params file
@@ -488,10 +494,12 @@ void SphSimulation::MainLoop(void)
 
     // Zero accelerations (perhaps)
     for (int i=0; i<sph->Nsph; i++) {
-      for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = 0.0;
-      for (int k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = 0.0;
-      sph->sphdata[i].gpot = 0.0;
-      sph->sphdata[i].dudt = 0.0;
+      if (sph->sphdata[i].active) {
+	for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = 0.0;
+	for (int k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = 0.0;
+	sph->sphdata[i].gpot = 0.0;
+	sph->sphdata[i].dudt = 0.0;
+      }
     }
 
     // Calculate all hydro and gravitational forces
@@ -518,5 +526,3 @@ void SphSimulation::MainLoop(void)
 
   return;
 }
-
-

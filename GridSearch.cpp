@@ -102,7 +102,7 @@ void GridSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
     for (j=0; j<Nactive; j++) {
       i = activelist[j];
       okflag = sph->ComputeH(i,Nneib,neiblist,simparams);
-      CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
+      //CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
     }
 
 
@@ -167,7 +167,7 @@ void GridSearch::UpdateAllSphForces(Sph *sph, Parameters &params)
       // Loop over all active particles in the cell
       for (j=0; j<Nactive; j++) {
 	i = activelist[j];
-	CheckValidNeighbourList(sph,i,Nneib,neiblist,"all");
+	//CheckValidNeighbourList(sph,i,Nneib,neiblist,"all");
 	sph->ComputeHydroForces(i,Nneib,neiblist,params);
       }
       
@@ -302,7 +302,7 @@ void GridSearch::CreateGrid(Sph *sph)
   Nlistmax = Noccupymax*pow(3,ndim);
 
   //cout << "Noccupymax : " << Noccupymax << "   " << Nlistmax << endl;
-  ValidateGrid();
+  //ValidateGrid();
 
   return;
 }
