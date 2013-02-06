@@ -23,6 +23,7 @@ throw SerenError("CTRL-C received");
 %}
 
 %exception SphSimulation::Run {
+	signal(SIGINT, catch_alarm);
     try{
         $action
     }
@@ -34,7 +35,7 @@ throw SerenError("CTRL-C received");
     	//exit(0);
     	//SWIG_exception(KeyboardInterrupt, "You pressed CTRL-C");
     //}
-    catch (SerenError& e){
+    catch (SerenError e){
     	PyErr_SetString(PyExc_KeyboardInterrupt,e.msg.c_str());
     	return NULL;
     }
@@ -63,7 +64,6 @@ throw SerenError("CTRL-C received");
 %include "numpy.i"
 %init %{
 import_array();
-signal(SIGINT, catch_alarm);
 ExceptionHandler::makeExceptionHandler(python);
 %}
 %numpy_typemaps(float, NPY_FLOAT, int)
