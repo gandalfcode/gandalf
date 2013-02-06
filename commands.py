@@ -1,3 +1,4 @@
+import analytical
 from data import Data
 from SimBuffer import SimBuffer
 
@@ -103,3 +104,41 @@ class ParticlePlotCommand (PlotCommand):
         y_data = snap.ExtractArray(self.yquantity)
         data = Data(x_data, y_data)
         return data
+    
+class AnalyticalPlotCommand (PlotCommand):
+    
+    def __init__(self, xquantity, yquantity, autoscale):
+        PlotCommand.__init__(self, xquantity, yquantity, autoscale)
+        
+    def update(self, plotting, fig, ax, line, data):
+        line.set_data(data.x_data, data.y_data)
+        
+    def execute(self, plotting, fig, ax, data):
+        line, = ax.plot(data.x_data, data.y_data)
+        return line
+    
+    def prepareData(self):
+        #TODO: remove duplicated code with the previous class
+        #get the snapshot
+        sim = SimBuffer.simlist[self.sim]
+        if self.snap == "current":
+            snap = SimBuffer.get_current_snapshot_by_sim(sim)
+            if sim.snapshots == []:
+                self.snap = "live"
+        elif self.snap == "live":
+            snap = SimBuffer.get_live_snapshot_sim(sim)
+        else:
+            snap = SimBuffer.get_snapshot_number_sim(sim, self.snap)
+        time = snap.t
+        ictype = sim.simparams.stringparams["ic"]
+        try:
+            analyticalclass = getattr(analytical,ictype)
+        except AttributeError:
+            raise CommandException, "We do not know an analytical solution for the requested initial condition"
+        computer = analyticalclass(sim, time)
+        x_data, y_data = computer.compute(self.xquantity, self.yquantity)
+        data = Data(x_data,y_data)
+        return data   
+    
+class CommandException(Exception):
+    pass     
