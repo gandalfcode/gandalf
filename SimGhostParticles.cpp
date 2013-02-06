@@ -190,6 +190,7 @@ void SphSimulation::CreateGhostParticle(int i, int k, float rk, float vk)
   sph->sphdata[sph->Nsph + sph->Nghost] = sph->sphdata[i];
   sph->sphdata[sph->Nsph + sph->Nghost].r[k] = rk;
   sph->sphdata[sph->Nsph + sph->Nghost].v[k] = vk;
+  sph->sphdata[sph->Nsph + sph->Nghost].active = false;
 
   // Record id of original particle for later copying
   if (i > sph->Nsph)

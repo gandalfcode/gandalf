@@ -7,7 +7,7 @@
 CC = g++
 PYTHON = python2.7
 
-OPT = -O3
+OPT = -O3 -fPIC
 #OPT = -g -Wall -fbounds-check
 
 OUTPUT_LEVEL              = 1
@@ -96,7 +96,7 @@ OBJ += Exception.o
 toy2 : $(WRAP_OBJ) $(OBJ)
 	@echo -e $(PYLIB)
 	g++ -bundle -flat_namespace -undefined suppress $(OBJ) $(WRAP_OBJ) -o _SphSim.so
-	f2py -m shocktub -c shocktub.f 
+	f2py2.7 -m shocktub -c shocktub.f 
 #	g++ -bundle -flat_namespace -undefined suppress SphSnapshot.o SphSnapshot_wrap.o -o _SphSnap.so
 	$(CC) $(CFLAGS) -o toymain $(OBJ)
 
