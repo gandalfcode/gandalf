@@ -40,7 +40,7 @@ class Sph
   // --------------------------------------------------------------------------
   void AllocateMemory(int);
   void DeallocateMemory(void);
-  void SphBoundingBox(float *, float *);
+  void SphBoundingBox(float *, float *, int);
   void InitialSmoothingLengthGuess(void);
 
   // SPH particle counters and main particle data array

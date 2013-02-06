@@ -28,7 +28,7 @@ void Sph::AllocateMemory(int N)
   if (N > Nsphmax) {
     if (allocated) DeallocateMemory();
     Nsph = N;
-    Nsphmax = 5*N;
+    Nsphmax = 10*N;
     sphdata = new struct SphParticle[Nsphmax];
     allocated = true;
   }
@@ -57,14 +57,14 @@ void Sph::DeallocateMemory(void)
 // Sph::SphBoundingBox
 // Calculate the bounding box containing all SPH particles.
 // ============================================================================
-void Sph::SphBoundingBox(float rmax[ndimmax],float rmin[ndimmax])
+void Sph::SphBoundingBox(float rmax[ndimmax],float rmin[ndimmax],int Nmax)
 {
   debug2("[Sph::SphBoundingBox]");
 
   for (int k=0; k<ndimmax; k++) rmin[k] = big_number; 
   for (int k=0; k<ndimmax; k++) rmax[k] = -big_number;
 
-  for (int i=0; i<Nsph; i++) {
+  for (int i=0; i<Nmax; i++) {
     for (int k=0; k<ndim; k++) 
       if (sphdata[i].r[k] < rmin[k]) rmin[k] = sphdata[i].r[k];
     for (int k=0; k<ndim; k++) 
@@ -98,7 +98,7 @@ void Sph::InitialSmoothingLengthGuess(void)
   debug2("[Sph::InitialSmoothingLengthGuess]");
 
   // Calculate bounding box containing all SPH particles
-  SphBoundingBox(rmax,rmin);
+  SphBoundingBox(rmax,rmin,Nsph);
 
   // Depending on the dimensionality, calculate the average smoothing 
   // length assuming a uniform density distribution filling the boudning box.
@@ -125,7 +125,7 @@ void Sph::InitialSmoothingLengthGuess(void)
 
   // Set all smoothing lengths equal to average value
   for (int i=0; i<Nsph; i++) {
-    sphdata[i].h = 1.1*h_guess;
+    sphdata[i].h = h_guess;
     sphdata[i].invh = 1.0/h_guess;
   }
 

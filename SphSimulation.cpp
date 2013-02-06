@@ -132,7 +132,7 @@ void SphSimulation::CalculateDiagnostics(void)
 
   for (int i=0; i<sph->Nsph; i++) {
     diag.ketot += sph->sphdata[i].m*
-      DotProduct(sph->sphdata[i].v,sph->sphdata[i].v);
+      DotProduct(sph->sphdata[i].v,sph->sphdata[i].v,ndim);
     diag.utot += sph->sphdata[i].m*sph->sphdata[i].u;
     diag.gpetot += sph->sphdata[i].m*sph->sphdata[i].gpot;
     for (k=0; k<ndim; k++) {
@@ -375,7 +375,11 @@ void SphSimulation::Setup(void)
   // --------------------------------------------------------------------------
   if (sph->Nsph > 0) {
 
+    // Set all relevant particle counters
+    sph->Nghost = 0;
+    sph->Nghostmax = sph->Nsphmax - sph->Nsph;
     sph->Ntot = sph->Nsph;
+    for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
     
     sph->InitialSmoothingLengthGuess();
     sphneib->UpdateTree(sph,simparams);

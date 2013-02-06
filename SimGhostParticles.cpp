@@ -61,7 +61,7 @@ void SphSimulation::SearchGhostParticles(void)
 {
   int i;
   int k;
-  const float ghost_range = 1.1;
+  const float ghost_range = 1.2;
   const float kernrange = sph->kern->kernrange;
   SphParticle *sphdata = sph->sphdata;
 
@@ -165,7 +165,7 @@ void SphSimulation::SearchGhostParticles(void)
   }
 #endif
 
-  cout << "Nghost : " << sph->Nghost << "   " << sph->Nghostmax;
+  //cout << "Nghost : " << sph->Nghost << "   " << sph->Nghostmax << endl;
 
   // Quit here if we've run out of memory for ghosts
   if (sph->Ntot > sph->Nsphmax) {
@@ -225,6 +225,7 @@ void SphSimulation::CopyDataToGhosts(void)
 
     for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = rp[k];
     for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = vp[k];
+    sph->sphdata[i].active = false;
 
   }
 

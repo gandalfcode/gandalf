@@ -91,7 +91,7 @@ void BruteForceSearch::UpdateAllSphForces(Sph *sph, Parameters &params)
   Nneib = sph->Ntot;
   neiblist = new int[sph->Ntot];
   for (int i=0; i<sph->Ntot; i++) neiblist[i] = i;
-  cout << "self_gravity : " << params.intparams["self_gravity"] << endl;
+
   // Compute SPH hydro forces for all particles
   if (params.intparams["hydro_forces"] == 1)
     for (int i=0; i<sph->Nsph; i++) 

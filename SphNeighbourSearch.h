@@ -87,7 +87,7 @@ class GridSearch: public SphNeighbourSearch
   int ComputeParticleGridCell(float *);
   void ComputeCellCoordinate(int, int *);
   int ComputeActiveCellList(int *);
-  int ComputeActiveParticleList(int, int *);
+  int ComputeActiveParticleList(int, int *, Sph *);
   int ComputeNeighbourList(int, int *);
   void CheckValidNeighbourList(Sph *,int,int,int *,string);
   void ValidateGrid(void);
@@ -100,6 +100,7 @@ class GridSearch: public SphNeighbourSearch
   int Ngrid[ndimmax];                       // No. of cells in each dimension
   int Noccupymax;                           // Max. occupancy of all cells
   int Nlistmax;                             // Max. length of neighbour list
+  int Nsph;
   int Ntot;                                 // No. of current points in list
   int Ntotmax;                              // Max. no. of points in list
   int *inext;                               // Linked list for grid search

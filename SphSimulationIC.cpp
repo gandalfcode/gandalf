@@ -134,6 +134,7 @@ void SphSimulation::RandomBox(void)
     sph->sphdata[i].m = 1.0f / (float) sph->Nsph;
     sph->sphdata[i].invomega = 0.5f;
     sph->sphdata[i].iorig = i;
+    sph->sphdata[i].u = 1.5;
   }
 
   delete[] r;
@@ -332,7 +333,7 @@ void SphSimulation::AddRandomSphere(int Npart, float *r,
     do {
       for (int k=0; k<ndim; k++) 
 	rpos[k] = 1.0 - 2.0*(float)(rand()%RAND_MAX)/(float)RAND_MAX;
-      rad = DotProduct(rpos,rpos);
+      rad = DotProduct(rpos,rpos,ndim);
     } while (rad > radius);
     for (int k=0; k<ndim; k++) r[ndim*i + k] = rcentre[k] + rpos[k];
   }

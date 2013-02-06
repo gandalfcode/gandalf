@@ -14,9 +14,14 @@ PRECISION                 = SINGLE
 NDIM                      = 0
 DEBUG                     = 1
 
-#PYLIB = /sw/include/python2.7
-#NUMPY = /sw/lib/python2.7/site-packages/numpy/core/include
 
+# Select location of python and numpy libraries.  If blank, make will try to 
+# find the location of the libraries automatically using installed python 
+# utilities.  If you have multiple versions of python installed on your 
+# computer, then select the prefered version with the PYTHON variable above.
+# -----------------------------------------------------------------------------
+PYLIB =
+NUMPY = 
 ifneq ($(PYTHON),)
 ifeq ($(NUMPY),)
 NUMPY = $(shell $(PYTHON) -c "import numpy; print numpy.get_include()")
@@ -25,6 +30,10 @@ ifeq ($(PYLIB),)
 PYLIB = $(shell $(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_inc()")
 endif
 endif
+
+#PYLIB = /sw/include/python2.7
+#NUMPY = /sw/lib/python2.7/site-packages/numpy/core/include
+
 
 
 # Dimensionality of the code
@@ -42,6 +51,8 @@ ERROR += "Invalid value for NDIM : "$(NDIM)"\n"
 endif
 
 
+# Debug flags
+# ----------------------------------------------------------------------------
 ifeq ($(DEBUG),1)
 CFLAGS += -DDEBUG1
 else ifeq ($(DEBUG),2)
@@ -49,9 +60,10 @@ CFLAGS += -DDEBUG1 -DDEBUG2
 endif
 
 
+# Object files to be compiled
+# ----------------------------------------------------------------------------
 SWIG_HEADERS = Parameters.i SimUnits.i Sph.i SphSnapshot.i SphSimulation.i
 WRAP_OBJ = Parameters_wrap.o SimUnits_wrap.o Sph_wrap.o SphSnapshot_wrap.o SphSimulation_wrap.o
-
 OBJ = Parameters.o SimUnits.o SphSnapshot.o SphSimulation.o
 OBJ += SphSimulationIC.o SphSimulationIO.o
 OBJ += M4Kernel.o
