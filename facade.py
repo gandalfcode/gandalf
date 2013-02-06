@@ -1,5 +1,5 @@
 import atexit
-import commands
+import Commands
 from multiprocessing import Manager, Queue
 from plotting import PlottingProcess
 from SimBuffer import SimBuffer, BufferException
@@ -15,14 +15,15 @@ def loadsim(run_id):
     return SimBuffer.get_current_sim()
     
 def plot(x,y, overplot = False, snap="current", autoscale = True, sim="current"):
-    command = commands.ParticlePlotCommand(x, y, autoscale)
+    command = Commands.ParticlePlotCommand(x, y, autoscale)
     command.overplot = overplot
     command.snap = snap
     if sim == "current":
         simobject = SimBuffer.get_current_sim()
         simno = SimBuffer.simlist.index(simobject)
     else:
-        simno = sim 
+        simno = sim
+    #TODO: substitute the number of the simulation inside the plot command with the object
     command.sim = simno
     data = command.prepareData()
     Singletons.queue.put([command, data])
@@ -53,12 +54,12 @@ def snap(no):
     update("current")
         
 def window(no = None):
-    command = commands.WindowCommand(no)
+    command = Commands.WindowCommand(no)
     data = None
     Singletons.queue.put([command,data])
 
 def subfigure(nx, ny, current):
-    command = commands.SubfigureCommand(nx, ny, current)
+    command = Commands.SubfigureCommand(nx, ny, current)
     data = None
     Singletons.queue.put([command,data])
 
@@ -103,16 +104,38 @@ def update(type=None):
             Singletons.queue.put([command, data])
 
 def savefig(name):
-    command = commands.SaveFigCommand(name)
+    command = Commands.SaveFigCommand(name)
     data = None
     Singletons.queue.put([command,data])
     time.sleep(1e-3)
 
 def switch_nongui():
-    command = commands.SwitchNonGui()
+    command = Commands.SwitchNonGui()
     data = None
     Singletons.queue.put([command,data])
     time.sleep(1e-3)
+
+def plotanalytical(x=None, y=None, overplot = True, sim = "current", snap = "current", autoscale = True):
+    '''Plots the analytical solution'''
+    
+    #TODO: remove duplicated code from the plot function
+    
+    #TODO: figure out automatically the quantities to plot depending on current window    
+    
+    #get the simulation number from the buffer
+    if sim == "current":
+        simobject = SimBuffer.get_current_sim()
+        simno = SimBuffer.simlist.index(simobject)
+    else:
+        simno = sim
+    
+    #istantiate and setup the command object
+    command = Commands.AnalyticalPlotCommand(x, y, autoscale)
+    command.overplot = overplot
+    command.sim = simno
+    command.snap = snap
+    data = command.prepareData()
+    Singletons.queue.put([command, data])
 
 def init():
     global plottingprocess
@@ -137,16 +160,13 @@ signal.signal(signal.SIGSEGV, sigint)
 atexit.register(cleanup)
 
 if __name__=="__main__":
-    import time
-    newsim('adshock.dat')
+    loadsim('TEST')
     plot("x","rho")
-    savefig('xrho.pdf')
-    run()
-    time.sleep(2)
-    savefig('xrho2.pdf')
-    switch_nongui()
-    plot("x","vx")
-    savefig('xv.pdf')
+    plotanalytical("x","rho")
+    import time; time.sleep(1)
+    next(); time.sleep(1)
+    snap(10)
+    block()
 #    
 #    loadsim('TEST')
 #    plot("x","y", snap=0)
@@ -172,5 +192,4 @@ if __name__=="__main__":
 #    for i in range(10):
 #        time.sleep(1)
 #        previous()
-    import sys; sys.exit()
 
