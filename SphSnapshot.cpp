@@ -224,5 +224,6 @@ void SphSnapshot::ReadSnapshot(string format, SphSimulation * simulation) {
   simulation->ReadSnapshotFile(filename, format);
   CopyDataFromSimulation(simulation->simparams.intparams["ndim"],
 			 simulation->sph->Nsph , simulation->sph->sphdata );
+  t= simulation->t;
 
 }
