@@ -4,6 +4,7 @@ from multiprocessing import Manager, Queue
 from plotting import PlottingProcess
 from SimBuffer import SimBuffer, BufferException
 import signal
+from time import sleep
 
 class Singletons:
     queue = Queue()
@@ -25,6 +26,7 @@ def plot(x,y, overplot = False, snap="current", autoscale = True, sim="current")
     command.sim = simno
     data = command.prepareData()
     Singletons.queue.put([command, data])
+    sleep(0.001)
 
 def addplot (x,y, **kwargs):
     plot(x,y, True, **kwargs)
@@ -84,7 +86,7 @@ def run(no=None):
     update("live")
 
 def block():
-    print "Type enter to quit..."
+    print "Press enter to quit..."
     raw_input()
 
 def update(type=None):
@@ -100,8 +102,17 @@ def update(type=None):
             data = command.prepareData()
             Singletons.queue.put([command, data])
 
+def savefig(name):
+    command = commands.SaveFigCommand(name)
+    data = None
+    Singletons.queue.put([command,data])
+    time.sleep(1e-3)
 
-
+def switch_nongui():
+    command = commands.SwitchNonGui()
+    data = None
+    Singletons.queue.put([command,data])
+    time.sleep(1e-3)
 
 def init():
     global plottingprocess
@@ -127,11 +138,15 @@ atexit.register(cleanup)
 
 if __name__=="__main__":
     import time
-    newsim('TEST.param')
-    plot("x","y")
-    time.sleep(5)
+    newsim('adshock.dat')
+    plot("x","rho")
+    savefig('xrho.pdf')
     run()
     time.sleep(2)
+    savefig('xrho2.pdf')
+    switch_nongui()
+    plot("x","vx")
+    savefig('xv.pdf')
 #    
 #    loadsim('TEST')
 #    plot("x","y", snap=0)

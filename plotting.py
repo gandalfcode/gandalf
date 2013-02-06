@@ -12,6 +12,8 @@ class PlottingProcess (Process):
     
     def run(self):
         import matplotlib.pyplot as plt
+        import warnings
+        warnings.filterwarnings("ignore", "matplotlib is currently using a non-GUI backend, so cannot show the figure")
         self.plt = plt
         self.ppid = os.getppid()
         

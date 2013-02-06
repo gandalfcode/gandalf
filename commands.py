@@ -10,6 +10,21 @@ class Command:
         Command.id += 1
         self.id = Command.id
 
+class SwitchNonGui(Command):
+    def __init__(self):
+        Command.__init__(self)
+        
+    def processCommand(self, plotting, data):
+        plotting.plt.switch_backend('Agg')
+        
+class SaveFigCommand(Command):
+    def __init__(self, name):
+        Command.__init__(self)
+        self.name = name
+        
+    def processCommand (self, plotting, data):
+        fig = plotting.plt.savefig(self.name)
+
 class WindowCommand(Command):
     def __init__(self, no = None):
         Command.__init__(self)
@@ -49,6 +64,7 @@ class PlotCommand(Command):
             if self.autoscale:
                 ax.relim()
                 ax.autoscale_view()
+            fig.canvas.draw()
         elif self.id > plotting.lastid:
             fig = plotting.plt.gcf()
             ax = fig.gca()
@@ -59,7 +75,7 @@ class PlotCommand(Command):
             plotting.commands.append(self)
             plotting.commandsfigures[self.id]= fig, ax, product
             plotting.lastid = self.id
-        fig.canvas.draw()
+            fig.canvas.draw()
 
 class ParticlePlotCommand (PlotCommand):
     
