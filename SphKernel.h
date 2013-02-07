@@ -56,4 +56,27 @@ class M4Kernel: public SphKernel
 };
 
 
+
+// ============================================================================
+// Class QuinticKernel
+// ============================================================================
+class QuinticKernel: public SphKernel
+{
+ public:
+
+  QuinticKernel(int);
+  ~QuinticKernel();
+
+  // M4 kernel function prototypes
+  // --------------------------------------------------------------------------
+  float w0(float);
+  float w1(float);
+  float womega(float);
+  float wzeta(float);
+  float wgrav(float);
+  float wpot(float);
+
+};
+
+
 #endif

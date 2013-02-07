@@ -95,7 +95,7 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
       j = neiblist[jj];
 
       for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - sphdata[i].r[k];
-      drmag = DotProduct(dr,dr);
+      drmag = DotProduct(dr,dr,ndim);
       
       // Skip particle if not a neighbour
       if (drmag > hrangesqd) continue;
@@ -104,7 +104,7 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
       for (k=0; k<ndim; k++) dr[k] /= (drmag + small_number);
       for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - sphdata[i].v[k];
       
-      sphdata[i].div_v -= sphdata[j].m*DotProduct(dv,dr)*
+      sphdata[i].div_v -= sphdata[j].m*DotProduct(dv,dr,ndim)*
 	kern->w1(drmag*sphdata[i].invh)*sphdata[i].hfactor*sphdata[i].invh;
       sphdata[i].rho += sphdata[j].m*sphdata[i].hfactor*
 	kern->w0(drmag*sphdata[i].invh);
@@ -113,7 +113,7 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
 
     }
     // ------------------------------------------------------------------------
-    
+
     if (sphdata[i].rho > 0.0) sphdata[i].invrho = 1.0/sphdata[i].rho;
 
     // If h changes below some fixed tolerance, exit iteration loop
@@ -158,8 +158,6 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
     sphdata[i].invomega*sphdata[i].invrho;
   sphdata[i].invomega = 1.0/sphdata[i].invomega;
   sphdata[i].div_v *= sphdata[i].invrho;
-
-  //cout << "h[" << i << "] : " << sphdata[i].h << endl;
 
   return 1;
 }
@@ -221,7 +219,7 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
     // Calculate relative position vector and determine if particles
     // are neighbours or not. If not, skip to next potential neighbour.
     for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - sphdata[i].r[k];
-    drmag = DotProduct(dr,dr);
+    drmag = DotProduct(dr,dr,ndim);
     if (drmag > hrangesqd && 
 	drmag > kern->kernrangesqd*sphdata[j].h*sphdata[j].h) continue;
 
@@ -229,7 +227,7 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
     drmag = sqrt(drmag);
     for (k=0; k<ndim; k++) dr[k] /= (drmag + small_number);
     for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - sphdata[i].v[k];
-    dvdr = DotProduct(dv,dr);
+    dvdr = DotProduct(dv,dr,ndim);
 
     // Compute hydro acceleration
     for (k=0; k<ndim; k++) sphdata[i].a[k] += sphdata[j].m*dr[k]*
@@ -305,7 +303,7 @@ void GradhSph::ComputeGravForces(int i, int Nneib, int *neiblist)
     if (i == j) continue;
 
     for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - sphdata[i].r[k];
-    drmag = DotProduct(dr,dr);
+    drmag = DotProduct(dr,dr,ndim);
     drmag = sqrt(drmag);
     invdrmag = 1.0/(drmag + small_number);
 
@@ -366,7 +364,7 @@ void GradhSph::ComputeMeanhZeta(int i, int Nneib, int *neiblist)
     // Calculate relative position vector and determine if particles
     // are neighbours or not. If not, skip to next potential neighbour.
     for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - sphdata[i].r[k];
-    drmag = DotProduct(dr,dr);
+    drmag = DotProduct(dr,dr,ndim);
     if (4.0*drmag > kernrangesqd*pow(sphdata[i].h + sphdata[j].h,2)) continue;
 
     // If particles are neighbours, continue computing hydro quantities

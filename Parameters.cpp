@@ -99,7 +99,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["run_id"] = "TEST";
   stringparams["in_file_form"] = "ascii";
   stringparams["out_file_form"] = "ascii";
-  floatparams["tend"] = 10.0;
+  floatparams["tend"] = 1.0;
   floatparams["dt_snap"] = 0.1;
   intparams["Nstepsmax"] = 9999999;
   intparams["noutputstep"] = 16;

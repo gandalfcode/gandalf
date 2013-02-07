@@ -93,7 +93,7 @@ void GridSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
     c = celllist[cc];
 
     // Find list of active particles
-    Nactive = ComputeActiveParticleList(c,activelist);
+    Nactive = ComputeActiveParticleList(c,activelist,sph);
 
     // Compute neighbour list for cell
     Nneib = ComputeNeighbourList(c,neiblist);
@@ -158,7 +158,7 @@ void GridSearch::UpdateAllSphForces(Sph *sph, Parameters &params)
       c = celllist[cc];
       
       // Find list of active particles
-      Nactive = ComputeActiveParticleList(c,activelist);
+      Nactive = ComputeActiveParticleList(c,activelist,sph);
       
       // Compute neighbour list for cell
       Nneib = ComputeNeighbourList(c,neiblist);
@@ -245,7 +245,7 @@ void GridSearch::CreateGrid(Sph *sph)
 {
   int c;
   float h_max = 0.0;
-  static float grid_h_tolerance = 1.4;
+  static float grid_h_tolerance = 1.6;
 
   debug2("[GridSearch::CreateGrid]");
   
@@ -256,7 +256,7 @@ void GridSearch::CreateGrid(Sph *sph)
   //cout << "Grid size : " << dx_grid << "   " << h_max << endl;
 
   // Compute bounding box of all particles
-  sph->SphBoundingBox(rmax,rmin);
+  sph->SphBoundingBox(rmax,rmin,sph->Ntot);
 
   // Calculate no. of grid cells in each dimension and in total
   Ncell = 1;
@@ -268,7 +268,8 @@ void GridSearch::CreateGrid(Sph *sph)
   //cout << "Ngrid : " << Ncell << endl;
 
   // Allocate memory for grid if not previously done
-  AllocateGridMemory(sph->Nsph);
+  AllocateGridMemory(sph->Ntot);
+  Nsph = sph->Nsph;
 
   // Initialise all values in cells
   for (int c=0; c<Ncellmax; c++) {
@@ -281,7 +282,7 @@ void GridSearch::CreateGrid(Sph *sph)
 
   // Now attach all particles to grid cells
   // --------------------------------------------------------------------------
-  for (int i=0; i<sph->Nsph; i++) {
+  for (int i=0; i<sph->Ntot; i++) {
     c = ComputeParticleGridCell(sph->sphdata[i].r);
 
     // If cell currently contains no particles, record first particle.
@@ -290,7 +291,7 @@ void GridSearch::CreateGrid(Sph *sph)
     else inext[grid[c].ilast] = i;
     grid[c].ilast = i;
     grid[c].Nptcls++;
-    grid[c].Nactive++;
+    if (sph->sphdata[i].active) grid[c].Nactive++;
 
   }
   // --------------------------------------------------------------------------
@@ -340,17 +341,21 @@ void GridSearch::ComputeCellCoordinate(int c, int igrid[ndimmax])
   else if (ndim == 2) {
     igrid[1] = c/Ngrid[0];
     igrid[0] = c%Ngrid[0];
+    if (c != igrid[0] + igrid[1]*Ngrid[0]) {
+      cout << "Problem with ComputeCellCoordinate : " << c << "   " << 
+	igrid[0] + igrid[1]*Ngrid[0] << endl; exit(0);
+    }
   }
   else if (ndim == 3) {
     igrid[2] = c/Ngrid[0]/Ngrid[1];
     igrid[1] = (c/Ngrid[0])%Ngrid[1];
     igrid[0] = c%Ngrid[0];
   }
-  if (c != igrid[0]) {
-    cout << "Problem with ComputeCellCoordinate" << c << "   " << 
-      igrid[0] << endl;
-    exit(0);
-  }
+  //if (c != igrid[0]) {
+  //  cout << "Problem with ComputeCellCoordinate : " << c << "   " << 
+  //    igrid[0] << endl;
+  //  exit(0);
+  // }
   return;
 }
 
@@ -376,7 +381,8 @@ int GridSearch::ComputeActiveCellList(int *celllist)
 // ============================================================================
 // GridSearch::ComputeActiveParticleList
 // ============================================================================
-int GridSearch::ComputeActiveParticleList(int c, int *activelist)
+int GridSearch::ComputeActiveParticleList(int c, int *activelist, 
+					  Sph *sph)
 {
   int Nactive = 0;
   int i = grid[c].ifirst;
@@ -385,7 +391,7 @@ int GridSearch::ComputeActiveParticleList(int c, int *activelist)
   if (grid[c].Nptcls == 0) return 0;
 
   do {
-    activelist[Nactive++] = i;
+    if (sph->sphdata[i].active) activelist[Nactive++] = i;
     if (i == ilast) break;
     i = inext[i];
   } while (i != -1);
@@ -443,8 +449,9 @@ int GridSearch::ComputeNeighbourList(int c, int *neiblist)
 	ilast = grid[caux].ilast;
 	do {
 	  neiblist[Nneib++] = i;
-	  if (i != ilast) i = inext[i];
-	} while (i != ilast);
+	  if (i == ilast) break;
+	  i = inext[i];
+	} while (i != -1);
       }
     }
   }
@@ -501,7 +508,7 @@ void GridSearch::CheckValidNeighbourList(Sph *sph, int i, int Nneib,
     for (j=0; j<sph->Ntot; j++) {
       for (k=0; k<ndimmax; k++)
 	dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
-      drsqd = DotProduct(dr,dr);
+      drsqd = DotProduct(dr,dr,ndim);
       if (drsqd <= sph->kern->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h)
 	trueneiblist[Ntrueneib++] = j;
     }
@@ -510,7 +517,7 @@ void GridSearch::CheckValidNeighbourList(Sph *sph, int i, int Nneib,
     for (j=0; j<sph->Ntot; j++) {
       for (k=0; k<ndimmax; k++)
 	dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
-      drsqd = DotProduct(dr,dr);
+      drsqd = DotProduct(dr,dr,ndim);
       if (drsqd <= sph->kern->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h 
 	  && drsqd <= sph->kern->kernrangesqd*
 	  sph->sphdata[j].h*sph->sphdata[j].h)
@@ -534,6 +541,8 @@ void GridSearch::CheckValidNeighbourList(Sph *sph, int i, int Nneib,
       exit(0);
     }
   }
+
+  delete[] trueneiblist;
 
   return;
 }
@@ -579,6 +588,8 @@ void GridSearch::ValidateGrid(void)
       exit(0);
     }
   }
+
+  delete[] gridentry;
 
   return;
 }

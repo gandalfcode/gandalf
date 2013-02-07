@@ -11,6 +11,7 @@
 
 
 struct SphParticle {
+  bool active;
   int iorig;
   int itype;
   float r[ndimmax];
@@ -39,6 +40,7 @@ struct SphParticle {
 
   SphParticle()
   {
+    active = false;
     iorig = -1;
     itype = -1;
     for (int k=0; k<ndimmax; k++) r[k] = 0.0;

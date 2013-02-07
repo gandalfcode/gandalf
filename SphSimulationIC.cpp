@@ -134,6 +134,7 @@ void SphSimulation::RandomBox(void)
     sph->sphdata[i].m = 1.0f / (float) sph->Nsph;
     sph->sphdata[i].invomega = 0.5f;
     sph->sphdata[i].iorig = i;
+    sph->sphdata[i].u = 1.5;
   }
 
   delete[] r;
@@ -285,11 +286,39 @@ void SphSimulation::KHI(void)
   // Add velocity perturbation here
   // --------------------------------------------------------------------------
   float sigmapert = 0.05/sqrt(2.0);
-  for (i=i; i<sph->Nsph; i++) {
+  for (i=0; i<sph->Nsph; i++) {
     sph->sphdata[i].v[1] = amp*sin(2.0*pi*sph->sphdata[i].r[0]/lambda)*
       (exp(-pow(sph->sphdata[i].r[1] + 0.25,2)/2.0/sigmapert/sigmapert) +  
        exp(-pow(sph->sphdata[i].r[1] - 0.25,2)/2.0/sigmapert/sigmapert));
   }
+
+  // Set initial smoothing lengths and create initial ghost particles
+  // --------------------------------------------------------------------------
+  sph->Nghost = 0;
+  sph->Nghostmax = sph->Nsphmax - sph->Nsph;
+  sph->Ntot = sph->Nsph;
+  for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
+  
+  sph->InitialSmoothingLengthGuess();
+  sphneib->UpdateTree(sph,simparams);
+  
+  sphneib->UpdateAllSphProperties(sph,simparams);
+  
+  // Search ghost particles
+  SearchGhostParticles();
+  
+  // Update neighbour tre
+  sphneib->UpdateTree(sph,simparams);
+
+  // Calculate all SPH properties
+  sphneib->UpdateAllSphProperties(sph,simparams);
+  
+  // Copy data to ghosts
+  CopyDataToGhosts();
+
+  for (i=0; i<sph->Nsph; i++) 
+    sph->sphdata[i].u = press1*sph->sphdata[i].invrho/gammaone;
+
 
   delete[] r;
 
@@ -332,7 +361,7 @@ void SphSimulation::AddRandomSphere(int Npart, float *r,
     do {
       for (int k=0; k<ndim; k++) 
 	rpos[k] = 1.0 - 2.0*(float)(rand()%RAND_MAX)/(float)RAND_MAX;
-      rad = DotProduct(rpos,rpos);
+      rad = DotProduct(rpos,rpos,ndim);
     } while (rad > radius);
     for (int k=0; k<ndim; k++) r[ndim*i + k] = rcentre[k] + rpos[k];
   }
