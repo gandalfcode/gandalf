@@ -98,13 +98,23 @@ void GridSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
     // Compute neighbour list for cell
     Nneib = ComputeNeighbourList(c,neiblist);
 
+    // Creates neighbour list local copy
+    SphParticle * neiblistpart = new SphParticle[Nneib];
+
+    // Copies particle from the main array to the new array
+    SphParticle * data;
+    for (j=0; j<Nneib; j++) {
+      neiblistpart[j] = data[neiblist[j]];
+    }
+
     // Loop over all active particles in the cell
     for (j=0; j<Nactive; j++) {
       i = activelist[j];
-      okflag = sph->ComputeH(i,Nneib,neiblist,simparams);
+      okflag = sph->ComputeH(i,Nneib,neiblistpart,simparams);
       //CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
     }
 
+    delete[] neiblistpart;
 
     // Compute all other SPH properties
     for (j=0; j<Nactive; j++) {

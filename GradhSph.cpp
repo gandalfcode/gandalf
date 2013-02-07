@@ -54,7 +54,7 @@ GradhSph::~GradhSph()
 // correct value of h.  The maximum tolerance used for deciding whether the 
 // iteration has converged is given by the 'h_converge' parameter.
 // ============================================================================
-int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
+int GradhSph::ComputeH(int i, int Nneib, SphParticle *neiblistpart, Parameters &params)
 {
   int j;                                      // Neighbour id
   int jj;                                     // Aux. neighbour counter
@@ -95,9 +95,9 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
     // Loop over all neighbours in list
     // ------------------------------------------------------------------------
     for (jj=0; jj<Nneib; jj++) {
-      j = neiblist[jj];
+//      j = neiblist[jj];
 
-      for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - parti.r[k];
+      for (k=0; k<ndim; k++) dr[k] = neiblistpart[jj].r[k] - parti.r[k];
       drmag = DotProduct(dr,dr,ndim);
       
       // Skip particle if not a neighbour
@@ -105,13 +105,13 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
 
       drmag = sqrt(drmag);
       for (k=0; k<ndim; k++) dr[k] /= (drmag + small_number);
-      for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - parti.v[k];
+      for (k=0; k<ndim; k++) dv[k] = neiblistpart[jj].v[k] - parti.v[k];
       
-      parti.div_v -= sphdata[j].m*DotProduct(dv,dr,ndim)*
+      parti.div_v -= neiblistpart[jj].m*DotProduct(dv,dr,ndim)*
 	kern->w1(drmag*parti.invh)*parti.hfactor*parti.invh;
-      parti.rho += sphdata[j].m*parti.hfactor*
+      parti.rho += neiblistpart[jj].m*parti.hfactor*
 	kern->w0(drmag*parti.invh);
-      parti.invomega += sphdata[j].m*parti.hfactor*
+      parti.invomega += neiblistpart[jj].m*parti.hfactor*
 	parti.invh*kern->womega(drmag*parti.invh);
 
     }

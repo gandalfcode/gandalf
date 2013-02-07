@@ -29,7 +29,7 @@ class Sph
   // SPH functions for computing SPH sums with neighbouring particles 
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
   // --------------------------------------------------------------------------
-  virtual int ComputeH(int,int,int *,Parameters &) = 0;
+  virtual int ComputeH(int,int,SphParticle *,Parameters &) = 0;
   virtual void ComputeSphProperties(int,int,int *,Parameters &) = 0;
   virtual void ComputeHydroForces(int,int,int *,Parameters &) = 0;
   virtual void ComputeGravForces(int,int,int *) = 0;
@@ -83,7 +83,7 @@ class GradhSph: public Sph
   GradhSph(int,int,int);
   ~GradhSph();
 
-  int ComputeH(int,int,int *,Parameters &);
+  int ComputeH(int,int,SphParticle *,Parameters &);
   void ComputeSphProperties(int,int,int *,Parameters &);
   void ComputeHydroForces(int,int,int *,Parameters &);
   void ComputeGravForces(int,int,int *);
