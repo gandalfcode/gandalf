@@ -31,10 +31,10 @@ class Sph
   // SPH functions for computing SPH sums with neighbouring particles 
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
   // --------------------------------------------------------------------------
-  virtual int ComputeH(int,int,int *,Parameters &) = 0;
-  virtual void ComputeSphProperties(int,int,int *,Parameters &) = 0;
-  virtual void ComputeHydroForces(int,int,int *,Parameters &) = 0;
-  virtual void ComputeGravForces(int,int,int *) = 0;
+  virtual int ComputeH(int,int,SphParticle *,Parameters &) = 0;
+  virtual void ComputeSphProperties(int,int,SphParticle *,Parameters &) = 0;
+  virtual void ComputeHydroForces(int,int,SphParticle *,Parameters &) = 0;
+  virtual void ComputeGravForces(int,int,SphParticle *) = 0;
   virtual void ComputeMeanhZeta(int,int,int *) = 0;
 
   // SPH array memory allocation functions
@@ -90,10 +90,10 @@ class GradhSph: public Sph
   GradhSph(int,int,int);
   ~GradhSph();
 
-  int ComputeH(int,int,int *,Parameters &);
-  void ComputeSphProperties(int,int,int *,Parameters &);
-  void ComputeHydroForces(int,int,int *,Parameters &);
-  void ComputeGravForces(int,int,int *);
+  int ComputeH(int,int,SphParticle *,Parameters &);
+  void ComputeSphProperties(int,int,SphParticle *,Parameters &);
+  void ComputeHydroForces(int,int,SphParticle *,Parameters &);
+  void ComputeGravForces(int,int,SphParticle *);
   void ComputeMeanhZeta(int,int,int *);
 
 };

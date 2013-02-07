@@ -56,21 +56,16 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
 
   debug2("[BruteForceSearch::UpdateAllSphProperties]");
 
-  // Allocate array to store local copy of potential neighbour ids
+  // The potential number of neighbours is given by ALL the particles
   Nneib = sph->Ntot;
-  neiblist = new int[sph->Ntot];
-  for (int i=0; i<sph->Ntot; i++) neiblist[i] = i;
 
   // Compute smoothing lengths of all SPH particles
   for (int i=0; i<sph->Nsph; i++) 
-    okflag = sph->ComputeH(i,Nneib,neiblist,simparams);
+    okflag = sph->ComputeH(i,Nneib,sph->sphdata,simparams);
 
   // Compute all other SPH properties
   for (int i=0; i<sph->Nsph; i++)
-    sph->ComputeSphProperties(i,Nneib,neiblist,simparams);
-
-  // Free up memory from local array
-  delete[] neiblist;
+    sph->ComputeSphProperties(i,Nneib,sph->sphdata,simparams);
 
   return;
 }
@@ -89,21 +84,17 @@ void BruteForceSearch::UpdateAllSphForces(Sph *sph, Parameters &params)
 
   // Allocate array to store local copy of potential neighbour ids
   Nneib = sph->Ntot;
-  neiblist = new int[sph->Ntot];
-  for (int i=0; i<sph->Ntot; i++) neiblist[i] = i;
 
   // Compute SPH hydro forces for all particles
   if (params.intparams["hydro_forces"] == 1)
     for (int i=0; i<sph->Nsph; i++) 
-      sph->ComputeHydroForces(i,Nneib,neiblist,params);
+      sph->ComputeHydroForces(i,Nneib,sph->sphdata,params);
 
   // Compute SPH hydro forces for all particles
   if (params.intparams["self_gravity"] == 1)
     for (int i=0; i<sph->Nsph; i++)
-      sph->ComputeGravForces(i,Nneib,neiblist);
+      sph->ComputeGravForces(i,Nneib,sph->sphdata);
 
-  // Free up memory from local array
-  delete[] neiblist;
 
   return;
 }
