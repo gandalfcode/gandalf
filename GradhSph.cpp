@@ -108,11 +108,11 @@ int GradhSph::ComputeH(int i, int Nneib, SphParticle *neiblistpart, Parameters &
       for (k=0; k<ndim; k++) dv[k] = neiblistpart[jj].v[k] - parti.v[k];
       
       parti.div_v -= neiblistpart[jj].m*DotProduct(dv,dr,ndim)*
-	kern->w1(drmag*parti.invh)*parti.hfactor*parti.invh;
+	w1(drmag*parti.invh)*parti.hfactor*parti.invh;
       parti.rho += neiblistpart[jj].m*parti.hfactor*
-	kern->w0(drmag*parti.invh);
+	w0(drmag*parti.invh);
       parti.invomega += neiblistpart[jj].m*parti.hfactor*
-	parti.invh*kern->womega(drmag*parti.invh);
+	parti.invh*womega(drmag*parti.invh);
 
     }
     // ------------------------------------------------------------------------

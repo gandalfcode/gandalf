@@ -10,7 +10,10 @@
 
 
 #include <string>
+#include "Dimensions.h"
 using namespace std;
+
+static const float kernnorm = invpi*7.0/478.0;
 
 
 // ============================================================================
@@ -43,5 +46,64 @@ static inline void PrintArray(string message, int Tsize, T *array)
   return;
 }
 
+inline float w0(float s)
+{
+  if (s < 1.0)
+    return kernnorm*(66.0 - 60.0*s*s + 30.0*pow(s,4) - 10.0*pow(s,5));
+  else if (s < 2.0)
+    return kernnorm*(51.0 + 75.0*s - 210.0*s*s + 150.0*pow(s,3) -
+             45.0*pow(s,4) + 5.0*pow(s,5));
+  else if (s < 3.0)
+    return kernnorm*(243.0 - 405*s + 270.0*s*s - 90.0*pow(s,3) +
+             15.0*pow(s,4) - pow(s,5));
+  else
+    return 0.0;
+}
+
+
+
+// ============================================================================
+// QuinticKernel::w1
+// ============================================================================
+inline float w1(float s)
+{
+  if (s < 1.0)
+    return kernnorm*(-120.0*s + 120.0*pow(s,3) - 50.0*pow(s,4));
+  else if (s < 2.0)
+    return kernnorm*(75.0 - 420.0*s + 450.0*s*s -
+             180.0*pow(s,3) + 25.0*pow(s,4));
+  else if (s < 2.0)
+    return kernnorm*(-405.0 + 540.0*s - 270.0*s*s +
+             60.0*pow(s,3) - 5.0*pow(s,4));
+  else
+    return 0.0;
+}
+
+
+
+// ============================================================================
+// QuinticKernel::womega
+// ============================================================================
+inline float womega(float s)
+{
+  if (s < 1.0)
+    return kernnorm*(-66.0*ndimpr + 60.0*(ndimpr + 2.0)*s*s -
+             30.0*(ndimpr + 4.0)*pow(s,4) +
+             10.0*(ndimpr + 5.0)*pow(s,5));
+  else if (s < 2.0)
+    return kernnorm*(-51.0*ndimpr - 75.0*(ndimpr + 1.0)*s +
+             210.0*(ndimpr + 2.0)*s*s -
+             150.0*(ndimpr + 3.0)*pow(s,3) +
+             45.0*(ndimpr + 4.0)*pow(s,4) -
+             5.0*(ndimpr + 5.0)*pow(s,5));
+  else if (s < 3.0)
+    return kernnorm*(-243.0*ndimpr + 405.0*(ndimpr + 1.0)*s -
+             270.0*(ndimpr + 2.0)*s*s +
+             90.0*(ndimpr + 3.0)*pow(s,3) -
+             15.0*(ndimpr + 4.0)*pow(s,4) +
+             (ndimpr + 5.0)*pow(s,5));
+  else
+    return 0.0;
+}
 
 #endif

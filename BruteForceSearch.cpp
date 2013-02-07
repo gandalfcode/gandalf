@@ -62,8 +62,8 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
   for (int i=0; i<sph->Ntot; i++) neiblist[i] = i;
 
   // Compute smoothing lengths of all SPH particles
-  for (int i=0; i<sph->Nsph; i++) 
-    okflag = sph->ComputeH(i,Nneib,neiblist,simparams);
+  for (int i=0; i<sph->Nsph; i++) {}
+//    okflag = sph->ComputeH(i,Nneib,neiblist,simparams);
 
   // Compute all other SPH properties
   for (int i=0; i<sph->Nsph; i++)
