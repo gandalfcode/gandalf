@@ -76,25 +76,28 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
   for (int k=0; k<ndimmax; k++) dr[k] = 0.0;
   for (int k=0; k<ndimmax; k++) dv[k] = 0.0;
 
+  // Particle local copy
+  SphParticle parti = sphdata[i];
+
   // Main smoothing length iteration loop
   // --------------------------------------------------------------------------
   do {
 
     // Initialise all variables for this value of h
     iteration++;
-    hrangesqd = kern->kernrangesqd*sphdata[i].h*sphdata[i].h;
-    sphdata[i].invh = 1.0/sphdata[i].h;
-    sphdata[i].hfactor = pow(sphdata[i].invh,ndim);
-    sphdata[i].rho = 0.0;
-    sphdata[i].invomega = 0.0;
-    sphdata[i].div_v = 0.0;
+    hrangesqd = kern->kernrangesqd*parti.h*parti.h;
+    parti.invh = 1.0/parti.h;
+    parti.hfactor = pow(parti.invh,ndim);
+    parti.rho = 0.0;
+    parti.invomega = 0.0;
+    parti.div_v = 0.0;
 
     // Loop over all neighbours in list
     // ------------------------------------------------------------------------
     for (jj=0; jj<Nneib; jj++) {
       j = neiblist[jj];
 
-      for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - sphdata[i].r[k];
+      for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - parti.r[k];
       drmag = DotProduct(dr,dr,ndim);
       
       // Skip particle if not a neighbour
@@ -102,23 +105,23 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
 
       drmag = sqrt(drmag);
       for (k=0; k<ndim; k++) dr[k] /= (drmag + small_number);
-      for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - sphdata[i].v[k];
+      for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - parti.v[k];
       
-      sphdata[i].div_v -= sphdata[j].m*DotProduct(dv,dr,ndim)*
-	kern->w1(drmag*sphdata[i].invh)*sphdata[i].hfactor*sphdata[i].invh;
-      sphdata[i].rho += sphdata[j].m*sphdata[i].hfactor*
-	kern->w0(drmag*sphdata[i].invh);
-      sphdata[i].invomega += sphdata[j].m*sphdata[i].hfactor*
-	sphdata[i].invh*kern->womega(drmag*sphdata[i].invh);
+      parti.div_v -= sphdata[j].m*DotProduct(dv,dr,ndim)*
+	kern->w1(drmag*parti.invh)*parti.hfactor*parti.invh;
+      parti.rho += sphdata[j].m*parti.hfactor*
+	kern->w0(drmag*parti.invh);
+      parti.invomega += sphdata[j].m*parti.hfactor*
+	parti.invh*kern->womega(drmag*parti.invh);
 
     }
     // ------------------------------------------------------------------------
 
-    if (sphdata[i].rho > 0.0) sphdata[i].invrho = 1.0/sphdata[i].rho;
+    if (parti.rho > 0.0) parti.invrho = 1.0/parti.rho;
 
     // If h changes below some fixed tolerance, exit iteration loop
-    if (sphdata[i].rho > 0.0 && sphdata[i].h > h_lower_bound && 
-	fabs(sphdata[i].h - h_fac*pow(sphdata[i].m*sphdata[i].invrho,
+    if (parti.rho > 0.0 && parti.h > h_lower_bound &&
+	fabs(parti.h - h_fac*pow(parti.m*parti.invrho,
 				      invndim)) < h_converge) break;
 
     // Use fixed-point iteration for now.  If this does not converge in a 
@@ -127,37 +130,40 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
     // to converge, albeit slowly.
     // ------------------------------------------------------------------------
     if (iteration < iteration_max)
-      sphdata[i].h = h_fac*pow(sphdata[i].m*sphdata[i].invrho,invndim);
+      parti.h = h_fac*pow(parti.m*parti.invrho,invndim);
 
     else if (iteration == iteration_max)
-      sphdata[i].h = 0.5*(h_lower_bound + h_upper_bound);
+      parti.h = 0.5*(h_lower_bound + h_upper_bound);
 
     else if (iteration < 5*iteration_max) {
-      if (sphdata[i].rho < small_number || 
-	  sphdata[i].rho*pow(sphdata[i].h,ndim) > pow(h_fac,ndim)*sphdata[i].m)
-	h_upper_bound = sphdata[i].h;
+      if (parti.rho < small_number ||
+	  parti.rho*pow(parti.h,ndim) > pow(h_fac,ndim)*parti.m)
+	h_upper_bound = parti.h;
       else 
-	h_lower_bound = sphdata[i].h;
-      sphdata[i].h = 0.5*(h_lower_bound + h_upper_bound);
+	h_lower_bound = parti.h;
+      parti.h = 0.5*(h_lower_bound + h_upper_bound);
     }
 
     // If the smoothing length is too large for the neighbour list, exit 
     // routine and flag neighbour list error in order to generate a larger
     // neighbour list
-    if (sphdata[i].h > h_max) return 0;
+    if (parti.h > h_max) return 0;
     
 
-  } while (sphdata[i].h > h_lower_bound && sphdata[i].h < h_upper_bound);
+  } while (parti.h > h_lower_bound && parti.h < h_upper_bound);
   // --------------------------------------------------------------------------
 
   // Normalise all SPH sums correctly
-  sphdata[i].invrho = 1.0/sphdata[i].rho;
-  sphdata[i].h = h_fac*pow(sphdata[i].m*sphdata[i].invrho,invndim);
-  sphdata[i].invh = 1.0/sphdata[i].h;
-  sphdata[i].invomega = 1.0 + invndim*sphdata[i].h*
-    sphdata[i].invomega*sphdata[i].invrho;
-  sphdata[i].invomega = 1.0/sphdata[i].invomega;
-  sphdata[i].div_v *= sphdata[i].invrho;
+  parti.invrho = 1.0/parti.rho;
+  parti.h = h_fac*pow(parti.m*parti.invrho,invndim);
+  parti.invh = 1.0/parti.h;
+  parti.invomega = 1.0 + invndim*parti.h*
+    parti.invomega*parti.invrho;
+  parti.invomega = 1.0/parti.invomega;
+  parti.div_v *= parti.invrho;
+
+  // Copies back particle data
+  sphdata[i] = parti;
 
   return 1;
 }
