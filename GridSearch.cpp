@@ -102,7 +102,7 @@ void GridSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
     SphParticle * neiblistpart = new SphParticle[Nneib];
 
     // Copies particle from the main array to the new array
-    SphParticle * data;
+    SphParticle * data = sph->sphdata;
     for (j=0; j<Nneib; j++) {
       neiblistpart[j] = data[neiblist[j]];
     }
