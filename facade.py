@@ -1,5 +1,5 @@
 import atexit
-import Commands
+import commandsource as Commands
 from multiprocessing import Manager, Queue
 from plotting import PlottingProcess
 from SimBuffer import SimBuffer, BufferException
