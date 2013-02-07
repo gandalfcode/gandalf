@@ -7,8 +7,7 @@
 CC = g++
 PYTHON = python2.7
 
-OPT = -O3 -fPIC
-#OPT = -g -Wall -fbounds-check
+OPT = -g -Wall -fbounds-check
 
 OUTPUT_LEVEL              = 1
 PRECISION                 = SINGLE
@@ -92,13 +91,19 @@ OBJ += Exception.o
 	$(CC) $(OPT) $(CFLAGS) -c $<
 
 
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+SHARED_OPTIONS = -bundle -flat_namespace -undefined suppress
+else ifeq ($(UNAME_S),Linux)
+SHARED_OPTIONS = -shared
+endif
+
 # =============================================================================
 toy2 : $(WRAP_OBJ) $(OBJ)
 	@echo -e $(PYLIB)
-	g++ -bundle -flat_namespace -undefined suppress $(OBJ) $(WRAP_OBJ) -o _SphSim.so
-	f2py2.7 -m shocktub -c shocktub.f 
-#	g++ -bundle -flat_namespace -undefined suppress SphSnapshot.o SphSnapshot_wrap.o -o _SphSnap.so
-	$(CC) $(CFLAGS) -o toymain $(OBJ)
+	$(CC) $(CFLAGS) $(OPT) $(SHARED_OPTIONS) $(OBJ) $(WRAP_OBJ) -o _SphSim.so
+	f2py -m shocktub -c shocktub.f 
+	$(CC) $(CFLAGS) $(OPT) -o toymain $(OBJ)
 
 
 
