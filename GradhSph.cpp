@@ -68,13 +68,11 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
   float dr[ndimmax];                          // Relative position vector
   float dv[ndimmax];                          // Relative velocity vector
   float drmag;                                // Neighbour distance
+  float invdrmag;                             // ..
 
   // Local copies of necessary input parameters
-  float h_fac = params.floatparams["h_fac"];
-  float h_converge = params.floatparams["h_converge"];
-
-  for (int k=0; k<ndimmax; k++) dr[k] = 0.0;
-  for (int k=0; k<ndimmax; k++) dv[k] = 0.0;
+  //float h_fac = params.floatparams["h_fac"];
+  //float h_converge = params.floatparams["h_converge"];
 
   // Main smoothing length iteration loop
   // --------------------------------------------------------------------------
@@ -101,7 +99,8 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
       if (drmag > hrangesqd) continue;
 
       drmag = sqrt(drmag);
-      for (k=0; k<ndim; k++) dr[k] /= (drmag + small_number);
+      invdrmag = 1.0/(drmag + small_number);
+      for (k=0; k<ndim; k++) dr[k] *= invdrmag;
       for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - sphdata[i].v[k];
       
       sphdata[i].div_v -= sphdata[j].m*DotProduct(dv,dr,ndim)*
@@ -158,6 +157,14 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
     sphdata[i].invomega*sphdata[i].invrho;
   sphdata[i].invomega = 1.0/sphdata[i].invomega;
   sphdata[i].div_v *= sphdata[i].invrho;
+  sphdata[i].hfactor = pow(sphdata[i].invh,ndim+1);
+  sphdata[i].u = eos->SpecificInternalEnergy(sphdata[i]);
+  sphdata[i].sound = eos->SoundSpeed(sphdata[i]);
+  sphdata[i].press = eos->Pressure(sphdata[i]);
+  sphdata[i].pfactor = eos->Pressure(sphdata[i])*
+    sphdata[i].invrho*sphdata[i].invrho*sphdata[i].invomega;
+
+
 
   return 1;
 }
@@ -169,12 +176,6 @@ int GradhSph::ComputeH(int i, int Nneib, int *neiblist, Parameters &params)
 // ============================================================================
 void GradhSph::ComputeSphProperties(int i, int Nneib,int *neiblist, Parameters &simparams)
 {
-  sphdata[i].hfactor = pow(sphdata[i].invh,ndim+1);
-  sphdata[i].u = eos->SpecificInternalEnergy(sphdata[i]);
-  sphdata[i].sound = eos->SoundSpeed(sphdata[i]);
-  sphdata[i].pfactor = eos->Pressure(sphdata[i])*
-    sphdata[i].invrho*sphdata[i].invrho*sphdata[i].invomega;
-
   return;
 }
 
@@ -196,19 +197,17 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
   float drmag;
   float invhmean;
   float invrhomean;
+  float invdrmag;
   float wmean;
   float vsignal;
-  int self_gravity = params.intparams["self_gravity"];
-  string avisc = params.stringparams["avisc"];
-  string acond = params.stringparams["acond"];
+  //int self_gravity = params.intparams["self_gravity"];
+  //string avisc = params.stringparams["avisc"];
+  //string acond = params.stringparams["acond"];
 
   sphdata[i].dudt = -eos->Pressure(sphdata[i])*sphdata[i].div_v*
     sphdata[i].invrho*sphdata[i].invomega;
   hrangesqd = kern->kernrangesqd*sphdata[i].h*sphdata[i].h;
   if (self_gravity == 1) sphdata[i].zeta = 0.0;
-
-  for (int k=0; k<ndimmax; k++) dr[k] = 0.0;
-  for (int k=0; k<ndimmax; k++) dv[k] = 0.0;
 
   // Loop over all potential neighbours in the list
   // --------------------------------------------------------------------------
@@ -225,7 +224,8 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
 
     // If particles are neighbours, continue computing hydro quantities
     drmag = sqrt(drmag);
-    for (k=0; k<ndim; k++) dr[k] /= (drmag + small_number);
+    invdrmag = 1.0/(drmag + small_number);
+    for (k=0; k<ndim; k++) dr[k] *= invdrmag;
     for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - sphdata[i].v[k];
     dvdr = DotProduct(dv,dr,ndim);
 
@@ -252,8 +252,7 @@ void GradhSph::ComputeHydroForces(int i, int Nneib,
 
       // Artificial conductivity term
       if (acond == "price2008") {
-	vsignal = sqrt(fabs(eos->Pressure(sphdata[i]) - 
-			    eos->Pressure(sphdata[j]))*invrhomean);
+	vsignal = sqrt(fabs(sphdata[i].press - sphdata[j].press)*invrhomean);
 	sphdata[i].dudt += sphdata[j].m*vsignal*
 	  (sphdata[i].u - sphdata[j].u)*wmean*invrhomean;
       }

@@ -69,7 +69,7 @@ float QuinticKernel::w1(float s)
   else if (s < 2.0)
     return kernnorm*(75.0 - 420.0*s + 450.0*s*s - 
 		     180.0*pow(s,3) + 25.0*pow(s,4));
-  else if (s < 2.0)
+  else if (s < 3.0)
     return kernnorm*(-405.0 + 540.0*s - 270.0*s*s + 
 		     60.0*pow(s,3) - 5.0*pow(s,4));
   else

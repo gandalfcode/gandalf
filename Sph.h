@@ -7,12 +7,14 @@
 #define _SPH_H_
 
 
+#include <string>
 #include "Constants.h"
 #include "Dimensions.h"
 #include "SphParticle.h"
 #include "SphKernel.h"
 #include "Parameters.h"
 #include "EOS.h"
+using namespace std;
 
 
 // ============================================================================
@@ -34,7 +36,6 @@ class Sph
   virtual void ComputeHydroForces(int,int,int *,Parameters &) = 0;
   virtual void ComputeGravForces(int,int,int *) = 0;
   virtual void ComputeMeanhZeta(int,int,int *) = 0;
-
 
   // SPH array memory allocation functions
   // --------------------------------------------------------------------------
@@ -58,6 +59,11 @@ class Sph
 
   float alpha_visc;                     // alpha artificial viscosity parameter
   float beta_visc;                      // beta artificial viscosity parameter
+  float h_fac;
+  float h_converge;
+  string avisc;
+  string acond;
+  int self_gravity;
 
 #if !defined(FIXED_DIMENSIONS)
   int ndim;

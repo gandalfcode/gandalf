@@ -62,6 +62,9 @@ void GridSearch::UpdateTree(Sph *sph, Parameters &simparams)
 
 // ============================================================================
 // GridSearch::UpdateAllSphProperties
+// Update all gather properties of SPH particles (e.g. rho, div_v, omega).
+// Uses grid-cells to construct local neighbour lists for all particles 
+// inside the cell.
 // ============================================================================
 void GridSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
 {

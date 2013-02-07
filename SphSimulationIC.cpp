@@ -145,6 +145,48 @@ void SphSimulation::RandomBox(void)
 
 
 // ============================================================================
+// SphSimulation::LatticeBox
+// ============================================================================
+void SphSimulation::LatticeBox(void)
+{
+  float *r;
+  int Nlattice1[ndimmax];
+  Nlattice1[0] = simparams.intparams["Nlattice1[0]"];
+  Nlattice1[1] = simparams.intparams["Nlattice1[1]"];
+  Nlattice1[2] = simparams.intparams["Nlattice1[1]"];
+
+  debug2("[SphSimulation::RandomBox]");
+
+  if (ndim == 1) sph->Nsph = Nlattice1[0];
+  else if (ndim == 2) sph->Nsph = Nlattice1[0]*Nlattice1[1];
+  else if (ndim == 3) sph->Nsph = Nlattice1[0]*Nlattice1[1]*Nlattice1[2];
+  sph->AllocateMemory(sph->Nsph);
+  r = new float[ndim*sph->Nsph];
+
+  // Add ..
+  AddFaceCentredCubicLattice(sph->Nsph,Nlattice1,r,simbox);
+
+  // Initialise all other variables
+  for (int i=0; i<sph->Nsph; i++) {
+    for (int k=0; k<ndim; k++) {
+      sph->sphdata[i].r[k] = r[ndim*i + k];
+      sph->sphdata[i].v[k] = 0.0f;
+      sph->sphdata[i].a[k] = 0.0f;
+    }
+    sph->sphdata[i].m = 1.0f / (float) sph->Nsph;
+    sph->sphdata[i].invomega = 0.5f;
+    sph->sphdata[i].iorig = i;
+    sph->sphdata[i].u = 1.5;
+  }
+
+  delete[] r;
+
+  return;
+}
+
+
+
+// ============================================================================
 // SphSimulation::RandomSphere
 // ============================================================================
 void SphSimulation::RandomSphere(void)
@@ -415,7 +457,7 @@ void SphSimulation::AddRegularLattice(int Npart, int Nlattice[ndimmax],
 	    (box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
 	  r[ndim*i + 1] = box.boxmin[1] + ((float)jj + 0.5)*
 	    (box.boxmax[1] - box.boxmin[1])/(float)Nlattice[1];
-	  r[ndim*i + 2] = box.boxmin[2] + ((float)jj + 0.5)*
+	  r[ndim*i + 2] = box.boxmin[2] + ((float)kk + 0.5)*
 	    (box.boxmax[2] - box.boxmin[2])/(float)Nlattice[2];
 	}
       }
@@ -427,3 +469,130 @@ void SphSimulation::AddRegularLattice(int Npart, int Nlattice[ndimmax],
 
 
 
+// ============================================================================
+// SphSimulation::AddFaceCentredCubicLattice
+// ============================================================================
+void SphSimulation::AddFaceCentredCubicLattice(int Npart, 
+					       int Nlattice[ndimmax], 
+					       float *r, DomainBox box)
+{
+  int i;
+  int ii;
+  int jj;
+  int kk;
+
+  debug2("[SphSimulation::AddFaceCentredCubicLattice]");
+  
+  // Create lattice depending on dimensionality
+  // --------------------------------------------------------------------------
+  if (ndim == 1) {
+    for (ii=0; ii<Nlattice[0]; ii++) {
+      i = ii;
+      r[i] = box.boxmin[0] + ((float)ii + 0.5)*
+	(box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
+    }
+  }
+  // --------------------------------------------------------------------------
+  else if (ndim == 2) {
+    for (jj=0; jj<Nlattice[1]; jj++) {
+      for (ii=0; ii<Nlattice[0]; ii++) {
+	i = jj*Nlattice[0] + ii;
+	r[ndim*i] = box.boxmin[0] + ((float)ii + 0.25 + 0.5*(float)(jj%2))*
+	  (box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
+	r[ndim*i + 1] = box.boxmin[1] + ((float)jj + 0.5)*
+	  (box.boxmax[1] - box.boxmin[1])/(float)Nlattice[1];
+      }
+    }
+  }
+  // --------------------------------------------------------------------------
+  else if (ndim == 3) {
+    for (kk=0; kk<Nlattice[1]; kk++) {
+      for (jj=0; jj<Nlattice[1]; jj++) {
+	for (ii=0; ii<Nlattice[0]; ii++) {
+	  i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
+	  if (kk%2 == 0) { 
+	    r[ndim*i] = box.boxmin[0] + 
+	      ((float)ii + 0.25 + 0.5*(float)(jj%2) + 0.5*(float)(kk%2))*
+	      (box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
+	    r[ndim*i + 1] = box.boxmin[1] + 
+	      ((float)jj + 0.5 + 0.25*(float)(kk%4))*
+	      (box.boxmax[1] - box.boxmin[1])/(float)Nlattice[1];
+	    r[ndim*i + 2] = box.boxmin[2] + ((float)kk + 0.5)*
+	      (box.boxmax[2] - box.boxmin[2])/(float)Nlattice[2];
+	  }
+	  else {
+	    r[ndim*i] = box.boxmin[0] + 
+	      ((float)ii + 0.25 + 0.5*(float)(jj%2) + 0.5*(float)(kk%2))*
+	      (box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
+	    r[ndim*i + 1] = box.boxmin[1] + 
+	      ((float)jj + 0.5 + 0.25*(float)(kk%4))*
+	      (box.boxmax[1] - box.boxmin[1])/(float)Nlattice[1];
+	    r[ndim*i + 2] = box.boxmin[2] + ((float)kk + 0.5)*
+	      (box.boxmax[2] - box.boxmin[2])/(float)Nlattice[2];
+
+	  }
+	}
+      }
+    }
+  }
+
+  return;
+}
+
+
+
+// ============================================================================
+// SphSimulation::AddHexagonalLattice
+// ============================================================================
+void SphSimulation::AddHexagonalLattice(int Npart, int Nlattice[ndimmax], 
+					float *r, DomainBox box)
+{
+  int i;
+  int ii;
+  int jj;
+  int kk;
+
+  debug2("[SphSimulation::AddHexagonalLattice]");
+  
+  // Create lattice depending on dimensionality
+  // --------------------------------------------------------------------------
+  if (ndim == 1) {
+    for (ii=0; ii<Nlattice[0]; ii++) {
+      i = ii;
+      r[i] = box.boxmin[0] + ((float)ii + 0.5)*
+	(box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
+    }
+  }
+  // --------------------------------------------------------------------------
+  else if (ndim == 2) {
+    for (jj=0; jj<Nlattice[1]; jj++) {
+      for (ii=0; ii<Nlattice[0]; ii++) {
+	i = jj*Nlattice[0] + ii;
+	r[ndim*i] = box.boxmin[0] + ((float)ii + 0.25 + 0.5*(float)(jj%2))*
+	  (box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
+	r[ndim*i + 1] = box.boxmin[1] + ((float)jj + 0.5)*
+	  (box.boxmax[1] - box.boxmin[1])/(float)Nlattice[1];
+      }
+    }
+  }
+  // --------------------------------------------------------------------------
+  else if (ndim == 3) {
+    for (kk=0; kk<Nlattice[1]; kk++) {
+      for (jj=0; jj<Nlattice[1]; jj++) {
+	for (ii=0; ii<Nlattice[0]; ii++) {
+	  i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
+	  r[ndim*i] = box.boxmin[0] + 
+	    ((float)ii + 0.25 + 0.5*(float)(jj%2) + 0.5*(float)(kk%2))*
+	    (box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
+	  r[ndim*i + 1] = box.boxmin[1] + 
+	    ((float)jj + 0.5 + 0.25*(float)(kk%4))*
+	    (box.boxmax[1] - box.boxmin[1])/(float)Nlattice[1];
+	  r[ndim*i + 2] = box.boxmin[2] + ((float)kk + 0.5)*
+	    (box.boxmax[2] - box.boxmin[2])/(float)Nlattice[2];
+	}
+      }
+    }
+  }
+
+  return;
+}

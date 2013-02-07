@@ -7,12 +7,12 @@
 CC = g++
 PYTHON = python2.7
 
-OPT = -O3 -fPIC
+OPT = -O3 -ffast-math -fPIC
 #OPT = -g -Wall -fbounds-check
 
 OUTPUT_LEVEL              = 1
 PRECISION                 = SINGLE
-NDIM                      = 0
+NDIM                      = 2
 DEBUG                     = 1
 
 
@@ -93,38 +93,13 @@ OBJ += Exception.o
 
 
 # =============================================================================
-toy2 : $(WRAP_OBJ) $(OBJ)
+toy : $(WRAP_OBJ) $(OBJ)
 	@echo -e $(PYLIB)
 	g++ -bundle -flat_namespace -undefined suppress $(OBJ) $(WRAP_OBJ) -o _SphSim.so
 	f2py2.7 -m shocktub -c shocktub.f 
 #	g++ -bundle -flat_namespace -undefined suppress SphSnapshot.o SphSnapshot_wrap.o -o _SphSnap.so
 	$(CC) $(CFLAGS) -o toymain $(OBJ)
 
-
-
-
-# =============================================================================
-toy ::
-	swig -c++ -python $(CFLAGS) Parameters.i
-	swig -c++ -python $(CFLAGS) SimUnits.i
-	swig -c++ -python $(CFLAGS) Sph.i
-	swig -c++ -python $(CFLAGS) SphSnapshot.i
-	swig -c++ -python $(CFLAGS) SphSimulation.i
-	$(CC) $(OPT) $(CFLAGS) SphKernel.cpp
-	$(CC) $(OPT) $(CFLAGS) SphIntegration.cpp
-	$(CC) $(OPT) $(CFLAGS) SphNeighbourSearch.cpp
-	$(CC) $(OPT) $(CFLAGS) EOS.cpp
-	$(CC) $(OPT) $(CFLAGS) toymain.cpp
-	$(CC) $(OPT) $(CFLAGS) Parameters.cpp Parameters_wrap.cxx -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY)
-	$(CC) $(OPT) $(CFLAGS) SimUnits.cpp SimUnits_wrap.cxx -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY)
-	$(CC) $(OPT) $(CFLAGS) Sph.cpp Sph_wrap.cxx -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY)
-	$(CC) $(OPT) $(CFLAGS) SphSnapshot.cpp SphSnapshot_wrap.cxx -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY)
-	$(CC) $(OPT) $(CFLAGS) SphSimulation.cpp SphSimulation_wrap.cxx -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY)
-	ld -bundle -flat_namespace -undefined suppress SphKernel.o EOS.o SphIntegration.o SphNeighbourSearch.o Sph.o Sph_wrap.o Parameters.o Parameters_wrap.o SimUnits.o SimUnits_wrap.o SphSnapshot.o SphSnapshot_wrap.o SphSimulation.o SphSimulation_wrap.o -o _SphSim.so
-	ld -bundle -flat_namespace -undefined suppress SphSnapshot.o SphSnapshot_wrap.o -o _SphSnap.so
-	$(CC) $(CFLAGS) -o toymain SphKernel.o EOS.o SphIntegration.o SphNeighbourSearch.o Sph.o Parameters.o SimUnits.o SphSnapshot.o SphSimulation.o toymain.o
-#\rm -f *_wrap.cxx
-#\rm -f *.o
 
 
 # =============================================================================

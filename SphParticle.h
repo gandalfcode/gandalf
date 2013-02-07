@@ -37,6 +37,7 @@ struct SphParticle {
   float zeta;
   float sound;
   float gpot;
+  float press;
 
   SphParticle()
   {

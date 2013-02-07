@@ -80,6 +80,7 @@ class SphSimulation
   // Initial conditions routines
   // --------------------------------------------------------------------------
   void RandomBox(void);
+  void LatticeBox(void);
   void RandomSphere(void);
   void ShockTube(void);
   void KHI(void);
@@ -89,6 +90,8 @@ class SphSimulation
   void AddRandomBox(int, float *, DomainBox);
   void AddRandomSphere(int, float *, float *, float);
   void AddRegularLattice(int, int *, float *, DomainBox);
+  void AddFaceCentredCubicLattice(int, int *, float *, DomainBox);
+  void AddHexagonalLattice(int, int *, float *, DomainBox);
 
   // Input-output routines
   // --------------------------------------------------------------------------

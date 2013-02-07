@@ -48,11 +48,13 @@ SphIntegration::~SphIntegration()
 // ============================================================================
 double SphIntegration::Timestep(SphParticle &part, Parameters &params)
 {
+  static int hydro_forces = 1;
   double timestep;
   double amag;
 
   //Courant condition
-  if (params.intparams["hydro_forces"] == 1)
+  //if (params.intparams["hydro_forces"] == 1)
+  if (hydro_forces == 1)
     timestep = courant_mult*part.h/
       (part.sound + part.h*fabs(part.div_v) + small_number_dp);
   else timestep = courant_mult*part.h/

@@ -188,6 +188,8 @@ void SphSimulation::GenerateIC(void)
     RandomBox();
   else if (simparams.stringparams["ic"] == "random_sphere") 
     RandomSphere();
+  else if (simparams.stringparams["ic"] == "lattice_cube")
+    LatticeBox();
   else if (simparams.stringparams["ic"] == "shocktube") 
     ShockTube();
   else if (simparams.stringparams["ic"] == "khi") 
@@ -341,6 +343,11 @@ void SphSimulation::ProcessParameters(void)
 
 
   sph->Nsph = intparams["Npart"];
+  sph->h_fac = floatparams["h_fac"];
+  sph->h_converge = floatparams["h_converge"];
+  sph->self_gravity = intparams["self_gravity"];
+  sph->avisc = stringparams["avisc"];
+  sph->acond = stringparams["acond"];
   Nstepsmax = intparams["Nstepsmax"];
   run_id = stringparams["run_id"];
   tend = floatparams["tend"];
