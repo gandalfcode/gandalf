@@ -63,6 +63,7 @@ class Sph
   float h_converge;
   string avisc;
   string acond;
+  int hydro_forces;
   int self_gravity;
 
 #if !defined(FIXED_DIMENSIONS)

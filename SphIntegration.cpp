@@ -46,9 +46,8 @@ SphIntegration::~SphIntegration()
 // ============================================================================
 // ..
 // ============================================================================
-double SphIntegration::Timestep(SphParticle &part, Parameters &params)
+double SphIntegration::Timestep(SphParticle &part, int hydro_forces)
 {
-  static int hydro_forces = 1;
   double timestep;
   double amag;
 

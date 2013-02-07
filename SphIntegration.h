@@ -32,7 +32,7 @@ class SphIntegration
   virtual void CorrectionTerms(int,SphParticle *,double) = 0;
   virtual void EndTimestep(int,int,SphParticle *) = 0;
 
-  virtual double Timestep(SphParticle &, Parameters &);
+  virtual double Timestep(SphParticle &, int);
   
   const double courant_mult;
   const double accel_mult;

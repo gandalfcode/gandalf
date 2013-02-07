@@ -217,7 +217,7 @@ void SphSimulation::ComputeBlockTimesteps(void)
   timestep = big_number;
 
   for (int i=0; i<sph->Nsph; i++) {
-    dt = sphint->Timestep(sph->sphdata[i],simparams);
+    dt = sphint->Timestep(sph->sphdata[i],sph->hydro_forces);
     if (dt < timestep) timestep = dt;
     if (simparams.stringparams["gas_eos"] == "energy_eqn") {
       dt = uint->Timestep(sph->sphdata[i]);
@@ -345,6 +345,7 @@ void SphSimulation::ProcessParameters(void)
   sph->Nsph = intparams["Npart"];
   sph->h_fac = floatparams["h_fac"];
   sph->h_converge = floatparams["h_converge"];
+  sph->hydro_forces = intparams["hydro_forces"];
   sph->self_gravity = intparams["self_gravity"];
   sph->avisc = stringparams["avisc"];
   sph->acond = stringparams["acond"];
