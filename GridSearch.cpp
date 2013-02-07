@@ -114,13 +114,13 @@ void GridSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
       //CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
     }
 
-    delete[] neiblistpart;
-
     // Compute all other SPH properties
     for (j=0; j<Nactive; j++) {
       i = activelist[j];
-      sph->ComputeSphProperties(i,Nneib,neiblist,simparams);
+      sph->ComputeSphProperties(i,Nneib,neiblistpart,simparams);
     }
+
+    delete[] neiblistpart;
 
   }   
   // --------------------------------------------------------------------------
@@ -173,14 +173,24 @@ void GridSearch::UpdateAllSphForces(Sph *sph, Parameters &params)
       // Compute neighbour list for cell
       Nneib = ComputeNeighbourList(c,neiblist);
 
+      // Creates neighbour list local copy
+      SphParticle * neiblistpart = new SphParticle[Nneib];
+
+      // Copies particle from the main array to the new array
+      SphParticle * data = sph->sphdata;
+      for (j=0; j<Nneib; j++) {
+        neiblistpart[j] = data[neiblist[j]];
+      }
 
       // Loop over all active particles in the cell
       for (j=0; j<Nactive; j++) {
-	i = activelist[j];
-	//CheckValidNeighbourList(sph,i,Nneib,neiblist,"all");
-	sph->ComputeHydroForces(i,Nneib,neiblist,params);
+        i = activelist[j];
+        //CheckValidNeighbourList(sph,i,Nneib,neiblist,"all");
+        sph->ComputeHydroForces(i,Nneib,neiblistpart,params);
       }
       
+      delete[] neiblistpart;
+
     }   
   }
   // --------------------------------------------------------------------------
@@ -194,15 +204,15 @@ void GridSearch::UpdateAllSphForces(Sph *sph, Parameters &params)
   // --------------------------------------------------------------------------
   if (params.intparams["self_gravity"] == 1) {
     Nneib = sph->Ntot;
-    neiblist = new int[sph->Ntot];
-    for (int i=0; i<sph->Ntot; i++) neiblist[i] = i;
+//    neiblist = new int[sph->Ntot];
+//    for (int i=0; i<sph->Ntot; i++) neiblist[i] = i;
     
     // Compute SPH hydro forces for all particles
     for (int i=0; i<sph->Nsph; i++)
-      sph->ComputeGravForces(i,Nneib,neiblist);
+      sph->ComputeGravForces(i,Nneib,sph->sphdata);
 
     // Free up memory from local array
-    delete[] neiblist;
+//    delete[] neiblist;
   }
 
   return;
