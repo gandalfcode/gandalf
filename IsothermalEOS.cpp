@@ -7,8 +7,6 @@
 #include <math.h>
 #include "EOS.h"
 #include "Sph.h"
-#include "Parameters.h"
-
 
 
 // ============================================================================
@@ -32,6 +30,7 @@ Isothermal::Isothermal(float temp0aux, float mu_bar_aux, float gamma_aux)
 Isothermal::~Isothermal()
 {
 }
+
 
 
 // ============================================================================
@@ -59,6 +58,7 @@ float Isothermal::EntropicFunction(SphParticle &part)
 
 // ============================================================================
 // Isothermal::SoundSpeed
+// Returns isothermal sound speed of SPH particle
 // ============================================================================
 float Isothermal::SoundSpeed(SphParticle &part)
 {
@@ -68,7 +68,7 @@ float Isothermal::SoundSpeed(SphParticle &part)
 
 
 // ============================================================================
-// Isothermal::SoundSpeed
+// Isothermal::SpecificInternalEnergy
 // ============================================================================
 float Isothermal::SpecificInternalEnergy(SphParticle &part)
 {
@@ -79,6 +79,7 @@ float Isothermal::SpecificInternalEnergy(SphParticle &part)
 
 // ============================================================================
 // Isothermal::Temperature
+// Return isothermal temperature of particle
 // ============================================================================
 float Isothermal::Temperature(SphParticle &part)
 {

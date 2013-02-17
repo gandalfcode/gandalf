@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <math.h>
+#include "Precision.h"
 #include "Sph.h"
 #include "SphKernel.h"
 #include "SphParticle.h"
@@ -57,7 +58,7 @@ void Sph::DeallocateMemory(void)
 // Sph::SphBoundingBox
 // Calculate the bounding box containing all SPH particles.
 // ============================================================================
-void Sph::SphBoundingBox(float rmax[ndimmax],float rmin[ndimmax],int Nmax)
+void Sph::SphBoundingBox(FLOAT rmax[ndimmax],FLOAT rmin[ndimmax],int Nmax)
 {
   debug2("[Sph::SphBoundingBox]");
 
@@ -89,10 +90,10 @@ void Sph::SphBoundingBox(float rmax[ndimmax],float rmin[ndimmax],int Nmax)
 // ============================================================================
 void Sph::InitialSmoothingLengthGuess(void)
 {
-  float h_guess;
-  float volume;
-  float rmin[ndimmax];
-  float rmax[ndimmax];
+  FLOAT h_guess;
+  FLOAT volume;
+  FLOAT rmin[ndimmax];
+  FLOAT rmax[ndimmax];
   int Ngather;
 
   debug2("[Sph::InitialSmoothingLengthGuess]");
@@ -106,20 +107,20 @@ void Sph::InitialSmoothingLengthGuess(void)
   if (ndim == 1) {
     Ngather = 5;
     volume = rmax[0] - rmin[0];
-    h_guess = (volume*(float) Ngather)/(4.0f*(float) Nsph);
+    h_guess = (volume*(FLOAT) Ngather)/(4.0f*(FLOAT) Nsph);
   }
   // --------------------------------------------------------------------------
   else if (ndim == 2) {
     Ngather = 16;
     volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1]);
-    h_guess = sqrtf((volume*(float) Ngather)/(4.0f*(float) Nsph));
+    h_guess = sqrtf((volume*(FLOAT) Ngather)/(4.0f*(FLOAT) Nsph));
   }
   // --------------------------------------------------------------------------
   else if (ndim == 3) {
     Ngather = 50;
     volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1])*(rmax[2] - rmin[2]);
-    h_guess = powf((3.0f*volume*(float) Ngather)/
-		   (32.0f*pi*(float) Nsph),onethird);
+    h_guess = powf((3.0f*volume*(FLOAT) Ngather)/
+		   (32.0f*pi*(FLOAT) Nsph),onethird);
   }
   // --------------------------------------------------------------------------
 

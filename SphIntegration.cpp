@@ -2,6 +2,7 @@
 // SphIntegration.cpp
 // ============================================================================
 
+
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -22,7 +23,7 @@ using namespace std;
 // ============================================================================
 // SphIntegration::SphIntegration
 // ============================================================================
-SphIntegration::SphIntegration(int ndimaux, int vdimaux, double accel_mult_aux, double courant_mult_aux):
+SphIntegration::SphIntegration(int ndimaux, int vdimaux, DOUBLE accel_mult_aux, DOUBLE courant_mult_aux):
 #if !defined(FIXED_DIMENSIONS)
   ndim(ndimaux),
   vdim(vdimaux),
@@ -46,10 +47,10 @@ SphIntegration::~SphIntegration()
 // ============================================================================
 // ..
 // ============================================================================
-double SphIntegration::Timestep(SphParticle &part, int hydro_forces)
+DOUBLE SphIntegration::Timestep(SphParticle &part, int hydro_forces)
 {
-  double timestep;
-  double amag;
+  DOUBLE timestep;
+  DOUBLE amag;
 
   //Courant condition
   //if (params.intparams["hydro_forces"] == 1)

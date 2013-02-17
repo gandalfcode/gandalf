@@ -10,6 +10,7 @@ subfigure(2,2,3)
 plot("x","u")
 subfigure(2,2,4)
 plot("x","ax")
+time.sleep(1)
 run()
 block()
 

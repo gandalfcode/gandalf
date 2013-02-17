@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <string>
+#include "Precision.h"
 #include "Constants.h"
 #include "Dimensions.h"
 #include "SphKernel.h"
@@ -84,7 +85,7 @@ class GridSearch: public SphNeighbourSearch
   void AllocateGridMemory(int);
   void DeallocateGridMemory(void);
   void CreateGrid(Sph *);
-  int ComputeParticleGridCell(float *);
+  int ComputeParticleGridCell(FLOAT *);
   void ComputeCellCoordinate(int, int *);
   int ComputeActiveCellList(int *);
   int ComputeActiveParticleList(int, int *, Sph *);
@@ -104,9 +105,9 @@ class GridSearch: public SphNeighbourSearch
   int Ntot;                                 // No. of current points in list
   int Ntotmax;                              // Max. no. of points in list
   int *inext;                               // Linked list for grid search
-  float dx_grid;                            // Grid spacing
-  float rmin[ndimmax];                      // Minimum extent of bounding box
-  float rmax[ndimmax];                      // Maximum extent of bounding box
+  FLOAT dx_grid;                            // Grid spacing
+  FLOAT rmin[ndimmax];                      // Minimum extent of bounding box
+  FLOAT rmax[ndimmax];                      // Maximum extent of bounding box
   GridCell *grid;                           // Main grid array
 #if !defined(FIXED_DIMENSIONS)
   int ndim;

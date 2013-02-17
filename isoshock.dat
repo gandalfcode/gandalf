@@ -1,5 +1,5 @@
-     : boxmin[0] = -16.0
-     : boxmax[0] = 16.0
+     : boxmin[0] = -6.0
+     : boxmax[0] = 6.0
      : Nlattice1[0] = 128
      : Nlattice2[0] = 128
      : vfluid1[0] = 4
@@ -14,8 +14,9 @@
      : alpha_visc = 1.0
      : beta_visc = 2.0
 
-     : courant_mult = 0.075
-     : accel_mult = 0.15
+     : courant_mult = 0.15
+     : accel_mult = 0.3
      : tend = 1.0
+     : dt_snap = 0.1
 
  
