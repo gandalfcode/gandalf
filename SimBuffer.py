@@ -22,7 +22,7 @@ class SimBuffer:
     Nsim = int(0)
     simlist = []
     snapshots = deque()
-    maxmemory = 1024**3
+    maxmemory = 1024**3 #now hardwired to 1 GB
     currentsim = -1
 
 
@@ -36,10 +36,9 @@ class SimBuffer:
         SimBuffer.Nsim += 1
         SimBuffer.currentsim = SimBuffer.Nsim - 1
     
-    # TODO: eliminate duplicate code between this function and fillsnapshot
     # TODO: improve the algorithm for making space/allocating space
     @staticmethod        
-    def _addsnapshot(sim, snapshot):
+    def _findmemoryfor(snapshot):
         '''
         Add a new snapshot to the list of snapshots.
         Checks for memory usage, and deallocates as many snapshots as needed
@@ -47,36 +46,26 @@ class SimBuffer:
         to the parent simulation accordingly. Raises BufferFull if there isn't enough space
         for the snapshot being loaded. 
         '''
-        while 1:
-            snapshotsize = snapshot.CalculateMemoryUsage()
-            if snapshotsize > SimBuffer.maxmemory:
-                print "Warning: the requested snapshot can't fit inside the buffer memory. It will not be cached"
-                raise BufferFull
-            available_memory = SimBuffer.maxmemory - SimBuffer.total_memory_usage()
-            if snapshotsize > available_memory:
-                SimBuffer._makespace()
-            else:
-                break
-        SimBuffer.snapshots.append(snapshot)
-        snapshot.sim = sim
-    
-    @staticmethod
-    def _fillsnapshot(snapshot):
-        snapshot.ReadSnapshot(snapshot.sim.simparams.stringparams["in_file_form"],snapshot.sim)
         snapshotsize = snapshot.CalculateMemoryUsage()
         if snapshotsize > SimBuffer.maxmemory:
             raise BufferFull("The requested snapshot can't fit inside the buffer memory")
         while 1:
             available_memory = SimBuffer.maxmemory - SimBuffer.total_memory_usage()
             if snapshotsize > available_memory:
-                SimBuffer._makespace()
+                SimBuffer._deallocateSnapshot()
             else:
                 break
     
     @staticmethod
-    def _makespace():
-        ''' Deletes the first snapshot on the queue (that is, the first created)
-        and deallocates its memory.
+    def _fillsnapshot(snapshot):
+        snapshot.ReadSnapshot(snapshot.sim.simparams.stringparams["in_file_form"],snapshot.sim)
+        SimBuffer._findmemoryfor(snapshot)
+    
+    @staticmethod
+    def _deallocateSnapshot():
+        ''' Deallocates a snapshot to make space.
+        The exact snapshot to deallocate depends on the specific caching algorithm; at the moment
+        a simple queue is used.
         '''
         for snapshot in SimBuffer.snapshots:
             if snapshot.allocated:
@@ -168,15 +157,13 @@ class SimBuffer:
         
         #depending on buffer_flag, caches all the snapshots or not
         for i, snapshot in enumerate(sim.snapshots):
+            snapshot.sim = sim
+            SimBuffer.snapshots.append(snapshot)
             if buffer_flag == "store":
-                snapshot.ReadSnapshot(fileformat, sim)
+                SimBuffer._fillsnapshot(snapshot)
             elif buffer_flag == "cache":
                 if i==0:
-                    snapshot.ReadSnapshot(fileformat, sim)
-            try:
-                SimBuffer._addsnapshot(sim, snapshot)
-            except BufferFull:
-                snapshot.DeallocateBufferMemory()
+                    SimBuffer._fillsnapshot(snapshot)
                 
         sim.current = sim.snapshots[0]
     
@@ -210,7 +197,7 @@ class SimBuffer:
     def get_sim_no(no):
         '''This function returns the simulation specified by the number'''
         try:
-            sim = Simbuffer.simlist[no]
+            sim = SimBuffer.simlist[no]
         except IndexError:
             raise BufferException ("The specified simulation number does not exist")
         return sim
