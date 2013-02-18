@@ -19,8 +19,7 @@ def plot(x,y, overplot = False, snap="current", autoscale = True, sim="current")
     command.overplot = overplot
     command.snap = snap
     if sim == "current":
-        simobject = SimBuffer.get_current_sim()
-        simno = SimBuffer.simlist.index(simobject)
+        simno = SimBuffer.get_current_sim_no()
     else:
         simno = sim
     #TODO: substitute the number of the simulation inside the plot command with the object
@@ -124,8 +123,7 @@ def plotanalytical(x=None, y=None, overplot = True, sim = "current", snap = "cur
     
     #get the simulation number from the buffer
     if sim == "current":
-        simobject = SimBuffer.get_current_sim()
-        simno = SimBuffer.simlist.index(simobject)
+        simno = SimBuffer.get_current_sim_no()
     else:
         simno = sim
     

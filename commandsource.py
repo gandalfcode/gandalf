@@ -91,7 +91,7 @@ class ParticlePlotCommand (PlotCommand):
         return line
     
     def prepareData (self):
-        sim = SimBuffer.simlist[self.sim]       
+        sim = SimBuffer.get_sim_no(self.sim)
         if self.snap == "current":
             snap = SimBuffer.get_current_snapshot_by_sim(sim)
             if sim.snapshots == []:
@@ -120,7 +120,7 @@ class AnalyticalPlotCommand (PlotCommand):
     def prepareData(self):
         #TODO: remove duplicated code with the previous class
         #get the snapshot
-        sim = SimBuffer.simlist[self.sim]
+        sim = SimBuffer.get_sim_no(self.sim)
         if self.snap == "current":
             snap = SimBuffer.get_current_snapshot_by_sim(sim)
             if sim.snapshots == []:

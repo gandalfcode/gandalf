@@ -195,13 +195,16 @@ class SimBuffer:
                 pass
         return total_memory
     
-    #TODO: uniform the API below for accesing the buffer. Should distinguish between calls that change
-    #what the current snapshot is and calls that don't do that
-    
     @staticmethod  
     def get_current_sim():
         '''This function returns the current simulation'''
         return SimBuffer.simlist[SimBuffer.currentsim]
+    
+    @staticmethod
+    def get_current_sim_no():
+        '''This function returns the number of the current simulation'''
+        return SimBuffer.currentsim
+    
     
     @staticmethod
     def get_sim_no(no):
@@ -225,7 +228,7 @@ class SimBuffer:
     
     @staticmethod
     def get_live_snapshot_current():
-        '''This function returns the live snapshot of the current simulation, if existing'''
+        '''This function returns the live snapshot of the current simulation, if exists'''
         sim = SimBuffer.get_current_sim()
         try:
             return sim.live
