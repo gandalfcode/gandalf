@@ -10,6 +10,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include "Precision.h"
 #include "Sph.h"
 #include "SphSimulation.h"
 using namespace std;
@@ -37,7 +38,7 @@ class SphSnapshot
   int ndim;
   int Nsph;
   int Nmax;
-  float t;
+  DOUBLE t;
   std::string filename;
   std::string fileform;
 

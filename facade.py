@@ -163,7 +163,7 @@ if __name__=="__main__":
     plotanalytical("x","rho")
     import time; time.sleep(1)
     next(); time.sleep(1)
-    snap(10)
+    snap(7)
     block()
 #    
 #    loadsim('TEST')

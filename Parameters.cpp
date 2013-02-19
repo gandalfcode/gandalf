@@ -137,6 +137,9 @@ void Parameters::SetDefaultValues(void)
   stringparams["sph_integration"] = "lfkdk";
   floatparams["accel_mult"] = 0.3;
   floatparams["courant_mult"] = 0.15;
+  intparams["Nlevels"] = 1;
+  intparams["sph_single_timestep"] = 0;
+  intparams["nbody_single_timestep"] = 0;
 
   // SPH parameters
   // --------------------------------------------------------------------------

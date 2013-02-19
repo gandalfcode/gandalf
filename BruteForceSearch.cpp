@@ -61,11 +61,7 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
 
   // Compute smoothing lengths of all SPH particles
   for (int i=0; i<sph->Nsph; i++) 
-    okflag = sph->ComputeH(i,Nneib,sph->sphdata,simparams);
-
-  // Compute all other SPH properties
-  for (int i=0; i<sph->Nsph; i++)
-    sph->ComputeSphProperties(i,Nneib,sph->sphdata,simparams);
+    okflag = sph->ComputeH(i,sph->sphdata[i],Nneib,sph->sphdata);
 
   return;
 }
@@ -88,13 +84,12 @@ void BruteForceSearch::UpdateAllSphForces(Sph *sph, Parameters &params)
   // Compute SPH hydro forces for all particles
   if (params.intparams["hydro_forces"] == 1)
     for (int i=0; i<sph->Nsph; i++) 
-      sph->ComputeHydroForces(i,Nneib,sph->sphdata,params);
+      sph->ComputeHydroForces(i,sph->sphdata[i],Nneib,sph->sphdata);
 
   // Compute SPH hydro forces for all particles
   if (params.intparams["self_gravity"] == 1)
     for (int i=0; i<sph->Nsph; i++)
       sph->ComputeGravForces(i,Nneib,sph->sphdata);
-
 
   return;
 }

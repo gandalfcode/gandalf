@@ -7,7 +7,6 @@
 #include <math.h>
 #include "EOS.h"
 #include "Sph.h"
-#include "Parameters.h"
 
 
 
@@ -60,6 +59,7 @@ float Adiabatic::EntropicFunction(SphParticle &part)
 
 // ============================================================================
 // Adiabatic::SoundSpeed
+// Returns adiabatic sound speed of particle
 // ============================================================================
 float Adiabatic::SoundSpeed(SphParticle &part)
 {
@@ -69,7 +69,8 @@ float Adiabatic::SoundSpeed(SphParticle &part)
 
 
 // ============================================================================
-// Adiabatic::SoundSpeed
+// Adiabatic::SpecificInternalEnergy
+// Returns specific internal energy of particle
 // ============================================================================
 float Adiabatic::SpecificInternalEnergy(SphParticle &part)
 {
@@ -80,6 +81,7 @@ float Adiabatic::SpecificInternalEnergy(SphParticle &part)
 
 // ============================================================================
 // Adiabatic::Temperature
+// Returns temperature of particle
 // ============================================================================
 float Adiabatic::Temperature(SphParticle &part)
 {

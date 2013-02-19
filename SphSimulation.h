@@ -9,6 +9,7 @@
 
 #include <map>
 #include <string>
+#include "Precision.h"
 #include "Parameters.h"
 #include "SimUnits.h"
 #include "SphKernel.h"
@@ -26,31 +27,31 @@ struct DomainBox {
   string y_boundary_rhs;
   string z_boundary_lhs;
   string z_boundary_rhs;
-  float boxmin[3];
-  float boxmax[3];
-  float boxsize[3];
-  float boxhalf[3];
-  //float rmin[ndimmax];
-  //float rmax[ndimmax];
+  FLOAT boxmin[3];
+  FLOAT boxmax[3];
+  FLOAT boxsize[3];
+  FLOAT boxhalf[3];
+  //FLOAT rmin[ndimmax];
+  //FLOAT rmax[ndimmax];
 };
 
 
 struct Diagnostics {
-  double Eerror;
-  double Etot;
-  double utot;
-  double ketot;
-  double gpetot;
-  double mom[ndimmax];
-  double angmom[3];
-  double force[ndimmax];
-  double force_grav[ndimmax];
+  DOUBLE Eerror;
+  DOUBLE Etot;
+  DOUBLE utot;
+  DOUBLE ketot;
+  DOUBLE gpetot;
+  DOUBLE mom[ndimmax];
+  DOUBLE angmom[3];
+  DOUBLE force[ndimmax];
+  DOUBLE force_grav[ndimmax];
 };
 
 
 
 // ============================================================================
-// CLASS SphSimulation
+// Clas SphSimulation
 // ============================================================================
 class SphSimulation
 {
@@ -68,12 +69,15 @@ class SphSimulation
   void Run(int=-1);
   void Output(void);
   void GenerateIC(void);
-  void ComputeBlockTimesteps(void);
   void ProcessParameters(void);
   void CalculateDiagnostics(void);
 
+  void ComputeGlobalTimestep(void);
+  void ComputeBlockTimesteps(void);
+  void VerifyBlockTimesteps(void);
+
   void SearchGhostParticles(void);
-  void CreateGhostParticle(int,int,float,float);
+  void CreateGhostParticle(int,int,FLOAT,FLOAT);
   void CopyDataToGhosts(void);
   void CheckBoundaries(void);
 
@@ -87,20 +91,18 @@ class SphSimulation
 
   // Initial conditions helper routines
   // --------------------------------------------------------------------------
-  void AddRandomBox(int, float *, DomainBox);
-  void AddRandomSphere(int, float *, float *, float);
-  void AddRegularLattice(int, int *, float *, DomainBox);
-  void AddFaceCentredCubicLattice(int, int *, float *, DomainBox);
-  void AddHexagonalLattice(int, int *, float *, DomainBox);
+  void AddRandomBox(int, FLOAT *, DomainBox);
+  void AddRandomSphere(int, FLOAT *, FLOAT *, FLOAT);
+  void AddRegularLattice(int, int *, FLOAT *, DomainBox);
+  void AddFaceCentredCubicLattice(int, int *, FLOAT *, DomainBox);
+  void AddHexagonalLattice(int, int *, FLOAT *, DomainBox);
 
   // Input-output routines
   // --------------------------------------------------------------------------
   bool ReadSnapshotFile(string,string);
   bool ReadColumnSnapshotFile(string);
-
   bool WriteSnapshotFile(string,string);
   bool WriteColumnSnapshotFile(string);
-
 
 #if !defined(FIXED_DIMENSIONS)
   int ndim;
@@ -108,22 +110,32 @@ class SphSimulation
   int bdim;
 #endif
 
+
   // Integer and physical Timestep counters
   // --------------------------------------------------------------------------
+  int sph_single_timestep;                  // ..
+  int nbody_single_timestep;                // ..
+  int integration_step;                     // ..
+  int level_max;                            // Maximum timestep level
+  int level_step;                           // ..
   int n;                                    // Integer time counter
   int Nsteps;                               // Total no. of steps in simulation
   int Nstepsmax;                            // Max. allowed no. of steps
-  int noutputstep;                          // ..
-  double t;                                 // Current simulation time
-  double timestep;                          // Current timestep
-  double tsnapnext;                         // Time of next snapshot
-  double tend;                              // End time of simulation
-  double dt_snap;                           // Snapshot time interval
+  int Nlevels;                              // No. of timestep levels
+  int noutputstep;                          // Output frequency
+  int nresync;                              // ..
+  DOUBLE dt_max;                            // ..
+  DOUBLE t;                                 // Current simulation time
+  DOUBLE timestep;                          // Current timestep
+  DOUBLE tsnapnext;                         // Time of next snapshot
+  DOUBLE tend;                              // End time of simulation
+  DOUBLE dt_snap;                           // Snapshot time interval
   int Noutsnap;                             // No. of output snapshots
 
   string run_id;                            // Simulation id string
   string paramfile;                         // Name of parameters file
-  bool setup;                               // Flags whether the simulation has been setup
+  string out_file_form;                     // ..
+  bool setup;                               // Flag if simulation is setup
 
   Parameters simparams;                     // Simulation parameters object
   SimUnits simunits;                        // Simulation units object

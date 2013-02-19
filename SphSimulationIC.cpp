@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstring>
 #include <math.h>
+#include "Precision.h"
 #include "Exception.h"
 #include "SphSimulation.h"
 #include "Sph.h"
@@ -28,21 +29,21 @@ void SphSimulation::ShockTube(void)
   int k;
   int Nbox1;
   int Nbox2;
-  float volume;
-  float *r;
+  FLOAT volume;
+  FLOAT *r;
   DomainBox box1;
   DomainBox box2;
   int Nlattice1[ndimmax];
   int Nlattice2[ndimmax];
-  float vfluid1[ndimmax];
-  float vfluid2[ndimmax];
-  float rhofluid1 = simparams.floatparams["rhofluid1"];
-  float rhofluid2 = simparams.floatparams["rhofluid2"];
-  float press1 = simparams.floatparams["press1"];
-  float press2 = simparams.floatparams["press2"];
-  float temp0 = simparams.floatparams["temp0"];
-  float mu_bar = simparams.floatparams["mu_bar"];
-  float gammaone = simparams.floatparams["gamma_eos"] - 1.0;
+  FLOAT vfluid1[ndimmax];
+  FLOAT vfluid2[ndimmax];
+  FLOAT rhofluid1 = simparams.floatparams["rhofluid1"];
+  FLOAT rhofluid2 = simparams.floatparams["rhofluid2"];
+  FLOAT press1 = simparams.floatparams["press1"];
+  FLOAT press2 = simparams.floatparams["press2"];
+  FLOAT temp0 = simparams.floatparams["temp0"];
+  FLOAT mu_bar = simparams.floatparams["mu_bar"];
+  FLOAT gammaone = simparams.floatparams["gamma_eos"] - 1.0;
   Nlattice1[0] = simparams.intparams["Nlattice1[0]"];
   Nlattice2[0] = simparams.intparams["Nlattice2[0]"];
   vfluid1[0] = simparams.floatparams["vfluid1[0]"];
@@ -70,7 +71,7 @@ void SphSimulation::ShockTube(void)
   // Allocate local and main particle memory
   sph->Nsph = Nbox1 + Nbox2;
   sph->AllocateMemory(sph->Nsph);
-  r = new float[ndim*sph->Nsph];
+  r = new FLOAT[ndim*sph->Nsph];
   cout << "Allocating memory : " << sph->Nsph << endl;
 
 
@@ -83,7 +84,7 @@ void SphSimulation::ShockTube(void)
       for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r[ndim*i + k];
       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
       sph->sphdata[i].v[0] = vfluid1[0];
-      sph->sphdata[i].m = rhofluid1*volume/(float) Nbox1;
+      sph->sphdata[i].m = rhofluid1*volume/(FLOAT) Nbox1;
       sph->sphdata[i].u = temp0/gammaone/mu_bar;
     }
   }
@@ -98,7 +99,7 @@ void SphSimulation::ShockTube(void)
       for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r[ndim*j + k];
       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
       sph->sphdata[i].v[0] = vfluid2[0];
-      sph->sphdata[i].m = rhofluid2*volume/(float) Nbox2;
+      sph->sphdata[i].m = rhofluid2*volume/(FLOAT) Nbox2;
       sph->sphdata[i].u = temp0/gammaone/mu_bar;
     }
   }
@@ -114,12 +115,12 @@ void SphSimulation::ShockTube(void)
 // ============================================================================
 void SphSimulation::RandomBox(void)
 {
-  float *r;
+  FLOAT *r;
 
   debug2("[SphSimulation::RandomBox]");
 
   sph->AllocateMemory(sph->Nsph);
-  r = new float[ndim*sph->Nsph];
+  r = new FLOAT[ndim*sph->Nsph];
 
   // Add a cube of random particles defined by the simulation bounding box
   AddRandomBox(sph->Nsph,r,simbox);
@@ -131,7 +132,7 @@ void SphSimulation::RandomBox(void)
       sph->sphdata[i].v[k] = 0.0f;
       sph->sphdata[i].a[k] = 0.0f;
     }
-    sph->sphdata[i].m = 1.0f / (float) sph->Nsph;
+    sph->sphdata[i].m = 1.0f / (FLOAT) sph->Nsph;
     sph->sphdata[i].invomega = 0.5f;
     sph->sphdata[i].iorig = i;
     sph->sphdata[i].u = 1.5;
@@ -149,7 +150,7 @@ void SphSimulation::RandomBox(void)
 // ============================================================================
 void SphSimulation::LatticeBox(void)
 {
-  float *r;
+  FLOAT *r;
   int Nlattice1[ndimmax];
   Nlattice1[0] = simparams.intparams["Nlattice1[0]"];
   Nlattice1[1] = simparams.intparams["Nlattice1[1]"];
@@ -161,7 +162,7 @@ void SphSimulation::LatticeBox(void)
   else if (ndim == 2) sph->Nsph = Nlattice1[0]*Nlattice1[1];
   else if (ndim == 3) sph->Nsph = Nlattice1[0]*Nlattice1[1]*Nlattice1[2];
   sph->AllocateMemory(sph->Nsph);
-  r = new float[ndim*sph->Nsph];
+  r = new FLOAT[ndim*sph->Nsph];
 
   // Add ..
   AddFaceCentredCubicLattice(sph->Nsph,Nlattice1,r,simbox);
@@ -173,7 +174,7 @@ void SphSimulation::LatticeBox(void)
       sph->sphdata[i].v[k] = 0.0f;
       sph->sphdata[i].a[k] = 0.0f;
     }
-    sph->sphdata[i].m = 1.0f / (float) sph->Nsph;
+    sph->sphdata[i].m = 1.0f / (FLOAT) sph->Nsph;
     sph->sphdata[i].invomega = 0.5f;
     sph->sphdata[i].iorig = i;
     sph->sphdata[i].u = 1.5;
@@ -191,14 +192,14 @@ void SphSimulation::LatticeBox(void)
 // ============================================================================
 void SphSimulation::RandomSphere(void)
 {
-  float *r;
-  float rcentre[ndimmax];
-  float radius = 1.0;
+  FLOAT *r;
+  FLOAT rcentre[ndimmax];
+  FLOAT radius = 1.0;
 
   debug2("[SphSimulation::RandomBox]");
 
   sph->AllocateMemory(sph->Nsph);
-  r = new float[ndim*sph->Nsph];
+  r = new FLOAT[ndim*sph->Nsph];
 
   for (int k=0; k<ndim; k++) rcentre[k] = 0.0;
 
@@ -212,7 +213,7 @@ void SphSimulation::RandomSphere(void)
       sph->sphdata[i].v[k] = 0.0f;
       sph->sphdata[i].a[k] = 0.0f;
     }
-    sph->sphdata[i].m = 1.0f / (float) sph->Nsph;
+    sph->sphdata[i].m = 1.0f / (FLOAT) sph->Nsph;
     sph->sphdata[i].invomega = 1.0;
     sph->sphdata[i].zeta = 0.0;
     sph->sphdata[i].iorig = i;
@@ -235,23 +236,23 @@ void SphSimulation::KHI(void)
   int k;
   int Nbox1;
   int Nbox2;
-  float volume;
-  float *r;
+  FLOAT volume;
+  FLOAT *r;
   DomainBox box1;
   DomainBox box2;
   int Nlattice1[ndimmax];
   int Nlattice2[ndimmax];
-  float vfluid1[ndimmax];
-  float vfluid2[ndimmax];
-  float rhofluid1 = simparams.floatparams["rhofluid1"];
-  float rhofluid2 = simparams.floatparams["rhofluid2"];
-  float press1 = simparams.floatparams["press1"];
-  float press2 = simparams.floatparams["press2"];
-  float temp0 = simparams.floatparams["temp0"];
-  float mu_bar = simparams.floatparams["mu_bar"];
-  float gammaone = simparams.floatparams["gamma_eos"] - 1.0;
-  float amp = simparams.floatparams["amp"];
-  float lambda = simparams.floatparams["lambda"];
+  FLOAT vfluid1[ndimmax];
+  FLOAT vfluid2[ndimmax];
+  FLOAT rhofluid1 = simparams.floatparams["rhofluid1"];
+  FLOAT rhofluid2 = simparams.floatparams["rhofluid2"];
+  FLOAT press1 = simparams.floatparams["press1"];
+  FLOAT press2 = simparams.floatparams["press2"];
+  FLOAT temp0 = simparams.floatparams["temp0"];
+  FLOAT mu_bar = simparams.floatparams["mu_bar"];
+  FLOAT gammaone = simparams.floatparams["gamma_eos"] - 1.0;
+  FLOAT amp = simparams.floatparams["amp"];
+  FLOAT lambda = simparams.floatparams["lambda"];
   Nlattice1[0] = simparams.intparams["Nlattice1[0]"];
   Nlattice1[1] = simparams.intparams["Nlattice1[1]"];
   Nlattice2[0] = simparams.intparams["Nlattice2[0]"];
@@ -285,7 +286,7 @@ void SphSimulation::KHI(void)
   // Allocate local and main particle memory
   sph->Nsph = Nbox1 + Nbox2;
   sph->AllocateMemory(sph->Nsph);
-  r = new float[ndim*sph->Nsph];
+  r = new FLOAT[ndim*sph->Nsph];
   cout << "Nbox1 : " << Nbox1 << "    Nbox2 : " << Nbox2 << endl;
   cout << "Allocating memory : " << sph->Nsph << endl;
 
@@ -302,7 +303,7 @@ void SphSimulation::KHI(void)
       if (sph->sphdata[i].r[1] < simbox.boxmin[1]) 
 	sph->sphdata[i].r[1] += simbox.boxsize[1];
       sph->sphdata[i].v[0] = vfluid1[0];
-      sph->sphdata[i].m = rhofluid1*volume/(float) Nbox1;
+      sph->sphdata[i].m = rhofluid1*volume/(FLOAT) Nbox1;
       sph->sphdata[i].u = press1/rhofluid1/gammaone;
     }
   }
@@ -320,14 +321,14 @@ void SphSimulation::KHI(void)
       if (sph->sphdata[i].r[1] < simbox.boxmin[1]) 
 	sph->sphdata[i].r[1] += simbox.boxsize[1];
       sph->sphdata[i].v[0] = vfluid2[0];
-      sph->sphdata[i].m = rhofluid2*volume/(float) Nbox2;
+      sph->sphdata[i].m = rhofluid2*volume/(FLOAT) Nbox2;
       sph->sphdata[i].u = press2/rhofluid2/gammaone;
     }
   }
 
   // Add velocity perturbation here
   // --------------------------------------------------------------------------
-  float sigmapert = 0.05/sqrt(2.0);
+  FLOAT sigmapert = 0.05/sqrt(2.0);
   for (i=0; i<sph->Nsph; i++) {
     sph->sphdata[i].v[1] = amp*sin(2.0*pi*sph->sphdata[i].r[0]/lambda)*
       (exp(-pow(sph->sphdata[i].r[1] + 0.25,2)/2.0/sigmapert/sigmapert) +  
@@ -372,14 +373,14 @@ void SphSimulation::KHI(void)
 // ============================================================================
 // SphSimulation::AddRandomBox
 // ============================================================================
-void SphSimulation::AddRandomBox(int Npart, float *r, DomainBox box)
+void SphSimulation::AddRandomBox(int Npart, FLOAT *r, DomainBox box)
 {
   debug2("[SphSimulation::AddRandomBox]");
 
   for (int i=0; i<Npart; i++) {
     for (int k=0; k<ndim; k++) {
       r[ndim*i + k] = box.boxmin[k] + (box.boxmax[k] - box.boxmin[k])*
-	(float)(rand()%RAND_MAX)/(float)RAND_MAX;
+	(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
     }
   }
 
@@ -391,18 +392,18 @@ void SphSimulation::AddRandomBox(int Npart, float *r, DomainBox box)
 // ============================================================================
 // SphSimulation::AddRandomsphere
 // ============================================================================
-void SphSimulation::AddRandomSphere(int Npart, float *r, 
-				    float *rcentre, float radius)
+void SphSimulation::AddRandomSphere(int Npart, FLOAT *r, 
+				    FLOAT *rcentre, FLOAT radius)
 {
-  float rad;
-  float rpos[ndimmax];
+  FLOAT rad;
+  FLOAT rpos[ndimmax];
 
   debug2("[SphSimulation::AddRandomSphere]");
 
   for (int i=0; i<Npart; i++) {
     do {
       for (int k=0; k<ndim; k++) 
-	rpos[k] = 1.0 - 2.0*(float)(rand()%RAND_MAX)/(float)RAND_MAX;
+	rpos[k] = 1.0 - 2.0*(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
       rad = DotProduct(rpos,rpos,ndim);
     } while (rad > radius);
     for (int k=0; k<ndim; k++) r[ndim*i + k] = rcentre[k] + rpos[k];
@@ -417,7 +418,7 @@ void SphSimulation::AddRandomSphere(int Npart, float *r,
 // SphSimulation::AddRegularLattice
 // ============================================================================
 void SphSimulation::AddRegularLattice(int Npart, int Nlattice[ndimmax], 
-				      float *r, DomainBox box)
+				      FLOAT *r, DomainBox box)
 {
   int i;
   int ii;
@@ -431,8 +432,8 @@ void SphSimulation::AddRegularLattice(int Npart, int Nlattice[ndimmax],
   if (ndim == 1) {
     for (ii=0; ii<Nlattice[0]; ii++) {
       i = ii;
-      r[i] = box.boxmin[0] + ((float)ii + 0.5)*
-	(box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
+      r[i] = box.boxmin[0] + ((FLOAT)ii + 0.5)*
+	(box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
     }
   }
   // --------------------------------------------------------------------------
@@ -440,10 +441,10 @@ void SphSimulation::AddRegularLattice(int Npart, int Nlattice[ndimmax],
     for (jj=0; jj<Nlattice[1]; jj++) {
       for (ii=0; ii<Nlattice[0]; ii++) {
 	i = jj*Nlattice[0] + ii;
-	r[ndim*i] = box.boxmin[0] + ((float)ii + 0.5)*
-	  (box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
-	r[ndim*i + 1] = box.boxmin[1] + ((float)jj + 0.5)*
-	  (box.boxmax[1] - box.boxmin[1])/(float)Nlattice[1];
+	r[ndim*i] = box.boxmin[0] + ((FLOAT)ii + 0.5)*
+	  (box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
+	r[ndim*i + 1] = box.boxmin[1] + ((FLOAT)jj + 0.5)*
+	  (box.boxmax[1] - box.boxmin[1])/(FLOAT)Nlattice[1];
       }
     }
   }
@@ -453,12 +454,12 @@ void SphSimulation::AddRegularLattice(int Npart, int Nlattice[ndimmax],
       for (jj=0; jj<Nlattice[1]; jj++) {
 	for (ii=0; ii<Nlattice[0]; ii++) {
 	  i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
-	  r[ndim*i] = box.boxmin[0] + ((float)ii + 0.5)*
-	    (box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
-	  r[ndim*i + 1] = box.boxmin[1] + ((float)jj + 0.5)*
-	    (box.boxmax[1] - box.boxmin[1])/(float)Nlattice[1];
-	  r[ndim*i + 2] = box.boxmin[2] + ((float)kk + 0.5)*
-	    (box.boxmax[2] - box.boxmin[2])/(float)Nlattice[2];
+	  r[ndim*i] = box.boxmin[0] + ((FLOAT)ii + 0.5)*
+	    (box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
+	  r[ndim*i + 1] = box.boxmin[1] + ((FLOAT)jj + 0.5)*
+	    (box.boxmax[1] - box.boxmin[1])/(FLOAT)Nlattice[1];
+	  r[ndim*i + 2] = box.boxmin[2] + ((FLOAT)kk + 0.5)*
+	    (box.boxmax[2] - box.boxmin[2])/(FLOAT)Nlattice[2];
 	}
       }
     }
@@ -474,7 +475,7 @@ void SphSimulation::AddRegularLattice(int Npart, int Nlattice[ndimmax],
 // ============================================================================
 void SphSimulation::AddFaceCentredCubicLattice(int Npart, 
 					       int Nlattice[ndimmax], 
-					       float *r, DomainBox box)
+					       FLOAT *r, DomainBox box)
 {
   int i;
   int ii;
@@ -488,8 +489,8 @@ void SphSimulation::AddFaceCentredCubicLattice(int Npart,
   if (ndim == 1) {
     for (ii=0; ii<Nlattice[0]; ii++) {
       i = ii;
-      r[i] = box.boxmin[0] + ((float)ii + 0.5)*
-	(box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
+      r[i] = box.boxmin[0] + ((FLOAT)ii + 0.5)*
+	(box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
     }
   }
   // --------------------------------------------------------------------------
@@ -497,10 +498,10 @@ void SphSimulation::AddFaceCentredCubicLattice(int Npart,
     for (jj=0; jj<Nlattice[1]; jj++) {
       for (ii=0; ii<Nlattice[0]; ii++) {
 	i = jj*Nlattice[0] + ii;
-	r[ndim*i] = box.boxmin[0] + ((float)ii + 0.25 + 0.5*(float)(jj%2))*
-	  (box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
-	r[ndim*i + 1] = box.boxmin[1] + ((float)jj + 0.5)*
-	  (box.boxmax[1] - box.boxmin[1])/(float)Nlattice[1];
+	r[ndim*i] = box.boxmin[0] + ((FLOAT)ii + 0.25 + 0.5*(FLOAT)(jj%2))*
+	  (box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
+	r[ndim*i + 1] = box.boxmin[1] + ((FLOAT)jj + 0.5)*
+	  (box.boxmax[1] - box.boxmin[1])/(FLOAT)Nlattice[1];
       }
     }
   }
@@ -512,23 +513,23 @@ void SphSimulation::AddFaceCentredCubicLattice(int Npart,
 	  i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
 	  if (kk%2 == 0) { 
 	    r[ndim*i] = box.boxmin[0] + 
-	      ((float)ii + 0.25 + 0.5*(float)(jj%2) + 0.5*(float)(kk%2))*
-	      (box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
+	      ((FLOAT)ii + 0.25 + 0.5*(FLOAT)(jj%2) + 0.5*(FLOAT)(kk%2))*
+	      (box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
 	    r[ndim*i + 1] = box.boxmin[1] + 
-	      ((float)jj + 0.5 + 0.25*(float)(kk%4))*
-	      (box.boxmax[1] - box.boxmin[1])/(float)Nlattice[1];
-	    r[ndim*i + 2] = box.boxmin[2] + ((float)kk + 0.5)*
-	      (box.boxmax[2] - box.boxmin[2])/(float)Nlattice[2];
+	      ((FLOAT)jj + 0.5 + 0.25*(FLOAT)(kk%4))*
+	      (box.boxmax[1] - box.boxmin[1])/(FLOAT)Nlattice[1];
+	    r[ndim*i + 2] = box.boxmin[2] + ((FLOAT)kk + 0.5)*
+	      (box.boxmax[2] - box.boxmin[2])/(FLOAT)Nlattice[2];
 	  }
 	  else {
 	    r[ndim*i] = box.boxmin[0] + 
-	      ((float)ii + 0.25 + 0.5*(float)(jj%2) + 0.5*(float)(kk%2))*
-	      (box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
+	      ((FLOAT)ii + 0.25 + 0.5*(FLOAT)(jj%2) + 0.5*(FLOAT)(kk%2))*
+	      (box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
 	    r[ndim*i + 1] = box.boxmin[1] + 
-	      ((float)jj + 0.5 + 0.25*(float)(kk%4))*
-	      (box.boxmax[1] - box.boxmin[1])/(float)Nlattice[1];
-	    r[ndim*i + 2] = box.boxmin[2] + ((float)kk + 0.5)*
-	      (box.boxmax[2] - box.boxmin[2])/(float)Nlattice[2];
+	      ((FLOAT)jj + 0.5 + 0.25*(FLOAT)(kk%4))*
+	      (box.boxmax[1] - box.boxmin[1])/(FLOAT)Nlattice[1];
+	    r[ndim*i + 2] = box.boxmin[2] + ((FLOAT)kk + 0.5)*
+	      (box.boxmax[2] - box.boxmin[2])/(FLOAT)Nlattice[2];
 
 	  }
 	}
@@ -545,7 +546,7 @@ void SphSimulation::AddFaceCentredCubicLattice(int Npart,
 // SphSimulation::AddHexagonalLattice
 // ============================================================================
 void SphSimulation::AddHexagonalLattice(int Npart, int Nlattice[ndimmax], 
-					float *r, DomainBox box)
+					FLOAT *r, DomainBox box)
 {
   int i;
   int ii;
@@ -559,8 +560,8 @@ void SphSimulation::AddHexagonalLattice(int Npart, int Nlattice[ndimmax],
   if (ndim == 1) {
     for (ii=0; ii<Nlattice[0]; ii++) {
       i = ii;
-      r[i] = box.boxmin[0] + ((float)ii + 0.5)*
-	(box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
+      r[i] = box.boxmin[0] + ((FLOAT)ii + 0.5)*
+	(box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
     }
   }
   // --------------------------------------------------------------------------
@@ -568,10 +569,10 @@ void SphSimulation::AddHexagonalLattice(int Npart, int Nlattice[ndimmax],
     for (jj=0; jj<Nlattice[1]; jj++) {
       for (ii=0; ii<Nlattice[0]; ii++) {
 	i = jj*Nlattice[0] + ii;
-	r[ndim*i] = box.boxmin[0] + ((float)ii + 0.25 + 0.5*(float)(jj%2))*
-	  (box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
-	r[ndim*i + 1] = box.boxmin[1] + ((float)jj + 0.5)*
-	  (box.boxmax[1] - box.boxmin[1])/(float)Nlattice[1];
+	r[ndim*i] = box.boxmin[0] + ((FLOAT)ii + 0.25 + 0.5*(FLOAT)(jj%2))*
+	  (box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
+	r[ndim*i + 1] = box.boxmin[1] + ((FLOAT)jj + 0.5)*
+	  (box.boxmax[1] - box.boxmin[1])/(FLOAT)Nlattice[1];
       }
     }
   }
@@ -582,13 +583,13 @@ void SphSimulation::AddHexagonalLattice(int Npart, int Nlattice[ndimmax],
 	for (ii=0; ii<Nlattice[0]; ii++) {
 	  i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
 	  r[ndim*i] = box.boxmin[0] + 
-	    ((float)ii + 0.25 + 0.5*(float)(jj%2) + 0.5*(float)(kk%2))*
-	    (box.boxmax[0] - box.boxmin[0])/(float)Nlattice[0];
+	    ((FLOAT)ii + 0.25 + 0.5*(FLOAT)(jj%2) + 0.5*(FLOAT)(kk%2))*
+	    (box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
 	  r[ndim*i + 1] = box.boxmin[1] + 
-	    ((float)jj + 0.5 + 0.25*(float)(kk%4))*
-	    (box.boxmax[1] - box.boxmin[1])/(float)Nlattice[1];
-	  r[ndim*i + 2] = box.boxmin[2] + ((float)kk + 0.5)*
-	    (box.boxmax[2] - box.boxmin[2])/(float)Nlattice[2];
+	    ((FLOAT)jj + 0.5 + 0.25*(FLOAT)(kk%4))*
+	    (box.boxmax[1] - box.boxmin[1])/(FLOAT)Nlattice[1];
+	  r[ndim*i + 2] = box.boxmin[2] + ((FLOAT)kk + 0.5)*
+	    (box.boxmax[2] - box.boxmin[2])/(FLOAT)Nlattice[2];
 	}
       }
     }

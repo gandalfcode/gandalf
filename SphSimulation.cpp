@@ -25,8 +25,10 @@ using namespace std;
 // ============================================================================
 SphSimulation::SphSimulation()
 {
-  paramfile = "adshock.dat"; //"params.dat";
+  paramfile = "";
   n = 0;
+  nresync = 0;
+  integration_step = 1;
   Nsteps = 0;
   t = 0.0;
   setup = false;
@@ -86,7 +88,6 @@ void SphSimulation::Output(void)
   string filename;
   string nostring;
   stringstream ss;
-  string fileform = simparams.stringparams["out_file_form"];
 
   debug2("[SphSimulation::Output]");
 
@@ -100,74 +101,9 @@ void SphSimulation::Output(void)
     nostring = "";
     ss << setfill('0') << setw(5) << Noutsnap;
     nostring = ss.str();
-    filename = run_id + '.' + fileform + '.' + nostring;
+    filename = run_id + '.' + out_file_form + '.' + nostring;
     ss.str(std::string());
     WriteSnapshotFile(filename,"column");
-  }
-
-  return;
-}
-
-
-
-// ============================================================================
-// SphSimulation::CalculateDiagnostics
-// Calculates all diagnostic quantities (e.g. conserved quantities), 
-// saves to the diagnostic data structure and outputs to screen.
-// ============================================================================
-void SphSimulation::CalculateDiagnostics(void)
-{
-  int k;
-
-  debug2("[SphSimulation::CalculateDiagnostics]");
-
-  diag.Etot = 0.0;
-  diag.utot = 0.0;
-  diag.ketot = 0.0;
-  diag.gpetot = 0.0;
-  for (k=0; k<ndim; k++) diag.mom[k] = 0.0;
-  for (k=0; k<3; k++) diag.angmom[k] = 0.0;
-  for (k=0; k<ndim; k++) diag.force[k] = 0.0;
-  for (k=0; k<ndim; k++) diag.force_grav[k] = 0.0;
-
-  for (int i=0; i<sph->Nsph; i++) {
-    diag.ketot += sph->sphdata[i].m*
-      DotProduct(sph->sphdata[i].v,sph->sphdata[i].v,ndim);
-    diag.utot += sph->sphdata[i].m*sph->sphdata[i].u;
-    diag.gpetot += sph->sphdata[i].m*sph->sphdata[i].gpot;
-    for (k=0; k<ndim; k++) {
-      diag.mom[k] += sph->sphdata[i].m*sph->sphdata[i].v[k];
-      diag.force[k] += sph->sphdata[i].m*sph->sphdata[i].a[k];
-      diag.force_grav[k] += sph->sphdata[i].m*sph->sphdata[i].agrav[k];
-    }
-  }
-  diag.ketot *= 0.5;
-  diag.gpetot *= 0.5;
-  diag.Etot = diag.ketot + diag.utot + diag.gpetot;
-
-  cout << "Printing out diagnostics" << endl;
-  cout << "Etot       : " << diag.Etot << endl;
-  cout << "utot       : " << diag.utot << endl;
-  cout << "ketot      : " << diag.ketot << endl;
-  cout << "gpetot     : " << diag.gpetot << endl;
-  if (ndim == 1) {
-    cout << "mom        : " << diag.mom[0] << endl;
-    cout << "force      : " << diag.force[0] << endl;
-    cout << "force_grav : " << diag.force_grav[0] << endl;
-  }
-  else if (ndim == 2) {
-    cout << "mom        : " << diag.mom[0] << "   " << diag.mom[1] << endl;
-    cout << "force      : " << diag.force[0] << "   " << diag.force[1] << endl;
-    cout << "force_grav : " << diag.force_grav[0] << "   " 
-	 << diag.force_grav[1] << endl;
-  }
-  else if (ndim == 3) {
-    cout << "mom        : " << diag.mom[0] << "   " 
-	 << diag.mom[1] << "   " << diag.mom[2] << endl;
-    cout << "force      : " << diag.force[0] << "   " 
-	 << diag.force[1] << "   " << diag.force[2] << endl;
-    cout << "force_grav : " << diag.force_grav[0] << "   " 
-	 << diag.force_grav[1] << "   " << diag.force_grav[2] << endl;
   }
 
   return;
@@ -205,34 +141,6 @@ void SphSimulation::GenerateIC(void)
 
 
 // ============================================================================
-// SphSimulation::ComputeBlockTimesteps
-// Computes global timestep for SPH simulation.
-// ============================================================================
-void SphSimulation::ComputeBlockTimesteps(void)
-{
-  double dt;                                // Aux. timestep variable
-
-  debug2("[SphSimulation::ComputeBlockTimesteps]");
-
-  timestep = big_number;
-
-  for (int i=0; i<sph->Nsph; i++) {
-    dt = sphint->Timestep(sph->sphdata[i],sph->hydro_forces);
-    if (dt < timestep) timestep = dt;
-    if (simparams.stringparams["gas_eos"] == "energy_eqn") {
-      dt = uint->Timestep(sph->sphdata[i]);
-      if (dt < timestep) timestep = dt;
-    }      
-  }
-
-  //cout << "Global timestep : " << timestep << "   t : " << t << endl;
-
-  return;
-}
-
-
-
-// ============================================================================
 // SphSimulation::ProcessParameters
 // Process all the options chosen in the parameters file, setting various 
 // simulation variables and creating important simulation objects.
@@ -260,7 +168,8 @@ void SphSimulation::ProcessParameters(void)
     sph->beta_visc = floatparams["beta_visc"];
   }
   else {
-    string message = "Unrecognised parameter : sph = " + simparams.stringparams["sph"];
+    string message = "Unrecognised parameter : sph = " 
+      + simparams.stringparams["sph"];
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -305,7 +214,8 @@ void SphSimulation::ProcessParameters(void)
   else if (stringparams["neib_search"] == "grid")
     sphneib = new GridSearch(ndim);
   else {
-    string message = "Unrecognised parameter : neib_search = " + simparams.stringparams["neib_search"];
+    string message = "Unrecognised parameter : neib_search = " 
+      + simparams.stringparams["neib_search"];
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -314,7 +224,8 @@ void SphSimulation::ProcessParameters(void)
 			  floatparams["courant_mult"]);
   }
   else {
-    string message = "Unrecognised parameter : sph_integration = " + simparams.stringparams["sph_integration"];
+    string message = "Unrecognised parameter : sph_integration = " 
+      + simparams.stringparams["sph_integration"];
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -328,7 +239,8 @@ void SphSimulation::ProcessParameters(void)
       uint = new EnergyPEC(floatparams["energy_mult"]);
     }
     else {
-      string message = "Unrecognised parameter : energy_integration = " + simparams.stringparams["energy_integration"];
+      string message = "Unrecognised parameter : energy_integration = " 
+	+ simparams.stringparams["energy_integration"];
       ExceptionHandler::getIstance().raise(message);
     }
   }
@@ -337,11 +249,13 @@ void SphSimulation::ProcessParameters(void)
 			      floatparams["mu_bar"],
 			      floatparams["gamma_eos"]);
   else {
-    string message = "Unrecognised parameter : gas_eos = " + simparams.stringparams["gas_eos"];
+    string message = "Unrecognised parameter : gas_eos = " 
+      + simparams.stringparams["gas_eos"];
     ExceptionHandler::getIstance().raise(message);
   }
 
-
+  // Set all other parameter variables
+  // --------------------------------------------------------------------------
   sph->Nsph = intparams["Npart"];
   sph->h_fac = floatparams["h_fac"];
   sph->h_converge = floatparams["h_converge"];
@@ -349,11 +263,16 @@ void SphSimulation::ProcessParameters(void)
   sph->self_gravity = intparams["self_gravity"];
   sph->avisc = stringparams["avisc"];
   sph->acond = stringparams["acond"];
+  sph->gas_eos = stringparams["gas_eos"];
   Nstepsmax = intparams["Nstepsmax"];
   run_id = stringparams["run_id"];
+  out_file_form = stringparams["out_file_form"];
   tend = floatparams["tend"];
   dt_snap = floatparams["dt_snap"];
   noutputstep = intparams["noutputstep"];
+  Nlevels = intparams["Nlevels"];
+  sph_single_timestep = intparams["sph_single_timestep"];
+  nbody_single_timestep = intparams["nbody_single_timestep"];
 
   return;
 }
@@ -463,7 +382,10 @@ void SphSimulation::MainLoop(void)
   debug2("[SphSimulation::MainLoop]");
 
   // Compute timesteps for all particles
-  ComputeBlockTimesteps();
+  if (Nlevels == 1) 
+    ComputeGlobalTimestep();
+  else 
+    ComputeBlockTimesteps();
 
   // Advance time variables
   n = n + 1;

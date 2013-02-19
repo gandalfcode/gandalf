@@ -31,9 +31,8 @@ class Sph
   // SPH functions for computing SPH sums with neighbouring particles 
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
   // --------------------------------------------------------------------------
-  virtual int ComputeH(int,int,SphParticle *,Parameters &) = 0;
-  virtual void ComputeSphProperties(int,int,SphParticle *,Parameters &) = 0;
-  virtual void ComputeHydroForces(int,int,SphParticle *,Parameters &) = 0;
+  virtual int ComputeH(int,SphParticle &,int,SphParticle *) = 0;
+  virtual void ComputeHydroForces(int,SphParticle &,int,SphParticle *) = 0;
   virtual void ComputeGravForces(int,int,SphParticle *) = 0;
   virtual void ComputeMeanhZeta(int,int,int *) = 0;
 
@@ -41,7 +40,7 @@ class Sph
   // --------------------------------------------------------------------------
   void AllocateMemory(int);
   void DeallocateMemory(void);
-  void SphBoundingBox(float *, float *, int);
+  void SphBoundingBox(FLOAT *, FLOAT *, int);
   void InitialSmoothingLengthGuess(void);
 
   // SPH particle counters and main particle data array
@@ -57,20 +56,21 @@ class Sph
   SphKernel *kern;                      // SPH kernel 
   EOS *eos;                             // Equation-of-state
 
-  float alpha_visc;                     // alpha artificial viscosity parameter
-  float beta_visc;                      // beta artificial viscosity parameter
-  float h_fac;
-  float h_converge;
-  string avisc;
-  string acond;
-  int hydro_forces;
-  int self_gravity;
+  FLOAT alpha_visc;                     // alpha artificial viscosity parameter
+  FLOAT beta_visc;                      // beta artificial viscosity parameter
+  FLOAT h_fac;                          // ..
+  FLOAT h_converge;                     // ..
+  string avisc;                         // ..
+  string acond;                         // ..
+  string gas_eos;                       // ..
+  int hydro_forces;                     // ..
+  int self_gravity;                     // ..
 
 #if !defined(FIXED_DIMENSIONS)
   int ndim;
   int vdim;
   int bdim;
-  float invndim;
+  FLOAT invndim;
 #endif
 
 };
@@ -90,9 +90,8 @@ class GradhSph: public Sph
   GradhSph(int,int,int);
   ~GradhSph();
 
-  int ComputeH(int,int,SphParticle *,Parameters &);
-  void ComputeSphProperties(int,int,SphParticle *,Parameters &);
-  void ComputeHydroForces(int,int,SphParticle *,Parameters &);
+  int ComputeH(int,SphParticle &,int,SphParticle *);
+  void ComputeHydroForces(int,SphParticle &,int,SphParticle *);
   void ComputeGravForces(int,int,SphParticle *);
   void ComputeMeanhZeta(int,int,int *);
 

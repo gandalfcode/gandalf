@@ -7,13 +7,15 @@
 CC = g++
 PYTHON = python2.7
 
+#OPT = -pg -O3 -fPIC
 OPT = -O3 -ffast-math -fPIC
 #OPT = -g -Wall -fbounds-check
 
 OUTPUT_LEVEL              = 1
 PRECISION                 = SINGLE
-NDIM                      = 2
+NDIM                      = 0
 DEBUG                     = 1
+VERIFY_ALL                = 0
 
 
 # Select location of python and numpy libraries.  If blank, make will try to 
@@ -52,6 +54,15 @@ ERROR += "Invalid value for NDIM : "$(NDIM)"\n"
 endif
 
 
+# Precision options
+# ----------------------------------------------------------------------------
+ifeq ($(PRECISION),SINGLE)
+CFLAGS += -DSINGLE_PRECISION
+else ifeq ($(PRECISION),DOUBLE)
+CFLAGS += -DDOUBLE_PRECISION
+endif
+
+
 # Debug flags
 # ----------------------------------------------------------------------------
 ifeq ($(DEBUG),1)
@@ -61,12 +72,21 @@ CFLAGS += -DDEBUG1 -DDEBUG2
 endif
 
 
+# Include expensive verification code
+# ----------------------------------------------------------------------------
+ifeq ($(VERIFY_ALL),1)
+CFLAGS += -DVERIFY_ALL
+endif
+
+
+
 # Object files to be compiled
 # ----------------------------------------------------------------------------
 SWIG_HEADERS = Parameters.i SimUnits.i Sph.i SphSnapshot.i SphSimulation.i
 WRAP_OBJ = Parameters_wrap.o SimUnits_wrap.o Sph_wrap.o SphSnapshot_wrap.o SphSimulation_wrap.o
 OBJ = Parameters.o SimUnits.o SphSnapshot.o SphSimulation.o
-OBJ += SphSimulationIC.o SphSimulationIO.o
+OBJ += SphSimulationIC.o SphSimulationIO.o SphSimulationTimesteps.o
+OBJ += SphAnalysis.o
 OBJ += M4Kernel.o QuinticKernel.o
 OBJ += Sph.o GradhSph.o
 OBJ += EnergyPEC.o
@@ -103,7 +123,7 @@ endif
 toy : $(WRAP_OBJ) $(OBJ)
 	@echo -e $(PYLIB)
 	$(CC) $(CFLAGS) $(OPT) $(SHARED_OPTIONS) $(OBJ) $(WRAP_OBJ) -o _SphSim.so
-	f2py -m shocktub -c shocktub.f 
+	f2py2.7 -m shocktub -c shocktub.f 
 	$(CC) $(CFLAGS) $(OPT) -o toymain $(OBJ)
 
 

@@ -7,6 +7,7 @@
 #include <math.h>
 #include <map>
 #include <string>
+#include "Precision.h"
 #include "Constants.h"
 #include "Debug.h"
 #include "Sph.h"
@@ -62,8 +63,8 @@ void SphSimulation::SearchGhostParticles(void)
 {
   int i;
   int k;
-  const float ghost_range = 1.5;
-  const float kernrange = sph->kern->kernrange;
+  const FLOAT ghost_range = 1.1;
+  const FLOAT kernrange = sph->kern->kernrange;
   SphParticle *sphdata = sph->sphdata;
 
   // Set all relevant particle counters
@@ -178,7 +179,7 @@ void SphSimulation::SearchGhostParticles(void)
 }
 
 
-void SphSimulation::CreateGhostParticle(int i, int k, float rk, float vk)
+void SphSimulation::CreateGhostParticle(int i, int k, FLOAT rk, FLOAT vk)
 {
   // Increase ghost counter and check there's enough space in memory
   if (sph->Nghost > sph->Nghostmax) {
@@ -214,8 +215,8 @@ void SphSimulation::CopyDataToGhosts(void)
   int i;
   int j;
   int k;
-  float rp[ndimmax];
-  float vp[ndimmax];
+  FLOAT rp[ndimmax];
+  FLOAT vp[ndimmax];
 
   for (j=0; j<sph->Nghost; j++) {
     i = sph->Nsph + j;

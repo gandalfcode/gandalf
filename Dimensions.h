@@ -1,8 +1,15 @@
 // ============================================================================
 // Dimensions.h
+// Definitions of all static dimensionality variables.  
+// If FIXED_DIMENSIONS macro is defined, then all dimensionality variables 
+// are set statically here.  Otherwise, some variables are set locally in 
+// each class definition.
 // ============================================================================
 
+
+#include "Precision.h"
 #include "Constants.h"
+
 
 #ifndef _DIMENSIONS_H_
 #define _DIMENSIONS_H_
@@ -35,21 +42,21 @@ static const int vdimmax = 3;
 #if NDIM==1
 static const int ndim = 1;
 static const int bdim = 1;
-static const float ndimpr = 1.0;
-static const float invndim = 1.0;
-static const float ndimplus1 = 2.0;
+static const FLOAT ndimpr = 1.0;
+static const FLOAT invndim = 1.0;
+static const FLOAT ndimplus1 = 2.0;
 #elif NDIM==2
 static const int ndim = 2;
 static const int bdim = 2;
-static const float ndimpr = 2.0;
-static const float invndim = 0.5;
-static const float ndimplus1 = 3.0;
+static const FLOAT ndimpr = 2.0;
+static const FLOAT invndim = 0.5;
+static const FLOAT ndimplus1 = 3.0;
 #elif NDIM==3
 static const int ndim = 3;
 static const int bdim = 3;
-static const float ndimpr = 3.0;
-static const float invndim = onethird;
-static const float ndimplus1 = 4.0;
+static const FLOAT ndimpr = 3.0;
+static const FLOAT invndim = onethird;
+static const FLOAT ndimplus1 = 4.0;
 #endif
 #if VDIM==1
 static const int vdim = 1;

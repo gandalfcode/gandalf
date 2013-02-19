@@ -20,9 +20,8 @@ SphSnapshot::SphSnapshot(string auxfilename)
   allocated = false;
   nallocated = 0;
   Nsph = 0;
-  t = 0.0f;
-  if (auxfilename != "")
-      filename = auxfilename;
+  t = 0.0;
+  if (auxfilename != "") filename = auxfilename;
 }
 
 
@@ -154,34 +153,34 @@ void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux,
   for (int i=0; i<Nsph; i++) {
 
     if (ndim == 1) {
-      x[i] = sphaux[i].r[0];
-      vx[i] = sphaux[i].v[0];
-      ax[i] = sphaux[i].a[0];
+      x[i] = (float) sphaux[i].r[0];
+      vx[i] = (float) sphaux[i].v[0];
+      ax[i] = (float) sphaux[i].a[0];
     }
     else if (ndim == 2) {
-      x[i] = sphaux[i].r[0];
-      y[i] = sphaux[i].r[1];
-      vx[i] = sphaux[i].v[0];
-      vy[i] = sphaux[i].v[1];
-      ax[i] = sphaux[i].a[0];
-      ay[i] = sphaux[i].a[1];
+      x[i] = (float) sphaux[i].r[0];
+      y[i] = (float) sphaux[i].r[1];
+      vx[i] = (float) sphaux[i].v[0];
+      vy[i] = (float) sphaux[i].v[1];
+      ax[i] = (float) sphaux[i].a[0];
+      ay[i] = (float) sphaux[i].a[1];
     }
     else if (ndim == 3) {
-      x[i] = sphaux[i].r[0];
-      y[i] = sphaux[i].r[1];
-      z[i] = sphaux[i].r[2];
-      vx[i] = sphaux[i].v[0];
-      vy[i] = sphaux[i].v[1];
-      vz[i] = sphaux[i].v[2];
-      ax[i] = sphaux[i].a[0];
-      ay[i] = sphaux[i].a[1];
-      az[i] = sphaux[i].a[2];
+      x[i] = (float) sphaux[i].r[0];
+      y[i] = (float) sphaux[i].r[1];
+      z[i] = (float) sphaux[i].r[2];
+      vx[i] = (float) sphaux[i].v[0];
+      vy[i] = (float) sphaux[i].v[1];
+      vz[i] = (float) sphaux[i].v[2];
+      ax[i] = (float) sphaux[i].a[0];
+      ay[i] = (float) sphaux[i].a[1];
+      az[i] = (float) sphaux[i].a[2];
     }
 
-    m[i] = sphaux[i].m;
-    h[i] = sphaux[i].h;
-    rho[i] = sphaux[i].rho;
-    u[i] = sphaux[i].u;
+    m[i] = (float) sphaux[i].m;
+    h[i] = (float) sphaux[i].h;
+    rho[i] = (float) sphaux[i].rho;
+    u[i] = (float) sphaux[i].u;
 
   }
 
@@ -193,8 +192,7 @@ void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux,
 // ============================================================================
 // SphSnapshot::ExtractArray
 // ============================================================================
-void SphSnapshot::ExtractArray(string name, float** out_array, 
-			       int* size_array)
+void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array)
 {
   if (name == "x") *out_array = x;
   else if (name == "y") *out_array = y;
@@ -216,14 +214,16 @@ void SphSnapshot::ExtractArray(string name, float** out_array,
   return;
 }
 
+
+
 // ============================================================================
 // SphSnapshot::ReadSnapshot
 // ============================================================================
-void SphSnapshot::ReadSnapshot(string format, SphSimulation * simulation) {
+void SphSnapshot::ReadSnapshot(string format, SphSimulation *simulation) {
 
   simulation->ReadSnapshotFile(filename, format);
   CopyDataFromSimulation(simulation->simparams.intparams["ndim"],
 			 simulation->sph->Nsph , simulation->sph->sphdata );
-  t= simulation->t;
+  t = simulation->t;
 
 }
