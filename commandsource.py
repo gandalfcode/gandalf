@@ -72,10 +72,15 @@ class PlotCommand(Command):
             if not self.overplot:
                 ax.clear()
             product = self.execute(plotting, fig, ax, data)
+            #the figure might have been shown already, but we need to redo it,
+            #because (apparently) matplotlib does not provide any way of knowing
+            #if that's the case
             fig.show()
             plotting.commands.append(self)
             plotting.commandsfigures[self.id]= fig, ax, product
             plotting.lastid = self.id
+            #finally we need to draw, because the previous call to show does not update
+            #the figure
             fig.canvas.draw()
 
 class ParticlePlotCommand (PlotCommand):
@@ -139,6 +144,42 @@ class AnalyticalPlotCommand (PlotCommand):
         x_data, y_data = computer.compute(self.xquantity, self.yquantity)
         data = Data(x_data,y_data)
         return data   
-    
+
+class LimitCommand(Command):
+    def __init__(self, quantity, min, max):
+        Command.__init__(self)
+        self.quantity = quantity
+        self.min = min
+        self.max = max
+        self.snap = None
+
+    def prepareData(self):
+        pass
+
+    def processCommand(self, plotting, data):
+        self.snap = None
+        try:
+            fig, ax, line = plotting.commandsfigures[self.id]
+        except KeyError:
+            fig = plotting.plt.gcf()
+            ax = plotting.plt.gca()
+            line = None
+            plotting.commands.append(self)
+            plotting.commandsfigures[self.id]= fig, ax, line
+            plotting.lastid = self.id
+        if self.quantity == 'x':
+            if self.min == 'auto':
+                ax.relim()
+                ax.autoscale()
+            else:
+                ax.set_xlim(self.min, self.max)
+        elif self.quantity == 'y':
+            if self.min == 'auto':
+                ax.relim()
+                ax.autoscale()
+            else:
+                ax.set_ylim(self.min, self.max)
+        fig.canvas.draw()
+        
 class CommandException(Exception):
     pass     

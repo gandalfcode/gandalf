@@ -28,6 +28,15 @@ def plot(x,y, overplot = False, snap="current", autoscale = True, sim="current")
     Singletons.queue.put([command, data])
     sleep(0.001)
 
+def limit (quantity, min, max=None):
+    '''First, rough implementation of limits. Quantity for now
+    is either x or y, indicating the axis to limit. Min can be set
+    to auto, and max can be omitted; in that case, the limits will be
+    recomputed automatically. 
+    '''
+    command = Commands.LimitCommand (quantity, min, max)
+    Singletons.queue.put([command,None])
+
 def addplot (x,y, **kwargs):
     plot(x,y, True, **kwargs)
     
@@ -161,9 +170,12 @@ if __name__=="__main__":
     loadsim('TEST')
     plot("x","rho")
     plotanalytical("x","rho")
-    import time; time.sleep(1)
-    next(); time.sleep(1)
+    limit('x', 0, 10.)
+    import time; time.sleep(2)
+    next(); time.sleep(2)
     snap(7)
+    limit('x', 'auto')
+
     block()
 #    
 #    loadsim('TEST')
