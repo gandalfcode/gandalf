@@ -1,4 +1,3 @@
-from collections import deque
 import fnmatch
 import os
 from SphSim import SphSimulation, SphSnapshot
@@ -21,7 +20,7 @@ class SimBuffer:
 
     Nsim = int(0)
     simlist = []
-    snapshots = deque()
+    snapshots = []
     maxmemory = 1024**3 #now hardwired to 1 GB
     currentsim = -1
 
@@ -50,9 +49,10 @@ class SimBuffer:
         if snapshotsize > SimBuffer.maxmemory:
             raise BufferFull("The requested snapshot can't fit inside the buffer memory")
         while 1:
-            available_memory = SimBuffer.maxmemory - SimBuffer.total_memory_usage()
+            usedmemory = SimBuffer.total_memory_usage()-snapshotsize
+            available_memory = SimBuffer.maxmemory - usedmemory
             if snapshotsize > available_memory:
-                SimBuffer._deallocateSnapshot()
+                SimBuffer._deallocateSnapshot(snapshot)
             else:
                 break
     
@@ -62,15 +62,23 @@ class SimBuffer:
         SimBuffer._findmemoryfor(snapshot)
     
     @staticmethod
-    def _deallocateSnapshot():
+    def _deallocateSnapshot(snapshottest):
         ''' Deallocates a snapshot to make space.
+        The argument is not the snapshot to be deallocated, but the one that we are making space for.
+        It is needed to check that we are not deallocating this snapshot itself.
         The exact snapshot to deallocate depends on the specific caching algorithm; at the moment
-        a simple queue is used.
+        a LRU (least recently used) algorithm is used. The list of snapshots is sorted depending on the
+        time at which the snapshot was used for the last time; the first snapshots to get deallocated are
+        the ones that were used most time ago. Not that this technique is not scan resistant (but there
+        are ways around that).
         '''
-        for snapshot in SimBuffer.snapshots:
+        for snapshot in sorted(SimBuffer.snapshots, key=lambda element: element.LastUsed):
             if snapshot.allocated:
-                snapshot.DeallocateBufferMemory()
-                return 
+                if snapshot != snapshottest:
+                    snapshot.DeallocateBufferMemory()
+                    return
+        raise RuntimeError('SimBuffer._deallocateSnapshot: should never get to this line!!!!')
+        
     
     @staticmethod
     def _destroy():
@@ -78,7 +86,7 @@ class SimBuffer:
         for snapshot in SimBuffer.snapshots:
             if snapshot.allocated:
                 snapshot.DeallocateBufferMemory()
-        SimBuffer.snapshots = deque()
+        SimBuffer.snapshots = []
         SimBuffer.simlist = []
     
     @staticmethod

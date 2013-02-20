@@ -2,7 +2,7 @@
 // SphSnapshot.cpp
 // ============================================================================
 
-
+#include <ctime>
 #include <cstdio>
 #include <iostream>
 #include "SphSnapshot.h"
@@ -22,6 +22,7 @@ SphSnapshot::SphSnapshot(string auxfilename)
   Nsph = 0;
   t = 0.0;
   if (auxfilename != "") filename = auxfilename;
+  LastUsed = time(NULL);
 }
 
 
@@ -183,7 +184,7 @@ void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux,
     u[i] = (float) sphaux[i].u;
 
   }
-
+  LastUsed = time(NULL);
   return;
 }
 
@@ -194,6 +195,9 @@ void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux,
 // ============================================================================
 void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array)
 {
+
+  LastUsed = time(NULL);
+
   if (name == "x") *out_array = x;
   else if (name == "y") *out_array = y;
   else if (name == "z") *out_array = z;
