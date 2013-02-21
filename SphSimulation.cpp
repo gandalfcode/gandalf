@@ -317,7 +317,7 @@ void SphSimulation::Setup(void)
     sph->InitialSmoothingLengthGuess();
     sphneib->UpdateTree(sph,simparams);
 
-    sphneib->UpdateAllSphProperties(sph,simparams);
+    sphneib->UpdateAllSphProperties(sph);
 
     // Search ghost particles
     SearchGhostParticles();
@@ -333,12 +333,6 @@ void SphSimulation::Setup(void)
 
     cout << "Ntot : " << sph->Ntot << endl;
 
-    // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph,simparams);
-
-    // Copy data to ghosts
-    CopyDataToGhosts();
-
     // Zero accelerations (perhaps)
     for (int i=0; i<sph->Nsph; i++) {
       for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = 0.0;
@@ -347,8 +341,8 @@ void SphSimulation::Setup(void)
       sph->sphdata[i].dudt = 0.0;
     }
 
-    // Calculate all hydro forces
-    sphneib->UpdateAllSphForces(sph,simparams);
+    // Calculate all SPH properties
+    sphneib->UpdateAllSphProperties(sph);
 
     // Add accelerations
     for (int i=0; i<sph->Nsph; i++) {
@@ -416,33 +410,25 @@ void SphSimulation::MainLoop(void)
   // --------------------------------------------------------------------------
   if (sph->Nsph > 0) {
 
-    // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph,simparams);
-
-    // Copy data to ghosts
-    CopyDataToGhosts();
-
     // Zero accelerations (perhaps)
-    for (int i=0; i<sph->Nsph; i++) {
-      if (sph->sphdata[i].active) {
+    for (int i=0; i<sph->Ntot; i++) {
+      //if (sph->sphdata[i].active) {
 	for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = 0.0;
 	for (int k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = 0.0;
 	sph->sphdata[i].gpot = 0.0;
 	sph->sphdata[i].dudt = 0.0;
-      }
+	//}
     }
 
-    // Calculate all hydro and gravitational forces
-    sphneib->UpdateAllSphForces(sph,simparams);
+    // Calculate all SPH properties
+    sphneib->UpdateAllSphProperties(sph);
 
     // Add accelerations
     for (int i=0; i<sph->Nsph; i++) {
       for (int k=0; k<ndim; k++) 
 	sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
-
   }
-
 
   // Apply correction steps
   sphint->CorrectionTerms(sph->Nsph,sph->sphdata,timestep);

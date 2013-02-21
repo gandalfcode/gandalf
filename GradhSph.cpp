@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <math.h>
+#include "Precision.h"
 #include "Sph.h"
 #include "SphKernel.h"
 #include "SphParticle.h"
@@ -27,7 +28,7 @@ GradhSph::GradhSph(int ndimaux, int vdimaux, int bdimaux)
   ndim = ndimaux;
   vdim = vdimaux;
   bdim = bdimaux;
-  invndim = 1.0/(float)ndim;
+  invndim = 1.0/(FLOAT)ndim;
 #endif
   allocated = false;
   Nsph = 0;
@@ -48,31 +49,31 @@ GradhSph::~GradhSph()
 // ============================================================================
 // GradhSph::ComputeH
 // Compute the value of the smoothing length of particle 'i' by iterating  
-// the relation :  h = h_fac*(m/rho)^(1/ndim).
+// the relation : h = h_fac*(m/rho)^(1/ndim).
 // Uses the previous value of h as a starting guess and then uses either 
 // a Newton-Rhapson solver, or fixed-point iteration, to converge on the 
 // correct value of h.  The maximum tolerance used for deciding whether the 
 // iteration has converged is given by the 'h_converge' parameter.
 // ============================================================================
-int GradhSph::ComputeH(int i, SphParticle &parti, 
-		       int Nneib, SphParticle *neiblistpart)
+int GradhSph::ComputeH(int i, SphParticle &parti, int Nneib, 
+		       SphParticle *neiblistpart, FLOAT *drmag, 
+		       FLOAT *invdrmag, FLOAT *dr)
 {
   int j;                                      // Neighbour id
   int jj;                                     // Aux. neighbour counter
   int k;                                      // Dimension counter
   int iteration = 0;                          // h-rho iteration counter
   int iteration_max = 30;                     // Max. no of iterations
-  float h_lower_bound = 0.0;                  // Lower bound on h
-  float h_upper_bound = big_number;           // Upper bound on h
-  float h_max = big_number;                   // Max. allowed value of h
-  float hrangesqd;                            // Kernel extent (squared)
-  float dr[ndimmax];                          // Relative position vector
-  float dv[ndimmax];                          // Relative velocity vector
-  float drmag;                                // Neighbour distance
-  float invdrmag;                             // ..
+  FLOAT h_lower_bound = 0.0;                  // Lower bound on h
+  FLOAT h_upper_bound = big_number;           // Upper bound on h
+  FLOAT h_max = big_number;                   // Max. allowed value of h
+  FLOAT hrange;                               // Kernel extent
+  FLOAT draux[ndimmax];                          // Relative position vector
+  FLOAT dv[ndimmax];                          // Relative velocity vector
+  FLOAT hfactor;
+  FLOAT skern;
+  FLOAT invrho;
 
-  // Particle local copy
-  //SphParticle parti = sphdata[i];
 
   // Main smoothing length iteration loop
   // --------------------------------------------------------------------------
@@ -80,44 +81,39 @@ int GradhSph::ComputeH(int i, SphParticle &parti,
 
     // Initialise all variables for this value of h
     iteration++;
-    hrangesqd = kern->kernrangesqd*parti.h*parti.h;
     parti.invh = 1.0/parti.h;
-    parti.hfactor = pow(parti.invh,ndim);
     parti.rho = 0.0;
     parti.invomega = 0.0;
     parti.div_v = 0.0;
+    hrange = kern->kernrange*parti.h;
+    hfactor = pow(parti.invh,ndim);
 
     // Loop over all neighbours in list
     // ------------------------------------------------------------------------
     for (jj=0; jj<Nneib; jj++) {
-//      j = neiblist[jj];
-
-      for (k=0; k<ndim; k++) dr[k] = neiblistpart[jj].r[k] - parti.r[k];
-      drmag = DotProduct(dr,dr,ndim);
       
       // Skip particle if not a neighbour
-      if (drmag > hrangesqd) continue;
+      if (drmag[jj] > hrange) continue;
 
-      drmag = sqrt(drmag);
-      invdrmag = 1.0/(drmag + small_number);
-      for (k=0; k<ndim; k++) dr[k] *= invdrmag;
+      for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
+      //for (k=0; k<ndim; k++) dr[k] *= invdrmag[jj];
       for (k=0; k<ndim; k++) dv[k] = neiblistpart[jj].v[k] - parti.v[k];
+      skern = drmag[jj]*parti.invh;
       
-      parti.div_v -= neiblistpart[jj].m*DotProduct(dv,dr,ndim)*
-	kern->w1(drmag*parti.invh)*parti.hfactor*parti.invh;
-      parti.rho += neiblistpart[jj].m*parti.hfactor*
-	kern->w0(drmag*parti.invh);
-      parti.invomega += neiblistpart[jj].m*parti.hfactor*
-	parti.invh*kern->womega(drmag*parti.invh);
+      parti.div_v -= neiblistpart[jj].m*DotProduct(dv,draux,ndim)*
+	kern->w1(skern)*hfactor*parti.invh;
+      parti.rho += neiblistpart[jj].m*hfactor*kern->w0(skern);
+      parti.invomega += neiblistpart[jj].m*hfactor*
+	parti.invh*kern->womega(skern);
 
     }
     // ------------------------------------------------------------------------
 
-    if (parti.rho > 0.0) parti.invrho = 1.0/parti.rho;
+    if (parti.rho > 0.0) invrho = 1.0/parti.rho;
 
     // If h changes below some fixed tolerance, exit iteration loop
     if (parti.rho > 0.0 && parti.h > h_lower_bound &&
-	fabs(parti.h - h_fac*pow(parti.m*parti.invrho,
+	fabs(parti.h - h_fac*pow(parti.m*invrho,
 				      invndim)) < h_converge) break;
 
     // Use fixed-point iteration for now.  If this does not converge in a 
@@ -126,7 +122,7 @@ int GradhSph::ComputeH(int i, SphParticle &parti,
     // to converge, albeit slowly.
     // ------------------------------------------------------------------------
     if (iteration < iteration_max)
-      parti.h = h_fac*pow(parti.m*parti.invrho,invndim);
+      parti.h = h_fac*pow(parti.m*invrho,invndim);
 
     else if (iteration == iteration_max)
       parti.h = 0.5*(h_lower_bound + h_upper_bound);
@@ -145,27 +141,24 @@ int GradhSph::ComputeH(int i, SphParticle &parti,
     // neighbour list
     if (parti.h > h_max) return 0;
     
-
   } while (parti.h > h_lower_bound && parti.h < h_upper_bound);
   // --------------------------------------------------------------------------
 
+
   // Normalise all SPH sums correctly
-  parti.invrho = 1.0/parti.rho;
-  parti.h = h_fac*pow(parti.m*parti.invrho,invndim);
+  //parti.invrho = 1.0*invrho;
+  parti.h = h_fac*pow(parti.m*invrho,invndim);
   parti.invh = 1.0/parti.h;
-  parti.invomega = 1.0 + invndim*parti.h*parti.invomega*parti.invrho;
+  parti.invomega = 1.0 + invndim*parti.h*parti.invomega*invrho;
   parti.invomega = 1.0/parti.invomega;
-  parti.div_v *= parti.invrho;
-  parti.hfactor = pow(parti.invh,ndim+1);
+  parti.div_v /= parti.rho;
+  //parti.hfactor = pow(parti.invh,ndim+1);
   parti.u = eos->SpecificInternalEnergy(parti);
   parti.sound = eos->SoundSpeed(parti);
-  parti.press = eos->Pressure(parti);
-  parti.pfactor = eos->Pressure(parti)*
-    parti.invrho*parti.invrho*parti.invomega;
-
-  // Copies back particle data
-  //sphdata[i] = parti;
-
+  //parti.press = eos->Pressure(parti);
+  //parti.pfactor = eos->Pressure(parti)*
+  //  parti.invrho*parti.invrho*parti.invomega;
+  
   return 1;
 }
 
@@ -175,90 +168,79 @@ int GradhSph::ComputeH(int i, SphParticle &parti,
 // GradhSph::ComputeHydroForces
 // ============================================================================
 void GradhSph::ComputeHydroForces(int i, SphParticle &parti,
-				  int Nneib, SphParticle *neiblist)
+				  int Nneib, SphParticle *neiblist,
+				  FLOAT *drmag, FLOAT *invdrmag, FLOAT *dr)
 {
   int j;
   int jj;
   int k;
-  float hrangesqd;
-  float dr[ndimmax];
-  float dv[ndimmax];
-  float dvdr;
-  float drmag;
-  float invhmean;
-  float invrhomean;
-  float invdrmag;
-  float wmean;
-  float vsignal;
+  //FLOAT dr[ndimmax];
+  FLOAT draux[ndimmax];
+  FLOAT dv[ndimmax];
+  FLOAT dvdr;
+  FLOAT wkern;
+  FLOAT vsignal;
+  FLOAT paux,uaux;
+  FLOAT hfactor = pow(parti.invh,ndim+1);
+  FLOAT hrange = kern->kernrange*parti.h;
+  FLOAT invrho = 1.0/parti.rho;
+  FLOAT pfactor = eos->Pressure(parti)*invrho*invrho*parti.invomega;
 
-  parti.dudt = -parti.press*parti.div_v*
-    parti.invrho*parti.invomega;
-  hrangesqd = kern->kernrangesqd*parti.h*parti.h;
   if (self_gravity == 1) parti.zeta = 0.0;
+
+
+  parti.dudt -= eos->Pressure(parti)*parti.div_v*invrho*parti.invomega;
+
 
   // Loop over all potential neighbours in the list
   // --------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
-//    j = neiblist[jj];
-//    if (i == j) continue;
 
-    // Calculate relative position vector and determine if particles
-    // are neighbours or not. If not, skip to next potential neighbour.
-    for (k=0; k<ndim; k++) dr[k] = neiblist[jj].r[k] - parti.r[k];
-    drmag = DotProduct(dr,dr,ndim);
-    if (drmag > hrangesqd && 
-	drmag > kern->kernrangesqd*neiblist[jj].h*neiblist[jj].h) continue;
+    if (drmag[jj] > hrange) continue;
 
-    // If particles are neighbours, continue computing hydro quantities
-    drmag = sqrt(drmag);
-    invdrmag = 1.0/(drmag + small_number);
-    for (k=0; k<ndim; k++) dr[k] *= invdrmag;
+    for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
     for (k=0; k<ndim; k++) dv[k] = neiblist[jj].v[k] - parti.v[k];
-    dvdr = DotProduct(dv,dr,ndim);
+    dvdr = DotProduct(dv,draux,ndim);
+    wkern = hfactor*kern->w1(drmag[jj]*parti.invh);
 
-    // Compute hydro acceleration
-    for (k=0; k<ndim; k++) parti.a[k] += neiblist[jj].m*dr[k]*
-      (parti.pfactor*parti.hfactor*kern->w1(drmag*parti.invh) +
-       neiblist[jj].pfactor*neiblist[jj].hfactor*kern->w1(drmag*neiblist[jj].invh));
+    // Compute net force term
+    paux = pfactor*wkern;
+
 
     // Add dissipation terms (for approaching particle-pairs)
     // ------------------------------------------------------------------------
     if (dvdr < 0.0) {
-      wmean = 0.5*(kern->w1(drmag*parti.invh)*parti.hfactor +
-          kern->w1(drmag*neiblist[jj].invh)*neiblist[jj].hfactor);
-      invrhomean = 2.0 / (parti.rho + neiblist[jj].rho);
 
       // Artificial viscosity term
-      if (avisc == "mon97") {
-	vsignal = parti.sound + neiblist[jj].sound - beta_visc*dvdr;
-	for (k=0; k<ndim; k++) parti.a[k] -= 
-	  neiblist[jj].m*alpha_visc*vsignal*dvdr*dr[k]*wmean*invrhomean;
-	parti.dudt -= 0.5*neiblist[jj].m*alpha_visc*
-	  vsignal*wmean*invrhomean*dvdr*dvdr;
+      if (avisc == "pf2010") {
+	vsignal = parti.sound - beta_visc*dvdr;
+	paux -= 0.5*alpha_visc*vsignal*dvdr*invrho*parti.invomega*wkern;
+	parti.dudt -= 0.25*neiblist[jj].m*alpha_visc*vsignal*dvdr*dvdr*
+	  invrho*parti.invomega*wkern;
+	neiblist[jj].dudt -= 0.25*parti.m*alpha_visc*vsignal*dvdr*dvdr*
+	  invrho*parti.invomega*wkern;
       }
 
       // Artificial conductivity term
-      if (acond == "price2008") {
-	vsignal = sqrt(fabs(parti.press - neiblist[jj].press)*invrhomean);
-	parti.dudt += neiblist[jj].m*vsignal*
-	  (parti.u - neiblist[jj].u)*wmean*invrhomean;
+      if (acond == "wadsley2008") {
+	parti.dudt += 0.5*neiblist[jj].m*fabs(dvdr)*
+	  (parti.u - neiblist[jj].u)*wkern*invrho;
+	neiblist[jj].dudt -= 0.5*parti.m*fabs(dvdr)*
+	  (parti.u - neiblist[jj].u)*wkern*invrho;
       }
+
+
     }
     // ------------------------------------------------------------------------
 
-    // Calculate zeta term for mean-h gravity
-    if (self_gravity == 1) {
-      invhmean = 2.0/(parti.h + neiblist[jj].h);
-      parti.zeta += neiblist[jj].m*invhmean*invhmean*
-	kern->wzeta(drmag*invhmean);
-    }
+    // Compute hydro acceleration
+    for (k=0; k<ndim; k++) parti.a[k] += neiblist[jj].m*draux[k]*paux;
+    
+    // If neighbour is also active, compute contribution to force here
+    for (k=0; k<ndim; k++) neiblist[jj].a[k] -= parti.m*draux[k]*paux;
 
   }
   // --------------------------------------------------------------------------
-
-  // Normalise zeta term
-  parti.zeta *= -invndim*parti.h*
-    parti.invrho*parti.invomega;
 
   return;
 }
@@ -275,12 +257,12 @@ void GradhSph::ComputeGravForces(int i, int Nneib, SphParticle *neiblist)
   int j;
   int jj;
   int k;
-  float hrangesqd;
-  float dr[ndimmax];
-  float drmag;
-  float invdrmag;
-  float invhmean;
-  float kernrange = kern->kernrange;
+  FLOAT hrangesqd;
+  FLOAT dr[ndimmax];
+  FLOAT drmag;
+  FLOAT invdrmag;
+  FLOAT invhmean;
+  FLOAT kernrange = kern->kernrange;
 
   // Loop over all neighbouring particles in list
   // --------------------------------------------------------------------------
@@ -307,6 +289,7 @@ void GradhSph::ComputeGravForces(int i, int Nneib, SphParticle *neiblist)
       sphdata[i].gpot -= neiblist[jj].m*invdrmag;
     }
 
+    /*
     if (drmag*sphdata[i].invh < kernrange) {
       for (k=0; k<ndim; k++) 
 	sphdata[i].agrav[k] += 0.5*neiblist[jj].m*dr[k]*invdrmag*
@@ -318,6 +301,7 @@ void GradhSph::ComputeGravForces(int i, int Nneib, SphParticle *neiblist)
 	sphdata[i].agrav[k] += 0.5*neiblist[jj].m*dr[k]*invdrmag*
 	  neiblist[jj].zeta*kern->w1(drmag*neiblist[jj].invh)*neiblist[jj].hfactor;
     }
+    */
 
   }
 
@@ -334,10 +318,10 @@ void GradhSph::ComputeMeanhZeta(int i, int Nneib, int *neiblist)
   int j;
   int jj;
   int k;
-  float dr[ndimmax];
-  float drmag;
-  float invhmean;
-  float kernrangesqd = kern->kernrangesqd;
+  FLOAT dr[ndimmax];
+  FLOAT drmag;
+  FLOAT invhmean;
+  FLOAT kernrangesqd = kern->kernrangesqd;
 
   sphdata[i].zeta = 0.0;
 
@@ -364,8 +348,7 @@ void GradhSph::ComputeMeanhZeta(int i, int Nneib, int *neiblist)
   // --------------------------------------------------------------------------
 
   // Normalise zeta term
-  sphdata[i].zeta *= -invndim*sphdata[i].h*
-    sphdata[i].invrho*sphdata[i].invomega;
+  sphdata[i].zeta *= -invndim*sphdata[i].h/sphdata[i].rho*sphdata[i].invomega;
 
   return;
 }

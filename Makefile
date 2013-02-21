@@ -3,17 +3,17 @@
 # =============================================================================
 
 
-
 CC = g++
 PYTHON = python2.7
 
 #OPT = -pg -O3 -fPIC
 OPT = -O3 -ffast-math -fPIC
+#OPT = -g -pg -fprofile-arcs -ftest-coverage -fPIC
 #OPT = -g -Wall -fbounds-check
 
 OUTPUT_LEVEL              = 1
-PRECISION                 = SINGLE
-NDIM                      = 0
+PRECISION                 = DOUBLE
+NDIM                      = 1
 DEBUG                     = 1
 VERIFY_ALL                = 0
 

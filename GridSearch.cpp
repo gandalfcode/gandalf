@@ -67,11 +67,13 @@ void GridSearch::UpdateTree(Sph *sph, Parameters &simparams)
 // Uses grid-cells to construct local neighbour lists for all particles 
 // inside the cell.
 // ============================================================================
-void GridSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
+void GridSearch::UpdateAllSphProperties(Sph *sph)
 {
   int c;
   int i;
   int j;
+  int jj;
+  int k;
   int okflag;
   int *celllist;
   int *neiblist;
@@ -80,6 +82,12 @@ void GridSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
   int Nneib;
   int Nneibmax;
   int cactive;
+  FLOAT draux[ndimmax];
+  FLOAT drsqd;
+  FLOAT rp[ndimmax];
+  FLOAT *drmag;
+  FLOAT *invdrmag;
+  FLOAT *dr;
   SphParticle *neiblistpart;
   SphParticle *data = sph->sphdata;
 
@@ -91,6 +99,9 @@ void GridSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
 
   Nneibmax = Nlistmax;
   neiblist = new int[Nneibmax];
+  dr = new FLOAT[Nneibmax*ndim];
+  drmag = new FLOAT[Nneibmax];
+  invdrmag = new FLOAT[Nneibmax];
   activelist = new int[Noccupymax];
   neiblistpart = new SphParticle[Nneibmax];
 
@@ -105,15 +116,45 @@ void GridSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
 
     // Compute neighbour list for cell
     Nneib = ComputeNeighbourList(c,neiblist);
-    for (j=0; j<Nneib; j++) neiblistpart[j] = data[neiblist[j]];
+    for (j=0; j<Nneib; j++) {
+      neiblistpart[j] = data[neiblist[j]];
+      neiblistpart[j].dudt = 0.0;
+      for (k=0; k<ndim; k++) neiblistpart[j].a[k] = 0.0;
+    }
 
     // Loop over all active particles in the cell
+    // ------------------------------------------------------------------------
     for (j=0; j<Nactive; j++) {
       i = activelist[j];
-      okflag = sph->ComputeH(i,data[i],Nneib,neiblistpart);
+
+      // Compute distances and the reciprical between the current particle 
+      // and all neighbours here
+      for (k=0; k<ndim; k++) rp[k] = data[i].r[k];
+      for (jj=0; jj<Nneib; jj++) { 
+	for (k=0; k<ndim; k++) draux[k] = neiblistpart[jj].r[k] - rp[k];
+	drsqd = DotProduct(draux,draux,ndim);
+	drmag[jj] = sqrt(drsqd);
+	invdrmag[jj] = 1.0/(drmag[jj] + small_number);
+	for (k=0; k<ndim; k++) dr[jj*ndim + k] = draux[k]*invdrmag[jj];
+      }
+
+      // Compute all SPH gather properties
+      okflag = sph->ComputeH(i,data[i],Nneib,neiblistpart,drmag,invdrmag,dr);
+
 #if defined(VERIFY_ALL)
       CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
 #endif
+
+      // Compute all current particle contributions to hydro forces
+      sph->ComputeHydroForces(i,data[i],Nneib,neiblistpart,drmag,invdrmag,dr);
+
+    }
+    // ------------------------------------------------------------------------
+
+    // Now add all neighbour contributions to the main arrays
+    for (j=0; j<Nneib; j++) {
+      for (k=0; k<ndim; k++) data[neiblist[j]].a[k] += neiblistpart[j].a[k];
+      data[neiblist[j]].dudt += neiblistpart[j].dudt;
     }
 
   }   
@@ -121,75 +162,9 @@ void GridSearch::UpdateAllSphProperties(Sph *sph, Parameters &simparams)
 
   delete[] neiblistpart;
   delete[] activelist;
-  delete[] neiblist;
-  delete[] celllist;
-
-  return;
-}
-
-
-
-// ============================================================================
-// GridSearch::UpdateAllSphForces
-// ============================================================================
-void GridSearch::UpdateAllSphForces(Sph *sph, Parameters &params)
-{
-  int c;
-  int i;
-  int j;
-  int okflag;
-  int *celllist;
-  int *neiblist;
-  int *activelist;
-  int Nactive;
-  int Nneib;
-  int Nneibmax;
-  int cactive;
-  SphParticle *neiblistpart;
-  SphParticle *data = sph->sphdata;
-
-  debug2("[GridSearch::UpdateAllSphForces]");
-
-  // Find list of all cells that contain active particles
-  celllist = new int[Ncell];
-  cactive = ComputeActiveCellList(celllist);
-
-  Nneibmax = Nlistmax;
-  neiblist = new int[Nneibmax];
-  activelist = new int[Noccupymax];
-  neiblistpart = new SphParticle[Nneibmax];
-
-
-  // Loop over all active cells
-  // --------------------------------------------------------------------------
-  if (sph->hydro_forces == 1) {
-    for (int cc=0; cc<cactive; cc++) {
-      c = celllist[cc];
-      
-      // Find list of active particles
-      Nactive = ComputeActiveParticleList(c,activelist,sph);
-      
-      // Compute neighbour list for cell
-      Nneib = ComputeNeighbourList(c,neiblist);
-
-      // Copies particle from the main array to the new array
-      for (j=0; j<Nneib; j++) neiblistpart[j] = data[neiblist[j]];
-
-      // Loop over all active particles in the cell
-      for (j=0; j<Nactive; j++) {
-        i = activelist[j];
-#if defined(VERIFY_ALL)
-        CheckValidNeighbourList(sph,i,Nneib,neiblist,"all");
-#endif
-        sph->ComputeHydroForces(i,data[i],Nneib,neiblistpart);
-      }
-      
-    }   
-  }
-  // --------------------------------------------------------------------------
-
-  delete[] neiblistpart;
-  delete[] activelist;
+  delete[] invdrmag;
+  delete[] drmag;
+  delete[] dr;
   delete[] neiblist;
   delete[] celllist;
 
@@ -198,15 +173,10 @@ void GridSearch::UpdateAllSphForces(Sph *sph, Parameters &params)
   // --------------------------------------------------------------------------
   if (sph->self_gravity == 1) {
     Nneib = sph->Ntot;
-//    neiblist = new int[sph->Ntot];
-//    for (int i=0; i<sph->Ntot; i++) neiblist[i] = i;
-    
+
     // Compute SPH hydro forces for all particles
     for (int i=0; i<sph->Nsph; i++)
       sph->ComputeGravForces(i,Nneib,sph->sphdata);
-
-    // Free up memory from local array
-//    delete[] neiblist;
   }
 
   return;

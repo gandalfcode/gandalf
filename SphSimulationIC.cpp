@@ -345,23 +345,19 @@ void SphSimulation::KHI(void)
   sph->InitialSmoothingLengthGuess();
   sphneib->UpdateTree(sph,simparams);
   
-  sphneib->UpdateAllSphProperties(sph,simparams);
-  
   // Search ghost particles
   SearchGhostParticles();
-  
+
+  sphneib->UpdateAllSphProperties(sph);
+
   // Update neighbour tre
   sphneib->UpdateTree(sph,simparams);
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph,simparams);
+  sphneib->UpdateAllSphProperties(sph);
   
-  // Copy data to ghosts
-  CopyDataToGhosts();
-
   for (i=0; i<sph->Nsph; i++) 
-    sph->sphdata[i].u = press1*sph->sphdata[i].invrho/gammaone;
-
+    sph->sphdata[i].u = press1/sph->sphdata[i].rho/gammaone;
 
   delete[] r;
 

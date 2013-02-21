@@ -59,6 +59,7 @@ class SphSnapshot
   float *h;
   float *rho;
   float *u;
+  float *dudt;
 
 };
 

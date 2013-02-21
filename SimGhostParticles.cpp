@@ -63,7 +63,7 @@ void SphSimulation::SearchGhostParticles(void)
 {
   int i;
   int k;
-  const FLOAT ghost_range = 1.1;
+  const FLOAT ghost_range = 2.2;
   const FLOAT kernrange = sph->kern->kernrange;
   SphParticle *sphdata = sph->sphdata;
 
@@ -179,6 +179,10 @@ void SphSimulation::SearchGhostParticles(void)
 }
 
 
+
+// ============================================================================
+// SphSimulation::CreateGhostParticle
+// ============================================================================
 void SphSimulation::CreateGhostParticle(int i, int k, FLOAT rk, FLOAT vk)
 {
   // Increase ghost counter and check there's enough space in memory
@@ -210,6 +214,9 @@ void SphSimulation::CreateGhostParticle(int i, int k, FLOAT rk, FLOAT vk)
 
 
 
+// ============================================================================
+// SphSimulation::CopyDataToGhosts
+// ============================================================================
 void SphSimulation::CopyDataToGhosts(void)
 {
   int i;
@@ -228,7 +235,7 @@ void SphSimulation::CopyDataToGhosts(void)
 
     for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = rp[k];
     for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = vp[k];
-    sph->sphdata[i].active = false;
+    //sph->sphdata[i].active = false;
 
   }
 
