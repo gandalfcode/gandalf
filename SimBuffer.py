@@ -1,4 +1,3 @@
-from collections import deque
 import fnmatch
 import os
 from SphSim import SphSimulation, SphSnapshot
@@ -21,8 +20,8 @@ class SimBuffer:
 
     Nsim = int(0)
     simlist = []
-    snapshots = deque()
-    maxmemory = 1024**3
+    snapshots = []
+    maxmemory = 1024**3 #now hardwired to 1 GB
     currentsim = -1
 
 
@@ -36,10 +35,9 @@ class SimBuffer:
         SimBuffer.Nsim += 1
         SimBuffer.currentsim = SimBuffer.Nsim - 1
     
-    # TODO: eliminate duplicate code between this function and fillsnapshot
     # TODO: improve the algorithm for making space/allocating space
     @staticmethod        
-    def _addsnapshot(sim, snapshot):
+    def _findmemoryfor(snapshot):
         '''
         Add a new snapshot to the list of snapshots.
         Checks for memory usage, and deallocates as many snapshots as needed
@@ -47,41 +45,40 @@ class SimBuffer:
         to the parent simulation accordingly. Raises BufferFull if there isn't enough space
         for the snapshot being loaded. 
         '''
-        while 1:
-            snapshotsize = snapshot.CalculateMemoryUsage()
-            if snapshotsize > SimBuffer.maxmemory:
-                print "Warning: the requested snapshot can't fit inside the buffer memory. It will not be cached"
-                raise BufferFull
-            available_memory = SimBuffer.maxmemory - SimBuffer.total_memory_usage()
-            if snapshotsize > available_memory:
-                SimBuffer._makespace()
-            else:
-                break
-        SimBuffer.snapshots.append(snapshot)
-        snapshot.sim = sim
-    
-    @staticmethod
-    def _fillsnapshot(snapshot):
-        snapshot.ReadSnapshot(snapshot.sim.simparams.stringparams["in_file_form"],snapshot.sim)
         snapshotsize = snapshot.CalculateMemoryUsage()
         if snapshotsize > SimBuffer.maxmemory:
             raise BufferFull("The requested snapshot can't fit inside the buffer memory")
         while 1:
-            available_memory = SimBuffer.maxmemory - SimBuffer.total_memory_usage()
+            usedmemory = SimBuffer.total_memory_usage()-snapshotsize
+            available_memory = SimBuffer.maxmemory - usedmemory
             if snapshotsize > available_memory:
-                SimBuffer._makespace()
+                SimBuffer._deallocateSnapshot(snapshot)
             else:
                 break
     
     @staticmethod
-    def _makespace():
-        ''' Deletes the first snapshot on the queue (that is, the first created)
-        and deallocates its memory.
+    def _fillsnapshot(snapshot):
+        snapshot.ReadSnapshot(snapshot.sim.simparams.stringparams["in_file_form"],snapshot.sim)
+        SimBuffer._findmemoryfor(snapshot)
+    
+    @staticmethod
+    def _deallocateSnapshot(snapshottest):
+        ''' Deallocates a snapshot to make space.
+        The argument is not the snapshot to be deallocated, but the one that we are making space for.
+        It is needed to check that we are not deallocating this snapshot itself.
+        The exact snapshot to deallocate depends on the specific caching algorithm; at the moment
+        a LRU (least recently used) algorithm is used. The list of snapshots is sorted depending on the
+        time at which the snapshot was used for the last time; the first snapshots to get deallocated are
+        the ones that were used most time ago. Not that this technique is not scan resistant (but there
+        are ways around that).
         '''
-        for snapshot in SimBuffer.snapshots:
+        for snapshot in sorted(SimBuffer.snapshots, key=lambda element: element.LastUsed):
             if snapshot.allocated:
-                snapshot.DeallocateBufferMemory()
-                return 
+                if snapshot != snapshottest:
+                    snapshot.DeallocateBufferMemory()
+                    return
+        raise RuntimeError('SimBuffer._deallocateSnapshot: should never get to this line!!!!')
+        
     
     @staticmethod
     def _destroy():
@@ -89,7 +86,7 @@ class SimBuffer:
         for snapshot in SimBuffer.snapshots:
             if snapshot.allocated:
                 snapshot.DeallocateBufferMemory()
-        SimBuffer.snapshots = deque()
+        SimBuffer.snapshots = []
         SimBuffer.simlist = []
     
     @staticmethod
@@ -168,15 +165,13 @@ class SimBuffer:
         
         #depending on buffer_flag, caches all the snapshots or not
         for i, snapshot in enumerate(sim.snapshots):
+            snapshot.sim = sim
+            SimBuffer.snapshots.append(snapshot)
             if buffer_flag == "store":
-                snapshot.ReadSnapshot(fileformat, sim)
+                SimBuffer._fillsnapshot(snapshot)
             elif buffer_flag == "cache":
                 if i==0:
-                    snapshot.ReadSnapshot(fileformat, sim)
-            try:
-                SimBuffer._addsnapshot(sim, snapshot)
-            except BufferFull:
-                snapshot.DeallocateBufferMemory()
+                    SimBuffer._fillsnapshot(snapshot)
                 
         sim.current = sim.snapshots[0]
     
@@ -195,19 +190,22 @@ class SimBuffer:
                 pass
         return total_memory
     
-    #TODO: uniform the API below for accesing the buffer. Should distinguish between calls that change
-    #what the current snapshot is and calls that don't do that
-    
     @staticmethod  
     def get_current_sim():
         '''This function returns the current simulation'''
         return SimBuffer.simlist[SimBuffer.currentsim]
     
     @staticmethod
+    def get_current_sim_no():
+        '''This function returns the number of the current simulation'''
+        return SimBuffer.currentsim
+    
+    
+    @staticmethod
     def get_sim_no(no):
         '''This function returns the simulation specified by the number'''
         try:
-            sim = Simbuffer.simlist[no]
+            sim = SimBuffer.simlist[no]
         except IndexError:
             raise BufferException ("The specified simulation number does not exist")
         return sim
@@ -225,7 +223,7 @@ class SimBuffer:
     
     @staticmethod
     def get_live_snapshot_current():
-        '''This function returns the live snapshot of the current simulation, if existing'''
+        '''This function returns the live snapshot of the current simulation, if exists'''
         sim = SimBuffer.get_current_sim()
         try:
             return sim.live
