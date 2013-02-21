@@ -175,7 +175,7 @@ void SphSimulation::SearchGhostParticles(void)
   }
 #endif
 
-  cout << "Nghost : " << sph->Nghost << "   " << sph->Ntot << endl;
+  //cout << "Nghost : " << sph->Nghost << "   " << sph->Ntot << endl;
 
   // Quit here if we've run out of memory for ghosts
   if (sph->Ntot > sph->Nsphmax) {
