@@ -345,6 +345,7 @@ void SphSimulation::Setup(void)
       for (int k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = 0.0;
       sph->sphdata[i].gpot = 0.0;
       sph->sphdata[i].dudt = 0.0;
+      sph->sphdata[i].active = true;
     }
 
     // Calculate all hydro forces
@@ -352,6 +353,7 @@ void SphSimulation::Setup(void)
 
     // Add accelerations
     for (int i=0; i<sph->Nsph; i++) {
+      sph->sphdata[i].active = false;
       for (int k=0; k<ndim; k++) 
 	sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }

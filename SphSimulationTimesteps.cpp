@@ -36,6 +36,8 @@ void SphSimulation::ComputeGlobalTimestep(void)
   if (n == nresync) {
 
     n = 0;
+    level_max = 0;
+    level_step = level_max + integration_step - 1;
     nresync = integration_step;
     timestep = big_number_dp;
 
@@ -43,7 +45,6 @@ void SphSimulation::ComputeGlobalTimestep(void)
     for (i=0; i<sph->Nsph; i++) {
       dt = sphint->Timestep(sph->sphdata[i],sph->hydro_forces);
       if (dt < timestep) timestep = dt;
-      //cout << "Timestep1[" << i << "] : " << timestep << endl;
     }
     
     // If integrating energy equation, include energy timestep
@@ -51,19 +52,14 @@ void SphSimulation::ComputeGlobalTimestep(void)
       for (i=0; i<sph->Nsph; i++) {
 	dt = uint->Timestep(sph->sphdata[i]);
 	if (dt < timestep) timestep = dt;
-	//cout << "Timestep2[" << i << "] : " << timestep << endl;
       }
     }
     
     // Set all particles to same timestep
-    for (i=0; i<sph->Nsph; i++) sph->sphdata[i].ilevel = 0;
+    for (i=0; i<sph->Nsph; i++) sph->sphdata[i].level = 0;
 
   }
   // --------------------------------------------------------------------------
-
-
-  //cout << "Timestep : " << timestep << endl;
-  //exit(0);
 
   return;
 }
@@ -122,12 +118,12 @@ void SphSimulation::ComputeBlockTimesteps(void)
     level_max_sph = max((int) (invlogetwo*log(dt_max/dt_max_sph)) + 1, 0);
 
     if (sph_single_timestep == 1)
-      for (i=0; i<sph->Nsph; i++) sph->sphdata[i].ilevel = level_max_sph;
+      for (i=0; i<sph->Nsph; i++) sph->sphdata[i].level = level_max_sph;
     else {
       dt = sph->sphdata[i].dt;
       level = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
       level = max(level,0);
-      sph->sphdata[i].ilevel = level;
+      sph->sphdata[i].level = level;
     }
 
     nresync = pow(2,level_step);
@@ -146,12 +142,12 @@ void SphSimulation::ComputeBlockTimesteps(void)
     // Find all SPH particles at the beginning of a new timestep
     // ------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
-      last_level = sph->sphdata[i].ilevel;
+      last_level = sph->sphdata[i].level;
       istep = pow(2,level_step - last_level + 1);
 
       // Skip particles not at end of step
       if (n%istep == 0) {
-	last_level = sph->sphdata[i].ilevel;
+	last_level = sph->sphdata[i].level;
 	dt = sphint->Timestep(sph->sphdata[i],sph->hydro_forces);
 	if (sph->gas_eos == "energy_eqn") 
 	  dt = min(dt,uint->Timestep(sph->sphdata[i]));
@@ -159,20 +155,20 @@ void SphSimulation::ComputeBlockTimesteps(void)
 
 	// Move up one level (if levels are correctly synchronised) or 
 	// down several levels if required
-	if (level < last_level && last_level > 1) sph->sphdata[i].ilevel--;
-	else if (level > last_level) sph->sphdata[i].ilevel = level;
+	if (level < last_level && last_level > 1) sph->sphdata[i].level--;
+	else if (level > last_level) sph->sphdata[i].level = level;
       }
 
       // Find maximum level of all SPH particles
-      level_max_sph = max(level_max_sph,sph->sphdata[i].ilevel);
-      level_max = max(level_max,sph->sphdata[i].ilevel);
+      level_max_sph = max(level_max_sph,sph->sphdata[i].level);
+      level_max = max(level_max,sph->sphdata[i].level);
     }
     // ------------------------------------------------------------------------
       
 
     // Set fixed SPH timestep level here in case maximum has changed
     if (sph_single_timestep == 1)
-      for (i=0; i<sph->Nsph; i++) sph->sphdata[i].ilevel = level_max_sph;
+      for (i=0; i<sph->Nsph; i++) sph->sphdata[i].level = level_max_sph;
 
 
     // Update all timestep variables if we have removed or added any levels
@@ -213,6 +209,17 @@ void SphSimulation::ComputeBlockTimesteps(void)
 
 
 // ============================================================================
+// SphSimulation::IntegerTimestep
+// ..
+// ============================================================================
+int SphSimulation::IntegerTimestep(int level)
+{
+  return pow(2,level_step - level);
+}
+
+
+
+// ============================================================================
 // SphSimulation::VerifyBlockTimesteps
 // ..
 // ============================================================================
@@ -229,9 +236,9 @@ void SphSimulation::VerifyBlockTimesteps(void)
 
   // Check all particles occupy valid timestep levels
   for (int i=0; i<sph->Nsph; i++) {
-    if (sph->sphdata[i].ilevel > level_max && sph->sphdata[i].ilevel < 0) {
+    if (sph->sphdata[i].level > level_max && sph->sphdata[i].level < 0) {
       cout << "Invalid SPH timestep level : " << i << "   "
-	   << sph->sphdata[i].ilevel << "   " << level_max << endl;
+	   << sph->sphdata[i].level << "   " << level_max << endl;
       exit(0);
     }
   }

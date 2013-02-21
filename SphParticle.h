@@ -15,7 +15,7 @@ struct SphParticle {
   bool active;
   int iorig;
   int itype;
-  int ilevel;
+  int level;
   FLOAT r[ndimmax];
   FLOAT v[vdimmax];
   FLOAT a[vdimmax];
@@ -47,7 +47,7 @@ struct SphParticle {
     active = false;
     iorig = -1;
     itype = -1;
-    ilevel = 0;
+    level = 0;
     for (int k=0; k<ndimmax; k++) r[k] = 0.0;
     for (int k=0; k<ndimmax; k++) v[k] = 0.0;
     for (int k=0; k<ndimmax; k++) a[k] = 0.0;
