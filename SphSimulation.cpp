@@ -361,9 +361,9 @@ void SphSimulation::Setup(void)
   }
 
   // Set r0,v0,a0 for initial step
-  sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
+  sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
   if (simparams.stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,sph->Nsph,sph->sphdata);
+    uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
   
 
   CalculateDiagnostics();
@@ -395,9 +395,9 @@ void SphSimulation::MainLoop(void)
   t = t + timestep;
 
   // Advance SPH particles positions and velocities
-  sphint->AdvanceParticles(sph->Nsph,sph->sphdata,timestep);
+  sphint->AdvanceParticles(n,level_step,sph->Nsph,sph->sphdata,timestep);
   if (simparams.stringparams["gas_eos"] == "energy_eqn")
-    uint->EnergyIntegration(sph->Nsph,sph->sphdata,timestep);
+    uint->EnergyIntegration(n,level_step,sph->Nsph,sph->sphdata,timestep);
 
   // Check all boundary conditions
   CheckBoundaries();
@@ -447,14 +447,14 @@ void SphSimulation::MainLoop(void)
 
 
   // Apply correction steps
-  sphint->CorrectionTerms(sph->Nsph,sph->sphdata,timestep);
+  sphint->CorrectionTerms(n,level_step,sph->Nsph,sph->sphdata,timestep);
   if (simparams.stringparams["gas_eos"] == "energy_eqn")
-    uint->EnergyCorrectionTerms(sph->Nsph,sph->sphdata,timestep);
+    uint->EnergyCorrectionTerms(n,level_step,sph->Nsph,sph->sphdata,timestep);
 
   // End-of-step
-  sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
+  sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
   if (simparams.stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,sph->Nsph,sph->sphdata);
+    uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
 
   return;
 }

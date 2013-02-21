@@ -209,13 +209,14 @@ void SphSimulation::ComputeBlockTimesteps(void)
 
 
 // ============================================================================
-// SphSimulation::IntegerTimestep
+// SphIntegerTimestep
 // ..
 // ============================================================================
 int SphSimulation::IntegerTimestep(int level)
 {
   return pow(2,level_step - level);
 }
+
 
 
 

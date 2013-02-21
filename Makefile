@@ -13,7 +13,7 @@ OPT = -O3 -ffast-math -fPIC
 
 OUTPUT_LEVEL              = 1
 PRECISION                 = SINGLE
-NDIM                      = 2
+NDIM                      = 0
 DEBUG                     = 1
 VERIFY_ALL                = 0
 
