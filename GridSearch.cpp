@@ -88,8 +88,10 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
   FLOAT *drmag;
   FLOAT *invdrmag;
   FLOAT *dr;
+  FLOAT hrangesqd;
   SphParticle *neiblistpart;
   SphParticle *data = sph->sphdata;
+  static FLOAT grid_h_tolerance = 1.1;
 
   debug2("[GridSearch::UpdateAllSphProperties]");
 
@@ -129,13 +131,18 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
 
       // Compute distances and the reciprical between the current particle 
       // and all neighbours here
+      hrangesqd = pow(grid_h_tolerance*sph->kern->kernrange*data[i].h,2);
       for (k=0; k<ndim; k++) rp[k] = data[i].r[k];
       for (jj=0; jj<Nneib; jj++) { 
 	for (k=0; k<ndim; k++) draux[k] = neiblistpart[jj].r[k] - rp[k];
 	drsqd = DotProduct(draux,draux,ndim);
-	drmag[jj] = sqrt(drsqd);
-	invdrmag[jj] = 1.0/(drmag[jj] + small_number);
-	for (k=0; k<ndim; k++) dr[jj*ndim + k] = draux[k]*invdrmag[jj];
+	if (drsqd > hrangesqd) 
+	  drmag[jj] = big_number;
+	else {
+	  drmag[jj] = sqrt(drsqd);
+	  invdrmag[jj] = 1.0/(drmag[jj] + small_number);
+	  for (k=0; k<ndim; k++) dr[jj*ndim + k] = draux[k]*invdrmag[jj];
+	}
       }
 
       // Compute all SPH gather properties

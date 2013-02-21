@@ -77,7 +77,7 @@ class SphSimulation
   void VerifyBlockTimesteps(void);
 
   void SearchGhostParticles(void);
-  void CreateGhostParticle(int,int,FLOAT,FLOAT);
+  void CreateGhostParticle(int,int,FLOAT,FLOAT,FLOAT);
   void CopyDataToGhosts(void);
   void CheckBoundaries(void);
 
