@@ -156,19 +156,23 @@ void SphSimulation::SearchGhostParticles(void)
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.z_boundary_lhs == "periodic")
 	  CreateGhostParticle(i,2,sphdata[i].r[2] + simbox.boxsize[2],
-			      sphdata[i].v[2]);
+			      sphdata[i].v[2],
+			      sphdata[i].r[2] - simbox.boxmin[2]);
 	if (simbox.z_boundary_lhs == "mirror")
 	  CreateGhostParticle(i,2,2.0*simbox.boxmin[2] - 
-			      sphdata[i].r[2],-sphdata[i].v[2]);
+			      sphdata[i].r[2],-sphdata[i].v[2],
+			      sphdata[i].r[2] - simbox.boxmin[2]);
       }
       if (sphdata[i].r[2] > simbox.boxmax[2] - 
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.z_boundary_rhs == "periodic")
 	  CreateGhostParticle(i,2,sphdata[i].r[2] - simbox.boxsize[2],
-			      sphdata[i].v[2]);
+			      sphdata[i].v[2],
+			      simbox.boxmax[1] - sphdata[i].r[1]);
 	if (simbox.z_boundary_rhs == "mirror")
 	  CreateGhostParticle(i,2,2.0*simbox.boxmax[2] - 
-			      sphdata[i].r[2],-sphdata[i].v[2]);
+			      sphdata[i].r[2],-sphdata[i].v[2],
+			      simbox.boxmax[2] - sphdata[i].r[2]);
       }
     }
     sph->Ntot = sph->Nsph + sph->Nghost;
