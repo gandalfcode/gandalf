@@ -6,7 +6,7 @@
 #ifndef _SPH_SNAPSHOT_H_
 #define _SPH_SNAPSHOT_H_
 
-
+#include <ctime>
 #include <iostream>
 #include <map>
 #include <string>
@@ -41,6 +41,7 @@ class SphSnapshot
   DOUBLE t;
   std::string filename;
   std::string fileform;
+  int LastUsed;
 
 
   // Pointers for allocating memory required for storing all important
@@ -59,6 +60,7 @@ class SphSnapshot
   float *h;
   float *rho;
   float *u;
+  float *dudt;
 
 };
 

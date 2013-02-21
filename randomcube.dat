@@ -14,7 +14,6 @@ xrhs : z_boundary_rhs = periodic
      : ndim = 2
      : ic = random_cube
      : gas_eos = isothermal
-     : energy_integration = PEC
      : neib_search = grid
 
      : courant_mult = 1.0

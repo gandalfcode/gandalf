@@ -15,6 +15,7 @@
 #include "SphSnapshot.h"
 #include <signal.h>
 #include <string>
+#include "Precision.h"
 
 void catch_alarm (int SIG) {
 signal(SIGINT, catch_alarm);
@@ -79,6 +80,7 @@ ExceptionHandler::makeExceptionHandler(python);
  /* Applies Numpy black magic */
  %apply (float** ARGOUTVIEW_ARRAY1, int *DIM1) {(float** out_array, int* size_array)}
 
+%include "Precision.h"
 %include "SphSimulation.h"
 %include "Parameters.h"
 %include "SimUnits.h"

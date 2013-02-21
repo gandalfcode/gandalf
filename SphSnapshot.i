@@ -4,7 +4,6 @@
 %include "std_string.i"
 %include "std_map.i"
 
-
 %{
 #define SWIG_FILE_WITH_INIT
 #include "SphSnapshot.h"

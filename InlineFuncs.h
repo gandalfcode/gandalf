@@ -10,6 +10,8 @@
 
 
 #include <string>
+#include "Precision.h"
+#include "Constants.h"
 using namespace std;
 
 
