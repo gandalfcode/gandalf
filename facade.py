@@ -1,3 +1,4 @@
+import __main__
 import atexit
 import commandsource as Commands
 from multiprocessing import Manager, Queue
@@ -5,6 +6,18 @@ from plotting import PlottingProcess
 from SimBuffer import SimBuffer, BufferException
 import signal
 from time import sleep
+
+try:
+    __main__.__file__
+    interactive=False
+except AttributeError:
+    interactive=True
+
+def handle(e):
+    if interactive:
+        print str(e)
+    else:
+        raise e
 
 class Singletons:
     queue = Queue()
@@ -44,20 +57,19 @@ def next():
     try:
         snap(SimBuffer.get_no_next_snapshot())
     except BufferException as e:
-        print str(e)
+        handle(e)
         
 def previous():
     try:
         snap(SimBuffer.get_no_previous_snapshot())
     except BufferException as e:
-        print str(e)
+        handle(e)
         
 def snap(no):
     try:
         SimBuffer.set_current_snapshot_number(no)
     except BufferException as e:
-        print str(e)
-        return
+        handle(e)
     
     update("current")
         
@@ -82,8 +94,8 @@ def run(no=None):
         else:
             sim = SimBuffer.get_sim_no(no)
     except BufferError as e:
-        print str(e)
-        return
+        handle(e)
+    #TODO: treat this as an exception
     if not sim.setup:
         print "The selected simulation has not been set-up. Please set it up before running"
         return
@@ -171,6 +183,7 @@ if __name__=="__main__":
     plot("x","rho")
     plotanalytical("x","rho")
     limit('x', 0, 10.)
+    snap(99)
     import time; time.sleep(2)
     next(); time.sleep(2)
     snap(7)
