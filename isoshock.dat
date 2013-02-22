@@ -13,9 +13,11 @@
 
      : h_converge = 0.005
 
+     : avisc = pf2010
      : alpha_visc = 1.0
      : beta_visc = 2.0
 
+     : Nlevels = 1
      : courant_mult = 0.15
      : accel_mult = 0.3
      : tend = 1.0

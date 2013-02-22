@@ -77,7 +77,7 @@ void EnergyPEC::EnergyCorrectionTerms(int n, int level_step,
   for (i=0; i<Nsph; i++) {
     nstep = pow(2,level_step - sph[i].level);
     if (n%nstep == 0) 
-      sph[i].u = sph[i].u0 + 0.5*(sph[i].dudt + sph[i].dudt0)*dt;
+      sph[i].u += 0.5*(sph[i].dudt - sph[i].dudt0)*dt*(DOUBLE) nstep;
   }
 
   return;
