@@ -33,11 +33,7 @@ class SphNeighbourSearch
 {
  public:
 
-  //SphNeighbourSearch();
-  //~SphNeighbourSearch();
-
-  virtual void UpdateAllSphProperties(Sph *, Parameters &) = 0;
-  virtual void UpdateAllSphForces(Sph *, Parameters &) = 0;
+  virtual void UpdateAllSphProperties(Sph *) = 0;
   virtual void UpdateTree(Sph *, Parameters &) = 0;
 
 };
@@ -54,8 +50,7 @@ class BruteForceSearch: public SphNeighbourSearch
   BruteForceSearch(int);
   ~BruteForceSearch();
 
-  void UpdateAllSphProperties(Sph *, Parameters &);
-  void UpdateAllSphForces(Sph *, Parameters &);
+  void UpdateAllSphProperties(Sph *);
   void UpdateTree(Sph *, Parameters &);
 
 #if !defined(FIXED_DIMENSIONS)
@@ -76,8 +71,7 @@ class GridSearch: public SphNeighbourSearch
   GridSearch(int);
   ~GridSearch();
 
-  void UpdateAllSphProperties(Sph *, Parameters &);
-  void UpdateAllSphForces(Sph *, Parameters &);
+  void UpdateAllSphProperties(Sph *);
   void UpdateTree(Sph *, Parameters &);
 
   // Additional functions for grid neighbour search

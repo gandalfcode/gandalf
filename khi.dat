@@ -30,7 +30,7 @@ xrhs : y_boundary_rhs = periodic
      : kernel = quintic
 
      : avisc = mon97
-     : acond = price2008
+     : acond = wadsley2008
      : alpha_visc = 0.1
      : beta_visc = 0.2
 
@@ -38,5 +38,5 @@ xrhs : y_boundary_rhs = periodic
      : accel_mult = 0.3
      : tend = 1.59
      : dt_snap = 2.159
-
+     : Nlevels = 2
  

@@ -63,7 +63,7 @@ void SphSimulation::SearchGhostParticles(void)
 {
   int i;
   int k;
-  const FLOAT ghost_range = 1.1;
+  const FLOAT ghost_range = 2.2;
   const FLOAT kernrange = sph->kern->kernrange;
   SphParticle *sphdata = sph->sphdata;
 
@@ -89,19 +89,23 @@ void SphSimulation::SearchGhostParticles(void)
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.x_boundary_lhs == "periodic")
 	  CreateGhostParticle(i,0,sphdata[i].r[0] + simbox.boxsize[0],
-			      sphdata[i].v[0]);
+			      sphdata[i].v[0],
+			      sphdata[i].r[0] - simbox.boxmin[0]);
 	if (simbox.x_boundary_lhs == "mirror")
 	  CreateGhostParticle(i,0,2.0*simbox.boxmin[0] - 
-			      sphdata[i].r[0],-sphdata[i].v[0]);
+			      sphdata[i].r[0],-sphdata[i].v[0],
+			      sphdata[i].r[0] - simbox.boxmin[0]);
       }
       if (sphdata[i].r[0] > simbox.boxmax[0] - 
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.x_boundary_rhs == "periodic")
 	  CreateGhostParticle(i,0,sphdata[i].r[0] - simbox.boxsize[0],
-			      sphdata[i].v[0]);
+			      sphdata[i].v[0],
+			      simbox.boxmax[0] - sphdata[i].r[0]);
 	if (simbox.x_boundary_rhs == "mirror")
 	  CreateGhostParticle(i,0,2.0*simbox.boxmax[0] - 
-			      sphdata[i].r[0],-sphdata[i].v[0]);
+			      sphdata[i].r[0],-sphdata[i].v[0],
+			      simbox.boxmax[0] - sphdata[i].r[0]);
       }
     }
     sph->Ntot = sph->Nsph + sph->Nghost;
@@ -118,19 +122,23 @@ void SphSimulation::SearchGhostParticles(void)
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.y_boundary_lhs == "periodic")
 	  CreateGhostParticle(i,1,sphdata[i].r[1] + simbox.boxsize[1],
-			      sphdata[i].v[1]);
+			      sphdata[i].v[1],
+			      sphdata[i].r[1] - simbox.boxmin[1]);
 	if (simbox.y_boundary_lhs == "mirror")
 	  CreateGhostParticle(i,1,2.0*simbox.boxmin[1] - 
-			      sphdata[i].r[1],-sphdata[i].v[1]);
+			      sphdata[i].r[1],-sphdata[i].v[1],
+			      sphdata[i].r[1] - simbox.boxmin[1]);
       }
       if (sphdata[i].r[1] > simbox.boxmax[1] - 
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.y_boundary_rhs == "periodic")
 	  CreateGhostParticle(i,1,sphdata[i].r[1] - simbox.boxsize[1],
-			      sphdata[i].v[1]);
+			      sphdata[i].v[1],
+			      simbox.boxmax[1] - sphdata[i].r[1]);
 	if (simbox.y_boundary_rhs == "mirror")
 	  CreateGhostParticle(i,1,2.0*simbox.boxmax[1] - 
-			      sphdata[i].r[1],-sphdata[i].v[1]);
+			      sphdata[i].r[1],-sphdata[i].v[1],
+			      simbox.boxmax[1] - sphdata[i].r[1]);
       }
     }
     sph->Ntot = sph->Nsph + sph->Nghost;
@@ -148,26 +156,30 @@ void SphSimulation::SearchGhostParticles(void)
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.z_boundary_lhs == "periodic")
 	  CreateGhostParticle(i,2,sphdata[i].r[2] + simbox.boxsize[2],
-			      sphdata[i].v[2]);
+			      sphdata[i].v[2],
+			      sphdata[i].r[2] - simbox.boxmin[2]);
 	if (simbox.z_boundary_lhs == "mirror")
 	  CreateGhostParticle(i,2,2.0*simbox.boxmin[2] - 
-			      sphdata[i].r[2],-sphdata[i].v[2]);
+			      sphdata[i].r[2],-sphdata[i].v[2],
+			      sphdata[i].r[2] - simbox.boxmin[2]);
       }
       if (sphdata[i].r[2] > simbox.boxmax[2] - 
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.z_boundary_rhs == "periodic")
 	  CreateGhostParticle(i,2,sphdata[i].r[2] - simbox.boxsize[2],
-			      sphdata[i].v[2]);
+			      sphdata[i].v[2],
+			      simbox.boxmax[1] - sphdata[i].r[1]);
 	if (simbox.z_boundary_rhs == "mirror")
 	  CreateGhostParticle(i,2,2.0*simbox.boxmax[2] - 
-			      sphdata[i].r[2],-sphdata[i].v[2]);
+			      sphdata[i].r[2],-sphdata[i].v[2],
+			      simbox.boxmax[2] - sphdata[i].r[2]);
       }
     }
     sph->Ntot = sph->Nsph + sph->Nghost;
   }
 #endif
 
-  //cout << "Nghost : " << sph->Nghost << "   " << sph->Nghostmax << endl;
+  //cout << "Nghost : " << sph->Nghost << "   " << sph->Ntot << endl;
 
   // Quit here if we've run out of memory for ghosts
   if (sph->Ntot > sph->Nsphmax) {
@@ -179,7 +191,12 @@ void SphSimulation::SearchGhostParticles(void)
 }
 
 
-void SphSimulation::CreateGhostParticle(int i, int k, FLOAT rk, FLOAT vk)
+
+// ============================================================================
+// SphSimulation::CreateGhostParticle
+// ============================================================================
+void SphSimulation::CreateGhostParticle(int i, int k, 
+					FLOAT rk, FLOAT vk, FLOAT bdist)
 {
   // Increase ghost counter and check there's enough space in memory
   if (sph->Nghost > sph->Nghostmax) {
@@ -191,7 +208,10 @@ void SphSimulation::CreateGhostParticle(int i, int k, FLOAT rk, FLOAT vk)
   sph->sphdata[sph->Nsph + sph->Nghost] = sph->sphdata[i];
   sph->sphdata[sph->Nsph + sph->Nghost].r[k] = rk;
   sph->sphdata[sph->Nsph + sph->Nghost].v[k] = vk;
-  sph->sphdata[sph->Nsph + sph->Nghost].active = false;
+
+  // If ghost is sufficiently away from the boundary, always flag as inactive
+  if (1.1*fabs(bdist)*sph->sphdata[i].invh > sph->kern->kernrange) 
+    sph->sphdata[sph->Nsph + sph->Nghost].active = false;
 
   // Record id of original particle for later copying
   if (i > sph->Nsph)
@@ -210,6 +230,9 @@ void SphSimulation::CreateGhostParticle(int i, int k, FLOAT rk, FLOAT vk)
 
 
 
+// ============================================================================
+// SphSimulation::CopyDataToGhosts
+// ============================================================================
 void SphSimulation::CopyDataToGhosts(void)
 {
   int i;
@@ -228,7 +251,7 @@ void SphSimulation::CopyDataToGhosts(void)
 
     for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = rp[k];
     for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = vp[k];
-    sph->sphdata[i].active = false;
+    //sph->sphdata[i].active = false;
 
   }
 

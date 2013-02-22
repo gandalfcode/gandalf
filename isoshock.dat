@@ -8,6 +8,8 @@
 
      : ic = shocktube
      : gas_eos = isothermal
+     : neib_search = grid
+     : kernel = m4
 
      : h_converge = 0.005
 

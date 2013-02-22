@@ -6,24 +6,26 @@
      : vfluid2[0] = -16
      : ndim = 1
      : tend = 0.8
+     : noutputstep = 64
 
      : ic = shocktube
      : gas_eos = energy_eqn
      : energy_integration = PEC
-     : gamma_eos = 1.6666666666666
+     : gamma_eos = 1.66666666666666666
 
      : hydro_forces = 1
      : self_gravity = 0
 
-     : h_converge = 0.001
+     : h_converge = 0.00001
 
-     : avisc = mon97
+     : avisc = pf2010
      : acond = none
      : alpha_visc = 1.0
      : beta_visc = 2.0
 
      : courant_mult = 0.15
      : accel_mult = 0.3
+     : Nlevels = 1
 
-     : kernel = quintic
+     : kernel = m4
      : neib_search = grid

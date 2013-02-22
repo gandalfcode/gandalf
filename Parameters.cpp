@@ -48,7 +48,8 @@ void Parameters::ReadParamsFile(std::string filename)
     }
   }
   else {
-    string message = "The specified parameter file: " + filename + " does not exist, aborting";
+    string message = "The specified parameter file: " + filename + 
+      " does not exist, aborting";
     ExceptionHandler::getIstance().raise(message);
   }
   inputfile.close();
@@ -102,7 +103,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["tend"] = 1.0;
   floatparams["dt_snap"] = 0.1;
   intparams["Nstepsmax"] = 9999999;
-  intparams["noutputstep"] = 16;
+  intparams["noutputstep"] = 32;
 
   // Initial conditions parameters
   // --------------------------------------------------------------------------

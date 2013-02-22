@@ -317,7 +317,7 @@ void SphSimulation::Setup(void)
     sph->InitialSmoothingLengthGuess();
     sphneib->UpdateTree(sph,simparams);
 
-    sphneib->UpdateAllSphProperties(sph,simparams);
+    sphneib->UpdateAllSphProperties(sph);
 
     // Search ghost particles
     SearchGhostParticles();
@@ -333,25 +333,21 @@ void SphSimulation::Setup(void)
 
     cout << "Ntot : " << sph->Ntot << endl;
 
-    // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph,simparams);
-
-    // Copy data to ghosts
-    CopyDataToGhosts();
-
     // Zero accelerations (perhaps)
     for (int i=0; i<sph->Nsph; i++) {
       for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = 0.0;
       for (int k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = 0.0;
       sph->sphdata[i].gpot = 0.0;
       sph->sphdata[i].dudt = 0.0;
+      sph->sphdata[i].active = true;
     }
 
-    // Calculate all hydro forces
-    sphneib->UpdateAllSphForces(sph,simparams);
+    // Calculate all SPH properties
+    sphneib->UpdateAllSphProperties(sph);
 
     // Add accelerations
     for (int i=0; i<sph->Nsph; i++) {
+      sph->sphdata[i].active = false;
       for (int k=0; k<ndim; k++) 
 	sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
@@ -359,9 +355,9 @@ void SphSimulation::Setup(void)
   }
 
   // Set r0,v0,a0 for initial step
-  sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
+  sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
   if (simparams.stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,sph->Nsph,sph->sphdata);
+    uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
   
 
   CalculateDiagnostics();
@@ -393,9 +389,9 @@ void SphSimulation::MainLoop(void)
   t = t + timestep;
 
   // Advance SPH particles positions and velocities
-  sphint->AdvanceParticles(sph->Nsph,sph->sphdata,timestep);
+  sphint->AdvanceParticles(n,level_step,sph->Nsph,sph->sphdata,timestep);
   if (simparams.stringparams["gas_eos"] == "energy_eqn")
-    uint->EnergyIntegration(sph->Nsph,sph->sphdata,timestep);
+    uint->EnergyIntegration(n,level_step,sph->Nsph,sph->sphdata,timestep);
 
   // Check all boundary conditions
   CheckBoundaries();
@@ -416,43 +412,35 @@ void SphSimulation::MainLoop(void)
   // --------------------------------------------------------------------------
   if (sph->Nsph > 0) {
 
-    // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph,simparams);
-
-    // Copy data to ghosts
-    CopyDataToGhosts();
-
     // Zero accelerations (perhaps)
-    for (int i=0; i<sph->Nsph; i++) {
-      if (sph->sphdata[i].active) {
+    for (int i=0; i<sph->Ntot; i++) {
+      //if (sph->sphdata[i].active) {
 	for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = 0.0;
 	for (int k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = 0.0;
 	sph->sphdata[i].gpot = 0.0;
 	sph->sphdata[i].dudt = 0.0;
-      }
+	//}
     }
 
-    // Calculate all hydro and gravitational forces
-    sphneib->UpdateAllSphForces(sph,simparams);
+    // Calculate all SPH properties
+    sphneib->UpdateAllSphProperties(sph);
 
     // Add accelerations
     for (int i=0; i<sph->Nsph; i++) {
       for (int k=0; k<ndim; k++) 
 	sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
-
   }
 
-
   // Apply correction steps
-  sphint->CorrectionTerms(sph->Nsph,sph->sphdata,timestep);
+  sphint->CorrectionTerms(n,level_step,sph->Nsph,sph->sphdata,timestep);
   if (simparams.stringparams["gas_eos"] == "energy_eqn")
-    uint->EnergyCorrectionTerms(sph->Nsph,sph->sphdata,timestep);
+    uint->EnergyCorrectionTerms(n,level_step,sph->Nsph,sph->sphdata,timestep);
 
   // End-of-step
-  sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
+  sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
   if (simparams.stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,sph->Nsph,sph->sphdata);
+    uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
 
   return;
 }

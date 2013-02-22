@@ -24,9 +24,9 @@ class EnergyEquation
   EnergyEquation(double);
   ~EnergyEquation();
 
-  virtual void EnergyIntegration(int,SphParticle *,double) = 0;
-  virtual void EnergyCorrectionTerms(int,SphParticle *,double) = 0;
-  virtual void EndTimestep(int,int,SphParticle *) = 0;
+  virtual void EnergyIntegration(int,int,int,SphParticle *,double) = 0;
+  virtual void EnergyCorrectionTerms(int,int,int,SphParticle *,double) = 0;
+  virtual void EndTimestep(int,int,int,SphParticle *) = 0;
   virtual double Timestep(SphParticle &) = 0;
 
   const double energy_mult;
@@ -45,9 +45,9 @@ class EnergyPEC: public EnergyEquation
   EnergyPEC(double);
   ~EnergyPEC();
 
-  void EnergyIntegration(int,SphParticle *,double);
-  void EnergyCorrectionTerms(int,SphParticle *,double);
-  void EndTimestep(int,int,SphParticle *);
+  void EnergyIntegration(int,int,int,SphParticle *,double);
+  void EnergyCorrectionTerms(int,int,int,SphParticle *,double);
+  void EndTimestep(int,int,int,SphParticle *);
   double Timestep(SphParticle &);
 
 };

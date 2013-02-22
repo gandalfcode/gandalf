@@ -10,6 +10,8 @@
 
 
 #include <string>
+#include "Precision.h"
+#include "Constants.h"
 using namespace std;
 
 
@@ -42,6 +44,9 @@ static inline void PrintArray(string message, int Tsize, T *array)
   cout << endl;
   return;
 }
+
+
+
 
 
 #endif

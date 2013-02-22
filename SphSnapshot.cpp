@@ -77,9 +77,10 @@ void SphSnapshot::AllocateBufferMemory(void)
   h = new float[Nsph];
   rho = new float[Nsph];
   u = new float[Nsph];
+  dudt = new float[Nsph];
 
   allocated = true;
-  nallocated = 3*ndim + 4;
+  nallocated = 3*ndim + 5;
   Nmax = Nsph;
 
   return;
@@ -121,6 +122,7 @@ void SphSnapshot::DeallocateBufferMemory(void)
   delete[] h;
   delete[] rho;
   delete[] u;
+  delete[] dudt;
 
   allocated = false;
   nallocated = 0;
@@ -182,6 +184,7 @@ void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux,
     h[i] = (float) sphaux[i].h;
     rho[i] = (float) sphaux[i].rho;
     u[i] = (float) sphaux[i].u;
+    dudt[i] = (float) sphaux[i].dudt;
 
   }
   LastUsed = time(NULL);
@@ -211,6 +214,7 @@ void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array)
   else if (name == "h") *out_array = h;
   else if (name == "rho") *out_array = rho;
   else if (name == "u") *out_array = u;
+  else if (name == "dudt") *out_array = dudt;
   else cout << "Warning: the selected array has not been recognized" << endl;
 
   *size_array = Nsph;
