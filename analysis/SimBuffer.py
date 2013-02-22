@@ -1,6 +1,6 @@
 import fnmatch
 import os
-from SphSim import SphSimulation, SphSnapshot
+from swig_generated.SphSim import SphSimulation, SphSnapshot
 
 # ============================================================================
 # CLASS SIMBUFFER
