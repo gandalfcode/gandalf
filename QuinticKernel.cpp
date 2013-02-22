@@ -40,22 +40,6 @@ QuinticKernel::~QuinticKernel()
 
 
 
-// ============================================================================
-// QuinticKernel::w0
-// ============================================================================
-inline float QuinticKernel::w0(float s)
-{
-  if (s < 1.0)
-    return kernnorm*(66.0 - 60.0*s*s + 30.0*pow(s,4) - 10.0*pow(s,5));
-  else if (s < 2.0)
-    return kernnorm*(51.0 + 75.0*s - 210.0*s*s + 150.0*pow(s,3) - 
-		     45.0*pow(s,4) + 5.0*pow(s,5));
-  else if (s < 3.0)
-    return kernnorm*(243.0 - 405*s + 270.0*s*s - 90.0*pow(s,3) +
-		     15.0*pow(s,4) - pow(s,5));
-  else
-    return 0.0;
-}
 
 
 
