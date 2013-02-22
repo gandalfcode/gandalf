@@ -6,8 +6,9 @@
      : vfluid2[0] = -16
      : ndim = 1
      : tend = 1.0
-     : dt_snap = 1.0
+     : dt_snap = 0.1
      : noutputstep = 256
+     : run_id = TESTx
 
      : ic = shocktube
      : gas_eos = energy_eqn
