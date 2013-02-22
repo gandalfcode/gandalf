@@ -232,7 +232,7 @@ void GradhSph<kernelclass>::ComputeHydroForces(int i, SphParticle &parti,
     // Compute gravitational contribution
     // ------------------------------------------------------------------------
     if (self_gravity == 1) {
-      paux += parti.invh*parti.invh*kern->wgrav(drmag[jj]*parti.invh) + 
+      paux += parti.invh*parti.invh*kern.wgrav(drmag[jj]*parti.invh) +
 	parti.zeta*wkern;
     }
 
