@@ -134,9 +134,9 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
       for (k=0; k<ndim; k++) rp[k] = data[i].r[k];
 
       // Only compute quantities for definite candidiate neighbours
-      hrangesqd = pow(grid_h_tolerance*sph->kern->kernrange*data[i].h,2);
+      hrangesqd = pow(grid_h_tolerance*sph->kernp->kernrange*data[i].h,2);
 
-      // Compute distances and the reciprical between the current particle 
+      // Compute distances and the reciprical between the current particle
       // and all neighbours here
       for (jj=0; jj<Nneib; jj++) { 
 	for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
@@ -247,7 +247,7 @@ void GridSearch::CreateGrid(Sph *sph)
   
   // Compute maximum smoothing length to determine optimum grid spacing
   for (int i=0; i<sph->Nsph; i++) h_max = max(h_max,sph->sphdata[i].h);
-  dx_grid = grid_h_tolerance*sph->kern->kernrange*h_max;
+  dx_grid = grid_h_tolerance*sph->kernp->kernrange*h_max;
 
   // Compute bounding box of all particles
   sph->SphBoundingBox(rmax,rmin,sph->Ntot);
@@ -506,7 +506,7 @@ void GridSearch::CheckValidNeighbourList(Sph *sph, int i, int Nneib,
       for (k=0; k<ndimmax; k++)
 	dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
       drsqd = DotProduct(dr,dr,ndim);
-      if (drsqd <= sph->kern->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h)
+      if (drsqd <= sph->kernp->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h)
 	trueneiblist[Ntrueneib++] = j;
     }
   }
@@ -515,8 +515,8 @@ void GridSearch::CheckValidNeighbourList(Sph *sph, int i, int Nneib,
       for (k=0; k<ndimmax; k++)
 	dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
       drsqd = DotProduct(dr,dr,ndim);
-      if (drsqd <= sph->kern->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h 
-	  && drsqd <= sph->kern->kernrangesqd*
+      if (drsqd <= sph->kernp->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h
+	  && drsqd <= sph->kernp->kernrangesqd*
 	  sph->sphdata[j].h*sph->sphdata[j].h)
 	trueneiblist[Ntrueneib++] = j;
     }

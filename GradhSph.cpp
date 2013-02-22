@@ -22,17 +22,17 @@ using namespace std;
 // ============================================================================
 // GradhSph::GradhSph
 // ============================================================================
-GradhSph::GradhSph(int ndimaux, int vdimaux, int bdimaux)
-{
+template <typename kernelclass>
+GradhSph<kernelclass>::GradhSph(int ndimaux, int vdimaux, int bdimaux):
 #if !defined(FIXED_DIMENSIONS)
-  ndim = ndimaux;
-  vdim = vdimaux;
-  bdim = bdimaux;
-  invndim = 1.0/(FLOAT)ndim;
+  Sph(ndimaux, vdimaux, bdimaux),
 #endif
+  kern (kernelclass(ndim))
+{
   allocated = false;
   Nsph = 0;
   Nsphmax = 0;
+  kernp = &kern;
 }
 
 
@@ -40,7 +40,8 @@ GradhSph::GradhSph(int ndimaux, int vdimaux, int bdimaux)
 // ============================================================================
 // GradhSph::~GradhSph
 // ============================================================================
-GradhSph::~GradhSph()
+template <typename kernelclass>
+GradhSph<kernelclass>::~GradhSph()
 {
 }
 
@@ -55,7 +56,8 @@ GradhSph::~GradhSph()
 // correct value of h.  The maximum tolerance used for deciding whether the 
 // iteration has converged is given by the 'h_converge' parameter.
 // ============================================================================
-int GradhSph::ComputeH(int i, SphParticle &parti, int Nneib, 
+template <typename kernelclass>
+int GradhSph<kernelclass>::ComputeH(int i, SphParticle &parti, int Nneib,
 		       SphParticle *neibpart, FLOAT *drmag, 
 		       FLOAT *invdrmag, FLOAT *dr)
 {
@@ -86,7 +88,7 @@ int GradhSph::ComputeH(int i, SphParticle &parti, int Nneib,
     parti.invomega = 0.0;
     parti.zeta = 0.0;
     parti.div_v = 0.0;
-    hrange = kern->kernrange*parti.h;
+    hrange = kern.kernrange*parti.h;
     hfactor = pow(parti.invh,ndim);
 
     // Loop over all neighbours in list to calculate density, omega and div_v
@@ -101,12 +103,11 @@ int GradhSph::ComputeH(int i, SphParticle &parti, int Nneib,
       skern = drmag[jj]*parti.invh;
       
       parti.div_v -= neibpart[jj].m*DotProduct(dv,draux,ndim)*
-	kern->w1(skern)*hfactor*parti.invh;
-      parti.rho += neibpart[jj].m*hfactor*kern->w0(skern);
+	kern.w1(skern)*hfactor*parti.invh;
+      parti.rho += neibpart[jj].m*hfactor*kern.w0(skern);
       parti.invomega += neibpart[jj].m*hfactor*
-	parti.invh*kern->womega(skern);
-      parti.zeta += neibpart[jj].m*parti.invh*parti.invh*kern->wzeta(skern);
-
+	parti.invh*kern.womega(skern);
+      parti.zeta += neibpart[jj].m*parti.invh*parti.invh*kern.wzeta(skern);
     }
     // ------------------------------------------------------------------------
 
@@ -167,7 +168,8 @@ int GradhSph::ComputeH(int i, SphParticle &parti, int Nneib,
 // GradhSph::ComputeHydroForces
 // ..
 // ============================================================================
-void GradhSph::ComputeHydroForces(int i, SphParticle &parti,
+template <typename kernelclass>
+void GradhSph<kernelclass>::ComputeHydroForces(int i, SphParticle &parti,
 				  int Nneib, SphParticle *neiblist,
 				  FLOAT *drmag, FLOAT *invdrmag, FLOAT *dr)
 {
@@ -181,7 +183,7 @@ void GradhSph::ComputeHydroForces(int i, SphParticle &parti,
   FLOAT vsignal;
   FLOAT paux,uaux;
   FLOAT hfactor = pow(parti.invh,ndim+1);
-  FLOAT hrange = kern->kernrange*parti.h;
+  FLOAT hrange = kern.kernrange*parti.h;
   FLOAT invrho = 1.0/parti.rho;
   FLOAT pfactor = eos->Pressure(parti)*invrho*invrho*parti.invomega;
 
@@ -197,7 +199,7 @@ void GradhSph::ComputeHydroForces(int i, SphParticle &parti,
     for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
     for (k=0; k<ndim; k++) dv[k] = neiblist[jj].v[k] - parti.v[k];
     dvdr = DotProduct(dv,draux,ndim);
-    wkern = hfactor*kern->w1(drmag[jj]*parti.invh);
+    wkern = hfactor*kern.w1(drmag[jj]*parti.invh);
 
     // Compute hydro forces
     // ------------------------------------------------------------------------
@@ -254,7 +256,8 @@ void GradhSph::ComputeHydroForces(int i, SphParticle &parti,
 // Compute the contribution to the total gravitational force of particle 'i' 
 // due to 'Nneib' neighbouring particles in the list 'neiblist'.
 // ============================================================================
-void GradhSph::ComputeGravForces(int i, int Nneib, SphParticle *neiblist)
+template <typename kernelclass>
+void GradhSph<kernelclass>::ComputeGravForces(int i, int Nneib, SphParticle *neiblist)
 {
   int j;
   int jj;
@@ -264,7 +267,7 @@ void GradhSph::ComputeGravForces(int i, int Nneib, SphParticle *neiblist)
   FLOAT drmag;
   FLOAT invdrmag;
   FLOAT invhmean;
-  FLOAT kernrange = kern->kernrange;
+  FLOAT kernrange = kern.kernrange;
 
   // Loop over all neighbouring particles in list
   // --------------------------------------------------------------------------
@@ -282,8 +285,8 @@ void GradhSph::ComputeGravForces(int i, int Nneib, SphParticle *neiblist)
     if (2.0*drmag < kernrange*(sphdata[i].h + neiblist[jj].h)) {
       invhmean = 2.0/(sphdata[i].h + neiblist[jj].h);
       for (k=0; k<ndim; k++) sphdata[i].agrav[k] += neiblist[jj].m*dr[k]*
-	invdrmag*invhmean*invhmean*kern->wgrav(drmag*invhmean);
-      sphdata[i].gpot -= neiblist[jj].m*invhmean*kern->wpot(drmag*invhmean);
+	invdrmag*invhmean*invhmean*kern.wgrav(drmag*invhmean);
+      sphdata[i].gpot -= neiblist[jj].m*invhmean*kern.wpot(drmag*invhmean);
     }
     else {
       for (k=0; k<ndim; k++) sphdata[i].agrav[k] += 
@@ -295,13 +298,13 @@ void GradhSph::ComputeGravForces(int i, int Nneib, SphParticle *neiblist)
     if (drmag*sphdata[i].invh < kernrange) {
       for (k=0; k<ndim; k++) 
 	sphdata[i].agrav[k] += 0.5*neiblist[jj].m*dr[k]*invdrmag*
-	  sphdata[i].zeta*kern->w1(drmag*sphdata[i].invh)*sphdata[i].hfactor;
+	  sphdata[i].zeta*kern.w1(drmag*sphdata[i].invh)*sphdata[i].hfactor;
     }
 
     if (drmag*neiblist[jj].invh < kernrange) {
       for (k=0; k<ndim; k++) 
 	sphdata[i].agrav[k] += 0.5*neiblist[jj].m*dr[k]*invdrmag*
-	  neiblist[jj].zeta*kern->w1(drmag*neiblist[jj].invh)*neiblist[jj].hfactor;
+	  neiblist[jj].zeta*kern.w1(drmag*neiblist[jj].invh)*neiblist[jj].hfactor;
     }
     */
 
@@ -315,7 +318,8 @@ void GradhSph::ComputeGravForces(int i, int Nneib, SphParticle *neiblist)
 // ============================================================================
 // GradhSph::ComputeMeanhZeta
 // ============================================================================
-void GradhSph::ComputeMeanhZeta(int i, int Nneib, int *neiblist)
+template <typename kernelclass>
+void GradhSph<kernelclass>::ComputeMeanhZeta(int i, int Nneib, int *neiblist)
 {
   int j;
   int jj;
@@ -323,7 +327,7 @@ void GradhSph::ComputeMeanhZeta(int i, int Nneib, int *neiblist)
   FLOAT dr[ndimmax];
   FLOAT drmag;
   FLOAT invhmean;
-  FLOAT kernrangesqd = kern->kernrangesqd;
+  FLOAT kernrangesqd = kern.kernrangesqd;
 
   sphdata[i].zeta = 0.0;
 
@@ -344,7 +348,7 @@ void GradhSph::ComputeMeanhZeta(int i, int Nneib, int *neiblist)
     for (k=0; k<ndim; k++) dr[k] /= (drmag + small_number);
     invhmean = 2.0/(sphdata[i].h + sphdata[j].h);
     sphdata[i].zeta += sphdata[j].m*invhmean*invhmean*
-      kern->wzeta(drmag*invhmean);
+      kern.wzeta(drmag*invhmean);
 
   }
   // --------------------------------------------------------------------------
@@ -354,3 +358,6 @@ void GradhSph::ComputeMeanhZeta(int i, int Nneib, int *neiblist)
 
   return;
 }
+
+template class GradhSph<M4Kernel>;
+template class GradhSph<QuinticKernel>;

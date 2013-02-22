@@ -163,26 +163,24 @@ void SphSimulation::ProcessParameters(void)
   // Create SPH object based on chosen method in params file
   // --------------------------------------------------------------------------
   if (stringparams["sph"] == "gradh") {
-    sph = new GradhSph(ndim,vdim,bdim);
+    // Depending on the kernel, instantiate a different GradSph object
+    if (stringparams["kernel"] == "m4") {
+      sph = new GradhSph<M4Kernel> (ndim, vdim, bdim);
+    }
+    else if (stringparams["kernel"] == "quintic") {
+      sph = new GradhSph<QuinticKernel> (ndim, vdim, bdim);
+    }
+    else {
+      string message = "Unrecognised parameter : kernel = " +
+        simparams.stringparams["kernel"];
+      ExceptionHandler::getIstance().raise(message);
+    }
     sph->alpha_visc = floatparams["alpha_visc"];
     sph->beta_visc = floatparams["beta_visc"];
   }
   else {
     string message = "Unrecognised parameter : sph = " 
       + simparams.stringparams["sph"];
-    ExceptionHandler::getIstance().raise(message);
-  }
-
-  // Create kernel object based on params file
-  if (stringparams["kernel"] == "m4") {
-    sph->kern = new M4Kernel(ndim);
-  }
-  else if (stringparams["kernel"] == "quintic") {
-    sph->kern = new QuinticKernel(ndim);
-  }
-  else {
-    string message = "Unrecognised parameter : kernel = " + 
-      simparams.stringparams["kernel"];
     ExceptionHandler::getIstance().raise(message);
   }
 

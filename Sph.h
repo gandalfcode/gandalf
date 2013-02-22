@@ -28,6 +28,15 @@ class Sph
 {
  public:
 
+#if !defined(FIXED_DIMENSIONS)
+  Sph(int ndimaux, int vdimaux, int bdimaux):
+    ndim(ndimaux),
+    vdim(vdimaux),
+    bdim(bdimaux),
+    invndim (1.0/(FLOAT)ndim)
+    {};
+#endif
+
   // SPH functions for computing SPH sums with neighbouring particles 
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
   // --------------------------------------------------------------------------
@@ -65,14 +74,14 @@ class Sph
   int self_gravity;                     // ..
 
   struct SphParticle *sphdata;          // Main SPH particle data array
-  SphKernel *kern;                      // SPH kernel 
   EOS *eos;                             // Equation-of-state
+  SphKernel* kernp;
 
 #if !defined(FIXED_DIMENSIONS)
-  int ndim;
-  int vdim;
-  int bdim;
-  FLOAT invndim;
+  const int ndim;
+  const int vdim;
+  const int bdim;
+  const FLOAT invndim;
 #endif
 
 };
@@ -85,9 +94,12 @@ class Sph
 // from the parent Sph class).  Full code for each of these class functions 
 // written in 'GradhSph.cpp'.
 // ============================================================================
+template <class kernelclass>
 class GradhSph: public Sph
 {
  public:
+
+  kernelclass kern;                      // SPH kernel
 
   GradhSph(int,int,int);
   ~GradhSph();
