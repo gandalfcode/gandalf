@@ -78,5 +78,4 @@ class QuinticKernel: public SphKernel
 
 };
 
-
 #endif

@@ -3,7 +3,7 @@
 // ============================================================================
 
 
-#include <cmath>
+#include <math.h>
 #include <iostream>
 #include "Constants.h"
 #include "Dimensions.h"
@@ -43,7 +43,7 @@ M4Kernel::~M4Kernel()
 // ============================================================================
 // M4Kernel::w0
 // ============================================================================
-float M4Kernel::w0(float s)
+inline float M4Kernel::w0(float s)
 {
   if (s < 1.0)
     return kernnorm*(1.0 - 1.5*s*s + 0.75*s*s*s);
@@ -58,7 +58,7 @@ float M4Kernel::w0(float s)
 // ============================================================================
 // M4Kernel::w1
 // ============================================================================
-float M4Kernel::w1(float s)
+inline float M4Kernel::w1(float s)
 {
   if (s < 1.0)
     return kernnorm*(-3.0*s + 2.25*s*s);
@@ -73,7 +73,7 @@ float M4Kernel::w1(float s)
 // ============================================================================
 // M4Kernel::womega
 // ============================================================================
-float M4Kernel::womega(float s)
+inline float M4Kernel::womega(float s)
 {
   if (s < 1.0)
     return kernnorm*(-ndimpr + 1.5*(ndimpr + 2.0)*s*s - 
@@ -90,7 +90,7 @@ float M4Kernel::womega(float s)
 // ============================================================================
 // M4Kernel::wzeta
 // ============================================================================
-float M4Kernel::wzeta(float s)
+inline float M4Kernel::wzeta(float s)
 {
   if (s < 1.0)
     return 1.4 - 2.0*s*s + 1.5*pow(s,4) - 0.6*pow(s,5);
@@ -105,7 +105,7 @@ float M4Kernel::wzeta(float s)
 // ============================================================================
 // M4Kernel::wgrav
 // ============================================================================
-float M4Kernel::wgrav(float s)
+inline float M4Kernel::wgrav(float s)
 {
   if (s < 1.0)
     return 1.33333333333333*s - 1.2*pow(s,3) + 0.5*pow(s,4);
@@ -121,7 +121,7 @@ float M4Kernel::wgrav(float s)
 // ============================================================================
 // M4Kernel::wpot
 // ============================================================================
-float M4Kernel::wpot(float s)
+inline float M4Kernel::wpot(float s)
 {
   if (s < 1.0)
     return 1.4 - 0.666666666666666*s*s + 0.3*pow(s,4) - 0.1*pow(s,5);

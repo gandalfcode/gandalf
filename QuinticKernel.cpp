@@ -3,7 +3,7 @@
 // ============================================================================
 
 
-#include <cmath>
+#include <math.h>
 #include <iostream>
 #include "Constants.h"
 #include "Dimensions.h"
@@ -43,7 +43,7 @@ QuinticKernel::~QuinticKernel()
 // ============================================================================
 // QuinticKernel::w0
 // ============================================================================
-float QuinticKernel::w0(float s)
+inline float QuinticKernel::w0(float s)
 {
   if (s < 1.0)
     return kernnorm*(66.0 - 60.0*s*s + 30.0*pow(s,4) - 10.0*pow(s,5));
@@ -62,7 +62,7 @@ float QuinticKernel::w0(float s)
 // ============================================================================
 // QuinticKernel::w1
 // ============================================================================
-float QuinticKernel::w1(float s)
+inline float QuinticKernel::w1(float s)
 {
   if (s < 1.0)
     return kernnorm*(-120.0*s + 120.0*pow(s,3) - 50.0*pow(s,4));
@@ -81,7 +81,7 @@ float QuinticKernel::w1(float s)
 // ============================================================================
 // QuinticKernel::womega
 // ============================================================================
-float QuinticKernel::womega(float s)
+inline float QuinticKernel::womega(float s)
 {
   if (s < 1.0)
     return kernnorm*(-66.0*ndimpr + 60.0*(ndimpr + 2.0)*s*s - 
@@ -108,7 +108,7 @@ float QuinticKernel::womega(float s)
 // ============================================================================
 // QuinticKernel::wzeta
 // ============================================================================
-float QuinticKernel::wzeta(float s)
+inline float QuinticKernel::wzeta(float s)
 {
   if (s < 1.0)
     return 1.4 - 2.0*s*s + 1.5*pow(s,4) - 0.6*pow(s,5);
@@ -123,7 +123,7 @@ float QuinticKernel::wzeta(float s)
 // ============================================================================
 // QuinticKernel::wgrav
 // ============================================================================
-float QuinticKernel::wgrav(float s)
+inline float QuinticKernel::wgrav(float s)
 {
   if (s < 1.0)
     return 1.33333333333333*s - 1.2*pow(s,3) + 0.5*pow(s,4);
@@ -139,7 +139,7 @@ float QuinticKernel::wgrav(float s)
 // ============================================================================
 // QuinticKernel::wpot
 // ============================================================================
-float QuinticKernel::wpot(float s)
+inline float QuinticKernel::wpot(float s)
 {
   if (s < 1.0)
     return 1.4 - 0.666666666666666*s*s + 0.3*pow(s,4) - 0.1*pow(s,5);

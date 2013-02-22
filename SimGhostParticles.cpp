@@ -64,7 +64,7 @@ void SphSimulation::SearchGhostParticles(void)
   int i;
   int k;
   const FLOAT ghost_range = 2.2;
-  const FLOAT kernrange = sph->kern->kernrange;
+  const FLOAT kernrange = sph->kernp->kernrange;
   SphParticle *sphdata = sph->sphdata;
 
   // Set all relevant particle counters
@@ -210,7 +210,7 @@ void SphSimulation::CreateGhostParticle(int i, int k,
   sph->sphdata[sph->Nsph + sph->Nghost].v[k] = vk;
 
   // If ghost is sufficiently away from the boundary, always flag as inactive
-  if (1.1*fabs(bdist)*sph->sphdata[i].invh > sph->kern->kernrange) 
+  if (1.1*fabs(bdist)*sph->sphdata[i].invh > sph->kernp->kernrange)
     sph->sphdata[sph->Nsph + sph->Nghost].active = false;
 
   // Record id of original particle for later copying

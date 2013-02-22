@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
-#include <cmath>
+#include <math.h>
 #include <iostream>
 #include "Sph.h"
 #include "SphKernel.h"
