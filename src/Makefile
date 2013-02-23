@@ -12,8 +12,8 @@ OPT = -O3 -ffast-math -fPIC
 #OPT = -g -Wall -fbounds-check
 
 OUTPUT_LEVEL              = 1
-PRECISION                 = DOUBLE
-NDIM                      = 0
+PRECISION                 = SINGLE
+NDIM                      = 2
 DEBUG                     = 1
 VERIFY_ALL                = 0
 
