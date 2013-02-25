@@ -15,7 +15,7 @@
 // Default constructor for perfect gas EOS.  Passes and sets important 
 // thermal physics variables.
 // ============================================================================
-Adiabatic::Adiabatic(float temp0aux, float mu_bar_aux, float gamma_aux)
+Adiabatic::Adiabatic(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux)
 {
   temp0 = temp0aux;
   mu_bar = mu_bar_aux;
@@ -38,7 +38,7 @@ Adiabatic::~Adiabatic()
 // Adiabatic::Pressure
 // Calculates and returns thermal pressure of referenced particle
 // ============================================================================
-float Adiabatic::Pressure(SphParticle &part)
+FLOAT Adiabatic::Pressure(SphParticle &part)
 {
   return (gamma - 1.0)*part.rho*part.u;
 }
@@ -50,7 +50,7 @@ float Adiabatic::Pressure(SphParticle &part)
 // Calculates and returns value of Entropic function (= P/rho^gamma) for 
 // referenced particle
 // ============================================================================
-float Adiabatic::EntropicFunction(SphParticle &part)
+FLOAT Adiabatic::EntropicFunction(SphParticle &part)
 {
   return (gamma - 1.0)*part.u*pow(part.rho,1.0 - gamma);
 }
@@ -61,7 +61,7 @@ float Adiabatic::EntropicFunction(SphParticle &part)
 // Adiabatic::SoundSpeed
 // Returns adiabatic sound speed of particle
 // ============================================================================
-float Adiabatic::SoundSpeed(SphParticle &part)
+FLOAT Adiabatic::SoundSpeed(SphParticle &part)
 {
   return sqrt(gamma*(gamma - 1.0)*part.u);
 }
@@ -72,7 +72,7 @@ float Adiabatic::SoundSpeed(SphParticle &part)
 // Adiabatic::SpecificInternalEnergy
 // Returns specific internal energy of particle
 // ============================================================================
-float Adiabatic::SpecificInternalEnergy(SphParticle &part)
+FLOAT Adiabatic::SpecificInternalEnergy(SphParticle &part)
 {
   return part.u;
 }
@@ -83,7 +83,7 @@ float Adiabatic::SpecificInternalEnergy(SphParticle &part)
 // Adiabatic::Temperature
 // Returns temperature of particle
 // ============================================================================
-float Adiabatic::Temperature(SphParticle &part)
+FLOAT Adiabatic::Temperature(SphParticle &part)
 {
   return gammam1*part.u;
 }

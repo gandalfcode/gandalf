@@ -34,6 +34,7 @@ class SphNeighbourSearch
  public:
 
   virtual void UpdateAllSphProperties(Sph *) = 0;
+  virtual void UpdateAllSphGravityProperties(Sph *) = 0;
   virtual void UpdateTree(Sph *, Parameters &) = 0;
 
 };
@@ -51,6 +52,7 @@ class BruteForceSearch: public SphNeighbourSearch
   ~BruteForceSearch();
 
   void UpdateAllSphProperties(Sph *);
+  void UpdateAllSphGravityProperties(Sph *);
   void UpdateTree(Sph *, Parameters &);
 
 #if !defined(FIXED_DIMENSIONS)
@@ -72,6 +74,7 @@ class GridSearch: public SphNeighbourSearch
   ~GridSearch();
 
   void UpdateAllSphProperties(Sph *);
+  void UpdateAllSphGravityProperties(Sph *);
   void UpdateTree(Sph *, Parameters &);
 
   // Additional functions for grid neighbour search
@@ -95,7 +98,7 @@ class GridSearch: public SphNeighbourSearch
   int Ngrid[ndimmax];                       // No. of cells in each dimension
   int Noccupymax;                           // Max. occupancy of all cells
   int Nlistmax;                             // Max. length of neighbour list
-  int Nsph;
+  int Nsph;                                 // ..
   int Ntot;                                 // No. of current points in list
   int Ntotmax;                              // Max. no. of points in list
   int *inext;                               // Linked list for grid search

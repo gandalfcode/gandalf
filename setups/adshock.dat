@@ -1,14 +1,14 @@
      : boxmin[0] = -32.0
      : boxmax[0] = 32.0
-     : Nlattice1[0] = 256
-     : Nlattice2[0] = 256
+     : Nlattice1[0] = 512
+     : Nlattice2[0] = 512
      : vfluid1[0] = 16
      : vfluid2[0] = -16
      : ndim = 1
      : tend = 1.0
-     : dt_snap = 0.1
+     : dt_snap = 1.1
      : noutputstep = 256
-     : run_id = TESTx
+     : run_id = TEST
 
      : ic = shocktube
      : gas_eos = energy_eqn

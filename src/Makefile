@@ -3,11 +3,11 @@
 # =============================================================================
 
 
-CC = g++
+CC = /sw/bin/g++-4
 PYTHON = python2.7
 
 #OPT = -pg -O3 -fPIC
-OPT = -O3 -ffast-math -fPIC
+OPT = -O3 -ffast-math -fPIC -ftemplate-depth-20
 #OPT = -g -pg -fprofile-arcs -ftest-coverage -fPIC
 #OPT = -g -Wall -fbounds-check
 
@@ -120,13 +120,23 @@ else ifeq ($(UNAME_S),Linux)
 SHARED_OPTIONS = -shared
 endif
 
+
+
 # =============================================================================
-toy : $(WRAP_OBJ) $(OBJ)
+toy : $(OBJ)
+	$(CC) $(CFLAGS) $(OPT) -o ../bin/toymain $(OBJ)
+
+
+
+# =============================================================================
+all : $(WRAP_OBJ) $(OBJ)
 	@echo -e $(PYLIB)
 	$(CC) $(CFLAGS) $(OPT) $(SHARED_OPTIONS) $(OBJ) $(WRAP_OBJ) -o _SphSim.so
 	f2py -m shocktub -c shocktub.f 
 	$(CC) $(CFLAGS) $(OPT) -o ../bin/toymain $(OBJ)
 	mv *.so ../analysis
+
+
 
 
 # =============================================================================

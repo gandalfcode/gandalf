@@ -34,15 +34,15 @@ class Sph
     vdim(vdimaux),
     bdim(bdimaux),
     invndim (1.0/(FLOAT)ndim)
-    {};
+      {};
 #endif
 
   // SPH functions for computing SPH sums with neighbouring particles 
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
   // --------------------------------------------------------------------------
-  virtual int ComputeH(int,SphParticle &,int,
-		       SphParticle *,FLOAT *,FLOAT *,FLOAT *) = 0;
-  virtual void ComputeHydroForces(int,SphParticle &,int,
+  virtual int ComputeH(int,SphParticle &,int,int,int *,
+			 SphParticle *,FLOAT *,FLOAT *,FLOAT *) = 0;
+  virtual void ComputeHydroForces(int,SphParticle &,int,int,int *,
 				  SphParticle *,FLOAT *,FLOAT *,FLOAT *) = 0;
   virtual void ComputeGravForces(int,int,SphParticle *) = 0;
   virtual void ComputeMeanhZeta(int,int,int *) = 0;
@@ -104,8 +104,10 @@ class GradhSph: public Sph
   GradhSph(int,int,int);
   ~GradhSph();
 
-  int ComputeH(int,SphParticle &,int,SphParticle *,FLOAT *,FLOAT *,FLOAT *);
-  void ComputeHydroForces(int,SphParticle &,int,SphParticle *,FLOAT *,FLOAT *,FLOAT *);
+  int ComputeH(int,SphParticle &,int,int,int *,
+	       SphParticle *,FLOAT *,FLOAT *,FLOAT *);
+  void ComputeHydroForces(int,SphParticle &,int,int,int *,
+			  SphParticle *,FLOAT *,FLOAT *,FLOAT *);
   void ComputeGravForces(int,int,SphParticle *);
   void ComputeMeanhZeta(int,int,int *);
 

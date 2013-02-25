@@ -165,7 +165,7 @@ void SphSimulation::LatticeBox(void)
   r = new FLOAT[ndim*sph->Nsph];
 
   // Add ..
-  AddFaceCentredCubicLattice(sph->Nsph,Nlattice1,r,simbox);
+  AddHexagonalLattice(sph->Nsph,Nlattice1,r,simbox);
 
   // Initialise all other variables
   for (int i=0; i<sph->Nsph; i++) {
@@ -467,67 +467,58 @@ void SphSimulation::AddRegularLattice(int Npart, int Nlattice[ndimmax],
 
 
 // ============================================================================
-// SphSimulation::AddFaceCentredCubicLattice
+// SphSimulation::AddHexagonalLattice
+// Create simple hexagonal-packed lattice using A-B-A-B pattern in z-direction
+// N.B. the box is scaled to fit to the x-boxsize
 // ============================================================================
-void SphSimulation::AddFaceCentredCubicLattice(int Npart, 
-					       int Nlattice[ndimmax], 
-					       FLOAT *r, DomainBox box)
+void SphSimulation::AddHexagonalLattice(int Npart, int Nlattice[ndimmax], 
+					FLOAT *r, DomainBox box)
 {
   int i;
   int ii;
   int jj;
   int kk;
+  FLOAT rad;
 
-  debug2("[SphSimulation::AddFaceCentredCubicLattice]");
+  debug2("[SphSimulation::AddHexagonalLattice]");
   
+  // Calculate 'radius' of points for simpler calculation
+  rad = 0.5*(box.boxmax[0] - box.boxmin[1])/(FLOAT) Nlattice[0];
+
   // Create lattice depending on dimensionality
-  // --------------------------------------------------------------------------
+  // ==========================================================================
   if (ndim == 1) {
     for (ii=0; ii<Nlattice[0]; ii++) {
       i = ii;
-      r[i] = box.boxmin[0] + ((FLOAT)ii + 0.5)*
-	(box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
+      r[i] = box.boxmin[0] + rad + 2.0*(FLOAT)ii*rad;
     }
   }
-  // --------------------------------------------------------------------------
+
+  // ==========================================================================
   else if (ndim == 2) {
     for (jj=0; jj<Nlattice[1]; jj++) {
       for (ii=0; ii<Nlattice[0]; ii++) {
 	i = jj*Nlattice[0] + ii;
-	r[ndim*i] = box.boxmin[0] + ((FLOAT)ii + 0.25 + 0.5*(FLOAT)(jj%2))*
-	  (box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
-	r[ndim*i + 1] = box.boxmin[1] + ((FLOAT)jj + 0.5)*
-	  (box.boxmax[1] - box.boxmin[1])/(FLOAT)Nlattice[1];
+	r[ndim*i] = box.boxmin[0] + 0.5*rad + 
+	  (2.0*(FLOAT)ii + (FLOAT)(jj%2))*rad;
+	r[ndim*i + 1] = box.boxmin[1] + 0.5*sqrt(3.0)*rad + 
+	  (FLOAT)jj*sqrt(3.0)*rad;
       }
     }
   }
-  // --------------------------------------------------------------------------
+
+  // ==========================================================================
   else if (ndim == 3) {
-    for (kk=0; kk<Nlattice[1]; kk++) {
+    for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
 	for (ii=0; ii<Nlattice[0]; ii++) {
 	  i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
-	  if (kk%2 == 0) { 
-	    r[ndim*i] = box.boxmin[0] + 
-	      ((FLOAT)ii + 0.25 + 0.5*(FLOAT)(jj%2) + 0.5*(FLOAT)(kk%2))*
-	      (box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
-	    r[ndim*i + 1] = box.boxmin[1] + 
-	      ((FLOAT)jj + 0.5 + 0.25*(FLOAT)(kk%4))*
-	      (box.boxmax[1] - box.boxmin[1])/(FLOAT)Nlattice[1];
-	    r[ndim*i + 2] = box.boxmin[2] + ((FLOAT)kk + 0.5)*
-	      (box.boxmax[2] - box.boxmin[2])/(FLOAT)Nlattice[2];
-	  }
-	  else {
-	    r[ndim*i] = box.boxmin[0] + 
-	      ((FLOAT)ii + 0.25 + 0.5*(FLOAT)(jj%2) + 0.5*(FLOAT)(kk%2))*
-	      (box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
-	    r[ndim*i + 1] = box.boxmin[1] + 
-	      ((FLOAT)jj + 0.5 + 0.25*(FLOAT)(kk%4))*
-	      (box.boxmax[1] - box.boxmin[1])/(FLOAT)Nlattice[1];
-	    r[ndim*i + 2] = box.boxmin[2] + ((FLOAT)kk + 0.5)*
-	      (box.boxmax[2] - box.boxmin[2])/(FLOAT)Nlattice[2];
-
-	  }
+	  r[ndim*i] = box.boxmin[0] + 0.5*rad + 
+	    (2.0*(FLOAT)ii + (FLOAT)(jj%2) + (FLOAT)((kk+1)%2))*rad;
+	  r[ndim*i + 1] = box.boxmin[1] + 0.5*sqrt(3.0)*rad + 
+	    (FLOAT)jj*sqrt(3.0)*rad + (FLOAT)(kk%2)/sqrt(3.0);
+	  r[ndim*i + 2] = box.boxmin[1] + sqrt(6.0)*rad/3.0 + 
+	    (FLOAT)kk*2.0*sqrt(6.0)*rad/3.0;
 	}
       }
     }
@@ -538,58 +529,66 @@ void SphSimulation::AddFaceCentredCubicLattice(int Npart,
 
 
 
+
 // ============================================================================
-// SphSimulation::AddHexagonalLattice
+// SphSimulation::CutSphere
+// Cut-out a sphere containing exactly'Nsphere' particles (if selected)
 // ============================================================================
-void SphSimulation::AddHexagonalLattice(int Npart, int Nlattice[ndimmax], 
-					FLOAT *r, DomainBox box)
+int SphSimulation::CutSphere(int Nsphere, int Npart,
+			     FLOAT radsphere, FLOAT *r, 
+			     DomainBox box, bool exact)
 {
   int i;
-  int ii;
-  int jj;
-  int kk;
+  int k;
+  int niterations = 0;
+  int Ninterior = 0;
+  int Niteration = 0;
+  int Nitmax = 100;
+  FLOAT dr[ndimmax];
+  FLOAT drsqd;
+  FLOAT r_low = 0.0;
+  FLOAT r_high = big_number;
+  FLOAT radius;
+  FLOAT rcentre[ndimmax];
 
-  debug2("[SphSimulation::AddHexagonalLattice]");
-  
-  // Create lattice depending on dimensionality
-  // --------------------------------------------------------------------------
-  if (ndim == 1) {
-    for (ii=0; ii<Nlattice[0]; ii++) {
-      i = ii;
-      r[i] = box.boxmin[0] + ((FLOAT)ii + 0.5)*
-	(box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
-    }
-  }
-  // --------------------------------------------------------------------------
-  else if (ndim == 2) {
-    for (jj=0; jj<Nlattice[1]; jj++) {
-      for (ii=0; ii<Nlattice[0]; ii++) {
-	i = jj*Nlattice[0] + ii;
-	r[ndim*i] = box.boxmin[0] + ((FLOAT)ii + 0.25 + 0.5*(FLOAT)(jj%2))*
-	  (box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
-	r[ndim*i + 1] = box.boxmin[1] + ((FLOAT)jj + 0.5)*
-	  (box.boxmax[1] - box.boxmin[1])/(FLOAT)Nlattice[1];
-      }
-    }
-  }
-  // --------------------------------------------------------------------------
-  else if (ndim == 3) {
-    for (kk=0; kk<Nlattice[1]; kk++) {
-      for (jj=0; jj<Nlattice[1]; jj++) {
-	for (ii=0; ii<Nlattice[0]; ii++) {
-	  i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
-	  r[ndim*i] = box.boxmin[0] + 
-	    ((FLOAT)ii + 0.25 + 0.5*(FLOAT)(jj%2) + 0.5*(FLOAT)(kk%2))*
-	    (box.boxmax[0] - box.boxmin[0])/(FLOAT)Nlattice[0];
-	  r[ndim*i + 1] = box.boxmin[1] + 
-	    ((FLOAT)jj + 0.5 + 0.25*(FLOAT)(kk%4))*
-	    (box.boxmax[1] - box.boxmin[1])/(FLOAT)Nlattice[1];
-	  r[ndim*i + 2] = box.boxmin[2] + ((FLOAT)kk + 0.5)*
-	    (box.boxmax[2] - box.boxmin[2])/(FLOAT)Nlattice[2];
-	}
-      }
-    }
+  debug2("[SphSimulation::CutSphere]");
+
+  // Find centre and shortest edge-length of bounding box
+  for (k=0; k<ndim; k++) {
+    rcentre[k] = 0.5*(box.boxmin[k] + box.boxmax[k]);
+    r_high = min(r_high,0.5*(box.boxmax[k] - box.boxmin[k]));
   }
 
-  return;
+  // Bisection iteration to determine the radius containing the desired 
+  // number of particles
+  // --------------------------------------------------------------------------
+  do {
+    radius = 0.5*(r_low + r_high);
+    Ninterior = 0;
+
+    for (i=0; i<Npart; i++) {
+      for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k] - rcentre[k];
+      drsqd = DotProduct(dr,dr,ndim);
+      if (drsqd <= radius*radius) Ninterior++;
+    }
+    if (Ninterior > Nsphere) r_high = radius;
+    if (Ninterior < Nsphere) r_low = radius;
+    if (Niteration++ > Nitmax);
+  } while (Ninterior != Nsphere);
+
+
+  // Now radius containing require number has been identified, record only 
+  // particle inside sphere
+  // --------------------------------------------------------------------------
+  Ninterior = 0;
+  for (i=0; i<Npart; i++) {
+    for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k] - rcentre[k];
+    drsqd = DotProduct(dr,dr,ndim);
+    if (drsqd <= radius*radius) {
+      for (k=0; k<ndim; k++) r[ndim*Ninterior + k] = r[ndim*i + k];
+      Ninterior++;
+    }
+  }
+
+  return Ninterior;
 }
