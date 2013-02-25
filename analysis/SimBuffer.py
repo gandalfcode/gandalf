@@ -104,7 +104,7 @@ class SimBuffer:
         return sim
     
     @staticmethod
-    def readparams (paramfile):
+    def newsimfromparams (paramfile):
         '''
         This methods reads the parameters of a simulation from the specified parameter file. However,
         it doesn't call setup simulation, and therefore it does NOT initialize the simulation (that is,
