@@ -3,28 +3,6 @@
 # =============================================================================
 
 
-CC = g++
-PYTHON = python2.7
-
-#OPT = -pg -O3 -fPIC
-OPT = -O3 -ffast-math -fPIC
-#OPT = -g -pg -fprofile-arcs -ftest-coverage -fPIC
-#OPT = -g -Wall -fbounds-check
-
-OUTPUT_LEVEL              = 1
-PRECISION                 = SINGLE
-NDIM                      = 2
-DEBUG                     = 1
-VERIFY_ALL                = 0
-
-
-# Select location of python and numpy libraries.  If blank, make will try to 
-# find the location of the libraries automatically using installed python 
-# utilities.  If you have multiple versions of python installed on your 
-# computer, then select the prefered version with the PYTHON variable above.
-# -----------------------------------------------------------------------------
-PYLIB =
-NUMPY = 
 ifneq ($(PYTHON),)
 ifeq ($(NUMPY),)
 NUMPY = $(shell $(PYTHON) -c "import numpy; print numpy.get_include()")
@@ -112,7 +90,8 @@ OBJ += Exception.o
 %.o: %.cpp
 	$(CC) $(OPT) $(CFLAGS) -c $<
 
-
+# Depending if we are on Linux or on Mac OS, sets the correct
+# flags for building a dynamic library
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 SHARED_OPTIONS = -bundle -flat_namespace -undefined suppress
@@ -122,9 +101,8 @@ endif
 
 # =============================================================================
 toy : $(WRAP_OBJ) $(OBJ)
-	@echo -e $(PYLIB)
 	$(CC) $(CFLAGS) $(OPT) $(SHARED_OPTIONS) $(OBJ) $(WRAP_OBJ) -o _SphSim.so
-	f2py -m shocktub -c shocktub.f 
+	$(F2PY) --quiet -m shocktub -c shocktub.f 
 	$(CC) $(CFLAGS) $(OPT) -o ../bin/toymain $(OBJ)
 	mv *.so ../analysis
 
