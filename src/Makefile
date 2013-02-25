@@ -4,7 +4,7 @@
 
 
 CC = g++
-PYTHON = python2.7
+PYTHON = python
 
 #OPT = -pg -O3 -fPIC
 OPT = -O3 -ffast-math -fPIC
@@ -13,7 +13,7 @@ OPT = -O3 -ffast-math -fPIC
 
 OUTPUT_LEVEL              = 1
 PRECISION                 = SINGLE
-NDIM                      = 2
+NDIM                      = 0
 DEBUG                     = 1
 VERIFY_ALL                = 0
 
@@ -124,7 +124,7 @@ endif
 toy : $(WRAP_OBJ) $(OBJ)
 	@echo -e $(PYLIB)
 	$(CC) $(CFLAGS) $(OPT) $(SHARED_OPTIONS) $(OBJ) $(WRAP_OBJ) -o _SphSim.so
-	f2py -m shocktub -c shocktub.f 
+	#f2py -m shocktub -c shocktub.f 
 	$(CC) $(CFLAGS) $(OPT) -o ../bin/toymain $(OBJ)
 	mv *.so ../analysis
 
