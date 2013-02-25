@@ -105,8 +105,8 @@ all : $(WRAP_OBJ) $(OBJ)
 	$(CC) $(CFLAGS) $(OPT) $(SHARED_OPTIONS) $(OBJ) $(WRAP_OBJ) -o _SphSim.so
 	f2py -m shocktub -c shocktub.f 
 	$(CC) $(CFLAGS) $(OPT) -o ../bin/toymain $(OBJ)
-	mv *.so ../analysis
-
+	mv shocktub.so ../analysis
+	mv _SphSim.so ../analysis/swig_generated
 
 # =============================================================================
 clean ::

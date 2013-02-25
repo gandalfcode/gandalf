@@ -3,7 +3,7 @@ import atexit
 import commandsource as Commands
 from multiprocessing import Manager, Queue
 from plotting import PlottingProcess
-from SimBuffer import SimBuffer, BufferException
+from seren.analysis.SimBuffer import SimBuffer, BufferException
 from scipy import interpolate
 import signal
 import numpy
