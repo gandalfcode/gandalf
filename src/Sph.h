@@ -28,7 +28,7 @@ class Sph
 {
  public:
 
-#if !defined(FIXED_DIMENSIONS)
+#if !defined(SWIG) && !defined(FIXED_DIMENSIONS)
  Sph(int ndimaux, int vdimaux, int bdimaux):
   ndim(ndimaux), 
     vdim(vdimaux), 
