@@ -14,7 +14,7 @@
 // Default constructor for isothermal EOS.  Passes and sets important 
 // thermal physics variables.
 // ============================================================================
-Isothermal::Isothermal(float temp0aux, float mu_bar_aux, float gamma_aux)
+Isothermal::Isothermal(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux)
 {
   temp0 = temp0aux;
   mu_bar = mu_bar_aux;
@@ -37,7 +37,7 @@ Isothermal::~Isothermal()
 // Isothermal::Pressure
 // Calculates and returns thermal pressure of referenced particle
 // ============================================================================
-float Isothermal::Pressure(SphParticle &part)
+FLOAT Isothermal::Pressure(SphParticle &part)
 {
   return (gamma - 1.0)*part.rho*part.u;
 }
@@ -49,7 +49,7 @@ float Isothermal::Pressure(SphParticle &part)
 // Calculates and returns value of Entropic function (= P/rho^gamma) for 
 // referenced particle
 // ============================================================================
-float Isothermal::EntropicFunction(SphParticle &part)
+FLOAT Isothermal::EntropicFunction(SphParticle &part)
 {
   return (gamma - 1.0)*part.u*pow(part.rho,1.0 - gamma);
 }
@@ -60,7 +60,7 @@ float Isothermal::EntropicFunction(SphParticle &part)
 // Isothermal::SoundSpeed
 // Returns isothermal sound speed of SPH particle
 // ============================================================================
-float Isothermal::SoundSpeed(SphParticle &part)
+FLOAT Isothermal::SoundSpeed(SphParticle &part)
 {
   return sqrt((gamma - 1.0)*part.u);
 }
@@ -70,7 +70,7 @@ float Isothermal::SoundSpeed(SphParticle &part)
 // ============================================================================
 // Isothermal::SpecificInternalEnergy
 // ============================================================================
-float Isothermal::SpecificInternalEnergy(SphParticle &part)
+FLOAT Isothermal::SpecificInternalEnergy(SphParticle &part)
 {
   return temp0/(gamma - 1.0)/mu_bar;
 }
@@ -81,7 +81,7 @@ float Isothermal::SpecificInternalEnergy(SphParticle &part)
 // Isothermal::Temperature
 // Return isothermal temperature of particle
 // ============================================================================
-float Isothermal::Temperature(SphParticle &part)
+FLOAT Isothermal::Temperature(SphParticle &part)
 {
   return temp0;
 }

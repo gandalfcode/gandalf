@@ -149,10 +149,11 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
 	for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
 	drsqd = DotProduct(draux,draux,ndim);
 	if (drsqd <= hrangesqd) {
-	  nearlist[Nnear++] = jj;
-	  drmag[jj] = sqrt(drsqd);
-	  invdrmag[jj] = 1.0/(drmag[jj] + small_number);
-	  for (k=0; k<ndim; k++) dr[jj*ndim + k] = draux[k]*invdrmag[jj];
+	  nearlist[Nnear] = jj;
+	  drmag[Nnear] = sqrt(drsqd);
+	  invdrmag[Nnear] = 1.0/(drmag[Nnear] + small_number);
+	  for (k=0; k<ndim; k++) dr[Nnear*ndim + k] = draux[k]*invdrmag[Nnear];
+          Nnear++;
 	}
       }
 
@@ -166,7 +167,7 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
 
       // Compute all current particle contributions to hydro forces
       sph->ComputeHydroForces(i,data[i],Nneib,Nnear,
-			      neiblist,neibpart,drmag,invdrmag,dr);
+			      nearlist,neibpart,drmag,invdrmag,dr);
 
     }
     // ------------------------------------------------------------------------

@@ -547,16 +547,17 @@ int SphSimulation::CutSphere(int Nsphere, int Npart,
   FLOAT dr[ndimmax];
   FLOAT drsqd;
   FLOAT r_low = 0.0;
-  FLOAT r_high = big_number;
+  FLOAT r_high;
   FLOAT radius;
   FLOAT rcentre[ndimmax];
 
   debug2("[SphSimulation::CutSphere]");
 
   // Find centre and shortest edge-length of bounding box
+  r_high = big_number;
   for (k=0; k<ndim; k++) {
     rcentre[k] = 0.5*(box.boxmin[k] + box.boxmax[k]);
-    r_high = min(r_high,0.5*(box.boxmax[k] - box.boxmin[k]));
+    r_high = min(r_high,(FLOAT)0.5*(box.boxmax[k] - box.boxmin[k]));
   }
 
   // Bisection iteration to determine the radius containing the desired 

@@ -98,7 +98,7 @@ int GradhSph<kernelclass>::ComputeH(int i, SphParticle &parti, int Nneib,
     for (jj=0; jj<Nnear; jj++) {
       j = nearlist[jj];
       
-      for (k=0; k<ndim; k++) draux[k] = dr[j*ndim + k];
+      for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
       for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
       skern = drmag[jj]*parti.invh;
       
@@ -198,10 +198,10 @@ void GradhSph<kernelclass>::ComputeHydroForces(int i, SphParticle &parti,
   for (jj=0; jj<Nnear; jj++) {
     j = nearlist[jj];
 
-    for (k=0; k<ndim; k++) draux[k] = dr[j*ndim + k];
+    for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
     for (k=0; k<ndim; k++) dv[k] = neiblist[j].v[k] - parti.v[k];
     dvdr = DotProduct(dv,draux,ndim);
-    wkern = hfactor*kern.w1(drmag[j]*parti.invh);
+    wkern = hfactor*kern.w1(drmag[jj]*parti.invh);
 
     // Compute hydro forces
     // ------------------------------------------------------------------------
@@ -209,23 +209,23 @@ void GradhSph<kernelclass>::ComputeHydroForces(int i, SphParticle &parti,
       paux = pfactor*wkern;
 
       // Add dissipation terms (for approaching particle-pairs)
-      if (dvdr < 0.0) {
+      if (dvdr < (FLOAT)0.0) {
 	
 	// Artificial viscosity term
 	if (avisc == "mon97" || avisc == "pf2010") {
 	  vsignal = parti.sound - beta_visc*dvdr;
-	  paux -= 0.5*alpha_visc*vsignal*dvdr*invrho*parti.invomega*wkern;
-	  parti.dudt -= 0.25*neiblist[j].m*alpha_visc*vsignal*dvdr*dvdr*
+	  paux -= (FLOAT)0.5*alpha_visc*vsignal*dvdr*invrho*parti.invomega*wkern;
+	  parti.dudt -= (FLOAT)0.25*neiblist[j].m*alpha_visc*vsignal*dvdr*dvdr*
 	    invrho*parti.invomega*wkern;
-	  neiblist[j].dudt -= 0.25*parti.m*alpha_visc*vsignal*dvdr*dvdr*
+	  neiblist[j].dudt -= (FLOAT)0.25*parti.m*alpha_visc*vsignal*dvdr*dvdr*
 	    invrho*parti.invomega*wkern;
 	}
 	
 	// Artificial conductivity term
 	if (acond == "wadsley2008") {
-	  parti.dudt += 0.5*neiblist[j].m*fabs(dvdr)*
+	  parti.dudt += (FLOAT)0.5*neiblist[j].m*fabs(dvdr)*
 	    (parti.u - neiblist[j].u)*wkern*invrho;
-	  neiblist[j].dudt -= 0.5*parti.m*fabs(dvdr)*
+	  neiblist[j].dudt -= (FLOAT)0.5f*parti.m*fabs(dvdr)*
 	    (parti.u - neiblist[j].u)*wkern*invrho;
 	}
       }

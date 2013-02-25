@@ -7,6 +7,7 @@
 #define _EOS_H_
 
 
+#include "Precision.h"
 #include "Constants.h"
 #include "Dimensions.h"
 #include "Parameters.h"
