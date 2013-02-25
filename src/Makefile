@@ -2,7 +2,7 @@
 # MAKEFILE
 # =============================================================================
 
-
+ 
 ifneq ($(PYTHON),)
 ifeq ($(NUMPY),)
 NUMPY = $(shell $(PYTHON) -c "import numpy; print numpy.get_include()")
@@ -90,8 +90,7 @@ OBJ += Exception.o
 %.o: %.cpp
 	$(CC) $(OPT) $(CFLAGS) -c $<
 
-# Depending if we are on Linux or on Mac OS, sets the correct
-# flags for building a dynamic library
+
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 SHARED_OPTIONS = -bundle -flat_namespace -undefined suppress
@@ -101,8 +100,9 @@ endif
 
 # =============================================================================
 toy : $(WRAP_OBJ) $(OBJ)
+	@echo -e $(PYLIB)
 	$(CC) $(CFLAGS) $(OPT) $(SHARED_OPTIONS) $(OBJ) $(WRAP_OBJ) -o _SphSim.so
-	$(F2PY) --quiet -m shocktub -c shocktub.f 
+	f2py -m shocktub -c shocktub.f 
 	$(CC) $(CFLAGS) $(OPT) -o ../bin/toymain $(OBJ)
 	mv *.so ../analysis
 

@@ -179,8 +179,6 @@ void SphSimulation::SearchGhostParticles(void)
   }
 #endif
 
-  //cout << "Nghost : " << sph->Nghost << "   " << sph->Ntot << endl;
-
   // Quit here if we've run out of memory for ghosts
   if (sph->Ntot > sph->Nsphmax) {
     cout << "Not enough memory for ghost particles" << endl;
@@ -251,7 +249,6 @@ void SphSimulation::CopyDataToGhosts(void)
 
     for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = rp[k];
     for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = vp[k];
-    //sph->sphdata[i].active = false;
 
   }
 

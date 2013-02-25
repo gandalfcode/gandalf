@@ -13,6 +13,7 @@
 
 struct SphParticle {
   bool active;
+  //bool active_grav;
   int iorig;
   int itype;
   int level;

@@ -94,8 +94,8 @@ class SphSimulation
   void AddRandomBox(int, FLOAT *, DomainBox);
   void AddRandomSphere(int, FLOAT *, FLOAT *, FLOAT);
   void AddRegularLattice(int, int *, FLOAT *, DomainBox);
-  void AddFaceCentredCubicLattice(int, int *, FLOAT *, DomainBox);
   void AddHexagonalLattice(int, int *, FLOAT *, DomainBox);
+  int CutSphere(int, int, FLOAT, FLOAT *, DomainBox, bool);
 
   // Input-output routines
   // --------------------------------------------------------------------------

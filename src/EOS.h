@@ -21,11 +21,11 @@ class EOS
 {
  public:
 
-  virtual float Pressure(SphParticle &) = 0;
-  virtual float EntropicFunction(SphParticle &) = 0;
-  virtual float SoundSpeed(SphParticle &) = 0;
-  virtual float Temperature(SphParticle &) = 0;
-  virtual float SpecificInternalEnergy(SphParticle &) = 0;
+  virtual FLOAT Pressure(SphParticle &) = 0;
+  virtual FLOAT EntropicFunction(SphParticle &) = 0;
+  virtual FLOAT SoundSpeed(SphParticle &) = 0;
+  virtual FLOAT Temperature(SphParticle &) = 0;
+  virtual FLOAT SpecificInternalEnergy(SphParticle &) = 0;
 
 };
 
@@ -38,19 +38,19 @@ class Isothermal: public EOS
 {
  public:
 
-  Isothermal(float,float,float);
+  Isothermal(FLOAT,FLOAT,FLOAT);
   ~Isothermal();
 
-  float Pressure(SphParticle &);
-  float EntropicFunction(SphParticle &);
-  float SoundSpeed(SphParticle &);
-  float Temperature(SphParticle &);
-  float SpecificInternalEnergy(SphParticle &);
+  FLOAT Pressure(SphParticle &);
+  FLOAT EntropicFunction(SphParticle &);
+  FLOAT SoundSpeed(SphParticle &);
+  FLOAT Temperature(SphParticle &);
+  FLOAT SpecificInternalEnergy(SphParticle &);
 
-  float gamma;
-  float gammam1;
-  float temp0;
-  float mu_bar;
+  FLOAT gamma;
+  FLOAT gammam1;
+  FLOAT temp0;
+  FLOAT mu_bar;
 
 };
 
@@ -63,19 +63,19 @@ class Adiabatic: public EOS
 {
  public:
 
-  Adiabatic(float,float,float);
+  Adiabatic(FLOAT,FLOAT,FLOAT);
   ~Adiabatic();
 
-  float Pressure(SphParticle &);
-  float EntropicFunction(SphParticle &);
-  float SoundSpeed(SphParticle &);
-  float Temperature(SphParticle &);
-  float SpecificInternalEnergy(SphParticle &);
+  FLOAT Pressure(SphParticle &);
+  FLOAT EntropicFunction(SphParticle &);
+  FLOAT SoundSpeed(SphParticle &);
+  FLOAT Temperature(SphParticle &);
+  FLOAT SpecificInternalEnergy(SphParticle &);
 
-  float gamma;
-  float gammam1;
-  float temp0;
-  float mu_bar;
+  FLOAT gamma;
+  FLOAT gammam1;
+  FLOAT temp0;
+  FLOAT mu_bar;
 
 };
 

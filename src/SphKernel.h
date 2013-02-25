@@ -17,20 +17,20 @@ class SphKernel
 {
  public:
 
-  virtual float w0(float) = 0;
-  virtual float w1(float) = 0;
-  virtual float womega(float) = 0;
-  virtual float wzeta(float) = 0;
-  virtual float wgrav(float) = 0;
-  virtual float wpot(float) = 0;
+  virtual FLOAT w0(FLOAT) = 0;
+  virtual FLOAT w1(FLOAT) = 0;
+  virtual FLOAT womega(FLOAT) = 0;
+  virtual FLOAT wzeta(FLOAT) = 0;
+  virtual FLOAT wgrav(FLOAT) = 0;
+  virtual FLOAT wpot(FLOAT) = 0;
 
-  float kernrange;
-  float invkernrange;
-  float kernrangesqd;
-  float kernnorm;
+  FLOAT kernrange;
+  FLOAT invkernrange;
+  FLOAT kernrangesqd;
+  FLOAT kernnorm;
 #if !defined(FIXED_DIMENSIONS)
   int ndim;
-  float ndimpr;
+  FLOAT ndimpr;
 #endif
 
 };
@@ -49,12 +49,12 @@ class M4Kernel: public SphKernel
 
   // M4 kernel function prototypes
   // --------------------------------------------------------------------------
-  float w0(float);
-  float w1(float);
-  float womega(float);
-  float wzeta(float);
-  float wgrav(float);
-  float wpot(float);
+  FLOAT w0(FLOAT);
+  FLOAT w1(FLOAT);
+  FLOAT womega(FLOAT);
+  FLOAT wzeta(FLOAT);
+  FLOAT wgrav(FLOAT);
+  FLOAT wpot(FLOAT);
 
 };
 
@@ -62,7 +62,7 @@ class M4Kernel: public SphKernel
 // ============================================================================
 // M4Kernel::w0
 // ============================================================================
-inline float M4Kernel::w0(float s)
+inline FLOAT M4Kernel::w0(FLOAT s)
 {
   if (s < 1.0)
     return kernnorm*(1.0 - 1.5*s*s + 0.75*s*s*s);
@@ -77,7 +77,7 @@ inline float M4Kernel::w0(float s)
 // ============================================================================
 // M4Kernel::w1
 // ============================================================================
-inline float M4Kernel::w1(float s)
+inline FLOAT M4Kernel::w1(FLOAT s)
 {
   if (s < 1.0)
     return kernnorm*(-3.0*s + 2.25*s*s);
@@ -92,7 +92,7 @@ inline float M4Kernel::w1(float s)
 // ============================================================================
 // M4Kernel::womega
 // ============================================================================
-inline float M4Kernel::womega(float s)
+inline FLOAT M4Kernel::womega(FLOAT s)
 {
   if (s < 1.0)
     return kernnorm*(-ndimpr + 1.5*(ndimpr + 2.0)*s*s -
@@ -109,7 +109,7 @@ inline float M4Kernel::womega(float s)
 // ============================================================================
 // M4Kernel::wzeta
 // ============================================================================
-inline float M4Kernel::wzeta(float s)
+inline FLOAT M4Kernel::wzeta(FLOAT s)
 {
   if (s < 1.0)
     return 1.4 - 2.0*s*s + 1.5*pow(s,4) - 0.6*pow(s,5);
@@ -124,7 +124,7 @@ inline float M4Kernel::wzeta(float s)
 // ============================================================================
 // M4Kernel::wgrav
 // ============================================================================
-inline float M4Kernel::wgrav(float s)
+inline FLOAT M4Kernel::wgrav(FLOAT s)
 {
   if (s < 1.0)
     return 1.33333333333333*s - 1.2*pow(s,3) + 0.5*pow(s,4);
@@ -140,7 +140,7 @@ inline float M4Kernel::wgrav(float s)
 // ============================================================================
 // M4Kernel::wpot
 // ============================================================================
-inline float M4Kernel::wpot(float s)
+inline FLOAT M4Kernel::wpot(FLOAT s)
 {
   if (s < 1.0)
     return 1.4 - 0.666666666666666*s*s + 0.3*pow(s,4) - 0.1*pow(s,5);
@@ -165,12 +165,12 @@ class QuinticKernel: public SphKernel
 
   // M4 kernel function prototypes
   // --------------------------------------------------------------------------
-  float w0(float);
-  float w1(float);
-  float womega(float);
-  float wzeta(float);
-  float wgrav(float);
-  float wpot(float);
+  FLOAT w0(FLOAT);
+  FLOAT w1(FLOAT);
+  FLOAT womega(FLOAT);
+  FLOAT wzeta(FLOAT);
+  FLOAT wgrav(FLOAT);
+  FLOAT wpot(FLOAT);
 
 };
 
@@ -178,7 +178,7 @@ class QuinticKernel: public SphKernel
 // ============================================================================
 // QuinticKernel::w0
 // ============================================================================
-inline float QuinticKernel::w0(float s)
+inline FLOAT QuinticKernel::w0(FLOAT s)
 {
   if (s < 1.0)
     return kernnorm*(66.0 - 60.0*s*s + 30.0*pow(s,4) - 10.0*pow(s,5));
@@ -197,7 +197,7 @@ inline float QuinticKernel::w0(float s)
 // ============================================================================
 // QuinticKernel::w1
 // ============================================================================
-inline float QuinticKernel::w1(float s)
+inline FLOAT QuinticKernel::w1(FLOAT s)
 {
   if (s < 1.0)
     return kernnorm*(-120.0*s + 120.0*pow(s,3) - 50.0*pow(s,4));
@@ -216,7 +216,7 @@ inline float QuinticKernel::w1(float s)
 // ============================================================================
 // QuinticKernel::womega
 // ============================================================================
-inline float QuinticKernel::womega(float s)
+inline FLOAT QuinticKernel::womega(FLOAT s)
 {
   if (s < 1.0)
     return kernnorm*(-66.0*ndimpr + 60.0*(ndimpr + 2.0)*s*s -
@@ -243,7 +243,7 @@ inline float QuinticKernel::womega(float s)
 // ============================================================================
 // QuinticKernel::wzeta
 // ============================================================================
-inline float QuinticKernel::wzeta(float s)
+inline FLOAT QuinticKernel::wzeta(FLOAT s)
 {
   if (s < 1.0)
     return 1.4 - 2.0*s*s + 1.5*pow(s,4) - 0.6*pow(s,5);
@@ -258,7 +258,7 @@ inline float QuinticKernel::wzeta(float s)
 // ============================================================================
 // QuinticKernel::wgrav
 // ============================================================================
-inline float QuinticKernel::wgrav(float s)
+inline FLOAT QuinticKernel::wgrav(FLOAT s)
 {
   if (s < 1.0)
     return 1.33333333333333*s - 1.2*pow(s,3) + 0.5*pow(s,4);
@@ -274,7 +274,7 @@ inline float QuinticKernel::wgrav(float s)
 // ============================================================================
 // QuinticKernel::wpot
 // ============================================================================
-inline float QuinticKernel::wpot(float s)
+inline FLOAT QuinticKernel::wpot(FLOAT s)
 {
   if (s < 1.0)
     return 1.4 - 0.666666666666666*s*s + 0.3*pow(s,4) - 0.1*pow(s,5);

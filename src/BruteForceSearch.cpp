@@ -52,10 +52,10 @@ void BruteForceSearch::UpdateTree(Sph *sph, Parameters &simparams)
 // ============================================================================
 void BruteForceSearch::UpdateAllSphProperties(Sph *sph)
 {
-  int jj;
+  int i,j,k;
   int okflag;
-  int *neiblist;
   int Nneib;
+  int *neiblist;
   FLOAT draux[ndimmax];
   FLOAT drsqd;
   FLOAT rp[ndimmax];
@@ -67,30 +67,31 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph)
 
   // The potential number of neighbours is given by ALL the particles
   Nneib = sph->Ntot;
-
+  neiblist = new int[sph->Ntot];
   drmag = new FLOAT[sph->Ntot];
   invdrmag = new FLOAT[sph->Ntot];
   dr = new FLOAT[ndim*sph->Ntot];
 
   // Compute smoothing lengths of all SPH particles
   // --------------------------------------------------------------------------
-  for (int i=0; i<sph->Ntot; i++) {
+  for (i=0; i<sph->Ntot; i++) {
 
     // Compute distances and the reciprical between the current particle 
     // and all neighbours here
-    for (int k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
-    for (int jj=0; jj<Nneib; jj++) { 
-      for (int k=0; k<ndim; k++) draux[k] = sph->sphdata[jj].r[k] - rp[k];
+    for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
+    for (j=0; j<Nneib; j++) { 
+      neiblist[j] = j;
+      for (k=0; k<ndim; k++) draux[k] = sph->sphdata[j].r[k] - rp[k];
       drsqd = DotProduct(draux,draux,ndim);
-      drmag[jj] = sqrt(drsqd);
-      invdrmag[jj] = 1.0/(drmag[jj] + small_number);
-      for (int k=0; k<ndim; k++) dr[jj*ndim + k] = draux[k]*invdrmag[jj];
+      drmag[j] = sqrt(drsqd);
+      invdrmag[j] = 1.0/(drmag[j] + small_number);
+      for (k=0; k<ndim; k++) dr[j*ndim + k] = draux[k]*invdrmag[j];
     }
 
-    okflag = sph->ComputeH(i,sph->sphdata[i],Nneib,
+    okflag = sph->ComputeH(i,sph->sphdata[i],Nneib,Nneib,neiblist,
 			   sph->sphdata,drmag,invdrmag,dr);
     
-    sph->ComputeHydroForces(i,sph->sphdata[i],Nneib,
+    sph->ComputeHydroForces(i,sph->sphdata[i],Nneib,Nneib,neiblist,
 			    sph->sphdata,drmag,invdrmag,dr);
 
   }
@@ -100,10 +101,15 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph)
   delete[] invdrmag;
   delete[] drmag;
 
-  // Compute SPH hydro forces for all particles
-  //for (int i=0; i<sph->Nsph; i++)
-  //  sph->ComputeGravForces(i,Nneib,sph->sphdata);
-
   return;
 }
 
+
+
+// ============================================================================
+// BruteForceSearch::UpdateAllSphProperties
+// ============================================================================
+void BruteForceSearch::UpdateAllSphGravityProperties(Sph *sph)
+{
+  return;
+}
