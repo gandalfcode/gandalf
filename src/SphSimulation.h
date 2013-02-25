@@ -65,6 +65,7 @@ class SphSimulation
   // Subroutine prototypes
   // --------------------------------------------------------------------------
   void Setup(void);
+  void SetupSimulation(void);
   void MainLoop(void);
   void Run(int=-1);
   void Output(void);

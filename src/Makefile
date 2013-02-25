@@ -98,8 +98,9 @@ else ifeq ($(UNAME_S),Linux)
 SHARED_OPTIONS = -shared
 endif
 
+
 # =============================================================================
-toy : $(WRAP_OBJ) $(OBJ)
+all : $(WRAP_OBJ) $(OBJ)
 	@echo -e $(PYLIB)
 	$(CC) $(CFLAGS) $(OPT) $(SHARED_OPTIONS) $(OBJ) $(WRAP_OBJ) -o _SphSim.so
 	f2py -m shocktub -c shocktub.f 

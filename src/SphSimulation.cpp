@@ -285,11 +285,22 @@ void SphSimulation::Setup(void)
 {
   debug1("[SphSimulation::Setup]");
 
-  // Set-up all parameters and assign default values
-  simparams.SetDefaultValues();
-
   // Read parameters files assigning any contained variables
   simparams.ReadParamsFile(paramfile);
+
+  SetupSimulation();
+
+}
+
+
+
+// ============================================================================
+// SphSimulation::SetupSimulation
+// Main function for setting up a new SPH simulation.
+// ============================================================================
+void SphSimulation::SetupSimulation(void)
+{
+  debug1("[SphSimulation::Setup]");
 
   // Process the parameters file setting up all simulation objects
   ProcessParameters();
