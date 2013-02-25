@@ -92,7 +92,8 @@ class SimBuffer:
     @staticmethod
     def newsim (paramfile):
         '''
-        This method creates a new simulation from the specified parameter file. 
+        This method creates a new simulation from the specified parameter file.
+        Returns the simulation created.
         '''
         sim = SphSimulation()
         SimBuffer._add_simulation(sim)
@@ -100,6 +101,20 @@ class SimBuffer:
         sim.Setup()
         sim.snapshots = []
         SimBuffer.load_live_snapshot(sim)
+        return sim
+    
+    @staticmethod
+    def readparams (paramfile):
+        '''
+        This methods reads the parameters of a simulation from the specified parameter file. However,
+        it doesn't call setup simulation, and therefore it does NOT initialize the simulation (that is,
+        you can't directly run a simulation that you created with this command. First you need to
+        initialize it. Returns the simulation created'''
+        sim = SphSimulation()
+        SimBuffer._add_simulation(sim)
+        sim.paramfile = paramfile
+        sim.simparams.ReadParamsFile(paramfile)
+        return sim
         
     @staticmethod
     def load_live_snapshot(sim):
