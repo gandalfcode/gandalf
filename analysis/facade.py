@@ -86,7 +86,10 @@ def subfigure(nx, ny, current):
     Singletons.queue.put([command,data])
 
 def newsim(paramfile):
-    SimBuffer.newsim(paramfile)
+    return SimBuffer.newsim(paramfile)
+
+def newsimfromparams(paramfile):
+    return SimBuffer.newsimfromparams(paramfile)
 
 def run(no=None):
     #gets the correct simulation object from the buffer
