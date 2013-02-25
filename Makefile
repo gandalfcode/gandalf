@@ -10,7 +10,7 @@
 CC = g++ # C++ compiler
 F2PY = f2py
 #OPT = -pg -O3 -fPIC
-OPT = -O3 -ffast-math -fPIC
+OPT = -O3 -ffast-math -fPIC #-g -Wall
 #OPT = -g -pg -fprofile-arcs -ftest-coverage -fPIC
 #OPT = -g -Wall -fbounds-check
 

@@ -326,6 +326,7 @@ void SphSimulation::SetupSimulation(void)
     sph->InitialSmoothingLengthGuess();
     sphneib->UpdateTree(sph,simparams);
 
+    sphneib->neibcheck = false;
     sphneib->UpdateAllSphProperties(sph);
 
     // Search ghost particles
@@ -341,17 +342,20 @@ void SphSimulation::SetupSimulation(void)
   if (sph->Nsph > 0) {
 
     cout << "Ntot : " << sph->Ntot << endl;
+    level_step = 1;
 
-    // Zero accelerations (perhaps)
+    // Zero accelerations (perhaps here)
     for (int i=0; i<sph->Nsph; i++) {
       for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = 0.0;
       for (int k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = 0.0;
       sph->sphdata[i].gpot = 0.0;
       sph->sphdata[i].dudt = 0.0;
       sph->sphdata[i].active = true;
+      sph->sphdata[i].level = level_step;
     }
 
     // Calculate all SPH properties
+    sphneib->neibcheck = true;
     sphneib->UpdateAllSphProperties(sph);
 
     // Add accelerations

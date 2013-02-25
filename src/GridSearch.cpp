@@ -21,7 +21,7 @@
 using namespace std;
 
 
-static FLOAT grid_h_tolerance = 1.1;
+static FLOAT grid_h_tolerance = 1.2;
 
 
 // ============================================================================
@@ -162,7 +162,7 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
 			     nearlist,neibpart,drmag,invdrmag,dr);
 
 #if defined(VERIFY_ALL)
-      CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
+      if (neibcheck) CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
 #endif
 
       // Compute all current particle contributions to hydro forces
@@ -187,6 +187,7 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
   delete[] invdrmag;
   delete[] drmag;
   delete[] dr;
+  delete[] nearlist;
   delete[] neiblist;
   delete[] celllist;
 
@@ -650,17 +651,6 @@ void GridSearch::CheckValidNeighbourList(Sph *sph, int i, int Nneib,
 	dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
       drsqd = DotProduct(dr,dr,ndim);
       if (drsqd <= sph->kernp->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h)
-	trueneiblist[Ntrueneib++] = j;
-    }
-  }
-  else if (neibtype == "all") {
-    for (j=0; j<sph->Ntot; j++) {
-      for (k=0; k<ndimmax; k++)
-	dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
-      drsqd = DotProduct(dr,dr,ndim);
-      if (drsqd <= sph->kernp->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h
-	  && drsqd <= sph->kernp->kernrangesqd*
-	  sph->sphdata[j].h*sph->sphdata[j].h)
 	trueneiblist[Ntrueneib++] = j;
     }
   }

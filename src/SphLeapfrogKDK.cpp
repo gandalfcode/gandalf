@@ -99,8 +99,12 @@ void SphLFKDK::EndTimestep(int n, int level_step, int Nsph, SphParticle *sph)
 
   for (i=0; i<Nsph; i++) {
     nstep = pow(2,level_step - sph[i].level);
+    if (nstep <= 0) {
+      cout << "SHIIIIT!! : " << nstep << "   " << level_step << "   " << sph[i].level << endl;
+      exit(0);
+    }
     if (n%nstep == 0) {
-      for (k=0; k<vdim; k++) sph[i].a0[k] = sph[i].a[k];
+      for (k=0; k<ndim; k++) sph[i].a0[k] = sph[i].a[k];
       sph[i].active = false;
     }
   }

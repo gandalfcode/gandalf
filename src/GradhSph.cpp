@@ -27,7 +27,7 @@ GradhSph<kernelclass>::GradhSph(int ndimaux, int vdimaux, int bdimaux):
 #if !defined(FIXED_DIMENSIONS)
   Sph(ndimaux, vdimaux, bdimaux),
 #endif
-  kern (kernelclass(ndim))
+  kern (kernelclass(ndimaux))
 {
   allocated = false;
   Nsph = 0;
