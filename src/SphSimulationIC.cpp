@@ -556,7 +556,7 @@ int SphSimulation::CutSphere(int Nsphere, int Npart,
   // Find centre and shortest edge-length of bounding box
   for (k=0; k<ndim; k++) {
     rcentre[k] = 0.5*(box.boxmin[k] + box.boxmax[k]);
-    r_high = min(r_high,0.5*(box.boxmax[k] - box.boxmin[k]));
+    //r_high = min(r_high,0.5*(box.boxmax[k] - box.boxmin[k]));
   }
 
   // Bisection iteration to determine the radius containing the desired 
