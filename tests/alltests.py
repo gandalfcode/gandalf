@@ -2,20 +2,18 @@ from seren.analysis.facade import *
 import os
 import sys
 
-setupsfolder = '../setups'
-
 if __name__ == "__main__":
-    setupfiles = os.listdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),setupsfolder))
-    print "Found the following setup files: "
-    print setupfiles
-    for setupfile in setupfiles:
+    #get the files in the same directory of the script
+    testfiles = [""]
+    for testfile in testfiles:
         try:
-            newsim(setupfile)
+            newsim(testfile)
             run()
         except:
-            print "Unexpected error while evaluating setup file ", setupfile
+            #if an error has happened, print info about that and goes to the next test
+            print "Unexpected error while evaluating test file ", testfile
             type, value, traceback = sys.exc_info()
             sys.excepthook(type, value, traceback)
-            print "Going to the next setup file..."
+            print "Going to the next test file..."
             sys.exc_clear()
             continue
