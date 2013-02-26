@@ -554,7 +554,7 @@ int SphSimulation::CutSphere(int Nsphere, int Npart,
   debug2("[SphSimulation::CutSphere]");
 
   // Find centre and shortest edge-length of bounding box
-  r_high = big_number;
+  r_high = (FLOAT) big_number;
   for (k=0; k<ndim; k++) {
     rcentre[k] = 0.5*(box.boxmin[k] + box.boxmax[k]);
     r_high = min(r_high,(FLOAT)0.5*(box.boxmax[k] - box.boxmin[k]));

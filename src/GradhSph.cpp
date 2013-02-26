@@ -27,7 +27,7 @@ GradhSph<kernelclass>::GradhSph(int ndimaux, int vdimaux, int bdimaux):
 #if !defined(FIXED_DIMENSIONS)
   Sph(ndimaux, vdimaux, bdimaux),
 #endif
-  kern (kernelclass(ndim))
+  kern (kernelclass(ndimaux))
 {
   allocated = false;
   Nsph = 0;
@@ -84,11 +84,11 @@ int GradhSph<kernelclass>::ComputeH(int i, SphParticle &parti, int Nneib,
 
     // Initialise all variables for this value of h
     iteration++;
-    parti.invh = 1.0/parti.h;
-    parti.rho = 0.0;
-    parti.invomega = 0.0;
-    parti.zeta = 0.0;
-    parti.div_v = 0.0;
+    parti.invh = (FLOAT) 1.0/parti.h;
+    parti.rho = (FLOAT) 0.0;
+    parti.invomega = (FLOAT) 0.0;
+    parti.zeta = (FLOAT) 0.0;
+    parti.div_v = (FLOAT) 0.0;
     hrange = kern.kernrange*parti.h;
     hfactor = pow(parti.invh,ndim);
 
@@ -111,10 +111,10 @@ int GradhSph<kernelclass>::ComputeH(int i, SphParticle &parti, int Nneib,
     }
     // ------------------------------------------------------------------------
 
-    if (parti.rho > 0.0) invrho = 1.0/parti.rho;
+    if (parti.rho > (FLOAT) 0.0) invrho = (FLOAT) 1.0/parti.rho;
 
     // If h changes below some fixed tolerance, exit iteration loop
-    if (parti.rho > 0.0 && parti.h > h_lower_bound &&
+    if (parti.rho > (FLOAT) 0.0 && parti.h > h_lower_bound &&
 	fabs(parti.h - h_fac*pow(parti.m*invrho,
 				 invndim)) < h_converge) break;
 
@@ -127,7 +127,7 @@ int GradhSph<kernelclass>::ComputeH(int i, SphParticle &parti, int Nneib,
       parti.h = h_fac*pow(parti.m*invrho,invndim);
 
     else if (iteration == iteration_max)
-      parti.h = 0.5*(h_lower_bound + h_upper_bound);
+      parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
 
     else if (iteration < 5*iteration_max) {
       if (parti.rho < small_number ||
@@ -135,7 +135,7 @@ int GradhSph<kernelclass>::ComputeH(int i, SphParticle &parti, int Nneib,
 	h_upper_bound = parti.h;
       else 
 	h_lower_bound = parti.h;
-      parti.h = 0.5*(h_lower_bound + h_upper_bound);
+      parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
 
     // If the smoothing length is too large for the neighbour list, exit 
@@ -149,9 +149,9 @@ int GradhSph<kernelclass>::ComputeH(int i, SphParticle &parti, int Nneib,
 
   // Normalise all SPH sums correctly
   parti.h = h_fac*pow(parti.m*invrho,invndim);
-  parti.invh = 1.0/parti.h;
-  parti.invomega = 1.0 + invndim*parti.h*parti.invomega*invrho;
-  parti.invomega = 1.0/parti.invomega;
+  parti.invh = (FLOAT) 1.0/parti.h;
+  parti.invomega = (FLOAT) 1.0 + invndim*parti.h*parti.invomega*invrho;
+  parti.invomega = (FLOAT) 1.0/parti.invomega;
   parti.zeta = -invndim*parti.h*parti.zeta*invrho*parti.invomega;
   parti.div_v *= invrho;
 
@@ -187,7 +187,7 @@ void GradhSph<kernelclass>::ComputeHydroForces(int i, SphParticle &parti,
   FLOAT paux,uaux;
   FLOAT hfactor = pow(parti.invh,ndim+1);
   FLOAT hrange = kern.kernrange*parti.h;
-  FLOAT invrho = 1.0/parti.rho;
+  FLOAT invrho = (FLOAT) 1.0/parti.rho;
   FLOAT pfactor = eos->Pressure(parti)*invrho*invrho*parti.invomega;
 
   // Compute contribution to compressional heating rate
@@ -209,23 +209,23 @@ void GradhSph<kernelclass>::ComputeHydroForces(int i, SphParticle &parti,
       paux = pfactor*wkern;
 
       // Add dissipation terms (for approaching particle-pairs)
-      if (dvdr < (FLOAT)0.0) {
+      if (dvdr < (FLOAT) 0.0) {
 	
 	// Artificial viscosity term
 	if (avisc == "mon97" || avisc == "pf2010") {
 	  vsignal = parti.sound - beta_visc*dvdr;
-	  paux -= (FLOAT)0.5*alpha_visc*vsignal*dvdr*invrho*parti.invomega*wkern;
-	  parti.dudt -= (FLOAT)0.25*neiblist[j].m*alpha_visc*vsignal*dvdr*dvdr*
+	  paux -= (FLOAT) 0.5*alpha_visc*vsignal*dvdr*invrho*parti.invomega*wkern;
+	  parti.dudt -= (FLOAT) 0.25*neiblist[j].m*alpha_visc*vsignal*dvdr*dvdr*
 	    invrho*parti.invomega*wkern;
-	  neiblist[j].dudt -= (FLOAT)0.25*parti.m*alpha_visc*vsignal*dvdr*dvdr*
+	  neiblist[j].dudt -= (FLOAT) 0.25*parti.m*alpha_visc*vsignal*dvdr*dvdr*
 	    invrho*parti.invomega*wkern;
 	}
 	
 	// Artificial conductivity term
 	if (acond == "wadsley2008") {
-	  parti.dudt += (FLOAT)0.5*neiblist[j].m*fabs(dvdr)*
+	  parti.dudt += (FLOAT) 0.5*neiblist[j].m*fabs(dvdr)*
 	    (parti.u - neiblist[j].u)*wkern*invrho;
-	  neiblist[j].dudt -= (FLOAT)0.5f*parti.m*fabs(dvdr)*
+	  neiblist[j].dudt -= (FLOAT) 0.5*parti.m*fabs(dvdr)*
 	    (parti.u - neiblist[j].u)*wkern*invrho;
 	}
       }
@@ -360,6 +360,7 @@ void GradhSph<kernelclass>::ComputeMeanhZeta(int i, int Nneib, int *neiblist)
 
   return;
 }
+
 
 template class GradhSph<M4Kernel>;
 template class GradhSph<QuinticKernel>;

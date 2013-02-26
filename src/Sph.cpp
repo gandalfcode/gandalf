@@ -107,20 +107,20 @@ void Sph::InitialSmoothingLengthGuess(void)
   if (ndim == 1) {
     Ngather = 5;
     volume = rmax[0] - rmin[0];
-    h_guess = (volume*(FLOAT) Ngather)/(4.0f*(FLOAT) Nsph);
+    h_guess = (volume*(FLOAT) Ngather)/(4.0*(FLOAT) Nsph);
   }
   // --------------------------------------------------------------------------
   else if (ndim == 2) {
     Ngather = 16;
     volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1]);
-    h_guess = sqrtf((volume*(FLOAT) Ngather)/(4.0f*(FLOAT) Nsph));
+    h_guess = sqrtf((volume*(FLOAT) Ngather)/(4.0*(FLOAT) Nsph));
   }
   // --------------------------------------------------------------------------
   else if (ndim == 3) {
     Ngather = 50;
     volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1])*(rmax[2] - rmin[2]);
-    h_guess = powf((3.0f*volume*(FLOAT) Ngather)/
-		   (32.0f*pi*(FLOAT) Nsph),onethird);
+    h_guess = powf((3.0*volume*(FLOAT) Ngather)/
+		   (32.0*pi*(FLOAT) Nsph),onethird);
   }
   // --------------------------------------------------------------------------
 

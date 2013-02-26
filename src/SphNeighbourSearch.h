@@ -37,6 +37,8 @@ class SphNeighbourSearch
   virtual void UpdateAllSphGravityProperties(Sph *) = 0;
   virtual void UpdateTree(Sph *, Parameters &) = 0;
 
+  bool neibcheck;
+
 };
 
 

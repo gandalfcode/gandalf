@@ -21,11 +21,11 @@ M4Kernel::M4Kernel(int ndimaux)
   ndim = ndimaux;
   ndimpr = (float) ndimaux;
 #endif
-  kernrange = 2.0;
-  invkernrange = 0.5;
-  kernrangesqd = 4.0;
+  kernrange = (FLOAT) 2.0;
+  invkernrange = (FLOAT) 0.5;
+  kernrangesqd = (FLOAT) 4.0;
   if (ndim == 1) kernnorm = twothirds;
-  else if (ndim == 2) kernnorm = invpi*10.0/7.0;
+  else if (ndim == 2) kernnorm = invpi*(FLOAT) (10.0/7.0);
   else if (ndim == 3) kernnorm = invpi;
 }
 

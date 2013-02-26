@@ -34,18 +34,18 @@ static const DOUBLE kappa_const = 2.09E-4;
 static const DOUBLE L_sun       = 3.839E26;
 
 // Dimensionless numerical constants
-static const FLOAT pi = 3.1415926536f;
-static const FLOAT twopi = 6.283185307f;
-static const FLOAT invpi = 0.318309886f;
-static const FLOAT invlogetwo = 1.442695041f;
-static const FLOAT invlog10two = 3.321928095f;
-static const FLOAT invsqrttwo = 0.707106781f;
-static const FLOAT sqrttwo = 1.414213562f;
-static const FLOAT onethird = 0.333333333333f;
-static const FLOAT onesixth = 0.16666666666666f;
-static const FLOAT twothirds = 0.66666666666666f;
-static const FLOAT big_number = 9.9e20f;
-static const FLOAT small_number = 1.0e-20f;
+static const FLOAT pi = 3.1415926536;
+static const FLOAT twopi = 6.283185307;
+static const FLOAT invpi = 0.318309886;
+static const FLOAT invlogetwo = 1.442695041;
+static const FLOAT invlog10two = 3.321928095;
+static const FLOAT invsqrttwo = 0.707106781;
+static const FLOAT sqrttwo = 1.414213562;
+static const FLOAT onethird = 0.333333333333;
+static const FLOAT onesixth = 0.16666666666666;
+static const FLOAT twothirds = 0.66666666666666;
+static const FLOAT big_number = 9.9e20;
+static const FLOAT small_number = 1.0e-20;
 
 static const DOUBLE pi_dp = 3.1415926536;
 static const DOUBLE twopi_dp = 6.283185307;

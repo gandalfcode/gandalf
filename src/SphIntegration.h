@@ -29,8 +29,8 @@ class SphIntegration
   SphIntegration(int, int, DOUBLE, DOUBLE);
   ~SphIntegration();
 
-  virtual void AdvanceParticles(int,int,int,SphParticle *,DOUBLE) = 0;
-  virtual void CorrectionTerms(int,int,int,SphParticle *,DOUBLE) = 0;
+  virtual void AdvanceParticles(int,int,int,SphParticle *,FLOAT) = 0;
+  virtual void CorrectionTerms(int,int,int,SphParticle *,FLOAT) = 0;
   virtual void EndTimestep(int,int,int,SphParticle *) = 0;
 
   virtual DOUBLE Timestep(SphParticle &, int);
@@ -50,15 +50,15 @@ class SphIntegration
 // ============================================================================
 // Class SphLeapfrogKDK
 // ============================================================================
-class SphLFKDK: public SphIntegration
+class SphLeapfrogKDK: public SphIntegration
 {
  public:
 
-  SphLFKDK(int, int, DOUBLE, DOUBLE);
-  ~SphLFKDK();
+  SphLeapfrogKDK(int, int, DOUBLE, DOUBLE);
+  ~SphLeapfrogKDK();
 
-  void AdvanceParticles(int,int,int,SphParticle *,DOUBLE);
-  void CorrectionTerms(int,int,int,SphParticle *,DOUBLE);
+  void AdvanceParticles(int,int,int,SphParticle *,FLOAT);
+  void CorrectionTerms(int,int,int,SphParticle *,FLOAT);
   void EndTimestep(int,int,int,SphParticle *);
 
 };

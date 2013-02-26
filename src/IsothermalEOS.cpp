@@ -19,7 +19,7 @@ Isothermal::Isothermal(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux)
   temp0 = temp0aux;
   mu_bar = mu_bar_aux;
   gamma = gamma_aux;
-  gammam1 = gamma - 1.0;
+  gammam1 = gamma - (FLOAT) 1.0;
 }
 
 
@@ -39,7 +39,7 @@ Isothermal::~Isothermal()
 // ============================================================================
 FLOAT Isothermal::Pressure(SphParticle &part)
 {
-  return (gamma - 1.0)*part.rho*part.u;
+  return gammam1*part.rho*part.u;
 }
 
 
@@ -51,7 +51,7 @@ FLOAT Isothermal::Pressure(SphParticle &part)
 // ============================================================================
 FLOAT Isothermal::EntropicFunction(SphParticle &part)
 {
-  return (gamma - 1.0)*part.u*pow(part.rho,1.0 - gamma);
+  return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
 }
 
 
@@ -62,7 +62,7 @@ FLOAT Isothermal::EntropicFunction(SphParticle &part)
 // ============================================================================
 FLOAT Isothermal::SoundSpeed(SphParticle &part)
 {
-  return sqrt((gamma - 1.0)*part.u);
+  return sqrt(gammam1*part.u);
 }
 
 
@@ -72,7 +72,7 @@ FLOAT Isothermal::SoundSpeed(SphParticle &part)
 // ============================================================================
 FLOAT Isothermal::SpecificInternalEnergy(SphParticle &part)
 {
-  return temp0/(gamma - 1.0)/mu_bar;
+  return temp0/gammam1/mu_bar;
 }
 
 
