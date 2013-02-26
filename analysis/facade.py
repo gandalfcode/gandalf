@@ -102,8 +102,8 @@ def run(no=None):
         handle(e)
     #TODO: treat this as an exception
     if not sim.setup:
-        print "The selected simulation has not been set-up. Please set it up before running"
-        return
+        print "The selected simulation was not set-up, we will do it for you"
+        sim.SetupSimulation()
     
     sim.Run()
     
