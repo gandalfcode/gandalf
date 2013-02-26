@@ -1,6 +1,6 @@
 import analytical
 from data import Data
-from SimBuffer import SimBuffer
+from facade import SimBuffer
 
 class Command:
     

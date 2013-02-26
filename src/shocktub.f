@@ -14,6 +14,9 @@ c     *********************************************************************
 c     Exact Rieman solver (shock tube problem)
 c     Reference: E.F. TORO, 1989, Intl. J. for Num. Methods in Fluid, 9
 c
+!f2py double precision intent(in) :: rhoinl, rhoinr, uinl, uinr
+!f2py double precision intent(in) :: pinl, pinr, xl, x0, xr, time, gamma
+!f2py integer intent(int) :: imax
       implicit double precision(a-h,l-z)
       dimension x(iMAX)
       dimension RHO(iMAX),U(iMAX),P(iMAX)

@@ -1,0 +1,104 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module shocktub ! in 
+    interface  ! in :shocktub
+        subroutine shocktub(rhoinl,rhoinr,uinl,uinr,pinl,pinr,xl,x0,xr,time,imax,gamma) ! in :shocktub:shocktub.f
+            double precision intent(in) :: rhoinl
+            double precision intent(in) :: rhoinr
+            double precision intent(in) :: uinl
+            double precision intent(in) :: uinr
+            double precision intent(in) :: pinl
+            double precision intent(in) :: pinr
+            double precision intent(in) :: xl
+            double precision intent(in) :: x0
+            double precision intent(in) :: xr
+            double precision intent(in) :: time
+            integer :: imax
+            double precision intent(in) :: gamma
+            double precision :: gm1
+            double precision :: gp1
+            double precision :: gmgp
+            double precision :: gpgm
+            double precision :: gfact1
+            double precision :: gfact2
+            common /gasconst/ gm1,gp1,gmgp,gpgm,gfact1,gfact2
+        end subroutine shocktub
+        subroutine grid(x,imax,xr,xl) ! in :shocktub:shocktub.f
+            double precision dimension(imax) :: x
+            integer, optional,check(len(x)>=imax),depend(x) :: imax=len(x)
+            double precision :: xr
+            double precision :: xl
+        end subroutine grid
+        subroutine icond(x,rhol,rhor,ul,ur,pl,pr,rho,u,p,imax,rhoinl,rhoinr,uinl,uinr,pinl,pinr,xl,x0) ! in :shocktub:shocktub.f
+            double precision dimension(imax) :: x
+            double precision :: rhol
+            double precision :: rhor
+            double precision :: ul
+            double precision :: ur
+            double precision :: pl
+            double precision :: pr
+            double precision dimension(imax),depend(imax) :: rho
+            double precision dimension(imax),depend(imax) :: u
+            double precision dimension(imax),depend(imax) :: p
+            integer, optional,check(len(x)>=imax),depend(x) :: imax=len(x)
+            double precision :: rhoinl
+            double precision :: rhoinr
+            double precision :: uinl
+            double precision :: uinr
+            double precision :: pinl
+            double precision :: pinr
+            double precision :: xl
+            double precision :: x0
+        end subroutine icond
+        subroutine qstar(rhol,rhor,ul,ur,pl,pr,ustar,pstar,gamma) ! in :shocktub:shocktub.f
+            double precision :: rhol
+            double precision :: rhor
+            double precision :: ul
+            double precision :: ur
+            double precision :: pl
+            double precision :: pr
+            double precision :: ustar
+            double precision :: pstar
+            double precision :: gamma
+            double precision :: gm1
+            double precision :: gp1
+            double precision :: gmgp
+            double precision :: gpgm
+            double precision :: gfact1
+            double precision :: gfact2
+            common /gasconst/ gm1,gp1,gmgp,gpgm,gfact1,gfact2
+        end subroutine qstar
+        function fpstar(p,rho,pstar,gamma) ! in :shocktub:shocktub.f
+            double precision :: p
+            double precision :: rho
+            double precision :: pstar
+            double precision :: gamma
+            double precision :: gm1
+            double precision :: gp1
+            double precision :: gmgp
+            double precision :: gpgm
+            double precision :: gfact1
+            double precision :: gfact2
+            double precision :: fpstar
+            common /gasconst/ gm1,gp1,gmgp,gpgm,gfact1,gfact2
+        end function fpstar
+        function dfpstar(p,rho,pstar,gamma) ! in :shocktub:shocktub.f
+            double precision :: p
+            double precision :: rho
+            double precision :: pstar
+            double precision :: gamma
+            double precision :: gm1
+            double precision :: gp1
+            double precision :: gmgp
+            double precision :: gpgm
+            double precision :: gfact1
+            double precision :: gfact2
+            double precision :: dfpstar
+            common /gasconst/ gm1,gp1,gmgp,gpgm,gfact1,gfact2
+        end function dfpstar
+    end interface 
+end python module shocktub
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/
