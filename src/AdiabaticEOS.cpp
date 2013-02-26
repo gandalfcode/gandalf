@@ -20,7 +20,7 @@ Adiabatic::Adiabatic(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux)
   temp0 = temp0aux;
   mu_bar = mu_bar_aux;
   gamma = gamma_aux;
-  gammam1 = gamma - 1.0;
+  gammam1 = gamma - (FLOAT) 1.0;
 }
 
 
@@ -40,7 +40,7 @@ Adiabatic::~Adiabatic()
 // ============================================================================
 FLOAT Adiabatic::Pressure(SphParticle &part)
 {
-  return (gamma - 1.0)*part.rho*part.u;
+  return gammam1*part.rho*part.u;
 }
 
 
@@ -52,7 +52,7 @@ FLOAT Adiabatic::Pressure(SphParticle &part)
 // ============================================================================
 FLOAT Adiabatic::EntropicFunction(SphParticle &part)
 {
-  return (gamma - 1.0)*part.u*pow(part.rho,1.0 - gamma);
+  return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
 }
 
 
@@ -63,7 +63,7 @@ FLOAT Adiabatic::EntropicFunction(SphParticle &part)
 // ============================================================================
 FLOAT Adiabatic::SoundSpeed(SphParticle &part)
 {
-  return sqrt(gamma*(gamma - 1.0)*part.u);
+  return sqrt(gamma*gammam1*part.u);
 }
 
 

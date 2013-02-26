@@ -40,6 +40,9 @@ void Parameters::ReadParamsFile(std::string filename)
   ifstream inputfile;
   std::string line;
 
+  // Set-up all parameters and assign default values
+  SetDefaultValues();
+
   inputfile.open(filename.c_str(), ios::in);
   if (inputfile.is_open()) {
     while ( inputfile.good() ) {

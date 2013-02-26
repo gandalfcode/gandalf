@@ -22,7 +22,7 @@ using namespace std;
 // ============================================================================
 // EnergyPEC::EnergyPEC()
 // ============================================================================
-EnergyEquation::EnergyEquation(double energy_mult_aux) :
+EnergyEquation::EnergyEquation(DOUBLE energy_mult_aux) :
   energy_mult(energy_mult_aux)
 {
 }
@@ -92,7 +92,7 @@ void EnergyPEC::EndTimestep(int n, int level_step, int Nsph, SphParticle *sph)
 {
   int i,nstep;
 
-  debug2("[EnergyPEC::EndTimestep]\n");
+  debug2("[EnergyPEC::EndTimestep]");
 
   for (i=0; i<Nsph; i++) {
     nstep = pow(2,level_step - sph[i].level);

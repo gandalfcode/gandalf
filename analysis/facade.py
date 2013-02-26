@@ -3,7 +3,7 @@ import atexit
 import commandsource as Commands
 from multiprocessing import Manager, Queue
 from plotting import PlottingProcess
-from SimBuffer import SimBuffer, BufferException
+from seren.analysis.SimBuffer import SimBuffer, BufferException
 from scipy import interpolate
 import signal
 import numpy
@@ -86,7 +86,10 @@ def subfigure(nx, ny, current):
     Singletons.queue.put([command,data])
 
 def newsim(paramfile):
-    SimBuffer.newsim(paramfile)
+    return SimBuffer.newsim(paramfile)
+
+def newsimfromparams(paramfile):
+    return SimBuffer.newsimfromparams(paramfile)
 
 def run(no=None):
     #gets the correct simulation object from the buffer

@@ -20,6 +20,8 @@ struct SphParticle {
   FLOAT r[ndimmax];
   FLOAT v[vdimmax];
   FLOAT a[vdimmax];
+  FLOAT r0[vdimmax];
+  FLOAT v0[vdimmax];
   FLOAT a0[vdimmax];
   FLOAT agrav[ndimmax];
   FLOAT u;
@@ -46,6 +48,8 @@ struct SphParticle {
     for (int k=0; k<ndimmax; k++) r[k] = 0.0;
     for (int k=0; k<ndimmax; k++) v[k] = 0.0;
     for (int k=0; k<ndimmax; k++) a[k] = 0.0;
+    for (int k=0; k<ndimmax; k++) r0[k] = 0.0;
+    for (int k=0; k<ndimmax; k++) v0[k] = 0.0;
     for (int k=0; k<ndimmax; k++) a0[k] = 0.0;
     for (int k=0; k<ndimmax; k++) agrav[k] = 0.0;
     m = 0;

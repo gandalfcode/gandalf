@@ -22,8 +22,8 @@ using namespace std;
 // ============================================================================
 // SphLeapfrogKDK::SphLeapfrogKDK()
 // ============================================================================
-SphLFKDK::SphLFKDK(int ndimaux, int vdimaux, 
-		   double accel_mult_aux, double courant_mult_aux) :
+SphLeapfrogKDK::SphLeapfrogKDK(int ndimaux, int vdimaux, 
+			       DOUBLE accel_mult_aux, DOUBLE courant_mult_aux) :
   SphIntegration(ndimaux, vdimaux, accel_mult_aux, courant_mult_aux)
 {
 }
@@ -33,7 +33,7 @@ SphLFKDK::SphLFKDK(int ndimaux, int vdimaux,
 // ============================================================================
 // SphLeapfrogKDK::~SphLeapfrog()
 // ============================================================================
-SphLFKDK::~SphLFKDK()
+SphLeapfrogKDK::~SphLeapfrogKDK()
 {
 }
 
@@ -42,20 +42,20 @@ SphLFKDK::~SphLFKDK()
 // ============================================================================
 // SphLeapfrogKDK::AdvanceParticles
 // ============================================================================
-void SphLFKDK::AdvanceParticles(int n, int level_step, 
-				int Nsph, SphParticle *sph, double dt)
+void SphLeapfrogKDK::AdvanceParticles(int n, int level_step, 
+				      int Nsph, SphParticle *sph, FLOAT dt)
 {
   int i;
   int k;
   int nstep;
 
-  debug2("[SphLFKDK::AdvanceParticles]");
+  debug2("[SphLeapfrogKDK::AdvanceParticles]");
 
   for (i=0; i<Nsph; i++) {
     nstep = pow(2,level_step - sph[i].level);
-    for (k=0; k<ndim; k++) sph[i].r[k] +=
-      sph[i].v[k]*dt + 0.5*sph[i].a[k]*dt*dt;
-    for (k=0; k<vdim; k++) sph[i].v[k] += sph[i].a[k]*dt;
+    for (k=0; k<ndim; k++) sph[i].r[k] = sph[i].r0[k] + sph[i].v0[k]*dt
+      + (FLOAT) 0.5*sph[i].a0[k]*dt*dt;
+    for (k=0; k<vdim; k++) sph[i].v[k] = sph[i].v0[k] + sph[i].a0[k]*dt;
     if (n%nstep == 0) sph[i].active = true;
   }
 
@@ -67,20 +67,20 @@ void SphLFKDK::AdvanceParticles(int n, int level_step,
 // ============================================================================
 // SphLeapfrogKDK::CorrectionTerms
 // ============================================================================
-void SphLFKDK::CorrectionTerms(int n, int level_step, 
-			       int Nsph, SphParticle *sph, double dt)
+void SphLeapfrogKDK::CorrectionTerms(int n, int level_step, 
+				     int Nsph, SphParticle *sph, FLOAT dt)
 {
   int i;
   int k;
   int nstep;
 
-  debug2("[SphLFKDK::CorrectionTerms]");
+  debug2("[SphLeapfrogKDK::CorrectionTerms]");
 
   for (i=0; i<Nsph; i++) {
     nstep = pow(2,level_step - sph[i].level);
     if (n%nstep == 0)
-      for (k=0; k<ndim; k++) 
-	sph[i].v[k] += 0.5*(sph[i].a[k] - sph[i].a0[k])*dt*(DOUBLE) nstep;
+      for (k=0; k<ndim; k++) sph[i].v[k] += 
+	(FLOAT) 0.5*(sph[i].a[k] - sph[i].a0[k])*dt*(FLOAT) nstep;
   }
 
   return;
@@ -91,16 +91,21 @@ void SphLFKDK::CorrectionTerms(int n, int level_step,
 // ============================================================================
 // SphLeapfrogKDK::EndTimestep
 // ============================================================================
-void SphLFKDK::EndTimestep(int n, int level_step, int Nsph, SphParticle *sph)
+void SphLeapfrogKDK::EndTimestep(int n, int level_step, 
+				 int Nsph, SphParticle *sph)
 {
-  int i,k,nstep;
+  int i;
+  int k;
+  int nstep;
 
-  debug2("[SphLFKDK::EndTimestep]");
+  debug2("[SphLeapfrogKDK::EndTimestep]");
 
   for (i=0; i<Nsph; i++) {
     nstep = pow(2,level_step - sph[i].level);
     if (n%nstep == 0) {
-      for (k=0; k<vdim; k++) sph[i].a0[k] = sph[i].a[k];
+      for (k=0; k<ndim; k++) sph[i].r0[k] = sph[i].r[k];
+      for (k=0; k<ndim; k++) sph[i].v0[k] = sph[i].v[k];
+      for (k=0; k<ndim; k++) sph[i].a0[k] = sph[i].a[k];
       sph[i].active = false;
     }
   }

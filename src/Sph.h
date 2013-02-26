@@ -28,13 +28,13 @@ class Sph
 {
  public:
 
-#if !defined(FIXED_DIMENSIONS)
-  Sph(int ndimaux, int vdimaux, int bdimaux):
-    ndim(ndimaux),
-    vdim(vdimaux),
-    bdim(bdimaux),
-    invndim (1.0/(FLOAT)ndim)
-      {};
+#if !defined(SWIG) && !defined(FIXED_DIMENSIONS)
+ Sph(int ndimaux, int vdimaux, int bdimaux):
+  ndim(ndimaux), 
+    vdim(vdimaux), 
+    bdim(bdimaux), 
+    invndim(1.0/(FLOAT)ndimaux)
+    {};
 #endif
 
   // SPH functions for computing SPH sums with neighbouring particles 

@@ -2,7 +2,7 @@
 // GridSearch.cpp
 // Contains functions for grid neighbour search routines.
 // Creates a uniform grid from particle distribution where the spacing is 
-// the size of the maximum kernel range (i.t. kernrange*h_max) over all ptcls.
+// the size of the maximum kernel range (i.e. kernrange*h_max) over all ptcls.
 // ============================================================================
 
 
@@ -21,7 +21,7 @@
 using namespace std;
 
 
-static FLOAT grid_h_tolerance = 1.1;
+static FLOAT grid_h_tolerance = (FLOAT) 1.1;
 
 
 // ============================================================================
@@ -129,8 +129,8 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
     // Make local copies of all potential neighbours
     for (j=0; j<Nneib; j++) {
       neibpart[j] = data[neiblist[j]];
-      neibpart[j].dudt = 0.0;
-      for (k=0; k<ndim; k++) neibpart[j].a[k] = 0.0;
+      neibpart[j].dudt = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
     }
 
     // Loop over all active particles in the cell
@@ -149,10 +149,11 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
 	for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
 	drsqd = DotProduct(draux,draux,ndim);
 	if (drsqd <= hrangesqd) {
-	  nearlist[Nnear++] = jj;
-	  drmag[jj] = sqrt(drsqd);
-	  invdrmag[jj] = 1.0/(drmag[jj] + small_number);
-	  for (k=0; k<ndim; k++) dr[jj*ndim + k] = draux[k]*invdrmag[jj];
+	  nearlist[Nnear] = jj;
+	  drmag[Nnear] = sqrt(drsqd);
+	  invdrmag[Nnear] = (FLOAT) 1.0/(drmag[Nnear] + small_number);
+	  for (k=0; k<ndim; k++) dr[Nnear*ndim + k] = draux[k]*invdrmag[Nnear];
+          Nnear++;
 	}
       }
 
@@ -161,12 +162,12 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
 			     nearlist,neibpart,drmag,invdrmag,dr);
 
 #if defined(VERIFY_ALL)
-      CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
+      if (neibcheck) CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
 #endif
 
       // Compute all current particle contributions to hydro forces
       sph->ComputeHydroForces(i,data[i],Nneib,Nnear,
-			      neiblist,neibpart,drmag,invdrmag,dr);
+			      nearlist,neibpart,drmag,invdrmag,dr);
 
     }
     // ------------------------------------------------------------------------
@@ -186,6 +187,7 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
   delete[] invdrmag;
   delete[] drmag;
   delete[] dr;
+  delete[] nearlist;
   delete[] neiblist;
   delete[] celllist;
 
@@ -649,17 +651,6 @@ void GridSearch::CheckValidNeighbourList(Sph *sph, int i, int Nneib,
 	dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
       drsqd = DotProduct(dr,dr,ndim);
       if (drsqd <= sph->kernp->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h)
-	trueneiblist[Ntrueneib++] = j;
-    }
-  }
-  else if (neibtype == "all") {
-    for (j=0; j<sph->Ntot; j++) {
-      for (k=0; k<ndimmax; k++)
-	dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
-      drsqd = DotProduct(dr,dr,ndim);
-      if (drsqd <= sph->kernp->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h
-	  && drsqd <= sph->kernp->kernrangesqd*
-	  sph->sphdata[j].h*sph->sphdata[j].h)
 	trueneiblist[Ntrueneib++] = j;
     }
   }

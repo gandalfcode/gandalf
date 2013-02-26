@@ -64,12 +64,12 @@ class M4Kernel: public SphKernel
 // ============================================================================
 inline FLOAT M4Kernel::w0(FLOAT s)
 {
-  if (s < 1.0)
-    return kernnorm*(1.0 - 1.5*s*s + 0.75*s*s*s);
-  else if (s < 2.0)
-    return 0.25*kernnorm*powf(2.0 - s,3.0);
+  if (s < (FLOAT) 1.0)
+    return kernnorm*((FLOAT) 1.0 - (FLOAT) 1.5*s*s + (FLOAT) 0.75*s*s*s);
+  else if (s < (FLOAT) 2.0)
+    return (FLOAT) 0.25*kernnorm*pow((FLOAT) 2.0 - s,3);
   else
-    return 0.0;
+    return (FLOAT) 0.0;
 }
 
 
@@ -79,12 +79,12 @@ inline FLOAT M4Kernel::w0(FLOAT s)
 // ============================================================================
 inline FLOAT M4Kernel::w1(FLOAT s)
 {
-  if (s < 1.0)
-    return kernnorm*(-3.0*s + 2.25*s*s);
-  else if (s < 2.0)
-    return -0.75*kernnorm*(2.0 - s)*(2.0 - s);
+  if (s < (FLOAT) 1.0)
+    return kernnorm*(-(FLOAT) 3.0*s + (FLOAT) 2.25*s*s);
+  else if (s < (FLOAT) 2.0)
+    return -(FLOAT) 0.75*kernnorm*((FLOAT) 2.0 - s)*((FLOAT) 2.0 - s);
   else
-    return 0.0;
+    return (FLOAT) 0.0;
 }
 
 
@@ -94,14 +94,16 @@ inline FLOAT M4Kernel::w1(FLOAT s)
 // ============================================================================
 inline FLOAT M4Kernel::womega(FLOAT s)
 {
-  if (s < 1.0)
-    return kernnorm*(-ndimpr + 1.5*(ndimpr + 2.0)*s*s -
-             0.75*(ndimpr + 3.0)*pow(s,3));
-  else if (s < 2.0)
-    return kernnorm*(-2.0*ndimpr + 3.0*(ndimpr + 1.0)*s - 1.50*
-             (ndimpr + 2.0)*s*s + 0.25*(ndimpr + 3.0)*pow(s,3));
+  if (s < (FLOAT) 1.0)
+    return kernnorm*(-ndimpr + (FLOAT) 1.5*(ndimpr + (FLOAT) 2.0)*s*s -
+		     (FLOAT) 0.75*(ndimpr + (FLOAT) 3.0)*pow(s,3));
+  else if (s < (FLOAT) 2.0)
+    return kernnorm*(-(FLOAT) 2.0*ndimpr + 
+		     (FLOAT) 3.0*(ndimpr + (FLOAT) 1.0)*s - (FLOAT) 1.50*
+		     (ndimpr + (FLOAT) 2.0)*s*s + 
+		     (FLOAT) 0.25*(ndimpr + (FLOAT) 3.0)*pow(s,3));
   else
-    return 0.0;
+    return (FLOAT) 0.0;
 }
 
 
@@ -111,10 +113,12 @@ inline FLOAT M4Kernel::womega(FLOAT s)
 // ============================================================================
 inline FLOAT M4Kernel::wzeta(FLOAT s)
 {
-  if (s < 1.0)
-    return 1.4 - 2.0*s*s + 1.5*pow(s,4) - 0.6*pow(s,5);
-  else if (s < 2.0)
-    return 1.6 - 4.0*s*s + 4.0*pow(s,3) - 1.5*pow(s,4) + 0.2*pow(s,5);
+  if (s < (FLOAT) 1.0)
+    return (FLOAT) 1.4 - (FLOAT) 2.0*s*s + (FLOAT) 1.5*pow(s,4) 
+      - (FLOAT) 0.6*pow(s,5);
+  else if (s < (FLOAT) 2.0)
+    return (FLOAT) 1.6 - (FLOAT) 4.0*s*s + (FLOAT) 4.0*pow(s,3) 
+      - (FLOAT) 1.5*pow(s,4) + (FLOAT) 0.2*pow(s,5);
   else
     return 0.0;
 }

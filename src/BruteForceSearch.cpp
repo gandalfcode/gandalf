@@ -100,6 +100,7 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph)
   delete[] dr;
   delete[] invdrmag;
   delete[] drmag;
+  delete[] neiblist;
 
   return;
 }
