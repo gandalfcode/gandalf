@@ -72,7 +72,9 @@ void SphSimulation::Run(int Nadvance)
   // --------------------------------------------------------------------------
 
   CalculateDiagnostics();
-  cout << "Eerror : " << fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot) << endl;
+  diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
+  cout << "Eerror : " << diag.Eerror << endl;
+
 
   return;
 }

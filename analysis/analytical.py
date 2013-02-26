@@ -69,6 +69,7 @@ class soundwave (AnalyticalSolution):
         
     def compute(self, ix, iy):
         x = np.arange(self.xL,self.xR,1.0/self.iMAX)
+        print x
         rho = self.rho*(1.0 + self.amp*np.sin(self.kwave*x - self.omega*self.time))
         vx = self.csound*self.amp*np.sin(self.kwave*x - self.omega*self.time)
         if ix == "x" and iy == "rho": return x,rho

@@ -1,5 +1,5 @@
-     : boxmin[0] = -2.0
-     : boxmax[0] = 2.0
+     : boxmin[0] = -8.0
+     : boxmax[0] = 8.0
      : Nlattice1[0] = 256
      : Nlattice2[0] = 32
      : vfluid1[0] = 0.0
@@ -21,7 +21,7 @@
      : hydro_forces = 1
      : self_gravity = 0
 
-     : h_converge = 0.0001
+     : h_converge = 0.000000000001
 
      : avisc = pf2010
      : acond = none
