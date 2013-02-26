@@ -1,5 +1,5 @@
-     : boxmin[0] = -4.0
-     : boxmax[0] = 4.0
+     : boxmin[0] = -8.0
+     : boxmax[0] = 8.0
      : Nlattice1[0] = 256
      : Nlattice2[0] = 32
      : vfluid1[0] = 0.0

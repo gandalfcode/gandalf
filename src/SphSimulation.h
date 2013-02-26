@@ -89,6 +89,7 @@ class SphSimulation
   void RandomSphere(void);
   void ShockTube(void);
   void KHI(void);
+  void SoundWave(void);
 
   // Initial conditions helper routines
   // --------------------------------------------------------------------------

@@ -128,6 +128,8 @@ void SphSimulation::GenerateIC(void)
     LatticeBox();
   else if (simparams.stringparams["ic"] == "shocktube") 
     ShockTube();
+  else if (simparams.stringparams["ic"] == "soundwave")
+	SoundWave();
   else if (simparams.stringparams["ic"] == "khi") 
     KHI();
   else {

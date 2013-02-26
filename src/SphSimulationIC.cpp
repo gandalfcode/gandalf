@@ -85,7 +85,10 @@ void SphSimulation::ShockTube(void)
       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
       sph->sphdata[i].v[0] = vfluid1[0];
       sph->sphdata[i].m = rhofluid1*volume/(FLOAT) Nbox1;
-      sph->sphdata[i].u = temp0/gammaone/mu_bar;
+      if (sph->gas_eos == "isothermal")
+    	sph->sphdata[i].u = temp0/gammaone/mu_bar;
+      else
+        sph->sphdata[i].u = press1/rhofluid1/gammaone;
     }
   }
 
@@ -100,7 +103,10 @@ void SphSimulation::ShockTube(void)
       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
       sph->sphdata[i].v[0] = vfluid2[0];
       sph->sphdata[i].m = rhofluid2*volume/(FLOAT) Nbox2;
-      sph->sphdata[i].u = temp0/gammaone/mu_bar;
+      if (sph->gas_eos == "isothermal")
+	    sph->sphdata[i].u = temp0/gammaone/mu_bar;
+      else
+	    sph->sphdata[i].u = press2/rhofluid2/gammaone;
     }
   }
 
@@ -360,6 +366,69 @@ void SphSimulation::KHI(void)
     sph->sphdata[i].u = press1/sph->sphdata[i].rho/gammaone;
 
   delete[] r;
+
+  return;
+}
+
+
+
+// ============================================================================
+// SphSimulation::KHI
+// ============================================================================
+void SphSimulation::SoundWave(void)
+{
+  int i,k;
+  FLOAT csound,diff,lambda,kwave,omegawave,ugas,volume,xold,xnew;
+  FLOAT *r;
+
+  int Nlattice1[ndimmax];
+  int Npart = simparams.intparams["Npart"];
+  FLOAT rhofluid1 = simparams.floatparams["rhofluid1"];
+  FLOAT press1 = simparams.floatparams["press1"];
+  FLOAT gamma = simparams.floatparams["gamma_eos"];
+  FLOAT gammaone = gamma - 1.0;
+  FLOAT amp = simparams.floatparams["amp"];
+  Nlattice1[0] = simparams.intparams["Nlattice1[0]"];
+
+  debug2("[SphSimulation::SoundWave]");
+
+  if (ndim != 1) {
+	  cout << "Sound wave only available in 1D" << endl;
+	  exit(0);
+  }
+
+  ugas = press1/rhofluid1/gammaone;
+  csound = sqrt(gamma*press1/rhofluid1);
+  lambda = simbox.boxmax[0] - simbox.boxmin[0];
+  kwave = twopi/lambda;
+  omegawave = twopi*csound/lambda;
+
+   // Allocate local and main particle memory
+   sph->Nsph = Npart;
+   Nlattice1[0] = Npart;
+   sph->AllocateMemory(sph->Nsph);
+   r = new FLOAT[ndim*sph->Nsph];
+   cout << "Allocating memory : " << sph->Nsph << endl;
+
+   AddRegularLattice(Npart,Nlattice1,r,simbox);
+
+   for (i=0; i<Npart; i++) {
+       xnew = r[ndim*i];
+
+       // Solve iterative procedure for particle positions in sound wave
+       do {
+    	 xold = xnew;
+    	 xnew = lambda*(xold - amp*cos(kwave*xold))/
+    			 (lambda - amp*cos(kwave*lambda));
+    	 diff = fabs((xnew - xold)/lambda);
+       } while(diff > 1.0e-5);
+
+       for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = xnew;
+       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = csound*amp*sin(kwave*xnew);
+       sph->sphdata[i].m = rhofluid1/(FLOAT) Npart;
+       sph->sphdata[i].u = press1/rhofluid1/gammaone;
+     }
+
 
   return;
 }
