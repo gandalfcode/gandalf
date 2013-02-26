@@ -114,6 +114,7 @@ class SimBuffer:
         SimBuffer._add_simulation(sim)
         sim.paramfile = paramfile
         sim.simparams.ReadParamsFile(paramfile)
+        sim.snapshots =[]
         return sim
         
     @staticmethod
