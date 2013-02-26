@@ -21,7 +21,7 @@ PYTHON = python2.7 # Name of the python interpreter
 # Compile time options
 #-------------------------------------------------
 OUTPUT_LEVEL              = 1
-PRECISION                 = SINGLE
+PRECISION                 = DOUBLE
 # If set to 0, the number of dimensions can be set at runtime
 NDIM                      = 1
 DEBUG                     = 1

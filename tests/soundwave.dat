@@ -1,0 +1,34 @@
+xlhs : x_boundary_lhs = periodic
+xrhs : x_boundary_rhs = periodic
+     : boxmin[0] = 0.0
+     : boxmax[0] = 1.0
+     : Npart = 256
+     : rhofluid1 = 1.0
+     : press1 = 1.0
+     : mu_bar = 1.0
+     : temp0 = 1.0
+     : amp = 0.002
+     : ndim = 1
+     : tend = 1.0
+     : dt_snap = 1.1
+     : noutputstep = 99999999
+
+     : ic = soundwave
+     : gas_eos = isothermal
+
+     : hydro_forces = 1
+     : self_gravity = 0
+
+     : h_converge = 0.0000000001
+
+     : avisc = none
+     : acond = none
+     : alpha_visc = 0.1
+     : beta_visc = 0.2
+
+     : Nlevels = 1
+     : courant_mult = 0.1
+     : accel_mult = 0.2
+
+     : kernel = quintic
+     : neib_search = bruteforce

@@ -373,7 +373,7 @@ void SphSimulation::KHI(void)
 
 
 // ============================================================================
-// SphSimulation::KHI
+// SphSimulation::SoundWave
 // ============================================================================
 void SphSimulation::SoundWave(void)
 {
@@ -388,6 +388,8 @@ void SphSimulation::SoundWave(void)
   FLOAT gamma = simparams.floatparams["gamma_eos"];
   FLOAT gammaone = gamma - 1.0;
   FLOAT amp = simparams.floatparams["amp"];
+  FLOAT temp0 = simparams.floatparams["temp0"];
+  FLOAT mu_bar = simparams.floatparams["mu_bar"];
   Nlattice1[0] = simparams.intparams["Nlattice1[0]"];
 
   debug2("[SphSimulation::SoundWave]");
@@ -397,11 +399,21 @@ void SphSimulation::SoundWave(void)
 	  exit(0);
   }
 
-  ugas = press1/rhofluid1/gammaone;
-  csound = sqrt(gamma*press1/rhofluid1);
+  if (sph->gas_eos == "isothermal") {
+    ugas = temp0/gammaone/mu_bar;
+    press1 = gammaone*rhofluid1*ugas;
+	csound = sqrt(press1/rhofluid1);
+  }
+  else {
+    ugas = press1/rhofluid1/gammaone;
+    csound = sqrt(gamma*press1/rhofluid1);
+  }
   lambda = simbox.boxmax[0] - simbox.boxmin[0];
   kwave = twopi/lambda;
   omegawave = twopi*csound/lambda;
+
+  cout << "amp : " << amp << "    rhofluid1" << rhofluid1 << endl;
+  cout << "kwave : " << kwave << "    csound : " << csound << endl;
 
    // Allocate local and main particle memory
    sph->Nsph = Npart;
@@ -417,16 +429,24 @@ void SphSimulation::SoundWave(void)
 
        // Solve iterative procedure for particle positions in sound wave
        do {
+    	 //break;
     	 xold = xnew;
-    	 xnew = lambda*(xold - amp*cos(kwave*xold))/
-    			 (lambda - amp*cos(kwave*lambda));
+    	 //xnew = lambda*(xold - amp*cos(kwave*xold))/
+    	 //		 (lambda - amp*cos(kwave*lambda));
+    	 //xnew = (lambda - amp*cos(kwave*lambda))*(r[ndim*i]/lambda) + amp*cos(kwave*xnew);
+    	 xnew = r[ndim*i] - amp*(1.0 - cos(kwave*xnew))/kwave;
     	 diff = fabs((xnew - xold)/lambda);
-       } while(diff > 1.0e-5);
-
+       } while(diff > 1.0e-6);
+       if (xnew < simbox.boxmin[0] || xnew > simbox.boxmax[0]) cout << "WTF?? : " << xnew << endl;
+       if (xnew > simbox.boxmax[0]) xnew -= simbox.boxsize[0];
+       if (xnew < simbox.boxmin[0]) xnew += simbox.boxsize[0];
        for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = xnew;
        for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = csound*amp*sin(kwave*xnew);
-       sph->sphdata[i].m = rhofluid1/(FLOAT) Npart;
-       sph->sphdata[i].u = press1/rhofluid1/gammaone;
+       sph->sphdata[i].m = rhofluid1*lambda/(FLOAT) Npart;
+       if (sph->gas_eos == "isothermal")
+      	 sph->sphdata[i].u = temp0/gammaone/mu_bar;
+       else
+         sph->sphdata[i].u = press1/rhofluid1/gammaone;
      }
 
 

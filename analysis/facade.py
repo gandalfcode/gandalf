@@ -1,9 +1,9 @@
 import __main__
 import atexit
-import commandsource as Commands
 from multiprocessing import Manager, Queue
 from plotting import PlottingProcess
 from seren.analysis.SimBuffer import SimBuffer, BufferException
+import commandsource as Commands
 from scipy import interpolate
 import signal
 import numpy
