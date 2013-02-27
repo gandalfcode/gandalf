@@ -63,7 +63,7 @@ void SphSimulation::SearchGhostParticles(void)
 {
   int i;
   int k;
-  const FLOAT ghost_range = 2.2;
+  const FLOAT ghost_range = 1.1;
   const FLOAT kernrange = sph->kernp->kernrange;
   SphParticle *sphdata = sph->sphdata;
 
@@ -207,9 +207,6 @@ void SphSimulation::CreateGhostParticle(int i, int k,
   sph->sphdata[sph->Nsph + sph->Nghost].r[k] = rk;
   sph->sphdata[sph->Nsph + sph->Nghost].v[k] = vk;
 
-  // If ghost is sufficiently away from the boundary, always flag as inactive
-  if (1.1*fabs(bdist)*sph->sphdata[i].invh > sph->kernp->kernrange)
-    sph->sphdata[sph->Nsph + sph->Nghost].active = false;
 
   // Record id of original particle for later copying
   if (i > sph->Nsph)
@@ -229,26 +226,24 @@ void SphSimulation::CreateGhostParticle(int i, int k,
 
 
 // ============================================================================
-// SphSimulation::CopyDataToGhosts
+// SphSimulation::CopyAccelerationsFromGhosts
 // ============================================================================
-void SphSimulation::CopyDataToGhosts(void)
+void SphSimulation::CopyAccelerationFromGhosts(void)
 {
   int i;
+  int iorig;
   int j;
   int k;
-  FLOAT rp[ndimmax];
-  FLOAT vp[ndimmax];
 
   for (j=0; j<sph->Nghost; j++) {
-    i = sph->Nsph + j;
+	i = sph->Nsph + j;
+	iorig = sph->sphdata[i].iorig;
 
-    for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
-    for (k=0; k<ndim; k++) vp[k] = sph->sphdata[i].v[k];
+	// Only look at active ghosts
+	if (!sph->sphdata[iorig].active) continue;
 
-    sph->sphdata[i] = sph->sphdata[sph->sphdata[i].iorig];
-
-    for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = rp[k];
-    for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = vp[k];
+	for (k=0; k<ndim; k++) sph->sphdata[iorig].a[k] += sph->sphdata[i].a[k];
+	sph->sphdata[iorig].dudt += sph->sphdata[i].dudt;
 
   }
 

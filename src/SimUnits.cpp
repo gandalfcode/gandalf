@@ -216,7 +216,7 @@ double DensityUnit::SIUnit(string unit_string)
 {
   if (unit_string == "m_sun_pc3") return r_pc*r_pc*r_pc;
   else if (unit_string == "kg_m3") return 1.0;
-  else if (unit_string == "g_cm3") return 1.0;
+  else if (unit_string == "g_cm3") return 1000.0;
   else if (unit_string != "") {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
