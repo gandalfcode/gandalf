@@ -28,7 +28,7 @@ SimUnit::SimUnit()
 
 
 // ============================================================================
-// LengthUnit::OutputScale
+// SimUnit::OutputScale
 // ============================================================================
 double SimUnit::OutputScale(string unit_string)
 {
@@ -61,6 +61,25 @@ double LengthUnit::SIUnit(string unit)
 
 
 // ============================================================================
+// LengthUnit::LatexLabel
+// ============================================================================
+string LengthUnit::LatexLabel(string unit)
+{
+  if (unit == "mpc") return "Mpc";
+  else if (unit == "kpc") return "kpc";
+  else if (unit == "pc") return "pc";
+  else if (unit == "au") return "AU";
+  else if (unit == "r_sun") return "R_{\\\\odot}";
+  else if (unit == "r_earth") return "R_{\\\\oplus}";
+  else if (unit == "km") return "km";
+  else if (unit == "m") return "m";
+  else if (unit == "cm") return "cm";
+  else return "";
+}
+
+
+
+// ============================================================================
 // MassUnit::SIUnit
 // ============================================================================
 double MassUnit::SIUnit(string unit_string)
@@ -75,6 +94,21 @@ double MassUnit::SIUnit(string unit_string)
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
+}
+
+
+
+// ============================================================================
+// MassUnit::LatexLabel
+// ============================================================================
+string MassUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "m_sun") return "M_{\\odot}";
+  else if (unit_string == "m_jup") return "M_{J}";
+  else if (unit_string == "m_earth") return "M_{\\oplus}";
+  else if (unit_string == "kg") return "kg";
+  else if (unit_string == "g") return "g";
+  else return "";
 }
 
 
@@ -99,6 +133,21 @@ double TimeUnit::SIUnit(string unit_string)
 
 
 // ============================================================================
+// TimeUnit::LatexLabel
+// ============================================================================
+string TimeUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "gyr") return "Gyr";
+  else if (unit_string == "myr") return "Myr";
+  else if (unit_string == "yr") return "yr";
+  else if (unit_string == "day") return "days";
+  else if (unit_string == "s") return "s";
+  else return "";
+}
+
+
+
+// ============================================================================
 // VelocityUnit::SIUnit
 // ============================================================================
 double VelocityUnit::SIUnit(string unit_string)
@@ -112,6 +161,21 @@ double VelocityUnit::SIUnit(string unit_string)
     ExceptionHandler::getIstance().raise(message);
   }
 }
+
+
+
+// ============================================================================
+// VelocityUnit::LatexLabel
+// ============================================================================
+string VelocityUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "km_s") return "km\\,s^{-1}";
+  else if (unit_string == "au_yr") return "AU\\,yr^{-1}";
+  else if (unit_string == "m_s") return "m/,s^{-1}";
+  else if (unit_string == "cm_s") return "cm\\,s^{-1}";
+  else return "";
+}
+
 
 
 // ============================================================================
@@ -132,6 +196,20 @@ double AccelerationUnit::SIUnit(string unit_string)
 
 
 // ============================================================================
+// AccelerationUnit::LatexLabel
+// ============================================================================
+string AccelerationUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "km_s2") return "km\\,s^{-2}";
+  else if (unit_string == "au_yr2") return "AU\\,yr^{-2}";
+  else if (unit_string == "m_s2") return "m\\,s^{-2}";
+  else if (unit_string == "cm_s2") return "cm\\,s^{-2}";
+  else return "";
+}
+
+
+
+// ============================================================================
 // DensityUnit::SIUnit
 // ============================================================================
 double DensityUnit::SIUnit(string unit_string)
@@ -143,6 +221,19 @@ double DensityUnit::SIUnit(string unit_string)
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
+}
+
+
+
+// ============================================================================
+// DensityUnit::LatexLabel
+// ============================================================================
+string DensityUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "m_sun_pc3") return "M_{\\odot}\\,pc^{-3}";
+  else if (unit_string == "kg_m3") return "kg\\,m^{-3}";
+  else if (unit_string == "g_cm3") return "g\\,cm^{-3}";
+  else return "";
 }
 
 
@@ -165,6 +256,20 @@ double EnergyUnit::SIUnit(string unit_string)
 
 
 // ============================================================================
+// EnergyUnit::LatexLabel
+// ============================================================================
+string EnergyUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "J") return "J";
+  else if (unit_string == "erg") return "erg";
+  else if (unit_string == "GJ") return "GJ";
+  else if (unit_string == "10^40erg") return "10^{40}\\,erg";
+  else return "";
+}
+
+
+
+// ============================================================================
 // MomentumUnit::SIUnit
 // ============================================================================
 double MomentumUnit::SIUnit(string unit_string)
@@ -177,6 +282,20 @@ double MomentumUnit::SIUnit(string unit_string)
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
+}
+
+
+
+// ============================================================================
+// MomentumUnit::LatexLabel
+// ============================================================================
+string MomentumUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "m_sunkm_s") return "M_{\\odot}\\,km\\,s^{-1}";
+  else if (unit_string == "m_sunau_yr") return "M_{\\odot}\\,AU\\,yr^{-1}";
+  else if (unit_string == "kgm_s") return "kg\\,m\\,s^{-1}";
+  else if (unit_string == "gcm_s") return "g\\,cm\\,s^{-1}";
+  else return "";
 }
 
 
@@ -199,6 +318,20 @@ double AngularMomentumUnit::SIUnit(string unit_string)
 
 
 // ============================================================================
+// AngularMomentumUnit::LatexLabel
+// ============================================================================
+string AngularMomentumUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "m_sunkm2_s") return "M_{\\odot}\\,km^2\\,s^{-1}";
+  else if (unit_string == "m_sunau2_yr") return "M_{\\odot}\\,AU^{2}\\,yr^{-1}";
+  else if (unit_string == "kgm2_s") return "kg\\,m^{2}\\,s^{-1}";
+  else if (unit_string == "gcm2_s") return "g\\,cm^{2}\\,s^{-1}";
+  else return "";
+}
+
+
+
+// ============================================================================
 // AngularVelocityUnit::SIUnit
 // ============================================================================
 double AngularVelocityUnit::SIUnit(string unit_string)
@@ -208,6 +341,17 @@ double AngularVelocityUnit::SIUnit(string unit_string)
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
+}
+
+
+
+// ============================================================================
+// AngularVelocityUnit::LatexLabel
+// ============================================================================
+string AngularVelocityUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "rad_s") return "rad\\,s^{-1}";
+  else return "";
 }
 
 
@@ -228,6 +372,18 @@ double SpecificEnergyUnit::SIUnit(string unit_string)
 
 
 // ============================================================================
+// SpecificEnergyUnit::LatexLabel
+// ============================================================================
+string SpecificEnergyUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "J_kg") return "J\\,kg^{-1}";
+  else if (unit_string == "erg_g") return "erg\\,g^{-1}";
+  else return "";
+}
+
+
+
+// ============================================================================
 // SpecificEnergyRateUnit::SIUnit
 // ============================================================================
 double SpecificEnergyRateUnit::SIUnit(string unit_string)
@@ -238,6 +394,18 @@ double SpecificEnergyRateUnit::SIUnit(string unit_string)
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
+}
+
+
+
+// ============================================================================
+// SpecificEnergyRateUnit::LatexLabel
+// ============================================================================
+string SpecificEnergyRateUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "J_kg_s") return "J\\,kg^{-1}\\,s^{-1}";
+  else if (unit_string == "erg_g_s") return "erg\\,g^{-1}\\,s^{-1}";
+  else return "";
 }
 
 
@@ -254,6 +422,16 @@ double TemperatureUnit::SIUnit(string unit_string)
   }
 }
 
+
+
+// ============================================================================
+// TemperatureUnit::LatexLabel
+// ============================================================================
+string TemperatureUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "K") return "K";
+  else return "";
+}
 
 
 
@@ -435,12 +613,12 @@ void SimUnits::SetupUnits(Parameters &params)
   temp.outscale = temp.outscale / temp.outSI;
   temp.outcgs = temp.outSI;
 
-  cout << "r.inscale : " << r.inscale 
+  /*cout << "r.inscale : " << r.inscale
        << "    r.outscale : " << r.outscale << endl;
   cout << "m.inscale : " << m.inscale 
        << "    m.outscale : " << m.outscale << endl;
   cout << "t.inscale : " << t.inscale 
-       << "    t.outscale : " << t.outscale << endl;
+       << "    t.outscale : " << t.outscale << endl;*/
 
   return;
 }

@@ -24,6 +24,7 @@ class SimUnit
   SimUnit();
 
   virtual double SIUnit(string) = 0;
+  virtual string LatexLabel(string) = 0;
   double OutputScale(string);
 
   double inscale;
@@ -46,6 +47,7 @@ class LengthUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -59,6 +61,7 @@ class MassUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
  
 };
 
@@ -72,6 +75,7 @@ class TimeUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -85,6 +89,7 @@ class VelocityUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -98,6 +103,7 @@ class AccelerationUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -112,6 +118,7 @@ class DensityUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -125,6 +132,7 @@ class ColumnDensityUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -138,6 +146,7 @@ class PressureUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -151,6 +160,7 @@ class ForceUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 */
@@ -164,6 +174,7 @@ class EnergyUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -177,6 +188,7 @@ class MomentumUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -191,6 +203,7 @@ class AngularMomentumUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -204,6 +217,7 @@ class AngularVelocityUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -217,6 +231,7 @@ class MassAccretionRateUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -230,6 +245,7 @@ class LuminosityUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -243,6 +259,7 @@ class OpacityUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -256,6 +273,7 @@ class MagneticFieldUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -269,6 +287,7 @@ class ChargeUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -282,6 +301,7 @@ class CurrentDensityUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 */
@@ -295,6 +315,7 @@ class SpecificEnergyUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -308,6 +329,7 @@ class SpecificEnergyRateUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
@@ -321,6 +343,7 @@ class TemperatureUnit: public SimUnit
  public:
 
   double SIUnit(string);
+  string LatexLabel(string);
 
 };
 
