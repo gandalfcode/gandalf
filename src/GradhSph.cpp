@@ -259,107 +259,35 @@ void GradhSph<kernelclass>::ComputeHydroForces(int i, SphParticle &parti,
 // due to 'Nneib' neighbouring particles in the list 'neiblist'.
 // ============================================================================
 template <typename kernelclass>
-void GradhSph<kernelclass>::ComputeGravForces(int i, int Nneib, SphParticle *neiblist)
+void GradhSph<kernelclass>::ComputeDirectGravForces(int i, int Nneib, 
+						    int *neiblist, 
+						    SphParticle &parti,
+						    SphParticle *sph)
 {
   int j;
   int jj;
   int k;
-  FLOAT hrangesqd;
   FLOAT dr[ndimmax];
   FLOAT drmag;
   FLOAT invdrmag;
-  FLOAT invhmean;
-  FLOAT kernrange = kern.kernrange;
 
   // Loop over all neighbouring particles in list
   // --------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
-//    j = neiblist[jj];
-    if (i == j) continue;
+    j = neiblist[jj];
 
-    for (k=0; k<ndim; k++) dr[k] = neiblist[jj].r[k] - sphdata[i].r[k];
+    for (k=0; k<ndim; k++) dr[k] = sph[j].r[k] - parti.r[k];
     drmag = DotProduct(dr,dr,ndim);
     drmag = sqrt(drmag);
     invdrmag = 1.0/(drmag + small_number);
 
-    // Calculate kernel-softened gravity if within mean-h kernel.
-    // Otherwise, use point-mass Newton's law of gravitation.
-    if (2.0*drmag < kernrange*(sphdata[i].h + neiblist[jj].h)) {
-      invhmean = 2.0/(sphdata[i].h + neiblist[jj].h);
-      for (k=0; k<ndim; k++) sphdata[i].agrav[k] += neiblist[jj].m*dr[k]*
-	invdrmag*invhmean*invhmean*kern.wgrav(drmag*invhmean);
-      sphdata[i].gpot -= neiblist[jj].m*invhmean*kern.wpot(drmag*invhmean);
-    }
-    else {
-      for (k=0; k<ndim; k++) sphdata[i].agrav[k] += 
-	neiblist[jj].m*dr[k]*pow(invdrmag,3);
-      sphdata[i].gpot -= neiblist[jj].m*invdrmag;
-    }
-
-    /*
-    if (drmag*sphdata[i].invh < kernrange) {
-      for (k=0; k<ndim; k++) 
-	sphdata[i].agrav[k] += 0.5*neiblist[jj].m*dr[k]*invdrmag*
-	  sphdata[i].zeta*kern.w1(drmag*sphdata[i].invh)*sphdata[i].hfactor;
-    }
-
-    if (drmag*neiblist[jj].invh < kernrange) {
-      for (k=0; k<ndim; k++) 
-	sphdata[i].agrav[k] += 0.5*neiblist[jj].m*dr[k]*invdrmag*
-	  neiblist[jj].zeta*kern.w1(drmag*neiblist[jj].invh)*neiblist[jj].hfactor;
-    }
-    */
-
+    for (k=0; k<ndim; k++) parti.agrav[k] += sph[j].m*dr[k]*pow(invdrmag,3);
+    parti.gpot -= sph[j].m*invdrmag;
   }
 
   return;
 }
 
-
-
-// ============================================================================
-// GradhSph::ComputeMeanhZeta
-// ============================================================================
-template <typename kernelclass>
-void GradhSph<kernelclass>::ComputeMeanhZeta(int i, int Nneib, int *neiblist)
-{
-  int j;
-  int jj;
-  int k;
-  FLOAT dr[ndimmax];
-  FLOAT drmag;
-  FLOAT invhmean;
-  FLOAT kernrangesqd = kern.kernrangesqd;
-
-  sphdata[i].zeta = 0.0;
-
-  // Loop over all potential neighbours in the list
-  // --------------------------------------------------------------------------
-  for (jj=0; jj<Nneib; jj++) {
-    j = neiblist[jj];
-    if (i == j) continue;
-
-    // Calculate relative position vector and determine if particles
-    // are neighbours or not. If not, skip to next potential neighbour.
-    for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - sphdata[i].r[k];
-    drmag = DotProduct(dr,dr,ndim);
-    if (4.0*drmag > kernrangesqd*pow(sphdata[i].h + sphdata[j].h,2)) continue;
-
-    // If particles are neighbours, continue computing hydro quantities
-    drmag = sqrt(drmag);
-    for (k=0; k<ndim; k++) dr[k] /= (drmag + small_number);
-    invhmean = 2.0/(sphdata[i].h + sphdata[j].h);
-    sphdata[i].zeta += sphdata[j].m*invhmean*invhmean*
-      kern.wzeta(drmag*invhmean);
-
-  }
-  // --------------------------------------------------------------------------
-
-  // Normalise zeta term
-  sphdata[i].zeta *= -invndim*sphdata[i].h/sphdata[i].rho*sphdata[i].invomega;
-
-  return;
-}
 
 
 template class GradhSph<M4Kernel>;

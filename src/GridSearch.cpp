@@ -205,6 +205,7 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
 // ============================================================================
 void GridSearch::UpdateAllSphGravityProperties(Sph *sph)
 {
+  bool *directgravmask;                   // Flag direct gravity particles
   int c;                                  // Cell id
   int cactive;                            // No. of active cells
   int cc;                                 // Aux. cell counter
@@ -212,15 +213,18 @@ void GridSearch::UpdateAllSphGravityProperties(Sph *sph)
   int j;                                  // Aux. particle counter
   int jj;                                 // Aux. particle counter
   int k;                                  // Dimension counter
-  int Nactive;                            // No. of active particles in cell
-  int Ngrav;                              // No. of direct sum gravity ptcls
-  int Nneib;                              // No. of neighbours
-  int Nneibmax;                           // Max. no. of neighbours
   int okflag;                             // Flag if h-rho iteration is valid
   int *activelist;                        // List of active particle ids
   int *celllist;                          // List of active cells
   int *neiblist;                          // List of neighbour ids
-  int *gravlist;                          // Direct-sum gravity ids
+  int *nearlist;                          // List of nearby neighbour ids
+  int *farlist;                           // ..
+  int Nactive;                            // No. of active particles in cell
+  int Ngrav;                              // No. of direct sum gravity ptcls
+  int Nnear;                              // No. of near neighbours
+  int Nfar;                               // No. of distant neighbours
+  int Nneib;                              // No. of neighbours
+  int Nneibmax;                           // Max. no. of neighbours
   FLOAT draux[ndimmax];                   // Aux. relative position vector var
   FLOAT drsqd;                            // Distance squared
   FLOAT hrangesqd;                        // Kernel extent
@@ -232,20 +236,21 @@ void GridSearch::UpdateAllSphGravityProperties(Sph *sph)
   SphParticle *data = sph->sphdata;       // Pointer to SPH particle data
 
   debug2("[GridSearch::UpdateAllSphProperties]");
-  /*
+
   // Find list of all cells that contain active particles
   celllist = new int[Ncell];
   cactive = ComputeActiveCellList(celllist);
 
   Nneibmax = Nlistmax;
   neiblist = new int[Nneibmax];
+  nearlist = new int[Nneibmax];
+  farlist = new int[sph->Nsph];
+  directgravmask = new bool[sph->Nsph];
   dr = new FLOAT[Nneibmax*ndim];
   drmag = new FLOAT[Nneibmax];
   invdrmag = new FLOAT[Nneibmax];
   activelist = new int[Noccupymax];
   neibpart = new SphParticle[Nneibmax];
-  if (self_gravity == 1) gravlist = new int[sph->Nsph];
-
 
   // Loop over all active cells
   // ==========================================================================
@@ -256,15 +261,13 @@ void GridSearch::UpdateAllSphGravityProperties(Sph *sph)
     Nactive = ComputeActiveParticleList(c,activelist,sph);
 
     // Compute neighbour list for cell depending on physics options
-    if (self_gravity == 1)
-      Nneib = ComputeGravityNeighbourList(c,neiblist,gravlist);
-    else
-      Nneib = ComputeNeighbourList(c,neiblist);
+    Nneib = ComputeNeighbourList(c,neiblist);
 
+    // Make local copies of all potential neighbours
     for (j=0; j<Nneib; j++) {
       neibpart[j] = data[neiblist[j]];
-      neibpart[j].dudt = 0.0;
-      for (k=0; k<ndim; k++) neibpart[j].a[k] = 0.0;
+      neibpart[j].dudt = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
     }
 
     // Loop over all active particles in the cell
@@ -278,30 +281,40 @@ void GridSearch::UpdateAllSphGravityProperties(Sph *sph)
 
       // Compute distances and the reciprical between the current particle
       // and all neighbours here
+      Nnear = 0;
+      for (jj=0; jj<sph->Nsph; jj++) directgravmask[jj] = true;
       for (jj=0; jj<Nneib; jj++) { 
 	for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
 	drsqd = DotProduct(draux,draux,ndim);
-	if (drsqd > hrangesqd) 
-	  drmag[jj] = big_number;
-	else {
-	  drmag[jj] = sqrt(drsqd);
-	  invdrmag[jj] = 1.0/(drmag[jj] + small_number);
-	  for (k=0; k<ndim; k++) dr[jj*ndim + k] = draux[k]*invdrmag[jj];
+	if (drsqd <= hrangesqd) {
+	  nearlist[Nnear] = jj;
+	  drmag[Nnear] = sqrt(drsqd);
+	  invdrmag[Nnear] = (FLOAT) 1.0/(drmag[Nnear] + small_number);
+	  for (k=0; k<ndim; k++) dr[Nnear*ndim + k] = draux[k]*invdrmag[Nnear];
+          Nnear++;
+	  directgravmask[neiblist[jj]] = false;
 	}
       }
 
+      // Compute list of far neighbours
+      Nfar = 0;
+      for (jj=0; jj<sph->Nsph; jj++)
+	if (directgravmask[jj]) farlist[Nfar++] = jj;
+
       // Compute all SPH gather properties
-      okflag = sph->ComputeH(i,data[i],Nneib,neibpart,drmag,invdrmag,dr);
+      okflag = sph->ComputeH(i,data[i],Nneib,Nnear,
+			     nearlist,neibpart,drmag,invdrmag,dr);
 
 #if defined(VERIFY_ALL)
-      CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
+      if (neibcheck) CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
 #endif
 
-      // Compute all current particle contributions to hydro forces
-      sph->ComputeHydroForces(i,data[i],Nneib,neibpart,drmag,invdrmag,dr);
+      // Compute neighbour forces (i.e. hydro plus smoothed gravity)
+      sph->ComputeHydroForces(i,data[i],Nneib,Nnear,
+			      nearlist,neibpart,drmag,invdrmag,dr);
 
-      // Compute direct-sum gravity for all non-neighbours
-      sph->ComputeDirectGravity(i,data[i],Ngrav,gravlist);
+      // Compute all distant (i.e. unsmoothed) gravitational forces
+      sph->ComputeDirectGravForces(i,Nfar,farlist,data[i],data);
 
     }
     // ------------------------------------------------------------------------
@@ -312,30 +325,21 @@ void GridSearch::UpdateAllSphGravityProperties(Sph *sph)
       data[neiblist[j]].dudt += neibpart[j].dudt;
     }
 
-  }   
+  }
   // ==========================================================================
 
   // Free-up all memory
-  if (self_gravity == 1) delete[] gravlist;
   delete[] neibpart;
   delete[] activelist;
   delete[] invdrmag;
   delete[] drmag;
   delete[] dr;
+  delete[] directgravmask;
+  delete[] farlist;
+  delete[] nearlist;
   delete[] neiblist;
   delete[] celllist;
 
-
-  // Allocate array to store local copy of potential neighbour ids
-  // --------------------------------------------------------------------------
-  if (sph->self_gravity == 1) {
-    Nneib = sph->Ntot;
-
-    // Compute SPH hydro forces for all particles
-    for (i=0; i<sph->Nsph; i++)
-      sph->ComputeGravForces(i,Nneib,sph->sphdata);
-  }
-  */
   return;
 }
 

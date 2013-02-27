@@ -44,8 +44,8 @@ class Sph
 			 SphParticle *,FLOAT *,FLOAT *,FLOAT *) = 0;
   virtual void ComputeHydroForces(int,SphParticle &,int,int,int *,
 				  SphParticle *,FLOAT *,FLOAT *,FLOAT *) = 0;
-  virtual void ComputeGravForces(int,int,SphParticle *) = 0;
-  virtual void ComputeMeanhZeta(int,int,int *) = 0;
+  virtual void ComputeDirectGravForces(int,int,int *,
+				       SphParticle &,SphParticle *) = 0;
 
   // SPH array memory allocation functions
   // --------------------------------------------------------------------------
@@ -108,8 +108,7 @@ class GradhSph: public Sph
 	       SphParticle *,FLOAT *,FLOAT *,FLOAT *);
   void ComputeHydroForces(int,SphParticle &,int,int,int *,
 			  SphParticle *,FLOAT *,FLOAT *,FLOAT *);
-  void ComputeGravForces(int,int,SphParticle *);
-  void ComputeMeanhZeta(int,int,int *);
+  void ComputeDirectGravForces(int,int,int *,SphParticle &,SphParticle *);
 
 };
 

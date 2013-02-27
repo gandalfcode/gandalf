@@ -55,6 +55,7 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph)
   int i,j,k;
   int okflag;
   int Nneib;
+  int Nfar;
   int *neiblist;
   FLOAT draux[ndimmax];
   FLOAT drsqd;
@@ -112,5 +113,57 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph)
 // ============================================================================
 void BruteForceSearch::UpdateAllSphGravityProperties(Sph *sph)
 {
+  int i,j,k;
+  int okflag;
+  int Nneib;
+  int Nfar;
+  int *neiblist;
+  FLOAT draux[ndimmax];
+  FLOAT drsqd;
+  FLOAT rp[ndimmax];
+  FLOAT *dr;
+  FLOAT *drmag;
+  FLOAT *invdrmag;
+
+  debug2("[BruteForceSearch::UpdateAllSphProperties]");
+
+  // The potential number of neighbours is given by ALL the particles
+  Nneib = sph->Ntot;
+  neiblist = new int[sph->Ntot];
+  drmag = new FLOAT[sph->Ntot];
+  invdrmag = new FLOAT[sph->Ntot];
+  dr = new FLOAT[ndim*sph->Ntot];
+
+  // Compute smoothing lengths of all SPH particles
+  // --------------------------------------------------------------------------
+  for (i=0; i<sph->Ntot; i++) {
+
+    // Compute distances and the reciprical between the current particle 
+    // and all neighbours here
+    for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
+    for (j=0; j<Nneib; j++) { 
+      neiblist[j] = j;
+      for (k=0; k<ndim; k++) draux[k] = sph->sphdata[j].r[k] - rp[k];
+      drsqd = DotProduct(draux,draux,ndim);
+      drmag[j] = sqrt(drsqd);
+      invdrmag[j] = 1.0/(drmag[j] + small_number);
+      for (k=0; k<ndim; k++) dr[j*ndim + k] = draux[k]*invdrmag[j];
+    }
+
+    // Compute smoothing length for current particle
+    okflag = sph->ComputeH(i,sph->sphdata[i],Nneib,Nneib,neiblist,
+			   sph->sphdata,drmag,invdrmag,dr);
+    
+    sph->ComputeHydroForces(i,sph->sphdata[i],Nneib,Nneib,neiblist,
+			    sph->sphdata,drmag,invdrmag,dr);
+
+  }
+  // --------------------------------------------------------------------------
+
+  delete[] dr;
+  delete[] invdrmag;
+  delete[] drmag;
+  delete[] neiblist;
+
   return;
 }
