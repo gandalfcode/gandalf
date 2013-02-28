@@ -24,13 +24,14 @@ def handle(e):
 class Singletons:
     queue = Queue()
     commands = Manager().list()
+    completedqueue = Queue()
     
 def loadsim(run_id):
     SimBuffer.loadsim(run_id)
     return SimBuffer.get_current_sim()
     
-def plot(x,y, overplot = False, snap="current", autoscale = True, sim="current"):
-    command = Commands.ParticlePlotCommand(x, y, autoscale)
+def plot(x,y, overplot = False, snap="current", autoscale = True, sim="current", xunit="default", yunit="default"):
+    command = Commands.ParticlePlotCommand(x, y, autoscale, xunit, yunit)
     command.overplot = overplot
     command.snap = snap
     if sim == "current":
@@ -161,6 +162,11 @@ def plotanalytical(x=None, y=None, overplot = True, sim = "current", snap = "cur
     data = command.prepareData()
     Singletons.queue.put([command, data])
 
+def rescale(quantity, unitname, window="current", subfig="current"):
+    command = Commands.RescaleCommand(quantity, unitname, window)
+    Singletons.queue.put([command,None])
+    okflag = Singletons.completedqueue.get()
+    update()
 
 def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "current", autoscale = True):
     '''Computes the L1 error norm from the simulation data relative to the analytical solution'''
@@ -206,7 +212,7 @@ def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "c
 
 def init():
     global plottingprocess
-    plottingprocess = PlottingProcess(Singletons.queue, Singletons.commands)
+    plottingprocess = PlottingProcess(Singletons.queue, Singletons.commands, Singletons.completedqueue)
     plottingprocess.start()
     
 init()

@@ -50,27 +50,39 @@ class SubfigureCommand(Command):
         fig.canvas.draw()
          
 class PlotCommand(Command):
-    def __init__(self, xquantity, yquantity, autoscale):
+    
+    quantitylabels = {'x': 'x', 'y': 'y', 'z': 'z', 'rho': '$\\rho$',
+                      'vx': '$v_x$', 'vy': '$v_y$', 'vz': '$v_z$', 'm': 'm',
+                      'h': 'h', 'u': 'u'}
+    
+    def __init__(self, xquantity, yquantity, autoscale, xunit="default", yunit="default"):
         Command.__init__(self)
         self.xquantity = xquantity
         self.yquantity = yquantity
         self.overplot = False
         self.autoscale = autoscale
+        self.xunit = xunit
+        self.yunit = yunit
+        self.xlabel=""
+        self.ylabel=""
+        self.xunitname = ""
+        self.yunitname = ""
         
     def processCommand(self, plotting, data):             
         update = plotting.command_in_list(self.id)
         if update:
             fig, ax, product = plotting.commandsfigures[self.id]
             self.update(plotting, fig, ax, product, data)
+            self.labels(ax)
             if self.autoscale:
-                ax.relim()
-                ax.autoscale_view()
+                self.autolimits(ax)
             fig.canvas.draw()
         elif self.id > plotting.lastid:
             fig = plotting.plt.gcf()
             ax = fig.gca()
             if not self.overplot:
                 ax.clear()
+                self.labels(ax)
             product = self.execute(plotting, fig, ax, data)
             #the figure might have been shown already, but we need to redo it,
             #because (apparently) matplotlib does not provide any way of knowing
@@ -82,17 +94,36 @@ class PlotCommand(Command):
             #finally we need to draw, because the previous call to show does not update
             #the figure
             fig.canvas.draw()
+            #now we register quantities and units
+            plotting.quantitiesfigures[(fig, 'x')] = self.xquantity, self.xunitname
+            plotting.quantitiesfigures[(fig, 'y')] = self.yquantity, self.yunitname
+            
+    def labels(self, ax):
+        xlabel = self.quantitylabels[self.xquantity]
+        if self.xlabel != "":
+            xlabel += ' [$'+self.xlabel+'$]'
+        ax.set_xlabel(xlabel)
+        ylabel = self.quantitylabels[self.yquantity]
+        if self.ylabel != "":
+            ylabel += ' [$'+self.ylabel+'$]'
+        ax.set_ylabel(ylabel)
+        
+    def autolimits(self, ax):
+        ax.relim()
+        ax.autoscale_view()
 
 class ParticlePlotCommand (PlotCommand):
     
-    def __init__(self, xquantity, yquantity, autoscale):
-        PlotCommand.__init__(self, xquantity, yquantity, autoscale)
-        
+    def __init__(self, xquantity, yquantity, autoscale, xunit="default", yunit="default"):
+        PlotCommand.__init__(self, xquantity, yquantity, autoscale, xunit, yunit)
+                
     def update(self, plotting, fig, ax, line, data):
         line.set_data(data.x_data,data.y_data)
         
     def execute(self, plotting, fig, ax, data) :
         line, = ax.plot(data.x_data, data.y_data, '.')
+        if self.autoscale:
+            self.autolimits(ax)
         return line
     
     def prepareData (self):
@@ -105,9 +136,15 @@ class ParticlePlotCommand (PlotCommand):
             snap = SimBuffer.get_live_snapshot_sim(sim)
         else:
             snap = SimBuffer.get_snapshot_number_sim(sim, self.snap)
-        x_data = snap.ExtractArray(self.xquantity)
-        y_data = snap.ExtractArray(self.yquantity)
-        data = Data(x_data, y_data)
+        xscaling_factor=1.
+        x_data, xscaling_factor = snap.ExtractArray(self.xquantity, xscaling_factor, self.xunit)
+        self.xlabel = snap.label
+        self.xunitname = snap.unitname
+        yscaling_factor=1.
+        y_data, yscaling_factor = snap.ExtractArray(self.yquantity, yscaling_factor, self.yunit)
+        self.ylabel = snap.label
+        self.yunitname = snap.unitname
+        data = Data(x_data*xscaling_factor, y_data*yscaling_factor)
         return data
     
 class AnalyticalPlotCommand (PlotCommand):
@@ -151,13 +188,11 @@ class LimitCommand(Command):
         self.quantity = quantity
         self.min = min
         self.max = max
-        self.snap = None
 
     def prepareData(self):
         pass
 
     def processCommand(self, plotting, data):
-        self.snap = None
         try:
             fig, ax, line = plotting.commandsfigures[self.id]
         except KeyError:
@@ -180,6 +215,49 @@ class LimitCommand(Command):
             else:
                 ax.set_ylim(self.min, self.max)
         fig.canvas.draw()
+
+class RescaleCommand(Command):
+    def __init__(self, quantity, unitname, window):
+        Command.__init__(self)
+        self.quantity = quantity
+        self.unitname = unitname
+        self.window = window
+        
+    def prepareData(self):
+        pass
+    
+    def processCommand(self, plotting, data):
+        #only do something THE FIRST TIME
+        if not plotting.command_in_list(self.id):
+            #TODO: remove duplicated code with LimitCommand class
+            try:
+                fig, ax, line = plotting.commandsfigures[self.id]
+            except KeyError:
+                if self.window=='current':
+                    fig = plotting.plt.gcf()
+                    ax = plotting.plt.gca()
+                else:
+                    fig = plotting.plt.figure(self.window)
+                    ax = fig.gca()
+                line = None
+                plotting.commands.append(self)
+                plotting.commandsfigures[self.id]= fig, ax, line
+                plotting.lastid = self.id
+            for axis in ['x', 'y', 'render']:
+                try:
+                    quantity, unitname = plotting.quantitiesfigures[(fig, axis)]
+                except KeyError:
+                    continue
+                if quantity == self.quantity:
+                    for index, command in enumerate(plotting.commands):
+                        attrname = axis+'quantity'
+                        try:
+                            if getattr(command, attrname) == quantity:
+                                setattr(command,axis+'unit',self.unitname)
+                                plotting.commands[index]=command
+                        except AttributeError:
+                            pass
+            plotting.completedqueue.put("completed")
         
 class CommandException(Exception):
     pass     

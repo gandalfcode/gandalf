@@ -103,7 +103,7 @@ SHARED_OPTIONS = -bundle -flat_namespace -undefined suppress
 else ifeq ($(UNAME_S),Linux)
 SHARED_OPTIONS = -shared
 endif
-
+.SECONDARY:
 
 # =============================================================================
 all : $(TEST_OBJ) $(WRAP_OBJ) $(OBJ)

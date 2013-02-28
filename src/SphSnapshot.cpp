@@ -5,6 +5,7 @@
 #include <ctime>
 #include <cstdio>
 #include <iostream>
+#include "Exception.h"
 #include "SphSnapshot.h"
 #include "Sph.h"
 #include "SphParticle.h"
@@ -196,28 +197,84 @@ void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux,
 // ============================================================================
 // SphSnapshot::ExtractArray
 // ============================================================================
-void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array)
+void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array, float& scaling_factor, string RequestedUnit)
 {
+
+  SimUnit* unit;
 
   LastUsed = time(NULL);
 
-  if (name == "x") *out_array = x;
-  else if (name == "y") *out_array = y;
-  else if (name == "z") *out_array = z;
-  else if (name == "vx") *out_array = vx;
-  else if (name == "vy") *out_array = vy;
-  else if (name == "vz") *out_array = vz;
-  else if (name == "ax") *out_array = ax;
-  else if (name == "ay") *out_array = ay;
-  else if (name == "az") *out_array = az;
-  else if (name == "m") *out_array = m;
-  else if (name == "h") *out_array = h;
-  else if (name == "rho") *out_array = rho;
-  else if (name == "u") *out_array = u;
-  else if (name == "dudt") *out_array = dudt;
-  else cout << "Warning: the selected array has not been recognized" << endl;
-
+  if (name == "x") {
+    *out_array = x;
+    unit = &(units->r);
+  }
+  else if (name == "y") {
+    *out_array = y;
+    unit = &(units->r);
+  }
+  else if (name == "z") {
+    *out_array = z;
+    unit = &(units->r);
+  }
+  else if (name == "vx") {
+    *out_array = vx;
+    unit = &(units->v);
+  }
+  else if (name == "vy") {
+    *out_array = vy;
+    unit = &(units->v);
+  }
+  else if (name == "vz") {
+    *out_array = vz;
+    unit = &(units->v);
+  }
+  else if (name == "ax") {
+    *out_array = ax;
+    unit = &(units->a);
+  }
+  else if (name == "ay") {
+    *out_array = ay;
+    unit = &(units->a);
+  }
+  else if (name == "az") {
+    *out_array = az;
+    unit = &(units->a);
+  }
+  else if (name == "m") {
+    *out_array = m;
+    unit = &(units->m);
+  }
+  else if (name == "h") {
+    *out_array = h;
+    unit = &(units->r);
+  }
+  else if (name == "rho") {
+    *out_array = rho;
+    unit = &(units->rho);
+  }
+  else if (name == "u") {
+    *out_array = u;
+    unit = &(units->u);
+  }
+  else if (name == "dudt") {
+    *out_array = dudt;
+    unit = &(units->dudt);
+  }
+  else {
+    string message = "Warning: the selected array: " + name + " has not been recognized";
+    ExceptionHandler::getIstance().raise(message);
+  }
   *size_array = Nsph;
+
+  if (RequestedUnit == "default") {
+    unitname = unit->outunit;
+    RequestedUnit=unitname;
+  }
+  else {
+    unitname=RequestedUnit;
+  }
+  label = unit->LatexLabel(RequestedUnit);
+  scaling_factor = unit->OutputScale(RequestedUnit);
 
   return;
 }
@@ -228,7 +285,7 @@ void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array)
 // SphSnapshot::ReadSnapshot
 // ============================================================================
 void SphSnapshot::ReadSnapshot(string format, SphSimulation *simulation) {
-
+  units = &(simulation->simunits);
   simulation->ReadSnapshotFile(filename, format);
   CopyDataFromSimulation(simulation->simparams.intparams["ndim"],
 			 simulation->sph->Nsph , simulation->sph->sphdata );
