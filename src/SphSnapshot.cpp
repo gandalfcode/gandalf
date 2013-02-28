@@ -201,6 +201,8 @@ void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array)
 
   LastUsed = time(NULL);
 
+  *size_array = Nsph;
+
   if (name == "x") *out_array = x;
   else if (name == "y") *out_array = y;
   else if (name == "z") *out_array = z;
@@ -215,9 +217,10 @@ void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array)
   else if (name == "rho") *out_array = rho;
   else if (name == "u") *out_array = u;
   else if (name == "dudt") *out_array = dudt;
-  else cout << "Warning: the selected array has not been recognized" << endl;
-
-  *size_array = Nsph;
+  else {
+	  cout << "Warning: the selected array has not been recognized" << endl;
+	  *size_array = -1;
+  }
 
   return;
 }

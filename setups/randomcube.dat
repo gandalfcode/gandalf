@@ -11,20 +11,22 @@ xrhs : z_boundary_rhs = periodic
      : boxmax[1] = 1.0
      : boxmax[2] = 1.0
 
-     : ndim = 2
+     : ndim = 3
      : ic = random_cube
      : gas_eos = isothermal
      : neib_search = grid
 
-     : courant_mult = 1.0
-     : accel_mult = 2.0
+     : nlevels = 1
+     : courant_mult = 0.15
+     : accel_mult = 0.3
+     : noutputstep = 16
 
-     : avisc = mon97
+     : avisc = pf2010
      : acond = none
      : alpha_visc = 1.0
      : beta_visc = 2.0
-     : h_tolerance = 0.0001
+     : h_tolerance = 0.01
 
-     : Npart = 256
-     : tend = 5.0
-     : dt_snap = 1.0
+     : Npart = 50000
+     : tend = 0.2
+     : dt_snap = 1.1

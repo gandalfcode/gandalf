@@ -79,6 +79,7 @@ OBJ += SphIntegration.o SphLeapfrogKDK.o
 OBJ += BruteForceSearch.o GridSearch.o
 OBJ += AdiabaticEOS.o IsothermalEOS.o
 OBJ += SimGhostParticles.o
+OBJ += Render.o
 OBJ += toymain.o
 OBJ += Exception.o
 
