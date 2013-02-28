@@ -45,7 +45,7 @@ class SimUnit
 class LengthUnit: public SimUnit
 {
  public:
-
+  LengthUnit() : SimUnit() {};
   double SIUnit(string);
   string LatexLabel(string);
 
@@ -59,7 +59,7 @@ class LengthUnit: public SimUnit
 class MassUnit: public SimUnit
 {
  public:
-
+  MassUnit() : SimUnit() {};
   double SIUnit(string);
   string LatexLabel(string);
  
@@ -73,7 +73,7 @@ class MassUnit: public SimUnit
 class TimeUnit: public SimUnit
 {
  public:
-
+  TimeUnit() : SimUnit() {};
   double SIUnit(string);
   string LatexLabel(string);
 
@@ -87,7 +87,7 @@ class TimeUnit: public SimUnit
 class VelocityUnit: public SimUnit
 {
  public:
-
+  VelocityUnit() : SimUnit() {};
   double SIUnit(string);
   string LatexLabel(string);
 
@@ -101,7 +101,7 @@ class VelocityUnit: public SimUnit
 class AccelerationUnit: public SimUnit
 {
  public:
-
+  AccelerationUnit() : SimUnit() {};
   double SIUnit(string);
   string LatexLabel(string);
 
@@ -116,7 +116,7 @@ class AccelerationUnit: public SimUnit
 class DensityUnit: public SimUnit
 {
  public:
-
+  DensityUnit() : SimUnit() {};
   double SIUnit(string);
   string LatexLabel(string);
 
@@ -172,7 +172,7 @@ class ForceUnit: public SimUnit
 class EnergyUnit: public SimUnit
 {
  public:
-
+  EnergyUnit() : SimUnit() {};
   double SIUnit(string);
   string LatexLabel(string);
 
@@ -186,7 +186,7 @@ class EnergyUnit: public SimUnit
 class MomentumUnit: public SimUnit
 {
  public:
-
+  MomentumUnit() : SimUnit() {};
   double SIUnit(string);
   string LatexLabel(string);
 
@@ -201,7 +201,7 @@ class MomentumUnit: public SimUnit
 class AngularMomentumUnit: public SimUnit
 {
  public:
-
+  AngularMomentumUnit() : SimUnit() {};
   double SIUnit(string);
   string LatexLabel(string);
 
@@ -215,7 +215,7 @@ class AngularMomentumUnit: public SimUnit
 class AngularVelocityUnit: public SimUnit
 {
  public:
-
+  AngularVelocityUnit() : SimUnit() {};
   double SIUnit(string);
   string LatexLabel(string);
 
@@ -313,7 +313,7 @@ class CurrentDensityUnit: public SimUnit
 class SpecificEnergyUnit: public SimUnit
 {
  public:
-
+  SpecificEnergyUnit() : SimUnit() {};
   double SIUnit(string);
   string LatexLabel(string);
 
@@ -327,7 +327,7 @@ class SpecificEnergyUnit: public SimUnit
 class SpecificEnergyRateUnit: public SimUnit
 {
  public:
-
+  SpecificEnergyRateUnit() : SimUnit() {};
   double SIUnit(string);
   string LatexLabel(string);
 
@@ -341,7 +341,7 @@ class SpecificEnergyRateUnit: public SimUnit
 class TemperatureUnit: public SimUnit
 {
  public:
-
+  TemperatureUnit() : SimUnit() {};
   double SIUnit(string);
   string LatexLabel(string);
 

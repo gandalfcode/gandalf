@@ -30,7 +30,7 @@ class SphSnapshot
   void DeallocateBufferMemory(void);
   int CalculateMemoryUsage(void);
   void CopyDataFromSimulation(int,int,SphParticle*);
-  void ExtractArray(std::string, float** out_array, int* size_array);
+  void ExtractArray(string, float** out_array, int* size_array, float& scaling_factor, string RequestedUnit);
   void ReadSnapshot(string, SphSimulation *);
 
   bool allocated;
@@ -42,6 +42,11 @@ class SphSnapshot
   std::string filename;
   std::string fileform;
   int LastUsed;
+
+  SimUnits* units;
+
+  string unitname;
+  string label;
 
 
   // Pointers for allocating memory required for storing all important

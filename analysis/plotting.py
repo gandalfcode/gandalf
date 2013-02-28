@@ -3,11 +3,13 @@ from Queue import Empty
 import os
 
 class PlottingProcess (Process):
-    def __init__(self, queue, commands):
+    def __init__(self, queue, commands, completedqueue):
         Process.__init__(self)
         self.queue = queue
         self.commands = commands
+        self.completedqueue = completedqueue
         self.commandsfigures = {}
+        self.quantitiesfigures = {}
         self.lastid = 0
     
     def run(self):
@@ -43,8 +45,7 @@ class PlottingProcess (Process):
             
             for job in jobs:
                 command, data = job
-                command.processCommand(self, data)
-                
+                command.processCommand(self, data)    
                 
     def command_in_list (self, id):
         for command in self.commands:

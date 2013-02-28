@@ -124,6 +124,8 @@ class SimBuffer:
             snap = sim.live
         except AttributeError:
             snap = SphSnapshot()
+            #TODO: check this is correct
+            snap.units = sim.simunits
         snap.CopyDataFromSimulation(sim.simparams.intparams["ndim"], sim.sph.Nsph, sim.sph.sphdata)
         snap.t = sim.t
         sim.live = snap
