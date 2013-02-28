@@ -349,7 +349,7 @@ void SphSimulation::SetupSimulation(void)
     level_step = 1;
 
     // Zero accelerations (perhaps here)
-    for (int i=0; i<sph->Nsph; i++) {
+    for (int i=0; i<sph->Ntot; i++) {
       for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = 0.0;
       for (int k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = 0.0;
       sph->sphdata[i].gpot = 0.0;
@@ -361,6 +361,9 @@ void SphSimulation::SetupSimulation(void)
     // Calculate all SPH properties
     sphneib->neibcheck = true;
     sphneib->UpdateAllSphProperties(sph);
+
+    // Add contributions to ghost particles from original neighbours
+    CopyAccelerationFromGhosts();
 
     // Add accelerations
     for (int i=0; i<sph->Nsph; i++) {
@@ -443,6 +446,9 @@ void SphSimulation::MainLoop(void)
 
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph);
+
+    // Add contributions to ghost particles from original neighbours
+    CopyAccelerationFromGhosts();
 
     // Add accelerations
     for (int i=0; i<sph->Nsph; i++) {

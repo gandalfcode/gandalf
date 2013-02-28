@@ -431,7 +431,7 @@ void GridSearch::CreateGrid(Sph *sph)
     else inext[grid[c].ilast] = i;
     grid[c].ilast = i;
     grid[c].Nptcls++;
-    if (sph->sphdata[i].active) grid[c].Nactive++;
+    if (i < sph->Nsph && sph->sphdata[i].active) grid[c].Nactive++;
 
   }
   // --------------------------------------------------------------------------
@@ -518,8 +518,7 @@ int GridSearch::ComputeActiveCellList(int *celllist)
 // ============================================================================
 // GridSearch::ComputeActiveParticleList
 // ============================================================================
-int GridSearch::ComputeActiveParticleList(int c, int *activelist, 
-					  Sph *sph)
+int GridSearch::ComputeActiveParticleList(int c, int *activelist, Sph *sph)
 {
   int Nactive = 0;
   int i = grid[c].ifirst;
@@ -530,7 +529,7 @@ int GridSearch::ComputeActiveParticleList(int c, int *activelist,
 
   // Else walk through linked list to obtain list and number of active ptcls.
   do {
-    if (sph->sphdata[i].active) activelist[Nactive++] = i;
+    if (i < sph->Nsph && sph->sphdata[i].active) activelist[Nactive++] = i;
     if (i == ilast) break;
     i = inext[i];
   } while (i != -1);

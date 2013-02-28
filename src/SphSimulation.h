@@ -79,7 +79,7 @@ class SphSimulation
 
   void SearchGhostParticles(void);
   void CreateGhostParticle(int,int,FLOAT,FLOAT,FLOAT);
-  void CopyDataToGhosts(void);
+  void CopyAccelerationFromGhosts(void);
   void CheckBoundaries(void);
 
   // Initial conditions routines
