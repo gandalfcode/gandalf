@@ -197,7 +197,8 @@ void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux,
 // ============================================================================
 // SphSnapshot::ExtractArray
 // ============================================================================
-void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array, float& scaling_factor, string RequestedUnit)
+void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array,
+                               float& scaling_factor, string RequestedUnit)
 {
 
   SimUnit* unit;

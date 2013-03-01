@@ -38,8 +38,8 @@ class Render
 
   // Subroutine prototypes
   // --------------------------------------------------------------------------
-  int CreateRenderingGrid(int, int, string, string, string, float, float,
-			   float, float, float, float *, float *, 
+  int CreateRenderingGrid(int, int, string, string, string, string, float &,
+		       float, float, float, float, float, float *, float *,
 			   SphSnapshot &, SphKernel *);
 
 

@@ -46,11 +46,10 @@ Render::~Render()
 // Render::CreateRenderingGrid
 // ============================================================================
 int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring, 
-				string ystring, string renderstring, 
-				float dx_grid, float xmin, float xmax, 
-				float ymin, float ymax, float *rgrid, 
-				float *values, SphSnapshot &snap, 
-				SphKernel *kern)
+				string ystring, string renderstring, string renderunit,
+				float &scaling_factor, float dx_grid, float xmin, float xmax,
+				float ymin, float ymax, float *rgrid, float *values,
+				SphSnapshot &snap, SphKernel *kern)
 {
   int arraycheck = 1;
   int c;
@@ -73,16 +72,18 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
   float invh;
   float wkern;
   float hrangesqd;
+  string dummystring = "";
+  float dummyfloat = 0.0;
 
   int ndim = snap.ndim;
 
   // First, verify x, y and render strings are valid
-  snap.ExtractArray(xstring,&xvalues,&idummy); arraycheck *= idummy;
-  snap.ExtractArray(ystring,&yvalues,&idummy); arraycheck *= idummy;
-  snap.ExtractArray(renderstring,&rendervalues,&idummy); arraycheck *= idummy;
-  snap.ExtractArray("m",&mvalues,&idummy); arraycheck *= idummy;
-  snap.ExtractArray("rho",&rhovalues,&idummy); arraycheck *= idummy;
-  snap.ExtractArray("h",&hvalues,&idummy); arraycheck *= idummy;
+  snap.ExtractArray(xstring,&xvalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;
+  snap.ExtractArray(ystring,&yvalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;
+  snap.ExtractArray(renderstring,&rendervalues,&idummy,scaling_factor,renderunit); arraycheck *= idummy;
+  snap.ExtractArray("m",&mvalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;
+  snap.ExtractArray("rho",&rhovalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;
+  snap.ExtractArray("h",&hvalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;
 
   // If any are invalid, exit here with failure code
   if (arraycheck == 0) return -1;
