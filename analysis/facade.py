@@ -9,6 +9,7 @@ import signal
 import numpy
 from time import sleep
 
+#figure out if we are in interactive mode
 try:
     __main__.__file__
     interactive=False
@@ -16,34 +17,106 @@ except AttributeError:
     interactive=True
 
 def handle(e):
+    '''This functions takes care of printing information about an error,
+    if we are in interactive mode, or re-raising it, if we are in script mode
+    (so that the execution of the script can stop if nobody catches the exception)
+    '''
     if interactive:
         print str(e)
     else:
         raise e
 
 class Singletons:
+    '''Container class for singletons object. They are:
+        queue
+            Queue for sending commands to the plotting process
+        commands
+            List of the commands shared with the plotting process.
+            Caution: if you modify a command, you need to reassign it in the list
+            to make the changes propagate to the other process
+        completedqueue
+            Queue used from the plotting process to signal the completion
+            of a command
+    '''
     queue = Queue()
     commands = Manager().list()
     completedqueue = Queue()
     
 def loadsim(run_id):
+    '''Given the run_id of a simulation, reads it from the disk'''
     SimBuffer.loadsim(run_id)
     return SimBuffer.get_current_sim()
     
-def plot(x,y, overplot = False, snap="current", autoscale = True, sim="current", xunit="default", yunit="default"):
-    command = Commands.ParticlePlotCommand(x, y, autoscale, xunit, yunit)
-    command.overplot = overplot
-    command.snap = snap
-    if sim == "current":
-        simno = SimBuffer.get_current_sim_no()
-    else:
-        simno = sim
-    #TODO: substitute the number of the simulation inside the plot command with the object
-    command.sim = simno
+def plot(x,y, snap="current", sim="current", overplot = False, autoscale = True, xunit="default", yunit="default"):
+    '''Particle plot. Needed arguments:
+    x
+        Quantity on the x-axis. Must be a string.
+    y
+        Quantity on the x-axis. Must be a string.
+        
+    Optional arguments:
+    snap
+        Number of the snapshot to plot. Defaults to 'current'.       
+    sim
+        Number of the simulation to plot. Defaults to 'current'.    
+    overplot
+        If True, overplots on the previous existing plot rather than deleting it. Defaults to False.
+    autoscale
+        If True (default), the limits of the plot are set automatically using the minimum and the maximum.
+    xunit
+        Specify the unit to use for the plotting for the quantity on the x-axis.
+    yunit
+        Specify the unit to use for the plotting for the quantity on the y-axis.
+    '''
+    
+    
+    simno = get_sim_no(sim)
+    command = Commands.ParticlePlotCommand(x, y, snap, simno, overplot, autoscale, xunit, yunit)
     data = command.prepareData()
     Singletons.queue.put([command, data])
     sleep(0.001)
 
+def render(x, y, render, snap="current", sim="current", overplot=False, autoscale=True, 
+           xunit="default", yunit="default", renderunit="default",
+           res=256):
+    '''Render plot. Needed arguments:
+    x
+        Quantity on the x-axis. Must be a string.
+    y
+        Quantity on the x-axis. Must be a string.
+    render
+        Quantity to be rendered. Must be a string.
+        
+    Optional arguments:
+    snap
+        Number of the snapshot to plot. Defaults to 'current'.       
+    sim
+        Number of the simulation to plot. Defaults to 'current'.    
+    overplot
+        If True, overplots on the previous existing plot rather than deleting it. Defaults to False.
+    autoscale
+        If True (default), the limits of the plot are set automatically using the minimum and the maximum.
+    xunit
+        Specify the unit to use for the plotting for the quantity on the x-axis.
+    yunit
+        Specify the unit to use for the plotting for the quantity on the y-axis.
+    renderunit
+        Specify the unit to use for the plotting for the rendered quantity.
+    res
+        Specify the resolution. Can be an integer number, in which case the same resolution will be used on the two axes,
+        or a tuple of two integer numbers, if you want to specify different resolutions on the two axes. 
+    '''
+    simno = getsimno(sim)
+    command = Commands.RenderPlotCommand(x, y, render, snap, simno, overplot, autoscale, xunit, 
+                                         yunit, renderunit, res)
+    data = command.prepareData()
+    Singletons.queue.put([command, data])
+
+def addrender(x, y, render, **kwargs):
+    '''Thin wrapper around render that sets overplot to True.
+    All the other arguments are the same'''
+    render(x, y, render, True, **kwargs)
+    
 def limit (quantity, min, max=None):
     '''First, rough implementation of limits. Quantity for now
     is either x or y, indicating the axis to limit. Min can be set
@@ -54,21 +127,26 @@ def limit (quantity, min, max=None):
     Singletons.queue.put([command,None])
 
 def addplot (x,y, **kwargs):
+    '''Thin wrapper around plot that sets overplot to True.
+    All the other arguments are the same'''
     plot(x,y, True, **kwargs)
     
 def next():
+    '''Advances the current snapshot of the current simulation'''
     try:
         snap(SimBuffer.get_no_next_snapshot())
     except BufferException as e:
         handle(e)
         
 def previous():
+    '''Decrements the current snapshot of the current simulation'''
     try:
         snap(SimBuffer.get_no_previous_snapshot())
     except BufferException as e:
         handle(e)
         
 def snap(no):
+    '''Jump to the given snapshot number of the current simulation'''
     try:
         SimBuffer.set_current_snapshot_number(no)
     except BufferException as e:
@@ -143,50 +221,33 @@ def switch_nongui():
 
 def plotanalytical(x=None, y=None, overplot = True, sim = "current", snap = "current", autoscale = True):
     '''Plots the analytical solution'''
-    
-    #TODO: remove duplicated code from the plot function
-    
+        
     #TODO: figure out automatically the quantities to plot depending on current window    
     
-    #get the simulation number from the buffer
-    if sim == "current":
-        simno = SimBuffer.get_current_sim_no()
-    else:
-        simno = sim
-    
-    #istantiate and setup the command object
-    command = Commands.AnalyticalPlotCommand(x, y, autoscale)
-    command.overplot = overplot
-    command.sim = simno
-    command.snap = snap
+    simno = get_sim_no(sim)
+    command = Commands.AnalyticalPlotCommand(x, y, snap, simno, overplot, autoscale)
     data = command.prepareData()
     Singletons.queue.put([command, data])
 
 def rescale(quantity, unitname, window="current", subfig="current"):
+    '''Rescales the specified quantity in the specified window to the specified unit'''
     command = Commands.RescaleCommand(quantity, unitname, window)
     Singletons.queue.put([command,None])
     okflag = Singletons.completedqueue.get()
     update()
 
-def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "current", autoscale = True):
+def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "current"):
     '''Computes the L1 error norm from the simulation data relative to the analytical solution'''
     
     #get the simulation number from the buffer
-    if sim == "current":
-        simno = SimBuffer.get_current_sim_no()
-    else:
-        simno = sim
+    simno = get_sim_no(snap)
     
     #istantiate and setup the command object to retrieve analytical solution
-    command1 = Commands.AnalyticalPlotCommand(x, y, autoscale)
-    command1.sim = simno
-    command1.snap = snap
+    command1 = Commands.AnalyticalPlotCommand(x, y, snap, simno)
     adata = command1.prepareData()
 
     #istantiate and setup the 2nd command object to retrieve particle data
-    command2 = Commands.ParticlePlotCommand(x, y, autoscale)
-    command2.sim = simno
-    command2.snap = snap
+    command2 = Commands.ParticlePlotCommand(x, y, snap, simno)
     pdata = command2.prepareData()
 
     #cut arrays if limits are provided
@@ -208,6 +269,13 @@ def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "c
     #compute error norm of particle data relative to analytical data
     L1 = numpy.linalg.norm((pdata.y_data - f(pdata.x_data)), ord=1)/pdata.x_data.size
     return L1
+
+def get_sim_no(sim):
+    if sim == "current":
+        simno = SimBuffer.get_current_sim_no()
+    else:
+        simno = sim
+    return simno
 
 
 def init():

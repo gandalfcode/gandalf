@@ -1,6 +1,7 @@
 import analytical
 from data import Data
 from facade import SimBuffer
+import numpy as np
 
 class Command:
     
@@ -55,11 +56,14 @@ class PlotCommand(Command):
                       'vx': '$v_x$', 'vy': '$v_y$', 'vz': '$v_z$', 'm': 'm',
                       'h': 'h', 'u': 'u'}
     
-    def __init__(self, xquantity, yquantity, autoscale, xunit="default", yunit="default"):
+    def __init__(self, xquantity, yquantity, snap, simno, 
+                 overplot, autoscale, xunit="default", yunit="default"):
         Command.__init__(self)
         self.xquantity = xquantity
         self.yquantity = yquantity
-        self.overplot = False
+        self.snap = snap
+        self.simno = simno
+        self.overplot = overplot
         self.autoscale = autoscale
         self.xunit = xunit
         self.yunit = yunit
@@ -111,11 +115,26 @@ class PlotCommand(Command):
     def autolimits(self, ax):
         ax.relim()
         ax.autoscale_view()
+        
+    def get_sim_and_snap(self):
+        sim = SimBuffer.get_sim_no(self.sim)
+        if self.snap == "current":
+            snap = SimBuffer.get_current_snapshot_by_sim(sim)
+            if sim.snapshots == []:
+                self.snap = "live"
+        elif self.snap == "live":
+            snap = SimBuffer.get_live_snapshot_sim(sim)
+        else:
+            snap = SimBuffer.get_snapshot_number_sim(sim, self.snap)
+        
+        return sim, snap
 
 class ParticlePlotCommand (PlotCommand):
     
-    def __init__(self, xquantity, yquantity, autoscale, xunit="default", yunit="default"):
-        PlotCommand.__init__(self, xquantity, yquantity, autoscale, xunit, yunit)
+    def __init__(self, xquantity, yquantity, snap, simno, overplot=False, 
+                 autoscale=True, xunit="default", yunit="default"):
+        PlotCommand.__init__(self, xquantity, yquantity, snap, simno, overplot, 
+                             autoscale, xunit, yunit)
                 
     def update(self, plotting, fig, ax, line, data):
         line.set_data(data.x_data,data.y_data)
@@ -127,15 +146,8 @@ class ParticlePlotCommand (PlotCommand):
         return line
     
     def prepareData (self):
-        sim = SimBuffer.get_sim_no(self.sim)
-        if self.snap == "current":
-            snap = SimBuffer.get_current_snapshot_by_sim(sim)
-            if sim.snapshots == []:
-                self.snap = "live"
-        elif self.snap == "live":
-            snap = SimBuffer.get_live_snapshot_sim(sim)
-        else:
-            snap = SimBuffer.get_snapshot_number_sim(sim, self.snap)
+        sim, snap = self.get_sim_and_snap()
+        
         xscaling_factor=1.
         x_data, xscaling_factor = snap.ExtractArray(self.xquantity, xscaling_factor, self.xunit)
         self.xlabel = snap.label
@@ -144,13 +156,14 @@ class ParticlePlotCommand (PlotCommand):
         y_data, yscaling_factor = snap.ExtractArray(self.yquantity, yscaling_factor, self.yunit)
         self.ylabel = snap.label
         self.yunitname = snap.unitname
+        
         data = Data(x_data*xscaling_factor, y_data*yscaling_factor)
         return data
     
 class AnalyticalPlotCommand (PlotCommand):
     
-    def __init__(self, xquantity, yquantity, autoscale):
-        PlotCommand.__init__(self, xquantity, yquantity, autoscale)
+    def __init__(self, xquantity, yquantity, snap, simno, overplot, autoscale):
+        PlotCommand.__init__(self, xquantity, yquantity, snap, simno, overplot, autoscale)
         
     def update(self, plotting, fig, ax, line, data):
         line.set_data(data.x_data, data.y_data)
@@ -161,16 +174,7 @@ class AnalyticalPlotCommand (PlotCommand):
     
     def prepareData(self):
         #TODO: remove duplicated code with the previous class
-        #get the snapshot
-        sim = SimBuffer.get_sim_no(self.sim)
-        if self.snap == "current":
-            snap = SimBuffer.get_current_snapshot_by_sim(sim)
-            if sim.snapshots == []:
-                self.snap = "live"
-        elif self.snap == "live":
-            snap = SimBuffer.get_live_snapshot_sim(sim)
-        else:
-            snap = SimBuffer.get_snapshot_number_sim(sim, self.snap)
+        sim, snap = self.get_sim_and_snap()
         time = snap.t
         ictype = sim.simparams.stringparams["ic"]
         try:
@@ -180,7 +184,62 @@ class AnalyticalPlotCommand (PlotCommand):
         computer = analyticalclass(sim, time)
         x_data, y_data = computer.compute(self.xquantity, self.yquantity)
         data = Data(x_data,y_data)
-        return data   
+        return data
+
+class RenderPlotCommand (RenderCommand):
+    
+    def __init__(self, xquantity, yquantity, renderquantity, snap, simno, overplot, autoscale, 
+                 xunit="default", yunit="default", renderunit="default", res=256):
+        PlotCommand.__init__(self, xquantity, yquantity, snap, simno, 
+                             overplot, autoscale, xunit, yunit)
+        self.renderquantity = renderquantity
+        self.renderunit = renderunit
+        self.res = res
+        
+    def update(self, plotting, fig, ax, data):
+        im.set_array(data.render_data)
+    
+    def execute(self, plotting, fig, ax, data):
+        im, = ax.imshow(data.render_data)
+        return im
+    
+    def prepareData(self):
+        sim, snap = self.get_sim_and_snap()
+        #TODO: refactor this code to have a function
+        xscaling_factor=1.
+        x_data, xscaling_factor = snap.ExtractArray(self.xquantity, xscaling_factor, self.xunit)
+        self.xlabel = snap.label
+        self.xunitname = snap.unitname
+        yscaling_factor=1.
+        y_data, yscaling_factor = snap.ExtractArray(self.yquantity, yscaling_factor, self.yunit)
+        self.ylabel = snap.label
+        self.yunitname = snap.unitname
+        renderscaling_factor=1.
+        render_data, renderscaling_factor = snap.ExtractArray(self.renderquantity, renderscaling_factor, self.renderunit)
+        self.renderlabel = snap.label
+        self.renderunitname=snap.unitname
+        
+        #creates the grid
+        #TODO: use proper limits
+        #how to get the limits? that's a bit tricky
+        #for now, just use the min and max of the array
+        try:
+            xres = self.res[0]
+            yres = self.res[1]
+        except TypeError:
+            xres = self.res
+            yres = self.res
+        x = np.linspace(x_data.min(), x_data.max(), xres)
+        y = np.linspace(y_data.min(), y_data.max(), yres)
+        xx, yy = np.meshgrid(x, y)
+        
+        #TODO: add in the wrapper; put correct arguments
+        rendering = Render()
+        rendered = rendering.CreateRenderingGrid()
+        
+        data = Data(x*xscaling_factor, y*yscaling_factor, rendered*renderscaling_factor)
+        
+        return data
 
 class LimitCommand(Command):
     def __init__(self, quantity, min, max):

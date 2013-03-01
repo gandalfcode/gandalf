@@ -278,7 +278,7 @@ class SimBuffer:
     
     @staticmethod
     def set_current_snapshot_number (no):
-        '''This function queries the buffer the given snapshot of the current simulation
+        '''This function queries the buffer for the given snapshot of the current simulation
         and sets it to the current snapshot of the current simulation'''
         snap = SimBuffer.get_snapshot_number(no)
         sim = SimBuffer.get_current_sim()
@@ -290,26 +290,6 @@ class SimBuffer:
         '''This function returns the snapshot number from the current simulation'''
         sim = SimBuffer.get_current_sim()
         return SimBuffer.get_snapshot_number_sim(sim, no)
-    
-    @staticmethod
-    def set_current_snapshot_number(no):
-        snap = SimBuffer.get_snapshot_number(no)
-        sim = SimBuffer.get_current_sim()
-        sim.current = snap
-    
-#    @staticmethod  
-#    def get_next_snapshot_sim (sim):
-#        '''This function returns the next snapshot from the given simulation'''
-#        index = sim.snapshots.index(sim.current)
-#        index += 1
-#        snap = SimBuffer.get_snapshot_number_sim(sim, index)
-#        return snap
-#    
-#    @staticmethod
-#    def get_next_snapshot_current():
-#        '''This function returns the next current snapshot'''
-#        sim = SimBuffer.get_current_sim()
-#        return SimBuffer.get_next_snapshot_sim (sim)
     
     @staticmethod
     def get_no_next_snapshot():
@@ -329,11 +309,6 @@ class SimBuffer:
             raise BufferException ("Reached the first snapshot")
         return previous_index
     
-#    @staticmethod
-#    def get_no_previous_snapshot():
-#        '''This function returns the number of the previous snapshot, without modifying it'''
-#        sim = SimBuffer.get_current_sim()
-#        return sim.snapshots.index(sim.current) -1
          
 class BufferException( Exception):   
     pass
