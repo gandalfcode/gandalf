@@ -62,7 +62,7 @@ void Parameters::ReadParamsFile(std::string filename)
   }
   inputfile.close();
 
-  // Now verify that parameters file contains a (unique) run id.
+  // Now verify that parameters file contains a run id.
   // If not defined, then quit program with exception
   if (stringparams["run_id"] == "") {
 	string message = "The parameter file: " + filename +

@@ -9,8 +9,10 @@
 #include <sstream>
 #include <string>
 #include <math.h>
+#include <time.h>
 #include <cstdio>
 #include <cstring>
+#include "Precision.h"
 #include "Exception.h"
 #include "SphSimulation.h"
 #include "Parameters.h"
@@ -75,6 +77,45 @@ void SphSimulation::Run(int Nadvance)
   diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
   cout << "Eerror : " << diag.Eerror << endl;
 
+
+  return;
+}
+
+
+
+// ============================================================================
+// SphSimulation::InteractiveRun
+// Controls the simulation main loop, including exit conditions.
+// If provided, will only advance the simulation by 'Nadvance' steps.
+// ============================================================================
+void SphSimulation::InteractiveRun(int Nadvance)
+{
+  int Ntarget;                              // Selected integer timestep
+  clock_t tstart = clock();
+  DOUBLE tdiff = 0.0;
+  DOUBLE tpython = 8.0;
+
+  debug1("[SphSimulation::Run]");
+
+  // Set integer timestep exit condition if provided as parameter.
+  if (Nadvance < 0) Ntarget = Nstepsmax;
+  else Ntarget = Nsteps + Nadvance;
+
+  // Continue to run simulation until we reach the required time, or
+  // exeeded the maximum allowed number of steps.
+  // --------------------------------------------------------------------------
+  while (t < tend && Nsteps < Ntarget && tdiff < tpython) {
+
+    MainLoop();
+    Output();
+
+    tdiff = (DOUBLE) (clock() - tstart) / (DOUBLE) CLOCKS_PER_SEC;
+
+  }
+  // --------------------------------------------------------------------------
+
+  CalculateDiagnostics();
+  diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
 
   return;
 }

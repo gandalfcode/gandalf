@@ -68,6 +68,7 @@ class SphSimulation
   void SetupSimulation(void);
   void MainLoop(void);
   void Run(int=-1);
+  void InteractiveRun(int=-1);
   void Output(void);
   void GenerateIC(void);
   void ProcessParameters(void);
