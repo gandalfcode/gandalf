@@ -78,7 +78,7 @@ def plot(x,y, snap="current", sim="current", overplot = False, autoscale = True,
 
 def render(x, y, render, snap="current", sim="current", overplot=False, autoscale=True, 
            xunit="default", yunit="default", renderunit="default",
-           res=256):
+           res=64, interpolation='nearest'):
     '''Render plot. Needed arguments:
     x
         Quantity on the x-axis. Must be a string.
@@ -106,22 +106,22 @@ def render(x, y, render, snap="current", sim="current", overplot=False, autoscal
         Specify the resolution. Can be an integer number, in which case the same resolution will be used on the two axes,
         or a tuple of two integer numbers, if you want to specify different resolutions on the two axes. 
     '''
-    simno = getsimno(sim)
+    simno = get_sim_no(sim)
     command = Commands.RenderPlotCommand(x, y, render, snap, simno, overplot, autoscale, xunit, 
-                                         yunit, renderunit, res)
+                                         yunit, renderunit, res, interpolation)
     data = command.prepareData()
     Singletons.queue.put([command, data])
 
-def addrender(x, y, render, **kwargs):
+def addrender(x, y, renderq, **kwargs):
     '''Thin wrapper around render that sets overplot to True.
     All the other arguments are the same'''
-    render(x, y, render, True, **kwargs)
+    render(x, y, renderq, overplot=True, **kwargs)
     
 def limit (quantity, min, max=None):
     '''First, rough implementation of limits. Quantity for now
     is either x or y, indicating the axis to limit. Min can be set
     to auto, and max can be omitted; in that case, the limits will be
-    recomputed automatically. 
+    recomputed automatically.
     '''
     command = Commands.LimitCommand (quantity, min, max)
     Singletons.queue.put([command,None])
@@ -129,7 +129,7 @@ def limit (quantity, min, max=None):
 def addplot (x,y, **kwargs):
     '''Thin wrapper around plot that sets overplot to True.
     All the other arguments are the same'''
-    plot(x,y, True, **kwargs)
+    plot(x,y, overplot=True, **kwargs)
     
 def next():
     '''Advances the current snapshot of the current simulation'''
