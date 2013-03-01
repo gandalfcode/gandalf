@@ -26,6 +26,7 @@ class Parameters
   void SetDefaultValues(void);
   void SetParameter(std::string,std::string);
   void PrintParameters(void);
+  void RecordParametersToFile(void);
   void trim2(std::string&);
   
 
