@@ -47,9 +47,9 @@ Render::~Render()
 // ============================================================================
 int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring, 
 				string ystring, string renderstring, string renderunit,
-				float &scaling_factor, float dx_grid, float xmin, float xmax,
-				float ymin, float ymax, float *rgrid, float *values,
-				SphSnapshot &snap, SphKernel *kern)
+				float &scaling_factor, float xmin, float xmax,
+				float ymin, float ymax, float **gridvalues,
+				SphSnapshot &snap, Sph *sph)
 {
   int arraycheck = 1;
   int c;
@@ -74,6 +74,8 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
   float hrangesqd;
   string dummystring = "";
   float dummyfloat = 0.0;
+  float *rgrid;
+  float *values = *gridvalues;
 
   int ndim = snap.ndim;
 
@@ -90,6 +92,16 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
 
   rendernorm = new float[snap.Nsph];
 
+  // Create grid positions here
+  c = 0;
+  rgrid = new float[2*Ngrid];
+  for (i=0; i<ixgrid; i++) {
+	  for (j=0; j<iygrid; j++) {
+		  rgrid[2*c] = xmin + ((float) i + 0.5f)*(xmax - xmin)/(float)ixgrid;
+		  rgrid[2*c + 1] = ymin + ((float) j + 0.5f)*(ymax - ymin)/(float)iygrid;
+	  }
+  }
+
   for (c=0; c<Ngrid; c++) values[c] = 0.0f;
   for (c=0; c<Ngrid; c++) rendernorm[c] = 0.0f;
 
@@ -100,7 +112,7 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
 
     invh = 1.0f/hvalues[i];
     wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);
-    hrangesqd = kern->kernrangesqd*hvalues[i]*hvalues[i];
+    hrangesqd = sph->kernp->kernrangesqd*hvalues[i]*hvalues[i];
 
     // Now loop over all pixels and add current particles
     // ---------------------------------------------------------------------------
@@ -113,7 +125,7 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
       if (drsqd > hrangesqd) continue;
 
       drmag = sqrt(hrangesqd);
-      wkern = float(kern->w0((FLOAT) drmag*invh));
+      wkern = float(sph->kernp->w0((FLOAT) (drmag*invh)));
 
       values[c] += wnorm*rendervalues[i]*wkern;
       rendernorm[c] += wnorm*wkern;
