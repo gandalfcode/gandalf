@@ -2,6 +2,7 @@ import analytical
 from data import Data
 from facade import SimBuffer
 import numpy as np
+from swig_generated.SphSim import Render
 
 class Command:
     
@@ -62,7 +63,7 @@ class PlotCommand(Command):
         self.xquantity = xquantity
         self.yquantity = yquantity
         self.snap = snap
-        self.simno = simno
+        self.sim = simno
         self.overplot = overplot
         self.autoscale = autoscale
         self.xunit = xunit
@@ -186,22 +187,38 @@ class AnalyticalPlotCommand (PlotCommand):
         data = Data(x_data,y_data)
         return data
 
-class RenderPlotCommand (RenderCommand):
-    
+class RenderPlotCommand (PlotCommand):    
     def __init__(self, xquantity, yquantity, renderquantity, snap, simno, overplot, autoscale, 
-                 xunit="default", yunit="default", renderunit="default", res=256):
+                 xunit="default", yunit="default", renderunit="default", res=64, interpolation='nearest'):
         PlotCommand.__init__(self, xquantity, yquantity, snap, simno, 
                              overplot, autoscale, xunit, yunit)
         self.renderquantity = renderquantity
         self.renderunit = renderunit
         self.res = res
+        self.interpolation = interpolation
         
-    def update(self, plotting, fig, ax, data):
+    def update(self, plotting, fig, ax, products, data):
+        im, colorbar = products
         im.set_array(data.render_data)
+        if self.autoscale:
+            im.autoscale()
     
     def execute(self, plotting, fig, ax, data):
-        im, = ax.imshow(data.render_data)
-        return im
+        #record old limits
+        xlimits = ax.get_xlim()
+        ylimits = ax.get_ylim()
+        im = ax.imshow(data.render_data, extent=(self.xmin, self.xmax, self.ymin, self.ymax), interpolation=self.interpolation)
+        newxlimits = ax.get_xlim()
+        newylimits = ax.get_ylim()
+        xmin = min(xlimits[0], newxlimits[0])
+        xmax = max(xlimits[1], newxlimits[1])
+        ymin = min(ylimits[0], newylimits[0])
+        ymax = max(ylimits[1], newylimits[1])
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, ymax)
+        colorbar = fig.colorbar(im)
+        products = (im, colorbar) 
+        return products
     
     def prepareData(self):
         sim, snap = self.get_sim_and_snap()
@@ -214,10 +231,6 @@ class RenderPlotCommand (RenderCommand):
         y_data, yscaling_factor = snap.ExtractArray(self.yquantity, yscaling_factor, self.yunit)
         self.ylabel = snap.label
         self.yunitname = snap.unitname
-        renderscaling_factor=1.
-        render_data, renderscaling_factor = snap.ExtractArray(self.renderquantity, renderscaling_factor, self.renderunit)
-        self.renderlabel = snap.label
-        self.renderunitname=snap.unitname
         
         #creates the grid
         #TODO: use proper limits
@@ -229,15 +242,20 @@ class RenderPlotCommand (RenderCommand):
         except TypeError:
             xres = self.res
             yres = self.res
-        x = np.linspace(x_data.min(), x_data.max(), xres)
-        y = np.linspace(y_data.min(), y_data.max(), yres)
-        xx, yy = np.meshgrid(x, y)
+        self.xmin = float(x_data.min())
+        self.xmax = float(x_data.max())
+        self.ymin = float(y_data.min())
+        self.ymax = float(y_data.max())
         
-        #TODO: add in the wrapper; put correct arguments
         rendering = Render()
-        rendered = rendering.CreateRenderingGrid()
-        
-        data = Data(x*xscaling_factor, y*yscaling_factor, rendered*renderscaling_factor)
+        renderscaling_factor=1.
+        rendered = np.zeros(xres*yres, dtype=np.float32)
+        returncode, renderscaling_factor = rendering.CreateRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.renderquantity,
+                                                 self.renderunit, self.xmin, self.xmax,
+                                                 self.ymin, self.ymax, rendered, snap, sim.sph, renderscaling_factor)
+        rendered = rendered.reshape(xres,yres)
+#        data = Data(x*xscaling_factor, y*yscaling_factor, rendered*renderscaling_factor)
+        data = Data(None, None, rendered*renderscaling_factor)
         
         return data
 

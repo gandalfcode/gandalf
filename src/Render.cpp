@@ -47,9 +47,9 @@ Render::~Render()
 // ============================================================================
 int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring, 
 				string ystring, string renderstring, string renderunit,
-				float &scaling_factor, float xmin, float xmax,
-				float ymin, float ymax, float **gridvalues,
-				SphSnapshot &snap, Sph *sph)
+				float xmin, float xmax,
+				float ymin, float ymax, float* values,
+				int Ngrid, SphSnapshot &snap, Sph *sph, float &scaling_factor)
 {
   int arraycheck = 1;
   int c;
@@ -57,7 +57,6 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
   int j;
   int k;
   int idummy;
-  int Ngrid = ixgrid*iygrid;
   float dr[2];
   float drsqd;
   float drmag;
@@ -75,7 +74,6 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
   string dummystring = "";
   float dummyfloat = 0.0;
   float *rgrid;
-  float *values = *gridvalues;
 
   int ndim = snap.ndim;
 
@@ -95,10 +93,11 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
   // Create grid positions here
   c = 0;
   rgrid = new float[2*Ngrid];
-  for (i=0; i<ixgrid; i++) {
-	  for (j=0; j<iygrid; j++) {
+  for (j=iygrid-1; j>=0; j--) {
+	  for (i=0; i<ixgrid; i++) {
 		  rgrid[2*c] = xmin + ((float) i + 0.5f)*(xmax - xmin)/(float)ixgrid;
 		  rgrid[2*c + 1] = ymin + ((float) j + 0.5f)*(ymax - ymin)/(float)iygrid;
+		  c++;
 	  }
   }
 
@@ -124,7 +123,7 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
       
       if (drsqd > hrangesqd) continue;
 
-      drmag = sqrt(hrangesqd);
+      drmag = sqrt(drsqd);
       wkern = float(sph->kernp->w0((FLOAT) (drmag*invh)));
 
       values[c] += wnorm*rendervalues[i]*wkern;
@@ -138,7 +137,6 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
   // Normalise all grid cells
   for (c=0; c<Ngrid; c++)
     if (rendernorm[c] > 1.e-10) values[c] /= rendernorm[c];
-
 
   return 1;
 }
