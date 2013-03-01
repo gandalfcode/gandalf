@@ -1,3 +1,5 @@
+     : run_id = KHI1
+
 xlhs : x_boundary_lhs = periodic
 xrhs : x_boundary_rhs = periodic
 xlhs : y_boundary_lhs = periodic

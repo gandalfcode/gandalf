@@ -10,6 +10,7 @@
 #include <string>
 #include "Exception.h"
 #include "Parameters.h"
+#include "Debug.h"
 using namespace std;
 
 
@@ -40,9 +41,13 @@ void Parameters::ReadParamsFile(std::string filename)
   ifstream inputfile;
   std::string line;
 
+  debug1("[Parameters::ReadParamsFile]");
+
   // Set-up all parameters and assign default values
   SetDefaultValues();
 
+  // If parameter file can be opened, parse each line in turn.
+  // Else, quit program with exception
   inputfile.open(filename.c_str(), ios::in);
   if (inputfile.is_open()) {
     while ( inputfile.good() ) {
@@ -56,6 +61,18 @@ void Parameters::ReadParamsFile(std::string filename)
     ExceptionHandler::getIstance().raise(message);
   }
   inputfile.close();
+
+  // Now verify that parameters file contains a (unique) run id.
+  // If not defined, then quit program with exception
+  if (stringparams["run_id"] == "") {
+	string message = "The parameter file: " + filename +
+	  " does not contain a run id string, aborting";
+	ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Record parameters to file
+  RecordParametersToFile();
+
   return;
 }
 
@@ -97,10 +114,11 @@ void Parameters::ParseLine(std::string paramline)
 // ============================================================================
 void Parameters::SetDefaultValues(void)
 {
+  debug1("[Parameters::SetDefaultValues]");
 
   // Simulation id, filename and output time parameters
   // --------------------------------------------------------------------------
-  stringparams["run_id"] = "TEST";
+  stringparams["run_id"] = "";
   stringparams["in_file_form"] = "ascii";
   stringparams["out_file_form"] = "ascii";
   floatparams["tend"] = 1.0;
@@ -219,6 +237,8 @@ void Parameters::SetDefaultValues(void)
   stringparams["dudtoutunit"] = "J_kg_s";
   stringparams["tempoutunit"] = "K";
 
+  PrintParameters();
+
   return;
 }
 
@@ -247,16 +267,55 @@ void Parameters::SetParameter(std::string key, std::string value)
 // ============================================================================
 void Parameters::PrintParameters(void)
 {
+  debug1("[Parameters::PrintParameters]");
 
   std::map <std::string, int>::iterator it;
-  for (it=intparams.begin(); it != intparams.end(); ++it){
-    std::cout << it->first << " " << it->second << std::endl;
+  for (it=intparams.begin(); it != intparams.end(); ++it) {
+    std::cout << it->first << " = " << it->second << std::endl;
   }
 
-  std::map <std::string, std::string>::iterator it2;
-  for (it2=stringparams.begin(); it2 != stringparams.end(); ++it2){
-    std::cout << it2->first << " " << it2->second << std::endl;
+  std::map <std::string, float>::iterator it2;
+  for (it2=floatparams.begin(); it2 != floatparams.end(); ++it2) {
+    std::cout << it2->first << " = " << it2->second << std::endl;
   }
+
+  std::map <std::string, std::string>::iterator it3;
+  for (it3=stringparams.begin(); it3 != stringparams.end(); ++it3) {
+    std::cout << it3->first << " = " << it3->second << std::endl;
+  }
+
+}
+
+
+
+// ============================================================================
+// Parameters::RecordParametersToFile
+// ============================================================================
+void Parameters::RecordParametersToFile(void)
+{
+  string filename = stringparams["run_id"] + ".param";
+  ofstream outfile;
+
+  debug1("[Parameters::RecordParametersToFile]");
+
+  outfile.open(filename.c_str());
+
+  std::map <std::string, int>::iterator it;
+  for (it=intparams.begin(); it != intparams.end(); ++it) {
+    outfile << it->first << " = " << it->second << endl;
+  }
+
+  std::map <std::string, float>::iterator it2;
+  for (it2=floatparams.begin(); it2 != floatparams.end(); ++it2) {
+    outfile << it2->first << " = " << it2->second << endl;
+  }
+
+  std::map <std::string, std::string>::iterator it3;
+  for (it3=stringparams.begin(); it3 != stringparams.end(); ++it3) {
+    outfile << it3->first << " = " << it3->second << endl;
+  }
+
+  outfile.close();
 
 }
 
