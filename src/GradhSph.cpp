@@ -294,3 +294,5 @@ void GradhSph<kernelclass>::ComputeDirectGravForces(int i, int Nneib,
 
 template class GradhSph<M4Kernel>;
 template class GradhSph<QuinticKernel>;
+template class GradhSph<TabulatedKernel<M4Kernel> >;
+template class GradhSph<TabulatedKernel<QuinticKernel> >;

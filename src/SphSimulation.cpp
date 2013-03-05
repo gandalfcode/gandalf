@@ -212,10 +212,20 @@ void SphSimulation::ProcessParameters(void)
 
     // Depending on the kernel, instantiate a different GradSph object
     if (stringparams["kernel"] == "m4") {
-      sph = new GradhSph<M4Kernel> (ndim, vdim, bdim);
+      if (stringparams["tabulatedkernel"] == "yes") {
+        sph = new GradhSph<TabulatedKernel<M4Kernel> > (ndim, vdim, bdim);
+      }
+      else {
+        sph = new GradhSph<M4Kernel> (ndim, vdim, bdim);
+      }
     }
     else if (stringparams["kernel"] == "quintic") {
-      sph = new GradhSph<QuinticKernel> (ndim, vdim, bdim);
+      if (stringparams["tabulatedkernel"] == "yes") {
+        sph = new GradhSph<TabulatedKernel<QuinticKernel> > (ndim, vdim, bdim);
+      }
+      else {
+        sph = new GradhSph<QuinticKernel> (ndim, vdim, bdim);
+      }
     }
     else {
       string message = "Unrecognised parameter : kernel = " +
