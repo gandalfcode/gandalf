@@ -90,13 +90,15 @@ void Parameters::ParseLine(std::string paramline)
   colon_pos = paramline.find(':');
   equal_pos = paramline.find('=');
   length = paramline.length();
+cout << "colon_pos : " << colon_pos << "    equal_pos : " << equal_pos << endl;
+cout << "npos : " << std::string::npos << endl;
 
-  if (colon_pos == std::string::npos || equal_pos == std::string::npos || 
+  if (equal_pos == std::string::npos ||
       colon_pos >= equal_pos) return;
 
   std::string var_name = paramline.substr(colon_pos+1,equal_pos-colon_pos-1);
   std::string var_value = paramline.substr(equal_pos+1,length-equal_pos-1);
-
+cout << "var_name : " << var_name << "     var_value : " << var_value << endl;
   //std::remove(var_name.begin(), var_name.end(), ' ');
   //std::remove(var_value.begin(), var_value.end(), ' ');
   trim2(var_name);

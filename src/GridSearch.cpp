@@ -279,7 +279,7 @@ void GridSearch::UpdateAllSphGravityProperties(Sph *sph)
       // Only compute quantities for definite candidiate neighbours
       hrangesqd = pow(grid_h_tolerance*sph->kernp->kernrange*data[i].h,2);
 
-      // Compute distances and the reciprical between the current particle
+      // Compute distances and the reciprocal between the current particle
       // and all neighbours here
       Nnear = 0;
       for (jj=0; jj<sph->Nsph; jj++) directgravmask[jj] = true;

@@ -39,6 +39,6 @@ xrhs : y_boundary_rhs = periodic
      : courant_mult = 0.15
      : accel_mult = 0.3
      : tend = 1.59
-     : dt_snap = 2.159
+     : dt_snap = 0.159
      : Nlevels = 1
  
