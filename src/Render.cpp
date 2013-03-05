@@ -81,13 +81,14 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
 	  (ystring != "x" && ystring != "y" && ystring != "z")) return -1;
 
   // First, verify x, y and render strings are valid
-  snap.ExtractArray(xstring,&xvalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;
-  snap.ExtractArray(ystring,&yvalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;
-  snap.ExtractArray(renderstring,&rendervalues,&idummy,scaling_factor,renderunit); arraycheck *= idummy;
-  snap.ExtractArray("m",&mvalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;
-  snap.ExtractArray("rho",&rhovalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;
-  snap.ExtractArray("h",&hvalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;
-
+  snap.ExtractArray(xstring,&xvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(ystring,&yvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(renderstring,&rendervalues,&idummy,scaling_factor,renderunit); arraycheck = min(idummy,arraycheck);
+  cout << "Problem?? : " << arraycheck << endl;
+  snap.ExtractArray("m",&mvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("rho",&rhovalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("h",&hvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+cout << "Problem?? : " << arraycheck << endl;
   // If any are invalid, exit here with failure code
   if (arraycheck == 0) return -1;
 
@@ -113,7 +114,7 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
   for (i=0; i<snap.Nsph; i++) {
 
     invh = 1.0f/hvalues[i];
-    wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);
+    wnorm = mvalues[i]/rhovalues[i]*pow(invh,(ndim - 1));
     hrangesqd = sph->kernp->kernrangesqd*hvalues[i]*hvalues[i];
 
     // Now loop over all pixels and add current particles
@@ -127,7 +128,7 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
       if (drsqd > hrangesqd) continue;
 
       drmag = sqrt(drsqd);
-      wkern = float(sph->kernp->w0((FLOAT) (drmag*invh)));
+      wkern = float(sph->kernp->wLOS((FLOAT) (drmag*invh)));
 
       values[c] += wnorm*rendervalues[i]*wkern;
       rendernorm[c] += wnorm*wkern;
@@ -138,9 +139,10 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
   // -----------------------------------------------------------------------------
 
   // Normalise all grid cells
-  for (c=0; c<Ngrid; c++)
-    if (rendernorm[c] > 1.e-10) values[c] /= rendernorm[c];
-
+  for (c=0; c<Ngrid; c++) {
+    //if (rendernorm[c] > 1.e-10) values[c] /= rendernorm[c];
+  cout << "render : " << values[c] << endl;
+  }
   return 1;
 }
 

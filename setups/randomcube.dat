@@ -11,11 +11,11 @@ xrhs : z_boundary_rhs = periodic
      : boxmin[2] = 0.0
      : boxmax[0] = 1.0
      : boxmax[1] = 1.0
-     : boxmax[2] = 1.0
+     : boxmax[2] = 4.0
 
      : ndim = 3
      : ic = random_cube
-     : Npart = 512
+     : Npart = 1024
      : run_id = RELAX-3D
 
      : neib_search = grid
@@ -24,6 +24,7 @@ xrhs : z_boundary_rhs = periodic
      : courant_mult = 0.15
      : accel_mult = 0.3
 
+     : tabulatedkernel = yes
      : gas_eos = isothermal
      : avisc = pf2010
      : acond = none
@@ -31,6 +32,6 @@ xrhs : z_boundary_rhs = periodic
      : beta_visc = 2.0
      : h_converge = 0.01
 
-     : tend = 1.0
-     : dt_snap = 1.1
+     : tend = 5.0
+     : dt_snap = 1.0
      : noutputstep = 1

@@ -24,7 +24,7 @@ class SphKernel
   virtual FLOAT wzeta(FLOAT) = 0;
   virtual FLOAT wgrav(FLOAT) = 0;
   virtual FLOAT wpot(FLOAT) = 0;
-
+  virtual FLOAT wLOS(FLOAT) {};
   FLOAT kernrange;
   FLOAT invkernrange;
   FLOAT kernrangesqd;

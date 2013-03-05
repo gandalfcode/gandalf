@@ -119,9 +119,9 @@ int GradhSph<kernelclass>::ComputeH(int i, SphParticle &parti, int Nneib,
     if (parti.rho > (FLOAT) 0.0 && parti.h > h_lower_bound &&
 	fabs(parti.h - h_fac*pow(parti.m*invrho,
 				 invndim)) < h_converge) break;
-    cout << "rho : " << parti.rho << "    " << parti.m*hfactor*kern.w0(0.0f) << endl;
-    cout << "Iterating : " << (parti.h - h_fac*pow(parti.m*invrho,
-			 invndim)) << "   " << h_converge << "   " << parti.rho << endl;
+    //cout << "rho : " << parti.rho << "    " << parti.m*hfactor*kern.w0(0.0f) << endl;
+    //cout << "Iterating : " << (parti.h - h_fac*pow(parti.m*invrho,
+	//		 invndim)) << "   " << h_converge << "   " << parti.rho << endl;
 
     // Use fixed-point iteration for now.  If this does not converge in a 
     // reasonable number of iterations (iteration_max), then assume something 

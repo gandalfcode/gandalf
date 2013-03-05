@@ -119,7 +119,7 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
   // ==========================================================================
   for (cc=0; cc<cactive; cc++) {
     c = celllist[cc];
-cout << "HERE : " << cactive << "   " << cc << "   " << c << endl;
+//cout << "HERE : " << cactive << "   " << cc << "   " << c << endl;
     // Find list of active particles
     Nactive = ComputeActiveParticleList(c,activelist,sph);
 
@@ -143,8 +143,8 @@ cout << "HERE : " << cactive << "   " << cc << "   " << c << endl;
 
       // Only compute quantities for definite candidiate neighbours
       hrangesqd = pow(grid_h_tolerance*sph->kernp->kernrange*data[i].h,2);
-      cout << "Ptcl : " << j << "   " << Nactive << "   " << i
-    		  << "   hrangesqd : " << hrangesqd << endl;
+      //cout << "Ptcl : " << j << "   " << Nactive << "   " << i
+    	//	  << "   hrangesqd : " << hrangesqd << endl;
       // Compute distances and the reciprical between the current particle
       // and all neighbours here
       Nnear = 0;
@@ -164,10 +164,10 @@ cout << "HERE : " << cactive << "   " << cc << "   " << c << endl;
       okflag = sph->ComputeH(i,data[i],Nneib,Nnear,
 			     nearlist,neibpart,drmag,invdrmag,dr);
 
-      if (2.0*data[i].h > dx_grid) {
-    	cout << "h : " << data[i].h << "   h_max : " << dx_grid/2.0 << endl;
+      //if (2.0*data[i].h > dx_grid) {
+    	//cout << "h : " << data[i].h << "   h_max : " << dx_grid/2.0 << endl;
     	  //exit(0);
-      }
+      //}
 
 #if defined(VERIFY_ALL)
       if (neibcheck) CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
