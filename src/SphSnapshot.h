@@ -18,6 +18,8 @@ using namespace std;
 
 // ============================================================================
 // Class SphSnapshot
+// Snapshot class contains a copy of the simulation data, either from main
+// memory or from a loaded file.
 // ============================================================================
 class SphSnapshot
 {
@@ -26,27 +28,34 @@ class SphSnapshot
   SphSnapshot(string="");
   ~SphSnapshot();
 
+
+  // Snapshot function prototypes
+  // --------------------------------------------------------------------------
   void AllocateBufferMemory(void);
   void DeallocateBufferMemory(void);
   int CalculateMemoryUsage(void);
   void CopyDataFromSimulation(int,int,SphParticle*);
-  void ExtractArray(string, float** out_array, int* size_array, float& scaling_factor, string RequestedUnit);
+  void ExtractArray(string, float** out_array, int* size_array, 
+		    float& scaling_factor, string RequestedUnit);
   void ReadSnapshot(string, SphSimulation *);
 
-  bool allocated;
-  int nallocated;
-  int ndim;
-  int Nsph;
-  int Nmax;
-  DOUBLE t;
-  std::string filename;
-  std::string fileform;
-  int LastUsed;
 
-  SimUnits* units;
+  // All variables
+  // --------------------------------------------------------------------------
+  bool allocated;                           // Is snapshot memory allocated?
+  int LastUsed;                             // ??
+  int nallocated;                           // No. of floats allocated
+  int ndim;                                 // Local copy of ndim
+  int Nsph;                                 // No. of SPH particles
+  int Nmax;                                 // Max. no. of SPH particles
+  DOUBLE t;                                 // Simulation time of snapshot
 
-  string unitname;
-  string label;
+  string filename;                          // Filename of snapshot
+  string fileform;                          // File format of snapshot
+  string unitname;                          // Aux. unit string
+  string label;                             // Aux. latex label
+
+  SimUnits* units;                          // Pointer to units object
 
 
   // Pointers for allocating memory required for storing all important

@@ -76,7 +76,9 @@ class SphSimulation
 
   void ComputeGlobalTimestep(void);
   void ComputeBlockTimesteps(void);
+#if defined(VERIFY_ALL)
   void VerifyBlockTimesteps(void);
+#endif
 
   void SearchGhostParticles(void);
   void CreateGhostParticle(int,int,FLOAT,FLOAT,FLOAT);

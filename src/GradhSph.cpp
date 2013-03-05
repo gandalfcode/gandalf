@@ -1,5 +1,6 @@
 // ============================================================================
 // GradhSph.cpp
+// Contains all functions for calculating conservative 'grad-h' SPH quantities.
 // ============================================================================
 
 
@@ -27,7 +28,7 @@ GradhSph<kernelclass>::GradhSph(int ndimaux, int vdimaux, int bdimaux):
 #if !defined(FIXED_DIMENSIONS)
   Sph(ndimaux, vdimaux, bdimaux),
 #endif
-  kern (kernelclass(ndimaux))
+  kern(kernelclass(ndimaux))
 {
   allocated = false;
   Nsph = 0;
@@ -79,7 +80,7 @@ int GradhSph<kernelclass>::ComputeH(int i, SphParticle &parti, int Nneib,
 
 
   // Main smoothing length iteration loop
-  // --------------------------------------------------------------------------
+  // ==========================================================================
   do {
 
     // Initialise all variables for this value of h
@@ -144,7 +145,7 @@ int GradhSph<kernelclass>::ComputeH(int i, SphParticle &parti, int Nneib,
     if (parti.h > h_max) return 0;
     
   } while (parti.h > h_lower_bound && parti.h < h_upper_bound);
-  // --------------------------------------------------------------------------
+  // ==========================================================================
 
 
   // Normalise all SPH sums correctly
@@ -176,22 +177,24 @@ void GradhSph<kernelclass>::ComputeHydroForces(int i, SphParticle &parti,
 					       FLOAT *drmag, FLOAT *invdrmag, 
 					       FLOAT *dr)
 {
-  int j;
-  int jj;
-  int k;
-  FLOAT draux[ndimmax];
-  FLOAT dv[ndimmax];
-  FLOAT dvdr;
-  FLOAT wkern;
-  FLOAT vsignal;
-  FLOAT paux,uaux;
-  FLOAT hfactor = pow(parti.invh,ndim+1);
-  FLOAT hrange = kern.kernrange*parti.h;
-  FLOAT invrho = (FLOAT) 1.0/parti.rho;
-  FLOAT pfactor = eos->Pressure(parti)*invrho*invrho*parti.invomega;
+  int j;                                    // Neighbour list id
+  int jj;                                   // Aux. neighbour counter
+  int k;                                    // Dimension counter
+  FLOAT draux[ndimmax];                     // Relative position vector
+  FLOAT dv[ndimmax];                        // Relative velocity vector
+  FLOAT dvdr;                               // Dot product of dv and dr
+  FLOAT wkern;                              // Value of w1 kernel function
+  FLOAT vsignal;                            // Signal velocity
+  FLOAT paux;                               // Aux. pressure force variable
+  FLOAT uaux;                               // Aux. internal energy variable
+  FLOAT pfactor;                            // press/rho/rho/omega
+  FLOAT hfactor = pow(parti.invh,ndim+1);   // invh^(ndim + 1)
+  FLOAT hrange = kern.kernrange*parti.h;    // Kernel extent
+  FLOAT invrho = (FLOAT) 1.0/parti.rho;     // 1 / rho
 
   // Compute contribution to compressional heating rate
   parti.dudt -= eos->Pressure(parti)*parti.div_v*invrho*parti.invomega;
+  pfactor = eos->Pressure(parti)*invrho*invrho*parti.invomega;
 
   // Loop over all potential neighbours in the list
   // ==========================================================================
@@ -208,7 +211,7 @@ void GradhSph<kernelclass>::ComputeHydroForces(int i, SphParticle &parti,
     if (hydro_forces == 1) {
       paux = pfactor*wkern;
 
-      // Add dissipation terms (for approaching particle-pairs)
+      // Add dissipation terms (for approaching particle pairs)
       if (dvdr < (FLOAT) 0.0) {
 	
 	// Artificial viscosity term
@@ -242,8 +245,7 @@ void GradhSph<kernelclass>::ComputeHydroForces(int i, SphParticle &parti,
     for (k=0; k<ndim; k++) parti.a[k] += neiblist[j].m*draux[k]*paux;
     
     // If neighbour is also active, add contribution to force here
-    if (neiblist[j].active)
-      for (k=0; k<ndim; k++) neiblist[j].a[k] -= parti.m*draux[k]*paux;
+    for (k=0; k<ndim; k++) neiblist[j].a[k] -= parti.m*draux[k]*paux;
 
   }
   // ==========================================================================

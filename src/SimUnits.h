@@ -1,5 +1,6 @@
 // ============================================================================
 // SimUnits.h
+// Contains class definitions for all unit scaling classes.
 // ============================================================================
 
 
@@ -16,6 +17,7 @@ using namespace std;
 
 // ============================================================================
 // Class SimUnit
+// Main parent class for each individual unit class.
 // ============================================================================
 class SimUnit
 {
@@ -27,13 +29,13 @@ class SimUnit
   virtual string LatexLabel(string) = 0;
   double OutputScale(string);
 
-  double inscale;
-  double inSI;
-  double outcgs;
-  double outscale;
-  double outSI;
-  string inunit;
-  string outunit;
+  double inscale;                           // Input scaling factor
+  double inSI;                              // Input SI scaling factor
+  double outcgs;                            // Output cgs scaling factor
+  double outscale;                          // Output scaling factor
+  double outSI;                             // Output SI scaling factor
+  string inunit;                            // Input unit string
+  string outunit;                           // Output unit string
 
 };
 
@@ -353,6 +355,7 @@ class TemperatureUnit: public SimUnit
 
 // ============================================================================
 // Class SimUnits
+// Main simulation scaling class containing an instance of each unit.
 // ============================================================================
 class SimUnits
 {
@@ -363,8 +366,12 @@ class SimUnits
 
   void SetupUnits(Parameters &);
 
-  bool ReadInputUnits;
+  bool ReadInputUnits;                      // Have input units been read-in
+                                            // from the snapshot file?
 
+
+  // Instances of all unit classes
+  // --------------------------------------------------------------------------
   LengthUnit r;
   MassUnit m;
   TimeUnit t;

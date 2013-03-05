@@ -172,11 +172,12 @@ void SphSimulation::GenerateIC(void)
   else if (simparams.stringparams["ic"] == "shocktube") 
     ShockTube();
   else if (simparams.stringparams["ic"] == "soundwave")
-	SoundWave();
+    SoundWave();
   else if (simparams.stringparams["ic"] == "khi") 
     KHI();
   else {
-    string message = "Unrecognised parameter : ic = " + simparams.stringparams["ic"];
+    string message = "Unrecognised parameter : ic = " 
+      + simparams.stringparams["ic"];
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -208,6 +209,7 @@ void SphSimulation::ProcessParameters(void)
   // Create SPH object based on chosen method in params file
   // --------------------------------------------------------------------------
   if (stringparams["sph"] == "gradh") {
+
     // Depending on the kernel, instantiate a different GradSph object
     if (stringparams["kernel"] == "m4") {
       sph = new GradhSph<M4Kernel> (ndim, vdim, bdim);
@@ -220,14 +222,69 @@ void SphSimulation::ProcessParameters(void)
         simparams.stringparams["kernel"];
       ExceptionHandler::getIstance().raise(message);
     }
-    sph->alpha_visc = floatparams["alpha_visc"];
-    sph->beta_visc = floatparams["beta_visc"];
   }
   else {
     string message = "Unrecognised parameter : sph = " 
       + simparams.stringparams["sph"];
     ExceptionHandler::getIstance().raise(message);
   }
+
+
+  // Create neighbour searching object based on chosen method in params file
+  // --------------------------------------------------------------------------
+  if (stringparams["neib_search"] == "bruteforce")
+    sphneib = new BruteForceSearch(ndim);
+  else if (stringparams["neib_search"] == "grid")
+    sphneib = new GridSearch(ndim);
+  else {
+    string message = "Unrecognised parameter : neib_search = " 
+      + simparams.stringparams["neib_search"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
+  // Create SPH particle integration object
+  // --------------------------------------------------------------------------
+  if (stringparams["sph_integration"] == "lfkdk") {
+    sphint = new SphLeapfrogKDK(ndim, vdim, 
+				floatparams["accel_mult"],
+				floatparams["courant_mult"]);
+  }
+  else {
+    string message = "Unrecognised parameter : sph_integration = " 
+      + simparams.stringparams["sph_integration"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
+  // Thermal physics object.  If energy equation is chosen, also initiate
+  // the energy integration object.
+  // --------------------------------------------------------------------------
+  if (stringparams["gas_eos"] == "energy_eqn") {
+    sph->eos = new Adiabatic(floatparams["temp0"],
+			     floatparams["mu_bar"],
+			     floatparams["gamma_eos"]);
+
+    if (stringparams["energy_integration"] == "PEC") {
+      uint = new EnergyPEC(floatparams["energy_mult"]);
+    }
+    else {
+      string message = "Unrecognised parameter : energy_integration = " 
+	+ simparams.stringparams["energy_integration"];
+      ExceptionHandler::getIstance().raise(message);
+    }
+
+  }
+  else if (stringparams["gas_eos"] == "isothermal") 
+    sph->eos = new Isothermal(floatparams["temp0"],
+			      floatparams["mu_bar"],
+			      floatparams["gamma_eos"]);
+  else {
+    string message = "Unrecognised parameter : gas_eos = " 
+      + simparams.stringparams["gas_eos"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
 
   // Boundary condition variables
   // --------------------------------------------------------------------------
@@ -246,56 +303,8 @@ void SphSimulation::ProcessParameters(void)
   for (int k=0; k<3; k++) {
     simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
     simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
-    cout << "SIMBOX : " << k << "  " << simbox.boxsize[k] << "   " 
-	 << simbox.boxhalf[k] << "   " << simbox.boxmin[k] << endl;
   }
 
-  // Create neighbour searching object based on chosen method in params file
-  // --------------------------------------------------------------------------
-  if (stringparams["neib_search"] == "bruteforce")
-    sphneib = new BruteForceSearch(ndim);
-  else if (stringparams["neib_search"] == "grid")
-    sphneib = new GridSearch(ndim);
-  else {
-    string message = "Unrecognised parameter : neib_search = " 
-      + simparams.stringparams["neib_search"];
-    ExceptionHandler::getIstance().raise(message);
-  }
-
-  if (stringparams["sph_integration"] == "lfkdk") {
-    sphint = new SphLeapfrogKDK(ndim,vdim,floatparams["accel_mult"],
-				floatparams["courant_mult"]);
-  }
-  else {
-    string message = "Unrecognised parameter : sph_integration = " 
-      + simparams.stringparams["sph_integration"];
-    ExceptionHandler::getIstance().raise(message);
-  }
-
-  // Thermal physics options
-  // --------------------------------------------------------------------------
-  if (stringparams["gas_eos"] == "energy_eqn") {
-    sph->eos = new Adiabatic(floatparams["temp0"],
-			     floatparams["mu_bar"],
-			     floatparams["gamma_eos"]);
-    if (stringparams["energy_integration"] == "PEC") {
-      uint = new EnergyPEC(floatparams["energy_mult"]);
-    }
-    else {
-      string message = "Unrecognised parameter : energy_integration = " 
-	+ simparams.stringparams["energy_integration"];
-      ExceptionHandler::getIstance().raise(message);
-    }
-  }
-  else if (stringparams["gas_eos"] == "isothermal") 
-    sph->eos = new Isothermal(floatparams["temp0"],
-			      floatparams["mu_bar"],
-			      floatparams["gamma_eos"]);
-  else {
-    string message = "Unrecognised parameter : gas_eos = " 
-      + simparams.stringparams["gas_eos"];
-    ExceptionHandler::getIstance().raise(message);
-  }
 
   // Set all other parameter variables
   // --------------------------------------------------------------------------
@@ -306,6 +315,8 @@ void SphSimulation::ProcessParameters(void)
   sph->self_gravity = intparams["self_gravity"];
   sph->avisc = stringparams["avisc"];
   sph->acond = stringparams["acond"];
+  sph->alpha_visc = floatparams["alpha_visc"];
+  sph->beta_visc = floatparams["beta_visc"];
   sph->gas_eos = stringparams["gas_eos"];
   Nstepsmax = intparams["Nstepsmax"];
   run_id = stringparams["run_id"];
@@ -333,6 +344,7 @@ void SphSimulation::Setup(void)
   // Read parameters files assigning any contained variables
   simparams.ReadParamsFile(paramfile);
 
+  // Now set up the simulation based on chosen parameters
   SetupSimulation();
 
 }
@@ -391,10 +403,10 @@ void SphSimulation::SetupSimulation(void)
 
     // Zero accelerations (perhaps here)
     for (int i=0; i<sph->Ntot; i++) {
-      for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = 0.0;
-      for (int k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = 0.0;
-      sph->sphdata[i].gpot = 0.0;
-      sph->sphdata[i].dudt = 0.0;
+      for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
+      for (int k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
+      sph->sphdata[i].gpot = (FLOAT) 0.0;
+      sph->sphdata[i].dudt = (FLOAT) 0.0;
       sph->sphdata[i].active = true;
       sph->sphdata[i].level = level_step;
     }
@@ -498,14 +510,14 @@ void SphSimulation::MainLoop(void)
     }
   }
 
-  // Apply correction steps
+  // Apply correction steps for both particle and energy integration
   sphint->CorrectionTerms(n,level_step,sph->Nsph,
 			  sph->sphdata,(FLOAT) timestep);
   if (simparams.stringparams["gas_eos"] == "energy_eqn")
     uint->EnergyCorrectionTerms(n,level_step,sph->Nsph,
 				sph->sphdata,(FLOAT) timestep);
 
-  // End-of-step
+  // Set all end-of-step variables
   sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
   if (simparams.stringparams["gas_eos"] == "energy_eqn")
     uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);

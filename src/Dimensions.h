@@ -1,9 +1,8 @@
 // ============================================================================
 // Dimensions.h
-// Definitions of all static dimensionality variables.  
-// If FIXED_DIMENSIONS macro is defined, then all dimensionality variables 
-// are set statically here.  Otherwise, some variables are set locally in 
-// each class definition.
+// Definitions of all static dimensionality variables. If FIXED_DIMENSIONS 
+// macro is defined, then all dimensionality variables are set statically 
+// here.  Otherwise, some variables are set locally in each class definition.
 // ============================================================================
 
 

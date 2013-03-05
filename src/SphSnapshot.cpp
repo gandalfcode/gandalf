@@ -1,6 +1,8 @@
 // ============================================================================
 // SphSnapshot.cpp
+// Contains all snapshot functions
 // ============================================================================
+
 
 #include <ctime>
 #include <cstdio>
@@ -10,6 +12,7 @@
 #include "Sph.h"
 #include "SphParticle.h"
 #include "SphSimulation.h"
+#include "Debug.h"
 using namespace std;
 
 
@@ -39,9 +42,15 @@ SphSnapshot::~SphSnapshot()
 
 // ============================================================================
 // SphSnapshot::AllocateBufferMemory
+// Allocate memory for current snapshot.  Only allocates single precision 
+// to minimise memory use, even if compiled with double precision. 
 // ============================================================================
 void SphSnapshot::AllocateBufferMemory(void)
 {
+  debug2("[SphSnapshot::AllocateBufferMemory]");
+
+  // If memory already allocated and more memory is needed for more particles,
+  // deallocate now before reallocating.
   if (allocated) {
     if (Nsph > Nmax)
       DeallocateBufferMemory();
@@ -80,8 +89,9 @@ void SphSnapshot::AllocateBufferMemory(void)
   u = new float[Nsph];
   dudt = new float[Nsph];
 
-  allocated = true;
+  // Record 3 vectors of size ndim (r,v,a) and 5 scalars (m,h,rho,u,dudt)
   nallocated = 3*ndim + 5;
+  allocated = true;
   Nmax = Nsph;
 
   return;
@@ -91,40 +101,43 @@ void SphSnapshot::AllocateBufferMemory(void)
 
 // ============================================================================
 // SphSnapshot::DeallocateBufferMemory
+// Deallocate memory for current snapshot.
 // ============================================================================
 void SphSnapshot::DeallocateBufferMemory(void)
 {
+  debug2("[SphSnapshot::DeallocateBufferMemory]");
+
+  delete[] dudt;
+  delete[] u;
+  delete[] rho;
+  delete[] h;
+  delete[] m;
+
   if (ndim == 1) {
-    delete[] x;
-    delete[] vx;
     delete[] ax;
+    delete[] vx;
+    delete[] x;
   }
   else if (ndim == 2) {
-    delete[] x;
-    delete[] y;
-    delete[] vx;
-    delete[] vy;
-    delete[] ax;
     delete[] ay;
+    delete[] ax;
+    delete[] vy;
+    delete[] vx;
+    delete[] y;
+    delete[] x;
   }
   else if (ndim == 3) {
-    delete[] x;
-    delete[] y;
-    delete[] z;
-    delete[] vx;
-    delete[] vy;
-    delete[] vz;
-    delete[] ax;
-    delete[] ay;
     delete[] az;
+    delete[] ay;
+    delete[] ax;
+    delete[] vz;
+    delete[] vy;
+    delete[] vx;
+    delete[] z;
+    delete[] y;
+    delete[] x;
   }
   
-  delete[] m;
-  delete[] h;
-  delete[] rho;
-  delete[] u;
-  delete[] dudt;
-
   allocated = false;
   nallocated = 0;
 
@@ -135,6 +148,7 @@ void SphSnapshot::DeallocateBufferMemory(void)
 
 // ============================================================================
 // SphSnapshot::CalculateMemoryUsage
+// Returns no. of bytes required for current snapshot
 // ============================================================================
 int SphSnapshot::CalculateMemoryUsage(void)
 {
@@ -145,10 +159,13 @@ int SphSnapshot::CalculateMemoryUsage(void)
 
 // ============================================================================
 // SphSnapshot::CopyDataFromSimulation
+// Copy particle data from main memory to current snapshot arrays.
 // ============================================================================
 void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux, 
 					 SphParticle *sphaux)
 {
+  debug2("[SphSnapshot::CopyDataFromSimulation]");
+
   ndim = ndimaux;
   Nsph = Nsphaux;
 
@@ -188,6 +205,7 @@ void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux,
     dudt[i] = (float) sphaux[i].dudt;
 
   }
+
   LastUsed = time(NULL);
   return;
 }
@@ -196,17 +214,19 @@ void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux,
 
 // ============================================================================
 // SphSnapshot::ExtractArray
+// Returns pointer to required array stored in snapshot buffer memory.
+// Currently also returns scaling factors for that array.
 // ============================================================================
 void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array,
                                float& scaling_factor, string RequestedUnit)
 {
-
-  SimUnit* unit;
+  SimUnit* unit;                            // Unit pointer
 
   LastUsed = time(NULL);
 
   *size_array = Nsph;
 
+  // If array name is valid, pass pointer to array and also set unit
   if (name == "x") {
     *out_array = x;
     unit = &(units->r);
@@ -264,12 +284,14 @@ void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array,
     unit = &(units->dudt);
   }
   else {
-    string message = "Warning: the selected array: " + name + " has not been recognized";
+    string message = "Warning: the selected array: " + name + 
+      " has not been recognized";
     ExceptionHandler::getIstance().raise(message);
     *size_array = 0;
   }
 
-
+  // If no new unit is requested, pass the default scaling values.
+  // Otherwise, calculate new scaling factor plus latex label.
   if (RequestedUnit == "default") {
     unitname = unit->outunit;
     RequestedUnit=unitname;
@@ -287,12 +309,23 @@ void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array,
 
 // ============================================================================
 // SphSnapshot::ReadSnapshot
+// Read snapshot into main memory and then copy into snapshot buffer.
 // ============================================================================
-void SphSnapshot::ReadSnapshot(string format, SphSimulation *simulation) {
+void SphSnapshot::ReadSnapshot(string format, SphSimulation *simulation)
+{
+  debug2("[SphSnapshot::ReadSnapshot]");
+
+  // Set pointer to units object
   units = &(simulation->simunits);
+
+  // Read simulation into main memory
   simulation->ReadSnapshotFile(filename, format);
+
+  // Now copy from main memory to current snapshot
   CopyDataFromSimulation(simulation->simparams.intparams["ndim"],
 			 simulation->sph->Nsph , simulation->sph->sphdata );
+
+  // Record simulation snapshot time
   t = simulation->t;
 
 }

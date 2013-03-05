@@ -1,5 +1,7 @@
 // ============================================================================
 // Sph.h
+// Contains main parent virtual class plus child classes for various SPH 
+// algorithms that are implemented.
 // ============================================================================
 
 
@@ -40,12 +42,12 @@ class Sph
   // SPH functions for computing SPH sums with neighbouring particles 
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
   // --------------------------------------------------------------------------
-  virtual int ComputeH(int,SphParticle &,int,int,int *,
-			 SphParticle *,FLOAT *,FLOAT *,FLOAT *) = 0;
-  virtual void ComputeHydroForces(int,SphParticle &,int,int,int *,
-				  SphParticle *,FLOAT *,FLOAT *,FLOAT *) = 0;
-  virtual void ComputeDirectGravForces(int,int,int *,
-				       SphParticle &,SphParticle *) = 0;
+  virtual int ComputeH(int, SphParticle &, int, int, int *,
+		       SphParticle *, FLOAT *, FLOAT *, FLOAT *) = 0;
+  virtual void ComputeHydroForces(int, SphParticle &, int, int, int *,
+				  SphParticle *, FLOAT *, FLOAT *, FLOAT *) = 0;
+  virtual void ComputeDirectGravForces(int, int, int *,
+				       SphParticle &, SphParticle *) = 0;
 
   // SPH array memory allocation functions
   // --------------------------------------------------------------------------
@@ -61,21 +63,21 @@ class Sph
   int Nghost;                           // No. of ghost SPH particles
   int Ntot;                             // No. of real + ghost particles
   int Nsphmax;                          // Max. no. of SPH particles in array
-  int Nghostmax;                        // ..
+  int Nghostmax;                        // Max. allowed no. of ghost particles
 
   FLOAT alpha_visc;                     // alpha artificial viscosity parameter
   FLOAT beta_visc;                      // beta artificial viscosity parameter
-  FLOAT h_fac;                          // ..
-  FLOAT h_converge;                     // ..
-  string avisc;                         // ..
-  string acond;                         // ..
-  string gas_eos;                       // ..
-  int hydro_forces;                     // ..
-  int self_gravity;                     // ..
+  FLOAT h_fac;                          // Smoothing length-density factor
+  FLOAT h_converge;                     // h-rho iteration tolerance
+  string avisc;                         // Artificial viscosity option
+  string acond;                         // Artificial conductivity option
+  string gas_eos;                       // Gas EOS option
+  int hydro_forces;                     // Compute hydro forces?
+  int self_gravity;                     // Compute gravitational forces?
 
   struct SphParticle *sphdata;          // Main SPH particle data array
   EOS *eos;                             // Equation-of-state
-  SphKernel* kernp;
+  SphKernel *kernp;                     // Pointer to chosen kernel object
 
 #if !defined(FIXED_DIMENSIONS)
   const int ndim;
@@ -101,14 +103,14 @@ class GradhSph: public Sph
 
   kernelclass kern;                      // SPH kernel
 
-  GradhSph(int,int,int);
+  GradhSph(int, int, int);
   ~GradhSph();
 
-  int ComputeH(int,SphParticle &,int,int,int *,
-	       SphParticle *,FLOAT *,FLOAT *,FLOAT *);
-  void ComputeHydroForces(int,SphParticle &,int,int,int *,
-			  SphParticle *,FLOAT *,FLOAT *,FLOAT *);
-  void ComputeDirectGravForces(int,int,int *,SphParticle &,SphParticle *);
+  int ComputeH(int, SphParticle &, int, int, int *,
+	       SphParticle *, FLOAT *, FLOAT *, FLOAT *);
+  void ComputeHydroForces(int, SphParticle &, int, int, int *,
+			  SphParticle *, FLOAT *, FLOAT *, FLOAT *);
+  void ComputeDirectGravForces(int, int, int *, SphParticle &, SphParticle *);
 
 };
 

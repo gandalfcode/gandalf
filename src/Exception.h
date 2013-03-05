@@ -1,10 +1,16 @@
+// ============================================================================
+// Exception.h
+// ..
+// ============================================================================
+
+
+#ifndef _EXCEPTION_H_
+#define _EXCEPTION_H_
+
 #include <cstdlib>
 #include <iostream>
 #include <string>
 using namespace std;
-
-#ifndef _EXCEPTION_H_
-#define _EXCEPTION_H_
 
 
 enum RunType {cplusplus, python};
