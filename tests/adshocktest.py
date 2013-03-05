@@ -9,9 +9,7 @@ plot("x","vx")
 subfigure(2,2,3)
 plot("x","u")
 subfigure(2,2,4)
-plot("x","ax")
+plot("x","h")
 time.sleep(1)
 run()
 block()
-
-

@@ -92,7 +92,8 @@ int GradhSph<kernelclass>::ComputeH(int i, SphParticle &parti, int Nneib,
     parti.div_v = (FLOAT) 0.0;
     hrange = kern.kernrange*parti.h;
     hfactor = pow(parti.invh,ndim);
-
+   //cout << "h_iteration : " << iteration << "   " << parti.h << "   "
+    //		<< hrange << "   " << parti.invh << "Nnear : " << Nnear << endl;
     // Loop over all nearest neighbours in list to calculate 
     // density, omega and div_v
     // ------------------------------------------------------------------------
@@ -104,10 +105,10 @@ int GradhSph<kernelclass>::ComputeH(int i, SphParticle &parti, int Nneib,
       skern = drmag[jj]*parti.invh;
       
       parti.div_v -= neibpart[j].m*DotProduct(dv,draux,ndim)*
-	kern.w1(skern)*hfactor*parti.invh;
+	    kern.w1(skern)*hfactor*parti.invh;
       parti.rho += neibpart[j].m*hfactor*kern.w0(skern);
       parti.invomega += neibpart[j].m*hfactor*
-	parti.invh*kern.womega(skern);
+	    parti.invh*kern.womega(skern);
       parti.zeta += neibpart[j].m*parti.invh*parti.invh*kern.wzeta(skern);
     }
     // ------------------------------------------------------------------------
@@ -118,6 +119,9 @@ int GradhSph<kernelclass>::ComputeH(int i, SphParticle &parti, int Nneib,
     if (parti.rho > (FLOAT) 0.0 && parti.h > h_lower_bound &&
 	fabs(parti.h - h_fac*pow(parti.m*invrho,
 				 invndim)) < h_converge) break;
+    cout << "rho : " << parti.rho << "    " << parti.m*hfactor*kern.w0(0.0f) << endl;
+    cout << "Iterating : " << (parti.h - h_fac*pow(parti.m*invrho,
+			 invndim)) << "   " << h_converge << "   " << parti.rho << endl;
 
     // Use fixed-point iteration for now.  If this does not converge in a 
     // reasonable number of iterations (iteration_max), then assume something 
@@ -138,6 +142,8 @@ int GradhSph<kernelclass>::ComputeH(int i, SphParticle &parti, int Nneib,
 	h_lower_bound = parti.h;
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
+
+    else exit(0);
 
     // If the smoothing length is too large for the neighbour list, exit 
     // routine and flag neighbour list error in order to generate a larger
@@ -245,7 +251,8 @@ void GradhSph<kernelclass>::ComputeHydroForces(int i, SphParticle &parti,
     for (k=0; k<ndim; k++) parti.a[k] += neiblist[j].m*draux[k]*paux;
     
     // If neighbour is also active, add contribution to force here
-    for (k=0; k<ndim; k++) neiblist[j].a[k] -= parti.m*draux[k]*paux;
+    if (neiblist[j].active)
+       for (k=0; k<ndim; k++) neiblist[j].a[k] -= parti.m*draux[k]*paux;
 
   }
   // ==========================================================================

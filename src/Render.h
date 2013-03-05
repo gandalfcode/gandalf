@@ -39,8 +39,12 @@ class Render
   // Subroutine prototypes
   // --------------------------------------------------------------------------
   int CreateRenderingGrid(int, int, string, string, string, string,
-                float, float, float, float, float* values, int Ngrid,
-                SphSnapshot &, Sph *, float& scaling_factor);
+				float, float, float, float, float* values, 
+				int Ngrid, SphSnapshot &, Sph *, float& scaling_factor);
+  int CreateSliceRenderingGrid(int, int, string, string, string, string, string,
+			       float, float, float, float, float* values, 
+			       int Ngrid,
+			       SphSnapshot &, Sph *, float& scaling_factor);
 
 
   // ..

@@ -8,25 +8,25 @@
 #-------------------------------------------------
 
 CC = g++ # C++ compiler
-F2PY = f2py2.7
+F2PY = f2py
 #OPT = -pg -O3 -fPIC
 OPT = -O3 -ffast-math -fPIC #-g -Wall
 #OPT = -g -pg -fprofile-arcs -ftest-coverage -fPIC
 #OPT = -g -Wall -fbounds-check
 
-PYTHON = python2.7 # Name of the python interpreter
+PYTHON = python # Name of the python interpreter
 
 
 #-------------------------------------------------
 # Compile time options
 #-------------------------------------------------
 OUTPUT_LEVEL              = 1
-PRECISION                 = SINGLE
+PRECISION                 = DOUBLE
 # If set to 0, the number of dimensions can be set at runtime
 NDIM                      = 0
 DEBUG                     = 1
 # Turn on expensive verifications (only needed to debug)
-VERIFY_ALL                = 0
+VERIFY_ALL                = 1
 
 
 # Select location of python and numpy libraries.  If blank, make will try to 

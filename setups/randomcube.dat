@@ -4,6 +4,8 @@ xlhs : y_boundary_lhs = periodic
 xrhs : y_boundary_rhs = periodic
 xlhs : z_boundary_lhs = periodic
 xrhs : z_boundary_rhs = periodic
+
+
      : boxmin[0] = 0.0
      : boxmin[1] = 0.0
      : boxmin[2] = 0.0
@@ -13,20 +15,22 @@ xrhs : z_boundary_rhs = periodic
 
      : ndim = 3
      : ic = random_cube
-     : gas_eos = isothermal
+     : Npart = 512
+     : run_id = RELAX-3D
+
      : neib_search = grid
 
-     : nlevels = 1
+     : Nlevels = 1
      : courant_mult = 0.15
      : accel_mult = 0.3
-     : noutputstep = 16
 
+     : gas_eos = isothermal
      : avisc = pf2010
      : acond = none
      : alpha_visc = 1.0
      : beta_visc = 2.0
-     : h_tolerance = 0.01
+     : h_converge = 0.01
 
-     : Npart = 50000
-     : tend = 0.2
+     : tend = 1.0
      : dt_snap = 1.1
+     : noutputstep = 1

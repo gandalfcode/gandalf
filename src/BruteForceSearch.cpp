@@ -82,7 +82,7 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph)
 
   // Compute smoothing lengths of all SPH particles
   // --------------------------------------------------------------------------
-  for (i=0; i<sph->Ntot; i++) {
+  for (i=0; i<sph->Nsph; i++) {
 
     // Compute distances and the reciprical between the current particle 
     // and all neighbours here

@@ -1,4 +1,4 @@
-from facade import *
+from seren.analysis.facade import *
 import time
 
 newsim('randomcube.dat')

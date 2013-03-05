@@ -168,7 +168,7 @@ void SphSimulation::SearchGhostParticles(void)
 	if (simbox.z_boundary_rhs == "periodic")
 	  CreateGhostParticle(i,2,sphdata[i].r[2] - simbox.boxsize[2],
 			      sphdata[i].v[2],
-			      simbox.boxmax[1] - sphdata[i].r[1]);
+			      simbox.boxmax[2] - sphdata[i].r[2]);
 	if (simbox.z_boundary_rhs == "mirror")
 	  CreateGhostParticle(i,2,2.0*simbox.boxmax[2] - 
 			      sphdata[i].r[2],-sphdata[i].v[2],
@@ -209,7 +209,7 @@ void SphSimulation::CreateGhostParticle(int i, int k,
 
 
   // Record id of original particle for later copying
-  if (i > sph->Nsph)
+  if (i >= sph->Nsph)
     sph->sphdata[sph->Nsph + sph->Nghost].iorig = sph->sphdata[i].iorig;
   else
     sph->sphdata[sph->Nsph + sph->Nghost].iorig = i;

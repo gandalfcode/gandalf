@@ -21,7 +21,7 @@
 using namespace std;
 
 
-static FLOAT grid_h_tolerance = (FLOAT) 1.1;
+static FLOAT grid_h_tolerance = (FLOAT) 1.2;
 
 
 // ============================================================================
@@ -119,12 +119,13 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
   // ==========================================================================
   for (cc=0; cc<cactive; cc++) {
     c = celllist[cc];
-
+cout << "HERE : " << cactive << "   " << cc << "   " << c << endl;
     // Find list of active particles
     Nactive = ComputeActiveParticleList(c,activelist,sph);
 
     // Compute neighbour list for cell depending on physics options
     Nneib = ComputeNeighbourList(c,neiblist);
+
 
     // Make local copies of all potential neighbours
     for (j=0; j<Nneib; j++) {
@@ -137,11 +138,13 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
     // ------------------------------------------------------------------------
     for (j=0; j<Nactive; j++) {
       i = activelist[j];
+
       for (k=0; k<ndim; k++) rp[k] = data[i].r[k];
 
       // Only compute quantities for definite candidiate neighbours
       hrangesqd = pow(grid_h_tolerance*sph->kernp->kernrange*data[i].h,2);
-
+      cout << "Ptcl : " << j << "   " << Nactive << "   " << i
+    		  << "   hrangesqd : " << hrangesqd << endl;
       // Compute distances and the reciprical between the current particle
       // and all neighbours here
       Nnear = 0;
@@ -160,6 +163,11 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
       // Compute all SPH gather properties
       okflag = sph->ComputeH(i,data[i],Nneib,Nnear,
 			     nearlist,neibpart,drmag,invdrmag,dr);
+
+      if (2.0*data[i].h > dx_grid) {
+    	cout << "h : " << data[i].h << "   h_max : " << dx_grid/2.0 << endl;
+    	  //exit(0);
+      }
 
 #if defined(VERIFY_ALL)
       if (neibcheck) CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
@@ -617,7 +625,7 @@ int GridSearch::ComputeNeighbourList(int c, int *neiblist)
     gridmin[2] = max(0,igrid[2]-1);
     gridmax[2] = min(Ngrid[2]-1,igrid[2]+1);
     
-    for (cz=gridmin[1]; cz<=gridmax[1]; cz++) {
+    for (cz=gridmin[2]; cz<=gridmax[2]; cz++) {
       for (cy=gridmin[1]; cy<=gridmax[1]; cy++) {
 	for (cx=gridmin[0]; cx<=gridmax[0]; cx++) {
 	  caux = cx + cy*Ngrid[0] + cz*Ngrid[0]*Ngrid[1];
@@ -626,8 +634,9 @@ int GridSearch::ComputeNeighbourList(int c, int *neiblist)
 	  ilast = grid[caux].ilast;
 	  do {
 	    neiblist[Nneib++] = i;
-	    if (i != ilast) i = inext[i];
-	  } while (i != ilast);
+	    if (i == ilast) break;
+	    i = inext[i];
+	  } while (i != 1);
 	}
       }
     }
