@@ -8,7 +8,8 @@
 
 #include <math.h>
 #include "Dimensions.h"
-
+#include <iostream>
+using namespace std;
 
 // ============================================================================
 // Class SphKernel
@@ -289,5 +290,155 @@ inline FLOAT QuinticKernel::wpot(FLOAT s)
     return 0.0;
 }
 
+
+template <typename KernelClass>
+class TabulatedKernel: public SphKernel {
+private:
+  KernelClass* kernel;
+  int res;
+  FLOAT resf;
+  FLOAT* tableW0;
+  FLOAT* tableW1;
+  FLOAT* tableWomega;
+  FLOAT* tableWzeta;
+  FLOAT* tableWgrav;
+  FLOAT* tableWpot;
+  FLOAT* tableLOS;
+
+  void initializeTable(FLOAT* table, FLOAT (KernelClass::*function) (FLOAT s)) {
+    const FLOAT step = kernel->kernrange/res;
+    for (int i=0; i< res; i++) {
+      table[i] = (kernel->*function)(step*i);
+    }
+  }
+
+  // -------------------------------
+  // Lookup table for the line of sight integrated kernel
+  // ------------------------------
+  void initializeTableLOS() {
+    const FLOAT step = kernel->kernrange/res; //step in the tabulated variable
+    const int intsteps = 4000; //how many steps for each integration
+    FLOAT sum;
+    FLOAT s; //distance from the center
+    for (int i=0; i<res; i++) {
+      FLOAT impactparameter = i*step;
+      FLOAT impactparametersqd = impactparameter*impactparameter;
+      sum=0;
+      FLOAT dist = sqrt(kernrangesqd-impactparametersqd); //half-length of the integration path
+      FLOAT intstep = dist/intsteps;
+      for (int j=0; j<intsteps; j++) {
+        FLOAT position = intstep*j;
+        s = sqrt(position*position+impactparametersqd); //compute distance from the center
+        sum += kernel->w0(s)*intstep;
+      }
+      tableLOS[i] = 2*sum; //multiply by 2 because we integrated only along half of the path
+    }
+  };
+
+
+  FLOAT tableLookup (FLOAT* table, FLOAT s) {
+    if (s>kernrange)
+      return 0;
+    FLOAT indexf = s*resf/kernrange;
+    int index = (int)indexf;
+    return table[index];
+  }
+
+public:
+  TabulatedKernel(int ndimaux, int resaux=1000)
+    {
+    cout << "Using tabulated kernel" << endl;
+    res = resaux;
+    resf = (int)res;
+
+    kernel = new KernelClass(ndimaux);
+    kernrange = kernel->kernrange;
+    kernrangesqd = kernel->kernrangesqd;
+    invkernrange = kernel->invkernrange;
+    kernnorm = kernel->kernnorm;
+#if !defined (FIXED_DIMENSIONS)
+    ndim = kernel->ndim;
+    ndimpr = kernel->ndimpr;
+#endif
+
+    //allocate memory
+    tableW0 = new FLOAT[res];
+    tableW1 = new FLOAT[res];
+    tableWomega = new FLOAT[res];
+    tableWzeta = new FLOAT[res];
+    tableWgrav = new FLOAT[res];
+    tableWpot = new FLOAT[res];
+    tableLOS = new FLOAT[res];
+
+
+    //initialize the tables
+    initializeTable(tableW0,&KernelClass::w0);
+    initializeTable(tableW1,&KernelClass::w1);
+    initializeTable(tableWomega,&KernelClass::womega);
+    initializeTable(tableWzeta,&KernelClass::wzeta);
+    initializeTable(tableWgrav,&KernelClass::wgrav);
+    initializeTable(tableWpot,&KernelClass::wpot);
+    initializeTableLOS();
+
+    //deallocates the kernel now that we don't need it anymore
+    delete kernel;
+  }
+
+  FLOAT w0(FLOAT s);
+  FLOAT w1(FLOAT s);
+  FLOAT womega(FLOAT s);
+  FLOAT wzeta(FLOAT s);
+  FLOAT wgrav(FLOAT s);
+  FLOAT wpot(FLOAT s);
+  FLOAT wLOS(FLOAT s);
+
+
+  ~TabulatedKernel() {
+    delete[] tableW0;
+    delete[] tableW1;
+    delete[] tableWomega;
+    delete[] tableWzeta;
+    delete[] tableWgrav;
+    delete[] tableWpot;
+    delete[] tableLOS;
+  }
+
+
+};
+
+template <typename KernelClass>
+inline FLOAT TabulatedKernel<KernelClass>::w0 (FLOAT s) {
+  return tableLookup(tableW0, s);
+}
+
+template <typename KernelClass>
+inline FLOAT TabulatedKernel<KernelClass>::w1 (FLOAT s) {
+  return tableLookup(tableW1, s);
+}
+
+template <typename KernelClass>
+inline FLOAT TabulatedKernel<KernelClass>::womega (FLOAT s) {
+  return tableLookup(tableWomega, s);
+}
+
+template <typename KernelClass>
+inline FLOAT TabulatedKernel<KernelClass>::wzeta (FLOAT s) {
+  return tableLookup(tableWzeta, s);
+}
+
+template <typename KernelClass>
+inline FLOAT TabulatedKernel<KernelClass>::wgrav (FLOAT s) {
+  return tableLookup(tableWgrav, s);
+}
+
+template <typename KernelClass>
+inline FLOAT TabulatedKernel<KernelClass>::wpot (FLOAT s) {
+  return tableLookup(tableWpot, s);
+}
+
+template <typename KernelClass>
+inline FLOAT TabulatedKernel<KernelClass>::wLOS (FLOAT s) {
+  return tableLookup(tableLOS, s);
+}
 
 #endif
