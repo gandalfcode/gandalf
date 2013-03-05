@@ -172,10 +172,12 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
     }
     // ------------------------------------------------------------------------
 
-    // Now add all neighbour contributions to the main arrays
+    // Now add all active neighbour contributions to the main arrays
     for (j=0; j<Nneib; j++) {
-      for (k=0; k<ndim; k++) data[neiblist[j]].a[k] += neibpart[j].a[k];
-      data[neiblist[j]].dudt += neibpart[j].dudt;
+      if (data[neiblist[j]].active) {
+	for (k=0; k<ndim; k++) data[neiblist[j]].a[k] += neibpart[j].a[k];
+	data[neiblist[j]].dudt += neibpart[j].dudt;
+      }
     }
 
   }
@@ -347,6 +349,8 @@ void GridSearch::UpdateAllSphGravityProperties(Sph *sph)
 
 // ============================================================================
 // GridSearch::AllocateGridMemory
+// Allocate memory for neighbour grid as requested.  If more memory is 
+// required than currently allocated, grid is deallocated and reallocated here.
 // ============================================================================
 void GridSearch::AllocateGridMemory(int Npart)
 {
@@ -369,6 +373,7 @@ void GridSearch::AllocateGridMemory(int Npart)
 
 // ============================================================================
 // GridSearch::DeallocateGridMemory
+// Deallocates all neighbour grid memory
 // ============================================================================
 void GridSearch::DeallocateGridMemory(void)
 {
@@ -385,11 +390,15 @@ void GridSearch::DeallocateGridMemory(void)
 
 // ============================================================================
 // GridSearch::CreateGrid
+// Create a regular neighbour grid using all SPH particles contained within 
+// the SPH object.  The grid spacing is equal to the maximum smoothing kernel 
+// range of all particles multiplied by some arbitrary tolerance parameter 
+// (grid_h_tolerance) to allow for some smoothing lengths increasing.
 // ============================================================================
 void GridSearch::CreateGrid(Sph *sph)
 {
-  int c;
-  FLOAT h_max = 0.0;
+  int c;                                // Grid cell counter/id
+  FLOAT h_max = 0.0;                    // Maximum smoothing length of ptcls
 
   debug2("[GridSearch::CreateGrid]");
   
@@ -412,7 +421,7 @@ void GridSearch::CreateGrid(Sph *sph)
   Nsph = sph->Nsph;
 
   // Initialise all values in cells
-  for (int c=0; c<Ncellmax; c++) {
+  for (c=0; c<Ncellmax; c++) {
     grid[c].Nactive = 0;
     grid[c].Nptcls = 0;
     grid[c].ifirst = 0;
@@ -456,7 +465,7 @@ void GridSearch::CreateGrid(Sph *sph)
 // ============================================================================
 int GridSearch::ComputeParticleGridCell(FLOAT *rp)
 {
-  int igrid[ndimmax];
+  int igrid[ndimmax];                   // Grid cell coordinate
 
   for (int k=0; k<ndim; k++) {
     igrid[k] = (int) ((rp[k] - rmin[k])/dx_grid);
@@ -503,7 +512,7 @@ void GridSearch::ComputeCellCoordinate(int c, int igrid[ndimmax])
 // ============================================================================
 int GridSearch::ComputeActiveCellList(int *celllist)
 {
-  int Nactive = 0;
+  int Nactive = 0;                      // No. of cells containing active ptcls
 
   debug2("[GridSearch::ComputeActiveCellList]");
 
@@ -517,12 +526,14 @@ int GridSearch::ComputeActiveCellList(int *celllist)
 
 // ============================================================================
 // GridSearch::ComputeActiveParticleList
+// Returns the number (Nactive) and list of ids (activelist) of all active 
+// SPH particles in the given cell 'c'.
 // ============================================================================
 int GridSearch::ComputeActiveParticleList(int c, int *activelist, Sph *sph)
 {
-  int Nactive = 0;
-  int i = grid[c].ifirst;
-  int ilast = grid[c].ilast;
+  int Nactive = 0;                      // No. of active particles in cell c
+  int i = grid[c].ifirst;               // Particle id (set to first ptcl id)
+  int ilast = grid[c].ilast;            // i.d. of last particle in cell c
 
   // If there are no active particles in this cell, return without walking list
   if (grid[c].Nptcls == 0) return 0;
@@ -548,13 +559,13 @@ int GridSearch::ComputeActiveParticleList(int c, int *activelist, Sph *sph)
 // ============================================================================
 int GridSearch::ComputeNeighbourList(int c, int *neiblist)
 {
-  int i;
-  int ilast;
-  int caux,cx,cy,cz;
-  int igrid[ndimmax];
-  int gridmin[ndimmax];
-  int gridmax[ndimmax];
-  int Nneib = 0;
+  int i;                                // Particle id
+  int ilast;                            // id of last particle in current cell
+  int caux,cx,cy,cz;                    // Aux. cell counters and coordinates
+  int igrid[ndimmax];                   // Grid cell coordinate
+  int gridmin[ndimmax];                 // Minimum neighbour cell coordinate
+  int gridmax[ndimmax];                 // Maximum neighbour cell coordinate
+  int Nneib = 0;                        // No. of neighbours
 
   // Compute the location of the cell on the grid using the id
   ComputeCellCoordinate(c,igrid);
@@ -628,6 +639,7 @@ int GridSearch::ComputeNeighbourList(int c, int *neiblist)
 
 
 
+#if defined(VERIFY_ALL)
 // ============================================================================
 // GridSearch::CheckValidNeighbourList
 // Checks that the neighbour list generated by the grid is valid in that it 
@@ -637,12 +649,13 @@ int GridSearch::ComputeNeighbourList(int c, int *neiblist)
 void GridSearch::CheckValidNeighbourList(Sph *sph, int i, int Nneib, 
 					 int *neiblist, string neibtype)
 {
-  int count = 0;
-  int j,k;
-  int Ntrueneib = 0;
-  int *trueneiblist;
-  FLOAT drsqd;
-  FLOAT dr[ndimmax];
+  int count;                            // Valid neighbour counter
+  int j;                                // Neighbour particle counter
+  int k;                                // Dimension counter
+  int Ntrueneib = 0;                    // No. of 'true' neighbours
+  int *trueneiblist;                    // List of true neighbour ids
+  FLOAT drsqd;                          // Distance squared
+  FLOAT dr[ndimmax];                    // Relative position vector
 
   // Allocate array to store local copy of potential neighbour ids
   trueneiblist = new int[sph->Ntot];
@@ -653,7 +666,8 @@ void GridSearch::CheckValidNeighbourList(Sph *sph, int i, int Nneib,
       for (k=0; k<ndimmax; k++)
 	dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
       drsqd = DotProduct(dr,dr,ndim);
-      if (drsqd <= sph->kernp->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h)
+      if (drsqd <= 
+	  sph->kernp->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h)
 	trueneiblist[Ntrueneib++] = j;
     }
   }
@@ -685,12 +699,13 @@ void GridSearch::CheckValidNeighbourList(Sph *sph, int i, int Nneib,
 
 // ============================================================================
 // GridSearch::ValidateGrid
-// Validate that the grid structure is correct with several sanity checks.
+// Validate that the grid structure is consistent with several sanity checks.
 // ============================================================================
 void GridSearch::ValidateGrid(void)
 {
-  int c,i;
-  int *gridentry;
+  int c;                                // Cell counter
+  int i;                                // Particle id
+  int *gridentry;                       // No. of time ptcl is present in grid
 
   debug2("[GridSearch::ValidateGrid]");
 
@@ -732,3 +747,4 @@ void GridSearch::ValidateGrid(void)
 
   return;
 }
+#endif

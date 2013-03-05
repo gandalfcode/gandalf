@@ -46,36 +46,37 @@ Render::~Render()
 // Render::CreateRenderingGrid
 // ============================================================================
 int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring, 
-				string ystring, string renderstring, string renderunit,
-				float xmin, float xmax,
+				string ystring, string renderstring, 
+				string renderunit, float xmin, float xmax,
 				float ymin, float ymax, float* values,
-				int Ngrid, SphSnapshot &snap, Sph *sph, float &scaling_factor)
+				int Ngrid, SphSnapshot &snap, 
+				Sph *sph, float &scaling_factor)
 {
-  int arraycheck = 1;
-  int c;
-  int i;
-  int j;
-  int k;
-  int idummy;
-  float dr[2];
-  float drsqd;
-  float drmag;
-  float *xvalues;
-  float *yvalues;
-  float *rendervalues;
-  float *mvalues;
-  float *rhovalues;
-  float *hvalues;
-  float *rendernorm;
-  float wnorm;
-  float invh;
-  float wkern;
-  float hrangesqd;
-  string dummystring = "";
-  float dummyfloat = 0.0;
-  float *rgrid;
+  int arraycheck = 1;                   // ..
+  int c;                                // ..
+  int i;                                // ..
+  int j;                                // ..
+  int k;                                // ..
+  int idummy;                           // ..
+  int ndim = snap.ndim;                 // Local copy of snapshot ndim
+  float dr[2];                          // ..
+  float drsqd;                          // ..
+  float drmag;                          // ..
+  float wnorm;                          // ..
+  float invh;                           // ..
+  float wkern;                          // ..
+  float hrangesqd;                      // ..
+  float dummyfloat = 0.0;               // ..
+  float *xvalues;                       // ..
+  float *yvalues;                       // ..
+  float *rendervalues;                  // ..
+  float *mvalues;                       // ..
+  float *rhovalues;                     // ..
+  float *hvalues;                       // ..
+  float *rendernorm;                    // ..
+  float *rgrid;                         // ..
+  string dummystring = "";              // ..
 
-  int ndim = snap.ndim;
 
   // First, verify x, y and render strings are valid
   snap.ExtractArray(xstring,&xvalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;

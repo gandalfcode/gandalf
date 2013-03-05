@@ -8,7 +8,7 @@
      : tend = 1.0
      : dt_snap = 1.1
      : noutputstep = 256
-     : run_id = TEST
+     : run_id = ADSHOCK1
 
      : ic = shocktube
      : gas_eos = energy_eqn
@@ -18,7 +18,7 @@
      : hydro_forces = 1
      : self_gravity = 0
 
-     : h_converge = 0.00001
+     : h_converge = 0.001
 
      : avisc = pf2010
      : acond = none
@@ -27,7 +27,8 @@
 
      : courant_mult = 0.15
      : accel_mult = 0.3
-     : Nlevels = 1
+     : energy_mult = 0.8
+     : Nlevels = 2
 
      : kernel = m4
      : neib_search = grid

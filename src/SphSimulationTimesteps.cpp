@@ -1,6 +1,6 @@
 // ============================================================================
 // SphSimulationTimesteps.cpp
-// Contains all main functions controlling the SPH simulation work-flow.
+// Contains all functions for controlling the SPH simulation timestep structure
 // ============================================================================
 
 
@@ -118,6 +118,8 @@ void SphSimulation::ComputeBlockTimesteps(void)
     // Calculate the maximum level occupied by all SPH particles
     level_max_sph = max((int) (invlogetwo*log(dt_max/dt_max_sph)) + 1, 0);
 
+    // If enforcing a single SPH timestep, set it here.  Otherwise, populate 
+    // the timestep levels with SPH particles.
     if (sph_single_timestep == 1)
       for (i=0; i<sph->Nsph; i++) sph->sphdata[i].level = level_max_sph;
     else {
@@ -217,9 +219,11 @@ void SphSimulation::ComputeBlockTimesteps(void)
 
 
 
+#if defined(VERIFY_ALL)
 // ============================================================================
 // SphSimulation::VerifyBlockTimesteps
-// ..
+// Perform simple sanity check on block timesteps to check if 
+// values are consistent.
 // ============================================================================
 void SphSimulation::VerifyBlockTimesteps(void)
 {
@@ -243,3 +247,4 @@ void SphSimulation::VerifyBlockTimesteps(void)
 
   return;
 }
+#endif

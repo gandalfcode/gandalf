@@ -1,5 +1,6 @@
 // ============================================================================
 // Sph.cpp
+// Contains important default routines for Sph class.
 // ============================================================================
 
 
@@ -21,6 +22,7 @@ using namespace std;
 
 // ============================================================================
 // Sph::AllocateMemory
+// Allocate main SPH particle array.
 // ============================================================================
 void Sph::AllocateMemory(int N)
 {
@@ -41,6 +43,7 @@ void Sph::AllocateMemory(int N)
 
 // ============================================================================
 // Sph::DeallocateMemory
+// Deallocate main array containing SPH particle data.
 // ============================================================================
 void Sph::DeallocateMemory(void)
 {
@@ -90,11 +93,11 @@ void Sph::SphBoundingBox(FLOAT rmax[ndimmax],FLOAT rmin[ndimmax],int Nmax)
 // ============================================================================
 void Sph::InitialSmoothingLengthGuess(void)
 {
-  FLOAT h_guess;
-  FLOAT volume;
-  FLOAT rmin[ndimmax];
-  FLOAT rmax[ndimmax];
-  int Ngather;
+  int Ngather;                              // No. of neighbours (move!!)
+  FLOAT h_guess;                            // Global guess of smoothing length
+  FLOAT volume;                             // Volume of global bounding box
+  FLOAT rmin[ndimmax];                      // Min. extent of bounding box
+  FLOAT rmax[ndimmax];                      // Max. extent of bounding box
 
   debug2("[Sph::InitialSmoothingLengthGuess]");
 
@@ -129,9 +132,6 @@ void Sph::InitialSmoothingLengthGuess(void)
     sphdata[i].h = h_guess;
     sphdata[i].invh = 1.0/h_guess;
   }
-
-  printf ("Volume : %f\n",volume);
-  printf ("Smoothing length : %f\n",h_guess);
 
   return;
 }

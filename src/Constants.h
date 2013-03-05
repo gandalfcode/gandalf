@@ -1,5 +1,7 @@
 // ============================================================================
 // Constants.h
+// Definitions for all astrophysical and dimensionless constants used 
+// throughout the code.
 // ============================================================================
 
 

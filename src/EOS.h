@@ -1,5 +1,8 @@
 // ============================================================================
 // EOS.h
+// Contains (virtual) definitions for equation of state class.  
+// Also includes inherited class defintions for various equation of  
+// state options.
 // ============================================================================
 
 
@@ -16,7 +19,9 @@
 
 
 // ============================================================================
-// CLASS EOS
+// Class EOS
+// Main Equation of state class.  Only contains virtual function defintions. 
+// All functions must be defined by the inherited EOS classes.
 // ============================================================================
 class EOS
 {
@@ -33,13 +38,14 @@ class EOS
 
 
 // ============================================================================
-// CLASS EOS
+// Class Isothermal
+// Isothermal EOS class defintion
 // ============================================================================
 class Isothermal: public EOS
 {
  public:
 
-  Isothermal(FLOAT,FLOAT,FLOAT);
+  Isothermal(FLOAT, FLOAT, FLOAT);
   ~Isothermal();
 
   FLOAT Pressure(SphParticle &);
@@ -59,12 +65,13 @@ class Isothermal: public EOS
 
 // ============================================================================
 // Class Adiabatic
+// Adiabatic equation of state class definition
 // ============================================================================
 class Adiabatic: public EOS
 {
  public:
 
-  Adiabatic(FLOAT,FLOAT,FLOAT);
+  Adiabatic(FLOAT, FLOAT, FLOAT);
   ~Adiabatic();
 
   FLOAT Pressure(SphParticle &);

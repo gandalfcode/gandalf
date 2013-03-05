@@ -1,5 +1,7 @@
 // ============================================================================
 // Parameters.cpp
+// Contains all functions for calculating default values and reading in 
+// new values from the simulation parameter file.
 // ============================================================================
 
 
@@ -35,11 +37,13 @@ Parameters::~Parameters()
 
 // ============================================================================
 // Parameters::ReadParamsFile
+// Read and parse parameter file 'filename'.  If file doesn't exist, or 
+// file does not contain a simulation run id, then quit program here.
 // ============================================================================
 void Parameters::ReadParamsFile(std::string filename)
 {
-  ifstream inputfile;
-  std::string line;
+  ifstream inputfile;                   // Input file stream
+  std::string line;                     // Parameter file line
 
   debug1("[Parameters::ReadParamsFile]");
 
@@ -65,9 +69,9 @@ void Parameters::ReadParamsFile(std::string filename)
   // Now verify that parameters file contains a run id.
   // If not defined, then quit program with exception
   if (stringparams["run_id"] == "") {
-	string message = "The parameter file: " + filename +
-	  " does not contain a run id string, aborting";
-	ExceptionHandler::getIstance().raise(message);
+    string message = "The parameter file: " + filename +
+      " does not contain a run id string, aborting";
+    ExceptionHandler::getIstance().raise(message);
   }
 
   // Record parameters to file
@@ -80,30 +84,31 @@ void Parameters::ReadParamsFile(std::string filename)
 
 // ============================================================================
 // Parameters::ParseLine
+// Parse a single line read from the parameters file.
+// Identifies if the line is in the form 'Comments : variable = value', or 
+// 'variable = value', and if so, stores value in memory.
 // ============================================================================
 void Parameters::ParseLine(std::string paramline)
 {
-  int colon_pos;
-  int equal_pos;
-  int length;
+  int colon_pos = paramline.find(':');      // Position of colon in string
+  int equal_pos = paramline.find('=');      // Position of equals in string
+  int length = paramline.length();          // Length of string
 
-  colon_pos = paramline.find(':');
-  equal_pos = paramline.find('=');
-  length = paramline.length();
-cout << "colon_pos : " << colon_pos << "    equal_pos : " << equal_pos << endl;
-cout << "npos : " << std::string::npos << endl;
+  // If line is not in the correct format (either equals is not present, or 
+  // equals is before the colon) then skip line and return
+  if (equal_pos == std::string::npos || colon_pos >= equal_pos) return;
+  //if (colon_pos == std::string::npos || equal_pos == std::string::npos || 
+  //    colon_pos >= equal_pos) return;
 
-  if (equal_pos == std::string::npos ||
-      colon_pos >= equal_pos) return;
-
+  // Extract variable name and value from line
   std::string var_name = paramline.substr(colon_pos+1,equal_pos-colon_pos-1);
   std::string var_value = paramline.substr(equal_pos+1,length-equal_pos-1);
-cout << "var_name : " << var_name << "     var_value : " << var_value << endl;
-  //std::remove(var_name.begin(), var_name.end(), ' ');
-  //std::remove(var_value.begin(), var_value.end(), ' ');
+
+  // Trim any white space from variable and value strings
   trim2(var_name);
   trim2(var_value);
 
+  // Finally, set parameter value in memory
   SetParameter(var_name,var_value);
 
   return;
@@ -113,6 +118,7 @@ cout << "var_name : " << var_name << "     var_value : " << var_value << endl;
 
 // ============================================================================
 // Parameters::SetDefaultValues
+// Record all parameter variable names in memory also setting default values.
 // ============================================================================
 void Parameters::SetDefaultValues(void)
 {
@@ -171,7 +177,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["kernel"] = "m4";
   stringparams["neib_search"] = "bruteforce";
   floatparams["h_fac"] = 1.2;
-  floatparams["h_converge"] = 0.005;
+  floatparams["h_converge"] = 0.01;
 
   // Artificial viscosity parameters
   // --------------------------------------------------------------------------
@@ -183,10 +189,10 @@ void Parameters::SetDefaultValues(void)
   // Thermal physics parameters
   // --------------------------------------------------------------------------
   intparams["hydro_forces"] = 1;
-  stringparams["gas_eos"] = "isothermal";
+  stringparams["gas_eos"] = "energy_eqn";
   stringparams["energy_integration"] = "PEC";
-  floatparams["energy_mult"] = 0.2;
-  floatparams["gamma_eos"] = 1.6666666666666;
+  floatparams["energy_mult"] = 0.4;
+  floatparams["gamma_eos"] = 1.66666666666666;
   floatparams["temp0"] = 1.0;
   floatparams["mu_bar"] = 1.0;
 
@@ -239,8 +245,6 @@ void Parameters::SetDefaultValues(void)
   stringparams["dudtoutunit"] = "J_kg_s";
   stringparams["tempoutunit"] = "K";
 
-  PrintParameters();
-
   return;
 }
 
@@ -248,6 +252,8 @@ void Parameters::SetDefaultValues(void)
 
 // ============================================================================
 // Parameters::SetParameter
+// Set parameter value in memory.  Checks in turn if parameter is a 
+// string, float or integer before recording value.
 // ============================================================================
 void Parameters::SetParameter(std::string key, std::string value)
 {
@@ -266,21 +272,25 @@ void Parameters::SetParameter(std::string key, std::string value)
 
 // ============================================================================
 // Parameters::PrintParameters
+// Prints all parameters stored in memory to screen
 // ============================================================================
 void Parameters::PrintParameters(void)
 {
   debug1("[Parameters::PrintParameters]");
 
+  // Print all integer parameters
   std::map <std::string, int>::iterator it;
   for (it=intparams.begin(); it != intparams.end(); ++it) {
     std::cout << it->first << " = " << it->second << std::endl;
   }
 
+  // Print all float parameters
   std::map <std::string, float>::iterator it2;
   for (it2=floatparams.begin(); it2 != floatparams.end(); ++it2) {
     std::cout << it2->first << " = " << it2->second << std::endl;
   }
 
+  // Print all string parameters
   std::map <std::string, std::string>::iterator it3;
   for (it3=stringparams.begin(); it3 != stringparams.end(); ++it3) {
     std::cout << it3->first << " = " << it3->second << std::endl;
@@ -292,26 +302,30 @@ void Parameters::PrintParameters(void)
 
 // ============================================================================
 // Parameters::RecordParametersToFile
+// Writes all recorded parameters to file.
 // ============================================================================
 void Parameters::RecordParametersToFile(void)
 {
-  string filename = stringparams["run_id"] + ".param";
-  ofstream outfile;
+  string filename = stringparams["run_id"] + ".param";  // Output filename
+  ofstream outfile;                                     // Output file stream
 
   debug1("[Parameters::RecordParametersToFile]");
 
   outfile.open(filename.c_str());
 
+  // Write all integer parameters
   std::map <std::string, int>::iterator it;
   for (it=intparams.begin(); it != intparams.end(); ++it) {
     outfile << it->first << " = " << it->second << endl;
   }
 
+  // Write all float parameters
   std::map <std::string, float>::iterator it2;
   for (it2=floatparams.begin(); it2 != floatparams.end(); ++it2) {
     outfile << it2->first << " = " << it2->second << endl;
   }
 
+  // Write all string parameters
   std::map <std::string, std::string>::iterator it3;
   for (it3=stringparams.begin(); it3 != stringparams.end(); ++it3) {
     outfile << it3->first << " = " << it3->second << endl;
@@ -325,6 +339,7 @@ void Parameters::RecordParametersToFile(void)
 
 // ============================================================================
 // Parameters::trim2
+// Trims string of any white space.
 // ============================================================================
 void Parameters::trim2(std::string& str)
 {

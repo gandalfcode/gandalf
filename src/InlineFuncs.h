@@ -17,8 +17,8 @@ using namespace std;
 
 // ============================================================================
 // DotProduct
-// Calculates the dot product between two vectors, v1 and v2.
-// For optimisation reasons, assumes both vectors are of length NDIM.
+// Calculates the dot product between two vectors, v1 and v2, 
+// of given length 'ndim'
 // ============================================================================
 template <typename T>
 static inline T DotProduct(T *v1, T *v2, int ndim)
@@ -34,7 +34,8 @@ static inline T DotProduct(T *v1, T *v2, int ndim)
 
 
 // ============================================================================
-// ..
+// PrintArray
+// Print values of a given array to standard output
 // ============================================================================
 template <typename T>
 static inline void PrintArray(string message, int Tsize, T *array)
@@ -44,9 +45,6 @@ static inline void PrintArray(string message, int Tsize, T *array)
   cout << endl;
   return;
 }
-
-
-
 
 
 #endif

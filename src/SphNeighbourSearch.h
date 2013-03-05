@@ -89,8 +89,10 @@ class GridSearch: public SphNeighbourSearch
   int ComputeActiveCellList(int *);
   int ComputeActiveParticleList(int, int *, Sph *);
   int ComputeNeighbourList(int, int *);
+#if defined(VERIFY_ALL)
   void CheckValidNeighbourList(Sph *,int,int,int *,string);
   void ValidateGrid(void);
+#endif
 
   // Additional variables for grid
   // --------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 // ============================================================================
 // SphIntegration.cpp
+// Contains default functions for SphIntegration class.
 // ============================================================================
 
 
@@ -45,7 +46,10 @@ SphIntegration::~SphIntegration()
 
 
 // ============================================================================
-// ..
+// SphIntegration::Timestep
+// Default timestep size for SPH particles.  Takes the minimum of : 
+// (i)  const*h/(sound_speed + h*|div_v|)    (Courant condition)
+// (ii) const*sqrt(h/|a|)                    (Acceleration condition)
 // ============================================================================
 DOUBLE SphIntegration::Timestep(SphParticle &part, int hydro_forces)
 {

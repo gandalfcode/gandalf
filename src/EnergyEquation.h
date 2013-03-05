@@ -1,5 +1,7 @@
 // ============================================================================
 // EnergyEquation.h
+// Class definitions of main energy equation class plus inherited children 
+// classes for various energy integration algorithms.
 // ============================================================================
 
 
@@ -8,6 +10,7 @@
 
 #include "Constants.h"
 #include "Dimensions.h"
+#include "Precision.h"
 #include "Sph.h"
 #include "EOS.h"
 #include "SphParticle.h"
@@ -16,20 +19,22 @@
 
 // ============================================================================
 // EnergyEquation
+// Main energy equation class, with virtual functions that require full 
+// definitions in the children classes.
 // ============================================================================
 class EnergyEquation
 {
  public:
 
-  EnergyEquation(double);
+  EnergyEquation(DOUBLE);
   ~EnergyEquation();
 
-  virtual void EnergyIntegration(int,int,int,SphParticle *,double) = 0;
-  virtual void EnergyCorrectionTerms(int,int,int,SphParticle *,double) = 0;
-  virtual void EndTimestep(int,int,int,SphParticle *) = 0;
-  virtual double Timestep(SphParticle &) = 0;
+  virtual void EnergyIntegration(int, int, int, SphParticle *, FLOAT) = 0;
+  virtual void EnergyCorrectionTerms(int, int, int, SphParticle *, FLOAT) = 0;
+  virtual void EndTimestep(int, int, int, SphParticle *) = 0;
+  virtual DOUBLE Timestep(SphParticle &) = 0;
 
-  const double energy_mult;
+  const DOUBLE energy_mult;
 
 };
 
@@ -37,18 +42,20 @@ class EnergyEquation
 
 // ============================================================================
 // EnergyPEC
+// Class definition for energy equation integration class using a 
+// Predict-Evaluate-Correct (PEC) scheme.
 // ============================================================================
 class EnergyPEC: public EnergyEquation
 {
  public:
 
-  EnergyPEC(double);
+  EnergyPEC(DOUBLE);
   ~EnergyPEC();
 
-  void EnergyIntegration(int,int,int,SphParticle *,double);
-  void EnergyCorrectionTerms(int,int,int,SphParticle *,double);
-  void EndTimestep(int,int,int,SphParticle *);
-  double Timestep(SphParticle &);
+  void EnergyIntegration(int, int, int, SphParticle *, FLOAT);
+  void EnergyCorrectionTerms(int, int, int, SphParticle *, FLOAT);
+  void EndTimestep(int, int, int, SphParticle *);
+  DOUBLE Timestep(SphParticle &);
 
 };
 
