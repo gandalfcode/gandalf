@@ -84,15 +84,13 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
   snap.ExtractArray(xstring,&xvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
   snap.ExtractArray(ystring,&yvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
   snap.ExtractArray(renderstring,&rendervalues,&idummy,scaling_factor,renderunit); arraycheck = min(idummy,arraycheck);
-  cout << "Problem?? : " << arraycheck << endl;
   snap.ExtractArray("m",&mvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
   snap.ExtractArray("rho",&rhovalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
   snap.ExtractArray("h",&hvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-cout << "Problem?? : " << arraycheck << endl;
   // If any are invalid, exit here with failure code
   if (arraycheck == 0) return -1;
 
-  rendernorm = new float[snap.Nsph];
+  rendernorm = new float[Ngrid];
 
   // Create grid positions here
   c = 0;
@@ -112,7 +110,6 @@ cout << "Problem?? : " << arraycheck << endl;
   // Loop over all particles in snapshot
   // -----------------------------------------------------------------------------
   for (i=0; i<snap.Nsph; i++) {
-
     invh = 1.0f/hvalues[i];
     wnorm = mvalues[i]/rhovalues[i]*pow(invh,(ndim - 1));
     hrangesqd = sph->kernp->kernrangesqd*hvalues[i]*hvalues[i];
@@ -140,9 +137,12 @@ cout << "Problem?? : " << arraycheck << endl;
 
   // Normalise all grid cells
   for (c=0; c<Ngrid; c++) {
-    //if (rendernorm[c] > 1.e-10) values[c] /= rendernorm[c];
-  cout << "render : " << values[c] << endl;
+    if (rendernorm[c] > 1.e-10) values[c] /= rendernorm[c];
   }
+
+  delete[] rendernorm;
+  delete[] rgrid;
+
   return 1;
 }
 
