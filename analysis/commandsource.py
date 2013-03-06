@@ -54,8 +54,9 @@ class SubfigureCommand(Command):
 class PlotCommand(Command):
     
     quantitylabels = {'x': 'x', 'y': 'y', 'z': 'z', 'rho': '$\\rho$',
-                      'vx': '$v_x$', 'vy': '$v_y$', 'vz': '$v_z$', 'm': 'm',
-                      'h': 'h', 'u': 'u'}
+                      'vx': '$v_x$', 'vy': '$v_y$', 'vz': '$v_z$', 
+                      'ax': '$a_x$', 'ay': '$a_y$', 'az': '$a_z$',
+                      'm': 'm', 'h': 'h', 'u': 'u'}
     
     def __init__(self, xquantity, yquantity, snap, simno, 
                  overplot, autoscale, xunit="default", yunit="default"):
