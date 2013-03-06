@@ -80,8 +80,7 @@ class PlotCommand(Command):
             fig, ax, product = plotting.commandsfigures[self.id]
             self.update(plotting, fig, ax, product, data)
             self.labels(ax)
-            if self.autoscale:
-                self.autolimits(ax)
+            self.autolimits(ax)
             fig.canvas.draw()
         elif self.id > plotting.lastid:
             fig = plotting.plt.gcf()
@@ -90,6 +89,17 @@ class PlotCommand(Command):
                 ax.clear()
                 self.labels(ax)
             product = self.execute(plotting, fig, ax, data)
+            #sets the autoscales on the axis
+            if bool(self.autoscale):
+                if self.autoscale=='x':
+                    ax.set_autoscalex_on(True)
+                elif self.autoscale=='y':
+                    ax.set_autoscaley_on(True)
+                else:
+                    ax.set_autoscale_on(True)
+            else:
+                ax.set_autoscale_on(False)
+            self.autolimits(ax)
             #the figure might have been shown already, but we need to redo it,
             #because (apparently) matplotlib does not provide any way of knowing
             #if that's the case
@@ -101,8 +111,8 @@ class PlotCommand(Command):
             #the figure
             fig.canvas.draw()
             #now we register quantities and units
-            plotting.quantitiesfigures[(fig, 'x')] = self.xquantity, self.xunitname
-            plotting.quantitiesfigures[(fig, 'y')] = self.yquantity, self.yunitname
+            plotting.quantitiesfigures[(fig, ax, 'x')] = self.xquantity, self.xunitname
+            plotting.quantitiesfigures[(fig, ax, 'y')] = self.yquantity, self.yunitname
             
     def labels(self, ax):
         xlabel = self.quantitylabels[self.xquantity]
@@ -115,6 +125,9 @@ class PlotCommand(Command):
         ax.set_ylabel(ylabel)
         
     def autolimits(self, ax):
+        '''Recomputes limits from the data and use them to update
+        the limits, if some axis has autoscaling set. Note that if the
+        axes have autoscaling off, nothing happens.'''
         ax.relim()
         ax.autoscale_view()
         
@@ -130,6 +143,15 @@ class PlotCommand(Command):
             snap = SimBuffer.get_snapshot_number_sim(sim, self.snap)
         
         return sim, snap
+    
+    def get_array(self, axis, snap):
+        scaling_factor=1.
+        quantity = getattr(self, axis+'quantity')
+        unit = getattr(self, axis+'unit')
+        data, scaling_factor = snap.ExtractArray(quantity, scaling_factor, unit)
+        setattr(self,axis+'label',snap.label)
+        setattr(self,axis+'unitname',snap.unitname)
+        return data, scaling_factor
 
 class ParticlePlotCommand (PlotCommand):
     
@@ -143,29 +165,23 @@ class ParticlePlotCommand (PlotCommand):
         
     def execute(self, plotting, fig, ax, data) :
         line, = ax.plot(data.x_data, data.y_data, '.')
-        if self.autoscale:
-            self.autolimits(ax)
         return line
     
     def prepareData (self):
         sim, snap = self.get_sim_and_snap()
         
-        xscaling_factor=1.
-        x_data, xscaling_factor = snap.ExtractArray(self.xquantity, xscaling_factor, self.xunit)
-        self.xlabel = snap.label
-        self.xunitname = snap.unitname
-        yscaling_factor=1.
-        y_data, yscaling_factor = snap.ExtractArray(self.yquantity, yscaling_factor, self.yunit)
-        self.ylabel = snap.label
-        self.yunitname = snap.unitname
+        x_data, xscaling_factor = self.get_array('x', snap)
+        y_data, yscaling_factor = self.get_array('y', snap)
         
         data = Data(x_data*xscaling_factor, y_data*yscaling_factor)
         return data
     
 class AnalyticalPlotCommand (PlotCommand):
     
-    def __init__(self, xquantity, yquantity, snap, simno, overplot, autoscale):
-        PlotCommand.__init__(self, xquantity, yquantity, snap, simno, overplot, autoscale)
+    def __init__(self, xquantity, yquantity, snap, simno, overplot, autoscale,
+                 xunit, yunit):
+        PlotCommand.__init__(self, xquantity, yquantity, snap, simno, overplot, 
+                             autoscale, xunit, yunit)
         
     def update(self, plotting, fig, ax, line, data):
         line.set_data(data.x_data, data.y_data)
@@ -185,7 +201,11 @@ class AnalyticalPlotCommand (PlotCommand):
             raise CommandException, "We do not know an analytical solution for the requested initial condition"
         computer = analyticalclass(sim, time)
         x_data, y_data = computer.compute(self.xquantity, self.yquantity)
-        data = Data(x_data,y_data)
+        
+        dummy, xscaling_factor = self.get_array('x', snap)
+        dummy, yscaling_factor = self.get_array('y', snap)
+        
+        data = Data(x_data*xscaling_factor,y_data*yscaling_factor)
         return data
 
 class RenderPlotCommand (PlotCommand):    
@@ -201,38 +221,22 @@ class RenderPlotCommand (PlotCommand):
     def update(self, plotting, fig, ax, products, data):
         im, colorbar = products
         im.set_array(data.render_data)
-        if self.autoscale:
-            im.autoscale()
+        im.autoscale()
     
     def execute(self, plotting, fig, ax, data):
         #record old limits
-        xlimits = ax.get_xlim()
-        ylimits = ax.get_ylim()
         im = ax.imshow(data.render_data, extent=(self.xmin, self.xmax, self.ymin, self.ymax), interpolation=self.interpolation)
-        newxlimits = ax.get_xlim()
-        newylimits = ax.get_ylim()
-        xmin = min(xlimits[0], newxlimits[0])
-        xmax = max(xlimits[1], newxlimits[1])
-        ymin = min(ylimits[0], newylimits[0])
-        ymax = max(ylimits[1], newylimits[1])
-        ax.set_xlim(xmin, xmax)
-        ax.set_ylim(ymin, ymax)
+        self.autolimits(ax)
         colorbar = fig.colorbar(im)
         products = (im, colorbar) 
         return products
     
     def prepareData(self):
         sim, snap = self.get_sim_and_snap()
-        #TODO: refactor this code to have a function
-        xscaling_factor=1.
-        x_data, xscaling_factor = snap.ExtractArray(self.xquantity, xscaling_factor, self.xunit)
-        self.xlabel = snap.label
-        self.xunitname = snap.unitname
-        yscaling_factor=1.
-        y_data, yscaling_factor = snap.ExtractArray(self.yquantity, yscaling_factor, self.yunit)
-        self.ylabel = snap.label
-        self.yunitname = snap.unitname
         
+        x_data, xscaling_factor = self.get_array('x',snap)
+        y_data, yscaling_factor = self.get_array('y', snap)
+                
         #creates the grid
         #TODO: use proper limits
         #how to get the limits? that's a bit tricky
@@ -261,38 +265,66 @@ class RenderPlotCommand (PlotCommand):
         return data
 
 class LimitCommand(Command):
-    def __init__(self, quantity, min, max):
+    def __init__(self, quantity, min, max, auto, window, subfigure):
         Command.__init__(self)
         self.quantity = quantity
         self.min = min
         self.max = max
+        self.auto = auto
+        self.window = window
+        self.subfigure = subfigure
 
     def prepareData(self):
         pass
 
     def processCommand(self, plotting, data):
         try:
-            fig, ax, line = plotting.commandsfigures[self.id]
+            figs, axs, line = plotting.commandsfigures[self.id]
         except KeyError:
-            fig = plotting.plt.gcf()
-            ax = plotting.plt.gca()
+            if self.window == 'current':
+                fig = plotting.plt.gcf()
+                figs=[fig]
+            elif self.window == 'all':
+                managers = plotting.plt._pylab_helpers.Gcf.get_all_fig_managers()
+                figs=map(lambda manager: manager.canvas.figure, managers)
+            else:
+                fig = plotting.plt.figure(self.window)
+                figs=[fig]
             line = None
+            axs=[]
+            for fig in figs:
+                if self.subfigure == 'current':
+                    ax = fig.gca()
+                    axs.append(ax)
+                elif self.subfigure == 'all':
+                    axslist = fig.axes
+                    for ax in axslist:
+                        axs.append(ax)
+                else:
+                    ax = fig.add_subplot(self.subfigure)
+                    axs.append(ax)
             plotting.commands.append(self)
-            plotting.commandsfigures[self.id]= fig, ax, line
+            plotting.commandsfigures[self.id]= figs, axs, line
             plotting.lastid = self.id
-        if self.quantity == 'x':
-            if self.min == 'auto':
-                ax.relim()
-                ax.autoscale()
-            else:
-                ax.set_xlim(self.min, self.max)
-        elif self.quantity == 'y':
-            if self.min == 'auto':
-                ax.relim()
-                ax.autoscale()
-            else:
-                ax.set_ylim(self.min, self.max)
-        fig.canvas.draw()
+        for ax in axs:
+            for axis in ['x', 'y']:
+                try:
+                    quantity, unitname = plotting.quantitiesfigures[(ax.figure, ax, axis)]
+                except KeyError:
+                    pass
+                if quantity == self.quantity:
+                    if self.auto:
+                        methodname='set_autoscale'+axis+'_on'
+                        method=getattr(ax,methodname)
+                        method(self.auto)
+                        ax.relim()
+                        ax.autoscale_view()
+                    else:
+                        methodname='set_'+axis+'lim'
+                        method = getattr(ax,methodname)
+                        method(self.min,self.max)
+        for fig in figs:
+            fig.canvas.draw()
 
 class RescaleCommand(Command):
     def __init__(self, quantity, unitname, window):
@@ -323,7 +355,7 @@ class RescaleCommand(Command):
                 plotting.lastid = self.id
             for axis in ['x', 'y', 'render']:
                 try:
-                    quantity, unitname = plotting.quantitiesfigures[(fig, axis)]
+                    quantity, unitname = plotting.quantitiesfigures[(fig, ax, axis)]
                 except KeyError:
                     continue
                 if quantity == self.quantity:
