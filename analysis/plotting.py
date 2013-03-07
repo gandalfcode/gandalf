@@ -73,6 +73,11 @@ class PlottingProcess (Process):
     def remove_closed_figures(self):
         for index, commanddummy in enumerate(self.commands):
             fig, ax, line = self.commandsfigures[commanddummy.id]
-            if not self.plt.fignum_exists(fig.number):
-                self.commandsfigures.pop(commanddummy.id)
-                self.commands.pop(index)
+            try:
+                if not self.plt.fignum_exists(fig.number):
+                    self.commandsfigures.pop(commanddummy.id)
+                    self.commands.pop(index)
+            #TODO: for efficiency, should remove the figures that have been closed from
+            #the command list 
+            except AttributeError:
+                pass       
