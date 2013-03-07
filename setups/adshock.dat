@@ -6,8 +6,8 @@
      : vfluid2[0] = -16
      : ndim = 1
      : tend = 1.0
-     : dt_snap = 0.1
-     : noutputstep = 256
+     : dt_snap = 0.2
+     : noutputstep = 16
      : run_id = ADSHOCK1
 
      : ic = shocktube
@@ -25,9 +25,9 @@
      : alpha_visc = 1.0
      : beta_visc = 2.0
 
-     : courant_mult = 0.15
-     : accel_mult = 0.3
-     : energy_mult = 0.8
+     : courant_mult = 0.1
+     : accel_mult = 0.2
+     : energy_mult = 0.5
      : Nlevels = 2
 
      : kernel = m4

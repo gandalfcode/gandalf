@@ -26,7 +26,7 @@ PRECISION                 = DOUBLE
 NDIM                      = 0
 DEBUG                     = 1
 # Turn on expensive verifications (only needed to debug)
-VERIFY_ALL                = 1
+VERIFY_ALL                = 0
 
 
 # Select location of python and numpy libraries.  If blank, make will try to 
@@ -34,7 +34,7 @@ VERIFY_ALL                = 1
 # utilities.  If you have multiple versions of python installed on your 
 # computer, then select the prefered version with the PYTHON variable above.
 # -----------------------------------------------------------------------------
-PYLIB =
+PYLIB = 
 NUMPY = 
 
 
