@@ -64,7 +64,8 @@ def plot(x,y, snap="current", sim="current", overplot = False, autoscale = True,
     autoscale
         If True (default), the limits of the plot are set automatically.
         Can also be set to 'x' or 'y' to specify that only one of the axis has to use autoscaling.
-        If False, autoscaling is not used.
+        If False, autoscaling is not used. On an axis that does not have autoscaling turned on,
+        global limits are used if defined for the plotted quantity.
     xunit
         Specify the unit to use for the plotting for the quantity on the x-axis.
     yunit
@@ -99,7 +100,8 @@ def render(x, y, render, snap="current", sim="current", overplot=False, autoscal
     autoscale
         If True (default), the limits of the plot are set automatically.
         Can also be set to 'x' or 'y' to specify that only one of the axis has to use autoscaling.
-        If False, autoscaling is not used.
+        If False, autoscaling is not used. On an axis that does not have autoscaling turned on,
+        global limits are used if defined for the plotted quantity.
     xunit
         Specify the unit to use for the plotting for the quantity on the x-axis.
     yunit
@@ -136,7 +138,9 @@ def limit (quantity, min=None, max=None, auto=False, window='current', subfigure
     the limits for that quantity are set automatically. Otherwise, use the one given by x and y.
     By default, changes the limits only for the current subfigure of the current plot. One
     can specify the number for them or use the special keyword 'all' to change the limits in all
-    the figures or in all the subfigures of the current figure.
+    the figures or in all the subfigures of the current figure. Also the keyword 'global' is available
+    for window, which means that the change will affect also future plots that do not have autoscaling
+    turned on. 
     '''
     if window=='all' and subfigure=='current':
         subfigure=='all'
