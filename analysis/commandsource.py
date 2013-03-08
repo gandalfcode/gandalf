@@ -136,6 +136,7 @@ class PlotCommand(Command):
         ax.autoscale_view()
         
     def get_sim_and_snap(self):
+        '''Retrieves from the buffer the desired sim and snap'''
         sim = SimBuffer.get_sim_no(self.sim)
         if self.snap == "current":
             snap = SimBuffer.get_current_snapshot_by_sim(sim)
@@ -184,7 +185,7 @@ class ParticlePlotCommand (PlotCommand):
         line, = ax.plot(data.x_data, data.y_data, '.')
         return line
     
-    def prepareData (self):
+    def prepareData (self, globallimits):
         sim, snap = self.get_sim_and_snap()
         
         x_data, xscaling_factor = self.get_array('x', snap)
@@ -207,8 +208,7 @@ class AnalyticalPlotCommand (PlotCommand):
         line, = ax.plot(data.x_data, data.y_data)
         return line
     
-    def prepareData(self):
-        #TODO: remove duplicated code with the previous class
+    def prepareData(self, globallimits):
         sim, snap = self.get_sim_and_snap()
         time = snap.t
         ictype = sim.simparams.stringparams["ic"]
@@ -225,49 +225,94 @@ class AnalyticalPlotCommand (PlotCommand):
         data = Data(x_data*xscaling_factor,y_data*yscaling_factor)
         return data
 
-class RenderPlotCommand (PlotCommand):    
-    def __init__(self, xquantity, yquantity, renderquantity, snap, simno, overplot, autoscale, 
-                 xunit="default", yunit="default", renderunit="default", res=64, interpolation='nearest'):
+class RenderPlotCommand (PlotCommand):
+    #TODO: add colormap selection
+    def __init__(self, xquantity, yquantity, renderquantity, snap, simno, overplot, autoscale,
+                 autoscalerender, coordlimits, xunit="default", yunit="default", 
+                 renderunit="default", res=64, interpolation='nearest'):
         PlotCommand.__init__(self, xquantity, yquantity, snap, simno, 
                              overplot, autoscale, xunit, yunit)
         self.renderquantity = renderquantity
+        self.autoscalerender = autoscalerender
+        self.coordlimits = coordlimits
         self.renderunit = renderunit
+        self.renderunitname = ""
         self.res = res
         self.interpolation = interpolation
         
     def update(self, plotting, fig, ax, products, data):
         im, colorbar = products
         im.set_array(data.render_data)
-        im.autoscale()
+        if self.autoscalerender:
+            im.autoscale()
+        else:
+            try:
+                min, max, auto = plotting.globallimits[self.renderquantity]
+                if auto:
+                    im.autoscale()
+                else:
+                    im.set_clim(min,max)
+                    self.autoscalerender = False
+            except KeyError:
+                im.autoscale()
     
     def execute(self, plotting, fig, ax, data):
-        #record old limits
         im = ax.imshow(data.render_data, extent=(self.xmin, self.xmax, self.ymin, self.ymax), interpolation=self.interpolation)
+        if not self.autoscalerender:
+            try:
+                min, max, auto = plotting.globallimits[self.renderquantity]
+                if auto:
+                    im.autoscale()
+                else:
+                    im.set_clim(min,max)
+                    self.autoscalerender = False
+            except KeyError:
+                pass
         self.autolimits(ax)
         colorbar = fig.colorbar(im)
-        products = (im, colorbar) 
+        products = (im, colorbar)
+        plotting.axesimages[ax]=products
+        plotting.quantitiesfigures[(fig, ax, 'render')] = self.renderquantity, self.renderunitname
         return products
     
-    def prepareData(self):
+    def prepareData(self, globallimits):
         sim, snap = self.get_sim_and_snap()
         
         x_data, xscaling_factor = self.get_array('x',snap)
         y_data, yscaling_factor = self.get_array('y', snap)
-                
-        #creates the grid
-        #TODO: use proper limits
-        #how to get the limits? that's a bit tricky
-        #for now, just use the min and max of the array
+
+        #create the grid
+        #set resolution
         try:
             xres = self.res[0]
             yres = self.res[1]
         except TypeError:
             xres = self.res
             yres = self.res
-        self.xmin = float(x_data.min())
-        self.xmax = float(x_data.max())
-        self.ymin = float(y_data.min())
-        self.ymax = float(y_data.max())
+
+        #set limits
+        if self.coordlimits is None:
+            try:
+                self.xmin, self.xmax, auto = globallimits[self.xquantity]
+                if auto:
+                    self.xmin = float(x_data.min())
+                    self.xmax = float(x_data.max())
+            except KeyError:
+                self.xmin = float(x_data.min())
+                self.xmax = float(x_data.max())
+            try:
+                self.ymin, self.ymax, auto = globallimits[self.yquantity]
+                if auto:
+                    self.ymin = float(y_data.min())
+                    self.ymax = float(y_data.max())
+            except KeyError:
+                self.ymin = float(y_data.min())
+                self.ymax = float(y_data.max())
+        else:
+            self.xmin=self.coordlimits[0]
+            self.xmax=self.coordlimits[1]
+            self.ymin=self.coordlimits[2]
+            self.ymax=self.coordlimits[3]
         
         rendering = Render()
         renderscaling_factor=1.
@@ -291,13 +336,15 @@ class LimitCommand(Command):
         self.window = window
         self.subfigure = subfigure
 
-    def prepareData(self):
+    def prepareData(self, globallimits):
         pass
 
     def processCommand(self, plotting, data):
+        #first retrieve the correct figs and ax objects
         try:
             figs, axs, line = plotting.commandsfigures[self.id]
         except KeyError:
+            #this gets executed the first time the command is run
             if self.window == 'current':
                 fig = plotting.plt.gcf()
                 figs=[fig]
@@ -325,7 +372,11 @@ class LimitCommand(Command):
             plotting.lastid = self.id
             if self.window=='global':
                 plotting.globallimits[self.quantity] = self.min, self.max, self.auto
+                plotting.completedqueue.put('limit completed')
+                
+        #loops over all the axes and looks if the desired quantity has been plotted there                
         for ax in axs:
+            #this big loop takes care of the x and y axis
             for axis in ['x', 'y']:
                 try:
                     quantity, unitname = plotting.quantitiesfigures[(ax.figure, ax, axis)]
@@ -342,6 +393,25 @@ class LimitCommand(Command):
                         methodname='set_'+axis+'lim'
                         method = getattr(ax,methodname)
                         method(self.min,self.max)
+            #here we take care of the quantity when is rendered
+            try:
+                quantity, unitname = plotting.quantitiesfigures[(ax.figure, ax, 'render')]
+            except KeyError:
+                continue
+            if quantity == self.quantity:
+                #looks for the image
+                im, colorbar=plotting.axesimages[ax]
+                if self.auto:
+                   im.autoscale()
+                else:
+                    im.set_clim(self.min,self.max) 
+                    #retrieve the command
+                    commandid = [key for key,value in plotting.commandsfigures.items() if value==(ax.figure, ax, (im, colorbar)) ][0]
+                    for index,command in enumerate(plotting.commands):
+                        if command.id == commandid:
+                            command.autoscalerender=False
+                            plotting.commands[index]=command
+        
         for fig in figs:
             fig.canvas.draw()
 
@@ -352,7 +422,7 @@ class RescaleCommand(Command):
         self.unitname = unitname
         self.window = window
         
-    def prepareData(self):
+    def prepareData(self, globallimits):
         pass
     
     def processCommand(self, plotting, data):
@@ -386,7 +456,7 @@ class RescaleCommand(Command):
                                 plotting.commands[index]=command
                         except AttributeError:
                             pass
-            plotting.completedqueue.put("completed")
+            plotting.completedqueue.put("rescale completed")
         
 class CommandException(Exception):
     pass     
