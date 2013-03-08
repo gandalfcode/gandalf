@@ -3,6 +3,28 @@ import atexit
 from multiprocessing import Manager, Queue
 from plotting import PlottingProcess
 from seren.analysis.SimBuffer import SimBuffer, BufferException
+
+manager= Manager()
+
+class Singletons:
+    '''Container class for singletons object. They are:
+        queue
+            Queue for sending commands to the plotting process
+        commands
+            List of the commands shared with the plotting process.
+            Caution: if you modify a command, you need to reassign it in the list
+            to make the changes propagate to the other process
+        completedqueue
+            Queue used from the plotting process to signal the completion
+            of a command
+        globallimits
+            List that for each quantity gives the limits
+    '''
+    queue = Queue()
+    commands = manager.list()
+    completedqueue = Queue()
+    globallimits = manager.dict()
+
 import commandsource as Commands
 from scipy import interpolate
 import signal
@@ -25,22 +47,6 @@ def handle(e):
         print str(e)
     else:
         raise e
-
-class Singletons:
-    '''Container class for singletons object. They are:
-        queue
-            Queue for sending commands to the plotting process
-        commands
-            List of the commands shared with the plotting process.
-            Caution: if you modify a command, you need to reassign it in the list
-            to make the changes propagate to the other process
-        completedqueue
-            Queue used from the plotting process to signal the completion
-            of a command
-    '''
-    queue = Queue()
-    commands = Manager().list()
-    completedqueue = Queue()
     
 def loadsim(run_id, fileformat = 'ascii', buffer_flag = 'cache'):
     '''Given the run_id of a simulation, reads it from the disk'''
@@ -75,11 +81,12 @@ def plot(x,y, snap="current", sim="current", overplot = False, autoscale = True,
     
     simno = get_sim_no(sim)
     command = Commands.ParticlePlotCommand(x, y, snap, simno, overplot, autoscale, xunit, yunit)
-    data = command.prepareData()
+    data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
     sleep(0.001)
 
 def render(x, y, render, snap="current", sim="current", overplot=False, autoscale=True, 
+           autoscalerender=True, coordlimits=None,
            xunit="default", yunit="default", renderunit="default",
            res=64, interpolation='nearest'):
     '''Render plot. Needed arguments:
@@ -98,10 +105,17 @@ def render(x, y, render, snap="current", sim="current", overplot=False, autoscal
     overplot
         If True, overplots on the previous existing plot rather than deleting it. Defaults to False.
     autoscale
-        If True (default), the limits of the plot are set automatically.
+        If True (default), the coordinate limits of the plot are set automatically.
         Can also be set to 'x' or 'y' to specify that only one of the axis has to use autoscaling.
         If False, autoscaling is not used. On an axis that does not have autoscaling turned on,
         global limits are used if defined for the plotted quantity.
+    autoscalerender
+        Same as the previous one, but for the rendered quantity.
+    coordlimits
+        Specify the coordinate limits for the plot. In order of precedence, the limits are set in this way:
+        -What this argument specifies. The value must be an iterable of 4 elements: (xmin, xmax, ymin, ymax).
+        -If this argument is None (default), global settings for the quantity are used.
+        -If global settings for the quantity are not defined, the min and max of the data are used.
     xunit
         Specify the unit to use for the plotting for the quantity on the x-axis.
     yunit
@@ -117,9 +131,9 @@ def render(x, y, render, snap="current", sim="current", overplot=False, autoscal
         of possible values.
     '''
     simno = get_sim_no(sim)
-    command = Commands.RenderPlotCommand(x, y, render, snap, simno, overplot, autoscale, xunit, 
-                                         yunit, renderunit, res, interpolation)
-    data = command.prepareData()
+    command = Commands.RenderPlotCommand(x, y, render, snap, simno, overplot, autoscale, autoscalerender, 
+                                         coordlimits, xunit, yunit, renderunit, res, interpolation)
+    data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
 
 def addrender(x, y, renderq, **kwargs):
@@ -146,6 +160,9 @@ def limit (quantity, min=None, max=None, auto=False, window='current', subfigure
         subfigure=='all'
     command = Commands.LimitCommand (quantity, min, max, auto, window, subfigure)
     Singletons.queue.put([command,None])
+    if window=='global':
+        okflag=Singletons.completedqueue.get()
+        print okflag
 
 def addplot (x,y, **kwargs):
     '''Thin wrapper around plot that sets overplot to True.
@@ -254,7 +271,7 @@ def update(type=None):
             except AttributeError:
                 updateplot=False
         if updateplot:
-            data = command.prepareData()
+            data = command.prepareData(Singletons.globallimits)
             Singletons.queue.put([command, data])
 
 def savefig(name):
@@ -282,7 +299,7 @@ def plotanalytical(x=None, y=None, snap = "current", sim = "current", overplot =
     
     simno = get_sim_no(sim)
     command = Commands.AnalyticalPlotCommand(x, y, snap, simno, overplot, autoscale, xunit, yunit)
-    data = command.prepareData()
+    data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
 
 def rescale(quantity, unitname, window="current", subfig="current"):
@@ -290,6 +307,7 @@ def rescale(quantity, unitname, window="current", subfig="current"):
     command = Commands.RescaleCommand(quantity, unitname, window)
     Singletons.queue.put([command,None])
     okflag = Singletons.completedqueue.get()
+    print okflag
     update()
 
 def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "current"):
@@ -300,11 +318,11 @@ def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "c
     
     #istantiate and setup the command object to retrieve analytical solution
     command1 = Commands.AnalyticalPlotCommand(x, y, snap, simno)
-    adata = command1.prepareData()
+    adata = command1.prepareData(Singletons.globallimits)
 
     #istantiate and setup the 2nd command object to retrieve particle data
     command2 = Commands.ParticlePlotCommand(x, y, snap, simno)
-    pdata = command2.prepareData()
+    pdata = command2.prepareData(Singletons.globallimits)
 
     #cut arrays if limits are provided
     if xmin != None and xmax != None:
@@ -333,14 +351,6 @@ def get_sim_no(sim):
         simno = sim
     return simno
 
-
-def init():
-    global plottingprocess
-    plottingprocess = PlottingProcess(Singletons.queue, Singletons.commands, Singletons.completedqueue)
-    plottingprocess.start()
-    
-init()
-
 def sigint(signum, frame):
     cleanup()
     
@@ -350,6 +360,13 @@ def cleanup():
     plottingprocess.join()
     import sys
     sys.exit()
+
+def init():
+    global plottingprocess
+    plottingprocess = PlottingProcess(Singletons.queue, Singletons.commands, Singletons.completedqueue, Singletons.globallimits)
+    plottingprocess.start()
+
+init()
  
 signal.signal(signal.SIGINT, sigint)
 signal.signal(signal.SIGTERM, sigint)

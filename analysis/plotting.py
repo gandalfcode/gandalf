@@ -3,14 +3,15 @@ from Queue import Empty
 import os
 
 class PlottingProcess (Process):
-    def __init__(self, queue, commands, completedqueue):
+    def __init__(self, queue, commands, completedqueue, globallimits):
         Process.__init__(self)
         self.queue = queue #queue for receiving commands and data
         self.commands = commands #list of commands to execute
         self.completedqueue = completedqueue #queue to signal main process that we are done
         self.commandsfigures = {} #dictionary that associate to each command the figure produced
         self.quantitiesfigures = {} #dictionary that associate to each quantity the figure where it is plotted
-        self.globallimits = {} #dictionary that associate to each quantity the global limits
+        self.globallimits = globallimits #dictionary that associate to each quantity the global limits
+        self.axesimages = {} #dictionary that for each axis associate the corresponding image
         self.lastid = 0 #id of the last command received
     
     def run(self):
