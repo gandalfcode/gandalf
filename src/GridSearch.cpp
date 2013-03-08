@@ -83,12 +83,14 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
   int *activelist;                        // List of active particle ids
   int *celllist;                          // List of active cells
   int *neiblist;                          // List of neighbour ids
-  int *nearlist;                          // List of nearby neighbour ids
+  int *gatherlist;                        // List of nearby neighbour ids
+  int *scatterlist;                       // List of nearby neighbour ids
   int Nactive;                            // No. of active particles in cell
   int Ngrav;                              // No. of direct sum gravity ptcls
-  int Nnear;                              // No. of near neighbours
+  int Ngather;                            // No. of near gather neighbours
   int Nneib;                              // No. of neighbours
   int Nneibmax;                           // Max. no. of neighbours
+  int Nscatter;                           // No. of near scatter neighbours
   FLOAT draux[ndimmax];                   // Aux. relative position vector var
   FLOAT drsqd;                            // Distance squared
   FLOAT hrangesqd;                        // Kernel extent
@@ -96,6 +98,9 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
   FLOAT *dr;                              // Array of relative position vectors
   FLOAT *drmag;                           // Array of neighbour distances
   FLOAT *invdrmag;                        // Array of 1/drmag between particles
+  FLOAT *dr2;                             // Array of relative position vectors
+  FLOAT *drmag2;                          // Array of neighbour distances
+  FLOAT *invdrmag2;                       // Array of 1/drmag between particles
   SphParticle *neibpart;                  // Local copy of neighbouring ptcls
   SphParticle *data = sph->sphdata;       // Pointer to SPH particle data
 
@@ -107,10 +112,14 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
 
   Nneibmax = Nlistmax;
   neiblist = new int[Nneibmax];
-  nearlist = new int[Nneibmax];
+  gatherlist = new int[Nneibmax];
+  scatterlist = new int[Nneibmax];
   dr = new FLOAT[Nneibmax*ndim];
   drmag = new FLOAT[Nneibmax];
   invdrmag = new FLOAT[Nneibmax];
+  dr2 = new FLOAT[Nneibmax*ndim];
+  drmag2 = new FLOAT[Nneibmax];
+  invdrmag2 = new FLOAT[Nneibmax];
   activelist = new int[Noccupymax];
   neibpart = new SphParticle[Nneibmax];
 
@@ -143,39 +152,51 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
 
       // Only compute quantities for definite candidiate neighbours
       hrangesqd = pow(grid_h_tolerance*sph->kernp->kernrange*data[i].h,2);
-      //cout << "Ptcl : " << j << "   " << Nactive << "   " << i
-    	//	  << "   hrangesqd : " << hrangesqd << endl;
+
       // Compute distances and the reciprical between the current particle
       // and all neighbours here
-      Nnear = 0;
+      Ngather = 0;
+      Nscatter = 0;
       for (jj=0; jj<Nneib; jj++) { 
 	for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
 	drsqd = DotProduct(draux,draux,ndim);
 	if (drsqd <= hrangesqd) {
-	  nearlist[Nnear] = jj;
-	  drmag[Nnear] = sqrt(drsqd);
-	  invdrmag[Nnear] = (FLOAT) 1.0/(drmag[Nnear] + small_number);
-	  for (k=0; k<ndim; k++) dr[Nnear*ndim + k] = draux[k]*invdrmag[Nnear];
-          Nnear++;
+	  gatherlist[Ngather] = jj;
+	  drmag[Ngather] = sqrt(drsqd);
+	  invdrmag[Ngather] = (FLOAT) 1.0/(drmag[Ngather] + small_number);
+	  for (k=0; k<ndim; k++)
+	    dr[Ngather*ndim + k] = draux[k]*invdrmag[Ngather];
+          Ngather++;
+	}
+
+	// Compute scatter list for unactive scatter neighbours
+	if (!neibpart[jj].active && (drsqd <= hrangesqd || 
+				     drsqd <= pow(sph->kernp->kernrange*
+						  neibpart[jj].h,2))) {
+	  scatterlist[Nscatter] = jj;
+	  drmag2[Nscatter] = sqrt(drsqd);
+	  invdrmag2[Nscatter] = (FLOAT) 1.0/(drmag2[Nscatter] + small_number);
+	  for (k=0; k<ndim; k++)
+	    dr2[Nscatter*ndim + k] = draux[k]*invdrmag2[Nscatter];
+          Nscatter++;
 	}
       }
 
       // Compute all SPH gather properties
-      okflag = sph->ComputeH(i,data[i],Nneib,Nnear,
-			     nearlist,neibpart,drmag,invdrmag,dr);
-
-      //if (2.0*data[i].h > dx_grid) {
-    	//cout << "h : " << data[i].h << "   h_max : " << dx_grid/2.0 << endl;
-    	  //exit(0);
-      //}
+      okflag = sph->ComputeH(i,data[i],Nneib,Ngather,
+			     gatherlist,neibpart,drmag,invdrmag,dr);
 
 #if defined(VERIFY_ALL)
       if (neibcheck) CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
 #endif
 
       // Compute all current particle contributions to hydro forces
-      sph->ComputeHydroForces(i,data[i],Nneib,Nnear,
-			      nearlist,neibpart,drmag,invdrmag,dr);
+      sph->ComputeGatherHydroForces(i,data[i],Nneib,Ngather,
+				    gatherlist,neibpart,drmag,invdrmag,dr);
+
+      sph->ComputeScatterHydroForces(i,data[i],Nneib,Nscatter,
+				     scatterlist,neibpart,
+				     drmag2,invdrmag2,dr2);
 
     }
     // ------------------------------------------------------------------------
@@ -194,10 +215,14 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
   // Free-up all memory
   delete[] neibpart;
   delete[] activelist;
+  delete[] invdrmag2;
+  delete[] drmag2;
+  delete[] dr2;
   delete[] invdrmag;
   delete[] drmag;
   delete[] dr;
-  delete[] nearlist;
+  delete[] scatterlist;
+  delete[] gatherlist;
   delete[] neiblist;
   delete[] celllist;
 
@@ -320,8 +345,8 @@ void GridSearch::UpdateAllSphGravityProperties(Sph *sph)
 #endif
 
       // Compute neighbour forces (i.e. hydro plus smoothed gravity)
-      sph->ComputeHydroForces(i,data[i],Nneib,Nnear,
-			      nearlist,neibpart,drmag,invdrmag,dr);
+      sph->ComputeGatherHydroForces(i,data[i],Nneib,Nnear,
+				    nearlist,neibpart,drmag,invdrmag,dr);
 
       // Compute all distant (i.e. unsmoothed) gravitational forces
       sph->ComputeDirectGravForces(i,Nfar,farlist,data[i],data);

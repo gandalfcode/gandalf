@@ -119,9 +119,6 @@ int GradhSph<kernelclass>::ComputeH(int i, SphParticle &parti, int Nneib,
     if (parti.rho > (FLOAT) 0.0 && parti.h > h_lower_bound &&
 	fabs(parti.h - h_fac*pow(parti.m*invrho,
 				 invndim)) < h_converge) break;
-    //cout << "rho : " << parti.rho << "    " << parti.m*hfactor*kern.w0(0.0f) << endl;
-    //cout << "Iterating : " << (parti.h - h_fac*pow(parti.m*invrho,
-	//		 invndim)) << "   " << h_converge << "   " << parti.rho << endl;
 
     // Use fixed-point iteration for now.  If this does not converge in a 
     // reasonable number of iterations (iteration_max), then assume something 
@@ -172,16 +169,19 @@ int GradhSph<kernelclass>::ComputeH(int i, SphParticle &parti, int Nneib,
 
 
 // ============================================================================
-// GradhSph::ComputeHydroForces
+// GradhSph::ComputeGatherHydroForces
 // ..
 // ============================================================================
 template <typename kernelclass>
-void GradhSph<kernelclass>::ComputeHydroForces(int i, SphParticle &parti,
-					       int Nneib, int Nnear, 
-					       int *nearlist, 
-					       SphParticle *neiblist,
-					       FLOAT *drmag, FLOAT *invdrmag, 
-					       FLOAT *dr)
+void GradhSph<kernelclass>::ComputeGatherHydroForces
+(int i,
+ SphParticle &parti,
+ int Nneib, int Nnear, 
+ int *nearlist, 
+ SphParticle *neiblist,
+ FLOAT *drmag, 
+ FLOAT *invdrmag, 
+ FLOAT *dr)
 {
   int j;                                    // Neighbour list id
   int jj;                                   // Aux. neighbour counter
@@ -259,6 +259,94 @@ void GradhSph<kernelclass>::ComputeHydroForces(int i, SphParticle &parti,
 
   return;
 }
+
+
+
+
+// ============================================================================
+// GradhSph::ComputeGatherHydroForces
+// ..
+// ============================================================================
+template <typename kernelclass>
+void GradhSph<kernelclass>::ComputeScatterHydroForces
+(int i,
+ SphParticle &parti,
+ int Nneib, int Nscatter, 
+ int *scatterlist, 
+ SphParticle *neiblist,
+ FLOAT *drmag, 
+ FLOAT *invdrmag, 
+ FLOAT *dr)
+{
+  int j;                                    // Neighbour list id
+  int jj;                                   // Aux. neighbour counter
+  int k;                                    // Dimension counter
+  FLOAT draux[ndimmax];                     // Relative position vector
+  FLOAT dv[ndimmax];                        // Relative velocity vector
+  FLOAT dvdr;                               // Dot product of dv and dr
+  FLOAT wkern;                              // Value of w1 kernel function
+  FLOAT vsignal;                            // Signal velocity
+  FLOAT paux;                               // Aux. pressure force variable
+  FLOAT uaux;                               // Aux. internal energy variable
+  FLOAT pfactor;                            // press/rho/rho/omega
+  FLOAT hfactor;                            // invh^(ndim + 1)
+  FLOAT hrange;                             // Kernel extent
+  FLOAT invrho;                             // 1 / rho
+
+
+  // Loop over all potential neighbours in the list
+  // ==========================================================================
+  for (jj=0; jj<Nscatter; jj++) {
+    j = scatterlist[jj];
+
+    for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
+    for (k=0; k<ndim; k++) dv[k] = neiblist[j].v[k] - parti.v[k];
+    dvdr = DotProduct(dv,draux,ndim);
+    invrho = 1.0/neiblist[j].rho;
+    wkern = hfactor*kern.w1(drmag[jj]*neiblist[j].invh);
+
+    // Compute hydro forces
+    // ------------------------------------------------------------------------
+    if (hydro_forces == 1) {
+      pfactor = eos->Pressure(neiblist[j])*invrho*invrho*neiblist[j].invomega;
+      paux = pfactor*wkern;
+
+      // Add dissipation terms (for approaching particle pairs)
+      if (dvdr < (FLOAT) 0.0) {
+	
+	// Artificial viscosity term
+	if (avisc == "mon97" || avisc == "pf2010") {
+	  vsignal = neiblist[j].sound - beta_visc*dvdr;
+	  paux -= (FLOAT) 0.5*alpha_visc*vsignal*dvdr*invrho*neiblist[j].invomega*wkern;
+	  parti.dudt -= (FLOAT) 0.25*neiblist[j].m*alpha_visc*vsignal*dvdr*dvdr*
+	    invrho*neiblist[j].invomega*wkern;
+	}
+	
+	// Artificial conductivity term
+	if (acond == "wadsley2008") {
+	  parti.dudt += (FLOAT) 0.5*neiblist[j].m*fabs(dvdr)*
+	    (parti.u - neiblist[j].u)*wkern*invrho;
+	}
+      }
+    }
+
+    // Compute gravitational contribution
+    // ------------------------------------------------------------------------
+    if (self_gravity == 1) {
+      paux += parti.invh*parti.invh*kern.wgrav(drmag[j]*parti.invh) +
+	parti.zeta*wkern;
+    }
+
+    // Add total contribution to acceleration for particle i
+    for (k=0; k<ndim; k++) parti.a[k] += neiblist[j].m*draux[k]*paux;
+    
+  }
+  // ==========================================================================
+
+  return;
+}
+
+
 
 
 

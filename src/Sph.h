@@ -44,8 +44,12 @@ class Sph
   // --------------------------------------------------------------------------
   virtual int ComputeH(int, SphParticle &, int, int, int *,
 		       SphParticle *, FLOAT *, FLOAT *, FLOAT *) = 0;
-  virtual void ComputeHydroForces(int, SphParticle &, int, int, int *,
-				  SphParticle *, FLOAT *, FLOAT *, FLOAT *) = 0;
+  virtual void ComputeGatherHydroForces(int, SphParticle &, int, int, int *,
+					SphParticle *, FLOAT *, FLOAT *, 
+					FLOAT *) = 0;
+  virtual void ComputeScatterHydroForces(int, SphParticle &, int, int, int *,
+					 SphParticle *, FLOAT *, FLOAT *, 
+					 FLOAT *) = 0;
   virtual void ComputeDirectGravForces(int, int, int *,
 				       SphParticle &, SphParticle *) = 0;
 
@@ -108,8 +112,10 @@ class GradhSph: public Sph
 
   int ComputeH(int, SphParticle &, int, int, int *,
 	       SphParticle *, FLOAT *, FLOAT *, FLOAT *);
-  void ComputeHydroForces(int, SphParticle &, int, int, int *,
-			  SphParticle *, FLOAT *, FLOAT *, FLOAT *);
+  void ComputeGatherHydroForces(int, SphParticle &, int, int, int *,
+				SphParticle *, FLOAT *, FLOAT *, FLOAT *);
+  void ComputeScatterHydroForces(int, SphParticle &, int, int, int *,
+				 SphParticle *, FLOAT *, FLOAT *, FLOAT *);
   void ComputeDirectGravForces(int, int, int *, SphParticle &, SphParticle *);
 
 };

@@ -101,8 +101,8 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph)
 			   sph->sphdata,drmag,invdrmag,dr);
     
     // Compute all SPH hydro forces
-    sph->ComputeHydroForces(i,sph->sphdata[i],Nneib,Nneib,neiblist,
-			    sph->sphdata,drmag,invdrmag,dr);
+    sph->ComputeGatherHydroForces(i,sph->sphdata[i],Nneib,Nneib,neiblist,
+				  sph->sphdata,drmag,invdrmag,dr);
 
   }
   // --------------------------------------------------------------------------
@@ -166,8 +166,8 @@ void BruteForceSearch::UpdateAllSphGravityProperties(Sph *sph)
 			   sph->sphdata,drmag,invdrmag,dr);
     
     // Compute all SPH forces
-    sph->ComputeHydroForces(i,sph->sphdata[i],Nneib,Nneib,neiblist,
-			    sph->sphdata,drmag,invdrmag,dr);
+    sph->ComputeGatherHydroForces(i,sph->sphdata[i],Nneib,Nneib,neiblist,
+				  sph->sphdata,drmag,invdrmag,dr);
 
   }
   // --------------------------------------------------------------------------

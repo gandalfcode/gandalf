@@ -8,13 +8,13 @@
 #-------------------------------------------------
 
 CC = g++ # C++ compiler
-F2PY = f2py2.7
+F2PY = f2py
 #OPT = -pg -O3 -fPIC
 OPT = -O3 -ffast-math -fPIC #-g -Wall
 #OPT = -g -pg -fprofile-arcs -ftest-coverage -fPIC
 #OPT = -g -Wall -fbounds-check
 
-PYTHON = python2.7 # Name of the python interpreter
+PYTHON = python # Name of the python interpreter
 
 
 #-------------------------------------------------

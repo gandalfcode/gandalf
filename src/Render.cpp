@@ -46,7 +46,7 @@ Render::~Render()
 // Calculate column integrated SPH averaged quantities on a grid for use in 
 // generated rendered images in python code.
 // ============================================================================
-int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
+int Render::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
 				string ystring, string renderstring,
 				string renderunit, float xmin, float xmax,
 				float ymin, float ymax, float* values,
@@ -89,6 +89,7 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
   snap.ExtractArray("m",&mvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
   snap.ExtractArray("rho",&rhovalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
   snap.ExtractArray("h",&hvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+
   // If any are invalid, exit here with failure code
   if (arraycheck == 0) return -1;
 
@@ -125,22 +126,27 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
       // ----------------------------------------------------------------------
       for (c=0; c<Ngrid; c++) {
 	
-	dr[0] = rgrid[2*c] - xvalues[i];
-	dr[1] = rgrid[2*c + 1] - yvalues[i];
-	drsqd = dr[0]*dr[0] + dr[1]*dr[1];
+    	dr[0] = rgrid[2*c] - xvalues[i];
+	    dr[1] = rgrid[2*c + 1] - yvalues[i];
+	    drsqd = dr[0]*dr[0] + dr[1]*dr[1];
 	
-	if (drsqd > hrangesqd) continue;
+	    if (drsqd > hrangesqd) continue;
 	
-	drmag = sqrt(drsqd);
-	wkern = float(sph->kernp->w0((FLOAT) (drmag*invh)));
+	    drmag = sqrt(drsqd);
+	    wkern = float(sph->kernp->w0((FLOAT) (drmag*invh)));
 	
-	values[c] += wnorm*rendervalues[i]*wkern;
-	rendernorm[c] += wnorm*wkern;
+	    values[c] += wnorm*rendervalues[i]*wkern;
+	    rendernorm[c] += wnorm*wkern;
       }
       // ----------------------------------------------------------------------
       
     }
     // ------------------------------------------------------------------------
+
+    // Normalise all grid cells
+    for (c=0; c<Ngrid; c++) {
+      if (rendernorm[c] > 1.e-10) values[c] /= rendernorm[c];
+    }
 
 
   }
@@ -158,17 +164,17 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
       // ----------------------------------------------------------------------
       for (c=0; c<Ngrid; c++) {
 	
-	dr[0] = rgrid[2*c] - xvalues[i];
-	dr[1] = rgrid[2*c + 1] - yvalues[i];
-	drsqd = dr[0]*dr[0] + dr[1]*dr[1];
+    	dr[0] = rgrid[2*c] - xvalues[i];
+	    dr[1] = rgrid[2*c + 1] - yvalues[i];
+	    drsqd = dr[0]*dr[0] + dr[1]*dr[1];
 	
-	if (drsqd > hrangesqd) continue;
+	    if (drsqd > hrangesqd) continue;
 	
-	drmag = sqrt(drsqd);
-	wkern = float(sph->kernp->wLOS((FLOAT) (drmag*invh)));
+	    drmag = sqrt(drsqd);
+	    wkern = float(sph->kernp->wLOS((FLOAT) (drmag*invh)));
 	
-	values[c] += wnorm*rendervalues[i]*wkern;
-	rendernorm[c] += wnorm*wkern;
+	    values[c] += wnorm*rendervalues[i]*wkern;
+	    rendernorm[c] += wnorm*wkern;
       }
       // ----------------------------------------------------------------------
 
@@ -179,18 +185,12 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
   // ==========================================================================
 
 
-  // Normalise all grid cells
-  for (c=0; c<Ngrid; c++) {
-    //if (rendernorm[c] > 1.e-10) values[c] /= rendernorm[c];
-  }
-
   // Free all locally allocated memory
   delete[] rgrid;
   delete[] rendernorm;
 
   return 1;
 }
-
 
 
 
@@ -237,30 +237,31 @@ int Render::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
 	  (ystring != "x" && ystring != "y" && ystring != "z")) return -1;
 
   // First, verify x, y and render strings are valid
-  snap.ExtractArray(xstring,&xvalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;
-  snap.ExtractArray(ystring,&yvalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;
-  snap.ExtractArray(zstring,&zvalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;
-  snap.ExtractArray(renderstring,&rendervalues,&idummy,scaling_factor,renderunit); arraycheck *= idummy;
-  snap.ExtractArray("m",&mvalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;
-  snap.ExtractArray("rho",&rhovalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;
-  snap.ExtractArray("h",&hvalues,&idummy,dummyfloat,dummystring); arraycheck *= idummy;
+  snap.ExtractArray(xstring,&xvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(ystring,&yvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(zstring,&zvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(renderstring,&rendervalues,&idummy,scaling_factor,renderunit); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("m",&mvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("rho",&rhovalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("h",&hvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
 
   // If any are invalid, exit here with failure code
   if (arraycheck == 0) return -1;
 
-  rendernorm = new float[snap.Nsph];
+  rendernorm = new float[Ngrid];
 
   // Create grid positions here
   c = 0;
   rgrid = new float[2*Ngrid];
   for (j=iygrid-1; j>=0; j--) {
-	  for (i=0; i<ixgrid; i++) {
-		  rgrid[2*c] = xmin + ((float) i + 0.5f)*(xmax - xmin)/(float)ixgrid;
-		  rgrid[2*c + 1] = ymin + ((float) j + 0.5f)*(ymax - ymin)/(float)iygrid;
-		  c++;
-	  }
+    for (i=0; i<ixgrid; i++) {
+      rgrid[2*c] = xmin + ((float) i + 0.5f)*(xmax - xmin)/(float)ixgrid;
+      rgrid[2*c + 1] = ymin + ((float) j + 0.5f)*(ymax - ymin)/(float)iygrid;
+      c++;
+    }
   }
 
+  // Zero arrays before computing rendering
   for (c=0; c<Ngrid; c++) values[c] = 0.0f;
   for (c=0; c<Ngrid; c++) rendernorm[c] = 0.0f;
 
