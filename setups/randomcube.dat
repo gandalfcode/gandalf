@@ -11,7 +11,7 @@ xrhs : z_boundary_rhs = periodic
      : boxmin[2] = 0.0
      : boxmax[0] = 1.0
      : boxmax[1] = 1.0
-     : boxmax[2] = 1.0
+     : boxmax[2] = 2.0
 
      : ndim = 3
      : ic = random_cube

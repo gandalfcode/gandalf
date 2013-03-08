@@ -181,7 +181,7 @@ int Render::CreateRenderingGrid(int ixgrid, int iygrid, string xstring,
 
   // Normalise all grid cells
   for (c=0; c<Ngrid; c++) {
-    if (rendernorm[c] > 1.e-10) values[c] /= rendernorm[c];
+    //if (rendernorm[c] > 1.e-10) values[c] /= rendernorm[c];
   }
 
   // Free all locally allocated memory
