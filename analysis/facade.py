@@ -199,12 +199,21 @@ def subfigure(nx, ny, current):
     Singletons.queue.put([command,data])
 
 def newsim(paramfile):
+    '''Reads a parameter file and setups a simulation from it'''
     return SimBuffer.newsim(paramfile)
 
 def newsimfromparams(paramfile):
+    '''Creates a new simulation object and parses the parameter file,
+    but does not do the setup, still allowing you to programmatically
+    change some of the parameters'''
     return SimBuffer.newsimfromparams(paramfile)
 
 def run(no=None):
+    '''Run a simulation. If no argument is given, run the current one;
+    otherwise queries the buffer for the given simulation number.
+    If the simulation has not been setup (e.g., if you have used
+    newsimfromparams), does it before running. 
+    '''
     #gets the correct simulation object from the buffer
     try:
         if no is None:
@@ -225,10 +234,14 @@ def run(no=None):
     update("live")
 
 def block():
+    '''Stops the execution flow until the user presses enter.
+    Useful in scripts, allowing to see a plot (which gets closed
+    when the execution flow reaches the end of the script'''
     print "Press enter to quit..."
     raw_input()
 
 def update(type=None):
+    '''Updates all the plots. The user should never call directly this function.''' 
     #updates the plots
     for command in Singletons.commands:
         updateplot=False
@@ -245,12 +258,17 @@ def update(type=None):
             Singletons.queue.put([command, data])
 
 def savefig(name):
+    '''Saves the current figure with the given name.
+    Note that matplotlib figures out automatically the type of the file
+    from the extension'''
     command = Commands.SaveFigCommand(name)
     data = None
     Singletons.queue.put([command,data])
     time.sleep(1e-3)
 
 def switch_nongui():
+    '''Switches matplotlib backend, disabling interactive plotting.
+    Useful in scripts where no interaction is required'''
     command = Commands.SwitchNonGui()
     data = None
     Singletons.queue.put([command,data])
