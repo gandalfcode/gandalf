@@ -244,11 +244,10 @@ def run(no=None):
         print "The selected simulation was not set-up, we will do it for you"
         sim.SetupSimulation()
     
-    sim.Run()
-    
-    SimBuffer.load_live_snapshot(sim)
-    
-    update("live")
+    while sim.t < sim.tend and sim.Nsteps < sim.Nstepsmax:
+        sim.InteractiveRun()
+        SimBuffer.load_live_snapshot(sim)
+        update("live")
 
 def block():
     '''Stops the execution flow until the user presses enter.
