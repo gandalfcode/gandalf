@@ -143,6 +143,16 @@ cout << "Problem?? : " << arraycheck << endl;
     //if (rendernorm[c] > 1.e-10) values[c] /= rendernorm[c];
   cout << "render : " << values[c] << endl;
   }
+
+  c = 0;
+  rgrid = new float[2*Ngrid];
+  for (j=iygrid-1; j>=0; j--) {
+	  for (i=0; i<ixgrid; i++) {
+	    cout << "i : " << i << "   j : " << j << "   val " << values[c] << endl;
+	  }
+  }
+
+
   return 1;
 }
 
