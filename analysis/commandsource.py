@@ -93,12 +93,16 @@ class PlotCommand(Command):
             if bool(self.autoscale):
                 if self.autoscale=='x':
                     ax.set_autoscalex_on(True)
+                    self.setlimits(plotting, ax, 'y')
                 elif self.autoscale=='y':
                     ax.set_autoscaley_on(True)
+                    self.setlimits(plotting, ax, 'x')
                 else:
                     ax.set_autoscale_on(True)
             else:
                 ax.set_autoscale_on(False)
+                self.setlimits(plotting, ax, 'x')
+                self.setlimits(plotting, ax, 'y')
             self.autolimits(ax)
             #the figure might have been shown already, but we need to redo it,
             #because (apparently) matplotlib does not provide any way of knowing
@@ -152,6 +156,19 @@ class PlotCommand(Command):
         setattr(self,axis+'label',snap.label)
         setattr(self,axis+'unitname',snap.unitname)
         return data, scaling_factor
+    
+    def setlimits(self, plotting, ax, axis):
+        try:
+            min, max, auto = plotting.globallimits[getattr(self,axis+'quantity')]
+        except KeyError:
+            return
+        if min is None or max is None:
+            method = getattr(ax,'set_autoscale'+axis+'_on')
+            method(True)
+        else:
+            method = getattr(ax, 'set_'+axis+'lim')
+            method(min,max)
+        
 
 class ParticlePlotCommand (PlotCommand):
     
@@ -284,7 +301,7 @@ class LimitCommand(Command):
             if self.window == 'current':
                 fig = plotting.plt.gcf()
                 figs=[fig]
-            elif self.window == 'all':
+            elif self.window == 'all' or self.window == 'global':
                 managers = plotting.plt._pylab_helpers.Gcf.get_all_fig_managers()
                 figs=map(lambda manager: manager.canvas.figure, managers)
             else:
@@ -306,6 +323,8 @@ class LimitCommand(Command):
             plotting.commands.append(self)
             plotting.commandsfigures[self.id]= figs, axs, line
             plotting.lastid = self.id
+            if self.window=='global':
+                plotting.globallimits[self.quantity] = self.min, self.max, self.auto
         for ax in axs:
             for axis in ['x', 'y']:
                 try:

@@ -5,12 +5,13 @@ import os
 class PlottingProcess (Process):
     def __init__(self, queue, commands, completedqueue):
         Process.__init__(self)
-        self.queue = queue
-        self.commands = commands
-        self.completedqueue = completedqueue
-        self.commandsfigures = {}
-        self.quantitiesfigures = {}
-        self.lastid = 0
+        self.queue = queue #queue for receiving commands and data
+        self.commands = commands #list of commands to execute
+        self.completedqueue = completedqueue #queue to signal main process that we are done
+        self.commandsfigures = {} #dictionary that associate to each command the figure produced
+        self.quantitiesfigures = {} #dictionary that associate to each quantity the figure where it is plotted
+        self.globallimits = {} #dictionary that associate to each quantity the global limits
+        self.lastid = 0 #id of the last command received
     
     def run(self):
         import matplotlib.pyplot as plt
