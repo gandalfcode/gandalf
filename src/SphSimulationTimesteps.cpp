@@ -72,22 +72,21 @@ void SphSimulation::ComputeGlobalTimestep(void)
 // ============================================================================
 void SphSimulation::ComputeBlockTimesteps(void)
 {
-  int i;                                    // ..
-  int istep;                                // ..
-  int level;                                // ..
-  int last_level;                           // ..
-  int level_diff;                           // ..
-  int level_old;                            // ..
-  int level_max_sph = 0;                    // ..
-  int nstep;                                // ..
+  int i;                                    // Particle counter
+  int istep;                                // ??
+  int level;                                // Particle timestep level
+  int last_level;                           // Previous timestep level
+  int level_max_old;                        // Old level_max
+  int level_max_sph = 0;                    // level_max for SPH particles only
+  int nstep;                                // ??
   DOUBLE dt;                                // Aux. timestep variable
-  DOUBLE dt_max_sph = 0.0;                  // ..
+  DOUBLE dt_max_sph = 0.0;                  // Maximum SPH particle timestep
 
   debug2("[SphSimulation::ComputeBlockTimesteps]");
 
   timestep = big_number;
 
-  // Synchronise all timesteps
+  // Synchronise all timesteps and reconstruct block timestep structure.
   // ==========================================================================
   if (n == nresync) {
 
@@ -141,7 +140,7 @@ void SphSimulation::ComputeBlockTimesteps(void)
   // ==========================================================================
   else {
 
-    level_old = level_max;
+    level_max_old = level_max;
     level_max = 0;
 
     // Find all SPH particles at the beginning of a new timestep
@@ -152,7 +151,7 @@ void SphSimulation::ComputeBlockTimesteps(void)
       nstep = pow(2,level_step - last_level);
       istep = pow(2,level_step - last_level + 1);
 
-      // Skip particles not at end of step
+      // Skip particles that are not at end of step
       if (n%nstep == 0) {
 	last_level = sph->sphdata[i].level;
 	dt = sphint->Timestep(sph->sphdata[i],sph->hydro_forces);
@@ -184,22 +183,21 @@ void SphSimulation::ComputeBlockTimesteps(void)
 
     // Update all timestep variables if we have removed or added any levels
     // ------------------------------------------------------------------------
-    if (level_max != level_old) {
+    if (level_max != level_max_old) {
 
       // Increase maximum timestep level if correctly synchronised
-      istep = pow(2,level_step - level_old + 1);
-      if (level_max <= level_old - 1 && level_old > 1 && n%istep == 0)
-	level_max = level_old - 1;
-      else if (level_max == level_old)
-	level_max = level_old;
+      istep = pow(2,level_step - level_max_old + 1);
+      if (level_max <= level_max_old - 1 && level_max_old > 1 && n%istep == 0)
+	level_max = level_max_old - 1;
+      else if (level_max == level_max_old)
+	level_max = level_max_old;
       level_step = level_max + integration_step - 1;
-      level_diff = level_max - level_old;
 
       // Adjust integer time if levels added or removed
-      if (level_max > level_old)
-	n *= pow(2,level_max - level_old);
-      else if (level_max < level_old)
-	n /= pow(2,level_old - level_max);
+      if (level_max > level_max_old)
+	n *= pow(2,level_max - level_max_old);
+      else if (level_max < level_max_old)
+	n /= pow(2,level_max_old - level_max);
 
     }
     // ------------------------------------------------------------------------
@@ -213,7 +211,7 @@ void SphSimulation::ComputeBlockTimesteps(void)
 #if defined(VERIFY_ALL)
   VerifyBlockTimesteps();
 #endif
-  //scanf("%d",&i);
+
   return;
 }
 

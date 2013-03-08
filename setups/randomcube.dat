@@ -11,12 +11,12 @@ xrhs : z_boundary_rhs = periodic
      : boxmin[2] = 0.0
      : boxmax[0] = 1.0
      : boxmax[1] = 1.0
-     : boxmax[2] = 4.0
+     : boxmax[2] = 2.0
 
      : ndim = 3
      : ic = random_cube
-     : Npart = 1024
-     : run_id = RELAX-3D
+     : Npart = 512
+     : run_id = TEST
 
      : neib_search = grid
 

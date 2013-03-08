@@ -48,7 +48,7 @@ SphLeapfrogKDK::~SphLeapfrogKDK()
 // order from the beginning of the step to the current simulation time, i.e. 
 // r(t+dt) = r(t) + v(t)*dt + 0.5*a(t)*dt^2, 
 // v(t+dt) = v(t) + a(t)*dt.
-// Also set particles at the send of step as 'active' in order to compute 
+// Also set particles at the end of step as 'active' in order to compute 
 // the end-of-step force computation.
 // ============================================================================
 void SphLeapfrogKDK::AdvanceParticles(int n, int level_step, int Nsph,

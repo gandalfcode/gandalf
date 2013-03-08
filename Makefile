@@ -8,13 +8,13 @@
 #-------------------------------------------------
 
 CC = g++ # C++ compiler
-F2PY = f2py
+F2PY = f2py2.7
 #OPT = -pg -O3 -fPIC
 OPT = -O3 -ffast-math -fPIC #-g -Wall
 #OPT = -g -pg -fprofile-arcs -ftest-coverage -fPIC
 #OPT = -g -Wall -fbounds-check
 
-PYTHON = python # Name of the python interpreter
+PYTHON = python2.7 # Name of the python interpreter
 
 
 #-------------------------------------------------
@@ -26,7 +26,7 @@ PRECISION                 = DOUBLE
 NDIM                      = 0
 DEBUG                     = 1
 # Turn on expensive verifications (only needed to debug)
-VERIFY_ALL                = 1
+VERIFY_ALL                = 0
 
 
 # Select location of python and numpy libraries.  If blank, make will try to 
@@ -34,7 +34,7 @@ VERIFY_ALL                = 1
 # utilities.  If you have multiple versions of python installed on your 
 # computer, then select the prefered version with the PYTHON variable above.
 # -----------------------------------------------------------------------------
-PYLIB =
+PYLIB = 
 NUMPY = 
 
 

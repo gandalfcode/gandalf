@@ -224,8 +224,6 @@ void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array,
 
   LastUsed = time(NULL);
 
-  *size_array = Nsph;
-
   // If array name is valid, pass pointer to array and also set unit
   if (name == "x") {
     *out_array = x;
@@ -289,6 +287,9 @@ void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array,
     ExceptionHandler::getIstance().raise(message);
     *size_array = 0;
   }
+
+  //set the size now that we have the array
+  *size_array = Nsph;
 
   // If no new unit is requested, pass the default scaling values.
   // Otherwise, calculate new scaling factor plus latex label.

@@ -42,9 +42,9 @@ class Singletons:
     commands = Manager().list()
     completedqueue = Queue()
     
-def loadsim(run_id):
+def loadsim(run_id, fileformat = 'ascii', buffer_flag = 'cache'):
     '''Given the run_id of a simulation, reads it from the disk'''
-    SimBuffer.loadsim(run_id)
+    SimBuffer.loadsim(run_id, fileformat=fileformat, buffer_flag=buffer_flag)
     return SimBuffer.get_current_sim()
     
 def plot(x,y, snap="current", sim="current", overplot = False, autoscale = True, xunit="default", yunit="default"):
@@ -62,7 +62,10 @@ def plot(x,y, snap="current", sim="current", overplot = False, autoscale = True,
     overplot
         If True, overplots on the previous existing plot rather than deleting it. Defaults to False.
     autoscale
-        If True (default), the limits of the plot are set automatically using the minimum and the maximum.
+        If True (default), the limits of the plot are set automatically.
+        Can also be set to 'x' or 'y' to specify that only one of the axis has to use autoscaling.
+        If False, autoscaling is not used. On an axis that does not have autoscaling turned on,
+        global limits are used if defined for the plotted quantity.
     xunit
         Specify the unit to use for the plotting for the quantity on the x-axis.
     yunit
@@ -95,7 +98,10 @@ def render(x, y, render, snap="current", sim="current", overplot=False, autoscal
     overplot
         If True, overplots on the previous existing plot rather than deleting it. Defaults to False.
     autoscale
-        If True (default), the limits of the plot are set automatically using the minimum and the maximum.
+        If True (default), the limits of the plot are set automatically.
+        Can also be set to 'x' or 'y' to specify that only one of the axis has to use autoscaling.
+        If False, autoscaling is not used. On an axis that does not have autoscaling turned on,
+        global limits are used if defined for the plotted quantity.
     xunit
         Specify the unit to use for the plotting for the quantity on the x-axis.
     yunit
@@ -104,7 +110,11 @@ def render(x, y, render, snap="current", sim="current", overplot=False, autoscal
         Specify the unit to use for the plotting for the rendered quantity.
     res
         Specify the resolution. Can be an integer number, in which case the same resolution will be used on the two axes,
-        or a tuple of two integer numbers, if you want to specify different resolutions on the two axes. 
+        or a tuple of two integer numbers, if you want to specify different resolutions on the two axes.
+    interpolation
+        Specify the interpolation to use. Default is nearest, which will show the pixels of the rendering grid. If one
+        wants to smooth the image, bilinear or bicubic could be used. See pyplot documentation for the full list
+        of possible values.
     '''
     simno = get_sim_no(sim)
     command = Commands.RenderPlotCommand(x, y, render, snap, simno, overplot, autoscale, xunit, 
@@ -114,21 +124,38 @@ def render(x, y, render, snap="current", sim="current", overplot=False, autoscal
 
 def addrender(x, y, renderq, **kwargs):
     '''Thin wrapper around render that sets overplot to True.
-    All the other arguments are the same'''
+    All the other arguments are the same. If autoscale is not
+    explicitly set, it will be set to False to preserve the
+    existing settings.'''
+    try:
+        kwargs['autoscale']
+    except KeyError:
+        kwargs['autoscale']=False
     render(x, y, renderq, overplot=True, **kwargs)
     
-def limit (quantity, min, max=None):
-    '''First, rough implementation of limits. Quantity for now
-    is either x or y, indicating the axis to limit. Min can be set
-    to auto, and max can be omitted; in that case, the limits will be
-    recomputed automatically.
+def limit (quantity, min=None, max=None, auto=False, window='current', subfigure='current'):
+    '''Set plot limits. Quantity is the quantity to limit. If auto is set to True, then
+    the limits for that quantity are set automatically. Otherwise, use the one given by x and y.
+    By default, changes the limits only for the current subfigure of the current plot. One
+    can specify the number for them or use the special keyword 'all' to change the limits in all
+    the figures or in all the subfigures of the current figure. Also the keyword 'global' is available
+    for window, which means that the change will affect also future plots that do not have autoscaling
+    turned on. 
     '''
-    command = Commands.LimitCommand (quantity, min, max)
+    if window=='all' and subfigure=='current':
+        subfigure=='all'
+    command = Commands.LimitCommand (quantity, min, max, auto, window, subfigure)
     Singletons.queue.put([command,None])
 
 def addplot (x,y, **kwargs):
     '''Thin wrapper around plot that sets overplot to True.
-    All the other arguments are the same'''
+    All the other arguments are the same. If autoscale is not
+    explicitly set, it will be set to False to preserve the
+    existing settings.'''
+    try:
+        kwargs['autoscale']
+    except KeyError:
+        kwargs['autoscale']=False
     plot(x,y, overplot=True, **kwargs)
     
 def next():
@@ -155,22 +182,38 @@ def snap(no):
     update("current")
         
 def window(no = None):
+    '''Changes the current window to the number specified. If the
+    window doesn't exist, recreate it.'''
     command = Commands.WindowCommand(no)
     data = None
     Singletons.queue.put([command,data])
 
 def subfigure(nx, ny, current):
+    '''Creates a subplot in the current window.
+    The arguments nx and ny specify the grid size; the current
+    arguments marks the subplot that will become the current one.
+    If the plot already exists, just sets it as the current one.
+    '''
     command = Commands.SubfigureCommand(nx, ny, current)
     data = None
     Singletons.queue.put([command,data])
 
 def newsim(paramfile):
+    '''Reads a parameter file and setups a simulation from it'''
     return SimBuffer.newsim(paramfile)
 
 def newsimfromparams(paramfile):
+    '''Creates a new simulation object and parses the parameter file,
+    but does not do the setup, still allowing you to programmatically
+    change some of the parameters'''
     return SimBuffer.newsimfromparams(paramfile)
 
 def run(no=None):
+    '''Run a simulation. If no argument is given, run the current one;
+    otherwise queries the buffer for the given simulation number.
+    If the simulation has not been setup (e.g., if you have used
+    newsimfromparams), does it before running. 
+    '''
     #gets the correct simulation object from the buffer
     try:
         if no is None:
@@ -191,41 +234,54 @@ def run(no=None):
     update("live")
 
 def block():
+    '''Stops the execution flow until the user presses enter.
+    Useful in scripts, allowing to see a plot (which gets closed
+    when the execution flow reaches the end of the script'''
     print "Press enter to quit..."
     raw_input()
 
 def update(type=None):
+    '''Updates all the plots. The user should never call directly this function.''' 
     #updates the plots
     for command in Singletons.commands:
         updateplot=False
         if type is None:
             updateplot=True
         else:
-            if command.snap == type:
-                updateplot=True
+            try:
+                if command.snap == type:
+                    updateplot=True
+            except AttributeError:
+                updateplot=False
         if updateplot:
             data = command.prepareData()
             Singletons.queue.put([command, data])
 
 def savefig(name):
+    '''Saves the current figure with the given name.
+    Note that matplotlib figures out automatically the type of the file
+    from the extension'''
     command = Commands.SaveFigCommand(name)
     data = None
     Singletons.queue.put([command,data])
     time.sleep(1e-3)
 
 def switch_nongui():
+    '''Switches matplotlib backend, disabling interactive plotting.
+    Useful in scripts where no interaction is required'''
     command = Commands.SwitchNonGui()
     data = None
     Singletons.queue.put([command,data])
     time.sleep(1e-3)
 
-def plotanalytical(x=None, y=None, overplot = True, sim = "current", snap = "current", autoscale = True):
+def plotanalytical(x=None, y=None, snap = "current", sim = "current", overplot = True, 
+                   autoscale = True, xunit="default", yunit="default"):
     '''Plots the analytical solution'''
         
     #TODO: figure out automatically the quantities to plot depending on current window    
     
     simno = get_sim_no(sim)
-    command = Commands.AnalyticalPlotCommand(x, y, snap, simno, overplot, autoscale)
+    command = Commands.AnalyticalPlotCommand(x, y, snap, simno, overplot, autoscale, xunit, yunit)
     data = command.prepareData()
     Singletons.queue.put([command, data])
 
