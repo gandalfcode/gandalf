@@ -124,7 +124,7 @@ def render(x, y, render, snap="current", sim="current", overplot=False, autoscal
         Specify the unit to use for the plotting for the rendered quantity.
     res
         Specify the resolution. Can be an integer number, in which case the same resolution will be used on the two axes,
-        or a tuple of two integer numbers, if you want to specify different resolutions on the two axes.
+        or a tuple (e.g., (xres, yres)) of two integer numbers, if you want to specify different resolutions on the two axes.
     interpolation
         Specify the interpolation to use. Default is nearest, which will show the pixels of the rendering grid. If one
         wants to smooth the image, bilinear or bicubic could be used. See pyplot documentation for the full list
