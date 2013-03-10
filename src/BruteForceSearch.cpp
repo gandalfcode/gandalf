@@ -68,6 +68,9 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph)
   FLOAT *dr;                            // Array of neib. position vectors
   FLOAT *drmag;                         // Array of neib. distances
   FLOAT *invdrmag;                      // Array of neib. inverse distances
+  FLOAT *dr2;                           // Array of neib. position vectors
+  FLOAT *drmag2;                        // Array of neib. distances
+  FLOAT *invdrmag2;                     // Array of neib. inverse distances
 
   debug2("[BruteForceSearch::UpdateAllSphProperties]");
 
@@ -83,22 +86,34 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph)
   // Compute smoothing lengths of all SPH particles
   // --------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
+    for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
 
     // Compute distances and the reciprical between the current particle 
     // and all neighbours here
-    for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
+    // ------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) { 
       neiblist[j] = j;
       for (k=0; k<ndim; k++) draux[k] = sph->sphdata[j].r[k] - rp[k];
       drsqd = DotProduct(draux,draux,ndim);
       drmag[j] = sqrt(drsqd);
-      invdrmag[j] = 1.0/(drmag[j] + small_number);
+      invdrmag[j] = (FLOAT) 1.0/(drmag[j] + small_number);
       for (k=0; k<ndim; k++) dr[j*ndim + k] = draux[k]*invdrmag[j];
-    }
 
-    // Compute smoothing length for current particle
-    okflag = sph->ComputeH(i,sph->sphdata[i],Nneib,Nneib,neiblist,
-			   sph->sphdata,drmag,invdrmag,dr);
+      // Compute scatter list for inactive scatter neighbours
+      if (!neibpart[j].active) {
+	scatterlist[Nscatter] = j;
+	drmag2[Nscatter] = drmag[j];
+	invdrmag2[Nscatter] = invdrmag[j];
+	for (k=0; k<ndim; k++)
+	  dr2[Nscatter*ndim + k] = dr[j*ndim + k];
+	Nscatter++;
+      }
+    }
+    // ------------------------------------------------------------------------
+
+    // Compute all SPH gather properties
+    okflag = sph->ComputeH(i,Nneib,Nneib,neiblist,drmag,
+			   invdrmag,dr,sph->sphdata[i],sph->sphdata);
     
     // Compute all SPH hydro forces
     sph->ComputeGatherHydroForces(i,sph->sphdata[i],Nneib,Nneib,neiblist,
@@ -161,9 +176,9 @@ void BruteForceSearch::UpdateAllSphGravityProperties(Sph *sph)
       for (k=0; k<ndim; k++) dr[j*ndim + k] = draux[k]*invdrmag[j];
     }
 
-    // Compute smoothing length for current particle
-    okflag = sph->ComputeH(i,sph->sphdata[i],Nneib,Nneib,neiblist,
-			   sph->sphdata,drmag,invdrmag,dr);
+    // Compute all SPH gather properties
+    okflag = sph->ComputeH(i,Nneib,Nneib,neiblist,drmag,
+			   invdrmag,dr,sph->sphdata[i],sph->sphdata);
     
     // Compute all SPH forces
     sph->ComputeGatherHydroForces(i,sph->sphdata[i],Nneib,Nneib,neiblist,

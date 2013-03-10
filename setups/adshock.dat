@@ -28,7 +28,7 @@
      : courant_mult = 0.1
      : accel_mult = 0.2
      : energy_mult = 0.5
-     : Nlevels = 2
+     : Nlevels = 4
 
      : kernel = m4
      : neib_search = grid

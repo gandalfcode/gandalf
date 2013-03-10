@@ -317,7 +317,7 @@ class RenderPlotCommand (PlotCommand):
         rendering = Render()
         renderscaling_factor=1.
         rendered = np.zeros(xres*yres, dtype=np.float32)
-        returncode, renderscaling_factor = rendering.CreateRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.renderquantity,
+        returncode, renderscaling_factor = rendering.CreateColumnRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.renderquantity,
                                                  self.renderunit, self.xmin, self.xmax,
                                                  self.ymin, self.ymax, rendered, snap, sim.sph, renderscaling_factor)
         rendered = rendered.reshape(xres,yres)

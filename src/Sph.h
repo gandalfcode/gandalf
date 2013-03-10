@@ -31,25 +31,25 @@ class Sph
  public:
 
 #if !defined(SWIG) && !defined(FIXED_DIMENSIONS)
- Sph(int ndimaux, int vdimaux, int bdimaux):
-  ndim(ndimaux), 
+  Sph(int ndimaux, int vdimaux, int bdimaux):
+    ndim(ndimaux), 
     vdim(vdimaux), 
     bdim(bdimaux), 
     invndim(1.0/(FLOAT)ndimaux)
-    {};
+      {};
 #endif
 
   // SPH functions for computing SPH sums with neighbouring particles 
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
   // --------------------------------------------------------------------------
-  virtual int ComputeH(int, SphParticle &, int, int, int *,
-		       SphParticle *, FLOAT *, FLOAT *, FLOAT *) = 0;
-  virtual void ComputeGatherHydroForces(int, SphParticle &, int, int, int *,
-					SphParticle *, FLOAT *, FLOAT *, 
-					FLOAT *) = 0;
-  virtual void ComputeScatterHydroForces(int, SphParticle &, int, int, int *,
-					 SphParticle *, FLOAT *, FLOAT *, 
-					 FLOAT *) = 0;
+  virtual int ComputeH(int, int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
+		       SphParticle &, SphParticle *) = 0;
+  virtual void ComputeGatherHydroForces(int, int, int, int *, 
+					FLOAT *, FLOAT *, FLOAT *, 
+					SphParticle &, SphParticle *) = 0;
+  virtual void ComputeScatterHydroForces(int, int, int, int *, 
+					FLOAT *, FLOAT *, FLOAT *, 
+					SphParticle &, SphParticle *) = 0;
   virtual void ComputeDirectGravForces(int, int, int *,
 				       SphParticle &, SphParticle *) = 0;
 
@@ -110,12 +110,12 @@ class GradhSph: public Sph
   GradhSph(int, int, int);
   ~GradhSph();
 
-  int ComputeH(int, SphParticle &, int, int, int *,
-	       SphParticle *, FLOAT *, FLOAT *, FLOAT *);
-  void ComputeGatherHydroForces(int, SphParticle &, int, int, int *,
-				SphParticle *, FLOAT *, FLOAT *, FLOAT *);
-  void ComputeScatterHydroForces(int, SphParticle &, int, int, int *,
-				 SphParticle *, FLOAT *, FLOAT *, FLOAT *);
+  int ComputeH(int, int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
+	       SphParticle &, SphParticle *);
+  void ComputeGatherHydroForces(int, int, int, int *, FLOAT *, FLOAT *, 
+				FLOAT *, SphParticle &, SphParticle *);
+  void ComputeScatterHydroForces(int, int, int, int *, FLOAT *, FLOAT *, 
+				 FLOAT *, SphParticle &, SphParticle *);
   void ComputeDirectGravForces(int, int, int *, SphParticle &, SphParticle *);
 
 };

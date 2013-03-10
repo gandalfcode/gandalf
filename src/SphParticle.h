@@ -1,5 +1,6 @@
 // ============================================================================
 // SphParticle.h
+// Main SPH particle data structure
 // ============================================================================
 
 
@@ -32,6 +33,7 @@ struct SphParticle {
   FLOAT h;
   FLOAT invh;
   FLOAT rho;
+  FLOAT invrho;
   FLOAT div_v;
   FLOAT invomega;
   FLOAT zeta;
@@ -45,22 +47,26 @@ struct SphParticle {
     iorig = -1;
     itype = -1;
     level = 0;
-    for (int k=0; k<ndimmax; k++) r[k] = 0.0;
-    for (int k=0; k<ndimmax; k++) v[k] = 0.0;
-    for (int k=0; k<ndimmax; k++) a[k] = 0.0;
-    for (int k=0; k<ndimmax; k++) r0[k] = 0.0;
-    for (int k=0; k<ndimmax; k++) v0[k] = 0.0;
-    for (int k=0; k<ndimmax; k++) a0[k] = 0.0;
-    for (int k=0; k<ndimmax; k++) agrav[k] = 0.0;
-    m = 0;
-    h = 0;
-    invh = 0.0;
-    rho = 0.0;
-    u = 0.0;
-    dudt = 0.0;
-    invomega = 0.0;
-    zeta = 0.0;
-    dt = 0.0;
+    for (int k=0; k<ndimmax; k++) r[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndimmax; k++) v[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndimmax; k++) a[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndimmax; k++) r0[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndimmax; k++) v0[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndimmax; k++) a0[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndimmax; k++) agrav[k] = (FLOAT) 0.0;
+    u = (FLOAT) 0.0;
+    u0 = (FLOAT) 0.0;
+    dudt = (FLOAT) 0.0;
+    dudt0 = (FLOAT) 0.0;
+    m = (FLOAT) 0.0;
+    h = (FLOAT) 0.0;
+    invh = (FLOAT) 0.0;
+    rho = (FLOAT) 0.0;
+    invrho = (FLOAT) 0.0;
+    invomega = (FLOAT) 0.0;
+    zeta = (FLOAT) 0.0;
+    sound = (FLOAT) 0.0;
+    dt = (FLOAT) 0.0;
   } 
 
 };
