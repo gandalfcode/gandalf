@@ -59,4 +59,23 @@ class NbodyLeapfrogKDK: public NbodyIntegration
 };
 
 
+
+// ============================================================================
+// Class NbodyHermite4
+// ============================================================================
+class NbodyHermite4: public NbodyIntegration
+{
+ public:
+
+  NbodyHermite4(int, int, DOUBLE);
+  ~NbodyHermite4();
+
+  void AdvanceParticles(int,int,int,SphParticle *,FLOAT);
+  void CorrectionTerms(int,int,int,SphParticle *,FLOAT);
+  void EndTimestep(int,int,int,SphParticle *);
+
+};
+
+
+
 #endif
