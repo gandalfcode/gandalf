@@ -308,12 +308,22 @@ private:
   FLOAT* tableWzeta;
   FLOAT* tableWgrav;
   FLOAT* tableWpot;
+  FLOAT* tableW0_s2;
+  FLOAT* tableWomega_s2;
+  FLOAT* tableWzeta_s2;
   FLOAT* tableLOS;
 
   void initializeTable(FLOAT* table, FLOAT (SphKernel::*function) (FLOAT s)) {
     const FLOAT step = kernel->kernrange/res;
     for (int i=0; i< res; i++) {
       table[i] = (kernel->*function)(step*i);
+    }
+  }
+
+  void initializeTableSqd (FLOAT* table, FLOAT (SphKernel::*function) (FLOAT s)) {
+    const FLOAT step = kernel->kernrangesqd/res;
+    for (int i=0; i< res; i++) {
+      table[i] = (kernel->*function)(sqrt(step*i));
     }
   }
 
@@ -328,13 +338,24 @@ private:
     return table[index];
   }
 
+  FLOAT tableLookupSqd(FLOAT* table, FLOAT s) {
+    if (s>kernrangesqd)
+      return 0;
+    FLOAT indexf = s*resf/kernrangesqd;
+    int index = (int)indexf;
+    return table[index];
+  }
+
 public:
   TabulatedKernel(int ndimaux, string KernelName, int resaux=1000);
 
   FLOAT w0(FLOAT s);
+  FLOAT w0_s2(FLOAT s);
   FLOAT w1(FLOAT s);
   FLOAT womega(FLOAT s);
+  FLOAT womega_s2(FLOAT s);
   FLOAT wzeta(FLOAT s);
+  FLOAT wzeta_s2(FLOAT s);
   FLOAT wgrav(FLOAT s);
   FLOAT wpot(FLOAT s);
   FLOAT wLOS(FLOAT s);
@@ -347,6 +368,9 @@ public:
     delete[] tableWzeta;
     delete[] tableWgrav;
     delete[] tableWpot;
+    delete[] tableW0_s2;
+    delete[] tableWomega_s2;
+    delete[] tableWzeta_s2;
     delete[] tableLOS;
   }
 
@@ -357,6 +381,10 @@ inline FLOAT TabulatedKernel::w0 (FLOAT s) {
   return tableLookup(tableW0, s);
 }
 
+inline FLOAT TabulatedKernel::w0_s2 (FLOAT s2) {
+  return tableLookupSqd(tableW0_s2, s2);
+}
+
 inline FLOAT TabulatedKernel::w1 (FLOAT s) {
   return tableLookup(tableW1, s);
 }
@@ -365,8 +393,16 @@ inline FLOAT TabulatedKernel::womega (FLOAT s) {
   return tableLookup(tableWomega, s);
 }
 
+inline FLOAT TabulatedKernel::womega_s2 (FLOAT s2) {
+  return tableLookupSqd(tableWomega_s2, s2);
+}
+
 inline FLOAT TabulatedKernel::wzeta (FLOAT s) {
   return tableLookup(tableWzeta, s);
+}
+
+inline FLOAT TabulatedKernel::wzeta_s2 (FLOAT s2) {
+  return tableLookupSqd(tableWzeta_s2, s2);
 }
 
 inline FLOAT TabulatedKernel::wgrav (FLOAT s) {

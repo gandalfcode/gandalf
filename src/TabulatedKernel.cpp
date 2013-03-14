@@ -37,6 +37,9 @@ TabulatedKernel::TabulatedKernel(int ndimaux, string KernelName, int resaux)
     tableWzeta = new FLOAT[res];
     tableWgrav = new FLOAT[res];
     tableWpot = new FLOAT[res];
+    tableW0_s2 = new FLOAT[res];
+    tableWomega_s2 = new FLOAT[res];
+    tableWzeta_s2 = new FLOAT[res];
     tableLOS = new FLOAT[res];
 
 
@@ -47,6 +50,9 @@ TabulatedKernel::TabulatedKernel(int ndimaux, string KernelName, int resaux)
     initializeTable(tableWzeta,&SphKernel::wzeta);
     initializeTable(tableWgrav,&SphKernel::wgrav);
     initializeTable(tableWpot,&SphKernel::wpot);
+    initializeTableSqd(tableW0_s2,&SphKernel::w0);
+    initializeTableSqd(tableWomega_s2,&SphKernel::womega);
+    initializeTableSqd(tableWzeta_s2,&SphKernel::wzeta);
     initializeTableLOS();
 
     //deallocates the kernel now that we don't need it anymore
