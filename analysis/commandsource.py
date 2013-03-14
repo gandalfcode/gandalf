@@ -381,7 +381,7 @@ class LimitCommand(Command):
                 try:
                     quantity, unitname = plotting.quantitiesfigures[(ax.figure, ax, axis)]
                 except KeyError:
-                    pass
+                    continue
                 if quantity == self.quantity:
                     if self.auto:
                         methodname='set_autoscale'+axis+'_on'
