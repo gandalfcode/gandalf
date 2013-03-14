@@ -255,7 +255,12 @@ class RenderPlotCommand (PlotCommand):
                     im.set_clim(min,max)
                     self.autoscalerender = False
             except KeyError:
-                im.autoscale()
+                try:
+                    min=self.zmin
+                    max=self.zmax
+                    im.set_clim(min,max)
+                except AttributeError:
+                    im.autoscale()
     
     def execute(self, plotting, fig, ax, data):
         im = ax.imshow(data.render_data, extent=(self.xmin, self.xmax, self.ymin, self.ymax), interpolation=self.interpolation)
@@ -421,6 +426,8 @@ class LimitCommand(Command):
                     for index,command in enumerate(plotting.commands):
                         if command.id == commandid:
                             command.autoscalerender=False
+                            command.zmin=self.min
+                            command.zmax=self.max
                             plotting.commands[index]=command
         
         for fig in figs:
