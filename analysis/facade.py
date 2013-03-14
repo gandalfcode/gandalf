@@ -18,7 +18,7 @@ class Singletons:
             Queue used from the plotting process to signal the completion
             of a command
         globallimits
-            List that for each quantity gives the limits
+            Dict that for each quantity gives the limits
     '''
     queue = Queue()
     commands = manager.list()
@@ -86,7 +86,7 @@ def plot(x,y, snap="current", sim="current", overplot = False, autoscale = True,
     sleep(0.001)
 
 def render(x, y, render, snap="current", sim="current", overplot=False, autoscale=True, 
-           autoscalerender=True, coordlimits=None,
+           autoscalerender=True, coordlimits=None, zslice=None,
            xunit="default", yunit="default", renderunit="default",
            res=64, interpolation='nearest'):
     '''Render plot. Needed arguments:
@@ -116,6 +116,9 @@ def render(x, y, render, snap="current", sim="current", overplot=False, autoscal
         -What this argument specifies. The value must be an iterable of 4 elements: (xmin, xmax, ymin, ymax).
         -If this argument is None (default), global settings for the quantity are used.
         -If global settings for the quantity are not defined, the min and max of the data are used.
+    zslice
+        z-coordinate of the slice when doing a slice rendering. Default is None, which produces a column-integrated
+        plot. If you set this variable, instead a slice rendering will be done. 
     xunit
         Specify the unit to use for the plotting for the quantity on the x-axis.
     yunit
@@ -132,9 +135,26 @@ def render(x, y, render, snap="current", sim="current", overplot=False, autoscal
     '''
     simno = get_sim_no(sim)
     command = Commands.RenderPlotCommand(x, y, render, snap, simno, overplot, autoscale, autoscalerender, 
-                                         coordlimits, xunit, yunit, renderunit, res, interpolation)
+                                         coordlimits, zslice, xunit, yunit, renderunit, res, interpolation)
     data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
+
+def renderslice(x, y, renderq, zslice, **kwargs):
+    '''Thin wrapper around render that does slice rendering.
+    All the other arguments are the same. Needs the z-coordinate
+    of the slice as a compulsory parameter'''
+    render(x, y, renderq, zslice=zslice, **kwargs)
+    
+def addrenderslice(x, y, renderq, zslice, **kwargs):
+    '''Thin wrapper around renderslice that sets overplot to True.
+    All the other arguments are the same. If autoscale is not
+    explicitly set, it will be set to False to preserve the
+    existing settings.'''
+    try:
+        kwargs['autoscale']
+    except KeyError:
+        kwargs['autoscale']=False
+    render(x, y, renderq, zslice=zslice, overplot=True, **kwargs)
 
 def addrender(x, y, renderq, **kwargs):
     '''Thin wrapper around render that sets overplot to True.
