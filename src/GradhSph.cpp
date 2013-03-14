@@ -94,12 +94,12 @@ int GradhSph<kernelclass>::ComputeH
     // ------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       ssqd = drsqd[j]*parti.invh*parti.invh;
-      parti.rho += m[j]*parti.hfactor*kern.w0(sqrt(ssqd));
-      parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega(sqrt(ssqd));
-      parti.zeta += m[j]*parti.invh*parti.invh*kern.wzeta(sqrt(ssqd));
-      //parti.rho += m[j]*parti.hfactor*kern.w0_s2(ssqd);
-      //parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega_s2(ssqd);
-      //parti.zeta += m[j]*parti.invh*parti.invh*kern.wzeta_s2(ssqd);
+      //parti.rho += m[j]*parti.hfactor*kern.w0(sqrt(ssqd));
+      //parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega(sqrt(ssqd));
+      //parti.zeta += m[j]*parti.invh*parti.invh*kern.wzeta(sqrt(ssqd));
+      parti.rho += m[j]*parti.hfactor*kern.w0_s2(ssqd);
+      parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega_s2(ssqd);
+      parti.zeta += m[j]*parti.invh*parti.invh*kern.wzeta_s2(ssqd);
     }
     // ------------------------------------------------------------------------
 
