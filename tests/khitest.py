@@ -1,9 +1,9 @@
 from seren.analysis.facade import *
 import time
 
-loadsim("KHI1")
-plot("x","y")
-addrender("x","y","rho",snap=9)
+newsim("khi.dat")
+render("x","y","rho",res=128)
+run()
 block()
 
 

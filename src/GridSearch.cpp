@@ -21,7 +21,7 @@
 using namespace std;
 
 
-static FLOAT grid_h_tolerance = (FLOAT) 1.2;
+static FLOAT grid_h_tolerance = (FLOAT) 1.1;
 
 
 // ============================================================================
@@ -94,6 +94,7 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
   FLOAT rp[ndimmax];                    // Local copy of particle position
   FLOAT *drsqd;                         // Position vectors to scatter neibs
   FLOAT *m;                             // Distances to scatter neibs
+  FLOAT *m2;                            // ..
   FLOAT *r;                             // 1/drmag to scatter neibs
   SphParticle *data = sph->sphdata;     // Pointer to SPH particle data
 
@@ -109,6 +110,7 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
   neiblist = new int[Nneibmax];
   drsqd = new FLOAT[Nneibmax];
   m = new FLOAT[Nneibmax];
+  m2 = new FLOAT[Nneibmax];
   r = new FLOAT[Nneibmax*ndim];
 
 
@@ -143,21 +145,22 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
       // Compute distance (squared) to all
       // ----------------------------------------------------------------------
       for (jj=0; jj<Nneib; jj++) {
-	for (k=0; k<ndim; k++) draux[k] = r[ndim*jj + k] - rp[k];
-	drsqdaux = DotProduct(draux,draux,ndim);
+	    for (k=0; k<ndim; k++) draux[k] = r[ndim*jj + k] - rp[k];
+	    drsqdaux = DotProduct(draux,draux,ndim);
 
-	// Record distance squared for all potential gather neighbours
-	if (drsqdaux <= hrangesqd) {
-	  gatherlist[Ngather] = jj;
-	  drsqd[Ngather] = drsqdaux;
+	    // Record distance squared for all potential gather neighbours
+	    if (drsqdaux <= hrangesqd) {
+	      gatherlist[Ngather] = jj;
+	      drsqd[Ngather] = drsqdaux;
+	      m2[Ngather] = m[jj];
           Ngather++;
-	}
+       	}
 
       }
       // ----------------------------------------------------------------------
 
       // Compute smoothing length and other gather properties for particle i
-      okflag = sph->ComputeH(i,Ngather,m,drsqd,data[i]);
+      okflag = sph->ComputeH(i,Ngather,m2,drsqd,data[i]);
 
     }
     // ------------------------------------------------------------------------
@@ -167,6 +170,7 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
 
   // Free-up all memory
   delete[] r;
+  delete[] m2;
   delete[] m;
   delete[] drsqd;
   delete[] neiblist;
@@ -251,6 +255,7 @@ void GridSearch::UpdateAllSphForces(Sph *sph)
     // Make local copies of all potential neighbours
     for (j=0; j<Nneib; j++) {
       neibpart[j] = data[neiblist[j]];
+      neibpart[j].div_v = (FLOAT) 0.0;
       neibpart[j].dudt = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
     }
@@ -265,6 +270,8 @@ void GridSearch::UpdateAllSphForces(Sph *sph)
 
       // Compute distances and the inverse between the current particle
       // and all neighbours here, for both gather and inactive scatter neibs.
+      // Only consider particles with j > i to compute pair forces once
+      // unless particle j is inactive.
       // ----------------------------------------------------------------------
       for (jj=0; jj<Nneib; jj++) { 
 
@@ -274,13 +281,14 @@ void GridSearch::UpdateAllSphForces(Sph *sph)
 
 	// Compute list of particle-neighbour interactions and also 
 	// compute
-	if (drsqd <= hrangesqdi || drsqd <= hrangesqdj) {
+	if ((drsqd <= hrangesqdi || drsqd <= hrangesqdj) &&
+		((i > neiblist[jj] && !neibpart[jj].active) || i < neiblist[jj])) {
 	  interactlist[Ninteract] = jj;
 	  drmag[Ninteract] = sqrt(drsqd);
 	  invdrmag[Ninteract] = (FLOAT) 1.0/(drmag[Ninteract] + small_number);
 	  for (k=0; k<ndim; k++)
 	    dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
-          Ninteract++;
+      Ninteract++;
 	}
 
       }
@@ -293,8 +301,31 @@ void GridSearch::UpdateAllSphForces(Sph *sph)
     }
     // ------------------------------------------------------------------------
 
+    // Now add all active neighbour contributions to the main arrays
+    for (jj=0; jj<Nneib; jj++) {
+      if (neibpart[jj].active) {
+        for (k=0; k<ndim; k++) data[neiblist[jj]].a[k] += neibpart[jj].a[k];
+        data[neiblist[jj]].dudt += neibpart[jj].dudt;
+        data[neiblist[jj]].div_v += neibpart[jj].div_v;
+      }
+    }
+
   }
   // ==========================================================================
+
+
+  // Compute dudt here (for now)
+  if (sph->hydro_forces == 1) {
+	for (i=0; i<sph->Nsph; i++) {
+		if (sph->sphdata[i].active) {
+		   sph->sphdata[i].div_v *= sph->sphdata[i].invrho;
+		   sph->sphdata[i].dudt -= sph->eos->Pressure(sph->sphdata[i])*
+				   sph->sphdata[i].div_v*sph->sphdata[i].invrho*
+				   sph->sphdata[i].invomega;
+		}
+	}
+  }
+
 
   // Free-up all memory
   delete[] neibpart;
