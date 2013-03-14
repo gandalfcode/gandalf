@@ -228,13 +228,14 @@ class AnalyticalPlotCommand (PlotCommand):
 class RenderPlotCommand (PlotCommand):
     #TODO: add colormap selection
     def __init__(self, xquantity, yquantity, renderquantity, snap, simno, overplot, autoscale,
-                 autoscalerender, coordlimits, xunit="default", yunit="default", 
+                 autoscalerender, coordlimits, zslice=None, xunit="default", yunit="default", 
                  renderunit="default", res=64, interpolation='nearest'):
         PlotCommand.__init__(self, xquantity, yquantity, snap, simno, 
                              overplot, autoscale, xunit, yunit)
         self.renderquantity = renderquantity
         self.autoscalerender = autoscalerender
         self.coordlimits = coordlimits
+        self.zslice = zslice
         self.renderunit = renderunit
         self.renderunitname = ""
         self.res = res
@@ -254,7 +255,12 @@ class RenderPlotCommand (PlotCommand):
                     im.set_clim(min,max)
                     self.autoscalerender = False
             except KeyError:
-                im.autoscale()
+                try:
+                    min=self.zmin
+                    max=self.zmax
+                    im.set_clim(min,max)
+                except AttributeError:
+                    im.autoscale()
     
     def execute(self, plotting, fig, ax, data):
         im = ax.imshow(data.render_data, extent=(self.xmin, self.xmax, self.ymin, self.ymax), interpolation=self.interpolation)
@@ -278,8 +284,8 @@ class RenderPlotCommand (PlotCommand):
     def prepareData(self, globallimits):
         sim, snap = self.get_sim_and_snap()
         
-        x_data, xscaling_factor = self.get_array('x',snap)
-        y_data, yscaling_factor = self.get_array('y', snap)
+        x_data, xscaling_factor = self.get_array(self.xquantity,snap)
+        y_data, yscaling_factor = self.get_array(self.yquantity, snap)
 
         #create the grid
         #set resolution
@@ -317,7 +323,17 @@ class RenderPlotCommand (PlotCommand):
         rendering = Render()
         renderscaling_factor=1.
         rendered = np.zeros(xres*yres, dtype=np.float32)
-        returncode, renderscaling_factor = rendering.CreateColumnRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.renderquantity,
+        if sim.ndim < 3 or self.zslice is None:
+            returncode, renderscaling_factor = rendering.CreateColumnRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.renderquantity,
+                                                 self.renderunit, self.xmin, self.xmax,
+                                                 self.ymin, self.ymax, rendered, snap, sim.sph, renderscaling_factor)
+        else:
+            quantities = ['x','y','z']
+            quantities.pop(quantities.index(self.xquantity))
+            quantities.pop(quantities.index(self.yquantity))
+            zquantity = quantities[0]
+            z_data, z_scaling_factor = self.get_array(zquantity, snap)
+            returncode, renderscaling_factor = rendering.CreateRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.renderquantity,
                                                  self.renderunit, self.xmin, self.xmax,
                                                  self.ymin, self.ymax, rendered, snap, sim.sph, renderscaling_factor)
         rendered = rendered.reshape(xres,yres)
@@ -381,7 +397,7 @@ class LimitCommand(Command):
                 try:
                     quantity, unitname = plotting.quantitiesfigures[(ax.figure, ax, axis)]
                 except KeyError:
-                    pass
+                    continue
                 if quantity == self.quantity:
                     if self.auto:
                         methodname='set_autoscale'+axis+'_on'
@@ -410,6 +426,8 @@ class LimitCommand(Command):
                     for index,command in enumerate(plotting.commands):
                         if command.id == commandid:
                             command.autoscalerender=False
+                            command.zmin=self.min
+                            command.zmax=self.max
                             plotting.commands[index]=command
         
         for fig in figs:

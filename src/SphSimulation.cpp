@@ -209,27 +209,27 @@ void SphSimulation::ProcessParameters(void)
   // Create SPH object based on chosen method in params file
   // --------------------------------------------------------------------------
   if (stringparams["sph"] == "gradh") {
-
-    // Depending on the kernel, instantiate a different GradSph object
-    if (stringparams["kernel"] == "m4") {
-      if (stringparams["tabulatedkernel"] == "yes") {
-        sph = new GradhSph<TabulatedKernel<M4Kernel> > (ndim, vdim, bdim);
-      }
-      else {
-        sph = new GradhSph<M4Kernel> (ndim, vdim, bdim);
-      }
-    }
-    else if (stringparams["kernel"] == "quintic") {
-      if (stringparams["tabulatedkernel"] == "yes") {
-        sph = new GradhSph<TabulatedKernel<QuinticKernel> > (ndim, vdim, bdim);
-      }
-      else {
-        sph = new GradhSph<QuinticKernel> (ndim, vdim, bdim);
-      }
+    string KernelName = stringparams["kernel"];
+    if (stringparams["tabulatedkernel"] == "yes") {
+        sph = new GradhSph<TabulatedKernel> (ndim, vdim, bdim, KernelName);
+          }
+    else if (stringparams["tabulatedkernel"] == "no"){
+        // Depending on the kernel, instantiate a different GradSph object
+        if (KernelName == "m4") {
+            sph = new GradhSph<M4Kernel> (ndim, vdim, bdim, KernelName);
+        }
+        else if (KernelName == "quintic") {
+            sph = new GradhSph<QuinticKernel> (ndim, vdim, bdim, KernelName);
+        }
+        else {
+          string message = "Unrecognised parameter : kernel = " +
+            simparams.stringparams["kernel"];
+          ExceptionHandler::getIstance().raise(message);
+        }
     }
     else {
-      string message = "Unrecognised parameter : kernel = " +
-        simparams.stringparams["kernel"];
+      string message = "Invalid option for the tabulatedkernel parameter: " +
+          stringparams["tabulatedkernel"];
       ExceptionHandler::getIstance().raise(message);
     }
   }

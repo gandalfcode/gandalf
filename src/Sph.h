@@ -103,7 +103,7 @@ class GradhSph: public Sph
 
   kernelclass kern;                      // SPH kernel
 
-  GradhSph(int, int, int);
+  GradhSph(int, int, int, string);
   ~GradhSph();
 
   int ComputeH(int, int, FLOAT *, FLOAT *, SphParticle &);

@@ -15,7 +15,7 @@ using namespace std;
 // ============================================================================
 // QuinticKernel::QuinticKernel
 // ============================================================================
-QuinticKernel::QuinticKernel(int ndimaux)
+QuinticKernel::QuinticKernel(int ndimaux, string KernelName)
 {
 #if !defined(FIXED_DIMENSIONS)
   ndim = ndimaux;

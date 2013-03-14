@@ -24,11 +24,11 @@ using namespace std;
 // GradhSph::GradhSph
 // ============================================================================
 template <typename kernelclass>
-GradhSph<kernelclass>::GradhSph(int ndimaux, int vdimaux, int bdimaux):
+GradhSph<kernelclass>::GradhSph(int ndimaux, int vdimaux, int bdimaux, string KernelName):
 #if !defined(FIXED_DIMENSIONS)
   Sph(ndimaux, vdimaux, bdimaux),
 #endif
-  kern(kernelclass(ndimaux))
+  kern(kernelclass(ndimaux, KernelName))
 {
   allocated = false;
   Nsph = 0;
@@ -338,5 +338,4 @@ void GradhSph<kernelclass>::ComputeDirectGravForces
 
 template class GradhSph<M4Kernel>;
 template class GradhSph<QuinticKernel>;
-template class GradhSph<TabulatedKernel<M4Kernel> >;
-template class GradhSph<TabulatedKernel<QuinticKernel> >;
+template class GradhSph<TabulatedKernel>;
