@@ -15,7 +15,7 @@ using namespace std;
 // ============================================================================
 // M4Kernel::M4Kernel
 // ============================================================================
-M4Kernel::M4Kernel(int ndimaux)
+M4Kernel::M4Kernel(int ndimaux, string kernelname)
 {
 #if !defined(FIXED_DIMENSIONS)
   ndim = ndimaux;

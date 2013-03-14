@@ -8,6 +8,7 @@
 
 #include <math.h>
 #include "Dimensions.h"
+#include "Exception.h"
 #include <iostream>
 using namespace std;
 
@@ -25,6 +26,7 @@ class SphKernel
   virtual FLOAT wgrav(FLOAT) = 0;
   virtual FLOAT wpot(FLOAT) = 0;
   virtual FLOAT wLOS(FLOAT) {};
+  virtual ~SphKernel(){};
   FLOAT kernrange;
   FLOAT invkernrange;
   FLOAT kernrangesqd;
@@ -45,7 +47,7 @@ class M4Kernel: public SphKernel
 {
  public:
 
-  M4Kernel(int);
+  M4Kernel(int, string);
   ~M4Kernel();
 
   // M4 kernel function prototypes
@@ -165,7 +167,7 @@ class QuinticKernel: public SphKernel
 {
  public:
 
-  QuinticKernel(int);
+  QuinticKernel(int, string);
   ~QuinticKernel();
 
   // M4 kernel function prototypes
@@ -290,11 +292,21 @@ inline FLOAT QuinticKernel::wpot(FLOAT s)
     return 0.0;
 }
 
+static SphKernel* KernelFactory (int ndimaux, string KernelName) {
+  if (KernelName == "m4")
+    return new M4Kernel(ndimaux, KernelName);
+  else if (KernelName == "quintic")
+    return new QuinticKernel(ndimaux,KernelName);
+  else {
+    string message = "Unrecognised kernel: " + KernelName;
+    ExceptionHandler::getIstance().raise(message);
+  }
+  return NULL;
+}
 
-template <typename KernelClass>
 class TabulatedKernel: public SphKernel {
 private:
-  KernelClass* kernel;
+  SphKernel* kernel;
   int res;
   FLOAT resf;
   FLOAT* tableW0;
@@ -305,7 +317,7 @@ private:
   FLOAT* tableWpot;
   FLOAT* tableLOS;
 
-  void initializeTable(FLOAT* table, FLOAT (KernelClass::*function) (FLOAT s)) {
+  void initializeTable(FLOAT* table, FLOAT (SphKernel::*function) (FLOAT s)) {
     const FLOAT step = kernel->kernrange/res;
     for (int i=0; i< res; i++) {
       table[i] = (kernel->*function)(step*i);
@@ -345,13 +357,14 @@ private:
   }
 
 public:
-  TabulatedKernel(int ndimaux, int resaux=1000)
+  TabulatedKernel(int ndimaux, string KernelName, int resaux=1000)
     {
     cout << "Using tabulated kernel" << endl;
     res = resaux;
     resf = (int)res;
 
-    kernel = new KernelClass(ndimaux);
+    kernel = KernelFactory (ndimaux, KernelName);
+
     kernrange = kernel->kernrange;
     kernrangesqd = kernel->kernrangesqd;
     invkernrange = kernel->invkernrange;
@@ -372,12 +385,12 @@ public:
 
 
     //initialize the tables
-    initializeTable(tableW0,&KernelClass::w0);
-    initializeTable(tableW1,&KernelClass::w1);
-    initializeTable(tableWomega,&KernelClass::womega);
-    initializeTable(tableWzeta,&KernelClass::wzeta);
-    initializeTable(tableWgrav,&KernelClass::wgrav);
-    initializeTable(tableWpot,&KernelClass::wpot);
+    initializeTable(tableW0,&SphKernel::w0);
+    initializeTable(tableW1,&SphKernel::w1);
+    initializeTable(tableWomega,&SphKernel::womega);
+    initializeTable(tableWzeta,&SphKernel::wzeta);
+    initializeTable(tableWgrav,&SphKernel::wgrav);
+    initializeTable(tableWpot,&SphKernel::wpot);
     initializeTableLOS();
 
     //deallocates the kernel now that we don't need it anymore
@@ -406,39 +419,33 @@ public:
 
 };
 
-template <typename KernelClass>
-inline FLOAT TabulatedKernel<KernelClass>::w0 (FLOAT s) {
+inline FLOAT TabulatedKernel::w0 (FLOAT s) {
   return tableLookup(tableW0, s);
 }
 
-template <typename KernelClass>
-inline FLOAT TabulatedKernel<KernelClass>::w1 (FLOAT s) {
+inline FLOAT TabulatedKernel::w1 (FLOAT s) {
   return tableLookup(tableW1, s);
 }
 
-template <typename KernelClass>
-inline FLOAT TabulatedKernel<KernelClass>::womega (FLOAT s) {
+inline FLOAT TabulatedKernel::womega (FLOAT s) {
   return tableLookup(tableWomega, s);
 }
 
-template <typename KernelClass>
-inline FLOAT TabulatedKernel<KernelClass>::wzeta (FLOAT s) {
+inline FLOAT TabulatedKernel::wzeta (FLOAT s) {
   return tableLookup(tableWzeta, s);
 }
 
-template <typename KernelClass>
-inline FLOAT TabulatedKernel<KernelClass>::wgrav (FLOAT s) {
+inline FLOAT TabulatedKernel::wgrav (FLOAT s) {
   return tableLookup(tableWgrav, s);
 }
 
-template <typename KernelClass>
-inline FLOAT TabulatedKernel<KernelClass>::wpot (FLOAT s) {
+inline FLOAT TabulatedKernel::wpot (FLOAT s) {
   return tableLookup(tableWpot, s);
 }
 
-template <typename KernelClass>
-inline FLOAT TabulatedKernel<KernelClass>::wLOS (FLOAT s) {
+inline FLOAT TabulatedKernel::wLOS (FLOAT s) {
   return tableLookup(tableLOS, s);
 }
+
 
 #endif
