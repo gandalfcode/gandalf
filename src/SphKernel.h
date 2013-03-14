@@ -292,17 +292,7 @@ inline FLOAT QuinticKernel::wpot(FLOAT s)
     return 0.0;
 }
 
-static SphKernel* KernelFactory (int ndimaux, string KernelName) {
-  if (KernelName == "m4")
-    return new M4Kernel(ndimaux, KernelName);
-  else if (KernelName == "quintic")
-    return new QuinticKernel(ndimaux,KernelName);
-  else {
-    string message = "Unrecognised kernel: " + KernelName;
-    ExceptionHandler::getIstance().raise(message);
-  }
-  return NULL;
-}
+SphKernel* KernelFactory (int ndimaux, string KernelName);
 
 class TabulatedKernel: public SphKernel {
 private:
@@ -324,28 +314,7 @@ private:
     }
   }
 
-  // -------------------------------
-  // Lookup table for the line of sight integrated kernel
-  // ------------------------------
-  void initializeTableLOS() {
-    const FLOAT step = kernel->kernrange/res; //step in the tabulated variable
-    const int intsteps = 4000; //how many steps for each integration
-    FLOAT sum;
-    FLOAT s; //distance from the center
-    for (int i=0; i<res; i++) {
-      FLOAT impactparameter = i*step;
-      FLOAT impactparametersqd = impactparameter*impactparameter;
-      sum=0;
-      FLOAT dist = sqrt(kernrangesqd-impactparametersqd); //half-length of the integration path
-      FLOAT intstep = dist/intsteps;
-      for (int j=0; j<intsteps; j++) {
-        FLOAT position = intstep*j;
-        s = sqrt(position*position+impactparametersqd); //compute distance from the center
-        sum += kernel->w0(s)*intstep;
-      }
-      tableLOS[i] = 2*sum; //multiply by 2 because we integrated only along half of the path
-    }
-  };
+  void initializeTableLOS();
 
 
   FLOAT tableLookup (FLOAT* table, FLOAT s) {
@@ -357,45 +326,7 @@ private:
   }
 
 public:
-  TabulatedKernel(int ndimaux, string KernelName, int resaux=1000)
-    {
-    cout << "Using tabulated kernel" << endl;
-    res = resaux;
-    resf = (int)res;
-
-    kernel = KernelFactory (ndimaux, KernelName);
-
-    kernrange = kernel->kernrange;
-    kernrangesqd = kernel->kernrangesqd;
-    invkernrange = kernel->invkernrange;
-    kernnorm = kernel->kernnorm;
-#if !defined (FIXED_DIMENSIONS)
-    ndim = kernel->ndim;
-    ndimpr = kernel->ndimpr;
-#endif
-
-    //allocate memory
-    tableW0 = new FLOAT[res];
-    tableW1 = new FLOAT[res];
-    tableWomega = new FLOAT[res];
-    tableWzeta = new FLOAT[res];
-    tableWgrav = new FLOAT[res];
-    tableWpot = new FLOAT[res];
-    tableLOS = new FLOAT[res];
-
-
-    //initialize the tables
-    initializeTable(tableW0,&SphKernel::w0);
-    initializeTable(tableW1,&SphKernel::w1);
-    initializeTable(tableWomega,&SphKernel::womega);
-    initializeTable(tableWzeta,&SphKernel::wzeta);
-    initializeTable(tableWgrav,&SphKernel::wgrav);
-    initializeTable(tableWpot,&SphKernel::wpot);
-    initializeTableLOS();
-
-    //deallocates the kernel now that we don't need it anymore
-    delete kernel;
-  }
+  TabulatedKernel(int ndimaux, string KernelName, int resaux=1000);
 
   FLOAT w0(FLOAT s);
   FLOAT w1(FLOAT s);
