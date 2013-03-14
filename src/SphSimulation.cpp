@@ -424,9 +424,11 @@ void SphSimulation::SetupSimulation(void)
     // Calculate all SPH properties
     sphneib->neibcheck = true;
     sphneib->UpdateAllSphProperties(sph);
+    CopySphDataToGhosts();
+    sphneib->UpdateAllSphForces(sph);
 
     // Add contributions to ghost particles from original neighbours
-    CopyAccelerationFromGhosts();
+    //CopyAccelerationFromGhosts();
 
     // Add accelerations
     for (int i=0; i<sph->Nsph; i++) {
@@ -510,8 +512,14 @@ void SphSimulation::MainLoop(void)
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph);
 
+    // Copy properties from original particles to ghost particles
+    CopySphDataToGhosts();
+
+    // Calculate all SPH forces
+    sphneib->UpdateAllSphForces(sph);
+
     // Add contributions to ghost particles from original neighbours
-    CopyAccelerationFromGhosts();
+    //CopyAccelerationFromGhosts();
 
     // Add accelerations
     for (int i=0; i<sph->Nsph; i++) {

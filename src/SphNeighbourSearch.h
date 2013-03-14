@@ -18,6 +18,7 @@
 #include "Parameters.h"
 using namespace std;
 
+
 struct GridCell {
   int Nactive;
   int Nptcls;
@@ -34,6 +35,7 @@ class SphNeighbourSearch
  public:
 
   virtual void UpdateAllSphProperties(Sph *) = 0;
+  virtual void UpdateAllSphForces(Sph *) = 0;
   virtual void UpdateAllSphGravityProperties(Sph *) = 0;
   virtual void UpdateTree(Sph *, Parameters &) = 0;
 
@@ -54,6 +56,7 @@ class BruteForceSearch: public SphNeighbourSearch
   ~BruteForceSearch();
 
   void UpdateAllSphProperties(Sph *);
+  void UpdateAllSphForces(Sph *);
   void UpdateAllSphGravityProperties(Sph *);
   void UpdateTree(Sph *, Parameters &);
 
@@ -76,6 +79,7 @@ class GridSearch: public SphNeighbourSearch
   ~GridSearch();
 
   void UpdateAllSphProperties(Sph *);
+  void UpdateAllSphForces(Sph *);
   void UpdateAllSphGravityProperties(Sph *);
   void UpdateTree(Sph *, Parameters &);
 
