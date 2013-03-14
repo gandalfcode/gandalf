@@ -214,11 +214,38 @@ void SphSimulation::CreateGhostParticle(int i, int k,
   else
     sph->sphdata[sph->Nsph + sph->Nghost].iorig = i;
 
-  //cout << "Adding ghost particle : " << i << "   " << sph->Nghost << "    " 
-  //     << sph->Nghostmax << "   " 
-  //     << sph->sphdata[sph->Nsph + sph->Nghost].iorig << endl;
-
   sph->Nghost = sph->Nghost + 1;
+
+  return;
+}
+
+
+
+// ============================================================================
+// SphSimulation::CopySphDataToGhosts
+// ============================================================================
+void SphSimulation::CopySphDataToGhosts(void)
+{
+  int i;
+  int iorig;
+  int j;
+  int k;
+  FLOAT rp[ndimmax];
+  FLOAT vp[ndimmax];
+
+  for (j=0; j<sph->Nghost; j++) {
+    i = sph->Nsph + j;
+    iorig = sph->sphdata[i].iorig;
+
+    for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
+    for (k=0; k<ndim; k++) vp[k] = sph->sphdata[i].v[k];
+    
+    sph->sphdata[i] = sph->sphdata[iorig];
+    sph->sphdata[i].iorig = iorig;
+    for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = rp[k];
+    for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = vp[k];
+    
+  }
 
   return;
 }
@@ -236,15 +263,15 @@ void SphSimulation::CopyAccelerationFromGhosts(void)
   int k;
 
   for (j=0; j<sph->Nghost; j++) {
-	i = sph->Nsph + j;
-	iorig = sph->sphdata[i].iorig;
-
-	// Only look at active ghosts
-	if (!sph->sphdata[iorig].active) continue;
-
-	for (k=0; k<ndim; k++) sph->sphdata[iorig].a[k] += sph->sphdata[i].a[k];
-	sph->sphdata[iorig].dudt += sph->sphdata[i].dudt;
-
+    i = sph->Nsph + j;
+    iorig = sph->sphdata[i].iorig;
+    
+    // Only look at active ghosts
+    if (!sph->sphdata[iorig].active) continue;
+    
+    for (k=0; k<ndim; k++) sph->sphdata[iorig].a[k] += sph->sphdata[i].a[k];
+    sph->sphdata[iorig].dudt += sph->sphdata[i].dudt;
+    
   }
 
   return;

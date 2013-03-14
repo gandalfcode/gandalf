@@ -32,6 +32,8 @@ struct SphParticle {
   FLOAT m;
   FLOAT h;
   FLOAT invh;
+  FLOAT hfactor;
+  FLOAT pfactor;
   FLOAT rho;
   FLOAT invrho;
   FLOAT div_v;
@@ -61,6 +63,8 @@ struct SphParticle {
     m = (FLOAT) 0.0;
     h = (FLOAT) 0.0;
     invh = (FLOAT) 0.0;
+    hfactor = (FLOAT) 0.0;
+    pfactor = (FLOAT) 0.0;
     rho = (FLOAT) 0.0;
     invrho = (FLOAT) 0.0;
     invomega = (FLOAT) 0.0;

@@ -42,14 +42,10 @@ class Sph
   // SPH functions for computing SPH sums with neighbouring particles 
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
   // --------------------------------------------------------------------------
-  virtual int ComputeH(int, int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
-		       SphParticle &, SphParticle *) = 0;
-  virtual void ComputeGatherHydroForces(int, int, int, int *, 
-					FLOAT *, FLOAT *, FLOAT *, 
-					SphParticle &, SphParticle *) = 0;
-  virtual void ComputeScatterHydroForces(int, int, int, int *, 
-					FLOAT *, FLOAT *, FLOAT *, 
-					SphParticle &, SphParticle *) = 0;
+  virtual int ComputeH(int, int, FLOAT *, FLOAT *, SphParticle &) = 0;
+  virtual void ComputeSphNeibForces(int, int, int *, 
+				    FLOAT *, FLOAT *, FLOAT *, 
+				    SphParticle &, SphParticle *) = 0;
   virtual void ComputeDirectGravForces(int, int, int *,
 				       SphParticle &, SphParticle *) = 0;
 
@@ -110,12 +106,9 @@ class GradhSph: public Sph
   GradhSph(int, int, int);
   ~GradhSph();
 
-  int ComputeH(int, int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
-	       SphParticle &, SphParticle *);
-  void ComputeGatherHydroForces(int, int, int, int *, FLOAT *, FLOAT *, 
-				FLOAT *, SphParticle &, SphParticle *);
-  void ComputeScatterHydroForces(int, int, int, int *, FLOAT *, FLOAT *, 
-				 FLOAT *, SphParticle &, SphParticle *);
+  int ComputeH(int, int, FLOAT *, FLOAT *, SphParticle &);
+  void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *, 
+			    FLOAT *, SphParticle &, SphParticle *);
   void ComputeDirectGravForces(int, int, int *, SphParticle &, SphParticle *);
 
 };
