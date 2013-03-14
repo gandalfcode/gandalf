@@ -278,8 +278,8 @@ class RenderPlotCommand (PlotCommand):
     def prepareData(self, globallimits):
         sim, snap = self.get_sim_and_snap()
         
-        x_data, xscaling_factor = self.get_array('x',snap)
-        y_data, yscaling_factor = self.get_array('y', snap)
+        x_data, xscaling_factor = self.get_array(self.xquantity,snap)
+        y_data, yscaling_factor = self.get_array(self.yquantity, snap)
 
         #create the grid
         #set resolution
