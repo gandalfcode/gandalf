@@ -74,6 +74,7 @@ int GradhSph<kernelclass>::ComputeH
   FLOAT h_lower_bound = 0.0;            // Lower bound on h
   FLOAT h_upper_bound = big_number;     // Upper bound on h
   FLOAT hfactor;                        // (1 / h)^ndim
+  FLOAT invhsqd;                        // (1 / h)^2
   FLOAT ssqd;                           // Kernel parameter squared, (r/h)^2
 
 
@@ -88,18 +89,19 @@ int GradhSph<kernelclass>::ComputeH
     parti.invomega = (FLOAT) 0.0;
     parti.zeta = (FLOAT) 0.0;
     parti.hfactor = pow(parti.invh,ndim);
+    invhsqd = parti.invh*parti.invh;
 
     // Loop over all nearest neighbours in list to calculate 
     // density, omega and zeta.
     // ------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
-      ssqd = drsqd[j]*parti.invh*parti.invh;
+      ssqd = drsqd[j]*invhsqd;
       //parti.rho += m[j]*parti.hfactor*kern.w0(sqrt(ssqd));
       //parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega(sqrt(ssqd));
       //parti.zeta += m[j]*parti.invh*parti.invh*kern.wzeta(sqrt(ssqd));
       parti.rho += m[j]*parti.hfactor*kern.w0_s2(ssqd);
       parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega_s2(ssqd);
-      parti.zeta += m[j]*parti.invh*parti.invh*kern.wzeta_s2(ssqd);
+      parti.zeta += m[j]*invhsqd*kern.wzeta_s2(ssqd);
     }
     // ------------------------------------------------------------------------
 
@@ -157,8 +159,6 @@ int GradhSph<kernelclass>::ComputeH
   parti.pfactor = eos->Pressure(parti)*parti.invrho*
     parti.invrho*parti.invomega;
   parti.div_v = (FLOAT) 0.0;
-
-  //cout << "h[" << i << "] : " << parti.h << "    rho : " << parti.rho << endl;
   
   return 1;
 }
@@ -206,69 +206,71 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
     wkerni = parti.hfactor*kern.w1(drmag[jj]*parti.invh);
     wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*neibpart[j].invh);
 
+    // Add contribution to velocity divergence
+    parti.div_v -= neibpart[j].m*dvdr*wkerni;
+    neibpart[j].div_v -= parti.m*dvdr*wkernj;
 
     // Compute hydro forces
     // ------------------------------------------------------------------------
     if (hydro_forces == 1) {
       paux = parti.pfactor*wkerni + neibpart[j].pfactor*wkernj;
+      uaux = (FLOAT) 0.0;
 
       // Add dissipation terms (for approaching particle pairs)
       if (dvdr < (FLOAT) 0.0) {
-
-    	  invrhomean = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
-
-    // Artificial viscosity term
-    if (avisc == "mon97") {
-      vsignal = parti.sound + neibpart[j].sound - beta_visc*dvdr;
-      paux -= 0.5*alpha_visc*vsignal*dvdr*(wkerni + wkernj)*invrhomean;
-      parti.dudt -= 0.25*neibpart[j].m*alpha_visc*
-                vsignal*(wkerni + wkernj)*invrhomean*dvdr*dvdr;
-      neibpart[j].dudt -= 0.25*parti.m*alpha_visc*
-                 vsignal*(wkerni + wkernj)*invrhomean*dvdr*dvdr;
-    }
-    else if (avisc == "pf2010") {
-	  vsignal = parti.sound - beta_visc*dvdr;
-	  paux -= (FLOAT) 0.5*alpha_visc*vsignal*dvdr*
-	    (parti.invrho*parti.invomega*wkerni + 
-	     neibpart[j].invrho*neibpart[j].invomega*wkernj);
-	  parti.dudt -= (FLOAT) 0.25*neibpart[j].m*alpha_visc*vsignal*
-	    dvdr*dvdr*(parti.invrho*parti.invomega*wkerni + 
-		       neibpart[j].invrho*neibpart[j].invomega*wkernj);
+	
+	invrhomean = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
+	
+	// Artificial viscosity term
+	if (avisc == "mon97") {
+	  vsignal = parti.sound + neibpart[j].sound - beta_visc*dvdr;
+	  paux -= 0.5*alpha_visc*vsignal*dvdr*(wkerni + wkernj)*invrhomean;
+	  uaux = 0.25*alpha_visc*vsignal*(wkerni + wkernj)*
+	    invrhomean*dvdr*dvdr;
+	  parti.dudt -= neibpart[j].m*uaux;
+	  neibpart[j].dudt -= parti.m*uaux;
+	  //parti.dudt -= 0.25*neibpart[j].m*alpha_visc*
+	  //vsignal*(wkerni + wkernj)*invrhomean*dvdr*dvdr;
+	  //neibpart[j].dudt -= 0.25*parti.m*alpha_visc*
+	  //vsignal*(wkerni + wkernj)*invrhomean*dvdr*dvdr;
 	}
 	
 	// Artificial conductivity term
-    if (acond == "price2008") {
-      vsignal = sqrt(fabs(eos->Pressure(parti) -
-                          eos->Pressure(neibpart[j]))*invrhomean);
-      parti.dudt += 0.5*neibpart[j].m*vsignal*
-        (parti.u - neibpart[j].u)*(wkerni + wkernj)*invrhomean;
-      neibpart[j].dudt -= 0.5*parti.m*vsignal*
-        (parti.u - neibpart[j].u)*(wkerni + wkernj)*invrhomean;
-    }
-    else if (acond == "wadsley2008") {
-	  parti.dudt += (FLOAT) 0.5*neibpart[j].m*fabs(dvdr)*
-	    (parti.u - neibpart[j].u)*
-	    (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
-	  neibpart[j].dudt -= (FLOAT) 0.5*parti.m*fabs(dvdr)*
-	    (parti.u - neibpart[j].u)*
-	    (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
+	if (acond == "price2008") {
+	  vsignal = sqrt(fabs(eos->Pressure(parti) -
+			      eos->Pressure(neibpart[j]))*invrhomean);
+	  uaux = 0.5*vsignal*(parti.u - neibpart[j].u)*
+	    (wkerni + wkernj)*invrhomean;
+	  parti.dudt += neibpart[j].m*uaux;
+	  neibpart[j].dudt -= parti.m*uaux;
+	  //parti.dudt += 0.5*neibpart[j].m*vsignal*
+	  //  (parti.u - neibpart[j].u)*(wkerni + wkernj)*invrhomean;
+	  //neibpart[j].dudt -= 0.5*parti.m*vsignal*
+	  //  (parti.u - neibpart[j].u)*(wkerni + wkernj)*invrhomean;
 	}
+	else if (acond == "wadsley2008") {
+	  uaux = 0.5*fabs(dvdr)*(parti.u - neibpart[j].u)*
+	    (wkerni + wkernj)*invrhomean;
+	  parti.dudt += neibpart[j].m*uaux;
+	  neibpart[j].dudt -= parti.m*uaux;
+	  //parti.dudt += (FLOAT) 0.5*neibpart[j].m*fabs(dvdr)*
+	  //  (parti.u - neibpart[j].u)*
+	  //  (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
+	  //neibpart[j].dudt -= (FLOAT) 0.5*parti.m*fabs(dvdr)*
+	  //  (parti.u - neibpart[j].u)*
+	  //  (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
+	}
+	
       }
 
       // Add total hydro contribution to acceleration for particle i
       for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
-
+      
       // If neighbour is also active, add contribution to force here
       for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
-
+      
     }
     // ------------------------------------------------------------------------
-
-
-    // Add contribution to velocity divergence
-    parti.div_v -= neibpart[j].m*dvdr*wkerni;
-    neibpart[j].div_v -= parti.m*dvdr*wkernj;
-
 
 
     // Compute gravitational contribution
@@ -289,7 +291,6 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
   //parti.div_v *= parti.invrho;
   //parti.dudt -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
 
-  //cout << "a[" << i << "] : " << parti.a[0] << "    dudt : " << parti.dudt << endl;
 
   return;
 }
