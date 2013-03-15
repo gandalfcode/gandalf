@@ -17,13 +17,14 @@ SphKernel* KernelFactory (int ndimaux, string KernelName) {
 TabulatedKernel::TabulatedKernel(int ndimaux, string KernelName, int resaux)
     {
     res = resaux;
-    resf = (int)res;
 
     kernel = KernelFactory (ndimaux, KernelName);
 
     kernrange = kernel->kernrange;
     kernrangesqd = kernel->kernrangesqd;
     invkernrange = kernel->invkernrange;
+    resinvkernrange = res/kernrange;
+    resinvkernrangesqd = res/kernrangesqd;
     kernnorm = kernel->kernnorm;
 #if !defined (FIXED_DIMENSIONS)
     ndim = kernel->ndim;
