@@ -20,6 +20,8 @@ class SphKernel
  public:
 
   virtual FLOAT w0(FLOAT) = 0;
+ //For the versions using the squared distance, the default behaviour
+ //is to call the standard one with the square root
   virtual FLOAT w0_s2(FLOAT s) {return this->w0(sqrt(s));};
   virtual FLOAT w1(FLOAT) = 0;
   virtual FLOAT womega(FLOAT) = 0;
@@ -28,7 +30,12 @@ class SphKernel
   virtual FLOAT wzeta_s2(FLOAT s) {return this->wzeta(sqrt(s));};
   virtual FLOAT wgrav(FLOAT) = 0;
   virtual FLOAT wpot(FLOAT) = 0;
-  virtual FLOAT wLOS(FLOAT) {};
+  virtual FLOAT wLOS(FLOAT) {
+    //We do not provide a default behaviour
+    string message = "Using a non-tabulated kernel, cannot use the column integrated kernel!";
+    ExceptionHandler::getIstance().raise(message);
+    return 0;
+  };
   virtual ~SphKernel(){};
   FLOAT kernrange;
   FLOAT invkernrange;
@@ -301,7 +308,8 @@ class TabulatedKernel: public SphKernel {
 private:
   SphKernel* kernel;
   int res;
-  FLOAT resf;
+  FLOAT resinvkernrange;
+  FLOAT resinvkernrangesqd;
   FLOAT* tableW0;
   FLOAT* tableW1;
   FLOAT* tableWomega;
@@ -333,7 +341,7 @@ private:
   FLOAT tableLookup (FLOAT* table, FLOAT s) {
     if (s>kernrange)
       return 0;
-    FLOAT indexf = s*resf/kernrange;
+    FLOAT indexf = s*resinvkernrange;
     int index = (int)indexf;
     return table[index];
   }
@@ -341,7 +349,7 @@ private:
   FLOAT tableLookupSqd(FLOAT* table, FLOAT s) {
     if (s>kernrangesqd)
       return 0;
-    FLOAT indexf = s*resf/kernrangesqd;
+    FLOAT indexf = s*resinvkernrangesqd;
     int index = (int)indexf;
     return table[index];
   }
