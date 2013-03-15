@@ -20,26 +20,27 @@
 
 void catch_alarm (int SIG) {
 signal(SIGINT, catch_alarm);
-throw SerenError("CTRL-C received");
+throw StopError("CTRL-C received");
 }
 %}
 
-%exception SphSimulation::Run {
+%exception SphSimulation::InteractiveRun {
 	signal(SIGINT, catch_alarm);
+	PyThreadState *_save;
+    _save = PyEval_SaveThread();
     try{
         $action
+        PyEval_RestoreThread(_save);
     }
-    //catch (int e){
-    	//printf("Got %i \n", e);
-    	//SWIG_exception(SWIG_RuntimeError, "Error error!");
-    	//PyErr_SetString(PyExc_KeyboardInterrupt,"You pressed CTRL-C");
-    	//return NULL;
-    	//exit(0);
-    	//SWIG_exception(KeyboardInterrupt, "You pressed CTRL-C");
-    //}
-    catch (SerenError e){
+    catch (StopError e){
+    	PyEval_RestoreThread(_save);
     	PyErr_SetString(PyExc_KeyboardInterrupt,e.msg.c_str());
     	return NULL;
+    }
+    catch (SerenError e){
+    	PyEval_RestoreThread(_save);
+    	PyErr_SetString(PyExc_Exception,e.msg.c_str());
+		return NULL;
     }
 }
 
