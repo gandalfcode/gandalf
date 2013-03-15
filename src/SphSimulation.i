@@ -16,6 +16,7 @@
 #include <string>
 #include "Precision.h"
 #include "Render.h"
+#include "SphKernel.h"
 
 void catch_alarm (int SIG) {
 signal(SIGINT, catch_alarm);
@@ -100,3 +101,4 @@ ExceptionHandler::makeExceptionHandler(python);
 %include "Sph.h"
 %include "SphSnapshot.h"
 %include "Render.h"
+%include "SphKernel.h"

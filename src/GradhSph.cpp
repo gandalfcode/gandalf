@@ -26,7 +26,7 @@ using namespace std;
 template <typename kernelclass>
 GradhSph<kernelclass>::GradhSph(int ndimaux, int vdimaux, int bdimaux, string KernelName):
 #if !defined(FIXED_DIMENSIONS)
-  Sph(ndimaux, vdimaux, bdimaux),
+  Sph(ndimaux, vdimaux, bdimaux, KernelName),
 #endif
   kern(kernelclass(ndimaux, KernelName))
 {

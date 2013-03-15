@@ -31,11 +31,12 @@ class Sph
  public:
 
 #if !defined(SWIG) && !defined(FIXED_DIMENSIONS)
-  Sph(int ndimaux, int vdimaux, int bdimaux):
+  Sph(int ndimaux, int vdimaux, int bdimaux, string KernelName):
     ndim(ndimaux), 
     vdim(vdimaux), 
     bdim(bdimaux), 
-    invndim(1.0/(FLOAT)ndimaux)
+    invndim(1.0/(FLOAT)ndimaux),
+    kerntab(TabulatedKernel(ndimaux, KernelName))
       {};
 #endif
 
@@ -78,6 +79,7 @@ class Sph
   struct SphParticle *sphdata;          // Main SPH particle data array
   EOS *eos;                             // Equation-of-state
   SphKernel *kernp;                     // Pointer to chosen kernel object
+  TabulatedKernel kerntab;        // Tabulated version of the chosen kernel
 
 #if !defined(FIXED_DIMENSIONS)
   const int ndim;
