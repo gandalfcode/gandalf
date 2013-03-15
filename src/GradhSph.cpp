@@ -24,10 +24,14 @@ using namespace std;
 // GradhSph::GradhSph
 // ============================================================================
 template <typename kernelclass>
-GradhSph<kernelclass>::GradhSph(int ndimaux, int vdimaux, int bdimaux, string KernelName):
-#if !defined(FIXED_DIMENSIONS)
-  Sph(ndimaux, vdimaux, bdimaux),
-#endif
+GradhSph<kernelclass>::GradhSph(int ndimaux, int vdimaux, int bdimaux, int hydro_forces_aux,
+	    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
+	    FLOAT h_fac_aux, FLOAT h_converge_aux, string avisc_aux,
+	    string acond_aux, string gas_eos_aux, string KernelName):
+  Sph(ndimaux, vdimaux, bdimaux, hydro_forces_aux,
+		    self_gravity_aux, alpha_visc_aux, beta_visc_aux,
+		    h_fac_aux, h_converge_aux, avisc_aux,
+		    acond_aux, gas_eos_aux),
   kern(kernelclass(ndimaux, KernelName))
 {
   allocated = false;
@@ -208,7 +212,6 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
     wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*neibpart[j].invh);
 
     // Add contribution to velocity divergence
-//#pragma omp atomic
     parti.div_v -= neibpart[j].m*dvdr*wkerni;
     neibpart[j].div_v -= parti.m*dvdr*wkernj;
 
@@ -226,7 +229,6 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
           vsignal = parti.sound + neibpart[j].sound - beta_visc*dvdr;
           paux -= (FLOAT) 0.5*alpha_visc*vsignal*dvdr*(wkerni + wkernj)*invrhomean;
           uaux = (FLOAT) 0.25*alpha_visc*vsignal*(wkerni + wkernj)*invrhomean*dvdr*dvdr;
-//#pragma omp atomic
           parti.dudt -= neibpart[j].m*uaux;
           neibpart[j].dudt -= parti.m*uaux;
         }
@@ -235,14 +237,12 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
         if (acond == "wadsley2008") {
         	uaux = (FLOAT) 0.5*fabs(dvdr)*(parti.u - neibpart[j].u)*
 	          (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
-//#pragma omp atomic
         	parti.dudt += neibpart[j].m*uaux;
         	neibpart[j].dudt -= parti.m*uaux;
     	}
         else if (acond == "price2008") {
           vsignal = sqrt(fabs(eos->Pressure(parti) -
                           eos->Pressure(neibpart[j]))*invrhomean);
-//#pragma omp atomic
           parti.dudt += 0.5*neibpart[j].m*vsignal*
             (parti.u - neibpart[j].u)*(wkerni + wkernj)*invrhomean;
           neibpart[j].dudt -= 0.5*parti.m*vsignal*
@@ -252,10 +252,8 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
       }
 
       // Add total hydro contribution to acceleration for particle i
-      for (k=0; k<ndim; k++) {
-//#pragma omp atomic
-    	  parti.a[k] += neibpart[j].m*draux[k]*paux;
-      }
+      for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
+
 
       // If neighbour is also active, add contribution to force here
       for (k=0; k<ndim; k++) {
@@ -264,9 +262,6 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
 
     }
     // ------------------------------------------------------------------------
-
-
-
 
 
     // Compute gravitational contribution

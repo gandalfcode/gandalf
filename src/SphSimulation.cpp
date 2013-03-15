@@ -211,15 +211,30 @@ void SphSimulation::ProcessParameters(void)
   if (stringparams["sph"] == "gradh") {
     string KernelName = stringparams["kernel"];
     if (stringparams["tabulatedkernel"] == "yes") {
-        sph = new GradhSph<TabulatedKernel> (ndim, vdim, bdim, KernelName);
+        sph = new GradhSph<TabulatedKernel> (ndim, vdim, bdim,
+        		intparams["hydro_forces"], intparams["self_gravity"],
+        		floatparams["alpha_visc"], floatparams["beta_visc"],
+        		floatparams["h_fac"], floatparams["h_converge"],
+        		stringparams["avisc"], stringparams["acond"],
+        		stringparams["acond"], KernelName);
           }
     else if (stringparams["tabulatedkernel"] == "no"){
         // Depending on the kernel, instantiate a different GradSph object
         if (KernelName == "m4") {
-            sph = new GradhSph<M4Kernel> (ndim, vdim, bdim, KernelName);
+            sph = new GradhSph<M4Kernel> (ndim, vdim, bdim,
+            		intparams["hydro_forces"], intparams["self_gravity"],
+            		floatparams["alpha_visc"], floatparams["beta_visc"],
+            		floatparams["h_fac"], floatparams["h_converge"],
+            		stringparams["avisc"], stringparams["acond"],
+            		stringparams["acond"], KernelName);
         }
         else if (KernelName == "quintic") {
-            sph = new GradhSph<QuinticKernel> (ndim, vdim, bdim, KernelName);
+            sph = new GradhSph<QuinticKernel> (ndim, vdim, bdim,
+            		intparams["hydro_forces"], intparams["self_gravity"],
+            		floatparams["alpha_visc"], floatparams["beta_visc"],
+            		floatparams["h_fac"], floatparams["h_converge"],
+            		stringparams["avisc"], stringparams["acond"],
+            		stringparams["acond"], KernelName);
         }
         else {
           string message = "Unrecognised parameter : kernel = " +
@@ -319,15 +334,15 @@ void SphSimulation::ProcessParameters(void)
   // Set all other parameter variables
   // --------------------------------------------------------------------------
   sph->Nsph = intparams["Npart"];
-  sph->h_fac = floatparams["h_fac"];
-  sph->h_converge = floatparams["h_converge"];
-  sph->hydro_forces = intparams["hydro_forces"];
-  sph->self_gravity = intparams["self_gravity"];
-  sph->avisc = stringparams["avisc"];
-  sph->acond = stringparams["acond"];
-  sph->alpha_visc = floatparams["alpha_visc"];
-  sph->beta_visc = floatparams["beta_visc"];
-  sph->gas_eos = stringparams["gas_eos"];
+  //sph->h_fac = floatparams["h_fac"];
+  //sph->h_converge = floatparams["h_converge"];
+  //sph->hydro_forces = intparams["hydro_forces"];
+  //sph->self_gravity = intparams["self_gravity"];
+  //sph->avisc = stringparams["avisc"];
+  //sph->acond = stringparams["acond"];
+  //sph->alpha_visc = floatparams["alpha_visc"];
+  //sph->beta_visc = floatparams["beta_visc"];
+  //sph->gas_eos = stringparams["gas_eos"];
   Nstepsmax = intparams["Nstepsmax"];
   run_id = stringparams["run_id"];
   out_file_form = stringparams["out_file_form"];

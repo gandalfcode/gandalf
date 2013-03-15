@@ -13,7 +13,7 @@ F2PY = f2py
 OPT = -O3 -ffast-math -fPIC #-g -Wall
 #OPT = -g -pg -fprofile-arcs -ftest-coverage -fPIC
 #OPT = -g -Wall -fbounds-check
-OPT += -fopenmp -DOPENMP
+#OPT += -fopenmp -DOPENMP
 
 PYTHON = python # Name of the python interpreter
 
