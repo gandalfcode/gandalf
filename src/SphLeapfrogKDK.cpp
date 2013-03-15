@@ -61,15 +61,24 @@ void SphLeapfrogKDK::AdvanceParticles(int n, int level_step, int Nsph,
 
   debug2("[SphLeapfrogKDK::AdvanceParticles]");
 
+  // --------------------------------------------------------------------------
+#pragma omp parallel for default(shared) private(dt,k,nstep)
   for (i=0; i<Nsph; i++) {
+
+	// Compute time since beginning of current step
     nstep = pow(2,level_step - sph[i].level);
     if (n%nstep == 0) dt = timestep*(FLOAT) nstep;
     else dt = timestep*(FLOAT) (n%nstep);
+
+    // Advance particle positions and velocities
     for (k=0; k<ndim; k++) sph[i].r[k] = sph[i].r0[k] + sph[i].v0[k]*dt
       + (FLOAT) 0.5*sph[i].a0[k]*dt*dt;
     for (k=0; k<vdim; k++) sph[i].v[k] = sph[i].v0[k] + sph[i].a0[k]*dt;
+
+    // Set particle as active at end of step
     if (n%nstep == 0) sph[i].active = true;
   }
+  // --------------------------------------------------------------------------
 
   return;
 }
@@ -91,12 +100,15 @@ void SphLeapfrogKDK::CorrectionTerms(int n, int level_step, int Nsph,
 
   debug2("[SphLeapfrogKDK::CorrectionTerms]");
 
+  // --------------------------------------------------------------------------
+#pragma omp parallel for default(shared) private(k,nstep)
   for (i=0; i<Nsph; i++) {
     nstep = pow(2,level_step - sph[i].level);
     if (n%nstep == 0)
       for (k=0; k<ndim; k++) sph[i].v[k] += 
-	(FLOAT) 0.5*(sph[i].a[k] - sph[i].a0[k])*timestep*(FLOAT) nstep;
+	     (FLOAT) 0.5*(sph[i].a[k] - sph[i].a0[k])*timestep*(FLOAT) nstep;
   }
+  // --------------------------------------------------------------------------
 
   return;
 }
@@ -117,6 +129,8 @@ void SphLeapfrogKDK::EndTimestep(int n, int level_step,
 
   debug2("[SphLeapfrogKDK::EndTimestep]");
 
+  // --------------------------------------------------------------------------
+#pragma omp parallel for default(shared) private(k,nstep)
   for (i=0; i<Nsph; i++) {
     nstep = pow(2,level_step - sph[i].level);
     if (n%nstep == 0) {
@@ -126,6 +140,7 @@ void SphLeapfrogKDK::EndTimestep(int n, int level_step,
       sph[i].active = false;
     }
   }
+  // --------------------------------------------------------------------------
 
   return;
 }

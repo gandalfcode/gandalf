@@ -70,12 +70,15 @@ void EnergyPEC::EnergyIntegration(int n, int level_step, int Nsph,
 
   debug2("[EnergyPEC::EnergyIntegration]");
 
+  // --------------------------------------------------------------------------
+#pragma omp parallel for default(shared) private(dt,nstep)
   for (i=0; i<Nsph; i++) {
     nstep = pow(2,level_step - sph[i].level);
     if (n%nstep == 0) dt = timestep*(FLOAT) nstep;
     else dt = timestep*(FLOAT) (n%nstep);
     sph[i].u = sph[i].u0 + sph[i].dudt*dt;
   }
+  // --------------------------------------------------------------------------
 
   return;
 }
@@ -96,11 +99,14 @@ void EnergyPEC::EnergyCorrectionTerms(int n, int level_step, int Nsph,
 
   debug2("[EnergyPEC::EnergyCorrectionTerms]");
 
+  // --------------------------------------------------------------------------
+#pragma omp parallel for default(shared) private(nstep)
   for (i=0; i<Nsph; i++) {
     nstep = pow(2,level_step - sph[i].level);
     if (n%nstep == 0) 
       sph[i].u += 0.5*(sph[i].dudt - sph[i].dudt0)*timestep*(FLOAT) nstep;
   }
+  // --------------------------------------------------------------------------
 
   return;
 }
@@ -119,6 +125,8 @@ void EnergyPEC::EndTimestep(int n, int level_step, int Nsph, SphParticle *sph)
 
   debug2("[EnergyPEC::EndTimestep]");
 
+  // --------------------------------------------------------------------------
+#pragma omp parallel for default(shared) private(nstep)
   for (i=0; i<Nsph; i++) {
     nstep = pow(2,level_step - sph[i].level);
     if (n%nstep == 0) {
@@ -126,6 +134,7 @@ void EnergyPEC::EndTimestep(int n, int level_step, int Nsph, SphParticle *sph)
       sph[i].dudt0 = sph[i].dudt;
     }
   }
+  // --------------------------------------------------------------------------
 
   return;
 }

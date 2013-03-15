@@ -13,6 +13,7 @@ F2PY = f2py2.7
 OPT = -O3 -ffast-math -fPIC #-g -Wall
 #OPT = -g -pg -fprofile-arcs -ftest-coverage -fPIC
 #OPT = -g -Wall -fbounds-check
+#OPT += -fopenmp -DOPENMP
 
 PYTHON = python2.7 # Name of the python interpreter
 
@@ -23,7 +24,7 @@ PYTHON = python2.7 # Name of the python interpreter
 OUTPUT_LEVEL              = 1
 PRECISION                 = DOUBLE
 # If set to 0, the number of dimensions can be set at runtime
-NDIM                      = 0
+NDIM                      = 2
 DEBUG                     = 1
 # Turn on expensive verifications (only needed to debug)
 VERIFY_ALL                = 0

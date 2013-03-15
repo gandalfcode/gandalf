@@ -120,7 +120,7 @@ int Render::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
     for (i=0; i<snap.Nsph; i++) {
       invh = 1.0f/hvalues[i];
       wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);
-      hrangesqd = sph->kernp->kernrangesqd*hvalues[i]*hvalues[i];
+      hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
       
       // Now loop over all pixels and add current particles
       // ----------------------------------------------------------------------
@@ -133,7 +133,7 @@ int Render::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
 	    if (drsqd > hrangesqd) continue;
 	
 	    drmag = sqrt(drsqd);
-	    wkern = float(sph->kernp->w0((FLOAT) (drmag*invh)));
+	    wkern = float(sph->kerntab.w0((FLOAT) (drmag*invh)));
 	
 	    values[c] += wnorm*rendervalues[i]*wkern;
 	    rendernorm[c] += wnorm*wkern;
@@ -158,7 +158,7 @@ int Render::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
     for (i=0; i<snap.Nsph; i++) {
       invh = 1.0f/hvalues[i];
       wnorm = mvalues[i]/rhovalues[i]*pow(invh,(ndim - 1));
-      hrangesqd = sph->kernp->kernrangesqd*hvalues[i]*hvalues[i];
+      hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
       
       // Now loop over all pixels and add current particles
       // ----------------------------------------------------------------------
@@ -171,7 +171,7 @@ int Render::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
 	    if (drsqd > hrangesqd) continue;
 	
 	    drmag = sqrt(drsqd);
-	    wkern = float(sph->kernp->wLOS((FLOAT) (drmag*invh)));
+	    wkern = float(sph->kerntab.wLOS((FLOAT) (drmag*invh)));
 	
 	    values[c] += wnorm*rendervalues[i]*wkern;
 	    rendernorm[c] += wnorm*wkern;
@@ -272,7 +272,7 @@ int Render::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
 
     invh = 1.0f/hvalues[i];
     wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);
-    hrangesqd = sph->kernp->kernrangesqd*hvalues[i]*hvalues[i];
+    hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
 
     // Now loop over all pixels and add current particles
     // ---------------------------------------------------------------------------
@@ -286,7 +286,7 @@ int Render::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
       if (drsqd > hrangesqd) continue;
 
       drmag = sqrt(drsqd);
-      wkern = float(sph->kernp->w0((FLOAT) (drmag*invh)));
+      wkern = float(sph->kerntab.w0((FLOAT) (drmag*invh)));
 
       values[c] += wnorm*rendervalues[i]*wkern;
       rendernorm[c] += wnorm*wkern;

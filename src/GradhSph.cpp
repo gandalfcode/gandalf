@@ -24,10 +24,14 @@ using namespace std;
 // GradhSph::GradhSph
 // ============================================================================
 template <typename kernelclass>
-GradhSph<kernelclass>::GradhSph(int ndimaux, int vdimaux, int bdimaux, string KernelName):
-#if !defined(FIXED_DIMENSIONS)
-  Sph(ndimaux, vdimaux, bdimaux),
-#endif
+GradhSph<kernelclass>::GradhSph(int ndimaux, int vdimaux, int bdimaux, int hydro_forces_aux,
+	    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
+	    FLOAT h_fac_aux, FLOAT h_converge_aux, string avisc_aux,
+	    string acond_aux, string gas_eos_aux, string KernelName):
+  Sph(ndimaux, vdimaux, bdimaux, hydro_forces_aux,
+		    self_gravity_aux, alpha_visc_aux, beta_visc_aux,
+		    h_fac_aux, h_converge_aux, avisc_aux,
+		    acond_aux, gas_eos_aux, KernelName),
   kern(kernelclass(ndimaux, KernelName))
 {
   allocated = false;
@@ -76,7 +80,7 @@ int GradhSph<kernelclass>::ComputeH
   FLOAT hfactor;                        // (1 / h)^ndim
   FLOAT invhsqd;                        // (1 / h)^2
   FLOAT ssqd;                           // Kernel parameter squared, (r/h)^2
-
+  //FLOAT s;
 
   // Main smoothing length iteration loop
   // ==========================================================================
@@ -96,9 +100,10 @@ int GradhSph<kernelclass>::ComputeH
     // ------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       ssqd = drsqd[j]*invhsqd;
-      //parti.rho += m[j]*parti.hfactor*kern.w0(sqrt(ssqd));
-      //parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega(sqrt(ssqd));
-      //parti.zeta += m[j]*parti.invh*parti.invh*kern.wzeta(sqrt(ssqd));
+      //s = sqrt(ssqd);
+      //parti.rho += m[j]*parti.hfactor*kern.w0(s);
+      //parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega(s);
+      //parti.zeta += m[j]*invhsqd*kern.wzeta(s);
       parti.rho += m[j]*parti.hfactor*kern.w0_s2(ssqd);
       parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega_s2(ssqd);
       parti.zeta += m[j]*invhsqd*kern.wzeta_s2(ssqd);
@@ -160,6 +165,7 @@ int GradhSph<kernelclass>::ComputeH
     parti.invrho*parti.invomega;
   parti.div_v = (FLOAT) 0.0;
   
+
   return 1;
 }
 
@@ -192,7 +198,6 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
   FLOAT invrhomean;                     // ..
   FLOAT paux;                           // Aux. pressure force variable
   FLOAT uaux;                           // Aux. internal energy variable
-  FLOAT pfactor;                        // press/rho/rho/omega
 
 
   // Loop over all potential neighbours in the list
@@ -215,51 +220,38 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
     if (hydro_forces == 1) {
       paux = parti.pfactor*wkerni + neibpart[j].pfactor*wkernj;
       uaux = (FLOAT) 0.0;
-
+      
       // Add dissipation terms (for approaching particle pairs)
       if (dvdr < (FLOAT) 0.0) {
 	
 	invrhomean = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
 	
-	// Artificial viscosity term
-	if (avisc == "mon97") {
-	  vsignal = parti.sound + neibpart[j].sound - beta_visc*dvdr;
-	  paux -= 0.5*alpha_visc*vsignal*dvdr*(wkerni + wkernj)*invrhomean;
-	  uaux = 0.25*alpha_visc*vsignal*(wkerni + wkernj)*
-	    invrhomean*dvdr*dvdr;
-	  parti.dudt -= neibpart[j].m*uaux;
-	  neibpart[j].dudt -= parti.m*uaux;
-	  //parti.dudt -= 0.25*neibpart[j].m*alpha_visc*
-	  //vsignal*(wkerni + wkernj)*invrhomean*dvdr*dvdr;
-	  //neibpart[j].dudt -= 0.25*parti.m*alpha_visc*
-	  //vsignal*(wkerni + wkernj)*invrhomean*dvdr*dvdr;
-	}
+        // Artificial viscosity term
+        if (avisc == "mon97") {
+          vsignal = parti.sound + neibpart[j].sound - beta_visc*dvdr;
+          paux -= (FLOAT) 0.5*alpha_visc*vsignal*dvdr*
+	    (wkerni + wkernj)*invrhomean;
+          uaux = (FLOAT) 0.25*alpha_visc*vsignal*
+	    (wkerni + wkernj)*invrhomean*dvdr*dvdr;
+          parti.dudt -= neibpart[j].m*uaux;
+          neibpart[j].dudt -= parti.m*uaux;
+        }
 	
 	// Artificial conductivity term
-	if (acond == "price2008") {
-	  vsignal = sqrt(fabs(eos->Pressure(parti) -
+        if (acond == "wadsley2008") {
+	  uaux = (FLOAT) 0.5*fabs(dvdr)*(parti.u - neibpart[j].u)*
+	    (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
+	  parti.dudt += neibpart[j].m*uaux;
+	  neibpart[j].dudt -= parti.m*uaux;
+    	}
+        else if (acond == "price2008") {
+          vsignal = sqrt(fabs(eos->Pressure(parti) -
 			      eos->Pressure(neibpart[j]))*invrhomean);
-	  uaux = 0.5*vsignal*(parti.u - neibpart[j].u)*
-	    (wkerni + wkernj)*invrhomean;
-	  parti.dudt += neibpart[j].m*uaux;
-	  neibpart[j].dudt -= parti.m*uaux;
-	  //parti.dudt += 0.5*neibpart[j].m*vsignal*
-	  //  (parti.u - neibpart[j].u)*(wkerni + wkernj)*invrhomean;
-	  //neibpart[j].dudt -= 0.5*parti.m*vsignal*
-	  //  (parti.u - neibpart[j].u)*(wkerni + wkernj)*invrhomean;
-	}
-	else if (acond == "wadsley2008") {
-	  uaux = 0.5*fabs(dvdr)*(parti.u - neibpart[j].u)*
-	    (wkerni + wkernj)*invrhomean;
-	  parti.dudt += neibpart[j].m*uaux;
-	  neibpart[j].dudt -= parti.m*uaux;
-	  //parti.dudt += (FLOAT) 0.5*neibpart[j].m*fabs(dvdr)*
-	  //  (parti.u - neibpart[j].u)*
-	  //  (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
-	  //neibpart[j].dudt -= (FLOAT) 0.5*parti.m*fabs(dvdr)*
-	  //  (parti.u - neibpart[j].u)*
-	  //  (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
-	}
+          parti.dudt += 0.5*neibpart[j].m*vsignal*
+            (parti.u - neibpart[j].u)*(wkerni + wkernj)*invrhomean;
+          neibpart[j].dudt -= 0.5*parti.m*vsignal*
+            (parti.u - neibpart[j].u)*(wkerni + wkernj)*invrhomean;
+        }
 	
       }
 
@@ -269,6 +261,7 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
       // If neighbour is also active, add contribution to force here
       for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
       
+
     }
     // ------------------------------------------------------------------------
 
@@ -285,11 +278,6 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
 
   }
   // ==========================================================================
-
-
-  // Normalise div_v and add compressional heating rate
-  //parti.div_v *= parti.invrho;
-  //parti.dudt -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
 
 
   return;
