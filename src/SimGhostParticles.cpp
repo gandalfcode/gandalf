@@ -234,6 +234,8 @@ void SphSimulation::CopySphDataToGhosts(void)
   FLOAT rp[ndimmax];
   FLOAT vp[ndimmax];
 
+  // --------------------------------------------------------------------------
+#pragma omp parallel for default(shared) private(i,iorig,k,rp,vp)
   for (j=0; j<sph->Nghost; j++) {
     i = sph->Nsph + j;
     iorig = sph->sphdata[i].iorig;
@@ -248,6 +250,7 @@ void SphSimulation::CopySphDataToGhosts(void)
     for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = vp[k];
     
   }
+  // --------------------------------------------------------------------------
 
   return;
 }
@@ -264,6 +267,8 @@ void SphSimulation::CopyAccelerationFromGhosts(void)
   int j;
   int k;
 
+  // --------------------------------------------------------------------------
+#pragma omp parallel for default(shared) private(i,iorig,k)
   for (j=0; j<sph->Nghost; j++) {
     i = sph->Nsph + j;
     iorig = sph->sphdata[i].iorig;
@@ -271,8 +276,14 @@ void SphSimulation::CopyAccelerationFromGhosts(void)
     // Only look at active ghosts
     if (!sph->sphdata[iorig].active) continue;
     
-    for (k=0; k<ndim; k++) sph->sphdata[iorig].a[k] += sph->sphdata[i].a[k];
+    for (k=0; k<ndim; k++) {
+#pragma omp atomic
+      sph->sphdata[iorig].a[k] += sph->sphdata[i].a[k];
+    }
+#pragma omp atomic
     sph->sphdata[iorig].dudt += sph->sphdata[i].dudt;
+#pragma omp atomic
+    sph->sphdata[iorig].div_v += sph->sphdata[i].dudt;
     
   }
 

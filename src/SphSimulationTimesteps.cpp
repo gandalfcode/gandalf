@@ -27,8 +27,8 @@ using namespace std;
 // ============================================================================
 void SphSimulation::ComputeGlobalTimestep(void)
 {
-  int i;                                    // Particle counter
-  DOUBLE dt;                                // Aux. timestep variable
+  int i;                               // ..
+  DOUBLE dt_min = big_number_dp;       // ..
 
   debug2("[SphSimulation::ComputeGlobalTimestep]");
 
@@ -39,23 +39,30 @@ void SphSimulation::ComputeGlobalTimestep(void)
     level_max = 0;
     level_step = level_max + integration_step - 1;
     nresync = integration_step;
-    timestep = big_number_dp;
 
     // Find minimum timestep from all SPH particles
-    for (i=0; i<sph->Nsph; i++) {
-      dt = sphint->Timestep(sph->sphdata[i],sph->hydro_forces);
-      if (dt < timestep) timestep = dt;
+    // ------------------------------------------------------------------------
+#pragma omp parallel default(shared) private(i)
+    {
+    	DOUBLE dt = big_number_dp;
+#pragma omp for
+       for (i=0; i<sph->Nsph; i++)
+         dt = min(dt,sphint->Timestep(sph->sphdata[i],sph->hydro_forces));
+
+       // If integrating energy equation, include energy timestep
+       if (simparams.stringparams["gas_eos"] == "energy_eqn") {
+#pragma omp for
+         for (i=0; i<sph->Nsph; i++)
+     	   dt = min(dt,uint->Timestep(sph->sphdata[i]));
+       }
+
+#pragma omp critical
+       if (dt < dt_min) dt_min = dt;
     }
-    
-    // If integrating energy equation, include energy timestep
-    if (simparams.stringparams["gas_eos"] == "energy_eqn") {
-      for (i=0; i<sph->Nsph; i++) {
-	dt = uint->Timestep(sph->sphdata[i]);
-	if (dt < timestep) timestep = dt;
-      }
-    }
+    // ------------------------------------------------------------------------
     
     // Set all particles to same timestep
+    timestep = dt_min;
     for (i=0; i<sph->Nsph; i++) sph->sphdata[i].level = 0;
 
   }
