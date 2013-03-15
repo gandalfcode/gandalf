@@ -22,12 +22,12 @@ class SphKernel
   virtual FLOAT w0(FLOAT) = 0;
  //For the versions using the squared distance, the default behaviour
  //is to call the standard one with the square root
-  virtual FLOAT w0_s2(FLOAT s) {return this->w0(sqrt(s));};
+  virtual inline FLOAT w0_s2(FLOAT s) {return this->w0(sqrt(s));};
   virtual FLOAT w1(FLOAT) = 0;
   virtual FLOAT womega(FLOAT) = 0;
-  virtual FLOAT womega_s2(FLOAT s) {return this->womega(sqrt(s));};
+  virtual inline FLOAT womega_s2(FLOAT s) {return this->womega(sqrt(s));};
   virtual FLOAT wzeta(FLOAT) = 0;
-  virtual FLOAT wzeta_s2(FLOAT s) {return this->wzeta(sqrt(s));};
+  virtual inline FLOAT wzeta_s2(FLOAT s) {return this->wzeta(sqrt(s));};
   virtual FLOAT wgrav(FLOAT) = 0;
   virtual FLOAT wpot(FLOAT) = 0;
   virtual FLOAT wLOS(FLOAT) {

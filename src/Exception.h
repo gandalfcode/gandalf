@@ -22,6 +22,13 @@ public:
     std::string msg;
 };
 
+class StopError: public SerenError {
+public:
+  StopError(std::string msgaux):
+    SerenError(msgaux)
+    {};
+};
+
 class ExceptionHandler {
 private:
   ExceptionHandler(RunType runtypeaux) : runtype(runtypeaux) {}

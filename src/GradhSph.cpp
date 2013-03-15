@@ -31,7 +31,7 @@ GradhSph<kernelclass>::GradhSph(int ndimaux, int vdimaux, int bdimaux, int hydro
   Sph(ndimaux, vdimaux, bdimaux, hydro_forces_aux,
 		    self_gravity_aux, alpha_visc_aux, beta_visc_aux,
 		    h_fac_aux, h_converge_aux, avisc_aux,
-		    acond_aux, gas_eos_aux),
+		    acond_aux, gas_eos_aux, KernelName),
   kern(kernelclass(ndimaux, KernelName))
 {
   allocated = false;
