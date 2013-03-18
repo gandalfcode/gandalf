@@ -176,7 +176,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["sph"] = "gradh";
   stringparams["kernel"] = "m4";
   stringparams["tabulatedkernel"] = "no";
-  stringparams["neib_search"] = "bruteforce";
+  stringparams["neib_search"] = "grid";
   floatparams["h_fac"] = 1.2;
   floatparams["h_converge"] = 0.01;
 

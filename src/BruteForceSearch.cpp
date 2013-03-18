@@ -70,37 +70,46 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph)
 
   debug2("[BruteForceSearch::UpdateAllSphProperties]");
 
-  // Allocate memory for storing neighbour ids and position data
-  neiblist = new int[sph->Ntot];
+  // Store masses in separate array
   m = new FLOAT[sph->Ntot];
-  drsqd = new FLOAT[sph->Ntot];
+  for (i=0; i<sph->Ntot; i++) m[i] = sph->sphdata[i].m;
 
-  // Compute smoothing lengths of all SPH particles
-  // --------------------------------------------------------------------------
-  for (i=0; i<sph->Nsph; i++) {
-    for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
+  // Loop over
+  // ==========================================================================
+#pragma omp parallel default(shared) private(dr,drsqd,i,j,k,neiblist,okflag,rp)
+  {
+    neiblist = new int[sph->Ntot];
+    drsqd = new FLOAT[sph->Ntot];
 
-    // Compute distances and the reciprical between the current particle 
-    // and all neighbours here
+    // Compute smoothing lengths of all SPH particles
     // ------------------------------------------------------------------------
-    for (j=0; j<sph->Ntot; j++) { 
-      neiblist[j] = j;
-      for (k=0; k<ndim; k++) dr[k] = sph->sphdata[j].r[k] - rp[k];
-      m[j] = sph->sphdata[j].m;
-      drsqd[j] = DotProduct(dr,dr,ndim);
+#pragma omp for
+    for (i=0; i<sph->Nsph; i++) {
+      for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
+
+      // Compute distances and the reciprical between the current particle 
+      // and all neighbours here
+      // ----------------------------------------------------------------------
+      for (j=0; j<sph->Ntot; j++) { 
+	neiblist[j] = j;
+	for (k=0; k<ndim; k++) dr[k] = sph->sphdata[j].r[k] - rp[k];
+	drsqd[j] = DotProduct(dr,dr,ndim);
+      }
+      // ----------------------------------------------------------------------
+
+      // Compute all SPH gather properties
+      okflag = sph->ComputeH(i,sph->Ntot,m,drsqd,sph->sphdata[i]);
+  
     }
     // ------------------------------------------------------------------------
 
-    // Compute all SPH gather properties
-    okflag = sph->ComputeH(i,sph->Ntot,m,drsqd,sph->sphdata[i]);
-  
-  }
-  // --------------------------------------------------------------------------
-
-  // Free-up all memory
   delete[] drsqd;
-  delete[] m;
   delete[] neiblist;
+
+  }
+  // ==========================================================================
+
+  delete[] m;
 
   return;
 }
@@ -122,6 +131,8 @@ void BruteForceSearch::UpdateAllSphForces(Sph *sph)
   int *neiblist;                        // List of neighbour ids
   FLOAT draux[ndimmax];                 // Relative distance vector
   FLOAT drsqd;                          // Distance squared
+  FLOAT hrangesqdi;                     // ..
+  FLOAT hrangesqdj;                     // ..
   FLOAT rp[ndimmax];                    // Position of current particle
   FLOAT *dr;                            // Array of neib. position vectors
   FLOAT *drmag;                         // Array of neib. distances
@@ -142,21 +153,27 @@ void BruteForceSearch::UpdateAllSphForces(Sph *sph)
   // --------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
     for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
+    hrangesqdi = pow(sph->kernp->kernrange*sph->sphdata[i].h,2);
+    Nneib = 0;
 
     // Compute distances and the reciprical between the current particle 
     // and all neighbours here
     // ------------------------------------------------------------------------
-    for (j=0; j<sph->Ntot; j++) { 
-      neiblist[j] = j;
+    for (j=0; j<sph->Ntot; j++) {
+      hrangesqdj = pow(sph->kernp->kernrange*sph->sphdata[j].h,2);
       for (k=0; k<ndim; k++) draux[k] = sph->sphdata[j].r[k] - rp[k];
       drsqd = DotProduct(draux,draux,ndim);
-      drmag[j] = sqrt(drsqd);
-      invdrmag[j] = (FLOAT) 1.0/(drmag[j] + small_number);
-      for (k=0; k<ndim; k++) dr[j*ndim + k] = draux[k]*invdrmag[j];
+      if ((drsqd < hrangesqdi || drsqd < hrangesqdj) &&
+	  ((j < i && !sph->sphdata[j].active) || j > i)) {
+	neiblist[Nneib] = j;
+	drmag[Nneib] = sqrt(drsqd);
+	invdrmag[Nneib] = (FLOAT) 1.0/(drmag[Nneib] + small_number);
+	for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
+	Nneib++;
+      }
     }
     // ------------------------------------------------------------------------
 
-    
     // Compute all SPH hydro forces
     sph->ComputeSphNeibForces(i,Nneib,neiblist,drmag,invdrmag,dr,
 			      sph->sphdata[i],sph->sphdata);

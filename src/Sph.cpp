@@ -49,7 +49,7 @@ void Sph::DeallocateMemory(void)
 {
   debug2("[Sph::DeallocateMemory]");
 
-  delete[] sphdata;
+  if (allocated) delete[] sphdata;
   allocated = false;
 
   return;

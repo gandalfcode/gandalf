@@ -58,6 +58,7 @@ void SphSnapshot::AllocateBufferMemory(void)
       return;
   }
 
+  // Allocate memory for all vector quantities depending on dimensionality
   if (ndim == 1) {
     x = new float[Nsph];
     vx = new float[Nsph];
@@ -83,6 +84,7 @@ void SphSnapshot::AllocateBufferMemory(void)
     az = new float[Nsph];
   }
   
+  // Allocate memory for other scalar quantities
   m = new float[Nsph];
   h = new float[Nsph];
   rho = new float[Nsph];
@@ -107,12 +109,14 @@ void SphSnapshot::DeallocateBufferMemory(void)
 {
   debug2("[SphSnapshot::DeallocateBufferMemory]");
 
+  // Deallocate scalar array memory
   delete[] dudt;
   delete[] u;
   delete[] rho;
   delete[] h;
   delete[] m;
 
+  // Deallocate vector array memory
   if (ndim == 1) {
     delete[] ax;
     delete[] vx;
@@ -171,6 +175,7 @@ void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux,
 
   AllocateBufferMemory();
 
+  // Loop over all SPH particles and record particle data
   for (int i=0; i<Nsph; i++) {
 
     if (ndim == 1) {

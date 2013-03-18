@@ -7,7 +7,7 @@
 # Compiler options
 #-------------------------------------------------
 
-CC = g++  # C++ compiler
+CC = g++-4  # C++ compiler
 F2PY = f2py2.7
 #OPT = -pg -O3 -fPIC
 OPT = -O3 -ffast-math -fPIC #-g -Wall
@@ -24,7 +24,7 @@ PYTHON = python2.7 # Name of the python interpreter
 OUTPUT_LEVEL              = 1
 PRECISION                 = DOUBLE
 # If set to 0, the number of dimensions can be set at runtime
-NDIM                      = 2
+NDIM                      = 0
 DEBUG                     = 1
 # Turn on expensive verifications (only needed to debug)
 VERIFY_ALL                = 0

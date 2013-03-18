@@ -1,5 +1,6 @@
 // ============================================================================
-// Rendergrid.cpp
+// Render.cpp
+// Contains all functions for generating rendered images from SPH data.
 // ============================================================================
 
 
@@ -47,11 +48,12 @@ Render::~Render()
 // generated rendered images in python code.
 // ============================================================================
 int Render::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
-				string ystring, string renderstring,
-				string renderunit, float xmin, float xmax,
-				float ymin, float ymax, float* values,
-				int Ngrid, SphSnapshot &snap,
-				Sph *sph, float &scaling_factor)
+				      string ystring, string renderstring,
+				      string renderunit, float xmin, 
+				      float xmax,
+				      float ymin, float ymax, float* values,
+				      int Ngrid, SphSnapshot &snap,
+				      Sph *sph, float &scaling_factor)
 {
   int arraycheck = 1;                   // Verification flag
   int c;                                // Rendering grid cell counter
@@ -93,11 +95,12 @@ int Render::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
   // If any are invalid, exit here with failure code
   if (arraycheck == 0) return -1;
 
+  // Allocate temporary memory for creating render grid
   rendernorm = new float[Ngrid];
+  rgrid = new float[2*Ngrid];
 
   // Create grid positions here
   c = 0;
-  rgrid = new float[2*Ngrid];
   for (j=iygrid-1; j>=0; j--) {
     for (i=0; i<ixgrid; i++) {
       rgrid[2*c] = xmin + ((float) i + 0.5f)*(xmax - xmin)/(float)ixgrid;
@@ -107,8 +110,8 @@ int Render::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
   }
 
   // Zero arrays before computing rendering
-  for (c=0; c<Ngrid; c++) values[c] = 0.0f;
-  for (c=0; c<Ngrid; c++) rendernorm[c] = 0.0f;
+  for (c=0; c<Ngrid; c++) values[c] = (float) 0.0;
+  for (c=0; c<Ngrid; c++) rendernorm[c] = (float) 0.0;
 
 
   // Create rendered grid depending on dimensionality
@@ -117,6 +120,7 @@ int Render::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
 
     // Loop over all particles in snapshot
     // -----------------------------------------------------------------------
+#pragma omp parallel for default(shared) private(c,dr,drmag,drsqd,hrangesqd,invh,wkern,wnorm)
     for (i=0; i<snap.Nsph; i++) {
       invh = 1.0f/hvalues[i];
       wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);
@@ -127,16 +131,18 @@ int Render::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
       for (c=0; c<Ngrid; c++) {
 	
     	dr[0] = rgrid[2*c] - xvalues[i];
-	    dr[1] = rgrid[2*c + 1] - yvalues[i];
-	    drsqd = dr[0]*dr[0] + dr[1]*dr[1];
+	dr[1] = rgrid[2*c + 1] - yvalues[i];
+	drsqd = dr[0]*dr[0] + dr[1]*dr[1];
 	
-	    if (drsqd > hrangesqd) continue;
+	if (drsqd > hrangesqd) continue;
 	
-	    drmag = sqrt(drsqd);
-	    wkern = float(sph->kerntab.w0((FLOAT) (drmag*invh)));
+	drmag = sqrt(drsqd);
+	wkern = float(sph->kerntab.w0((FLOAT) (drmag*invh)));
 	
-	    values[c] += wnorm*rendervalues[i]*wkern;
-	    rendernorm[c] += wnorm*wkern;
+#pragma omp atomic
+	values[c] += wnorm*rendervalues[i]*wkern;
+#pragma omp atomic
+	rendernorm[c] += wnorm*wkern;
       }
       // ----------------------------------------------------------------------
       
@@ -165,16 +171,16 @@ int Render::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
       for (c=0; c<Ngrid; c++) {
 	
     	dr[0] = rgrid[2*c] - xvalues[i];
-	    dr[1] = rgrid[2*c + 1] - yvalues[i];
-	    drsqd = dr[0]*dr[0] + dr[1]*dr[1];
+	dr[1] = rgrid[2*c + 1] - yvalues[i];
+	drsqd = dr[0]*dr[0] + dr[1]*dr[1];
 	
-	    if (drsqd > hrangesqd) continue;
+	if (drsqd > hrangesqd) continue;
 	
-	    drmag = sqrt(drsqd);
-	    wkern = float(sph->kerntab.wLOS((FLOAT) (drmag*invh)));
+	drmag = sqrt(drsqd);
+	wkern = float(sph->kerntab.wLOS((FLOAT) (drmag*invh)));
 	
-	    values[c] += wnorm*rendervalues[i]*wkern;
-	    rendernorm[c] += wnorm*wkern;
+	values[c] += wnorm*rendervalues[i]*wkern;
+	rendernorm[c] += wnorm*wkern;
       }
       // ----------------------------------------------------------------------
 
@@ -267,7 +273,7 @@ int Render::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
 
 
   // Loop over all particles in snapshot
-  // -----------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
   for (i=0; i<snap.Nsph; i++) {
 
     invh = 1.0f/hvalues[i];
@@ -275,7 +281,7 @@ int Render::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
     hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
 
     // Now loop over all pixels and add current particles
-    // ---------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     for (c=0; c<Ngrid; c++) {
 
       dr[0] = rgrid[2*c] - xvalues[i];
@@ -291,10 +297,10 @@ int Render::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
       values[c] += wnorm*rendervalues[i]*wkern;
       rendernorm[c] += wnorm*wkern;
     }
-    // ---------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
 
   }
-  // -----------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
 
   // Normalise all grid cells
   for (c=0; c<Ngrid; c++)

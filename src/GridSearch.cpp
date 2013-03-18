@@ -21,7 +21,7 @@
 using namespace std;
 
 
-static FLOAT grid_h_tolerance = (FLOAT) 1.1;
+static FLOAT grid_h_tolerance = (FLOAT) 1.3;
 
 
 // ============================================================================
@@ -129,7 +129,7 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
       // Compute neighbour list for cell depending on physics options
       Nneib = ComputeNeighbourList(c,neiblist);
 
-      // Make local copies of important neighbour information (mass and position)
+      // Make local copies of important neib information (mass and position)
       for (jj=0; jj<Nneib; jj++) {
         j = neiblist[jj];
         m[jj] = data[j].m;
@@ -149,17 +149,17 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
         // Compute distance (squared) to all
         // --------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
-	      for (k=0; k<ndim; k++) draux[k] = r[ndim*jj + k] - rp[k];
-	      drsqdaux = DotProduct(draux,draux,ndim);
-
-	      // Record distance squared for all potential gather neighbours
-	      if (drsqdaux <= hrangesqd) {
-	        gatherlist[Ngather] = jj;
-	        drsqd[Ngather] = drsqdaux;
-	        m2[Ngather] = m[jj];
+	  for (k=0; k<ndim; k++) draux[k] = r[ndim*jj + k] - rp[k];
+	  drsqdaux = DotProduct(draux,draux,ndim);
+	  
+	  // Record distance squared for all potential gather neighbours
+	  if (drsqdaux <= hrangesqd) {
+	    gatherlist[Ngather] = jj;
+	    drsqd[Ngather] = drsqdaux;
+	    m2[Ngather] = m[jj];
             Ngather++;
        	  }
-
+	  
         }
         // --------------------------------------------------------------------
 
@@ -249,7 +249,6 @@ void GridSearch::UpdateAllSphForces(Sph *sph)
     invdrmag = new FLOAT[Nneibmax];
     neibpart = new SphParticle[Nneibmax];
 
-
     // Loop over all active cells
     // ========================================================================
 #pragma omp for schedule(dynamic)
@@ -296,27 +295,29 @@ void GridSearch::UpdateAllSphForces(Sph *sph)
         for (jj=0; jj<Nneib; jj++) {
 
           hrangesqdj = pow(sph->kernp->kernrange*neibpart[jj].h,2);
-	      for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
-	      drsqd = DotProduct(draux,draux,ndim);
-
-          // Compute list of particle-neighbour interactions and also
-	      // compute
-	      if ((drsqd <= hrangesqdi || drsqd <= hrangesqdj) &&
-		      ((i > neiblist[jj] && !neibpart[jj].active) || i < neiblist[jj])) {
-	        interactlist[Ninteract] = jj;
-	        drmag[Ninteract] = sqrt(drsqd);
-	        invdrmag[Ninteract] = (FLOAT) 1.0/(drmag[Ninteract] + small_number);
-	        for (k=0; k<ndim; k++)
-	          dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
+	  for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
+	  drsqd = DotProduct(draux,draux,ndim);
+	  
+	  // Compute list of particle-neighbour interactions and also
+	  // compute
+	  if ((drsqd <= hrangesqdi || drsqd <= hrangesqdj) &&
+	      ((neiblist[jj] < i && !neibpart[jj].active) || 
+	       neiblist[jj] > i)) {
+	    interactlist[Ninteract] = jj;
+	    drmag[Ninteract] = sqrt(drsqd);
+	    invdrmag[Ninteract] = (FLOAT) 1.0/
+	      (drmag[Ninteract] + small_number);
+	    for (k=0; k<ndim; k++)
+	      dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
             Ninteract++;
           }
-
+	  
         }
-        // ----------------------------------------------------------------------
+        // --------------------------------------------------------------------
 
         // Compute all gather neighbour contributions to hydro forces
         sph->ComputeSphNeibForces(i,Ninteract,interactlist,
-		  		drmag,invdrmag,dr,parti,neibpart);
+				  drmag,invdrmag,dr,parti,neibpart);
 
         // Add ..
         for (k=0; k<ndim; k++) {
@@ -327,9 +328,9 @@ void GridSearch::UpdateAllSphForces(Sph *sph)
         data[i].dudt += parti.dudt;
 #pragma omp atomic
         data[i].div_v += parti.div_v;
-
+	
       }
-      // ------------------------------------------------------------------------
+      // ----------------------------------------------------------------------
 
       // Now add all active neighbour contributions to the main arrays
       for (jj=0; jj<Nneib; jj++) {
@@ -337,7 +338,7 @@ void GridSearch::UpdateAllSphForces(Sph *sph)
           j = neiblist[jj];
           for (k=0; k<ndim; k++) {
 #pragma omp atomic
-        	data[j].a[k] += neibpart[jj].a[k];
+	    data[j].a[k] += neibpart[jj].a[k];
           }
 #pragma omp atomic
           data[j].dudt += neibpart[jj].dudt;
@@ -345,11 +346,11 @@ void GridSearch::UpdateAllSphForces(Sph *sph)
           data[j].div_v += neibpart[jj].div_v;
         }
       }
-
+      
     }
-    // ==========================================================================
+    // ========================================================================
 
-    // Free-up all memory
+    // Free-up local memory for OpenMP thread
     delete[] neibpart;
     delete[] invdrmag;
     delete[] drmag;
@@ -357,24 +358,24 @@ void GridSearch::UpdateAllSphForces(Sph *sph)
     delete[] interactlist;
     delete[] neiblist;
     delete[] activelist;
-
+    
   }
-  // ============================================================================
+  // ==========================================================================
 
   delete[] celllist;
 
   // Compute dudt here (for now)
   if (sph->hydro_forces == 1) {
-	for (i=0; i<sph->Nsph; i++) {
+    for (i=0; i<sph->Nsph; i++) {
       if (sph->sphdata[i].active) {
-		 sph->sphdata[i].div_v *= sph->sphdata[i].invrho;
-		 sph->sphdata[i].dudt -= sph->eos->Pressure(sph->sphdata[i])*
-			   sph->sphdata[i].div_v*sph->sphdata[i].invrho*
-			   sph->sphdata[i].invomega;
+	sph->sphdata[i].div_v *= sph->sphdata[i].invrho;
+	sph->sphdata[i].dudt -= sph->eos->Pressure(sph->sphdata[i])*
+	  sph->sphdata[i].div_v*sph->sphdata[i].invrho*
+	  sph->sphdata[i].invomega;
       }
-	}
+    }
   }
-
+  
   return;
 }
 
