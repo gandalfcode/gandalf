@@ -91,9 +91,9 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph)
       // and all neighbours here
       // ----------------------------------------------------------------------
       for (j=0; j<sph->Ntot; j++) { 
-	neiblist[j] = j;
-	for (k=0; k<ndim; k++) dr[k] = sph->sphdata[j].r[k] - rp[k];
-	drsqd[j] = DotProduct(dr,dr,ndim);
+    	neiblist[j] = j;
+    	for (k=0; k<ndim; k++) dr[k] = sph->sphdata[j].r[k] - rp[k];
+    	drsqd[j] = DotProduct(dr,dr,ndim);
       }
       // ----------------------------------------------------------------------
 
@@ -103,8 +103,8 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph)
     }
     // ------------------------------------------------------------------------
 
-  delete[] drsqd;
-  delete[] neiblist;
+    delete[] drsqd;
+    delete[] neiblist;
 
   }
   // ==========================================================================
@@ -137,6 +137,7 @@ void BruteForceSearch::UpdateAllSphForces(Sph *sph)
   FLOAT *dr;                            // Array of neib. position vectors
   FLOAT *drmag;                         // Array of neib. distances
   FLOAT *invdrmag;                      // Array of neib. inverse distances
+  struct SphParticle *neibpart;         // ..
 
   debug2("[BruteForceSearch::UpdateAllSphForces]");
 
@@ -148,6 +149,9 @@ void BruteForceSearch::UpdateAllSphForces(Sph *sph)
   dr = new FLOAT[ndim*sph->Ntot];
   drmag = new FLOAT[sph->Ntot];
   invdrmag = new FLOAT[sph->Ntot];
+  neibpart = new SphParticle[sph->Ntot];
+
+  for (j=0; j<sph->Ntot; j++) neibpart[j] = sph->sphdata[j];
 
   // Compute smoothing lengths of all SPH particles
   // --------------------------------------------------------------------------
@@ -155,6 +159,13 @@ void BruteForceSearch::UpdateAllSphForces(Sph *sph)
     for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
     hrangesqdi = pow(sph->kernp->kernrange*sph->sphdata[i].h,2);
     Nneib = 0;
+
+    // Make local copies of all potential neighbours
+     for (j=0; j<sph->Ntot; j++) {
+       neibpart[j].div_v = (FLOAT) 0.0;
+       neibpart[j].dudt = (FLOAT) 0.0;
+       for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
+     }
 
     // Compute distances and the reciprical between the current particle 
     // and all neighbours here
@@ -165,26 +176,49 @@ void BruteForceSearch::UpdateAllSphForces(Sph *sph)
       drsqd = DotProduct(draux,draux,ndim);
       if ((drsqd < hrangesqdi || drsqd < hrangesqdj) &&
 	  ((j < i && !sph->sphdata[j].active) || j > i)) {
-	neiblist[Nneib] = j;
-	drmag[Nneib] = sqrt(drsqd);
-	invdrmag[Nneib] = (FLOAT) 1.0/(drmag[Nneib] + small_number);
-	for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
-	Nneib++;
+    	neiblist[Nneib] = j;
+    	drmag[Nneib] = sqrt(drsqd);
+    	invdrmag[Nneib] = (FLOAT) 1.0/(drmag[Nneib] + small_number);
+    	for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
+    	Nneib++;
       }
     }
     // ------------------------------------------------------------------------
 
     // Compute all SPH hydro forces
     sph->ComputeSphNeibForces(i,Nneib,neiblist,drmag,invdrmag,dr,
-			      sph->sphdata[i],sph->sphdata);
+			      sph->sphdata[i],neibpart);
+
+    // Now add all active neighbour contributions to the main arrays
+    for (j=0; j<sph->Ntot; j++) {
+      if (neibpart[j].active) {
+        for (k=0; k<ndim; k++) sph->sphdata[j].a[k] += neibpart[j].a[k];
+        sph->sphdata[j].dudt += neibpart[j].dudt;
+        sph->sphdata[j].div_v += neibpart[j].div_v;
+      }
+    }
 
   }
   // --------------------------------------------------------------------------
 
+  delete[] neibpart;
   delete[] invdrmag;
   delete[] drmag;
   delete[] dr;
   delete[] neiblist;
+
+
+  // Compute dudt here (for now)
+   if (sph->hydro_forces == 1) {
+     for (i=0; i<sph->Nsph; i++) {
+       if (sph->sphdata[i].active) {
+    	 sph->sphdata[i].div_v *= sph->sphdata[i].invrho;
+    	 sph->sphdata[i].dudt -= sph->eos->Pressure(sph->sphdata[i])*
+    		sph->sphdata[i].div_v*sph->sphdata[i].invrho*
+    		sph->sphdata[i].invomega;
+       }
+     }
+   }
 
   return;
 }

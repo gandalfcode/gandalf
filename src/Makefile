@@ -21,6 +21,20 @@ PYFOLDER = ../analysis/swig_generated
 GTEST = /Users#/david/astro/code/gtest-1.6.0/include
 
 
+# Compiler mode flags
+# ----------------------------------------------------------------------------
+ifeq ($(CC),g++)
+ifeq ($(COMPILER_MODE),FAST)
+OPT += -O3 -ffast-math -fPIC
+else ifeq ($(COMPILER_MODE),DEBUG)
+OPT += -g -pg -Wall -fbounds-check -fprofile-arcs -ftest-coverage
+endif
+ifeq ($(OPENMP),1)
+OPT += -fopenmp -DOPENMP
+endif
+endif
+
+
 # Dimensionality of the code
 # ----------------------------------------------------------------------------
 ifeq ($(NDIM),1)
@@ -45,11 +59,11 @@ CFLAGS += -DDOUBLE_PRECISION
 endif
 
 
-# Debug flags
+# Debug output flags
 # ----------------------------------------------------------------------------
-ifeq ($(DEBUG),1)
+ifeq ($(OUTPUT_LEVEL),1)
 CFLAGS += -DDEBUG1
-else ifeq ($(DEBUG),2)
+else ifeq ($(OUTPUT_LEVEL),2)
 CFLAGS += -DDEBUG1 -DDEBUG2
 endif
 
