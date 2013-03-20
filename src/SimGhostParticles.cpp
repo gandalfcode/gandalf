@@ -63,7 +63,7 @@ void SphSimulation::SearchGhostParticles(void)
 {
   int i;
   int k;
-  const FLOAT ghost_range = 1.1;
+  static const FLOAT ghost_range = 1.1;
   const FLOAT kernrange = sph->kernp->kernrange;
   SphParticle *sphdata = sph->sphdata;
 
@@ -283,7 +283,7 @@ void SphSimulation::CopyAccelerationFromGhosts(void)
 #pragma omp atomic
     sph->sphdata[iorig].dudt += sph->sphdata[i].dudt;
 #pragma omp atomic
-    sph->sphdata[iorig].div_v += sph->sphdata[i].dudt;
+    sph->sphdata[iorig].div_v += sph->sphdata[i].div_v;
     
   }
 

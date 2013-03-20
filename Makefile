@@ -1,33 +1,19 @@
-# -------------------------------------------------
-# SEREN Makefile
-# Here you can set the compile-time options
-# -------------------------------------------------
+# =============================================================================
+# Makefile
+# =============================================================================
 
-#-------------------------------------------------
-# Compiler options
-#-------------------------------------------------
+CC                 = g++-4
+PYTHON             = python2.7
+F2PY               = f2py2.7
+COMPILER_MODE      = FAST
+OPENMP             = 1
 
-CC = g++-4  # C++ compiler
-F2PY = f2py2.7
-#OPT = -pg -O3 -fPIC
-OPT = -g -O3 -ffast-math -fPIC #-g -Wall
-#OPT = -g -pg -fprofile-arcs -ftest-coverage -fPIC
-#OPT = -g -Wall -fbounds-check
-#OPT += -fopenmp -DOPENMP
+NDIM               = 0
+PRECISION          = DOUBLE
 
-PYTHON = python2.7 # Name of the python interpreter
-
-
-#-------------------------------------------------
-# Compile time options
-#-------------------------------------------------
-OUTPUT_LEVEL              = 1
-PRECISION                 = DOUBLE
-# If set to 0, the number of dimensions can be set at runtime
-NDIM                      = 0
-DEBUG                     = 2
-# Turn on expensive verifications (only needed to debug)
-VERIFY_ALL                = 0
+OUTPUT_LEVEL       = 1
+DEBUG              = 1
+VERIFY_ALL         = 0
 
 
 # Select location of python and numpy libraries.  If blank, make will try to 
@@ -39,8 +25,7 @@ PYLIB =
 NUMPY = 
 
 
-
-# Don't delete this command! Makes sure that the variables defined here are passed
+# Don't delete this command! Makes sure that defined variables here are passed
 # to the others make
 export
 

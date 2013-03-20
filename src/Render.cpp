@@ -207,7 +207,8 @@ int Render::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
 				     string ystring, string zstring, 
 				     string renderstring,
 				     string renderunit, float xmin, float xmax,
-				     float ymin, float ymax, float* values,
+				     float ymin, float ymax, float zslice, 
+				     float* values,
 				     int Ngrid, SphSnapshot &snap, 
 				     Sph *sph, float &scaling_factor)
 {
@@ -235,7 +236,6 @@ int Render::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
   float *hvalues;                       // ..
   float *rendernorm;                    // ..
   float *rgrid;                         // ..
-  float zslice = 0.0;
   string dummystring = "";              // ..
 
   // Check x and y strings are actual co-ordinate strings

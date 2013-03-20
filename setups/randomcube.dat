@@ -1,37 +1,85 @@
-xlhs : x_boundary_lhs = periodic
-xrhs : x_boundary_rhs = periodic
-xlhs : y_boundary_lhs = periodic
-xrhs : y_boundary_rhs = periodic
-xlhs : z_boundary_lhs = periodic
-xrhs : z_boundary_rhs = periodic
+-------------------------
+Relaxing random cube test
+-------------------------
 
 
-     : boxmin[0] = 0.0
-     : boxmin[1] = 0.0
-     : boxmin[2] = 0.0
-     : boxmax[0] = 1.0
-     : boxmax[1] = 1.0
-     : boxmax[2] = 2.0
+----------------------------
+Initial conditions variables
+----------------------------
+Simulation run id string                    : run_id = RELAXCUBE1
+Select shocktube initial conditions         : ic = random_cube
+1D shocktube test                           : ndim = 3
+No. of SPH particles                        : Npart = 1024
 
-     : ndim = 3
-     : ic = random_cube
-     : Npart = 512
-     : run_id = TEST
 
-     : neib_search = grid
+-----------------------------
+Simulation boundary variables
+-----------------------------
+LHS position of boundary in x-dimension     : boxmin[0] = 0.0
+RHS position of boundary in x-dimension     : boxmax[0] = 1.0
+LHS position of boundary in y-dimension     : boxmin[1] = 0.0
+RHS position of boundary in y-dimension     : boxmax[1] = 1.0
+LHS position of boundary in z-dimension     : boxmin[2] = 0.0
+RHS position of boundary in z-dimension     : boxmax[2] = 1.0
+LHS boundary type in x-dimension            : x_boundary_lhs = periodic
+RHS boundary type in x-dimension            : x_boundary_rhs = periodic
+LHS boundary type in y-dimension            : y_boundary_lhs = periodic
+RHS boundary type in y-dimension            : y_boundary_rhs = periodic
+LHS boundary type in z-dimension            : z_boundary_lhs = periodic
+RHS boundary type in z-dimension            : z_boundary_rhs = periodic
 
-     : Nlevels = 1
-     : courant_mult = 0.15
-     : accel_mult = 0.3
 
-     : tabulatedkernel = yes
-     : gas_eos = isothermal
-     : avisc = pf2010
-     : acond = none
-     : alpha_visc = 1.0
-     : beta_visc = 2.0
-     : h_converge = 0.01
+-------------------------
+Simulation time variables
+-------------------------
+Simulation end time                         : tend = 20.0
+Regular snapshot output frequency           : dt_snap = 1.0
+Screen output frequency (in no. of steps)   : noutputstep = 32
 
-     : tend = 5.0
-     : dt_snap = 1.0
-     : noutputstep = 1
+
+-----------------------
+Thermal physics options
+-----------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = isothermal
+Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
+
+
+---------------------------------------
+Smoothed Particle Hydrodynamics options
+---------------------------------------
+SPH algorithm choice                        : sph = gradh
+SPH smoothing kernel choice                 : kernel = m4
+SPH smoothing length iteration tolerance    : h_converge = 0.01
+
+
+--------------------------------
+SPH artificial viscosity options
+--------------------------------
+Artificial viscosity choice                 : avisc = mon97
+Artificial conductivity choice              : acond = none
+Artificial viscosity alpha value            : alpha_visc = 1.0
+Artificial viscosity beta value             : beta_visc = 2.0
+
+
+------------------------
+Time integration options
+------------------------
+SPH particle integration option             : sph_integration = lfkdk
+SPH Courant timestep condition multiplier   : courant_mult = 0.1
+SPH acceleration condition multiplier       : accel_mult = 0.2
+SPH energy equation timestep multiplier     : energy_mult = 0.5
+No. of block timestep levels                : Nlevels = 4
+
+
+--------------------
+Optimisation options
+--------------------
+Tabulate SPH kernel                         : yes
+SPH neighbour search algorithm              : neib_search = grid
+
+
+-------------
+Misc. options
+-------------
+Switch-off self-gravity of gas              : self_gravity = 0

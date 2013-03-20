@@ -77,10 +77,9 @@ int GradhSph<kernelclass>::ComputeH
   FLOAT h_max = big_number;             // Max. allowed value of h
   FLOAT h_lower_bound = 0.0;            // Lower bound on h
   FLOAT h_upper_bound = big_number;     // Upper bound on h
-  FLOAT hfactor;                        // (1 / h)^ndim
   FLOAT invhsqd;                        // (1 / h)^2
   FLOAT ssqd;                           // Kernel parameter squared, (r/h)^2
-  //FLOAT s;
+
 
   // Main smoothing length iteration loop
   // ==========================================================================
@@ -100,10 +99,6 @@ int GradhSph<kernelclass>::ComputeH
     // ------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       ssqd = drsqd[j]*invhsqd;
-      //s = sqrt(ssqd);
-      //parti.rho += m[j]*parti.hfactor*kern.w0(s);
-      //parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega(s);
-      //parti.zeta += m[j]*invhsqd*kern.wzeta(s);
       parti.rho += m[j]*parti.hfactor*kern.w0_s2(ssqd);
       parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega_s2(ssqd);
       parti.zeta += m[j]*invhsqd*kern.wzeta_s2(ssqd);
@@ -114,8 +109,8 @@ int GradhSph<kernelclass>::ComputeH
 
     // If h changes below some fixed tolerance, exit iteration loop
     if (parti.rho > (FLOAT) 0.0 && parti.h > h_lower_bound &&
-	fabs(parti.h - h_fac*pow(parti.m*parti.invrho,
-				 invndim)) < h_converge) break;
+    		fabs(parti.h - h_fac*pow(parti.m*parti.invrho,
+    				invndim)) < h_converge) break;
 
     // Use fixed-point iteration, i.e. h_new = h_fac*(m/rho_old)^(1/ndim), 
     // for now.  If this does not converge in a reasonable number of 
@@ -195,78 +190,81 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
   FLOAT wkerni;                         // Value of w1 kernel function
   FLOAT wkernj;                         // Value of w1 kernel function
   FLOAT vsignal;                        // Signal velocity
-  FLOAT invrhomean;                     // ..
   FLOAT paux;                           // Aux. pressure force variable
   FLOAT uaux;                           // Aux. internal energy variable
+  FLOAT winvrho;                        // 0.5*(wkerni + wkernj)*invrhomean
 
 
-  // Loop over all potential neighbours in the list
+  // Compute hydro forces
   // ==========================================================================
-  for (jj=0; jj<Nneib; jj++) {
-    j = neiblist[jj];
+  if (hydro_forces == 1) {
 
-    for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
-    for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
-    dvdr = DotProduct(dv,draux,ndim);
-    wkerni = parti.hfactor*kern.w1(drmag[jj]*parti.invh);
-    wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*neibpart[j].invh);
-
-    // Add contribution to velocity divergence
-    parti.div_v -= neibpart[j].m*dvdr*wkerni;
-    neibpart[j].div_v -= parti.m*dvdr*wkernj;
-
-    // Compute hydro forces
+    // Loop over all potential neighbours in the list
     // ------------------------------------------------------------------------
-    if (hydro_forces == 1) {
+    for (jj=0; jj<Nneib; jj++) {
+      j = neiblist[jj];
+      wkerni = parti.hfactor*kern.w1(drmag[jj]*parti.invh);
+      wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*neibpart[j].invh);
+
+      for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
+      for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
+      dvdr = DotProduct(dv,draux,ndim);
+
+      // Add contribution to velocity divergence
+      parti.div_v -= neibpart[j].m*dvdr*wkerni;
+      neibpart[j].div_v -= parti.m*dvdr*wkernj;
+
+      // Main SPH pressure force term
       paux = parti.pfactor*wkerni + neibpart[j].pfactor*wkernj;
-      uaux = (FLOAT) 0.0;
       
       // Add dissipation terms (for approaching particle pairs)
+      // ----------------------------------------------------------------------
       if (dvdr < (FLOAT) 0.0) {
-	
-	invrhomean = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
+
+    	winvrho = (FLOAT) 0.25*(wkerni + wkernj)*(parti.invrho + neibpart[j].invrho);
 	
         // Artificial viscosity term
         if (avisc == "mon97") {
           vsignal = parti.sound + neibpart[j].sound - beta_visc*dvdr;
-          paux -= (FLOAT) 0.5*alpha_visc*vsignal*dvdr*
-	    (wkerni + wkernj)*invrhomean;
-          uaux = (FLOAT) 0.25*alpha_visc*vsignal*
-	    (wkerni + wkernj)*invrhomean*dvdr*dvdr;
+          paux -= (FLOAT) alpha_visc*vsignal*dvdr*winvrho;
+          uaux = (FLOAT) 0.5*alpha_visc*vsignal*dvdr*dvdr*winvrho;
           parti.dudt -= neibpart[j].m*uaux;
           neibpart[j].dudt -= parti.m*uaux;
         }
-	
-	// Artificial conductivity term
+
+        // Artificial conductivity term
         if (acond == "wadsley2008") {
-	  uaux = (FLOAT) 0.5*fabs(dvdr)*(parti.u - neibpart[j].u)*
-	    (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
-	  parti.dudt += neibpart[j].m*uaux;
-	  neibpart[j].dudt -= parti.m*uaux;
-    	}
+	      uaux = (FLOAT) 0.5*dvdr*(neibpart[j].u - parti.u)*
+	    		  (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
+	      parti.dudt += neibpart[j].m*uaux;
+	      neibpart[j].dudt -= parti.m*uaux;
+        }
         else if (acond == "price2008") {
-          vsignal = sqrt(fabs(eos->Pressure(parti) -
-			      eos->Pressure(neibpart[j]))*invrhomean);
+    	  vsignal = sqrt(fabs(eos->Pressure(parti) -
+			      eos->Pressure(neibpart[j]))*0.5*
+    			  (parti.invrho + neibpart[j].invrho));
           parti.dudt += 0.5*neibpart[j].m*vsignal*
-            (parti.u - neibpart[j].u)*(wkerni + wkernj)*invrhomean;
+            (parti.u - neibpart[j].u)*winvrho;
           neibpart[j].dudt -= 0.5*parti.m*vsignal*
-            (parti.u - neibpart[j].u)*(wkerni + wkernj)*invrhomean;
+            (parti.u - neibpart[j].u)*winvrho;
         }
 	
       }
+      // ----------------------------------------------------------------------
 
       // Add total hydro contribution to acceleration for particle i
       for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
       
       // If neighbour is also active, add contribution to force here
       for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
-      
 
     }
     // ------------------------------------------------------------------------
 
+  }
+  // ==========================================================================
 
-    // Compute gravitational contribution
+   // Compute gravitational contribution
     // ------------------------------------------------------------------------
     /*if (self_gravity == 1) {
       paux = (FLOAT) 0.5*
@@ -275,10 +273,6 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
       for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*draux[k]*paux;
       parti.gpot += neibpart[j].m*parti.invh*wpot(drmag[j].parti.invh);
       }*/
-
-  }
-  // ==========================================================================
-
 
   return;
 }

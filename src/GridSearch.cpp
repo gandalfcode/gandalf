@@ -21,7 +21,7 @@
 using namespace std;
 
 
-static FLOAT grid_h_tolerance = (FLOAT) 1.3;
+static const FLOAT grid_h_tolerance = (FLOAT) 1.1;
 
 
 // ============================================================================
@@ -149,15 +149,15 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
         // Compute distance (squared) to all
         // --------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
-	  for (k=0; k<ndim; k++) draux[k] = r[ndim*jj + k] - rp[k];
-	  drsqdaux = DotProduct(draux,draux,ndim);
-	  
-	  // Record distance squared for all potential gather neighbours
-	  if (drsqdaux <= hrangesqd) {
-	    gatherlist[Ngather] = jj;
-	    drsqd[Ngather] = drsqdaux;
+          for (k=0; k<ndim; k++) draux[k] = r[ndim*jj + k] - rp[k];
+          drsqdaux = DotProduct(draux,draux,ndim);
+
+          // Record distance squared for all potential gather neighbours
+          if (drsqdaux <= hrangesqd) {
+            gatherlist[Ngather] = jj;
+            drsqd[Ngather] = drsqdaux;
 	    m2[Ngather] = m[jj];
-            Ngather++;
+	    Ngather++;
        	  }
 	  
         }
@@ -295,21 +295,21 @@ void GridSearch::UpdateAllSphForces(Sph *sph)
         for (jj=0; jj<Nneib; jj++) {
 
           hrangesqdj = pow(sph->kernp->kernrange*neibpart[jj].h,2);
-	  for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
-	  drsqd = DotProduct(draux,draux,ndim);
-	  
-	  // Compute list of particle-neighbour interactions and also
-	  // compute
-	  if ((drsqd <= hrangesqdi || drsqd <= hrangesqdj) &&
-	      ((neiblist[jj] < i && !neibpart[jj].active) || 
-	       neiblist[jj] > i)) {
-	    interactlist[Ninteract] = jj;
-	    drmag[Ninteract] = sqrt(drsqd);
-	    invdrmag[Ninteract] = (FLOAT) 1.0/
-	      (drmag[Ninteract] + small_number);
-	    for (k=0; k<ndim; k++)
-	      dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
-            Ninteract++;
+          for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
+          drsqd = DotProduct(draux,draux,ndim);
+
+          // Compute list of particle-neighbour interactions and also
+          // compute
+          if ((drsqd <= hrangesqdi || drsqd <= hrangesqdj) &&
+	        ((neiblist[jj] < i && !neibpart[jj].active) ||
+	        neiblist[jj] > i)) {
+        	interactlist[Ninteract] = jj;
+        	drmag[Ninteract] = sqrt(drsqd);
+        	invdrmag[Ninteract] = (FLOAT) 1.0/
+        			(drmag[Ninteract] + small_number);
+        	for (k=0; k<ndim; k++)
+        	  dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
+        	Ninteract++;
           }
 	  
         }
@@ -338,7 +338,7 @@ void GridSearch::UpdateAllSphForces(Sph *sph)
           j = neiblist[jj];
           for (k=0; k<ndim; k++) {
 #pragma omp atomic
-	    data[j].a[k] += neibpart[jj].a[k];
+        	data[j].a[k] += neibpart[jj].a[k];
           }
 #pragma omp atomic
           data[j].dudt += neibpart[jj].dudt;
