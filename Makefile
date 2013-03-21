@@ -11,8 +11,8 @@ OPENMP             = 1
 NDIM               = 0
 PRECISION          = DOUBLE
 
-OUTPUT_LEVEL       = 1
-DEBUG              = 1
+OUTPUT_LEVEL       = 2
+DEBUG              = 2
 VERIFY_ALL         = 0
 
 

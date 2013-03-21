@@ -12,6 +12,7 @@
 #include <math.h>
 #include "Precision.h"
 #include "Dimensions.h"
+#include "Exception.h"
 #include "SphNeighbourSearch.h"
 #include "Sph.h"
 #include "Parameters.h"
@@ -889,7 +890,8 @@ void GridSearch::CheckValidNeighbourList(Sph *sph, int i, int Nneib,
       cout << "Nneib : " << Nneib << "   Ntrueneib : " << Ntrueneib << endl;
       PrintArray("neiblist     : ",Nneib,neiblist);
       PrintArray("trueneiblist : ",Ntrueneib,trueneiblist);
-      exit(0);
+      string message = "Problem with neighbour lists in grid search";
+      ExceptionHandler::getIstance().raise(message);
     }
   }
 
@@ -932,7 +934,8 @@ void GridSearch::ValidateGrid(void)
     if (gridentry[i] != 1) {
       cout << "Problem with particle in gridentry : " 
 	   << i << "   " << gridentry[i] << endl;
-      exit(0);
+      string message = "Problem with particle in gridentry";
+      ExceptionHandler::getIstance().raise(message);
     }
   }
 
@@ -942,7 +945,8 @@ void GridSearch::ValidateGrid(void)
     if (grid[c].Nptcls != 0 && inext[grid[c].ilast] != -1) {
       cout << "Error in linked list : " << c << "  " << grid[c].ilast << "  "
 	   << inext[grid[c].ilast] << endl;
-      exit(0);
+      string message = "Error in grid search linked lists";
+      ExceptionHandler::getIstance().raise(message);
     }
   }
 

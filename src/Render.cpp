@@ -255,10 +255,10 @@ int Render::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
   if (arraycheck == 0) return -1;
 
   rendernorm = new float[Ngrid];
+  rgrid = new float[2*Ngrid];
 
   // Create grid positions here
   c = 0;
-  rgrid = new float[2*Ngrid];
   for (j=iygrid-1; j>=0; j--) {
     for (i=0; i<ixgrid; i++) {
       rgrid[2*c] = xmin + ((float) i + 0.5f)*(xmax - xmin)/(float)ixgrid;
@@ -280,6 +280,8 @@ int Render::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
     wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);
     hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
 
+
+
     // Now loop over all pixels and add current particles
     // ------------------------------------------------------------------------
     for (c=0; c<Ngrid; c++) {
@@ -296,8 +298,10 @@ int Render::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
 
       values[c] += wnorm*rendervalues[i]*wkern;
       rendernorm[c] += wnorm*wkern;
+
     }
     // ------------------------------------------------------------------------
+
 
   }
   // --------------------------------------------------------------------------
@@ -305,6 +309,12 @@ int Render::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
   // Normalise all grid cells
   for (c=0; c<Ngrid; c++)
     if (rendernorm[c] > 1.e-10) values[c] /= rendernorm[c];
+
+  //if (rendernorm[c] > 0.01 && rendernorm[c] < 100.0) values[c] /= rendernorm[c];
+
+  // Free all locally allocated memory
+  delete[] rgrid;
+  delete[] rendernorm;
 
   return 1;
 }

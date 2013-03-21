@@ -236,6 +236,8 @@ class RenderPlotCommand (PlotCommand):
         self.autoscalerender = autoscalerender
         self.coordlimits = coordlimits
         self.zslice = zslice
+        self.zquantity = None
+        self.zunit = "default"
         self.renderunit = renderunit
         self.renderunitname = ""
         self.res = res
@@ -284,8 +286,8 @@ class RenderPlotCommand (PlotCommand):
     def prepareData(self, globallimits):
         sim, snap = self.get_sim_and_snap()
         
-        x_data, xscaling_factor = self.get_array(self.xquantity,snap)
-        y_data, yscaling_factor = self.get_array(self.yquantity, snap)
+        x_data, xscaling_factor = self.get_array('x',snap)
+        y_data, yscaling_factor = self.get_array('y', snap)
 
         #create the grid
         #set resolution
@@ -331,12 +333,14 @@ class RenderPlotCommand (PlotCommand):
             quantities = ['x','y','z']
             quantities.pop(quantities.index(self.xquantity))
             quantities.pop(quantities.index(self.yquantity))
-            zquantity = quantities[0]
-            z_data, z_scaling_factor = self.get_array(zquantity, snap)
-            returncode, renderscaling_factor = rendering.CreateSliceRenderingGrid(xres, yres, self.xquantity, self.yquantity, zquantity, self.renderquantity,
+            self.zquantity = quantities[0]
+            z_data, z_scaling_factor = self.get_array('z', snap)
+            returncode, renderscaling_factor = rendering.CreateSliceRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.zquantity, self.renderquantity,
                                                  self.renderunit, self.xmin, self.xmax,
                                                  self.ymin, self.ymax, self.zslice, rendered, snap, sim.sph, renderscaling_factor)
         rendered = rendered.reshape(xres,yres)
+        np.set_printoptions(threshold='nan')
+        print rendered
 #        data = Data(x*xscaling_factor, y*yscaling_factor, rendered*renderscaling_factor)
         data = Data(None, None, rendered*renderscaling_factor)
         

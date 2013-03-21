@@ -339,7 +339,7 @@ private:
 
 
   FLOAT tableLookup (FLOAT* table, FLOAT s) {
-    if (s>kernrange)
+    if (s>=kernrange)
       return 0;
     FLOAT indexf = s*resinvkernrange;
     int index = (int)indexf;
@@ -347,7 +347,7 @@ private:
   }
 
   FLOAT tableLookupSqd(FLOAT* table, FLOAT s) {
-    if (s>kernrangesqd)
+    if (s>=kernrangesqd)
       return 0;
     FLOAT indexf = s*resinvkernrangesqd;
     int index = (int)indexf;
