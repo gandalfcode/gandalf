@@ -340,7 +340,6 @@ class RenderPlotCommand (PlotCommand):
                                                  self.ymin, self.ymax, self.zslice, rendered, snap, sim.sph, renderscaling_factor)
         rendered = rendered.reshape(xres,yres)
         np.set_printoptions(threshold='nan')
-        print rendered
 #        data = Data(x*xscaling_factor, y*yscaling_factor, rendered*renderscaling_factor)
         data = Data(None, None, rendered*renderscaling_factor)
         
