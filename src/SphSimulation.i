@@ -74,6 +74,36 @@ throw StopError("CTRL-C received");
 	}
 }
 
+%exception Render::CreateColumnRenderingGrid {
+	signal(SIGINT, catch_alarm);
+	PyThreadState *_save;
+    _save = PyEval_SaveThread();
+    try{
+        $action
+        PyEval_RestoreThread(_save);
+    }
+    catch (StopError e){
+    	PyEval_RestoreThread(_save);
+    	PyErr_SetString(PyExc_KeyboardInterrupt,e.msg.c_str());
+    	return NULL;
+    }
+}
+
+%exception Render::CreateSliceRenderingGrid {
+	signal(SIGINT, catch_alarm);
+	PyThreadState *_save;
+    _save = PyEval_SaveThread();
+    try{
+        $action
+        PyEval_RestoreThread(_save);        
+    }
+    catch (StopError e){
+        PyEval_RestoreThread(_save);
+    	PyErr_SetString(PyExc_KeyboardInterrupt,e.msg.c_str());
+    	return NULL;
+    }
+}
+    
 %include "numpy.i"
 %init %{
 import_array();

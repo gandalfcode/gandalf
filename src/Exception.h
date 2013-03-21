@@ -35,17 +35,7 @@ private:
   static ExceptionHandler * istance;
   const RunType runtype;
 public:
-  void raise(string msg) {
-    switch (runtype){
-    case cplusplus:
-      cout << msg << endl;
-      exit(-1);
-      break;
-    case python:
-      throw (SerenError (msg));
-      break;
-    }
-  }
+  void raise(string msg);
   static void makeExceptionHandler (RunType runtypeaux);
   static ExceptionHandler & getIstance() {return *istance;}
 };
