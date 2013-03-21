@@ -198,6 +198,7 @@ void SphSimulation::ProcessParameters(void)
   map<string, string> &stringparams = simparams.stringparams;
 
   Sph::aviscenum avisc;
+  Sph::acondenum acond;
 
   debug2("[SphSimulation::ProcessParameters]");
 
@@ -208,13 +209,29 @@ void SphSimulation::ProcessParameters(void)
   bdim = intparams["ndim"];
 #endif
 
-  // Sets the enum for artificial viscosity
+  // Set the enum for artificial viscosity
   if (stringparams["avisc"] == "mon97") {
     avisc = Sph::mon97;
   }
   else {
     string message = "Unrecognised parameter : avisc = " +
         simparams.stringparams["avisc"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Set the enum for artificial conductivity
+  if (stringparams["acond"] == "none") {
+    acond = Sph::noneac;
+  }
+  else if (stringparams["acond"] == "wadsley2008") {
+    acond = Sph::wadsley2008;
+  }
+  else if (stringparams["acond"] == "price2008") {
+    acond = Sph::price2008;
+  }
+  else {
+    string message = "Unrecognised parameter : acond = " +
+        simparams.stringparams["acond"];
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -227,8 +244,8 @@ void SphSimulation::ProcessParameters(void)
         		intparams["hydro_forces"], intparams["self_gravity"],
         		floatparams["alpha_visc"], floatparams["beta_visc"],
         		floatparams["h_fac"], floatparams["h_converge"],
-        		avisc, stringparams["acond"],
-        		stringparams["acond"], KernelName);
+        		avisc, acond,
+        		stringparams["gas_eos"], KernelName);
           }
     else if (stringparams["tabulatedkernel"] == "no"){
         // Depending on the kernel, instantiate a different GradSph object
@@ -237,16 +254,16 @@ void SphSimulation::ProcessParameters(void)
             		intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
-            		avisc, stringparams["acond"],
-            		stringparams["acond"], KernelName);
+            		avisc, acond,
+            		stringparams["gas_eos"], KernelName);
         }
         else if (KernelName == "quintic") {
             sph = new GradhSph<QuinticKernel> (ndim, vdim, bdim,
             		intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
-            		avisc, stringparams["acond"],
-            		stringparams["acond"], KernelName);
+            		avisc, acond,
+            		stringparams["gas_eos"], KernelName);
         }
         else {
           string message = "Unrecognised parameter : kernel = " +
