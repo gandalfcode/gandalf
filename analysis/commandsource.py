@@ -196,8 +196,8 @@ class ParticlePlotCommand (PlotCommand):
     
 class AnalyticalPlotCommand (PlotCommand):
     
-    def __init__(self, xquantity, yquantity, snap, simno, overplot, autoscale,
-                 xunit, yunit):
+    def __init__(self, xquantity, yquantity, snap, simno, overplot=True, autoscale=True,
+                 xunit="default", yunit="default"):
         PlotCommand.__init__(self, xquantity, yquantity, snap, simno, overplot, 
                              autoscale, xunit, yunit)
         

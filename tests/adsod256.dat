@@ -1,3 +1,4 @@
+     : run_id = adsod256
      : boxmin[0] = -8.0
      : boxmax[0] = 8.0
      : Nlattice1[0] = 256
