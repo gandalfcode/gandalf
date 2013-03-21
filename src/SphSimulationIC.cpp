@@ -52,8 +52,8 @@ void SphSimulation::ShockTube(void)
   debug2("[SphSimulation::ShockTube]");
 
   if (ndim != 1) {
-    cout << "Wrong dimensionality : " << ndim << endl;
-    exit(0);
+    string message = "Wrong dimensionality : " + ndim;
+    ExceptionHandler::getIstance().raise(message);
   }
 
   // Compute size and range of fluid bounding boxes
@@ -398,8 +398,8 @@ void SphSimulation::SoundWave(void)
   debug2("[SphSimulation::SoundWave]");
 
   if (ndim != 1) {
-	  cout << "Sound wave only available in 1D" << endl;
-	  exit(0);
+	  string message="Sound wave only available in 1D";
+	  ExceptionHandler::getIstance().raise(message);
   }
 
   if (sph->gas_eos == "isothermal") {

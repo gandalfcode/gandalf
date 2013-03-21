@@ -31,6 +31,8 @@ void Sph::AllocateMemory(int N)
   if (N > Nsphmax) {
     if (allocated) DeallocateMemory();
     Nsph = N;
+    //TODO: perhaps this 10 could be made a user-provided parameter
+    //(to handle the case where one doesn't want to waste memory)
     Nsphmax = 10*N;
     sphdata = new struct SphParticle[Nsphmax];
     allocated = true;
