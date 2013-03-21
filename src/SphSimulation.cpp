@@ -197,6 +197,8 @@ void SphSimulation::ProcessParameters(void)
   map<string, float> &floatparams = simparams.floatparams;
   map<string, string> &stringparams = simparams.stringparams;
 
+  Sph::aviscenum avisc;
+
   debug2("[SphSimulation::ProcessParameters]");
 
   // Assign dimensionality variables here (for now)
@@ -205,6 +207,16 @@ void SphSimulation::ProcessParameters(void)
   vdim = intparams["ndim"];
   bdim = intparams["ndim"];
 #endif
+
+  // Sets the enum for artificial viscosity
+  if (stringparams["avisc"] == "mon97") {
+    avisc = Sph::mon97;
+  }
+  else {
+    string message = "Unrecognised parameter : avisc = " +
+        simparams.stringparams["avisc"];
+    ExceptionHandler::getIstance().raise(message);
+  }
 
   // Create SPH object based on chosen method in params file
   // --------------------------------------------------------------------------
@@ -215,7 +227,7 @@ void SphSimulation::ProcessParameters(void)
         		intparams["hydro_forces"], intparams["self_gravity"],
         		floatparams["alpha_visc"], floatparams["beta_visc"],
         		floatparams["h_fac"], floatparams["h_converge"],
-        		stringparams["avisc"], stringparams["acond"],
+        		avisc, stringparams["acond"],
         		stringparams["acond"], KernelName);
           }
     else if (stringparams["tabulatedkernel"] == "no"){
@@ -225,7 +237,7 @@ void SphSimulation::ProcessParameters(void)
             		intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
-            		stringparams["avisc"], stringparams["acond"],
+            		avisc, stringparams["acond"],
             		stringparams["acond"], KernelName);
         }
         else if (KernelName == "quintic") {
@@ -233,7 +245,7 @@ void SphSimulation::ProcessParameters(void)
             		intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
-            		stringparams["avisc"], stringparams["acond"],
+            		avisc, stringparams["acond"],
             		stringparams["acond"], KernelName);
         }
         else {
