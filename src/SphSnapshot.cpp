@@ -226,6 +226,11 @@ void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array,
                                float& scaling_factor, string RequestedUnit)
 {
   SimUnit* unit;                            // Unit pointer
+  if (!allocated){
+    cout << "Error: requested a snapshot that it's not allocated!!!!" << endl;
+    exit(-2);
+  }
+
 
   LastUsed = time(NULL);
 
