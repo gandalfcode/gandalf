@@ -330,6 +330,32 @@ def rescale(quantity, unitname, window="current", subfig="current"):
     print okflag
     update()
 
+def sims():
+    '''Print a list of the simulations'''
+    print "These simulations are currently loaded into memory:"
+    for num, sim in enumerate(SimBuffer.simlist):
+        print str(num) + ' ' + sim.simparams.stringparams["run_id"]
+        
+def snaps(simno):
+    '''For the given simulation number, print a list of all the snapshots'''
+    sim=SimBuffer.get_sim_no(simno)
+    print "The run_id of the requested simulation is " + sim.simparams.stringparams["run_id"]
+    print "These are the snapshots that we know about for this simulation:"
+    for num, snap in enumerate(sim.snapshots):
+        #TODO: snap.t is set correctly only the first time that the snapshot is read from the disc, should be fixed
+        print str(num) + ' ' + snap.filename + " " + str(snap.t)
+    try:
+        live=None
+        live=sim.live
+    except AttributeError:
+        pass
+    if live is not None:
+        print "In addition, there is a live snapshot in memory, at time " + str(live.t) 
+
+def set_current_sim(simno):
+    '''Set the current simulation to the given number. Returns the newly set current simulation'''
+    return SimBuffer.set_current_sim_no(simno)
+
 def get_sim_no(sim):
     if sim == "current":
         simno = SimBuffer.get_current_sim_no()
