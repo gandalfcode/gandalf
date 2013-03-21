@@ -1,5 +1,5 @@
 # =============================================================================
-# MAKEFILE
+# Makefile
 # =============================================================================
 
 
@@ -33,6 +33,35 @@ ifeq ($(OPENMP),1)
 OPT += -fopenmp -DOPENMP
 endif
 endif
+
+
+# Compiler mode flags
+# ----------------------------------------------------------------------------
+ifeq ($(CC),g++-4)
+ifeq ($(COMPILER_MODE),FAST)
+OPT += -O3 -ffast-math -fPIC
+else ifeq ($(COMPILER_MODE),DEBUG)
+OPT += -g -pg -Wall -fbounds-check -fprofile-arcs -ftest-coverage
+endif
+ifeq ($(OPENMP),1)
+OPT += -fopenmp -DOPENMP
+endif
+endif
+
+
+# Compiler mode flags
+# ----------------------------------------------------------------------------
+ifeq ($(CC),clang)
+ifeq ($(COMPILER_MODE),FAST)
+OPT += -O3 -ffast-math -fPIC
+else ifeq ($(COMPILER_MODE),DEBUG)
+OPT += -g -pg -Wall -fbounds-check -fprofile-arcs -ftest-coverage
+endif
+ifeq ($(OPENMP),1)
+OPT += -fopenmp -DOPENMP
+endif
+endif
+
 
 
 # Dimensionality of the code

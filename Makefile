@@ -2,17 +2,17 @@
 # Makefile
 # =============================================================================
 
-CC                 = g++
-PYTHON             = python
-F2PY               = f2py
+CC                 = g++-4
+PYTHON             = python2.7
+F2PY               = f2py2.7
 COMPILER_MODE      = FAST
 OPENMP             = 1
 
 NDIM               = 0
 PRECISION          = DOUBLE
 
-OUTPUT_LEVEL       = 1
-DEBUG              = 1
+OUTPUT_LEVEL       = 2
+DEBUG              = 2
 VERIFY_ALL         = 0
 
 
@@ -23,7 +23,6 @@ VERIFY_ALL         = 0
 # -----------------------------------------------------------------------------
 PYLIB = 
 NUMPY = 
-
 
 
 # Don't delete this command! Makes sure that defined variables here are passed

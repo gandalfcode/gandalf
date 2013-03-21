@@ -138,7 +138,8 @@ void SphSimulation::RandomBox(void)
       sph->sphdata[i].v[k] = 0.0f;
       sph->sphdata[i].a[k] = 0.0f;
     }
-    sph->sphdata[i].m = 1.0f / (FLOAT) sph->Nsph;
+    //    sph->sphdata[i].m = 1.0f / (FLOAT) sph->Nsph;
+sph->sphdata[i].m = (1.0 + 9.0*sph->sphdata[i].r[0])*1.0f / (FLOAT) sph->Nsph;
     sph->sphdata[i].invomega = 0.5f;
     sph->sphdata[i].iorig = i;
     sph->sphdata[i].u = 1.5;
@@ -160,7 +161,7 @@ void SphSimulation::LatticeBox(void)
   int Nlattice1[ndimmax];
   Nlattice1[0] = simparams.intparams["Nlattice1[0]"];
   Nlattice1[1] = simparams.intparams["Nlattice1[1]"];
-  Nlattice1[2] = simparams.intparams["Nlattice1[1]"];
+  Nlattice1[2] = simparams.intparams["Nlattice1[2]"];
 
   debug2("[SphSimulation::RandomBox]");
 
@@ -171,7 +172,7 @@ void SphSimulation::LatticeBox(void)
   r = new FLOAT[ndim*sph->Nsph];
 
   // Add ..
-  AddHexagonalLattice(sph->Nsph,Nlattice1,r,simbox);
+  AddRegularLattice(sph->Nsph,Nlattice1,r,simbox);
 
   // Initialise all other variables
   for (int i=0; i<sph->Nsph; i++) {
@@ -180,6 +181,8 @@ void SphSimulation::LatticeBox(void)
       sph->sphdata[i].v[k] = 0.0f;
       sph->sphdata[i].a[k] = 0.0f;
     }
+    //sph->sphdata[i].m = (1.0 + 9.0*sph->sphdata[i].r[0])*1.0f / (FLOAT) sph->Nsph;
+
     sph->sphdata[i].m = 1.0f / (FLOAT) sph->Nsph;
     sph->sphdata[i].invomega = 0.5f;
     sph->sphdata[i].iorig = i;
@@ -535,7 +538,7 @@ void SphSimulation::AddRegularLattice(int Npart, int Nlattice[ndimmax],
   }
   // --------------------------------------------------------------------------
   else if (ndim == 3) {
-    for (kk=0; kk<Nlattice[1]; kk++) {
+    for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
 	for (ii=0; ii<Nlattice[0]; ii++) {
 	  i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;

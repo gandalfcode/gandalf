@@ -1,6 +1,7 @@
 // ============================================================================
 // GradhSph.cpp
-// Contains all functions for calculating conservative 'grad-h' SPH quantities.
+// Contains all functions for calculating conservative 'grad-h' SPH quantities
+// (See Springel & Hernquist (2002) and Price & Monaghan (2007).
 // ============================================================================
 
 
@@ -10,6 +11,7 @@
 #include <iostream>
 #include <math.h>
 #include "Precision.h"
+#include "Exception.h"
 #include "Sph.h"
 #include "SphKernel.h"
 #include "SphParticle.h"
@@ -133,8 +135,10 @@ int GradhSph<kernelclass>::ComputeH
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
 
-    else
-      exit(0);
+    else {
+      string message = "Problem with convergence of h-rho iteration";
+      ExceptionHandler::getIstance().raise(message);
+    }
 
     // If the smoothing length is too large for the neighbour list, exit 
     // routine and flag neighbour list error in order to generate a larger
@@ -168,7 +172,12 @@ int GradhSph<kernelclass>::ComputeH
 
 // ============================================================================
 // GradhSph::ComputeSphNeibForces
-// Compute all SPH neighbour forces on particle i.
+// Compute SPH neighbour force pairs for 
+// (i) All neighbour interactions of particle i with i.d. j > i,
+// (ii) Active neighbour interactions of particle j with i.d. j > i
+// (iii) All inactive neighbour interactions of particle i with i.d. j < i.
+// This ensures that all particle-particle pair interactions are only 
+// computed once only for efficiency.
 // ============================================================================
 template <typename kernelclass>
 void GradhSph<kernelclass>::ComputeSphNeibForces
@@ -221,7 +230,8 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
       // ----------------------------------------------------------------------
       if (dvdr < (FLOAT) 0.0) {
 
-    	winvrho = (FLOAT) 0.25*(wkerni + wkernj)*(parti.invrho + neibpart[j].invrho);
+    	winvrho = (FLOAT) 0.25*(wkerni + wkernj)*
+	  (parti.invrho + neibpart[j].invrho);
 	
         // Artificial viscosity term
         if (avisc == mon97) {
@@ -242,7 +252,7 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
         else if (acond == price2008) {
     	  vsignal = sqrt(fabs(eos->Pressure(parti) -
 			      eos->Pressure(neibpart[j]))*0.5*
-    			  (parti.invrho + neibpart[j].invrho));
+			 (parti.invrho + neibpart[j].invrho));
           parti.dudt += 0.5*neibpart[j].m*vsignal*
             (parti.u - neibpart[j].u)*winvrho;
           neibpart[j].dudt -= 0.5*parti.m*vsignal*
