@@ -26,15 +26,14 @@ using namespace std;
 // GradhSph::GradhSph
 // ============================================================================
 template <typename kernelclass>
-GradhSph<kernelclass>::GradhSph(int ndimaux, int vdimaux, int bdimaux, 
-				int hydro_forces_aux, int self_gravity_aux, 
-				FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
-				FLOAT h_fac_aux, FLOAT h_converge_aux, 
-				string avisc_aux, string acond_aux, 
-				string gas_eos_aux, string KernelName):
-  Sph(ndimaux, vdimaux, bdimaux, hydro_forces_aux, self_gravity_aux, 
-      alpha_visc_aux, beta_visc_aux, h_fac_aux, h_converge_aux, avisc_aux,
-      acond_aux, gas_eos_aux, KernelName),
+GradhSph<kernelclass>::GradhSph(int ndimaux, int vdimaux, int bdimaux, int hydro_forces_aux,
+	    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
+	    FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
+	    string acond_aux, string gas_eos_aux, string KernelName):
+  Sph(ndimaux, vdimaux, bdimaux, hydro_forces_aux,
+		    self_gravity_aux, alpha_visc_aux, beta_visc_aux,
+		    h_fac_aux, h_converge_aux, avisc_aux,
+		    acond_aux, gas_eos_aux, KernelName),
   kern(kernelclass(ndimaux, KernelName))
 {
   allocated = false;
@@ -235,7 +234,7 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
 	  (parti.invrho + neibpart[j].invrho);
 	
         // Artificial viscosity term
-        if (avisc == "mon97") {
+        if (avisc == mon97) {
           vsignal = parti.sound + neibpart[j].sound - beta_visc*dvdr;
           paux -= (FLOAT) alpha_visc*vsignal*dvdr*winvrho;
           uaux = (FLOAT) 0.5*alpha_visc*vsignal*dvdr*dvdr*winvrho;
