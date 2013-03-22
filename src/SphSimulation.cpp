@@ -285,7 +285,7 @@ void SphSimulation::ProcessParameters(void)
         		intparams["hydro_forces"], intparams["self_gravity"],
         		floatparams["alpha_visc"], floatparams["beta_visc"],
         		floatparams["h_fac"], floatparams["h_converge"],
-        		avisc, stringparams["acond"],
+        		avisc, acond,
         		stringparams["acond"], KernelName);
           }
     else if (stringparams["tabulatedkernel"] == "no"){
@@ -295,7 +295,7 @@ void SphSimulation::ProcessParameters(void)
             		intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
-            		avisc, stringparams["acond"],
+            		avisc, acond,
             		stringparams["acond"], KernelName);
         }
         else if (KernelName == "quintic") {
@@ -303,7 +303,7 @@ void SphSimulation::ProcessParameters(void)
             		intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
-            		avisc, stringparams["acond"],
+            		avisc, acond,
             		stringparams["acond"], KernelName);
         }
         else {

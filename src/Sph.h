@@ -163,7 +163,7 @@ class SM2012Sph: public Sph
   kernelclass kern;                      // SPH kernel
 
   SM2012Sph(int, int, int, int, int, FLOAT, FLOAT, FLOAT, FLOAT,
-		  aviscenum, string, string, string);
+		  aviscenum, acondenum, string, string);
   ~SM2012Sph();
 
   int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle &);

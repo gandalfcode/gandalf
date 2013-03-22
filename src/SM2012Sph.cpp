@@ -30,7 +30,7 @@ template <typename kernelclass>
 SM2012Sph<kernelclass>::SM2012Sph(int ndimaux, int vdimaux, int bdimaux, int hydro_forces_aux,
 	    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
 	    FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
-	    string acond_aux, string gas_eos_aux, string KernelName):
+	    acondenum acond_aux, string gas_eos_aux, string KernelName):
   Sph(ndimaux, vdimaux, bdimaux, hydro_forces_aux,
 		    self_gravity_aux, alpha_visc_aux, beta_visc_aux,
 		    h_fac_aux, h_converge_aux, avisc_aux,
@@ -246,13 +246,13 @@ void SM2012Sph<kernelclass>::ComputeSphNeibForces
         }
 
         // Artificial conductivity term
-        if (acond == "wadsley2008") {
+        if (acond == wadsley2008) {
 	      uaux = (FLOAT) 0.5*dvdr*(neibpart[j].u - parti.u)*
 	    		  (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
 	      parti.dudt += neibpart[j].m*uaux;
 	      neibpart[j].dudt -= parti.m*uaux;
         }
-        else if (acond == "price2008") {
+        else if (acond == price2008) {
     	  vsignal = sqrt(fabs(eos->Pressure(parti) -
 			      eos->Pressure(neibpart[j]))*0.5*
     			  (parti.invrho + neibpart[j].invrho));
