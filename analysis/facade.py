@@ -208,7 +208,8 @@ def previous():
         handle(e)
         
 def snap(no):
-    '''Jump to the given snapshot number of the current simulation'''
+    '''Jump to the given snapshot number of the current simulation.
+    Note that you can use standard Numpy index notation (e.g., -1 is the last snapshot).'''
     try:
         SimBuffer.set_current_snapshot_number(no)
     except BufferException as e:
@@ -243,11 +244,18 @@ def newsimfromparams(paramfile):
     change some of the parameters'''
     return SimBuffer.newsimfromparams(paramfile)
 
+def newsimpython(paramfile):
+    '''Creates a new simulation object reading the parameter file and
+    doing part of the setup, but doesn't generate the initial conditions.
+    You can use the method ImportArray of the simulation object to specify
+    the initial conditions from Python.'''
+    return SimBuffer.newsimpython(paramfile)
+
 def run(no=None):
     '''Run a simulation. If no argument is given, run the current one;
     otherwise queries the buffer for the given simulation number.
-    If the simulation has not been setup (e.g., if you have used
-    newsimfromparams), does it before running. 
+    If the simulation has not been setup (i.e., you have used
+    newsimfromparams or newsimpython), does it before running. 
     '''
     #gets the correct simulation object from the buffer
     try:
@@ -260,7 +268,13 @@ def run(no=None):
     #TODO: treat this as an exception
     if not sim.setup:
         print "The selected simulation was not set-up, we will do it for you"
-        sim.SetupSimulation()
+        try:
+            sim.frompython
+            sim.PostSetupForPython()
+        except AttributeError:
+            sim.SetupSimulation()
+        SimBuffer.load_live_snapshot(sim)
+
     
     while sim.t < sim.tend and sim.Nsteps < sim.Nstepsmax:
         #TODO: maybe some of these operations could be done in another thread, so that the computation is

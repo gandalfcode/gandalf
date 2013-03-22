@@ -106,7 +106,7 @@ class SimBuffer:
     @staticmethod
     def newsimfromparams (paramfile):
         '''
-        This methods reads the parameters of a simulation from the specified parameter file. However,
+        This method reads the parameters of a simulation from the specified parameter file. However,
         it doesn't call setup simulation, and therefore it does NOT initialize the simulation (that is,
         you can't directly run a simulation that you created with this command. First you need to
         initialize it. Returns the simulation created'''
@@ -116,6 +116,21 @@ class SimBuffer:
         sim.simparams.ReadParamsFile(paramfile)
         sim.snapshots =[]
         return sim
+        
+    @staticmethod
+    def newsimpython(paramfile):
+        '''This method creates a simulation but does not fill in the arrays, allowing one to use the import
+        array method of the simulation object created to define the initial conditions from Python.
+        Remember that after having imported all the arrays, must call PostSetupForPython. Note however that
+        the run function in facade will do this for you if you forget.'''
+        sim = SphSimulation()
+        SimBuffer._add_simulation(sim)
+        sim.paramfile=paramfile
+        sim.PreSetupForPython()
+        sim.snapshots=[]
+        sim.frompython=True
+        return sim
+        
         
     @staticmethod
     def load_live_snapshot(sim):
@@ -239,7 +254,11 @@ class SimBuffer:
     @staticmethod  
     def get_current_snapshot_by_sim(sim):
         '''This function queries the simulation given and returns its current snapshot'''
-        snap = sim.current
+        try:
+            snap = sim.current
+        except AttributeError:
+            SimBuffer.load_live_snapshot(sim)
+            snap=sim.current
         if (not snap.allocated):
             SimBuffer._fillsnapshot(snap)
         return snap
