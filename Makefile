@@ -32,5 +32,8 @@ export
 all:
 	@+$(MAKE) -C src
 
+executable:
+	@+$(MAKE) executable -C src
+
 clean:
 	@+$(MAKE) clean -C src

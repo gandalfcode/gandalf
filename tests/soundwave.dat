@@ -1,3 +1,4 @@
+     : run_id = soundwave
 xlhs : x_boundary_lhs = periodic
 xrhs : x_boundary_rhs = periodic
      : boxmin[0] = 0.0

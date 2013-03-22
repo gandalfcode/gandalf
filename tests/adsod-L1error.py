@@ -1,4 +1,5 @@
 from seren.analysis.facade import *
+from seren.analysis.compute import L1errornorm
 import time
 
 

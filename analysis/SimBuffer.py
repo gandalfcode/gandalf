@@ -218,6 +218,14 @@ class SimBuffer:
         '''This function returns the number of the current simulation'''
         return SimBuffer.currentsim
     
+    @staticmethod
+    def set_current_sim_no(simno):
+        '''This function sets the current simulation to the given number'''
+        #Checks that the simulation exists
+        sim=SimBuffer.get_sim_no(simno)
+        SimBuffer.currentsim=simno
+        return sim
+    
     
     @staticmethod
     def get_sim_no(no):
@@ -231,7 +239,10 @@ class SimBuffer:
     @staticmethod  
     def get_current_snapshot_by_sim(sim):
         '''This function queries the simulation given and returns its current snapshot'''
-        return sim.current
+        snap = sim.current
+        if (not snap.allocated):
+            SimBuffer._fillsnapshot(snap)
+        return snap
     
     @staticmethod      
     def get_current_snapshot():

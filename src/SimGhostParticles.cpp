@@ -10,6 +10,7 @@
 #include "Precision.h"
 #include "Constants.h"
 #include "Debug.h"
+#include "Exception.h"
 #include "Sph.h"
 #include "SphSimulation.h"
 #include "SphParticle.h"
@@ -181,8 +182,8 @@ void SphSimulation::SearchGhostParticles(void)
 
   // Quit here if we've run out of memory for ghosts
   if (sph->Ntot > sph->Nsphmax) {
-    cout << "Not enough memory for ghost particles" << endl;
-    exit(0);
+    string message="Not enough memory for ghost particles";
+    ExceptionHandler::getIstance().raise(message);
   }
 
   return;
@@ -198,8 +199,8 @@ void SphSimulation::CreateGhostParticle(int i, int k,
 {
   // Increase ghost counter and check there's enough space in memory
   if (sph->Nghost > sph->Nghostmax) {
-    cout << "Not enough memory for new ghost" << endl;
-    exit(0);
+    string message= "Not enough memory for new ghost";
+    ExceptionHandler::getIstance().raise(message);
   }
 
   // If there's enough memory, create ghost particle in arrays

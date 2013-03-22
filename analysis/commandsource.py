@@ -196,8 +196,8 @@ class ParticlePlotCommand (PlotCommand):
     
 class AnalyticalPlotCommand (PlotCommand):
     
-    def __init__(self, xquantity, yquantity, snap, simno, overplot, autoscale,
-                 xunit, yunit):
+    def __init__(self, xquantity, yquantity, snap, simno, overplot=True, autoscale=True,
+                 xunit="default", yunit="default"):
         PlotCommand.__init__(self, xquantity, yquantity, snap, simno, overplot, 
                              autoscale, xunit, yunit)
         
@@ -340,7 +340,6 @@ class RenderPlotCommand (PlotCommand):
                                                  self.ymin, self.ymax, self.zslice, rendered, snap, sim.sph, renderscaling_factor)
         rendered = rendered.reshape(xres,yres)
         np.set_printoptions(threshold='nan')
-        print rendered
 #        data = Data(x*xscaling_factor, y*yscaling_factor, rendered*renderscaling_factor)
         data = Data(None, None, rendered*renderscaling_factor)
         

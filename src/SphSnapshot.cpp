@@ -225,6 +225,14 @@ void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux,
 void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array,
                                float& scaling_factor, string RequestedUnit)
 {
+
+  //Check that the memory is allocated. If not, fails very rumorously
+  if (!allocated){
+    cout << "Error: requested a snapshot that it's not allocated!!!!" << endl;
+    cout << "This means there's a bug in the memory management: please inform the authors" << endl;
+    exit(-2);
+  }
+
   SimUnit* unit;                            // Unit pointer
 
   LastUsed = time(NULL);

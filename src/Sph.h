@@ -30,14 +30,15 @@ class Sph
 {
  public:
 
-  enum aviscenum{none, mon97} avisc;
+  enum aviscenum{noneav, mon97} avisc;
+  enum acondenum{noneac, wadsley2008, price2008} acond;
 
 
 #if !defined(SWIG) && defined(FIXED_DIMENSIONS)
   Sph(int ndimaux, int vdimaux, int bdimaux, int hydro_forces_aux,
     int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
     FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
-    string acond_aux, string gas_eos_aux, string KernelName):
+    acondenum acond_aux, string gas_eos_aux, string KernelName):
 	hydro_forces(hydro_forces_aux),
 	self_gravity(self_gravity_aux),
 	alpha_visc(alpha_visc_aux),
@@ -53,21 +54,21 @@ class Sph
   Sph(int ndimaux, int vdimaux, int bdimaux, int hydro_forces_aux,
     int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
     FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
-    string acond_aux, string gas_eos_aux, string KernelName):
+    acondenum acond_aux, string gas_eos_aux, string KernelName):
 	hydro_forces(hydro_forces_aux),
 	self_gravity(self_gravity_aux),
 	alpha_visc(alpha_visc_aux),
 	beta_visc(beta_visc_aux),
 	h_fac(h_fac_aux),
 	h_converge(h_converge_aux),
-	acond(acond_aux),
 	gas_eos(gas_eos_aux),
     ndim(ndimaux), 
     vdim(vdimaux), 
     bdim(bdimaux), 
     invndim(1.0/(FLOAT)ndimaux),
     kerntab(TabulatedKernel(ndimaux, KernelName))
-      {avisc = avisc_aux;};
+      {avisc = avisc_aux;
+      acond = acond_aux; };
 #endif
 
   // SPH functions for computing SPH sums with neighbouring particles 
@@ -101,7 +102,6 @@ class Sph
   const FLOAT beta_visc;                // beta artificial viscosity parameter
   const FLOAT h_fac;                    // Smoothing length-density factor
   const FLOAT h_converge;               // h-rho iteration tolerance
-  const string acond;                   // Artificial conductivity option
   const string gas_eos;                 // Gas EOS option
   const int hydro_forces;               // Compute hydro forces?
   const int self_gravity;               // Compute gravitational forces?
@@ -136,7 +136,7 @@ class GradhSph: public Sph
   kernelclass kern;                      // SPH kernel
 
   GradhSph(int, int, int, int, int, FLOAT, FLOAT, FLOAT, FLOAT,
-		  aviscenum, string, string, string);
+		  aviscenum, acondenum, string, string);
   ~GradhSph();
 
   int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle &);
