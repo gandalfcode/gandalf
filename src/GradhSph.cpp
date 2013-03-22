@@ -68,6 +68,7 @@ int GradhSph<kernelclass>::ComputeH
 (int i,                                 // id of particle
  int Nneib,                             // No. of potential neighbours
  FLOAT *m,                              // Array of neib. masses
+ FLOAT *mu,                             // Array of m*u (not needed here)
  FLOAT *drsqd,                          // Array of neib. distances (squared)
  SphParticle &parti)                    // Particle i data
 {
@@ -283,6 +284,22 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
       for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*draux[k]*paux;
       parti.gpot += neibpart[j].m*parti.invh*wpot(drmag[j].parti.invh);
       }*/
+
+  return;
+}
+
+
+
+// ============================================================================
+// GradhSph::ComputePostHydroQuantities
+// ..
+// ============================================================================
+template <typename kernelclass>
+void GradhSph<kernelclass>::ComputePostHydroQuantities
+(SphParticle &parti)
+{
+  parti.div_v *= parti.invrho;
+  parti.dudt -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
 
   return;
 }

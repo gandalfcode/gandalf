@@ -39,6 +39,8 @@ struct SphParticle {
   FLOAT div_v;
   FLOAT invomega;
   FLOAT zeta;
+  FLOAT q;
+  FLOAT invq;
   FLOAT sound;
   FLOAT gpot;
   DOUBLE dt;
@@ -69,6 +71,8 @@ struct SphParticle {
     invrho = (FLOAT) 0.0;
     invomega = (FLOAT) 0.0;
     zeta = (FLOAT) 0.0;
+    q = (FLOAT) 0.0;
+    invq = (FLOAT) q;
     sound = (FLOAT) 0.0;
     dt = (FLOAT) 0.0;
   } 

@@ -2,17 +2,17 @@
 # Makefile
 # =============================================================================
 
-CC                 = g++-4
-PYTHON             = python2.7
-F2PY               = f2py2.7
+CC                 = g++
+PYTHON             = python
+F2PY               = f2py
 COMPILER_MODE      = FAST
 OPENMP             = 1
 
 NDIM               = 0
 PRECISION          = DOUBLE
 
-OUTPUT_LEVEL       = 2
-DEBUG              = 2
+OUTPUT_LEVEL       = 1
+DEBUG              = 1
 VERIFY_ALL         = 0
 
 

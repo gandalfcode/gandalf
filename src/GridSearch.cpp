@@ -93,9 +93,11 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
   FLOAT drsqdaux;                       // Distance squared
   FLOAT hrangesqd;                      // Kernel extent
   FLOAT rp[ndimmax];                    // Local copy of particle position
-  FLOAT *drsqd;                         // Position vectors to scatter neibs
-  FLOAT *m;                             // Distances to scatter neibs
+  FLOAT *drsqd;                         // Position vectors to gather neibs
+  FLOAT *m;                             // Distances to gather neibs
   FLOAT *m2;                            // ..
+  FLOAT *mu;                            // mass*u for gather neibs
+  FLOAT *mu2;                           // ..
   FLOAT *r;                             // 1/drmag to scatter neibs
   SphParticle *data = sph->sphdata;     // Pointer to SPH particle data
 
@@ -108,7 +110,7 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
 
   // Set-up all OMP threads
   // ==========================================================================
-#pragma omp parallel default(shared) private(activelist,c,cc,draux,drsqd,drsqdaux,gatherlist,hrangesqd,i,j,jj,k,okflag,m,m2,Nactive,neiblist,Ngather,Nneib,r,rp)
+#pragma omp parallel default(shared) private(activelist,c,cc,draux,drsqd,drsqdaux,gatherlist,hrangesqd,i,j,jj,k,okflag,m,m2,mu,mu2,Nactive,neiblist,Ngather,Nneib,r,rp)
   {
     activelist = new int[Noccupymax];
     gatherlist = new int[Nneibmax];
@@ -116,6 +118,8 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
     drsqd = new FLOAT[Nneibmax];
     m = new FLOAT[Nneibmax];
     m2 = new FLOAT[Nneibmax];
+    mu = new FLOAT[Nneibmax];
+    mu2 = new FLOAT[Nneibmax];
     r = new FLOAT[Nneibmax*ndim];
 
     // Loop over all active cells
@@ -134,6 +138,7 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
       for (jj=0; jj<Nneib; jj++) {
         j = neiblist[jj];
         m[jj] = data[j].m;
+        mu[jj] = data[j].m*data[j].u;
         for (k=0; k<ndim; k++) r[ndim*jj + k] = (FLOAT) data[j].r[k];
       }
 
@@ -157,15 +162,16 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
           if (drsqdaux <= hrangesqd) {
             gatherlist[Ngather] = jj;
             drsqd[Ngather] = drsqdaux;
-	    m2[Ngather] = m[jj];
-	    Ngather++;
+            m2[Ngather] = m[jj];
+            mu2[Ngather] = mu[jj];
+            Ngather++;
        	  }
 	  
         }
         // --------------------------------------------------------------------
 
         // Compute smoothing length and other gather properties for particle i
-        okflag = sph->ComputeH(i,Ngather,m2,drsqd,data[i]);
+        okflag = sph->ComputeH(i,Ngather,m2,mu2,drsqd,data[i]);
 
       }
       // ----------------------------------------------------------------------
@@ -175,6 +181,8 @@ void GridSearch::UpdateAllSphProperties(Sph *sph)
 
     // Free-up all memory
     delete[] r;
+    delete[] mu2;
+    delete[] mu;
     delete[] m2;
     delete[] m;
     delete[] drsqd;
@@ -365,18 +373,15 @@ void GridSearch::UpdateAllSphForces(Sph *sph)
 
   delete[] celllist;
 
-  // Compute dudt here (for now)
+
+  // Compute other important SPH quantities after hydro forces are computed
   if (sph->hydro_forces == 1) {
     for (i=0; i<sph->Nsph; i++) {
-      if (sph->sphdata[i].active) {
-	sph->sphdata[i].div_v *= sph->sphdata[i].invrho;
-	sph->sphdata[i].dudt -= sph->eos->Pressure(sph->sphdata[i])*
-	  sph->sphdata[i].div_v*sph->sphdata[i].invrho*
-	  sph->sphdata[i].invomega;
-      }
+      if (sph->sphdata[i].active)
+    	  sph->ComputePostHydroQuantities(sph->sphdata[i]);
     }
   }
-  
+
   return;
 }
 
