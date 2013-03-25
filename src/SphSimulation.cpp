@@ -277,6 +277,47 @@ void SphSimulation::ProcessParameters(void)
       ExceptionHandler::getIstance().raise(message);
     }
   }
+  // --------------------------------------------------------------------------
+  else if (stringparams["sph"] == "sm2012") {
+    string KernelName = stringparams["kernel"];
+    if (stringparams["tabulatedkernel"] == "yes") {
+        sph = new SM2012Sph<TabulatedKernel> (ndim, vdim, bdim,
+        		intparams["hydro_forces"], intparams["self_gravity"],
+        		floatparams["alpha_visc"], floatparams["beta_visc"],
+        		floatparams["h_fac"], floatparams["h_converge"],
+        		avisc, acond,
+        		stringparams["acond"], KernelName);
+          }
+    else if (stringparams["tabulatedkernel"] == "no"){
+        // Depending on the kernel, instantiate a different GradSph object
+        if (KernelName == "m4") {
+            sph = new SM2012Sph<M4Kernel> (ndim, vdim, bdim,
+            		intparams["hydro_forces"], intparams["self_gravity"],
+            		floatparams["alpha_visc"], floatparams["beta_visc"],
+            		floatparams["h_fac"], floatparams["h_converge"],
+            		avisc, acond,
+            		stringparams["acond"], KernelName);
+        }
+        else if (KernelName == "quintic") {
+            sph = new SM2012Sph<QuinticKernel> (ndim, vdim, bdim,
+            		intparams["hydro_forces"], intparams["self_gravity"],
+            		floatparams["alpha_visc"], floatparams["beta_visc"],
+            		floatparams["h_fac"], floatparams["h_converge"],
+            		avisc, acond,
+            		stringparams["acond"], KernelName);
+        }
+        else {
+          string message = "Unrecognised parameter : kernel = " +
+            simparams.stringparams["kernel"];
+          ExceptionHandler::getIstance().raise(message);
+        }
+    }
+    else {
+      string message = "Invalid option for the tabulatedkernel parameter: " +
+          stringparams["tabulatedkernel"];
+      ExceptionHandler::getIstance().raise(message);
+    }
+  }
   else {
     string message = "Unrecognised parameter : sph = " 
       + simparams.stringparams["sph"];

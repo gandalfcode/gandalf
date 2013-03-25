@@ -33,6 +33,9 @@ class EOS
   virtual FLOAT Temperature(SphParticle &) = 0;
   virtual FLOAT SpecificInternalEnergy(SphParticle &) = 0;
 
+  FLOAT gamma;
+  FLOAT gammam1;
+
 };
 
 
@@ -54,8 +57,6 @@ class Isothermal: public EOS
   FLOAT Temperature(SphParticle &);
   FLOAT SpecificInternalEnergy(SphParticle &);
 
-  FLOAT gamma;
-  FLOAT gammam1;
   FLOAT temp0;
   FLOAT mu_bar;
 
@@ -80,8 +81,6 @@ class Adiabatic: public EOS
   FLOAT Temperature(SphParticle &);
   FLOAT SpecificInternalEnergy(SphParticle &);
 
-  FLOAT gamma;
-  FLOAT gammam1;
   FLOAT temp0;
   FLOAT mu_bar;
 

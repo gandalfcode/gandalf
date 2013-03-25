@@ -39,9 +39,9 @@ endif
 # ----------------------------------------------------------------------------
 ifeq ($(CC),g++-4)
 ifeq ($(COMPILER_MODE),FAST)
-OPT += -O3 -ffast-math -fPIC
+OPT += -O3 -ffast-math -fPIC #-fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -g -pg -Wall -fbounds-check -fprofile-arcs -ftest-coverage
+OPT += -g -pg -Wall -fbounds-check
 endif
 ifeq ($(OPENMP),1)
 OPT += -fopenmp -DOPENMP
@@ -55,7 +55,7 @@ ifeq ($(CC),clang)
 ifeq ($(COMPILER_MODE),FAST)
 OPT += -O3 -ffast-math -fPIC
 else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -g -pg -Wall -fbounds-check -fprofile-arcs -ftest-coverage
+OPT += -g -pg -Wall -fbounds-check
 endif
 ifeq ($(OPENMP),1)
 OPT += -fopenmp -DOPENMP
@@ -115,7 +115,7 @@ OBJ = Parameters.o SimUnits.o SphSnapshot.o SphSimulation.o
 OBJ += SphSimulationIC.o SphSimulationIO.o SphSimulationTimesteps.o
 OBJ += SphAnalysis.o
 OBJ += M4Kernel.o QuinticKernel.o TabulatedKernel.o
-OBJ += Sph.o GradhSph.o
+OBJ += Sph.o GradhSph.o SM2012Sph.o
 OBJ += EnergyPEC.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o
 #OBJ += SphNeighbourSearch.o 

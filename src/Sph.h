@@ -74,12 +74,13 @@ class Sph
   // SPH functions for computing SPH sums with neighbouring particles 
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
   // --------------------------------------------------------------------------
-  virtual int ComputeH(int, int, FLOAT *, FLOAT *, SphParticle &) = 0;
+  virtual int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle &) = 0;
   virtual void ComputeSphNeibForces(int, int, int *, 
 				    FLOAT *, FLOAT *, FLOAT *, 
 				    SphParticle &, SphParticle *) = 0;
   virtual void ComputeDirectGravForces(int, int, int *,
 				       SphParticle &, SphParticle *) = 0;
+  virtual void ComputePostHydroQuantities(SphParticle &) = 0;
 
   // SPH array memory allocation functions
   // --------------------------------------------------------------------------
@@ -108,7 +109,7 @@ class Sph
   struct SphParticle *sphdata;          // Main SPH particle data array
   EOS *eos;                             // Equation-of-state
   SphKernel *kernp;                     // Pointer to chosen kernel object
-  TabulatedKernel kerntab;        // Tabulated version of the chosen kernel
+  TabulatedKernel kerntab;              // Tabulated version of chosen kernel
 
 #if !defined(FIXED_DIMENSIONS)
   const int ndim;
@@ -138,12 +139,41 @@ class GradhSph: public Sph
 		  aviscenum, acondenum, string, string);
   ~GradhSph();
 
-  int ComputeH(int, int, FLOAT *, FLOAT *, SphParticle &);
+  int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle &);
+  void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *,
+			    FLOAT *, SphParticle &, SphParticle *);
+  void ComputeDirectGravForces(int, int, int *, SphParticle &, SphParticle *);
+  void ComputePostHydroQuantities(SphParticle &);
+
+};
+
+
+
+// ============================================================================
+// Class SM2012Sph
+// Class definition for Saitoh & Makino (2012) SPH simulations (as derived
+// from the parent Sph class).  Full code for each of these class functions
+// written in 'SM2012Sph.cpp'.
+// ============================================================================
+template <class kernelclass>
+class SM2012Sph: public Sph
+{
+ public:
+
+  kernelclass kern;                      // SPH kernel
+
+  SM2012Sph(int, int, int, int, int, FLOAT, FLOAT, FLOAT, FLOAT,
+		  aviscenum, acondenum, string, string);
+  ~SM2012Sph();
+
+  int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle &);
   void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *, 
 			    FLOAT *, SphParticle &, SphParticle *);
   void ComputeDirectGravForces(int, int, int *, SphParticle &, SphParticle *);
+  void ComputePostHydroQuantities(SphParticle &);
 
 };
+
 
 
 #endif
