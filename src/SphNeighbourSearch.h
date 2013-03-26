@@ -36,6 +36,8 @@ class SphNeighbourSearch
 
   virtual void UpdateAllSphProperties(Sph *) = 0;
   virtual void UpdateAllSphForces(Sph *) = 0;
+  virtual void UpdateAllSphDudt(Sph *) = 0;
+  virtual void UpdateAllSphDerivatives(Sph *) = 0;
   virtual void UpdateAllSphGravityProperties(Sph *) = 0;
   virtual void UpdateTree(Sph *, Parameters &) = 0;
 
@@ -57,6 +59,8 @@ class BruteForceSearch: public SphNeighbourSearch
 
   void UpdateAllSphProperties(Sph *);
   void UpdateAllSphForces(Sph *);
+  void UpdateAllSphDudt(Sph *);
+  void UpdateAllSphDerivatives(Sph *);
   void UpdateAllSphGravityProperties(Sph *);
   void UpdateTree(Sph *, Parameters &);
 
@@ -80,6 +84,8 @@ class GridSearch: public SphNeighbourSearch
 
   void UpdateAllSphProperties(Sph *);
   void UpdateAllSphForces(Sph *);
+  void UpdateAllSphDudt(Sph *);
+  void UpdateAllSphDerivatives(Sph *);
   void UpdateAllSphGravityProperties(Sph *);
   void UpdateTree(Sph *, Parameters &);
 

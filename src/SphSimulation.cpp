@@ -210,7 +210,10 @@ void SphSimulation::ProcessParameters(void)
 #endif
 
   // Set the enum for artificial viscosity
-  if (stringparams["avisc"] == "mon97") {
+  if (stringparams["avisc"] == "none") {
+    avisc = Sph::noneav;
+  }
+  else if (stringparams["avisc"] == "mon97") {
     avisc = Sph::mon97;
   }
   else {
@@ -264,6 +267,14 @@ void SphSimulation::ProcessParameters(void)
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
             		stringparams["gas_eos"], KernelName);
+	}
+        else if (KernelName == "gaussian") {
+            sph = new GradhSph<GaussianKernel> (ndim, vdim, bdim,
+            		intparams["hydro_forces"], intparams["self_gravity"],
+            		floatparams["alpha_visc"], floatparams["beta_visc"],
+            		floatparams["h_fac"], floatparams["h_converge"],
+            		avisc, acond,
+            		stringparams["gas_eos"], KernelName);
         }
         else {
           string message = "Unrecognised parameter : kernel = " +
@@ -306,6 +317,14 @@ void SphSimulation::ProcessParameters(void)
             		avisc, acond,
             		stringparams["acond"], KernelName);
         }
+        else if (KernelName == "gaussian") {
+            sph = new SM2012Sph<GaussianKernel> (ndim, vdim, bdim,
+            		intparams["hydro_forces"], intparams["self_gravity"],
+            		floatparams["alpha_visc"], floatparams["beta_visc"],
+            		floatparams["h_fac"], floatparams["h_converge"],
+            		avisc, acond,
+            		stringparams["acond"], KernelName);
+        }
         else {
           string message = "Unrecognised parameter : kernel = " +
             simparams.stringparams["kernel"];
@@ -318,6 +337,56 @@ void SphSimulation::ProcessParameters(void)
       ExceptionHandler::getIstance().raise(message);
     }
   }
+  // --------------------------------------------------------------------------
+  else if (stringparams["sph"] == "godunov") {
+    string KernelName = stringparams["kernel"];
+    if (stringparams["tabulatedkernel"] == "yes") {
+        sph = new GodunovSph<TabulatedKernel> (ndim, vdim, bdim,
+        		intparams["hydro_forces"], intparams["self_gravity"],
+        		floatparams["alpha_visc"], floatparams["beta_visc"],
+        		floatparams["h_fac"], floatparams["h_converge"],
+        		avisc, acond,
+        		stringparams["acond"], KernelName);
+          }
+    else if (stringparams["tabulatedkernel"] == "no"){
+        // Depending on the kernel, instantiate a different GradSph object
+        if (KernelName == "m4") {
+            sph = new GodunovSph<M4Kernel> (ndim, vdim, bdim,
+            		intparams["hydro_forces"], intparams["self_gravity"],
+            		floatparams["alpha_visc"], floatparams["beta_visc"],
+            		floatparams["h_fac"], floatparams["h_converge"],
+            		avisc, acond,
+            		stringparams["acond"], KernelName);
+        }
+        else if (KernelName == "quintic") {
+            sph = new GodunovSph<QuinticKernel> (ndim, vdim, bdim,
+            		intparams["hydro_forces"], intparams["self_gravity"],
+            		floatparams["alpha_visc"], floatparams["beta_visc"],
+            		floatparams["h_fac"], floatparams["h_converge"],
+            		avisc, acond,
+            		stringparams["acond"], KernelName);
+        }
+        else if (KernelName == "gaussian") {
+            sph = new GodunovSph<GaussianKernel> (ndim, vdim, bdim,
+            		intparams["hydro_forces"], intparams["self_gravity"],
+            		floatparams["alpha_visc"], floatparams["beta_visc"],
+            		floatparams["h_fac"], floatparams["h_converge"],
+            		avisc, acond,
+            		stringparams["acond"], KernelName);
+        }
+        else {
+          string message = "Unrecognised parameter : kernel = " +
+            simparams.stringparams["kernel"];
+          ExceptionHandler::getIstance().raise(message);
+        }
+    }
+    else {
+      string message = "Invalid option for the tabulatedkernel parameter: " +
+          stringparams["tabulatedkernel"];
+      ExceptionHandler::getIstance().raise(message);
+    }
+  }
+  // --------------------------------------------------------------------------
   else {
     string message = "Unrecognised parameter : sph = " 
       + simparams.stringparams["sph"];
@@ -509,6 +578,10 @@ void SphSimulation::SetupSimulation(void)
     // Calculate all SPH properties
     sphneib->neibcheck = true;
     sphneib->UpdateAllSphProperties(sph);
+
+    if (simparams.stringparams["sph"] == "godunov")
+      sphneib->UpdateAllSphDerivatives(sph);
+
     CopySphDataToGhosts();
     sphneib->UpdateAllSphForces(sph);
 
@@ -545,6 +618,8 @@ void SphSimulation::SetupSimulation(void)
 // ============================================================================
 void SphSimulation::MainLoop(void)
 {
+  int i;
+
   debug2("[SphSimulation::MainLoop]");
 
   // Compute timesteps for all particles
@@ -552,6 +627,15 @@ void SphSimulation::MainLoop(void)
     ComputeGlobalTimestep();
   else 
     ComputeBlockTimesteps();
+
+  // For Godunov SPH, compute compressional heating rates after the timestep 
+  // for each particle is known
+  if (simparams.stringparams["sph"] == "godunov") {
+    for (i=0; i<sph->Ntot; i++)
+      sph->sphdata[i].dudt = (FLOAT) 0.0;
+    //if (sph->sphdata[i].active) sph->sphdata[i].dudt = (FLOAT) 0.0;
+    sphneib->UpdateAllSphDudt(sph);
+  }
 
   // Advance time variables
   n = n + 1;
@@ -585,7 +669,7 @@ void SphSimulation::MainLoop(void)
   if (sph->Nsph > 0) {
 
     // Zero accelerations (perhaps)
-    for (int i=0; i<sph->Ntot; i++) {
+    for (i=0; i<sph->Ntot; i++) {
       if (sph->sphdata[i].active) {
 	for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
 	for (int k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
@@ -597,6 +681,9 @@ void SphSimulation::MainLoop(void)
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph);
 
+    if (simparams.stringparams["sph"] == "godunov")
+      sphneib->UpdateAllSphDerivatives(sph);
+
     // Copy properties from original particles to ghost particles
     CopySphDataToGhosts();
 
@@ -607,7 +694,7 @@ void SphSimulation::MainLoop(void)
     //CopyAccelerationFromGhosts();
 
     // Add accelerations
-    for (int i=0; i<sph->Nsph; i++) {
+    for (i=0; i<sph->Nsph; i++) {
       for (int k=0; k<ndim; k++) 
 	sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
@@ -615,10 +702,10 @@ void SphSimulation::MainLoop(void)
 
   // Apply correction steps for both particle and energy integration
   sphint->CorrectionTerms(n,level_step,sph->Nsph,
-			  sph->sphdata,(FLOAT) timestep);
+  			  sph->sphdata,(FLOAT) timestep);
   if (simparams.stringparams["gas_eos"] == "energy_eqn")
     uint->EnergyCorrectionTerms(n,level_step,sph->Nsph,
-				sph->sphdata,(FLOAT) timestep);
+  				sph->sphdata,(FLOAT) timestep);
 
   // Set all end-of-step variables
   sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);

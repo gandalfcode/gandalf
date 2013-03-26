@@ -33,9 +33,10 @@ struct SphParticle {
   FLOAT h;
   FLOAT invh;
   FLOAT hfactor;
-  FLOAT pfactor;
   FLOAT rho;
   FLOAT invrho;
+  FLOAT press;
+  FLOAT pfactor;
   FLOAT div_v;
   FLOAT invomega;
   FLOAT zeta;
@@ -44,6 +45,9 @@ struct SphParticle {
   FLOAT sound;
   FLOAT gpot;
   DOUBLE dt;
+  FLOAT gradP[ndimmax];
+  FLOAT gradrho[ndimmax];
+  FLOAT gradv[ndimmax][ndimmax];
 
   SphParticle()
   {
@@ -66,15 +70,20 @@ struct SphParticle {
     h = (FLOAT) 0.0;
     invh = (FLOAT) 0.0;
     hfactor = (FLOAT) 0.0;
-    pfactor = (FLOAT) 0.0;
     rho = (FLOAT) 0.0;
     invrho = (FLOAT) 0.0;
+    press = (FLOAT) 0.0;
+    pfactor = (FLOAT) 0.0;
     invomega = (FLOAT) 0.0;
     zeta = (FLOAT) 0.0;
     q = (FLOAT) 0.0;
     invq = (FLOAT) q;
     sound = (FLOAT) 0.0;
-    dt = (FLOAT) 0.0;
+    for (int k=0; k<ndimmax; k++) gradP[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndimmax; k++) gradrho[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndimmax; k++) 
+      for (int kk=0; kk<ndimmax; kk++) gradv[k][kk] = (FLOAT) 0.0;
+    dt = (DOUBLE) 0.0;
   } 
 
 };

@@ -27,7 +27,7 @@ ifeq ($(CC),g++)
 ifeq ($(COMPILER_MODE),FAST)
 OPT += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -g -pg -Wall -fbounds-check -fprofile-arcs -ftest-coverage
+OPT += -g -pg -Wall -fbounds-check #-fprofile-arcs -ftest-coverage
 endif
 ifeq ($(OPENMP),1)
 OPT += -fopenmp -DOPENMP
@@ -114,8 +114,8 @@ WRAP_OBJ = SphSimulation_wrap.o
 OBJ = Parameters.o SimUnits.o SphSnapshot.o SphSimulation.o
 OBJ += SphSimulationIC.o SphSimulationIO.o SphSimulationTimesteps.o
 OBJ += SphAnalysis.o
-OBJ += M4Kernel.o QuinticKernel.o TabulatedKernel.o
-OBJ += Sph.o GradhSph.o SM2012Sph.o
+OBJ += M4Kernel.o QuinticKernel.o GaussianKernel.o TabulatedKernel.o
+OBJ += Sph.o GradhSph.o SM2012Sph.o GodunovSph.o
 OBJ += EnergyPEC.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o
 #OBJ += SphNeighbourSearch.o 
@@ -175,7 +175,7 @@ shocktub.so : shocktub.f shocktub.pyf
 
 Exception.o : Exception.cpp
 	$(CC) $(OPT) $(CFLAGS) -fexceptions -c $<
-	
+
 force: ;
 
 clean ::

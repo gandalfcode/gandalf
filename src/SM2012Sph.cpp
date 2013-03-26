@@ -290,6 +290,34 @@ void SM2012Sph<kernelclass>::ComputeSphNeibForces
 
 
 // ============================================================================
+// SM2012Sph::ComputeSphNeibDudt
+// Empty definition (
+// ============================================================================
+template <typename kernelclass>
+void SM2012Sph<kernelclass>::ComputeSphNeibDudt
+(int i, int Nneib, int *neiblist, FLOAT *drmag, 
+ FLOAT *invdrmag, FLOAT *dr, SphParticle &parti, SphParticle *neibpart)
+{
+  return;
+}
+
+
+
+// ============================================================================
+// SM2012Sph::ComputeSphDerivatives
+// Empty definition
+// ============================================================================
+template <typename kernelclass>
+void SM2012Sph<kernelclass>::ComputeSphDerivatives
+(int i, int Nneib, int *neiblist, FLOAT *drmag, 
+ FLOAT *invdrmag, FLOAT *dr, SphParticle &parti, SphParticle *neibpart)
+{
+  return;
+}
+
+
+
+// ============================================================================
 // SM2012Sph::ComputePostHydroQuantities
 // ..
 // ============================================================================
@@ -298,7 +326,6 @@ void SM2012Sph<kernelclass>::ComputePostHydroQuantities
 (SphParticle &parti)
 {
   parti.div_v *= parti.invrho;
-
   return;
 }
 
@@ -324,4 +351,5 @@ void SM2012Sph<kernelclass>::ComputeDirectGravForces
 
 template class SM2012Sph<M4Kernel>;
 template class SM2012Sph<QuinticKernel>;
+template class SM2012Sph<GaussianKernel>;
 template class SM2012Sph<TabulatedKernel>;

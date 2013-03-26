@@ -291,6 +291,34 @@ void GradhSph<kernelclass>::ComputeSphNeibForces
 
 
 // ============================================================================
+// GradhSph::ComputeSphNeibDudt
+// Empty definition
+// ============================================================================
+template <typename kernelclass>
+void GradhSph<kernelclass>::ComputeSphNeibDudt
+(int i, int Nneib, int *neiblist, FLOAT *drmag, 
+ FLOAT *invdrmag, FLOAT *dr, SphParticle &parti, SphParticle *neibpart)
+{
+  return;
+}
+
+
+
+// ============================================================================
+// GradhSph::ComputeSphDerivatives
+// Empty definition
+// ============================================================================
+template <typename kernelclass>
+void GradhSph<kernelclass>::ComputeSphDerivatives
+(int i, int Nneib, int *neiblist, FLOAT *drmag, 
+ FLOAT *invdrmag, FLOAT *dr, SphParticle &parti, SphParticle *neibpart)
+{
+  return;
+}
+
+
+
+// ============================================================================
 // GradhSph::ComputePostHydroQuantities
 // ..
 // ============================================================================
@@ -348,4 +376,5 @@ void GradhSph<kernelclass>::ComputeDirectGravForces
 
 template class GradhSph<M4Kernel>;
 template class GradhSph<QuinticKernel>;
+template class GradhSph<GaussianKernel>;
 template class GradhSph<TabulatedKernel>;

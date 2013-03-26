@@ -10,6 +10,7 @@
 
 
 #include <string>
+#include <math.h>
 #include "Precision.h"
 #include "Constants.h"
 using namespace std;
@@ -45,6 +46,36 @@ static inline void PrintArray(string message, int Tsize, T *array)
   cout << endl;
   return;
 }
+
+
+//file wave.c
+/*
++ wave - Nonlinear wave speeds.
+     Description :
+         This function calculates the wave speed for a wave connecting
+         states with pressures pi, p ahead an behind respectively.
+*/
+static inline FLOAT wave(FLOAT p, FLOAT pi, FLOAT g3, FLOAT g4)
+{
+  FLOAT x, w;
+  x = p/pi;
+  if (fabs(x - 1.0) < 1.0e-03)
+    /* Use linear expression */
+    w = 1.0 + 0.5*g3*(x - 1.0);
+  else{
+    /* Use non-linear expression */
+    if (x >= 1.0)
+      /* Shock */
+      w = sqrt(1.0 + g3*(x - 1.0));
+    else
+      /* Rarefaction */
+      w = g4*(1.0 - x)/(1.0 - (FLOAT)pow((DOUBLE)x, (DOUBLE)g4));
+  }
+  return(w);
+}
+//end wave.c
+
+
 
 
 #endif

@@ -44,7 +44,7 @@ void SphSimulation::ComputeGlobalTimestep(void)
     // ------------------------------------------------------------------------
 #pragma omp parallel default(shared) private(i)
     {
-    	DOUBLE dt = big_number_dp;
+       DOUBLE dt = big_number_dp;
 #pragma omp for
        for (i=0; i<sph->Nsph; i++)
          dt = min(dt,sphint->Timestep(sph->sphdata[i],sph->hydro_forces));
@@ -63,7 +63,10 @@ void SphSimulation::ComputeGlobalTimestep(void)
     
     // Set all particles to same timestep
     timestep = dt_min;
-    for (i=0; i<sph->Nsph; i++) sph->sphdata[i].level = 0;
+    for (i=0; i<sph->Nsph; i++) {
+      sph->sphdata[i].level = 0;
+      sph->sphdata[i].dt = timestep;
+    }
 
   }
   // --------------------------------------------------------------------------
@@ -120,6 +123,8 @@ void SphSimulation::ComputeBlockTimesteps(void)
     level_max = Nlevels - 1;
     level_step = level_max + integration_step - 1;
     dt_max = timestep*powf(2.0,level_max);
+    nresync = pow(2,level_step);
+    timestep = dt_max / (DOUBLE) nresync;
     
     // Calculate the maximum level occupied by all SPH particles
     level_max_sph = max((int) (invlogetwo*log(dt_max/dt_max_sph)) + 1, 0);
@@ -130,15 +135,13 @@ void SphSimulation::ComputeBlockTimesteps(void)
       for (i=0; i<sph->Nsph; i++) sph->sphdata[i].level = level_max_sph;
     else {
       for (i=0; i<sph->Nsph; i++) {
-	dt = sph->sphdata[i].dt;
 	level = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
 	level = max(level,0);
 	sph->sphdata[i].level = level;
+	sph->sphdata[i].dt = 
+	  (DOUBLE) pow(2,level_step - sph->sphdata[i].level)*timestep;
       }
     }
-
-    nresync = pow(2,level_step);
-    timestep = dt_max / (DOUBLE) nresync;
 
   }
 
@@ -164,6 +167,7 @@ void SphSimulation::ComputeBlockTimesteps(void)
 	dt = sphint->Timestep(sph->sphdata[i],sph->hydro_forces);
 	if (sph->gas_eos == "energy_eqn") 
 	  dt = min(dt,uint->Timestep(sph->sphdata[i]));
+	sph->sphdata[i].dt = dt;
 	level = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
 	level = max(level,0);
 
@@ -211,6 +215,9 @@ void SphSimulation::ComputeBlockTimesteps(void)
 
     nresync = pow(2,level_step);
     timestep = dt_max / (DOUBLE) nresync;
+
+    for (i=0; i<sph->Nsph; i++) sph->sphdata[i].dt = 
+      (DOUBLE) pow(2,level_step - sph->sphdata[i].level)*timestep;
 
   }
   // ==========================================================================

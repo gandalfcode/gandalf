@@ -19,7 +19,7 @@ M4Kernel::M4Kernel(int ndimaux, string kernelname)
 {
 #if !defined(FIXED_DIMENSIONS)
   ndim = ndimaux;
-  ndimpr = (float) ndimaux;
+  ndimpr = (FLOAT) ndimaux;
 #endif
   kernrange = (FLOAT) 2.0;
   invkernrange = (FLOAT) 0.5;

@@ -302,6 +302,109 @@ inline FLOAT QuinticKernel::wpot(FLOAT s)
     return 0.0;
 }
 
+
+
+// ============================================================================
+// Class GaussianKernel
+// ============================================================================
+class GaussianKernel: public SphKernel
+{
+ public:
+
+  GaussianKernel(int, string);
+  ~GaussianKernel();
+
+  // M4 kernel function prototypes
+  // --------------------------------------------------------------------------
+  FLOAT w0(FLOAT);
+  FLOAT w1(FLOAT);
+  FLOAT womega(FLOAT);
+  FLOAT wzeta(FLOAT);
+  FLOAT wgrav(FLOAT);
+  FLOAT wpot(FLOAT);
+
+};
+
+
+// ============================================================================
+// GaussianKernel::w0
+// ============================================================================
+inline FLOAT GaussianKernel::w0(FLOAT s)
+{
+  if (s < (FLOAT) 3.0)
+    return kernnorm*exp(-s*s);
+  else
+    return (FLOAT) 0.0;
+}
+
+
+
+// ============================================================================
+// GaussianKernel::w1
+// ============================================================================
+inline FLOAT GaussianKernel::w1(FLOAT s)
+{
+  if (s < (FLOAT) 3.0)
+    return -(FLOAT) 2.0*kernnorm*s*exp(-s*s);
+  else
+    return (FLOAT) 0.0;
+}
+
+
+
+// ============================================================================
+// GaussianKernel::womega
+// ============================================================================
+inline FLOAT GaussianKernel::womega(FLOAT s)
+{
+  if (s < (FLOAT) 3.0)
+    return kernnorm*((FLOAT) 2.0*s*exp(-s*s) - ndimpr*exp(-s*s));
+  else
+    return (FLOAT) 0.0;
+}
+
+
+
+// ============================================================================
+// GaussianKernel::wzeta
+// ============================================================================
+inline FLOAT GaussianKernel::wzeta(FLOAT s)
+{
+  if (s < (FLOAT) 3.0)
+    return 0.0;
+  else
+    return 0.0;
+}
+
+
+
+// ============================================================================
+// GaussianKernel::wgrav
+// ============================================================================
+inline FLOAT GaussianKernel::wgrav(FLOAT s)
+{
+  if (s < (FLOAT) 3.0)
+    return 0.0;
+  else
+    return 0.0;
+}
+
+
+
+// ============================================================================
+// GaussianKernel::wpot
+// ============================================================================
+inline FLOAT GaussianKernel::wpot(FLOAT s)
+{
+  if (s < (FLOAT) 3.0)
+    return 0.0;
+  else
+    return 0.0;
+}
+
+
+
+
 SphKernel* KernelFactory (int ndimaux, string KernelName);
 
 class TabulatedKernel: public SphKernel {

@@ -80,7 +80,12 @@ class Sph
 				    SphParticle &, SphParticle *) = 0;
   virtual void ComputeDirectGravForces(int, int, int *,
 				       SphParticle &, SphParticle *) = 0;
+  virtual void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
+				  FLOAT *, SphParticle &, SphParticle *) = 0;
+  virtual void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *,
+				     FLOAT *, SphParticle &,SphParticle *) = 0;
   virtual void ComputePostHydroQuantities(SphParticle &) = 0;
+
 
   // SPH array memory allocation functions
   // --------------------------------------------------------------------------
@@ -142,6 +147,10 @@ class GradhSph: public Sph
   int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle &);
   void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *,
 			    FLOAT *, SphParticle &, SphParticle *);
+  void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
+			  FLOAT *, SphParticle &, SphParticle *);
+  void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *,
+			     FLOAT *, SphParticle &, SphParticle *);
   void ComputeDirectGravForces(int, int, int *, SphParticle &, SphParticle *);
   void ComputePostHydroQuantities(SphParticle &);
 
@@ -169,8 +178,47 @@ class SM2012Sph: public Sph
   int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle &);
   void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *, 
 			    FLOAT *, SphParticle &, SphParticle *);
+  void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
+			  FLOAT *, SphParticle &, SphParticle *);
+  void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *,
+			     FLOAT *, SphParticle &, SphParticle *);
   void ComputeDirectGravForces(int, int, int *, SphParticle &, SphParticle *);
   void ComputePostHydroQuantities(SphParticle &);
+
+};
+
+
+
+// ============================================================================
+// Class SM2012Sph
+// Class definition for Godunov SPH (Inutsuka 2002) algorithm.
+// Full code for each of these class functions
+// written in 'GodunovSph.cpp'.
+// ============================================================================
+template <class kernelclass>
+class GodunovSph: public Sph
+{
+ public:
+
+  kernelclass kern;                     // SPH kernel
+
+  GodunovSph(int, int, int, int, int, FLOAT, FLOAT, FLOAT, FLOAT,
+             aviscenum, acondenum, string, string);
+  ~GodunovSph();
+
+  int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle &);
+  void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *, 
+			    FLOAT *, SphParticle &, SphParticle *);
+  void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
+  			  FLOAT *, SphParticle &, SphParticle *);
+  void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *,
+			     FLOAT *, SphParticle &, SphParticle *);
+  void ComputeDirectGravForces(int, int, int *, SphParticle &, SphParticle *);
+  void ComputePostHydroQuantities(SphParticle &);
+  void HllcSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
+		  FLOAT, FLOAT, FLOAT &, FLOAT &);
+  void MgSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
+		FLOAT, FLOAT, FLOAT &, FLOAT &);
 
 };
 

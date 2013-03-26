@@ -6,6 +6,8 @@ SphKernel* KernelFactory (int ndimaux, string KernelName) {
     return new M4Kernel(ndimaux, KernelName);
   else if (KernelName == "quintic")
     return new QuinticKernel(ndimaux,KernelName);
+  else if (KernelName == "gaussian")
+    return new GaussianKernel(ndimaux,KernelName);
   else {
     string message = "Unrecognised kernel: " + KernelName;
     ExceptionHandler::getIstance().raise(message);
