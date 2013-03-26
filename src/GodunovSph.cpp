@@ -21,7 +21,7 @@
 using namespace std;
 
 
-static const int riemann_order = 2;
+static const int riemann_order = 1;
 static const string riemann_solver = "hllc";
 
 
@@ -252,65 +252,9 @@ void GodunovSph<kernelclass>::ComputeSphNeibForces
       Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi + 
 				  neibpart[j].h*neibpart[j].h/Vsqdj);
 
-      // Now extrapolate state variables for initialisation of Riemann problem
-      if (riemann_order == 1) {
-	pl = eos->Pressure(parti);
-	pr = eos->Pressure(neibpart[j]);
-	rhol = parti.rho;
-	rhor = neibpart[j].rho;
-	vl = (FLOAT) 0.0;
-	vr = dvdr;
-      }
-      else if (riemann_order == 2) {
-
-	// Slope limiter for pressure gradients
-	gradi = DotProduct(parti.gradP,draux,ndim);
-	gradj = DotProduct(neibpart[j].gradP,draux,ndim);
-	if (gradi*gradj < (FLOAT) 0.0) {
-	  pl = parti.press;
-	  pr = neibpart[j].press;
-	}
-	else {
-	  pl = parti.press - DotProduct(parti.gradP,draux,ndim)*
-	    ((FLOAT) 0.5*parti.sound*parti.dt + Sij - (FLOAT) 0.5*drmag[jj]);
-	  pr = neibpart[j].press - DotProduct(neibpart[j].gradP,draux,ndim)*
-	    ((FLOAT) 0.5*parti.sound*parti.dt + Sij + (FLOAT) 0.5*drmag[jj]);
-	}
-
-	gradi = DotProduct(parti.gradrho,draux,ndim);
-	gradj = DotProduct(neibpart[j].gradrho,draux,ndim);
-	if (gradi*gradj < (FLOAT) 0.0) {
-	  rhol = parti.rho;
-	  rhor = neibpart[j].rho;
-	}
-	else {
-	  rhol = parti.rho - DotProduct(parti.gradrho,draux,ndim)*
-	    ((FLOAT) 0.5*parti.sound*parti.dt + Sij - (FLOAT) 0.5*drmag[jj]);
-	  rhor = neibpart[j].rho - DotProduct(neibpart[j].gradrho,draux,ndim)*
-	    ((FLOAT) 0.5*parti.sound*parti.dt + Sij + (FLOAT) 0.5*drmag[jj]);
-	}
-
-	gradi = DotProduct(parti.gradrho,draux,ndim);
-	gradj = DotProduct(neibpart[j].gradrho,draux,ndim);
-	if (gradi*gradj < (FLOAT) 0.0) {
-	  vl = (FLOAT) 0.0;
-	  vr = dvdr;
-	}
-	else {
-	  //for (k=0; k<ndim; k++) 
-	  //  vtemp[k] = DotProduct(parti.gradv[k],draux,ndim);
-	  //vl = (FLOAT) 0.0 - DotProduct(vtemp,draux,ndim)*
-	  //  ((FLOAT) 0.5*parti.sound*parti.dt + Sij - (FLOAT) 0.5*drmag[jj]);
-	  //for (k=0; k<ndim; k++) vtemp[k] = 
-	  //  DotProduct(neibpart[j].gradv[k],draux,ndim);
-	  //vr = dvdr + DotProduct(vtemp,draux,ndim)*
-	  //((FLOAT) 0.5*parti.sound*parti.dt + Sij + (FLOAT) 0.5*drmag[jj]);
-	  vl = (FLOAT) 0.0 - DotProduct(parti.gradv[0],draux,ndim)*
-	    ((FLOAT) 0.5*parti.sound*parti.dt + Sij - (FLOAT) 0.5*drmag[jj]);
-	  vr = dvdr - DotProduct(neibpart[j].gradv[0],draux,ndim)*
-	    ((FLOAT) 0.5*parti.sound*parti.dt + Sij + (FLOAT) 0.5*drmag[jj]);
-	}
-      }
+      // Initialise the LHS and RHS of the Riemann problem
+      InitialiseRiemannProblem(parti,neibpart[j],draux,drmag[jj],dvdr,
+    		  parti.sound,neibpart[j].sound,pl,pr,rhol,rhor,vl,vr);
 
       // Now solve Riemann problem and return intermediate state variables
       if (riemann_solver == "hllc")
@@ -340,6 +284,95 @@ void GodunovSph<kernelclass>::ComputeSphNeibForces
   }
   // ==========================================================================
 
+
+  return;
+}
+
+
+// ============================================================================
+// GodunovSph::ComputeSphDerivatives
+// ..
+// ============================================================================
+template <typename kernelclass>
+void GodunovSph<kernelclass>::InitialiseRiemannProblem
+(SphParticle partl,
+ SphParticle partr,
+ FLOAT draux[ndimmax],
+ FLOAT drmag,
+ FLOAT dvdr,
+ FLOAT soundl,
+ FLOAT soundr,
+ FLOAT &pl,
+ FLOAT &pr,
+ FLOAT &rhol,
+ FLOAT &rhor,
+ FLOAT &vl,
+ FLOAT &vr)
+{
+  FLOAT deltal;
+  FLOAT deltar;
+  FLOAT limiter;
+
+  // ..
+  pl = partl.press;
+  pr = partr.press;
+  rhol = partl.rho;
+  rhor = partr.rho;
+  vl = (FLOAT) 0.0;
+  vr = dvdr;
+
+  // --------------------------------------------------------------------------
+  if (riemann_order == 2) {
+
+	// Slope limiter for pressure gradients
+	deltal = DotProduct(partl.gradP,draux,ndim)*drmag;
+	deltar = DotProduct(partr.gradP,draux,ndim)*drmag;
+
+	limiter = max3(0.0,deltal/(deltar + small_number),deltar/(deltal + small_number));
+	limiter = 2.0*limiter/(limiter*limiter + 1);
+	//limiter = 1.0;
+	//deltal = min3(2.0*fabs(pl - pr),fabs(deltal),2.0*fabs(2.0*deltal + pr - pl))*sgn(deltal);
+    //deltar = min3(2.0*fabs(pr - pl),fabs(deltar),2.0*fabs(2.0*deltar + pl - pr))*sgn(deltar);
+
+	//if (sgn(pl - pr) != sgn(deltal) || sgn(deltal) == sgn(2.0*deltal + pr - pl)) deltal = 0.0;
+	//if (sgn(pr - pl) != sgn(deltar) || sgn(deltar) == sgn(2.0*deltar + pl - pr)) deltar = 0.0;
+
+	pl += limiter*(FLOAT) 0.5*deltal*(1.0 - partl.sound*partl.dt/drmag);
+	pr -= limiter*(FLOAT) 0.5*deltar*(1.0 - partr.sound*partr.dt/drmag);
+
+
+	// Slope limiter for pressure gradients
+	deltal = DotProduct(partl.gradrho,draux,ndim)*drmag;
+	deltar = DotProduct(partr.gradrho,draux,ndim)*drmag;
+	limiter = max3(0.0,deltal/(deltar + small_number),deltar/(deltal + small_number));
+	limiter = 2.0*limiter/(limiter*limiter + 1);
+	//deltal = min3(2.0*fabs(rhol - rhor),fabs(deltal),2.0*fabs(2.0*deltal + pr - pl))*sgn(deltal);
+    //deltar = min3(2.0*fabs(rhor - rhol),fabs(deltar),2.0*fabs(2.0*deltar + pl - pr))*sgn(deltar);
+//limiter = 1.0;
+	//if (sgn(rhol - rhor) != sgn(deltal) || sgn(deltal) == sgn(2.0*deltal + rhor - rhol)) deltal = 0.0;
+	//if (sgn(rhor - rhol) != sgn(deltar) || sgn(deltar) == sgn(2.0*deltar + rhol - rhor)) deltar = 0.0;
+
+	rhol += limiter*(FLOAT) 0.5*deltal*(1.0 - partl.sound*partl.dt/drmag);
+	rhor -= limiter*(FLOAT) 0.5*deltar*(1.0 - partr.sound*partr.dt/drmag);
+
+
+	// Slope limiter for pressure gradients
+	deltal = DotProduct(partl.gradv[0],draux,ndim)*drmag;
+	deltar = DotProduct(partr.gradv[0],draux,ndim)*drmag;
+	limiter = max3(0.0,deltal/(deltar + small_number),deltar/(deltal + small_number));
+	limiter = 2.0*limiter/(limiter*limiter + 1);
+	//cout << "limiter : " << vl << "    " << vr << "    " << limiter << endl;
+	//deltal = min3(2.0*fabs(vl - vr),fabs(deltal),2.0*fabs(2.0*deltal + pr - pl))*sgn(deltal);
+    //deltar = min3(2.0*fabs(vr - vl),fabs(deltar),2.0*fabs(2.0*deltar + pl - pr))*sgn(deltar);
+//limiter = 1.0;
+	//if (sgn(vl - vr) != sgn(deltal) || sgn(deltal) == sgn(2.0*deltal + rhor - rhol)) deltal = 0.0;
+	//if (sgn(vr - vl) != sgn(deltar) || sgn(deltar) == sgn(2.0*deltar + rhol - rhor)) deltar = 0.0;
+
+	vl += limiter*(FLOAT) 0.5*deltal*(1.0 - partl.sound*partl.dt/drmag);
+	vr -= limiter*(FLOAT) 0.5*deltar*(1.0 - partr.sound*partr.dt/drmag);
+
+  }
+  // --------------------------------------------------------------------------
 
   return;
 }
@@ -395,8 +428,8 @@ void GodunovSph<kernelclass>::ComputeSphDerivatives
   }
   // --------------------------------------------------------------------------
 
-  cout << "Gradients : " << i << "   " << parti.v[0] << "   " 
-       << parti.gradv[0][0] << endl;
+  //cout << "Gradients : " << i << "   " << parti.v[0] << "   "
+    //   << parti.gradv[0][0] << endl;
 
   return;
 }
@@ -487,65 +520,9 @@ void GodunovSph<kernelclass>::ComputeSphNeibDudt
       Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi + 
 				  neibpart[j].h*neibpart[j].h/Vsqdj);
 
-      // Now extrapolate state variables for initialisation of Riemann problem
-      if (riemann_order == 1) {
-	pl = eos->Pressure(parti);
-	pr = eos->Pressure(neibpart[j]);
-	rhol = parti.rho;
-	rhor = neibpart[j].rho;
-	vl = (FLOAT) 0.0;
-	vr = dvdr;
-      }
-      else if (riemann_order == 2) {
-
-	// Slope limiter for pressure gradients
-	gradi = DotProduct(parti.gradP,draux,ndim);
-	gradj = DotProduct(neibpart[j].gradP,draux,ndim);
-	if (gradi*gradj < (FLOAT) 0.0) {
-	  pl = parti.press;
-	  pr = neibpart[j].press;
-	}
-	else {
-	  pl = parti.press - DotProduct(parti.gradP,draux,ndim)*
-	    ((FLOAT) 0.5*parti.sound*parti.dt + Sij - (FLOAT) 0.5*drmag[jj]);
-	  pr = neibpart[j].press - DotProduct(neibpart[j].gradP,draux,ndim)*
-	    ((FLOAT) 0.5*parti.sound*parti.dt + Sij + (FLOAT) 0.5*drmag[jj]);
-	}
-
-	gradi = DotProduct(parti.gradrho,draux,ndim);
-	gradj = DotProduct(neibpart[j].gradrho,draux,ndim);
-	if (gradi*gradj < (FLOAT) 0.0) {
-	  rhol = parti.rho;
-	  rhor = neibpart[j].rho;
-	}
-	else {
-	  rhol = parti.rho - DotProduct(parti.gradrho,draux,ndim)*
-	    ((FLOAT) 0.5*parti.sound*parti.dt + Sij - (FLOAT) 0.5*drmag[jj]);
-	  rhor = neibpart[j].rho - DotProduct(neibpart[j].gradrho,draux,ndim)*
-	    ((FLOAT) 0.5*parti.sound*parti.dt + Sij + (FLOAT) 0.5*drmag[jj]);
-	}
-
-	gradi = DotProduct(parti.gradrho,draux,ndim);
-	gradj = DotProduct(neibpart[j].gradrho,draux,ndim);
-	if (gradi*gradj < (FLOAT) 0.0) {
-	  vl = (FLOAT) 0.0;
-	  vr = dvdr;
-	}
-	else {
-	  //for (k=0; k<ndim; k++) 
-	  //  vtemp[k] = DotProduct(parti.gradv[k],draux,ndim);
-	  //vl = (FLOAT) 0.0 - DotProduct(vtemp,draux,ndim)*
-	  //  ((FLOAT) 0.5*parti.sound*parti.dt + Sij - (FLOAT) 0.5*drmag[jj]);
-	  //for (k=0; k<ndim; k++) vtemp[k] = 
-	  //  DotProduct(neibpart[j].gradv[k],draux,ndim);
-	  //vr = dvdr + DotProduct(vtemp,draux,ndim)*
-	  //((FLOAT) 0.5*parti.sound*parti.dt + Sij + (FLOAT) 0.5*drmag[jj]);
-	  vl = (FLOAT) 0.0 - DotProduct(parti.gradv[0],draux,ndim)*
-	    ((FLOAT) 0.5*parti.sound*parti.dt + Sij - (FLOAT) 0.5*drmag[jj]);
-	  vr = dvdr - DotProduct(neibpart[j].gradv[0],draux,ndim)*
-	    ((FLOAT) 0.5*parti.sound*parti.dt + Sij + (FLOAT) 0.5*drmag[jj]);
-	}
-      }
+      // Initialise the LHS and RHS of the Riemann problem
+      InitialiseRiemannProblem(parti,neibpart[j],draux,drmag[jj],dvdr,
+    		  parti.sound,neibpart[j].sound,pl,pr,rhol,rhor,vl,vr);
 
       // Now solve Riemann problem and return intermediate state variables
       if (riemann_solver == "hllc")
@@ -569,7 +546,6 @@ void GodunovSph<kernelclass>::ComputeSphNeibDudt
 
   }
   // ==========================================================================
-
 
   return;
 }

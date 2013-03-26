@@ -707,8 +707,10 @@ void SphSimulation::PostGeneration(void) {
     sphneib->neibcheck = true;
     sphneib->UpdateAllSphProperties(sph);
 
-    if (simparams.stringparams["sph"] == "godunov")
+    if (simparams.stringparams["sph"] == "godunov") {
       sphneib->UpdateAllSphDerivatives(sph);
+      for (int i=0; i<sph->Ntot; i++) sph->sphdata[i].dt = sph->sphdata[i].h/sph->sphdata[i].sound;
+    }
 
     CopySphDataToGhosts();
     sphneib->UpdateAllSphForces(sph);

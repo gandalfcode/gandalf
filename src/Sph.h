@@ -190,7 +190,7 @@ class SM2012Sph: public Sph
 
 
 // ============================================================================
-// Class SM2012Sph
+// Class GodunovSph
 // Class definition for Godunov SPH (Inutsuka 2002) algorithm.
 // Full code for each of these class functions
 // written in 'GodunovSph.cpp'.
@@ -215,6 +215,8 @@ class GodunovSph: public Sph
 			     FLOAT *, SphParticle &, SphParticle *);
   void ComputeDirectGravForces(int, int, int *, SphParticle &, SphParticle *);
   void ComputePostHydroQuantities(SphParticle &);
+  void InitialiseRiemannProblem(SphParticle, SphParticle, FLOAT *, FLOAT, FLOAT,
+		  FLOAT, FLOAT, FLOAT &, FLOAT &, FLOAT &, FLOAT &, FLOAT &, FLOAT &);
   void HllcSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
 		  FLOAT, FLOAT, FLOAT &, FLOAT &);
   void MgSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
