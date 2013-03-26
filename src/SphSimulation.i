@@ -54,6 +54,16 @@ throw StopError("CTRL-C received");
 	}
 }
 
+%exception SphSimulation::ImportArray {
+	try {
+		$action
+	}
+	catch (SerenError &e) {
+		PyErr_SetString(PyExc_Exception,e.msg.c_str());
+		return NULL;
+	}
+}
+
 %exception Parameters::ReadParamsFile {
 	try{
 		$action
@@ -122,6 +132,7 @@ ExceptionHandler::makeExceptionHandler(python);
  /* Applies Numpy black magic */
  %apply (float** ARGOUTVIEW_ARRAY1, int *DIM1) {(float** out_array, int* size_array)}
  %apply (float* INPLACE_ARRAY1, int DIM1) {(float* values, int Ngrid)}
+ %apply (double* IN_ARRAY1, int DIM1) {(double* input, int size)}
  
  %apply float& INOUT { float& scaling_factor };
 

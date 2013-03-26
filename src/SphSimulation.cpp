@@ -513,7 +513,126 @@ void SphSimulation::Setup(void)
 
 }
 
+void SphSimulation::PreSetupForPython(void) {
+  debug1("[SphSimulation::PreSetupForPython]");
 
+  // Read the parameters
+  simparams.ReadParamsFile(paramfile);
+
+  ProcessParameters();
+
+  sph->AllocateMemory(sph->Nsph);
+
+}
+
+void SphSimulation::ImportArray(double* input, int size, string quantity) {
+
+  //First checks that the size is correct
+  if (size != sph->Nsph) {
+    stringstream message;
+    message << "Error: the array you are passing has a size of " << size << ", but memory has been allocated for " << sph->Nsph << " particles";
+    ExceptionHandler::getIstance().raise(message.str());
+  }
+
+  //Now sets the pointer to the correct value inside the particle data structure
+  FLOAT SphParticle::*quantityp;
+  FLOAT (SphParticle::*quantitypvec)[ndimmax];
+  bool scalar;
+  int index;
+  if (quantity=="x") {
+    quantitypvec = &SphParticle::r;
+    index=0;
+    scalar=false;
+  }
+  else if (quantity=="y") {
+    if (ndim<2) {
+      string message = "Error: you tried to load a y array, but you are running a 1-d simulation";
+      ExceptionHandler::getIstance().raise(message);
+    }
+    quantitypvec = &SphParticle::r;
+    index=1;
+    scalar=false;
+  }
+  else if (quantity == "z") {
+    if (ndim<3) {
+      string message = "Error: you tried to load a z array, but you are running a simulation with ndim<3";
+      ExceptionHandler::getIstance().raise(message);
+    }
+    quantitypvec = &SphParticle::r;
+    index=2;
+    scalar=false;
+  }
+  else if (quantity == "vx") {
+    quantitypvec = &SphParticle::v;
+    index=0;
+    scalar=false;
+  }
+  else if (quantity == "vy") {
+    if (ndim<2) {
+      string message = "Error: you tried to load a vy array, but you are running a 1-d simulation";
+      ExceptionHandler::getIstance().raise(message);
+    }
+    quantitypvec = &SphParticle::v;
+    index=1;
+    scalar=false;
+  }
+  else if (quantity == "vz") {
+    if (ndim<3) {
+      string message = "Error: you tried to load a vz array, but you are running a simulation with ndim<3";
+      ExceptionHandler::getIstance().raise(message);
+    }
+    quantitypvec = &SphParticle::v;
+    index=2;
+    scalar=false;
+  }
+  else if (quantity=="rho") {
+    //TODO: at the moment, if rho or h are uploaded, they will be just ignored.
+    //Add some facility to use them
+    quantityp = &SphParticle::rho;
+    scalar=true;
+  }
+  else if (quantity == "h") {
+    quantityp = &SphParticle::h;
+    scalar=true;
+  }
+  else if (quantity == "u") {
+    //TODO: add some facility for uploading either u, T, or cs, and compute automatically the other ones
+    //depending on the EOS
+    quantityp = &SphParticle::u;
+    scalar=true;
+  }
+  else if (quantity=="m") {
+    quantityp = &SphParticle::m;
+    scalar=true;
+  }
+  else {
+    string message = "Quantity " + quantity + "not recognised";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  //Finally loops over particles and set the values
+  //Note that the syntax for scalar is different from the one for vectors
+  if (scalar) {
+    int i=0;
+    for (SphParticle* particlep = sph->sphdata; particlep < sph->sphdata+size; particlep++, i++) {
+      particlep->*quantityp = input[i];
+    }
+  }
+  else {
+    int i=0;
+    for (SphParticle* particlep = sph->sphdata; particlep < sph->sphdata+size; particlep++, i++) {
+      (particlep->*quantitypvec)[index] = input[i];
+    }
+  }
+  return;
+
+}
+
+void SphSimulation::PostSetupForPython(void) {
+  debug1("[SphSimulation::PostSetupForPython]");
+
+  PostGeneration();
+}
 
 // ============================================================================
 // SphSimulation::SetupSimulation
@@ -529,10 +648,20 @@ void SphSimulation::SetupSimulation(void)
   // Generate initial conditions for simulation
   GenerateIC();
 
+  // Call a messy function that does all the rest of the initialisation
+  PostGeneration();
+
+  return;
+}
+
+
+//TODO: make this mess more modular (note: initial h computation
+//should be done inside the neighbour search)
+void SphSimulation::PostGeneration(void) {
+
   // Set time variables here (for now)
   Noutsnap = 0;
   tsnapnext = dt_snap;
-
 
   // Set initial smoothing lengths and create initial ghost particles
   // --------------------------------------------------------------------------
@@ -556,7 +685,6 @@ void SphSimulation::SetupSimulation(void)
     // Update neighbour tre
     sphneib->UpdateTree(sph,simparams);
   }
-
 
   // Compute all SPH particle properties (if SPH particles exist)
   // --------------------------------------------------------------------------
@@ -591,27 +719,22 @@ void SphSimulation::SetupSimulation(void)
     // Add accelerations
     for (int i=0; i<sph->Nsph; i++) {
       sph->sphdata[i].active = false;
-      for (int k=0; k<ndim; k++) 
-	sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
+      for (int k=0; k<ndim; k++)
+    sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
-
   }
 
-  // Set r0,v0,a0 for initial step
-  sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
-  if (simparams.stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
-  
+    // Set r0,v0,a0 for initial step
+    sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+    if (simparams.stringparams["gas_eos"] == "energy_eqn")
+      uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
 
-  CalculateDiagnostics();
-  diag0 = diag;
+    CalculateDiagnostics();
+    diag0 = diag;
 
-  setup = true;
+    setup = true;
 
-  return;
 }
-
-
 
 // ============================================================================
 // SphSimulation::MainLoop

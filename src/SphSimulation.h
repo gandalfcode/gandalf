@@ -65,7 +65,11 @@ class SphSimulation
   // Subroutine prototypes
   // --------------------------------------------------------------------------
   void Setup(void);
+  void PreSetupForPython(void);
+  void ImportArray(double* input, int size, string quantity);
+  void PostSetupForPython(void);
   void SetupSimulation(void);
+  void PostGeneration(void);
   void MainLoop(void);
   void Run(int=-1);
   void InteractiveRun(int=-1);

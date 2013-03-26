@@ -107,7 +107,7 @@ void Sph::InitialSmoothingLengthGuess(void)
   SphBoundingBox(rmax,rmin,Nsph);
 
   // Depending on the dimensionality, calculate the average smoothing 
-  // length assuming a uniform density distribution filling the boudning box.
+  // length assuming a uniform density distribution filling the bounding box.
   // --------------------------------------------------------------------------
   if (ndim == 1) {
     Ngather = 5;
