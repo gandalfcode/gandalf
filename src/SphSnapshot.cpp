@@ -17,9 +17,9 @@ using namespace std;
 
 
 // ============================================================================
-// SphSnapshot::SphSnapshot
+// SphSnapshotBase::SphSnapshotBase
 // ============================================================================
-SphSnapshot::SphSnapshot(string auxfilename)
+SphSnapshotBase::SphSnapshotBase(string auxfilename)
 {
   allocated = false;
   nallocated = 0;
@@ -32,22 +32,22 @@ SphSnapshot::SphSnapshot(string auxfilename)
 
 
 // ============================================================================
-// SphSnapshot::~SphSnapshot
+// SphSnapshotBase::~SphSnapshotBase
 // ============================================================================
-SphSnapshot::~SphSnapshot()
+SphSnapshotBase::~SphSnapshotBase()
 {
 }
 
 
 
 // ============================================================================
-// SphSnapshot::AllocateBufferMemory
+// SphSnapshotBase::AllocateBufferMemory
 // Allocate memory for current snapshot.  Only allocates single precision 
 // to minimise memory use, even if compiled with double precision. 
 // ============================================================================
-void SphSnapshot::AllocateBufferMemory(void)
+void SphSnapshotBase::AllocateBufferMemory(void)
 {
-  debug2("[SphSnapshot::AllocateBufferMemory]");
+  debug2("[SphSnapshotBase::AllocateBufferMemory]");
 
   // If memory already allocated and more memory is needed for more particles,
   // deallocate now before reallocating.
@@ -102,12 +102,12 @@ void SphSnapshot::AllocateBufferMemory(void)
 
 
 // ============================================================================
-// SphSnapshot::DeallocateBufferMemory
+// SphSnapshotBase::DeallocateBufferMemory
 // Deallocate memory for current snapshot.
 // ============================================================================
-void SphSnapshot::DeallocateBufferMemory(void)
+void SphSnapshotBase::DeallocateBufferMemory(void)
 {
-  debug2("[SphSnapshot::DeallocateBufferMemory]");
+  debug2("[SphSnapshotBase::DeallocateBufferMemory]");
 
   // Deallocate scalar array memory
   delete[] dudt;
@@ -151,10 +151,10 @@ void SphSnapshot::DeallocateBufferMemory(void)
 
 
 // ============================================================================
-// SphSnapshot::CalculateMemoryUsage
+// SphSnapshotBase::CalculateMemoryUsage
 // Returns no. of bytes required for current snapshot
 // ============================================================================
-int SphSnapshot::CalculateMemoryUsage(void)
+int SphSnapshotBase::CalculateMemoryUsage(void)
 {
   return Nsph*nallocated*sizeof(float);
 }
@@ -162,13 +162,13 @@ int SphSnapshot::CalculateMemoryUsage(void)
 
 
 // ============================================================================
-// SphSnapshot::CopyDataFromSimulation
+// SphSnapshotBase::CopyDataFromSimulation
 // Copy particle data from main memory to current snapshot arrays.
 // ============================================================================
-void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux, 
-					 SphParticle *sphaux)
+template <int ndim>
+void SphSnapshot<ndim>::CopyDataFromSimulation(int ndimaux, int Nsphaux)
 {
-  debug2("[SphSnapshot::CopyDataFromSimulation]");
+  debug2("[SphSnapshotBase::CopyDataFromSimulation]");
 
   ndim = ndimaux;
   Nsph = Nsphaux;
@@ -218,11 +218,11 @@ void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux,
 
 
 // ============================================================================
-// SphSnapshot::ExtractArray
+// SphSnapshotBase::ExtractArray
 // Returns pointer to required array stored in snapshot buffer memory.
 // Currently also returns scaling factors for that array.
 // ============================================================================
-void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array,
+void SphSnapshotBase::ExtractArray(string name, float** out_array, int* size_array,
                                float& scaling_factor, string RequestedUnit)
 {
 
@@ -322,12 +322,13 @@ void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array,
 
 
 // ============================================================================
-// SphSnapshot::ReadSnapshot
+// SphSnapshotBase::ReadSnapshot
 // Read snapshot into main memory and then copy into snapshot buffer.
 // ============================================================================
-void SphSnapshot::ReadSnapshot(string format, SphSimulation *simulation)
+template <int ndim>
+void SphSnapshot<ndim>::ReadSnapshot(string format, SphSimulationBase *simulation)
 {
-  debug2("[SphSnapshot::ReadSnapshot]");
+  debug2("[SphSnapshotBase::ReadSnapshot]");
 
   // Set pointer to units object
   units = &(simulation->simunits);
@@ -336,8 +337,8 @@ void SphSnapshot::ReadSnapshot(string format, SphSimulation *simulation)
   simulation->ReadSnapshotFile(filename, format);
 
   // Now copy from main memory to current snapshot
-  CopyDataFromSimulation(simulation->simparams.intparams["ndim"],
-			 simulation->sph->Nsph , simulation->sph->sphdata );
+  CopyDataFromSimulation(simulation->simparams->intparams["ndim"],
+			 simulation->sph->Nsph);
 
   // Record simulation snapshot time
   t = simulation->t;

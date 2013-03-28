@@ -111,9 +111,10 @@ endif
 SWIG_HEADERS = SphSimulation.i
 WRAP_OBJ = SphSimulation_wrap.o
 #WRAP_OBJ = Parameters_wrap.o SimUnits_wrap.o Sph_wrap.o SphSnapshot_wrap.o SphSimulation_wrap.o
-OBJ = Parameters.o SimUnits.o SphSnapshot.o SphSimulation.o
-OBJ += SphSimulationIC.o SphSimulationIO.o SphSimulationTimesteps.o
-OBJ += SphAnalysis.o
+OBJ = Parameters.o SimUnits.o SphSimulation.o #SphSnapshot.o 
+#OBJ += SphSimulationIC.o SphSimulationIO.o 
+#OBJ += SphSimulationTimesteps.o
+#OBJ += SphAnalysis.o
 OBJ += M4Kernel.o QuinticKernel.o GaussianKernel.o TabulatedKernel.o
 OBJ += Sph.o GradhSph.o SM2012Sph.o GodunovSph.o
 OBJ += EnergyPEC.o
@@ -121,7 +122,7 @@ OBJ += SphIntegration.o SphLeapfrogKDK.o
 #OBJ += SphNeighbourSearch.o 
 OBJ += BruteForceSearch.o GridSearch.o
 OBJ += AdiabaticEOS.o IsothermalEOS.o
-OBJ += SimGhostParticles.o
+#OBJ += SimGhostParticles.o
 OBJ += Render.o
 
 TEST_OBJ = #TestScaling.o Parameters.o SimUnits.o Exception.o
@@ -160,12 +161,12 @@ all : $(TEST_OBJ) $(WRAP_OBJ) $(OBJ) Exception.o shocktub.so _SphSim.so executab
 	#$(CC) $(CFLAGS) $(OPT) -o ../bin/testing $(TEST_OBJ) /Users/david/astro/code/gtest-1.6.0/make/gtest_main.a
 	cp shocktub.so ../analysis
 	cp _SphSim.so ../analysis/swig_generated
-	cp toymain ../bin/toymain
 
 # =============================================================================
 
 executable : $(OBJ) toymain.o Exception.o
 	$(CC) $(CFLAGS) $(OPT) -o toymain $(OBJ) Exception.o toymain.o
+	cp toymain ../bin/toymain
 
 _SphSim.so : $(WRAP_OBJ) $(OBJ) Exception.o
 	$(CC) $(CFLAGS) $(OPT) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o -o _SphSim.so

@@ -25,7 +25,8 @@ using namespace std;
 // Calculates all diagnostic quantities (e.g. conserved quantities), 
 // saves to the diagnostic data structure and outputs to screen.
 // ============================================================================
-void SphSimulation::CalculateDiagnostics(void)
+template <int ndim>
+void SphSimulation<ndim>::CalculateDiagnostics(void)
 {
   int k;
 

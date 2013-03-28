@@ -26,12 +26,14 @@ using namespace std;
 // ============================================================================
 // EnergyEquation::EnergyEquation()
 // ============================================================================
-EnergyEquation::EnergyEquation(DOUBLE energy_mult_aux) :
+template <int ndim>
+EnergyEquation<ndim>::EnergyEquation(DOUBLE energy_mult_aux) :
   energy_mult(energy_mult_aux)
 {
 }
 
-EnergyEquation::~EnergyEquation()
+template <int ndim>
+EnergyEquation<ndim>::~EnergyEquation()
 {
 }
 
@@ -40,8 +42,9 @@ EnergyEquation::~EnergyEquation()
 // ============================================================================
 // EnergyPEC::EnergyPEC()
 // ============================================================================
-EnergyPEC::EnergyPEC(DOUBLE energy_mult_aux) :
-  EnergyEquation(energy_mult_aux)
+template <int ndim>
+EnergyPEC<ndim>::EnergyPEC(DOUBLE energy_mult_aux) :
+  EnergyEquation<ndim>(energy_mult_aux)
 {
 }
 
@@ -50,7 +53,8 @@ EnergyPEC::EnergyPEC(DOUBLE energy_mult_aux) :
 // ============================================================================
 // EnergyPEC::~EnergyPEC()
 // ============================================================================
-EnergyPEC::~EnergyPEC()
+template <int ndim>
+EnergyPEC<ndim>::~EnergyPEC()
 {
 }
 
@@ -61,8 +65,9 @@ EnergyPEC::~EnergyPEC()
 // Integrate internal energy to first order from the beginning of the step to 
 // the current simulation time, i.e. u(t+dt) = u(t) + dudt(t)*dt
 // ============================================================================
-void EnergyPEC::EnergyIntegration(int n, int level_step, int Nsph,
-				  SphParticle *sph, FLOAT timestep)
+template <int ndim>
+void EnergyPEC<ndim>::EnergyIntegration(int n, int level_step, int Nsph,
+				  SphParticle<ndim> *sph, FLOAT timestep)
 {
   int i;                                // Particle counter
   int nstep;                            // Particle (integer) step size
@@ -91,8 +96,9 @@ void EnergyPEC::EnergyIntegration(int n, int level_step, int Nsph,
 // adding a second order correction term.  The full integration becomes
 // u(t+dt) = u(t) + 0.5*(dudt(t) + dudt(t+dt))*dt 
 // ============================================================================
-void EnergyPEC::EnergyCorrectionTerms(int n, int level_step, int Nsph, 
-				      SphParticle *sph, FLOAT timestep)
+template <int ndim>
+void EnergyPEC<ndim>::EnergyCorrectionTerms(int n, int level_step, int Nsph,
+				      SphParticle<ndim> *sph, FLOAT timestep)
 {
   int i;                                // Particle counter
   int nstep;                            // Particle (integer) step size
@@ -118,7 +124,8 @@ void EnergyPEC::EnergyCorrectionTerms(int n, int level_step, int Nsph,
 // Record all important thermal quantities at the end of the step for the 
 // start of the new timestep.
 // ============================================================================
-void EnergyPEC::EndTimestep(int n, int level_step, int Nsph, SphParticle *sph)
+template <int ndim>
+void EnergyPEC<ndim>::EndTimestep(int n, int level_step, int Nsph, SphParticle<ndim> *sph)
 {
   int i;                                // Particle counter
   int nstep;                            // Particle (integer) step size
@@ -147,7 +154,13 @@ void EnergyPEC::EndTimestep(int n, int level_step, int Nsph, SphParticle *sph)
 // in one step, i.e. dt = const*u/|dudt + epsilon| 
 // where epsilon is to prevent the denominator becoming zero.
 // ============================================================================
-DOUBLE EnergyPEC::Timestep(SphParticle &part)
+template <int ndim>
+DOUBLE EnergyPEC<ndim>::Timestep(SphParticle<ndim> &part)
 {
-  return energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number));
+  return this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number));
 }
+
+
+template class EnergyPEC<1>;
+template class EnergyPEC<2>;
+template class EnergyPEC<3>;

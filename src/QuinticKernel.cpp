@@ -15,18 +15,20 @@ using namespace std;
 // ============================================================================
 // QuinticKernel::QuinticKernel
 // ============================================================================
-QuinticKernel::QuinticKernel(int ndimaux, string KernelName)
+template <int ndim>
+QuinticKernel<ndim>::QuinticKernel(string KernelName):
+  SphKernel<ndim>()
 {
-#if !defined(FIXED_DIMENSIONS)
-  ndim = ndimaux;
-  ndimpr = (FLOAT) ndimaux;
-#endif
-  kernrange = (FLOAT) 3.0;
-  invkernrange = onethird;
-  kernrangesqd = (FLOAT) 9.0;
-  if (ndim == 1) kernnorm = (FLOAT) (1.0/120.0);
-  else if (ndim == 2) kernnorm = invpi*(FLOAT) (7.0/478.0);
-  else if (ndim == 3) kernnorm = invpi*(FLOAT) (3.0/359.0);
+//#if !defined(FIXED_DIMENSIONS)
+//  ndim = ndimaux;
+//  ndimpr = (FLOAT) ndim;
+//#endif
+  this->kernrange = (FLOAT) 3.0;
+  this->invkernrange = onethird;
+  this->kernrangesqd = (FLOAT) 9.0;
+  if (ndim == 1) this->kernnorm = (FLOAT) (1.0/120.0);
+  else if (ndim == 2) this->kernnorm = invpi*(FLOAT) (7.0/478.0);
+  else if (ndim == 3) this->kernnorm = invpi*(FLOAT) (3.0/359.0);
 }
 
 
@@ -34,12 +36,16 @@ QuinticKernel::QuinticKernel(int ndimaux, string KernelName)
 // ============================================================================
 // QuinticKernel::~QuinticKernel
 // ============================================================================
-QuinticKernel::~QuinticKernel()
+template <int ndim>
+QuinticKernel<ndim>::~QuinticKernel()
 {
 }
 
 
 
+template class QuinticKernel<1>;
+template class QuinticKernel<2>;
+template class QuinticKernel<3>;
 
 
 

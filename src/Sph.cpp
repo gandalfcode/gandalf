@@ -18,13 +18,44 @@
 #include "Debug.h"
 using namespace std;
 
+template <int ndim>
+const FLOAT Sph<ndim>::invndim;
+
+
+template <int ndim>
+Sph<ndim>::Sph(int hydro_forces_aux,
+  int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
+  FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
+  acondenum acond_aux, string gas_eos_aux, string KernelName):
+  hydro_forces(hydro_forces_aux),
+  self_gravity(self_gravity_aux),
+  alpha_visc(alpha_visc_aux),
+  beta_visc(beta_visc_aux),
+  h_fac(h_fac_aux),
+  h_converge(h_converge_aux),
+  gas_eos(gas_eos_aux),
+//    vdim(vdimaux),
+//    bdim(bdimaux),
+//    invndim(1.0/(FLOAT)ndimaux),
+  kerntab(TabulatedKernel<ndim>(KernelName)),
+  allocated(false),
+  Nsph(0),
+  Nsphmax(0),
+  avisc (avisc_aux),
+  acond (acond_aux)
+    {
+
+
+}
+
 
 
 // ============================================================================
 // Sph::AllocateMemory
 // Allocate main SPH particle array.
 // ============================================================================
-void Sph::AllocateMemory(int N)
+template <int ndim>
+void Sph<ndim>::AllocateMemory(int N)
 {
   debug2("[Sph::AllocateMemory]");
 
@@ -34,20 +65,19 @@ void Sph::AllocateMemory(int N)
     //TODO: perhaps this 10 could be made a user-provided parameter
     //(to handle the case where one doesn't want to waste memory)
     Nsphmax = 10*N;
-    sphdata = new struct SphParticle[Nsphmax];
+    sphdata = new struct SphParticle<ndim>[Nsphmax];
     allocated = true;
   }
 
   return;
 }
 
-
-
 // ============================================================================
 // Sph::DeallocateMemory
 // Deallocate main array containing SPH particle data.
 // ============================================================================
-void Sph::DeallocateMemory(void)
+template <int ndim>
+void Sph<ndim>::DeallocateMemory(void)
 {
   debug2("[Sph::DeallocateMemory]");
 
@@ -57,18 +87,17 @@ void Sph::DeallocateMemory(void)
   return;
 }
 
-
-
 // ============================================================================
 // Sph::SphBoundingBox
 // Calculate the bounding box containing all SPH particles.
 // ============================================================================
-void Sph::SphBoundingBox(FLOAT rmax[ndimmax],FLOAT rmin[ndimmax],int Nmax)
+template <int ndim>
+void Sph<ndim>::SphBoundingBox(FLOAT rmax[ndim],FLOAT rmin[ndim],int Nmax)
 {
   debug2("[Sph::SphBoundingBox]");
 
-  for (int k=0; k<ndimmax; k++) rmin[k] = big_number; 
-  for (int k=0; k<ndimmax; k++) rmax[k] = -big_number;
+  for (int k=0; k<ndim; k++) rmin[k] = big_number;
+  for (int k=0; k<ndim; k++) rmax[k] = -big_number;
 
   for (int i=0; i<Nmax; i++) {
     for (int k=0; k<ndim; k++) 
@@ -93,13 +122,14 @@ void Sph::SphBoundingBox(FLOAT rmax[ndimmax],FLOAT rmin[ndimmax],int Nmax)
 // techniques, we guess the smoothing length assuming a uniform density 
 // medium with the same volume and total mass.
 // ============================================================================
-void Sph::InitialSmoothingLengthGuess(void)
+template <int ndim>
+void Sph<ndim>::InitialSmoothingLengthGuess(void)
 {
   int Ngather;                              // No. of neighbours (move!!)
   FLOAT h_guess;                            // Global guess of smoothing length
   FLOAT volume;                             // Volume of global bounding box
-  FLOAT rmin[ndimmax];                      // Min. extent of bounding box
-  FLOAT rmax[ndimmax];                      // Max. extent of bounding box
+  FLOAT rmin[ndim];                      // Min. extent of bounding box
+  FLOAT rmax[ndim];                      // Max. extent of bounding box
 
   debug2("[Sph::InitialSmoothingLengthGuess]");
 
@@ -137,3 +167,8 @@ void Sph::InitialSmoothingLengthGuess(void)
 
   return;
 }
+
+
+template class Sph<1>;
+template class Sph<2>;
+template class Sph<3>;

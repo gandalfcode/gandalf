@@ -30,16 +30,17 @@ struct GridCell {
 // ============================================================================
 // Class SphNeighbourSearch
 // ============================================================================
+template <int ndim>
 class SphNeighbourSearch
 {
  public:
 
-  virtual void UpdateAllSphProperties(Sph *) = 0;
-  virtual void UpdateAllSphForces(Sph *) = 0;
-  virtual void UpdateAllSphDudt(Sph *) = 0;
-  virtual void UpdateAllSphDerivatives(Sph *) = 0;
-  virtual void UpdateAllSphGravityProperties(Sph *) = 0;
-  virtual void UpdateTree(Sph *, Parameters &) = 0;
+  virtual void UpdateAllSphProperties(Sph<ndim> *) = 0;
+  virtual void UpdateAllSphForces(Sph<ndim> *) = 0;
+  virtual void UpdateAllSphDudt(Sph<ndim> *) = 0;
+  virtual void UpdateAllSphDerivatives(Sph<ndim> *) = 0;
+  virtual void UpdateAllSphGravityProperties(Sph<ndim> *) = 0;
+  virtual void UpdateTree(Sph<ndim>*, Parameters &) = 0;
 
   bool neibcheck;
 
@@ -50,23 +51,24 @@ class SphNeighbourSearch
 // ============================================================================
 // Class BruteForceSearch
 // ============================================================================
-class BruteForceSearch: public SphNeighbourSearch
+template <int ndim>
+class BruteForceSearch: public SphNeighbourSearch<ndim>
 {
  public:
 
-  BruteForceSearch(int);
+  BruteForceSearch();
   ~BruteForceSearch();
 
-  void UpdateAllSphProperties(Sph *);
-  void UpdateAllSphForces(Sph *);
-  void UpdateAllSphDudt(Sph *);
-  void UpdateAllSphDerivatives(Sph *);
-  void UpdateAllSphGravityProperties(Sph *);
-  void UpdateTree(Sph *, Parameters &);
+  void UpdateAllSphProperties(Sph<ndim> *);
+  void UpdateAllSphForces(Sph<ndim> *);
+  void UpdateAllSphDudt(Sph<ndim> *);
+  void UpdateAllSphDerivatives(Sph<ndim> *);
+  void UpdateAllSphGravityProperties(Sph<ndim> *);
+  void UpdateTree(Sph<ndim> *, Parameters &);
 
-#if !defined(FIXED_DIMENSIONS)
-  int ndim;
-#endif
+//#if !defined(FIXED_DIMENSIONS)
+//  int ndim;
+//#endif
 
 };
 
@@ -75,32 +77,33 @@ class BruteForceSearch: public SphNeighbourSearch
 // ============================================================================
 // Class GridSearch
 // ============================================================================
-class GridSearch: public SphNeighbourSearch
+template <int ndim>
+class GridSearch: public SphNeighbourSearch<ndim>
 {
  public:
 
-  GridSearch(int);
+  GridSearch();
   ~GridSearch();
 
-  void UpdateAllSphProperties(Sph *);
-  void UpdateAllSphForces(Sph *);
-  void UpdateAllSphDudt(Sph *);
-  void UpdateAllSphDerivatives(Sph *);
-  void UpdateAllSphGravityProperties(Sph *);
-  void UpdateTree(Sph *, Parameters &);
+  void UpdateAllSphProperties(Sph<ndim> *);
+  void UpdateAllSphForces(Sph<ndim> *);
+  void UpdateAllSphDudt(Sph<ndim> *);
+  void UpdateAllSphDerivatives(Sph<ndim> *);
+  void UpdateAllSphGravityProperties(Sph<ndim> *);
+  void UpdateTree(Sph<ndim> *, Parameters &);
 
   // Additional functions for grid neighbour search
   // --------------------------------------------------------------------------
   void AllocateGridMemory(int);
   void DeallocateGridMemory(void);
-  void CreateGrid(Sph *);
+  void CreateGrid(Sph<ndim> *);
   int ComputeParticleGridCell(FLOAT *);
   void ComputeCellCoordinate(int, int *);
   int ComputeActiveCellList(int *);
-  int ComputeActiveParticleList(int, int *, Sph *);
+  int ComputeActiveParticleList(int, int *, Sph<ndim> *);
   int ComputeNeighbourList(int, int *);
 #if defined(VERIFY_ALL)
-  void CheckValidNeighbourList(Sph *,int,int,int *,string);
+  void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
   void ValidateGrid(void);
 #endif
 
@@ -109,7 +112,7 @@ class GridSearch: public SphNeighbourSearch
   bool allocated_grid;                      // Are grid arrays allocated?
   int Ncell;                                // Current no. of grid cells
   int Ncellmax;                             // Max. allowed no. of grid cells
-  int Ngrid[ndimmax];                       // No. of cells in each dimension
+  int Ngrid[ndim];                       // No. of cells in each dimension
   int Noccupymax;                           // Max. occupancy of all cells
   int Nlistmax;                             // Max. length of neighbour list
   int Nsph;                                 // ..
@@ -117,12 +120,12 @@ class GridSearch: public SphNeighbourSearch
   int Ntotmax;                              // Max. no. of points in list
   int *inext;                               // Linked list for grid search
   FLOAT dx_grid;                            // Grid spacing
-  FLOAT rmin[ndimmax];                      // Minimum extent of bounding box
-  FLOAT rmax[ndimmax];                      // Maximum extent of bounding box
+  FLOAT rmin[ndim];                      // Minimum extent of bounding box
+  FLOAT rmax[ndim];                      // Maximum extent of bounding box
   GridCell *grid;                           // Main grid array
-#if !defined(FIXED_DIMENSIONS)
-  int ndim;
-#endif
+//#if !defined(FIXED_DIMENSIONS)
+//  int ndim;
+//#endif
 
 };
 

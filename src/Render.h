@@ -27,6 +27,7 @@ using namespace std;
 // ============================================================================
 // Clas Render
 // ============================================================================
+template <int ndim>
 class Render
 {
  public:
@@ -40,11 +41,11 @@ class Render
   // --------------------------------------------------------------------------
   int CreateColumnRenderingGrid(int, int, string, string, string, string,
 				float, float, float, float, float* values, 
-				int Ngrid, SphSnapshot &, Sph *, float& scaling_factor);
+				int Ngrid, SphSnapshotBase &, Sph<ndim> *, float& scaling_factor);
   int CreateSliceRenderingGrid(int, int, string, string, string, string, string,
 			       float, float, float, float, float, float* values, 
 			       int Ngrid,
-			       SphSnapshot &, Sph *, float& scaling_factor);
+			       SphSnapshotBase &, Sph<ndim> *, float& scaling_factor);
 
 
   // ..

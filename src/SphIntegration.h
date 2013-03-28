@@ -20,28 +20,29 @@
 // ============================================================================
 // Class SphIntegration
 // ============================================================================
+template <int ndim>
 class SphIntegration
 {
  public:
 
   //SphIntegration(DOUBLE accel_mult_aux, DOUBLE courant_mult_aux):
   //  accel_mult(accel_mult_aux),courant_mult(courant_mult_aux) {}
-  SphIntegration(int, int, DOUBLE, DOUBLE);
+  SphIntegration(DOUBLE, DOUBLE);
   ~SphIntegration();
 
-  virtual void AdvanceParticles(int,int,int,SphParticle *,FLOAT) = 0;
-  virtual void CorrectionTerms(int,int,int,SphParticle *,FLOAT) = 0;
-  virtual void EndTimestep(int,int,int,SphParticle *) = 0;
+  virtual void AdvanceParticles(int,int,int,SphParticle<ndim> *,FLOAT) = 0;
+  virtual void CorrectionTerms(int,int,int,SphParticle<ndim> *,FLOAT) = 0;
+  virtual void EndTimestep(int,int,int,SphParticle<ndim> *) = 0;
 
-  virtual DOUBLE Timestep(SphParticle &, int);
+  virtual DOUBLE Timestep(SphParticle<ndim> &, int);
   
   int level_step;
   const DOUBLE courant_mult;
   const DOUBLE accel_mult;
-#if !defined(FIXED_DIMENSIONS)
-  const int ndim;
-  const int vdim;
-#endif
+//#if !defined(FIXED_DIMENSIONS)
+//  const int ndim;
+  static const int vdim=ndim;
+//#endif
 
 };
 
@@ -50,16 +51,17 @@ class SphIntegration
 // ============================================================================
 // Class SphLeapfrogKDK
 // ============================================================================
-class SphLeapfrogKDK: public SphIntegration
+template <int ndim>
+class SphLeapfrogKDK: public SphIntegration<ndim>
 {
  public:
 
-  SphLeapfrogKDK(int, int, DOUBLE, DOUBLE);
+  SphLeapfrogKDK(DOUBLE, DOUBLE);
   ~SphLeapfrogKDK();
 
-  void AdvanceParticles(int,int,int,SphParticle *,FLOAT);
-  void CorrectionTerms(int,int,int,SphParticle *,FLOAT);
-  void EndTimestep(int,int,int,SphParticle *);
+  void AdvanceParticles(int,int,int,SphParticle<ndim> *,FLOAT);
+  void CorrectionTerms(int,int,int,SphParticle<ndim> *,FLOAT);
+  void EndTimestep(int,int,int,SphParticle<ndim> *);
 
 };
 

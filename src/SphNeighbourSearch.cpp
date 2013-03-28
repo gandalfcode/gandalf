@@ -13,12 +13,12 @@
 using namespace std;
 
 
-
-SphNeighbourSearch::SphNeighbourSearch()
+template <int ndim>
+SphNeighbourSearch<ndim>::SphNeighbourSearch()
 {
 }
 
-
-SphNeighbourSearch::~SphNeighbourSearch()
+template <int ndim>
+SphNeighbourSearch<ndim>::~SphNeighbourSearch()
 {
 }

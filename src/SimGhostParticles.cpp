@@ -21,10 +21,11 @@ using namespace std;
 // ============================================================================
 // 
 // ============================================================================
-void SphSimulation::CheckBoundaries(void)
+template <int ndim>
+void SphSimulation<ndim>::CheckBoundaries(void)
 {
   int i;
-  SphParticle *part;
+  SphParticle<ndim> *part;
 
   // x-boundary conditions
   for (i=0; i<sph->Nsph; i++) {
@@ -60,13 +61,14 @@ void SphSimulation::CheckBoundaries(void)
 // ============================================================================
 // SphSimulation::SearchGhostParticles
 // ============================================================================
-void SphSimulation::SearchGhostParticles(void)
+template <int ndim>
+void SphSimulation<ndim>::SearchGhostParticles(void)
 {
   int i;
   int k;
   static const FLOAT ghost_range = 1.1;
   const FLOAT kernrange = sph->kernp->kernrange;
-  SphParticle *sphdata = sph->sphdata;
+  SphParticle<ndim>* sphdata = sph->sphdata;
 
   // Set all relevant particle counters
   sph->Nghost    = 0;
@@ -194,7 +196,8 @@ void SphSimulation::SearchGhostParticles(void)
 // ============================================================================
 // SphSimulation::CreateGhostParticle
 // ============================================================================
-void SphSimulation::CreateGhostParticle(int i, int k, 
+template <int ndim>
+void SphSimulation<ndim>::CreateGhostParticle(int i, int k,
 					FLOAT rk, FLOAT vk, FLOAT bdist)
 {
   // Increase ghost counter and check there's enough space in memory
@@ -226,14 +229,15 @@ void SphSimulation::CreateGhostParticle(int i, int k,
 // ============================================================================
 // SphSimulation::CopySphDataToGhosts
 // ============================================================================
-void SphSimulation::CopySphDataToGhosts(void)
+template <int ndim>
+void SphSimulation<ndim>::CopySphDataToGhosts(void)
 {
   int i;
   int iorig;
   int j;
   int k;
-  FLOAT rp[ndimmax];
-  FLOAT vp[ndimmax];
+  FLOAT rp[ndim];
+  FLOAT vp[ndim];
 
   // --------------------------------------------------------------------------
 #pragma omp parallel for default(shared) private(i,iorig,k,rp,vp)
@@ -261,7 +265,8 @@ void SphSimulation::CopySphDataToGhosts(void)
 // ============================================================================
 // SphSimulation::CopyAccelerationsFromGhosts
 // ============================================================================
-void SphSimulation::CopyAccelerationFromGhosts(void)
+template <int ndim>
+void SphSimulation<ndim>::CopyAccelerationFromGhosts(void)
 {
   int i;
   int iorig;

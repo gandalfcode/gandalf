@@ -25,7 +25,8 @@ using namespace std;
 // SphSimulation::ComputeGlobalTimestep
 // Computes global timestep for SPH simulation.
 // ============================================================================
-void SphSimulation::ComputeGlobalTimestep(void)
+template <int ndim>
+void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 {
   int i;                               // ..
   DOUBLE dt_min = big_number_dp;       // ..
@@ -50,7 +51,7 @@ void SphSimulation::ComputeGlobalTimestep(void)
          dt = min(dt,sphint->Timestep(sph->sphdata[i],sph->hydro_forces));
 
        // If integrating energy equation, include energy timestep
-       if (simparams.stringparams["gas_eos"] == "energy_eqn") {
+       if (simparams->stringparams["gas_eos"] == "energy_eqn") {
 #pragma omp for
          for (i=0; i<sph->Nsph; i++)
      	   dt = min(dt,uint->Timestep(sph->sphdata[i]));
@@ -80,7 +81,8 @@ void SphSimulation::ComputeGlobalTimestep(void)
 // SphSimulation::ComputeBlockTimesteps
 // ..
 // ============================================================================
-void SphSimulation::ComputeBlockTimesteps(void)
+template <int ndim>
+void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 {
   int i;                                    // Particle counter
   int istep;                                // ??
@@ -237,7 +239,8 @@ void SphSimulation::ComputeBlockTimesteps(void)
 // Perform simple sanity check on block timesteps to check if 
 // values are consistent.
 // ============================================================================
-void SphSimulation::VerifyBlockTimesteps(void)
+template <int ndim>
+void SphSimulation<ndim>::VerifyBlockTimesteps(void)
 {
   debug2("[SphSimulation::VerifyBlockTimesteps]");
 
