@@ -64,4 +64,22 @@ class SphLeapfrogKDK: public SphIntegration
 };
 
 
+
+// ============================================================================
+// Class SphGodunovIntegration
+// ============================================================================
+class SphGodunovIntegration: public SphIntegration
+{
+ public:
+
+  SphGodunovIntegration(int, int, DOUBLE, DOUBLE);
+  ~SphGodunovIntegration();
+
+  void AdvanceParticles(int,int,int,SphParticle *,FLOAT);
+  void CorrectionTerms(int,int,int,SphParticle *,FLOAT);
+  void EndTimestep(int,int,int,SphParticle *);
+
+};
+
+
 #endif

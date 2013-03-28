@@ -187,6 +187,12 @@ void Parameters::SetDefaultValues(void)
   floatparams["alpha_visc"] = 1.0;
   floatparams["beta_visc"] = 2.0;
 
+  // Riemann solver parameters
+  // --------------------------------------------------------------------------
+  stringparams["riemann_solver"] = "hllc";
+  stringparams["slope_limiter"] = "mine";
+  intparams["riemann_order"] = 2;
+
   // Thermal physics parameters
   // --------------------------------------------------------------------------
   intparams["hydro_forces"] = 1;

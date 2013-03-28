@@ -138,8 +138,8 @@ void SphSimulation::RandomBox(void)
       sph->sphdata[i].v[k] = 0.0f;
       sph->sphdata[i].a[k] = 0.0f;
     }
-    //    sph->sphdata[i].m = 1.0f / (FLOAT) sph->Nsph;
-sph->sphdata[i].m = (1.0 + 9.0*sph->sphdata[i].r[0])*1.0f / (FLOAT) sph->Nsph;
+    sph->sphdata[i].m = 1.0f / (FLOAT) sph->Nsph;
+    //sph->sphdata[i].m = (1.0 + 9.0*sph->sphdata[i].r[0])*1.0f / (FLOAT) sph->Nsph;
     sph->sphdata[i].invomega = 0.5f;
     sph->sphdata[i].iorig = i;
     sph->sphdata[i].u = 1.5;

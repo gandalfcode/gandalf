@@ -40,6 +40,8 @@ SM2012Sph<kernelclass>::SM2012Sph(int ndimaux, int vdimaux, int bdimaux, int hyd
   allocated = false;
   Nsph = 0;
   Nsphmax = 0;
+  kernfac = (FLOAT) 1.0;
+  kernfacsqd = (FLOAT) 1.0;
   kernp = &kern;
 }
 

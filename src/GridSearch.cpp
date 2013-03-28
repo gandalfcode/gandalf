@@ -293,7 +293,7 @@ void GridSearch::UpdateAllSphForces(Sph *sph)
         for (k=0; k<ndim; k++) parti.a[k] = (FLOAT) 0.0;
 
         for (k=0; k<ndim; k++) rp[k] = parti.r[k]; //data[i].r[k];
-        hrangesqdi = pow(sph->kernp->kernrange*parti.h,2);
+        hrangesqdi = pow(sph->kernfac*sph->kernp->kernrange*parti.h,2);
         Ninteract = 0;
 
         // Compute distances and the inverse between the current particle
@@ -303,22 +303,22 @@ void GridSearch::UpdateAllSphForces(Sph *sph)
         // --------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
-          hrangesqdj = pow(sph->kernp->kernrange*neibpart[jj].h,2);
+          hrangesqdj = pow(sph->kernfac*sph->kernp->kernrange*neibpart[jj].h,2);
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
           drsqd = DotProduct(draux,draux,ndim);
 
           // Compute list of particle-neighbour interactions and also
           // compute
           if ((drsqd <= hrangesqdi || drsqd <= hrangesqdj) &&
-	        ((neiblist[jj] < i && !neibpart[jj].active) ||
-	        neiblist[jj] > i)) {
-        	interactlist[Ninteract] = jj;
-        	drmag[Ninteract] = sqrt(drsqd);
-        	invdrmag[Ninteract] = (FLOAT) 1.0/
-        			(drmag[Ninteract] + small_number);
-        	for (k=0; k<ndim; k++)
-        	  dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
-        	Ninteract++;
+	      ((neiblist[jj] < i && !neibpart[jj].active) ||
+	       neiblist[jj] > i)) {
+	    interactlist[Ninteract] = jj;
+	    drmag[Ninteract] = sqrt(drsqd);
+	    invdrmag[Ninteract] = (FLOAT) 1.0/
+	      (drmag[Ninteract] + small_number);
+	    for (k=0; k<ndim; k++)
+	      dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
+	    Ninteract++;
           }
 	  
         }
@@ -608,7 +608,7 @@ void GridSearch::UpdateAllSphDudt(Sph *sph)
         parti.dudt = (FLOAT) 0.0;
 
         for (k=0; k<ndim; k++) rp[k] = parti.r[k];
-        hrangesqdi = pow(sph->kernp->kernrange*parti.h,2);
+        hrangesqdi = pow(sph->kernfac*sph->kernp->kernrange*parti.h,2);
         Ninteract = 0;
 
         // Compute distances and the inverse between the current particle
@@ -618,22 +618,22 @@ void GridSearch::UpdateAllSphDudt(Sph *sph)
         // --------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
-          hrangesqdj = pow(sph->kernp->kernrange*neibpart[jj].h,2);
+          hrangesqdj = pow(sph->kernfac*sph->kernp->kernrange*neibpart[jj].h,2);
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
           drsqd = DotProduct(draux,draux,ndim);
 
           // Compute list of particle-neighbour interactions and also
           // compute
           if ((drsqd <= hrangesqdi || drsqd <= hrangesqdj) &&
-	        ((neiblist[jj] < i && !neibpart[jj].active) ||
-	        neiblist[jj] > i)) {
-        	interactlist[Ninteract] = jj;
-        	drmag[Ninteract] = sqrt(drsqd);
-        	invdrmag[Ninteract] = (FLOAT) 1.0/
-        			(drmag[Ninteract] + small_number);
-        	for (k=0; k<ndim; k++)
-        	  dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
-        	Ninteract++;
+	      ((neiblist[jj] < i && !neibpart[jj].active) ||
+	       neiblist[jj] > i)) {
+	    interactlist[Ninteract] = jj;
+	    drmag[Ninteract] = sqrt(drsqd);
+	    invdrmag[Ninteract] = (FLOAT) 1.0/
+	      (drmag[Ninteract] + small_number);
+	    for (k=0; k<ndim; k++)
+	      dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
+	    Ninteract++;
           }
 	  
         }
@@ -906,7 +906,7 @@ void GridSearch::CreateGrid(Sph *sph)
   
   // Compute maximum smoothing length to determine optimum grid spacing
   for (int i=0; i<sph->Nsph; i++) h_max = max(h_max,sph->sphdata[i].h);
-  dx_grid = grid_h_tolerance*sph->kernp->kernrange*h_max;
+  dx_grid = grid_h_tolerance*sph->kernfac*sph->kernp->kernrange*h_max;
 
   // Compute bounding box of all particles
   sph->SphBoundingBox(rmax,rmin,sph->Ntot);

@@ -39,6 +39,8 @@ GradhSph<kernelclass>::GradhSph(int ndimaux, int vdimaux, int bdimaux, int hydro
   allocated = false;
   Nsph = 0;
   Nsphmax = 0;
+  kernfac = (FLOAT) 1.0;
+  kernfacsqd = (FLOAT) 1.0;
   kernp = &kern;
 }
 

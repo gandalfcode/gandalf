@@ -21,9 +21,6 @@
 using namespace std;
 
 
-static const int riemann_order = 1;
-static const string riemann_solver = "hllc";
-
 
 // ============================================================================
 // GodunovSph::GodunovSph
@@ -42,6 +39,8 @@ GodunovSph<kernelclass>::GodunovSph(int ndimaux, int vdimaux, int bdimaux, int h
   allocated = false;
   Nsph = 0;
   Nsphmax = 0;
+  kernfac = sqrttwo;
+  kernfacsqd = (FLOAT) 2.0;
   kernp = &kern;
 }
 
@@ -263,11 +262,9 @@ void GodunovSph<kernelclass>::ComputeSphNeibForces
       else if (riemann_solver == "mg")
 	MgSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
 		 vl,vr,eos->gamma,pstar,vstar);
-
-      //FLOAT rhomean = 0.5*(rhol + rhor);
-      //FLOAT soundmean = 0.5*(parti.sound + neibpart[j].sound);
-      //pstar = 0.5*(pl + pr) - 0.5*dvdr*rhomean*soundmean;
-      //vstar = 0.5*(vl + vr) - 0.5*(pr - pl)/rhomean/soundmean;
+      else if (riemann_solver == "isothermal")
+	IsothermalSolver("basic1",pl,pr,rhol,rhor,parti.sound,
+			 neibpart[j].sound,vl,vr,eos->gamma,pstar,vstar);
 
       // Main SPH pressure force term
       paux = pstar*(Vsqdi*wkerni + Vsqdj*wkernj);
@@ -290,7 +287,7 @@ void GodunovSph<kernelclass>::ComputeSphNeibForces
 
 
 // ============================================================================
-// GodunovSph::ComputeSphDerivatives
+// GodunovSph::InitialiseRiemannProblem
 // ..
 // ============================================================================
 template <typename kernelclass>
@@ -309,11 +306,14 @@ void GodunovSph<kernelclass>::InitialiseRiemannProblem
  FLOAT &vl,
  FLOAT &vr)
 {
+  int k;
   FLOAT deltal;
   FLOAT deltar;
   FLOAT limiter;
+  FLOAT vec1[ndimmax];
+  FLOAT vec2[ndimmax];
 
-  // ..
+  // 1st-order approximation for initialising Riemann problem
   pl = partl.press;
   pr = partr.press;
   rhol = partl.rho;
@@ -321,58 +321,121 @@ void GodunovSph<kernelclass>::InitialiseRiemannProblem
   vl = (FLOAT) 0.0;
   vr = dvdr;
 
+  // For 2nd-order, extrapolate quantities using SPH gradients.
   // --------------------------------------------------------------------------
-  if (riemann_order == 2) {
+  if (riemann_order == 2 && slope_limiter == "mine") {
 
-	// Slope limiter for pressure gradients
-	deltal = DotProduct(partl.gradP,draux,ndim)*drmag;
-	deltar = DotProduct(partr.gradP,draux,ndim)*drmag;
-
-	limiter = max3(0.0,deltal/(deltar + small_number),deltar/(deltal + small_number));
-	limiter = 2.0*limiter/(limiter*limiter + 1);
-	//limiter = 1.0;
-	//deltal = min3(2.0*fabs(pl - pr),fabs(deltal),2.0*fabs(2.0*deltal + pr - pl))*sgn(deltal);
-    //deltar = min3(2.0*fabs(pr - pl),fabs(deltar),2.0*fabs(2.0*deltar + pl - pr))*sgn(deltar);
-
-	//if (sgn(pl - pr) != sgn(deltal) || sgn(deltal) == sgn(2.0*deltal + pr - pl)) deltal = 0.0;
-	//if (sgn(pr - pl) != sgn(deltar) || sgn(deltar) == sgn(2.0*deltar + pl - pr)) deltar = 0.0;
-
-	pl += limiter*(FLOAT) 0.5*deltal*(1.0 - partl.sound*partl.dt/drmag);
-	pr -= limiter*(FLOAT) 0.5*deltar*(1.0 - partr.sound*partr.dt/drmag);
+    // Slope limiter for pressure gradients
+    deltal = DotProduct(partl.gradP,draux,ndim)*drmag;
+    deltar = DotProduct(partr.gradP,draux,ndim)*drmag;
+    limiter = min(deltal/(deltar + small_number),
+                  deltar/(deltal + small_number));
+    limiter = max(limiter,0.0);
+    limiter = 2.0*limiter/(limiter*limiter + 1);
+    pl += limiter*(FLOAT) 0.5*deltal*(1.0 - partl.sound*partl.dt/drmag);
+    pr -= limiter*(FLOAT) 0.5*deltar*(1.0 - partr.sound*partr.dt/drmag);
 
 
-	// Slope limiter for pressure gradients
-	deltal = DotProduct(partl.gradrho,draux,ndim)*drmag;
-	deltar = DotProduct(partr.gradrho,draux,ndim)*drmag;
-	limiter = max3(0.0,deltal/(deltar + small_number),deltar/(deltal + small_number));
-	limiter = 2.0*limiter/(limiter*limiter + 1);
-	//deltal = min3(2.0*fabs(rhol - rhor),fabs(deltal),2.0*fabs(2.0*deltal + pr - pl))*sgn(deltal);
-    //deltar = min3(2.0*fabs(rhor - rhol),fabs(deltar),2.0*fabs(2.0*deltar + pl - pr))*sgn(deltar);
-//limiter = 1.0;
-	//if (sgn(rhol - rhor) != sgn(deltal) || sgn(deltal) == sgn(2.0*deltal + rhor - rhol)) deltal = 0.0;
-	//if (sgn(rhor - rhol) != sgn(deltar) || sgn(deltar) == sgn(2.0*deltar + rhol - rhor)) deltar = 0.0;
-
-	rhol += limiter*(FLOAT) 0.5*deltal*(1.0 - partl.sound*partl.dt/drmag);
-	rhor -= limiter*(FLOAT) 0.5*deltar*(1.0 - partr.sound*partr.dt/drmag);
+    // Slope limiter for pressure gradients
+    deltal = DotProduct(partl.gradrho,draux,ndim)*drmag;
+    deltar = DotProduct(partr.gradrho,draux,ndim)*drmag;
+    limiter = min(deltal/(deltar + small_number),
+                  deltar/(deltal + small_number));
+    limiter = max(limiter,0.0);
+    limiter = 2.0*limiter/(limiter*limiter + 1);
+    rhol += limiter*(FLOAT) 0.5*deltal*(1.0 - partl.sound*partl.dt/drmag);
+    rhor -= limiter*(FLOAT) 0.5*deltar*(1.0 - partr.sound*partr.dt/drmag);
 
 
-	// Slope limiter for pressure gradients
-	deltal = DotProduct(partl.gradv[0],draux,ndim)*drmag;
-	deltar = DotProduct(partr.gradv[0],draux,ndim)*drmag;
-	limiter = max3(0.0,deltal/(deltar + small_number),deltar/(deltal + small_number));
-	limiter = 2.0*limiter/(limiter*limiter + 1);
-	//cout << "limiter : " << vl << "    " << vr << "    " << limiter << endl;
-	//deltal = min3(2.0*fabs(vl - vr),fabs(deltal),2.0*fabs(2.0*deltal + pr - pl))*sgn(deltal);
-    //deltar = min3(2.0*fabs(vr - vl),fabs(deltar),2.0*fabs(2.0*deltar + pl - pr))*sgn(deltar);
-//limiter = 1.0;
-	//if (sgn(vl - vr) != sgn(deltal) || sgn(deltal) == sgn(2.0*deltal + rhor - rhol)) deltal = 0.0;
-	//if (sgn(vr - vl) != sgn(deltar) || sgn(deltar) == sgn(2.0*deltar + rhol - rhor)) deltar = 0.0;
+    // Slope limiter for pressure gradients
+    for (k=0; k<ndim; k++) vec1[k] = DotProduct(partl.gradv[k],draux,ndim);
+    for (k=0; k<ndim; k++) vec2[k] = DotProduct(partr.gradv[k],draux,ndim);
+    deltal = DotProduct(vec1,draux,ndim)*drmag;
+    deltar = DotProduct(vec2,draux,ndim)*drmag;
+    limiter = min(deltal/(deltar + small_number),
+                  deltar/(deltal + small_number));
+    limiter = max(limiter,0.0);
+    limiter = 2.0*limiter/(limiter*limiter + 1);
+    vl += limiter*(FLOAT) 0.5*deltal*(1.0 - partl.sound*partl.dt/drmag);
+    vr -= limiter*(FLOAT) 0.5*deltar*(1.0 - partr.sound*partr.dt/drmag);
 
-	vl += limiter*(FLOAT) 0.5*deltal*(1.0 - partl.sound*partl.dt/drmag);
-	vr -= limiter*(FLOAT) 0.5*deltar*(1.0 - partr.sound*partr.dt/drmag);
+  }
+  // Van Leer (1977) limiter
+  // --------------------------------------------------------------------------
+  else if (riemann_order == 2 && slope_limiter == "vanleer1977") {
+
+    // Slope limiter for pressure gradients
+    deltal = DotProduct(partl.gradP,draux,ndim)*drmag;
+    deltar = DotProduct(partr.gradP,draux,ndim)*drmag;
+    limiter = min(deltal/(deltar + small_number),
+                  deltar/(deltal + small_number));
+    limiter = max(0.0,min3(2.0*limiter,0.5*(1.0 + limiter),2.0));
+    pl += limiter*(FLOAT) 0.5*deltal*(1.0 - partl.sound*partl.dt/drmag);
+    pr -= limiter*(FLOAT) 0.5*deltar*(1.0 - partr.sound*partr.dt/drmag);
+
+
+    // Slope limiter for pressure gradients
+    deltal = DotProduct(partl.gradrho,draux,ndim)*drmag;
+    deltar = DotProduct(partr.gradrho,draux,ndim)*drmag;
+    limiter = min(deltal/(deltar + small_number),
+                  deltar/(deltal + small_number));
+    limiter = max(0.0,min3(2.0*limiter,0.5*(1.0 + limiter),2.0));
+    rhol += limiter*(FLOAT) 0.5*deltal*(1.0 - partl.sound*partl.dt/drmag);
+    rhor -= limiter*(FLOAT) 0.5*deltar*(1.0 - partr.sound*partr.dt/drmag);
+
+
+    // Slope limiter for pressure gradients
+    for (k=0; k<ndim; k++) vec1[k] = DotProduct(partl.gradv[k],draux,ndim);
+    for (k=0; k<ndim; k++) vec2[k] = DotProduct(partr.gradv[k],draux,ndim);
+    deltal = DotProduct(vec1,draux,ndim)*drmag;
+    deltar = DotProduct(vec2,draux,ndim)*drmag;
+    limiter = min(deltal/(deltar + small_number),
+                  deltar/(deltal + small_number));
+    limiter = max(0.0,min3(2.0*limiter,0.5*(1.0 + limiter),2.0));
+    vl += limiter*(FLOAT) 0.5*deltal*(1.0 - partl.sound*partl.dt/drmag);
+    vr -= limiter*(FLOAT) 0.5*deltar*(1.0 - partr.sound*partr.dt/drmag);
+
+  }
+  // Van Leer (1979) limiter
+  // --------------------------------------------------------------------------
+  else if (riemann_order == 2 && slope_limiter == "vanleer1979") {
+
+    // Slope limiter for pressure gradients
+    deltal = DotProduct(partl.gradP,draux,ndim)*drmag;
+    deltar = DotProduct(partr.gradP,draux,ndim)*drmag;
+    if (fabs(deltal + deltar) > small_number && deltal*deltar > 0.0) 
+      limiter = 2.0*deltal*deltar/(deltal + deltar);
+    else
+      limiter = 0.0;
+    pl += limiter*(FLOAT) 0.5*(1.0 - partl.sound*partl.dt/drmag);
+    pr -= limiter*(FLOAT) 0.5*(1.0 - partr.sound*partr.dt/drmag);
+
+
+    // Slope limiter for pressure gradients
+    deltal = DotProduct(partl.gradrho,draux,ndim)*drmag;
+    deltar = DotProduct(partr.gradrho,draux,ndim)*drmag;
+    if (deltal*deltar > 0.0) 
+      limiter = 2.0*deltal*deltar/(deltal + deltar + small_number);
+    else
+      limiter = 0.0;
+    rhol += limiter*(FLOAT) 0.5*(1.0 - partl.sound*partl.dt/drmag);
+    rhor -= limiter*(FLOAT) 0.5*(1.0 - partr.sound*partr.dt/drmag);
+
+
+    // Slope limiter for pressure gradients
+    for (k=0; k<ndim; k++) vec1[k] = DotProduct(partl.gradv[k],draux,ndim);
+    for (k=0; k<ndim; k++) vec2[k] = DotProduct(partr.gradv[k],draux,ndim);
+    if (fabs(deltal + deltar) > small_number && deltal*deltar > 0.0) 
+      limiter = 2.0*deltal*deltar/(deltal + deltar);
+    else
+      limiter = 0.0;
+    vl += limiter*(FLOAT) 0.5*(1.0 - partl.sound*partl.dt/drmag);
+    vr -= limiter*(FLOAT) 0.5*(1.0 - partr.sound*partr.dt/drmag);
 
   }
   // --------------------------------------------------------------------------
+
+
 
   return;
 }
@@ -427,9 +490,6 @@ void GodunovSph<kernelclass>::ComputeSphDerivatives
 	dv[kk]*wkern*parti.invrho*draux[k];
   }
   // --------------------------------------------------------------------------
-
-  //cout << "Gradients : " << i << "   " << parti.v[0] << "   "
-    //   << parti.gradv[0][0] << endl;
 
   return;
 }
@@ -531,6 +591,9 @@ void GodunovSph<kernelclass>::ComputeSphNeibDudt
       else if (riemann_solver == "mg")
 	MgSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
 		 vl,vr,eos->gamma,pstar,vstar);
+      else if (riemann_solver == "isothermal")
+	IsothermalSolver("basic1",pl,pr,rhol,rhor,parti.sound,
+			 neibpart[j].sound,vl,vr,eos->gamma,pstar,vstar);
 
       // Main SPH pressure force term
       uaux = pstar*(Vsqdi*wkerni + Vsqdj*wkernj);
@@ -673,15 +736,16 @@ void GodunovSph<kernelclass>::MgSolver
  FLOAT &Sstar)
 {
   FLOAT soundi,pressi,Wl,Wr;
-  FLOAT tol = (FLOAT) 0.1;
+  FLOAT tol = (FLOAT) 0.2;
   FLOAT gamma_aux1 = (FLOAT) 0.5*(gamma_eos - (FLOAT) 1.0)/gamma_eos;
   FLOAT gamma_aux2 = (FLOAT) 0.5*(gamma_eos + (FLOAT) 1.0)/gamma_eos;
+  FLOAT cl = rhol*soundl;
+  FLOAT cr = rhor*soundr;
 
   // Linear Riemann solver
-  pstar = (soundr*rhor*pl + soundl*rhol*pr - rhor*soundr*rhol*soundl*
-	   (vr - vl))/(rhor*soundr + rhol*soundl);
-  Sstar = (soundr*rhor*vr + soundl*rhol*vl - (pr - pl))/
-    (rhor*soundr + rhol*soundl);
+  pstar = (cr*pl + cl*pr - cr*cl*(vr - vl))/(cr + cl);
+  Sstar = (cr*vr + cl*vl - (pr - pl))/(cr + cl);
+  //return;
 
   // If linear solver is not good enough an approximation, use iterative 
   // Riemann solver.
@@ -692,20 +756,20 @@ void GodunovSph<kernelclass>::MgSolver
     // Non-iterative solution for two rarefactions
     // ------------------------------------------------------------------------
     if (pstar < pl && pstar < pr) {
-      soundi = soundl / (rhol*powf(pl,gamma_aux1));
-      pstar = (0.5*(gamma_eos - 1.0)*(vr - vl) + soundl/rhol + soundr/rhor)/
-	(soundi + soundr/(rhor*powf(pr,gamma_aux1)));
+      soundi = cr / (rhor*powf(pr,gamma_aux1));
+      pstar = (0.5*(gamma_eos - 1.0)*(vr - vl) + cr/rhor + cl/rhol)/
+	(soundi + cl/(rhol*powf(pl,gamma_aux1)));
       pstar = fmax(small_number,powf(pstar,1.0/gamma_aux1));
-      Wl = -soundl*rhol*wave(pstar,pl,gamma_aux1,gamma_aux2);
-      Wr = soundr*rhor*wave(pstar,pr,gamma_aux1,gamma_aux2);
+      Wl = -cl*wave(pstar,pl,gamma_aux1,gamma_aux2);
+      Wr = cr*wave(pstar,pr,gamma_aux1,gamma_aux2);
     }
 
     // Iterative solution for shock/rarefaction
     // ------------------------------------------------------------------------
     else {
       pressi = pstar;
-      Wl = -soundl*rhol*wave(pstar,pl,gamma_aux1,gamma_aux2);
-      Wr = soundr*rhor*wave(pstar,pr,gamma_aux1,gamma_aux2);
+      Wl = -cl*wave(pstar,pl,gamma_aux1,gamma_aux2);
+      Wr = cr*wave(pstar,pr,gamma_aux1,gamma_aux2);
       int nit = 0;
       bool doit = true;
 
@@ -716,16 +780,16 @@ void GodunovSph<kernelclass>::MgSolver
 
 	if (fabs(pstar - pressi) > tol*pstar) {
 	  pressi = pstar;
-	  Wl = -soundl*rhol*wave(pstar,pl,gamma_aux1,gamma_aux2);
-	  Wr = soundr*rhor*wave(pstar,pr,gamma_aux1,gamma_aux2);
+	  Wl = -cl*wave(pstar,pl,gamma_aux1,gamma_aux2);
+	  Wr = cr*wave(pstar,pr,gamma_aux1,gamma_aux2);
 	  nit++;
 
 	  if (nit > 50) {
 	    cout << "Convergence failure in Riemann solver" << endl;
-	    pstar = (soundr*rhor*pl + soundl*rhol*pr - rhor*soundr*rhol*soundl*
-		     (vr - vl))/(rhor*soundr + rhol*soundl);
-	    Wl = -soundl;
-	    Wr = soundr;
+	    pstar = max((cr*pl + cl*pr - cr*cl*(vr - vl))/(cr + cl),
+			small_number);
+	    Wl = -cl;
+	    Wr = cr;
 	    doit = false;
 	  }
 	}
@@ -747,6 +811,39 @@ void GodunovSph<kernelclass>::MgSolver
 
   return;
 }
+
+
+
+// ============================================================================
+// IsothermalSolver
+// ..
+// ============================================================================
+template <typename kernelclass>
+void GodunovSph<kernelclass>::IsothermalSolver
+(string wave_speed,
+ FLOAT pl,
+ FLOAT pr,
+ FLOAT rhol,
+ FLOAT rhor,
+ FLOAT soundl,
+ FLOAT soundr,
+ FLOAT vl,
+ FLOAT vr,
+ FLOAT gamma_eos,
+ FLOAT &pstar,
+ FLOAT &Sstar)
+{
+  FLOAT sqrtrhol = sqrt(rhol);
+  FLOAT sqrtrhor = sqrt(rhor);
+  FLOAT X = sqrtrhol*sqrtrhor / (sqrtrhol + sqrtrhor);
+
+  pstar = 0.25*powf(X*(vl - vr) + sqrt(X*X*(vl - vr)*(vl - vr) + 4.0*soundl*
+				       soundr*X*(sqrtrhol + sqrtrhor)),2.0);
+  Sstar = vl - (pstar - soundl*soundl*rhol)/sqrt(pstar*rhol);
+
+  return;
+}
+
 
 
 

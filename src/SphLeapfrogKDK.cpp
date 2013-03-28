@@ -71,8 +71,6 @@ void SphLeapfrogKDK::AdvanceParticles(int n, int level_step, int Nsph,
     else dt = timestep*(FLOAT) (n%nstep);
 
     // Advance particle positions and velocities
-    //for (k=0; k<ndim; k++) sph[i].r[k] = sph[i].r0[k] + sph[i].v0[k]*dt
-    //  + (FLOAT) 0.5*sph[i].a0[k]*dt*dt;
     for (k=0; k<ndim; k++) sph[i].r[k] = sph[i].r0[k] + 
       (sph[i].v0[k] + 0.5*sph[i].a[k]*sph[i].dt)*dt;
     for (k=0; k<vdim; k++) sph[i].v[k] = sph[i].v0[k] + sph[i].a0[k]*dt;

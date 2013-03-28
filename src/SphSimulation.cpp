@@ -409,11 +409,14 @@ void SphSimulation::ProcessParameters(void)
 
   // Create SPH particle integration object
   // --------------------------------------------------------------------------
-  if (stringparams["sph_integration"] == "lfkdk") {
+  if (stringparams["sph_integration"] == "lfkdk")
     sphint = new SphLeapfrogKDK(ndim, vdim, 
 				floatparams["accel_mult"],
 				floatparams["courant_mult"]);
-  }
+  else if (stringparams["sph_integration"] == "godunov")
+    sphint = new SphGodunovIntegration(ndim, vdim, 
+				       floatparams["accel_mult"],
+				       floatparams["courant_mult"]);
   else {
     string message = "Unrecognised parameter : sph_integration = " 
       + simparams.stringparams["sph_integration"];
@@ -429,9 +432,10 @@ void SphSimulation::ProcessParameters(void)
 			     floatparams["mu_bar"],
 			     floatparams["gamma_eos"]);
 
-    if (stringparams["energy_integration"] == "PEC") {
+    if (stringparams["energy_integration"] == "PEC")
       uint = new EnergyPEC(floatparams["energy_mult"]);
-    }
+    else if (stringparams["energy_integration"] == "godunov")
+      uint = new EnergyGodunovIntegration(floatparams["energy_mult"]);
     else {
       string message = "Unrecognised parameter : energy_integration = " 
 	+ simparams.stringparams["energy_integration"];
@@ -491,6 +495,9 @@ void SphSimulation::ProcessParameters(void)
   Nlevels = intparams["Nlevels"];
   sph_single_timestep = intparams["sph_single_timestep"];
   nbody_single_timestep = intparams["nbody_single_timestep"];
+  sph->riemann_solver = stringparams["riemann_solver"];
+  sph->slope_limiter = stringparams["slope_limiter"];
+  sph->riemann_order = intparams["riemann_order"];
 
   return;
 }

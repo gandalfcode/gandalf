@@ -65,7 +65,7 @@ void SphSimulation::SearchGhostParticles(void)
   int i;
   int k;
   static const FLOAT ghost_range = 1.1;
-  const FLOAT kernrange = sph->kernp->kernrange;
+  const FLOAT kernrange = sph->kernp->kernrange*sph->kernfac;
   SphParticle *sphdata = sph->sphdata;
 
   // Set all relevant particle counters

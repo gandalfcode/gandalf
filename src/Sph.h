@@ -111,6 +111,12 @@ class Sph
   const int hydro_forces;               // Compute hydro forces?
   const int self_gravity;               // Compute gravitational forces?
 
+  string riemann_solver;
+  string slope_limiter;
+  int riemann_order;
+  FLOAT kernfac;
+  FLOAT kernfacsqd;
+
   struct SphParticle *sphdata;          // Main SPH particle data array
   EOS *eos;                             // Equation-of-state
   SphKernel *kernp;                     // Pointer to chosen kernel object
@@ -215,12 +221,15 @@ class GodunovSph: public Sph
 			     FLOAT *, SphParticle &, SphParticle *);
   void ComputeDirectGravForces(int, int, int *, SphParticle &, SphParticle *);
   void ComputePostHydroQuantities(SphParticle &);
-  void InitialiseRiemannProblem(SphParticle, SphParticle, FLOAT *, FLOAT, FLOAT,
-		  FLOAT, FLOAT, FLOAT &, FLOAT &, FLOAT &, FLOAT &, FLOAT &, FLOAT &);
+  void InitialiseRiemannProblem(SphParticle, SphParticle, FLOAT *, FLOAT, 
+				FLOAT, FLOAT, FLOAT, FLOAT &, FLOAT &, 
+				FLOAT &, FLOAT &, FLOAT &, FLOAT &);
   void HllcSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
 		  FLOAT, FLOAT, FLOAT &, FLOAT &);
   void MgSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
 		FLOAT, FLOAT, FLOAT &, FLOAT &);
+  void IsothermalSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, 
+                        FLOAT, FLOAT, FLOAT, FLOAT &, FLOAT &);
 
 };
 
