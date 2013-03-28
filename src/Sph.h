@@ -226,7 +226,7 @@ class GodunovSph: public Sph
 				FLOAT &, FLOAT &, FLOAT &, FLOAT &);
   void HllcSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
 		  FLOAT, FLOAT, FLOAT &, FLOAT &);
-  void MgSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
+  void VanLeerSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
 		FLOAT, FLOAT, FLOAT &, FLOAT &);
   void IsothermalSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, 
                         FLOAT, FLOAT, FLOAT, FLOAT &, FLOAT &);

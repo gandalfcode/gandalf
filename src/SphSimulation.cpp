@@ -297,7 +297,7 @@ void SphSimulation::ProcessParameters(void)
         		floatparams["alpha_visc"], floatparams["beta_visc"],
         		floatparams["h_fac"], floatparams["h_converge"],
         		avisc, acond,
-        		stringparams["acond"], KernelName);
+        		stringparams["gas_eos"], KernelName);
           }
     else if (stringparams["tabulatedkernel"] == "no"){
         // Depending on the kernel, instantiate a different GradSph object
@@ -307,7 +307,7 @@ void SphSimulation::ProcessParameters(void)
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
-            		stringparams["acond"], KernelName);
+            		stringparams["gas_eos"], KernelName);
         }
         else if (KernelName == "quintic") {
             sph = new SM2012Sph<QuinticKernel> (ndim, vdim, bdim,
@@ -315,7 +315,7 @@ void SphSimulation::ProcessParameters(void)
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
-            		stringparams["acond"], KernelName);
+            		stringparams["gas_eos"], KernelName);
         }
         else if (KernelName == "gaussian") {
             sph = new SM2012Sph<GaussianKernel> (ndim, vdim, bdim,
@@ -323,7 +323,7 @@ void SphSimulation::ProcessParameters(void)
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
-            		stringparams["acond"], KernelName);
+            		stringparams["gas_eos"], KernelName);
         }
         else {
           string message = "Unrecognised parameter : kernel = " +
@@ -346,7 +346,7 @@ void SphSimulation::ProcessParameters(void)
         		floatparams["alpha_visc"], floatparams["beta_visc"],
         		floatparams["h_fac"], floatparams["h_converge"],
         		avisc, acond,
-        		stringparams["acond"], KernelName);
+        		stringparams["gas_eos"], KernelName);
           }
     else if (stringparams["tabulatedkernel"] == "no"){
         // Depending on the kernel, instantiate a different GradSph object
@@ -356,7 +356,7 @@ void SphSimulation::ProcessParameters(void)
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
-            		stringparams["acond"], KernelName);
+            		stringparams["gas_eos"], KernelName);
         }
         else if (KernelName == "quintic") {
             sph = new GodunovSph<QuinticKernel> (ndim, vdim, bdim,
@@ -364,7 +364,7 @@ void SphSimulation::ProcessParameters(void)
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
-            		stringparams["acond"], KernelName);
+            		stringparams["gas_eos"], KernelName);
         }
         else if (KernelName == "gaussian") {
             sph = new GodunovSph<GaussianKernel> (ndim, vdim, bdim,
@@ -372,7 +372,7 @@ void SphSimulation::ProcessParameters(void)
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
-            		stringparams["acond"], KernelName);
+            		stringparams["gas_eos"], KernelName);
         }
         else {
           string message = "Unrecognised parameter : kernel = " +
@@ -714,6 +714,12 @@ void SphSimulation::PostGeneration(void) {
     sphneib->neibcheck = true;
     sphneib->UpdateAllSphProperties(sph);
 
+    // Search ghost particles
+    SearchGhostParticles();
+
+    // Update neighbour tre
+    sphneib->UpdateTree(sph,simparams);
+
     if (simparams.stringparams["sph"] == "godunov") {
       sphneib->UpdateAllSphDerivatives(sph);
       for (int i=0; i<sph->Ntot; i++) sph->sphdata[i].dt = sph->sphdata[i].h/sph->sphdata[i].sound;
@@ -828,7 +834,7 @@ void SphSimulation::MainLoop(void)
     // Add accelerations
     for (i=0; i<sph->Nsph; i++) {
       for (int k=0; k<ndim; k++) 
-	sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
+        sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
   }
 

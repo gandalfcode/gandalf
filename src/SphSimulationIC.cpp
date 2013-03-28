@@ -401,7 +401,7 @@ void SphSimulation::SoundWave(void)
 	  string message="Sound wave only available in 1D";
 	  ExceptionHandler::getIstance().raise(message);
   }
-
+  cout << "gas_eos : " << sph->gas_eos << endl;
   if (sph->gas_eos == "isothermal") {
     ugas = temp0/gammaone/mu_bar;
     press1 = gammaone*rhofluid1*ugas;

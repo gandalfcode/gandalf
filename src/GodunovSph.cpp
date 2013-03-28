@@ -233,7 +233,7 @@ void GodunovSph<kernelclass>::ComputeSphNeibForces
       j = neiblist[jj];
       wkerni = hconv*parti.hfactor*kern.w1(invsqrttwo*drmag[jj]*parti.invh);
       wkernj = hconv*neibpart[j].hfactor*
-	kern.w1(invsqrttwo*drmag[jj]*neibpart[j].invh);
+        kern.w1(invsqrttwo*drmag[jj]*neibpart[j].invh);
 
       for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
       for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
@@ -257,14 +257,16 @@ void GodunovSph<kernelclass>::ComputeSphNeibForces
 
       // Now solve Riemann problem and return intermediate state variables
       if (riemann_solver == "hllc")
-	HllcSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
-		   vl,vr,eos->gamma,pstar,vstar);
-      else if (riemann_solver == "mg")
-	MgSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
-		 vl,vr,eos->gamma,pstar,vstar);
+        HllcSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
+                   vl,vr,eos->gamma,pstar,vstar);
+      else if (riemann_solver == "vanleer")
+        VanLeerSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
+                       vl,vr,eos->gamma,pstar,vstar);
       else if (riemann_solver == "isothermal")
-	IsothermalSolver("basic1",pl,pr,rhol,rhor,parti.sound,
-			 neibpart[j].sound,vl,vr,eos->gamma,pstar,vstar);
+          VanLeerSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
+   		      vl,vr,1.000001,pstar,vstar);
+        //IsothermalSolver("basic1",pl,pr,rhol,rhor,parti.sound,
+          //                neibpart[j].sound,vl,vr,eos->gamma,pstar,vstar);
 
       // Main SPH pressure force term
       paux = pstar*(Vsqdi*wkerni + Vsqdj*wkernj);
@@ -398,44 +400,10 @@ void GodunovSph<kernelclass>::InitialiseRiemannProblem
   }
   // Van Leer (1979) limiter
   // --------------------------------------------------------------------------
-  else if (riemann_order == 2 && slope_limiter == "vanleer1979") {
-
-    // Slope limiter for pressure gradients
-    deltal = DotProduct(partl.gradP,draux,ndim)*drmag;
-    deltar = DotProduct(partr.gradP,draux,ndim)*drmag;
-    if (fabs(deltal + deltar) > small_number && deltal*deltar > 0.0) 
-      limiter = 2.0*deltal*deltar/(deltal + deltar);
-    else
-      limiter = 0.0;
-    pl += limiter*(FLOAT) 0.5*(1.0 - partl.sound*partl.dt/drmag);
-    pr -= limiter*(FLOAT) 0.5*(1.0 - partr.sound*partr.dt/drmag);
-
-
-    // Slope limiter for pressure gradients
-    deltal = DotProduct(partl.gradrho,draux,ndim)*drmag;
-    deltar = DotProduct(partr.gradrho,draux,ndim)*drmag;
-    if (deltal*deltar > 0.0) 
-      limiter = 2.0*deltal*deltar/(deltal + deltar + small_number);
-    else
-      limiter = 0.0;
-    rhol += limiter*(FLOAT) 0.5*(1.0 - partl.sound*partl.dt/drmag);
-    rhor -= limiter*(FLOAT) 0.5*(1.0 - partr.sound*partr.dt/drmag);
-
-
-    // Slope limiter for pressure gradients
-    for (k=0; k<ndim; k++) vec1[k] = DotProduct(partl.gradv[k],draux,ndim);
-    for (k=0; k<ndim; k++) vec2[k] = DotProduct(partr.gradv[k],draux,ndim);
-    if (fabs(deltal + deltar) > small_number && deltal*deltar > 0.0) 
-      limiter = 2.0*deltal*deltar/(deltal + deltar);
-    else
-      limiter = 0.0;
-    vl += limiter*(FLOAT) 0.5*(1.0 - partl.sound*partl.dt/drmag);
-    vr -= limiter*(FLOAT) 0.5*(1.0 - partr.sound*partr.dt/drmag);
+  else if (riemann_order == 2 && slope_limiter == "mine2") {
 
   }
   // --------------------------------------------------------------------------
-
-
 
   return;
 }
@@ -586,14 +554,16 @@ void GodunovSph<kernelclass>::ComputeSphNeibDudt
 
       // Now solve Riemann problem and return intermediate state variables
       if (riemann_solver == "hllc")
-	HllcSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
+        HllcSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
 		   vl,vr,eos->gamma,pstar,vstar);
-      else if (riemann_solver == "mg")
-	MgSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
+      else if (riemann_solver == "vanleer")
+        VanLeerSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
 		 vl,vr,eos->gamma,pstar,vstar);
       else if (riemann_solver == "isothermal")
-	IsothermalSolver("basic1",pl,pr,rhol,rhor,parti.sound,
-			 neibpart[j].sound,vl,vr,eos->gamma,pstar,vstar);
+         VanLeerSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
+  		      vl,vr,1.000001,pstar,vstar);
+        //IsothermalSolver("basic1",pl,pr,rhol,rhor,parti.sound,
+			// neibpart[j].sound,vl,vr,eos->gamma,pstar,vstar);
 
       // Main SPH pressure force term
       uaux = pstar*(Vsqdi*wkerni + Vsqdj*wkernj);
@@ -717,11 +687,11 @@ void GodunovSph<kernelclass>::HllcSolver
 
 
 // ============================================================================
-// MgSolver
-// Riemann solver implemented in MG (courtesy of S. Falle).
+// VanLeerSolver
+// Riemann solver ...
 // ============================================================================
 template <typename kernelclass>
-void GodunovSph<kernelclass>::MgSolver
+void GodunovSph<kernelclass>::VanLeerSolver
 (string wave_speed,
  FLOAT pl,
  FLOAT pr,
@@ -735,82 +705,95 @@ void GodunovSph<kernelclass>::MgSolver
  FLOAT &pstar,
  FLOAT &Sstar)
 {
-  FLOAT soundi,pressi,Wl,Wr;
-  FLOAT tol = (FLOAT) 0.2;
+  FLOAT soundi,pressi,Wl,Wr,zl,zr,vlstar,vrstar;
+  FLOAT tol = (FLOAT) 0.02;
   FLOAT gamma_aux1 = (FLOAT) 0.5*(gamma_eos - (FLOAT) 1.0)/gamma_eos;
   FLOAT gamma_aux2 = (FLOAT) 0.5*(gamma_eos + (FLOAT) 1.0)/gamma_eos;
   FLOAT cl = rhol*soundl;
   FLOAT cr = rhor*soundr;
+    int nit = 0;
+    bool doit = true;
 
   // Linear Riemann solver
   pstar = (cr*pl + cl*pr - cr*cl*(vr - vl))/(cr + cl);
   Sstar = (cr*vr + cl*vl - (pr - pl))/(cr + cl);
   //return;
 
+  /*cout << "Linear riemann solver; " << nit << "   " << fabs(pstar - pressi)/pstar << "   " << tol << endl;
+  cout << "                         p : " << pl << "   " << pstar << "   " << pressi << "   " << pr << endl;
+  cout << "                         v : " << vl << "   " << Sstar << "   " << vr << endl;
+  cin >> vlstar;*/
+
   // If linear solver is not good enough an approximation, use iterative 
   // Riemann solver.
   // --------------------------------------------------------------------------
   if (fabs(pstar - pl) > tol*pl || fabs(pstar - pr) > tol*pr) {
 
-
-    // Non-iterative solution for two rarefactions
+    // Iteration loop
     // ------------------------------------------------------------------------
-    if (pstar < pl && pstar < pr) {
-      soundi = cr / (rhor*powf(pr,gamma_aux1));
-      pstar = (0.5*(gamma_eos - 1.0)*(vr - vl) + cr/rhor + cl/rhol)/
-	(soundi + cl/(rhol*powf(pl,gamma_aux1)));
-      pstar = fmax(small_number,powf(pstar,1.0/gamma_aux1));
-      Wl = -cl*wave(pstar,pl,gamma_aux1,gamma_aux2);
-      Wr = cr*wave(pstar,pr,gamma_aux1,gamma_aux2);
-    }
-
-    // Iterative solution for shock/rarefaction
-    // ------------------------------------------------------------------------
-    else {
+    while (doit) {
+      doit = false;
       pressi = pstar;
-      Wl = -cl*wave(pstar,pl,gamma_aux1,gamma_aux2);
-      Wr = cr*wave(pstar,pr,gamma_aux1,gamma_aux2);
-      int nit = 0;
-      bool doit = true;
 
-      // Iteration loop
-      // ----------------------------------------------------------------------
-      while (doit) {
-	pstar = fmax((Wr*pl - Wl*pr + Wr*Wl*(vr - vl))/(Wr - Wl),small_number);
-
-	if (fabs(pstar - pressi) > tol*pstar) {
-	  pressi = pstar;
-	  Wl = -cl*wave(pstar,pl,gamma_aux1,gamma_aux2);
-	  Wr = cr*wave(pstar,pr,gamma_aux1,gamma_aux2);
-	  nit++;
-
-	  if (nit > 50) {
-	    cout << "Convergence failure in Riemann solver" << endl;
-	    pstar = max((cr*pl + cl*pr - cr*cl*(vr - vl))/(cr + cl),
-			small_number);
-	    Wl = -cl;
-	    Wr = cr;
-	    doit = false;
-	  }
-	}
-	else 
-	  doit = false;
-
+      if (pstar > pl) {
+    	  Wl = cl*sqrt(1.0 + gamma_aux2*(pstar - pl)/pl);
+          zl = 2.0*Wl*Wl*Wl/(Wl*Wl + cl*cl);
       }
-      // ----------------------------------------------------------------------
+      else {
+    	  Wl = gamma_aux1*(1.0 - pstar/pl)*cl/(1.0 - powf(pstar/pl,gamma_aux1));
+    	  zl = cl*powf(pstar/pl,1.0 - gamma_aux1);
+      }
+
+      if (pstar > pr) {
+    	  Wr = cr*sqrt(1.0 + gamma_aux2*(pstar - pr)/pr);
+          zr = 2.0*Wr*Wr*Wr/(Wr*Wr + cr*cr);
+      }
+      else {
+    	  Wr = gamma_aux1*(1.0 - pstar/pr)*cr/(1.0 - powf(pstar/pr,gamma_aux1));
+    	  zr = cr*powf(pstar/pr,1.0 - gamma_aux1);
+      }
+
+      vlstar = vl - (pstar - pl)/Wl;
+      vrstar = vr + (pstar - pr)/Wr;
+
+      pstar = max(pressi - zr*zl*(vrstar - vlstar)/(zl + zr),small_number);
+      Sstar = (zl*vlstar + zr*vrstar)/(zl + zr);
+
+      //cout << "WTF?? : " << pressi << "   " << pstar << "   " << fabs(pstar - pressi)/pstar << endl;
+
+      if (fabs(pstar - pressi) > tol*pstar) {
+        pressi = pstar;
+	    nit++;
+        doit = true;
+	    if (nit > 50) {
+	      //cout << "Convergence failure in Riemann solver" << endl;
+	      pstar = max((cr*pl + cl*pr - cr*cl*(vr - vl))/(cr + cl),
+			  small_number);
+	      Sstar = (cr*vr + cl*vl - (pr - pl))/(cr + cl);
+	      doit = false;
+	    }
+      }
+      else if (fabs(pstar - pressi) < tol*pstar) doit = false;
 
     }
     // ------------------------------------------------------------------------
-
-    // Calculate resolved velocity
-    Sstar = (Wr*vr - Wl*vl - pr + pl)/(Wr - Wl);
 
   }
   // --------------------------------------------------------------------------
 
+      /*cout << "Van Leer riemann solver; " << nit << "   " << fabs(pstar - pressi)/pstar << "   " << tol << endl;
+      cout << "                         p : " << pl << "   " << pstar << "   " << pressi << "   " << pr << endl;
+      cout << "                         v : " << vl << "   " << Sstar << "   " << vr << endl;
+      cout << "                         w : " << cl << "   " << Wl << "   " << Wr << "   " << cr << endl;
+      cin >> vlstar;*/
 
   return;
 }
+
+
+
+
+
 
 
 
@@ -837,9 +820,9 @@ void GodunovSph<kernelclass>::IsothermalSolver
   FLOAT sqrtrhor = sqrt(rhor);
   FLOAT X = sqrtrhol*sqrtrhor / (sqrtrhol + sqrtrhor);
 
-  pstar = 0.25*powf(X*(vl - vr) + sqrt(X*X*(vl - vr)*(vl - vr) + 4.0*soundl*
-				       soundr*X*(sqrtrhol + sqrtrhor)),2.0);
-  Sstar = vl - (pstar - soundl*soundl*rhol)/sqrt(pstar*rhol);
+  pstar = 0.25*powf(X*(vr - vl) + sqrt(X*X*(vr - vl)*(vr - vl) + 4.0*soundl*
+				       soundl*X*(sqrtrhol + sqrtrhor)),2.0);
+  Sstar = vl + (pstar - soundl*soundl*rhol)/sqrt(pstar*rhol);
 
   return;
 }

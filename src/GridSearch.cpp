@@ -22,7 +22,7 @@
 using namespace std;
 
 
-static const FLOAT grid_h_tolerance = (FLOAT) 1.1;
+static const FLOAT grid_h_tolerance = (FLOAT) 1.2;
 
 
 // ============================================================================
