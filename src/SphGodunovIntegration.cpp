@@ -1,7 +1,6 @@
 // ============================================================================
-// SphLeapfrogKDK.cpp
-// Contains functions for integrating SPH particle positions and velocities 
-// using the leapfrog kick-drift-kick (KDK) scheme.
+// SphGodunovIntegration.cpp
+// ..
 // ============================================================================
 
 
@@ -22,29 +21,28 @@ using namespace std;
 
 
 // ============================================================================
-// SphLeapfrogKDK::SphLeapfrogKDK()
+// SphGodunovIntegration::SphGodunovIntegration()
 // ============================================================================
-template <int ndim>
-SphLeapfrogKDK<ndim>::SphLeapfrogKDK( DOUBLE accel_mult_aux,
+SphGodunovIntegration::SphGodunovIntegration(int ndimaux, int vdimaux, 
+			       DOUBLE accel_mult_aux, 
 			       DOUBLE courant_mult_aux) :
-  SphIntegration<ndim>(accel_mult_aux, courant_mult_aux)
+  SphIntegration(ndimaux, vdimaux, accel_mult_aux, courant_mult_aux)
 {
 }
 
 
 
 // ============================================================================
-// SphLeapfrogKDK::~SphLeapfrog()
+// SphGodunovIntegration::~SphGodunovIntegration()
 // ============================================================================
-template <int ndim>
-SphLeapfrogKDK<ndim>::~SphLeapfrogKDK()
+SphGodunovIntegration::~SphGodunovIntegration()
 {
 }
 
 
 
 // ============================================================================
-// SphLeapfrogKDK::AdvanceParticles
+// SphGodunovIntegration::AdvanceParticles
 // Integrate particle positions to 2nd order, and particle velocities to 1st
 // order from the beginning of the step to the current simulation time, i.e. 
 // r(t+dt) = r(t) + v(t)*dt + 0.5*a(t)*dt^2, 
@@ -52,16 +50,15 @@ SphLeapfrogKDK<ndim>::~SphLeapfrogKDK()
 // Also set particles at the end of step as 'active' in order to compute 
 // the end-of-step force computation.
 // ============================================================================
-template <int ndim>
-void SphLeapfrogKDK<ndim>::AdvanceParticles(int n, int level_step, int Nsph,
-				      SphParticle<ndim> *sph, FLOAT timestep)
+void SphGodunovIntegration::AdvanceParticles(int n, int level_step, int Nsph,
+				      SphParticle *sph, FLOAT timestep)
 {
   int i;                                // Particle counter
   int k;                                // Dimension counter
   int nstep;                            // Particle (integer) step size
   FLOAT dt;                             // Timestep since start of step
 
-  debug2("[SphLeapfrogKDK::AdvanceParticles]");
+  debug2("[SphGodunovIntegration::AdvanceParticles]");
 
   // --------------------------------------------------------------------------
 #pragma omp parallel for default(shared) private(dt,k,nstep)
@@ -75,7 +72,7 @@ void SphLeapfrogKDK<ndim>::AdvanceParticles(int n, int level_step, int Nsph,
     // Advance particle positions and velocities
     for (k=0; k<ndim; k++) sph[i].r[k] = sph[i].r0[k] + 
       (sph[i].v0[k] + 0.5*sph[i].a[k]*sph[i].dt)*dt;
-    for (k=0; k<ndim; k++) sph[i].v[k] = sph[i].v0[k] + sph[i].a0[k]*dt;
+    for (k=0; k<vdim; k++) sph[i].v[k] = sph[i].v0[k] + sph[i].a0[k]*dt;
 
     // Set particle as active at end of step
     if (n%nstep == 0) sph[i].active = true;
@@ -89,50 +86,30 @@ void SphLeapfrogKDK<ndim>::AdvanceParticles(int n, int level_step, int Nsph,
 
 
 // ============================================================================
-// SphLeapfrogKDK::CorrectionTerms
-// Compute velocity integration to second order at the end of the step by 
-// adding a second order correction term.  The full integration becomes
-// v(t+dt) = v(t) + 0.5*(a(t) + a(t+dt))*dt 
+// SphGodunovIntegration::CorrectionTerms
+// No correction terms to apply.
 // ============================================================================
-template <int ndim>
-void SphLeapfrogKDK<ndim>::CorrectionTerms(int n, int level_step, int Nsph,
-				     SphParticle<ndim> *sph, FLOAT timestep)
+void SphGodunovIntegration::CorrectionTerms(int n, int level_step, int Nsph,
+					    SphParticle *sph, FLOAT timestep)
 {
-  int i;                                // Particle counter
-  int k;                                // Dimension counter
-  int nstep;                            // Particle (integer) step size
-
-  debug2("[SphLeapfrogKDK::CorrectionTerms]");
-
-  // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(k,nstep)
-  for (i=0; i<Nsph; i++) {
-    nstep = pow(2,level_step - sph[i].level);
-    if (n%nstep == 0)
-      for (k=0; k<ndim; k++) sph[i].v[k] += 
-	     (FLOAT) 0.5*(sph[i].a[k] - sph[i].a0[k])*timestep*(FLOAT) nstep;
-  }
-  // --------------------------------------------------------------------------
-
   return;
 }
 
 
 
 // ============================================================================
-// SphLeapfrogKDK::EndTimestep
+// SphGodunovIntegration::EndTimestep
 // Record all important SPH particle quantities at the end of the step for the 
 // start of the new timestep.
 // ============================================================================
-template <int ndim>
-void SphLeapfrogKDK<ndim>::EndTimestep(int n, int level_step,
-				 int Nsph, SphParticle<ndim> *sph)
+void SphGodunovIntegration::EndTimestep(int n, int level_step, 
+				 int Nsph, SphParticle *sph)
 {
   int i;                                // Particle counter
   int k;                                // Dimension counter
   int nstep;                            // Particle (integer) step size
 
-  debug2("[SphLeapfrogKDK::EndTimestep]");
+  debug2("[SphGodunovIntegration::EndTimestep]");
 
   // --------------------------------------------------------------------------
 #pragma omp parallel for default(shared) private(k,nstep)
@@ -150,7 +127,3 @@ void SphLeapfrogKDK<ndim>::EndTimestep(int n, int level_step,
 
   return;
 }
-
-template class SphLeapfrogKDK<1>;
-template class SphLeapfrogKDK<2>;
-template class SphLeapfrogKDK<3>;

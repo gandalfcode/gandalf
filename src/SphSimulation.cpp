@@ -315,7 +315,7 @@ if (ndim < 1 || ndim > 3) {
         		floatparams["alpha_visc"], floatparams["beta_visc"],
         		floatparams["h_fac"], floatparams["h_converge"],
         		avisc, acond,
-        		stringparams["acond"], KernelName);
+        		stringparams["gas_eos"], KernelName);
           }
     else if (stringparams["tabulatedkernel"] == "no"){
         // Depending on the kernel, instantiate a different GradSph object
@@ -324,21 +324,21 @@ if (ndim < 1 || ndim > 3) {
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
-            		stringparams["acond"], KernelName);
+            		stringparams["gas_eos"], KernelName);
         }
         else if (KernelName == "quintic") {
             sph = new SM2012Sph<ndim, QuinticKernel> (intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
-            		stringparams["acond"], KernelName);
+            		stringparams["gas_eos"], KernelName);
         }
         else if (KernelName == "gaussian") {
             sph = new SM2012Sph<ndim, GaussianKernel> (intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
-            		stringparams["acond"], KernelName);
+            		stringparams["gas_eos"], KernelName);
         }
         else {
           string message = "Unrecognised parameter : kernel = " +
@@ -360,7 +360,7 @@ if (ndim < 1 || ndim > 3) {
         		floatparams["alpha_visc"], floatparams["beta_visc"],
         		floatparams["h_fac"], floatparams["h_converge"],
         		avisc, acond,
-        		stringparams["acond"], KernelName);
+        		stringparams["gas_eos"], KernelName);
           }
     else if (stringparams["tabulatedkernel"] == "no"){
         // Depending on the kernel, instantiate a different GradSph object
@@ -369,21 +369,21 @@ if (ndim < 1 || ndim > 3) {
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
-            		stringparams["acond"], KernelName);
+            		stringparams["gas_eos"], KernelName);
         }
         else if (KernelName == "quintic") {
             sph = new GodunovSph<ndim, QuinticKernel> (intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
-            		stringparams["acond"], KernelName);
+            		stringparams["gas_eos"], KernelName);
         }
         else if (KernelName == "gaussian") {
             sph = new GodunovSph<ndim, GaussianKernel> (intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
-            		stringparams["acond"], KernelName);
+            		stringparams["gas_eos"], KernelName);
         }
         else {
           string message = "Unrecognised parameter : kernel = " +
@@ -442,7 +442,10 @@ if (ndim < 1 || ndim > 3) {
   if (stringparams["sph_integration"] == "lfkdk") {
     sphint = new SphLeapfrogKDK<ndim>(floatparams["accel_mult"],
 				floatparams["courant_mult"]);
-  }
+  else if (stringparams["sph_integration"] == "godunov")
+    sphint = new SphGodunovIntegration(ndim, vdim, 
+				       floatparams["accel_mult"],
+				       floatparams["courant_mult"]);
   else {
     string message = "Unrecognised parameter : sph_integration = " 
       + simparams->stringparams["sph_integration"];
@@ -502,6 +505,9 @@ if (ndim < 1 || ndim > 3) {
   Nlevels = intparams["Nlevels"];
   sph_single_timestep = intparams["sph_single_timestep"];
   nbody_single_timestep = intparams["nbody_single_timestep"];
+  sph->riemann_solver = stringparams["riemann_solver"];
+  sph->slope_limiter = stringparams["slope_limiter"];
+  sph->riemann_order = intparams["riemann_order"];
 
   return;
 }
@@ -724,8 +730,16 @@ void SphSimulation<ndim>::PostGeneration(void) {
     sphneib->neibcheck = true;
     sphneib->UpdateAllSphProperties(sph);
 
-    if (simparams->stringparams["sph"] == "godunov")
+    // Search ghost particles
+    SearchGhostParticles();
+
+    // Update neighbour tre
+    sphneib->UpdateTree(sph,simparams);
+
+    if (simparams.stringparams["sph"] == "godunov") {
       sphneib->UpdateAllSphDerivatives(sph);
+      for (int i=0; i<sph->Ntot; i++) sph->sphdata[i].dt = sph->sphdata[i].h/sph->sphdata[i].sound;
+    }
 
     CopySphDataToGhosts();
     sphneib->UpdateAllSphForces(sph);
@@ -837,7 +851,7 @@ void SphSimulation<ndim>::MainLoop(void)
     // Add accelerations
     for (i=0; i<sph->Nsph; i++) {
       for (int k=0; k<ndim; k++) 
-	sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
+        sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
   }
 

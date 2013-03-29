@@ -40,6 +40,8 @@ GradhSph<ndim, kernelclass >::GradhSph(int hydro_forces_aux,
 
   this->kernp = &kern;
 
+  kernfac = (FLOAT) 1.0;
+  kernfacsqd = (FLOAT) 1.0;
 }
 
 

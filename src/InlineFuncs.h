@@ -48,6 +48,31 @@ static inline void PrintArray(string message, int Tsize, T *array)
 }
 
 
+template <typename T>
+static inline T min3(T v1, T v2, T v3)
+{
+   T vmin = v1;
+   if (v2 < vmin) vmin = v2;
+   if (v3 < vmin) vmin = v2;
+   return vmin;
+}
+
+
+template <typename T>
+static inline T max3(T v1, T v2, T v3)
+{
+   T vmax = v1;
+   if (v2 > vmax) vmax = v2;
+   if (v3 > vmax) vmax = v2;
+   return vmax;
+}
+
+
+template <typename T> int sgn(T val) {
+	return (T(0) < val) - (val < T(0));
+}
+
+
 //file wave.c
 /*
 + wave - Nonlinear wave speeds.

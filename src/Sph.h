@@ -103,6 +103,12 @@ class Sph
 
   SphKernel<ndim> *kernp;                     // Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;              // Tabulated version of chosen kernel
+  string riemann_solver;
+  string slope_limiter;
+  int riemann_order;
+  FLOAT kernfac;
+  FLOAT kernfacsqd;
+
 
   struct SphParticle<ndim> *sphdata;          // Main SPH particle data array
   EOS<ndim> *eos;                             // Equation-of-state
@@ -209,7 +215,7 @@ class SM2012Sph: public Sph<ndim>
 
 
 // ============================================================================
-// Class SM2012Sph
+// Class GodunovSph
 // Class definition for Godunov SPH (Inutsuka 2002) algorithm.
 // Full code for each of these class functions
 // written in 'GodunovSph.cpp'.
@@ -247,10 +253,15 @@ class GodunovSph: public Sph<ndim>
 			     FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeDirectGravForces(int, int, int *, SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputePostHydroQuantities(SphParticle<ndim> &);
+  void InitialiseRiemannProblem(SphParticle<ndim>, SphParticle<ndim>, FLOAT *, FLOAT, 
+				FLOAT, FLOAT, FLOAT, FLOAT &, FLOAT &, 
+				FLOAT &, FLOAT &, FLOAT &, FLOAT &);
   void HllcSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
 		  FLOAT, FLOAT, FLOAT &, FLOAT &);
-  void MgSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
+  void VanLeerSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
 		FLOAT, FLOAT, FLOAT &, FLOAT &);
+  void IsothermalSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, 
+                        FLOAT, FLOAT, FLOAT, FLOAT &, FLOAT &);
 
 };
 

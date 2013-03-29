@@ -67,8 +67,8 @@ void SphSimulation<ndim>::SearchGhostParticles(void)
   int i;
   int k;
   static const FLOAT ghost_range = 1.1;
-  const FLOAT kernrange = sph->kernp->kernrange;
   SphParticle<ndim>* sphdata = sph->sphdata;
+  FLOAT kernrange = sph->kernp->kernrange*sph->kernfac;
 
   // Set all relevant particle counters
   sph->Nghost    = 0;
