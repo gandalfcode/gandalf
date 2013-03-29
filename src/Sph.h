@@ -235,6 +235,9 @@ class GodunovSph: public Sph<ndim>
   using Sph<ndim>::beta_visc;
   using Sph<ndim>::alpha_visc;
   using Sph<ndim>::acond;
+  using Sph<ndim>::riemann_solver;
+  using Sph<ndim>::riemann_order;
+  using Sph<ndim>::slope_limiter;
 
  public:
 

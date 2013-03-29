@@ -70,17 +70,18 @@ class SphLeapfrogKDK: public SphIntegration<ndim>
 // ============================================================================
 // Class SphGodunovIntegration
 // ============================================================================
-class SphGodunovIntegration: public SphIntegration
+template <int ndim>
+class SphGodunovIntegration: public SphIntegration<ndim>
 {
  public:
 
-  SphGodunovIntegration(int, int, DOUBLE, DOUBLE);
+  SphGodunovIntegration(DOUBLE, DOUBLE);
   ~SphGodunovIntegration();
 
-  void AdvanceParticles(int,int,int,SphParticle *,FLOAT);
-  void CorrectionTerms(int,int,int,SphParticle *,FLOAT);
-  void EndTimestep(int,int,int,SphParticle *);
-
+  void AdvanceParticles(int,int,int,SphParticle<ndim> *,FLOAT);
+  void CorrectionTerms(int,int,int,SphParticle<ndim> *,FLOAT);
+  void EndTimestep(int,int,int,SphParticle<ndim> *);
+  static const int vdim = ndim;
 };
 
 

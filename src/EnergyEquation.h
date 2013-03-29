@@ -68,17 +68,18 @@ class EnergyPEC: public EnergyEquation<ndim>
 // Class definition for energy equation integration class using a 
 // Predict-Evaluate-Correct (PEC) scheme.
 // ============================================================================
-class EnergyGodunovIntegration: public EnergyEquation
+template <int ndim>
+class EnergyGodunovIntegration: public EnergyEquation<ndim>
 {
  public:
 
   EnergyGodunovIntegration(DOUBLE);
   ~EnergyGodunovIntegration();
 
-  void EnergyIntegration(int, int, int, SphParticle *, FLOAT);
-  void EnergyCorrectionTerms(int, int, int, SphParticle *, FLOAT);
-  void EndTimestep(int, int, int, SphParticle *);
-  DOUBLE Timestep(SphParticle &);
+  void EnergyIntegration(int, int, int, SphParticle<ndim> *, FLOAT);
+  void EnergyCorrectionTerms(int, int, int, SphParticle<ndim> *, FLOAT);
+  void EndTimestep(int, int, int, SphParticle<ndim> *);
+  DOUBLE Timestep(SphParticle<ndim> &);
 
 };
 

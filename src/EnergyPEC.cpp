@@ -38,6 +38,9 @@ EnergyEquation<ndim>::~EnergyEquation()
 }
 
 
+template class EnergyEquation<1>;
+template class EnergyEquation<2>;
+template class EnergyEquation<3>;
 
 // ============================================================================
 // EnergyPEC::EnergyPEC()

@@ -441,10 +441,9 @@ if (ndim < 1 || ndim > 3) {
   // --------------------------------------------------------------------------
   if (stringparams["sph_integration"] == "lfkdk") {
     sphint = new SphLeapfrogKDK<ndim>(floatparams["accel_mult"],
-				floatparams["courant_mult"]);
+				floatparams["courant_mult"]);}
   else if (stringparams["sph_integration"] == "godunov")
-    sphint = new SphGodunovIntegration(ndim, vdim, 
-				       floatparams["accel_mult"],
+    sphint = new SphGodunovIntegration<ndim>(floatparams["accel_mult"],
 				       floatparams["courant_mult"]);
   else {
     string message = "Unrecognised parameter : sph_integration = " 
@@ -734,9 +733,9 @@ void SphSimulation<ndim>::PostGeneration(void) {
     SearchGhostParticles();
 
     // Update neighbour tre
-    sphneib->UpdateTree(sph,simparams);
+    sphneib->UpdateTree(sph,*simparams);
 
-    if (simparams.stringparams["sph"] == "godunov") {
+    if (simparams->stringparams["sph"] == "godunov") {
       sphneib->UpdateAllSphDerivatives(sph);
       for (int i=0; i<sph->Ntot; i++) sph->sphdata[i].dt = sph->sphdata[i].h/sph->sphdata[i].sound;
     }

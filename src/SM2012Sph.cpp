@@ -39,8 +39,8 @@ SM2012Sph<ndim, kernelclass >::SM2012Sph(int hydro_forces_aux,
 {
 
   this->kernp = &kern;
-  kernfac = (FLOAT) 1.0;
-  kernfacsqd = (FLOAT) 1.0;
+  this->kernfac = (FLOAT) 1.0;
+  this->kernfacsqd = (FLOAT) 1.0;
 }
 
 

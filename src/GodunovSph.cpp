@@ -37,8 +37,8 @@ GodunovSph<ndim, kernelclass >::GodunovSph(int hydro_forces_aux,
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp = &kern;
-  kernfac = sqrttwo;
-  kernfacsqd = (FLOAT) 2.0;
+  this->kernfac = sqrttwo;
+  this->kernfacsqd = (FLOAT) 2.0;
 }
 
 
@@ -289,11 +289,11 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibForces
 // GodunovSph::InitialiseRiemannProblem
 // ..
 // ============================================================================
-template <typename kernelclass>
-void GodunovSph<kernelclass>::InitialiseRiemannProblem
-(SphParticle partl,
- SphParticle partr,
- FLOAT draux[ndimmax],
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
+(SphParticle<ndim> partl,
+ SphParticle<ndim> partr,
+ FLOAT draux[ndim],
  FLOAT drmag,
  FLOAT dvdr,
  FLOAT soundl,
@@ -309,8 +309,8 @@ void GodunovSph<kernelclass>::InitialiseRiemannProblem
   FLOAT deltal;
   FLOAT deltar;
   FLOAT limiter;
-  FLOAT vec1[ndimmax];
-  FLOAT vec2[ndimmax];
+  FLOAT vec1[ndim];
+  FLOAT vec2[ndim];
 
   // 1st-order approximation for initialising Riemann problem
   pl = partl.press;
@@ -798,7 +798,7 @@ void GodunovSph<ndim, kernelclass>::VanLeerSolver
 // IsothermalSolver
 // ..
 // ============================================================================
-template <int ndim, typename<int> kernelclass>
+template <int ndim, template<int> class kernelclass>
 void GodunovSph<ndim, kernelclass>::IsothermalSolver
 (string wave_speed,
  FLOAT pl,
