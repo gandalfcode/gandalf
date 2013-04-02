@@ -34,7 +34,7 @@ class shocktube (AnalyticalSolution):
         shocktub.shocktub(self.RHOinL, self.RHOinR, self.UinL, self.UinR,
                  self.PinL, self.PinR, self.xL, self.x0, self.xR,
                  self.time, self.iMAX, self.gamma)
-        data=np.genfromtxt('sod.out',names=['x','rho','vx','pressure'])
+        data=np.genfromtxt('sod.out',names=['x','rho','vx','pressure','u'])
         return data[x], data[y]
     
     

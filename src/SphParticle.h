@@ -10,6 +10,7 @@
 
 #include "Dimensions.h"
 #include "Precision.h"
+#include "Constants.h"
 
 template <int ndim>
 struct SphParticle {
@@ -48,6 +49,12 @@ struct SphParticle {
     FLOAT gradP[ndim];
     FLOAT gradrho[ndim];
     FLOAT gradv[ndim][ndim];
+  	FLOAT rhomax;
+  	FLOAT rhomin;
+  	FLOAT pressmax;
+  	FLOAT pressmin;
+  	FLOAT vmax[ndim];
+  	FLOAT vmin[ndim];
 
 
     SphParticle()
@@ -85,11 +92,15 @@ struct SphParticle {
       for (int k=0; k<ndim; k++)
         for (int kk=0; kk<ndim; kk++) gradv[k][kk] = (FLOAT) 0.0;
       dt = (DOUBLE) 0.0;
+      rhomin = (FLOAT) 0.0;
+      rhomax = (FLOAT) 0.0;
+      pressmin = (FLOAT) 0.0;
+      pressmax = (FLOAT) 0.0;
+      for (int k=0; k<ndimmax; k++) vmax[k] = 0.0;
+      for (int k=0; k<ndimmax; k++) vmin[k] = 0.0;
     }
 
   };
-
-
 
 
 #endif

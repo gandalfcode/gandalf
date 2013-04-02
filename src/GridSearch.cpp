@@ -22,7 +22,7 @@
 using namespace std;
 
 
-static const FLOAT grid_h_tolerance = (FLOAT) 1.2;
+static const FLOAT grid_h_tolerance = (FLOAT) 1.3;
 
 
 // ============================================================================
@@ -949,6 +949,9 @@ void GridSearch<ndim>::CreateGrid(Sph<ndim> *sph)
 
     // If cell currently contains no particles, record first particle.
     // Else, add to end of linked list.
+    if (c < 0) cout << "rp : " << sph->sphdata[i].r[0] << "   " 
+		    << sph->sphdata[i].a[0] << "   " << sph->sphdata[i].dudt 
+		    << endl;
     if (grid[c].Nptcls == 0) grid[c].ifirst = i;
     else inext[grid[c].ilast] = i;
     grid[c].ilast = i;

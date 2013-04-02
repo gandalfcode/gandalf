@@ -133,6 +133,31 @@ void SphGodunovIntegration<ndim>::EndTimestep(int n, int level_step,
   return;
 }
 
+// ============================================================================
+// SphIntegration::Timestep
+// Default timestep size for SPH particles.  Takes the minimum of : 
+// (i)  const*h/(sound_speed + h*|div_v|)    (Courant condition)
+// (ii) const*sqrt(h/|a|)                    (Acceleration condition)
+// ============================================================================
+template <int ndim>
+DOUBLE SphGodunovIntegration<ndim>::Timestep(SphParticle<ndim> &part, int hydro_forces)
+{
+  DOUBLE timestep;
+  //DOUBLE amag;
+
+  // Courant condition
+  timestep = courant_mult*part.h/(part.sound + small_number_dp);
+
+  // Local convergence/divergence condition
+  timestep = min(timestep,courant_mult/(fabs(part.div_v) + small_number_dp));
+
+  //Acceleration condition
+  //amag = sqrt(DotProduct(part.a,part.a,ndim));
+  //timestep = min(timestep, accel_mult*sqrt(part.h/(amag + small_number_dp)));
+
+  return timestep;
+}
+
 template class SphGodunovIntegration<1>;
 template class SphGodunovIntegration<2>;
 template class SphGodunovIntegration<3>;

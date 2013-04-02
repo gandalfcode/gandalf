@@ -82,6 +82,7 @@ class SphGodunovIntegration: public SphIntegration<ndim>
   void CorrectionTerms(int,int,int,SphParticle<ndim> *,FLOAT);
   void EndTimestep(int,int,int,SphParticle<ndim> *);
   static const int vdim = ndim;
+  DOUBLE Timestep(SphParticle<ndim> &, int);
 };
 
 
