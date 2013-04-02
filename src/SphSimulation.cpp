@@ -752,7 +752,7 @@ void SphSimulation<ndim>::PostGeneration(void) {
     CopySphDataToGhosts();
 
     // Compute timesteps for all particles
-    if (simparams.stringparams["sph"] == "godunov") {
+    if (simparams->stringparams["sph"] == "godunov") {
       if (Nlevels == 1) 
 	ComputeGlobalTimestep();
       else 
@@ -799,7 +799,7 @@ void SphSimulation<ndim>::MainLoop(void)
   debug2("[SphSimulation::MainLoop]");
 
   // Compute timesteps for all particles
-  if (simparams.stringparams["sph"] != "godunov") {
+  if (simparams->stringparams["sph"] != "godunov") {
     if (Nlevels == 1) 
       ComputeGlobalTimestep();
     else 
@@ -813,7 +813,7 @@ void SphSimulation<ndim>::MainLoop(void)
   //    sph->sphdata[i].dudt = (FLOAT) 0.0;
   //  //if (sph->sphdata[i].active) sph->sphdata[i].dudt = (FLOAT) 0.0;
   //  sphneib->UpdateAllSphDudt(sph);
-  }
+  //}
 
   // Advance time variables
   n = n + 1;
@@ -857,7 +857,7 @@ void SphSimulation<ndim>::MainLoop(void)
 	ComputeBlockTimesteps();
     }
 
-    if (simparams.stringparams["sph"] == "godunov")
+    if (simparams->stringparams["sph"] == "godunov")
       sphneib->UpdateAllSphDerivatives(sph);
 
     // Copy properties from original particles to ghost particles
@@ -876,7 +876,7 @@ void SphSimulation<ndim>::MainLoop(void)
     // Calculate all SPH forces
     sphneib->UpdateAllSphForces(sph);
 
-    if (simparams.stringparams["sph"] == "godunov")
+    if (simparams->stringparams["sph"] == "godunov")
       sphneib->UpdateAllSphDudt(sph);
 
     // Add contributions to ghost particles from original neighbours

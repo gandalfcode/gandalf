@@ -96,8 +96,8 @@ struct SphParticle {
       rhomax = (FLOAT) 0.0;
       pressmin = (FLOAT) 0.0;
       pressmax = (FLOAT) 0.0;
-      for (int k=0; k<ndimmax; k++) vmax[k] = 0.0;
-      for (int k=0; k<ndimmax; k++) vmin[k] = 0.0;
+      for (int k=0; k<ndim; k++) vmax[k] = 0.0;
+      for (int k=0; k<ndim; k++) vmin[k] = 0.0;
     }
 
   };

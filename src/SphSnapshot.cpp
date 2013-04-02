@@ -334,13 +334,6 @@ void SphSnapshotBase::ExtractArray(string name, float** out_array, int* size_arr
   label = unit->LatexLabel(RequestedUnit);
   scaling_factor = unit->OutputScale(RequestedUnit);
 
-  cout << "Selecting quantity: " << name << endl;
-  cout << out_array << endl;
-//  for (int i=0; i<*size_array; i++) {
-//    cout << * (out_array [i]) << " ";
-//  }
-//  cout << endl;
-
   return;
 }
 

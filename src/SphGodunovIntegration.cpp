@@ -146,10 +146,10 @@ DOUBLE SphGodunovIntegration<ndim>::Timestep(SphParticle<ndim> &part, int hydro_
   //DOUBLE amag;
 
   // Courant condition
-  timestep = courant_mult*part.h/(part.sound + small_number_dp);
+  timestep = this->courant_mult*part.h/(part.sound + small_number_dp);
 
   // Local convergence/divergence condition
-  timestep = min(timestep,courant_mult/(fabs(part.div_v) + small_number_dp));
+  timestep = min(timestep,this->courant_mult/(fabs(part.div_v) + small_number_dp));
 
   //Acceleration condition
   //amag = sqrt(DotProduct(part.a,part.a,ndim));

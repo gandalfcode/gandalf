@@ -288,8 +288,6 @@ class RenderPlotCommand (PlotCommand):
         
         x_data, xscaling_factor = self.get_array('x',snap)
         y_data, yscaling_factor = self.get_array('y', snap)
-        print 'ciao'
-        print x_data
         #create the grid
         #set resolution
         try:

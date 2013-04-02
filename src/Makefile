@@ -123,7 +123,7 @@ OBJ += SphIntegration.o SphLeapfrogKDK.o SphGodunovIntegration.o
 OBJ += BruteForceSearch.o GridSearch.o
 OBJ += AdiabaticEOS.o IsothermalEOS.o
 #OBJ += SimGhostParticles.o
-OBJ += Render.o
+#OBJ += Render.o
 
 TEST_OBJ = #TestScaling.o Parameters.o SimUnits.o Exception.o
 
@@ -168,8 +168,8 @@ executable : $(OBJ) toymain.o Exception.o
 	$(CC) $(CFLAGS) $(OPT) -o toymain $(OBJ) Exception.o toymain.o
 	cp toymain ../bin/toymain
 
-_SphSim.so : $(WRAP_OBJ) $(OBJ) Exception.o
-	$(CC) $(CFLAGS) $(OPT) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o -o _SphSim.so
+_SphSim.so : $(WRAP_OBJ) $(OBJ) Exception.o Render.o SphSnapshot.o
+	$(CC) $(CFLAGS) $(OPT) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o Render.o SphSnapshot.o -o _SphSim.so
 
 shocktub.so : shocktub.f shocktub.pyf
 	$(F2PY) --quiet -c shocktub.f shocktub.pyf
