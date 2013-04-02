@@ -220,7 +220,7 @@ void GodunovSph<kernelclass>::ComputeSphNeibForces
   FLOAT gradi;
   FLOAT gradj;
 
-  static const FLOAT hconv = powf(invsqrttwo,ndim+1);
+  FLOAT hconv = powf(invsqrttwo,ndim+1);
 
 
   // Compute hydro forces
@@ -969,7 +969,7 @@ void GodunovSph<kernelclass>::ComputeSphNeibDudt
   FLOAT vtemp[ndimmax];
   FLOAT gradi,gradj;
 
-  static const FLOAT hconv = powf(invsqrttwo,ndim+1);
+  FLOAT hconv = powf(invsqrttwo,ndim+1);
 
 
   // Compute hydro forces
@@ -1020,10 +1020,10 @@ void GodunovSph<kernelclass>::ComputeSphNeibDudt
       uaux = pstar*(Vsqdi*wkerni + Vsqdj*wkernj);
 
       // Add total hydro contribution to acceleration for particle i
-      for (k=0; k<ndim; k++) parti.dudt += neibpart[j].m*uaux*(vstar - vhalfi);
+      parti.dudt += neibpart[j].m*uaux*(vstar - vhalfi);
       
       // If neighbour is also active, add contribution to force here
-      for (k=0; k<ndim; k++) neibpart[j].dudt -= parti.m*uaux*(vstar - vhalfj);
+      neibpart[j].dudt -= parti.m*uaux*(vstar - vhalfj);
 
     }
     // ------------------------------------------------------------------------

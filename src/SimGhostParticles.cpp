@@ -17,7 +17,7 @@
 using namespace std;
 
 
-static const FLOAT ghost_range = 1.4;
+static const FLOAT ghost_range = 1.3;
 
 
 // ============================================================================
