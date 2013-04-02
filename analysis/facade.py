@@ -236,7 +236,7 @@ def subfigure(nx, ny, current):
 
 def newsim(paramfile):
     '''Reads a parameter file and setups a simulation from it'''
-    return SimBuffer.newsim(paramfile, ndim)
+    return SimBuffer.newsim(paramfile)
 
 def newsimfromparams(paramfile):
     '''Creates a new simulation object and parses the parameter file,
@@ -249,7 +249,7 @@ def newsimpython(paramfile):
     doing part of the setup, but doesn't generate the initial conditions.
     You can use the method ImportArray of the simulation object to specify
     the initial conditions from Python.'''
-    return SimBuffer.newsimpython(paramfile, ndim)
+    return SimBuffer.newsimpython(paramfile)
 
 def run(no=None):
     '''Run a simulation. If no argument is given, run the current one;
