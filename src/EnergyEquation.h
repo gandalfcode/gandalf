@@ -9,7 +9,6 @@
 #define _ENERGY_EQUATION_H_
 
 #include "Constants.h"
-#include "Dimensions.h"
 #include "Precision.h"
 #include "Sph.h"
 #include "EOS.h"

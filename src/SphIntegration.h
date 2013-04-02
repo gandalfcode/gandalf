@@ -9,7 +9,6 @@
 
 #include "Precision.h"
 #include "Constants.h"
-#include "Dimensions.h"
 #include "Sph.h"
 #include "EOS.h"
 #include "Parameters.h"

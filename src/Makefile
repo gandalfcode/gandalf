@@ -62,23 +62,6 @@ OPT += -fopenmp -DOPENMP
 endif
 endif
 
-
-
-# Dimensionality of the code
-# ----------------------------------------------------------------------------
-ifeq ($(NDIM),1)
-CFLAGS += -DNDIM=1 -DVDIM=1 -DFIXED_DIMENSIONS
-else ifeq ($(NDIM),2)
-CFLAGS += -DNDIM=2 -DVDIM=2 -DFIXED_DIMENSIONS
-else ifeq ($(NDIM),3)
-CFLAGS += -DNDIM=3 -DVDIM=3 -DFIXED_DIMENSIONS
-else ifeq ($(NDIM),0)
-CFLAGS += -DNDIM=3 -DVDIM=3
-else
-ERROR += "Invalid value for NDIM : "$(NDIM)"\n"
-endif
-
-
 # Precision options
 # ----------------------------------------------------------------------------
 ifeq ($(PRECISION),SINGLE)

@@ -11,7 +11,6 @@
 #include <string>
 #include <math.h>
 #include "Precision.h"
-#include "Dimensions.h"
 #include "Exception.h"
 #include "SphNeighbourSearch.h"
 #include "Sph.h"
