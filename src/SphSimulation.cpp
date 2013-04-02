@@ -457,6 +457,9 @@ if (ndim < 1 || ndim > 3) {
   if (stringparams["energy_integration"] == "PEC") {
     uint = new EnergyPEC<ndim>(floatparams["energy_mult"]);
   }
+  else if (stringparams["energy_integration"] == "godunov") {
+    uint = new EnergyGodunovIntegration<ndim>(floatparams["energy_mult"]);
+  }
   else {
     string message = "Unrecognised parameter : energy_integration = "
   + simparams->stringparams["energy_integration"];
