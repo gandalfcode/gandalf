@@ -234,7 +234,7 @@ def subfigure(nx, ny, current):
     data = None
     Singletons.queue.put([command,data])
 
-def newsim(paramfile, ndim):
+def newsim(paramfile):
     '''Reads a parameter file and setups a simulation from it'''
     return SimBuffer.newsim(paramfile, ndim)
 
@@ -244,7 +244,7 @@ def newsimfromparams(paramfile):
     change some of the parameters'''
     return SimBuffer.newsimfromparams(paramfile)
 
-def newsimpython(paramfile, ndim):
+def newsimpython(paramfile):
     '''Creates a new simulation object reading the parameter file and
     doing part of the setup, but doesn't generate the initial conditions.
     You can use the method ImportArray of the simulation object to specify

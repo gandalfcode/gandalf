@@ -90,7 +90,7 @@ class SimBuffer:
         SimBuffer.simlist = []
     
     @staticmethod
-    def newsim (paramfile, ndim):
+    def newsim (paramfile):
         '''
         This method creates a new simulation from the specified parameter file.
         Returns the simulation created.
@@ -119,7 +119,7 @@ class SimBuffer:
         return sim
         
     @staticmethod
-    def newsimpython(paramfile, ndim):
+    def newsimpython(paramfile):
         '''This method creates a simulation but does not fill in the arrays, allowing one to use the import
         array method of the simulation object created to define the initial conditions from Python.
         Remember that after having imported all the arrays, must call PostSetupForPython. Note however that
