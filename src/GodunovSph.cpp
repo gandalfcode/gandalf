@@ -237,7 +237,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibForces
       dvdr = DotProduct(dv,draux,ndim);
 
       // Linear interpolate quantites between left and right states
-      Cij = (parti.invrho - neibpart[j].invrho)*invdrmag[jj];
+      Cij = -(parti.invrho - neibpart[j].invrho)*invdrmag[jj];
       Dij = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
       Vsqdi = (FLOAT) 0.25*parti.h*parti.h*Cij*Cij + Dij*Dij;
       Vsqdj = (FLOAT) 0.25*neibpart[j].h*neibpart[j].h*Cij*Cij + Dij*Dij;
@@ -245,7 +245,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibForces
 				  neibpart[j].h*neibpart[j].h/Vsqdj);
 
       // Initialise the LHS and RHS of the Riemann problem
-      InitialiseRiemannProblem(parti,neibpart[j],draux,drmag[jj],dvdr,
+      InitialiseRiemannProblem(parti,neibpart[j],draux,drmag[jj],Sij,dvdr,
     		  parti.sound,neibpart[j].sound,pl,pr,rhol,rhor,vl,vr);
 
       // Now solve Riemann problem and return intermediate state variables
@@ -291,6 +291,7 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
  SphParticle<ndim> partr,
  FLOAT draux[ndim],
  FLOAT drmag,
+ FLOAT Sij,
  FLOAT dvdr,
  FLOAT soundl,
  FLOAT soundr,
@@ -339,15 +340,19 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
     // Slope limiter for pressure gradients
     deltal = DotProduct(partl.gradP,draux,ndim)*drmag;
     deltar = DotProduct(partr.gradP,draux,ndim)*drmag;
-    pl += 0.5*deltal*(1.0 - min(0.5,partl.sound*partl.dt/drmag));
-    pr -= 0.5*deltar*(1.0 - min(0.5,partr.sound*partr.dt/drmag));
+    pl += 0.5*deltal*max(0.5,Sij - 0.5*partl.sound*partl.dt);
+    pr -= 0.5*deltar*max(0.5,drmag - Sij - 0.5*partr.sound*partr.dt);
+    //pl += 0.5*deltal*(1.0 - min(0.5,partl.sound*partl.dt/drmag));
+    //pr -= 0.5*deltar*(1.0 - min(0.5,partr.sound*partr.dt/drmag));
 
 
     // Slope limiter for pressure gradients
     deltal = DotProduct(partl.gradrho,draux,ndim)*drmag;
     deltar = DotProduct(partr.gradrho,draux,ndim)*drmag;
-    rhol += 0.5*deltal*(1.0 - min(0.5,partl.sound*partl.dt/drmag));
-    rhor -= 0.5*deltar*(1.0 - min(0.5,partr.sound*partr.dt/drmag));
+    rhol += 0.5*deltal*max(0.5,Sij - 0.5*partl.sound*partl.dt);
+    rhor -= 0.5*deltar*max(0.5,drmag - Sij - 0.5*partr.sound*partr.dt);
+    //rhol += 0.5*deltal*(1.0 - min(0.5,partl.sound*partl.dt/drmag));
+    //rhor -= 0.5*deltar*(1.0 - min(0.5,partr.sound*partr.dt/drmag));
 
 
     // Slope limiter for pressure gradients
@@ -355,8 +360,10 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
     for (k=0; k<ndim; k++) vec2[k] = DotProduct(partr.gradv[k],draux,ndim);
     deltal = DotProduct(vec1,draux,ndim)*drmag;
     deltar = DotProduct(vec2,draux,ndim)*drmag;
-    vl += 0.5*deltal*(1.0 - min(0.5,partl.sound*partl.dt/drmag));
-    vr -= 0.5*deltar*(1.0 - min(0.5,partr.sound*partr.dt/drmag));
+    vl += 0.5*deltal*max(0.5,Sij - 0.5*partl.sound*partl.dt);
+    vr -= 0.5*deltar*max(0.5,drmag - Sij - 0.5*partr.sound*partr.dt);
+    //vl += 0.5*deltal*(1.0 - min(0.5,partl.sound*partl.dt/drmag));
+    //vr -= 0.5*deltar*(1.0 - min(0.5,partr.sound*partr.dt/drmag));
 
   }
   // ..
@@ -462,6 +469,7 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
                   deltar/(deltal + small_number));
     R = max(R,0.0);
     limiter = 4.0*R/(R + 1.0)/(R + 1.0);
+
     pl += 0.5*limiter*deltal*(1.0 - min(1.0,partl.sound*partl.dt/drmag));
     pr -= 0.5*limiter*deltar*(1.0 - min(1.0,partr.sound*partr.dt/drmag));
 
@@ -474,6 +482,7 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
                   deltar/(deltal + small_number));
     R = max(R,0.0);
     limiter = 4.0*R/(R + 1.0)/(R + 1.0);
+
     rhol += 0.5*limiter*deltal*(1.0 - min(1.0,partl.sound*partl.dt/drmag));
     rhor -= 0.5*limiter*deltar*(1.0 - min(1.0,partr.sound*partr.dt/drmag));
 
@@ -488,6 +497,7 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
                   deltar/(deltal + small_number));
     R = max(R,0.0);
     limiter = 4.0*R/(R + 1.0)/(R + 1.0);
+
     vl += 0.5*limiter*deltal*(1.0 - min(1.0,partl.sound*partl.dt/drmag));
     vr -= 0.5*limiter*deltar*(1.0 - min(1.0,partr.sound*partr.dt/drmag));
 
@@ -771,7 +781,7 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
   }
 
 
-  /*
+/*
   if (slope_limiter != "none") {
     if ((pr - pl)*(prorig - plorig) < -0.00001 || (rhor - rhol)*(rhororig - rholorig) < -0.00001 || (vr - vl)*(vrorig - vlorig) < -0.00001) {
       cout << "Something wrong with initial values?? : " << endl;
@@ -794,7 +804,7 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
     }
   }
   */
-  
+
 
 
   //cout << "Fin. state; p   : " << pl << "   " << pr << endl;
@@ -989,7 +999,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
       vhalfj = dvdr + (FLOAT) 0.5*DotProduct(neibpart[j].a,draux,ndim)*neibpart[j].dt;
 
       // Linear interpolate quantites between left and right states
-      Cij = (parti.invrho - neibpart[j].invrho)*invdrmag[jj];
+      Cij = -(parti.invrho - neibpart[j].invrho)*invdrmag[jj];
       Dij = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
       Vsqdi = (FLOAT) 0.25*parti.h*parti.h*Cij*Cij + Dij*Dij;
       Vsqdj = (FLOAT) 0.25*neibpart[j].h*neibpart[j].h*Cij*Cij + Dij*Dij;
@@ -997,7 +1007,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
 				  neibpart[j].h*neibpart[j].h/Vsqdj);
 
       // Initialise the LHS and RHS of the Riemann problem
-      InitialiseRiemannProblem(parti,neibpart[j],draux,drmag[jj],dvdr,
+      InitialiseRiemannProblem(parti,neibpart[j],draux,drmag[jj],Sij,dvdr,
     		  parti.sound,neibpart[j].sound,pl,pr,rhol,rhor,vl,vr);
 
       // Now solve Riemann problem and return intermediate state variables

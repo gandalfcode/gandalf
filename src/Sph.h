@@ -258,7 +258,7 @@ class GodunovSph: public Sph<ndim>
   void ComputeDirectGravForces(int, int, int *, SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputePostHydroQuantities(SphParticle<ndim> &);
   void InitialiseRiemannProblem(SphParticle<ndim>, SphParticle<ndim>, FLOAT *, FLOAT, 
-				FLOAT, FLOAT, FLOAT, FLOAT &, FLOAT &, 
+				FLOAT, FLOAT, FLOAT, FLOAT, FLOAT &, FLOAT &,
 				FLOAT &, FLOAT &, FLOAT &, FLOAT &);
   void HllcSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
 		  FLOAT, FLOAT, FLOAT &, FLOAT &);
