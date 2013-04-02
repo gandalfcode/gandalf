@@ -203,7 +203,7 @@ void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux,
       az[i] = (float) sphaux[i].a[2];
     }
 
-    m[i] = (float) sphaux[i].m;
+    m[i] = (float) sphaux[i].press/powf(sphaux[i].rho,1.4); //sphaux[i].m;
     h[i] = (float) sphaux[i].h;
     rho[i] = (float) sphaux[i].rho;
     u[i] = (float) sphaux[i].u;

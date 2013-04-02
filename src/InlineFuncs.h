@@ -73,6 +73,14 @@ template <typename T> int sgn(T val) {
 }
 
 
+template <typename T>
+static inline T CubicHermite(T x0, T xdot0, T x1, T xdot1, T t)
+{
+  return (2.0*t*t*t - 3.0*t*t + 1.0)*x0 + (-2.0*t*t*t + 3.0*t*t)*x1 +  
+    (t*t*t - 2.0*t*t + t)*xdot0 + (t*t*t - t*t)*xdot1;
+}
+
+
 //file wave.c
 /*
 + wave - Nonlinear wave speeds.

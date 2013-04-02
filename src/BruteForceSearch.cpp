@@ -75,7 +75,7 @@ void BruteForceSearch::UpdateAllSphProperties(Sph *sph)
   m = new FLOAT[sph->Ntot];
   mu = new FLOAT[sph->Ntot];
   for (i=0; i<sph->Ntot; i++) m[i] = sph->sphdata[i].m;
-  for (i=0; i<sph->Ntot; i++) m[i] = sph->sphdata[i].m*sph->sphdata[i].u;
+  for (i=0; i<sph->Ntot; i++) mu[i] = sph->sphdata[i].m*sph->sphdata[i].u;
 
   // Loop over
   // ==========================================================================
@@ -161,7 +161,7 @@ void BruteForceSearch::UpdateAllSphForces(Sph *sph)
   // --------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
     for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
-    hrangesqdi = pow(sph->kernp->kernrange*sph->sphdata[i].h,2);
+    hrangesqdi = pow(sph->kernfac*sph->kernp->kernrange*sph->sphdata[i].h,2);
     Nneib = 0;
 
     // Make local copies of all potential neighbours
@@ -175,7 +175,7 @@ void BruteForceSearch::UpdateAllSphForces(Sph *sph)
     // and all neighbours here
     // ------------------------------------------------------------------------
     for (j=0; j<sph->Ntot; j++) {
-      hrangesqdj = pow(sph->kernp->kernrange*sph->sphdata[j].h,2);
+      hrangesqdj = pow(sph->kernfac*sph->kernp->kernrange*sph->sphdata[j].h,2);
       for (k=0; k<ndim; k++) draux[k] = sph->sphdata[j].r[k] - rp[k];
       drsqd = DotProduct(draux,draux,ndim);
       if ((drsqd < hrangesqdi || drsqd < hrangesqdj) &&
@@ -339,21 +339,19 @@ void BruteForceSearch::UpdateAllSphDudt(Sph *sph)
   // --------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
     for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
-    hrangesqdi = pow(sph->kernp->kernrange*sph->sphdata[i].h,2);
+    hrangesqdi = pow(sph->kernfac*sph->kernp->kernrange*sph->sphdata[i].h,2);
     Nneib = 0;
 
     // Make local copies of all potential neighbours
      for (j=0; j<sph->Ntot; j++) {
-       neibpart[j].div_v = (FLOAT) 0.0;
        neibpart[j].dudt = (FLOAT) 0.0;
-       for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
      }
 
     // Compute distances and the reciprical between the current particle 
     // and all neighbours here
     // ------------------------------------------------------------------------
     for (j=0; j<sph->Ntot; j++) {
-      hrangesqdj = pow(sph->kernp->kernrange*sph->sphdata[j].h,2);
+      hrangesqdj = pow(sph->kernfac*sph->kernp->kernrange*sph->sphdata[j].h,2);
       for (k=0; k<ndim; k++) draux[k] = sph->sphdata[j].r[k] - rp[k];
       drsqd = DotProduct(draux,draux,ndim);
       if ((drsqd < hrangesqdi || drsqd < hrangesqdj) &&
@@ -374,9 +372,7 @@ void BruteForceSearch::UpdateAllSphDudt(Sph *sph)
     // Now add all active neighbour contributions to the main arrays
     for (j=0; j<sph->Ntot; j++) {
       if (neibpart[j].active) {
-        for (k=0; k<ndim; k++) sph->sphdata[j].a[k] += neibpart[j].a[k];
         sph->sphdata[j].dudt += neibpart[j].dudt;
-        sph->sphdata[j].div_v += neibpart[j].div_v;
       }
     }
 
@@ -389,14 +385,6 @@ void BruteForceSearch::UpdateAllSphDudt(Sph *sph)
   delete[] dr;
   delete[] neiblist;
 
-
-  // Compute other important SPH quantities after hydro forces are computed
-  if (sph->hydro_forces == 1) {
-    for (i=0; i<sph->Nsph; i++) {
-      if (sph->sphdata[i].active)
-    	  sph->ComputePostHydroQuantities(sph->sphdata[i]);
-    }
-  }
 
   return;
 }

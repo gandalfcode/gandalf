@@ -15,6 +15,7 @@
 #include "SphParticle.h"
 #include "EOS.h"
 #include "EnergyEquation.h"
+#include "Exception.h"
 #include "Debug.h"
 using namespace std;
 
@@ -61,6 +62,24 @@ void EnergyGodunovIntegration::EnergyIntegration(int n, int level_step, int Nsph
     if (n%nstep == 0) dt = timestep*(FLOAT) nstep;
     else dt = timestep*(FLOAT) (n%nstep);
     sph[i].u = sph[i].u0 + sph[i].dudt*dt;
+    //if (sph[i].u < small_number && sph[i].dudt < 0.0)
+    //  sph[i].u = sph[i].u0*exp(dt*sph[i].dudt/sph[i].u0);
+    if (sph[i].u != sph[i].u) {
+      cout << "Something wrong with energy integration (NaN) : " << endl;
+      cout << sph[i].u << "   " << sph[i].u0 << "   " << sph[i].dudt 
+	   << "   " << dt << "   " << nstep << "    " << timestep << endl;
+      exit(0);
+    }
+    if (sph[i].u < small_number) {
+      cout << "Something wrong with energy integration (0) : " << endl;
+      cout << sph[i].u << "   " << sph[i].u0 << "   " << sph[i].dudt 
+	   << "   " << dt << "   " << nstep << "    " 
+	   << sph[i].u0/sph[i].dudt << endl;
+      cout << " dt_courant : " << sph[i].h/sph[i].sound << "   " 
+	   << sph[i].u0/(sph[i].dudt + small_number) << endl;
+      string message = "Problem with energy integration (0)";
+      ExceptionHandler::getIstance().raise(message);
+    }
   }
   // --------------------------------------------------------------------------
 

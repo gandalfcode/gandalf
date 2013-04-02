@@ -17,6 +17,8 @@
 using namespace std;
 
 
+static const FLOAT ghost_range = 1.4;
+
 
 // ============================================================================
 // 
@@ -64,7 +66,6 @@ void SphSimulation::SearchGhostParticles(void)
 {
   int i;
   int k;
-  static const FLOAT ghost_range = 1.1;
   FLOAT kernrange = sph->kernp->kernrange*sph->kernfac;
   SphParticle *sphdata = sph->sphdata;
 

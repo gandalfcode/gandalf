@@ -78,6 +78,7 @@ class SphGodunovIntegration: public SphIntegration
   void AdvanceParticles(int,int,int,SphParticle *,FLOAT);
   void CorrectionTerms(int,int,int,SphParticle *,FLOAT);
   void EndTimestep(int,int,int,SphParticle *);
+  DOUBLE Timestep(SphParticle &, int);
 
 };
 
