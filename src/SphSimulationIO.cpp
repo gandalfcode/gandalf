@@ -18,7 +18,8 @@ using namespace std;
 // ============================================================================
 // SphSimulation::ReadSnapshotFile
 // ============================================================================
-bool SphSimulation::ReadSnapshotFile(string filename, string fileform)
+template <int ndim>
+bool SphSimulation<ndim>::ReadSnapshotFile(string filename, string fileform)
 {
   debug1("[SphSimulation::ReadSnapshotFile]");
 
@@ -35,7 +36,8 @@ bool SphSimulation::ReadSnapshotFile(string filename, string fileform)
 // ============================================================================
 // SphSimulation::WriteSnapshotFile
 // ============================================================================
-bool SphSimulation::WriteSnapshotFile(string filename, string fileform)
+template <int ndim>
+bool SphSimulation<ndim>::WriteSnapshotFile(string filename, string fileform)
 {
   debug1("[SphSimulation::WriteSnapshotFile]");
 
@@ -52,7 +54,8 @@ bool SphSimulation::WriteSnapshotFile(string filename, string fileform)
 // ============================================================================
 // SphSimulation::ReadColumnSnapshotFile
 // ============================================================================
-bool SphSimulation::ReadColumnSnapshotFile(string filename)
+template <int ndim>
+bool SphSimulation<ndim>::ReadColumnSnapshotFile(string filename)
 {
   int i;
   int ndimaux;
@@ -70,15 +73,15 @@ bool SphSimulation::ReadColumnSnapshotFile(string filename)
   infile >> t;
 
   // Check dimensionality matches if using fixed dimensions
-#if defined(FIXED_DIMENSIONS)
-  if (ndimaux != ndim) {
+//#if defined(FIXED_DIMENSIONS)
+if (ndimaux != ndim) {
     cout << "Incorrect no. of dimensions in file : " 
 	 << ndimaux << "  [ndim : " << ndim << "]" << endl;
     return false;
   }
-#else
-  ndim = ndimaux;
-#endif
+//#else
+//  ndim = ndimaux;
+//#endif
 
   sph->Nsph = Npart;
   sph->AllocateMemory(sph->Nsph);
@@ -112,7 +115,8 @@ bool SphSimulation::ReadColumnSnapshotFile(string filename)
 // ============================================================================
 // SphSimulation::WriteColumnSnapshotFile
 // ============================================================================
-bool SphSimulation::WriteColumnSnapshotFile(string filename)
+template <int ndim>
+bool SphSimulation<ndim>::WriteColumnSnapshotFile(string filename)
 {
   int i;
   int ndimaux;
@@ -167,3 +171,4 @@ bool SphSimulation::WriteColumnSnapshotFile(string filename)
 
   return true;
 }
+

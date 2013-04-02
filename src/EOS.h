@@ -23,15 +23,20 @@
 // Main Equation of state class.  Only contains virtual function defintions. 
 // All functions must be defined by the inherited EOS classes.
 // ============================================================================
+template <int ndim>
 class EOS
 {
  public:
 
-  virtual FLOAT Pressure(SphParticle &) = 0;
-  virtual FLOAT EntropicFunction(SphParticle &) = 0;
-  virtual FLOAT SoundSpeed(SphParticle &) = 0;
-  virtual FLOAT Temperature(SphParticle &) = 0;
-  virtual FLOAT SpecificInternalEnergy(SphParticle &) = 0;
+  EOS (FLOAT _gamma):
+    gamma(_gamma),
+    gammam1 (gamma-1){};
+
+  virtual FLOAT Pressure(SphParticle<ndim> &) = 0;
+  virtual FLOAT EntropicFunction(SphParticle<ndim> &) = 0;
+  virtual FLOAT SoundSpeed(SphParticle<ndim> &) = 0;
+  virtual FLOAT Temperature(SphParticle<ndim> &) = 0;
+  virtual FLOAT SpecificInternalEnergy(SphParticle<ndim> &) = 0;
 
   FLOAT gamma;
   FLOAT gammam1;
@@ -44,18 +49,23 @@ class EOS
 // Class Isothermal
 // Isothermal EOS class defintion
 // ============================================================================
-class Isothermal: public EOS
+template <int ndim>
+class Isothermal: public EOS<ndim>
 {
+
+  using EOS<ndim>::gamma;
+  using EOS<ndim>::gammam1;
+
  public:
 
   Isothermal(FLOAT, FLOAT, FLOAT);
   ~Isothermal();
 
-  FLOAT Pressure(SphParticle &);
-  FLOAT EntropicFunction(SphParticle &);
-  FLOAT SoundSpeed(SphParticle &);
-  FLOAT Temperature(SphParticle &);
-  FLOAT SpecificInternalEnergy(SphParticle &);
+  FLOAT Pressure(SphParticle<ndim> &);
+  FLOAT EntropicFunction(SphParticle<ndim> &);
+  FLOAT SoundSpeed(SphParticle<ndim> &);
+  FLOAT Temperature(SphParticle<ndim> &);
+  FLOAT SpecificInternalEnergy(SphParticle<ndim> &);
 
   FLOAT temp0;
   FLOAT mu_bar;
@@ -68,18 +78,23 @@ class Isothermal: public EOS
 // Class Adiabatic
 // Adiabatic equation of state class definition
 // ============================================================================
-class Adiabatic: public EOS
+template <int ndim>
+class Adiabatic: public EOS<ndim>
 {
+
+  using EOS<ndim>::gamma;
+  using EOS<ndim>::gammam1;
+
  public:
 
   Adiabatic(FLOAT, FLOAT, FLOAT);
   ~Adiabatic();
 
-  FLOAT Pressure(SphParticle &);
-  FLOAT EntropicFunction(SphParticle &);
-  FLOAT SoundSpeed(SphParticle &);
-  FLOAT Temperature(SphParticle &);
-  FLOAT SpecificInternalEnergy(SphParticle &);
+  FLOAT Pressure(SphParticle<ndim> &);
+  FLOAT EntropicFunction(SphParticle<ndim> &);
+  FLOAT SoundSpeed(SphParticle<ndim> &);
+  FLOAT Temperature(SphParticle<ndim> &);
+  FLOAT SpecificInternalEnergy(SphParticle<ndim> &);
 
   FLOAT temp0;
   FLOAT mu_bar;

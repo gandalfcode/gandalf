@@ -24,7 +24,7 @@ throw StopError("CTRL-C received");
 }
 %}
 
-%exception SphSimulation::InteractiveRun {
+%exception SphSimulationBase::InteractiveRun {
 	signal(SIGINT, catch_alarm);
 	PyThreadState *_save;
     _save = PyEval_SaveThread();

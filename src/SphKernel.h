@@ -15,9 +15,15 @@ using namespace std;
 // ============================================================================
 // Class SphKernel
 // ============================================================================
+template <int ndim>
 class SphKernel
 {
  public:
+
+
+  SphKernel(): ndimpr(ndim) {};
+
+  static SphKernel<ndim>* KernelFactory (string KernelName);
 
   virtual FLOAT w0(FLOAT) = 0;
  //For the versions using the squared distance, the default behaviour
@@ -41,10 +47,10 @@ class SphKernel
   FLOAT invkernrange;
   FLOAT kernrangesqd;
   FLOAT kernnorm;
-#if !defined(FIXED_DIMENSIONS)
-  int ndim;
+//#if !defined(FIXED_DIMENSIONS)
+//  int ndim;
   FLOAT ndimpr;
-#endif
+//#endif
 
 };
 
@@ -53,11 +59,13 @@ class SphKernel
 // ============================================================================
 // Class M4Kernel
 // ============================================================================
-class M4Kernel: public SphKernel
+template <int ndim>
+class M4Kernel: public SphKernel<ndim>
 {
+
  public:
 
-  M4Kernel(int, string);
+  M4Kernel(string);
   ~M4Kernel();
 
   // M4 kernel function prototypes
@@ -75,12 +83,13 @@ class M4Kernel: public SphKernel
 // ============================================================================
 // M4Kernel::w0
 // ============================================================================
-inline FLOAT M4Kernel::w0(FLOAT s)
+template <int ndim>
+inline FLOAT M4Kernel<ndim>::w0(FLOAT s)
 {
   if (s < (FLOAT) 1.0)
-    return kernnorm*((FLOAT) 1.0 - (FLOAT) 1.5*s*s + (FLOAT) 0.75*s*s*s);
+    return (this->kernnorm)*((FLOAT) 1.0 - (FLOAT) 1.5*s*s + (FLOAT) 0.75*s*s*s);
   else if (s < (FLOAT) 2.0)
-    return (FLOAT) 0.25*kernnorm*pow((FLOAT) 2.0 - s,3);
+    return (FLOAT) 0.25*(this->kernnorm)*pow((FLOAT) 2.0 - s,3);
   else
     return (FLOAT) 0.0;
 }
@@ -90,12 +99,13 @@ inline FLOAT M4Kernel::w0(FLOAT s)
 // ============================================================================
 // M4Kernel::w1
 // ============================================================================
-inline FLOAT M4Kernel::w1(FLOAT s)
+template <int ndim>
+inline FLOAT M4Kernel<ndim>::w1(FLOAT s)
 {
   if (s < (FLOAT) 1.0)
-    return kernnorm*(-(FLOAT) 3.0*s + (FLOAT) 2.25*s*s);
+    return (this->kernnorm)*(-(FLOAT) 3.0*s + (FLOAT) 2.25*s*s);
   else if (s < (FLOAT) 2.0)
-    return -(FLOAT) 0.75*kernnorm*((FLOAT) 2.0 - s)*((FLOAT) 2.0 - s);
+    return -(FLOAT) 0.75*(this->kernnorm)*((FLOAT) 2.0 - s)*((FLOAT) 2.0 - s);
   else
     return (FLOAT) 0.0;
 }
@@ -105,16 +115,17 @@ inline FLOAT M4Kernel::w1(FLOAT s)
 // ============================================================================
 // M4Kernel::womega
 // ============================================================================
-inline FLOAT M4Kernel::womega(FLOAT s)
+template <int ndim>
+inline FLOAT M4Kernel<ndim>::womega(FLOAT s)
 {
   if (s < (FLOAT) 1.0)
-    return kernnorm*(-ndimpr + (FLOAT) 1.5*(ndimpr + (FLOAT) 2.0)*s*s -
-		     (FLOAT) 0.75*(ndimpr + (FLOAT) 3.0)*pow(s,3));
+    return (this->kernnorm)*(-(this->ndimpr) + (FLOAT) 1.5*((this->ndimpr) + (FLOAT) 2.0)*s*s -
+		     (FLOAT) 0.75*((this->ndimpr) + (FLOAT) 3.0)*pow(s,3));
   else if (s < (FLOAT) 2.0)
-    return kernnorm*(-(FLOAT) 2.0*ndimpr + 
-		     (FLOAT) 3.0*(ndimpr + (FLOAT) 1.0)*s - (FLOAT) 1.50*
-		     (ndimpr + (FLOAT) 2.0)*s*s + 
-		     (FLOAT) 0.25*(ndimpr + (FLOAT) 3.0)*pow(s,3));
+    return (this->kernnorm)*(-(FLOAT) 2.0*(this->ndimpr) +
+		     (FLOAT) 3.0*((this->ndimpr) + (FLOAT) 1.0)*s - (FLOAT) 1.50*
+		     ((this->ndimpr) + (FLOAT) 2.0)*s*s +
+		     (FLOAT) 0.25*((this->ndimpr) + (FLOAT) 3.0)*pow(s,3));
   else
     return (FLOAT) 0.0;
 }
@@ -124,7 +135,8 @@ inline FLOAT M4Kernel::womega(FLOAT s)
 // ============================================================================
 // M4Kernel::wzeta
 // ============================================================================
-inline FLOAT M4Kernel::wzeta(FLOAT s)
+template <int ndim>
+inline FLOAT M4Kernel<ndim>::wzeta(FLOAT s)
 {
   if (s < (FLOAT) 1.0)
     return (FLOAT) 1.4 - (FLOAT) 2.0*s*s + (FLOAT) 1.5*pow(s,4) 
@@ -141,7 +153,8 @@ inline FLOAT M4Kernel::wzeta(FLOAT s)
 // ============================================================================
 // M4Kernel::wgrav
 // ============================================================================
-inline FLOAT M4Kernel::wgrav(FLOAT s)
+template <int ndim>
+inline FLOAT M4Kernel<ndim>::wgrav(FLOAT s)
 {
   if (s < 1.0)
     return 1.33333333333333*s - 1.2*pow(s,3) + 0.5*pow(s,4);
@@ -157,7 +170,8 @@ inline FLOAT M4Kernel::wgrav(FLOAT s)
 // ============================================================================
 // M4Kernel::wpot
 // ============================================================================
-inline FLOAT M4Kernel::wpot(FLOAT s)
+template <int ndim>
+inline FLOAT M4Kernel<ndim>::wpot(FLOAT s)
 {
   if (s < 1.0)
     return 1.4 - 0.666666666666666*s*s + 0.3*pow(s,4) - 0.1*pow(s,5);
@@ -173,11 +187,12 @@ inline FLOAT M4Kernel::wpot(FLOAT s)
 // ============================================================================
 // Class QuinticKernel
 // ============================================================================
-class QuinticKernel: public SphKernel
+template <int ndim>
+class QuinticKernel: public SphKernel<ndim>
 {
  public:
 
-  QuinticKernel(int, string);
+  QuinticKernel(string);
   ~QuinticKernel();
 
   // M4 kernel function prototypes
@@ -195,15 +210,16 @@ class QuinticKernel: public SphKernel
 // ============================================================================
 // QuinticKernel::w0
 // ============================================================================
-inline FLOAT QuinticKernel::w0(FLOAT s)
+template <int ndim>
+inline FLOAT QuinticKernel<ndim>::w0(FLOAT s)
 {
   if (s < 1.0)
-    return kernnorm*(66.0 - 60.0*s*s + 30.0*pow(s,4) - 10.0*pow(s,5));
+    return (this->kernnorm)*(66.0 - 60.0*s*s + 30.0*pow(s,4) - 10.0*pow(s,5));
   else if (s < 2.0)
-    return kernnorm*(51.0 + 75.0*s - 210.0*s*s + 150.0*pow(s,3) -
+    return (this->kernnorm)*(51.0 + 75.0*s - 210.0*s*s + 150.0*pow(s,3) -
              45.0*pow(s,4) + 5.0*pow(s,5));
   else if (s < 3.0)
-    return kernnorm*(243.0 - 405*s + 270.0*s*s - 90.0*pow(s,3) +
+    return (this->kernnorm)*(243.0 - 405*s + 270.0*s*s - 90.0*pow(s,3) +
              15.0*pow(s,4) - pow(s,5));
   else
     return 0.0;
@@ -214,15 +230,16 @@ inline FLOAT QuinticKernel::w0(FLOAT s)
 // ============================================================================
 // QuinticKernel::w1
 // ============================================================================
-inline FLOAT QuinticKernel::w1(FLOAT s)
+template <int ndim>
+inline FLOAT QuinticKernel<ndim>::w1(FLOAT s)
 {
   if (s < 1.0)
-    return kernnorm*(-120.0*s + 120.0*pow(s,3) - 50.0*pow(s,4));
+    return (this->kernnorm)*(-120.0*s + 120.0*pow(s,3) - 50.0*pow(s,4));
   else if (s < 2.0)
-    return kernnorm*(75.0 - 420.0*s + 450.0*s*s -
+    return (this->kernnorm)*(75.0 - 420.0*s + 450.0*s*s -
              180.0*pow(s,3) + 25.0*pow(s,4));
   else if (s < 3.0)
-    return kernnorm*(-405.0 + 540.0*s - 270.0*s*s +
+    return (this->kernnorm)*(-405.0 + 540.0*s - 270.0*s*s +
              60.0*pow(s,3) - 5.0*pow(s,4));
   else
     return 0.0;
@@ -233,24 +250,25 @@ inline FLOAT QuinticKernel::w1(FLOAT s)
 // ============================================================================
 // QuinticKernel::womega
 // ============================================================================
-inline FLOAT QuinticKernel::womega(FLOAT s)
+template <int ndim>
+inline FLOAT QuinticKernel<ndim>::womega(FLOAT s)
 {
   if (s < 1.0)
-    return kernnorm*(-66.0*ndimpr + 60.0*(ndimpr + 2.0)*s*s -
-             30.0*(ndimpr + 4.0)*pow(s,4) +
-             10.0*(ndimpr + 5.0)*pow(s,5));
+    return (this->kernnorm)*(-66.0*(this->ndimpr) + 60.0*((this->ndimpr) + 2.0)*s*s -
+             30.0*((this->ndimpr) + 4.0)*pow(s,4) +
+             10.0*((this->ndimpr) + 5.0)*pow(s,5));
   else if (s < 2.0)
-    return kernnorm*(-51.0*ndimpr - 75.0*(ndimpr + 1.0)*s +
-             210.0*(ndimpr + 2.0)*s*s -
-             150.0*(ndimpr + 3.0)*pow(s,3) +
-             45.0*(ndimpr + 4.0)*pow(s,4) -
-             5.0*(ndimpr + 5.0)*pow(s,5));
+    return (this->kernnorm)*(-51.0*(this->ndimpr) - 75.0*((this->ndimpr) + 1.0)*s +
+             210.0*((this->ndimpr) + 2.0)*s*s -
+             150.0*((this->ndimpr) + 3.0)*pow(s,3) +
+             45.0*((this->ndimpr) + 4.0)*pow(s,4) -
+             5.0*((this->ndimpr) + 5.0)*pow(s,5));
   else if (s < 3.0)
-    return kernnorm*(-243.0*ndimpr + 405.0*(ndimpr + 1.0)*s -
-             270.0*(ndimpr + 2.0)*s*s +
-             90.0*(ndimpr + 3.0)*pow(s,3) -
-             15.0*(ndimpr + 4.0)*pow(s,4) +
-             (ndimpr + 5.0)*pow(s,5));
+    return (this->kernnorm)*(-243.0*(this->ndimpr) + 405.0*((this->ndimpr) + 1.0)*s -
+             270.0*((this->ndimpr) + 2.0)*s*s +
+             90.0*((this->ndimpr) + 3.0)*pow(s,3) -
+             15.0*((this->ndimpr) + 4.0)*pow(s,4) +
+             ((this->ndimpr) + 5.0)*pow(s,5));
   else
     return 0.0;
 }
@@ -260,7 +278,8 @@ inline FLOAT QuinticKernel::womega(FLOAT s)
 // ============================================================================
 // QuinticKernel::wzeta
 // ============================================================================
-inline FLOAT QuinticKernel::wzeta(FLOAT s)
+template <int ndim>
+inline FLOAT QuinticKernel<ndim>::wzeta(FLOAT s)
 {
   if (s < 1.0)
     return 1.4 - 2.0*s*s + 1.5*pow(s,4) - 0.6*pow(s,5);
@@ -275,7 +294,8 @@ inline FLOAT QuinticKernel::wzeta(FLOAT s)
 // ============================================================================
 // QuinticKernel::wgrav
 // ============================================================================
-inline FLOAT QuinticKernel::wgrav(FLOAT s)
+template <int ndim>
+inline FLOAT QuinticKernel<ndim>::wgrav(FLOAT s)
 {
   if (s < 1.0)
     return 1.33333333333333*s - 1.2*pow(s,3) + 0.5*pow(s,4);
@@ -291,7 +311,8 @@ inline FLOAT QuinticKernel::wgrav(FLOAT s)
 // ============================================================================
 // QuinticKernel::wpot
 // ============================================================================
-inline FLOAT QuinticKernel::wpot(FLOAT s)
+template <int ndim>
+inline FLOAT QuinticKernel<ndim>::wpot(FLOAT s)
 {
   if (s < 1.0)
     return 1.4 - 0.666666666666666*s*s + 0.3*pow(s,4) - 0.1*pow(s,5);
@@ -307,11 +328,12 @@ inline FLOAT QuinticKernel::wpot(FLOAT s)
 // ============================================================================
 // Class GaussianKernel
 // ============================================================================
-class GaussianKernel: public SphKernel
+template <int ndim>
+class GaussianKernel: public SphKernel<ndim>
 {
  public:
 
-  GaussianKernel(int, string);
+  GaussianKernel(string);
   ~GaussianKernel();
 
   // M4 kernel function prototypes
@@ -329,10 +351,11 @@ class GaussianKernel: public SphKernel
 // ============================================================================
 // GaussianKernel::w0
 // ============================================================================
-inline FLOAT GaussianKernel::w0(FLOAT s)
+template <int ndim>
+inline FLOAT GaussianKernel<ndim>::w0(FLOAT s)
 {
   if (s < (FLOAT) 3.0)
-    return kernnorm*exp(-s*s);
+    return (this->kernnorm)*exp(-s*s);
   else
     return (FLOAT) 0.0;
 }
@@ -342,10 +365,11 @@ inline FLOAT GaussianKernel::w0(FLOAT s)
 // ============================================================================
 // GaussianKernel::w1
 // ============================================================================
-inline FLOAT GaussianKernel::w1(FLOAT s)
+template <int ndim>
+inline FLOAT GaussianKernel<ndim>::w1(FLOAT s)
 {
   if (s < (FLOAT) 3.0)
-    return -(FLOAT) 2.0*kernnorm*s*exp(-s*s);
+    return -(FLOAT) 2.0*(this->kernnorm)*s*exp(-s*s);
   else
     return (FLOAT) 0.0;
 }
@@ -355,10 +379,11 @@ inline FLOAT GaussianKernel::w1(FLOAT s)
 // ============================================================================
 // GaussianKernel::womega
 // ============================================================================
-inline FLOAT GaussianKernel::womega(FLOAT s)
+template <int ndim>
+inline FLOAT GaussianKernel<ndim>::womega(FLOAT s)
 {
   if (s < (FLOAT) 3.0)
-    return kernnorm*((FLOAT) 2.0*s*exp(-s*s) - ndimpr*exp(-s*s));
+    return (this->kernnorm)*((FLOAT) 2.0*s*exp(-s*s) - (this->ndimpr)*exp(-s*s));
   else
     return (FLOAT) 0.0;
 }
@@ -368,7 +393,8 @@ inline FLOAT GaussianKernel::womega(FLOAT s)
 // ============================================================================
 // GaussianKernel::wzeta
 // ============================================================================
-inline FLOAT GaussianKernel::wzeta(FLOAT s)
+template <int ndim>
+inline FLOAT GaussianKernel<ndim>::wzeta(FLOAT s)
 {
   if (s < (FLOAT) 3.0)
     return 0.0;
@@ -381,7 +407,8 @@ inline FLOAT GaussianKernel::wzeta(FLOAT s)
 // ============================================================================
 // GaussianKernel::wgrav
 // ============================================================================
-inline FLOAT GaussianKernel::wgrav(FLOAT s)
+template <int ndim>
+inline FLOAT GaussianKernel<ndim>::wgrav(FLOAT s)
 {
   if (s < (FLOAT) 3.0)
     return 0.0;
@@ -394,7 +421,8 @@ inline FLOAT GaussianKernel::wgrav(FLOAT s)
 // ============================================================================
 // GaussianKernel::wpot
 // ============================================================================
-inline FLOAT GaussianKernel::wpot(FLOAT s)
+template <int ndim>
+inline FLOAT GaussianKernel<ndim>::wpot(FLOAT s)
 {
   if (s < (FLOAT) 3.0)
     return 0.0;
@@ -402,14 +430,10 @@ inline FLOAT GaussianKernel::wpot(FLOAT s)
     return 0.0;
 }
 
-
-
-
-SphKernel* KernelFactory (int ndimaux, string KernelName);
-
-class TabulatedKernel: public SphKernel {
+template <int ndim>
+class TabulatedKernel: public SphKernel<ndim> {
 private:
-  SphKernel* kernel;
+  SphKernel<ndim>* kernel;
   int res;
   FLOAT resinvkernrange;
   FLOAT resinvkernrangesqd;
@@ -424,14 +448,14 @@ private:
   FLOAT* tableWzeta_s2;
   FLOAT* tableLOS;
 
-  void initializeTable(FLOAT* table, FLOAT (SphKernel::*function) (FLOAT s)) {
+  void initializeTable(FLOAT* table, FLOAT (SphKernel<ndim>::*function) (FLOAT s)) {
     const FLOAT step = kernel->kernrange/res;
     for (int i=0; i< res; i++) {
       table[i] = (kernel->*function)(step*i);
     }
   }
 
-  void initializeTableSqd (FLOAT* table, FLOAT (SphKernel::*function) (FLOAT s)) {
+  void initializeTableSqd (FLOAT* table, FLOAT (SphKernel<ndim>::*function) (FLOAT s)) {
     const FLOAT step = kernel->kernrangesqd/res;
     for (int i=0; i< res; i++) {
       table[i] = (kernel->*function)(sqrt(step*i));
@@ -442,7 +466,7 @@ private:
 
 
   FLOAT tableLookup (FLOAT* table, FLOAT s) {
-    if (s>=kernrange)
+    if (s>=(this->kernrange))
       return 0;
     FLOAT indexf = s*resinvkernrange;
     int index = (int)indexf;
@@ -450,7 +474,7 @@ private:
   }
 
   FLOAT tableLookupSqd(FLOAT* table, FLOAT s) {
-    if (s>=kernrangesqd)
+    if (s>=(this->kernrangesqd))
       return 0;
     FLOAT indexf = s*resinvkernrangesqd;
     int index = (int)indexf;
@@ -458,7 +482,7 @@ private:
   }
 
 public:
-  TabulatedKernel(int ndimaux, string KernelName, int resaux=1000);
+  TabulatedKernel(string KernelName, int resaux=1000);
 
   FLOAT w0(FLOAT s);
   FLOAT w0_s2(FLOAT s);
@@ -488,45 +512,54 @@ public:
 
 };
 
-inline FLOAT TabulatedKernel::w0 (FLOAT s) {
+template <int ndim>
+inline FLOAT TabulatedKernel<ndim>::w0 (FLOAT s) {
   return tableLookup(tableW0, s);
 }
 
-inline FLOAT TabulatedKernel::w0_s2 (FLOAT s2) {
+template <int ndim>
+inline FLOAT TabulatedKernel<ndim>::w0_s2 (FLOAT s2) {
   return tableLookupSqd(tableW0_s2, s2);
 }
 
-inline FLOAT TabulatedKernel::w1 (FLOAT s) {
+template <int ndim>
+inline FLOAT TabulatedKernel<ndim>::w1 (FLOAT s) {
   return tableLookup(tableW1, s);
 }
 
-inline FLOAT TabulatedKernel::womega (FLOAT s) {
+template <int ndim>
+inline FLOAT TabulatedKernel<ndim>::womega (FLOAT s) {
   return tableLookup(tableWomega, s);
 }
 
-inline FLOAT TabulatedKernel::womega_s2 (FLOAT s2) {
+template <int ndim>
+inline FLOAT TabulatedKernel<ndim>::womega_s2 (FLOAT s2) {
   return tableLookupSqd(tableWomega_s2, s2);
 }
 
-inline FLOAT TabulatedKernel::wzeta (FLOAT s) {
+template <int ndim>
+inline FLOAT TabulatedKernel<ndim>::wzeta (FLOAT s) {
   return tableLookup(tableWzeta, s);
 }
 
-inline FLOAT TabulatedKernel::wzeta_s2 (FLOAT s2) {
+template <int ndim>
+inline FLOAT TabulatedKernel<ndim>::wzeta_s2 (FLOAT s2) {
   return tableLookupSqd(tableWzeta_s2, s2);
 }
 
-inline FLOAT TabulatedKernel::wgrav (FLOAT s) {
+template <int ndim>
+inline FLOAT TabulatedKernel<ndim>::wgrav (FLOAT s) {
   return tableLookup(tableWgrav, s);
 }
 
-inline FLOAT TabulatedKernel::wpot (FLOAT s) {
+template <int ndim>
+inline FLOAT TabulatedKernel<ndim>::wpot (FLOAT s) {
   return tableLookup(tableWpot, s);
 }
 
-inline FLOAT TabulatedKernel::wLOS (FLOAT s) {
+template <int ndim>
+inline FLOAT TabulatedKernel<ndim>::wLOS (FLOAT s) {
   return tableLookup(tableLOS, s);
 }
-
 
 #endif

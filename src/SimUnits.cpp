@@ -393,6 +393,7 @@ double SpecificEnergyUnit::SIUnit(string unit_string)
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
+  return -1;
 }
 
 
@@ -422,6 +423,7 @@ double SpecificEnergyRateUnit::SIUnit(string unit_string)
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
+  return -1;
 }
 
 
@@ -450,6 +452,7 @@ double TemperatureUnit::SIUnit(string unit_string)
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
+  return -1;
 }
 
 

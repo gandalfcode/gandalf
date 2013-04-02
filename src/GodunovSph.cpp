@@ -25,23 +25,20 @@ using namespace std;
 // ============================================================================
 // GodunovSph::GodunovSph
 // ============================================================================
-template <typename kernelclass>
-GodunovSph<kernelclass>::GodunovSph(int ndimaux, int vdimaux, int bdimaux, int hydro_forces_aux,
+template <int ndim, template<int> class kernelclass>
+GodunovSph<ndim, kernelclass >::GodunovSph(int hydro_forces_aux,
 	    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
 	    FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
 	    acondenum acond_aux, string gas_eos_aux, string KernelName):
-  Sph(ndimaux, vdimaux, bdimaux, hydro_forces_aux,
+  Sph<ndim>(hydro_forces_aux,
 		    self_gravity_aux, alpha_visc_aux, beta_visc_aux,
 		    h_fac_aux, h_converge_aux, avisc_aux,
 		    acond_aux, gas_eos_aux, KernelName),
-  kern(kernelclass(ndimaux, KernelName))
+  kern(kernelclass<ndim>(KernelName))
 {
-  allocated = false;
-  Nsph = 0;
-  Nsphmax = 0;
-  kernfac = sqrttwo;
-  kernfacsqd = (FLOAT) 2.0;
-  kernp = &kern;
+  this->kernp = &kern;
+  this->kernfac = sqrttwo;
+  this->kernfacsqd = (FLOAT) 2.0;
 }
 
 
@@ -49,8 +46,8 @@ GodunovSph<kernelclass>::GodunovSph(int ndimaux, int vdimaux, int bdimaux, int h
 // ============================================================================
 // GodunovSph::~GodunovSph
 // ============================================================================
-template <typename kernelclass>
-GodunovSph<kernelclass>::~GodunovSph()
+template <int ndim, template<int> class kernelclass>
+GodunovSph<ndim, kernelclass >::~GodunovSph()
 {
 }
 
@@ -65,14 +62,14 @@ GodunovSph<kernelclass>::~GodunovSph()
 // correct value of h.  The maximum tolerance used for deciding whether the 
 // iteration has converged is given by the 'h_converge' parameter.
 // ============================================================================
-template <typename kernelclass>
-int GodunovSph<kernelclass>::ComputeH
+template <int ndim, template<int> class kernelclass>
+int GodunovSph<ndim, kernelclass >::ComputeH
 (int i,                                 // id of particle
  int Nneib,                             // No. of potential neighbours
  FLOAT *m,                              // Array of neib. masses
  FLOAT *mu,                             // Array of m*u (not needed here)
  FLOAT *drsqd,                          // Array of neib. distances (squared)
- SphParticle &parti)                    // Particle i data
+ SphParticle<ndim> &parti)                    // Particle i data
 {
   int j;                                // Neighbour id
   int jj;                               // Aux. neighbour counter
@@ -182,22 +179,22 @@ int GodunovSph<kernelclass>::ComputeH
 // This ensures that all particle-particle pair interactions are only 
 // computed once only for efficiency.
 // ============================================================================
-template <typename kernelclass>
-void GodunovSph<kernelclass>::ComputeSphNeibForces
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass >::ComputeSphNeibForces
 (int i,                                 // id of particle
  int Nneib,                             // No. of neighbours in neibpart array
  int *neiblist,                         // id of gather neighbour in neibpart
  FLOAT *drmag,                          // Distances of gather neighbours
  FLOAT *invdrmag,                       // Inverse distances of gather neibs
  FLOAT *dr,                             // Position vector of gather neibs
- SphParticle &parti,                    // Particle i data
- SphParticle *neibpart)                 // Neighbour particle data
+ SphParticle<ndim> &parti,                    // Particle i data
+ SphParticle<ndim> *neibpart)                 // Neighbour particle data
 {
   int j;                                // Neighbour list id
   int jj;                               // Aux. neighbour counter
   int k;                                // Dimension counter
-  FLOAT draux[ndimmax];                 // Relative position vector
-  FLOAT dv[ndimmax];                    // Relative velocity vector
+  FLOAT draux[ndim];                 // Relative position vector
+  FLOAT dv[ndim];                    // Relative velocity vector
   FLOAT dvdr;                           // Dot product of dv and dr
   FLOAT wkerni;                         // Value of w1 kernel function
   FLOAT wkernj;                         // Value of w1 kernel function
@@ -216,7 +213,7 @@ void GodunovSph<kernelclass>::ComputeSphNeibForces
   FLOAT vl,vr;
   FLOAT pstar;
   FLOAT vstar;
-  FLOAT vtemp[ndimmax];
+  FLOAT vtemp[ndim];
   FLOAT gradi;
   FLOAT gradj;
 
@@ -288,11 +285,11 @@ void GodunovSph<kernelclass>::ComputeSphNeibForces
 // GodunovSph::InitialiseRiemannProblem
 // ..
 // ============================================================================
-template <typename kernelclass>
-void GodunovSph<kernelclass>::InitialiseRiemannProblem
-(SphParticle partl,
- SphParticle partr,
- FLOAT draux[ndimmax],
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
+(SphParticle<ndim> partl,
+ SphParticle<ndim> partr,
+ FLOAT draux[ndim],
  FLOAT drmag,
  FLOAT dvdr,
  FLOAT soundl,
@@ -310,8 +307,8 @@ void GodunovSph<kernelclass>::InitialiseRiemannProblem
   FLOAT deltal;
   FLOAT deltar;
   FLOAT limiter;
-  FLOAT vec1[ndimmax];
-  FLOAT vec2[ndimmax];
+  FLOAT vec1[ndim];
+  FLOAT vec2[ndim];
   FLOAT limiterl,limiterr,vlmin,vlmax,vrmin,vrmax;
   FLOAT R1,R2,R3;
   FLOAT deltamean;
@@ -838,25 +835,25 @@ void GodunovSph<kernelclass>::InitialiseRiemannProblem
 // GodunovSph::ComputeSphDerivatives
 // ..
 // ============================================================================
-template <typename kernelclass>
-void GodunovSph<kernelclass>::ComputeSphDerivatives
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass >::ComputeSphDerivatives
 (int i,                                 // id of particle
  int Nneib,                             // No. of neighbours in neibpart array
  int *neiblist,                         // id of gather neighbour in neibpart
  FLOAT *drmag,                          // Distances of gather neighbours
  FLOAT *invdrmag,                       // Inverse distances of gather neibs
  FLOAT *dr,                             // Position vector of gather neibs
- SphParticle &parti,                    // Particle i data
- SphParticle *neibpart)                 // Neighbour particle data
+ SphParticle<ndim> &parti,                    // Particle i data
+ SphParticle<ndim> *neibpart)                 // Neighbour particle data
 {
   int j;                                // Neighbour list id
   int jj;                               // Aux. neighbour counter
   int k;                                // Dimension counter
-  int kk;                               // ..
-  FLOAT dvdr;                           // ..
+  int kk;
+  FLOAT draux[ndim];                 // Relative position vector
+  FLOAT dv[ndim];                    // Relative velocity vector
   FLOAT wkern;                          // Value of w1 kernel function
-  FLOAT draux[ndimmax];                 // Relative position vector
-  FLOAT dv[ndimmax];                    // Relative velocity vector
+  FLOAT dvdr;                           // ..
 
   parti.div_v = (FLOAT) 0.0;
   parti.rhomin = big_number;
@@ -928,23 +925,23 @@ void GodunovSph<kernelclass>::ComputeSphDerivatives
 // This ensures that all particle-particle pair interactions are only 
 // computed once only for efficiency.
 // ============================================================================
-template <typename kernelclass>
-void GodunovSph<kernelclass>::ComputeSphNeibDudt
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
 (int i,                                 // id of particle
  int Nneib,                             // No. of neighbours in neibpart array
  int *neiblist,                         // id of gather neighbour in neibpart
  FLOAT *drmag,                          // Distances of gather neighbours
  FLOAT *invdrmag,                       // Inverse distances of gather neibs
  FLOAT *dr,                             // Position vector of gather neibs
- SphParticle &parti,                    // Particle i data
- SphParticle *neibpart)                 // Neighbour particle data
+ SphParticle<ndim> &parti,                    // Particle i data
+ SphParticle<ndim> *neibpart)                 // Neighbour particle data
 {
   int j;                                // Neighbour list id
   int jj;                               // Aux. neighbour counter
   int k;                                // Dimension counter
-  FLOAT da[ndimmax];                    // ..
-  FLOAT draux[ndimmax];                 // Relative position vector
-  FLOAT dv[ndimmax];                    // Relative velocity vector
+  FLOAT da[ndim];                    // ..
+  FLOAT draux[ndim];                 // Relative position vector
+  FLOAT dv[ndim];                    // Relative velocity vector
   FLOAT dvdr;                           // Dot product of dv and dr
   FLOAT wkerni;                         // Value of w1 kernel function
   FLOAT wkernj;                         // Value of w1 kernel function
@@ -966,8 +963,8 @@ void GodunovSph<kernelclass>::ComputeSphNeibDudt
   FLOAT vhalfi;
   FLOAT vhalfj;
   FLOAT dt;
-  FLOAT vtemp[ndimmax];
-  FLOAT gradi,gradj;
+  FLOAT vtemp[ndim];
+  FLOAT gradi, gradj;
 
   FLOAT hconv = powf(invsqrttwo,ndim+1);
 
@@ -1040,9 +1037,9 @@ void GodunovSph<kernelclass>::ComputeSphNeibDudt
 // GodunovSph::ComputePostHydroQuantities
 // ..
 // ============================================================================
-template <typename kernelclass>
-void GodunovSph<kernelclass>::ComputePostHydroQuantities
-(SphParticle &parti)
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass >::ComputePostHydroQuantities
+(SphParticle<ndim> &parti)
 {
   //parti.div_v *= parti.invrho;
   //parti.dudt = (FLOAT) 0.0;
@@ -1058,13 +1055,13 @@ void GodunovSph<kernelclass>::ComputePostHydroQuantities
 // Compute the contribution to the total gravitational force of particle 'i' 
 // due to 'Nneib' neighbouring particles in the list 'neiblist'.
 // ============================================================================
-template <typename kernelclass>
-void GodunovSph<kernelclass>::ComputeDirectGravForces
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass >::ComputeDirectGravForces
 (int i,                                 // id of particle
  int Ndirect,                           // No. of nearby 'gather' neighbours
  int *directlist,                       // id of gather neighbour in neibpart
- SphParticle &parti,                    // Particle i data
- SphParticle *sph)                      // Neighbour particle data
+ SphParticle<ndim> &parti,                    // Particle i data
+ SphParticle<ndim> *sph)                      // Neighbour particle data
 {
   return;
 }
@@ -1075,8 +1072,8 @@ void GodunovSph<kernelclass>::ComputeDirectGravForces
 // HllcSolver
 // ..
 // ============================================================================
-template <typename kernelclass>
-void GodunovSph<kernelclass>::HllcSolver
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass >::HllcSolver
 (string wave_speed,
  FLOAT pl,
  FLOAT pr,
@@ -1177,8 +1174,8 @@ void GodunovSph<kernelclass>::HllcSolver
 // VanLeerSolver
 // Riemann solver ...
 // ============================================================================
-template <typename kernelclass>
-void GodunovSph<kernelclass>::VanLeerSolver
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass>::VanLeerSolver
 (string wave_speed,
  FLOAT pl,
  FLOAT pr,
@@ -1295,8 +1292,8 @@ void GodunovSph<kernelclass>::VanLeerSolver
 // IsothermalSolver
 // ..
 // ============================================================================
-template <typename kernelclass>
-void GodunovSph<kernelclass>::IsothermalSolver
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass>::IsothermalSolver
 (string wave_speed,
  FLOAT pl,
  FLOAT pr,
@@ -1325,8 +1322,17 @@ void GodunovSph<kernelclass>::IsothermalSolver
 
 
 
+template class GodunovSph<1, M4Kernel>;
+template class GodunovSph<1, QuinticKernel>;
+template class GodunovSph<1, GaussianKernel>;
+template class GodunovSph<1, TabulatedKernel>;
+template class GodunovSph<2, M4Kernel>;
+template class GodunovSph<2, QuinticKernel>;
+template class GodunovSph<2, GaussianKernel>;
+template class GodunovSph<2, TabulatedKernel>;
+template class GodunovSph<3, M4Kernel>;
+template class GodunovSph<3, QuinticKernel>;
+template class GodunovSph<3, GaussianKernel>;
+template class GodunovSph<3, TabulatedKernel>;
 
-template class GodunovSph<M4Kernel>;
-template class GodunovSph<QuinticKernel>;
-template class GodunovSph<GaussianKernel>;
-template class GodunovSph<TabulatedKernel>;
+

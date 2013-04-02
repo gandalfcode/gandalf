@@ -23,10 +23,11 @@ using namespace std;
 // ============================================================================
 // SphGodunovIntegration::SphGodunovIntegration()
 // ============================================================================
-SphGodunovIntegration::SphGodunovIntegration(int ndimaux, int vdimaux, 
+template <int ndim>
+SphGodunovIntegration<ndim>::SphGodunovIntegration(
 			       DOUBLE accel_mult_aux, 
 			       DOUBLE courant_mult_aux) :
-  SphIntegration(ndimaux, vdimaux, accel_mult_aux, courant_mult_aux)
+  SphIntegration<ndim>(accel_mult_aux, courant_mult_aux)
 {
 }
 
@@ -35,7 +36,8 @@ SphGodunovIntegration::SphGodunovIntegration(int ndimaux, int vdimaux,
 // ============================================================================
 // SphGodunovIntegration::~SphGodunovIntegration()
 // ============================================================================
-SphGodunovIntegration::~SphGodunovIntegration()
+template <int ndim>
+SphGodunovIntegration<ndim>::~SphGodunovIntegration()
 {
 }
 
@@ -50,8 +52,9 @@ SphGodunovIntegration::~SphGodunovIntegration()
 // Also set particles at the end of step as 'active' in order to compute 
 // the end-of-step force computation.
 // ============================================================================
-void SphGodunovIntegration::AdvanceParticles(int n, int level_step, int Nsph,
-				      SphParticle *sph, FLOAT timestep)
+template <int ndim>
+void SphGodunovIntegration<ndim>::AdvanceParticles(int n, int level_step, int Nsph,
+				      SphParticle<ndim> *sph, FLOAT timestep)
 {
   int i;                                // Particle counter
   int k;                                // Dimension counter
@@ -89,8 +92,9 @@ void SphGodunovIntegration::AdvanceParticles(int n, int level_step, int Nsph,
 // SphGodunovIntegration::CorrectionTerms
 // No correction terms to apply.
 // ============================================================================
-void SphGodunovIntegration::CorrectionTerms(int n, int level_step, int Nsph,
-					    SphParticle *sph, FLOAT timestep)
+template <int ndim>
+void SphGodunovIntegration<ndim>::CorrectionTerms(int n, int level_step, int Nsph,
+					    SphParticle<ndim> *sph, FLOAT timestep)
 {
   return;
 }
@@ -102,8 +106,9 @@ void SphGodunovIntegration::CorrectionTerms(int n, int level_step, int Nsph,
 // Record all important SPH particle quantities at the end of the step for the 
 // start of the new timestep.
 // ============================================================================
-void SphGodunovIntegration::EndTimestep(int n, int level_step, 
-				 int Nsph, SphParticle *sph)
+template <int ndim>
+void SphGodunovIntegration<ndim>::EndTimestep(int n, int level_step,
+				 int Nsph, SphParticle<ndim> *sph)
 {
   int i;                                // Particle counter
   int k;                                // Dimension counter
@@ -128,24 +133,23 @@ void SphGodunovIntegration::EndTimestep(int n, int level_step,
   return;
 }
 
-
-
 // ============================================================================
 // SphIntegration::Timestep
 // Default timestep size for SPH particles.  Takes the minimum of : 
 // (i)  const*h/(sound_speed + h*|div_v|)    (Courant condition)
 // (ii) const*sqrt(h/|a|)                    (Acceleration condition)
 // ============================================================================
-DOUBLE SphGodunovIntegration::Timestep(SphParticle &part, int hydro_forces)
+template <int ndim>
+DOUBLE SphGodunovIntegration<ndim>::Timestep(SphParticle<ndim> &part, int hydro_forces)
 {
   DOUBLE timestep;
   //DOUBLE amag;
 
   // Courant condition
-  timestep = courant_mult*part.h/(part.sound + small_number_dp);
+  timestep = this->courant_mult*part.h/(part.sound + small_number_dp);
 
   // Local convergence/divergence condition
-  timestep = min(timestep,courant_mult/(fabs(part.div_v) + small_number_dp));
+  timestep = min(timestep,this->courant_mult/(fabs(part.div_v) + small_number_dp));
 
   //Acceleration condition
   //amag = sqrt(DotProduct(part.a,part.a,ndim));
@@ -153,3 +157,7 @@ DOUBLE SphGodunovIntegration::Timestep(SphParticle &part, int hydro_forces)
 
   return timestep;
 }
+
+template class SphGodunovIntegration<1>;
+template class SphGodunovIntegration<2>;
+template class SphGodunovIntegration<3>;

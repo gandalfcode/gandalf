@@ -26,23 +26,21 @@ using namespace std;
 // ============================================================================
 // SM2012Sph::SM2012Sph
 // ============================================================================
-template <typename kernelclass>
-SM2012Sph<kernelclass>::SM2012Sph(int ndimaux, int vdimaux, int bdimaux, int hydro_forces_aux,
+template <int ndim, template<int> class kernelclass>
+SM2012Sph<ndim, kernelclass >::SM2012Sph(int hydro_forces_aux,
 	    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
 	    FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
 	    acondenum acond_aux, string gas_eos_aux, string KernelName):
-  Sph(ndimaux, vdimaux, bdimaux, hydro_forces_aux,
+  Sph<ndim>(hydro_forces_aux,
 		    self_gravity_aux, alpha_visc_aux, beta_visc_aux,
 		    h_fac_aux, h_converge_aux, avisc_aux,
 		    acond_aux, gas_eos_aux, KernelName),
-  kern(kernelclass(ndimaux, KernelName))
+  kern(kernelclass<ndim>(KernelName))
 {
-  allocated = false;
-  Nsph = 0;
-  Nsphmax = 0;
-  kernfac = (FLOAT) 1.0;
-  kernfacsqd = (FLOAT) 1.0;
-  kernp = &kern;
+
+  this->kernp = &kern;
+  this->kernfac = (FLOAT) 1.0;
+  this->kernfacsqd = (FLOAT) 1.0;
 }
 
 
@@ -50,8 +48,8 @@ SM2012Sph<kernelclass>::SM2012Sph(int ndimaux, int vdimaux, int bdimaux, int hyd
 // ============================================================================
 // SM2012Sph::~SM2012Sph
 // ============================================================================
-template <typename kernelclass>
-SM2012Sph<kernelclass>::~SM2012Sph()
+template <int ndim, template<int> class kernelclass>
+SM2012Sph<ndim, kernelclass >::~SM2012Sph()
 {
 }
 
@@ -66,14 +64,14 @@ SM2012Sph<kernelclass>::~SM2012Sph()
 // correct value of h.  The maximum tolerance used for deciding whether the 
 // iteration has converged is given by the 'h_converge' parameter.
 // ============================================================================
-template <typename kernelclass>
-int SM2012Sph<kernelclass>::ComputeH
+template <int ndim, template<int> class kernelclass>
+int SM2012Sph<ndim, kernelclass >::ComputeH
 (int i,                                 // id of particle
  int Nneib,                             // No. of potential neighbours
  FLOAT *m,                              // Array of neib. masses
  FLOAT *mu,                             // Array of neib. internal energies
  FLOAT *drsqd,                          // Array of neib. distances (squared)
- SphParticle &parti)                    // Particle i data
+ SphParticle<ndim> &parti)                    // Particle i data
 {
   int j;                                // Neighbour id
   int jj;                               // Aux. neighbour counter
@@ -183,22 +181,22 @@ int SM2012Sph<kernelclass>::ComputeH
 // This ensures that all particle-particle pair interactions are only 
 // computed once only for efficiency.
 // ============================================================================
-template <typename kernelclass>
-void SM2012Sph<kernelclass>::ComputeSphNeibForces
+template <int ndim, template<int> class kernelclass>
+void SM2012Sph<ndim, kernelclass >::ComputeSphNeibForces
 (int i,                                 // id of particle
  int Nneib,                             // No. of neighbours in neibpart array
  int *neiblist,                         // id of gather neighbour in neibpart
  FLOAT *drmag,                          // Distances of gather neighbours
  FLOAT *invdrmag,                       // Inverse distances of gather neibs
  FLOAT *dr,                             // Position vector of gather neibs
- SphParticle &parti,                    // Particle i data
- SphParticle *neibpart)                 // Neighbour particle data
+ SphParticle<ndim> &parti,                    // Particle i data
+ SphParticle<ndim> *neibpart)                 // Neighbour particle data
 {
   int j;                                // Neighbour list id
   int jj;                               // Aux. neighbour counter
   int k;                                // Dimension counter
-  FLOAT draux[ndimmax];                 // Relative position vector
-  FLOAT dv[ndimmax];                    // Relative velocity vector
+  FLOAT draux[ndim];                 // Relative position vector
+  FLOAT dv[ndim];                    // Relative velocity vector
   FLOAT dvdr;                           // Dot product of dv and dr
   FLOAT wkerni;                         // Value of w1 kernel function
   FLOAT wkernj;                         // Value of w1 kernel function
@@ -295,10 +293,10 @@ void SM2012Sph<kernelclass>::ComputeSphNeibForces
 // SM2012Sph::ComputeSphNeibDudt
 // Empty definition (
 // ============================================================================
-template <typename kernelclass>
-void SM2012Sph<kernelclass>::ComputeSphNeibDudt
+template <int ndim, template<int> class kernelclass>
+void SM2012Sph<ndim, kernelclass >::ComputeSphNeibDudt
 (int i, int Nneib, int *neiblist, FLOAT *drmag, 
- FLOAT *invdrmag, FLOAT *dr, SphParticle &parti, SphParticle *neibpart)
+ FLOAT *invdrmag, FLOAT *dr, SphParticle<ndim> &parti, SphParticle<ndim> *neibpart)
 {
   return;
 }
@@ -309,10 +307,10 @@ void SM2012Sph<kernelclass>::ComputeSphNeibDudt
 // SM2012Sph::ComputeSphDerivatives
 // Empty definition
 // ============================================================================
-template <typename kernelclass>
-void SM2012Sph<kernelclass>::ComputeSphDerivatives
+template <int ndim, template<int> class kernelclass>
+void SM2012Sph<ndim, kernelclass >::ComputeSphDerivatives
 (int i, int Nneib, int *neiblist, FLOAT *drmag, 
- FLOAT *invdrmag, FLOAT *dr, SphParticle &parti, SphParticle *neibpart)
+ FLOAT *invdrmag, FLOAT *dr, SphParticle<ndim> &parti, SphParticle<ndim> *neibpart)
 {
   return;
 }
@@ -323,9 +321,9 @@ void SM2012Sph<kernelclass>::ComputeSphDerivatives
 // SM2012Sph::ComputePostHydroQuantities
 // ..
 // ============================================================================
-template <typename kernelclass>
-void SM2012Sph<kernelclass>::ComputePostHydroQuantities
-(SphParticle &parti)
+template <int ndim, template<int> class kernelclass>
+void SM2012Sph<ndim, kernelclass >::ComputePostHydroQuantities
+(SphParticle<ndim> &parti)
 {
   parti.div_v *= parti.invrho;
   return;
@@ -338,20 +336,28 @@ void SM2012Sph<kernelclass>::ComputePostHydroQuantities
 // Compute the contribution to the total gravitational force of particle 'i' 
 // due to 'Nneib' neighbouring particles in the list 'neiblist'.
 // ============================================================================
-template <typename kernelclass>
-void SM2012Sph<kernelclass>::ComputeDirectGravForces
+template <int ndim, template<int> class kernelclass>
+void SM2012Sph<ndim, kernelclass >::ComputeDirectGravForces
 (int i,                                 // id of particle
  int Ndirect,                           // No. of nearby 'gather' neighbours
  int *directlist,                       // id of gather neighbour in neibpart
- SphParticle &parti,                    // Particle i data
- SphParticle *sph)                      // Neighbour particle data
+ SphParticle<ndim> &parti,                    // Particle i data
+ SphParticle<ndim> *sph)                      // Neighbour particle data
 {
   return;
 }
 
 
 
-template class SM2012Sph<M4Kernel>;
-template class SM2012Sph<QuinticKernel>;
-template class SM2012Sph<GaussianKernel>;
-template class SM2012Sph<TabulatedKernel>;
+template class SM2012Sph<1, M4Kernel>;
+template class SM2012Sph<1, QuinticKernel>;
+template class SM2012Sph<1, GaussianKernel>;
+template class SM2012Sph<1, TabulatedKernel>;
+template class SM2012Sph<2, M4Kernel>;
+template class SM2012Sph<2, QuinticKernel>;
+template class SM2012Sph<2, GaussianKernel>;
+template class SM2012Sph<2, TabulatedKernel>;
+template class SM2012Sph<3, M4Kernel>;
+template class SM2012Sph<3, QuinticKernel>;
+template class SM2012Sph<3, GaussianKernel>;
+template class SM2012Sph<3, TabulatedKernel>;

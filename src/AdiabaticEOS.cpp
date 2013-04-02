@@ -15,12 +15,12 @@
 // Default constructor for perfect gas EOS.  Passes and sets important 
 // thermal physics variables.
 // ============================================================================
-Adiabatic::Adiabatic(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux)
+template <int ndim>
+Adiabatic<ndim>::Adiabatic(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux):
+  EOS<ndim> (gamma_aux)
 {
   temp0 = temp0aux;
   mu_bar = mu_bar_aux;
-  gamma = gamma_aux;
-  gammam1 = gamma - (FLOAT) 1.0;
 }
 
 
@@ -28,7 +28,8 @@ Adiabatic::Adiabatic(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux)
 // ============================================================================
 // Adiabatic::Adiabatic()
 // ============================================================================
-Adiabatic::~Adiabatic()
+template <int ndim>
+Adiabatic<ndim>::~Adiabatic()
 {
 }
 
@@ -38,7 +39,8 @@ Adiabatic::~Adiabatic()
 // Adiabatic::Pressure
 // Calculates and returns thermal pressure of referenced particle
 // ============================================================================
-FLOAT Adiabatic::Pressure(SphParticle &part)
+template <int ndim>
+FLOAT Adiabatic<ndim>::Pressure(SphParticle<ndim> &part)
 {
   return gammam1*part.rho*part.u;
 }
@@ -50,7 +52,8 @@ FLOAT Adiabatic::Pressure(SphParticle &part)
 // Calculates and returns value of Entropic function (= P/rho^gamma) for 
 // referenced particle
 // ============================================================================
-FLOAT Adiabatic::EntropicFunction(SphParticle &part)
+template <int ndim>
+FLOAT Adiabatic<ndim>::EntropicFunction(SphParticle<ndim> &part)
 {
   return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
 }
@@ -61,7 +64,8 @@ FLOAT Adiabatic::EntropicFunction(SphParticle &part)
 // Adiabatic::SoundSpeed
 // Returns adiabatic sound speed of particle
 // ============================================================================
-FLOAT Adiabatic::SoundSpeed(SphParticle &part)
+template <int ndim>
+FLOAT Adiabatic<ndim>::SoundSpeed(SphParticle<ndim> &part)
 {
   return sqrt(gamma*gammam1*part.u);
 }
@@ -72,7 +76,8 @@ FLOAT Adiabatic::SoundSpeed(SphParticle &part)
 // Adiabatic::SpecificInternalEnergy
 // Returns specific internal energy of particle
 // ============================================================================
-FLOAT Adiabatic::SpecificInternalEnergy(SphParticle &part)
+template <int ndim>
+FLOAT Adiabatic<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
 {
   return part.u;
 }
@@ -83,7 +88,12 @@ FLOAT Adiabatic::SpecificInternalEnergy(SphParticle &part)
 // Adiabatic::Temperature
 // Returns temperature of particle
 // ============================================================================
-FLOAT Adiabatic::Temperature(SphParticle &part)
+template <int ndim>
+FLOAT Adiabatic<ndim>::Temperature(SphParticle<ndim> &part)
 {
   return gammam1*part.u;
 }
+
+template class Adiabatic<1>;
+template class Adiabatic<2>;
+template class Adiabatic<3>;

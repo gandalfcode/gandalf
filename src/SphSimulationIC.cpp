@@ -22,7 +22,8 @@ using namespace std;
 // ============================================================================
 // SphSimulation::ShockTube
 // ============================================================================
-void SphSimulation::ShockTube(void)
+template <int ndim>
+void SphSimulation<ndim>::ShockTube(void)
 {
   int i;
   int j;
@@ -31,23 +32,23 @@ void SphSimulation::ShockTube(void)
   int Nbox2;
   FLOAT volume;
   FLOAT *r;
-  DomainBox box1;
-  DomainBox box2;
-  int Nlattice1[ndimmax];
-  int Nlattice2[ndimmax];
-  FLOAT vfluid1[ndimmax];
-  FLOAT vfluid2[ndimmax];
-  FLOAT rhofluid1 = simparams.floatparams["rhofluid1"];
-  FLOAT rhofluid2 = simparams.floatparams["rhofluid2"];
-  FLOAT press1 = simparams.floatparams["press1"];
-  FLOAT press2 = simparams.floatparams["press2"];
-  FLOAT temp0 = simparams.floatparams["temp0"];
-  FLOAT mu_bar = simparams.floatparams["mu_bar"];
-  FLOAT gammaone = simparams.floatparams["gamma_eos"] - 1.0;
-  Nlattice1[0] = simparams.intparams["Nlattice1[0]"];
-  Nlattice2[0] = simparams.intparams["Nlattice2[0]"];
-  vfluid1[0] = simparams.floatparams["vfluid1[0]"];
-  vfluid2[0] = simparams.floatparams["vfluid2[0]"];
+  DomainBox<ndim> box1;
+  DomainBox<ndim> box2;
+  int Nlattice1[ndim];
+  int Nlattice2[ndim];
+  FLOAT vfluid1[ndim];
+  FLOAT vfluid2[ndim];
+  FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
+  FLOAT rhofluid2 = simparams->floatparams["rhofluid2"];
+  FLOAT press1 = simparams->floatparams["press1"];
+  FLOAT press2 = simparams->floatparams["press2"];
+  FLOAT temp0 = simparams->floatparams["temp0"];
+  FLOAT mu_bar = simparams->floatparams["mu_bar"];
+  FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
+  Nlattice1[0] = simparams->intparams["Nlattice1[0]"];
+  Nlattice2[0] = simparams->intparams["Nlattice2[0]"];
+  vfluid1[0] = simparams->floatparams["vfluid1[0]"];
+  vfluid2[0] = simparams->floatparams["vfluid2[0]"];
 
   debug2("[SphSimulation::ShockTube]");
 
@@ -119,7 +120,8 @@ void SphSimulation::ShockTube(void)
 // ============================================================================
 // SphSimulation::RandomBox
 // ============================================================================
-void SphSimulation::RandomBox(void)
+template <int ndim>
+void SphSimulation<ndim>::RandomBox(void)
 {
   FLOAT *r;
 
@@ -155,13 +157,14 @@ void SphSimulation::RandomBox(void)
 // ============================================================================
 // SphSimulation::LatticeBox
 // ============================================================================
-void SphSimulation::LatticeBox(void)
+template <int ndim>
+void SphSimulation<ndim>::LatticeBox(void)
 {
   FLOAT *r;
-  int Nlattice1[ndimmax];
-  Nlattice1[0] = simparams.intparams["Nlattice1[0]"];
-  Nlattice1[1] = simparams.intparams["Nlattice1[1]"];
-  Nlattice1[2] = simparams.intparams["Nlattice1[2]"];
+  int Nlattice1[ndim];
+  Nlattice1[0] = simparams->intparams["Nlattice1[0]"];
+  Nlattice1[1] = simparams->intparams["Nlattice1[1]"];
+  Nlattice1[2] = simparams->intparams["Nlattice1[2]"];
 
   debug2("[SphSimulation::RandomBox]");
 
@@ -199,10 +202,11 @@ void SphSimulation::LatticeBox(void)
 // ============================================================================
 // SphSimulation::RandomSphere
 // ============================================================================
-void SphSimulation::RandomSphere(void)
+template <int ndim>
+void SphSimulation<ndim>::RandomSphere(void)
 {
   FLOAT *r;
-  FLOAT rcentre[ndimmax];
+  FLOAT rcentre[ndim];
   FLOAT radius = 1.0;
 
   debug2("[SphSimulation::RandomBox]");
@@ -238,7 +242,8 @@ void SphSimulation::RandomSphere(void)
 // ============================================================================
 // SphSimulation::KHI
 // ============================================================================
-void SphSimulation::KHI(void)
+template <int ndim>
+void SphSimulation<ndim>::KHI(void)
 {
   int i;
   int j;
@@ -247,27 +252,27 @@ void SphSimulation::KHI(void)
   int Nbox2;
   FLOAT volume;
   FLOAT *r;
-  DomainBox box1;
-  DomainBox box2;
-  int Nlattice1[ndimmax];
-  int Nlattice2[ndimmax];
-  FLOAT vfluid1[ndimmax];
-  FLOAT vfluid2[ndimmax];
-  FLOAT rhofluid1 = simparams.floatparams["rhofluid1"];
-  FLOAT rhofluid2 = simparams.floatparams["rhofluid2"];
-  FLOAT press1 = simparams.floatparams["press1"];
-  FLOAT press2 = simparams.floatparams["press2"];
-  FLOAT temp0 = simparams.floatparams["temp0"];
-  FLOAT mu_bar = simparams.floatparams["mu_bar"];
-  FLOAT gammaone = simparams.floatparams["gamma_eos"] - 1.0;
-  FLOAT amp = simparams.floatparams["amp"];
-  FLOAT lambda = simparams.floatparams["lambda"];
-  Nlattice1[0] = simparams.intparams["Nlattice1[0]"];
-  Nlattice1[1] = simparams.intparams["Nlattice1[1]"];
-  Nlattice2[0] = simparams.intparams["Nlattice2[0]"];
-  Nlattice2[1] = simparams.intparams["Nlattice2[1]"];
-  vfluid1[0] = simparams.floatparams["vfluid1[0]"];
-  vfluid2[0] = simparams.floatparams["vfluid2[0]"];
+  DomainBox<ndim> box1;
+  DomainBox<ndim> box2;
+  int Nlattice1[ndim];
+  int Nlattice2[ndim];
+  FLOAT vfluid1[ndim];
+  FLOAT vfluid2[ndim];
+  FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
+  FLOAT rhofluid2 = simparams->floatparams["rhofluid2"];
+  FLOAT press1 = simparams->floatparams["press1"];
+  FLOAT press2 = simparams->floatparams["press2"];
+  FLOAT temp0 = simparams->floatparams["temp0"];
+  FLOAT mu_bar = simparams->floatparams["mu_bar"];
+  FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
+  FLOAT amp = simparams->floatparams["amp"];
+  FLOAT lambda = simparams->floatparams["lambda"];
+  Nlattice1[0] = simparams->intparams["Nlattice1[0]"];
+  Nlattice1[1] = simparams->intparams["Nlattice1[1]"];
+  Nlattice2[0] = simparams->intparams["Nlattice2[0]"];
+  Nlattice2[1] = simparams->intparams["Nlattice2[1]"];
+  vfluid1[0] = simparams->floatparams["vfluid1[0]"];
+  vfluid2[0] = simparams->floatparams["vfluid2[0]"];
 
   debug2("[SphSimulation::ShockTube]");
 
@@ -352,7 +357,7 @@ void SphSimulation::KHI(void)
   for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
   
   sph->InitialSmoothingLengthGuess();
-  sphneib->UpdateTree(sph,simparams);
+  sphneib->UpdateTree(sph,*simparams);
   
   // Search ghost particles
   SearchGhostParticles();
@@ -360,7 +365,7 @@ void SphSimulation::KHI(void)
   sphneib->UpdateAllSphProperties(sph);
 
   // Update neighbour tre
-  sphneib->UpdateTree(sph,simparams);
+  sphneib->UpdateTree(sph,*simparams);
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(sph);
@@ -378,22 +383,23 @@ void SphSimulation::KHI(void)
 // ============================================================================
 // SphSimulation::SoundWave
 // ============================================================================
-void SphSimulation::SoundWave(void)
+template <int ndim>
+void SphSimulation<ndim>::SoundWave(void)
 {
   int i,k;
   FLOAT csound,diff,lambda,kwave,omegawave,ugas,volume,xold,xnew;
   FLOAT *r;
 
-  int Nlattice1[ndimmax];
-  int Npart = simparams.intparams["Npart"];
-  FLOAT rhofluid1 = simparams.floatparams["rhofluid1"];
-  FLOAT press1 = simparams.floatparams["press1"];
-  FLOAT gamma = simparams.floatparams["gamma_eos"];
+  int Nlattice1[ndim];
+  int Npart = simparams->intparams["Npart"];
+  FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
+  FLOAT press1 = simparams->floatparams["press1"];
+  FLOAT gamma = simparams->floatparams["gamma_eos"];
   FLOAT gammaone = gamma - 1.0;
-  FLOAT amp = simparams.floatparams["amp"];
-  FLOAT temp0 = simparams.floatparams["temp0"];
-  FLOAT mu_bar = simparams.floatparams["mu_bar"];
-  Nlattice1[0] = simparams.intparams["Nlattice1[0]"];
+  FLOAT amp = simparams->floatparams["amp"];
+  FLOAT temp0 = simparams->floatparams["temp0"];
+  FLOAT mu_bar = simparams->floatparams["mu_bar"];
+  Nlattice1[0] = simparams->intparams["Nlattice1[0]"];
 
   debug2("[SphSimulation::SoundWave]");
 
@@ -461,7 +467,8 @@ void SphSimulation::SoundWave(void)
 // ============================================================================
 // SphSimulation::AddRandomBox
 // ============================================================================
-void SphSimulation::AddRandomBox(int Npart, FLOAT *r, DomainBox box)
+template <int ndim>
+void SphSimulation<ndim>::AddRandomBox(int Npart, FLOAT *r, DomainBox<ndim> box)
 {
   debug2("[SphSimulation::AddRandomBox]");
 
@@ -480,11 +487,12 @@ void SphSimulation::AddRandomBox(int Npart, FLOAT *r, DomainBox box)
 // ============================================================================
 // SphSimulation::AddRandomsphere
 // ============================================================================
-void SphSimulation::AddRandomSphere(int Npart, FLOAT *r, 
+template <int ndim>
+void SphSimulation<ndim>::AddRandomSphere(int Npart, FLOAT *r,
 				    FLOAT *rcentre, FLOAT radius)
 {
   FLOAT rad;
-  FLOAT rpos[ndimmax];
+  FLOAT rpos[ndim];
 
   debug2("[SphSimulation::AddRandomSphere]");
 
@@ -505,8 +513,9 @@ void SphSimulation::AddRandomSphere(int Npart, FLOAT *r,
 // ============================================================================
 // SphSimulation::AddRegularLattice
 // ============================================================================
-void SphSimulation::AddRegularLattice(int Npart, int Nlattice[ndimmax], 
-				      FLOAT *r, DomainBox box)
+template <int ndim>
+void SphSimulation<ndim>::AddRegularLattice(int Npart, int Nlattice[ndim],
+				      FLOAT *r, DomainBox<ndim> box)
 {
   int i;
   int ii;
@@ -563,8 +572,9 @@ void SphSimulation::AddRegularLattice(int Npart, int Nlattice[ndimmax],
 // Create simple hexagonal-packed lattice using A-B-A-B pattern in z-direction
 // N.B. the box is scaled to fit to the x-boxsize
 // ============================================================================
-void SphSimulation::AddHexagonalLattice(int Npart, int Nlattice[ndimmax], 
-					FLOAT *r, DomainBox box)
+template <int ndim>
+void SphSimulation<ndim>::AddHexagonalLattice(int Npart, int Nlattice[ndim],
+					FLOAT *r, DomainBox<ndim> box)
 {
   int i;
   int ii;
@@ -626,9 +636,10 @@ void SphSimulation::AddHexagonalLattice(int Npart, int Nlattice[ndimmax],
 // SphSimulation::CutSphere
 // Cut-out a sphere containing exactly'Nsphere' particles (if selected)
 // ============================================================================
-int SphSimulation::CutSphere(int Nsphere, int Npart,
+template <int ndim>
+int SphSimulation<ndim>::CutSphere(int Nsphere, int Npart,
 			     FLOAT radsphere, FLOAT *r, 
-			     DomainBox box, bool exact)
+			     DomainBox<ndim> box, bool exact)
 {
   int i;
   int k;
@@ -636,12 +647,12 @@ int SphSimulation::CutSphere(int Nsphere, int Npart,
   int Ninterior = 0;
   int Niteration = 0;
   int Nitmax = 100;
-  FLOAT dr[ndimmax];
+  FLOAT dr[ndim];
   FLOAT drsqd;
   FLOAT r_low = 0.0;
   FLOAT r_high;
   FLOAT radius;
-  FLOAT rcentre[ndimmax];
+  FLOAT rcentre[ndim];
 
   debug2("[SphSimulation::CutSphere]");
 
@@ -685,3 +696,4 @@ int SphSimulation::CutSphere(int Nsphere, int Npart,
 
   return Ninterior;
 }
+

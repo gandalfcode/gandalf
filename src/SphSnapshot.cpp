@@ -15,11 +15,21 @@
 #include "Debug.h"
 using namespace std;
 
+SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory(string filename, SphSimulationBase* sim, int ndim) {
+    if (ndim==1)
+      return new SphSnapshot<1>(filename, sim);
+    else if (ndim==2)
+      return new SphSnapshot<2>(filename, sim);
+    else if (ndim==3)
+      return new SphSnapshot<3>(filename, sim);
+    return NULL;
+  };
+
 
 // ============================================================================
-// SphSnapshot::SphSnapshot
+// SphSnapshotBase::SphSnapshotBase
 // ============================================================================
-SphSnapshot::SphSnapshot(string auxfilename)
+SphSnapshotBase::SphSnapshotBase(string auxfilename)
 {
   allocated = false;
   nallocated = 0;
@@ -29,25 +39,32 @@ SphSnapshot::SphSnapshot(string auxfilename)
   LastUsed = time(NULL);
 }
 
+template <int ndims>
+SphSnapshot<ndims>::SphSnapshot (string filename, SphSimulationBase* sim):
+SphSnapshotBase(filename),
+simulation(static_cast<SphSimulation<ndims>* > (sim))
+{
+  this->ndim = ndims;
+}
 
 
 // ============================================================================
-// SphSnapshot::~SphSnapshot
+// SphSnapshotBase::~SphSnapshotBase
 // ============================================================================
-SphSnapshot::~SphSnapshot()
+SphSnapshotBase::~SphSnapshotBase()
 {
 }
 
 
 
 // ============================================================================
-// SphSnapshot::AllocateBufferMemory
+// SphSnapshotBase::AllocateBufferMemory
 // Allocate memory for current snapshot.  Only allocates single precision 
 // to minimise memory use, even if compiled with double precision. 
 // ============================================================================
-void SphSnapshot::AllocateBufferMemory(void)
+void SphSnapshotBase::AllocateBufferMemory(void)
 {
-  debug2("[SphSnapshot::AllocateBufferMemory]");
+  debug2("[SphSnapshotBase::AllocateBufferMemory]");
 
   // If memory already allocated and more memory is needed for more particles,
   // deallocate now before reallocating.
@@ -102,12 +119,12 @@ void SphSnapshot::AllocateBufferMemory(void)
 
 
 // ============================================================================
-// SphSnapshot::DeallocateBufferMemory
+// SphSnapshotBase::DeallocateBufferMemory
 // Deallocate memory for current snapshot.
 // ============================================================================
-void SphSnapshot::DeallocateBufferMemory(void)
+void SphSnapshotBase::DeallocateBufferMemory(void)
 {
-  debug2("[SphSnapshot::DeallocateBufferMemory]");
+  debug2("[SphSnapshotBase::DeallocateBufferMemory]");
 
   // Deallocate scalar array memory
   delete[] dudt;
@@ -151,10 +168,10 @@ void SphSnapshot::DeallocateBufferMemory(void)
 
 
 // ============================================================================
-// SphSnapshot::CalculateMemoryUsage
+// SphSnapshotBase::CalculateMemoryUsage
 // Returns no. of bytes required for current snapshot
 // ============================================================================
-int SphSnapshot::CalculateMemoryUsage(void)
+int SphSnapshotBase::CalculateMemoryUsage(void)
 {
   return Nsph*nallocated*sizeof(float);
 }
@@ -162,16 +179,17 @@ int SphSnapshot::CalculateMemoryUsage(void)
 
 
 // ============================================================================
-// SphSnapshot::CopyDataFromSimulation
+// SphSnapshotBase::CopyDataFromSimulation
 // Copy particle data from main memory to current snapshot arrays.
 // ============================================================================
-void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux, 
-					 SphParticle *sphaux)
+template <int ndims>
+void SphSnapshot<ndims>::CopyDataFromSimulation()
 {
-  debug2("[SphSnapshot::CopyDataFromSimulation]");
+  debug2("[SphSnapshotBase::CopyDataFromSimulation]");
 
-  ndim = ndimaux;
-  Nsph = Nsphaux;
+  SphParticle<ndims>* sphaux = simulation->sph->sphdata;
+
+  Nsph = simulation->sph->Nsph;
 
   AllocateBufferMemory();
 
@@ -203,7 +221,7 @@ void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux,
       az[i] = (float) sphaux[i].a[2];
     }
 
-    m[i] = (float) sphaux[i].press/powf(sphaux[i].rho,1.4); //sphaux[i].m;
+    m[i] = (float) sphaux[i].m;
     h[i] = (float) sphaux[i].h;
     rho[i] = (float) sphaux[i].rho;
     u[i] = (float) sphaux[i].u;
@@ -218,11 +236,11 @@ void SphSnapshot::CopyDataFromSimulation(int ndimaux, int Nsphaux,
 
 
 // ============================================================================
-// SphSnapshot::ExtractArray
+// SphSnapshotBase::ExtractArray
 // Returns pointer to required array stored in snapshot buffer memory.
 // Currently also returns scaling factors for that array.
 // ============================================================================
-void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array,
+void SphSnapshotBase::ExtractArray(string name, float** out_array, int* size_array,
                                float& scaling_factor, string RequestedUnit)
 {
 
@@ -320,14 +338,14 @@ void SphSnapshot::ExtractArray(string name, float** out_array, int* size_array,
 }
 
 
-
 // ============================================================================
-// SphSnapshot::ReadSnapshot
+// SphSnapshotBase::ReadSnapshot
 // Read snapshot into main memory and then copy into snapshot buffer.
 // ============================================================================
-void SphSnapshot::ReadSnapshot(string format, SphSimulation *simulation)
+template <int ndims>
+void SphSnapshot<ndims>::ReadSnapshot(string format)
 {
-  debug2("[SphSnapshot::ReadSnapshot]");
+  debug2("[SphSnapshotBase::ReadSnapshot]");
 
   // Set pointer to units object
   units = &(simulation->simunits);
@@ -336,8 +354,7 @@ void SphSnapshot::ReadSnapshot(string format, SphSimulation *simulation)
   simulation->ReadSnapshotFile(filename, format);
 
   // Now copy from main memory to current snapshot
-  CopyDataFromSimulation(simulation->simparams.intparams["ndim"],
-			 simulation->sph->Nsph , simulation->sph->sphdata );
+  CopyDataFromSimulation();
 
   // Record simulation snapshot time
   t = simulation->t;

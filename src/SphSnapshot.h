@@ -21,12 +21,15 @@ using namespace std;
 // Snapshot class contains a copy of the simulation data, either from main
 // memory or from a loaded file.
 // ============================================================================
-class SphSnapshot
+class SphSnapshotBase
 {
  public:
 
-  SphSnapshot(string="");
-  ~SphSnapshot();
+  static SphSnapshotBase* SphSnapshotFactory(string filename, SphSimulationBase* sim, int ndim);
+
+
+  SphSnapshotBase(string="");
+  ~SphSnapshotBase();
 
 
   // Snapshot function prototypes
@@ -34,10 +37,10 @@ class SphSnapshot
   void AllocateBufferMemory(void);
   void DeallocateBufferMemory(void);
   int CalculateMemoryUsage(void);
-  void CopyDataFromSimulation(int,int,SphParticle*);
+  virtual void CopyDataFromSimulation()=0;
   void ExtractArray(string, float** out_array, int* size_array, 
 		    float& scaling_factor, string RequestedUnit);
-  void ReadSnapshot(string, SphSimulation *);
+  virtual void ReadSnapshot(string)=0;
 
 
   // All variables
@@ -78,5 +81,13 @@ class SphSnapshot
 
 };
 
+template <int ndims>
+class SphSnapshot : public SphSnapshotBase {
+public:
+  SphSnapshot (string, SphSimulationBase* );
+  void CopyDataFromSimulation();
+  void ReadSnapshot(string);
 
+  SphSimulation<ndims>* simulation;
+};
 #endif

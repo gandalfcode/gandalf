@@ -24,11 +24,12 @@ using namespace std;
 // ============================================================================
 // SphIntegration::SphIntegration
 // ============================================================================
-SphIntegration::SphIntegration(int ndimaux, int vdimaux, DOUBLE accel_mult_aux, DOUBLE courant_mult_aux):
-#if !defined(FIXED_DIMENSIONS)
-  ndim(ndimaux),
-  vdim(vdimaux),
-#endif
+template <int ndim>
+SphIntegration<ndim>::SphIntegration(DOUBLE accel_mult_aux, DOUBLE courant_mult_aux):
+//#if !defined(FIXED_DIMENSIONS)
+//  ndim(ndimaux),
+//  vdim(ndim),
+//#endif
   accel_mult(accel_mult_aux),
   courant_mult(courant_mult_aux)
 {
@@ -39,7 +40,8 @@ SphIntegration::SphIntegration(int ndimaux, int vdimaux, DOUBLE accel_mult_aux, 
 // ============================================================================
 // SphIntegration::~SphIntegration
 // ============================================================================
-SphIntegration::~SphIntegration()
+template <int ndim>
+SphIntegration<ndim>::~SphIntegration()
 {
 }
 
@@ -51,7 +53,8 @@ SphIntegration::~SphIntegration()
 // (i)  const*h/(sound_speed + h*|div_v|)    (Courant condition)
 // (ii) const*sqrt(h/|a|)                    (Acceleration condition)
 // ============================================================================
-DOUBLE SphIntegration::Timestep(SphParticle &part, int hydro_forces)
+template <int ndim>
+DOUBLE SphIntegration<ndim>::Timestep(SphParticle<ndim> &part, int hydro_forces)
 {
   DOUBLE timestep;
   DOUBLE amag;
@@ -70,3 +73,7 @@ DOUBLE SphIntegration::Timestep(SphParticle &part, int hydro_forces)
 
   return timestep;
 }
+
+template class SphIntegration<1>;
+template class SphIntegration<2>;
+template class SphIntegration<3>;

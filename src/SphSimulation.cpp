@@ -18,15 +18,30 @@
 #include "Parameters.h"
 #include "InlineFuncs.h"
 #include "Debug.h"
+#include "Sph.h"
+#include "SphSimulationIO.cpp"
+#include "SphSimulationIC.cpp"
+#include "SphAnalysis.cpp"
+#include "SimGhostParticles.cpp"
+#include "SphSimulationTimesteps.cpp"
 using namespace std;
 
-
+SphSimulationBase* SphSimulationBase::SphSimulationFactory (int ndim, Parameters* params){
+ if (ndim==1)
+   return new SphSimulation<1>(params);
+ else if (ndim==2)
+   return new SphSimulation<2>(params);
+ else if (ndim==3)
+   return new SphSimulation<3>(params);
+ return NULL;
+}
 
 // ============================================================================
 // SphSimulation::SphSimulation
 // ============================================================================
-SphSimulation::SphSimulation()
+SphSimulationBase::SphSimulationBase(Parameters* params)
 {
+  simparams = new Parameters(*params);
   paramfile = "";
   n = 0;
   nresync = 0;
@@ -41,7 +56,7 @@ SphSimulation::SphSimulation()
 // ============================================================================
 // SphSimulation::~SphSimulation
 // ============================================================================
-SphSimulation::~SphSimulation()
+SphSimulationBase::~SphSimulationBase()
 {
 }
 
@@ -52,7 +67,8 @@ SphSimulation::~SphSimulation()
 // Controls the simulation main loop, including exit conditions.
 // If provided, will only advance the simulation by 'Nadvance' steps.
 // ============================================================================
-void SphSimulation::Run(int Nadvance)
+template <int ndim>
+void SphSimulation<ndim>::Run(int Nadvance)
 {
   int Ntarget;                              // Selected integer timestep
 
@@ -88,7 +104,8 @@ void SphSimulation::Run(int Nadvance)
 // Controls the simulation main loop, including exit conditions.
 // If provided, will only advance the simulation by 'Nadvance' steps.
 // ============================================================================
-void SphSimulation::InteractiveRun(int Nadvance)
+template <int ndim>
+void SphSimulation<ndim>::InteractiveRun(int Nadvance)
 {
   int Ntarget;                              // Selected integer timestep
   clock_t tstart = clock();
@@ -126,7 +143,8 @@ void SphSimulation::InteractiveRun(int Nadvance)
 // SphSimulation::Output
 // Controls when regular output snapshots are written by the code.
 // ============================================================================
-void SphSimulation::Output(void)
+template <int ndim>
+void SphSimulation<ndim>::Output(void)
 {
   string filename;
   string nostring;
@@ -158,83 +176,88 @@ void SphSimulation::Output(void)
 // SphSimulation::GenerateIC
 // Generate initial conditions for SPH simulation chosen in parameters file.
 // ============================================================================
-void SphSimulation::GenerateIC(void) 
+template <int ndim>
+void SphSimulation<ndim>::GenerateIC(void)
 {
   debug2("[SphSimulation::GenerateIC]");
 
   // Generate initial conditions
-  if (simparams.stringparams["ic"] == "random_cube") 
+  if (simparams->stringparams["ic"] == "random_cube")
     RandomBox();
-  else if (simparams.stringparams["ic"] == "random_sphere") 
+  else if (simparams->stringparams["ic"] == "random_sphere")
     RandomSphere();
-  else if (simparams.stringparams["ic"] == "lattice_cube")
+  else if (simparams->stringparams["ic"] == "lattice_cube")
     LatticeBox();
-  else if (simparams.stringparams["ic"] == "shocktube") 
+  else if (simparams->stringparams["ic"] == "shocktube")
     ShockTube();
-  else if (simparams.stringparams["ic"] == "soundwave")
+  else if (simparams->stringparams["ic"] == "soundwave")
     SoundWave();
-  else if (simparams.stringparams["ic"] == "khi") 
+  else if (simparams->stringparams["ic"] == "khi")
     KHI();
   else {
     string message = "Unrecognised parameter : ic = " 
-      + simparams.stringparams["ic"];
+      + simparams->stringparams["ic"];
     ExceptionHandler::getIstance().raise(message);
   }
 
   return;
 }
 
-
-
 // ============================================================================
 // SphSimulation::ProcessParameters
 // Process all the options chosen in the parameters file, setting various 
 // simulation variables and creating important simulation objects.
 // ============================================================================
-void SphSimulation::ProcessParameters(void)
+template <int ndim>
+void SphSimulation<ndim>::ProcessParameters(void)
 {
-  map<string, int> &intparams = simparams.intparams;
-  map<string, float> &floatparams = simparams.floatparams;
-  map<string, string> &stringparams = simparams.stringparams;
+  map<string, int> &intparams = simparams->intparams;
+  map<string, float> &floatparams = simparams->floatparams;
+  map<string, string> &stringparams = simparams->stringparams;
 
-  Sph::aviscenum avisc;
-  Sph::acondenum acond;
+  aviscenum avisc;
+  acondenum acond;
 
   debug2("[SphSimulation::ProcessParameters]");
 
   // Assign dimensionality variables here (for now)
-#if !defined(FIXED_DIMENSIONS)
-  ndim = intparams["ndim"];
-  vdim = intparams["ndim"];
-  bdim = intparams["ndim"];
-#endif
+//#if !defined(FIXED_DIMENSIONS)
+//  ndim = intparams["ndim"];
+//  vdim = intparams["ndim"];
+//  bdim = intparams["ndim"];
+//#endif
+
+if (ndim < 1 || ndim > 3) {
+  string message="Error: the number of dimensions can be only 1, 2 or 3, you gave " + ndim;
+  ExceptionHandler::getIstance().raise(message);
+}
 
   // Set the enum for artificial viscosity
   if (stringparams["avisc"] == "none") {
-    avisc = Sph::noneav;
+    avisc = noneav;
   }
   else if (stringparams["avisc"] == "mon97") {
-    avisc = Sph::mon97;
+    avisc = mon97;
   }
   else {
     string message = "Unrecognised parameter : avisc = " +
-        simparams.stringparams["avisc"];
+        simparams->stringparams["avisc"];
     ExceptionHandler::getIstance().raise(message);
   }
 
   // Set the enum for artificial conductivity
   if (stringparams["acond"] == "none") {
-    acond = Sph::noneac;
+    acond = noneac;
   }
   else if (stringparams["acond"] == "wadsley2008") {
-    acond = Sph::wadsley2008;
+    acond = wadsley2008;
   }
   else if (stringparams["acond"] == "price2008") {
-    acond = Sph::price2008;
+    acond = price2008;
   }
   else {
     string message = "Unrecognised parameter : acond = " +
-        simparams.stringparams["acond"];
+        simparams->stringparams["acond"];
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -243,8 +266,7 @@ void SphSimulation::ProcessParameters(void)
   if (stringparams["sph"] == "gradh") {
     string KernelName = stringparams["kernel"];
     if (stringparams["tabulatedkernel"] == "yes") {
-        sph = new GradhSph<TabulatedKernel> (ndim, vdim, bdim,
-        		intparams["hydro_forces"], intparams["self_gravity"],
+        sph = new GradhSph<ndim, TabulatedKernel> (intparams["hydro_forces"], intparams["self_gravity"],
         		floatparams["alpha_visc"], floatparams["beta_visc"],
         		floatparams["h_fac"], floatparams["h_converge"],
         		avisc, acond,
@@ -253,24 +275,21 @@ void SphSimulation::ProcessParameters(void)
     else if (stringparams["tabulatedkernel"] == "no"){
         // Depending on the kernel, instantiate a different GradSph object
         if (KernelName == "m4") {
-            sph = new GradhSph<M4Kernel> (ndim, vdim, bdim,
-            		intparams["hydro_forces"], intparams["self_gravity"],
+            sph = new GradhSph<ndim, M4Kernel> (intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
             		stringparams["gas_eos"], KernelName);
         }
         else if (KernelName == "quintic") {
-            sph = new GradhSph<QuinticKernel> (ndim, vdim, bdim,
-            		intparams["hydro_forces"], intparams["self_gravity"],
+            sph = new GradhSph<ndim, QuinticKernel> (intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
             		stringparams["gas_eos"], KernelName);
 	}
         else if (KernelName == "gaussian") {
-            sph = new GradhSph<GaussianKernel> (ndim, vdim, bdim,
-            		intparams["hydro_forces"], intparams["self_gravity"],
+            sph = new GradhSph<ndim, GaussianKernel> (intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
@@ -278,7 +297,7 @@ void SphSimulation::ProcessParameters(void)
         }
         else {
           string message = "Unrecognised parameter : kernel = " +
-            simparams.stringparams["kernel"];
+            simparams->stringparams["kernel"];
           ExceptionHandler::getIstance().raise(message);
         }
     }
@@ -292,8 +311,7 @@ void SphSimulation::ProcessParameters(void)
   else if (stringparams["sph"] == "sm2012") {
     string KernelName = stringparams["kernel"];
     if (stringparams["tabulatedkernel"] == "yes") {
-        sph = new SM2012Sph<TabulatedKernel> (ndim, vdim, bdim,
-        		intparams["hydro_forces"], intparams["self_gravity"],
+        sph = new SM2012Sph<ndim, TabulatedKernel> (intparams["hydro_forces"], intparams["self_gravity"],
         		floatparams["alpha_visc"], floatparams["beta_visc"],
         		floatparams["h_fac"], floatparams["h_converge"],
         		avisc, acond,
@@ -302,24 +320,21 @@ void SphSimulation::ProcessParameters(void)
     else if (stringparams["tabulatedkernel"] == "no"){
         // Depending on the kernel, instantiate a different GradSph object
         if (KernelName == "m4") {
-            sph = new SM2012Sph<M4Kernel> (ndim, vdim, bdim,
-            		intparams["hydro_forces"], intparams["self_gravity"],
+            sph = new SM2012Sph<ndim, M4Kernel> (intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
             		stringparams["gas_eos"], KernelName);
         }
         else if (KernelName == "quintic") {
-            sph = new SM2012Sph<QuinticKernel> (ndim, vdim, bdim,
-            		intparams["hydro_forces"], intparams["self_gravity"],
+            sph = new SM2012Sph<ndim, QuinticKernel> (intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
             		stringparams["gas_eos"], KernelName);
         }
         else if (KernelName == "gaussian") {
-            sph = new SM2012Sph<GaussianKernel> (ndim, vdim, bdim,
-            		intparams["hydro_forces"], intparams["self_gravity"],
+            sph = new SM2012Sph<ndim, GaussianKernel> (intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
@@ -327,7 +342,7 @@ void SphSimulation::ProcessParameters(void)
         }
         else {
           string message = "Unrecognised parameter : kernel = " +
-            simparams.stringparams["kernel"];
+            simparams->stringparams["kernel"];
           ExceptionHandler::getIstance().raise(message);
         }
     }
@@ -341,8 +356,7 @@ void SphSimulation::ProcessParameters(void)
   else if (stringparams["sph"] == "godunov") {
     string KernelName = stringparams["kernel"];
     if (stringparams["tabulatedkernel"] == "yes") {
-        sph = new GodunovSph<TabulatedKernel> (ndim, vdim, bdim,
-        		intparams["hydro_forces"], intparams["self_gravity"],
+        sph = new GodunovSph<ndim, TabulatedKernel> (intparams["hydro_forces"], intparams["self_gravity"],
         		floatparams["alpha_visc"], floatparams["beta_visc"],
         		floatparams["h_fac"], floatparams["h_converge"],
         		avisc, acond,
@@ -351,24 +365,21 @@ void SphSimulation::ProcessParameters(void)
     else if (stringparams["tabulatedkernel"] == "no"){
         // Depending on the kernel, instantiate a different GradSph object
         if (KernelName == "m4") {
-            sph = new GodunovSph<M4Kernel> (ndim, vdim, bdim,
-            		intparams["hydro_forces"], intparams["self_gravity"],
+            sph = new GodunovSph<ndim, M4Kernel> (intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
             		stringparams["gas_eos"], KernelName);
         }
         else if (KernelName == "quintic") {
-            sph = new GodunovSph<QuinticKernel> (ndim, vdim, bdim,
-            		intparams["hydro_forces"], intparams["self_gravity"],
+            sph = new GodunovSph<ndim, QuinticKernel> (intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
             		stringparams["gas_eos"], KernelName);
         }
         else if (KernelName == "gaussian") {
-            sph = new GodunovSph<GaussianKernel> (ndim, vdim, bdim,
-            		intparams["hydro_forces"], intparams["self_gravity"],
+            sph = new GodunovSph<ndim, GaussianKernel> (intparams["hydro_forces"], intparams["self_gravity"],
             		floatparams["alpha_visc"], floatparams["beta_visc"],
             		floatparams["h_fac"], floatparams["h_converge"],
             		avisc, acond,
@@ -376,7 +387,7 @@ void SphSimulation::ProcessParameters(void)
         }
         else {
           string message = "Unrecognised parameter : kernel = " +
-            simparams.stringparams["kernel"];
+            simparams->stringparams["kernel"];
           ExceptionHandler::getIstance().raise(message);
         }
     }
@@ -389,37 +400,7 @@ void SphSimulation::ProcessParameters(void)
   // --------------------------------------------------------------------------
   else {
     string message = "Unrecognised parameter : sph = " 
-      + simparams.stringparams["sph"];
-    ExceptionHandler::getIstance().raise(message);
-  }
-
-
-  // Create neighbour searching object based on chosen method in params file
-  // --------------------------------------------------------------------------
-  if (stringparams["neib_search"] == "bruteforce")
-    sphneib = new BruteForceSearch(ndim);
-  else if (stringparams["neib_search"] == "grid")
-    sphneib = new GridSearch(ndim);
-  else {
-    string message = "Unrecognised parameter : neib_search = " 
-      + simparams.stringparams["neib_search"];
-    ExceptionHandler::getIstance().raise(message);
-  }
-
-
-  // Create SPH particle integration object
-  // --------------------------------------------------------------------------
-  if (stringparams["sph_integration"] == "lfkdk")
-    sphint = new SphLeapfrogKDK(ndim, vdim, 
-				floatparams["accel_mult"],
-				floatparams["courant_mult"]);
-  else if (stringparams["sph_integration"] == "godunov")
-    sphint = new SphGodunovIntegration(ndim, vdim, 
-				       floatparams["accel_mult"],
-				       floatparams["courant_mult"]);
-  else {
-    string message = "Unrecognised parameter : sph_integration = " 
-      + simparams.stringparams["sph_integration"];
+      + simparams->stringparams["sph"];
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -427,32 +408,60 @@ void SphSimulation::ProcessParameters(void)
   // Thermal physics object.  If energy equation is chosen, also initiate
   // the energy integration object.
   // --------------------------------------------------------------------------
-  if (stringparams["gas_eos"] == "energy_eqn") {
-    sph->eos = new Adiabatic(floatparams["temp0"],
-			     floatparams["mu_bar"],
-			     floatparams["gamma_eos"]);
-
-    if (stringparams["energy_integration"] == "PEC")
-      uint = new EnergyPEC(floatparams["energy_mult"]);
-    else if (stringparams["energy_integration"] == "godunov")
-      uint = new EnergyGodunovIntegration(floatparams["energy_mult"]);
-    else {
-      string message = "Unrecognised parameter : energy_integration = " 
-	+ simparams.stringparams["energy_integration"];
-      ExceptionHandler::getIstance().raise(message);
-    }
-
+  string gas_eos = stringparams["gas_eos"];
+  if (gas_eos == "energy_eqn") {
+    sph->eos = new Adiabatic<ndim>(floatparams["temp0"],
+                 floatparams["mu_bar"],
+                 floatparams["gamma_eos"]);
   }
-  else if (stringparams["gas_eos"] == "isothermal") 
-    sph->eos = new Isothermal(floatparams["temp0"],
-			      floatparams["mu_bar"],
-			      floatparams["gamma_eos"]);
+  else if (gas_eos == "isothermal")
+    sph->eos = new Isothermal<ndim>(floatparams["temp0"],
+                  floatparams["mu_bar"],
+                  floatparams["gamma_eos"]);
   else {
-    string message = "Unrecognised parameter : gas_eos = " 
-      + simparams.stringparams["gas_eos"];
+    string message = "Unrecognised parameter : gas_eos = "
+      + gas_eos;
     ExceptionHandler::getIstance().raise(message);
   }
 
+  // Create neighbour searching object based on chosen method in params file
+  // --------------------------------------------------------------------------
+  if (stringparams["neib_search"] == "bruteforce")
+    sphneib = new BruteForceSearch<ndim>;
+  else if (stringparams["neib_search"] == "grid")
+    sphneib = new GridSearch<ndim>;
+  else {
+    string message = "Unrecognised parameter : neib_search = " 
+      + simparams->stringparams["neib_search"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
+  // Create SPH particle integration object
+  // --------------------------------------------------------------------------
+  if (stringparams["sph_integration"] == "lfkdk") {
+    sphint = new SphLeapfrogKDK<ndim>(floatparams["accel_mult"],
+				floatparams["courant_mult"]);}
+  else if (stringparams["sph_integration"] == "godunov")
+    sphint = new SphGodunovIntegration<ndim>(floatparams["accel_mult"],
+				       floatparams["courant_mult"]);
+  else {
+    string message = "Unrecognised parameter : sph_integration = " 
+      + simparams->stringparams["sph_integration"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
+  // Energy integration object
+  // -----------------------------------------------------------------------------
+  if (stringparams["energy_integration"] == "PEC") {
+    uint = new EnergyPEC<ndim>(floatparams["energy_mult"]);
+  }
+  else {
+    string message = "Unrecognised parameter : energy_integration = "
+  + simparams->stringparams["energy_integration"];
+    ExceptionHandler::getIstance().raise(message);
+  }
 
   // Boundary condition variables
   // --------------------------------------------------------------------------
@@ -508,23 +517,25 @@ void SphSimulation::ProcessParameters(void)
 // SphSimulation::Setup
 // Main function for setting up a new SPH simulation.
 // ============================================================================
-void SphSimulation::Setup(void)
+template <int ndim>
+void SphSimulation<ndim>::Setup(void)
 {
   debug1("[SphSimulation::Setup]");
 
   // Read parameters files assigning any contained variables
-  simparams.ReadParamsFile(paramfile);
+  simparams->ReadParamsFile(paramfile);
 
   // Now set up the simulation based on chosen parameters
   SetupSimulation();
 
 }
 
-void SphSimulation::PreSetupForPython(void) {
+template <int ndim>
+void SphSimulation<ndim>::PreSetupForPython(void) {
   debug1("[SphSimulation::PreSetupForPython]");
 
-  // Read the parameters
-  simparams.ReadParamsFile(paramfile);
+//  // Read the parameters
+//  simparams->ReadParamsFile(paramfile);
 
   ProcessParameters();
 
@@ -532,7 +543,8 @@ void SphSimulation::PreSetupForPython(void) {
 
 }
 
-void SphSimulation::ImportArray(double* input, int size, string quantity) {
+template <int ndim>
+void SphSimulation<ndim>::ImportArray(double* input, int size, string quantity) {
 
   //First checks that the size is correct
   if (size != sph->Nsph) {
@@ -542,12 +554,12 @@ void SphSimulation::ImportArray(double* input, int size, string quantity) {
   }
 
   //Now sets the pointer to the correct value inside the particle data structure
-  FLOAT SphParticle::*quantityp;
-  FLOAT (SphParticle::*quantitypvec)[ndimmax];
+  FLOAT SphParticle<ndim>::*quantityp;
+  FLOAT (SphParticle<ndim>::*quantitypvec)[ndim];
   bool scalar;
   int index;
   if (quantity=="x") {
-    quantitypvec = &SphParticle::r;
+    quantitypvec = &SphParticle<ndim>::r;
     index=0;
     scalar=false;
   }
@@ -556,7 +568,7 @@ void SphSimulation::ImportArray(double* input, int size, string quantity) {
       string message = "Error: you tried to load a y array, but you are running a 1-d simulation";
       ExceptionHandler::getIstance().raise(message);
     }
-    quantitypvec = &SphParticle::r;
+    quantitypvec = &SphParticle<ndim>::r;
     index=1;
     scalar=false;
   }
@@ -565,12 +577,12 @@ void SphSimulation::ImportArray(double* input, int size, string quantity) {
       string message = "Error: you tried to load a z array, but you are running a simulation with ndim<3";
       ExceptionHandler::getIstance().raise(message);
     }
-    quantitypvec = &SphParticle::r;
+    quantitypvec = &SphParticle<ndim>::r;
     index=2;
     scalar=false;
   }
   else if (quantity == "vx") {
-    quantitypvec = &SphParticle::v;
+    quantitypvec = &SphParticle<ndim>::v;
     index=0;
     scalar=false;
   }
@@ -579,7 +591,7 @@ void SphSimulation::ImportArray(double* input, int size, string quantity) {
       string message = "Error: you tried to load a vy array, but you are running a 1-d simulation";
       ExceptionHandler::getIstance().raise(message);
     }
-    quantitypvec = &SphParticle::v;
+    quantitypvec = &SphParticle<ndim>::v;
     index=1;
     scalar=false;
   }
@@ -588,28 +600,28 @@ void SphSimulation::ImportArray(double* input, int size, string quantity) {
       string message = "Error: you tried to load a vz array, but you are running a simulation with ndim<3";
       ExceptionHandler::getIstance().raise(message);
     }
-    quantitypvec = &SphParticle::v;
+    quantitypvec = &SphParticle<ndim>::v;
     index=2;
     scalar=false;
   }
   else if (quantity=="rho") {
     //TODO: at the moment, if rho or h are uploaded, they will be just ignored.
     //Add some facility to use them
-    quantityp = &SphParticle::rho;
+    quantityp = &SphParticle<ndim>::rho;
     scalar=true;
   }
   else if (quantity == "h") {
-    quantityp = &SphParticle::h;
+    quantityp = &SphParticle<ndim>::h;
     scalar=true;
   }
   else if (quantity == "u") {
     //TODO: add some facility for uploading either u, T, or cs, and compute automatically the other ones
     //depending on the EOS
-    quantityp = &SphParticle::u;
+    quantityp = &SphParticle<ndim>::u;
     scalar=true;
   }
   else if (quantity=="m") {
-    quantityp = &SphParticle::m;
+    quantityp = &SphParticle<ndim>::m;
     scalar=true;
   }
   else {
@@ -621,13 +633,13 @@ void SphSimulation::ImportArray(double* input, int size, string quantity) {
   //Note that the syntax for scalar is different from the one for vectors
   if (scalar) {
     int i=0;
-    for (SphParticle* particlep = sph->sphdata; particlep < sph->sphdata+size; particlep++, i++) {
+    for (SphParticle<ndim>* particlep = sph->sphdata; particlep < sph->sphdata+size; particlep++, i++) {
       particlep->*quantityp = input[i];
     }
   }
   else {
     int i=0;
-    for (SphParticle* particlep = sph->sphdata; particlep < sph->sphdata+size; particlep++, i++) {
+    for (SphParticle<ndim>* particlep = sph->sphdata; particlep < sph->sphdata+size; particlep++, i++) {
       (particlep->*quantitypvec)[index] = input[i];
     }
   }
@@ -635,7 +647,8 @@ void SphSimulation::ImportArray(double* input, int size, string quantity) {
 
 }
 
-void SphSimulation::PostSetupForPython(void) {
+template <int ndim>
+void SphSimulation<ndim>::PostSetupForPython(void) {
   debug1("[SphSimulation::PostSetupForPython]");
 
   PostGeneration();
@@ -647,7 +660,8 @@ void SphSimulation::PostSetupForPython(void) {
 // SphSimulation::SetupSimulation
 // Main function for setting up a new SPH simulation.
 // ============================================================================
-void SphSimulation::SetupSimulation(void)
+template <int ndim>
+void SphSimulation<ndim>::SetupSimulation(void)
 {
   debug1("[SphSimulation::Setup]");
 
@@ -667,7 +681,8 @@ void SphSimulation::SetupSimulation(void)
 
 //TODO: make this mess more modular (note: initial h computation
 //should be done inside the neighbour search)
-void SphSimulation::PostGeneration(void) {
+template <int ndim>
+void SphSimulation<ndim>::PostGeneration(void) {
 
   // Set time variables here (for now)
   Noutsnap = 0;
@@ -684,7 +699,7 @@ void SphSimulation::PostGeneration(void) {
     for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
     
     sph->InitialSmoothingLengthGuess();
-    sphneib->UpdateTree(sph,simparams);
+    sphneib->UpdateTree(sph,*simparams);
 
     sphneib->neibcheck = false;
     sphneib->UpdateAllSphProperties(sph);
@@ -692,8 +707,8 @@ void SphSimulation::PostGeneration(void) {
     // Search ghost particles
     SearchGhostParticles();
 
-    // Update neighbour tre
-    sphneib->UpdateTree(sph,simparams);
+    // Update neighbour tree
+    sphneib->UpdateTree(sph,*simparams);
   }
 
   // Compute all SPH particle properties (if SPH particles exist)
@@ -714,11 +729,11 @@ void SphSimulation::PostGeneration(void) {
     SearchGhostParticles();
 
     // Update neighbour tre
-    sphneib->UpdateTree(sph,simparams);
+    sphneib->UpdateTree(sph,*simparams);
     sphneib->UpdateAllSphProperties(sph);
 
 
-    if (simparams.stringparams["sph"] == "godunov") {
+    if (simparams->stringparams["sph"] == "godunov") {
       sphneib->UpdateAllSphDerivatives(sph);
       //for (int i=0; i<sph->Ntot; i++) 
       //sph->sphdata[i].dt = sph->sphdata[i].h/sph->sphdata[i].sound;
@@ -737,7 +752,7 @@ void SphSimulation::PostGeneration(void) {
     CopySphDataToGhosts();
 
     // Compute timesteps for all particles
-    if (simparams.stringparams["sph"] == "godunov") {
+    if (simparams->stringparams["sph"] == "godunov") {
       if (Nlevels == 1) 
 	ComputeGlobalTimestep();
       else 
@@ -763,7 +778,7 @@ void SphSimulation::PostGeneration(void) {
 
     // Set r0,v0,a0 for initial step
     sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
-    if (simparams.stringparams["gas_eos"] == "energy_eqn")
+    if (simparams->stringparams["gas_eos"] == "energy_eqn")
       uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
 
     CalculateDiagnostics();
@@ -776,14 +791,15 @@ void SphSimulation::PostGeneration(void) {
 // ============================================================================
 // SphSimulation::MainLoop
 // ============================================================================
-void SphSimulation::MainLoop(void)
+template <int ndim>
+void SphSimulation<ndim>::MainLoop(void)
 {
   int i;
 
   debug2("[SphSimulation::MainLoop]");
 
   // Compute timesteps for all particles
-  if (simparams.stringparams["sph"] != "godunov") {
+  if (simparams->stringparams["sph"] != "godunov") {
     if (Nlevels == 1) 
       ComputeGlobalTimestep();
     else 
@@ -792,7 +808,7 @@ void SphSimulation::MainLoop(void)
 
   // For Godunov SPH, compute compressional heating rates after the timestep 
   // for each particle is known
-  //if (simparams.stringparams["sph"] == "godunov") {
+  //if (simparams->stringparams["sph"] == "godunov") {
   //  for (i=0; i<sph->Ntot; i++)
   //    sph->sphdata[i].dudt = (FLOAT) 0.0;
   //  //if (sph->sphdata[i].active) sph->sphdata[i].dudt = (FLOAT) 0.0;
@@ -807,7 +823,7 @@ void SphSimulation::MainLoop(void)
   // Advance SPH particles positions and velocities
   sphint->AdvanceParticles(n,level_step,sph->Nsph,
 			   sph->sphdata,(FLOAT) timestep);
-  if (simparams.stringparams["gas_eos"] == "energy_eqn")
+  if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EnergyIntegration(n,level_step,sph->Nsph,
 			    sph->sphdata,(FLOAT) timestep);
 
@@ -823,7 +839,7 @@ void SphSimulation::MainLoop(void)
     SearchGhostParticles();
 
     // Update neighbour tree
-    sphneib->UpdateTree(sph,simparams);
+    sphneib->UpdateTree(sph,*simparams);
   }
 
 
@@ -834,14 +850,14 @@ void SphSimulation::MainLoop(void)
     sphneib->UpdateAllSphProperties(sph);
 
     // Compute timesteps for all particles
-    if (simparams.stringparams["sph"] == "godunov") {
+    if (simparams->stringparams["sph"] == "godunov") {
       if (Nlevels == 1) 
 	ComputeGlobalTimestep();
       else 
 	ComputeBlockTimesteps();
     }
 
-    if (simparams.stringparams["sph"] == "godunov")
+    if (simparams->stringparams["sph"] == "godunov")
       sphneib->UpdateAllSphDerivatives(sph);
 
     // Copy properties from original particles to ghost particles
@@ -860,7 +876,7 @@ void SphSimulation::MainLoop(void)
     // Calculate all SPH forces
     sphneib->UpdateAllSphForces(sph);
 
-    if (simparams.stringparams["sph"] == "godunov")
+    if (simparams->stringparams["sph"] == "godunov")
       sphneib->UpdateAllSphDudt(sph);
 
     // Add contributions to ghost particles from original neighbours
@@ -876,14 +892,18 @@ void SphSimulation::MainLoop(void)
   // Apply correction steps for both particle and energy integration
   sphint->CorrectionTerms(n,level_step,sph->Nsph,
   			  sph->sphdata,(FLOAT) timestep);
-  if (simparams.stringparams["gas_eos"] == "energy_eqn")
+  if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EnergyCorrectionTerms(n,level_step,sph->Nsph,
   				sph->sphdata,(FLOAT) timestep);
 
   // Set all end-of-step variables
   sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
-  if (simparams.stringparams["gas_eos"] == "energy_eqn")
+  if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
 
   return;
 }
+
+template class SphSimulation<1>;
+template class SphSimulation<2>;
+template class SphSimulation<3>;

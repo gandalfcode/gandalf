@@ -33,7 +33,11 @@ Parameters::~Parameters()
 {
 }
 
-
+Parameters::Parameters(const Parameters& other) {
+  this->intparams = other.intparams;
+  this->stringparams = other.stringparams;
+  this->floatparams = other.floatparams;
+}
 
 // ============================================================================
 // Parameters::ReadParamsFile
@@ -138,11 +142,11 @@ void Parameters::SetDefaultValues(void)
   // --------------------------------------------------------------------------
   stringparams["ic"] = "random_cube";
   intparams["Npart"] = 100;
-#if defined(FIXED_DIMENSIONS)
-  intparams["ndim"] = NDIM;
-#else
+//#if defined(FIXED_DIMENSIONS)
+//  intparams["ndim"] = NDIM;
+//#else
   intparams["ndim"] = 3;
-#endif
+//#endif
   intparams["Nlattice1[0]"] = 16;
   intparams["Nlattice1[1]"] = 16;
   intparams["Nlattice1[2]"] = 16;

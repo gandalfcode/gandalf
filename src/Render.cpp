@@ -23,11 +23,29 @@
 using namespace std;
 
 
+RenderBase* RenderBase::RenderFactory(int ndim, SphSimulationBase* sim) {
+  RenderBase* render;
+  if (ndim==1) {
+    render = new Render<1> (sim);
+  }
+  else if (ndim==2) {
+    render = new Render<2> (sim);
+  }
+  else if (ndim==3) {
+    render = new Render<3> (sim);
+  }
+  else {
+    render = NULL;
+  }
+  return render;
+}
 
 // ============================================================================
 // Render::Render
 // ============================================================================
-Render::Render()
+template <int ndim>
+Render<ndim>::Render(SphSimulationBase* sim):
+sph(static_cast<Sph<ndim>* > (static_cast<SphSimulation<ndim>* > (sim)->sph))
 {
 }
 
@@ -36,7 +54,8 @@ Render::Render()
 // ============================================================================
 // Render::~Render
 // ============================================================================
-Render::~Render()
+template <int ndim>
+Render<ndim>::~Render()
 {
 }
 
@@ -47,13 +66,14 @@ Render::~Render()
 // Calculate column integrated SPH averaged quantities on a grid for use in 
 // generated rendered images in python code.
 // ============================================================================
-int Render::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
+template <int ndim>
+int Render<ndim>::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
 				      string ystring, string renderstring,
 				      string renderunit, float xmin, 
 				      float xmax,
 				      float ymin, float ymax, float* values,
-				      int Ngrid, SphSnapshot &snap,
-				      Sph *sph, float &scaling_factor)
+				      int Ngrid, SphSnapshotBase &snap,
+				      float &scaling_factor)
 {
   int arraycheck = 1;                   // Verification flag
   int c;                                // Rendering grid cell counter
@@ -61,7 +81,6 @@ int Render::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
   int j;                                // Aux. counter
   int k;                                // Dimension counter
   int idummy;                           // ..
-  int ndim = snap.ndim;                 // Local copy of snapshot ndim
   float dr[2];                          // Rel. position vector on grid plane
   float drsqd;                          // Distance squared on grid plane
   float drmag;                          // Distance
@@ -203,14 +222,15 @@ int Render::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
 // ============================================================================
 // Render::CreateSliceRenderingGrid
 // ============================================================================
-int Render::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
+template <int ndim>
+int Render<ndim>::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
 				     string ystring, string zstring, 
 				     string renderstring,
 				     string renderunit, float xmin, float xmax,
 				     float ymin, float ymax, float zslice, 
 				     float* values,
-				     int Ngrid, SphSnapshot &snap, 
-				     Sph *sph, float &scaling_factor)
+				     int Ngrid, SphSnapshotBase &snap,
+				     float &scaling_factor)
 {
   int arraycheck = 1;                   // ..
   int c;                                // ..
@@ -218,7 +238,6 @@ int Render::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
   int j;                                // ..
   int k;                                // ..
   int idummy;                           // ..
-  int ndim = snap.ndim;                 // Local copy of snapshot ndim
   float dr[2];                          // ..
   float drsqd;                          // ..
   float drmag;                          // ..
@@ -320,3 +339,6 @@ int Render::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
 }
 
 
+template class Render<1>;
+template class Render<2>;
+template class Render<3>;

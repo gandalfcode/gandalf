@@ -24,10 +24,10 @@ using namespace std;
 // ============================================================================
 // SphLeapfrogKDK::SphLeapfrogKDK()
 // ============================================================================
-SphLeapfrogKDK::SphLeapfrogKDK(int ndimaux, int vdimaux, 
-			       DOUBLE accel_mult_aux, 
+template <int ndim>
+SphLeapfrogKDK<ndim>::SphLeapfrogKDK( DOUBLE accel_mult_aux,
 			       DOUBLE courant_mult_aux) :
-  SphIntegration(ndimaux, vdimaux, accel_mult_aux, courant_mult_aux)
+  SphIntegration<ndim>(accel_mult_aux, courant_mult_aux)
 {
 }
 
@@ -36,7 +36,8 @@ SphLeapfrogKDK::SphLeapfrogKDK(int ndimaux, int vdimaux,
 // ============================================================================
 // SphLeapfrogKDK::~SphLeapfrog()
 // ============================================================================
-SphLeapfrogKDK::~SphLeapfrogKDK()
+template <int ndim>
+SphLeapfrogKDK<ndim>::~SphLeapfrogKDK()
 {
 }
 
@@ -51,8 +52,9 @@ SphLeapfrogKDK::~SphLeapfrogKDK()
 // Also set particles at the end of step as 'active' in order to compute 
 // the end-of-step force computation.
 // ============================================================================
-void SphLeapfrogKDK::AdvanceParticles(int n, int level_step, int Nsph,
-				      SphParticle *sph, FLOAT timestep)
+template <int ndim>
+void SphLeapfrogKDK<ndim>::AdvanceParticles(int n, int level_step, int Nsph,
+				      SphParticle<ndim> *sph, FLOAT timestep)
 {
   int i;                                // Particle counter
   int k;                                // Dimension counter
@@ -73,7 +75,7 @@ void SphLeapfrogKDK::AdvanceParticles(int n, int level_step, int Nsph,
     // Advance particle positions and velocities
     for (k=0; k<ndim; k++) sph[i].r[k] = sph[i].r0[k] + 
       (sph[i].v0[k] + 0.5*sph[i].a[k]*sph[i].dt)*dt;
-    for (k=0; k<vdim; k++) sph[i].v[k] = sph[i].v0[k] + sph[i].a0[k]*dt;
+    for (k=0; k<ndim; k++) sph[i].v[k] = sph[i].v0[k] + sph[i].a0[k]*dt;
 
     // Set particle as active at end of step
     if (n%nstep == 0) sph[i].active = true;
@@ -92,8 +94,9 @@ void SphLeapfrogKDK::AdvanceParticles(int n, int level_step, int Nsph,
 // adding a second order correction term.  The full integration becomes
 // v(t+dt) = v(t) + 0.5*(a(t) + a(t+dt))*dt 
 // ============================================================================
-void SphLeapfrogKDK::CorrectionTerms(int n, int level_step, int Nsph,
-				     SphParticle *sph, FLOAT timestep)
+template <int ndim>
+void SphLeapfrogKDK<ndim>::CorrectionTerms(int n, int level_step, int Nsph,
+				     SphParticle<ndim> *sph, FLOAT timestep)
 {
   int i;                                // Particle counter
   int k;                                // Dimension counter
@@ -121,8 +124,9 @@ void SphLeapfrogKDK::CorrectionTerms(int n, int level_step, int Nsph,
 // Record all important SPH particle quantities at the end of the step for the 
 // start of the new timestep.
 // ============================================================================
-void SphLeapfrogKDK::EndTimestep(int n, int level_step, 
-				 int Nsph, SphParticle *sph)
+template <int ndim>
+void SphLeapfrogKDK<ndim>::EndTimestep(int n, int level_step,
+				 int Nsph, SphParticle<ndim> *sph)
 {
   int i;                                // Particle counter
   int k;                                // Dimension counter
@@ -146,3 +150,7 @@ void SphLeapfrogKDK::EndTimestep(int n, int level_step,
 
   return;
 }
+
+template class SphLeapfrogKDK<1>;
+template class SphLeapfrogKDK<2>;
+template class SphLeapfrogKDK<3>;

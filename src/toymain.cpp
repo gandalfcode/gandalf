@@ -5,21 +5,26 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-  SphSimulation sim;
-
+  SphSimulationBase* sim;
+  Parameters* params = new Parameters();
+  string paramfile;
   ExceptionHandler::makeExceptionHandler(cplusplus);
 
   if (argc >= 2){
-    sim.paramfile = argv[1];
+    paramfile = argv[1];
   }
   else {
     cout << "No parameter file specified, aborting..." << endl;
     exit(-1);
   }
 
-  sim.Setup();
+  params->ReadParamsFile(paramfile);
 
-  sim.Run();
+  sim = SphSimulationBase::SphSimulationFactory(params->intparams["ndim"], params);
+
+  sim->SetupSimulation();
+
+  sim->Run();
 
   return 0;
 }

@@ -20,6 +20,7 @@ class Parameters
 
   Parameters();
   ~Parameters();
+  Parameters(const Parameters&);
 
   void ReadParamsFile(std::string);
   void ParseLine(std::string);

@@ -25,8 +25,9 @@ using namespace std;
 // ============================================================================
 // EnergyGodunovIntegration::EnergyGodunovIntegration()
 // ============================================================================
-EnergyGodunovIntegration::EnergyGodunovIntegration(DOUBLE energy_mult_aux) :
-  EnergyEquation(energy_mult_aux)
+template <int ndim>
+EnergyGodunovIntegration<ndim>::EnergyGodunovIntegration(DOUBLE energy_mult_aux) :
+  EnergyEquation<ndim>(energy_mult_aux)
 {
 }
 
@@ -35,7 +36,8 @@ EnergyGodunovIntegration::EnergyGodunovIntegration(DOUBLE energy_mult_aux) :
 // ============================================================================
 // EnergyGodunovIntegration::~EnergyGodunovIntegration()
 // ============================================================================
-EnergyGodunovIntegration::~EnergyGodunovIntegration()
+template <int ndim>
+EnergyGodunovIntegration<ndim>::~EnergyGodunovIntegration()
 {
 }
 
@@ -46,8 +48,9 @@ EnergyGodunovIntegration::~EnergyGodunovIntegration()
 // Integrate internal energy to first order from the beginning of the step to 
 // the current simulation time, i.e. u(t+dt) = u(t) + dudt(t)*dt
 // ============================================================================
-void EnergyGodunovIntegration::EnergyIntegration(int n, int level_step, int Nsph,
-				  SphParticle *sph, FLOAT timestep)
+template <int ndim>
+void EnergyGodunovIntegration<ndim>::EnergyIntegration(int n, int level_step, int Nsph,
+				  SphParticle<ndim> *sph, FLOAT timestep)
 {
   int i;                                // Particle counter
   int nstep;                            // Particle (integer) step size
@@ -94,9 +97,10 @@ void EnergyGodunovIntegration::EnergyIntegration(int n, int level_step, int Nsph
 // adding a second order correction term.  The full integration becomes
 // u(t+dt) = u(t) + 0.5*(dudt(t) + dudt(t+dt))*dt 
 // ============================================================================
-void EnergyGodunovIntegration::EnergyCorrectionTerms(int n, int level_step, 
+template <int ndim>
+void EnergyGodunovIntegration<ndim>::EnergyCorrectionTerms(int n, int level_step,
 						     int Nsph, 
-						     SphParticle *sph, 
+						     SphParticle<ndim> *sph,
 						     FLOAT timestep)
 {
   return;
@@ -109,7 +113,8 @@ void EnergyGodunovIntegration::EnergyCorrectionTerms(int n, int level_step,
 // Record all important thermal quantities at the end of the step for the 
 // start of the new timestep.
 // ============================================================================
-void EnergyGodunovIntegration::EndTimestep(int n, int level_step, int Nsph, SphParticle *sph)
+template <int ndim>
+void EnergyGodunovIntegration<ndim>::EndTimestep(int n, int level_step, int Nsph, SphParticle<ndim> *sph)
 {
   int i;                                // Particle counter
   int nstep;                            // Particle (integer) step size
@@ -138,7 +143,12 @@ void EnergyGodunovIntegration::EndTimestep(int n, int level_step, int Nsph, SphP
 // in one step, i.e. dt = const*u/|dudt + epsilon| 
 // where epsilon is to prevent the denominator becoming zero.
 // ============================================================================
-DOUBLE EnergyGodunovIntegration::Timestep(SphParticle &part)
+template <int ndim>
+DOUBLE EnergyGodunovIntegration<ndim>::Timestep(SphParticle<ndim> &part)
 {
-  return energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number));
+  return this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number));
 }
+
+template class EnergyGodunovIntegration<1>;
+template class EnergyGodunovIntegration<2>;
+template class EnergyGodunovIntegration<3>;
