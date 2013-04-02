@@ -131,6 +131,7 @@ class Sph
 // from the parent Sph class).  Full code for each of these class functions 
 // written in 'GradhSph.cpp'.
 // ============================================================================
+#if !defined(SWIG)
 template <int ndim, template<int> class kernelclass>
 class GradhSph: public Sph<ndim>
 {
@@ -267,6 +268,6 @@ class GodunovSph: public Sph<ndim>
                         FLOAT, FLOAT, FLOAT, FLOAT &, FLOAT &);
 
 };
-
+#endif
 
 #endif

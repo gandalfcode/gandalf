@@ -15,6 +15,16 @@
 #include "Debug.h"
 using namespace std;
 
+SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory(string filename, SphSimulationBase* sim, int ndim) {
+    if (ndim==1)
+      return new SphSnapshot<1>(filename, sim);
+    else if (ndim==2)
+      return new SphSnapshot<2>(filename, sim);
+    else if (ndim==3)
+      return new SphSnapshot<3>(filename, sim);
+    return NULL;
+  };
+
 
 // ============================================================================
 // SphSnapshotBase::SphSnapshotBase
@@ -29,6 +39,13 @@ SphSnapshotBase::SphSnapshotBase(string auxfilename)
   LastUsed = time(NULL);
 }
 
+template <int ndims>
+SphSnapshot<ndims>::SphSnapshot (string filename, SphSimulationBase* sim):
+SphSnapshotBase(filename),
+simulation(static_cast<SphSimulation<ndims>* > (sim))
+{
+  this->ndim = ndims;
+}
 
 
 // ============================================================================
@@ -165,13 +182,14 @@ int SphSnapshotBase::CalculateMemoryUsage(void)
 // SphSnapshotBase::CopyDataFromSimulation
 // Copy particle data from main memory to current snapshot arrays.
 // ============================================================================
-template <int ndim>
-void SphSnapshot<ndim>::CopyDataFromSimulation(int ndimaux, int Nsphaux)
+template <int ndims>
+void SphSnapshot<ndims>::CopyDataFromSimulation()
 {
   debug2("[SphSnapshotBase::CopyDataFromSimulation]");
 
-  ndim = ndimaux;
-  Nsph = Nsphaux;
+  SphParticle<ndims>* sphaux = simulation->sph->sphdata;
+
+  Nsph = simulation->sph->Nsph;
 
   AllocateBufferMemory();
 
@@ -316,17 +334,23 @@ void SphSnapshotBase::ExtractArray(string name, float** out_array, int* size_arr
   label = unit->LatexLabel(RequestedUnit);
   scaling_factor = unit->OutputScale(RequestedUnit);
 
+  cout << "Selecting quantity: " << name << endl;
+  cout << out_array << endl;
+//  for (int i=0; i<*size_array; i++) {
+//    cout << * (out_array [i]) << " ";
+//  }
+//  cout << endl;
+
   return;
 }
-
 
 
 // ============================================================================
 // SphSnapshotBase::ReadSnapshot
 // Read snapshot into main memory and then copy into snapshot buffer.
 // ============================================================================
-template <int ndim>
-void SphSnapshot<ndim>::ReadSnapshot(string format, SphSimulationBase *simulation)
+template <int ndims>
+void SphSnapshot<ndims>::ReadSnapshot(string format)
 {
   debug2("[SphSnapshotBase::ReadSnapshot]");
 
@@ -337,8 +361,7 @@ void SphSnapshot<ndim>::ReadSnapshot(string format, SphSimulationBase *simulatio
   simulation->ReadSnapshotFile(filename, format);
 
   // Now copy from main memory to current snapshot
-  CopyDataFromSimulation(simulation->simparams->intparams["ndim"],
-			 simulation->sph->Nsph);
+  CopyDataFromSimulation();
 
   // Record simulation snapshot time
   t = simulation->t;

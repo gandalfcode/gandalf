@@ -1,6 +1,6 @@
 import fnmatch
 import os
-from swig_generated.SphSim import SphSimulation, SphSnapshot
+from swig_generated.SphSim import SphSimulationBase, SphSnapshotBase, Parameters
 
 # ============================================================================
 # CLASS SIMBUFFER
@@ -58,7 +58,7 @@ class SimBuffer:
     
     @staticmethod
     def _fillsnapshot(snapshot):
-        snapshot.ReadSnapshot(snapshot.sim.simparams.stringparams["in_file_form"],snapshot.sim)
+        snapshot.ReadSnapshot(snapshot.sim.simparams.stringparams["in_file_form"])
         SimBuffer._findmemoryfor(snapshot)
     
     @staticmethod
@@ -90,15 +90,16 @@ class SimBuffer:
         SimBuffer.simlist = []
     
     @staticmethod
-    def newsim (paramfile):
+    def newsim (paramfile, ndim):
         '''
         This method creates a new simulation from the specified parameter file.
         Returns the simulation created.
         '''
-        sim = SphSimulation()
+        params = Parameters()
+        params.ReadParamsFile(paramfile)
+        sim = SphSimulationBase.SphSimulationFactory(params.intparams["ndim"], params);
         SimBuffer._add_simulation(sim)
-        sim.paramfile = paramfile
-        sim.Setup()
+        sim.SetupSimulation()
         sim.snapshots = []
         SimBuffer.load_live_snapshot(sim)
         return sim
@@ -110,22 +111,23 @@ class SimBuffer:
         it doesn't call setup simulation, and therefore it does NOT initialize the simulation (that is,
         you can't directly run a simulation that you created with this command. First you need to
         initialize it. Returns the simulation created'''
-        sim = SphSimulation()
+        params = Parameters()
+        params.ReadParamsFile(paramfile)
+        sim = SphSimulationBase.SphSimulationFactory(params.intparams["ndim"], params);
         SimBuffer._add_simulation(sim)
-        sim.paramfile = paramfile
-        sim.simparams.ReadParamsFile(paramfile)
         sim.snapshots =[]
         return sim
         
     @staticmethod
-    def newsimpython(paramfile):
+    def newsimpython(paramfile, ndim):
         '''This method creates a simulation but does not fill in the arrays, allowing one to use the import
         array method of the simulation object created to define the initial conditions from Python.
         Remember that after having imported all the arrays, must call PostSetupForPython. Note however that
         the run function in facade will do this for you if you forget.'''
-        sim = SphSimulation()
+        params = Parameters()
+        params.ReadParamsFile(paramfile)
+        sim = SphSimulationBase.SphSimulationFactory(params.intparams["ndim"], params);
         SimBuffer._add_simulation(sim)
-        sim.paramfile=paramfile
         sim.PreSetupForPython()
         sim.snapshots=[]
         sim.frompython=True
@@ -138,10 +140,10 @@ class SimBuffer:
         try:
             snap = sim.live
         except AttributeError:
-            snap = SphSnapshot()
+            snap = SphSnapshotBase.SphSnapshotFactory("",sim,sim.simparams.intparams["ndim"])
             #TODO: check this is correct
             snap.units = sim.simunits
-        snap.CopyDataFromSimulation(sim.simparams.intparams["ndim"], sim.sph.Nsph, sim.sph.sphdata)
+        snap.CopyDataFromSimulation()
         snap.t = sim.t
         sim.live = snap
         sim.current = sim.live
@@ -171,10 +173,11 @@ class SimBuffer:
         #construct the simulation object and initialize it
         paramfile = run_id + '.param'
         run_id_base = os.path.basename(run_id)
-        sim = SphSimulation()
-        SimBuffer._add_simulation(sim)
-        parameters = sim.simparams
+        parameters = Parameters()
         parameters.ReadParamsFile(paramfile)
+        ndim=params.intparams["ndim"]
+        sim = SphSimulationBase.SphSimulationFactory(ndim, parameters);
+        SimBuffer._add_simulation(sim)
         sim.ProcessParameters()
         fileformat = parameters.stringparams["in_file_form"]
         
@@ -189,7 +192,7 @@ class SimBuffer:
         sim.snapshots = []
         for filename in folderfiles:
             if fnmatch.fnmatch(filename, filetest):
-                sim.snapshots.append(SphSnapshot(os.path.join(dirname,filename)))              
+                sim.snapshots.append(SphSnapshotBase.SphSnapshotFactory(os.path.join(dirname,filename),sim,ndim))              
         if len(sim.snapshots) == 0:
             print "Warning: no snapshots files found for simulation " + run_id 
             

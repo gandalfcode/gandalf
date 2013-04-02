@@ -58,11 +58,11 @@ class SphSimulationBase
 {
  public:
 
-  static SphSimulationBase* SphSimulationFactory (int ndim, Parameters& params);
+  static SphSimulationBase* SphSimulationFactory (int ndim, Parameters* params);
 
   // Constructor and Destructor
   // --------------------------------------------------------------------------
-  SphSimulationBase(Parameters& params);
+  SphSimulationBase(Parameters* params);
   ~SphSimulationBase();
 
   // Subroutine prototypes
@@ -114,7 +114,7 @@ class SphSimulationBase
   virtual bool WriteColumnSnapshotFile(string)=0;
 
 //#if !defined(FIXED_DIMENSIONS)
-//  int ndim;
+  int ndims;
 //  int vdim;
 //  int bdim;
 //#endif
@@ -155,7 +155,7 @@ class SphSimulationBase
 template <int ndim>
 class SphSimulation : public SphSimulationBase {
 public:
-  SphSimulation(Parameters& parameters) : SphSimulationBase(parameters) {};
+  SphSimulation(Parameters* parameters) : SphSimulationBase(parameters) {this->ndims=ndim;};
 
 
   // Initial conditions helper routines

@@ -26,7 +26,7 @@
 #include "SphSimulationTimesteps.cpp"
 using namespace std;
 
-SphSimulationBase* SphSimulationBase::SphSimulationFactory (int ndim, Parameters& params){
+SphSimulationBase* SphSimulationBase::SphSimulationFactory (int ndim, Parameters* params){
  if (ndim==1)
    return new SphSimulation<1>(params);
  else if (ndim==2)
@@ -39,9 +39,9 @@ SphSimulationBase* SphSimulationBase::SphSimulationFactory (int ndim, Parameters
 // ============================================================================
 // SphSimulation::SphSimulation
 // ============================================================================
-SphSimulationBase::SphSimulationBase(Parameters& params):
-    simparams(&params)
+SphSimulationBase::SphSimulationBase(Parameters* params)
 {
+  simparams = new Parameters(*params);
   paramfile = "";
   n = 0;
   nresync = 0;
@@ -534,8 +534,8 @@ template <int ndim>
 void SphSimulation<ndim>::PreSetupForPython(void) {
   debug1("[SphSimulation::PreSetupForPython]");
 
-  // Read the parameters
-  simparams->ReadParamsFile(paramfile);
+//  // Read the parameters
+//  simparams->ReadParamsFile(paramfile);
 
   ProcessParameters();
 

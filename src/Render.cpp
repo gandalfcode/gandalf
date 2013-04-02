@@ -23,12 +23,29 @@
 using namespace std;
 
 
+RenderBase* RenderBase::RenderFactory(int ndim, SphSimulationBase* sim) {
+  RenderBase* render;
+  if (ndim==1) {
+    render = new Render<1> (sim);
+  }
+  else if (ndim==2) {
+    render = new Render<2> (sim);
+  }
+  else if (ndim==3) {
+    render = new Render<3> (sim);
+  }
+  else {
+    render = NULL;
+  }
+  return render;
+}
 
 // ============================================================================
 // Render::Render
 // ============================================================================
 template <int ndim>
-Render<ndim>::Render()
+Render<ndim>::Render(SphSimulationBase* sim):
+sph(static_cast<Sph<ndim>* > (static_cast<SphSimulation<ndim>* > (sim)->sph))
 {
 }
 
@@ -56,7 +73,7 @@ int Render<ndim>::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstri
 				      float xmax,
 				      float ymin, float ymax, float* values,
 				      int Ngrid, SphSnapshotBase &snap,
-				      Sph<ndim> *sph, float &scaling_factor)
+				      float &scaling_factor)
 {
   int arraycheck = 1;                   // Verification flag
   int c;                                // Rendering grid cell counter
@@ -213,7 +230,7 @@ int Render<ndim>::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstrin
 				     float ymin, float ymax, float zslice, 
 				     float* values,
 				     int Ngrid, SphSnapshotBase &snap,
-				     Sph<ndim> *sph, float &scaling_factor)
+				     float &scaling_factor)
 {
   int arraycheck = 1;                   // ..
   int c;                                // ..
@@ -322,3 +339,6 @@ int Render<ndim>::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstrin
 }
 
 
+template class Render<1>;
+template class Render<2>;
+template class Render<3>;

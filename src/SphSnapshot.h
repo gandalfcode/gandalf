@@ -25,6 +25,9 @@ class SphSnapshotBase
 {
  public:
 
+  static SphSnapshotBase* SphSnapshotFactory(string filename, SphSimulationBase* sim, int ndim);
+
+
   SphSnapshotBase(string="");
   ~SphSnapshotBase();
 
@@ -34,10 +37,10 @@ class SphSnapshotBase
   void AllocateBufferMemory(void);
   void DeallocateBufferMemory(void);
   int CalculateMemoryUsage(void);
-  virtual void CopyDataFromSimulation(int,int)=0;
+  virtual void CopyDataFromSimulation()=0;
   void ExtractArray(string, float** out_array, int* size_array, 
 		    float& scaling_factor, string RequestedUnit);
-  virtual void ReadSnapshot(string, SphSimulationBase *)=0;
+  virtual void ReadSnapshot(string)=0;
 
 
   // All variables
@@ -78,9 +81,13 @@ class SphSnapshotBase
 
 };
 
-template <int ndim>
+template <int ndims>
 class SphSnapshot : public SphSnapshotBase {
-  void CopyDataFromSimulation(int,int);
-  void ReadSnapshot(string, SphSimulationBase *);
+public:
+  SphSnapshot (string, SphSimulationBase* );
+  void CopyDataFromSimulation();
+  void ReadSnapshot(string);
+
+  SphSimulation<ndims>* simulation;
 };
 #endif

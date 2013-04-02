@@ -23,34 +23,48 @@
 using namespace std;
 
 
+class RenderBase
+{
+public:
+  static RenderBase* RenderFactory(int ndim, SphSimulationBase* sim);
+
+  virtual int CreateColumnRenderingGrid(int, int, string, string, string, string,
+                float, float, float, float, float* values,
+                int Ngrid, SphSnapshotBase &, float& scaling_factor)=0;
+  virtual int CreateSliceRenderingGrid(int, int, string, string, string, string, string,
+      float, float, float, float, float, float* values,
+      int Ngrid,
+      SphSnapshotBase &, float& scaling_factor)=0;
+};
+
 
 // ============================================================================
-// Clas Render
+// Class Render
 // ============================================================================
 template <int ndim>
-class Render
+class Render : public RenderBase
 {
  public:
 
   // Constructor and Destructor
   // --------------------------------------------------------------------------
-  Render();
+  Render(SphSimulationBase* sim);
   ~Render();
 
   // Subroutine prototypes
   // --------------------------------------------------------------------------
   int CreateColumnRenderingGrid(int, int, string, string, string, string,
 				float, float, float, float, float* values, 
-				int Ngrid, SphSnapshotBase &, Sph<ndim> *, float& scaling_factor);
+				int Ngrid, SphSnapshotBase &, float& scaling_factor);
   int CreateSliceRenderingGrid(int, int, string, string, string, string, string,
 			       float, float, float, float, float, float* values, 
 			       int Ngrid,
-			       SphSnapshotBase &, Sph<ndim> *, float& scaling_factor);
+			       SphSnapshotBase &, float& scaling_factor);
 
 
   // ..
   // --------------------------------------------------------------------------
-
+  Sph<ndim>* sph;
 
 
 };

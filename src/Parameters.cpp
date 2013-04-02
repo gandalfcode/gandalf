@@ -33,7 +33,11 @@ Parameters::~Parameters()
 {
 }
 
-
+Parameters::Parameters(const Parameters& other) {
+  this->intparams = other.intparams;
+  this->stringparams = other.stringparams;
+  this->floatparams = other.floatparams;
+}
 
 // ============================================================================
 // Parameters::ReadParamsFile

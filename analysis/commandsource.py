@@ -2,7 +2,7 @@ import analytical
 from data import Data
 from facade import SimBuffer
 import numpy as np
-from swig_generated.SphSim import Render
+from swig_generated.SphSim import RenderBase
 
 class Command:
     
@@ -288,7 +288,8 @@ class RenderPlotCommand (PlotCommand):
         
         x_data, xscaling_factor = self.get_array('x',snap)
         y_data, yscaling_factor = self.get_array('y', snap)
-
+        print 'ciao'
+        print x_data
         #create the grid
         #set resolution
         try:
@@ -322,13 +323,13 @@ class RenderPlotCommand (PlotCommand):
             self.ymin=self.coordlimits[2]
             self.ymax=self.coordlimits[3]
         
-        rendering = Render()
+        rendering = RenderBase.RenderFactory(sim.ndims, sim)
         renderscaling_factor=1.
         rendered = np.zeros(xres*yres, dtype=np.float32)
-        if sim.ndim < 3 or self.zslice is None:
+        if sim.ndims < 3 or self.zslice is None:
             returncode, renderscaling_factor = rendering.CreateColumnRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.renderquantity,
                                                  self.renderunit, self.xmin, self.xmax,
-                                                 self.ymin, self.ymax, rendered, snap, sim.sph, renderscaling_factor)
+                                                 self.ymin, self.ymax, rendered, snap,renderscaling_factor)
         else:
             quantities = ['x','y','z']
             quantities.pop(quantities.index(self.xquantity))
@@ -337,9 +338,8 @@ class RenderPlotCommand (PlotCommand):
             z_data, z_scaling_factor = self.get_array('z', snap)
             returncode, renderscaling_factor = rendering.CreateSliceRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.zquantity, self.renderquantity,
                                                  self.renderunit, self.xmin, self.xmax,
-                                                 self.ymin, self.ymax, self.zslice, rendered, snap, sim.sph, renderscaling_factor)
+                                                 self.ymin, self.ymax, self.zslice, rendered, snap, renderscaling_factor)
         rendered = rendered.reshape(xres,yres)
-        np.set_printoptions(threshold='nan')
 #        data = Data(x*xscaling_factor, y*yscaling_factor, rendered*renderscaling_factor)
         data = Data(None, None, rendered*renderscaling_factor)
         
