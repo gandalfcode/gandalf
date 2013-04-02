@@ -12,7 +12,6 @@
 
 #include "Precision.h"
 #include "Constants.h"
-#include "Dimensions.h"
 #include "Parameters.h"
 #include "SphParticle.h"
 

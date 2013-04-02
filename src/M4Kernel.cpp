@@ -6,7 +6,6 @@
 #include <math.h>
 #include <iostream>
 #include "Constants.h"
-#include "Dimensions.h"
 #include "SphKernel.h"
 using namespace std;
 

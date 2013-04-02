@@ -8,7 +8,6 @@ F2PY               = f2py
 COMPILER_MODE      = FAST
 OPENMP             = 0
 
-NDIM               = 0
 PRECISION          = DOUBLE
 
 OUTPUT_LEVEL       = 1

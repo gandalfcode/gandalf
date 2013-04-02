@@ -11,7 +11,6 @@
 #include <string>
 #include "Precision.h"
 #include "Constants.h"
-#include "Dimensions.h"
 #include "SphKernel.h"
 #include "SphParticle.h"
 #include "Sph.h"

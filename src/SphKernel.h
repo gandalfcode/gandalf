@@ -7,7 +7,6 @@
 #define _SPH_KERNEL_H_
 
 #include <math.h>
-#include "Dimensions.h"
 #include "Exception.h"
 #include <iostream>
 using namespace std;

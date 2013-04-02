@@ -9,7 +9,6 @@
 #include <cstdlib>
 #include <iostream>
 #include <math.h>
-#include "Dimensions.h"
 #include "Sph.h"
 #include "SphKernel.h"
 #include "SphIntegration.h"

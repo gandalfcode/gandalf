@@ -8,7 +8,6 @@
 #define _SPH_PARTICLE_H_
 
 
-#include "Dimensions.h"
 #include "Precision.h"
 #include "Constants.h"
 
