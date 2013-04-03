@@ -175,7 +175,7 @@ class SimBuffer:
         run_id_base = os.path.basename(run_id)
         parameters = Parameters()
         parameters.ReadParamsFile(paramfile)
-        ndim=params.intparams["ndim"]
+        ndim=parameters.intparams["ndim"]
         sim = SphSimulationBase.SphSimulationFactory(ndim, parameters);
         SimBuffer._add_simulation(sim)
         sim.ProcessParameters()
