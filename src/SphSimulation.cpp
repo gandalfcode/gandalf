@@ -214,6 +214,8 @@ void SphSimulation<ndim>::GenerateIC(void)
     RandomBox();
   else if (simparams->stringparams["ic"] == "random_sphere")
     RandomSphere();
+  else if (simparams->stringparams["ic"] == "cdiscontinuity")
+    ContactDiscontinuity();
   else if (simparams->stringparams["ic"] == "lattice_cube")
     LatticeBox();
   else if (simparams->stringparams["ic"] == "sedov")
@@ -250,7 +252,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
   map<string, int> &intparams = simparams->intparams;
   map<string, float> &floatparams = simparams->floatparams;
   map<string, string> &stringparams = simparams->stringparams;
-
 
   debug2("[SphSimulation::ProcessParameters]");
 
@@ -852,6 +853,11 @@ void SphSimulation<ndim>::PostGeneration(void)
   diag0 = diag;
   
   setup = true;
+
+  for (int i=0; i<sph->Nsph; i++) {
+   cout << "WTF2?? : " << i << "   x : " << sph->sphdata[i].rho << "   " << sph->eos->gammam1*sph->sphdata[i].u*sph->sphdata[i].rho << endl;
+  }
+
 
   return;
 }

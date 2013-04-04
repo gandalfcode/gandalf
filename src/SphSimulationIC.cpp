@@ -240,6 +240,150 @@ void SphSimulation<ndim>::RandomSphere(void)
 
 
 // ============================================================================
+// SphSimulation::ContactDiscontinuity
+// ============================================================================
+template <int ndim>
+void SphSimulation<ndim>::ContactDiscontinuity(void)
+{
+  DomainBox<ndim> box1;
+  DomainBox<ndim> box2;
+  int Nlattice1[ndim];
+  int Nlattice2[ndim];
+  int i;
+  int j;
+  int k;
+  int Nbox1;
+  int Nbox2;
+  FLOAT volume;
+  FLOAT *r;
+  FLOAT vfluid1[ndim];
+  FLOAT vfluid2[ndim];
+  FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
+  FLOAT rhofluid2 = simparams->floatparams["rhofluid2"];
+  FLOAT press1 = simparams->floatparams["press1"];
+  FLOAT press2 = simparams->floatparams["press2"];
+  FLOAT temp0 = simparams->floatparams["temp0"];
+  FLOAT mu_bar = simparams->floatparams["mu_bar"];
+  FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
+  FLOAT amp = simparams->floatparams["amp"];
+  FLOAT lambda = simparams->floatparams["lambda"];
+  Nlattice1[0] = simparams->intparams["Nlattice1[0]"];
+  Nlattice1[1] = simparams->intparams["Nlattice1[1]"];
+  Nlattice2[0] = simparams->intparams["Nlattice2[0]"];
+  Nlattice2[1] = simparams->intparams["Nlattice2[1]"];
+  vfluid1[0] = simparams->floatparams["vfluid1[0]"];
+  vfluid2[0] = simparams->floatparams["vfluid2[0]"];
+
+  debug2("[SphSimulation::ContactDiscontinuity]");
+
+
+  // 1d simulation
+  // ==========================================================================
+  if (ndim == 1) {
+	box1.boxmin[0] = simbox.boxmin[0];
+	box1.boxmax[0] = 0.8*simbox.boxmax[0];
+	box2.boxmin[0] = 0.8*simbox.boxmax[0];
+	box2.boxmax[0] = simbox.boxmax[0];
+	volume = box1.boxmax[0] - box1.boxmin[0];
+	Nbox1 = Nlattice1[0];
+	Nbox2 = Nlattice2[0];
+
+	// Allocate local and main particle memory
+	sph->Nsph = Nbox1 + Nbox2;
+	sph->AllocateMemory(sph->Nsph);
+	r = new FLOAT[ndim*sph->Nsph];
+	cout << "Allocating memory : " << sph->Nsph << endl;
+
+
+	// ------------------------------------------------------------------------
+	if (Nbox1 > 0) {
+	  AddRegularLattice(Nbox1,Nlattice1,r,box1);
+      volume = box1.boxmax[0] - box1.boxmin[0];
+      cout << "Vol1 : " << volume << "   m1 : " << rhofluid1*volume/(FLOAT) Nbox1 << endl;
+      for (i=0; i<Nbox1; i++) {
+		sph->sphdata[i].r[0] = r[i] - 0.4*simbox.boxsize[0];
+		if (sph->sphdata[i].r[0] < simbox.boxmin[0])
+		  sph->sphdata[i].r[0] += simbox.boxsize[0];
+		sph->sphdata[i].v[0] = 0.0;
+        sph->sphdata[i].m = rhofluid1*volume/(FLOAT) Nbox1;
+        if (sph->gas_eos == "isothermal")
+	      sph->sphdata[i].u = temp0/gammaone/mu_bar;
+	    else
+	      sph->sphdata[i].u = press1/rhofluid1/gammaone;
+	  }
+	}
+
+	// ------------------------------------------------------------------------
+	if (Nbox2 > 0) {
+	  AddRegularLattice(Nbox2,Nlattice2,r,box2);
+      volume = box2.boxmax[0] - box2.boxmin[0];
+      cout << "Vol2 : " << volume << "   m2 : " << rhofluid2*volume/(FLOAT) Nbox2 << endl;
+	  for (j=0; j<Nbox2; j++) {
+        i = Nbox1 + j;
+		sph->sphdata[i].r[0] = r[j] - 0.4*simbox.boxsize[0];
+		if (sph->sphdata[i].r[0] < simbox.boxmin[0])
+		  sph->sphdata[i].r[0] += simbox.boxsize[0];
+		sph->sphdata[i].v[0] = 0.0;
+        sph->sphdata[i].m = rhofluid2*volume/(FLOAT) Nbox2;
+        if (sph->gas_eos == "isothermal")
+	      sph->sphdata[i].u = temp0/gammaone/mu_bar;
+	    else
+	      sph->sphdata[i].u = press2/rhofluid2/gammaone;
+	  }
+	}
+
+  }
+  // ==========================================================================
+  else if (ndim == 2) {
+
+
+
+  }
+  // ==========================================================================
+
+
+  // Set initial smoothing lengths and create initial ghost particles
+  // --------------------------------------------------------------------------
+  sph->Nghost = 0;
+  sph->Nghostmax = sph->Nsphmax - sph->Nsph;
+  sph->Ntot = sph->Nsph;
+  for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
+
+  sph->InitialSmoothingLengthGuess();
+  sphneib->UpdateTree(sph,*simparams);
+
+  // Search ghost particles
+  SearchGhostParticles();
+
+  sphneib->UpdateAllSphProperties(sph);
+
+  // Update neighbour tre
+  sphneib->UpdateTree(sph,*simparams);
+
+  // Calculate all SPH properties
+  sphneib->UpdateAllSphProperties(sph);
+
+  sphneib->UpdateTree(sph,*simparams);
+  sphneib->UpdateAllSphProperties(sph);
+
+  CopySphDataToGhosts();
+
+  for (i=0; i<sph->Nsph; i++) {
+    sph->sphdata[i].u = press1/sph->sphdata[i].rho/gammaone;
+   cout << "WTF?? : " << i << "   x : " << sph->sphdata[i].rho << "   " << gammaone*sph->sphdata[i].u*sph->sphdata[i].rho << endl;
+  }
+
+  // Calculate all SPH properties
+  sphneib->UpdateAllSphProperties(sph);
+
+  delete[] r;
+
+  return;
+}
+
+
+
+// ============================================================================
 // SphSimulation::KHI
 // ============================================================================
 template <int ndim>

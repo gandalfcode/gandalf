@@ -29,7 +29,7 @@ class EOS
 
   EOS (FLOAT _gamma):
     gamma(_gamma),
-    gammam1 (gamma-1){};
+    gammam1 (gamma - (FLOAT) 1.0){};
 
   virtual FLOAT Pressure(SphParticle<ndim> &) = 0;
   virtual FLOAT EntropicFunction(SphParticle<ndim> &) = 0;

@@ -222,8 +222,8 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       az[i] = (float) sphaux[i].a[2];
     }
 
-    m[i] = (float) sphaux[i].m;
-    h[i] = (float) sphaux[i].h;
+    m[i] = (float) sphaux[i].u*sphaux[i].rho*0.6666666666666;
+    h[i] = (float) simulation->sph->eos->Pressure(sphaux[i]);
     rho[i] = (float) sphaux[i].rho;
     u[i] = (float) sphaux[i].u;
     dudt[i] = (float) sphaux[i].dudt;

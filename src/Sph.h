@@ -18,17 +18,20 @@
 using namespace std;
 
 
-  enum aviscenum {noneav, mon97};
-  enum acondenum{noneac, wadsley2008, price2008};
+enum aviscenum{noneav, mon97};
+enum acondenum{noneac, wadsley2008, price2008};
 
 
-// ============================================================================
-// Class Sph
-// Main parent Sph class.  Different SPH implementations 
-// (e.g. grad-h SPH, Saitoh & Makino 2012) are derived from this class.
-// Each implementation requires defining its own version of each function 
-// (e.g. ComputeH for its own method of computing smoothing lengths).
-// ============================================================================
+//=============================================================================
+//  Class Sph
+/// \brief   Main parent Sph class.
+/// \details Different SPH implementations (e.g. grad-h SPH, Saitoh &
+///          Makino 2012) are derived from this class.  Each implementation
+///          requires defining its own version of each function (e.g. ComputeH
+///          for its own method of computing smoothing lengths).
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=============================================================================
 template <int ndim>
 class Sph
 {
@@ -38,28 +41,13 @@ class Sph
   const aviscenum avisc;
   const acondenum acond;
 
-//#if !defined(SWIG) && defined(FIXED_DIMENSIONS)
-//  Sph(int ndimaux, int vdimaux, int bdimaux, int hydro_forces_aux,
-//    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
-//    FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
-//    acondenum acond_aux, string gas_eos_aux, string KernelName):
-//	hydro_forces(hydro_forces_aux),
-//	self_gravity(self_gravity_aux),
-//	alpha_visc(alpha_visc_aux),
-//	beta_visc(beta_visc_aux),
-//	h_fac(h_fac_aux),
-//	h_converge(h_converge_aux),
-//	avisc(avisc_aux),
-//	acond(acond_aux),
-//	gas_eos(gas_eos_aux),
-//    kerntab(TabulatedKernel(ndim, KernelName))
-//      {};
-//#elif !defined(SWIG) && !defined(FIXED_DIMENSIONS)
+  // Constructor
+  // --------------------------------------------------------------------------
   Sph(int hydro_forces_aux,
     int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
     FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
     acondenum acond_aux, string gas_eos_aux, string KernelName);
-//#endif
+
 
   // SPH functions for computing SPH sums with neighbouring particles 
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
@@ -113,13 +101,7 @@ class Sph
   struct SphParticle<ndim> *sphdata;          // Main SPH particle data array
   EOS<ndim> *eos;                             // Equation-of-state
 
-//#if !defined(FIXED_DIMENSIONS)
-//  const int ndim;
-//  const int vdim;
-//  const int bdim;
   static const FLOAT invndim=1./ndim;
-
-//#endif
 
 };
 
@@ -135,8 +117,6 @@ class Sph
 template <int ndim, template<int> class kernelclass>
 class GradhSph: public Sph<ndim>
 {
-
-
   using Sph<ndim>::allocated;
   using Sph<ndim>::Nsph;
   using Sph<ndim>::eos;

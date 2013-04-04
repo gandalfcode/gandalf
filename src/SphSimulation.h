@@ -118,6 +118,7 @@ class SphSimulationBase
   // Initial conditions routines
   // --------------------------------------------------------------------------
   virtual void RandomBox(void)=0;
+  virtual void ContactDiscontinuity(void)=0;
   virtual void LatticeBox(void)=0;
   virtual void RandomSphere(void)=0;
   virtual void ShockTube(void)=0;
@@ -220,6 +221,7 @@ class SphSimulation : public SphSimulationBase {
   // Initial conditions routines
   // --------------------------------------------------------------------------
   virtual void RandomBox(void);
+  virtual void ContactDiscontinuity(void);
   virtual void LatticeBox(void);
   virtual void RandomSphere(void);
   virtual void ShockTube(void);
