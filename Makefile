@@ -3,13 +3,11 @@
 # =============================================================================
 
 CC                 = g++
-PYTHON             = python
-F2PY               = f2py
+PYTHON             = python2.7
+F2PY               = f2py2.7
 COMPILER_MODE      = FAST
 OPENMP             = 0
-
 PRECISION          = DOUBLE
-
 OUTPUT_LEVEL       = 1
 DEBUG              = 1
 VERIFY_ALL         = 0

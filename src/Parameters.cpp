@@ -141,12 +141,9 @@ void Parameters::SetDefaultValues(void)
   // Initial conditions parameters
   // --------------------------------------------------------------------------
   stringparams["ic"] = "random_cube";
-  intparams["Npart"] = 100;
-//#if defined(FIXED_DIMENSIONS)
-//  intparams["ndim"] = NDIM;
-//#else
+  intparams["smooth_ic"] = 0;
+  intparams["Npart"] = 256;
   intparams["ndim"] = 3;
-//#endif
   intparams["Nlattice1[0]"] = 16;
   intparams["Nlattice1[1]"] = 16;
   intparams["Nlattice1[2]"] = 16;
@@ -165,6 +162,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["press2"] = 1.0;
   floatparams["amp"] = 0.1;
   floatparams["lambda"] = 0.5;
+  floatparams["kefrac"] = 0.0;
 
   // Integration scheme and timestep parameters
   // --------------------------------------------------------------------------
@@ -195,7 +193,7 @@ void Parameters::SetDefaultValues(void)
   // --------------------------------------------------------------------------
   stringparams["riemann_solver"] = "hllc";
   stringparams["slope_limiter"] = "mine";
-  intparams["riemann_order"] = 2;
+  intparams["riemann_order"] = 1;
 
   // Thermal physics parameters
   // --------------------------------------------------------------------------

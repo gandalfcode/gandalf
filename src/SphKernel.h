@@ -6,9 +6,10 @@
 #ifndef _SPH_KERNEL_H_
 #define _SPH_KERNEL_H_
 
+#include <iostream>
 #include <math.h>
 #include "Exception.h"
-#include <iostream>
+#include "Precision.h"
 using namespace std;
 
 // ============================================================================

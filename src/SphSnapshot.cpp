@@ -13,6 +13,7 @@
 #include "SphParticle.h"
 #include "SphSimulation.h"
 #include "Debug.h"
+#include "InlineFuncs.h"
 using namespace std;
 
 SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory(string filename, SphSimulationBase* sim, int ndim) {
@@ -202,7 +203,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       ax[i] = (float) sphaux[i].a[0];
     }
     else if (ndim == 2) {
-      x[i] = (float) sphaux[i].r[0];
+      x[i] = (float) sqrt(DotProduct(sphaux[i].r,sphaux[i].r,ndim)); //sphaux[i].r[0];
       y[i] = (float) sphaux[i].r[1];
       vx[i] = (float) sphaux[i].v[0];
       vy[i] = (float) sphaux[i].v[1];
@@ -210,7 +211,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       ay[i] = (float) sphaux[i].a[1];
     }
     else if (ndim == 3) {
-      x[i] = (float) sphaux[i].r[0];
+      x[i] = (float) sqrt(DotProduct(sphaux[i].r,sphaux[i].r,ndim)); //sphaux[i].r[0];
       y[i] = (float) sphaux[i].r[1];
       z[i] = (float) sphaux[i].r[2];
       vx[i] = (float) sphaux[i].v[0];

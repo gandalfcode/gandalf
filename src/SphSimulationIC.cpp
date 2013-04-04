@@ -381,6 +381,163 @@ void SphSimulation<ndim>::KHI(void)
 
 
 // ============================================================================
+// SphSimulation::SedovBlastWave
+// ============================================================================
+template <int ndim>
+void SphSimulation<ndim>::SedovBlastWave(void)
+{
+  int i;                                // ..
+  int j;                                // ..
+  int k;                                // ..
+  int Nbox;                             // ..
+  int Ncold;                            // ..
+  int Nhot;                             // ..
+  int Nlattice[3];                      // ..
+  int *hotlist;                         // ..
+  FLOAT drmag;                          // ..
+  FLOAT drsqd;                          // ..
+  FLOAT mbox;                           // ..
+  FLOAT r_hot;                          // ..
+  FLOAT ufrac;                          // ..
+  FLOAT umax;                           // ..
+  FLOAT utot;                           // ..
+  FLOAT volume;                         // ..
+  FLOAT *r;                             // ..
+
+  // Create local copies of initial conditions parameters
+  int smooth_ic = simparams->intparams["smooth_ic"];
+  FLOAT rhofluid = simparams->floatparams["rhofluid1"];
+  FLOAT press = simparams->floatparams["press1"];
+  FLOAT mu_bar = simparams->floatparams["mu_bar"];
+  FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
+  FLOAT kefrac = simparams->floatparams["kefrac"];
+  Nlattice[0] = simparams->intparams["Nlattice1[0]"];
+  Nlattice[1] = simparams->intparams["Nlattice1[1]"];
+  Nlattice[2] = simparams->intparams["Nlattice1[2]"];
+
+  debug2("[SphSimulation::SedovBlastWave]");
+
+
+  // Compute size and range of fluid bounding boxes
+  // --------------------------------------------------------------------------
+  if (ndim == 1) {
+    volume = simbox.boxmax[0] - simbox.boxmin[0];
+    Nbox = Nlattice[0];
+  }
+  else if (ndim == 2) {
+    volume = (simbox.boxmax[0] - simbox.boxmin[0])*
+      (simbox.boxmax[1] - simbox.boxmin[1]);
+    Nbox = Nlattice[0]*Nlattice[1];
+  }
+  else if (ndim == 3) {
+    volume = (simbox.boxmax[0] - simbox.boxmin[0])*
+      (simbox.boxmax[1] - simbox.boxmin[1])*
+      (simbox.boxmax[2] - simbox.boxmin[2]);
+    Nbox = Nlattice[0]*Nlattice[1]*Nlattice[2];
+  }
+  mbox = volume*rhofluid;
+  ufrac = max((FLOAT) 0.0,(FLOAT) 1.0 - kefrac);
+  Ncold = 0;
+  Nhot = 0;
+  r_hot = powf(powf(4.0,ndim)/(FLOAT) Nbox,sph->invndim);
+
+  // Allocate local and main particle memory
+  sph->Nsph = Nbox;
+  sph->AllocateMemory(sph->Nsph);
+  r = new FLOAT[ndim*sph->Nsph];
+  hotlist = new int[sph->Nsph];
+  cout << "Here??? : " << endl;
+  cout << "mbox : " << mbox << "   r_hot : " << r_hot 
+       << "   Nbox : " << Nbox << endl;
+
+  // Add particles for LHS of the shocktube
+  // --------------------------------------------------------------------------
+  if (Nbox > 0) {
+    AddRegularLattice(Nbox,Nlattice,r,simbox);
+
+    for (i=0; i<Nbox; i++) {
+      for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r[ndim*i + k];
+      for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
+      sph->sphdata[i].m = mbox/(FLOAT) Nbox;
+      sph->sphdata[i].u = small_number;
+    }
+  }
+
+  // Set initial smoothing lengths and create initial ghost particles
+  // --------------------------------------------------------------------------
+  sph->Nghost = 0;
+  sph->Nghostmax = sph->Nsphmax - sph->Nsph;
+  sph->Ntot = sph->Nsph;
+  for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
+  
+  sph->InitialSmoothingLengthGuess();
+  sphneib->UpdateTree(sph,*simparams);
+  
+  // Search ghost particles
+  SearchGhostParticles();
+
+  sphneib->UpdateAllSphProperties(sph);
+
+  // Update neighbour tre
+  sphneib->UpdateTree(sph,*simparams);
+
+  // Calculate all SPH properties
+  sphneib->UpdateAllSphProperties(sph);
+
+  // Now calculate which particles are hot
+  // --------------------------------------------------------------------------
+  umax = (FLOAT) 0.0;
+  utot = (FLOAT) 0.0;
+  for (i=0; i<sph->Nsph; i++) {
+    drsqd = DotProduct(sph->sphdata[i].r,sph->sphdata[i].r,ndim);
+    if (drsqd < r_hot*r_hot) {
+      hotlist[i] = 1;
+      if (smooth_ic == 1)
+	sph->sphdata[i].u = sph->sphdata[i].m*
+	  sph->kernp->w0(sph->kernp->kernrange*sqrt(drsqd)/r_hot);
+      else
+	sph->sphdata[i].u = sph->sphdata[i].m;
+      utot += sph->sphdata[i].u;
+      umax = max(umax,sph->sphdata[i].u);
+      Nhot++;
+    }
+    else {
+      hotlist[i] = 0;
+      Ncold++;
+    }
+  }
+
+  cout << "utot : " << utot << endl;
+
+  // Normalise the energies
+  // --------------------------------------------------------------------------
+  for (i=0; i<sph->Nsph; i++) {
+    if (hotlist[i] == 1) {
+      drmag = sqrt(DotProduct(sph->sphdata[i].r,sph->sphdata[i].r,ndim));
+      sph->sphdata[i].u = sph->sphdata[i].u/utot/sph->sphdata[i].m;
+      //,1.0e-6*umax/sph->sphdata[i].m);
+      for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 
+	sqrt(2.0*kefrac*sph->sphdata[i].u)*
+	sph->sphdata[i].r[k]/(drmag + small_number);
+      sph->sphdata[i].u = ufrac*sph->sphdata[i].u;
+      //,1.0e-6*umax/sph->sphdata[i].m);
+    }
+    else {
+      sph->sphdata[i].u = 1.0e-6/sph->sphdata[i].m;
+      for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = (FLOAT) 0.0;
+    }
+  }
+
+  delete[] hotlist;
+  delete[] r;
+
+  return;
+}
+
+
+
+
+// ============================================================================
 // SphSimulation::SoundWave
 // ============================================================================
 template <int ndim>
@@ -411,7 +568,7 @@ void SphSimulation<ndim>::SoundWave(void)
   if (sph->gas_eos == "isothermal") {
     ugas = temp0/gammaone/mu_bar;
     press1 = gammaone*rhofluid1*ugas;
-	csound = sqrt(press1/rhofluid1);
+    csound = sqrt(press1/rhofluid1);
   }
   else {
     ugas = press1/rhofluid1/gammaone;
@@ -446,11 +603,13 @@ void SphSimulation<ndim>::SoundWave(void)
     	 xnew = r[ndim*i] - amp*(1.0 - cos(kwave*xnew))/kwave;
     	 diff = fabs((xnew - xold)/lambda);
        } while(diff > 1.0e-6);
-       if (xnew < simbox.boxmin[0] || xnew > simbox.boxmax[0]) cout << "WTF?? : " << xnew << endl;
+       if (xnew < simbox.boxmin[0] || xnew > simbox.boxmax[0]) 
+	 cout << "WTF?? : " << xnew << endl;
        if (xnew > simbox.boxmax[0]) xnew -= simbox.boxsize[0];
        if (xnew < simbox.boxmin[0]) xnew += simbox.boxsize[0];
        for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = xnew;
-       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = csound*amp*sin(kwave*xnew);
+       for (k=0; k<ndim; k++) 
+	 sph->sphdata[i].v[k] = csound*amp*sin(kwave*xnew);
        sph->sphdata[i].m = rhofluid1*lambda/(FLOAT) Npart;
        if (sph->gas_eos == "isothermal")
       	 sph->sphdata[i].u = temp0/gammaone/mu_bar;
@@ -514,8 +673,8 @@ void SphSimulation<ndim>::AddRandomSphere(int Npart, FLOAT *r,
 // SphSimulation::AddRegularLattice
 // ============================================================================
 template <int ndim>
-void SphSimulation<ndim>::AddRegularLattice(int Npart, int Nlattice[ndim],
-				      FLOAT *r, DomainBox<ndim> box)
+void SphSimulation<ndim>::AddRegularLattice(int Npart, int Nlattice[3],
+					    FLOAT *r, DomainBox<ndim> box)
 {
   int i;
   int ii;

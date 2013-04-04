@@ -1,7 +1,7 @@
-// ============================================================================
+//============================================================================
 // SphSimulation.cpp
-// Contains all main functions controlling the SPH simulation work-flow.
-// ============================================================================
+// Contains all main functions controlling SPH simulation work-flow.
+//============================================================================
 
 
 #include <iostream>
@@ -26,20 +26,41 @@
 #include "SphSimulationTimesteps.cpp"
 using namespace std;
 
-SphSimulationBase* SphSimulationBase::SphSimulationFactory (int ndim, Parameters* params){
- if (ndim==1)
-   return new SphSimulation<1>(params);
- else if (ndim==2)
-   return new SphSimulation<2>(params);
- else if (ndim==3)
-   return new SphSimulation<3>(params);
- return NULL;
+
+// Create template class instances of the main SphSimulation object for 
+// each dimension used (1, 2 and 3)
+template class SphSimulation<1>;
+template class SphSimulation<2>;
+template class SphSimulation<3>;
+
+
+
+//=============================================================================
+//  SphSimulationBase
+/// Creates a simulation object depending on the dimensionality.
+//=============================================================================
+SphSimulationBase* SphSimulationBase::SphSimulationFactory
+(int ndim,                          ///< [in] No. of dimensions
+ Parameters* params)                ///< [in] Pointer to parameters object
+{
+  if (ndim==1)
+    return new SphSimulation<1>(params);
+  else if (ndim==2)
+    return new SphSimulation<2>(params);
+  else if (ndim==3)
+    return new SphSimulation<3>(params);
+  return NULL;
 }
 
+
+
+//=============================================================================
+//  SphSimulation::SphSimulation
+/// SphSimulation constructor, initialising important simulation variables. 
 // ============================================================================
-// SphSimulation::SphSimulation
-// ============================================================================
-SphSimulationBase::SphSimulationBase(Parameters* params)
+SphSimulationBase::SphSimulationBase
+(Parameters* params                 ///< [in] Pointer to parameters object
+ )
 {
   simparams = new Parameters(*params);
   paramfile = "";
@@ -53,24 +74,28 @@ SphSimulationBase::SphSimulationBase(Parameters* params)
 
 
 
-// ============================================================================
-// SphSimulation::~SphSimulation
-// ============================================================================
+//=============================================================================
+//  SphSimulation::~SphSimulation
+/// SphSimulation destructor
+//=============================================================================
 SphSimulationBase::~SphSimulationBase()
 {
 }
 
 
 
-// ============================================================================
-// SphSimulation::Run
-// Controls the simulation main loop, including exit conditions.
-// If provided, will only advance the simulation by 'Nadvance' steps.
-// ============================================================================
+//=============================================================================
+//  SphSimulation::Run
+/// Controls the simulation main loop, including exit conditions.  If provided
+/// (optional argument), will only advance the simulation by 'Nadvance' steps.
+//=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::Run(int Nadvance)
+void SphSimulation<ndim>::Run
+(int Nadvance                           ///< [in] Selected max no. of integer 
+ )                                      ///< timesteps (Optional argument).
 {
-  int Ntarget;                              // Selected integer timestep
+  int Ntarget;                          // Target step no before finishing 
+                                        // main code integration.
 
   debug1("[SphSimulation::Run]");
 
@@ -99,18 +124,20 @@ void SphSimulation<ndim>::Run(int Nadvance)
 
 
 
-// ============================================================================
-// SphSimulation::InteractiveRun
-// Controls the simulation main loop, including exit conditions.
-// If provided, will only advance the simulation by 'Nadvance' steps.
-// ============================================================================
+//=============================================================================
+//  SphSimulation::InteractiveRun
+/// Controls the simulation main loop, including exit conditions.
+/// If provided, will only advance the simulation by 'Nadvance' steps.
+//=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::InteractiveRun(int Nadvance)
+void SphSimulation<ndim>::InteractiveRun
+(int Nadvance                           ///< [in] Selected max no. of integer 
+ )                                      ///< timesteps (Optional argument).
 {
-  int Ntarget;                              // Selected integer timestep
-  clock_t tstart = clock();
-  DOUBLE tdiff = 0.0;
-  DOUBLE tpython = 8.0;
+  int Ntarget;                          // Selected integer timestep
+  DOUBLE tdiff = 0.0;                   // Measured time difference
+  DOUBLE tpython = 8.0;                 // Python viewer update time
+  clock_t tstart = clock();             // Initial CPU clock time
 
   debug1("[SphSimulation::Run]");
 
@@ -126,6 +153,7 @@ void SphSimulation<ndim>::InteractiveRun(int Nadvance)
     MainLoop();
     Output();
 
+    // Measure CPU clock time difference since current function was called
     tdiff = (DOUBLE) (clock() - tstart) / (DOUBLE) CLOCKS_PER_SEC;
 
   }
@@ -139,16 +167,16 @@ void SphSimulation<ndim>::InteractiveRun(int Nadvance)
 
 
 
-// ============================================================================
-// SphSimulation::Output
-// Controls when regular output snapshots are written by the code.
-// ============================================================================
+//=============================================================================
+//  SphSimulation::Output
+/// Controls when regular output snapshots are written by the code.
+//=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::Output(void)
 {
-  string filename;
-  string nostring;
-  stringstream ss;
+  string filename;                  // Output snapshot filename
+  string nostring;                  // ???
+  stringstream ss;                  // ???
 
   debug2("[SphSimulation::Output]");
 
@@ -172,10 +200,10 @@ void SphSimulation<ndim>::Output(void)
 
 
 
-// ============================================================================
-// SphSimulation::GenerateIC
-// Generate initial conditions for SPH simulation chosen in parameters file.
-// ============================================================================
+//============================================================================
+//  SphSimulation::GenerateIC
+/// Generate initial conditions for SPH simulation chosen in parameters file.
+//=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::GenerateIC(void)
 {
@@ -188,6 +216,8 @@ void SphSimulation<ndim>::GenerateIC(void)
     RandomSphere();
   else if (simparams->stringparams["ic"] == "lattice_cube")
     LatticeBox();
+  else if (simparams->stringparams["ic"] == "sedov")
+    SedovBlastWave();
   else if (simparams->stringparams["ic"] == "shocktube")
     ShockTube();
   else if (simparams->stringparams["ic"] == "soundwave")
@@ -203,58 +233,51 @@ void SphSimulation<ndim>::GenerateIC(void)
   return;
 }
 
-// ============================================================================
-// SphSimulation::ProcessParameters
-// Process all the options chosen in the parameters file, setting various 
-// simulation variables and creating important simulation objects.
-// ============================================================================
+
+
+//=============================================================================
+//  SphSimulation::ProcessParameters
+/// Process all the options chosen in the parameters file, setting various 
+/// simulation variables and creating important simulation objects.
+//=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::ProcessParameters(void)
 {
+  aviscenum avisc;                  // Artificial viscosity enum
+  acondenum acond;                  // Artificial conductivity enum
+
+  // Local references to parameter variables for brevity
   map<string, int> &intparams = simparams->intparams;
   map<string, float> &floatparams = simparams->floatparams;
   map<string, string> &stringparams = simparams->stringparams;
 
-  aviscenum avisc;
-  acondenum acond;
 
   debug2("[SphSimulation::ProcessParameters]");
 
-  // Assign dimensionality variables here (for now)
-//#if !defined(FIXED_DIMENSIONS)
-//  ndim = intparams["ndim"];
-//  vdim = intparams["ndim"];
-//  bdim = intparams["ndim"];
-//#endif
-
-if (ndim < 1 || ndim > 3) {
-  string message="Error: the number of dimensions can be only 1, 2 or 3, you gave " + ndim;
-  ExceptionHandler::getIstance().raise(message);
-}
+  // Sanity check for valid dimensionality
+  if (ndim < 1 || ndim > 3) {
+    string message = "Error: the number of dimensions can be only 1, 2 or 3, you gave " + ndim;
+    ExceptionHandler::getIstance().raise(message);
+  }
 
   // Set the enum for artificial viscosity
-  if (stringparams["avisc"] == "none") {
+  if (stringparams["avisc"] == "none")
     avisc = noneav;
-  }
-  else if (stringparams["avisc"] == "mon97") {
+  else if (stringparams["avisc"] == "mon97")
     avisc = mon97;
-  }
   else {
     string message = "Unrecognised parameter : avisc = " +
-        simparams->stringparams["avisc"];
+      simparams->stringparams["avisc"];
     ExceptionHandler::getIstance().raise(message);
   }
 
   // Set the enum for artificial conductivity
-  if (stringparams["acond"] == "none") {
+  if (stringparams["acond"] == "none")
     acond = noneac;
-  }
-  else if (stringparams["acond"] == "wadsley2008") {
+  else if (stringparams["acond"] == "wadsley2008")
     acond = wadsley2008;
-  }
-  else if (stringparams["acond"] == "price2008") {
+  else if (stringparams["acond"] == "price2008")
     acond = price2008;
-  }
   else {
     string message = "Unrecognised parameter : acond = " +
         simparams->stringparams["acond"];
@@ -266,44 +289,44 @@ if (ndim < 1 || ndim > 3) {
   if (stringparams["sph"] == "gradh") {
     string KernelName = stringparams["kernel"];
     if (stringparams["tabulatedkernel"] == "yes") {
-        sph = new GradhSph<ndim, TabulatedKernel> (intparams["hydro_forces"], intparams["self_gravity"],
-        		floatparams["alpha_visc"], floatparams["beta_visc"],
-        		floatparams["h_fac"], floatparams["h_converge"],
-        		avisc, acond,
-        		stringparams["gas_eos"], KernelName);
-          }
-    else if (stringparams["tabulatedkernel"] == "no"){
-        // Depending on the kernel, instantiate a different GradSph object
-        if (KernelName == "m4") {
-            sph = new GradhSph<ndim, M4Kernel> (intparams["hydro_forces"], intparams["self_gravity"],
-            		floatparams["alpha_visc"], floatparams["beta_visc"],
-            		floatparams["h_fac"], floatparams["h_converge"],
-            		avisc, acond,
-            		stringparams["gas_eos"], KernelName);
-        }
-        else if (KernelName == "quintic") {
-            sph = new GradhSph<ndim, QuinticKernel> (intparams["hydro_forces"], intparams["self_gravity"],
-            		floatparams["alpha_visc"], floatparams["beta_visc"],
-            		floatparams["h_fac"], floatparams["h_converge"],
-            		avisc, acond,
-            		stringparams["gas_eos"], KernelName);
-	}
-        else if (KernelName == "gaussian") {
-            sph = new GradhSph<ndim, GaussianKernel> (intparams["hydro_forces"], intparams["self_gravity"],
-            		floatparams["alpha_visc"], floatparams["beta_visc"],
-            		floatparams["h_fac"], floatparams["h_converge"],
-            		avisc, acond,
-            		stringparams["gas_eos"], KernelName);
-        }
-        else {
-          string message = "Unrecognised parameter : kernel = " +
-            simparams->stringparams["kernel"];
-          ExceptionHandler::getIstance().raise(message);
-        }
+      sph = new GradhSph<ndim, TabulatedKernel> 
+	(intparams["hydro_forces"], intparams["self_gravity"],
+	 floatparams["alpha_visc"], floatparams["beta_visc"],
+	 floatparams["h_fac"], floatparams["h_converge"], 
+	 avisc, acond, stringparams["gas_eos"], KernelName);
+    }
+    else if (stringparams["tabulatedkernel"] == "no") {
+      // Depending on the kernel, instantiate a different GradSph object
+      if (KernelName == "m4") {
+	sph = new GradhSph<ndim, M4Kernel> 
+	  (intparams["hydro_forces"], intparams["self_gravity"],
+	   floatparams["alpha_visc"], floatparams["beta_visc"],
+	   floatparams["h_fac"], floatparams["h_converge"],
+	   avisc, acond, stringparams["gas_eos"], KernelName);
+      }
+      else if (KernelName == "quintic") {
+	sph = new GradhSph<ndim, QuinticKernel> 
+	  (intparams["hydro_forces"], intparams["self_gravity"],
+	   floatparams["alpha_visc"], floatparams["beta_visc"],
+	   floatparams["h_fac"], floatparams["h_converge"],
+	   avisc, acond, stringparams["gas_eos"], KernelName);
+      }
+      else if (KernelName == "gaussian") {
+	sph = new GradhSph<ndim, GaussianKernel> 
+	  (intparams["hydro_forces"], intparams["self_gravity"],
+	   floatparams["alpha_visc"], floatparams["beta_visc"],
+	   floatparams["h_fac"], floatparams["h_converge"],
+	   avisc, acond, stringparams["gas_eos"], KernelName);
+      }
+      else {
+	string message = "Unrecognised parameter : kernel = " +
+	  simparams->stringparams["kernel"];
+	ExceptionHandler::getIstance().raise(message);
+      }
     }
     else {
       string message = "Invalid option for the tabulatedkernel parameter: " +
-          stringparams["tabulatedkernel"];
+	stringparams["tabulatedkernel"];
       ExceptionHandler::getIstance().raise(message);
     }
   }
@@ -311,44 +334,44 @@ if (ndim < 1 || ndim > 3) {
   else if (stringparams["sph"] == "sm2012") {
     string KernelName = stringparams["kernel"];
     if (stringparams["tabulatedkernel"] == "yes") {
-        sph = new SM2012Sph<ndim, TabulatedKernel> (intparams["hydro_forces"], intparams["self_gravity"],
-        		floatparams["alpha_visc"], floatparams["beta_visc"],
-        		floatparams["h_fac"], floatparams["h_converge"],
-        		avisc, acond,
-        		stringparams["gas_eos"], KernelName);
-          }
+      sph = new SM2012Sph<ndim, TabulatedKernel> 
+        (intparams["hydro_forces"], intparams["self_gravity"],
+	 floatparams["alpha_visc"], floatparams["beta_visc"],
+	 floatparams["h_fac"], floatparams["h_converge"],
+	 avisc, acond, stringparams["gas_eos"], KernelName);
+    }
     else if (stringparams["tabulatedkernel"] == "no"){
-        // Depending on the kernel, instantiate a different GradSph object
-        if (KernelName == "m4") {
-            sph = new SM2012Sph<ndim, M4Kernel> (intparams["hydro_forces"], intparams["self_gravity"],
-            		floatparams["alpha_visc"], floatparams["beta_visc"],
-            		floatparams["h_fac"], floatparams["h_converge"],
-            		avisc, acond,
-            		stringparams["gas_eos"], KernelName);
-        }
-        else if (KernelName == "quintic") {
-            sph = new SM2012Sph<ndim, QuinticKernel> (intparams["hydro_forces"], intparams["self_gravity"],
-            		floatparams["alpha_visc"], floatparams["beta_visc"],
-            		floatparams["h_fac"], floatparams["h_converge"],
-            		avisc, acond,
-            		stringparams["gas_eos"], KernelName);
-        }
-        else if (KernelName == "gaussian") {
-            sph = new SM2012Sph<ndim, GaussianKernel> (intparams["hydro_forces"], intparams["self_gravity"],
-            		floatparams["alpha_visc"], floatparams["beta_visc"],
-            		floatparams["h_fac"], floatparams["h_converge"],
-            		avisc, acond,
-            		stringparams["gas_eos"], KernelName);
-        }
-        else {
-          string message = "Unrecognised parameter : kernel = " +
-            simparams->stringparams["kernel"];
-          ExceptionHandler::getIstance().raise(message);
-        }
+      // Depending on the kernel, instantiate a different GradSph object
+      if (KernelName == "m4") {
+	sph = new SM2012Sph<ndim, M4Kernel> 
+	  (intparams["hydro_forces"], intparams["self_gravity"],
+	   floatparams["alpha_visc"], floatparams["beta_visc"],
+	   floatparams["h_fac"], floatparams["h_converge"],
+	   avisc, acond, stringparams["gas_eos"], KernelName);
+      }
+      else if (KernelName == "quintic") {
+	sph = new SM2012Sph<ndim, QuinticKernel> 
+	  (intparams["hydro_forces"], intparams["self_gravity"],
+	   floatparams["alpha_visc"], floatparams["beta_visc"],
+	   floatparams["h_fac"], floatparams["h_converge"],
+	   avisc, acond, stringparams["gas_eos"], KernelName);
+      }
+      else if (KernelName == "gaussian") {
+	sph = new SM2012Sph<ndim, GaussianKernel> 
+	  (intparams["hydro_forces"], intparams["self_gravity"],
+	   floatparams["alpha_visc"], floatparams["beta_visc"],
+	   floatparams["h_fac"], floatparams["h_converge"],
+	   avisc, acond, stringparams["gas_eos"], KernelName);
+      }
+      else {
+	string message = "Unrecognised parameter : kernel = " +
+	  simparams->stringparams["kernel"];
+	ExceptionHandler::getIstance().raise(message);
+      }
     }
     else {
       string message = "Invalid option for the tabulatedkernel parameter: " +
-          stringparams["tabulatedkernel"];
+	stringparams["tabulatedkernel"];
       ExceptionHandler::getIstance().raise(message);
     }
   }
@@ -356,44 +379,44 @@ if (ndim < 1 || ndim > 3) {
   else if (stringparams["sph"] == "godunov") {
     string KernelName = stringparams["kernel"];
     if (stringparams["tabulatedkernel"] == "yes") {
-        sph = new GodunovSph<ndim, TabulatedKernel> (intparams["hydro_forces"], intparams["self_gravity"],
-        		floatparams["alpha_visc"], floatparams["beta_visc"],
-        		floatparams["h_fac"], floatparams["h_converge"],
-        		avisc, acond,
-        		stringparams["gas_eos"], KernelName);
-          }
+      sph = new GodunovSph<ndim, TabulatedKernel> 
+	(intparams["hydro_forces"], intparams["self_gravity"],
+	 floatparams["alpha_visc"], floatparams["beta_visc"],
+	 floatparams["h_fac"], floatparams["h_converge"],
+	 avisc, acond, stringparams["gas_eos"], KernelName);
+    }
     else if (stringparams["tabulatedkernel"] == "no"){
-        // Depending on the kernel, instantiate a different GradSph object
-        if (KernelName == "m4") {
-            sph = new GodunovSph<ndim, M4Kernel> (intparams["hydro_forces"], intparams["self_gravity"],
-            		floatparams["alpha_visc"], floatparams["beta_visc"],
-            		floatparams["h_fac"], floatparams["h_converge"],
-            		avisc, acond,
-            		stringparams["gas_eos"], KernelName);
-        }
-        else if (KernelName == "quintic") {
-            sph = new GodunovSph<ndim, QuinticKernel> (intparams["hydro_forces"], intparams["self_gravity"],
-            		floatparams["alpha_visc"], floatparams["beta_visc"],
-            		floatparams["h_fac"], floatparams["h_converge"],
-            		avisc, acond,
-            		stringparams["gas_eos"], KernelName);
-        }
-        else if (KernelName == "gaussian") {
-            sph = new GodunovSph<ndim, GaussianKernel> (intparams["hydro_forces"], intparams["self_gravity"],
-            		floatparams["alpha_visc"], floatparams["beta_visc"],
-            		floatparams["h_fac"], floatparams["h_converge"],
-            		avisc, acond,
-            		stringparams["gas_eos"], KernelName);
-        }
-        else {
-          string message = "Unrecognised parameter : kernel = " +
-            simparams->stringparams["kernel"];
-          ExceptionHandler::getIstance().raise(message);
-        }
+      // Depending on the kernel, instantiate a different GradSph object
+      if (KernelName == "m4") {
+	sph = new GodunovSph<ndim, M4Kernel> 
+	  (intparams["hydro_forces"], intparams["self_gravity"],
+	   floatparams["alpha_visc"], floatparams["beta_visc"],
+	   floatparams["h_fac"], floatparams["h_converge"],
+	   avisc, acond, stringparams["gas_eos"], KernelName);
+      }
+      else if (KernelName == "quintic") {
+	sph = new GodunovSph<ndim, QuinticKernel> 
+	  (intparams["hydro_forces"], intparams["self_gravity"],
+	   floatparams["alpha_visc"], floatparams["beta_visc"],
+	   floatparams["h_fac"], floatparams["h_converge"],
+	   avisc, acond, stringparams["gas_eos"], KernelName);
+      }
+      else if (KernelName == "gaussian") {
+	sph = new GodunovSph<ndim, GaussianKernel> 
+	  (intparams["hydro_forces"], intparams["self_gravity"],
+	   floatparams["alpha_visc"], floatparams["beta_visc"],
+	   floatparams["h_fac"], floatparams["h_converge"],
+	   avisc, acond, stringparams["gas_eos"], KernelName);
+      }
+      else {
+	string message = "Unrecognised parameter : kernel = " +
+	  simparams->stringparams["kernel"];
+	ExceptionHandler::getIstance().raise(message);
+      }
     }
     else {
       string message = "Invalid option for the tabulatedkernel parameter: " +
-          stringparams["tabulatedkernel"];
+	stringparams["tabulatedkernel"];
       ExceptionHandler::getIstance().raise(message);
     }
   }
@@ -403,6 +426,7 @@ if (ndim < 1 || ndim > 3) {
       + simparams->stringparams["sph"];
     ExceptionHandler::getIstance().raise(message);
   }
+  // --------------------------------------------------------------------------
 
 
   // Thermal physics object.  If energy equation is chosen, also initiate
@@ -411,13 +435,13 @@ if (ndim < 1 || ndim > 3) {
   string gas_eos = stringparams["gas_eos"];
   if (gas_eos == "energy_eqn") {
     sph->eos = new Adiabatic<ndim>(floatparams["temp0"],
-                 floatparams["mu_bar"],
-                 floatparams["gamma_eos"]);
+				   floatparams["mu_bar"],
+				   floatparams["gamma_eos"]);
   }
   else if (gas_eos == "isothermal")
     sph->eos = new Isothermal<ndim>(floatparams["temp0"],
-                  floatparams["mu_bar"],
-                  floatparams["gamma_eos"]);
+				    floatparams["mu_bar"],
+				    floatparams["gamma_eos"]);
   else {
     string message = "Unrecognised parameter : gas_eos = "
       + gas_eos;
@@ -441,10 +465,10 @@ if (ndim < 1 || ndim > 3) {
   // --------------------------------------------------------------------------
   if (stringparams["sph_integration"] == "lfkdk") {
     sphint = new SphLeapfrogKDK<ndim>(floatparams["accel_mult"],
-				floatparams["courant_mult"]);}
+			              floatparams["courant_mult"]);}
   else if (stringparams["sph_integration"] == "godunov")
     sphint = new SphGodunovIntegration<ndim>(floatparams["accel_mult"],
-				       floatparams["courant_mult"]);
+				             floatparams["courant_mult"]);
   else {
     string message = "Unrecognised parameter : sph_integration = " 
       + simparams->stringparams["sph_integration"];
@@ -453,16 +477,14 @@ if (ndim < 1 || ndim > 3) {
 
 
   // Energy integration object
-  // -----------------------------------------------------------------------------
-  if (stringparams["energy_integration"] == "PEC") {
+  // --------------------------------------------------------------------------
+  if (stringparams["energy_integration"] == "PEC")
     uint = new EnergyPEC<ndim>(floatparams["energy_mult"]);
-  }
-  else if (stringparams["energy_integration"] == "godunov") {
+  else if (stringparams["energy_integration"] == "godunov")
     uint = new EnergyGodunovIntegration<ndim>(floatparams["energy_mult"]);
-  }
   else {
     string message = "Unrecognised parameter : energy_integration = "
-  + simparams->stringparams["energy_integration"];
+      + simparams->stringparams["energy_integration"];
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -489,15 +511,6 @@ if (ndim < 1 || ndim > 3) {
   // Set all other parameter variables
   // --------------------------------------------------------------------------
   sph->Nsph = intparams["Npart"];
-  //sph->h_fac = floatparams["h_fac"];
-  //sph->h_converge = floatparams["h_converge"];
-  //sph->hydro_forces = intparams["hydro_forces"];
-  //sph->self_gravity = intparams["self_gravity"];
-  //sph->avisc = stringparams["avisc"];
-  //sph->acond = stringparams["acond"];
-  //sph->alpha_visc = floatparams["alpha_visc"];
-  //sph->beta_visc = floatparams["beta_visc"];
-  //sph->gas_eos = stringparams["gas_eos"];
   Nstepsmax = intparams["Nstepsmax"];
   run_id = stringparams["run_id"];
   out_file_form = stringparams["out_file_form"];
@@ -516,10 +529,10 @@ if (ndim < 1 || ndim > 3) {
 
 
 
-// ============================================================================
-// SphSimulation::Setup
-// Main function for setting up a new SPH simulation.
-// ============================================================================
+//=============================================================================
+//  SphSimulation::Setup
+/// Main function for setting up a new SPH simulation.
+//=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::Setup(void)
 {
@@ -531,138 +544,183 @@ void SphSimulation<ndim>::Setup(void)
   // Now set up the simulation based on chosen parameters
   SetupSimulation();
 
+  return;
 }
 
-template <int ndim>
-void SphSimulation<ndim>::PreSetupForPython(void) {
-  debug1("[SphSimulation::PreSetupForPython]");
 
-//  // Read the parameters
-//  simparams->ReadParamsFile(paramfile);
+
+//=============================================================================
+//  SphSimulation::PreSetupForPython
+/// Initialisation routine called by python interface.
+//=============================================================================
+template <int ndim>
+void SphSimulation<ndim>::PreSetupForPython(void) 
+{
+  debug1("[SphSimulation::PreSetupForPython]");
 
   ProcessParameters();
 
   sph->AllocateMemory(sph->Nsph);
 
+  return;
 }
 
+
+
+//=============================================================================
+//  SphSimulation::ImportArray
+/// Import an array containing particle properties from python to C++ arrays.
+//=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::ImportArray(double* input, int size, string quantity) {
-
-  //First checks that the size is correct
-  if (size != sph->Nsph) {
-    stringstream message;
-    message << "Error: the array you are passing has a size of " << size << ", but memory has been allocated for " << sph->Nsph << " particles";
-    ExceptionHandler::getIstance().raise(message.str());
-  }
-
-  //Now sets the pointer to the correct value inside the particle data structure
+void SphSimulation<ndim>::ImportArray
+(double* input,                         ///< ..
+ int size,                              ///< ..
+ string quantity)                       ///< ..
+{
   FLOAT SphParticle<ndim>::*quantityp;
   FLOAT (SphParticle<ndim>::*quantitypvec)[ndim];
   bool scalar;
   int index;
-  if (quantity=="x") {
-    quantitypvec = &SphParticle<ndim>::r;
-    index=0;
-    scalar=false;
+
+  debug2("[SphSimulation::ImportArray]");
+
+  // First checks that the size is correct
+  if (size != sph->Nsph) {
+    stringstream message;
+    message << "Error: the array you are passing has a size of " 
+	    << size << ", but memory has been allocated for " 
+	    << sph->Nsph << " particles";
+    ExceptionHandler::getIstance().raise(message.str());
   }
-  else if (quantity=="y") {
-    if (ndim<2) {
-      string message = "Error: you tried to load a y array, but you are running a 1-d simulation";
+
+  // Now set pointer to the correct value inside the particle data structure
+  // --------------------------------------------------------------------------
+  if (quantity == "x") {
+    quantitypvec = &SphParticle<ndim>::r;
+    index = 0;
+    scalar = false;
+  }
+  // --------------------------------------------------------------------------
+  else if (quantity == "y") {
+    if (ndim < 2) {
+      string message = "Error: loading y-coordinate array for ndim < 2";
       ExceptionHandler::getIstance().raise(message);
     }
     quantitypvec = &SphParticle<ndim>::r;
-    index=1;
-    scalar=false;
+    index = 1;
+    scalar = false;
   }
+  // --------------------------------------------------------------------------
   else if (quantity == "z") {
-    if (ndim<3) {
-      string message = "Error: you tried to load a z array, but you are running a simulation with ndim<3";
+    if (ndim < 3) {
+      string message = "Error: loading y-coordinate array for ndim < 3";
       ExceptionHandler::getIstance().raise(message);
     }
     quantitypvec = &SphParticle<ndim>::r;
-    index=2;
-    scalar=false;
+    index = 2;
+    scalar = false;
   }
+  // --------------------------------------------------------------------------
   else if (quantity == "vx") {
     quantitypvec = &SphParticle<ndim>::v;
-    index=0;
-    scalar=false;
+    index = 0;
+    scalar = false;
   }
+  // --------------------------------------------------------------------------
   else if (quantity == "vy") {
-    if (ndim<2) {
-      string message = "Error: you tried to load a vy array, but you are running a 1-d simulation";
+    if (ndim < 2) {
+      string message = "Error: loading vy array for ndim < 2";
       ExceptionHandler::getIstance().raise(message);
     }
     quantitypvec = &SphParticle<ndim>::v;
-    index=1;
-    scalar=false;
+    index = 1;
+    scalar = false;
   }
+  // --------------------------------------------------------------------------
   else if (quantity == "vz") {
-    if (ndim<3) {
-      string message = "Error: you tried to load a vz array, but you are running a simulation with ndim<3";
+    if (ndim < 3) {
+      string message = "Error: loading vz array for ndim < 3";
       ExceptionHandler::getIstance().raise(message);
     }
     quantitypvec = &SphParticle<ndim>::v;
-    index=2;
-    scalar=false;
+    index = 2;
+    scalar = false;
   }
+  // --------------------------------------------------------------------------
   else if (quantity=="rho") {
     //TODO: at the moment, if rho or h are uploaded, they will be just ignored.
     //Add some facility to use them
     quantityp = &SphParticle<ndim>::rho;
-    scalar=true;
+    scalar = true;
   }
+  // --------------------------------------------------------------------------
   else if (quantity == "h") {
     quantityp = &SphParticle<ndim>::h;
-    scalar=true;
+    scalar = true;
   }
+  // --------------------------------------------------------------------------
   else if (quantity == "u") {
     //TODO: add some facility for uploading either u, T, or cs, and compute automatically the other ones
     //depending on the EOS
     quantityp = &SphParticle<ndim>::u;
     scalar=true;
   }
+  // --------------------------------------------------------------------------
   else if (quantity=="m") {
     quantityp = &SphParticle<ndim>::m;
-    scalar=true;
+    scalar = true;
   }
+  // --------------------------------------------------------------------------
   else {
     string message = "Quantity " + quantity + "not recognised";
     ExceptionHandler::getIstance().raise(message);
   }
+  // --------------------------------------------------------------------------
 
-  //Finally loops over particles and set the values
-  //Note that the syntax for scalar is different from the one for vectors
+
+  // Finally loop over particles and set all values
+  // (Note that the syntax for scalar is different from the one for vectors)
+  // --------------------------------------------------------------------------
   if (scalar) {
     int i=0;
-    for (SphParticle<ndim>* particlep = sph->sphdata; particlep < sph->sphdata+size; particlep++, i++) {
+    for (SphParticle<ndim>* particlep = sph->sphdata; 
+	 particlep < sph->sphdata+size; particlep++, i++) {
       particlep->*quantityp = input[i];
     }
   }
   else {
     int i=0;
-    for (SphParticle<ndim>* particlep = sph->sphdata; particlep < sph->sphdata+size; particlep++, i++) {
+    for (SphParticle<ndim>* particlep = sph->sphdata; 
+	 particlep < sph->sphdata+size; particlep++, i++) {
       (particlep->*quantitypvec)[index] = input[i];
     }
   }
-  return;
 
+  return;
 }
 
+
+
+//=============================================================================
+//  SphSimulation::PostSetupForPython
+/// ...
+//=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::PostSetupForPython(void) {
+void SphSimulation<ndim>::PostSetupForPython(void)
+{
   debug1("[SphSimulation::PostSetupForPython]");
 
   PostGeneration();
+
+  return;
 }
 
 
 
-// ============================================================================
-// SphSimulation::SetupSimulation
-// Main function for setting up a new SPH simulation.
-// ============================================================================
+//=============================================================================
+//  SphSimulation::SetupSimulation
+/// Main function for setting up a new SPH simulation.
+//=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::SetupSimulation(void)
 {
@@ -684,8 +742,14 @@ void SphSimulation<ndim>::SetupSimulation(void)
 
 //TODO: make this mess more modular (note: initial h computation
 //should be done inside the neighbour search)
+//=============================================================================
+//  SphSimulation::PostGeneration
+/// ..
+//=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::PostGeneration(void) {
+void SphSimulation<ndim>::PostGeneration(void)
+{
+  debug2("[SphSimulation::PostGeneration]");
 
   // Set time variables here (for now)
   Noutsnap = 0;
@@ -779,25 +843,29 @@ void SphSimulation<ndim>::PostGeneration(void) {
     }
   }
 
-    // Set r0,v0,a0 for initial step
-    sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
-    if (simparams->stringparams["gas_eos"] == "energy_eqn")
-      uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+  // Set r0,v0,a0 for initial step
+  sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+  if (simparams->stringparams["gas_eos"] == "energy_eqn")
+    uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+  
+  CalculateDiagnostics();
+  diag0 = diag;
+  
+  setup = true;
 
-    CalculateDiagnostics();
-    diag0 = diag;
-
-    setup = true;
-
+  return;
 }
 
-// ============================================================================
-// SphSimulation::MainLoop
-// ============================================================================
+
+
+//=============================================================================
+//  SphSimulation::MainLoop
+/// Main SPH simulation integration loop.
+//=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::MainLoop(void)
 {
-  int i;
+  int i;                                // Particle loop counter
 
   debug2("[SphSimulation::MainLoop]");
 
@@ -907,6 +975,5 @@ void SphSimulation<ndim>::MainLoop(void)
   return;
 }
 
-template class SphSimulation<1>;
-template class SphSimulation<2>;
-template class SphSimulation<3>;
+
+

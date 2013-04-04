@@ -1,5 +1,10 @@
 // ============================================================================
 // SphSimulation.h
+// Contains definitions for following data structures and classes:
+// - DomainBox
+// - Diagnostics
+// - SphSimulationBase
+// - SphSimulation
 // ============================================================================
 
 
@@ -19,46 +24,61 @@
 #include "EnergyEquation.h"
 using namespace std;
 
+
+// ============================================================================
+// Structure DomainBox
+/// \brief  Bounding box data structure.
+/// \author D. A. Hubber, G. Rosotti
+/// \date   03/04/2013
+// ============================================================================
 template <int ndim>
 struct DomainBox {
-  string x_boundary_lhs;
-  string x_boundary_rhs;
-  string y_boundary_lhs;
-  string y_boundary_rhs;
-  string z_boundary_lhs;
-  string z_boundary_rhs;
-  FLOAT boxmin[ndim];
-  FLOAT boxmax[ndim];
-  FLOAT boxsize[ndim];
-  FLOAT boxhalf[ndim];
-  //FLOAT rmin[ndimmax];
-  //FLOAT rmax[ndimmax];
-};
-
-template <int ndim>
-struct Diagnostics {
-  DOUBLE Eerror;
-  DOUBLE Etot;
-  DOUBLE utot;
-  DOUBLE ketot;
-  DOUBLE gpetot;
-  DOUBLE mom[ndim];
-  //TODO: I assume that the 3 here is correct...
-  DOUBLE angmom[3];
-  DOUBLE force[ndim];
-  DOUBLE force_grav[ndim];
+  string x_boundary_lhs;                ///< x-dimension LHS boundary condition
+  string x_boundary_rhs;                ///< x-dimension RHS boundary condition
+  string y_boundary_lhs;                ///< y-dimension LHS boundary condition
+  string y_boundary_rhs;                ///< y-dimension RHS boundary condition
+  string z_boundary_lhs;                ///< z-dimension LHS boundary condition
+  string z_boundary_rhs;                ///< z-dimension RHS boundary condition
+  FLOAT boxmin[ndim];                   ///< Minimum bounding box extent
+  FLOAT boxmax[ndim];                   ///< Maximum bounding box extent
+  FLOAT boxsize[ndim];                  ///< Side-lengths of bounding box
+  FLOAT boxhalf[ndim];                  ///< Half side-lengths of bounding box
 };
 
 
 
 // ============================================================================
-// Clas SphSimulation
+// Structure Diagnostics
+/// \brief  Structure containing snapshot of current diagnostic quantities.
+/// \author D. A. Hubber, G. Rosotti
+/// \date   03/04/2013
+// ============================================================================
+template <int ndim>
+struct Diagnostics {
+  DOUBLE Eerror;                        ///< Total energy error
+  DOUBLE Etot;                          ///< Total energy
+  DOUBLE utot;                          ///< Total thermal energy
+  DOUBLE ketot;                         ///< Total kinetic energy
+  DOUBLE gpetot;                        ///< Total grav. potential energy
+  DOUBLE mom[ndim];                     ///< Total momentum vector
+  DOUBLE angmom[3];                     ///< Total angular momentum vector
+  DOUBLE force[ndim];                   ///< Net force
+  DOUBLE force_grav[ndim];              ///< Net gravitational force
+};
+
+
+
+// ============================================================================
+// Class SphSimulationBase
+/// \brief  Creates a simulation object depending on the dimensionality.
+/// \author D. A. Hubber, G. Rosotti
+/// \date   03/04/2013
 // ============================================================================
 class SphSimulationBase
 {
  public:
 
-  static SphSimulationBase* SphSimulationFactory (int ndim, Parameters* params);
+  static SphSimulationBase* SphSimulationFactory(int ndim, Parameters* params);
 
   // Constructor and Destructor
   // --------------------------------------------------------------------------
@@ -104,8 +124,6 @@ class SphSimulationBase
   virtual void KHI(void)=0;
   virtual void SoundWave(void)=0;
 
-
-
   // Input-output routines
   // --------------------------------------------------------------------------
   virtual bool ReadSnapshotFile(string,string)=0;
@@ -113,49 +131,51 @@ class SphSimulationBase
   virtual bool WriteSnapshotFile(string,string)=0;
   virtual bool WriteColumnSnapshotFile(string)=0;
 
-//#if !defined(FIXED_DIMENSIONS)
-  int ndims;
-//  int vdim;
-//  int bdim;
-//#endif
-
-
-  // Integer and physical Timestep counters
+  // Variables
   // --------------------------------------------------------------------------
-  int sph_single_timestep;                  // ..
-  int nbody_single_timestep;                // ..
-  int integration_step;                     // ..
-  int level_max;                            // Maximum timestep level
-  int level_step;                           // ..
-  int n;                                    // Integer time counter
-  int Nsteps;                               // Total no. of steps in simulation
-  int Nstepsmax;                            // Max. allowed no. of steps
-  int Nlevels;                              // No. of timestep levels
-  int noutputstep;                          // Output frequency
-  int nresync;                              // ..
-  DOUBLE dt_max;                            // ..
-  DOUBLE t;                                 // Current simulation time
-  DOUBLE timestep;                          // Current timestep
-  DOUBLE tsnapnext;                         // Time of next snapshot
-  DOUBLE tend;                              // End time of simulation
-  DOUBLE dt_snap;                           // Snapshot time interval
-  int Noutsnap;                             // No. of output snapshots
+  bool setup;                       ///< Flag if simulation is setup
+  int integration_step;             ///< Steps per complete integration step
+  int level_max;                    ///< Maximum timestep level
+  int level_step;                   ///< Level of smallest timestep unit
+  int n;                            ///< Integer time counter
+  int nbody_single_timestep;        ///< Flag if stars use same timestep
+  int ndims;                        ///< Aux. dimensionality variable. 
+                                    ///< Required for python routines.
+  int noutputstep;                  ///< Output frequency
+  int nresync;                      ///< Integer time for resynchronisation
+  int Nsteps;                       ///< Total no. of steps in simulation
+  int Nstepsmax;                    ///< Max. allowed no. of steps
+  int Nlevels;                      ///< No. of timestep levels
+  int Noutsnap;                     ///< No. of output snapshots
+  int sph_single_timestep;          ///< Flag if SPH ptcls use same step
+  DOUBLE dt_max;                    ///< Value of maximum timestep level
+  DOUBLE dt_snap;                   ///< Snapshot time interval
+  DOUBLE t;                         ///< Current simulation time
+  DOUBLE tend;                      ///< End time of simulation
+  DOUBLE timestep;                  ///< Current timestep
+  DOUBLE tsnapnext;                 ///< Time of next snapshot
+  string out_file_form;             ///< Output snapshot file format
+  string paramfile;                 ///< Name of parameters file
+  string run_id;                    ///< Simulation id string
 
-  string run_id;                            // Simulation id string
-  string paramfile;                         // Name of parameters file
-  string out_file_form;                     // ..
-  bool setup;                               // Flag if simulation is setup
-
-  Parameters* simparams;                     // Simulation parameters object
-  SimUnits simunits;                        // Simulation units object
+  Parameters* simparams;            ///< Simulation parameters object (pointer)
+  SimUnits simunits;                ///< Simulation units object
 
 };
 
 
+
+// ============================================================================
+// Class SphSimulation
+/// \brief  Main Sph Simulation class.
+/// \author D. A. Hubber, G. Rosotti
+/// \date   03/04/2013
+// ============================================================================
 template <int ndim>
 class SphSimulation : public SphSimulationBase {
-public:
-  SphSimulation(Parameters* parameters) : SphSimulationBase(parameters) {this->ndims=ndim;};
+ public:
+  SphSimulation(Parameters* parameters) : 
+    SphSimulationBase(parameters) {this->ndims=ndim;};
 
 
   // Initial conditions helper routines
@@ -204,9 +224,8 @@ public:
   virtual void RandomSphere(void);
   virtual void ShockTube(void);
   virtual void KHI(void);
+  virtual void SedovBlastWave(void);
   virtual void SoundWave(void);
-
-
 
   // Input-output routines
   // --------------------------------------------------------------------------
@@ -215,17 +234,17 @@ public:
   virtual bool WriteSnapshotFile(string,string);
   virtual bool WriteColumnSnapshotFile(string);
 
-
-
-  DomainBox<ndim> simbox;                         // Simulation boundary data
-  Diagnostics<ndim> diag0;                        // Initial diagnostic state
-  Diagnostics<ndim> diag;                         // Current diagnostic state
-  SphNeighbourSearch<ndim> *sphneib;              // SPH Neighbour scheme pointer
-  SphIntegration<ndim> *sphint;                   // SPH Integration scheme pointer
-  EnergyEquation<ndim> *uint;                     // Energy equation pointer
-  Sph<ndim> *sph;                                 // SPH algorithm pointer
-
+  // Variables
+  // --------------------------------------------------------------------------
   static const int vdim=ndim;
+
+  DomainBox<ndim> simbox;               ///< Simulation boundary data
+  Diagnostics<ndim> diag0;              ///< Initial diagnostic state
+  Diagnostics<ndim> diag;               ///< Current diagnostic state
+  EnergyEquation<ndim> *uint;           ///< Energy equation pointer
+  Sph<ndim> *sph;                       ///< SPH algorithm pointer
+  SphIntegration<ndim> *sphint;         ///< SPH Integration scheme pointer
+  SphNeighbourSearch<ndim> *sphneib;    ///< SPH Neighbour scheme pointer
 
 };
 
