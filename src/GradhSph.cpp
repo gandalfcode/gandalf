@@ -1,8 +1,8 @@
-// ============================================================================
+//=============================================================================
 // GradhSph.cpp
 // Contains all functions for calculating conservative 'grad-h' SPH quantities
 // (See Springel & Hernquist (2002) and Price & Monaghan (2007).
-// ============================================================================
+//=============================================================================
 
 
 #include <cstdio>
@@ -22,9 +22,10 @@ using namespace std;
 
 
 
-// ============================================================================
-// GradhSph::GradhSph
-// ============================================================================
+//=============================================================================
+//  GradhSph::GradhSph
+/// GradhSph class constructor
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 GradhSph<ndim, kernelclass >::GradhSph(int hydro_forces_aux,
 	    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
@@ -37,52 +38,52 @@ GradhSph<ndim, kernelclass >::GradhSph(int hydro_forces_aux,
   kern(kernelclass<ndim>(KernelName))
 
 {
-
   this->kernp = &kern;
-
   this->kernfac = (FLOAT) 1.0;
   this->kernfacsqd = (FLOAT) 1.0;
 }
 
 
 
-// ============================================================================
-// GradhSph::~GradhSph
-// ============================================================================
+//=============================================================================
+//  GradhSph::~GradhSph
+/// GradhSph class destructor
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 GradhSph<ndim, kernelclass >::~GradhSph()
 {
 }
 
 
-// ============================================================================
-// GradhSph::ComputeH
-// Compute the value of the smoothing length of particle 'i' by iterating  
-// the relation : h = h_fac*(m/rho)^(1/ndim).
-// Uses the previous value of h as a starting guess and then uses either 
-// a Newton-Rhapson solver, or fixed-point iteration, to converge on the 
-// correct value of h.  The maximum tolerance used for deciding whether the 
-// iteration has converged is given by the 'h_converge' parameter.
-// ============================================================================
+
+//=============================================================================
+//  GradhSph::ComputeH
+/// Compute the value of the smoothing length of particle 'i' by iterating  
+/// the relation : h = h_fac*(m/rho)^(1/ndim).
+/// Uses the previous value of h as a starting guess and then uses either 
+/// a Newton-Rhapson solver, or fixed-point iteration, to converge on the 
+/// correct value of h.  The maximum tolerance used for deciding whether the 
+/// iteration has converged is given by the 'h_converge' parameter.
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 int GradhSph<ndim, kernelclass >::ComputeH
-(int i,                                 // id of particle
- int Nneib,                             // No. of potential neighbours
- FLOAT *m,                              // Array of neib. masses
- FLOAT *mu,                             // Array of m*u (not needed here)
- FLOAT *drsqd,                          // Array of neib. distances (squared)
- SphParticle<ndim> &parti)                    // Particle i data
+(int i,                             ///< [in] id of particle
+ int Nneib,                         ///< [in] No. of potential neighbours
+ FLOAT *m,                          ///< [in] Array of neib. masses
+ FLOAT *mu,                         ///< [in] Array of m*u (not needed here)
+ FLOAT *drsqd,                      ///< [in] Array of neib. distances squared
+ SphParticle<ndim> &parti)          ///< [inout] Particle i data
 {
-  int j;                                // Neighbour id
-  int jj;                               // Aux. neighbour counter
-  int k;                                // Dimension counter
-  int iteration = 0;                    // h-rho iteration counter
-  int iteration_max = 30;               // Max. no of iterations
-  FLOAT h_max = big_number;             // Max. allowed value of h
-  FLOAT h_lower_bound = 0.0;            // Lower bound on h
-  FLOAT h_upper_bound = big_number;     // Upper bound on h
-  FLOAT invhsqd;                        // (1 / h)^2
-  FLOAT ssqd;                           // Kernel parameter squared, (r/h)^2
+  int j;                            // Neighbour id
+  int jj;                           // Aux. neighbour counter
+  int k;                            // Dimension counter
+  int iteration = 0;                // h-rho iteration counter
+  int iteration_max = 30;           // Max. no of iterations
+  FLOAT h_max = big_number;         // Max. allowed value of h
+  FLOAT h_lower_bound = 0.0;        // Lower bound on h
+  FLOAT h_upper_bound = big_number; // Upper bound on h
+  FLOAT invhsqd;                    // (1 / h)^2
+  FLOAT ssqd;                       // Kernel parameter squared, (r/h)^2
 
 
   // Main smoothing length iteration loop
@@ -154,9 +155,11 @@ int GradhSph<ndim, kernelclass >::ComputeH
   // Normalise all SPH sums correctly
   parti.h = h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim);
   parti.invh = (FLOAT) 1.0/parti.h;
-  parti.invomega = (FLOAT) 1.0 + Sph<ndim>::invndim*parti.h*parti.invomega*parti.invrho;
+  parti.invomega = (FLOAT) 1.0 + 
+    Sph<ndim>::invndim*parti.h*parti.invomega*parti.invrho;
   parti.invomega = (FLOAT) 1.0/parti.invomega;
-  parti.zeta = -Sph<ndim>::invndim*parti.h*parti.zeta*parti.invrho*parti.invomega;
+  parti.zeta = -Sph<ndim>::invndim*parti.h*parti.zeta*
+    parti.invrho*parti.invomega;
 
   // Set important thermal variables here
   parti.u = eos->SpecificInternalEnergy(parti);
@@ -166,44 +169,43 @@ int GradhSph<ndim, kernelclass >::ComputeH
     parti.invrho*parti.invomega;
   parti.div_v = (FLOAT) 0.0;
   
-
   return 1;
 }
 
 
 
-// ============================================================================
-// GradhSph::ComputeSphNeibForces
-// Compute SPH neighbour force pairs for 
-// (i) All neighbour interactions of particle i with i.d. j > i,
-// (ii) Active neighbour interactions of particle j with i.d. j > i
-// (iii) All inactive neighbour interactions of particle i with i.d. j < i.
-// This ensures that all particle-particle pair interactions are only 
-// computed once only for efficiency.
-// ============================================================================
+//=============================================================================
+//  GradhSph::ComputeSphNeibForces
+/// Compute SPH neighbour force pairs for 
+/// (i) All neighbour interactions of particle i with i.d. j > i,
+/// (ii) Active neighbour interactions of particle j with i.d. j > i
+/// (iii) All inactive neighbour interactions of particle i with i.d. j < i.
+/// This ensures that all particle-particle pair interactions are only 
+/// computed once only for efficiency.
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass >::ComputeSphNeibForces
-(int i,                                 // id of particle
- int Nneib,                             // No. of neighbours in neibpart array
- int *neiblist,                         // id of gather neighbour in neibpart
- FLOAT *drmag,                          // Distances of gather neighbours
- FLOAT *invdrmag,                       // Inverse distances of gather neibs
- FLOAT *dr,                             // Position vector of gather neibs
- SphParticle<ndim> &parti,                    // Particle i data
- SphParticle<ndim> *neibpart)                 // Neighbour particle data
+(int i,                             ///< [in] id of particle
+ int Nneib,                         ///< [in] No. of neins in neibpart array
+ int *neiblist,                     ///< [in] id of gather neibs in neibpart
+ FLOAT *drmag,                      ///< [in] Distances of gather neighbours
+ FLOAT *invdrmag,                   ///< [in] Inverse distances of gather neibs
+ FLOAT *dr,                         ///< [in] Position vector of gather neibs
+ SphParticle<ndim> &parti,          ///< [inout] Particle i data
+ SphParticle<ndim> *neibpart)       ///< [inout] Neighbour particle data
 {
-  int j;                                // Neighbour list id
-  int jj;                               // Aux. neighbour counter
-  int k;                                // Dimension counter
-  FLOAT draux[ndim];                 // Relative position vector
-  FLOAT dv[ndim];                    // Relative velocity vector
-  FLOAT dvdr;                           // Dot product of dv and dr
-  FLOAT wkerni;                         // Value of w1 kernel function
-  FLOAT wkernj;                         // Value of w1 kernel function
-  FLOAT vsignal;                        // Signal velocity
-  FLOAT paux;                           // Aux. pressure force variable
-  FLOAT uaux;                           // Aux. internal energy variable
-  FLOAT winvrho;                        // 0.5*(wkerni + wkernj)*invrhomean
+  int j;                            // Neighbour list id
+  int jj;                           // Aux. neighbour counter
+  int k;                            // Dimension counter
+  FLOAT draux[ndim];                // Relative position vector
+  FLOAT dv[ndim];                   // Relative velocity vector
+  FLOAT dvdr;                       // Dot product of dv and dr
+  FLOAT wkerni;                     // Value of w1 kernel function
+  FLOAT wkernj;                     // Value of w1 kernel function
+  FLOAT vsignal;                    // Signal velocity
+  FLOAT paux;                       // Aux. pressure force variable
+  FLOAT uaux;                       // Aux. internal energy variable
+  FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
 
 
   // Compute hydro forces
@@ -291,38 +293,109 @@ void GradhSph<ndim, kernelclass >::ComputeSphNeibForces
 
 
 
+//=============================================================================
+//  GradhSph::ComputeSphNeibGravForces
+/// Compute SPH neighbour force pairs for 
+/// (i) All neighbour interactions of particle i with i.d. j > i,
+/// (ii) Active neighbour interactions of particle j with i.d. j > i
+/// (iii) All inactive neighbour interactions of particle i with i.d. j < i.
+/// This ensures that all particle-particle pair interactions are only 
+/// computed once only for efficiency.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void GradhSph<ndim, kernelclass>::ComputeSphNeibGravForces
+(int i,                             ///< [in] id of particle
+ int Nneib,                         ///< [in] No. of neins in neibpart array
+ int *neiblist,                     ///< [in] id of gather neibs in neibpart
+ FLOAT *drmag,                      ///< [in] Distances of gather neighbours
+ FLOAT *invdrmag,                   ///< [in] Inverse distances of gather neibs
+ FLOAT *dr,                         ///< [in] Position vector of gather neibs
+ SphParticle<ndim> &parti,          ///< [inout] Particle i data
+ SphParticle<ndim> *neibpart)       ///< [inout] Neighbour particle data
+{
+  int j;                            // Neighbour list id
+  int jj;                           // Aux. neighbour counter
+  int k;                            // Dimension counter
+  FLOAT draux[ndim];                // Relative position vector
+  FLOAT dv[ndim];                   // Relative velocity vector
+  FLOAT dvdr;                       // Dot product of dv and dr
+  FLOAT paux;                       // Aux. pressure force variable
+  FLOAT gaux;                       // Aux. internal energy variable
+
+
+  // Compute hydro forces
+  // ==========================================================================
+  if (self_gravity == 1) {
+
+    // Loop over all potential neighbours in the list
+    // ------------------------------------------------------------------------
+    for (jj=0; jj<Nneib; jj++) {
+      j = neiblist[jj];
+      for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
+
+      // Main SPH gravity terms
+      paux = parti.invh*parti.invh*kern.wgrav(drmag[jj]*parti.invh) + 
+	parti.zeta*parti.hfactor*kern.w1(drmag[jj]*parti.invh) + 
+	neibpart[j].invh*neibpart[j].invh*
+	kern.wgrav(drmag[jj]*neibpart[j].invh) + 
+	neibpart[j].zeta*neibpart[j].hfactor*
+	kern.w1(drmag[jj]*neibpart[j].invh);
+      gaux = (parti.invh*kern.wpot(drmag[jj]*parti.invh) + 
+	      neibpart[j].invh*kern.wpot(drmag[jj]*neibpart[j].invh));
+      
+      // Add total hydro contribution to acceleration for particle i
+      for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
+      parti.gpot += neibpart[j].m*paux;
+
+      // If neighbour is also active, add contribution to force here
+      for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
+      neibpart[j].gpot += parti.m*paux;
+
+    }
+    // ------------------------------------------------------------------------
+
+  }
+  // ==========================================================================
+
+
+  return;
+}
+
+
+
+
 // ============================================================================
 // GradhSph::ComputeSphNeibDudt
 // Empty definition
 // ============================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass >::ComputeSphNeibDudt
-(int i, int Nneib, int *neiblist, FLOAT *drmag, 
- FLOAT *invdrmag, FLOAT *dr, SphParticle<ndim> &parti, SphParticle<ndim> *neibpart)
+(int i, int Nneib, int *neiblist, FLOAT *drmag, FLOAT *invdrmag, 
+ FLOAT *dr, SphParticle<ndim> &parti, SphParticle<ndim> *neibpart)
 {
   return;
 }
 
 
 
-// ============================================================================
-// GradhSph::ComputeSphDerivatives
-// Empty definition
-// ============================================================================
+//=============================================================================
+//  GradhSph::ComputeSphDerivatives
+/// Empty definition
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass >::ComputeSphDerivatives
-(int i, int Nneib, int *neiblist, FLOAT *drmag, 
- FLOAT *invdrmag, FLOAT *dr, SphParticle<ndim> &parti, SphParticle<ndim> *neibpart)
+(int i, int Nneib, int *neiblist, FLOAT *drmag, FLOAT *invdrmag, 
+ FLOAT *dr, SphParticle<ndim> &parti, SphParticle<ndim> *neibpart)
 {
   return;
 }
 
 
 
-// ============================================================================
-// GradhSph::ComputePostHydroQuantities
-// ..
-// ============================================================================
+//=============================================================================
+//  GradhSph::ComputePostHydroQuantities
+/// ..
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass >::ComputePostHydroQuantities
 (SphParticle<ndim> &parti)
@@ -369,6 +442,7 @@ void GradhSph<ndim, kernelclass >::ComputeDirectGravForces
       parti.agrav[k] += sph[j].m*dr[ndim*jj + k]*pow(invdrmag,3);
 
   }
+  // --------------------------------------------------------------------------
 
   return;
 }

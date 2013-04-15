@@ -825,11 +825,14 @@ void SphSimulation<ndim>::PostGeneration(void)
 	ComputeGlobalTimestep();
       else 
 	ComputeBlockTimesteps();
-      sphneib->UpdateAllSphForces(sph);
+      if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
+      if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
       sphneib->UpdateAllSphDudt(sph);
     }
-    else 
-      sphneib->UpdateAllSphForces(sph);
+    else {
+      if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
+      if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
+    }
 
     CopySphDataToGhosts();
 
@@ -853,11 +856,6 @@ void SphSimulation<ndim>::PostGeneration(void)
   diag0 = diag;
   
   setup = true;
-
-  for (int i=0; i<sph->Nsph; i++) {
-   cout << "WTF2?? : " << i << "   x : " << sph->sphdata[i].rho << "   " << sph->eos->gammam1*sph->sphdata[i].u*sph->sphdata[i].rho << endl;
-  }
-
 
   return;
 }
@@ -951,7 +949,8 @@ void SphSimulation<ndim>::MainLoop(void)
     }
 
     // Calculate all SPH forces
-    sphneib->UpdateAllSphForces(sph);
+    if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
+    if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
 
     if (simparams->stringparams["sph"] == "godunov")
       sphneib->UpdateAllSphDudt(sph);

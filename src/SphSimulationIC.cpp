@@ -247,8 +247,8 @@ void SphSimulation<ndim>::ContactDiscontinuity(void)
 {
   DomainBox<ndim> box1;
   DomainBox<ndim> box2;
-  int Nlattice1[ndim];
-  int Nlattice2[ndim];
+  int Nlattice1[3];
+  int Nlattice2[3];
   int i;
   int j;
   int k;
@@ -256,8 +256,8 @@ void SphSimulation<ndim>::ContactDiscontinuity(void)
   int Nbox2;
   FLOAT volume;
   FLOAT *r;
-  FLOAT vfluid1[ndim];
-  FLOAT vfluid2[ndim];
+  FLOAT vfluid1[3];
+  FLOAT vfluid2[3];
   FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
   FLOAT rhofluid2 = simparams->floatparams["rhofluid2"];
   FLOAT press1 = simparams->floatparams["press1"];
@@ -295,11 +295,13 @@ void SphSimulation<ndim>::ContactDiscontinuity(void)
 	cout << "Allocating memory : " << sph->Nsph << endl;
 
 
-	// ------------------------------------------------------------------------
+	// --------------------------------------------------------------------
 	if (Nbox1 > 0) {
 	  AddRegularLattice(Nbox1,Nlattice1,r,box1);
       volume = box1.boxmax[0] - box1.boxmin[0];
-      cout << "Vol1 : " << volume << "   m1 : " << rhofluid1*volume/(FLOAT) Nbox1 << endl;
+      cout << "Vol1 : " << volume << "   m1 : " 
+	   << rhofluid1*volume/(FLOAT) Nbox1 << "   rho : "
+	   << rhofluid1*volume << "   Nbox : " << Nbox1 << endl;
       for (i=0; i<Nbox1; i++) {
 		sph->sphdata[i].r[0] = r[i] - 0.4*simbox.boxsize[0];
 		if (sph->sphdata[i].r[0] < simbox.boxmin[0])
@@ -313,11 +315,13 @@ void SphSimulation<ndim>::ContactDiscontinuity(void)
 	  }
 	}
 
-	// ------------------------------------------------------------------------
+	// --------------------------------------------------------------------
 	if (Nbox2 > 0) {
 	  AddRegularLattice(Nbox2,Nlattice2,r,box2);
       volume = box2.boxmax[0] - box2.boxmin[0];
-      cout << "Vol2 : " << volume << "   m2 : " << rhofluid2*volume/(FLOAT) Nbox2 << endl;
+      cout << "Vol2 : " << volume << "   m2 : " 
+	   << rhofluid2*volume/(FLOAT) Nbox2 
+	   << "   rho : " << rhofluid2*volume << "   Nbox : " << Nbox2 << endl;
 	  for (j=0; j<Nbox2; j++) {
         i = Nbox1 + j;
 		sph->sphdata[i].r[0] = r[j] - 0.4*simbox.boxsize[0];
@@ -368,10 +372,10 @@ void SphSimulation<ndim>::ContactDiscontinuity(void)
 
   CopySphDataToGhosts();
 
-  for (i=0; i<sph->Nsph; i++) {
-    sph->sphdata[i].u = press1/sph->sphdata[i].rho/gammaone;
-   cout << "WTF?? : " << i << "   x : " << sph->sphdata[i].rho << "   " << gammaone*sph->sphdata[i].u*sph->sphdata[i].rho << endl;
-  }
+  //for (i=0; i<sph->Nsph; i++) {
+  //  sph->sphdata[i].u = press1/sph->sphdata[i].rho/gammaone;
+  // cout << "WTF?? : " << i << "   x : " << sph->sphdata[i].rho << "   " << gammaone*sph->sphdata[i].u*sph->sphdata[i].rho << endl;
+  //}
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(sph);

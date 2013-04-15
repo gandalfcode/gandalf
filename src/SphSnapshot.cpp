@@ -203,7 +203,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       ax[i] = (float) sphaux[i].a[0];
     }
     else if (ndim == 2) {
-      x[i] = (float) sqrt(DotProduct(sphaux[i].r,sphaux[i].r,ndim)); //sphaux[i].r[0];
+      x[i] = (float) sphaux[i].r[0];
       y[i] = (float) sphaux[i].r[1];
       vx[i] = (float) sphaux[i].v[0];
       vy[i] = (float) sphaux[i].v[1];
@@ -211,7 +211,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       ay[i] = (float) sphaux[i].a[1];
     }
     else if (ndim == 3) {
-      x[i] = (float) sqrt(DotProduct(sphaux[i].r,sphaux[i].r,ndim)); //sphaux[i].r[0];
+      x[i] = (float) sphaux[i].r[0];
       y[i] = (float) sphaux[i].r[1];
       z[i] = (float) sphaux[i].r[2];
       vx[i] = (float) sphaux[i].v[0];
@@ -222,8 +222,8 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       az[i] = (float) sphaux[i].a[2];
     }
 
-    m[i] = (float) sphaux[i].u*sphaux[i].rho*0.6666666666666;
-    h[i] = (float) simulation->sph->eos->Pressure(sphaux[i]);
+    m[i] = (float) sphaux[i].m; //sphaux[i].u*sphaux[i].rho*0.6666666666666;
+    h[i] = (float) sphaux[i].h; //simulation->sph->eos->Pressure(sphaux[i]);
     rho[i] = (float) sphaux[i].rho;
     u[i] = (float) sphaux[i].u;
     dudt[i] = (float) sphaux[i].dudt;

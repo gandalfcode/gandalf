@@ -48,12 +48,12 @@ struct SphParticle {
     FLOAT gradP[ndim];
     FLOAT gradrho[ndim];
     FLOAT gradv[ndim][ndim];
-  	FLOAT rhomax;
-  	FLOAT rhomin;
-  	FLOAT pressmax;
-  	FLOAT pressmin;
-  	FLOAT vmax[ndim];
-  	FLOAT vmin[ndim];
+    FLOAT rhomax;
+    FLOAT rhomin;
+    FLOAT pressmax;
+    FLOAT pressmin;
+    FLOAT vmax[ndim];
+    FLOAT vmin[ndim];
 
 
     SphParticle()

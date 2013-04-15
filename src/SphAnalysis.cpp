@@ -1,7 +1,7 @@
-// ============================================================================
+//=============================================================================
 // SphAnalysis.cpp
 // Contains various analysis routines for SphSimulation object.
-// ============================================================================
+//=============================================================================
 
 
 #include <iostream>
@@ -20,15 +20,15 @@ using namespace std;
 
 
 
-// ============================================================================
-// SphSimulation::CalculateDiagnostics
-// Calculates all diagnostic quantities (e.g. conserved quantities), 
-// saves to the diagnostic data structure and outputs to screen.
-// ============================================================================
+//=============================================================================
+//  SphSimulation::CalculateDiagnostics
+/// Calculates all diagnostic quantities (e.g. conserved quantities), 
+/// saves to the diagnostic data structure and outputs to screen.
+//=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::CalculateDiagnostics(void)
 {
-  int k;
+  int k;                            // Dimensionality counter
 
   debug2("[SphSimulation::CalculateDiagnostics]");
 

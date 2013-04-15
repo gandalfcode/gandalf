@@ -1,8 +1,8 @@
-// ============================================================================
+//=============================================================================
 // Sph.h
 // Contains main parent virtual class plus child classes for various SPH 
 // algorithms that are implemented.
-// ============================================================================
+//=============================================================================
 
 
 #ifndef _SPH_H_
@@ -52,16 +52,22 @@ class Sph
   // SPH functions for computing SPH sums with neighbouring particles 
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
   // --------------------------------------------------------------------------
-  virtual int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle<ndim> &) = 0;
-  virtual void ComputeSphNeibForces(int, int, int *, 
-				    FLOAT *, FLOAT *, FLOAT *, 
-				    SphParticle<ndim> &, SphParticle<ndim> *) = 0;
-  virtual void ComputeDirectGravForces(int, int, int *,
-				       SphParticle<ndim> &, SphParticle<ndim> *) = 0;
+  virtual int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, 
+	               SphParticle<ndim> &) = 0;
+  virtual void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *, 
+                                    FLOAT *, SphParticle<ndim> &, 
+                                    SphParticle<ndim> *) = 0;
+  virtual void ComputeSphNeibGravForces(int, int, int *, FLOAT *, FLOAT *, 
+					FLOAT *, SphParticle<ndim> &, 
+					SphParticle<ndim> *) = 0;
+  virtual void ComputeDirectGravForces(int, int, int *, SphParticle<ndim> &, 
+                                       SphParticle<ndim> *) = 0;
   virtual void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
-				  FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *) = 0;
+				  FLOAT *, SphParticle<ndim> &, 
+                                  SphParticle<ndim> *) = 0;
   virtual void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *,
-				     FLOAT *, SphParticle<ndim> &,SphParticle<ndim> *) = 0;
+				     FLOAT *, SphParticle<ndim> &, 
+                                     SphParticle<ndim> *) = 0;
   virtual void ComputePostHydroQuantities(SphParticle<ndim> &) = 0;
 
 
@@ -74,34 +80,33 @@ class Sph
 
   // SPH particle counters and main particle data array
   // --------------------------------------------------------------------------
-  bool allocated;                       // Is SPH memory allocated?
-  int Nsph;                             // No. of SPH particles in simulation
-  int Nghost;                           // No. of ghost SPH particles
-  int Ntot;                             // No. of real + ghost particles
-  int Nsphmax;                          // Max. no. of SPH particles in array
-  int Nghostmax;                        // Max. allowed no. of ghost particles
+  bool allocated;                     ///< Is SPH memory allocated?
+  int Nsph;                           ///< No. of SPH particles in simulation
+  int Nghost;                         ///< No. of ghost SPH particles
+  int Ntot;                           ///< No. of real + ghost particles
+  int Nsphmax;                        ///< Max. no. of SPH particles in array
+  int Nghostmax;                      ///< Max. allowed no. of ghost particles
 
-  const FLOAT alpha_visc;               // alpha artificial viscosity parameter
-  const FLOAT beta_visc;                // beta artificial viscosity parameter
-  const FLOAT h_fac;                    // Smoothing length-density factor
-  const FLOAT h_converge;               // h-rho iteration tolerance
-  const string gas_eos;                 // Gas EOS option
-  const int hydro_forces;               // Compute hydro forces?
-  const int self_gravity;               // Compute gravitational forces?
+  const FLOAT alpha_visc;             ///< alpha artificial viscosity parameter
+  const FLOAT beta_visc;              ///< beta artificial viscosity parameter
+  const FLOAT h_fac;                  ///< Smoothing length-density factor
+  const FLOAT h_converge;             ///< h-rho iteration tolerance
+  const string gas_eos;               ///< Gas EOS option
+  const int hydro_forces;             ///< Compute hydro forces?
+  const int self_gravity;             ///< Compute gravitational forces?
 
-  SphKernel<ndim> *kernp;                     // Pointer to chosen kernel object
-  TabulatedKernel<ndim> kerntab;              // Tabulated version of chosen kernel
-  string riemann_solver;
-  string slope_limiter;
-  int riemann_order;
-  FLOAT kernfac;
-  FLOAT kernfacsqd;
+  SphKernel<ndim> *kernp;             ///< Pointer to chosen kernel object
+  TabulatedKernel<ndim> kerntab;      ///< Tabulated version of chosen kernel
+  string riemann_solver;              ///< Selected Riemann solver
+  string slope_limiter;               ///< Selected slope limiter
+  int riemann_order;                  ///< Order of Riemann solver
+  FLOAT kernfac;                      ///< Kernel range neighbour fraction
+  FLOAT kernfacsqd;                   ///< Kernel range neib. fraction squared
 
+  struct SphParticle<ndim> *sphdata;  ///< Main SPH particle data array
+  EOS<ndim> *eos;                     ///< Equation-of-state
 
-  struct SphParticle<ndim> *sphdata;          // Main SPH particle data array
-  EOS<ndim> *eos;                             // Equation-of-state
-
-  static const FLOAT invndim=1./ndim;
+  static const FLOAT invndim=1./ndim; ///< Copy of 1/ndim
 
 };
 
@@ -124,6 +129,7 @@ class GradhSph: public Sph<ndim>
   using Sph<ndim>::invndim;
   using Sph<ndim>::h_converge;
   using Sph<ndim>::hydro_forces;
+  using Sph<ndim>::self_gravity;
   using Sph<ndim>::avisc;
   using Sph<ndim>::beta_visc;
   using Sph<ndim>::alpha_visc;
@@ -131,13 +137,16 @@ class GradhSph: public Sph<ndim>
 
  public:
 
-  kernelclass<ndim> kern;                      // SPH kernel
+  kernelclass<ndim> kern;                  ///< SPH kernel
 
   GradhSph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
       aviscenum, acondenum, string, string);
   ~GradhSph();
 
   int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle<ndim> &);
+  void ComputeSphNeibGravForces(int, int, int *, FLOAT *, FLOAT *,
+				FLOAT *, SphParticle<ndim> &, 
+				SphParticle<ndim> *);
   void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *,
 			    FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
@@ -160,7 +169,6 @@ class GradhSph: public Sph<ndim>
 template <int ndim, template<int> class kernelclass>
 class SM2012Sph: public Sph<ndim>
 {
-
   using Sph<ndim>::allocated;
   using Sph<ndim>::Nsph;
   using Sph<ndim>::eos;
@@ -175,7 +183,7 @@ class SM2012Sph: public Sph<ndim>
 
  public:
 
-  kernelclass<ndim> kern;                      // SPH kernel
+  kernelclass<ndim> kern;                  ///< SPH kernel
 
   SM2012Sph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
 		  aviscenum, acondenum, string, string);
@@ -184,11 +192,15 @@ class SM2012Sph: public Sph<ndim>
   int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle<ndim> &);
   void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *, 
 			    FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
+  void ComputeSphNeibGravForces(int, int, int *, FLOAT *, FLOAT *,
+				FLOAT *, SphParticle<ndim> &, 
+				SphParticle<ndim> *);
   void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
 			  FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *,
-			     FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeDirectGravForces(int, int, int *, SphParticle<ndim> &, SphParticle<ndim> *);
+  void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
+			     SphParticle<ndim> &, SphParticle<ndim> *);
+  void ComputeDirectGravForces(int, int, int *, 
+                               SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputePostHydroQuantities(SphParticle<ndim> &);
 
 };
@@ -204,7 +216,6 @@ class SM2012Sph: public Sph<ndim>
 template <int ndim, template<int> class kernelclass>
 class GodunovSph: public Sph<ndim>
 {
-
   using Sph<ndim>::allocated;
   using Sph<ndim>::Nsph;
   using Sph<ndim>::eos;
@@ -222,7 +233,7 @@ class GodunovSph: public Sph<ndim>
 
  public:
 
-  kernelclass<ndim> kern;                     // SPH kernel
+  kernelclass<ndim> kern;                 ///< SPH kernel
 
   GodunovSph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
              aviscenum, acondenum, string, string);
@@ -231,19 +242,23 @@ class GodunovSph: public Sph<ndim>
   int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle<ndim> &);
   void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *, 
 			    FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
+  void ComputeSphNeibGravForces(int, int, int *, FLOAT *, FLOAT *,
+				FLOAT *, SphParticle<ndim> &, 
+				SphParticle<ndim> *);
   void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
   			  FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *,
-			     FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeDirectGravForces(int, int, int *, SphParticle<ndim> &, SphParticle<ndim> *);
+  void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
+			     SphParticle<ndim> &, SphParticle<ndim> *);
+  void ComputeDirectGravForces(int, int, int *, 
+                               SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputePostHydroQuantities(SphParticle<ndim> &);
-  void InitialiseRiemannProblem(SphParticle<ndim>, SphParticle<ndim>, FLOAT *, FLOAT, 
-				FLOAT, FLOAT, FLOAT, FLOAT, FLOAT &, FLOAT &,
-				FLOAT &, FLOAT &, FLOAT &, FLOAT &);
+  void InitialiseRiemannProblem(SphParticle<ndim>, SphParticle<ndim>, FLOAT *,
+                                FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT &, 
+                                FLOAT &, FLOAT &, FLOAT &, FLOAT &, FLOAT &);
   void HllcSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
 		  FLOAT, FLOAT, FLOAT &, FLOAT &);
   void VanLeerSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
-		FLOAT, FLOAT, FLOAT &, FLOAT &);
+                     FLOAT, FLOAT, FLOAT &, FLOAT &);
   void IsothermalSolver(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, 
                         FLOAT, FLOAT, FLOAT, FLOAT &, FLOAT &);
 

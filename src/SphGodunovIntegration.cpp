@@ -1,7 +1,7 @@
-// ============================================================================
+//=============================================================================
 // SphGodunovIntegration.cpp
 // ..
-// ============================================================================
+//=============================================================================
 
 
 #include <cstdio>
@@ -19,9 +19,10 @@ using namespace std;
 
 
 
-// ============================================================================
-// SphGodunovIntegration::SphGodunovIntegration()
-// ============================================================================
+//=============================================================================
+//  SphGodunovIntegration::SphGodunovIntegration
+/// SphGodunovIntegration class constructor
+//=============================================================================
 template <int ndim>
 SphGodunovIntegration<ndim>::SphGodunovIntegration(
 			       DOUBLE accel_mult_aux, 
@@ -32,9 +33,10 @@ SphGodunovIntegration<ndim>::SphGodunovIntegration(
 
 
 
-// ============================================================================
-// SphGodunovIntegration::~SphGodunovIntegration()
-// ============================================================================
+//=============================================================================
+//  SphGodunovIntegration::~SphGodunovIntegration()
+/// SphGodunovIntegration class destructor
+//=============================================================================
 template <int ndim>
 SphGodunovIntegration<ndim>::~SphGodunovIntegration()
 {
@@ -42,15 +44,15 @@ SphGodunovIntegration<ndim>::~SphGodunovIntegration()
 
 
 
-// ============================================================================
-// SphGodunovIntegration::AdvanceParticles
-// Integrate particle positions to 2nd order, and particle velocities to 1st
-// order from the beginning of the step to the current simulation time, i.e. 
-// r(t+dt) = r(t) + v(t)*dt + 0.5*a(t)*dt^2, 
-// v(t+dt) = v(t) + a(t)*dt.
-// Also set particles at the end of step as 'active' in order to compute 
-// the end-of-step force computation.
-// ============================================================================
+//=============================================================================
+//  SphGodunovIntegration::AdvanceParticles
+/// Integrate particle positions to 2nd order, and particle velocities to 1st
+/// order from the beginning of the step to the current simulation time, i.e. 
+/// r(t+dt) = r(t) + v(t)*dt + 0.5*a(t)*dt^2, 
+/// v(t+dt) = v(t) + a(t)*dt.
+/// Also set particles at the end of step as 'active' in order to compute 
+/// the end-of-step force computation.
+//=============================================================================
 template <int ndim>
 void SphGodunovIntegration<ndim>::AdvanceParticles(int n, int level_step, int Nsph,
 				      SphParticle<ndim> *sph, FLOAT timestep)
@@ -92,8 +94,10 @@ void SphGodunovIntegration<ndim>::AdvanceParticles(int n, int level_step, int Ns
 // No correction terms to apply.
 // ============================================================================
 template <int ndim>
-void SphGodunovIntegration<ndim>::CorrectionTerms(int n, int level_step, int Nsph,
-					    SphParticle<ndim> *sph, FLOAT timestep)
+void SphGodunovIntegration<ndim>::CorrectionTerms(int n, int level_step, 
+                                                  int Nsph, 
+						  SphParticle<ndim> *sph, 
+						  FLOAT timestep)
 {
   return;
 }
@@ -106,12 +110,15 @@ void SphGodunovIntegration<ndim>::CorrectionTerms(int n, int level_step, int Nsp
 // start of the new timestep.
 // ============================================================================
 template <int ndim>
-void SphGodunovIntegration<ndim>::EndTimestep(int n, int level_step,
-				 int Nsph, SphParticle<ndim> *sph)
+void SphGodunovIntegration<ndim>::EndTimestep
+(int n,                             ///< [in] Integer time in block time struct
+ int level_step,                    ///< Current block level
+ int Nsph,                          ///< No. of SPH particles
+ SphParticle<ndim> *sph)            ///< SPH particle data array
 {
-  int i;                                // Particle counter
-  int k;                                // Dimension counter
-  int nstep;                            // Particle (integer) step size
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+  int nstep;                        // Particle (integer) step size
 
   debug2("[SphGodunovIntegration::EndTimestep]");
 
@@ -132,12 +139,14 @@ void SphGodunovIntegration<ndim>::EndTimestep(int n, int level_step,
   return;
 }
 
-// ============================================================================
-// SphIntegration::Timestep
-// Default timestep size for SPH particles.  Takes the minimum of : 
-// (i)  const*h/(sound_speed + h*|div_v|)    (Courant condition)
-// (ii) const*sqrt(h/|a|)                    (Acceleration condition)
-// ============================================================================
+
+
+//=============================================================================
+//  SphIntegration::Timestep
+/// Default timestep size for SPH particles.  Takes the minimum of : 
+/// (i)  const*h/(sound_speed + h*|div_v|)    (Courant condition)
+/// (ii) const*sqrt(h/|a|)                    (Acceleration condition)
+//=============================================================================
 template <int ndim>
 DOUBLE SphGodunovIntegration<ndim>::Timestep(SphParticle<ndim> &part, int hydro_forces)
 {
@@ -156,6 +165,8 @@ DOUBLE SphGodunovIntegration<ndim>::Timestep(SphParticle<ndim> &part, int hydro_
 
   return timestep;
 }
+
+
 
 template class SphGodunovIntegration<1>;
 template class SphGodunovIntegration<2>;

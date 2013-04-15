@@ -1,8 +1,8 @@
-// ============================================================================
+//=============================================================================
 // Parameters.cpp
 // Contains all functions for calculating default values and reading in 
 // new values from the simulation parameter file.
-// ============================================================================
+//=============================================================================
 
 
 #include <cstdio>
@@ -16,9 +16,10 @@
 using namespace std;
 
 
-// ============================================================================
-// Parameters::Parameters
-// ============================================================================
+//=============================================================================
+//  Parameters::Parameters
+/// Constructor for Parameters class
+//=============================================================================
 Parameters::Parameters()
 {
   SetDefaultValues();
@@ -26,12 +27,15 @@ Parameters::Parameters()
 
 
 
-// ============================================================================
-// Parameters::~Parameters
-// ============================================================================
+//=============================================================================
+//  Parameters::~Parameters
+/// Parameters destructor
+//=============================================================================
 Parameters::~Parameters()
 {
 }
+
+
 
 Parameters::Parameters(const Parameters& other) {
   this->intparams = other.intparams;
@@ -39,15 +43,19 @@ Parameters::Parameters(const Parameters& other) {
   this->floatparams = other.floatparams;
 }
 
-// ============================================================================
-// Parameters::ReadParamsFile
-// Read and parse parameter file 'filename'.  If file doesn't exist, or 
-// file does not contain a simulation run id, then quit program here.
-// ============================================================================
-void Parameters::ReadParamsFile(std::string filename)
+
+
+//=============================================================================
+//  Parameters::ReadParamsFile
+/// Read and parse parameter file 'filename'.  If file doesn't exist, or 
+/// file does not contain a simulation run id, then quit program here.
+//=============================================================================
+void Parameters::ReadParamsFile
+(string filename                    ///< [in] Parameters file to be read
+ )
 {
-  ifstream inputfile;                   // Input file stream
-  std::string line;                     // Parameter file line
+  ifstream inputfile;               // Input file stream
+  std::string line;                 // Parameter file line
 
   debug1("[Parameters::ReadParamsFile]");
 
@@ -70,15 +78,15 @@ void Parameters::ReadParamsFile(std::string filename)
   }
   inputfile.close();
 
-  // Now verify that parameters file contains a run id.
-  // If not defined, then quit program with exception
+  // Now verify that parameters file contains a run id in order to generate 
+  // labelled output files.  If not defined, then quit program with exception.
   if (stringparams["run_id"] == "") {
     string message = "The parameter file: " + filename +
       " does not contain a run id string, aborting";
     ExceptionHandler::getIstance().raise(message);
   }
 
-  // Record parameters to file
+  // Record parameters to file 'run_id.param'
   RecordParametersToFile();
 
   return;
@@ -86,17 +94,19 @@ void Parameters::ReadParamsFile(std::string filename)
 
 
 
-// ============================================================================
-// Parameters::ParseLine
-// Parse a single line read from the parameters file.
-// Identifies if the line is in the form 'Comments : variable = value', or 
-// 'variable = value', and if so, stores value in memory.
-// ============================================================================
-void Parameters::ParseLine(std::string paramline)
+//=============================================================================
+//  Parameters::ParseLine
+/// Parse a single line read from the parameters file.
+/// Identifies if the line is in the form 'Comments : variable = value', or 
+/// 'variable = value', and if so, stores value in memory.
+///============================================================================
+void Parameters::ParseLine
+(string paramline                       ///< [in] Line from parameters file to be parsed.
+ )
 {
-  int colon_pos = paramline.find(':');      // Position of colon in string
-  int equal_pos = paramline.find('=');      // Position of equals in string
-  int length = paramline.length();          // Length of string
+  int colon_pos = paramline.find(':');  // Position of colon in string
+  int equal_pos = paramline.find('=');  // Position of equals in string
+  int length = paramline.length();      // Length of string
 
   // If line is not in the correct format (either equals is not present, or 
   // equals is before the colon) then skip line and return
@@ -120,10 +130,10 @@ void Parameters::ParseLine(std::string paramline)
 
 
 
-// ============================================================================
-// Parameters::SetDefaultValues
-// Record all parameter variable names in memory also setting default values.
-// ============================================================================
+//=============================================================================
+//  Parameters::SetDefaultValues
+/// Record all parameter variable names in memory also setting default values.
+//=============================================================================
 void Parameters::SetDefaultValues(void)
 {
   debug1("[Parameters::SetDefaultValues]");
@@ -259,12 +269,14 @@ void Parameters::SetDefaultValues(void)
 
 
 
-// ============================================================================
-// Parameters::SetParameter
-// Set parameter value in memory.  Checks in turn if parameter is a 
-// string, float or integer before recording value.
-// ============================================================================
-void Parameters::SetParameter(std::string key, std::string value)
+//=============================================================================
+//  Parameters::SetParameter
+/// Set parameter value in memory.  Checks in turn if parameter is a 
+/// string, float or integer before recording value.
+//=============================================================================
+void Parameters::SetParameter
+(string key,                        ///< [in] Parameter key to be searched
+ string value)                      ///< [in] Parameter value if key found
 {
   if (intparams.count(key) == 1)
     std::stringstream(value) >> intparams[key];
@@ -279,10 +291,10 @@ void Parameters::SetParameter(std::string key, std::string value)
 
 
 
-// ============================================================================
-// Parameters::PrintParameters
-// Prints all parameters stored in memory to screen
-// ============================================================================
+//=============================================================================
+//  Parameters::PrintParameters
+/// Prints all parameters stored in memory to screen.
+//=============================================================================
 void Parameters::PrintParameters(void)
 {
   debug1("[Parameters::PrintParameters]");
@@ -309,10 +321,10 @@ void Parameters::PrintParameters(void)
 
 
 
-// ============================================================================
-// Parameters::RecordParametersToFile
-// Writes all recorded parameters to file.
-// ============================================================================
+//=============================================================================
+//  Parameters::RecordParametersToFile
+/// Writes all recorded parameters to file named 'run_id.param'
+//=============================================================================
 void Parameters::RecordParametersToFile(void)
 {
   string filename = stringparams["run_id"] + ".param";  // Output filename
@@ -346,10 +358,10 @@ void Parameters::RecordParametersToFile(void)
 
 
 
-// ============================================================================
-// Parameters::trim2
-// Trims string of any white space.
-// ============================================================================
+//=============================================================================
+//  Parameters::trim2
+/// Trims string of any white space (N.B. needs to be replaced at some point).
+//=============================================================================
 void Parameters::trim2(std::string& str)
 {
   std::string::size_type pos = str.find_last_not_of(' ');
