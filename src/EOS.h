@@ -1,9 +1,9 @@
-// ============================================================================
-// EOS.h
-// Contains (virtual) definitions for equation of state class.  
-// Also includes inherited class defintions for various equation of  
-// state options.
-// ============================================================================
+//=============================================================================
+//  EOS.h
+//  Contains (virtual) definitions for equation of state class.  
+//  Also includes inherited class defintions for various equation of  
+//  state options.
+//=============================================================================
 
 
 #ifndef _EOS_H_
@@ -17,19 +17,23 @@
 
 
 
-// ============================================================================
-// Class EOS
-// Main Equation of state class.  Only contains virtual function defintions. 
-// All functions must be defined by the inherited EOS classes.
-// ============================================================================
+//=============================================================================
+//  Class EOS
+/// \brief   Main equation of state
+/// \details Main equation of state class.  Only contains virtual function 
+///          defintions. All functions must be defined by the inherited 
+///          EOS classes.
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=============================================================================
 template <int ndim>
 class EOS
 {
  public:
 
-  EOS (FLOAT _gamma):
+  EOS(FLOAT _gamma):
     gamma(_gamma),
-    gammam1 (gamma - (FLOAT) 1.0){};
+    gammam1(gamma - (FLOAT) 1.0){};
 
   virtual FLOAT Pressure(SphParticle<ndim> &) = 0;
   virtual FLOAT EntropicFunction(SphParticle<ndim> &) = 0;
@@ -44,14 +48,16 @@ class EOS
 
 
 
-// ============================================================================
-// Class Isothermal
-// Isothermal EOS class defintion
-// ============================================================================
+//=============================================================================
+//  Class Isothermal
+/// \brief   Isothermal equation of state
+/// \details Isothermal equation of state
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=============================================================================
 template <int ndim>
 class Isothermal: public EOS<ndim>
 {
-
   using EOS<ndim>::gamma;
   using EOS<ndim>::gammam1;
 
@@ -73,14 +79,17 @@ class Isothermal: public EOS<ndim>
 
 
 
-// ============================================================================
-// Class Adiabatic
-// Adiabatic equation of state class definition
-// ============================================================================
+//=============================================================================
+//  Class Adiabatic
+/// \brief   Adiabatic equation of state
+/// \details Adiabatic equation of state.  Requires integrating the energy 
+///          equation parallel to the main dynamical quantities.
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=============================================================================
 template <int ndim>
 class Adiabatic: public EOS<ndim>
 {
-
   using EOS<ndim>::gamma;
   using EOS<ndim>::gammam1;
 

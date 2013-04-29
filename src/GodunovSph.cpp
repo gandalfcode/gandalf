@@ -1,8 +1,8 @@
-// ============================================================================
-// GodunovSph.cpp
-// Contains all functions for calculating conservative 'grad-h' SPH quantities
-// (See Springel & Hernquist (2002) and Price & Monaghan (2007).
-// ============================================================================
+//=============================================================================
+//  GodunovSph.cpp
+//  Contains all functions for calculating conservative 'grad-h' SPH quantities
+//  (See Springel & Hernquist (2002) and Price & Monaghan (2007).
+//=============================================================================
 
 
 #include <cstdio>
@@ -17,14 +17,16 @@
 #include "SphParticle.h"
 #include "Parameters.h"
 #include "EOS.h"
+#include "RiemannSolver.h"
 #include "InlineFuncs.h"
 using namespace std;
 
 
 
-// ============================================================================
-// GodunovSph::GodunovSph
-// ============================================================================
+//=============================================================================
+//  GodunovSph::GodunovSph
+/// GodunovSph class contructor
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 GodunovSph<ndim, kernelclass >::GodunovSph(int hydro_forces_aux,
 	    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
@@ -43,9 +45,10 @@ GodunovSph<ndim, kernelclass >::GodunovSph(int hydro_forces_aux,
 
 
 
-// ============================================================================
-// GodunovSph::~GodunovSph
-// ============================================================================
+//=============================================================================
+//  GodunovSph::~GodunovSph
+/// GodunovSph class destructor
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 GodunovSph<ndim, kernelclass >::~GodunovSph()
 {
@@ -53,15 +56,15 @@ GodunovSph<ndim, kernelclass >::~GodunovSph()
 
 
 
-// ============================================================================
-// GodunovSph::ComputeH
-// Compute the value of the smoothing length of particle 'i' by iterating  
-// the relation : h = h_fac*(m/rho)^(1/ndim).
-// Uses the previous value of h as a starting guess and then uses either 
-// a Newton-Rhapson solver, or fixed-point iteration, to converge on the 
-// correct value of h.  The maximum tolerance used for deciding whether the 
-// iteration has converged is given by the 'h_converge' parameter.
-// ============================================================================
+//=============================================================================
+//  GodunovSph::ComputeH
+/// Compute the value of the smoothing length of particle 'i' by iterating  
+/// the relation : h = h_fac*(m/rho)^(1/ndim).
+/// Uses the previous value of h as a starting guess and then uses either 
+/// a Newton-Rhapson solver, or fixed-point iteration, to converge on the 
+/// correct value of h.  The maximum tolerance used for deciding whether the 
+/// iteration has converged is given by the 'h_converge' parameter.
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 int GodunovSph<ndim, kernelclass >::ComputeH
 (int i,                                 // id of particle
@@ -170,54 +173,57 @@ int GodunovSph<ndim, kernelclass >::ComputeH
 
 
 
-// ============================================================================
-// GodunovSph::ComputeSphNeibForces
-// Compute SPH neighbour force pairs for 
-// (i) All neighbour interactions of particle i with i.d. j > i,
-// (ii) Active neighbour interactions of particle j with i.d. j > i
-// (iii) All inactive neighbour interactions of particle i with i.d. j < i.
-// This ensures that all particle-particle pair interactions are only 
-// computed once only for efficiency.
-// ============================================================================
+//=============================================================================
+//  GodunovSph::ComputeSphNeibForces
+/// Compute SPH neighbour force pairs for 
+/// (i) All neighbour interactions of particle i with i.d. j > i,
+/// (ii) Active neighbour interactions of particle j with i.d. j > i
+/// (iii) All inactive neighbour interactions of particle i with i.d. j < i.
+/// This ensures that all particle-particle pair interactions are only 
+/// computed once only for efficiency.
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GodunovSph<ndim, kernelclass >::ComputeSphNeibForces
-(int i,                                 // id of particle
- int Nneib,                             // No. of neighbours in neibpart array
- int *neiblist,                         // id of gather neighbour in neibpart
- FLOAT *drmag,                          // Distances of gather neighbours
- FLOAT *invdrmag,                       // Inverse distances of gather neibs
- FLOAT *dr,                             // Position vector of gather neibs
- SphParticle<ndim> &parti,                    // Particle i data
- SphParticle<ndim> *neibpart)                 // Neighbour particle data
+(int i,                             ///< [in] id of particle
+ int Nneib,                         ///< [in] No. of neibs in neibpart array
+ int *neiblist,                     ///< [in] id of gather neibs in neibpart
+ FLOAT *drmag,                      ///< [in] Distances of gather neighbours
+ FLOAT *invdrmag,                   ///< [in] Inverse distances of gather neibs
+ FLOAT *dr,                         ///< [in] Position vector of gather neibs
+ SphParticle<ndim> &parti,          ///< [inout] Particle i data
+ SphParticle<ndim> *neibpart)       ///< [inout] Neighbour particle data
 {
-  int j;                                // Neighbour list id
-  int jj;                               // Aux. neighbour counter
-  int k;                                // Dimension counter
-  FLOAT draux[ndim];                 // Relative position vector
-  FLOAT dv[ndim];                    // Relative velocity vector
-  FLOAT dvdr;                           // Dot product of dv and dr
-  FLOAT wkerni;                         // Value of w1 kernel function
-  FLOAT wkernj;                         // Value of w1 kernel function
-  FLOAT vsignal;                        // Signal velocity
-  FLOAT paux;                           // Aux. pressure force variable
-  FLOAT uaux;                           // Aux. internal energy variable
-  FLOAT winvrho;                        // 0.5*(wkerni + wkernj)*invrhomean
+  int j;                            // Neighbour list id
+  int jj;                           // Aux. neighbour counter
+  int k;                            // Dimension counter
+  FLOAT draux[ndim];                // Relative position vector
+  FLOAT dv[ndim];                   // Relative velocity vector
+  FLOAT dvdr;                       // Dot product of dv and dr
+  FLOAT wkerni;                     // Value of w1 kernel function
+  FLOAT wkernj;                     // Value of w1 kernel function
+  FLOAT vsignal;                    // Signal velocity
+  FLOAT paux;                       // Aux. pressure force variable
+  FLOAT uaux;                       // Aux. internal energy variable
+  FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
 
-  FLOAT Cij;                            // ..
-  FLOAT Dij;                            // ..
-  FLOAT Vsqdi;                          // ..
-  FLOAT Vsqdj;                          // ..
-  FLOAT Sij;                            // ..
-  FLOAT pl,pr;
-  FLOAT rhol,rhor;
-  FLOAT vl,vr;
-  FLOAT pstar;
-  FLOAT vstar;
-  FLOAT vtemp[ndim];
-  FLOAT gradi;
-  FLOAT gradj;
+  FLOAT Aij;
+  FLOAT Bij;
+  FLOAT Cij;                        // ..
+  FLOAT Dij;                        // ..
+  FLOAT Vsqdi;                      // ..
+  FLOAT Vsqdj;                      // ..
+  FLOAT Vprimei;
+  FLOAT Vprimej;
+  FLOAT Sij;                        // ..
+  FLOAT pl,pr;                      // ..
+  FLOAT rhol,rhor;                  // ..
+  FLOAT vl,vr;                      // ..
+  FLOAT pstar;                      // ..
+  FLOAT vstar;                      // ..
+  FLOAT vtemp[ndim];                // ..
+  FLOAT hconv = pow(invsqrttwo,ndim+1);
 
-  FLOAT hconv = powf(invsqrttwo,ndim+1);
+  string interpolation = "linear";
 
 
   // Compute hydro forces
@@ -237,29 +243,38 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibForces
       dvdr = DotProduct(dv,draux,ndim);
 
       // Linear interpolate quantites between left and right states
-      Cij = -(parti.invrho - neibpart[j].invrho)*invdrmag[jj];
-      Dij = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
-      Vsqdi = (FLOAT) 0.25*parti.h*parti.h*Cij*Cij + Dij*Dij;
-      Vsqdj = (FLOAT) 0.25*neibpart[j].h*neibpart[j].h*Cij*Cij + Dij*Dij;
-      Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi + 
-				  neibpart[j].h*neibpart[j].h/Vsqdj);
+
+      if (interpolation == "linear") {
+	Cij = (neibpart[j].invrho - parti.invrho)*invdrmag[jj];
+	Dij = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
+	Vsqdi = (FLOAT) 0.25*parti.h*parti.h*Cij*Cij + Dij*Dij;
+	Vsqdj = (FLOAT) 0.25*neibpart[j].h*neibpart[j].h*Cij*Cij + Dij*Dij;
+	Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi + 
+				    neibpart[j].h*neibpart[j].h/Vsqdj);
+      }
+      else if (interpolation == "cubic") {
+	Vprimei = -DotProduct(parti.gradrho,draux,ndim)*
+	  parti.invrho*parti.invrho;
+	Vprimej = -DotProduct(neibpart[j].gradrho,draux,ndim)*
+	  neibpart[j].invrho*neibpart[j].invrho;
+	Aij = -2.0*(neibpart[j].invrho - parti.invrho)*pow(invdrmag[jj],3) + 
+	  (Vprimei + Vprimej)*invdrmag[jj]*invdrmag[jj];
+	Bij = 0.5*(Vprimej - Vprimei)*invdrmag[jj];
+	Cij = 1.5*(neibpart[j].invrho - parti.invrho)*invdrmag[jj] - 
+	  0.25*(Vprimei + Vprimej);
+	Dij = 0.5*(neibpart[j].invrho + parti.invrho) - 
+	  0.125*(Vprimej - Vprimei)*drmag[jj];
+      }
+
 
       // Initialise the LHS and RHS of the Riemann problem
-      InitialiseRiemannProblem(parti,neibpart[j],draux,drmag[jj],Sij,dvdr,
-    		  parti.sound,neibpart[j].sound,pl,pr,rhol,rhor,vl,vr);
+      InitialiseRiemannProblem(parti,neibpart[j],draux,drmag[jj],Sij,
+			       dvdr,parti.sound,neibpart[j].sound,
+			       pl,pr,rhol,rhor,vl,vr);
 
       // Now solve Riemann problem and return intermediate state variables
-      if (riemann_solver == "hllc")
-        HllcSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
-                   vl,vr,eos->gamma,pstar,vstar);
-      else if (riemann_solver == "vanleer")
-        VanLeerSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
-                       vl,vr,eos->gamma,pstar,vstar);
-      else if (riemann_solver == "isothermal")
-          VanLeerSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
-   		      vl,vr,1.000001,pstar,vstar);
-        //IsothermalSolver("basic1",pl,pr,rhol,rhor,parti.sound,
-          //                neibpart[j].sound,vl,vr,eos->gamma,pstar,vstar);
+      riemann->SolveRiemannProblem(pl,pr,rhol,rhor,parti.sound,
+				   neibpart[j].sound,vl,vr,pstar,vstar);
 
       // Main SPH pressure force term
       paux = pstar*(Vsqdi*wkerni + Vsqdj*wkernj);
@@ -326,9 +341,6 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibGravForces
   FLOAT pstar;
   FLOAT vstar;
   FLOAT vtemp[ndim];
-  FLOAT gradi;
-  FLOAT gradj;
-
   FLOAT hconv = powf(invsqrttwo,ndim+1);
 
 
@@ -361,17 +373,8 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibGravForces
     		  parti.sound,neibpart[j].sound,pl,pr,rhol,rhor,vl,vr);
 
       // Now solve Riemann problem and return intermediate state variables
-      if (riemann_solver == "hllc")
-        HllcSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
-                   vl,vr,eos->gamma,pstar,vstar);
-      else if (riemann_solver == "vanleer")
-        VanLeerSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
-                       vl,vr,eos->gamma,pstar,vstar);
-      else if (riemann_solver == "isothermal")
-          VanLeerSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
-   		      vl,vr,1.000001,pstar,vstar);
-        //IsothermalSolver("basic1",pl,pr,rhol,rhor,parti.sound,
-          //                neibpart[j].sound,vl,vr,eos->gamma,pstar,vstar);
+      riemann->SolveRiemannProblem(pl,pr,rhol,rhor,parti.sound,
+				  neibpart[j].sound,vl,vr,pstar,vstar);
 
       // Main SPH pressure force term
       paux = pstar*(Vsqdi*wkerni + Vsqdj*wkernj);
@@ -955,29 +958,29 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
 
 
 
-// ============================================================================
-// GodunovSph::ComputeSphDerivatives
-// ..
-// ============================================================================
+//=============================================================================
+//  GodunovSph::ComputeSphDerivatives
+/// ..
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GodunovSph<ndim, kernelclass >::ComputeSphDerivatives
-(int i,                                 // id of particle
- int Nneib,                             // No. of neighbours in neibpart array
- int *neiblist,                         // id of gather neighbour in neibpart
- FLOAT *drmag,                          // Distances of gather neighbours
- FLOAT *invdrmag,                       // Inverse distances of gather neibs
- FLOAT *dr,                             // Position vector of gather neibs
- SphParticle<ndim> &parti,                    // Particle i data
- SphParticle<ndim> *neibpart)                 // Neighbour particle data
+(int i,                             ///< id of particle
+ int Nneib,                         ///< No. of neighbours in neibpart array
+ int *neiblist,                     ///< id of gather neighbour in neibpart
+ FLOAT *drmag,                      ///< Distances of gather neighbours
+ FLOAT *invdrmag,                   ///< Inverse distances of gather neibs
+ FLOAT *dr,                         ///< Position vector of gather neibs
+ SphParticle<ndim> &parti,          ///< Particle i data
+ SphParticle<ndim> *neibpart)       ///< Neighbour particle data
 {
-  int j;                                // Neighbour list id
-  int jj;                               // Aux. neighbour counter
-  int k;                                // Dimension counter
-  int kk;
-  FLOAT draux[ndim];                 // Relative position vector
-  FLOAT dv[ndim];                    // Relative velocity vector
-  FLOAT wkern;                          // Value of w1 kernel function
-  FLOAT dvdr;                           // ..
+  int j;                            // Neighbour list id
+  int jj;                           // Aux. neighbour counter
+  int k;                            // Dimension counter
+  int kk;                           // ..
+  FLOAT draux[ndim];                // Relative position vector
+  FLOAT dv[ndim];                   // Relative velocity vector
+  FLOAT wkern;                      // Value of w1 kernel function
+  FLOAT dvdr;                       // ..
 
   parti.div_v = (FLOAT) 0.0;
   parti.rhomin = big_number;
@@ -1040,15 +1043,15 @@ void GodunovSph<ndim, kernelclass >::ComputeSphDerivatives
 
 
 
-// ============================================================================
-// GodunovSph::ComputeSphNeibDudt
-// Compute SPH neighbour contributions to dudt for 
-// (i) All neighbour interactions of particle i with i.d. j > i,
-// (ii) Active neighbour interactions of particle j with i.d. j > i
-// (iii) All inactive neighbour interactions of particle i with i.d. j < i.
-// This ensures that all particle-particle pair interactions are only 
-// computed once only for efficiency.
-// ============================================================================
+//=============================================================================
+//  GodunovSph::ComputeSphNeibDudt
+/// Compute SPH neighbour contributions to dudt for 
+/// (i) All neighbour interactions of particle i with i.d. j > i,
+/// (ii) Active neighbour interactions of particle j with i.d. j > i
+/// (iii) All inactive neighbour interactions of particle i with i.d. j < i.
+/// This ensures that all particle-particle pair interactions are only 
+/// computed once only for efficiency.
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
 (int i,                                 // id of particle
@@ -1113,7 +1116,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
       vhalfj = dvdr + (FLOAT) 0.5*DotProduct(neibpart[j].a,draux,ndim)*neibpart[j].dt;
 
       // Linear interpolate quantites between left and right states
-      Cij = -(parti.invrho - neibpart[j].invrho)*invdrmag[jj];
+      Cij = (neibpart[j].invrho - parti.invrho)*invdrmag[jj];
       Dij = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
       Vsqdi = (FLOAT) 0.25*parti.h*parti.h*Cij*Cij + Dij*Dij;
       Vsqdj = (FLOAT) 0.25*neibpart[j].h*neibpart[j].h*Cij*Cij + Dij*Dij;
@@ -1125,17 +1128,8 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
     		  parti.sound,neibpart[j].sound,pl,pr,rhol,rhor,vl,vr);
 
       // Now solve Riemann problem and return intermediate state variables
-      if (riemann_solver == "hllc")
-        HllcSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
-		   vl,vr,eos->gamma,pstar,vstar);
-      else if (riemann_solver == "vanleer")
-        VanLeerSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
-		 vl,vr,eos->gamma,pstar,vstar);
-      else if (riemann_solver == "isothermal")
-         VanLeerSolver("basic1",pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,
-  		      vl,vr,1.000001,pstar,vstar);
-        //IsothermalSolver("basic1",pl,pr,rhol,rhor,parti.sound,
-			// neibpart[j].sound,vl,vr,eos->gamma,pstar,vstar);
+      riemann->SolveRiemannProblem(pl,pr,rhol,rhor,parti.sound,
+				  neibpart[j].sound,vl,vr,pstar,vstar);
 
       // Main SPH pressure force term
       uaux = pstar*(Vsqdi*wkerni + Vsqdj*wkernj);
@@ -1189,259 +1183,6 @@ void GodunovSph<ndim, kernelclass >::ComputeDirectGravForces
 {
   return;
 }
-
-
-
-// ============================================================================
-// HllcSolver
-// ..
-// ============================================================================
-template <int ndim, template<int> class kernelclass>
-void GodunovSph<ndim, kernelclass >::HllcSolver
-(string wave_speed,
- FLOAT pl,
- FLOAT pr,
- FLOAT rhol,
- FLOAT rhor,
- FLOAT soundl,
- FLOAT soundr,
- FLOAT vl,
- FLOAT vr,
- FLOAT gamma_eos,
- FLOAT &pstar,
- FLOAT &Sstar)
-{
-  FLOAT ql = 1.0;
-  FLOAT qr = 1.0;
-  FLOAT Sl;
-  FLOAT Sr;
-  FLOAT gamma_fac = 0.5f*(gamma_eos - 1.0f)/gamma_eos;
-
-  FLOAT gamma_aux1 = (FLOAT) 0.5*(gamma_eos - (FLOAT) 1.0)/gamma_eos;
-  FLOAT gamma_aux2 = (FLOAT) 0.5*(gamma_eos + (FLOAT) 1.0)/gamma_eos;
-  FLOAT g3 = gamma_aux2;
-  FLOAT g4 = gamma_aux1;
-  FLOAT g1 = gamma_eos - 1.0;
-  FLOAT g5 = 1.0/g4;
-  FLOAT cl = rhol*soundl;
-  FLOAT cr = rhor*soundr;
-
-  // Compute wave speeds based on various options
-  if (wave_speed == "basic1") { 
-    Sl = vl - soundl;
-    Sr = vr + soundr;
-  }
-  else if (wave_speed == "basic2") { 
-    Sl = vl - soundl;
-    Sr = vr + soundr;
-  }
-  else if (wave_speed == "pressure") {
-    FLOAT rhomean = 0.5f*(rhol + rhor);
-    FLOAT soundmean = 0.5f*(soundl + soundr);
-    pstar = 0.5*(pl + pr) - 0.5f*(vr - vl)*rhomean*soundmean;
-    //Sstar = 0.5f*(vl + vr) - 0.5f*(pr - rl)/rhomean/soundmean;
-
-    // Compute pressure-based speeds depending on pressure values
-    if (pstar > pl) ql = sqrt(1.0f + gamma_fac*(pstar/pl - 1.0f));
-    if (pstar > pr) qr = sqrt(1.0f + gamma_fac*(pstar/pr - 1.0f));
-    Sl = vl - ql*soundl;
-    Sr = vr + qr*soundr;
-  }
-  else {
-    cout << "Unrecognised wave_speed option" << endl;
-    Sstar = 0.0;
-    pstar = 0.0;
-    return;
-  }
-
-  // Compute intermediate ('star') velocity and pressure
-  Sstar = (pr - pl + rhol*vl*(Sl - vl) - rhor*vr*(Sr - vr))/
-    (rhol*(Sl - vl) - rhor*(Sr - vr));
-  pstar = ((Sr - vr)*rhor*pl - (Sl - vl)*rhol*pr + rhol*rhor*(Sr - vr)*
-	   (Sl - vl)*(vr - vl))/((Sr - vr)*rhor - (Sl - vl)*rhol);
-
-  if (pstar != pstar) {
-    cout << "Problem in HLLC" << endl;
-    cout << "p : " << pl << "   " << pstar << "    " << pr << endl;
-    cout << "v : " << vl << "   " << Sstar << "    " << vr << endl;
-    exit(0);
-  }
-
-
-  // Check for non-iterative rarefaction solution
-  // ------------------------------------------------------------------------
-  /*if (pstar < pl && pstar < pr) {
-    FLOAT fr = soundr/powf(pr,g4);
-    FLOAT fl = soundl/powf(pl,g4);
-    pstar = (0.5*g1*(vr - vl) + soundr + soundl)/(fl + fr);
-    if (pstar < 0.0)
-      pstar = small_number;
-    else
-      pstar = powf(pstar,g5);
-    FLOAT Wl = -cl*wave(pstar,pl,g3,g4);
-    FLOAT Wr = cr*wave(pstar,pr,g3,g4);
-    Sstar = (Wr*vr - Wl*vl - pr + pl)/(Wr - Wl);
-    
-    //cout << "Rarefaction riemann solver; : " << endl;
-    //cout << "                         p : " << pl << "   " << pstar << "   " << "   " << pr << endl;
-    //cout << "                         v : " << vl << "   " << Sstar << "   " << vr << endl;
-    //cin >> ci;
-    
-    }*/
-
-  return;
-}
-
-
-
-// ============================================================================
-// VanLeerSolver
-// Riemann solver ...
-// ============================================================================
-template <int ndim, template<int> class kernelclass>
-void GodunovSph<ndim, kernelclass>::VanLeerSolver
-(string wave_speed,
- FLOAT pl,
- FLOAT pr,
- FLOAT rhol,
- FLOAT rhor,
- FLOAT soundl,
- FLOAT soundr,
- FLOAT vl,
- FLOAT vr,
- FLOAT gamma_eos,
- FLOAT &pstar,
- FLOAT &Sstar)
-{
-  FLOAT soundi,pressi,Wl,Wr,zl,zr,vlstar,vrstar;
-  FLOAT tol = (FLOAT) 0.01;
-  FLOAT gamma_aux1 = (FLOAT) 0.5*(gamma_eos - (FLOAT) 1.0)/gamma_eos;
-  FLOAT gamma_aux2 = (FLOAT) 0.5*(gamma_eos + (FLOAT) 1.0)/gamma_eos;
-  FLOAT g3 = gamma_aux2;
-  FLOAT g4 = gamma_aux1;
-  FLOAT g1 = gamma_eos - 1.0;
-  FLOAT g5 = 1.0/g4;
-  FLOAT cl = rhol*soundl;
-  FLOAT cr = rhor*soundr;
-  int nit = 0;
-  bool doit = true;
-
-  // Linear Riemann solver
-  pstar = max((cr*pl + cl*pr - cr*cl*(vr - vl))/(cr + cl),small_number);
-  Sstar = (cr*vr + cl*vl - (pr - pl))/(cr + cl);
-  //return;
-
-  /*cout << "Linear riemann solver; " << nit << "   " << fabs(pstar - pressi)/pstar << "   " << tol << endl;
-  cout << "                         p : " << pl << "   " << pstar << "   " << pressi << "   " << pr << endl;
-  cout << "                         v : " << vl << "   " << Sstar << "   " << vr << endl;
-  cin >> vlstar;*/
-
-  // If linear solver is not good enough an approximation, use iterative 
-  // Riemann solver.
-  // --------------------------------------------------------------------------
-  if (fabs(pstar - pl) > tol*pl || fabs(pstar - pr) > tol*pr) {
-
-
-    // Iteration loop      
-    // ------------------------------------------------------------------------
-    while (doit) {
-      doit = false;
-      pressi = pstar;
-      
-      if (pstar >= pl) {
-	Wl = cl*sqrt(1.0 + gamma_aux2*(pstar - pl)/pl);
-	zl = 2.0*Wl*Wl*Wl/(Wl*Wl + cl*cl);
-      }
-      else {
-	Wl = gamma_aux1*(1.0 - pstar/pl)*cl/
-	  (1.0 - powf(pstar/pl,gamma_aux1));
-	zl = cl*powf(pstar/pl,1.0 - gamma_aux1);
-      }
-      
-      if (pstar >= pr) {
-	Wr = cr*sqrt(1.0 + gamma_aux2*(pstar - pr)/pr);
-	zr = 2.0*Wr*Wr*Wr/(Wr*Wr + cr*cr);
-      }
-      else {
-	Wr = gamma_aux1*(1.0 - pstar/pr)*cr/
-	  (1.0 - powf(pstar/pr,gamma_aux1));
-	zr = cr*powf(pstar/pr,1.0 - gamma_aux1);
-      }
-      
-      vlstar = vl - (pstar - pl)/Wl;
-      vrstar = vr + (pstar - pr)/Wr;
-      
-      pstar = max(pressi - zr*zl*(vrstar - vlstar)/(zl + zr),small_number);
-      Sstar = (zl*vlstar + zr*vrstar)/(zl + zr);
-      
-      
-      if (fabs(pstar - pressi) > tol*pstar) {
-	pressi = pstar;
-	nit++;
-	doit = true;
-	if (nit > 50) {
-	  //cout << "Convergence failure in Riemann solver" << endl;
-	  pstar = max((cr*pl + cl*pr - cr*cl*(vr - vl))/(cr + cl),
-		      small_number);
-	  Sstar = (cr*vr + cl*vl - (pr - pl))/(cr + cl);
-	  doit = false;
-	}
-      }
-      else if (fabs(pstar - pressi) < tol*pstar) doit = false;
-      
-    }
-    // ----------------------------------------------------------------------
-    
-  }
-  // ------------------------------------------------------------------------
-    
-
-      /*cout << "Van Leer riemann solver; " << nit << "   " << fabs(pstar - pressi)/pstar << "   " << tol << endl;
-      cout << "                         p : " << pl << "   " << pstar << "   " << pressi << "   " << pr << endl;
-      cout << "                         v : " << vl << "   " << Sstar << "   " << vr << endl;
-      cout << "                         w : " << cl << "   " << Wl << "   " << Wr << "   " << cr << endl;
-      cin >> vlstar;*/
-
-  return;
-}
-
-
-
-
-
-
-
-
-// ============================================================================
-// IsothermalSolver
-// ..
-// ============================================================================
-template <int ndim, template<int> class kernelclass>
-void GodunovSph<ndim, kernelclass>::IsothermalSolver
-(string wave_speed,
- FLOAT pl,
- FLOAT pr,
- FLOAT rhol,
- FLOAT rhor,
- FLOAT soundl,
- FLOAT soundr,
- FLOAT vl,
- FLOAT vr,
- FLOAT gamma_eos,
- FLOAT &pstar,
- FLOAT &Sstar)
-{
-  FLOAT sqrtrhol = sqrt(rhol);
-  FLOAT sqrtrhor = sqrt(rhor);
-  FLOAT X = sqrtrhol*sqrtrhor / (sqrtrhol + sqrtrhor);
-
-  pstar = 0.25*powf(X*(vr - vl) + sqrt(X*X*(vr - vl)*(vr - vl) + 4.0*soundl*
-				       soundl*X*(sqrtrhol + sqrtrhor)),2.0);
-  Sstar = vl + (pstar - soundl*soundl*rhol)/sqrt(pstar*rhol);
-
-  return;
-}
-
 
 
 

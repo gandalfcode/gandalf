@@ -1,7 +1,7 @@
 //=============================================================================
-// GradhSph.cpp
-// Contains all functions for calculating conservative 'grad-h' SPH quantities
-// (See Springel & Hernquist (2002) and Price & Monaghan (2007).
+//  GradhSph.cpp
+//  Contains all functions for calculating conservative 'grad-h' SPH quantities
+//  (See Springel & Hernquist (2002) and Price & Monaghan (2007).
 //=============================================================================
 
 
@@ -11,12 +11,13 @@
 #include <iostream>
 #include <math.h>
 #include "Precision.h"
-#include "Exception.h"
 #include "Sph.h"
-#include "SphKernel.h"
 #include "SphParticle.h"
 #include "Parameters.h"
+#include "SphKernel.h"
 #include "EOS.h"
+#include "Debug.h"
+#include "Exception.h"
 #include "InlineFuncs.h"
 using namespace std;
 
@@ -27,16 +28,14 @@ using namespace std;
 /// GradhSph class constructor
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
-GradhSph<ndim, kernelclass >::GradhSph(int hydro_forces_aux,
+GradhSph<ndim, kernelclass>::GradhSph(int hydro_forces_aux,
 	    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
 	    FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
 	    acondenum acond_aux, string gas_eos_aux, string KernelName):
-  Sph<ndim>(hydro_forces_aux,
-		    self_gravity_aux, alpha_visc_aux, beta_visc_aux,
-		    h_fac_aux, h_converge_aux, avisc_aux,
-		    acond_aux, gas_eos_aux, KernelName),
+  Sph<ndim>(hydro_forces_aux,self_gravity_aux, alpha_visc_aux, beta_visc_aux,
+	    h_fac_aux, h_converge_aux, avisc_aux,acond_aux, gas_eos_aux, 
+            KernelName),
   kern(kernelclass<ndim>(KernelName))
-
 {
   this->kernp = &kern;
   this->kernfac = (FLOAT) 1.0;
@@ -50,7 +49,7 @@ GradhSph<ndim, kernelclass >::GradhSph(int hydro_forces_aux,
 /// GradhSph class destructor
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
-GradhSph<ndim, kernelclass >::~GradhSph()
+GradhSph<ndim, kernelclass>::~GradhSph()
 {
 }
 
@@ -66,7 +65,7 @@ GradhSph<ndim, kernelclass >::~GradhSph()
 /// iteration has converged is given by the 'h_converge' parameter.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
-int GradhSph<ndim, kernelclass >::ComputeH
+int GradhSph<ndim, kernelclass>::ComputeH
 (int i,                             ///< [in] id of particle
  int Nneib,                         ///< [in] No. of potential neighbours
  FLOAT *m,                          ///< [in] Array of neib. masses
@@ -184,7 +183,7 @@ int GradhSph<ndim, kernelclass >::ComputeH
 /// computed once only for efficiency.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
-void GradhSph<ndim, kernelclass >::ComputeSphNeibForces
+void GradhSph<ndim, kernelclass>::ComputeSphNeibForces
 (int i,                             ///< [in] id of particle
  int Nneib,                         ///< [in] No. of neins in neibpart array
  int *neiblist,                     ///< [in] id of gather neibs in neibpart
@@ -363,11 +362,10 @@ void GradhSph<ndim, kernelclass>::ComputeSphNeibGravForces
 
 
 
-
-// ============================================================================
-// GradhSph::ComputeSphNeibDudt
-// Empty definition
-// ============================================================================
+//=============================================================================
+//  GradhSph::ComputeSphNeibDudt
+/// Empty definition (not needed for grad-h SPH)
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass >::ComputeSphNeibDudt
 (int i, int Nneib, int *neiblist, FLOAT *drmag, FLOAT *invdrmag, 
@@ -383,7 +381,7 @@ void GradhSph<ndim, kernelclass >::ComputeSphNeibDudt
 /// Empty definition
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
-void GradhSph<ndim, kernelclass >::ComputeSphDerivatives
+void GradhSph<ndim, kernelclass>::ComputeSphDerivatives
 (int i, int Nneib, int *neiblist, FLOAT *drmag, FLOAT *invdrmag, 
  FLOAT *dr, SphParticle<ndim> &parti, SphParticle<ndim> *neibpart)
 {
@@ -397,7 +395,7 @@ void GradhSph<ndim, kernelclass >::ComputeSphDerivatives
 /// ..
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
-void GradhSph<ndim, kernelclass >::ComputePostHydroQuantities
+void GradhSph<ndim, kernelclass>::ComputePostHydroQuantities
 (SphParticle<ndim> &parti)
 {
   parti.div_v *= parti.invrho;
@@ -414,7 +412,7 @@ void GradhSph<ndim, kernelclass >::ComputePostHydroQuantities
 // due to 'Nneib' neighbouring particles in the list 'neiblist'.
 // ============================================================================
 template <int ndim, template<int> class kernelclass>
-void GradhSph<ndim, kernelclass >::ComputeDirectGravForces
+void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
 (int i,                                 // id of particle
  int Ndirect,                           // No. of nearby 'gather' neighbours
  int *directlist,                       // id of gather neighbour in neibpart

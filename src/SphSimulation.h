@@ -1,11 +1,11 @@
-// ============================================================================
+//=============================================================================
 // SphSimulation.h
 // Contains definitions for following data structures and classes:
 // - DomainBox
 // - Diagnostics
 // - SphSimulationBase
 // - SphSimulation
-// ============================================================================
+//=============================================================================
 
 
 #ifndef _SPH_SIMULATION_H_
@@ -22,15 +22,16 @@
 #include "SphNeighbourSearch.h"
 #include "SphIntegration.h"
 #include "EnergyEquation.h"
+#include "Nbody.h"
 using namespace std;
 
 
-// ============================================================================
-// Structure DomainBox
+//=============================================================================
+//  Structure DomainBox
 /// \brief  Bounding box data structure.
 /// \author D. A. Hubber, G. Rosotti
 /// \date   03/04/2013
-// ============================================================================
+//=============================================================================
 template <int ndim>
 struct DomainBox {
   string x_boundary_lhs;                ///< x-dimension LHS boundary condition
@@ -47,12 +48,12 @@ struct DomainBox {
 
 
 
-// ============================================================================
-// Structure Diagnostics
+//=============================================================================
+//  Structure Diagnostics
 /// \brief  Structure containing snapshot of current diagnostic quantities.
 /// \author D. A. Hubber, G. Rosotti
 /// \date   03/04/2013
-// ============================================================================
+//=============================================================================
 template <int ndim>
 struct Diagnostics {
   DOUBLE Eerror;                        ///< Total energy error
@@ -121,6 +122,7 @@ class SphSimulationBase
   virtual void ContactDiscontinuity(void)=0;
   virtual void LatticeBox(void)=0;
   virtual void RandomSphere(void)=0;
+  virtual void ShearFlow(void) = 0;
   virtual void ShockTube(void)=0;
   virtual void KHI(void)=0;
   virtual void SoundWave(void)=0;
@@ -166,12 +168,12 @@ class SphSimulationBase
 
 
 
-// ============================================================================
-// Class SphSimulation
+//=============================================================================
+//  Class SphSimulation
 /// \brief  Main Sph Simulation class.
 /// \author D. A. Hubber, G. Rosotti
 /// \date   03/04/2013
-// ============================================================================
+//=============================================================================
 template <int ndim>
 class SphSimulation : public SphSimulationBase {
  public:
@@ -227,6 +229,7 @@ class SphSimulation : public SphSimulationBase {
   virtual void ShockTube(void);
   virtual void KHI(void);
   virtual void SedovBlastWave(void);
+  virtual void ShearFlow(void);
   virtual void SoundWave(void);
 
   // Input-output routines
@@ -247,6 +250,7 @@ class SphSimulation : public SphSimulationBase {
   Sph<ndim> *sph;                       ///< SPH algorithm pointer
   SphIntegration<ndim> *sphint;         ///< SPH Integration scheme pointer
   SphNeighbourSearch<ndim> *sphneib;    ///< SPH Neighbour scheme pointer
+  Nbody<ndim> *nbody;                   ///< N-body algorithm pointer
 
 };
 

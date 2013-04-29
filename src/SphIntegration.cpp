@@ -1,6 +1,6 @@
 //=============================================================================
-// SphIntegration.cpp
-// Contains default functions for SphIntegration class.
+//  SphIntegration.cpp
+//  Contains default functions for SphIntegration class.
 //=============================================================================
 
 

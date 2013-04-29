@@ -1,6 +1,6 @@
-// ============================================================================
-// GaussianKernel.cpp
-// ============================================================================
+//=============================================================================
+//  GaussianKernel.cpp
+//=============================================================================
 
 
 #include <math.h>
@@ -11,17 +11,14 @@ using namespace std;
 
 
 
-// ============================================================================
-// GaussianKernel::GaussianKernel
-// ============================================================================
+//=============================================================================
+//  GaussianKernel::GaussianKernel
+/// GaussianKernel contructor to initialise all kernel constants
+//=============================================================================
 template <int ndim>
 GaussianKernel<ndim>::GaussianKernel(string kernelname):
   SphKernel<ndim>()
 {
-//#if !defined(FIXED_DIMENSIONS)
-//  ndim = ndimaux;
-//  ndimpr = (FLOAT) ndim;
-//#endif
   this->kernrange = (FLOAT) 3.0;
   this->invkernrange = onethird;
   this->kernrangesqd = (FLOAT) 9.0;
@@ -32,13 +29,15 @@ GaussianKernel<ndim>::GaussianKernel(string kernelname):
 
 
 
-// ============================================================================
-// GaussianKernel::~GaussianKernel
-// ============================================================================
+//=============================================================================
+//  GaussianKernel::~GaussianKernel
+/// GaussianKernel destructor
+//=============================================================================
 template <int ndim>
 GaussianKernel<ndim>::~GaussianKernel()
 {
 }
+
 
 
 template class GaussianKernel<1>;

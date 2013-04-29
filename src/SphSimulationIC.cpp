@@ -1,6 +1,6 @@
-// ============================================================================
-// SphSimulationIC.cpp
-// ============================================================================
+//=============================================================================
+//  SphSimulationIC.cpp
+//=============================================================================
 
 
 #include <iostream>
@@ -19,9 +19,9 @@ using namespace std;
 
 
 
-// ============================================================================
-// SphSimulation::ShockTube
-// ============================================================================
+//=============================================================================
+//  SphSimulation::ShockTube
+//=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::ShockTube(void)
 {
@@ -117,9 +117,9 @@ void SphSimulation<ndim>::ShockTube(void)
 }
 
 
-// ============================================================================
-// SphSimulation::RandomBox
-// ============================================================================
+//=============================================================================
+//  SphSimulation::RandomBox
+//=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::RandomBox(void)
 {
@@ -154,9 +154,9 @@ void SphSimulation<ndim>::RandomBox(void)
 
 
 
-// ============================================================================
-// SphSimulation::LatticeBox
-// ============================================================================
+//=============================================================================
+//  SphSimulation::LatticeBox
+//=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::LatticeBox(void)
 {
@@ -199,9 +199,9 @@ void SphSimulation<ndim>::LatticeBox(void)
 
 
 
-// ============================================================================
-// SphSimulation::RandomSphere
-// ============================================================================
+//=============================================================================
+//  SphSimulation::RandomSphere
+//=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::RandomSphere(void)
 {
@@ -239,9 +239,9 @@ void SphSimulation<ndim>::RandomSphere(void)
 
 
 
-// ============================================================================
-// SphSimulation::ContactDiscontinuity
-// ============================================================================
+//=============================================================================
+//  SphSimulation::ContactDiscontinuity
+//=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::ContactDiscontinuity(void)
 {
@@ -682,6 +682,78 @@ void SphSimulation<ndim>::SedovBlastWave(void)
   return;
 }
 
+
+
+//=============================================================================
+//  SphSimulation::ShearFlow
+/// Create shear-flow to test effective shear viscosity.
+//=============================================================================
+template <int ndim>
+void SphSimulation<ndim>::ShearFlow(void)
+{
+  int i;
+  int j;
+  int k;
+  int Nbox;
+  FLOAT volume;
+  FLOAT *r;
+  int Nlattice1[ndim];
+  FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
+  FLOAT press1 = simparams->floatparams["press1"];
+  FLOAT temp0 = simparams->floatparams["temp0"];
+  FLOAT mu_bar = simparams->floatparams["mu_bar"];
+  FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
+  FLOAT amp = simparams->floatparams["amp"];
+  FLOAT lambda = simparams->floatparams["lambda"];
+  Nlattice1[0] = simparams->intparams["Nlattice1[0]"];
+  Nlattice1[1] = simparams->intparams["Nlattice1[1]"];
+
+  debug2("[SphSimulation::ShockTube]");
+
+  if (ndim != 2) {
+    string message = "Shear-flow test only in 2D";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Compute size and range of fluid bounding boxes
+  // --------------------------------------------------------------------------
+  volume = (simbox.boxmax[0] - simbox.boxmin[0])*
+    (simbox.boxmax[1] - simbox.boxmin[1]);
+  Nbox = Nlattice1[0]*Nlattice1[1];
+
+
+
+  // Allocate local and main particle memory
+  sph->Nsph = Nbox;
+  sph->AllocateMemory(sph->Nsph);
+  r = new FLOAT[ndim*sph->Nsph];
+  cout << "Nbox1 : " << Nbox << endl;
+  cout << "Allocating memory : " << sph->Nsph << endl;
+
+
+  // Add particles for LHS of the shocktube
+  // --------------------------------------------------------------------------
+  if (Nbox > 0) {
+    AddRegularLattice(Nbox,Nlattice1,r,simbox);
+
+    for (i=0; i<Nbox; i++) {
+      for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r[ndim*i + k];
+      for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
+      sph->sphdata[i].m = rhofluid1*volume/(FLOAT) Nbox;
+      sph->sphdata[i].u = press1/rhofluid1/gammaone;
+    }
+  }
+
+
+  // Add velocity perturbation here
+  // --------------------------------------------------------------------------
+  for (i=0; i<sph->Nsph; i++) {
+  }
+
+  delete[] r;
+
+  return;
+}
 
 
 

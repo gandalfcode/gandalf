@@ -1,7 +1,7 @@
-// ============================================================================
-// IsothermalEOS.cpp
-// Contains all function definitions for the Isothermal Equation of state.
-// ============================================================================
+//=============================================================================
+//  IsothermalEOS.cpp
+//  Contains all function definitions for the Isothermal Equation of state.
+//=============================================================================
 
 
 #include <math.h>
@@ -9,11 +9,11 @@
 #include "Sph.h"
 
 
-// ============================================================================
-// Isothermal::Isothermal()
-// Default constructor for isothermal EOS.  Passes and sets important 
-// thermal physics variables.
-// ============================================================================
+//=============================================================================
+//  Isothermal::Isothermal()
+/// Default constructor for isothermal EOS.  Passes and sets important 
+/// thermal physics variables.
+//=============================================================================
 template <int ndim>
 Isothermal<ndim>::Isothermal(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux):
   EOS<ndim>(gamma_aux)
@@ -24,9 +24,9 @@ Isothermal<ndim>::Isothermal(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux):
 
 
 
-// ============================================================================
-// Isothermal::Isothermal()
-// ============================================================================
+//=============================================================================
+//  Isothermal::Isothermal()
+//=============================================================================
 template <int ndim>
 Isothermal<ndim>::~Isothermal()
 {
@@ -34,10 +34,10 @@ Isothermal<ndim>::~Isothermal()
 
 
 
-// ============================================================================
-// Isothermal::Pressure
-// Calculates and returns thermal pressure of referenced particle
-// ============================================================================
+//=============================================================================
+//  Isothermal::Pressure
+/// Calculates and returns thermal pressure of referenced particle
+//=============================================================================
 template <int ndim>
 FLOAT Isothermal<ndim>::Pressure(SphParticle<ndim> &part)
 {
@@ -46,11 +46,11 @@ FLOAT Isothermal<ndim>::Pressure(SphParticle<ndim> &part)
 
 
 
-// ============================================================================
-// Isothermal::EntropicFunction
-// Calculates and returns value of Entropic function (= P/rho^gamma) for 
-// referenced particle
-// ============================================================================
+//=============================================================================
+//  Isothermal::EntropicFunction
+/// Calculates and returns value of Entropic function (= P/rho^gamma) for 
+/// referenced particle
+//=============================================================================
 template <int ndim>
 FLOAT Isothermal<ndim>::EntropicFunction(SphParticle<ndim> &part)
 {
@@ -59,10 +59,10 @@ FLOAT Isothermal<ndim>::EntropicFunction(SphParticle<ndim> &part)
 
 
 
-// ============================================================================
-// Isothermal::SoundSpeed
-// Returns isothermal sound speed of SPH particle
-// ============================================================================
+//=============================================================================
+//  Isothermal::SoundSpeed
+/// Returns isothermal sound speed of SPH particle
+//=============================================================================
 template <int ndim>
 FLOAT Isothermal<ndim>::SoundSpeed(SphParticle<ndim> &part)
 {
@@ -71,9 +71,9 @@ FLOAT Isothermal<ndim>::SoundSpeed(SphParticle<ndim> &part)
 
 
 
-// ============================================================================
-// Isothermal::SpecificInternalEnergy
-// ============================================================================
+//=============================================================================
+//  Isothermal::SpecificInternalEnergy
+//=============================================================================
 template <int ndim>
 FLOAT Isothermal<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
 {
@@ -82,15 +82,17 @@ FLOAT Isothermal<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
 
 
 
-// ============================================================================
-// Isothermal::Temperature
-// Return isothermal temperature of particle
-// ============================================================================
+//=============================================================================
+//  Isothermal::Temperature
+/// Return isothermal temperature of particle
+//=============================================================================
 template <int ndim>
 FLOAT Isothermal<ndim>::Temperature(SphParticle<ndim> &part)
 {
   return temp0;
 }
+
+
 
 template class Isothermal<1>;
 template class Isothermal<2>;

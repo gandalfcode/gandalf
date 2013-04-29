@@ -206,13 +206,13 @@ void GridSearch<ndim>::UpdateAllSphProperties
 
 
 
-// ============================================================================
-// GridSearch::UpdateAllSphForces
-// Compute all local 'gather' properties of currently active particles, and 
-// then compute each particle's contribution to its (active) neighbour 
-// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
-// construct local neighbour lists for all particles  inside the cell.
-// ============================================================================
+//=============================================================================
+//  GridSearch::UpdateAllSphForces
+/// Compute all local 'gather' properties of currently active particles, and 
+/// then compute each particle's contribution to its (active) neighbour 
+/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
+/// construct local neighbour lists for all particles  inside the cell.
+//=============================================================================
 template <int ndim>
 void GridSearch<ndim>::UpdateAllSphForces
 (Sph<ndim> *sph                     ///< Pointer to SPH object
@@ -396,18 +396,19 @@ void GridSearch<ndim>::UpdateAllSphForces
 
 
 
-// ============================================================================
-// GridSearch::UpdateAllSphGravityProperties
-// Compute all local 'gather' properties of currently active particles, and 
-// then compute each particle's contribution to its (active) neighbour 
-// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
-// construct local neighbour lists for all particles  inside the cell.
-// ============================================================================
+//=============================================================================
+//  GridSearch::UpdateAllSphGravityProperties
+/// Compute all local 'gather' properties of currently active particles, and 
+/// then compute each particle's contribution to its (active) neighbour 
+/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
+/// construct local neighbour lists for all particles  inside the cell.
+//=============================================================================
 template <int ndim>
 void GridSearch<ndim>::UpdateAllSphGravForces
 (Sph<ndim> *sph                     ///< Pointer to SPH object
 )
 {
+  bool *neibflag;                   // SPH neighbour flag
   int c;                            // Cell id
   int cactive;                      // No. of active cells
   int cc;                           // Aux. cell counter
@@ -417,12 +418,13 @@ void GridSearch<ndim>::UpdateAllSphGravForces
   int k;                            // Dimension counter
   int okflag;                       // Flag if h-rho iteration is valid
   int Nactive;                      // No. of active particles in cell
-  int Ngrav;                        // No. of direct sum gravity ptcls
+  int Ndirect;                      // No. of direct sum gravity ptcls
   int Ninteract;                    // No. of near gather neighbours
   int Nneib;                        // No. of neighbours
   int Nneibmax;                     // Max. no. of neighbours
   int *activelist;                  // List of active particle ids
   int *celllist;                    // List of active cells
+  int *directlist;                  // ..
   int *interactlist;                // ..
   int *neiblist;                    // List of neighbour ids
   FLOAT draux[ndim];                // Aux. relative position vector var
@@ -430,9 +432,11 @@ void GridSearch<ndim>::UpdateAllSphGravForces
   FLOAT hrangesqdi;                 // Kernel extent
   FLOAT hrangesqdj;                 // ..
   FLOAT rp[ndim];                   // Local copy of particle position
+  FLOAT *adirect;                   // ..
   FLOAT *dr;                        // Array of relative position vectors
   FLOAT *drmag;                     // Array of neighbour distances
   FLOAT *invdrmag;                  // Array of 1/drmag between particles
+  FLOAT *potdirect;                 // ..
   SphParticle<ndim> *neibpart;      // Local copy of neighbouring ptcls
   SphParticle<ndim> parti;          // Local copy of SPH particle
   SphParticle<ndim> *data = sph->sphdata;   // Pointer to SPH particle data
@@ -447,14 +451,18 @@ void GridSearch<ndim>::UpdateAllSphGravForces
 
   // Set-up all OMP threads
   // ==========================================================================
-#pragma omp parallel default(shared) private(activelist,c,cc,dr,draux,drmag,drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,parti,rp)
+#pragma omp parallel default(shared) private(activelist,adirect,c,cc,directlist,dr,draux,drmag,drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag,potdirect,Nactive,neibflag,neiblist,neibpart,Ninteract,Nneib,parti,rp)
   {
+    neibflag = new bool[sph->Nsph];
     activelist = new int[Noccupymax];
+    directlist = new int[sph->Nsph];
     neiblist = new int[Nneibmax];
     interactlist = new int[Nneibmax];
+    adirect = new FLOAT[sph->Nsph*ndim];
     dr = new FLOAT[Nneibmax*ndim];
     drmag = new FLOAT[Nneibmax];
     invdrmag = new FLOAT[Nneibmax];
+    potdirect = new FLOAT[sph->Nsph*ndim];
     neibpart = new SphParticle<ndim>[Nneibmax];
 
     // Loop over all active cells
@@ -468,6 +476,7 @@ void GridSearch<ndim>::UpdateAllSphGravForces
 
       // Compute neighbour list for cell depending on physics options
       Nneib = ComputeNeighbourList(c,neiblist);
+      for (j=0; j<sph->Nsph; j++) neibflag[j] = false;
 
       // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
@@ -476,24 +485,31 @@ void GridSearch<ndim>::UpdateAllSphGravForces
 
       // Make local copies of all potential neighbours
       for (j=0; j<Nneib; j++) {
+	neibflag[neiblist[j]] = true;
         neibpart[j] = data[neiblist[j]];
         neibpart[j].div_v = (FLOAT) 0.0;
         neibpart[j].dudt = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
       }
 
+      // Create list of all unsmoothed direct-sum neighbour lists
+      Ndirect = 0;
+      for (j=0; j<sph->Nsph; j++)
+	if (!neibflag[j]) directlist[Ndirect++] = j;
+
+
       // Loop over all active particles in the cell
       // ----------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
         parti = data[i];
-        parti.div_v = (FLOAT) 0.0;
-        parti.dudt = (FLOAT) 0.0;
+	parti.gpot = 0.0;
         for (k=0; k<ndim; k++) parti.a[k] = (FLOAT) 0.0;
 
         for (k=0; k<ndim; k++) rp[k] = parti.r[k]; //data[i].r[k];
         hrangesqdi = pow(sph->kernfac*sph->kernp->kernrange*parti.h,2);
         Ninteract = 0;
+
 
         // Compute distances and the inverse between the current particle
         // and all neighbours here, for both gather and inactive scatter neibs.
@@ -502,40 +518,29 @@ void GridSearch<ndim>::UpdateAllSphGravForces
         // --------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
-          hrangesqdj = pow(sph->kernfac*sph->kernp->kernrange*neibpart[jj].h,2);
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
           drsqd = DotProduct(draux,draux,ndim);
-
-          // Compute list of particle-neighbour interactions and also
-          // compute
-          if ((drsqd <= hrangesqdi || drsqd <= hrangesqdj) &&
-	      ((neiblist[jj] < i && !neibpart[jj].active) ||
-	       neiblist[jj] > i)) {
-	    interactlist[Ninteract] = jj;
-	    drmag[Ninteract] = sqrt(drsqd);
-	    invdrmag[Ninteract] = (FLOAT) 1.0/
-	      (drmag[Ninteract] + small_number);
-	    for (k=0; k<ndim; k++)
-	      dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
-	    Ninteract++;
-          }
+	  interactlist[Ninteract] = jj;
+	  drmag[Ninteract] = sqrt(drsqd);
+	  invdrmag[Ninteract] = (FLOAT) 1.0/(drmag[Ninteract] + small_number);
+	  for (k=0; k<ndim; k++)
+	    dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
+	  Ninteract++;
 	  
         }
         // --------------------------------------------------------------------
 
         // Compute all gather neighbour contributions to hydro forces
-        sph->ComputeSphNeibForces(i,Ninteract,interactlist,
-				  drmag,invdrmag,dr,parti,neibpart);
+        sph->ComputeSphNeibGravForces(i,Ninteract,interactlist,
+				      drmag,invdrmag,dr,parti,neibpart);
 
-        // Add ..
+        // Add contributions to main arrays
         for (k=0; k<ndim; k++) {
 #pragma omp atomic
-          data[i].a[k] += parti.a[k];
+          data[i].agrav[k] += parti.agrav[k];
         }
 #pragma omp atomic
-        data[i].dudt += parti.dudt;
-#pragma omp atomic
-        data[i].div_v += parti.div_v;
+        data[i].gpot += parti.gpot;
 	
       }
       // ----------------------------------------------------------------------
@@ -546,12 +551,10 @@ void GridSearch<ndim>::UpdateAllSphGravForces
           j = neiblist[jj];
           for (k=0; k<ndim; k++) {
 #pragma omp atomic
-            data[j].a[k] += neibpart[jj].a[k];
+            data[j].agrav[k] += neibpart[jj].agrav[k];
           }
 #pragma omp atomic
-          data[j].dudt += neibpart[jj].dudt;
-#pragma omp atomic
-          data[j].div_v += neibpart[jj].div_v;
+          data[j].gpot += neibpart[jj].gpot;
         }
       }
       
@@ -560,12 +563,16 @@ void GridSearch<ndim>::UpdateAllSphGravForces
 
     // Free-up local memory for OpenMP thread
     delete[] neibpart;
+    delete[] potdirect;
     delete[] invdrmag;
     delete[] drmag;
     delete[] dr;
+    delete[] adirect;
     delete[] interactlist;
     delete[] neiblist;
+    delete[] directlist;
     delete[] activelist;
+    delete[] neibflag;
     
   }
   // ==========================================================================
@@ -583,168 +590,6 @@ void GridSearch<ndim>::UpdateAllSphGravForces
 
   return;
 }
-
-/*
-template <int ndim>
-void GridSearch<ndim>::UpdateAllSphGravityProperties(Sph<ndim> *sph)
-{
-  int c;                                  // Cell id
-  int cactive;                            // No. of active cells
-  int cc;                                 // Aux. cell counter
-  int i;                                  // Particle id
-  int j;                                  // Aux. particle counter
-  int jj;                                 // Aux. particle counter
-  int k;                                  // Dimension counter
-  int okflag;                             // Flag if h-rho iteration is valid
-  int Nactive;                            // No. of active particles in cell
-  int Ngrav;                              // No. of direct sum gravity ptcls
-  int Ngather;                            // No. of near gather neighbours
-  int Nneib;                              // No. of neighbours
-  int Nneibmax;                           // Max. no. of neighbours
-  int Nscatter;                           // No. of near scatter neighbours
-  int *activelist;                        // List of active particle ids
-  int *celllist;                          // List of active cells
-  int *directgravlist;                    // Direct gravity
-  int *neiblist;                          // List of neighbour ids
-  int *gatherlist;                        // List of nearby neighbour ids
-  int *scatterlist;                       // List of nearby neighbour ids
-  FLOAT draux[ndim];                   // Aux. relative position vector var
-  FLOAT drsqd;                            // Distance squared
-  FLOAT hrangesqd;                        // Kernel extent
-  FLOAT rp[ndim];                      // Local copy of particle position
-  FLOAT *dr;                              // Array of relative position vectors
-  FLOAT *drmag;                           // Array of neighbour distances
-  FLOAT *invdrmag;                        // Array of 1/drmag between particles
-  FLOAT *dr2;                             // Position vectors to scatter neibs
-  FLOAT *drmag2;                          // Distances to scatter neibs
-  FLOAT *invdrmag2;                       // 1/drmag to scatter neibs
-  SphParticle<ndim> *neibpart;                  // Local copy of neighbouring ptcls
-  SphParticle<ndim> *data = sph->sphdata;       // Pointer to SPH particle data
-
-  debug2("[GridSearch::UpdateAllSphProperties]");
-
-  // Find list of all cells that contain active particles
-  celllist = new int[Ncell];
-  cactive = ComputeActiveCellList(celllist);
-
-  Nneibmax = Nlistmax;
-  activelist = new int[Noccupymax];
-  neiblist = new int[Nneibmax];
-  gatherlist = new int[Nneibmax];
-  scatterlist = new int[Nneibmax];
-  dr = new FLOAT[Nneibmax*ndim];
-  drmag = new FLOAT[Nneibmax];
-  invdrmag = new FLOAT[Nneibmax];
-  dr2 = new FLOAT[Nneibmax*ndim];
-  drmag2 = new FLOAT[Nneibmax];
-  invdrmag2 = new FLOAT[Nneibmax];
-  neibpart = new SphParticle<ndim>[Nneibmax];
-
-
-  // Loop over all active cells
-  // ==========================================================================
-  for (cc=0; cc<cactive; cc++) {
-    c = celllist[cc];
-
-    // Find list of active particles in current cell
-    Nactive = ComputeActiveParticleList(c,activelist,sph);
-
-    // Compute neighbour list for cell depending on physics options
-    Nneib = ComputeNeighbourList(c,neiblist);
-
-    // Make local copies of all potential neighbours
-    for (j=0; j<Nneib; j++) {
-      neibpart[j] = data[neiblist[j]];
-      neibpart[j].dudt = (FLOAT) 0.0;
-      for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
-    }
-
-    // Loop over all active particles in the cell
-    // ------------------------------------------------------------------------
-    for (j=0; j<Nactive; j++) {
-      i = activelist[j];
-      for (k=0; k<ndim; k++) rp[k] = data[i].r[k];
-
-      // Set gather range as current h multiplied by some tolerance factor
-      hrangesqd = pow(grid_h_tolerance*sph->kernp->kernrange*data[i].h,2);
-      Ngather = 0;
-      Nscatter = 0;
-
-      // Compute distances and the inverse between the current particle
-      // and all neighbours here, for both gather and inactive scatter neibs.
-      // ----------------------------------------------------------------------
-      for (jj=0; jj<Nneib; jj++) { 
-	for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
-	drsqd = DotProduct(draux,draux,ndim);
-
-	// Compute gather list for active particles
-	if (drsqd <= hrangesqd) {
-	  gatherlist[Ngather] = jj;
-	  drmag[Ngather] = sqrt(drsqd);
-	  invdrmag[Ngather] = (FLOAT) 1.0/(drmag[Ngather] + small_number);
-	  for (k=0; k<ndim; k++)
-	    dr[Ngather*ndim + k] = draux[k]*invdrmag[Ngather];
-          Ngather++;
-	}
-
-	// Compute scatter list for inactive scatter neighbours
-	if ((!neibpart[jj].active) && drsqd <= pow(sph->kernp->kernrange*
-						   neibpart[jj].h,2)) {
-	  scatterlist[Nscatter] = jj;
-	  drmag2[Nscatter] = sqrt(drsqd);
-	  invdrmag2[Nscatter] = (FLOAT) 1.0/(drmag2[Nscatter] + small_number);
-	  for (k=0; k<ndim; k++)
-	    dr2[Nscatter*ndim + k] = draux[k]*invdrmag2[Nscatter];
-          Nscatter++;
-	}
-      }
-      // ----------------------------------------------------------------------
-
-      // Validate that gather neighbour list is correct
-#if defined(VERIFY_ALL)
-      if (neibcheck) CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
-#endif
-
-      // Compute all gather neighbour contributions to hydro forces
-      /*sph->ComputeGatherHydroForces(i,data[i],Nneib,Ngather,
-				    gatherlist,neibpart,drmag,invdrmag,dr);
-
-      // Compute all scatter neighbour contributions to hydro forces
-      sph->ComputeScatterHydroForces(i,data[i],Nneib,Nscatter,
-				     scatterlist,neibpart,
-				     drmag2,invdrmag2,dr2);
-
-    }
-    // ------------------------------------------------------------------------
-
-    // Now add all active neighbour contributions to the main arrays
-    for (j=0; j<Nneib; j++) {
-      if (data[neiblist[j]].active) {
-	for (k=0; k<ndim; k++) data[neiblist[j]].a[k] += neibpart[j].a[k];
-	data[neiblist[j]].dudt += neibpart[j].dudt;
-      }
-    }
-
-  }
-  // ==========================================================================
-
-  // Free-up all memory
-  delete[] neibpart;
-  delete[] invdrmag2;
-  delete[] drmag2;
-  delete[] dr2;
-  delete[] invdrmag;
-  delete[] drmag;
-  delete[] dr;
-  delete[] scatterlist;
-  delete[] gatherlist;
-  delete[] neiblist;
-  delete[] activelist;
-  delete[] celllist;
-
-  return;
-}
-*/
 
 
 
@@ -1210,11 +1055,11 @@ void GridSearch<ndim>::ComputeCellCoordinate(int c, int igrid[ndim])
 
 
 
-// ============================================================================
-// GridSearch::ComputeActiveCellList
-// Returns the number of cells containing active particles, 'Nactive', and 
-// the i.d. list of cells contains active particles, 'celllist'
-// ============================================================================
+//=============================================================================
+//  GridSearch::ComputeActiveCellList
+/// Returns the number of cells containing active particles, 'Nactive', and 
+/// the i.d. list of cells contains active particles, 'celllist'
+//=============================================================================
 template <int ndim>
 int GridSearch<ndim>::ComputeActiveCellList(int *celllist)
 {
@@ -1230,17 +1075,20 @@ int GridSearch<ndim>::ComputeActiveCellList(int *celllist)
 
 
 
-// ============================================================================
-// GridSearch::ComputeActiveParticleList
-// Returns the number (Nactive) and list of ids (activelist) of all active 
-// SPH particles in the given cell 'c'.
-// ============================================================================
+//=============================================================================
+//  GridSearch::ComputeActiveParticleList
+/// Returns the number (Nactive) and list of ids (activelist) of all active 
+/// SPH particles in the given cell 'c'.
+//=============================================================================
 template <int ndim>
-int GridSearch<ndim>::ComputeActiveParticleList(int c, int *activelist, Sph<ndim> *sph)
+int GridSearch<ndim>::ComputeActiveParticleList
+(int c,                             ///< [in] Cell i.d.
+ int *activelist,                   ///< [out] List of active particles in cell
+ Sph<ndim> *sph)                    ///< [in] SPH object pointer
 {
-  int Nactive = 0;                      // No. of active particles in cell c
-  int i = grid[c].ifirst;               // Particle id (set to first ptcl id)
-  int ilast = grid[c].ilast;            // i.d. of last particle in cell c
+  int Nactive = 0;                  // No. of active particles in cell
+  int i = grid[c].ifirst;           // Particle id (set to first ptcl id)
+  int ilast = grid[c].ilast;        // i.d. of last particle in cell c
 
   // If there are no active particles in this cell, return without walking list
   if (grid[c].Nptcls == 0) return 0;
@@ -1257,23 +1105,25 @@ int GridSearch<ndim>::ComputeActiveParticleList(int c, int *activelist, Sph<ndim
 
 
 
-// ============================================================================
-// GridSearch::ComputeNeighbourList
-// Computes and returns number of neighbour, 'Nneib', and the list 
-// of neighbour ids, 'neiblist', for all particles inside cell 'c'.
-// Includes all particles in the selected cell, plus all particles 
-// contained in adjacent cells (including diagonal cells).
-// ============================================================================
+//=============================================================================
+//  GridSearch::ComputeNeighbourList
+/// Computes and returns number of neighbour, 'Nneib', and the list 
+/// of neighbour ids, 'neiblist', for all particles inside cell 'c'.
+/// Includes all particles in the selected cell, plus all particles 
+/// contained in adjacent cells (including diagonal cells).
+//=============================================================================
 template <int ndim>
-int GridSearch<ndim>::ComputeNeighbourList(int c, int *neiblist)
+int GridSearch<ndim>::ComputeNeighbourList
+(int c,                             ///< [in] i.d. of cell
+ int *neiblist)                     ///< [out] List of neighbour i.d.s
 {
-  int i;                                // Particle id
-  int ilast;                            // id of last particle in current cell
-  int caux,cx,cy,cz;                    // Aux. cell counters and coordinates
-  int igrid[ndim];                   // Grid cell coordinate
-  int gridmin[ndim];                 // Minimum neighbour cell coordinate
-  int gridmax[ndim];                 // Maximum neighbour cell coordinate
-  int Nneib = 0;                        // No. of neighbours
+  int i;                            // Particle id
+  int ilast;                        // id of last particle in current cell
+  int caux,cx,cy,cz;                // Aux. cell counters and coordinates
+  int igrid[ndim];                  // Grid cell coordinate
+  int gridmin[ndim];                // Minimum neighbour cell coordinate
+  int gridmax[ndim];                // Maximum neighbour cell coordinate
+  int Nneib = 0;                    // No. of neighbours
 
   // Compute the location of the cell on the grid using the id
   ComputeCellCoordinate(c,igrid);
@@ -1349,23 +1199,27 @@ int GridSearch<ndim>::ComputeNeighbourList(int c, int *neiblist)
 
 
 #if defined(VERIFY_ALL)
-// ============================================================================
-// GridSearch::CheckValidNeighbourList
-// Checks that the neighbour list generated by the grid is valid in that it 
-// (i) does include all true neighbours, and 
-// (ii) all true neigbours are only included once and once only.
-// ============================================================================
+//=============================================================================
+//  GridSearch::CheckValidNeighbourList
+/// Checks that the neighbour list generated by the grid is valid in that it 
+/// (i) does include all true neighbours, and 
+/// (ii) all true neigbours are only included once and once only.
+//=============================================================================
 template <int ndim>
-void GridSearch<ndim>::CheckValidNeighbourList(Sph *sph, int i, int Nneib,
-					 int *neiblist, string neibtype)
+void GridSearch<ndim>::CheckValidNeighbourList
+(Sph *sph,                          ///< [in] SPH object pointer
+ int i,                             ///< [in] Particle i.d.
+ int Nneib,                         ///< [in] No. of potential neighbours
+ int *neiblist,                     ///< [in] List of potential neighbour i.d.s
+ string neibtype)                   ///< [in] Neighbour search type
 {
-  int count;                            // Valid neighbour counter
-  int j;                                // Neighbour particle counter
-  int k;                                // Dimension counter
-  int Ntrueneib = 0;                    // No. of 'true' neighbours
-  int *trueneiblist;                    // List of true neighbour ids
-  FLOAT drsqd;                          // Distance squared
-  FLOAT dr[ndim];                    // Relative position vector
+  int count;                        // Valid neighbour counter
+  int j;                            // Neighbour particle counter
+  int k;                            // Dimension counter
+  int Ntrueneib = 0;                // No. of 'true' neighbours
+  int *trueneiblist;                // List of true neighbour ids
+  FLOAT drsqd;                      // Distance squared
+  FLOAT dr[ndim];                   // Relative position vector
 
   // Allocate array to store local copy of potential neighbour ids
   trueneiblist = new int[sph->Ntot];
@@ -1408,16 +1262,16 @@ void GridSearch<ndim>::CheckValidNeighbourList(Sph *sph, int i, int Nneib,
 
 
 
-// ============================================================================
-// GridSearch::ValidateGrid
-// Validate that the grid structure is consistent with several sanity checks.
-// ============================================================================
+//=============================================================================
+//  GridSearch::ValidateGrid
+/// Validate that the grid structure is consistent with several sanity checks.
+//=============================================================================
 template <int ndim>
 void GridSearch<ndim>::ValidateGrid(void)
 {
-  int c;                                // Cell counter
-  int i;                                // Particle id
-  int *gridentry;                       // No. of time ptcl is present in grid
+  int c;                            // Cell counter
+  int i;                            // Particle id
+  int *gridentry;                   // No. of time ptcl is present in grid
 
   debug2("[GridSearch::ValidateGrid]");
 
@@ -1462,6 +1316,7 @@ void GridSearch<ndim>::ValidateGrid(void)
   return;
 }
 #endif
+
 
 template class GridSearch<1>;
 template class GridSearch<2>;

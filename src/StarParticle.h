@@ -1,6 +1,7 @@
-// ============================================================================
-// StarParticle.h
-// ============================================================================
+//=============================================================================
+//  StarParticle.h
+//  Main star particle data structure
+//=============================================================================
 
 
 #ifndef _STAR_PARTICLE_H_
@@ -8,42 +9,20 @@
 
 
 #include "Precision.h"
+#include "Constants.h"
+#include "NbodyParticle.h"
 
 
-struct StarParticle {
-  bool active;
-  int ilevel;
-  DOUBLE r[ndimmax];
-  DOUBLE v[ndimmax];
-  DOUBLE a[ndimmax];
-  DOUBLE adot[ndimmax];
-  DOUBLE r0[ndimmax];
-  DOUBLE v0[ndimmax];
-  DOUBLE a0[ndimmax];
-  DOUBLE adot0[ndimmax];
-  DOUBLE m;
-  DOUBLE h;
-  DOUBLE invh;
-  DOUBLE hfactor;
-  DOUBLE gpot;
-
-  StarParticle()
-  {
-    active = false;
-    for (int k=0; k<ndimmax; k++) r[k] = 0.0;
-    for (int k=0; k<ndimmax; k++) v[k] = 0.0;
-    for (int k=0; k<ndimmax; k++) a[k] = 0.0;
-    for (int k=0; k<ndimmax; k++) r0[k] = 0.0;
-    for (int k=0; k<ndimmax; k++) v0[k] = 0.0;
-    for (int k=0; k<ndimmax; k++) a0[k] = 0.0;
-    for (int k=0; k<ndimmax; k++) agrav[k] = 0.0;
-    m = 0;
-    h = 0;
-    invh = 0.0;
-    hfactor = 0.0;
-  } 
-
+//=============================================================================
+//  Structure StarParticle
+/// \brief  Star particle data structure
+/// \author D. A. Hubber
+/// \date   15/04/2013
+//=============================================================================
+template <int ndim>
+class StarParticle: public NbodyParticle<ndim>
+{
+  DOUBLE Tsurface;                  ///< Surface temperature
+  DOUBLE L;                         ///< Luminosity
 };
-
-
 #endif

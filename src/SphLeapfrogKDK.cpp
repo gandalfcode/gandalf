@@ -1,7 +1,7 @@
 //=============================================================================
-// SphLeapfrogKDK.cpp
-// Contains functions for integrating SPH particle positions and velocities 
-// using the leapfrog kick-drift-kick (KDK) scheme.
+//  SphLeapfrogKDK.cpp
+//  Contains functions for integrating SPH particle positions and velocities 
+//  using the leapfrog kick-drift-kick (KDK) scheme.
 //=============================================================================
 
 

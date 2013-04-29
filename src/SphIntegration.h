@@ -1,10 +1,10 @@
-// ============================================================================
-// SphIntegration.h
-// ============================================================================
+//=============================================================================
+//  SphIntegration.h
+//=============================================================================
 
 
-#ifndef _SPH_INTEGRATOR_H_
-#define _SPH_INTEGRATOR_H_
+#ifndef _SPH_INTEGRATION_H_
+#define _SPH_INTEGRATION_H_
 
 
 #include "Precision.h"
@@ -16,9 +16,13 @@
 
 
 
-// ============================================================================
-// Class SphIntegration
-// ============================================================================
+//=============================================================================
+//  Class SphIntegration
+/// \brief   Main parent Sph Integration class
+/// \details ..
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=============================================================================
 template <int ndim>
 class SphIntegration
 {
@@ -38,18 +42,19 @@ class SphIntegration
   int level_step;
   const DOUBLE courant_mult;
   const DOUBLE accel_mult;
-//#if !defined(FIXED_DIMENSIONS)
-//  const int ndim;
   static const int vdim=ndim;
-//#endif
 
 };
 
 
 
-// ============================================================================
-// Class SphLeapfrogKDK
-// ============================================================================
+//=============================================================================
+//  Class SphLeapfrogKDK
+/// \brief   Leapfrog kick-drift-kick SPH particle integration scheme.
+/// \details ..
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=============================================================================
 template <int ndim>
 class SphLeapfrogKDK: public SphIntegration<ndim>
 {
@@ -66,9 +71,13 @@ class SphLeapfrogKDK: public SphIntegration<ndim>
 
 
 
-// ============================================================================
-// Class SphGodunovIntegration
-// ============================================================================
+//=============================================================================
+//  Class SphGodunovIntegration
+/// \brief   ..
+/// \details ..
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=============================================================================
 template <int ndim>
 class SphGodunovIntegration: public SphIntegration<ndim>
 {

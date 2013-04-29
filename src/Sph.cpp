@@ -1,7 +1,7 @@
-// ============================================================================
-// Sph.cpp
-// Contains important default routines for Sph class.
-// ============================================================================
+//=============================================================================
+//  Sph.cpp
+//  Contains important default routines for Sph class.
+//=============================================================================
 
 
 #include <cstdio>
@@ -22,11 +22,15 @@ template <int ndim>
 const FLOAT Sph<ndim>::invndim;
 
 
+//=============================================================================
+//  Sph::Sph
+/// ..
+//=============================================================================
 template <int ndim>
-Sph<ndim>::Sph(int hydro_forces_aux,
-  int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
-  FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
-  acondenum acond_aux, string gas_eos_aux, string KernelName):
+Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux, 
+  FLOAT alpha_visc_aux, FLOAT beta_visc_aux, FLOAT h_fac_aux, 
+  FLOAT h_converge_aux, aviscenum avisc_aux, acondenum acond_aux, 
+  string gas_eos_aux, string KernelName):
   hydro_forces(hydro_forces_aux),
   self_gravity(self_gravity_aux),
   alpha_visc(alpha_visc_aux),
@@ -38,19 +42,17 @@ Sph<ndim>::Sph(int hydro_forces_aux,
   allocated(false),
   Nsph(0),
   Nsphmax(0),
-  avisc (avisc_aux),
-  acond (acond_aux)
-    {
-
-
+  avisc(avisc_aux),
+  acond(acond_aux)
+{
 }
 
 
 
-// ============================================================================
-// Sph::AllocateMemory
-// Allocate main SPH particle array.
-// ============================================================================
+//=============================================================================
+//  Sph::AllocateMemory
+/// Allocate main SPH particle array.
+//=============================================================================
 template <int ndim>
 void Sph<ndim>::AllocateMemory(int N)
 {
@@ -69,10 +71,12 @@ void Sph<ndim>::AllocateMemory(int N)
   return;
 }
 
-// ============================================================================
-// Sph::DeallocateMemory
-// Deallocate main array containing SPH particle data.
-// ============================================================================
+
+
+//=============================================================================
+//  Sph::DeallocateMemory
+/// Deallocate main array containing SPH particle data.
+//=============================================================================
 template <int ndim>
 void Sph<ndim>::DeallocateMemory(void)
 {
@@ -84,12 +88,17 @@ void Sph<ndim>::DeallocateMemory(void)
   return;
 }
 
-// ============================================================================
-// Sph::SphBoundingBox
-// Calculate the bounding box containing all SPH particles.
-// ============================================================================
+
+
+//=============================================================================
+//  Sph::SphBoundingBox
+/// Calculate the bounding box containing all SPH particles.
+//=============================================================================
 template <int ndim>
-void Sph<ndim>::SphBoundingBox(FLOAT rmax[ndim],FLOAT rmin[ndim],int Nmax)
+void Sph<ndim>::SphBoundingBox
+(FLOAT rmax[ndim],                  ///< Maximum extent of bounding box
+ FLOAT rmin[ndim],                  ///< Minimum extent of bounding box
+ int Nmax)                          ///< Maximum particle i.d. in loop
 {
   debug2("[Sph::SphBoundingBox]");
 
@@ -103,30 +112,25 @@ void Sph<ndim>::SphBoundingBox(FLOAT rmax[ndim],FLOAT rmin[ndim],int Nmax)
       if (sphdata[i].r[k] > rmax[k]) rmax[k] = sphdata[i].r[k];
   }
 
-#if defined(DEBUG_ALL)
-  printf("rmin : %f\n",rmin[0]);
-  printf("rmax : %f\n",rmax[0]);
-#endif
-
   return;
 }
 
 
 
-// ============================================================================
-// Sph::InitialSmoothingLengthGuess
-// Perform initial guess of smoothing.  In the abscence of more sophisticated 
-// techniques, we guess the smoothing length assuming a uniform density 
-// medium with the same volume and total mass.
-// ============================================================================
+//=============================================================================
+//  Sph::InitialSmoothingLengthGuess
+/// Perform initial guess of smoothing.  In the abscence of more sophisticated 
+/// techniques, we guess the smoothing length assuming a uniform density 
+/// medium with the same volume and total mass.
+//=============================================================================
 template <int ndim>
 void Sph<ndim>::InitialSmoothingLengthGuess(void)
 {
-  int Ngather;                              // No. of neighbours (move!!)
-  FLOAT h_guess;                            // Global guess of smoothing length
-  FLOAT volume;                             // Volume of global bounding box
-  FLOAT rmin[ndim];                      // Min. extent of bounding box
-  FLOAT rmax[ndim];                      // Max. extent of bounding box
+  int Ngather;                      // No. of neighbours (move!!)
+  FLOAT h_guess;                    // Global guess of smoothing length
+  FLOAT volume;                     // Volume of global bounding box
+  FLOAT rmin[ndim];                 // Min. extent of bounding box
+  FLOAT rmax[ndim];                 // Max. extent of bounding box
 
   debug2("[Sph::InitialSmoothingLengthGuess]");
 
@@ -166,6 +170,7 @@ void Sph<ndim>::InitialSmoothingLengthGuess(void)
 }
 
 
+ 
 template class Sph<1>;
 template class Sph<2>;
 template class Sph<3>;

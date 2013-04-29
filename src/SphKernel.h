@@ -1,7 +1,7 @@
 //=============================================================================
-// SphKernel.h
-// Contains all routines for computing kernel functions, calculatiung and 
-// storing kernel tables for quick look-up of values.
+//  SphKernel.h
+//  Contains all routines for computing kernel functions, calculatiung and 
+//  storing kernel tables for quick look-up of values.
 //=============================================================================
 
 
@@ -16,7 +16,7 @@ using namespace std;
 
 
 //=============================================================================
-// Class SphKernel
+//  Class SphKernel
 /// \brief   Parent class for all SPH kernel options.
 /// \details Contains all (virtual) SPH kernel functions.  All functions 
 ///          are fully defined in inheritated child class implementations 
@@ -71,7 +71,7 @@ class SphKernel
 
 
 //=============================================================================
-// Class M4Kernel
+//  Class M4Kernel
 /// \brief   M4 kernel class including functions
 /// \details Contains all SPH kernel function definitions for M4 kernel.
 /// \author  D. A. Hubber, G. Rosotti
@@ -121,7 +121,7 @@ inline FLOAT M4Kernel<ndim>::w0(FLOAT s)  ///< [in] Kernel parameter, r/h
 /// First spatial derivative of main smoothing kernel, dWdr, for M4 kernel.
 //=============================================================================
 template <int ndim>
-inline FLOAT M4Kernel<ndim>::w1(FLOAT s)
+inline FLOAT M4Kernel<ndim>::w1(FLOAT s)  ///< [in] Kernel parameter, r/h
 {
   if (s < (FLOAT) 1.0)
     return (this->kernnorm)*(-(FLOAT) 3.0*s + (FLOAT) 2.25*s*s);
@@ -139,7 +139,7 @@ inline FLOAT M4Kernel<ndim>::w1(FLOAT s)
 /// to compute omega/f correction term for M4 kernel.
 //=============================================================================
 template <int ndim>
-inline FLOAT M4Kernel<ndim>::womega(FLOAT s)
+inline FLOAT M4Kernel<ndim>::womega(FLOAT s)  ///< [in] Kernel parameter, r/h
 {
   if (s < (FLOAT) 1.0)
     return (this->kernnorm)*(-(this->ndimpr) + (FLOAT) 1.5*((this->ndimpr) + (FLOAT) 2.0)*s*s -
@@ -161,7 +161,7 @@ inline FLOAT M4Kernel<ndim>::womega(FLOAT s)
 /// gravitational zeta correction term when using grad-h SPH and M4 kernel.
 //=============================================================================
 template <int ndim>
-inline FLOAT M4Kernel<ndim>::wzeta(FLOAT s)
+inline FLOAT M4Kernel<ndim>::wzeta(FLOAT s)  ///< [in] Kernel parameter, r/h
 {
   if (s < (FLOAT) 1.0)
     return (FLOAT) 1.4 - (FLOAT) 2.0*s*s + (FLOAT) 1.5*pow(s,4) 
@@ -181,7 +181,7 @@ inline FLOAT M4Kernel<ndim>::wzeta(FLOAT s)
 /// force for M4 kernel.
 //=============================================================================
 template <int ndim>
-inline FLOAT M4Kernel<ndim>::wgrav(FLOAT s)
+inline FLOAT M4Kernel<ndim>::wgrav(FLOAT s)  ///< [in] Kernel parameter, r/h
 {
   if (s < (FLOAT) 1.0)
     return 1.33333333333333*s - 1.2*pow(s,3) + 0.5*pow(s,4);
@@ -200,7 +200,7 @@ inline FLOAT M4Kernel<ndim>::wgrav(FLOAT s)
 /// potential using M4 kernel.
 //=============================================================================
 template <int ndim>
-inline FLOAT M4Kernel<ndim>::wpot(FLOAT s)
+inline FLOAT M4Kernel<ndim>::wpot(FLOAT s)  ///< [in] Kernel parameter, r/h
 {
   if (s < 1.0)
     return 1.4 - 0.666666666666666666666666*s*s + 0.3*pow(s,4) - 0.1*pow(s,5);
@@ -413,7 +413,7 @@ class GaussianKernel: public SphKernel<ndim>
 
 
 //=============================================================================
-// GaussianKernel::w0
+//  GaussianKernel::w0
 /// Main SPH smoothing kernel function, $W(s=r/h)$, for Gaussian kernel.
 //=============================================================================
 template <int ndim>
@@ -512,7 +512,7 @@ class TabulatedKernel: public SphKernel<ndim>
 {
  private:
 
-  SphKernel<ndim>* kernel;
+  SphKernel<ndim>* kernel;          ///< ??
 
   int res;                          ///< ??
   FLOAT resinvkernrange;            ///< ??
@@ -527,7 +527,6 @@ class TabulatedKernel: public SphKernel<ndim>
   FLOAT* tableWomega_s2;            ///< Tabulated Womega with ssqd argument
   FLOAT* tableWzeta_s2;             ///< Tabulated Wzeta with ssqd argument
   FLOAT* tableLOS;                  ///< Tabulated Line-of-sight kernel
-
 
   void initializeTableLOS();
 
@@ -562,10 +561,10 @@ class TabulatedKernel: public SphKernel<ndim>
   /// ..
   //===========================================================================
   FLOAT tableLookup (FLOAT* table, FLOAT s) {
-    if (s>=(this->kernrange))
-      return 0;
+    if (s >= (this->kernrange))
+      return (FLOAT) 0.0;
     FLOAT indexf = s*resinvkernrange;
-    int index = (int)indexf;
+    int index = (int) indexf;
     return table[index];
   }
 
@@ -575,10 +574,10 @@ class TabulatedKernel: public SphKernel<ndim>
   /// ..
   //===========================================================================
   FLOAT tableLookupSqd(FLOAT* table, FLOAT s) {
-    if (s>=(this->kernrangesqd))
-      return 0;
+    if (s >= (this->kernrangesqd))
+      return (FLOAT) 0.0;
     FLOAT indexf = s*resinvkernrangesqd;
-    int index = (int)indexf;
+    int index = (int) indexf;
     return table[index];
   }
 

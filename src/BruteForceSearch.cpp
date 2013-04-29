@@ -283,16 +283,15 @@ void BruteForceSearch<ndim>::UpdateAllSphGravForces
 
     // Make local copies of all potential neighbours
     for (j=0; j<sph->Ntot; j++) {
-      neibpart[j].div_v = (FLOAT) 0.0;
-      neibpart[j].dudt = (FLOAT) 0.0;
-      for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
+      neibpart[j].gpot = 0.0;
+      for (k=0; k<ndim; k++) neibpart[j].agrav[k] = (FLOAT) 0.0;
     }
 
     // Compute distances and the reciprical between the current particle 
     // and all neighbours here
     // ------------------------------------------------------------------------
     for (j=0; j<sph->Ntot; j++) {
-      hrangesqdj = pow(sph->kernfac*sph->kernp->kernrange*sph->sphdata[j].h,2);
+
       for (k=0; k<ndim; k++) draux[k] = sph->sphdata[j].r[k] - rp[k];
       drsqd = DotProduct(draux,draux,ndim);
       neiblist[Nneib] = j;
@@ -300,6 +299,7 @@ void BruteForceSearch<ndim>::UpdateAllSphGravForces
       invdrmag[Nneib] = (FLOAT) 1.0/(drmag[Nneib] + small_number);
       for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
       Nneib++;
+
     }
     // ------------------------------------------------------------------------
 
@@ -310,11 +310,9 @@ void BruteForceSearch<ndim>::UpdateAllSphGravForces
     // Now add all active neighbour contributions to the main arrays
     for (j=0; j<sph->Ntot; j++) {
       if (neibpart[j].active) {
-        for (k=0; k<ndim; k++) sph->sphdata[j].a[k] += neibpart[j].a[k];
-        for (k=0; k<ndim; k++) sph->sphdata[j].agrav[k] += neibpart[j].agrav[k];
-	sph->sphdata[j].gpot += neibpart[j].gpot;
-        sph->sphdata[j].dudt += neibpart[j].dudt;
-        sph->sphdata[j].div_v += neibpart[j].div_v;
+	sph->sphdata[i].gpot += neibpart[j].gpot;
+        for (k=0; k<ndim; k++) 
+	  sph->sphdata[i].agrav[k] += neibpart[j].agrav[k];
       }
     }
 
@@ -326,15 +324,6 @@ void BruteForceSearch<ndim>::UpdateAllSphGravForces
   delete[] drmag;
   delete[] dr;
   delete[] neiblist;
-
-
-  // Compute other important SPH quantities after hydro forces are computed
-  if (sph->hydro_forces == 1) {
-    for (i=0; i<sph->Nsph; i++) {
-      if (sph->sphdata[i].active) 
-        sph->ComputePostHydroQuantities(sph->sphdata[i]);
-    }
-  }
 
   return;
 }

@@ -1,7 +1,7 @@
-//============================================================================
-// SphSimulation.cpp
-// Contains all main functions controlling SPH simulation work-flow.
-//============================================================================
+//=============================================================================
+//  SphSimulation.cpp
+//  Contains all main functions controlling SPH simulation work-flow.
+//=============================================================================
 
 
 #include <iostream>
@@ -18,7 +18,9 @@
 #include "Parameters.h"
 #include "InlineFuncs.h"
 #include "Debug.h"
+#include "Nbody.h"
 #include "Sph.h"
+#include "RiemannSolver.h"
 #include "SphSimulationIO.cpp"
 #include "SphSimulationIC.cpp"
 #include "SphAnalysis.cpp"
@@ -257,7 +259,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   // Sanity check for valid dimensionality
   if (ndim < 1 || ndim > 3) {
-    string message = "Error: the number of dimensions can be only 1, 2 or 3, you gave " + ndim;
+    string message = "Invalid dimensionality chosen : ndim = " + ndim;
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -444,10 +446,26 @@ void SphSimulation<ndim>::ProcessParameters(void)
 				    floatparams["mu_bar"],
 				    floatparams["gamma_eos"]);
   else {
-    string message = "Unrecognised parameter : gas_eos = "
-      + gas_eos;
+    string message = "Unrecognised parameter : gas_eos = " + gas_eos;
     ExceptionHandler::getIstance().raise(message);
   }
+
+
+  // Riemann solver object
+  // --------------------------------------------------------------------------
+  string riemann = stringparams["riemann_solver"];
+  if (riemann == "exact") {
+    sph->riemann = new ExactRiemannSolver(floatparams["gamma_eos"]);
+  }
+  else if (riemann == "hllc") {
+    sph->riemann = new HllcRiemannSolver(floatparams["gamma_eos"]);
+  }
+  else {
+    string message = "Unrecognised parameter : riemann_solver = "
+      + riemann;
+    ExceptionHandler::getIstance().raise(message);
+  }
+
 
   // Create neighbour searching object based on chosen method in params file
   // --------------------------------------------------------------------------
@@ -488,6 +506,50 @@ void SphSimulation<ndim>::ProcessParameters(void)
       + simparams->stringparams["energy_integration"];
     ExceptionHandler::getIstance().raise(message);
   }
+
+  /*
+  // Create N-body object based on chosen method in params file
+  // --------------------------------------------------------------------------
+  if (stringparams["nbody"] == "lfkdk") {
+    string KernelName = stringparams["kernel"];
+    if (stringparams["tabulatedkernel"] == "yes") {
+      nbody = new NbodyLeapfrogKDK<ndim, TabulatedKernel> 
+	(intparams["nbody_softening"], intparams["sub_systems"],
+	 floatparams["nbody_mult"], KernelName);
+    }
+    else if (stringparams["tabulatedkernel"] == "no") {
+      // Depending on the kernel, instantiate a different GradSph object
+      if (KernelName == "m4") {
+	nbody = new NbodyLeapfrogKDK<ndim, M4Kernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else if (KernelName == "quintic") {
+	nbody = new NbodyLeapfrogKDK<ndim, QuinticKernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else if (KernelName == "gaussian") {
+	nbody = new NbodyLeapfrogKDK<ndim, GaussianKernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else {
+	string message = "Unrecognised parameter : kernel = " +
+	  simparams->stringparams["kernel"];
+	ExceptionHandler::getIstance().raise(message);
+      }
+    }
+    else {
+      string message = "Invalid option for the tabulatedkernel parameter: " +
+	stringparams["tabulatedkernel"];
+      ExceptionHandler::getIstance().raise(message);
+    }
+  }
+  // --------------------------------------------------------------------------
+  */
+
+
 
   // Boundary condition variables
   // --------------------------------------------------------------------------

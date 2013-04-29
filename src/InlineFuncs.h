@@ -1,8 +1,8 @@
-// ============================================================================
-// InlineFuncs.h
-// Contains definitions of any useful small utility functions that can be 
-// inlined to improve readability/performance of the code.
-// ============================================================================
+//=============================================================================
+//  InlineFuncs.h
+//  Contains definitions of any useful small utility functions that can be 
+//  inlined to improve readability/performance of the code.
+//=============================================================================
 
 
 #ifndef _INLINE_FUNCS_H_
@@ -16,11 +16,11 @@
 using namespace std;
 
 
-// ============================================================================
-// DotProduct
-// Calculates the dot product between two vectors, v1 and v2, 
-// of given length 'ndim'
-// ============================================================================
+//=============================================================================
+//  DotProduct
+//  Calculates the dot product between two vectors, v1 and v2, 
+//  of given length 'ndim'
+//=============================================================================
 template <typename T>
 static inline T DotProduct(T *v1, T *v2, int ndim)
 {
@@ -34,10 +34,10 @@ static inline T DotProduct(T *v1, T *v2, int ndim)
 
 
 
-// ============================================================================
-// PrintArray
-// Print values of a given array to standard output
-// ============================================================================
+//=============================================================================
+//  PrintArray
+//  Print values of a given array to standard output
+//=============================================================================
 template <typename T>
 static inline void PrintArray(string message, int Tsize, T *array)
 {
@@ -48,6 +48,11 @@ static inline void PrintArray(string message, int Tsize, T *array)
 }
 
 
+
+//=============================================================================
+//  min3
+//  Return minimum of 3 given values.
+//=============================================================================
 template <typename T>
 static inline T min3(T v1, T v2, T v3)
 {
@@ -58,6 +63,11 @@ static inline T min3(T v1, T v2, T v3)
 }
 
 
+
+//=============================================================================
+//  max3
+//  Return maximum of 3 given values.
+//=============================================================================
 template <typename T>
 static inline T max3(T v1, T v2, T v3)
 {
@@ -68,9 +78,88 @@ static inline T max3(T v1, T v2, T v3)
 }
 
 
-template <typename T> int sgn(T val) {
-	return (T(0) < val) - (val < T(0));
+
+//=============================================================================
+//  sgn
+//  Sign function.  Returns (a) -1 if T < 0, (b) 0 if T = 0, (c) +1 if T > 0.
+//=============================================================================
+template <typename T> 
+static inline int sgn(T val)
+{
+  return (T(0) < val) - (val < T(0));
 }
+
+
+
+
+//=============================================================================
+//  Heapsort
+//  Sorts a 1D array of values using the Heapsort algorithm.
+//  (Courtesy of Anthony Whitworth - 18/04/2013)
+//=============================================================================
+template <typename T>
+static inline void Heapsort
+(int output,                        ///< Flag to regulate diagnostic output
+ int q_TOT,                         ///< No. of values to be sorted
+ int *qV,                           ///< Sorted ids of q-values
+ T *V)                              ///< Array of values to sort
+{
+  int q,qq;                         // Dummy ids
+  int q1;                           // Dummy id (for comparison)
+  int q2;                           // Buffer for ranked id
+
+  // Give V-value arbitrary rank
+  for (q=0; q<q_TOT; q++) qV[q] = q_TOT - q - 1;
+
+  // Build heap
+  for (q=1; q<q_TOT; q++) {
+    qq = q;  q1 = qq/2;
+
+    while(V[qV[qq]] > V[qV[q1]]) {
+      q2 = qV[qq];  qV[qq] = qV[q1];   qV[q1] = q2;
+      if (q1 == 0) break;
+      qq = q1;   q1 = qq/2;
+    }
+  }
+
+  // Check local ordering
+  if (output == 1) {
+    for (q=1; q<q_TOT; q++)
+      if (V[qV[q]] > V[qV[q/2]]) cout << "Tree not locally hierarchical" << endl;
+  }
+
+  // Invert heap
+  for (q=q_TOT-1; q>0; q--) {
+    q2 = qV[q];  qV[q] = qV[0];   qV[0] = q2;
+    if (q == 1) break;
+    qq = 0; q1 = 1;
+    if (V[qV[1]] < V[qV[2]] && q > 2) q1 = 2;
+    while (V[qV[qq]] < V[qV[q1]]) {
+      q2 = qV[qq];  qV[qq] = qV[q1];   qV[q1] = q2;
+      qq = q1;   q1 = 2*qq;
+      if (q1 >= q) break;
+      if (V[qV[q1]] < V[qV[q1+1]] && q1+1 < q) q1++;
+    }
+  }
+
+  // Check ordering
+  if (output == 1) {
+    for (q=1; q<q_TOT; q++)
+      if (V[qV[q]] < V[qV[q-1]]) 
+	cout << "Not properly ranked : "
+	     << q << "   " 
+	     << q_TOT << "   "
+	     << V[qV[q-2]] << "   "
+	     << V[qV[q-1]] << "   "
+	     << V[qV[q]] << "   " 
+	     << V[qV[q+1]] << endl;
+  }
+
+  return;
+}
+
+
+
 
 
 template <typename T>

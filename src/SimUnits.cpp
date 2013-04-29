@@ -1,8 +1,8 @@
-// ============================================================================
-// SimUnits.cpp
-// Contains functions for computing all scaling factors for converting 
-// between dimensionless and physical units.
-// ============================================================================
+//=============================================================================
+//  SimUnits.cpp
+//  Contains functions for computing all scaling factors for converting 
+//  between dimensionless and physical units.
+//=============================================================================
 
 
 #include <math.h>
@@ -15,11 +15,11 @@ using namespace std;
 
 
 
-// ============================================================================
-// SimUnit::SimUnit
-// Constructor for SimUnit class.  Defaults all scaling variables to unity 
-// in case of a dimensionless simulation.
-// ============================================================================
+//=============================================================================
+//  SimUnit::SimUnit
+/// Constructor for SimUnit class.  Defaults all scaling variables to unity 
+/// in case of a dimensionless simulation.
+//=============================================================================
 SimUnit::SimUnit()
 {
   inscale = 1.0;
@@ -31,11 +31,11 @@ SimUnit::SimUnit()
 
 
 
-// ============================================================================
-// SimUnit::OutputScale
-// Compute scaling factor to convert between dimensionless units and the 
-// requested unit (unit_string).
-// ============================================================================
+//=============================================================================
+//  SimUnit::OutputScale
+/// Compute scaling factor to convert between dimensionless units and the 
+/// requested unit (unit_string).
+//=============================================================================
 double SimUnit::OutputScale(string unit_string)
 {
   return inscale*inSI/SIUnit(unit_string);
@@ -43,10 +43,10 @@ double SimUnit::OutputScale(string unit_string)
 
 
 
-// ============================================================================
-// LengthUnit::SIUnit
-// Return numerical value requested length unit in SI units
-// ============================================================================
+//=============================================================================
+//  LengthUnit::SIUnit
+/// Return numerical value requested length unit in SI units
+//=============================================================================
 double LengthUnit::SIUnit(string unit)
 {
   if (unit == "mpc") return 1.0E6*r_pc;
@@ -67,10 +67,10 @@ double LengthUnit::SIUnit(string unit)
 
 
 
-// ============================================================================
-// LengthUnit::LatexLabel
-// Return latex string of requested unit for external plotting
-// ============================================================================
+//=============================================================================
+//  LengthUnit::LatexLabel
+/// Return latex string of requested length unit for external plotting
+//=============================================================================
 string LengthUnit::LatexLabel(string unit)
 {
   if (unit == "mpc") return "Mpc";
@@ -87,10 +87,10 @@ string LengthUnit::LatexLabel(string unit)
 
 
 
-// ============================================================================
-// MassUnit::SIUnit
-// Return numerical value requested mass unit in SI units
-// ============================================================================
+//=============================================================================
+//  MassUnit::SIUnit
+/// Return numerical value requested mass unit in SI units
+//=============================================================================
 double MassUnit::SIUnit(string unit_string)
 {
   if (unit_string == "m_sun") return m_sun;
@@ -107,9 +107,10 @@ double MassUnit::SIUnit(string unit_string)
 
 
 
-// ============================================================================
-// MassUnit::LatexLabel
-// ============================================================================
+//=============================================================================
+//  MassUnit::LatexLabel
+/// Return latex string of requested mass unit for external plotting
+//=============================================================================
 string MassUnit::LatexLabel(string unit_string)
 {
   if (unit_string == "m_sun") return "M_{\\odot}";
@@ -122,10 +123,10 @@ string MassUnit::LatexLabel(string unit_string)
 
 
 
-// ============================================================================
-// TimeUnit::SIUnit
-// Return numerical value requested time unit in SI units
-// ============================================================================
+//=============================================================================
+//  TimeUnit::SIUnit
+/// Return numerical value requested time unit in SI units
+//=============================================================================
 double TimeUnit::SIUnit(string unit_string)
 {
   if (unit_string == "gyr") return 1000.0*myr;
@@ -142,9 +143,10 @@ double TimeUnit::SIUnit(string unit_string)
 
 
 
-// ============================================================================
-// TimeUnit::LatexLabel
-// ============================================================================
+//=============================================================================
+//  TimeUnit::LatexLabel
+/// Return latex string of requested time unit for external plotting
+//=============================================================================
 string TimeUnit::LatexLabel(string unit_string)
 {
   if (unit_string == "gyr") return "Gyr";
@@ -157,10 +159,10 @@ string TimeUnit::LatexLabel(string unit_string)
 
 
 
-// ============================================================================
-// VelocityUnit::SIUnit
-// Return numerical value requested velocity unit in SI units
-// ============================================================================
+//=============================================================================
+//  VelocityUnit::SIUnit
+/// Return numerical value requested velocity unit in SI units
+//=============================================================================
 double VelocityUnit::SIUnit(string unit_string)
 {
   if (unit_string == "km_s") return 1000.0;
@@ -176,9 +178,10 @@ double VelocityUnit::SIUnit(string unit_string)
 
 
 
-// ============================================================================
-// VelocityUnit::LatexLabel
-// ============================================================================
+//=============================================================================
+//  VelocityUnit::LatexLabel
+/// Return latex string of requested velocity unit for external plotting
+//=============================================================================
 string VelocityUnit::LatexLabel(string unit_string)
 {
   if (unit_string == "km_s") return "km\\,s^{-1}";
@@ -190,10 +193,10 @@ string VelocityUnit::LatexLabel(string unit_string)
 
 
 
-// ============================================================================
-// AccelerationUnit::SIUnit
-// Return numerical value requested acceleration unit in SI units
-// ============================================================================
+//=============================================================================
+//  AccelerationUnit::SIUnit
+/// Return numerical value requested acceleration unit in SI units
+//=============================================================================
 double AccelerationUnit::SIUnit(string unit_string)
 {
   if (unit_string == "km_s2") return 1000.0;
@@ -209,9 +212,10 @@ double AccelerationUnit::SIUnit(string unit_string)
 
 
 
-// ============================================================================
-// AccelerationUnit::LatexLabel
-// ============================================================================
+//=============================================================================
+//  AccelerationUnit::LatexLabel
+/// Return latex string of requested acceleration unit for external plotting
+//=============================================================================
 string AccelerationUnit::LatexLabel(string unit_string)
 {
   if (unit_string == "km_s2") return "km\\,s^{-2}";
@@ -223,10 +227,10 @@ string AccelerationUnit::LatexLabel(string unit_string)
 
 
 
-// ============================================================================
-// DensityUnit::SIUnit
-// Return numerical value requested density unit in SI units
-// ============================================================================
+//=============================================================================
+//  DensityUnit::SIUnit
+/// Return numerical value requested density unit in SI units
+//=============================================================================
 double DensityUnit::SIUnit(string unit_string)
 {
   if (unit_string == "m_sun_pc3") return m_sun/(r_pc*r_pc*r_pc);
@@ -241,9 +245,10 @@ double DensityUnit::SIUnit(string unit_string)
 
 
 
-// ============================================================================
-// DensityUnit::LatexLabel
-// ============================================================================
+//=============================================================================
+//  DensityUnit::LatexLabel
+/// Return latex string of requested density unit for external plotting
+//=============================================================================
 string DensityUnit::LatexLabel(string unit_string)
 {
   if (unit_string == "m_sun_pc3") return "M_{\\odot}\\,pc^{-3}";
@@ -254,10 +259,10 @@ string DensityUnit::LatexLabel(string unit_string)
 
 
 
-// ============================================================================
-// EnergyUnit::SIUnit
-// Return numerical value requested energy unit in SI units
-// ============================================================================
+//=============================================================================
+//  EnergyUnit::SIUnit
+/// Return numerical value requested energy unit in SI units
+//=============================================================================
 double EnergyUnit::SIUnit(string unit_string)
 {
   if (unit_string == "J") return 1.0;
@@ -273,9 +278,10 @@ double EnergyUnit::SIUnit(string unit_string)
 
 
 
-// ============================================================================
-// EnergyUnit::LatexLabel
-// ============================================================================
+//=============================================================================
+//  EnergyUnit::LatexLabel
+/// Return latex string of requested energy unit for external plotting
+//=============================================================================
 string EnergyUnit::LatexLabel(string unit_string)
 {
   if (unit_string == "J") return "J";
@@ -287,10 +293,10 @@ string EnergyUnit::LatexLabel(string unit_string)
 
 
 
-// ============================================================================
-// MomentumUnit::SIUnit
-// Return numerical value requested momentum unit in SI units
-// ============================================================================
+//=============================================================================
+//  MomentumUnit::SIUnit
+/// Return numerical value requested momentum unit in SI units
+//=============================================================================
 double MomentumUnit::SIUnit(string unit_string)
 {
   if (unit_string == "m_sunkm_s") return m_sun*1000.0;
@@ -306,9 +312,10 @@ double MomentumUnit::SIUnit(string unit_string)
 
 
 
-// ============================================================================
-// MomentumUnit::LatexLabel
-// ============================================================================
+//=============================================================================
+//  MomentumUnit::LatexLabel
+/// Return latex string of requested momentum unit for external plotting
+//=============================================================================
 string MomentumUnit::LatexLabel(string unit_string)
 {
   if (unit_string == "m_sunkm_s") return "M_{\\odot}\\,km\\,s^{-1}";
@@ -320,10 +327,10 @@ string MomentumUnit::LatexLabel(string unit_string)
 
 
 
-// ============================================================================
-// AngularMomentumUnit::SIUnit
-// Return numerical value requested angular momentum unit in SI units
-// ============================================================================
+//=============================================================================
+//  AngularMomentumUnit::SIUnit
+/// Return numerical value requested angular momentum unit in SI units
+//=============================================================================
 double AngularMomentumUnit::SIUnit(string unit_string)
 {
   if (unit_string == "m_sunkm2_s") return m_sun*1000.0*1000.0;
@@ -339,9 +346,10 @@ double AngularMomentumUnit::SIUnit(string unit_string)
 
 
 
-// ============================================================================
-// AngularMomentumUnit::LatexLabel
-// ============================================================================
+//=============================================================================
+//  AngularMomentumUnit::LatexLabel
+/// Return latex string of requested angular mom. unit for external plotting
+//=============================================================================
 string AngularMomentumUnit::LatexLabel(string unit_string)
 {
   if (unit_string == "m_sunkm2_s") return "M_{\\odot}\\,km^2\\,s^{-1}";
@@ -353,10 +361,10 @@ string AngularMomentumUnit::LatexLabel(string unit_string)
 
 
 
-// ============================================================================
-// AngularVelocityUnit::SIUnit
-// Return numerical value requested angular velocity unit in SI units
-// ============================================================================
+//=============================================================================
+//  AngularVelocityUnit::SIUnit
+/// Return numerical value requested angular velocity unit in SI units
+//=============================================================================
 double AngularVelocityUnit::SIUnit(string unit_string)
 {
   if (unit_string == "rad_s") return 1.0;
@@ -369,9 +377,10 @@ double AngularVelocityUnit::SIUnit(string unit_string)
 
 
 
-// ============================================================================
-// AngularVelocityUnit::LatexLabel
-// ============================================================================
+//=============================================================================
+//  AngularVelocityUnit::LatexLabel
+/// Return latex string of requested angular vel. unit for external plotting
+//=============================================================================
 string AngularVelocityUnit::LatexLabel(string unit_string)
 {
   if (unit_string == "rad_s") return "rad\\,s^{-1}";
@@ -380,10 +389,10 @@ string AngularVelocityUnit::LatexLabel(string unit_string)
 
 
 
-// ============================================================================
-// SpecificEnergyUnit::SIUnit
-// Return numerical value requested specific energy unit in SI units
-// ============================================================================
+//=============================================================================
+//  SpecificEnergyUnit::SIUnit
+/// Return numerical value requested specific energy unit in SI units
+//=============================================================================
 double SpecificEnergyUnit::SIUnit(string unit_string)
 {
   if (unit_string == "J_kg") return 1.0;
@@ -398,9 +407,10 @@ double SpecificEnergyUnit::SIUnit(string unit_string)
 
 
 
-// ============================================================================
-// SpecificEnergyUnit::LatexLabel
-// ============================================================================
+//=============================================================================
+//  SpecificEnergyUnit::LatexLabel
+/// Return latex string of requested specific energy unit for external plotting
+//=============================================================================
 string SpecificEnergyUnit::LatexLabel(string unit_string)
 {
   if (unit_string == "J_kg") return "J\\,kg^{-1}";
@@ -410,10 +420,10 @@ string SpecificEnergyUnit::LatexLabel(string unit_string)
 
 
 
-// ============================================================================
-// SpecificEnergyRateUnit::SIUnit
-// Return numerical value requested specific energy rate unit in SI units
-// ============================================================================
+//=============================================================================
+//  SpecificEnergyRateUnit::SIUnit
+/// Return numerical value requested specific energy rate unit in SI units
+//=============================================================================
 double SpecificEnergyRateUnit::SIUnit(string unit_string)
 {
   if (unit_string == "J_kg_s") return 1.0;
@@ -428,9 +438,10 @@ double SpecificEnergyRateUnit::SIUnit(string unit_string)
 
 
 
-// ============================================================================
-// SpecificEnergyRateUnit::LatexLabel
-// ============================================================================
+//=============================================================================
+//  SpecificEnergyRateUnit::LatexLabel
+/// Return latex string of requested dudt unit for external plotting
+//=============================================================================
 string SpecificEnergyRateUnit::LatexLabel(string unit_string)
 {
   if (unit_string == "J_kg_s") return "J\\,kg^{-1}\\,s^{-1}";
@@ -440,10 +451,10 @@ string SpecificEnergyRateUnit::LatexLabel(string unit_string)
 
 
 
-// ============================================================================
-// TemperatureUnit::SIUnit
-// Return numerical value requested temperature unit in SI units
-// ============================================================================
+//=============================================================================
+//  TemperatureUnit::SIUnit
+/// Return numerical value requested temperature unit in SI units
+//=============================================================================
 double TemperatureUnit::SIUnit(string unit_string)
 {
   if (unit_string == "K") return 1.0;
@@ -457,9 +468,10 @@ double TemperatureUnit::SIUnit(string unit_string)
 
 
 
-// ============================================================================
-// TemperatureUnit::LatexLabel
-// ============================================================================
+//=============================================================================
+//  TemperatureUnit::LatexLabel
+/// Return latex string of requested temperature unit for external plotting
+//=============================================================================
 string TemperatureUnit::LatexLabel(string unit_string)
 {
   if (unit_string == "K") return "K";
@@ -468,9 +480,10 @@ string TemperatureUnit::LatexLabel(string unit_string)
 
 
 
-// ============================================================================
-// SimUnits::SimUnits
-// ============================================================================
+//=============================================================================
+//  SimUnits::SimUnits
+/// Constructor for SimUnits class
+//=============================================================================
 SimUnits::SimUnits()
 {
   ReadInputUnits = false;
@@ -478,20 +491,21 @@ SimUnits::SimUnits()
 
 
 
-// ============================================================================
-// SimUnits::~SimUnits
-// ============================================================================
+//=============================================================================
+//  SimUnits::~SimUnits
+/// Destructor for SimUnits class
+//=============================================================================
 SimUnits::~SimUnits()
 {
 }
 
 
 
-// ============================================================================
-// Units::SetupUnits
-// Calculate all scaling variables based on the chosen units from the 
-// parameters file (and possibly input snapshot).
-// ============================================================================
+//=============================================================================
+//  Units::SetupUnits
+/// Calculate all scaling variables based on the chosen units from the 
+/// parameters file (and possibly input snapshot).
+//=============================================================================
 void SimUnits::SetupUnits(Parameters &params)
 {
 

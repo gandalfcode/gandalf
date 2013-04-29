@@ -1,8 +1,8 @@
-// ============================================================================
-// NbodyHermite4.cpp
-// Contains functions for integrating star particle positions and velocities 
-// using the 4th-order Hermite scheme (Makino & Aarseth 1992).
-// ============================================================================
+//=============================================================================
+//  NbodyHermite4.cpp
+//  Contains functions for integrating star particle positions and velocities 
+//  using the 4th-order Hermite scheme (Makino & Aarseth 1992).
+//=============================================================================
 
 
 #include <cstdio>
@@ -10,45 +10,102 @@
 #include <cstdlib>
 #include <iostream>
 #include <math.h>
-#include "Dimensions.h"
-#include "Sph.h"
-#include "NbodyIntegration.h"
+#include "Precision.h"
+#include "NbodyParticle.h"
 #include "StarParticle.h"
+#include "Nbody.h"
 #include "Debug.h"
+#include "InlineFuncs.h"
 using namespace std;
 
 
 
-// ============================================================================
-// NbodyHermite4::NbodyHermite4()
-// ============================================================================
-NbodyHermite4::NbodyHermite4(int ndimaux, int vdimaux, DOUBLE nbody_mult_aux) :
-  NbodyIntegration(ndimaux, vdimaux, nbody_mult_aux)
+//=============================================================================
+//  NbodyHermite4::NbodyHermite4()
+/// ..
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+NbodyHermite4<ndim, kernelclass>::NbodyHermite4(int nbody_softening_aux, int sub_systems_aux, DOUBLE nbody_mult_aux, string KernelName) : 
+  Nbody<ndim>(nbody_softening_aux, sub_systems_aux, nbody_mult_aux, KernelName),
+  kern(kernelclass<ndim>(KernelName))
 {
 }
 
 
 
-// ============================================================================
-// NbodyHermite4::~NbodyLeapfrog()
-// ============================================================================
-NbodyHermite4::~NbodyHermite4()
+//=============================================================================
+//  NbodyHermite4::~NbodyHermite4()
+/// ..
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+NbodyHermite4<ndim, kernelclass>::~NbodyHermite4()
 {
 }
 
 
 
-// ============================================================================
-// NbodyHermite4::AdvanceParticles
-// Integrate particle positions to 3nd order, and particle velocities to 2nd
-// order from the beginning of the step to the current simulation time, i.e. 
-// r(t+dt) = r(t) + v(t)*dt + a(t)*dt^2/2 + adot(t)*dt^3/6, 
-// v(t+dt) = v(t) + a(t)*dt + adot(t)*dt^2/2.
-// Also set particles at the end of step as 'active' in order to compute 
-// the end-of-step force computation.
-// ============================================================================
-void NbodyHermite4::AdvanceParticles(int n, int level_step, int Nsystem,
-				     StarParticle *system, Double timestep)
+//=============================================================================
+//  NbodyHermite4::CalculateDirectGravForces
+/// Calculate all star-star force contributions for active systems using 
+/// direct summation with unsoftened gravity.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void NbodyHermite4<ndim, kernelclass>::CalculateDirectGravForces(void)
+{
+  int i,j,k;                        // Star and dimension counters
+  DOUBLE dr[ndim];                  // Relative position vector
+  DOUBLE drsqd;                     // Distance squared
+  DOUBLE invdrmag;                  // 1 / drmag
+  StarParticle<ndim> stari;         // Local copy of star particle
+
+  debug2("[NbodyHermite4::CalculateDirectGravForces]");
+
+  // Loop over all (active) stars
+  // --------------------------------------------------------------------------
+  for (i=0; i<Nstar; i++) {
+    if (stardata[i].active == 0) continue;
+
+    stari = stardata[i];
+    stari.gpot = 0.0;
+    for (k=0; k<ndim; k++) stari.a[k] = 0.0;
+    for (k=0; k<ndim; k++) stari.adot[k] = 0.0;
+
+    // Sum grav. contributions for all other stars (excluding star itself)
+    // ------------------------------------------------------------------------
+    for (j=0; j<Nstar; j++) {
+      if (i == j) continue;
+
+      for (k=0; k<ndim; k++) dr[k] = stardata[j].r[k] - stari.r[k];
+      drsqd = DotProduct(dr,dr,ndim);
+      invdrmag = 1.0/sqrt(drsqd);
+
+      stari.gpot -= stardata[j].m*invdrmag;
+      for (k=0; k<ndim; k++) stari.a[k] += stari.m*dr[k]*pow(invdrmag,3);
+
+    }
+    // ------------------------------------------------------------------------
+
+
+  }
+  // --------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=============================================================================
+//  NbodyHermite4::AdvanceParticles
+/// Integrate particle positions to 3nd order, and particle velocities to 2nd
+/// order from the beginning of the step to the current simulation time, i.e. 
+/// r(t+dt) = r(t) + v(t)*dt + a(t)*dt^2/2 + adot(t)*dt^3/6, 
+/// v(t+dt) = v(t) + a(t)*dt + adot(t)*dt^2/2.
+/// Also set particles at the end of step as 'active' in order to compute 
+/// the end-of-step force computation.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void NbodyHermite4<ndim, kernelclass>::AdvanceParticles(int n, int level_step, int Nsystem,
+				     StarParticle<ndim> *system, DOUBLE timestep)
 {
   int i;                                // Particle counter
   int k;                                // Dimension counter
@@ -83,14 +140,15 @@ void NbodyHermite4::AdvanceParticles(int n, int level_step, int Nsystem,
  
 
 
-// ============================================================================
-// NbodyHermite4::CorrectionTerms
-// Compute 2nd and 3rd time derivatives of the acceleration using Hermite 
-// interpolation.  Finally correct positions to 5th order and velocities to 
-// 4th order using higher-order derivatives.
-// ============================================================================
-void NbodyHermite4::CorrectionTerms(int n, int level_step, int Nsystem,
-				    StarParticle *system, DOUBLE timestep)
+//=============================================================================
+//  NbodyHermite4::CorrectionTerms
+/// Compute 2nd and 3rd time derivatives of the acceleration using Hermite 
+/// interpolation.  Finally correct positions to 5th order and velocities to 
+/// 4th order using higher-order derivatives.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void NbodyHermite4<ndim, kernelclass>::CorrectionTerms(int n, int level_step, int Nsystem,
+				    StarParticle<ndim> *system, DOUBLE timestep)
 {
   int i;                                // Particle counter
   int k;                                // Dimension counter
@@ -124,13 +182,14 @@ void NbodyHermite4::CorrectionTerms(int n, int level_step, int Nsystem,
 
 
 
-// ============================================================================
-// NbodyHermite4::EndTimestep
-// Record all important star particle quantities at the end of the step 
-// for the start of the new timestep.
-// ============================================================================
-void NbodyHermite4::EndTimestep(int n, int level_step, 
-				int Nsystem, StarParticle *system)
+//=============================================================================
+//  NbodyHermite4::EndTimestep
+/// Record all important star particle quantities at the end of the step 
+/// for the start of the new timestep.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void NbodyHermite4<ndim, kernelclass>::EndTimestep(int n, int level_step, 
+				int Nsystem, StarParticle<ndim> *system)
 {
   int i;                                // Particle counter
   int k;                                // Dimension counter
@@ -157,3 +216,20 @@ void NbodyHermite4::EndTimestep(int n, int level_step,
 
   return;
 }
+
+
+
+// Template class instances for each dimensionality value (1, 2 and 3)
+template class NbodyHermite4<1, M4Kernel>;
+template class NbodyHermite4<1, QuinticKernel>;
+template class NbodyHermite4<1, GaussianKernel>;
+template class NbodyHermite4<1, TabulatedKernel>;
+template class NbodyHermite4<2, M4Kernel>;
+template class NbodyHermite4<2, QuinticKernel>;
+template class NbodyHermite4<2, GaussianKernel>;
+template class NbodyHermite4<2, TabulatedKernel>;
+template class NbodyHermite4<3, M4Kernel>;
+template class NbodyHermite4<3, QuinticKernel>;
+template class NbodyHermite4<3, GaussianKernel>;
+template class NbodyHermite4<3, TabulatedKernel>;
+

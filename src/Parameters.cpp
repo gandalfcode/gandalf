@@ -179,6 +179,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["sph_integration"] = "lfkdk";
   floatparams["accel_mult"] = 0.3;
   floatparams["courant_mult"] = 0.15;
+  floatparams["nbody_mult"] = 0.075;
   intparams["Nlevels"] = 1;
   intparams["sph_single_timestep"] = 0;
   intparams["nbody_single_timestep"] = 0;
@@ -219,6 +220,11 @@ void Parameters::SetDefaultValues(void)
   // --------------------------------------------------------------------------
   intparams["self_gravity"] = 0;
   stringparams["grav_kernel"] = "mean_h";
+
+  // N-body parameters
+  // --------------------------------------------------------------------------
+  intparams["nbody_softening"] = 0;
+  intparams["sub_systems"] = 0;
 
   // Boundary conditions parameters
   // --------------------------------------------------------------------------

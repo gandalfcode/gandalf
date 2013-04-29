@@ -102,11 +102,14 @@ OBJ += M4Kernel.o QuinticKernel.o GaussianKernel.o TabulatedKernel.o
 OBJ += Sph.o GradhSph.o SM2012Sph.o GodunovSph.o
 OBJ += EnergyPEC.o EnergyGodunovIntegration.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o SphGodunovIntegration.o
+OBJ += RiemannSolver.o
 #OBJ += SphNeighbourSearch.o 
-OBJ += BruteForceSearch.o GridSearch.o
+OBJ += BruteForceSearch.o GridSearch.o #BinaryTree.o
 OBJ += AdiabaticEOS.o IsothermalEOS.o
 #OBJ += SimGhostParticles.o
 #OBJ += Render.o
+OBJ += Nbody.o NbodyLeapfrogKDK.o# NbodyHermite4.o
+
 
 TEST_OBJ = #TestScaling.o Parameters.o SimUnits.o Exception.o
 
