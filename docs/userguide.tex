@@ -1,13 +1,13 @@
 \documentclass[a4paper]{article}
 \usepackage{txfonts}
-\usepackage[scaled=0.85]{luximono}
+%\usepackage[scaled=0.85]{luximono}
 
 \usepackage{graphicx}
 %\usepackage{psfig}
 \usepackage{amssymb}
 \usepackage{supertabular}
 \usepackage{array}
-\usepackage[latex2html,colorlinks,final]{hyperref}
+\usepackage[colorlinks,final]{hyperref}
 
 \newcommand{\CODENAME}{SEREN\_VIEW}
 \newcommand{\codename}{seren\_view}
@@ -678,7 +678,7 @@ or, depending on the default version of python on your system (e.g. installing m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Generating initial conditions}
 
-One important difference between SEREN and SEREN\_VIEW is that initial conditions can be generated on-the-fly in SEREN\_VIEW, i.e. while running the code, unlike SEREN where initial conditions always had to be generated before the simulation.  While they are still situations where it is appropriate to prepare initial conditions prior to running the simulations, it is more convenient to generate the initial conditions at the same time as running the simulation.
+One important difference between SEREN and SEREN\_VIEW is that initial conditions can be generated on-the-fly in SEREN\_VIEW, i.e. while running the code, unlike SEREN where initial conditions always had to be generated before the simulation.  While they are still situations where it is appropriate to prepare initial conditions prior to running the simulations, it is more convenient to generate the initial conditions at the same time as running the simulation. It's also possible to generate the initial conditions in python (see next section).
 
 At present, the following initial conditions are included in the code : 
 
@@ -704,33 +704,42 @@ At present, the following initial conditions are included in the code :
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Python viewer usage}
+\section{Python scripting usage}
+
+While the numerical part of \CODENAME  is implemented in C++ for efficiency, we provide bindings to Python to control the simulation and a large set of analysis and plotting tools to inspect the results. Therefore, from Python you are able to set up the simulation (including initial conditions), run it, load existing snapshots and plot quantities. There are two main ways to use the Python side of \CODENAME.
+
+The first one is an interpreter, that works similarly to a shell (e.g., bash, csh) and understands specific commands to load a simulation and plot quantities. We provide a large set of commands to do standard operations when running and analyzing a simulation, so that this solution can be satisfactory where you need to quickly analyze a simulation.
+
+The second way is writing your own python script. You still have access to the same commands available in the interpeter, but combining the power of the python language you are free to do much more. You can access the raw data from the simulation and compute the quantities that you are interested in, and you can still use the provided functions to plot them. Many of the C++ objects are also available at runtime, so that you can inspect them if you want. It's also possible to generate the initial conditions of the simulation in python, and run it from your script. This is very useful, for example, if you want to do parameter studies.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Python viewer commands}
+\subsection{Interpreter usage}
 
-Information on commands for the python viewer is available using the 'help' command.  Typing 'help' or 'h' gives a list of all the principle commands available.  Typing 'help command' or 'h command' gives more information on the chosen command.
+The interpreter is located in the analysis/ folder in the main directory of \CODENAME. To start it, just type 'python interpreter.py' or './interpeter.py'.
+Information on commands for the python interpeter is available using the 'help' command.  Typing 'help' gives a list of all the principle commands available.  Typing 'help command' gives more information on the chosen command.
+Like in a shell, you can use the interpreter interactively or you can write little scripts for it (that is, texts files with a list of the commands that you want to be executed). \textbf{TODO: must actually implement reading from a script}. Any script can be read in and processed by typing : \var{read SCRIPTNAME}.
+
+The interpreter provides commands for creating new simulations, loading a simulation and do the plotting. The next section contains some examples to show how to use it.
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Python viewer script examples}
+\subsection{Python interpreter examples}
 
-The python viewer can read in scripts to perform some repetitive sequence of viewing commands.  Any script can be read in and processed by typing : 
-\var{read SCRIPTNAME}. \\
-\newline
+\textbf{rewrite examples}
 
-\noindent Example 1 - Loading a snapshot and plotting SPH quantites : \\
-
-\begin{tabular}{p{7cm}p{6cm}}
-\var{loadsnap su BBSIT1.su.00010} &        (Load single snapshot file into memory)\\
-\var{limits x -0.005 0.005}       &        (Set limits for x-axis) \\
-\var{limits y -0.005 0.005}       &        (Set limits for y-axis) \\
-\var{plot sph x y}                &        (Plot SPH particle x-y positions) \\
-\var{savefig eps BBSIT1.eps}      &        (Save window to file)
-\end{tabular}
-\newline
+%
+%\noindent Example 1 - Loading a snapshot and plotting SPH quantites : \\
+%
+%\begin{tabular}{p{7cm}p{6cm}}
+%\var{loadsnap su BBSIT1.su.00010} &        (Load single snapshot file into memory)\\
+%\var{limits x -0.005 0.005}       &        (Set limits for x-axis) \\
+%\var{limits y -0.005 0.005}       &        (Set limits for y-axis) \\
+%\var{plot sph x y}                &        (Plot SPH particle x-y positions) \\
+%\var{savefig eps BBSIT1.eps}      &        (Save window to file)
+%\end{tabular}
+%\newline
 
 
 \noindent Example 2 - Loading a whole simulation and plotting SPH and star quantites for several selected snapshots : \\
@@ -817,9 +826,50 @@ The python viewer can read in scripts to perform some repetitive sequence of vie
 
 \noindent Example 7 - ... :
 
+\subsection{Write your Python script}
+
+All the commands available in the interpreter can also be used in your Python script. Just note the slight difference in syntax (since they are function, you need to put the arguments inside parentheses and they must be comma-separated). To use them, you need to import the module facade.py in the analysis/ folder. We recommend to add it to your PYTHONPATH to make the import simpler. Each function in facade comes with documentation, so you can inspect that to know what a function does.
+
+Here are the same examples from the previous section, rewritten to show how to use them in a Python script:
+\textbf{add examples}
+
+In addition, in your script you can also perform other tasks that are not possible from the interpreter, since you have a full programming language at your disposal. For example:
+\begin{itemize}
+
+\item You can modify from Python the parameters of the simulation before running it. This is very useful to do parameter studies, without generating in advance many different parameter files. Just remember to change the run\_id for each one of the simulations that you want to run, otherwise all the snapshots will be overwritten.
+
+\textbf{Example}
+
+\item It is possible to generate the initial conditions from Python. You need to create numpy arrays containing the quantities for the SPH particles (position, velocity, mass, internal energy) and you can import them in the code. An example follows:
+\textbf{Write the example!}
+
+\item You can define your own quantities to add to the plots in addition to the built-in ones. \textbf{Not implemented yet}
+
+\item It is possible to get access to the raw data of the simulation, in order to compute whatever quantity you need. \textbf{Actually, this is not possible yet in an easy way... I need to write a proper wrapper around the C++ method which is too low level. Remember -> give 'snap' attribute to the array to save reference counting. Implement it!}
+
+\item Everything else that you can think. The point is, it's \CODENAME that takes care of reading the snapshots, getting the data, and all this boring parts; you can concentrate on what to do with the data and on the science, and forget about the details.
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Structure of the python code}
+
+If you just want to use the python code, the previous section is enough. But if you want to develop some new feature, or you are just curious to know how we implemented it, you can go on reading.
+
+The functions defined in facade act mostly as wrappers around lower levels of abstraction. Sometimes they also make two different portions of the code communicate. The three main lower-level portions of the code are:
+\begin{itemize}
+
+\item SimBuffer. This class is responsible to keep track of all the simulations you have loaded, and the snapshots that are available for each one of them, either on disk or in memory (if you are running it). To eliminate the overhead of reading from the disk as much as possible (which is particularly important with network mounted filesystems), data is cached in memory once read. When all the cache is used, the buffer will look for objects that are no longer used since a long time and deallocate them to make space. The algorithm used is LRU (least recently used), which unfortunately is not scan resistant. However, we think that scans along all the snapshots are not something frequently enough to be a problem. The size in memory of the cache is a parameter that you can set; by default it is 1 GB. \textbf{Give to the user the possibility to change it}. Always use the functions in the buffer when you want to have the raw simulation/snapshot object, rather than reading them manually; in addition to saving you a lot of coding, this ensures that you are using caching and speeding up the reading.
+
+\item Plotting process. In order to have the figures responsive while the simulation is running, the plotting part is done in another process. A queue is used to make the main process (the one that responds to the user commands, and where the simulation runs) communicate with the plotting one. Two kinds of objects are transferred by this queue: the data to plot, and the commands to execute (see next element). The plotting process executes a loop: it reads what is there in the queue, and executes the commands if there is any. Then sleeps for a while, letting the user interact with the plots.
+
+There is a potential performance improvement in the transferring of the data along the queue. Internally, python uses the pickle module to serialize the array, which is quite slow. Using zeromq, it would be possible to copy the binary data, which would be just a memcopy and therefore very fast compared to the plotting itself. Another possible improvement is to store the data used, and avoid transferring it again each time a plot is updated.
+
+\item Commands. The functions in facade that interact with the plotting process create a command object and send them through the queue. A command is a class that contains a method that gets called by the plotting process when the object is received. Therefore, it's the command itself that knows what to do when it's called, rather than the plotting process. This separates the roles of the plotting process from the ones of the commands. Some of the commands also contain methods for getting the data from the simulation (this happens in the main process, where the data is stored).
 
 
-
+\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{To-do list}
