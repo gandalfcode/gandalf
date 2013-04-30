@@ -193,19 +193,6 @@ void Parameters::SetDefaultValues(void)
   floatparams["h_fac"] = 1.2;
   floatparams["h_converge"] = 0.01;
 
-  // Artificial viscosity parameters
-  // --------------------------------------------------------------------------
-  stringparams["avisc"] = "mon97";
-  stringparams["acond"] = "none";
-  floatparams["alpha_visc"] = 1.0;
-  floatparams["beta_visc"] = 2.0;
-
-  // Riemann solver parameters
-  // --------------------------------------------------------------------------
-  stringparams["riemann_solver"] = "hllc";
-  stringparams["slope_limiter"] = "mine";
-  intparams["riemann_order"] = 1;
-
   // Thermal physics parameters
   // --------------------------------------------------------------------------
   intparams["hydro_forces"] = 1;
@@ -215,6 +202,19 @@ void Parameters::SetDefaultValues(void)
   floatparams["gamma_eos"] = 1.66666666666666;
   floatparams["temp0"] = 1.0;
   floatparams["mu_bar"] = 1.0;
+
+  // Artificial viscosity parameters
+  // --------------------------------------------------------------------------
+  stringparams["avisc"] = "mon97";
+  stringparams["acond"] = "none";
+  floatparams["alpha_visc"] = 1.0;
+  floatparams["beta_visc"] = 2.0;
+
+  // Riemann solver parameters
+  // --------------------------------------------------------------------------
+  stringparams["riemann_solver"] = "exact";
+  stringparams["slope_limiter"] = "mine";
+  intparams["riemann_order"] = 1;
 
   // Gravity parameters
   // --------------------------------------------------------------------------

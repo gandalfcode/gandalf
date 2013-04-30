@@ -1,0 +1,845 @@
+\documentclass[a4paper]{article}
+\usepackage{txfonts}
+\usepackage[scaled=0.85]{luximono}
+
+\usepackage{graphicx}
+%\usepackage{psfig}
+\usepackage{amssymb}
+\usepackage{supertabular}
+\usepackage{array}
+\usepackage[latex2html,colorlinks,final]{hyperref}
+
+\newcommand{\CODENAME}{SEREN\_VIEW}
+\newcommand{\codename}{seren\_view}
+\newcommand{\VERNO}{0.1.0}
+
+\newcommand{\var}[1]{\texttt{#1}}
+
+
+\textheight 9.2in 
+\textwidth 6.2in
+\oddsidemargin 0pt
+\topmargin -40pt
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+\title{\CODENAME v\VERNO userguide}
+\author{David Hubber \& Giovanni Rosotti}
+
+\maketitle
+\tableofcontents
+
+\newpage
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Overview of code}
+\CODENAME is a new SPH code written in C++ and python based partly on the algorithms and code structures used in SEREN (Hubber et al. 2011), but principally written from scratch.  It has been written for several purposes.
+\begin{itemize}
+\item \CODENAME can be written in three different modes; as a standard executable run from the command line (like SEREN), run from a python script or run inside an interactive python environment.  Both the script and interactive python modes include a graphical output that can be used to visualise previously run simulations, or to interactively visualise simulations as they are run.
+\item \CODENAME generates initial conditions at run-time, as opposed to SEREN where the initial conditions had to be prepared a priori.
+\item \CODENAME uses additional parameters to switch on various physics options, as well as requiring them to be activated in the Makefile.  In comparison, SEREN controlled physics options exclusively in the Makefile.
+\item \CODENAME uses modules to contain all subroutines.  Therefore, no additional interface file (such as interface.F90) exists in SEREN\_VIEW.
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Installation} \label{S:INSTALL}
+Requirements:
+\begin{itemize}
+\item C++ compiler; at present, only gcc/g++ has been tested with the code
+\item Python 2.7
+\item matplotlib compatible with python 2.7
+\item swig compatible with python 2.7
+\item f2py compatible with python 2.7
+%\item ffmpeg (for generating movies automatically)
+\end{itemize}
+
+
+\subsection{Linux}
+All of these programs/libraries can be found in most standard Linux installations, and if not, will be present in package managers.
+
+
+\subsection{Mac OS X}
+All programs can be installed with either fink, MacPorts or homebrew.  It is preferable that all (except the Fortran compiler) are downloaded with just the one package manager in order to ensure they are compatible and function together correctly.
+
+\newpage
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Makefile options}
+The \CODENAME Makefile is used to select options which are used to compile the code with.  If the user wishes to change any compile-time options, the code must be recompiled from scratch by typing {\var make clean}, and {\var make seren} or \var{make seren\_view}.  For users of SEREN, the \CODENAME Makefile is somewhat simpler with many options either not present (since more complex algorithms have not been implemented) or have been transfered to the parameters file.  This has been done in order to make it less likely that the wrong Makefile options are used in simulations, and also to stop the need to recompile the code completely so often when using slightly different options.
+
+\begin{itemize}
+
+\item CC : C++ compiler (only gcc/g++ set-up at present)
+
+\item PYTHON : name of python command-line executable (e.g. python, python2.7)
+
+\item F2PY : f2py executable name (e.g. f2py,f2py2.7)
+
+\item COMPILER\_MODE : Set compiler flags for production or debug runs \\
+\begin{tabular}{ll}
+DEBUG & : Set all debug compiler options, including flags to use gdb debugger \\
+STANDARD & : Standard flag options (-O3) \\
+FAST & : -O3 + fast flag options
+\end{tabular}
+
+\item PRECISION : Floating point precision \\
+\begin{tabular}{ll}
+SINGLE & : 32-bit precision \\
+DOUBLE & : 64-bit precision
+\end{tabular}
+
+\item OPENMP : Activate OpenMP directives during compilation (0 or 1)
+
+\item OUTPUT\_LEVEL : Amount of output produced by code \\
+\begin{tabular}{ll}
+0 & : No output \\
+1 & : Minimal output \\
+2 & : Code routine marker output for all steps
+\end{tabular}
+
+\item DEBUG : ?? \\
+
+\item VERIFY\_ALL : Include additional code to verify code is functioning correctly.  Increases run-time considerably, so should only be used for debugging purposes (0 or 1)
+
+\end{itemize}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Main simulation parameters}
+
+
+\begin{itemize}
+
+\item \var{run\_id}  : Simulation run id string
+
+\item \var{ic} : Simulation initial conditions \vspace{0.1cm} \\
+\begin{tabular}{ll}
+cdiscontinuity   & = Contact discontinuity test \\
+khi              & = Kelvin-Helmholtz instability test \\
+lattice\_cube    & = Generate cuboid with particle on a cubic lattice \\
+random\_cube     & = Populate cubiod with random particles \\
+random\_sphere   & = Populate sphere of unit radius with random particles \\
+sedov            & = Sedov blast-wave test \\
+soundwave        & = Sound wave test \\
+shocktube        & = Shocktube test
+\end{tabular}
+
+%\item \var{restart} : Is reloaded snapshot a restart or not? (\var{.true.} or \var{.false.})
+
+%\item \var{new\_sim} : Is this a new simulation? (\var{.true.} or \var{.false.})
+
+%\item \var{in\_file} : Name of input initial conditions files
+
+\item \var{in\_file\_form} : Format of initial conditions file
+                      (ascii)
+
+\item \var{out\_file\_form} : Format of outputted snapshot files
+                      (ascii)
+
+
+%\item \var{run\_dir} : Run directory
+
+%\item \var{com\_frame} : Do we translate system to centre-of-mass frame?
+%                      (\var{.true.} or \var{.false.})
+
+\item \var{endtime} : Termination time of the simulation
+
+\item \var{dt\_snap} : Snapshot time interval
+
+\item \var{nstepsmax} : Maximum no. of steps in simulation before termination
+
+\item \var{tfirstsnap} : Time of first snapshot
+
+\item \var{noutputstep} : Frequency of screen output (in units of integer steps)
+
+\item \var{ndiagstep} : No. of complete block steps between diagnostic output
+
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Unit parameters}
+
+\begin{itemize}
+%\item \var{dimensionless} : Are all particle quantities dimensionless?
+%                      (\var{.true.} or \var{.false.})
+
+\item \var{runit} : Position unit \vspace{0.1cm} \\
+\begin{tabular}{ll}
+pc/kpc/mpc & = parsec/kiloparsec/megaparsec \\
+au         & = astronomical unit \\
+r\_sun     & = Solar radius \\
+r\_earth   & = Earth radius \\
+cm/m/km    & = centimetre/metre/kilometre
+\end{tabular}
+
+\item \var{munit} : Mass unit \vspace{0.1cm} \\
+\begin{tabular}{ll}
+m\_sun          & = Solar mass \\
+m\_jup/m\_earth & = Jupiter mass/Earth mass \\
+g/kg            & = gram/kilogram
+\end{tabular}
+
+
+\item \var{tunit} : Time unit \\
+\begin{tabular}{ll}
+yr/myr/gyr & = year/megayear/gigayear \\
+day        & = day \\
+sec        & = second
+\end{tabular}
+
+\item \var{vunit} : Velocity unit \\
+\begin{tabular}{ll}
+cm\_s/m\_s/km\_s & = centimetres/metres/kilometres per second \\
+au\_yr           & = astronomical units per year
+\end{tabular}
+
+\item \var{aunit} : Acceleration unit \\
+\begin{tabular}{ll}
+cm\_s2/m\_s2/km\_s2 & = cm/m/km per second squared \\
+au\_yr2             & = astronomical units per year squared
+\end{tabular}
+
+\item \var{rhounit} : Density unit \\
+\begin{tabular}{ll}
+m\_sun\_pc3 & = Solar masses per parsec cubed \\
+kg\_m3      & = kilogrammes per metre cubed \\
+g\_cm3      & = grammes per centimetre cubed
+\end{tabular}
+
+\item \var{sigmaunit} : Column/surface density unit
+
+\item \var{pressunit} : Pressure unit
+
+\item \var{funit} : Force unit
+
+\item \var{Eunit} : Energy unit \\
+\begin{tabular}{ll}
+J/GJ      & = Joules/Gigajoules \\
+erg       & = ergs \\
+10\^40erg & = 10\^40 ergs
+\end{tabular}
+
+\item \var{momunit} : Momentum unit \\
+\begin{tabular}{ll}
+m\_sunkm\_s  & = Solar masses kilometres per second \\
+m\_sunau\_yr & = Solar masses A.U. per year \\
+kgm\_s       & = Kilogram metres per second \\
+gcm\_s       & = Gram centimetres per second
+\end{tabular}
+
+\item \var{angmomunit} : Angular momentum unit \\
+\begin{tabular}{ll}
+m\_sunkm2\_s  & = Solar masses kilometres squared per second \\
+m\_sunau2\_yr & = Solar masses A.U. squared per year \\
+kgm2\_s       & = Kilogram metres squared per second \\
+gcm2\_s       & = Gram centimetres squared per second
+\end{tabular}
+
+\item \var{angvelunit} : Angular velocity unit \\
+\begin{tabular}{ll}
+rad\_s & = Radians per second
+\end{tabular}
+
+\item \var{dmdtunit} : Mass accretion rate unit
+
+\item \var{Lunit} : Luminosity unit
+
+\item \var{kappaunit} : Volume opacity unit
+
+\item \var{Bunit} : Magnetic field unit
+
+\item \var{Qunit} : Charge unit
+
+\item \var{uunit} : Specific energy unit \\
+\begin{tabular}{ll}
+J\_kg  & = Joules per kilogram \\
+erg\_g & = ergs per gram
+\end{tabular}
+
+\item \var{Jcurunit} : Current density unit
+
+\item \var{dudtunit} : Heating rate unit \\
+\begin{tabular}{ll}
+J\_kg\_s  & = Joules per kilogram per second \\
+erg\_g\_s & = ergs per gram per second
+\end{tabular}
+
+\item \var{tempunit} : Temperature unit \\
+\begin{tabular}{ll}
+K & = Kelvin
+\end{tabular}
+
+\end{itemize}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{SPH parameters}
+
+\begin{itemize}
+
+\item \var{sph} : SPH algorithm \\
+\begin{tabular}{ll}
+gradh    & = Conservative 'grad-h' SPH \\
+sm2012   & = Saitoh \& Makino (2012) SPH \\
+godunov  & = Godunov SPH (Inutsuka 2002)
+\end{tabular}
+
+\item \var{kernel} : SPH kernel function \\
+\begin{tabular}{ll}
+m4        & = M4 Cubic spline kernel \\
+quintic   & = Quintic spline kernel \\
+gaussuan  & = Gaussian kernel (truncated at 3h)
+\end{tabular}
+
+\item \var{tabulatedkernel} : Tabulate kernel function  (\var{yes} or \var{no})
+
+\item \var{neib\_search} : Neighbour searching algorithm \\
+\begin{tabular}{ll}
+bruteforce & = Brute-force (i.e. summation over all particles) \\
+grid       & = Grid with uniform spacing
+\end{tabular}
+
+\item \var{h\_fac}     : Particles-per-smoothing length factor (eta in papers)
+
+\item \var{h\_converge} : Smoothing length iteration convergence tolerance
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Hydrodynamical parameters}
+
+\begin{itemize}
+\item \var{hydro\_forces} : Compute hydro forces?  (\var{.true.} or \var{.false.})
+
+\item \var{gas\_eos} : Gas particles equation-of-state \\
+\begin{tabular}{ll}
+energy\_eqn & = Solve energy equation \\
+isothermal  & = Isothermal EOS
+\end{tabular}
+
+%\item \var{cooling\_law} : Cooling law for gas particles (only applicable if solving the energy equation) \\
+%\begin{tabular}{ll}
+%none    & = No cooling \\
+%linear1 & = Simple linear cooling law
+%\end{tabular}
+
+\item \var{energy\_integration} : Energy integration scheme (only applicable if solving the energy equation) \\
+\begin{tabular}{ll}
+PEC         & = Explicit integration using predict-correct-evaluate scheme \\
+godunov     & = Explicit integration for use with Godunov SPH scheme
+\end{tabular}
+
+\item \var{energy\_mult} : Explicit energy integration timestep multiplier
+
+\item \var{gamma\_eos} : Ratio of specific heats for gas
+
+\item \var{temp0} : (Isothermal) temperature (isothermal or barotropic EOS)
+
+\item \var{mu\_bar}    : Mean gas particle mass (in units of hydrogen mass)
+
+%\item \var{eta\_eos}   : Polytropic exponent
+
+%\item \var{rho\_bary} : Adiabatic density turnover in barotropic EOS (in g/cm\^3)
+
+%\item \var{Acool} : Simple cooling rate factor
+
+%\item \var{u\_eq} : Equilibrium internal energy (for simple cooling law)
+
+
+\item \var{avisc} : Artificial viscosity options \\
+\begin{tabular}{ll}
+none  & = No artificial viscosity \\
+mon97 & = Monaghan (1997) viscosity
+\end{tabular}
+
+\item \var{acond} : Artificial conductivity options \\
+\begin{tabular}{ll}
+none        & = No artificial conductivity \\
+wadsley2008 & = Wadsley et al. (2008) conductivity
+\end{tabular}
+
+\item \var{alpha\_visc} : (Maximum) value of alpha viscosity parameter
+
+\item \var{beta\_visc} : Value of beta viscosity as a multiple of alpha
+
+
+\item \var{riemann\_solver} : Riemann solver to be used in Godunov SPH \\
+\begin{tabular}{ll}
+exact  & = Exact Riemann solver (Toro 19??) \\
+hllc   & = HLLC approximate Riemann Solver (????)
+\end{tabular}
+
+\item \var{riemann\_order} : Order of Riemann solver \\
+\begin{tabular}{ll}
+1  & = 1st-order Riemann solver (i.e. Godunov's original method) \\
+2  & = 2nd-order Riemann solver (i.e. 2nd-order MUSCL-type reconstruction)
+\end{tabular}
+
+\item \var{slope\_limiter} : Slope limiter for second-order Riemann solver \\
+\begin{tabular}{ll}
+????     & = ???? \\
+\end{tabular}
+
+
+%\item \var{td\_avisc} : Use time-dependent viscosity? (\var{.true.} or \var{.false.})
+
+%\item \var{alpha\_min\_visc} : Minimum value of alpha for time-dependent viscosity
+
+\end{itemize}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Gravitational parameters}
+
+\begin{itemize}
+
+\item \var{self\_gravity} : Compute gravitational forces?   (\var{.true.} or \var{.false.})
+
+%\item \var{meanh\_gravity} : Use mean-smoothing length for gravitational forces? (\var{.true.} or \var{.false.})
+
+%\item \var{thetamaxsqd} : Gravity tree opening angle (squared)
+
+%\item \var{external\_force}   : Add an external gravitational field
+
+%\item \var{ggrav}             : External gravitational acceleration
+
+
+\end{itemize}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Boundary parameters}
+
+\begin{itemize}
+
+\item \var{x\_boundary\_lhs} : Boundary conditions for LHS of x-dimension
+\item \var{x\_boundary\_rhs} : Boundary conditions for RHS of x-dimension
+\item \var{y\_boundary\_lhs} : Boundary conditions for LHS of y-dimension
+\item \var{y\_boundary\_rhs} : Boundary conditions for RHS of y-dimension
+\item \var{z\_boundary\_lhs} : Boundary conditions for LHS of z-dimension
+\item \var{z\_boundary\_rhs} : Boundary conditions for RHS of z-dimension
+For all boundaries: \\
+\begin{tabular}{ll}
+open     & = open boundaries (i.e. extends to infinity) \\
+periodic & = periodic wrapping between LHS \& RHS boundary \\
+wall     & = wall at boundary (i.e. reflection of particles) \\
+mirror   & = mirror boundary (i.e. 'ghost' reflections)
+\end{tabular}
+
+\item \var{boxmin[0]} : Location of LHS x-boundary
+\item \var{boxmax[0]} : Location of RHS x-boundary
+\item \var{boxmin[1]} : Location of LHS y-boundary
+\item \var{boxmax[1]} : Location of RHS y-boundary
+\item \var{boxmin[2]} : Location of LHS z-boundary
+\item \var{boxmax[2]} : Location of RHS z-boundary
+
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Integration and timestep parameters}
+
+\begin{itemize}
+
+\item \var{sph\_integration} : SPH particle integration scheme \\
+\begin{tabular}{ll}
+lfkdk   & = 2nd-order Leapfrog kick-drift-kick \\
+godunov & = Godunov SPH integration scheme
+\end{tabular}
+
+%\item \var{nbody\_integration} : N-body star particle integration scheme \\
+%\begin{tabular}{ll}
+%lfkdk        & = 2nd-order Leapfrog kick-drift-kick \\
+%lfdkd        & = 2nd-order Leapfrog drift-kick-drift \\
+%hermite4     & = Standard 4th-order Hermite scheme \\
+%hermite4\_ts & = Time-symmetric 4th-order Hermite scheme \\
+%hermite6\_ts & = Time-symmetric 6th-order Hermite scheme
+%\end{tabular}
+
+%\item \var{sub\_system\_integration} : N-body sub-system integration scheme \\
+%\begin{tabular}{ll}
+%lfkdk        & = 2nd-order Leapfrog kick-drift-kick \\
+%hermite4     & = Standard 4th-order Hermite scheme \\
+%hermite4\_ts & = Time-symmetric 4th-order Hermite scheme \\
+%hermite6\_ts & = Time-symmetric 6th-order Hermite scheme
+%\end{tabular}
+
+\item \var{Nlevels} : No. of initial timestep levels
+
+\item \var{accel\_mult} : Acceleration timestep multiplier
+
+\item \var{courant\_mult} : Courant timestep multiplier
+
+\item \var{nbody\_mult} : N-body timestep multiplier
+
+\item \var{sph\_single\_timestep} : Constrain all SPH particles to a single timestep level 
+
+\item \var{nbody\_single\_timestep} : Constrain all N-body particles to a single timestep level 
+
+%\item \var{subsys\_mult} : Sub-system N-body timestep multiplier
+
+
+%\item \var{rzero(1)} : Aux. x-coordinate variable
+%\item \var{rzero(2)} : Aux. y-coordinate variable
+%\item \var{rzero(3)} : Aux. z-coordinate variable
+
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\subsection{Sink particle parameters}
+
+%\begin{itemize}
+
+%\item \var{sink\_particles}   : Do stars/sinks accrete?  (.true. or .false.)
+
+%\item \var{create\_sinks}     : Create new sink particles?  (.true. or .false.)
+
+%\item \var{smooth\_accretion} : Use smooth accretion?  (.true. or .false.)
+
+%\item \var{rho\_sink}         : Sink particle creation density
+
+%\item \var{sink\_radius}      : Sink particle radius (in units of smoothing length)
+
+%\item \var{alpha\_ss}         : Sunyaev-Shakura alpha
+%\item \var{smooth\_accrete\_frac} : Smooth accretion instantaneous accretion mass frac.
+%\item \var{smooth\_accrete\_dt} : Smooth accretion instantaneous accretion timestep frac.
+
+
+%\item \var{Npec}              : No. of iterations in P(EC)\^n integration scheme
+
+%\end{itemize}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Initial conditions parameters}
+
+\begin{itemize}
+
+\item \var{Nlattice1[0]} : No. of ptcls on lattice 1 in x-dimension
+\item \var{Nlattice1[1]} : No. of ptcls on lattice 1 in y-dimension
+\item \var{Nlattice1[2]} : No. of ptcls on lattice 1 in z-dimension
+\item \var{Nlattice2[0]} : No. of ptcls on lattice 2 in x-dimension
+\item \var{Nlattice2[1]} : No. of ptcls on lattice 2 in y-dimension
+\item \var{Nlattice2[2]} : No. of ptcls on lattice 2 in z-dimension
+
+\item \var{vfluid1[0]}   : x-velocity of fluid 1
+\item \var{vfluid1[1]}   : y-velocity of fluid 1
+\item \var{vfluid1[2]}   : z-velocity of fluid 1
+\item \var{vfluid2[0]}   : x-velocity of fluid 2
+\item \var{vfluid2[1]}   : y-velocity of fluid 2
+\item \var{vfluid2[2]}   : z-velocity of fluid 2
+
+\item \var{rhofluid1}    : Density of fluid 1
+\item \var{rhofluid2}    : Density of fluid 2
+
+\item \var{press1}       : Pressure of fluid 1
+\item \var{press2}       : Pressure of fluid 2
+
+\item \var{amp}          : Amplitude of applied perturbation
+\item \var{lambda}       : Wavelength of applied perturbation
+
+\item \var{kefrac}       : Fraction of energy that is kinetic (Sedov test)
+
+%\item \var{amp}       : Perturbation amplitude
+%\item \var{lambda}    : Perturbation wavelength
+
+%\item \var{radius}    : Radius
+%\item \var{rho0}      : Central density
+
+%\item \var{rplummer}  : Plummer radius
+%\item \var{mplummer}  : Total mass of plummer sphere
+
+%\item \var{cdmfrac}   : Fraction of mass in cdm particles
+%\item \var{gasfrac}   : Fraction of mass in gas particles
+%\item \var{starfrac}  : Fraction of mass in star particles
+
+%\item \var{rstar}     : (Softening) radius of star particles
+
+%\item \var{Nplummer\_gas} : No. of gas particles in Plummer sphere
+%\item \var{Nplummer\_cdm} : No. of cdm particles in Plummer sphere
+%\item \var{Nplummer\_star} : No. of star particles in Plummer sphere
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\subsection{Python viewer parameters}
+
+%\begin{itemize}
+
+%\item \var{dt\_python} : Time interval (in seconds) between view window updates
+
+%\item \var{xslice} : x-coordinate for slice in y-z plane
+%\item \var{yslice} : y-coordinate for slice in x-z plane
+%\item \var{zslice} : z-coordinate for slice in x-y plane
+
+%\end{itemize}
+
+
+\newpage
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Basic usage}
+\CODENAME can be run in three principle modes.  Command-line mode, where the code is run via the command line with a parameters file (similar to SEREN), via a python script where the code is run in a python environment with various plotting options available as well as running the code, and in interactive mode where all the code and plotting options can be run directly in a python shell.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Set-up}
+
+If you wish to run \CODENAME only as a C++ executable from the command line without visualisation, then it is possible to compile only the C++ code, ignoring all python libraries, by typing 
+\newline
+\noindent \var{make executable} \\
+
+
+If you wish to compile all python components of the code, then you must first complete the following steps : 
+\begin{itemize}
+
+\item Install all python-related programs listed in Section \ref{S:INSTALL}
+
+\item Add the location of the main \CODENAME directory to the \var{PYTHONPATH} environment variable.  If you are using bash or related shells, then add 
+\newline
+\noindent \var{export PYTHONPATH=XXX/YYY/ZZZ:\$PYTHONPATH} \\
+
+to your bashrc (or bash\_profile) script where {\var XXX/YYY/ZZZ} is the absolute path of the \CODENAME directory.  
+
+If you are using csh, tcsh or related shells, then add
+\newline
+\noindent \var{setenv PYTHONPATH ``XXX/YYY/ZZZ:\$PYTHONPATH''} \\
+
+\item Set the required version of python and f2py in your Makefile.  Since operating systems usually have more than one version of python installed, it is important to ensure that make uses the correct version when compiling the code.  These are set by the \var{PYTHON} and \var{F2PY} variables in the Makefile.
+
+Also, make requires the location of the python and numpy libraries.  In most cases, make will be able to locate these libraries automatically.  However, if there is a problem, or you wish to use an alternative version of these libraries installed elsewhere on your system, then these can be set by the \var{PYLIB} and \var{NUMPY} variables in the Makefile.  
+
+
+\item To compile all components of the code, including the python libraries with swig, type : \\
+\newline
+\noindent \var{make} or \var{make all} \\
+
+\end{itemize}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Command-line mode}
+
+\noindent To run a simulation the C++ executable, type : \\
+\newline
+\var{./seren PARAMSFILE} \\
+\newline
+where PARAMSFILE is the name of the params file for that simulation.  If the parameters file does not exist, or contains invalid parameter options, then the program will quit citing an error message.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Interactive mode}
+
+To compile all components the advance interactive visualisation version of the code, type :\\
+\newline
+\noindent \var{make} or \var{make all} \\
+
+\noindent To open the interactive viewer, type : \\
+\newline
+\var{python seren\_view.py} \\
+\newline
+or, depending on the default version of python on your system (e.g. installing matplotlib with fink on Mac OS X), \\
+\newline
+\var{python2.7 seren\_view.py} \\
+\newline
+\noindent The code should open with a splash screen containing the code title followed by a command prompt of the form '\var{seren\_view >'}'.  To run a simulation defined by a parameter file, then type \\
+\newline
+\var{newsim PARAMSFILE} \\
+\newline
+\noindent and then \\
+\newline
+\var{run} \\
+\newline
+\noindent The current simulation can be plotted at any point by using simple commands such as, for example, \\
+\newline
+\var{plot sph x y} \\
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Generating initial conditions}
+
+One important difference between SEREN and SEREN\_VIEW is that initial conditions can be generated on-the-fly in SEREN\_VIEW, i.e. while running the code, unlike SEREN where initial conditions always had to be generated before the simulation.  While they are still situations where it is appropriate to prepare initial conditions prior to running the simulations, it is more convenient to generate the initial conditions at the same time as running the simulation.
+
+At present, the following initial conditions are included in the code : 
+
+\noindent SPH simulations : \\
+\begin{tabular}{ll}
+- khi       &: Kelvin-helmholtz instability \\
+- randcube  &: Random cube of gas particles \\
+- rti       &: Rayleigh-Taylor instability \\
+- sedov     &: Sedov blastwave test \\
+- shocktube &: Simple two-fluid shocktube test \\
+- plummer   &: Plummer sphere (stars + gas, or just gas)
+\end{tabular}
+\newline
+
+\noindent N-body simultions : \\
+\begin{tabular}{ll}
+- binary    &: Simple circular binary test \\
+- burrau    &: Burrau Pythagorean test \\
+- figure8   &: Simple 3-body figure-8 test \\
+- plummer   &: Plummer sphere (stars + gas, or just stars) \\
+- quadruple &: Simple hierarchical quadruple test
+\end{tabular}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Python viewer usage}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Python viewer commands}
+
+Information on commands for the python viewer is available using the 'help' command.  Typing 'help' or 'h' gives a list of all the principle commands available.  Typing 'help command' or 'h command' gives more information on the chosen command.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Python viewer script examples}
+
+The python viewer can read in scripts to perform some repetitive sequence of viewing commands.  Any script can be read in and processed by typing : 
+\var{read SCRIPTNAME}. \\
+\newline
+
+\noindent Example 1 - Loading a snapshot and plotting SPH quantites : \\
+
+\begin{tabular}{p{7cm}p{6cm}}
+\var{loadsnap su BBSIT1.su.00010} &        (Load single snapshot file into memory)\\
+\var{limits x -0.005 0.005}       &        (Set limits for x-axis) \\
+\var{limits y -0.005 0.005}       &        (Set limits for y-axis) \\
+\var{plot sph x y}                &        (Plot SPH particle x-y positions) \\
+\var{savefig eps BBSIT1.eps}      &        (Save window to file)
+\end{tabular}
+\newline
+
+
+\noindent Example 2 - Loading a whole simulation and plotting SPH and star quantites for several selected snapshots : \\
+
+\begin{tabular}{p{7cm}p{6cm}}
+\var{loadsim su BBSIT1} &              (Load all simulation files into memory) \\
+\var{limits x -0.005 0.005} &          (Set limits for x-axis) \\
+\var{limits y -0.005 0.005} &         (Set limits for y-axis) \\
+\var{plot sph x y} &                   (Plot SPH particle x-y positions) \\
+\var{addplot star x y color=red size=20} & (Add star particles to current plot \\
+                                        & with selected colour and marker size) \\
+\var{savefig eps BBSIT1-SNAP1.eps} &   (Save image to file) \\
+\var{snap 10}                      &   (Change to snapshot 10) \\
+\var{replot}                       &   (Replot window, but with new snapshot)\\
+\var{savefig eps BBSIT1-SNAP2.eps} &   (Save new image to separate file)
+\end{tabular}
+\newline
+
+
+\noindent Example 3 - Loading a whole simulation and plotting SPH and star quantites including tracks indicating the movement of stars : \\
+
+\begin{tabular}{p{7cm}p{6cm}}
+\var{loadsim su BBSIT1} &               (Load all simulation files into memory) \\
+\var{limits x -0.005 0.005} &           (Set limits for x-axis) \\
+\var{limits y -0.005 0.005} &           (Set limits for y-axis) \\
+\var{plot sph x y} &                    (Plot SPH particle x-y positions) \\
+\var{addplot star x y color=red size=20} &  (Add star particles to current plot) \\
+\var{addplot star x y color=red plotstyle=tracks} &            (Add tracks of star particles movement) \\
+    
+\var{makemovie BBSIT1.mp4} &             (Create movie of snapshots using ffmpeg)
+\end{tabular}
+\newline
+
+
+\noindent Example 4 - Plotting non-coordinate quantities of stars : \\
+
+\begin{tabular}{p{7cm}p{6cm}}
+\var{loadsim su BBSIT1} &               (Load all simulation files into memory) \\
+\var{limits t 0.02 0.035} &                    (Set limits time plotting axis) \\
+\var{limits m 0.0 0.2} &                      (Set limits for star mass axis) \\
+\var{plot star t m color=red plotstyle=tracks} & (Plot time vs mass of star ptcls)     
+\end{tabular}
+\newline
+
+
+\noindent Example 5 - Rendered images (e.g. rendered density slice) : \\
+
+\begin{tabular}{p{7cm}p{6cm}}
+\var{loadsim su BBSIT1} &       (Load all simulation files into memory) \\
+\var{limits t 0.02 0.035} &            (Set limits time plotting axis) \\
+\var{limits rho 1.0e-18 1.0e-12} &     (Set limits for rendered quantity) \\
+\var{render x y rho renderscale=log} & (Render density logarithmically) \\
+\var{addplot star x y color=black plotstyle=tracks} & (Add star tracks over rendered image)
+\end{tabular}
+\newline
+
+
+\noindent Example 6 - Load in two simulations and compare quantities on same plot : \\
+
+\begin{tabular}{p{7cm}p{6cm}}
+\var{loadsim su BBSIT1} &              (Load first simulation files) \\
+\var{loadsim su BBSIT2} &              (Load in second simulation files) \\
+\var{plot star x y sim=1 snap=200 color=red tracks=1 legend=1} & (Plot time-mass tracks (red solid) for 1st sim, 200th snapshot with legend) \\
+\var{addplot star x y sim=2 snap=200 color=blue linestyle=-- plotstyle=tracks legend=1} & (Add time-mass tracks (blue dashed)of 2nd sim , 200th snapshot) \\
+\var{savefig eps BBSIT-MASS.eps} & (Save final figure to file)
+\end{tabular}
+\newline
+
+\noindent Alternatively, this can also be done with the following longer code : \\
+
+\begin{tabular}{p{7cm}p{6cm}}
+\var{loadsim su BBSIT1} &              (Load first simulation files) \\
+\var{loadsim su BBSIT2} &              (Load in second simulation files) \\
+\var{sim 1} &                          (Select first simulation) \\
+\var{snap 200} &                       (Select 200th snapshot) \\
+\var{plot star x y color=red legend=1 plotstyle=tracks} & (..) \\
+\var{sim 2} &                          (..) \\
+\var{snap 200} &                       (..) \\
+\var{addplot star x y color=blue legend=1 plotstyle=tracks linestyle=--} & (..) \\
+\var{savefig eps BBSIT-MASS.eps} &     (..) \\
+\end{tabular}
+\newline
+
+
+\noindent Example 7 - ... :
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{To-do list}
+
+\subsection{Known bugs}
+\begin{itemize}
+\item ...
+%\item If running a simulation in interactive mode, the simulation variables can become corrupted if previous snapshots are viewed, i.e. once a previous snapshot is viewed, the simulation can no longer be continued.
+%\item If running a simulation in interactive mode and a different simulation is loaded into memory, then it is no longer possible to continue running that simulation.
+%\item Rendered images are technically not done correct if smoothing lengths are smaller than the grid size (which can often be the case, although the images are fine for viewing/movie purposes).
+\end{itemize}
+
+
+\subsection{Proposed features}
+List of possible new features, in list of decreasing order of probable implementation.
+\begin{itemize}
+\item Plot star/sink-based statistics, e.g. sink mass-functions, binary statistics
+\item More sanity-checking/error-trapping (to prevent crashing on erroneous input)
+\end{itemize}
+
+
+\end{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
