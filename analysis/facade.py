@@ -37,6 +37,9 @@ try:
 except AttributeError:
     interactive=True
 
+
+#TODO: add function for resizing (programmatically) the figure
+
 def handle(e):
     '''This functions takes care of printing information about an error,
     if we are in interactive mode, or re-raising it, if we are in script mode
@@ -293,7 +296,10 @@ def block():
     raw_input()
 
 def update(type=None):
-    '''Updates all the plots. The user should never call directly this function.''' 
+    '''Updates all the plots. You should never call directly this function,
+    because all the plotting functions should call this function for you. 
+    If you run into a situation when you need it, please contact the authors, because
+    you probably just spotted a bug in the code.''' 
     #updates the plots
     for command in Singletons.commands:
         updateplot=False
