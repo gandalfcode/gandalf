@@ -1,7 +1,7 @@
-// ============================================================================
-// Render.cpp
-// Contains all functions for generating rendered images from SPH data.
-// ============================================================================
+//=============================================================================
+//  Render.cpp
+//  Contains all functions for generating rendered images from SPH data.
+//=============================================================================
 
 
 #include <iostream>
@@ -40,9 +40,9 @@ RenderBase* RenderBase::RenderFactory(int ndim, SphSimulationBase* sim) {
   return render;
 }
 
-// ============================================================================
-// Render::Render
-// ============================================================================
+//=============================================================================
+//  Render::Render
+//=============================================================================
 template <int ndim>
 Render<ndim>::Render(SphSimulationBase* sim):
 sph(static_cast<Sph<ndim>* > (static_cast<SphSimulation<ndim>* > (sim)->sph))
@@ -51,9 +51,9 @@ sph(static_cast<Sph<ndim>* > (static_cast<SphSimulation<ndim>* > (sim)->sph))
 
 
 
-// ============================================================================
-// Render::~Render
-// ============================================================================
+//=============================================================================
+//  Render::~Render
+//=============================================================================
 template <int ndim>
 Render<ndim>::~Render()
 {
@@ -61,11 +61,11 @@ Render<ndim>::~Render()
 
 
 
-// ============================================================================
-// Render::CreateColumnRenderingGrid
-// Calculate column integrated SPH averaged quantities on a grid for use in 
-// generated rendered images in python code.
-// ============================================================================
+//=============================================================================
+//  Render::CreateColumnRenderingGrid
+/// Calculate column integrated SPH averaged quantities on a grid for use in
+/// generated rendered images in python code.
+//=============================================================================
 template <int ndim>
 int Render<ndim>::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
 				      string ystring, string renderstring,
@@ -219,9 +219,9 @@ int Render<ndim>::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstri
 
 
 
-// ============================================================================
-// Render::CreateSliceRenderingGrid
-// ============================================================================
+//=============================================================================
+//  Render::CreateSliceRenderingGrid
+//=============================================================================
 template <int ndim>
 int Render<ndim>::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
 				     string ystring, string zstring, 
