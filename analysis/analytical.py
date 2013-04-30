@@ -86,8 +86,8 @@ class soundwave (AnalyticalSolution):
             self.gamma = simfloatparams["gamma_eos"]
             self.csound = np.sqrt(self.gamma*self.press/self.rho)
         self.wlambda = self.xR - self.xL
-        self.kwave = 2.0*3.1415/self.wlambda
-        self.omega = 2.0*3.1415*self.csound/self.wlambda
+        self.kwave = 2.0*np.pi/self.wlambda
+        self.omega = 2.0*np.pi*self.csound/self.wlambda
         self.time = time
         self.iMAX = 1000
         if sim.simparams.stringparams["gas_eos"] == "isothermal":
@@ -100,6 +100,11 @@ class soundwave (AnalyticalSolution):
         rho = self.rho*(1.0 + self.amp*np.sin(self.kwave*x - self.omega*self.time))
         vx = self.csound*self.amp*np.sin(self.kwave*x - self.omega*self.time)
         ax = -self.csound*self.csound*self.kwave*self.rho*self.amp*np.cos(self.kwave*x - self.omega*self.time)
-        if ix == "x" and iy == "rho": return x,rho
-        if ix == "x" and iy == "vx": return x,vx
-        if ix == "x" and iy == "ax": return x,ax
+        if ix == "x" and iy == "rho": 
+            return x,rho
+        elif ix == "x" and iy == "vx": 
+            return x,vx
+        elif ix == "x" and iy == "ax": 
+            return x,ax
+        else:
+            raise KeyError("There were errors in the quantity you requested")
