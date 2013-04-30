@@ -1,35 +1,86 @@
-     : run_id = soundwave
-xlhs : x_boundary_lhs = periodic
-xrhs : x_boundary_rhs = periodic
-     : boxmin[0] = 0.0
-     : boxmax[0] = 1.0
-     : Npart = 256
-     : rhofluid1 = 1.0
-     : press1 = 1.0
-     : mu_bar = 1.0
-     : temp0 = 1.0
-     : amp = 0.002
-     : ndim = 1
-     : tend = 1.0
-     : dt_snap = 1.1
-     : noutputstep = 99999999
+-----------------------------------------------------------------
+Sound wave test
+Generates and propagates a small linear density perturbation as a 
+sound-wave along a uniform density gas.
+-----------------------------------------------------------------
 
-     : ic = soundwave
-     : gas_eos = isothermal
 
-     : hydro_forces = 1
-     : self_gravity = 0
+----------------------------
+Initial conditions variables
+----------------------------
+Simulation run id string                    : run_id = SOUNDWAVE1
+Select shocktube initial conditions         : ic = soundwave
+1D shocktube test                           : ndim = 1
+Pressure of LHS fluid                       : press1 = 1.0
+Density of LHS fluid                        : rhofluid1 = 1.0
+Sound wave amplitude                        : amp = 0.001
+No. of particles in wave                    : Npart = 256
 
-     : h_converge = 0.0000000001
 
-     : avisc = none
-     : acond = none
-     : alpha_visc = 0.1
-     : beta_visc = 0.2
+-----------------------------
+Simulation boundary variables
+-----------------------------
+LHS position of boundary in x-dimension     : boxmin[0] = 0.0
+RHS position of boundary in x-dimension     : boxmax[0] = 1.0
+LHS boundary type in x-dimension            : x_boundary_lhs = periodic
+RHS boundary type in x-dimension            : x_boundary_rhs = periodic
 
-     : Nlevels = 1
-     : courant_mult = 0.1
-     : accel_mult = 0.2
 
-     : kernel = quintic
-     : neib_search = bruteforce
+-------------------------
+Simulation time variables
+-------------------------
+Simulation end time                         : tend = 1.5
+Regular snapshot output frequency           : dt_snap = 0.5
+Screen output frequency (in no. of steps)   : noutputstep = 999999999
+
+
+-----------------------
+Thermal physics options
+-----------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = isothermal
+Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
+
+
+---------------------------------------
+Smoothed Particle Hydrodynamics options
+---------------------------------------
+SPH algorithm choice                        : sph = gradh
+SPH smoothing kernel choice                 : kernel = quintic
+SPH smoothing length iteration tolerance    : h_converge = 0.00000001
+
+
+--------------------------------
+SPH artificial viscosity options
+--------------------------------
+Artificial viscosity choice                 : avisc = none
+Artificial conductivity choice              : acond = none
+Artificial viscosity alpha value            : alpha_visc = 0.1
+Artificial viscosity beta value             : beta_visc = 0.2
+Riemann solver                              : riemann_solver = vanleer
+Order of Riemann solver                     : riemann_order = 2
+Slope limiter                               : slope_limiter = mine
+
+
+------------------------
+Time integration options
+------------------------
+SPH particle integration option             : sph_integration = lfkdk
+Integration of gas thermal energy           : energy_integration = PEC
+SPH Courant timestep condition multiplier   : courant_mult = 0.1
+SPH acceleration condition multiplier       : accel_mult = 0.2
+SPH energy equation timestep multiplier     : energy_mult = 0.5
+No. of block timestep levels                : Nlevels = 1
+
+
+--------------------
+Optimisation options
+--------------------
+Tabulate SPH kernel                         : tabulatedkernel = no
+SPH neighbour search algorithm              : neib_search = grid
+
+
+-------------
+Misc. options
+-------------
+Switch-off self-gravity of gas              : self_gravity = 0

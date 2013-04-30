@@ -253,6 +253,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphNeibForces
 	      neibpart[j].dudt -= parti.m*uaux;
         }
         else if (acond == price2008) {
+
     	  vsignal = sqrt(fabs(eos->Pressure(parti) -
 			      eos->Pressure(neibpart[j]))*0.5*
 			 (parti.invrho + neibpart[j].invrho));

@@ -1,6 +1,7 @@
--------------------------
-Adiabatic shock tube test
--------------------------
+------------------------------------------------------------------------
+Adiabatic wall shock tube test
+Creates a wall-shock test problem with an adiabatic gas with gamma = 5/3
+------------------------------------------------------------------------
 
 
 ----------------------------
@@ -47,7 +48,7 @@ Smoothed Particle Hydrodynamics options
 ---------------------------------------
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = m4
-SPH smoothing length iteration tolerance    : h_converge = 0.001
+SPH smoothing length iteration tolerance    : h_converge = 0.01
 
 
 --------------------------------
@@ -67,13 +68,13 @@ Integration of gas thermal energy           : energy_integration = PEC
 SPH Courant timestep condition multiplier   : courant_mult = 0.1
 SPH acceleration condition multiplier       : accel_mult = 0.2
 SPH energy equation timestep multiplier     : energy_mult = 0.5
-No. of block timestep levels                : Nlevels = 4
+No. of block timestep levels                : Nlevels = 1
 
 
 --------------------
 Optimisation options
 --------------------
-Tabulate SPH kernel                         : tabulatedkernel = yes
+Tabulate SPH kernel                         : tabulated_kernel = 1
 SPH neighbour search algorithm              : neib_search = grid
 
 

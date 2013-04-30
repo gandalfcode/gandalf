@@ -1,6 +1,8 @@
----------------------------------
+-------------------------------------------------------------------------------
 Kelvin-Helmholtz instability test
----------------------------------
+Generate 2:1 Kelvin-Helmholtz instability test based on initial conditions 
+given by Springel (2009).
+-------------------------------------------------------------------------------
 
 
 ----------------------------
@@ -8,19 +10,19 @@ Initial conditions variables
 ----------------------------
 Simulation run id string                    : run_id = KHI1
 Select Kelvin-Helmholtz initial conditions  : ic = khi
-1D shocktube test                           : ndim = 2
-x-velocity of LHS fluid                     : vfluid1[0] = -0.5
-x-velocity of RHS fluid                     : vfluid2[0] = 0.5
-Pressure of LHS fluid                       : press1 = 2.5
-Pressure of RHS fluid                       : press2 = 2.5
-Density of LHS fluid                        : rhofluid1 = 1.0
-Density of RHS fluid                        : rhofluid2 = 2.0
+Select 2D                                   : ndim = 2
+x-velocity of rho=1 fluid                   : vfluid1[0] = -0.5
+x-velocity of rho=2 fluid                   : vfluid2[0] = 0.5
+Pressure of fluid 1                         : press1 = 2.5
+Pressure of fluid 2                         : press2 = 2.5
+Density of fluid 1                          : rhofluid1 = 1.0
+Density of fluid 2                          : rhofluid2 = 2.0
 Velocity perturbation amplitude             : amp = 0.1
 Velocity perturbation wavelength            : lambda = 0.5
-No. of particles in LHS fluid               : Nlattice1[0] = 44
-No. of particles in LHS fluid               : Nlattice1[1] = 22
-No. of particles in RHS fluid               : Nlattice2[0] = 64
-No. of particles in RHS fluid               : Nlattice2[1] = 32
+No. of x-particles in fluid 1               : Nlattice1[0] = 44
+No. of y-particles in fluid 1               : Nlattice1[1] = 22
+No. of x-particles in fluid 2               : Nlattice2[0] = 64
+No. of y-particles in fluid 2               : Nlattice2[1] = 32
 
 
 -----------------------------
@@ -41,7 +43,7 @@ Simulation time variables
 -------------------------
 Simulation end time                         : tend = 1.59
 Regular snapshot output frequency           : dt_snap = 0.059
-Screen output frequency (in no. of steps)   : noutputstep = 16
+Screen output frequency (in no. of steps)   : noutputstep = 32
 
 
 -----------------------
@@ -83,7 +85,7 @@ No. of block timestep levels                : Nlevels = 1
 --------------------
 Optimisation options
 --------------------
-Tabulate SPH kernel                         : yes
+Tabulate SPH kernel                         : tabulated_kernel = 1
 SPH neighbour search algorithm              : neib_search = grid
 
 
@@ -91,8 +93,3 @@ SPH neighbour search algorithm              : neib_search = grid
 Misc. options
 -------------
 Switch-off self-gravity of gas              : self_gravity = 0
-
-
-
-
- 

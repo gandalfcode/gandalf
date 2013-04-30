@@ -291,14 +291,14 @@ void SphSimulation<ndim>::ProcessParameters(void)
   // --------------------------------------------------------------------------
   if (stringparams["sph"] == "gradh") {
     string KernelName = stringparams["kernel"];
-    if (stringparams["tabulatedkernel"] == "yes") {
+    if (intparams["tabulated_kernel"] == 1) {
       sph = new GradhSph<ndim, TabulatedKernel> 
 	(intparams["hydro_forces"], intparams["self_gravity"],
 	 floatparams["alpha_visc"], floatparams["beta_visc"],
 	 floatparams["h_fac"], floatparams["h_converge"], 
 	 avisc, acond, stringparams["gas_eos"], KernelName);
     }
-    else if (stringparams["tabulatedkernel"] == "no") {
+    else if (intparams["tabulated_kernel"] == 0) {
       // Depending on the kernel, instantiate a different GradSph object
       if (KernelName == "m4") {
 	sph = new GradhSph<ndim, M4Kernel> 
@@ -328,22 +328,22 @@ void SphSimulation<ndim>::ProcessParameters(void)
       }
     }
     else {
-      string message = "Invalid option for the tabulatedkernel parameter: " +
-	stringparams["tabulatedkernel"];
+      string message = "Invalid option for the tabulated_kernel parameter: " +
+	stringparams["tabulated_kernel"];
       ExceptionHandler::getIstance().raise(message);
     }
   }
   // --------------------------------------------------------------------------
   else if (stringparams["sph"] == "sm2012") {
     string KernelName = stringparams["kernel"];
-    if (stringparams["tabulatedkernel"] == "yes") {
+    if (intparams["tabulated_kernel"] == 1) {
       sph = new SM2012Sph<ndim, TabulatedKernel> 
         (intparams["hydro_forces"], intparams["self_gravity"],
 	 floatparams["alpha_visc"], floatparams["beta_visc"],
 	 floatparams["h_fac"], floatparams["h_converge"],
 	 avisc, acond, stringparams["gas_eos"], KernelName);
     }
-    else if (stringparams["tabulatedkernel"] == "no"){
+    else if (intparams["tabulated_kernel"] == 0){
       // Depending on the kernel, instantiate a different GradSph object
       if (KernelName == "m4") {
 	sph = new SM2012Sph<ndim, M4Kernel> 
@@ -373,22 +373,22 @@ void SphSimulation<ndim>::ProcessParameters(void)
       }
     }
     else {
-      string message = "Invalid option for the tabulatedkernel parameter: " +
-	stringparams["tabulatedkernel"];
+      string message = "Invalid option for the tabulated_kernel parameter: " +
+	stringparams["tabulated_kernel"];
       ExceptionHandler::getIstance().raise(message);
     }
   }
   // --------------------------------------------------------------------------
   else if (stringparams["sph"] == "godunov") {
     string KernelName = stringparams["kernel"];
-    if (stringparams["tabulatedkernel"] == "yes") {
+    if (intparams["tabulated_kernel"] == 1) {
       sph = new GodunovSph<ndim, TabulatedKernel> 
 	(intparams["hydro_forces"], intparams["self_gravity"],
 	 floatparams["alpha_visc"], floatparams["beta_visc"],
 	 floatparams["h_fac"], floatparams["h_converge"],
 	 avisc, acond, stringparams["gas_eos"], KernelName);
     }
-    else if (stringparams["tabulatedkernel"] == "no"){
+    else if (intparams["tabulated_kernel"] == 0){
       // Depending on the kernel, instantiate a different GradSph object
       if (KernelName == "m4") {
 	sph = new GodunovSph<ndim, M4Kernel> 
@@ -418,8 +418,8 @@ void SphSimulation<ndim>::ProcessParameters(void)
       }
     }
     else {
-      string message = "Invalid option for the tabulatedkernel parameter: " +
-	stringparams["tabulatedkernel"];
+      string message = "Invalid option for the tabulated_kernel parameter: " +
+	stringparams["tabulated_kernel"];
       ExceptionHandler::getIstance().raise(message);
     }
   }
@@ -512,12 +512,12 @@ void SphSimulation<ndim>::ProcessParameters(void)
   // --------------------------------------------------------------------------
   if (stringparams["nbody"] == "lfkdk") {
     string KernelName = stringparams["kernel"];
-    if (stringparams["tabulatedkernel"] == "yes") {
+    if (intparams["tabulated_kernel"] == 1) {
       nbody = new NbodyLeapfrogKDK<ndim, TabulatedKernel> 
 	(intparams["nbody_softening"], intparams["sub_systems"],
 	 floatparams["nbody_mult"], KernelName);
     }
-    else if (stringparams["tabulatedkernel"] == "no") {
+    else if (intparams["tabulated_kernel"] == 0) {
       // Depending on the kernel, instantiate a different GradSph object
       if (KernelName == "m4") {
 	nbody = new NbodyLeapfrogKDK<ndim, M4Kernel> 
@@ -541,8 +541,8 @@ void SphSimulation<ndim>::ProcessParameters(void)
       }
     }
     else {
-      string message = "Invalid option for the tabulatedkernel parameter: " +
-	stringparams["tabulatedkernel"];
+      string message = "Invalid option for the tabulated_kernel parameter: " +
+	stringparams["tabulated_kernel"];
       ExceptionHandler::getIstance().raise(message);
     }
   }
