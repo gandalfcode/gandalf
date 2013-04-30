@@ -6,6 +6,7 @@ from seren.analysis.SimBuffer import SimBuffer, BufferException
 
 manager= Manager()
 
+
 class Singletons:
     '''Container class for singletons object. They are:
         queue

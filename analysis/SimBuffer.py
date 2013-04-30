@@ -16,6 +16,8 @@ class SimBuffer:
     To keep these structures synchronized, it is better to use only the methods
     provided by this class to modify its members (reading new snapshots and
     simulations and deleting them). 
+    The class is implemented as singleton, so it should never be instantiated; for
+    this reason, all of its methods are static.
     '''
 
     Nsim = int(0)
@@ -36,6 +38,9 @@ class SimBuffer:
         SimBuffer.currentsim = SimBuffer.Nsim - 1
     
     # TODO: improve the algorithm for making space/allocating space
+    # TODO: there are still problems with the way memory is managed. Should check
+    #the reference counting before deallocating - we don't want to deallocate a snapshot
+    #that might be still in use
     @staticmethod        
     def _findmemoryfor(snapshot):
         '''

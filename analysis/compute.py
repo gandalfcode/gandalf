@@ -3,6 +3,8 @@ import commandsource as Commands
 import numpy
 from scipy import interpolate
 
+'''This module collects helper functions to compute useful quantities'''
+
 
 def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "current"):
     '''Computes the L1 error norm from the simulation data relative to the analytical solution'''

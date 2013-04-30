@@ -3,13 +3,21 @@ from Queue import Empty
 import os
 
 class PlottingProcess (Process):
+    '''This class contains the code for the plotting process.
+    The run method is the main method that gets executed. It contains an infinite loop, where the command queue is inspected;
+    if there are commands on it, they get executed. The method also does some bookkeeping,
+    removing closed figures. After that, it pauses for a while until the queue is inspected again. The only way to exit
+    from this loop is to get a 'STOP' string on the command queue.
+    The class contains also a couple of helper functions, and many structures to do the bookkeeping of figures, limits, quantities, ...
+    (see the comments in the constructor).
+    '''
     def __init__(self, queue, commands, completedqueue, globallimits):
         Process.__init__(self)
         self.queue = queue #queue for receiving commands and data
         self.commands = commands #list of commands to execute
         self.completedqueue = completedqueue #queue to signal main process that we are done
-        self.commandsfigures = {} #dictionary that associate to each command the figure produced
-        self.quantitiesfigures = {} #dictionary that associate to each quantity the figure where it is plotted
+        self.commandsfigures = {} #dictionary that associate to each command id the figure, axis, product triplet produced by the command
+        self.quantitiesfigures = {} #dictionary that associate to figure, axis, string (either 'x', 'y' or 'render') triplet the quantity, unit name double plotted
         self.globallimits = globallimits #dictionary that associate to each quantity the global limits
         self.axesimages = {} #dictionary that for each axis associate the corresponding image
         self.lastid = 0 #id of the last command received
@@ -50,6 +58,8 @@ class PlottingProcess (Process):
                 command.processCommand(self, data)    
                 
     def command_in_list (self, id):
+        '''Returns true if the given id is in the list,
+        false otherwise'''
         for command in self.commands:
             if id == command.id:
                 return True
@@ -57,6 +67,8 @@ class PlottingProcess (Process):
     
             
     def mypause (self, interval):
+        '''Pauses for a while, allowing the event loops of the figures to run,
+        so that the user can interact with them (zoom, pan, ...).'''
         plt = self.plt
         backend = plt.rcParams['backend']
         if backend in plt._interactive_bk:
@@ -73,6 +85,7 @@ class PlottingProcess (Process):
     #TODO: for efficiency reason, refactor this routine to be a callback
     #of when a window is closed
     def remove_closed_figures(self):
+        '''Remove closed figures from the dictionary'''
         for index, commanddummy in enumerate(self.commands):
             fig, ax, line = self.commandsfigures[commanddummy.id]
             try:
