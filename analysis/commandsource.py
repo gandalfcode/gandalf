@@ -181,6 +181,11 @@ class PlotCommand(Command):
     def get_sim_and_snap(self):
         '''Retrieves from the buffer the desired sim and snap'''
         sim = SimBuffer.get_sim_no(self.sim)
+        
+        if not sim.setup:
+            raise Exception("""Error: this simulation has not been set up! If you have set all the relevant parameters/
+            initial conditions, please run the setupsim command to set it up.""")
+        
         if self.snap == "current":
             snap = SimBuffer.get_current_snapshot_by_sim(sim)
             if sim.snapshots == []:
@@ -268,7 +273,7 @@ class ParticlePlotCommand (PlotCommand):
     
     def prepareData (self, globallimits):
         sim, snap = self.get_sim_and_snap()
-        
+
         x_data, xscaling_factor = self.get_array('x', snap)
         y_data, yscaling_factor = self.get_array('y', snap)
         
