@@ -137,6 +137,7 @@ class SphSimulationBase
   // Variables
   // --------------------------------------------------------------------------
   bool setup;                       ///< Flag if simulation is setup
+  bool ParametersProcessed;         ///< Flag if the parameters have been already processed
   int integration_step;             ///< Steps per complete integration step
   int level_max;                    ///< Maximum timestep level
   int level_step;                   ///< Level of smallest timestep unit

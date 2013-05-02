@@ -238,28 +238,15 @@ def subfigure(nx, ny, current):
     data = None
     Singletons.queue.put([command,data])
 
-def newsim(paramfile):
-    '''Reads a parameter file and setups a simulation from it'''
-    return SimBuffer.newsim(paramfile)
-
-def newsimfromparams(paramfile):
-    '''Creates a new simulation object and parses the parameter file,
-    but does not do the setup, still allowing you to programmatically
-    change some of the parameters'''
-    return SimBuffer.newsimfromparams(paramfile)
-
-def newsimpython(paramfile):
-    '''Creates a new simulation object reading the parameter file and
-    doing part of the setup, but doesn't generate the initial conditions.
-    You can use the method ImportArray of the simulation object to specify
-    the initial conditions from Python.'''
-    return SimBuffer.newsimpython(paramfile)
+def newsim(paramfile=None, ndim=None):
+    '''Create a new simulation object. Need to specify either the parameter file, either the number
+    of dimensions. Note that it is not possible to change the number of dimensions afterwards.'''
+    return SimBuffer.newsim(paramfile=paramfile, ndim=ndim)
 
 def run(no=None):
     '''Run a simulation. If no argument is given, run the current one;
     otherwise queries the buffer for the given simulation number.
-    If the simulation has not been setup (i.e., you have used
-    newsimfromparams or newsimpython), does it before running. 
+    If the simulation has not been setup, does it before running. 
     '''
     #gets the correct simulation object from the buffer
     try:
@@ -269,15 +256,14 @@ def run(no=None):
             sim = SimBuffer.get_sim_no(no)
     except BufferError as e:
         handle(e)
-    #TODO: treat this as an exception
+        
+    #setup the simulation
     if not sim.setup:
-        print "The selected simulation was not set-up, we will do it for you"
-        try:
-            sim.frompython
+        if sim.ParametersProcessed:
             sim.PostSetupForPython()
-        except AttributeError:
+        else:
             sim.SetupSimulation()
-        SimBuffer.load_live_snapshot(sim)
+    SimBuffer.load_live_snapshot(sim)
 
     
     while sim.t < sim.tend and sim.Nsteps < sim.Nstepsmax:

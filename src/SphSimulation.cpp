@@ -228,6 +228,8 @@ void SphSimulation<ndim>::GenerateIC(void)
     SoundWave();
   else if (simparams->stringparams["ic"] == "khi")
     KHI();
+  else if (simparams->stringparams["ic"] == "python")
+    return;
   else {
     string message = "Unrecognised parameter : ic = " 
       + simparams->stringparams["ic"];
@@ -587,6 +589,9 @@ void SphSimulation<ndim>::ProcessParameters(void)
   sph->slope_limiter = stringparams["slope_limiter"];
   sph->riemann_order = intparams["riemann_order"];
 
+
+  ParametersProcessed = true;
+
   return;
 }
 
@@ -621,6 +626,12 @@ void SphSimulation<ndim>::PreSetupForPython(void)
 {
   debug1("[SphSimulation::PreSetupForPython]");
 
+  //Check that IC type is really python
+  if (simparams->stringparams["ic"] != "python") {
+    string msg = "Error: you should call this function only if you are using \"python\" as \"ic\" parameter";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+
   ProcessParameters();
 
   sph->AllocateMemory(sph->Nsph);
@@ -647,7 +658,13 @@ void SphSimulation<ndim>::ImportArray
 
   debug2("[SphSimulation::ImportArray]");
 
-  // First checks that the size is correct
+  //Check that PreSetup has been called
+  if (! ParametersProcessed) {
+    string msg = "Error: before calling ImportArray, you need to call PreSetupForPython!";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+
+  //Check that the size is correct
   if (size != sph->Nsph) {
     stringstream message;
     message << "Error: the array you are passing has a size of " 
@@ -772,6 +789,12 @@ template <int ndim>
 void SphSimulation<ndim>::PostSetupForPython(void)
 {
   debug1("[SphSimulation::PostSetupForPython]");
+
+  //Check that IC type is really python
+  if (simparams->stringparams["ic"] != "python") {
+    string msg = "Error: you should call this function only if you are using \"python\" as \"ic\" parameter";
+    ExceptionHandler::getIstance().raise(msg);
+  }
 
   PostGeneration();
 
