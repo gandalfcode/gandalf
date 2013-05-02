@@ -1,8 +1,8 @@
 //=============================================================================
-// GridSearch.cpp
-// Contains functions for grid neighbour search routines.
-// Creates a uniform grid from particle distribution where the spacing is 
-// the size of the maximum kernel range (i.e. kernrange*h_max) over all ptcls.
+//  GridSearch.cpp
+//  Contains functions for grid neighbour search routines.
+//  Creates a uniform grid from particle distribution where the spacing is 
+//  the size of the maximum kernel range (i.e. kernrange*h_max) over all ptcls.
 //=============================================================================
 
 
@@ -175,6 +175,12 @@ void GridSearch<ndim>::UpdateAllSphProperties
 	  
         }
         // --------------------------------------------------------------------
+
+      // Validate that gather neighbour list is correct
+#if defined(VERIFY_ALL)
+	if (neibcheck) CheckValidNeighbourList(sph,i,Ngather,
+					       gatherlist,"gather");
+#endif
 
         // Compute smoothing length and other gather properties for particle i
         okflag = sph->ComputeH(i,Ngather,m2,mu2,drsqd,data[i]);
@@ -903,8 +909,8 @@ void GridSearch<ndim>::AllocateGridMemory(int Npart)
 
   if (Ntot > Ntotmax || Ncell > Ncellmax) {
     if (allocated_grid) DeallocateGridMemory();
-    Ntotmax = 2*Ntot;
-    Ncellmax = 2*Ncell;
+    Ntotmax = 3*Ntot;
+    Ncellmax = 3*Ncell;
     inext = new int[Ntotmax];
     grid = new struct GridCell[Ncellmax];
   }
@@ -959,6 +965,7 @@ void GridSearch<ndim>::CreateGrid(Sph<ndim> *sph)
   for (int k=0; k<ndim; k++) {
     Ngrid[k] = (int)((rmax[k] - rmin[k])/dx_grid) + 1;
     Ncell = Ngrid[k]*Ncell;
+    //cout << "No. of grid cells : " << k << "   " << Ngrid[k] << endl;
   }
 
   // Allocate memory for grid if not previously done
@@ -989,6 +996,7 @@ void GridSearch<ndim>::CreateGrid(Sph<ndim> *sph)
     grid[c].ilast = i;
     grid[c].Nptcls++;
     if (i < sph->Nsph && sph->sphdata[i].active) grid[c].Nactive++;
+    //cout << "GRID " << i << "   " << c << "   " << Ncell << "   " << grid[c].Nptcls << endl;
 
   }
   // --------------------------------------------------------------------------
@@ -1037,7 +1045,9 @@ int GridSearch<ndim>::ComputeParticleGridCell(FLOAT *rp)
 // grid cell i.d. 'c'
 // ============================================================================
 template <int ndim>
-void GridSearch<ndim>::ComputeCellCoordinate(int c, int igrid[ndim])
+void GridSearch<ndim>::ComputeCellCoordinate
+(int c,                             ///< [in] Grid-cell id
+ int igrid[ndim])                   ///< [out] Grid-cell co-ordinate
 {
   if (ndim == 1) 
     igrid[0] = c;
@@ -1050,6 +1060,14 @@ void GridSearch<ndim>::ComputeCellCoordinate(int c, int igrid[ndim])
     igrid[1] = (c/Ngrid[0])%Ngrid[1];
     igrid[0] = c%Ngrid[0];
   }
+#if defined(VERIFY_ALL)
+  if ((ndim == 1 && c != igrid[0]) ||
+    (ndim == 2 && c != igrid[0] + Ngrid[0]*igrid[1]) || 
+      (ndim == 3 && c!= igrid[0] + Ngrid[0]*igrid[1] + Ngrid[0]*Ngrid[1]*igrid[2])) {
+      string message= "Problem computing Grid cell coorindate";
+      ExceptionHandler::getIstance().raise(message);
+    }
+#endif
   return;
 }
 
@@ -1186,7 +1204,7 @@ int GridSearch<ndim>::ComputeNeighbourList
 	    neiblist[Nneib++] = i;
 	    if (i == ilast) break;
 	    i = inext[i];
-	  } while (i != 1);
+	  } while (i != -1);
 	}
       }
     }
@@ -1207,7 +1225,7 @@ int GridSearch<ndim>::ComputeNeighbourList
 //=============================================================================
 template <int ndim>
 void GridSearch<ndim>::CheckValidNeighbourList
-(Sph *sph,                          ///< [in] SPH object pointer
+(Sph<ndim> *sph,                    ///< [in] SPH object pointer
  int i,                             ///< [in] Particle i.d.
  int Nneib,                         ///< [in] No. of potential neighbours
  int *neiblist,                     ///< [in] List of potential neighbour i.d.s
@@ -1227,7 +1245,7 @@ void GridSearch<ndim>::CheckValidNeighbourList
   // First, create list of 'true' neighbours by looping over all particles
   if (neibtype == "gather") {
     for (j=0; j<sph->Ntot; j++) {
-      for (k=0; k<ndimmax; k++)
+      for (k=0; k<ndim; k++)
 	dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
       drsqd = DotProduct(dr,dr,ndim);
       if (drsqd <= 
@@ -1271,6 +1289,7 @@ void GridSearch<ndim>::ValidateGrid(void)
 {
   int c;                            // Cell counter
   int i;                            // Particle id
+  int ilast;                        // i.d. of last particle in list
   int *gridentry;                   // No. of time ptcl is present in grid
 
   debug2("[GridSearch::ValidateGrid]");
@@ -1283,11 +1302,13 @@ void GridSearch<ndim>::ValidateGrid(void)
   for (c=0; c<Ncell; c++) {
     if (grid[c].Nptcls == 0) continue;
     i = grid[c].ifirst;
+    ilast = grid[c].ilast;
     do {
       gridentry[i]++;
-      if (i == grid[c].ilast) break;
+      cout << "COUNTING : " << c << "   " << i << "   " << gridentry[i] << "    " << grid[c].Nptcls << "   " << ilast << endl;
+      if (i == ilast) break;
       i = inext[i];
-    } while (1);
+    } while (i != -1);
   }
 
   // If particles appear multiple times, or not at all, quit with error msg

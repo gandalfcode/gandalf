@@ -138,6 +138,8 @@ int GradhSph<ndim, kernelclass>::ComputeH
     }
 
     else {
+      cout << "HERE : " << parti.h << "    " << parti.rho << "    " << 
+	h_upper_bound << "     " << h_lower_bound << "    " << parti.hfactor << "     " << parti.m*parti.hfactor*kern.w0(0.0) << endl;
       string message = "Problem with convergence of h-rho iteration";
       ExceptionHandler::getIstance().raise(message);
     }

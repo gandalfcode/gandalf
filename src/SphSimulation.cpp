@@ -136,11 +136,11 @@ void SphSimulationBase::SetParam(string key, float value) {
 //=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::Run
-(int Nadvance                           ///< [in] Selected max no. of integer 
- )                                      ///< timesteps (Optional argument).
+(int Nadvance                       ///< [in] Selected max no. of integer 
+ )                                  ///< timesteps (Optional argument).
 {
-  int Ntarget;                          // Target step no before finishing 
-                                        // main code integration.
+  int Ntarget;                      // Target step no before finishing 
+                                    // main code integration.
 
   debug1("[SphSimulation::Run]");
 
@@ -184,7 +184,7 @@ void SphSimulation<ndim>::InteractiveRun
   DOUBLE tpython = 8.0;                 // Python viewer update time
   clock_t tstart = clock();             // Initial CPU clock time
 
-  debug1("[SphSimulation::Run]");
+  debug2("[SphSimulation::InteractiveRun]");
 
   // Set integer timestep exit condition if provided as parameter.
   if (Nadvance < 0) Ntarget = Nstepsmax;
@@ -255,7 +255,10 @@ void SphSimulation<ndim>::GenerateIC(void)
   debug2("[SphSimulation::GenerateIC]");
 
   // Generate initial conditions
-  if (simparams->stringparams["ic"] == "random_cube")
+  if (simparams->stringparams["ic"] == "file")
+    ReadSnapshotFile(simparams->stringparams["in_file"],
+		     simparams->stringparams["in_file_form"]);
+  else if (simparams->stringparams["ic"] == "random_cube")
     RandomBox();
   else if (simparams->stringparams["ic"] == "random_sphere")
     RandomSphere();

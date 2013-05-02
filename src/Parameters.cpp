@@ -237,9 +237,9 @@ void Parameters::SetDefaultValues(void)
   floatparams["boxmin[0]"] = 0.0;
   floatparams["boxmin[1]"] = 0.0;
   floatparams["boxmin[2]"] = 0.0;
-  floatparams["boxmax[0]"] = 0.0;
-  floatparams["boxmax[1]"] = 0.0;
-  floatparams["boxmax[2]"] = 0.0;
+  floatparams["boxmax[0]"] = 1.0;
+  floatparams["boxmax[1]"] = 1.0;
+  floatparams["boxmax[2]"] = 1.0;
 
   // Unit and scaling parameters
   // --------------------------------------------------------------------------

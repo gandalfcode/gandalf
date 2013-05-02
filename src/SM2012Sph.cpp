@@ -1,8 +1,8 @@
 //=============================================================================
-// SM2012Sph.cpp
-// Contains all functions for calculating SPH quantities using the method 
-// proposed by Saitoh & Makino (2012) in the conservative formalation 
-// of Hopkins (2013).
+//  SM2012Sph.cpp
+//  Contains all functions for calculating SPH quantities using the method 
+//  proposed by Saitoh & Makino (2012) in the conservative formalation 
+//  of Hopkins (2013).
 //=============================================================================
 
 
@@ -24,7 +24,7 @@ using namespace std;
 
 
 //=============================================================================
-// SM2012Sph::SM2012Sph
+//  SM2012Sph::SM2012Sph
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 SM2012Sph<ndim, kernelclass >::SM2012Sph(int hydro_forces_aux,
@@ -45,9 +45,9 @@ SM2012Sph<ndim, kernelclass >::SM2012Sph(int hydro_forces_aux,
 
 
 
-// ============================================================================
-// SM2012Sph::~SM2012Sph
-// ============================================================================
+//=============================================================================
+//  SM2012Sph::~SM2012Sph
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 SM2012Sph<ndim, kernelclass >::~SM2012Sph()
 {
@@ -172,15 +172,15 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
 
 
 
-// ============================================================================
-// SM2012Sph::ComputeSphNeibForces
-// Compute SPH neighbour force pairs for 
-// (i) All neighbour interactions of particle i with id j > i,
-// (ii) Active neighbour interactions of particle j with id j > i
-// (iii) All inactive neighbour interactions of particle i with id j < i.
-// This ensures that all particle-particle pair interactions are only 
-// computed once only for efficiency.
-// ============================================================================
+//=============================================================================
+//  SM2012Sph::ComputeSphNeibForces
+/// Compute SPH neighbour force pairs for 
+/// (i) All neighbour interactions of particle i with id j > i,
+/// (ii) Active neighbour interactions of particle j with id j > i
+/// (iii) All inactive neighbour interactions of particle i with id j < i.
+/// This ensures that all particle-particle pair interactions are only 
+/// computed once only for efficiency.
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void SM2012Sph<ndim, kernelclass >::ComputeSphNeibForces
 (int i,                                 // id of particle
@@ -289,15 +289,15 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphNeibForces
 
 
 
-// ============================================================================
-// SM2012Sph::ComputeSphNeibForces
-// Compute SPH neighbour force pairs for 
-// (i) All neighbour interactions of particle i with id j > i,
-// (ii) Active neighbour interactions of particle j with id j > i
-// (iii) All inactive neighbour interactions of particle i with id j < i.
-// This ensures that all particle-particle pair interactions are only 
-// computed once only for efficiency.
-// ============================================================================
+//=============================================================================
+//  SM2012Sph::ComputeSphNeibForces
+/// Compute SPH neighbour force pairs for 
+/// (i) All neighbour interactions of particle i with id j > i,
+/// (ii) Active neighbour interactions of particle j with id j > i
+/// (iii) All inactive neighbour interactions of particle i with id j < i.
+/// This ensures that all particle-particle pair interactions are only 
+/// computed once only for efficiency.
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void SM2012Sph<ndim, kernelclass >::ComputeSphNeibGravForces
 (int i,                                 // id of particle
@@ -406,10 +406,10 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphNeibGravForces
 
 
 
-// ============================================================================
-// SM2012Sph::ComputeSphNeibDudt
-// Empty definition (
-// ============================================================================
+//=============================================================================
+//  SM2012Sph::ComputeSphNeibDudt
+/// Empty definition
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void SM2012Sph<ndim, kernelclass >::ComputeSphNeibDudt
 (int i, int Nneib, int *neiblist, FLOAT *drmag, 
@@ -420,10 +420,10 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphNeibDudt
 
 
 
-// ============================================================================
-// SM2012Sph::ComputeSphDerivatives
-// Empty definition
-// ============================================================================
+//=============================================================================
+//  SM2012Sph::ComputeSphDerivatives
+/// Empty definition
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void SM2012Sph<ndim, kernelclass >::ComputeSphDerivatives
 (int i, int Nneib, int *neiblist, FLOAT *drmag, 
@@ -434,10 +434,10 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphDerivatives
 
 
 
-// ============================================================================
-// SM2012Sph::ComputePostHydroQuantities
-// ..
-// ============================================================================
+//=============================================================================
+//  SM2012Sph::ComputePostHydroQuantities
+/// ..
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void SM2012Sph<ndim, kernelclass >::ComputePostHydroQuantities
 (SphParticle<ndim> &parti)
@@ -448,11 +448,11 @@ void SM2012Sph<ndim, kernelclass >::ComputePostHydroQuantities
 
 
 
-// ============================================================================
-// SM2012Sph::ComputeGravForces
-// Compute the contribution to the total gravitational force of particle 'i' 
-// due to 'Nneib' neighbouring particles in the list 'neiblist'.
-// ============================================================================
+//=============================================================================
+//  SM2012Sph::ComputeGravForces
+/// Compute the contribution to the total gravitational force of particle 'i' 
+/// due to 'Nneib' neighbouring particles in the list 'neiblist'.
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void SM2012Sph<ndim, kernelclass >::ComputeDirectGravForces
 (int i,                                 // id of particle

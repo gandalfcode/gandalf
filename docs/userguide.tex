@@ -9,9 +9,9 @@
 \usepackage{array}
 \usepackage[colorlinks,final]{hyperref}
 
-\newcommand{\CODENAME}{SEREN\_VIEW}
-\newcommand{\codename}{seren\_view}
-\newcommand{\VERNO}{0.1.0}
+%\newcommand{\CODENAME}{SEREN\_VIEW}
+%\newcommand{\codename}{seren\_view}
+\newcommand{\VERNO}{0.1.0 }
 
 \newcommand{\var}[1]{\texttt{#1}}
 
@@ -25,7 +25,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
 
-\title{\CODENAME v\VERNO userguide}
+\title{CODENAME v\VERNO userguide}
 \author{David Hubber \& Giovanni Rosotti}
 
 \maketitle
@@ -36,18 +36,18 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Overview of code}
-\CODENAME is a new SPH code written in C++ and python based partly on the algorithms and code structures used in SEREN (Hubber et al. 2011), but principally written from scratch.  It has been written for several purposes.
+CODENAME is a new SPH and N-body code written in C++ and python.  Although partly on the algorithms and code structures used in SEREN (Hubber et al. 2011), it has been written from scratch and contains many new features and optimisations which significantly improve the code.  It has been written for several purposes.
 \begin{itemize}
-\item \CODENAME can be written in three different modes; as a standard executable run from the command line (like SEREN), run from a python script or run inside an interactive python environment.  Both the script and interactive python modes include a graphical output that can be used to visualise previously run simulations, or to interactively visualise simulations as they are run.
-\item \CODENAME generates initial conditions at run-time, as opposed to SEREN where the initial conditions had to be prepared a priori.
-\item \CODENAME uses additional parameters to switch on various physics options, as well as requiring them to be activated in the Makefile.  In comparison, SEREN controlled physics options exclusively in the Makefile.
-\item \CODENAME uses modules to contain all subroutines.  Therefore, no additional interface file (such as interface.F90) exists in SEREN\_VIEW.
+\item CODENAME can be written in three different modes; as a standard executable run from the command line (like SEREN), run from a python script or run inside an interactive python environment.  Both the script and interactive python modes include a graphical output that can be used to visualise previously run simulations, or to interactively visualise simulations as they are run.
+\item CODENAME generates initial conditions at run-time, as opposed to SEREN where the initial conditions had to be prepared a priori.
+\item CODENAME uses additional parameters to switch on various physics options, as well as requiring them to be activated in the Makefile.  In comparison, SEREN controlled physics options exclusively in the Makefile.
+%\item CODENAME uses modules to contain all subroutines.  Therefore, no additional interface file (such as interface.F90) exists in CODENAME.
 \end{itemize}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Installation} \label{S:INSTALL}
-Requirements:
+In order to use all features in CODENAME, the following programs and libraries must be installed : 
 \begin{itemize}
 \item C++ compiler; at present, only gcc/g++ has been tested with the code
 \item Python 2.7
@@ -58,19 +58,118 @@ Requirements:
 \end{itemize}
 
 
-\subsection{Linux}
-All of these programs/libraries can be found in most standard Linux installations, and if not, will be present in package managers.
+All of these programs/libraries can be found in most standard Linux installations, and if not, will be available to download from most package managers.  For Mac users, all programs can be installed with either fink, MacPorts or homebrew.  It is preferable that all (except the Fortran compiler) are downloaded with just the one package manager in order to ensure they are compatible and function together correctly.
 
 
-\subsection{Mac OS X}
-All programs can be installed with either fink, MacPorts or homebrew.  It is preferable that all (except the Fortran compiler) are downloaded with just the one package manager in order to ensure they are compatible and function together correctly.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Command-line code compilation}
+
+To compile CODENAME only as a C++ executable to be run from the command line without visualisation, type \\
+\newline
+\noindent \var{make executable} \\
+
+\noindent The code is compiled and linked with the chosen C++ compiler and all python components are ignored.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Python code compilation}
+To compile all code elements including the python components, then complete the following steps : 
+\begin{itemize}
+
+\item Install all python-related programs listed in Section \ref{S:INSTALL}
+
+\item Add the location of the main CODENAME directory to the \var{PYTHONPATH} environment variable.  If you are using bash or related shells, then add the line \\
+\newline
+\noindent \var{export PYTHONPATH=XXX/YYY/ZZZ:\$PYTHONPATH} \\
+
+\noindent to your bashrc (or bash\_profile) script where {\var XXX/YYY/ZZZ} is the absolute path of the CODENAME directory.  
+
+If you are using csh, tcsh or related shells, then add
+\newline
+\noindent \var{setenv PYTHONPATH ``XXX/YYY/ZZZ:\$PYTHONPATH''} \\
+
+\item Set the required version of python and f2py in your Makefile (See Section \ref{S:MAKEFILE}).  Since operating systems usually have more than one version of python installed, it is important to ensure that \var{make} uses the correct version when compiling the code.  These are set using the \var{PYTHON} and \var{F2PY} variables in the Makefile.
+
+Also, \var{make} requires the location of the python and numpy libraries.  In most cases, \var{make} will be able to locate these libraries automatically.  However, if there is a problem, or you wish to use an alternative version of these libraries installed elsewhere on your system, then these can be set by the \var{PYLIB} and \var{NUMPY} variables in the Makefile.  
+
+
+\item To compile all components of the code, including the python libraries with swig, type \\
+\newline
+\noindent \var{make} or \var{make all} \\
+
+\end{itemize}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Basic usage}
+CODENAME can be run in three principle modes.  
+\begin{itemize} 
+\item Command-line mode, where the code is run as a C++ executable via the command line with a parameters file (similar to SEREN), 
+\item via a python script where the code is run in a python environment with various plotting options available as well as running the code, 
+\item in interactive mode where all the code and plotting options can be run directly by typing them into an interactive python shell.
+\end{itemize}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Command-line mode}
+
+\noindent To run a simulation with the C++ executable on the command line, type : \\
+\newline
+\var{./codename PARAMSFILE} \\
+\newline
+where PARAMSFILE is the name of the params file for that simulation.  If the parameters file does not exist, or contains invalid parameter options, then the program will quit citing an error message.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Running python scripts}
+
+
+\noindent Any python script using the CODENAME python API can be run directly from the command-line as any regular python script.  To run the script PYTHONSCRIPT.py, type \\
+\newline
+\var{python PYTHONSCRIPT.py} \\
+\newline
+or, depending on the default version of python on your system (e.g. installing matplotlib with fink on Mac OS X), \\
+\newline
+\var{python2.7 PYTHONSCRIPT.py} \\
+\newline
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Interactive mode}
+
+
+\noindent To open the interactive viewer, type : \\
+\newline
+\var{python analysis/interpreter.py} \\
+\newline
+or, depending on the default version of python on your system (e.g. installing matplotlib with fink on Mac OS X), \\
+\newline
+\var{python2.7 analysis/interpreter.py} \\
+\newline
+\noindent The code should open with a splash screen containing the code title followed by a command prompt of the form '\var{codename >'}'.  To run a simulation defined by a parameter file, then type \\
+\newline
+\var{newsim PARAMSFILE} \\
+\newline
+\noindent and then \\
+\newline
+\var{run} \\
+\newline
+\noindent The current simulation can be plotted at any point by using simple commands such as, for example, \\
+\newline
+\var{plot x y} \\
+\newline
+\noindent For a list on available commands, type \var{help} in the command line.  For more detailed information on the functionality of a particular command, type \var{help command}.  For more information on interactive python commands, see Section ???
 
 \newpage
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Makefile options}
-The \CODENAME Makefile is used to select options which are used to compile the code with.  If the user wishes to change any compile-time options, the code must be recompiled from scratch by typing {\var make clean}, and {\var make seren} or \var{make seren\_view}.  For users of SEREN, the \CODENAME Makefile is somewhat simpler with many options either not present (since more complex algorithms have not been implemented) or have been transfered to the parameters file.  This has been done in order to make it less likely that the wrong Makefile options are used in simulations, and also to stop the need to recompile the code completely so often when using slightly different options.
+\section{Makefile options} \label{S:MAKEFILE}
+The CODENAME Makefile is used to select options which are used to compile the code with.  If the user wishes to change any compile-time options, the code must be recompiled from scratch by typing {\var make clean}, and {\var make seren} or \var{make codename}.  For users of SEREN, the CODENAME Makefile is somewhat simpler with many options either not present (since more complex algorithms have not been implemented) or have been transfered to the parameters file.  This has been done in order to make it less likely that the wrong Makefile options are used in simulations, and also to stop the need to recompile the code completely so often when using slightly different options.
 
 \begin{itemize}
 
@@ -107,6 +206,8 @@ DOUBLE & : 64-bit precision
 \item VERIFY\_ALL : Include additional code to verify code is functioning correctly.  Increases run-time considerably, so should only be used for debugging purposes (0 or 1)
 
 \end{itemize}
+
+\newpage
 
 
 
@@ -160,8 +261,8 @@ shocktube        & = Shocktube test
 
 \item \var{ndiagstep} : No. of complete block steps between diagnostic output
 
-
 \end{itemize}
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -595,90 +696,12 @@ godunov & = Godunov SPH integration scheme
 \newpage
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Basic usage}
-\CODENAME can be run in three principle modes.  Command-line mode, where the code is run via the command line with a parameters file (similar to SEREN), via a python script where the code is run in a python environment with various plotting options available as well as running the code, and in interactive mode where all the code and plotting options can be run directly in a python shell.
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Set-up}
-
-If you wish to run \CODENAME only as a C++ executable from the command line without visualisation, then it is possible to compile only the C++ code, ignoring all python libraries, by typing 
-\newline
-\noindent \var{make executable} \\
-
-
-If you wish to compile all python components of the code, then you must first complete the following steps : 
-\begin{itemize}
-
-\item Install all python-related programs listed in Section \ref{S:INSTALL}
-
-\item Add the location of the main \CODENAME directory to the \var{PYTHONPATH} environment variable.  If you are using bash or related shells, then add 
-\newline
-\noindent \var{export PYTHONPATH=XXX/YYY/ZZZ:\$PYTHONPATH} \\
-
-to your bashrc (or bash\_profile) script where {\var XXX/YYY/ZZZ} is the absolute path of the \CODENAME directory.  
-
-If you are using csh, tcsh or related shells, then add
-\newline
-\noindent \var{setenv PYTHONPATH ``XXX/YYY/ZZZ:\$PYTHONPATH''} \\
-
-\item Set the required version of python and f2py in your Makefile.  Since operating systems usually have more than one version of python installed, it is important to ensure that make uses the correct version when compiling the code.  These are set by the \var{PYTHON} and \var{F2PY} variables in the Makefile.
-
-Also, make requires the location of the python and numpy libraries.  In most cases, make will be able to locate these libraries automatically.  However, if there is a problem, or you wish to use an alternative version of these libraries installed elsewhere on your system, then these can be set by the \var{PYLIB} and \var{NUMPY} variables in the Makefile.  
-
-
-\item To compile all components of the code, including the python libraries with swig, type : \\
-\newline
-\noindent \var{make} or \var{make all} \\
-
-\end{itemize}
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Command-line mode}
-
-\noindent To run a simulation the C++ executable, type : \\
-\newline
-\var{./seren PARAMSFILE} \\
-\newline
-where PARAMSFILE is the name of the params file for that simulation.  If the parameters file does not exist, or contains invalid parameter options, then the program will quit citing an error message.
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Interactive mode}
-
-To compile all components the advance interactive visualisation version of the code, type :\\
-\newline
-\noindent \var{make} or \var{make all} \\
-
-\noindent To open the interactive viewer, type : \\
-\newline
-\var{python seren\_view.py} \\
-\newline
-or, depending on the default version of python on your system (e.g. installing matplotlib with fink on Mac OS X), \\
-\newline
-\var{python2.7 seren\_view.py} \\
-\newline
-\noindent The code should open with a splash screen containing the code title followed by a command prompt of the form '\var{seren\_view >'}'.  To run a simulation defined by a parameter file, then type \\
-\newline
-\var{newsim PARAMSFILE} \\
-\newline
-\noindent and then \\
-\newline
-\var{run} \\
-\newline
-\noindent The current simulation can be plotted at any point by using simple commands such as, for example, \\
-\newline
-\var{plot sph x y} \\
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Generating initial conditions}
 
-One important difference between SEREN and SEREN\_VIEW is that initial conditions can be generated on-the-fly in SEREN\_VIEW, i.e. while running the code, unlike SEREN where initial conditions always had to be generated before the simulation.  While they are still situations where it is appropriate to prepare initial conditions prior to running the simulations, it is more convenient to generate the initial conditions at the same time as running the simulation. It's also possible to generate the initial conditions in python (see next section).
+One important difference between SEREN and CODENAME is that initial conditions can be generated on-the-fly in CODENAME, i.e. while running the code, unlike SEREN where initial conditions always had to be generated before the simulation.  While they are still situations where it is appropriate to prepare initial conditions prior to running the simulations, it is more convenient to generate the initial conditions at the same time as running the simulation. It's also possible to generate the initial conditions in python (see next section).
 
 At present, the following initial conditions are included in the code : 
 
@@ -706,7 +729,7 @@ At present, the following initial conditions are included in the code :
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Python scripting usage}
 
-While the numerical part of \CODENAME  is implemented in C++ for efficiency, we provide bindings to Python to control the simulation and a large set of analysis and plotting tools to inspect the results. Therefore, from Python you are able to set up the simulation (including initial conditions), run it, load existing snapshots and plot quantities. There are two main ways to use the Python side of \CODENAME.
+While the numerical part of CODENAME  is implemented in C++ for efficiency, we provide bindings to Python to control the simulation and a large set of analysis and plotting tools to inspect the results. Therefore, from Python you are able to set up the simulation (including initial conditions), run it, load existing snapshots and plot quantities. There are two main ways to use the Python side of CODENAME.
 
 The first one is an interpreter, that works similarly to a shell (e.g., bash, csh) and understands specific commands to load a simulation and plot quantities. We provide a large set of commands to do standard operations when running and analyzing a simulation, so that this solution can be satisfactory where you need to quickly analyze a simulation.
 
@@ -716,7 +739,7 @@ The second way is writing your own python script. You still have access to the s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Interpreter usage}
 
-The interpreter is located in the analysis/ folder in the main directory of \CODENAME. To start it, just type 'python interpreter.py' or './interpeter.py'.
+The interpreter is located in the analysis/ folder in the main directory of CODENAME. To start it, just type 'python interpreter.py' or './interpeter.py'.
 Information on commands for the python interpeter is available using the 'help' command.  Typing 'help' gives a list of all the principle commands available.  Typing 'help command' gives more information on the chosen command.
 Like in a shell, you can use the interpreter interactively or you can write little scripts for it (that is, texts files with a list of the commands that you want to be executed). \textbf{TODO: must actually implement reading from a script}. Any script can be read in and processed by typing : \var{read SCRIPTNAME}.
 
@@ -847,7 +870,7 @@ In addition, in your script you can also perform other tasks that are not possib
 
 \item It is possible to get access to the raw data of the simulation, in order to compute whatever quantity you need. \textbf{Actually, this is not possible yet in an easy way... I need to write a proper wrapper around the C++ method which is too low level. Remember -> give 'snap' attribute to the array to save reference counting. Implement it!}
 
-\item Everything else that you can think. The point is, it's \CODENAME that takes care of reading the snapshots, getting the data, and all this boring parts; you can concentrate on what to do with the data and on the science, and forget about the details.
+\item Everything else that you can think. The point is, it's CODENAME that takes care of reading the snapshots, getting the data, and all this boring parts; you can concentrate on what to do with the data and on the science, and forget about the details.
 
 \end{itemize}
 

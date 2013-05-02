@@ -29,8 +29,8 @@ RHS boundary type in x-dimension            : x_boundary_rhs = periodic
 -------------------------
 Simulation time variables
 -------------------------
-Simulation end time                         : tend = 1.5
-Regular snapshot output frequency           : dt_snap = 0.5
+Simulation end time                         : tend = 0.2
+Regular snapshot output frequency           : dt_snap = 2.5
 Screen output frequency (in no. of steps)   : noutputstep = 999999999
 
 
@@ -47,7 +47,7 @@ Smoothed Particle Hydrodynamics options
 ---------------------------------------
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = quintic
-SPH smoothing length iteration tolerance    : h_converge = 0.00000001
+SPH smoothing length iteration tolerance    : h_converge = 0.000000001
 
 
 --------------------------------
@@ -57,8 +57,8 @@ Artificial viscosity choice                 : avisc = none
 Artificial conductivity choice              : acond = none
 Artificial viscosity alpha value            : alpha_visc = 0.1
 Artificial viscosity beta value             : beta_visc = 0.2
-Riemann solver                              : riemann_solver = vanleer
-Order of Riemann solver                     : riemann_order = 2
+Riemann solver                              : riemann_solver = exact
+Order of Riemann solver                     : riemann_order = 1
 Slope limiter                               : slope_limiter = mine
 
 
@@ -66,17 +66,15 @@ Slope limiter                               : slope_limiter = mine
 Time integration options
 ------------------------
 SPH particle integration option             : sph_integration = lfkdk
-Integration of gas thermal energy           : energy_integration = PEC
-SPH Courant timestep condition multiplier   : courant_mult = 0.1
-SPH acceleration condition multiplier       : accel_mult = 0.2
-SPH energy equation timestep multiplier     : energy_mult = 0.5
+SPH Courant timestep condition multiplier   : courant_mult = 0.05
+SPH acceleration condition multiplier       : accel_mult = 0.1
 No. of block timestep levels                : Nlevels = 1
 
 
 --------------------
 Optimisation options
 --------------------
-Tabulate SPH kernel                         : tabulatedkernel = no
+Tabulate SPH kernel                         : tabulated_kernel = 0
 SPH neighbour search algorithm              : neib_search = grid
 
 

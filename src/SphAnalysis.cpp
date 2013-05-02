@@ -1,6 +1,6 @@
 //=============================================================================
-// SphAnalysis.cpp
-// Contains various analysis routines for SphSimulation object.
+//  SphAnalysis.cpp
+//  Contains various analysis routines for SphSimulation object.
 //=============================================================================
 
 
@@ -32,6 +32,7 @@ void SphSimulation<ndim>::CalculateDiagnostics(void)
 
   debug2("[SphSimulation::CalculateDiagnostics]");
 
+  // Zero all diagnostic summation variables
   diag.Etot = 0.0;
   diag.utot = 0.0;
   diag.ketot = 0.0;
@@ -41,6 +42,7 @@ void SphSimulation<ndim>::CalculateDiagnostics(void)
   for (k=0; k<ndim; k++) diag.force[k] = 0.0;
   for (k=0; k<ndim; k++) diag.force_grav[k] = 0.0;
 
+  // Loop over all SPH particles and add contributions to all quantities
   for (int i=0; i<sph->Nsph; i++) {
     diag.ketot += sph->sphdata[i].m*
       DotProduct(sph->sphdata[i].v,sph->sphdata[i].v,ndim);

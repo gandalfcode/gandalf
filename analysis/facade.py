@@ -56,28 +56,28 @@ def loadsim(run_id, fileformat = 'ascii', buffer_flag = 'cache'):
     return SimBuffer.get_current_sim()
     
 def plot(x,y, snap="current", sim="current", overplot = False, autoscale = True, xunit="default", yunit="default"):
-    '''Particle plot. Needed arguments:
-    x
-        Quantity on the x-axis. Must be a string.
-    y
-        Quantity on the x-axis. Must be a string.
+    '''Plot particle data as a scatter plot.  Creates a new plotting window if
+one does not already exist.
+
+Required arguments:
+    x          : Quantity on the x-axis. Must be a string.
+    y          : Quantity on the y-axis. Must be a string.
         
-    Optional arguments:
-    snap
-        Number of the snapshot to plot. Defaults to 'current'.       
-    sim
-        Number of the simulation to plot. Defaults to 'current'.    
-    overplot
-        If True, overplots on the previous existing plot rather than deleting it. Defaults to False.
-    autoscale
-        If True (default), the limits of the plot are set automatically.
-        Can also be set to 'x' or 'y' to specify that only one of the axis has to use autoscaling.
-        If False, autoscaling is not used. On an axis that does not have autoscaling turned on,
-        global limits are used if defined for the plotted quantity.
-    xunit
-        Specify the unit to use for the plotting for the quantity on the x-axis.
-    yunit
-        Specify the unit to use for the plotting for the quantity on the y-axis.
+Optional arguments:
+    snap       : Number of the snapshot to plot. Defaults to 'current'.       
+    sim        : Number of the simulation to plot. Defaults to 'current'.    
+    overplot   : If True, overplots on the previous existing plot rather
+                 than deleting it. Defaults to False.
+    autoscale  : If True (default), the limits of the plot are set
+                 automatically.  Can also be set to 'x' or 'y' to specify
+                 that only one of the axis has to use autoscaling.
+                 If False, autoscaling is not used. On an axis that does
+                 not have autoscaling turned on, global limits are used
+                 if defined for the plotted quantity.
+    xunit      : Specify the unit to use for the plotting for the quantity
+                 on the x-axis.
+    yunit      : Specify the unit to use for the plotting for the quantity
+                 on the y-axis.
     '''
     
     
@@ -91,49 +91,52 @@ def render(x, y, render, snap="current", sim="current", overplot=False, autoscal
            autoscalerender=True, coordlimits=None, zslice=None,
            xunit="default", yunit="default", renderunit="default",
            res=64, interpolation='nearest'):
-    '''Render plot. Needed arguments:
-    x
-        Quantity on the x-axis. Must be a string.
-    y
-        Quantity on the x-axis. Must be a string.
-    render
-        Quantity to be rendered. Must be a string.
+    '''Create a rendered plot from selected particle data.
+
+Required arguments:
+    x          : Quantity on the x-axis. Must be a string.
+    y          : Quantity on the y-axis. Must be a string.
+    renderdata : Quantity to be rendered. Must be a string.
         
-    Optional arguments:
-    snap
-        Number of the snapshot to plot. Defaults to 'current'.       
-    sim
-        Number of the simulation to plot. Defaults to 'current'.    
-    overplot
-        If True, overplots on the previous existing plot rather than deleting it. Defaults to False.
-    autoscale
-        If True (default), the coordinate limits of the plot are set automatically.
-        Can also be set to 'x' or 'y' to specify that only one of the axis has to use autoscaling.
-        If False, autoscaling is not used. On an axis that does not have autoscaling turned on,
-        global limits are used if defined for the plotted quantity.
-    autoscalerender
-        Same as the previous one, but for the rendered quantity.
-    coordlimits
-        Specify the coordinate limits for the plot. In order of precedence, the limits are set in this way:
-        -What this argument specifies. The value must be an iterable of 4 elements: (xmin, xmax, ymin, ymax).
-        -If this argument is None (default), global settings for the quantity are used.
-        -If global settings for the quantity are not defined, the min and max of the data are used.
-    zslice
-        z-coordinate of the slice when doing a slice rendering. Default is None, which produces a column-integrated
-        plot. If you set this variable, instead a slice rendering will be done. 
-    xunit
-        Specify the unit to use for the plotting for the quantity on the x-axis.
-    yunit
-        Specify the unit to use for the plotting for the quantity on the y-axis.
-    renderunit
-        Specify the unit to use for the plotting for the rendered quantity.
-    res
-        Specify the resolution. Can be an integer number, in which case the same resolution will be used on the two axes,
-        or a tuple (e.g., (xres, yres)) of two integer numbers, if you want to specify different resolutions on the two axes.
-    interpolation
-        Specify the interpolation to use. Default is nearest, which will show the pixels of the rendering grid. If one
-        wants to smooth the image, bilinear or bicubic could be used. See pyplot documentation for the full list
-        of possible values.
+Optional arguments:
+    snap       : Number of the snapshot to plot. Defaults to 'current'.       
+    sim        : Number of the simulation to plot. Defaults to 'current'.    
+    overplot   : If True, overplots on the previous existing plot rather
+                 than deleting it. Defaults to False.
+    autoscale  : If True (default), the coordinate limits of the plot are
+                 set automatically.  Can also be set to 'x' or 'y' to specify
+                 that only one of the axis has to use autoscaling.
+                 If False, autoscaling is not used. On an axis that does not
+                 have autoscaling turned on, global limits are used if
+                 defined for the plotted quantity.
+    autoscalerender : Same as the autoscale, but for the rendered quantity.
+    coordlimits : Specify the coordinate limits for the plot. In order of
+                  precedence, the limits are set in this way:
+                  - What this argument specifies. The value must be an
+                    iterable of 4 elements: (xmin, xmax, ymin, ymax).
+                  - If this argument is None (default), global settings for
+                    the quantity are used.
+                  - If global settings for the quantity are not defined,
+                    the min and max of the data are used.
+    zslice     : z-coordinate of the slice when doing a slice rendering.
+                 Default is None, which produces a column-integrated plot.
+                 If you set this variable, instead a slice rendering will
+                 be done. 
+    xunit      : Specify the unit to use for the plotting for the quantity
+                 on the x-axis.
+    yunit      : Specify the unit to use for the plotting for the quantity
+                 on the y-axis.
+    renderunit : Specify the unit to use for the plotting for the rendered
+                 quantity.
+    res        : Specify the resolution. Can be an integer number, in which
+                 case the same resolution will be used on the two axes, or a
+                 tuple (e.g., (xres, yres)) of two integer numbers, if you
+                 want to specify different resolutions on the two axes.
+    interpolation : Specify the interpolation to use. Default is nearest,
+                    which will show the pixels of the rendering grid. If one
+                    wants to smooth the image, bilinear or bicubic could be
+                    used. See pyplot documentation for the full list of
+                    possible values.
     '''
     simno = get_sim_no(sim)
     command = Commands.RenderPlotCommand(x, y, render, snap, simno, overplot, autoscale, autoscalerender, 
@@ -143,15 +146,33 @@ def render(x, y, render, snap="current", sim="current", overplot=False, autoscal
 
 def renderslice(x, y, renderq, zslice, **kwargs):
     '''Thin wrapper around render that does slice rendering.
-    All the other arguments are the same. Needs the z-coordinate
-    of the slice as a compulsory parameter'''
+
+Required arguments:
+    x          : Quantity on the x-axis. Must be a string.
+    y          : Quantity on the y-axis. Must be a string.
+    renderq    : Quantity to be rendered. Must be a string.
+    zslice     : z-coordinate of the slice.
+
+Optional arguments:
+    See render function optional arguments
+'''
     render(x, y, renderq, zslice=zslice, **kwargs)
     
 def addrenderslice(x, y, renderq, zslice, **kwargs):
-    '''Thin wrapper around renderslice that sets overplot to True.
-    All the other arguments are the same. If autoscale is not
-    explicitly set, it will be set to False to preserve the
-    existing settings.'''
+    '''Thin wrapper around renderslice that sets overplot to True.  If autoscale is
+not explicitly set, it will be set to False to preserve the existing settings.
+
+Required arguments:
+    x          : Quantity on the x-axis. Must be a string.
+    y          : Quantity on the y-axis. Must be a string.
+    renderq    : Quantity to be rendered. Must be a string.
+    zslice     : z-coordinate of the slice.
+
+Optional arguments:
+    See render function optional arguments
+'''
+
+
     try:
         kwargs['autoscale']
     except KeyError:
@@ -159,10 +180,18 @@ def addrenderslice(x, y, renderq, zslice, **kwargs):
     render(x, y, renderq, zslice=zslice, overplot=True, **kwargs)
 
 def addrender(x, y, renderq, **kwargs):
-    '''Thin wrapper around render that sets overplot to True.
-    All the other arguments are the same. If autoscale is not
-    explicitly set, it will be set to False to preserve the
-    existing settings.'''
+    '''Thin wrapper around render that sets overplot to True.  If autoscale is not
+explicitly set, it will be set to False to preserve the existing settings.
+
+Required arguments:
+    x          : Quantity on the x-axis. Must be a string.
+    y          : Quantity on the y-axis. Must be a string.
+    renderdata : Quantity to be rendered. Must be a string.
+        
+Optional arguments:
+    See render function optional arguments
+
+    '''
     try:
         kwargs['autoscale']
     except KeyError:
@@ -170,13 +199,20 @@ def addrender(x, y, renderq, **kwargs):
     render(x, y, renderq, overplot=True, **kwargs)
     
 def limit (quantity, min=None, max=None, auto=False, window='current', subfigure='current'):
-    '''Set plot limits. Quantity is the quantity to limit. If auto is set to True, then
-    the limits for that quantity are set automatically. Otherwise, use the one given by x and y.
-    By default, changes the limits only for the current subfigure of the current plot. One
-    can specify the number for them or use the special keyword 'all' to change the limits in all
-    the figures or in all the subfigures of the current figure. Also the keyword 'global' is available
-    for window, which means that the change will affect also future plots that do not have autoscaling
-    turned on. 
+    '''Set plot limits. Quantity is the quantity to limit.
+    
+Required arguments:
+    quantity   : Set limits of this variable. Must be a string.
+
+Optional arguments:
+    min        : Minimum value of variable range.
+    max        : Maximum value of variable range.
+    auto       : If auto is set to True, then the limits for that quantity are 
+                 set automatically. Otherwise, use the one given by x and y.
+    window     : If window is set to 'global' is available, then any changes
+                 will affect also future plots that do not have autoscaling 
+                 turned on.
+    subfigure  : If subfigure is set to 'all', the limits in all the figures or                 in all the subfigures of the current figure are set.
     '''
     if window=='all' and subfigure=='current':
         subfigure=='all'
@@ -187,10 +223,17 @@ def limit (quantity, min=None, max=None, auto=False, window='current', subfigure
         print okflag
 
 def addplot (x,y, **kwargs):
-    '''Thin wrapper around plot that sets overplot to True.
-    All the other arguments are the same. If autoscale is not
-    explicitly set, it will be set to False to preserve the
-    existing settings.'''
+    '''Thin wrapper around plot that sets overplot to True.  All the other
+arguments are the same. If autoscale is not explicitly set, it will be set
+to False to preserve the existing settings.
+
+Required arguments:
+    x          : Quantity on the x-axis. Must be a string.
+    y          : Quantity on the y-axis. Must be a string.
+        
+Optional arguments:
+    See plot function optional arguments
+    '''
     try:
         kwargs['autoscale']
     except KeyError:
@@ -212,8 +255,12 @@ def previous():
         handle(e)
         
 def snap(no):
-    '''Jump to the given snapshot number of the current simulation.
-    Note that you can use standard Numpy index notation (e.g., -1 is the last snapshot).'''
+    '''Jump to the given snapshot number of the current simulation.  Note that you
+can use standard Numpy index notation (e.g., -1 is the last snapshot).
+
+Required arguments:
+    snapno     : Snapshot number
+'''
     try:
         SimBuffer.set_current_snapshot_number(no)
     except BufferException as e:
@@ -222,17 +269,24 @@ def snap(no):
     update("current")
         
 def window(no = None):
-    '''Changes the current window to the number specified. If the
-    window doesn't exist, recreate it.'''
+    '''Changes the current window to the number specified. If the window
+doesn\'t exist, recreate it.
+
+Required arguments:
+    winno      : Window number
+    '''
     command = Commands.WindowCommand(no)
     data = None
     Singletons.queue.put([command,data])
 
 def subfigure(nx, ny, current):
     '''Creates a subplot in the current window.
-    The arguments nx and ny specify the grid size; the current
-    arguments marks the subplot that will become the current one.
-    If the plot already exists, just sets it as the current one.
+
+Required arguments:
+    nx         : x-grid size
+    ny         : y-grid size
+    current    : id of active sub-figure.  If sub-figure already exists,
+                 then this sets the new active sub-figure.
     '''
     command = Commands.SubfigureCommand(nx, ny, current)
     data = None

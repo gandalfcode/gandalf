@@ -1,6 +1,6 @@
 #==============================================================================
-#  khitest.py
-#  Run Kelvin-Helmholtz test using initial conditions file 'khi.dat'.
+# khitest.py
+# Run Kelvin-Helmholtz test using initial conditions file 'khi.dat'.
 #==============================================================================
 from seren.analysis.facade import *
 import time
