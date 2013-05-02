@@ -44,7 +44,17 @@ throw StopError("CTRL-C received");
     }
 }
 
-%exception SphSimulation::Setup {
+%exception SphSimulationBase::SetParam {
+	try{
+		$action
+	}
+	catch (SerenError e) {
+		PyErr_SetString(PyExc_Exception,e.msg.c_str());
+		return NULL;
+	}
+}
+
+%exception SphSimulationBase::SetupSimulation {
 	try{
 		$action
 	}
@@ -54,7 +64,7 @@ throw StopError("CTRL-C received");
 	}
 }
 
-%exception SphSimulation::ImportArray {
+%exception SphSimulationBase::ImportArray {
 	try {
 		$action
 	}
@@ -74,7 +84,7 @@ throw StopError("CTRL-C received");
 	}
 }
 
-%exception SphSnapshot::ExtractArray {
+%exception SphSnapshotBase::ExtractArray {
 	try{
 		$action
 	}
@@ -84,7 +94,7 @@ throw StopError("CTRL-C received");
 	}
 }
 
-%exception Render::CreateColumnRenderingGrid {
+%exception RenderBase::CreateColumnRenderingGrid {
 	signal(SIGINT, catch_alarm);
 	PyThreadState *_save;
     _save = PyEval_SaveThread();
@@ -99,7 +109,7 @@ throw StopError("CTRL-C received");
     }
 }
 
-%exception Render::CreateSliceRenderingGrid {
+%exception RenderBase::CreateSliceRenderingGrid {
 	signal(SIGINT, catch_alarm);
 	PyThreadState *_save;
     _save = PyEval_SaveThread();
