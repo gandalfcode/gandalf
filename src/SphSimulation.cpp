@@ -642,27 +642,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
 }
 
 
-
-//=============================================================================
-//  SphSimulation::Setup
-/// Main function for setting up a new SPH simulation.
-//=============================================================================
-template <int ndim>
-void SphSimulation<ndim>::Setup(void)
-{
-  debug1("[SphSimulation::Setup]");
-
-  // Read parameters files assigning any contained variables
-  simparams->ReadParamsFile(paramfile);
-
-  // Now set up the simulation based on chosen parameters
-  SetupSimulation();
-
-  return;
-}
-
-
-
 //=============================================================================
 //  SphSimulation::PreSetupForPython
 /// Initialisation routine called by python interface.
@@ -675,6 +654,11 @@ void SphSimulation<ndim>::PreSetupForPython(void)
   //Check that IC type is really python
   if (simparams->stringparams["ic"] != "python") {
     string msg = "Error: you should call this function only if you are using \"python\" as \"ic\" parameter";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+
+  if (ParametersProcessed) {
+    string msg = "Error: this function has been already called!";
     ExceptionHandler::getIstance().raise(msg);
   }
 
@@ -826,29 +810,6 @@ void SphSimulation<ndim>::ImportArray
 }
 
 
-
-//=============================================================================
-//  SphSimulation::PostSetupForPython
-/// ...
-//=============================================================================
-template <int ndim>
-void SphSimulation<ndim>::PostSetupForPython(void)
-{
-  debug1("[SphSimulation::PostSetupForPython]");
-
-  //Check that IC type is really python
-  if (simparams->stringparams["ic"] != "python") {
-    string msg = "Error: you should call this function only if you are using \"python\" as \"ic\" parameter";
-    ExceptionHandler::getIstance().raise(msg);
-  }
-
-  PostGeneration();
-
-  return;
-}
-
-
-
 //=============================================================================
 //  SphSimulation::SetupSimulation
 /// Main function for setting up a new SPH simulation.
@@ -858,8 +819,27 @@ void SphSimulation<ndim>::SetupSimulation(void)
 {
   debug1("[SphSimulation::Setup]");
 
+  if (setup) {
+    string msg = "This simulation has been already set up";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+
+
   // Process the parameters file setting up all simulation objects
-  ProcessParameters();
+  if (simparams->stringparams["ic"]=="python") {
+    if (!ParametersProcessed) {
+      string msg = "Error: you are attempting to setup a simulation with initial conditions generated"
+          "from Python. Before setting up the simulation, you need to import the initial conditions";
+      ExceptionHandler::getIstance().raise(msg);
+    }
+  }
+  else
+    if (ParametersProcessed) {
+      string msg = "The parameters of the simulation have been already processed."
+          "It means that you shouldn't be calling this function, please consult the documentation.";
+      ExceptionHandler::getIstance().raise(msg);
+    }
+    ProcessParameters();
 
   // Generate initial conditions for simulation
   GenerateIC();

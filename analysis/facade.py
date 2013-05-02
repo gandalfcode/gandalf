@@ -319,13 +319,9 @@ def run(no=None):
         
     #setup the simulation
     if not sim.setup:
-        if sim.ParametersProcessed:
-            sim.PostSetupForPython()
-        else:
-            sim.SetupSimulation()
+        sim.SetupSimulation()
     SimBuffer.load_live_snapshot(sim)
 
-    
     while sim.t < sim.tend and sim.Nsteps < sim.Nstepsmax:
         #TODO: maybe some of these operations could be done in another thread, so that the computation is
         #not slowed down when compared to the stand-alone c++ executable

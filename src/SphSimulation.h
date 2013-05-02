@@ -91,10 +91,8 @@ class SphSimulationBase
   void SetParam (string key, string value);
   void SetParam (string key, int value);
   void SetParam (string ket, float value);
-  virtual void Setup(void)=0;
   virtual void PreSetupForPython(void)=0;
   virtual void ImportArray(double* input, int size, string quantity)=0;
-  virtual void PostSetupForPython(void)=0;
   virtual void SetupSimulation(void)=0;
   virtual void PostGeneration(void)=0;
   virtual void MainLoop(void)=0;
@@ -196,10 +194,8 @@ class SphSimulation : public SphSimulationBase {
 
   // Subroutine prototypes
   // --------------------------------------------------------------------------
-  void Setup(void);
   void PreSetupForPython(void);
   void ImportArray(double* input, int size, string quantity);
-  void PostSetupForPython(void);
   void SetupSimulation(void);
   void PostGeneration(void);
   void MainLoop(void);

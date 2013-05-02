@@ -113,7 +113,6 @@ class SimBuffer:
         sim = SphSimulationBase.SphSimulationFactory(ndim, params);
         SimBuffer._add_simulation(sim)
         sim.snapshots = []
-        sim.SetupSimulation()
         return sim
         
     @staticmethod
