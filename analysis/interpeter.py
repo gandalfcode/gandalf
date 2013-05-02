@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import cmd
+import cmd2 as cmd
 import facade
 import inspect
 import types
@@ -38,7 +38,10 @@ class WrappedFunction:
                 continue
             dict[kw]=value
             args.remove(arg)
-        self.function(*args, **dict)
+        try:
+            self.function(*args, **dict)
+        except Exception as e:
+            facade.handle(e)
 
 class Interpreter(cmd.Cmd):
     '''This class implements the interpreter proper.
@@ -47,6 +50,14 @@ class Interpreter(cmd.Cmd):
     defines a command for each one of them. Also imports the
     documentation string for each one. 
     '''
+    
+    abbreviations = {
+                      'next': 'n',
+                      'previous': 'p',
+                      'snap': 's',
+                      'help': 'h'
+                      }
+    
     def __init__(self):
         cmd.Cmd.__init__(self)
         
@@ -59,10 +70,15 @@ class Interpreter(cmd.Cmd):
             wrapper = WrappedFunction(function[1])
             setattr(self, 'do_'+function[0], wrapper)
         
-    def do_EOF(self, line):
-        '''Quits the interpreter'''
-        print
-        return True
+        #generate the abbreviated versions of the commands
+        for key in self.abbreviations:
+            abbr = self.abbreviations[key]
+            name_abbr='do_'+abbr
+            name_long='do_'+key
+            setattr(self, name_abbr, getattr(self, name_long))
+            
+        #convince facade that we are in interactive mode
+        facade.interactive = True
         
     def get_names(self):
         names = dir(self)
@@ -71,4 +87,4 @@ class Interpreter(cmd.Cmd):
         
 if __name__ == "__main__":
     interpreter = Interpreter()
-    interpreter.cmdloop('Welcome to PySeren++')
+    interpreter.cmdloop()
