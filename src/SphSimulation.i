@@ -131,13 +131,7 @@ ExceptionHandler::makeExceptionHandler(python);
 %}
 %numpy_typemaps(float, NPY_FLOAT, int)
  /* %include <boost_any.i> */
- 
- namespace std {
-    %template(map_string_int) map<string, int>;
-    %template(map_string_string) map<string, string>;
-    %template(map_string_float) map<string, float>;
-    /*%template(map_string_any) map<string, boost::any>;*/
-}
+
 
  /* Applies Numpy black magic */
  %apply (float** ARGOUTVIEW_ARRAY1, int *DIM1) {(float** out_array, int* size_array)}

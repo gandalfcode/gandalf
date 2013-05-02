@@ -72,6 +72,7 @@ SphSimulationBase::SphSimulationBase
   Nsteps = 0;
   t = 0.0;
   setup = false;
+  ParametersProcessed = false;
 }
 
 
@@ -84,6 +85,48 @@ SphSimulationBase::~SphSimulationBase()
 {
 }
 
+//=============================================================================
+//  SphSimulationBase::SetParam
+/// Accessor function for modifying a string value. Also checks that the
+/// non return point has not been reached
+//=============================================================================
+void SphSimulationBase::SetParam(string key, string value) {
+
+  //Error checking
+  if (ParametersProcessed) {
+    string msg = "Error: the non-return point for setting parameters has been reached!";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+  if (key=="ndim") {
+    string msg = "Error: it's not possible to change the number of dimensions!";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+
+  simparams->SetParameter (key, value);
+}
+
+
+//=============================================================================
+//  SphSimulationBase::SetParam
+/// Accessor function for modifying an int value, wrapper around the one for string value.
+/// Also checks that the non return point has not been reached
+//=============================================================================
+void SphSimulationBase::SetParam(string key, int value) {
+  ostringstream convert;
+  convert << value;
+  SetParam (key, convert.str());
+}
+
+//=============================================================================
+//  SphSimulationBase::SetParam
+/// Accessor function for modifying a float value, wrapper around the one for string value.
+/// Also checks that the non return point has not been reached
+//=============================================================================
+void SphSimulationBase::SetParam(string key, float value) {
+  ostringstream convert;
+  convert << value;
+  SetParam (key, convert.str());
+}
 
 
 //=============================================================================
