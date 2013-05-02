@@ -80,6 +80,8 @@ class SphNeighbourSearch
 template <int ndim>
 class BruteForceSearch: public SphNeighbourSearch<ndim>
 {
+  using SphNeighbourSearch<ndim>::neibcheck;
+
  public:
 
   BruteForceSearch();
@@ -105,6 +107,8 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
 template <int ndim>
 class GridSearch: public SphNeighbourSearch<ndim>
 {
+  using SphNeighbourSearch<ndim>::neibcheck;
+
  public:
 
   GridSearch();
