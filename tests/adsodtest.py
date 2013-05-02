@@ -1,8 +1,8 @@
 #==============================================================================
-#  adshocktest.py
-#  Run the adiabatic Sod shocktube test using initial conditions specified in
-#  the file 'adsod.dat' and then plotting important quantities together 
-#  with the analytical solutions.
+# adshocktest.py
+# Run the adiabatic Sod shocktube test using initial conditions specified in
+# the file 'adsod.dat' and then plotting important quantities together 
+# with the analytical solutions.
 #==============================================================================
 from seren.analysis.facade import *
 import time
@@ -25,7 +25,7 @@ subfigure(2,2,3)
 plot("x","u")
 plotanalytical("x","u")
 
-# Plot the smoothing length
+# Plot the thermal pressure
 subfigure(2,2,4)
 plot("x","h")
 

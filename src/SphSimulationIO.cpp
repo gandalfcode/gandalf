@@ -1,6 +1,6 @@
-// ============================================================================
-// SphSimulationIO.cpp
-// ============================================================================
+//=============================================================================
+//  SphSimulationIO.cpp
+//=============================================================================
 
 
 #include <iostream>
@@ -15,11 +15,13 @@ using namespace std;
 
 
 
-// ============================================================================
-// SphSimulation::ReadSnapshotFile
-// ============================================================================
+//=============================================================================
+//  SphSimulation::ReadSnapshotFile
+//=============================================================================
 template <int ndim>
-bool SphSimulation<ndim>::ReadSnapshotFile(string filename, string fileform)
+bool SphSimulation<ndim>::ReadSnapshotFile
+(string filename,                   ///< [in] Name of input snapshot file
+ string fileform)                   ///< [in] Format of input snapshot file
 {
   debug1("[SphSimulation::ReadSnapshotFile]");
 
@@ -33,11 +35,13 @@ bool SphSimulation<ndim>::ReadSnapshotFile(string filename, string fileform)
 
 
 
-// ============================================================================
-// SphSimulation::WriteSnapshotFile
-// ============================================================================
+//=============================================================================
+//  SphSimulation::WriteSnapshotFile
+//=============================================================================
 template <int ndim>
-bool SphSimulation<ndim>::WriteSnapshotFile(string filename, string fileform)
+bool SphSimulation<ndim>::WriteSnapshotFile
+(string filename,                   ///< [in] Name of output snapshot file
+ string fileform)                   ///< [in] Format of output snapshot file
 {
   debug1("[SphSimulation::WriteSnapshotFile]");
 
@@ -51,9 +55,9 @@ bool SphSimulation<ndim>::WriteSnapshotFile(string filename, string fileform)
 
 
 
-// ============================================================================
-// SphSimulation::ReadColumnSnapshotFile
-// ============================================================================
+//=============================================================================
+//  SphSimulation::ReadColumnSnapshotFile
+//=============================================================================
 template <int ndim>
 bool SphSimulation<ndim>::ReadColumnSnapshotFile(string filename)
 {
@@ -73,15 +77,11 @@ bool SphSimulation<ndim>::ReadColumnSnapshotFile(string filename)
   infile >> t;
 
   // Check dimensionality matches if using fixed dimensions
-//#if defined(FIXED_DIMENSIONS)
-if (ndimaux != ndim) {
+  if (ndimaux != ndim) {
     cout << "Incorrect no. of dimensions in file : " 
 	 << ndimaux << "  [ndim : " << ndim << "]" << endl;
     return false;
   }
-//#else
-//  ndim = ndimaux;
-//#endif
 
   sph->Nsph = Npart;
   sph->AllocateMemory(sph->Nsph);
@@ -112,9 +112,9 @@ if (ndimaux != ndim) {
 
 
 
-// ============================================================================
-// SphSimulation::WriteColumnSnapshotFile
-// ============================================================================
+//=============================================================================
+//  SphSimulation::WriteColumnSnapshotFile
+//=============================================================================
 template <int ndim>
 bool SphSimulation<ndim>::WriteColumnSnapshotFile(string filename)
 {

@@ -69,8 +69,8 @@ struct Diagnostics {
 
 
 
-// ============================================================================
-// Class SphSimulationBase
+//=============================================================================
+//  Class SphSimulationBase
 /// \brief  Creates a simulation object depending on the dimensionality.
 /// \author D. A. Hubber, G. Rosotti
 /// \date   03/04/2013
