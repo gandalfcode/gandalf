@@ -297,6 +297,12 @@ def newsim(paramfile=None, ndim=None):
     of dimensions. Note that it is not possible to change the number of dimensions afterwards.'''
     return SimBuffer.newsim(paramfile=paramfile, ndim=ndim)
 
+def setupsim():
+    '''Set up the current simulation object. Note that after calling this function, no parameter change
+    it's possible!'''
+    sim = SimBuffer.get_current_sim()
+    sim.SetupSimulation()
+
 def run(no=None):
     '''Run a simulation. If no argument is given, run the current one;
     otherwise queries the buffer for the given simulation number.
