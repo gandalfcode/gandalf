@@ -45,6 +45,15 @@ SphSimulationBase* SphSimulationBase::SphSimulationFactory
 (int ndim,                          ///< [in] No. of dimensions
  Parameters* params)                ///< [in] Pointer to parameters object
 {
+
+  //Check ndim
+  if (ndim<1 || ndim>3) {
+    stringstream msg;
+    msg << "Error: ndim must be either 1,2,3; the value " << ndim << "is not allowed!";
+    ExceptionHandler::getIstance().raise(msg.str());
+  }
+
+  params->intparams["ndim"]=ndim;
   if (ndim==1)
     return new SphSimulation<1>(params);
   else if (ndim==2)
