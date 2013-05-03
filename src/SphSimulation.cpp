@@ -835,13 +835,14 @@ void SphSimulation<ndim>::SetupSimulation(void)
       ExceptionHandler::getIstance().raise(msg);
     }
   }
-  else
+  else {
     if (ParametersProcessed) {
       string msg = "The parameters of the simulation have been already processed."
           "It means that you shouldn't be calling this function, please consult the documentation.";
       ExceptionHandler::getIstance().raise(msg);
     }
     ProcessParameters();
+  }
 
   // Generate initial conditions for simulation
   GenerateIC();
