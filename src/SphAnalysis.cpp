@@ -62,6 +62,7 @@ void SphSimulation<ndim>::CalculateDiagnostics(void)
 }
 
 
+
 //=============================================================================
 //  SphSimulation::CalculateDiagnostics
 /// Calculates all diagnostic quantities (e.g. conserved quantities),
