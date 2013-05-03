@@ -14,5 +14,7 @@ sim.SetupSimulation()
 plot('x','y')
 import time; time.sleep(1)
 run()
+window(2)
+render("x","y","rho")
 block()
 
