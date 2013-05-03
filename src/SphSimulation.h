@@ -88,6 +88,7 @@ class SphSimulationBase
 
   // Subroutine prototypes
   // --------------------------------------------------------------------------
+  string GetParam(string key);
   void SetParam (string key, string value);
   void SetParam (string key, int value);
   void SetParam (string ket, float value);

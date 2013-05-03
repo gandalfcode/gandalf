@@ -25,7 +25,8 @@ class Parameters
   void ReadParamsFile(std::string);
   void ParseLine(std::string);
   void SetDefaultValues(void);
-  void SetParameter(std::string,std::string);
+  std::string GetParameter (std::string);
+  void SetParameter(std::string , std::string);
   void PrintParameters(void);
   void RecordParametersToFile(void);
   void trim2(std::string&);

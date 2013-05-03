@@ -273,11 +273,36 @@ void Parameters::SetDefaultValues(void)
   return;
 }
 
-
-
 //=============================================================================
 //  Parameters::SetParameter
 /// Set parameter value in memory.  Checks in turn if parameter is a 
+/// string, float or integer before recording value.
+//=============================================================================
+string Parameters::GetParameter (string key) {
+
+  if (intparams.count(key) == 1) {
+    std::stringstream value;
+    value << intparams[key];
+    return value.str();
+  }
+  else if (floatparams.count(key) == 1) {
+    std::stringstream value;
+    value << floatparams[key];
+    return value.str();
+  }
+  else if (stringparams.count(key) == 1)
+    return stringparams[key];
+  else {
+    string msg = "Error: the parameter " + key + " is not recognized ";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+
+  return NULL;
+}
+
+//=============================================================================
+//  Parameters::SetParameter
+/// Set parameter value in memory.  Checks in turn if parameter is a
 /// string, float or integer before recording value.
 //=============================================================================
 void Parameters::SetParameter
