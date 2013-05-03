@@ -750,105 +750,9 @@ The interpreter provides commands for creating new simulations, loading a simula
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Python interpreter examples}
 
-\textbf{rewrite examples}
-
-%
-%\noindent Example 1 - Loading a snapshot and plotting SPH quantites : \\
-%
-%\begin{tabular}{p{7cm}p{6cm}}
-%\var{loadsnap su BBSIT1.su.00010} &        (Load single snapshot file into memory)\\
-%\var{limits x -0.005 0.005}       &        (Set limits for x-axis) \\
-%\var{limits y -0.005 0.005}       &        (Set limits for y-axis) \\
-%\var{plot sph x y}                &        (Plot SPH particle x-y positions) \\
-%\var{savefig eps BBSIT1.eps}      &        (Save window to file)
-%\end{tabular}
-%\newline
 
 
-\noindent Example 2 - Loading a whole simulation and plotting SPH and star quantites for several selected snapshots : \\
-
-\begin{tabular}{p{7cm}p{6cm}}
-\var{loadsim su BBSIT1} &              (Load all simulation files into memory) \\
-\var{limits x -0.005 0.005} &          (Set limits for x-axis) \\
-\var{limits y -0.005 0.005} &         (Set limits for y-axis) \\
-\var{plot sph x y} &                   (Plot SPH particle x-y positions) \\
-\var{addplot star x y color=red size=20} & (Add star particles to current plot \\
-                                        & with selected colour and marker size) \\
-\var{savefig eps BBSIT1-SNAP1.eps} &   (Save image to file) \\
-\var{snap 10}                      &   (Change to snapshot 10) \\
-\var{replot}                       &   (Replot window, but with new snapshot)\\
-\var{savefig eps BBSIT1-SNAP2.eps} &   (Save new image to separate file)
-\end{tabular}
-\newline
-
-
-\noindent Example 3 - Loading a whole simulation and plotting SPH and star quantites including tracks indicating the movement of stars : \\
-
-\begin{tabular}{p{7cm}p{6cm}}
-\var{loadsim su BBSIT1} &               (Load all simulation files into memory) \\
-\var{limits x -0.005 0.005} &           (Set limits for x-axis) \\
-\var{limits y -0.005 0.005} &           (Set limits for y-axis) \\
-\var{plot sph x y} &                    (Plot SPH particle x-y positions) \\
-\var{addplot star x y color=red size=20} &  (Add star particles to current plot) \\
-\var{addplot star x y color=red plotstyle=tracks} &            (Add tracks of star particles movement) \\
-    
-\var{makemovie BBSIT1.mp4} &             (Create movie of snapshots using ffmpeg)
-\end{tabular}
-\newline
-
-
-\noindent Example 4 - Plotting non-coordinate quantities of stars : \\
-
-\begin{tabular}{p{7cm}p{6cm}}
-\var{loadsim su BBSIT1} &               (Load all simulation files into memory) \\
-\var{limits t 0.02 0.035} &                    (Set limits time plotting axis) \\
-\var{limits m 0.0 0.2} &                      (Set limits for star mass axis) \\
-\var{plot star t m color=red plotstyle=tracks} & (Plot time vs mass of star ptcls)     
-\end{tabular}
-\newline
-
-
-\noindent Example 5 - Rendered images (e.g. rendered density slice) : \\
-
-\begin{tabular}{p{7cm}p{6cm}}
-\var{loadsim su BBSIT1} &       (Load all simulation files into memory) \\
-\var{limits t 0.02 0.035} &            (Set limits time plotting axis) \\
-\var{limits rho 1.0e-18 1.0e-12} &     (Set limits for rendered quantity) \\
-\var{render x y rho renderscale=log} & (Render density logarithmically) \\
-\var{addplot star x y color=black plotstyle=tracks} & (Add star tracks over rendered image)
-\end{tabular}
-\newline
-
-
-\noindent Example 6 - Load in two simulations and compare quantities on same plot : \\
-
-\begin{tabular}{p{7cm}p{6cm}}
-\var{loadsim su BBSIT1} &              (Load first simulation files) \\
-\var{loadsim su BBSIT2} &              (Load in second simulation files) \\
-\var{plot star x y sim=1 snap=200 color=red tracks=1 legend=1} & (Plot time-mass tracks (red solid) for 1st sim, 200th snapshot with legend) \\
-\var{addplot star x y sim=2 snap=200 color=blue linestyle=-- plotstyle=tracks legend=1} & (Add time-mass tracks (blue dashed)of 2nd sim , 200th snapshot) \\
-\var{savefig eps BBSIT-MASS.eps} & (Save final figure to file)
-\end{tabular}
-\newline
-
-\noindent Alternatively, this can also be done with the following longer code : \\
-
-\begin{tabular}{p{7cm}p{6cm}}
-\var{loadsim su BBSIT1} &              (Load first simulation files) \\
-\var{loadsim su BBSIT2} &              (Load in second simulation files) \\
-\var{sim 1} &                          (Select first simulation) \\
-\var{snap 200} &                       (Select 200th snapshot) \\
-\var{plot star x y color=red legend=1 plotstyle=tracks} & (..) \\
-\var{sim 2} &                          (..) \\
-\var{snap 200} &                       (..) \\
-\var{addplot star x y color=blue legend=1 plotstyle=tracks linestyle=--} & (..) \\
-\var{savefig eps BBSIT-MASS.eps} &     (..) \\
-\end{tabular}
-\newline
-
-
-\noindent Example 7 - ... :
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Write your Python script}
 
 All the commands available in the interpreter can also be used in your Python script. Just note the slight difference in syntax (since they are function, you need to put the arguments inside parentheses and they must be comma-separated). To use them, you need to import the module facade.py in the analysis/ folder. We recommend to add it to your PYTHONPATH to make the import simpler. Each function in facade comes with documentation, so you can inspect that to know what a function does.
@@ -893,6 +797,62 @@ There is a potential performance improvement in the transferring of the data alo
 
 
 \end{itemize}
+
+\newpage 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Python script examples}
+
+\noindent Example 1 - Create a shock-tube simualtion directly in a python script : \\
+
+\begin{tabular}{p{9cm}p{6.0cm}}
+\var{from seren.analysis.facade import *}  & Import code python library \\
+\var{import numpy as np}                   & and other libraries \\
+\var{import time}                          & \\
+& \\
+\var{sim = newsim(ndim=1)}                 & Create a new (but unspecified) 1D simulation object \\
+& \\                                       
+\var{sim.SetParam('ic','python')}          & Set all important code parameters   \\
+\var{sim.SetParam('sph','gradh')}          & \\
+\var{sim.SetParam('sph\_integration','lfkdk')} &\\
+\var{sim.SetParam('gas\_eos','energy\_eqn')} & \\
+\var{sim.SetParam('energy\_integration','PEC')} & \\
+\var{sim.SetParam('gamma\_eos',1.6666666666666666666)} & \\
+\var{sim.SetParam('Npart',200)} & \\
+\var{sim.SetParam('tend',0.075)} & \\
+\var{sim.SetParam('dt\_snap',1.0)} & \\
+\var{sim.SetParam('x\_boundary\_lhs','open')} & \\
+\var{sim.SetParam('x\_boundary\_rhs','open')} & \\
+& \\                      
+\var{Npart = 200} &  Set number of particles \\
+\var{x = np.linspace(-0.995,0.995,num=Npart)} & Allocate local numpy arrays \\
+\var{vx = np.zeros(Npart)}  & \\
+\var{m = np.ones(Npart)*2.0/Npart} & \\
+\var{u = np.ones(Npart)*1.5} & \\
+& \\          
+\var{for i in range(Npart):}   & Loop over all particles \\
+\hspace{0.5cm}\var{if x[i] < 0.0:}   & Set velocity depending on whether particle \\
+\hspace{1cm}\var{vx[i] = 4.0}   & is in LHS or RHS shock region \\
+\hspace{0.5cm}\var{else:} & \\
+\hspace{1cm}\var{vx[i] = -4.0} & \\
+& \\  
+\var{sim.PreSetupForPython()}  & Now call setup routines to create objects and allocate memory 
+(N.B. parameters are now fixed and cannot be changed after this point) \\
+\var{sim.ImportArray(x,'x')}    & Import all arrays to main memory \\
+\var{sim.ImportArray(vx,'vx')}  & \\
+\var{sim.ImportArray(m,'m')}    & \\
+\var{sim.ImportArray(u,'u')}    & \\
+\var{sim.SetupSimulation()}     & \\
+& \\                                  
+\var{plot("x","rho")}           & First, plot the initial conditions \\ 
+& \\              
+\var{run()}                     & Run simulations \\
+\var{plot("x","rho")}           & Re-plot results \\
+\var{block()}                   & Pause program to prevent window closing \\
+\end{tabular}
+\newline
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{To-do list}

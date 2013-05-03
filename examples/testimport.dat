@@ -1,0 +1,6 @@
+run_id = testimport
+ndim=2
+ic=python
+Npart=100
+tend = 1.0
+dt_snap = 2.0

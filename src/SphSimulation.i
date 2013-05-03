@@ -54,6 +54,16 @@ throw StopError("CTRL-C received");
 	}
 }
 
+%exception SphSimulationBase::PreSetupForPython {
+	try{
+		$action
+	}
+	catch (SerenError &e) {
+		PyErr_SetString(PyExc_Exception,e.msg.c_str());
+		return NULL;
+	}
+}
+
 %exception SphSimulationBase::SetupSimulation {
 	try{
 		$action
