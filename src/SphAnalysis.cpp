@@ -58,6 +58,21 @@ void SphSimulation<ndim>::CalculateDiagnostics(void)
   diag.gpetot *= 0.5;
   diag.Etot = diag.ketot + diag.utot + diag.gpetot;
 
+  return;
+}
+
+
+
+//=============================================================================
+//  SphSimulation::CalculateDiagnostics
+/// Calculates all diagnostic quantities (e.g. conserved quantities),
+/// saves to the diagnostic data structure and outputs to screen.
+//=============================================================================
+template <int ndim>
+void SphSimulation<ndim>::OutputDiagnostics(void)
+{
+  debug2("[SphSimulation::OutputDiagnostics]");
+
   cout << "Printing out diagnostics" << endl;
   cout << "Etot       : " << diag.Etot << endl;
   cout << "utot       : " << diag.utot << endl;

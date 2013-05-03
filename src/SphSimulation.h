@@ -103,6 +103,7 @@ class SphSimulationBase
   virtual void GenerateIC(void)=0;
   virtual void ProcessParameters(void)=0;
   virtual void CalculateDiagnostics(void)=0;
+  virtual void OutputDiagnostics(void)=0;
 
   virtual void ComputeGlobalTimestep(void)=0;
   virtual void ComputeBlockTimesteps(void)=0;
@@ -206,6 +207,7 @@ class SphSimulation : public SphSimulationBase {
   void GenerateIC(void);
   void ProcessParameters(void);
   void CalculateDiagnostics(void);
+  void OutputDiagnostics(void);
 
   void ComputeGlobalTimestep(void);
   void ComputeBlockTimesteps(void);

@@ -94,6 +94,8 @@ SphSimulationBase::~SphSimulationBase()
 {
 }
 
+
+
 //=============================================================================
 //  SphSimulationBase::SetParam
 /// Accessor function for modifying a string value. Also checks that the
@@ -115,6 +117,7 @@ void SphSimulationBase::SetParam(string key, string value) {
 }
 
 
+
 //=============================================================================
 //  SphSimulationBase::SetParam
 /// Accessor function for modifying an int value, wrapper around the one for string value.
@@ -125,6 +128,8 @@ void SphSimulationBase::SetParam(string key, int value) {
   convert << value;
   SetParam (key, convert.str());
 }
+
+
 
 //=============================================================================
 //  SphSimulationBase::SetParam
@@ -147,6 +152,7 @@ string SphSimulationBase::GetParam(string key) {
   return simparams->GetParameter(key);
 
 }
+
 
 //=============================================================================
 //  SphSimulation::Run
@@ -179,9 +185,9 @@ void SphSimulation<ndim>::Run
   // --------------------------------------------------------------------------
 
   CalculateDiagnostics();
+  OutputDiagnostics();
   diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
   cout << "Eerror : " << diag.Eerror << endl;
-
 
   return;
 }
