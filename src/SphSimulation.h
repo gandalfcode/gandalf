@@ -69,8 +69,8 @@ struct Diagnostics {
 
 
 
-// ============================================================================
-// Class SphSimulationBase
+//=============================================================================
+//  Class SphSimulationBase
 /// \brief  Creates a simulation object depending on the dimensionality.
 /// \author D. A. Hubber, G. Rosotti
 /// \date   03/04/2013
@@ -88,10 +88,11 @@ class SphSimulationBase
 
   // Subroutine prototypes
   // --------------------------------------------------------------------------
-  virtual void Setup(void)=0;
+  void SetParam (string key, string value);
+  void SetParam (string key, int value);
+  void SetParam (string ket, float value);
   virtual void PreSetupForPython(void)=0;
   virtual void ImportArray(double* input, int size, string quantity)=0;
-  virtual void PostSetupForPython(void)=0;
   virtual void SetupSimulation(void)=0;
   virtual void PostGeneration(void)=0;
   virtual void MainLoop(void)=0;
@@ -137,6 +138,7 @@ class SphSimulationBase
   // Variables
   // --------------------------------------------------------------------------
   bool setup;                       ///< Flag if simulation is setup
+  bool ParametersProcessed;         ///< Flag if the parameters have been already processed
   int integration_step;             ///< Steps per complete integration step
   int level_max;                    ///< Maximum timestep level
   int level_step;                   ///< Level of smallest timestep unit
@@ -192,10 +194,8 @@ class SphSimulation : public SphSimulationBase {
 
   // Subroutine prototypes
   // --------------------------------------------------------------------------
-  void Setup(void);
   void PreSetupForPython(void);
   void ImportArray(double* input, int size, string quantity);
-  void PostSetupForPython(void);
   void SetupSimulation(void);
   void PostGeneration(void);
   void MainLoop(void);

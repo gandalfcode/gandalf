@@ -1,8 +1,8 @@
 #==============================================================================
-#  adshocktest.py
-#  Run the adiabatic wall-shock test using initial conditions specified in
-#  the file 'adshock.dat' and then plotting important quantities together 
-#  with the analytical solutions.
+# adshocktest.py
+# Run the adiabatic wall-shock test using initial conditions specified in
+# the file 'adshock.dat' and then plotting important quantities together 
+# with the analytical solutions.
 #==============================================================================
 from seren.analysis.facade import *
 import time

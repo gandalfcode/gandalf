@@ -72,6 +72,7 @@ SphSimulationBase::SphSimulationBase
   Nsteps = 0;
   t = 0.0;
   setup = false;
+  ParametersProcessed = false;
 }
 
 
@@ -84,6 +85,48 @@ SphSimulationBase::~SphSimulationBase()
 {
 }
 
+//=============================================================================
+//  SphSimulationBase::SetParam
+/// Accessor function for modifying a string value. Also checks that the
+/// non return point has not been reached
+//=============================================================================
+void SphSimulationBase::SetParam(string key, string value) {
+
+  //Error checking
+  if (ParametersProcessed) {
+    string msg = "Error: the non-return point for setting parameters has been reached!";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+  if (key=="ndim") {
+    string msg = "Error: it's not possible to change the number of dimensions!";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+
+  simparams->SetParameter (key, value);
+}
+
+
+//=============================================================================
+//  SphSimulationBase::SetParam
+/// Accessor function for modifying an int value, wrapper around the one for string value.
+/// Also checks that the non return point has not been reached
+//=============================================================================
+void SphSimulationBase::SetParam(string key, int value) {
+  ostringstream convert;
+  convert << value;
+  SetParam (key, convert.str());
+}
+
+//=============================================================================
+//  SphSimulationBase::SetParam
+/// Accessor function for modifying a float value, wrapper around the one for string value.
+/// Also checks that the non return point has not been reached
+//=============================================================================
+void SphSimulationBase::SetParam(string key, float value) {
+  ostringstream convert;
+  convert << value;
+  SetParam (key, convert.str());
+}
 
 
 //=============================================================================
@@ -93,11 +136,11 @@ SphSimulationBase::~SphSimulationBase()
 //=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::Run
-(int Nadvance                           ///< [in] Selected max no. of integer 
- )                                      ///< timesteps (Optional argument).
+(int Nadvance                       ///< [in] Selected max no. of integer 
+ )                                  ///< timesteps (Optional argument).
 {
-  int Ntarget;                          // Target step no before finishing 
-                                        // main code integration.
+  int Ntarget;                      // Target step no before finishing 
+                                    // main code integration.
 
   debug1("[SphSimulation::Run]");
 
@@ -141,7 +184,7 @@ void SphSimulation<ndim>::InteractiveRun
   DOUBLE tpython = 8.0;                 // Python viewer update time
   clock_t tstart = clock();             // Initial CPU clock time
 
-  debug1("[SphSimulation::Run]");
+  debug2("[SphSimulation::InteractiveRun]");
 
   // Set integer timestep exit condition if provided as parameter.
   if (Nadvance < 0) Ntarget = Nstepsmax;
@@ -212,7 +255,10 @@ void SphSimulation<ndim>::GenerateIC(void)
   debug2("[SphSimulation::GenerateIC]");
 
   // Generate initial conditions
-  if (simparams->stringparams["ic"] == "random_cube")
+  if (simparams->stringparams["ic"] == "file")
+    ReadSnapshotFile(simparams->stringparams["in_file"],
+		     simparams->stringparams["in_file_form"]);
+  else if (simparams->stringparams["ic"] == "random_cube")
     RandomBox();
   else if (simparams->stringparams["ic"] == "random_sphere")
     RandomSphere();
@@ -222,12 +268,16 @@ void SphSimulation<ndim>::GenerateIC(void)
     LatticeBox();
   else if (simparams->stringparams["ic"] == "sedov")
     SedovBlastWave();
+  else if (simparams->stringparams["ic"] == "shearflow")
+    ShearFlow();
   else if (simparams->stringparams["ic"] == "shocktube")
     ShockTube();
   else if (simparams->stringparams["ic"] == "soundwave")
     SoundWave();
   else if (simparams->stringparams["ic"] == "khi")
     KHI();
+  else if (simparams->stringparams["ic"] == "python")
+    return;
   else {
     string message = "Unrecognised parameter : ic = " 
       + simparams->stringparams["ic"];
@@ -587,29 +637,11 @@ void SphSimulation<ndim>::ProcessParameters(void)
   sph->slope_limiter = stringparams["slope_limiter"];
   sph->riemann_order = intparams["riemann_order"];
 
-  return;
-}
 
-
-
-//=============================================================================
-//  SphSimulation::Setup
-/// Main function for setting up a new SPH simulation.
-//=============================================================================
-template <int ndim>
-void SphSimulation<ndim>::Setup(void)
-{
-  debug1("[SphSimulation::Setup]");
-
-  // Read parameters files assigning any contained variables
-  simparams->ReadParamsFile(paramfile);
-
-  // Now set up the simulation based on chosen parameters
-  SetupSimulation();
+  ParametersProcessed = true;
 
   return;
 }
-
 
 
 //=============================================================================
@@ -620,6 +652,17 @@ template <int ndim>
 void SphSimulation<ndim>::PreSetupForPython(void) 
 {
   debug1("[SphSimulation::PreSetupForPython]");
+
+  //Check that IC type is really python
+  if (simparams->stringparams["ic"] != "python") {
+    string msg = "Error: you should call this function only if you are using \"python\" as \"ic\" parameter";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+
+  if (ParametersProcessed) {
+    string msg = "Error: this function has been already called!";
+    ExceptionHandler::getIstance().raise(msg);
+  }
 
   ProcessParameters();
 
@@ -647,7 +690,13 @@ void SphSimulation<ndim>::ImportArray
 
   debug2("[SphSimulation::ImportArray]");
 
-  // First checks that the size is correct
+  //Check that PreSetup has been called
+  if (! ParametersProcessed) {
+    string msg = "Error: before calling ImportArray, you need to call PreSetupForPython!";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+
+  //Check that the size is correct
   if (size != sph->Nsph) {
     stringstream message;
     message << "Error: the array you are passing has a size of " 
@@ -763,23 +812,6 @@ void SphSimulation<ndim>::ImportArray
 }
 
 
-
-//=============================================================================
-//  SphSimulation::PostSetupForPython
-/// ...
-//=============================================================================
-template <int ndim>
-void SphSimulation<ndim>::PostSetupForPython(void)
-{
-  debug1("[SphSimulation::PostSetupForPython]");
-
-  PostGeneration();
-
-  return;
-}
-
-
-
 //=============================================================================
 //  SphSimulation::SetupSimulation
 /// Main function for setting up a new SPH simulation.
@@ -789,8 +821,27 @@ void SphSimulation<ndim>::SetupSimulation(void)
 {
   debug1("[SphSimulation::Setup]");
 
+  if (setup) {
+    string msg = "This simulation has been already set up";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+
+
   // Process the parameters file setting up all simulation objects
-  ProcessParameters();
+  if (simparams->stringparams["ic"]=="python") {
+    if (!ParametersProcessed) {
+      string msg = "Error: you are attempting to setup a simulation with initial conditions generated"
+          "from Python. Before setting up the simulation, you need to import the initial conditions";
+      ExceptionHandler::getIstance().raise(msg);
+    }
+  }
+  else
+    if (ParametersProcessed) {
+      string msg = "The parameters of the simulation have been already processed."
+          "It means that you shouldn't be calling this function, please consult the documentation.";
+      ExceptionHandler::getIstance().raise(msg);
+    }
+    ProcessParameters();
 
   // Generate initial conditions for simulation
   GenerateIC();

@@ -32,7 +32,7 @@ Simulation time variables
 -------------------------
 Simulation end time                         : tend = 0.5
 Regular snapshot output frequency           : dt_snap = 0.6
-Screen output frequency (in no. of steps)   : noutputstep = 16
+Screen output frequency (in no. of steps)   : noutputstep = 128
 
 
 -----------------------

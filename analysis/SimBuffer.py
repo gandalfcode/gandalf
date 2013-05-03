@@ -95,49 +95,25 @@ class SimBuffer:
         SimBuffer.simlist = []
     
     @staticmethod
-    def newsim (paramfile):
+    def newsim (paramfile=None, ndim=None):
         '''
-        This method creates a new simulation from the specified parameter file.
+        This method creates a new simulation from the specified parameter file, if given;
+        otherwise, just used default values for the parameters, but needs ndim to be specified.
         Returns the simulation created.
         '''
+        #create the parameter object
         params = Parameters()
-        params.ReadParamsFile(paramfile)
-        sim = SphSimulationBase.SphSimulationFactory(params.intparams["ndim"], params);
+        #if a paramfile name was given, read it
+        if paramfile is not None:
+            params.ReadParamsFile(paramfile)
+        if ndim is None:
+            if paramfile is None:
+                raise BufferException("You need to specify either the number of dimensions, either the parameter file")
+            ndim = params.intparams["ndim"]
+        sim = SphSimulationBase.SphSimulationFactory(ndim, params);
         SimBuffer._add_simulation(sim)
-        sim.SetupSimulation()
         sim.snapshots = []
-        SimBuffer.load_live_snapshot(sim)
         return sim
-    
-    @staticmethod
-    def newsimfromparams (paramfile):
-        '''
-        This method reads the parameters of a simulation from the specified parameter file. However,
-        it doesn't call setup simulation, and therefore it does NOT initialize the simulation (that is,
-        you can't directly run a simulation that you created with this command. First you need to
-        initialize it. Returns the simulation created'''
-        params = Parameters()
-        params.ReadParamsFile(paramfile)
-        sim = SphSimulationBase.SphSimulationFactory(params.intparams["ndim"], params);
-        SimBuffer._add_simulation(sim)
-        sim.snapshots =[]
-        return sim
-        
-    @staticmethod
-    def newsimpython(paramfile):
-        '''This method creates a simulation but does not fill in the arrays, allowing one to use the import
-        array method of the simulation object created to define the initial conditions from Python.
-        Remember that after having imported all the arrays, must call PostSetupForPython. Note however that
-        the run function in facade will do this for you if you forget.'''
-        params = Parameters()
-        params.ReadParamsFile(paramfile)
-        sim = SphSimulationBase.SphSimulationFactory(params.intparams["ndim"], params);
-        SimBuffer._add_simulation(sim)
-        sim.PreSetupForPython()
-        sim.snapshots=[]
-        sim.frompython=True
-        return sim
-        
         
     @staticmethod
     def load_live_snapshot(sim):

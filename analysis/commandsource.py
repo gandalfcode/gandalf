@@ -181,6 +181,11 @@ class PlotCommand(Command):
     def get_sim_and_snap(self):
         '''Retrieves from the buffer the desired sim and snap'''
         sim = SimBuffer.get_sim_no(self.sim)
+        
+        if not sim.setup:
+            raise Exception("""Error: this simulation has not been set up! If you have set all the relevant parameters/
+            initial conditions, please run the setupsim command to set it up.""")
+        
         if self.snap == "current":
             snap = SimBuffer.get_current_snapshot_by_sim(sim)
             if sim.snapshots == []:
@@ -212,11 +217,26 @@ class PlotCommand(Command):
         scaling_factor=1.
         quantity = getattr(self, axis+'quantity')
         unit = getattr(self, axis+'unit')
+        
+        self.check_requested_quantity(quantity, snap)
+        
         data, scaling_factor = snap.ExtractArray(quantity, scaling_factor, unit)
         setattr(self,axis+'label',snap.label)
         setattr(self,axis+'unitname',snap.unitname)
         return data, scaling_factor
     
+    def check_requested_quantity(self, quantity, snap):
+        oned = ('x', 'vx', 'ax')
+        twod = ('y', 'vy', 'ay')
+        threed = ('z', 'vz', 'az')
+        minus3 = quantity in threed and snap.ndim<3
+        minus2 = quantity in twod and snap.ndim<2
+        if minus3 or minus2:
+            raise Exception("Error: you requested the quantity " + quantity + ", but the simulation is only in " + str(snap.ndim) + " dims")
+        if self.snap != "live":
+            if quantity in ('ax', 'ay', 'az'):
+                raise Exception ("Error: accelerations are available only for live snapshots")
+        
     def setlimits(self, plotting, ax, axis):
         '''Helper function to set the limits of a plot.
         Takes care of handling autoscaling on/off for different axes.
@@ -253,7 +273,7 @@ class ParticlePlotCommand (PlotCommand):
     
     def prepareData (self, globallimits):
         sim, snap = self.get_sim_and_snap()
-        
+
         x_data, xscaling_factor = self.get_array('x', snap)
         y_data, yscaling_factor = self.get_array('y', snap)
         
