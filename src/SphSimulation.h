@@ -206,7 +206,7 @@ class SphSimulation : public SphSimulationBase {
   void GenerateIC(void);
   void ProcessParameters(void);
   void CalculateDiagnostics(void);
-  void OutputDiagnsotics(void);
+  void OutputDiagnostics(void);
 
   void ComputeGlobalTimestep(void);
   void ComputeBlockTimesteps(void);
