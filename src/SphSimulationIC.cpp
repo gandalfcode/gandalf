@@ -709,16 +709,17 @@ void SphSimulation<ndim>::ShearFlow(void)
   int j;
   int k;
   int Nbox;
+  int Nlattice1[ndim];
+  FLOAT lambda;
+  FLOAT kwave;
   FLOAT volume;
   FLOAT *r;
-  int Nlattice1[ndim];
   FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
   FLOAT press1 = simparams->floatparams["press1"];
   FLOAT temp0 = simparams->floatparams["temp0"];
   FLOAT mu_bar = simparams->floatparams["mu_bar"];
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
   FLOAT amp = simparams->floatparams["amp"];
-  FLOAT lambda = simparams->floatparams["lambda"];
   Nlattice1[0] = simparams->intparams["Nlattice1[0]"];
   Nlattice1[1] = simparams->intparams["Nlattice1[1]"];
 
@@ -731,11 +732,14 @@ void SphSimulation<ndim>::ShearFlow(void)
 
   // Compute size and range of fluid bounding boxes
   // --------------------------------------------------------------------------
+  simbox.boxmin[0] *= sqrt(3.0);
+  simbox.boxmax[0] *= sqrt(3.0);
   volume = (simbox.boxmax[0] - simbox.boxmin[0])*
     (simbox.boxmax[1] - simbox.boxmin[1]);
   Nbox = Nlattice1[0]*Nlattice1[1];
 
-
+  lambda = simbox.boxmax[1] - simbox.boxmin[0];
+  kwave = twopi/lambda;
 
   // Allocate local and main particle memory
   sph->Nsph = Nbox;
@@ -748,20 +752,16 @@ void SphSimulation<ndim>::ShearFlow(void)
   // Add particles for LHS of the shocktube
   // --------------------------------------------------------------------------
   if (Nbox > 0) {
-    AddRegularLattice(Nbox,Nlattice1,r,simbox);
+    //AddRegularLattice(Nbox,Nlattice1,r,simbox);
+    AddHexagonalLattice(Nbox,Nlattice1,r,simbox);
 
     for (i=0; i<Nbox; i++) {
       for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r[ndim*i + k];
       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
+      sph->sphdata[i].v[0] = amp*sin(kwave*sph->sphdata[i].r[1]);
       sph->sphdata[i].m = rhofluid1*volume/(FLOAT) Nbox;
       sph->sphdata[i].u = press1/rhofluid1/gammaone;
     }
-  }
-
-
-  // Add velocity perturbation here
-  // --------------------------------------------------------------------------
-  for (i=0; i<sph->Nsph; i++) {
   }
 
   delete[] r;
@@ -781,15 +781,15 @@ void SphSimulation<ndim>::SoundWave(void)
   int i,k;                          // Particle and dimension counters
   int Nlattice1[ndim];              // Lattice size
   FLOAT csound;                     // (Isothermal) sound speed
-  FLOAT diff;                       // ..
-  FLOAT lambda;                     // ..
-  FLOAT kwave;                      // ..
-  FLOAT omegawave;                  // ..
-  FLOAT ugas;                       // ..
-  FLOAT volume;                     // ..
-  FLOAT xold;                       // ..
-  FLOAT xnew;                       // ..
-  FLOAT *r;                         // ..
+  FLOAT diff;                       // ??
+  FLOAT lambda;                     // Wavelength of perturbation
+  FLOAT kwave;                      // Wave number of perturbing sound wave
+  FLOAT omegawave;                  // Angular frequency of sound wave
+  FLOAT ugas;                       // Internal energy of gas
+  FLOAT volume;                     // Total gas volume
+  FLOAT xold;                       // Old x-position (for iteration)
+  FLOAT xnew;                       // New x-position (for iteration)
+  FLOAT *r;                         // Particle positions
 
   // Make local copies of parameters for setting up problem
   int Npart = simparams->intparams["Npart"];
@@ -875,9 +875,9 @@ void SphSimulation<ndim>::SoundWave(void)
 //=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::AddRandomBox
-(int Npart,                         ///< No. of particles
- FLOAT *r,                          ///< Positions of particles
- DomainBox<ndim> box)               ///< Bounding box containing particles
+(int Npart,                         ///< [in] No. of particles
+ FLOAT *r,                          ///< [out] Positions of particles
+ DomainBox<ndim> box)               ///< [in] Bounding box containing particles
 {
   debug2("[SphSimulation::AddRandomBox]");
 
@@ -898,22 +898,31 @@ void SphSimulation<ndim>::AddRandomBox
 /// Add random sphere of particles
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::AddRandomSphere(int Npart, FLOAT *r,
-				    FLOAT *rcentre, FLOAT radius)
+void SphSimulation<ndim>::AddRandomSphere
+(int Npart,                         ///< [in] No. of particles in sphere
+ FLOAT *r,                          ///< [out] Positions of particles in sphere
+ FLOAT *rcentre,                    ///< [in] Position of sphere centre
+ FLOAT radius)                      ///< [in] Radius of sphere
 {
-  FLOAT rad;
-  FLOAT rpos[ndim];
+  int i,k;                          // Particle and dimension counters
+  FLOAT rad;                        // Radius of particle
+  FLOAT rpos[ndim];                 // Random position of new particle
 
   debug2("[SphSimulation::AddRandomSphere]");
 
-  for (int i=0; i<Npart; i++) {
+  // --------------------------------------------------------------------------
+  for (i=0; i<Npart; i++) {
+
+    // Continously loop until random particle lies inside sphere
     do {
-      for (int k=0; k<ndim; k++) 
+      for (k=0; k<ndim; k++) 
 	rpos[k] = 1.0 - 2.0*(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
       rad = DotProduct(rpos,rpos,ndim);
     } while (rad > radius);
-    for (int k=0; k<ndim; k++) r[ndim*i + k] = rcentre[k] + rpos[k];
+
+    for (k=0; k<ndim; k++) r[ndim*i + k] = rcentre[k] + rpos[k];
   }
+  // --------------------------------------------------------------------------
 
   return;
 }
@@ -925,13 +934,14 @@ void SphSimulation<ndim>::AddRandomSphere(int Npart, FLOAT *r,
 /// Add regular (cubic) lattice of particles
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::AddRegularLattice(int Npart, int Nlattice[3],
-					    FLOAT *r, DomainBox<ndim> box)
+void SphSimulation<ndim>::AddRegularLattice
+(int Npart,                         ///< [in] No. of particles in lattice
+ int Nlattice[ndim],                ///< [in] Ptcls per dimension in lattice
+ FLOAT *r,                          ///< [out] Positions of particles
+ DomainBox<ndim> box)               ///< [in] Bounding box of particles
 {
-  int i;
-  int ii;
-  int jj;
-  int kk;
+  int i;                            // Particle counter
+  int ii,jj,kk;                     // Aux. lattice counters
 
   debug2("[SphSimulation::AddRegularLattice]");
   
@@ -984,14 +994,15 @@ void SphSimulation<ndim>::AddRegularLattice(int Npart, int Nlattice[3],
 /// N.B. the box is scaled to fit to the x-boxsize.
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::AddHexagonalLattice(int Npart, int Nlattice[ndim],
-					FLOAT *r, DomainBox<ndim> box)
+void SphSimulation<ndim>::AddHexagonalLattice
+(int Npart,                         ///< [in] No. of particles in lattice
+ int Nlattice[ndim],                ///< [in] Ptcls per dimension in lattice
+ FLOAT *r,                          ///< [out] Positions of particles
+ DomainBox<ndim> box)               ///< [in] Bounding box of particles
 {
-  int i;
-  int ii;
-  int jj;
-  int kk;
-  FLOAT rad;
+  int i;                            // Particle counter
+  int ii,jj,kk;                     // Aux. lattice counters
+  FLOAT rad;                        // 'Radius' of particle in lattice
 
   debug2("[SphSimulation::AddHexagonalLattice]");
   
@@ -1042,28 +1053,28 @@ void SphSimulation<ndim>::AddHexagonalLattice(int Npart, int Nlattice[ndim],
 
 
 
-
-// ============================================================================
-// SphSimulation::CutSphere
-// Cut-out a sphere containing exactly'Nsphere' particles (if selected)
-// ============================================================================
+//=============================================================================
+//  SphSimulation::CutSphere
+/// Cut-out a sphere containing exactly 'Nsphere' particles from a uniform 
+/// box of particles.
+//=============================================================================
 template <int ndim>
-int SphSimulation<ndim>::CutSphere(int Nsphere, int Npart,
-			     FLOAT radsphere, FLOAT *r, 
-			     DomainBox<ndim> box, bool exact)
+int SphSimulation<ndim>::CutSphere
+(int Nsphere,                       ///< [in] Desired np of particles in sphere
+ int Npart,                         ///< [in] No. of particles in cube
+ FLOAT radsphere,                   ///< [in] ??
+ FLOAT *r,                          ///< [inout] Positions of particles
+ DomainBox<ndim> box,               ///< [in] Bounding box of particles
+ bool exact)                        ///< [in] ??
 {
-  int i;
-  int k;
-  int niterations = 0;
-  int Ninterior = 0;
-  int Niteration = 0;
-  int Nitmax = 100;
-  FLOAT dr[ndim];
-  FLOAT drsqd;
-  FLOAT r_low = 0.0;
-  FLOAT r_high;
-  FLOAT radius;
-  FLOAT rcentre[ndim];
+  int i,k;                          // Particle and dimension counters
+  int Ninterior = 0;                // No. of particle
+  FLOAT dr[ndim];                   // Relative position vector
+  FLOAT drsqd;                      // Distance squared
+  FLOAT r_low = 0.0;                // Lower-bound for bisection iteration
+  FLOAT r_high;                     // Upper-bound for bisection iteration
+  FLOAT radius;                     // Current radius containing Nsphere ptcls
+  FLOAT rcentre[ndim];              // Centre of sphere
 
   debug2("[SphSimulation::CutSphere]");
 
@@ -1081,19 +1092,27 @@ int SphSimulation<ndim>::CutSphere(int Nsphere, int Npart,
     radius = 0.5*(r_low + r_high);
     Ninterior = 0;
 
+    // Count how many particles lie inside current radius
     for (i=0; i<Npart; i++) {
       for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k] - rcentre[k];
       drsqd = DotProduct(dr,dr,ndim);
       if (drsqd <= radius*radius) Ninterior++;
     }
+
+    // If it's impossible to converge on the desired number of particles, due 
+    // to lattice configurations, then exit iteration with approximate number 
+    // of particles.
+    if (fabs(r_high - r_low)/radius < 1.e-8) break;
+
+    // Otherwise, continue bisection iteration to find radius
     if (Ninterior > Nsphere) r_high = radius;
     if (Ninterior < Nsphere) r_low = radius;
-    if (Niteration++ > Nitmax);
+
   } while (Ninterior != Nsphere);
 
 
-  // Now radius containing require number has been identified, record only 
-  // particle inside sphere
+  // Now that the radius containing require number has been identified, 
+  // record only the particles inside the sphere.
   // --------------------------------------------------------------------------
   Ninterior = 0;
   for (i=0; i<Npart; i++) {

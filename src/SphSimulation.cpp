@@ -268,6 +268,8 @@ void SphSimulation<ndim>::GenerateIC(void)
     LatticeBox();
   else if (simparams->stringparams["ic"] == "sedov")
     SedovBlastWave();
+  else if (simparams->stringparams["ic"] == "shearflow")
+    ShearFlow();
   else if (simparams->stringparams["ic"] == "shocktube")
     ShockTube();
   else if (simparams->stringparams["ic"] == "soundwave")
