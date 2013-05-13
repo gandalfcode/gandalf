@@ -287,7 +287,7 @@ class PlotCommand(Command):
             raise Exception("error: different spatial coordinates have different scaling facors. Bug in units, please contact the authors")
         
         x,y,z = arrays        
-        return x**2+y**2+z**2, xfactor
+        return np.sqrt(x**2+y**2+z**2), xfactor
         
 
 class ParticlePlotCommand (PlotCommand):
