@@ -66,6 +66,7 @@ bool SphSimulation<ndim>::ReadColumnSnapshotFile(string filename)
   int Npart;
   int Nstar;
   ifstream infile;
+  FLOAT raux;
 
   debug1("[SphSimulation::ReadColumnSnapshotFile]");
 
@@ -89,7 +90,7 @@ bool SphSimulation<ndim>::ReadColumnSnapshotFile(string filename)
 
   // Read in data depending on dimensionality
   // --------------------------------------------------------------------------
-  while (infile.good()) {
+  while (infile.good() && i < sph->Nsph) {
     if (ndim == 1) infile >> sph->sphdata[i].r[0] >> sph->sphdata[i].v[0] 
 			  >> sph->sphdata[i].m >> sph->sphdata[i].h
 			  >> sph->sphdata[i].rho >> sph->sphdata[i].u;
@@ -104,6 +105,32 @@ bool SphSimulation<ndim>::ReadColumnSnapshotFile(string filename)
 			       >> sph->sphdata[i].rho >> sph->sphdata[i].u;
     i++;
   }
+
+  nbody->Nstar = Nstar;
+  nbody->AllocateMemory(nbody->Nstar);
+  i = 0;
+
+  // Read in data depending on dimensionality
+  // --------------------------------------------------------------------------
+  while (infile.good() && i < nbody->Nstar) {
+    if (ndim == 1) 
+      infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].v[0] 
+	     >> nbody->stardata[i].m >> nbody->stardata[i].h
+	     >> raux >> raux;
+    else if (ndim == 2) 
+      infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].r[1] 
+	     >> nbody->stardata[i].v[0] >> nbody->stardata[i].v[1] 
+	     >> nbody->stardata[i].m >> nbody->stardata[i].h
+	     >> raux >> raux;
+    else if (ndim == 3) 
+      infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].r[1] 
+	     >> nbody->stardata[i].r[2] >> nbody->stardata[i].v[0] 
+	     >> nbody->stardata[i].v[1] >> nbody->stardata[i].v[2] 
+	     >> nbody->stardata[i].m >> nbody->stardata[i].h
+	     >> raux >> raux;
+    i++;
+  }
+
 
   infile.close();
 
@@ -135,7 +162,7 @@ bool SphSimulation<ndim>::WriteColumnSnapshotFile(string filename)
   outfile << ndim << endl;
   outfile << t << endl;
 
-  // Write data
+  // Write data for SPH particles
   // --------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
     if (ndim == 1) outfile << sph->sphdata[i].r[0] << "   " 
@@ -164,6 +191,38 @@ bool SphSimulation<ndim>::WriteColumnSnapshotFile(string filename)
 				<< sph->sphdata[i].h << "   "
 				<< sph->sphdata[i].rho << "   "
 				<< sph->sphdata[i].u
+				<< endl;
+  }
+
+  // Write data for SPH particles
+  // --------------------------------------------------------------------------
+  for (i=0; i<nbody->Nstar; i++) {
+    if (ndim == 1) outfile << nbody->stardata[i].r[0] << "   " 
+			   << nbody->stardata[i].v[0] << "   "
+			   << nbody->stardata[i].m << "   " 
+			   << nbody->stardata[i].h << "   "
+			   << 0.0 << "   " 
+			   << 0.0
+			   << endl;
+    else if (ndim == 2) outfile << nbody->stardata[i].r[0] << "   " 
+				<< nbody->stardata[i].r[1] << "   " 
+				<< nbody->stardata[i].v[0] << "   " 
+				<< nbody->stardata[i].v[1] << "   "
+				<< nbody->stardata[i].m << "   "
+				<< nbody->stardata[i].h << "   "
+				<< 0.0 << "   "
+				<< 0.0
+				<< endl;
+    else if (ndim == 3) outfile << nbody->stardata[i].r[0] << "   "
+				<< nbody->stardata[i].r[1] << "   " 
+				<< nbody->stardata[i].r[2] << "   "
+				<< nbody->stardata[i].v[0] << "   " 
+				<< nbody->stardata[i].v[1] << "   " 
+				<< nbody->stardata[i].v[2] << "   "
+				<< nbody->stardata[i].m << "   "
+				<< nbody->stardata[i].h << "   "
+				<< 0.0 << "   "
+				<< 0.0
 				<< endl;
   }
 

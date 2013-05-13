@@ -3,9 +3,9 @@
 # =============================================================================
 
 CC                 = g++
-PYTHON             = python
-F2PY               = f2py
-COMPILER_MODE      = FAST
+PYTHON             = python2.7
+F2PY               = f2py2.7
+COMPILER_MODE      = DEBUG
 PRECISION          = DOUBLE
 OPENMP             = 0
 OUTPUT_LEVEL       = 1

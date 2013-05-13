@@ -63,7 +63,7 @@ void Sph<ndim>::AllocateMemory(int N)
     Nsph = N;
     //TODO: perhaps this 10 could be made a user-provided parameter
     //(to handle the case where one doesn't want to waste memory)
-    Nsphmax = 30*N;
+    Nsphmax = 10*N;
     sphdata = new struct SphParticle<ndim>[Nsphmax];
     allocated = true;
   }
@@ -147,7 +147,7 @@ void Sph<ndim>::InitialSmoothingLengthGuess(void)
   }
   // --------------------------------------------------------------------------
   else if (ndim == 2) {
-    Ngather = 16;
+    Ngather = 20;
     volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1]);
     h_guess = sqrtf((volume*(FLOAT) Ngather)/(4.0*(FLOAT) Nsph));
   }

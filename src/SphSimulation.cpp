@@ -273,14 +273,12 @@ void SphSimulation<ndim>::GenerateIC(void)
   if (simparams->stringparams["ic"] == "file")
     ReadSnapshotFile(simparams->stringparams["in_file"],
 		     simparams->stringparams["in_file_form"]);
-  else if (simparams->stringparams["ic"] == "random_cube")
-    RandomBox();
-  else if (simparams->stringparams["ic"] == "random_sphere")
-    RandomSphere();
+  else if (simparams->stringparams["ic"] == "box")
+    UniformBox();
+  else if (simparams->stringparams["ic"] == "sphere")
+    UniformSphere();
   else if (simparams->stringparams["ic"] == "cdiscontinuity")
     ContactDiscontinuity();
-  else if (simparams->stringparams["ic"] == "lattice_cube")
-    LatticeBox();
   else if (simparams->stringparams["ic"] == "sedov")
     SedovBlastWave();
   else if (simparams->stringparams["ic"] == "shearflow")
@@ -291,6 +289,8 @@ void SphSimulation<ndim>::GenerateIC(void)
     SoundWave();
   else if (simparams->stringparams["ic"] == "khi")
     KHI();
+  else if (simparams->stringparams["ic"] == "binary")
+    BinaryStar();
   else if (simparams->stringparams["ic"] == "python")
     return;
   else {
@@ -298,6 +298,9 @@ void SphSimulation<ndim>::GenerateIC(void)
       + simparams->stringparams["ic"];
     ExceptionHandler::getIstance().raise(message);
   }
+
+  // Check that the initial conditions are valid
+  CheckInitialConditions();
 
   return;
 }
@@ -572,7 +575,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
-  /*
+  
   // Create N-body object based on chosen method in params file
   // --------------------------------------------------------------------------
   if (stringparams["nbody"] == "lfkdk") {
@@ -612,8 +615,49 @@ void SphSimulation<ndim>::ProcessParameters(void)
     }
   }
   // --------------------------------------------------------------------------
-  */
-
+  else if (stringparams["nbody"] == "hermite4") {
+    string KernelName = stringparams["kernel"];
+    if (intparams["tabulated_kernel"] == 1) {
+      nbody = new NbodyHermite4<ndim, TabulatedKernel> 
+	(intparams["nbody_softening"], intparams["sub_systems"],
+	 floatparams["nbody_mult"], KernelName);
+    }
+    else if (intparams["tabulated_kernel"] == 0) {
+      // Depending on the kernel, instantiate a different GradSph object
+      if (KernelName == "m4") {
+	nbody = new NbodyHermite4<ndim, M4Kernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else if (KernelName == "quintic") {
+	nbody = new NbodyHermite4<ndim, QuinticKernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else if (KernelName == "gaussian") {
+	nbody = new NbodyHermite4<ndim, GaussianKernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else {
+	string message = "Unrecognised parameter : kernel = " +
+	  simparams->stringparams["kernel"];
+	ExceptionHandler::getIstance().raise(message);
+      }
+    }
+    else {
+      string message = "Invalid option for the tabulated_kernel parameter: " +
+	stringparams["tabulated_kernel"];
+      ExceptionHandler::getIstance().raise(message);
+    }
+  }
+  // --------------------------------------------------------------------------
+  else {
+    string message = "Unrecognised parameter : nbody = " 
+      + simparams->stringparams["nbody"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+  // --------------------------------------------------------------------------
 
 
   // Boundary condition variables
@@ -652,7 +696,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   sph->slope_limiter = stringparams["slope_limiter"];
   sph->riemann_order = intparams["riemann_order"];
 
-
+  // Flag that we've processed all parameters already
   ParametersProcessed = true;
 
   return;
@@ -879,6 +923,9 @@ void SphSimulation<ndim>::SetupSimulation(void)
 template <int ndim>
 void SphSimulation<ndim>::PostGeneration(void)
 {
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+
   debug2("[SphSimulation::PostGeneration]");
 
   // Set time variables here (for now)
@@ -908,7 +955,7 @@ void SphSimulation<ndim>::PostGeneration(void)
     sphneib->UpdateTree(sph,*simparams);
   }
 
-  // Compute all SPH particle properties (if SPH particles exist)
+  // Compute all initial SPH particle properties (if SPH particles exist)
   // --------------------------------------------------------------------------
   if (sph->Nsph > 0) {
 
@@ -935,15 +982,43 @@ void SphSimulation<ndim>::PostGeneration(void)
       //for (int i=0; i<sph->Ntot; i++) 
       //sph->sphdata[i].dt = sph->sphdata[i].h/sph->sphdata[i].sound;
     }
+  }
 
-    // Zero accelerations (perhaps here)
-    for (int i=0; i<sph->Ntot; i++) {
-      for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
-      for (int k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
+
+  // Compute all initial N-body terms
+  // --------------------------------------------------------------------------
+  if (nbody->Nstar > 0) {
+
+    // Zero all acceleration terms
+    for (i=0; i<nbody->Nstar; i++) {
+      for (k=0; k<ndim; k++) nbody->stardata[i].a[k] = 0.0;
+      for (k=0; k<ndim; k++) nbody->stardata[i].adot[k] = 0.0;
+      for (k=0; k<ndim; k++) nbody->stardata[i].a2dot[k] = 0.0;
+      for (k=0; k<ndim; k++) nbody->stardata[i].a3dot[k] = 0.0;
+      nbody->stardata[i].gpot = 0.0;
+      nbody->stardata[i].active = true;
+      nbody->stardata[i].level = level_step;
+      nbody->stardata[i].nstep = 1;
+    }
+
+    nbody->CalculateDirectGravForces(nbody->Nstar,nbody->stardata);
+
+  }
+
+
+  // Compute all initial SPH force terms
+  // --------------------------------------------------------------------------
+  if (sph->Nsph > 0) {
+
+    // Zero accelerations (here for now)
+    for (i=0; i<sph->Ntot; i++) {
+      for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
       sph->sphdata[i].gpot = (FLOAT) 0.0;
       sph->sphdata[i].dudt = (FLOAT) 0.0;
       sph->sphdata[i].active = true;
       sph->sphdata[i].level = level_step;
+      sph->sphdata[i].nstep = 1;
     }
 
     CopySphDataToGhosts();
@@ -969,17 +1044,18 @@ void SphSimulation<ndim>::PostGeneration(void)
     //CopyAccelerationFromGhosts();
 
     // Add accelerations
-    for (int i=0; i<sph->Nsph; i++) {
+    for (i=0; i<sph->Nsph; i++) {
       sph->sphdata[i].active = false;
-      for (int k=0; k<ndim; k++)
+      for (k=0; k<ndim; k++)
 	sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
   }
 
-  // Set r0,v0,a0 for initial step
+  // Set particle values for initial step (e.g. r0, v0, a0)
   sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+  nbody->EndTimestep(n,nbody->Nstar,nbody->stardata);
   
   CalculateDiagnostics();
   diag0 = diag;
@@ -998,7 +1074,8 @@ void SphSimulation<ndim>::PostGeneration(void)
 template <int ndim>
 void SphSimulation<ndim>::MainLoop(void)
 {
-  int i;                                // Particle loop counter
+  int i;                            // Particle loop counter
+  int k;                            // Dimension counter
 
   debug2("[SphSimulation::MainLoop]");
 
@@ -1030,6 +1107,7 @@ void SphSimulation<ndim>::MainLoop(void)
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EnergyIntegration(n,level_step,sph->Nsph,
 			    sph->sphdata,(FLOAT) timestep);
+  nbody->AdvanceParticles(n,nbody->Nstar,nbody->stardata,timestep);
 
   // Check all boundary conditions
   CheckBoundaries();
@@ -1053,6 +1131,31 @@ void SphSimulation<ndim>::MainLoop(void)
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph);
 
+  }
+
+
+  // Compute N-body forces
+  // --------------------------------------------------------------------------
+  if (nbody->Nstar > 0) {
+
+    // Zero all acceleration terms
+    for (i=0; i<nbody->Nstar; i++) {
+      if (nbody->stardata[i].active) {
+	for (k=0; k<ndim; k++) nbody->stardata[i].a[k] = 0.0;
+	for (k=0; k<ndim; k++) nbody->stardata[i].adot[k] = 0.0;
+	for (k=0; k<ndim; k++) nbody->stardata[i].a2dot[k] = 0.0;
+	for (k=0; k<ndim; k++) nbody->stardata[i].a3dot[k] = 0.0;
+	nbody->stardata[i].gpot = 0.0;
+      }
+    }
+
+    nbody->CalculateDirectGravForces(nbody->Nstar,nbody->stardata);
+  }
+
+
+  // --------------------------------------------------------------------------
+  if (sph->Nsph > 0) {
+
     // Compute timesteps for all particles
     if (simparams->stringparams["sph"] == "godunov") {
       if (Nlevels == 1) 
@@ -1070,8 +1173,8 @@ void SphSimulation<ndim>::MainLoop(void)
     // Zero accelerations (perhaps)
     for (i=0; i<sph->Ntot; i++) {
       if (sph->sphdata[i].active) {
-	for (int k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
-	for (int k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
+	for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
+	for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
 	sph->sphdata[i].gpot = (FLOAT) 0.0;
 	sph->sphdata[i].dudt = (FLOAT) 0.0;
       }
@@ -1089,7 +1192,7 @@ void SphSimulation<ndim>::MainLoop(void)
 
     // Add accelerations
     for (i=0; i<sph->Nsph; i++) {
-      for (int k=0; k<ndim; k++) 
+      for (k=0; k<ndim; k++) 
         sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
   }
@@ -1100,11 +1203,13 @@ void SphSimulation<ndim>::MainLoop(void)
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EnergyCorrectionTerms(n,level_step,sph->Nsph,
   				sph->sphdata,(FLOAT) timestep);
+  nbody->CorrectionTerms(n,nbody->Nstar,nbody->stardata,timestep);
 
   // Set all end-of-step variables
   sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+  nbody->EndTimestep(n,nbody->Nstar,nbody->stardata);
 
   return;
 }

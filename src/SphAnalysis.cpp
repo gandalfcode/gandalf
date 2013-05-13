@@ -28,6 +28,7 @@ using namespace std;
 template <int ndim>
 void SphSimulation<ndim>::CalculateDiagnostics(void)
 {
+  int i;                            // Particle counter
   int k;                            // Dimensionality counter
 
   debug2("[SphSimulation::CalculateDiagnostics]");
@@ -38,12 +39,12 @@ void SphSimulation<ndim>::CalculateDiagnostics(void)
   diag.ketot = 0.0;
   diag.gpetot = 0.0;
   for (k=0; k<ndim; k++) diag.mom[k] = 0.0;
-  for (k=0; k<3; k++) diag.angmom[k] = 0.0;
   for (k=0; k<ndim; k++) diag.force[k] = 0.0;
   for (k=0; k<ndim; k++) diag.force_grav[k] = 0.0;
+  for (k=0; k<3; k++) diag.angmom[k] = 0.0;
 
   // Loop over all SPH particles and add contributions to all quantities
-  for (int i=0; i<sph->Nsph; i++) {
+  for (i=0; i<sph->Nsph; i++) {
     diag.ketot += sph->sphdata[i].m*
       DotProduct(sph->sphdata[i].v,sph->sphdata[i].v,ndim);
     diag.utot += sph->sphdata[i].m*sph->sphdata[i].u;
@@ -54,6 +55,41 @@ void SphSimulation<ndim>::CalculateDiagnostics(void)
       diag.force_grav[k] += sph->sphdata[i].m*sph->sphdata[i].agrav[k];
     }
   }
+
+  // Add contributions to angular momentum depending on dimensionality
+  if (ndim == 2) {
+    for (i=0; i<sph->Nsph; i++)
+      diag.angmom[2] += sph->sphdata[i].m*
+	(sph->sphdata[i].r[0]*sph->sphdata[i].v[1] - 
+	 sph->sphdata[i].r[1]*sph->sphdata[i].v[0]);
+  }
+  else if (ndim == 3) {
+    for (i=0; i<sph->Nsph; i++) {
+      diag.angmom[0] += sph->sphdata[i].m*
+	(sph->sphdata[i].r[1]*sph->sphdata[i].v[2] - 
+	 sph->sphdata[i].r[2]*sph->sphdata[i].v[1]);
+      diag.angmom[1] += sph->sphdata[i].m*
+	(sph->sphdata[i].r[2]*sph->sphdata[i].v[0] - 
+	 sph->sphdata[i].r[0]*sph->sphdata[i].v[2]);
+      diag.angmom[2] += sph->sphdata[i].m*
+	(sph->sphdata[i].r[0]*sph->sphdata[i].v[1] - 
+	 sph->sphdata[i].r[1]*sph->sphdata[i].v[0]);
+    }
+  }
+
+  // Loop over all star particles and add contributions to all quantities
+  for (i=0; i<nbody->Nstar; i++) {
+    diag.ketot += nbody->stardata[i].m*
+      DotProduct(nbody->stardata[i].v,nbody->stardata[i].v,ndim);
+    diag.gpetot += nbody->stardata[i].m*nbody->stardata[i].gpot;
+    for (k=0; k<ndim; k++) {
+      diag.mom[k] += nbody->stardata[i].m*nbody->stardata[i].v[k];
+      diag.force[k] += nbody->stardata[i].m*nbody->stardata[i].a[k];
+      diag.force_grav[k] += nbody->stardata[i].m*nbody->stardata[i].a[k];
+    }
+  }
+
+  // Normalise all quantities and sum all contributions to total energy
   diag.ketot *= 0.5;
   diag.gpetot *= 0.5;
   diag.Etot = diag.ketot + diag.utot + diag.gpetot;
@@ -74,6 +110,8 @@ void SphSimulation<ndim>::OutputDiagnostics(void)
   debug2("[SphSimulation::OutputDiagnostics]");
 
   cout << "Printing out diagnostics" << endl;
+  cout << "Nsph       : " << sph->Nsph << endl;
+  cout << "Nstar      : " << nbody->Nstar << endl;
   cout << "Etot       : " << diag.Etot << endl;
   cout << "utot       : " << diag.utot << endl;
   cout << "ketot      : " << diag.ketot << endl;

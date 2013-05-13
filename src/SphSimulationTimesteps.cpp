@@ -28,8 +28,10 @@ using namespace std;
 template <int ndim>
 void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 {
-  int i;                               // ..
-  DOUBLE dt_min = big_number_dp;       // ..
+  int i;                            // Particle counter
+  DOUBLE dt = big_number_dp;        // Particle timestep
+  DOUBLE dt_min = big_number_dp;    // Local copy of minimum timestep
+
 
   debug2("[SphSimulation::ComputeGlobalTimestep]");
 
@@ -43,30 +45,41 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 
     // Find minimum timestep from all SPH particles
     // ------------------------------------------------------------------------
-#pragma omp parallel default(shared) private(i)
+#pragma omp parallel default(shared) private(i,dt)
     {
-       DOUBLE dt = big_number_dp;
 #pragma omp for
-       for (i=0; i<sph->Nsph; i++)
-         dt = min(dt,sphint->Timestep(sph->sphdata[i],sph->hydro_forces));
+      for (i=0; i<sph->Nsph; i++)
+	dt = min(dt,sphint->Timestep(sph->sphdata[i],sph->hydro_forces));
 
-       // If integrating energy equation, include energy timestep
-       if (simparams->stringparams["gas_eos"] == "energy_eqn") {
+      // If integrating energy equation, include energy timestep
+      if (simparams->stringparams["gas_eos"] == "energy_eqn") {
 #pragma omp for
-         for (i=0; i<sph->Nsph; i++)
-     	   dt = min(dt,uint->Timestep(sph->sphdata[i]));
-       }
+	for (i=0; i<sph->Nsph; i++)
+	  dt = min(dt,uint->Timestep(sph->sphdata[i]));
+      }
 
 #pragma omp critical
-       if (dt < dt_min) dt_min = dt;
+      if (dt < dt_min) dt_min = dt;
     }
     // ------------------------------------------------------------------------
+
+
+    // Now compute minimum timestep due to stars/systems
+    for (i=0; i<nbody->Nstar; i++)
+      dt_min = min(dt_min,nbody->Timestep(nbody->stardata[i]));
+
     
     // Set all particles to same timestep
     timestep = dt_min;
     for (i=0; i<sph->Nsph; i++) {
       sph->sphdata[i].level = 0;
+      sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
       sph->sphdata[i].dt = timestep;
+    }
+    for (i=0; i<nbody->Nstar; i++) {
+      nbody->stardata[i].level = 0;
+      nbody->stardata[i].nstep = pow(2,level_step - nbody->stardata[i].level);
+      nbody->stardata[i].dt = timestep;
     }
 
   }

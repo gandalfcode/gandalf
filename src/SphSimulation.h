@@ -1,10 +1,10 @@
 //=============================================================================
-// SphSimulation.h
-// Contains definitions for following data structures and classes:
-// - DomainBox
-// - Diagnostics
-// - SphSimulationBase
-// - SphSimulation
+//  SphSimulation.h
+//  Contains definitions for following data structures and classes:
+//  - DomainBox
+//  - Diagnostics
+//  - SphSimulationBase
+//  - SphSimulation
 //=============================================================================
 
 
@@ -74,7 +74,7 @@ struct Diagnostics {
 /// \brief  Creates a simulation object depending on the dimensionality.
 /// \author D. A. Hubber, G. Rosotti
 /// \date   03/04/2013
-// ============================================================================
+//=============================================================================
 class SphSimulationBase
 {
  public:
@@ -88,9 +88,9 @@ class SphSimulationBase
 
   // Subroutine prototypes
   // --------------------------------------------------------------------------
-  void SetParam (string key, string value);
-  void SetParam (string key, int value);
-  void SetParam (string ket, float value);
+  void SetParam(string key, string value);
+  void SetParam(string key, int value);
+  void SetParam(string key, float value);
   virtual void PreSetupForPython(void)=0;
   virtual void ImportArray(double* input, int size, string quantity)=0;
   virtual void SetupSimulation(void)=0;
@@ -120,14 +120,15 @@ class SphSimulationBase
 
   // Initial conditions routines
   // --------------------------------------------------------------------------
-  virtual void RandomBox(void)=0;
+  virtual void CheckInitialConditions(void)=0;
   virtual void ContactDiscontinuity(void)=0;
-  virtual void LatticeBox(void)=0;
-  virtual void RandomSphere(void)=0;
+  virtual void UniformBox(void)=0;
+  virtual void UniformSphere(void)=0;
   virtual void ShearFlow(void) = 0;
   virtual void ShockTube(void)=0;
   virtual void KHI(void)=0;
   virtual void SoundWave(void)=0;
+  virtual void BinaryStar(void)=0;
 
   // Input-output routines
   // --------------------------------------------------------------------------
@@ -139,7 +140,7 @@ class SphSimulationBase
   // Variables
   // --------------------------------------------------------------------------
   bool setup;                       ///< Flag if simulation is setup
-  bool ParametersProcessed;         ///< Flag if the parameters have been already processed
+  bool ParametersProcessed;         ///< Flag if params are already processed
   int integration_step;             ///< Steps per complete integration step
   int level_max;                    ///< Maximum timestep level
   int level_step;                   ///< Level of smallest timestep unit
@@ -188,8 +189,9 @@ class SphSimulation : public SphSimulationBase {
   // --------------------------------------------------------------------------
   void AddRandomBox(int, FLOAT *, DomainBox<ndim>);
   void AddRandomSphere(int, FLOAT *, FLOAT *, FLOAT);
-  void AddRegularLattice(int, int *, FLOAT *, DomainBox<ndim>);
-  void AddHexagonalLattice(int, int *, FLOAT *, DomainBox<ndim>);
+  void AddCubicLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
+  void AddHexagonalLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
+  int AddLatticeSphere(int, FLOAT *, FLOAT *, FLOAT, string);
   int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
 
 
@@ -224,15 +226,16 @@ class SphSimulation : public SphSimulationBase {
 
   // Initial conditions routines
   // --------------------------------------------------------------------------
-  virtual void RandomBox(void);
+  virtual void CheckInitialConditions(void);
   virtual void ContactDiscontinuity(void);
-  virtual void LatticeBox(void);
-  virtual void RandomSphere(void);
+  virtual void UniformBox(void);
+  virtual void UniformSphere(void);
   virtual void ShockTube(void);
   virtual void KHI(void);
   virtual void SedovBlastWave(void);
   virtual void ShearFlow(void);
   virtual void SoundWave(void);
+  virtual void BinaryStar(void);
 
   // Input-output routines
   // --------------------------------------------------------------------------
@@ -244,6 +247,7 @@ class SphSimulation : public SphSimulationBase {
   // Variables
   // --------------------------------------------------------------------------
   static const int vdim=ndim;
+  static const FLOAT invndim=1.0/ndim;
 
   DomainBox<ndim> simbox;               ///< Simulation boundary data
   Diagnostics<ndim> diag0;              ///< Initial diagnostic state

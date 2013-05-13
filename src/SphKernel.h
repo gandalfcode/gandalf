@@ -419,7 +419,7 @@ class GaussianKernel: public SphKernel<ndim>
 template <int ndim>
 inline FLOAT GaussianKernel<ndim>::w0(FLOAT s)
 {
-  if (s < (FLOAT) 3.0)
+  if (s < this->kernrange)
     return (this->kernnorm)*exp(-s*s);
   else
     return (FLOAT) 0.0;
@@ -434,7 +434,7 @@ inline FLOAT GaussianKernel<ndim>::w0(FLOAT s)
 template <int ndim>
 inline FLOAT GaussianKernel<ndim>::w1(FLOAT s)
 {
-  if (s < (FLOAT) 3.0)
+  if (s < this->kernrange)
     return -(FLOAT) 2.0*(this->kernnorm)*s*exp(-s*s);
   else
     return (FLOAT) 0.0;
@@ -448,7 +448,7 @@ inline FLOAT GaussianKernel<ndim>::w1(FLOAT s)
 template <int ndim>
 inline FLOAT GaussianKernel<ndim>::womega(FLOAT s)
 {
-  if (s < (FLOAT) 3.0)
+  if (s < this->kernrange)
     return (this->kernnorm)*((FLOAT) 2.0*s*exp(-s*s) - (this->ndimpr)*exp(-s*s));
   else
     return (FLOAT) 0.0;
@@ -462,7 +462,7 @@ inline FLOAT GaussianKernel<ndim>::womega(FLOAT s)
 template <int ndim>
 inline FLOAT GaussianKernel<ndim>::wzeta(FLOAT s)
 {
-  if (s < (FLOAT) 3.0)
+  if (s < this->kernrange)
     return 0.0;
   else
     return 0.0;
@@ -476,7 +476,7 @@ inline FLOAT GaussianKernel<ndim>::wzeta(FLOAT s)
 template <int ndim>
 inline FLOAT GaussianKernel<ndim>::wgrav(FLOAT s)
 {
-  if (s < (FLOAT) 3.0)
+  if (s < this->kernrange)
     return 0.0;
   else
     return 0.0;
@@ -490,7 +490,7 @@ inline FLOAT GaussianKernel<ndim>::wgrav(FLOAT s)
 template <int ndim>
 inline FLOAT GaussianKernel<ndim>::wpot(FLOAT s)
 {
-  if (s < (FLOAT) 3.0)
+  if (s < this->kernrange)
     return 0.0;
   else
     return 0.0;

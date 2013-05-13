@@ -9,6 +9,7 @@ import time
 
 # Create new shocktube simulation from 'adsod.dat' file
 newsim('adsod.dat')
+setupsim()
 
 # Plot the density with the analytical solution
 subfigure(2,2,1)

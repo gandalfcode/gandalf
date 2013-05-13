@@ -6,7 +6,8 @@ from seren.analysis.facade import *
 import time
 
 # Create new simulation object and generate initial conditions
-newsim('soundwave.dat')
+sim = newsim('soundwave.dat')
+setupsim()
 
 # Plot density distribution along with analytical solution
 plot("x","rho")

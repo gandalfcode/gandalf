@@ -12,6 +12,7 @@
 #include "Precision.h"
 #include "NbodyParticle.h"
 #include "StarParticle.h"
+#include "SystemParticle.h"
 #include "Parameters.h"
 #include "Nbody.h"
 #include "SphKernel.h"
@@ -57,7 +58,7 @@ void Nbody<ndim>::AllocateMemory(int N)
     Nsystem = N;
     Nsystemmax = N;
     stardata = new struct StarParticle<ndim>[Nstarmax];
-    system = new struct StarParticle<ndim>[Nsystemmax];
+    system = new struct SystemParticle<ndim>[Nsystemmax];
     allocated = true;
   }
 

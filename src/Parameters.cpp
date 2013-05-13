@@ -151,15 +151,16 @@ void Parameters::SetDefaultValues(void)
   // Initial conditions parameters
   // --------------------------------------------------------------------------
   stringparams["ic"] = "random_cube";
+  stringparams["particle_distribution"] = "random";
   intparams["smooth_ic"] = 0;
   intparams["Npart"] = 256;
   intparams["ndim"] = 3;
-  intparams["Nlattice1[0]"] = 16;
-  intparams["Nlattice1[1]"] = 16;
-  intparams["Nlattice1[2]"] = 16;
-  intparams["Nlattice2[0]"] = 16;
-  intparams["Nlattice2[1]"] = 16;
-  intparams["Nlattice2[2]"] = 16;
+  intparams["Nlattice1[0]"] = 1;
+  intparams["Nlattice1[1]"] = 1;
+  intparams["Nlattice1[2]"] = 1;
+  intparams["Nlattice2[0]"] = 1;
+  intparams["Nlattice2[1]"] = 1;
+  intparams["Nlattice2[2]"] = 1;
   floatparams["vfluid1[0]"] = 0.0;
   floatparams["vfluid1[1]"] = 0.0;
   floatparams["vfluid1[2]"] = 0.0;
@@ -173,6 +174,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["amp"] = 0.1;
   floatparams["lambda"] = 0.5;
   floatparams["kefrac"] = 0.0;
+  floatparams["radius"] = 1.0;
 
   // Integration scheme and timestep parameters
   // --------------------------------------------------------------------------
@@ -223,6 +225,7 @@ void Parameters::SetDefaultValues(void)
 
   // N-body parameters
   // --------------------------------------------------------------------------
+  stringparams["nbody"] = "lfkdk";
   intparams["nbody_softening"] = 0;
   intparams["sub_systems"] = 0;
 

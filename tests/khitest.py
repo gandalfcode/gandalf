@@ -7,9 +7,11 @@ import time
 
 # Create new simulation object and generate initial conditions
 newsim("khi.dat")
+setupsim()
 
 # Create rendered density plot
-render("x","y","rho",res=128)
+plot("x","y")
+#render("x","y","rho",res=128)
 
 # Run the simulation and then block to retain the rendering window
 run()

@@ -28,8 +28,11 @@ using namespace std;
 /// N-body leapfrog KDK class constructor
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
-NbodyLeapfrogKDK<ndim, kernelclass>::NbodyLeapfrogKDK(int nbody_softening_aux, int sub_systems_aux, DOUBLE nbody_mult_aux, string KernelName) : 
-  Nbody<ndim>(nbody_softening_aux, sub_systems_aux, nbody_mult_aux, KernelName),
+NbodyLeapfrogKDK<ndim, kernelclass>::NbodyLeapfrogKDK
+(int nbody_softening_aux, int sub_systems_aux, 
+ DOUBLE nbody_mult_aux, string KernelName) : 
+  Nbody<ndim>(nbody_softening_aux, sub_systems_aux, 
+              nbody_mult_aux, KernelName),
   kern(kernelclass<ndim>(KernelName))
 {
 }
@@ -53,41 +56,45 @@ NbodyLeapfrogKDK<ndim, kernelclass>::~NbodyLeapfrogKDK()
 /// direct summation with unsoftened gravity.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
-void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectGravForces(void)
+void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectGravForces
+(int N,                             ///< Number of stars
+ NbodyParticle<ndim> *star)         ///< Array of stars/systems
 {
   int i,j,k;                        // Star and dimension counters
   DOUBLE dr[ndim];                  // Relative position vector
   DOUBLE drsqd;                     // Distance squared
   DOUBLE invdrmag;                  // 1 / drmag
-  StarParticle<ndim> stari;         // Local copy of star particle
 
   debug2("[NbodyLeapfrogKDK::CalculateDirectGravForces]");
 
   // Loop over all (active) stars
   // --------------------------------------------------------------------------
-  for (i=0; i<Nstar; i++) {
-    if (stardata[i].active == 0) continue;
+  for (i=0; i<N; i++) {
+    //cout << "Active? : " << star[i].active << "   " << star[i].r[0] << "    " << star[i].r[1] << endl;
+    if (star[i].active == 0) continue;
 
-    stari = stardata[i];
-    stari.gpot = 0.0;
-    for (k=0; k<ndim; k++) stari.a[k] = 0.0;
-    for (k=0; k<ndim; k++) stari.adot[k] = 0.0;
+    star[i].gpot = 0.0;
+    for (k=0; k<ndim; k++) star[i].a[k] = 0.0;
+    for (k=0; k<ndim; k++) star[i].adot[k] = 0.0;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     // ------------------------------------------------------------------------
-    for (j=0; j<Nstar; j++) {
+    for (j=0; j<N; j++) {
       if (i == j) continue;
 
-      for (k=0; k<ndim; k++) dr[k] = stardata[j].r[k] - stari.r[k];
+      for (k=0; k<ndim; k++) dr[k] = star[j].r[k] - star[i].r[k];
       drsqd = DotProduct(dr,dr,ndim);
       invdrmag = 1.0/sqrt(drsqd);
 
-      stari.gpot -= stardata[j].m*invdrmag;
-      for (k=0; k<ndim; k++) stari.a[k] += stari.m*dr[k]*pow(invdrmag,3);
+      star[i].gpot -= star[j].m*invdrmag;
+      for (k=0; k<ndim; k++) star[i].a[k] += star[j].m*dr[k]*pow(invdrmag,3);
+
+      //cout << "ACCEL1 : " << dr[0] << "   " << dr[1] << "    " << invdrmag << "    " << pow(invdrmag,3) << endl;
 
     }
     // ------------------------------------------------------------------------
 
+    //cout << "ACCEL : " << star[i].a[0] << "    " << star[i].a[1] << endl;
 
   }
   // --------------------------------------------------------------------------
@@ -107,21 +114,24 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectGravForces(void)
 /// the end-of-step force computation and velocity correction step.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
-void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles(int n, int level_step, int Nsystem,
-					StarParticle<ndim> *star, DOUBLE timestep)
+void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles
+(int n,                             ///< Integer time
+ int N,                             ///< No. of stars/systems
+ NbodyParticle<ndim> *star,         ///< Main star/system array
+ DOUBLE timestep)                   ///< Smallest timestep value
 {
-  int i;                                // Particle counter
-  int k;                                // Dimension counter
-  int nstep;                            // Particle (integer) step size
-  DOUBLE dt;                            // Timestep since start of step
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+  int nstep;                        // Particle (integer) step size
+  DOUBLE dt;                        // Timestep since start of step
 
   debug2("[NbodyLeapfrogKDK::AdvanceParticles]");
 
   // --------------------------------------------------------------------------
-  for (i=0; i<Nsystem; i++) {
+  for (i=0; i<N; i++) {
 
     // Compute time since beginning of step
-    nstep = pow(2,level_step - star[i].level);
+    nstep = star[i].nstep;
     if (n%nstep == 0) dt = timestep*(DOUBLE) nstep;
     else dt = timestep*(DOUBLE) (n%nstep);
 
@@ -150,21 +160,26 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles(int n, int level_step
 /// v(t+dt) = v(t) + 0.5*(a(t) + a(t+dt))*dt.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
-void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectionTerms(int n, int level_step, int Nsystem,
-				       StarParticle<ndim> *star, DOUBLE timestep)
+void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectionTerms
+(int n,                             ///< Integer time
+ int N,                             ///< No. of stars/systems
+ NbodyParticle<ndim> *star,         ///< Main star/system array
+ DOUBLE timestep)                   ///< Smallest timestep value
 {
-  int i;                                // Particle counter
-  int k;                                // Dimension counter
-  int nstep;                            // Particle (integer) step size
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+  int nstep;                        // Particle (integer) step size
 
   debug2("[NbodyLeapfrogKDK::CorrectionTerms]");
 
-  for (i=0; i<Nsystem; i++) {
-    nstep = pow(2,level_step - star[i].level);
+  // --------------------------------------------------------------------------
+  for (i=0; i<N; i++) {
+    nstep = star[i].nstep;
     if (n%nstep == 0)
       for (k=0; k<ndim; k++) star[i].v[k] += 
 	0.5*(star[i].a[k] - star[i].a0[k])*timestep*(DOUBLE) nstep;
   }
+  // --------------------------------------------------------------------------
 
   return;
 }
@@ -177,17 +192,22 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectionTerms(int n, int level_step,
 /// for the start of the new timestep.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
-void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep(int n, int level_step, 
-				   int Nsystem, StarParticle<ndim> *star)
+void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
+(int n,                             ///< Integer time
+ int N,                             ///< No. of stars/systems
+ NbodyParticle<ndim> *star)         ///< Main star/system array
 {
-  int i;                                // Particle counter
-  int k;                                // Dimension counter
-  int nstep;                            // Particle (integer) step size
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+  int nstep;                        // Particle (integer) step size
 
   debug2("[NbodyLeapfrogKDK::EndTimestep]");
 
-  for (i=0; i<Nsystem; i++) {
-    nstep = pow(2,level_step - star[i].level);
+  // --------------------------------------------------------------------------
+  for (i=0; i<N; i++) {
+    nstep = star[i].nstep;
+    //cout << "HERE : " << i << "   " << N << "   " << nstep << endl;
+    //cout << "POS  : " << star[i].r[0] << "    " << star[i].r[1] << endl;
     if (n%nstep == 0) {
       for (k=0; k<ndim; k++) star[i].r0[k] = star[i].r[k];
       for (k=0; k<ndim; k++) star[i].v0[k] = star[i].v[k];
@@ -195,6 +215,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep(int n, int level_step,
       star[i].active = false;
     }
   }
+  // --------------------------------------------------------------------------
 
   return;
 }
@@ -209,8 +230,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep(int n, int level_step,
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 DOUBLE NbodyLeapfrogKDK<ndim, kernelclass>::Timestep
-(StarParticle<ndim> &star,              ///< Reference to SPH particle
- int hydro_forces)                      ///< Hydro forces flag
+(NbodyParticle<ndim> &star)             ///< Reference to SPH particle
 {
   DOUBLE timestep;                      // Minimum value of particle timesteps
   DOUBLE amag;                          // Magnitude of particle acceleration
@@ -218,6 +238,8 @@ DOUBLE NbodyLeapfrogKDK<ndim, kernelclass>::Timestep
   // Acceleration condition
   amag = sqrt(DotProduct(star.a,star.a,ndim));
   timestep = nbody_mult*sqrt(star.h/(amag + small_number_dp));
+
+  //cout << "TIMESTEP : " << amag << "   " << star.h << "   " << timestep << endl;
 
   return timestep;
 }
@@ -237,4 +259,3 @@ template class NbodyLeapfrogKDK<3, M4Kernel>;
 template class NbodyLeapfrogKDK<3, QuinticKernel>;
 template class NbodyLeapfrogKDK<3, GaussianKernel>;
 template class NbodyLeapfrogKDK<3, TabulatedKernel>;
-

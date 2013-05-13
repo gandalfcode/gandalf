@@ -32,10 +32,9 @@ GodunovSph<ndim, kernelclass >::GodunovSph(int hydro_forces_aux,
 	    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
 	    FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
 	    acondenum acond_aux, string gas_eos_aux, string KernelName):
-  Sph<ndim>(hydro_forces_aux,
-		    self_gravity_aux, alpha_visc_aux, beta_visc_aux,
-		    h_fac_aux, h_converge_aux, avisc_aux,
-		    acond_aux, gas_eos_aux, KernelName),
+  Sph<ndim>(hydro_forces_aux,self_gravity_aux, alpha_visc_aux, beta_visc_aux,
+	    h_fac_aux, h_converge_aux, avisc_aux, acond_aux, gas_eos_aux, 
+            KernelName),
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp = &kern;
@@ -1054,34 +1053,34 @@ void GodunovSph<ndim, kernelclass >::ComputeSphDerivatives
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
-(int i,                                 // id of particle
- int Nneib,                             // No. of neighbours in neibpart array
- int *neiblist,                         // id of gather neighbour in neibpart
- FLOAT *drmag,                          // Distances of gather neighbours
- FLOAT *invdrmag,                       // Inverse distances of gather neibs
- FLOAT *dr,                             // Position vector of gather neibs
- SphParticle<ndim> &parti,                    // Particle i data
- SphParticle<ndim> *neibpart)                 // Neighbour particle data
+(int i,                             ///< id of particle
+ int Nneib,                         ///< No. of neighbours in neibpart array
+ int *neiblist,                     ///< id of gather neighbour in neibpart
+ FLOAT *drmag,                      ///< Distances of gather neighbours
+ FLOAT *invdrmag,                   ///< Inverse distances of gather neibs
+ FLOAT *dr,                         ///< Position vector of gather neibs
+ SphParticle<ndim> &parti,          ///< Particle i data
+ SphParticle<ndim> *neibpart)       ///< Neighbour particle data
 {
-  int j;                                // Neighbour list id
-  int jj;                               // Aux. neighbour counter
-  int k;                                // Dimension counter
-  FLOAT da[ndim];                    // ..
-  FLOAT draux[ndim];                 // Relative position vector
-  FLOAT dv[ndim];                    // Relative velocity vector
-  FLOAT dvdr;                           // Dot product of dv and dr
-  FLOAT wkerni;                         // Value of w1 kernel function
-  FLOAT wkernj;                         // Value of w1 kernel function
-  FLOAT vsignal;                        // Signal velocity
-  FLOAT paux;                           // Aux. pressure force variable
-  FLOAT uaux;                           // Aux. internal energy variable
-  FLOAT winvrho;                        // 0.5*(wkerni + wkernj)*invrhomean
+  int j;                            // Neighbour list id
+  int jj;                           // Aux. neighbour counter
+  int k;                            // Dimension counter
+  FLOAT da[ndim];                   // ..
+  FLOAT draux[ndim];                // Relative position vector
+  FLOAT dv[ndim];                   // Relative velocity vector
+  FLOAT dvdr;                       // Dot product of dv and dr
+  FLOAT wkerni;                     // Value of w1 kernel function
+  FLOAT wkernj;                     // Value of w1 kernel function
+  FLOAT vsignal;                    // Signal velocity
+  FLOAT paux;                       // Aux. pressure force variable
+  FLOAT uaux;                       // Aux. internal energy variable
+  FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
 
-  FLOAT Cij;                            // ..
-  FLOAT Dij;                            // ..
-  FLOAT Vsqdi;                          // ..
-  FLOAT Vsqdj;                          // ..
-  FLOAT Sij;                            // ..
+  FLOAT Cij;                        // ..
+  FLOAT Dij;                        // ..
+  FLOAT Vsqdi;                      // ..
+  FLOAT Vsqdj;                      // ..
+  FLOAT Sij;                        // ..
   FLOAT pl,pr;
   FLOAT rhol,rhor;
   FLOAT vl,vr;
@@ -1136,9 +1135,18 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
 
       // Add total hydro contribution to acceleration for particle i
       parti.dudt += neibpart[j].m*uaux*(vstar - vhalfi);
+      //parti.dudt += 2.0*neibpart[j].m*parti.press*Vsqdi*wkerni*(vstar - vhalfi);
       
       // If neighbour is also active, add contribution to force here
       neibpart[j].dudt -= parti.m*uaux*(vstar - vhalfj);
+      //neibpart[j].dudt -= 2.0*parti.m*neibpart[j].press*Vsqdj*wkernj*(vstar - vhalfj);
+
+      //if (i == 0) {
+      //	cout << "Heating rates : " << i << "    r : " << parti.r[0] 
+      //     << "   " << uaux << "   vstar : " << vstar 
+      //     << "   vhalf : " << vhalfi << "   dudt : " 
+      //     << neibpart[j].m*uaux*(vstar - vhalfi) << endl;
+      //}
 
     }
     // ------------------------------------------------------------------------

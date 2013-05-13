@@ -22,7 +22,7 @@
 template <int ndim>
 class StarParticle: public NbodyParticle<ndim>
 {
-  DOUBLE Tsurface;                  ///< Surface temperature
-  DOUBLE L;                         ///< Luminosity
+  //DOUBLE Tsurface;                  ///< Surface temperature
+  //DOUBLE L;                         ///< Luminosity
 };
 #endif

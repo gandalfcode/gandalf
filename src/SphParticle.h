@@ -24,6 +24,7 @@ struct SphParticle {
   int iorig;                        ///< Original particle i.d.
   int itype;                        ///< SPH particle type
   int level;                        ///< Current timestep level of particle
+  int nstep;                        ///< Integer step-size of particle
   FLOAT r[ndim];                    ///< Position
   FLOAT v[ndim];                    ///< Velocity
   FLOAT a[ndim];                    ///< Total acceleration

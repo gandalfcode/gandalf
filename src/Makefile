@@ -108,7 +108,7 @@ OBJ += BruteForceSearch.o GridSearch.o #BinaryTree.o
 OBJ += AdiabaticEOS.o IsothermalEOS.o
 #OBJ += SimGhostParticles.o
 #OBJ += Render.o
-OBJ += Nbody.o NbodyLeapfrogKDK.o# NbodyHermite4.o
+OBJ += Nbody.o NbodyLeapfrogKDK.o NbodyHermite4.o
 
 
 TEST_OBJ = #TestScaling.o Parameters.o SimUnits.o Exception.o

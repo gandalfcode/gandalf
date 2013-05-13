@@ -1,0 +1,40 @@
+-------------------------------------------------------------
+Relaxing random cube test
+Relax a cube of randomly placed particles using an isothermal 
+EOS with artificial viscosity
+-------------------------------------------------------------
+
+
+----------------------------
+Initial conditions variables
+----------------------------
+Simulation run id string                    : run_id = BINARY1
+Select shocktube initial conditions         : ic = binary
+Dimensionality of cube                      : ndim = 3
+
+
+-------------------------
+Simulation time variables
+-------------------------
+Simulation end time                         : tend = 20.0
+Regular snapshot output frequency           : dt_snap = 1.0
+Screen output frequency (in no. of steps)   : noutputstep = 32
+
+
+----------------------------
+SPH softening kernel options
+----------------------------
+SPH smoothing kernel choice                 : kernel = m4
+Tabulate SPH kernel                         : tabulated_kernel = 1
+
+
+------------------------
+Time integration options
+------------------------
+Star particle integration option            : nbody = hermite4
+N-body timestep multiplier                  : nbody_mult = 0.2
+No. of block timestep levels                : Nlevels = 1
+
+
+
+
