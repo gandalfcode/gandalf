@@ -86,7 +86,9 @@ class PlotCommand(Command):
     quantitylabels = {'x': 'x', 'y': 'y', 'z': 'z', 'rho': '$\\rho$',
                       'vx': '$v_x$', 'vy': '$v_y$', 'vz': '$v_z$', 
                       'ax': '$a_x$', 'ay': '$a_y$', 'az': '$a_z$',
-                      'm': 'm', 'h': 'h', 'u': 'u'}
+                      'm': 'm', 'h': 'h', 'u': 'u',
+                      'r': 'r'}
+    derived = {'r' : 'compute_r'}
     
     def __init__(self, xquantity, yquantity, snap, simno, 
                  overplot, autoscale, xunit="default", yunit="default"):
@@ -214,18 +216,20 @@ class PlotCommand(Command):
                 The scaling factor for unit conversion (multiply data by this
                 to get the requested unit)
         '''
-        scaling_factor=1.
+        
         quantity = getattr(self, axis+'quantity')
         unit = getattr(self, axis+'unit')
         
-        self.check_requested_quantity(quantity, snap)
-        
-        data, scaling_factor = snap.ExtractArray(quantity, scaling_factor, unit)
+        data, scaling_factor = self.get_array_by_name(quantity, snap, unit)
+    
         setattr(self,axis+'label',snap.label)
         setattr(self,axis+'unitname',snap.unitname)
+        
         return data, scaling_factor
     
     def check_requested_quantity(self, quantity, snap):
+        '''Check the requested quantity exists, depending on the dimensionality of the snapshot.
+        Also return information about the kind of the quantity (direct or derived)'''
         oned = ('x', 'vx', 'ax')
         twod = ('y', 'vy', 'ay')
         threed = ('z', 'vz', 'az')
@@ -236,7 +240,29 @@ class PlotCommand(Command):
         if self.snap != "live":
             if quantity in ('ax', 'ay', 'az'):
                 raise Exception ("Error: accelerations are available only for live snapshots")
+            elif quantity in ('dudt'):
+                raise Exception ("Error: dudt is available only for live snapshots")
+        other_direct = ('m', 'h', 'rho', 'u', 'dudt')
+        all_direct = oned + twod + threed + other_direct
         
+        if quantity in all_direct:
+            return "direct"
+        elif quantity in self.derived:
+            return "derived"
+        else:
+            raise Exception("We don't know how to compute " + quantity)
+        
+    def get_array_by_name(self, quantity, snap, unit="default"):
+        kind = self.check_requested_quantity(quantity, snap)
+        
+        if kind == "direct":
+            scaling_factor=1.
+            data, scaling_factor = snap.ExtractArray(quantity, scaling_factor, unit)
+
+        else:
+            data, scaling_factor = getattr(self,self.derived[quantity])(snap, unit)
+        return data, scaling_factor
+    
     def setlimits(self, plotting, ax, axis):
         '''Helper function to set the limits of a plot.
         Takes care of handling autoscaling on/off for different axes.
@@ -251,6 +277,17 @@ class PlotCommand(Command):
         else:
             method = getattr(ax, 'set_'+axis+'lim')
             method(min,max)
+    
+    def compute_r(self, snap, unit):
+        arrays_scalings = map(lambda quantity : self.get_array_by_name(quantity, snap, unit), ['x', 'y', 'z'])
+        arrays, scalings = zip(*arrays_scalings)
+        xfactor, yfactor, zfactor = scalings
+        #check that the factors are all the same
+        if not all([x==scalings[0] for x in scalings]):
+            raise Exception("error: different spatial coordinates have different scaling facors. Bug in units, please contact the authors")
+        
+        x,y,z = arrays        
+        return x**2+y**2+z**2, xfactor
         
 
 class ParticlePlotCommand (PlotCommand):
