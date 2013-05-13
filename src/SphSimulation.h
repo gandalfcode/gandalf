@@ -88,9 +88,10 @@ class SphSimulationBase
 
   // Subroutine prototypes
   // --------------------------------------------------------------------------
-  void SetParam(string key, string value);
-  void SetParam(string key, int value);
-  void SetParam(string key, float value);
+  string GetParam(string key);
+  void SetParam (string key, string value);
+  void SetParam (string key, int value);
+  void SetParam (string ket, float value);
   virtual void PreSetupForPython(void)=0;
   virtual void ImportArray(double* input, int size, string quantity)=0;
   virtual void SetupSimulation(void)=0;

@@ -142,6 +142,16 @@ void SphSimulationBase::SetParam(string key, float value) {
   SetParam (key, convert.str());
 }
 
+//=============================================================================
+//  SphSimulationBase::GetParam
+/// Accessor function for getting a parameter value
+/// Wrapper around the corresponding function in Parameters
+//=============================================================================
+string SphSimulationBase::GetParam(string key) {
+
+  return simparams->GetParameter(key);
+
+}
 
 
 //=============================================================================
