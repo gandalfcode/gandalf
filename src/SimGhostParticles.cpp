@@ -20,7 +20,7 @@
 using namespace std;
 
 
-static const FLOAT ghost_range = 1.5;
+static const FLOAT ghost_range = 1.1;
 
 
 //=============================================================================
@@ -28,7 +28,7 @@ static const FLOAT ghost_range = 1.5;
 /// Check all particles to see if any have crossed the simulation bounding 
 /// box.  If so, then move the particles to their new location on the other 
 /// side of the periodic box.
-// ============================================================================
+//=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::CheckBoundaries(void)
 {

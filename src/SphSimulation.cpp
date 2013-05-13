@@ -142,6 +142,8 @@ void SphSimulationBase::SetParam(string key, float value) {
   SetParam (key, convert.str());
 }
 
+
+
 //=============================================================================
 //  SphSimulationBase::GetParam
 /// Accessor function for getting a parameter value
@@ -152,6 +154,7 @@ string SphSimulationBase::GetParam(string key) {
   return simparams->GetParameter(key);
 
 }
+
 
 
 //=============================================================================
@@ -1001,6 +1004,7 @@ void SphSimulation<ndim>::PostGeneration(void)
 
     // Zero all acceleration terms
     for (i=0; i<nbody->Nstar; i++) {
+
       for (k=0; k<ndim; k++) nbody->stardata[i].a[k] = 0.0;
       for (k=0; k<ndim; k++) nbody->stardata[i].adot[k] = 0.0;
       for (k=0; k<ndim; k++) nbody->stardata[i].a2dot[k] = 0.0;
@@ -1009,9 +1013,10 @@ void SphSimulation<ndim>::PostGeneration(void)
       nbody->stardata[i].active = true;
       nbody->stardata[i].level = level_step;
       nbody->stardata[i].nstep = 1;
+      nbody->nbodydata[i] = &(nbody->stardata[i]);
     }
 
-    nbody->CalculateDirectGravForces(nbody->Nstar,nbody->stardata);
+    nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
 
   }
 
@@ -1065,7 +1070,7 @@ void SphSimulation<ndim>::PostGeneration(void)
   sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
-  nbody->EndTimestep(n,nbody->Nstar,nbody->stardata);
+  nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
   
   CalculateDiagnostics();
   diag0 = diag;
@@ -1117,7 +1122,7 @@ void SphSimulation<ndim>::MainLoop(void)
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EnergyIntegration(n,level_step,sph->Nsph,
 			    sph->sphdata,(FLOAT) timestep);
-  nbody->AdvanceParticles(n,nbody->Nstar,nbody->stardata,timestep);
+  nbody->AdvanceParticles(n,nbody->Nstar,nbody->nbodydata,timestep);
 
   // Check all boundary conditions
   CheckBoundaries();
@@ -1149,17 +1154,17 @@ void SphSimulation<ndim>::MainLoop(void)
   if (nbody->Nstar > 0) {
 
     // Zero all acceleration terms
-    for (i=0; i<nbody->Nstar; i++) {
-      if (nbody->stardata[i].active) {
-	for (k=0; k<ndim; k++) nbody->stardata[i].a[k] = 0.0;
-	for (k=0; k<ndim; k++) nbody->stardata[i].adot[k] = 0.0;
-	for (k=0; k<ndim; k++) nbody->stardata[i].a2dot[k] = 0.0;
-	for (k=0; k<ndim; k++) nbody->stardata[i].a3dot[k] = 0.0;
-	nbody->stardata[i].gpot = 0.0;
+    for (i=0; i<nbody->Nnbody; i++) {
+      if (nbody->nbodydata[i]->active) {
+	for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k] = 0.0;
+	for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k] = 0.0;
+	for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = 0.0;
+	for (k=0; k<ndim; k++) nbody->nbodydata[i]->a3dot[k] = 0.0;
+	nbody->nbodydata[i]->gpot = 0.0;
       }
     }
 
-    nbody->CalculateDirectGravForces(nbody->Nstar,nbody->stardata);
+    nbody->CalculateDirectGravForces(nbody->Nstar,nbody->nbodydata);
   }
 
 
@@ -1213,13 +1218,13 @@ void SphSimulation<ndim>::MainLoop(void)
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EnergyCorrectionTerms(n,level_step,sph->Nsph,
   				sph->sphdata,(FLOAT) timestep);
-  nbody->CorrectionTerms(n,nbody->Nstar,nbody->stardata,timestep);
+  nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
 
   // Set all end-of-step variables
   sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
-  nbody->EndTimestep(n,nbody->Nstar,nbody->stardata);
+  nbody->EndTimestep(n,nbody->Nnbody,nbody->nbodydata);
 
   return;
 }

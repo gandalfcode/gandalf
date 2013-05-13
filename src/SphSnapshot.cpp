@@ -223,7 +223,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
     }
 
     m[i] = (float) sphaux[i].m;
-    h[i] = (float) sphaux[i].dudt;  //sqrt(DotProduct(sphaux[i].r,sphaux[i].r,ndim)); //sphaux[i].h;
+    h[i] = (float) sphaux[i].h;  //sqrt(DotProduct(sphaux[i].r,sphaux[i].r,ndim)); //sphaux[i].h;
     rho[i] = (float) sphaux[i].rho;
     u[i] = (float) sphaux[i].u;
     dudt[i] = (float) sphaux[i].dudt;

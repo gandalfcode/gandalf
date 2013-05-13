@@ -48,16 +48,18 @@ class Nbody
   // Other functions
   // --------------------------------------------------------------------------
   //void CalculateDirectSoftenedGravForces(void);
-  virtual void CalculateDirectGravForces(int,NbodyParticle<ndim> *) = 0;
-  virtual void AdvanceParticles(int,int,NbodyParticle<ndim> *,DOUBLE) = 0;
-  virtual void CorrectionTerms(int,int,NbodyParticle<ndim> *,DOUBLE) = 0;
-  virtual void EndTimestep(int,int,NbodyParticle<ndim> *) = 0;
-  virtual DOUBLE Timestep(NbodyParticle<ndim> &) = 0;
+  virtual void CalculateDirectGravForces(int,NbodyParticle<ndim> **) = 0;
+  virtual void AdvanceParticles(int,int,NbodyParticle<ndim> **,DOUBLE) = 0;
+  virtual void CorrectionTerms(int,int,NbodyParticle<ndim> **,DOUBLE) = 0;
+  virtual void EndTimestep(int,int,NbodyParticle<ndim> **) = 0;
+  virtual DOUBLE Timestep(NbodyParticle<ndim> *) = 0;
 
 
   // N-body counters and main data arrays
   // --------------------------------------------------------------------------
   bool allocated;                       ///< Is N-body memory allocated
+  int Nnbody;                           ///< ..
+  int Nnbodymax;                        ///< ..
   int Nstar;                            ///< No. of star particles
   int Nstarmax;                         ///< Max. no. of star particles
   int Nsystem;                          ///< No. of system particles
@@ -71,6 +73,7 @@ class Nbody
 
   SphKernel<ndim> *kernp;               ///< Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;        ///< Tabulated version of chosen kernel
+  struct NbodyParticle<ndim> **nbodydata;  ///< ..
   struct StarParticle<ndim> *stardata;  ///< Main star particle data array
   struct SystemParticle<ndim> *system;  ///< Main system particle array
 
@@ -98,11 +101,11 @@ class NbodyLeapfrogKDK: public Nbody<ndim>
   NbodyLeapfrogKDK(int, int, DOUBLE, string);
   ~NbodyLeapfrogKDK();
 
-  void CalculateDirectGravForces(int,NbodyParticle<ndim> *);
-  void AdvanceParticles(int,int,NbodyParticle<ndim> *,DOUBLE);
-  void CorrectionTerms(int,int,NbodyParticle<ndim> *,DOUBLE);
-  void EndTimestep(int,int,NbodyParticle<ndim> *);
-  DOUBLE Timestep(NbodyParticle<ndim> &);
+  void CalculateDirectGravForces(int,NbodyParticle<ndim> **);
+  void AdvanceParticles(int,int,NbodyParticle<ndim> **,DOUBLE);
+  void CorrectionTerms(int,int,NbodyParticle<ndim> **,DOUBLE);
+  void EndTimestep(int,int,NbodyParticle<ndim> **);
+  DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;           ///< Local copy of vdim
   static const FLOAT invndim=1./ndim;   ///< Copy of 1/ndim
@@ -131,11 +134,11 @@ class NbodyHermite4: public Nbody<ndim>
   NbodyHermite4(int, int, DOUBLE, string);
   ~NbodyHermite4();
 
-  void CalculateDirectGravForces(int,NbodyParticle<ndim> *);
-  void AdvanceParticles(int,int,NbodyParticle<ndim> *,DOUBLE);
-  void CorrectionTerms(int,int,NbodyParticle<ndim> *,DOUBLE);
-  void EndTimestep(int,int,NbodyParticle<ndim> *);
-  DOUBLE Timestep(NbodyParticle<ndim> &);
+  void CalculateDirectGravForces(int,NbodyParticle<ndim> **);
+  void AdvanceParticles(int,int,NbodyParticle<ndim> **,DOUBLE);
+  void CorrectionTerms(int,int,NbodyParticle<ndim> **,DOUBLE);
+  void EndTimestep(int,int,NbodyParticle<ndim> **);
+  DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;           ///< Local copy of vdim
   static const FLOAT invndim=1./ndim;   ///< Copy of 1/ndim

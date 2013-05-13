@@ -1,7 +1,7 @@
-// ============================================================================
-// SphSimulationTimesteps.cpp
-// Contains all functions for controlling the SPH simulation timestep structure
-// ============================================================================
+//=============================================================================
+//  SphSimulationTimesteps.cpp
+//  Contains all functions for controlling the SPH simulation timestep structure
+//=============================================================================
 
 
 #include <iostream>
@@ -21,17 +21,16 @@ using namespace std;
 
 
 
-// ============================================================================
-// SphSimulation::ComputeGlobalTimestep
-// Computes global timestep for SPH simulation.
-// ============================================================================
+//=============================================================================
+//  SphSimulation::ComputeGlobalTimestep
+//  Computes global timestep for SPH simulation.
+//=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 {
   int i;                            // Particle counter
   DOUBLE dt = big_number_dp;        // Particle timestep
   DOUBLE dt_min = big_number_dp;    // Local copy of minimum timestep
-
 
   debug2("[SphSimulation::ComputeGlobalTimestep]");
 
@@ -49,13 +48,13 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
     {
 #pragma omp for
       for (i=0; i<sph->Nsph; i++)
-	dt = min(dt,sphint->Timestep(sph->sphdata[i],sph->hydro_forces));
+        dt = min(dt,sphint->Timestep(sph->sphdata[i],sph->hydro_forces));
 
       // If integrating energy equation, include energy timestep
       if (simparams->stringparams["gas_eos"] == "energy_eqn") {
 #pragma omp for
-	for (i=0; i<sph->Nsph; i++)
-	  dt = min(dt,uint->Timestep(sph->sphdata[i]));
+        for (i=0; i<sph->Nsph; i++)
+          dt = min(dt,uint->Timestep(sph->sphdata[i]));
       }
 
 #pragma omp critical
@@ -66,7 +65,7 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 
     // Now compute minimum timestep due to stars/systems
     for (i=0; i<nbody->Nstar; i++)
-      dt_min = min(dt_min,nbody->Timestep(nbody->stardata[i]));
+      dt_min = min(dt_min,nbody->Timestep(nbody->nbodydata[i]));
 
     
     // Set all particles to same timestep
@@ -76,10 +75,10 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
       sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
       sph->sphdata[i].dt = timestep;
     }
-    for (i=0; i<nbody->Nstar; i++) {
-      nbody->stardata[i].level = 0;
-      nbody->stardata[i].nstep = pow(2,level_step - nbody->stardata[i].level);
-      nbody->stardata[i].dt = timestep;
+    for (i=0; i<nbody->Nnbody; i++) {
+      nbody->nbodydata[i]->level = 0;
+      nbody->nbodydata[i]->nstep = pow(2,level_step - nbody->nbodydata[i]->level);
+      nbody->nbodydata[i]->dt = timestep;
     }
 
   }

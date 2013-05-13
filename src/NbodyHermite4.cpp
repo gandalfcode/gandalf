@@ -58,7 +58,7 @@ NbodyHermite4<ndim, kernelclass>::~NbodyHermite4()
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite4<ndim, kernelclass>::CalculateDirectGravForces
 (int N,                             ///< Number of stars
- NbodyParticle<ndim> *star)         ///< Array of stars/systems
+ NbodyParticle<ndim> **star)        ///< Array of stars/systems
 {
   int i,j,k;                        // Star and dimension counters
   DOUBLE dr[ndim];                  // Relative position vector
@@ -72,27 +72,27 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectGravForces
   // Loop over all (active) stars
   // --------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-    if (star[i].active == 0) continue;
+    if (star[i]->active == 0) continue;
 
-    star[i].gpot = 0.0;
-    for (k=0; k<ndim; k++) star[i].a[k] = 0.0;
-    for (k=0; k<ndim; k++) star[i].adot[k] = 0.0;
+    star[i]->gpot = 0.0;
+    for (k=0; k<ndim; k++) star[i]->a[k] = 0.0;
+    for (k=0; k<ndim; k++) star[i]->adot[k] = 0.0;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     // ------------------------------------------------------------------------
     for (j=0; j<N; j++) {
       if (i == j) continue;
 
-      for (k=0; k<ndim; k++) dr[k] = star[j].r[k] - star[i].r[k];
-      for (k=0; k<ndim; k++) dv[k] = star[j].v[k] - star[i].v[k];
+      for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
       drsqd = DotProduct(dr,dr,ndim);
       invdrmag = 1.0/sqrt(drsqd);
       drdt = DotProduct(dv,dr,ndim)*invdrmag;
 
-      star[i].gpot -= star[j].m*invdrmag;
-      for (k=0; k<ndim; k++) star[i].a[k] += star[j].m*dr[k]*pow(invdrmag,3);
-      for (k=0; k<ndim; k++) star[i].adot[k] += 
-	star[j].m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+      star[i]->gpot -= star[j]->m*invdrmag;
+      for (k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
+      for (k=0; k<ndim; k++) star[i]->adot[k] +=
+	star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
 
     }
     // ------------------------------------------------------------------------
@@ -118,7 +118,7 @@ template <int ndim, template<int> class kernelclass>
 void NbodyHermite4<ndim, kernelclass>::AdvanceParticles
 (int n,                             ///< Integer time
  int N,                             ///< No. of stars/systems
- NbodyParticle<ndim> *star,         ///< Main star/system array
+ NbodyParticle<ndim> **star,        ///< Main star/system array
  DOUBLE timestep)                   ///< Smallest timestep value
 {
   int i;                            // Particle counter
@@ -133,19 +133,19 @@ void NbodyHermite4<ndim, kernelclass>::AdvanceParticles
   for (i=0; i<Nsystem; i++) {
 
     // Compute time since beginning of step
-    nstep = star[i].nstep;
+    nstep = star[i]->nstep;
     if (n%nstep == 0) dt = timestep*(DOUBLE) nstep;
     else dt = timestep*(DOUBLE) (n%nstep);
 
     // Advance positions to third order and velocities to second order
-    for (k=0; k<ndim; k++) system[i].r[k] = system[i].r0[k] + 
-      system[i].v0[k]*dt + 0.5*system[i].a0[k]*dt*dt + 
-      onesixth*system[i].adot0[k]*dt*dt*dt;
-    for (k=0; k<vdim; k++) system[i].v[k] = system[i].v0[k] + 
-      system[i].a0[k]*dt + 0.5*system[i].adot0[k]*dt*dt;
+    for (k=0; k<ndim; k++) star[i]->r[k] = star[i]->r0[k] +
+      star[i]->v0[k]*dt + 0.5*star[i]->a0[k]*dt*dt +
+      onesixth*star[i]->adot0[k]*dt*dt*dt;
+    for (k=0; k<vdim; k++) star[i]->v[k] = star[i]->v0[k] +
+      star[i]->a0[k]*dt + 0.5*star[i]->adot0[k]*dt*dt;
 
     // If at end of step, set system particle as active
-    if (n%nstep == 0) system[i].active = true;
+    if (n%nstep == 0) star[i]->active = true;
   }
   // --------------------------------------------------------------------------
 
@@ -164,7 +164,7 @@ template <int ndim, template<int> class kernelclass>
 void NbodyHermite4<ndim, kernelclass>::CorrectionTerms
 (int n,                             ///< Integer time
  int N,                             ///< No. of stars/systems
- NbodyParticle<ndim> *star,         ///< Main star/system array
+ NbodyParticle<ndim> **star,        ///< Main star/system array
  DOUBLE timestep)                   ///< Smallest timestep value
 {
   int i;                            // Particle counter
@@ -177,20 +177,20 @@ void NbodyHermite4<ndim, kernelclass>::CorrectionTerms
   // Loop over all system particles
   // --------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-    nstep = star[i].nstep;
+    nstep = star[i]->nstep;
     if (n%nstep == 0) continue;
     dt = timestep*(DOUBLE) nstep;
     
     for (k=0; k<ndim; k++) {
-      star[i].a2dot[k] = (-6.0*(star[i].a0[k] - star[i].a[k]) - dt*
-			  (4.0*star[i].adot0[k] + 2.0*star[i].adot[k]))/dt/dt;
+      star[i]->a2dot[k] = (-6.0*(star[i]->a0[k] - star[i]->a[k]) - dt*
+			  (4.0*star[i]->adot0[k] + 2.0*star[i]->adot[k]))/dt/dt;
       
-      star[i].a3dot[k] = (12.0*(star[i].a0[k] - star[i].a[k]) + 6.0*dt*
-			  (star[i].adot0[k] + star[i].adot[k]))/dt/dt/dt;
-      star[i].r[k] += star[i].a2dot[k]*dt*dt*dt*dt/24.0 + 
-	star[i].a3dot[k]*dt*dt*dt*dt*dt/120.0;
-      star[i].v[k] += star[i].a2dot[k]*dt*dt*dt/6.0 + 
-	star[i].a3dot[k]*dt*dt*dt*dt/24.0;
+      star[i]->a3dot[k] = (12.0*(star[i]->a0[k] - star[i]->a[k]) + 6.0*dt*
+			  (star[i]->adot0[k] + star[i]->adot[k]))/dt/dt/dt;
+      star[i]->r[k] += star[i]->a2dot[k]*dt*dt*dt*dt/24.0 +
+	star[i]->a3dot[k]*dt*dt*dt*dt*dt/120.0;
+      star[i]->v[k] += star[i]->a2dot[k]*dt*dt*dt/6.0 +
+	star[i]->a3dot[k]*dt*dt*dt*dt/24.0;
     }
     
   }
@@ -210,26 +210,26 @@ template <int ndim, template<int> class kernelclass>
 void NbodyHermite4<ndim, kernelclass>::EndTimestep
 (int n,                             ///< Integer time
  int N,                             ///< No. of stars/systems
- NbodyParticle<ndim> *star)         ///< Main star/system array
+ NbodyParticle<ndim> **star)        ///< Main star/system array
 {
-  int i;                                // Particle counter
-  int k;                                // Dimension counter
-  int nstep;                            // Particle (integer) step size
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+  int nstep;                        // Particle (integer) step size
 
   debug2("[NbodyHermite4::EndTimestep]");
 
   // Loop over all system particles
   // --------------------------------------------------------------------------
   for (i=0; i<Nsystem; i++) {
-    nstep = star[i].nstep;
+    nstep = star[i]->nstep;
 
     // If at end of the current step, set quantites for start of new step
     if (n%nstep == 0) {
-      for (k=0; k<ndim; k++) system[i].r0[k] = system[i].r[k];
-      for (k=0; k<ndim; k++) system[i].v0[k] = system[i].v[k];
-      for (k=0; k<ndim; k++) system[i].a0[k] = system[i].a[k];
-      for (k=0; k<ndim; k++) system[i].adot0[k] = system[i].adot[k];
-      system[i].active = false;
+      for (k=0; k<ndim; k++) star[i]->r0[k] = star[i]->r[k];
+      for (k=0; k<ndim; k++) star[i]->v0[k] = star[i]->v[k];
+      for (k=0; k<ndim; k++) star[i]->a0[k] = star[i]->a[k];
+      for (k=0; k<ndim; k++) star[i]->adot0[k] = star[i]->adot[k];
+      star[i]->active = false;
     }
 
   }
@@ -248,14 +248,14 @@ void NbodyHermite4<ndim, kernelclass>::EndTimestep
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 DOUBLE NbodyHermite4<ndim, kernelclass>::Timestep
-(NbodyParticle<ndim> &star)             ///< Reference to SPH particle
+(NbodyParticle<ndim> *star)             ///< Reference to SPH particle
 {
   DOUBLE timestep;                      // Minimum value of particle timesteps
   DOUBLE amag;                          // Magnitude of particle acceleration
 
   // Acceleration condition
-  amag = sqrt(DotProduct(star.a,star.a,ndim));
-  timestep = nbody_mult*sqrt(star.h/(amag + small_number_dp));
+  amag = sqrt(DotProduct(star->a,star->a,ndim));
+  timestep = nbody_mult*sqrt(star->h/(amag + small_number_dp));
 
   //cout << "TIMESTEP : " << amag << "   " << star.h << "   " << timestep << endl;
 

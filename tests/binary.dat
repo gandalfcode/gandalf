@@ -31,7 +31,7 @@ Tabulate SPH kernel                         : tabulated_kernel = 1
 ------------------------
 Time integration options
 ------------------------
-Star particle integration option            : nbody = hermite4
+Star particle integration option            : nbody = lfkdk
 N-body timestep multiplier                  : nbody_mult = 0.2
 No. of block timestep levels                : Nlevels = 1
 

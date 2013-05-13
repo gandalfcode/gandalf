@@ -57,6 +57,9 @@ void Nbody<ndim>::AllocateMemory(int N)
     Nstarmax = N;
     Nsystem = N;
     Nsystemmax = N;
+    Nnbody = N;
+    Nnbodymax = Nstarmax + Nsystemmax;
+    nbodydata = new struct NbodyParticle<ndim>*[Nnbodymax];
     stardata = new struct StarParticle<ndim>[Nstarmax];
     system = new struct SystemParticle<ndim>[Nsystemmax];
     allocated = true;
@@ -79,6 +82,7 @@ void Nbody<ndim>::DeallocateMemory(void)
   if (allocated) {
     delete[] system;
     delete[] stardata;
+    delete[] nbodydata;
   }
   allocated = false;
 
