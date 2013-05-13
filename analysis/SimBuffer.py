@@ -160,6 +160,7 @@ class SimBuffer:
         sim = SphSimulationBase.SphSimulationFactory(ndim, parameters);
         SimBuffer._add_simulation(sim)
         sim.ProcessParameters()
+        sim.setup = True
         fileformat = parameters.stringparams["in_file_form"]
         
         #get the list of all files in the directory where the parameter file is
