@@ -13,6 +13,7 @@
 #include "Precision.h"
 #include "Sph.h"
 #include "SphSimulation.h"
+#include "UnitInfo.h"
 using namespace std;
 
 
@@ -38,7 +39,7 @@ class SphSnapshotBase
   void DeallocateBufferMemory(void);
   int CalculateMemoryUsage(void);
   virtual void CopyDataFromSimulation()=0;
-  void ExtractArray(string, float** out_array, int* size_array, 
+  UnitInfo ExtractArray(string, float** out_array, int* size_array,
 		    float& scaling_factor, string RequestedUnit);
   virtual void ReadSnapshot(string)=0;
 
@@ -55,7 +56,7 @@ class SphSnapshotBase
 
   string filename;                          // Filename of snapshot
   string fileform;                          // File format of snapshot
-  string unitname;                          // Aux. unit string
+//  string unitname;                          // Aux. unit string
   string label;                             // Aux. latex label
 
   SimUnits* units;                          // Pointer to units object
