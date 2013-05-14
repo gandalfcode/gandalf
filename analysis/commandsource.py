@@ -552,7 +552,7 @@ class RenderPlotCommand (PlotCommand):
             quantities.pop(quantities.index(self.xquantity))
             quantities.pop(quantities.index(self.yquantity))
             self.zquantity = quantities[0]
-            z_data, z_scaling_factor = self.get_array('z', snap)
+            zunitinfo, z_data, z_scaling_factor = self.get_array('z', snap)
             returncode, renderscaling_factor = rendering.CreateSliceRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.zquantity, self.renderquantity,
                                                  self.renderunit, self.xmin, self.xmax,
                                                  self.ymin, self.ymax, self.zslice, rendered, snap)
