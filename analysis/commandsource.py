@@ -87,10 +87,10 @@ class PlotCommand(Command):
                       'vx': '$v_x$', 'vy': '$v_y$', 'vz': '$v_z$', 
                       'ax': '$a_x$', 'ay': '$a_y$', 'az': '$a_z$',
                       'm': 'm', 'h': 'h', 'u': 'u',
-                      'r': 'r', 'rcyl': '', 'phi': '$\\phi$',
+                      'r': 'r', 'R': 'R', 'phi': '$\\phi$',
                       'theta': '$\\theta$'}
     derived = {'r' : 'compute_r',
-               'rcyl': 'compute_rcyl',
+               'R': 'compute_R',
                'phi': 'compute_phi',
                'theta': 'compute_theta'}
     
@@ -288,18 +288,18 @@ class PlotCommand(Command):
         xfactor, yfactor, zfactor = scalings
         #check that the factors are all the same
         if not all([x==scalings[0] for x in scalings]):
-            raise Exception("error: different spatial coordinates have different scaling facors. Bug in units, please contact the authors")
+            raise Exception("error: different spatial coordinates have different scaling factors. Bug in units, please contact the authors")
         
         x,y,z = arrays        
         return np.sqrt(x**2+y**2+z**2), xfactor
     
-    def compute_rcyl(self, snap, unit):
+    def compute_R(self, snap, unit):
         arrays_scalings = map(lambda quantity : self.get_array_by_name(quantity, snap, unit), ['x', 'y'])
         arrays, scalings = zip(*arrays_scalings)
         xfactor, yfactor = scalings
         #check that the factors are all the same
         if not all([x==scalings[0] for x in scalings]):
-            raise Exception("error: different spatial coordinates have different scaling facors. Bug in units, please contact the authors")
+            raise Exception("error: different spatial coordinates have different scaling factors. Bug in units, please contact the authors")
         
         x,y = arrays        
         return np.sqrt(x**2+y**2), xfactor
@@ -310,7 +310,7 @@ class PlotCommand(Command):
         xfactor, yfactor = scalings
         #check that the factors are all the same
         if not all([x==scalings[0] for x in scalings]):
-            raise Exception("error: different spatial coordinates have different scaling facors. Bug in units, please contact the authors")
+            raise Exception("error: different spatial coordinates have different scaling factors. Bug in units, please contact the authors")
         
         x,y = arrays        
         return np.arctan2(y,x), 1.
@@ -321,7 +321,7 @@ class PlotCommand(Command):
         rfactor, zfactor = scalings
         #check that the factors are all the same
         if not all([x==scalings[0] for x in scalings]):
-            raise Exception("error: different spatial coordinates have different scaling facors. Bug in units, please contact the authors")
+            raise Exception("error: different spatial coordinates have different scaling factors. Bug in units, please contact the authors")
         
         r,z = arrays        
         return np.arccos(z/r), rfactor    
