@@ -88,11 +88,14 @@ class PlotCommand(Command):
                       'ax': '$a_x$', 'ay': '$a_y$', 'az': '$a_z$',
                       'm': 'm', 'h': 'h', 'u': 'u',
                       'r': 'r', 'R': 'R', 'phi': '$\\phi$',
-                      'theta': '$\\theta$'}
+                      'theta': '$\\theta$',
+                      'vr': '$v_r$', 'ar': '$a_r$'}
     derived = {'r' : 'compute_r',
                'R': 'compute_R',
                'phi': 'compute_phi',
-               'theta': 'compute_theta'}
+               'theta': 'compute_theta',
+               'vr': 'compute_vr',
+               'ar': 'compute_ar'}
     
     def __init__(self, xquantity, yquantity, snap, simno, 
                  overplot, autoscale, xunit="default", yunit="default"):
@@ -324,7 +327,29 @@ class PlotCommand(Command):
             raise Exception("error: different spatial coordinates have different scaling factors. Bug in units, please contact the authors")
         
         r,z = arrays        
-        return np.arccos(z/r), rfactor    
+        return np.arccos(z/r), 1. 
+    
+    def compute_vector_r(self, snap, unit, vecname):
+        vectors = [vecname+'x', vecname+'y', vecname+'z']
+        arrays_scalings = map(lambda quantity : self.get_array_by_name(quantity, snap, unit), ['theta', 'phi']+vectors)
+        arrays, scalings = zip(*arrays_scalings)
+        vectorfactor = scalings[2]
+        #check that the factors are all the same
+        if not all([x==scalings[2] for x in scalings[2:]]):
+            raise Exception("error: different velocity coordinates have different scaling factors. Bug in units, please contact the authors")
+        
+        theta, phi, vectorx, vectory, vectorz = arrays
+        sintheta = np.sin(theta); costheta = np.cos(theta)
+        sinphi = np.sin(phi); cosphi = np.cos(phi)        
+        return sintheta*cosphi*vectorx+sintheta*sinphi*vectory+costheta*vectorz, vectorfactor
+    
+    def compute_vr(self, snap, unit):
+        vecname = 'v'
+        return self.compute_vector_r(snap, unit, vecname)
+    
+    def compute_ar(self, snap, unit):
+        vecname = 'a'
+        return self.compute_vector_r(snap, unit, vecname)
         
 
 class ParticlePlotCommand (PlotCommand):
