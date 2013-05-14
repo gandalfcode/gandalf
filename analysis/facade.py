@@ -261,6 +261,7 @@ can use standard Numpy index notation (e.g., -1 is the last snapshot).
 Required arguments:
     snapno     : Snapshot number
 '''
+    no = int(no)
     try:
         SimBuffer.set_current_snapshot_number(no)
     except BufferException as e:
@@ -401,6 +402,7 @@ def sims():
         
 def snaps(simno):
     '''For the given simulation number, print a list of all the snapshots'''
+    simno = int(simno)
     sim=SimBuffer.get_sim_no(simno)
     print "The run_id of the requested simulation is " + sim.simparams.stringparams["run_id"]
     print "These are the snapshots that we know about for this simulation:"
