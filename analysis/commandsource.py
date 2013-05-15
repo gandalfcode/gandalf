@@ -1,5 +1,6 @@
 import analytical
 from data import Data
+from data_fetcher import get_fetcher
 from facade import SimBuffer
 import numpy as np
 from swig_generated.SphSim import RenderBase, UnitInfo
@@ -253,45 +254,10 @@ class PlotCommand(Command):
         quantity = getattr(self, axis+'quantity')
         unit = getattr(self, axis+'unit')
         
-        unitinfo, data, scaling_factor = self.get_array_by_name(quantity, snap, unit)
+        unitinfo, data, scaling_factor = get_fetcher(quantity).fetch(snap, unit)
         
         return unitinfo, data, scaling_factor
-    
-    def check_requested_quantity(self, quantity, snap):
-        '''Check the requested quantity exists, depending on the dimensionality of the snapshot.
-        Also return information about the kind of the quantity (direct or derived)'''
-        oned = ('x', 'vx', 'ax')
-        twod = ('y', 'vy', 'ay')
-        threed = ('z', 'vz', 'az')
-        minus3 = quantity in threed+('r','theta') and snap.ndim<3
-        minus2 = quantity in twod+('R','phi') and snap.ndim<2
-        if minus3 or minus2:
-            raise Exception("Error: you requested the quantity " + quantity + ", but the simulation is only in " + str(snap.ndim) + " dims")
-        if self.snap != "live":
-            if quantity in ('ax', 'ay', 'az'):
-                raise Exception ("Error: accelerations are available only for live snapshots")
-            elif quantity in ('dudt'):
-                raise Exception ("Error: dudt is available only for live snapshots")
-        other_direct = ('m', 'h', 'rho', 'u', 'dudt')
-        all_direct = oned + twod + threed + other_direct
-        
-        if quantity in all_direct:
-            return "direct"
-        elif quantity in self.derived:
-            return "derived"
-        else:
-            raise Exception("We don't know how to compute " + quantity)
-        
-    def get_array_by_name(self, quantity, snap, unit="default"):
-        kind = self.check_requested_quantity(quantity, snap)
-        
-        if kind == "direct":
-            extracted = snap.ExtractArray(quantity, unit)
-
-        else:
-            extracted = getattr(self,self.derived[quantity])(snap, unit)
-        return extracted
-    
+     
     def setlimits(self, plotting, ax, axis):
         '''Helper function to set the limits of a plot.
         Takes care of handling autoscaling on/off for different axes.
