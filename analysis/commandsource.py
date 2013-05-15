@@ -133,6 +133,26 @@ class PlotCommand(Command):
                 #if we are not overplotting, clear what is there
                 ax.clear()
                 self.labels(ax)
+                
+                #hack for deleting the old colorbar
+                #first we retrieve the colorbar axes
+                try:
+                    products = plotting.axesimages[ax]
+                except KeyError:
+                    products = None
+                if isinstance(products, tuple):
+                    #cbar is the colorbar object
+                    cbar = products[1]
+                    #here we get the old geometry
+                    gs = ax.get_subplotspec()
+                    row, cols, num1, num2 = gs.get_geometry()
+                    try:
+                        #here we delete the colorbar
+                        fig.delaxes(cbar.ax)
+                    except KeyError:
+                        pass
+                    #here we change the geometry, reducing the number of columns by one
+                    ax.change_geometry(row,cols-1,num1+1)
             #call the function in the child class to do the plot
             product = self.execute(plotting, fig, ax, data)
             #set the autoscales on the axis
