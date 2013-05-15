@@ -324,6 +324,12 @@ UnitInfo SphSnapshotBase::ExtractArray(string name, float** out_array, int* size
     *size_array = 0;
   }
 
+  if (out_array == NULL) {
+    string message = "Error: the requested array: " + name + " is not allocated! "
+        "Probably a dimensionality problem";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
   //set the size now that we have the array
   *size_array = Nsph;
 
