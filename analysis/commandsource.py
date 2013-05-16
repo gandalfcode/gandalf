@@ -91,12 +91,6 @@ class PlotCommand(Command):
                       'r': 'r', 'R': 'R', 'phi': '$\\phi$',
                       'theta': '$\\theta$',
                       'vr': '$v_r$', 'ar': '$a_r$'}
-    derived = {'r' : 'compute_r',
-               'R': 'compute_R',
-               'phi': 'compute_phi',
-               'theta': 'compute_theta',
-               'vr': 'compute_vr',
-               'ar': 'compute_ar'}
     
     def __init__(self, xquantity, yquantity, snap, simno, 
                  overplot, autoscale, xunit="default", yunit="default"):
@@ -272,74 +266,6 @@ class PlotCommand(Command):
         else:
             method = getattr(ax, 'set_'+axis+'lim')
             method(min,max)
-    
-    def compute_r(self, snap, unit):
-        arrays_scalings = map(lambda quantity : self.get_array_by_name(quantity, snap, unit), ['x', 'y', 'z'])
-        unitinfos, arrays, scalings = zip(*arrays_scalings)
-        xfactor, yfactor, zfactor = scalings
-        #check that the factors are all the same
-        if not all([x==scalings[0] for x in scalings]):
-            raise Exception("error: different spatial coordinates have different scaling factors. Bug in units, please contact the authors")
-        
-        x,y,z = arrays        
-        return unitinfos[0], np.sqrt(x**2+y**2+z**2), xfactor
-    
-    def compute_R(self, snap, unit):
-        arrays_scalings = map(lambda quantity : self.get_array_by_name(quantity, snap, unit), ['x', 'y'])
-        unitinfos, arrays, scalings = zip(*arrays_scalings)
-        xfactor, yfactor = scalings
-        #check that the factors are all the same
-        if not all([x==scalings[0] for x in scalings]):
-            raise Exception("error: different spatial coordinates have different scaling factors. Bug in units, please contact the authors")
-        
-        x,y = arrays        
-        return unitinfos[0], np.sqrt(x**2+y**2), xfactor
-    
-    def compute_phi(self, snap, unit):
-        arrays_scalings = map(lambda quantity : self.get_array_by_name(quantity, snap, unit), ['x', 'y'])
-        unitinfos, arrays, scalings = zip(*arrays_scalings)
-        xfactor, yfactor = scalings
-        #check that the factors are all the same
-        if not all([x==scalings[0] for x in scalings]):
-            raise Exception("error: different spatial coordinates have different scaling factors. Bug in units, please contact the authors")
-        
-        x,y = arrays
-        unitinfo = UnitInfo("","")
-        return unitinfo, np.arctan2(y,x), 1.
-    
-    def compute_theta(self, snap, unit):
-        arrays_scalings = map(lambda quantity : self.get_array_by_name(quantity, snap, unit), ['r', 'z'])
-        unitinfos, arrays, scalings = zip(*arrays_scalings)
-        rfactor, zfactor = scalings
-        #check that the factors are all the same
-        if not all([x==scalings[0] for x in scalings]):
-            raise Exception("error: different spatial coordinates have different scaling factors. Bug in units, please contact the authors")
-        
-        r,z = arrays
-        unitinfo = UnitInfo("","")
-        return unitinfo, np.arccos(z/r), 1.
-    
-    def compute_vector_r(self, snap, unit, vecname):
-        vectors = [vecname+'x', vecname+'y', vecname+'z']
-        arrays_scalings = map(lambda quantity : self.get_array_by_name(quantity, snap, unit), ['theta', 'phi']+vectors)
-        untinfos, arrays, scalings = zip(*arrays_scalings)
-        vectorfactor = scalings[2]
-        #check that the factors are all the same
-        if not all([x==scalings[2] for x in scalings[2:]]):
-            raise Exception("error: different velocity coordinates have different scaling factors. Bug in units, please contact the authors")
-        
-        theta, phi, vectorx, vectory, vectorz = arrays
-        sintheta = np.sin(theta); costheta = np.cos(theta)
-        sinphi = np.sin(phi); cosphi = np.cos(phi)        
-        return unitinfos[2], sintheta*cosphi*vectorx+sintheta*sinphi*vectory+costheta*vectorz, vectorfactor
-    
-    def compute_vr(self, snap, unit):
-        vecname = 'v'
-        return self.compute_vector_r(snap, unit, vecname)
-    
-    def compute_ar(self, snap, unit):
-        vecname = 'a'
-        return self.compute_vector_r(snap, unit, vecname)
         
 
 class ParticlePlotCommand (PlotCommand):

@@ -81,3 +81,14 @@ class FormulaDataFetcher:
         result = evaluateStack(list(self._stack), snap)
         unitinfo = UnitInfo()
         return unitinfo, result, 1.
+    
+def initialize():
+    set_fetcher('r','sqrt(x^2+y^2+z^2)')
+    set_fetcher('R','sqrt(x^2+y^2)')
+    set_fetcher('phi','arctan2(y,x)')
+    set_fetcher('theta','arccos(z/r)')
+    set_fetcher('vr','sin(theta)*cos(phi)*vx+sin(theta)*sin(phi)*vy+cos(theta)*vz')
+    set_fetcher('ar','sin(theta)*cos(phi)*ax+sin(theta)*sin(phi)*ay+cos(theta)*az')
+
+#if we are being imported, initialize quantities
+initialize()
