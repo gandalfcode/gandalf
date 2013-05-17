@@ -26,6 +26,7 @@
 using namespace std;
 
 
+
 //=============================================================================
 //  Structure DomainBox
 /// \brief  Bounding box data structure.
@@ -121,15 +122,16 @@ class SphSimulationBase
 
   // Initial conditions routines
   // --------------------------------------------------------------------------
+  virtual void BinaryStar(void)=0;
   virtual void CheckInitialConditions(void)=0;
   virtual void ContactDiscontinuity(void)=0;
-  virtual void UniformBox(void)=0;
-  virtual void UniformSphere(void)=0;
+  virtual void KHI(void)=0;
+  virtual void NohProblem(void)=0;
   virtual void ShearFlow(void) = 0;
   virtual void ShockTube(void)=0;
-  virtual void KHI(void)=0;
   virtual void SoundWave(void)=0;
-  virtual void BinaryStar(void)=0;
+  virtual void UniformBox(void)=0;
+  virtual void UniformSphere(void)=0;
 
   // Input-output routines
   // --------------------------------------------------------------------------
@@ -227,16 +229,17 @@ class SphSimulation : public SphSimulationBase {
 
   // Initial conditions routines
   // --------------------------------------------------------------------------
+  virtual void BinaryStar(void);
   virtual void CheckInitialConditions(void);
   virtual void ContactDiscontinuity(void);
-  virtual void UniformBox(void);
-  virtual void UniformSphere(void);
-  virtual void ShockTube(void);
   virtual void KHI(void);
+  virtual void NohProblem(void);
+  virtual void ShockTube(void);
   virtual void SedovBlastWave(void);
   virtual void ShearFlow(void);
   virtual void SoundWave(void);
-  virtual void BinaryStar(void);
+  virtual void UniformBox(void);
+  virtual void UniformSphere(void);
 
   // Input-output routines
   // --------------------------------------------------------------------------

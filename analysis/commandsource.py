@@ -18,7 +18,7 @@ the plotting process to execute it.
 class Command:
     '''Base class from which all the other commands inherit.
     Each command has an unique id, which gets assigned by this class.
-    Therefore, it's crucial to call the constructor of this class when
+    Therefore, it\'s crucial to call the constructor of this class when
     creating a command.
     '''
     id = 0

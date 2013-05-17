@@ -273,12 +273,16 @@ void SphSimulation<ndim>::UniformSphere(void)
 {
   int i,k;                          // Particle and dimension counters
   int Nsphere;                      // Actual number of particles in sphere
-  FLOAT *r;                         // Particle position vectors
   FLOAT rcentre[ndim];              // Position of sphere centre
+  FLOAT volume;                     // Volume of sphere
+  FLOAT *r;                         // Particle position vectors
 
   // Local copies of important parameters
   int Npart = simparams->intparams["Npart"];
   FLOAT radius = simparams->floatparams["radius"];
+  FLOAT rhofluid = simparams->floatparams["rhofluid1"];
+  FLOAT press = simparams->floatparams["press1"];
+  FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
   string particle_dist = simparams->stringparams["particle_distribution"];
 
   debug2("[SphSimulation::UniformSphere]");
@@ -307,6 +311,10 @@ void SphSimulation<ndim>::UniformSphere(void)
   sph->Nsph = Npart;
   sph->AllocateMemory(sph->Nsph);
 
+  if (ndim == 1) volume = 2.0*radius;
+  else if (ndim == 2) volume = pi*radius*radius;
+  else if (ndim == 3) volume = 4.0*onethird*pi*pow(radius,3);
+
   // Record particle positions and initialise all other variables
   for (i=0; i<sph->Nsph; i++) {
     for (k=0; k<ndim; k++) {
@@ -314,7 +322,8 @@ void SphSimulation<ndim>::UniformSphere(void)
       sph->sphdata[i].v[k] = (FLOAT) 0.0;
       sph->sphdata[i].a[k] = (FLOAT) 0.0;
     }
-    sph->sphdata[i].m = (FLOAT) 1.0 / (FLOAT) sph->Nsph;
+    sph->sphdata[i].m = rhofluid*volume / (FLOAT) Npart;
+    sph->sphdata[i].u = press/rhofluid/gammaone;
     sph->sphdata[i].invomega = (FLOAT) 1.0;
     sph->sphdata[i].zeta = (FLOAT) 0.0;
     sph->sphdata[i].iorig = i;
@@ -368,7 +377,7 @@ void SphSimulation<ndim>::ContactDiscontinuity(void)
   debug2("[SphSimulation::ContactDiscontinuity]");
 
 
-  // 1d simulation
+  // 1D simulation
   // ==========================================================================
   if (ndim == 1) {
     box1.boxmin[0] = simbox.boxmin[0];
@@ -609,6 +618,83 @@ void SphSimulation<ndim>::KHI(void)
   
   for (i=0; i<sph->Nsph; i++) 
     sph->sphdata[i].u = press1/sph->sphdata[i].rho/gammaone;
+
+  delete[] r;
+
+  return;
+}
+
+
+
+//=============================================================================
+//  SphSimulation::NohProblem
+/// Set-up Noh Problem initial conditions
+//=============================================================================
+template <int ndim>
+void SphSimulation<ndim>::NohProblem(void)
+{
+  int i;                            // Particle counter
+  int j;                            // Aux. particle counter
+  int k;                            // Dimension counter
+  int Nsphere;                      // Actual number of particles in sphere
+  int Nlattice[3];                  // Lattice size
+  FLOAT dr[ndim];                   // Relative position vector
+  FLOAT drmag;                      // Distance
+  FLOAT drsqd;                      // Distance squared
+  FLOAT rcentre[ndim];              // Position of sphere centre
+  FLOAT volume;                     // Volume of box
+  FLOAT *r;                         // Positions of all particles
+
+  // Create local copies of initial conditions parameters
+  int Npart = simparams->intparams["Npart"];
+  FLOAT rhofluid = simparams->floatparams["rhofluid1"];
+  FLOAT press = simparams->floatparams["press1"];
+  FLOAT radius = simparams->floatparams["radius"];
+  FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
+  string particle_dist = simparams->stringparams["particle_distribution"];
+
+  debug2("[SphSimulation::NohProblem]");
+
+  r = new FLOAT[ndim*Npart];
+
+  // Add a sphere of random particles with origin 'rcentre' and radius 'radius'
+  for (k=0; k<ndim; k++) rcentre[k] = (FLOAT) 0.0;
+
+  // Create the sphere depending on the choice of initial particle distribution
+  if (particle_dist == "random")
+    AddRandomSphere(Npart,r,rcentre,radius);
+  else if (particle_dist == "cubic_lattice" || 
+	   particle_dist == "hexagonal_lattice") {
+    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    if (Nsphere != Npart) 
+      cout << "Warning! Unable to converge to required " 
+	   << "no. of ptcls due to lattice symmetry" << endl;
+    Npart = Nsphere;
+  }
+  else {
+    string message = "Invalid particle distribution option";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Allocate local and main particle memory
+  sph->Nsph = Npart;
+  sph->AllocateMemory(sph->Nsph);
+
+  if (ndim == 1) volume = 2.0*radius;
+  else if (ndim == 2) volume = pi*radius*radius;
+  else if (ndim == 3) volume = 4.0*onethird*pi*pow(radius,3);
+
+  // Record particle properties in main memory
+  for (i=0; i<Npart; i++) {
+    for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r[ndim*i + k];
+    for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k];
+    drsqd = DotProduct(dr,dr,ndim);
+    drmag = sqrt(drsqd) + small_number;
+    for (k=0; k<ndim; k++) 
+      sph->sphdata[i].v[k] = -1.0*dr[k]/drmag;
+    sph->sphdata[i].m = rhofluid*volume/(FLOAT) Npart;
+    sph->sphdata[i].u = press/rhofluid/gammaone;
+  }
 
   delete[] r;
 

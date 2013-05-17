@@ -308,13 +308,13 @@ void BruteForceSearch<ndim>::UpdateAllSphGravForces
 				  sph->sphdata[i],neibpart);
 
     // Now add all active neighbour contributions to the main arrays
-    for (j=0; j<sph->Ntot; j++) {
-      if (neibpart[j].active) {
-	sph->sphdata[i].gpot += neibpart[j].gpot;
-        for (k=0; k<ndim; k++) 
-	  sph->sphdata[i].agrav[k] += neibpart[j].agrav[k];
-      }
-    }
+    //for (j=0; j<sph->Ntot; j++) {
+    //  if (neibpart[j].active) {
+    //sph->sphdata[i].gpot += neibpart[j].gpot;
+    //  for (k=0; k<ndim; k++) 
+    //  sph->sphdata[j].agrav[k] += neibpart[j].agrav[k];
+    //}
+    //}
 
   }
   // --------------------------------------------------------------------------

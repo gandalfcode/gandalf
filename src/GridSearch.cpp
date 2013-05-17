@@ -330,7 +330,7 @@ void GridSearch<ndim>::UpdateAllSphForces
 	    interactlist[Ninteract] = jj;
 	    drmag[Ninteract] = sqrt(drsqd);
 	    invdrmag[Ninteract] = (FLOAT) 1.0/
-	      (drmag[Ninteract] + small_number);
+              (drmag[Ninteract] + small_number);
 	    for (k=0; k<ndim; k++)
 	      dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
 	    Ninteract++;
@@ -471,6 +471,9 @@ void GridSearch<ndim>::UpdateAllSphGravForces
     potdirect = new FLOAT[sph->Nsph*ndim];
     neibpart = new SphParticle<ndim>[Nneibmax];
 
+    for (i=0; i<sph->Nsph; i++)
+      for (k=0; k<ndim; k++) adirect[ndim*i + k] = (FLOAT) 0.0;
+
     // Loop over all active cells
     // ========================================================================
 #pragma omp for schedule(dynamic)
@@ -493,9 +496,8 @@ void GridSearch<ndim>::UpdateAllSphGravForces
       for (j=0; j<Nneib; j++) {
 	neibflag[neiblist[j]] = true;
         neibpart[j] = data[neiblist[j]];
-        neibpart[j].div_v = (FLOAT) 0.0;
-        neibpart[j].dudt = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
+        neibpart[j].gpot = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) neibpart[j].agrav[k] = (FLOAT) 0.0;
       }
 
       // Create list of all unsmoothed direct-sum neighbour lists
@@ -510,10 +512,8 @@ void GridSearch<ndim>::UpdateAllSphGravForces
         i = activelist[j];
         parti = data[i];
 	parti.gpot = 0.0;
-        for (k=0; k<ndim; k++) parti.a[k] = (FLOAT) 0.0;
-
+        for (k=0; k<ndim; k++) parti.agrav[k] = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) rp[k] = parti.r[k]; //data[i].r[k];
-        hrangesqdi = pow(sph->kernfac*sph->kernp->kernrange*parti.h,2);
         Ninteract = 0;
 
 
@@ -524,21 +524,24 @@ void GridSearch<ndim>::UpdateAllSphGravForces
         // --------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
-          for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
-          drsqd = DotProduct(draux,draux,ndim);
+	  for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
+	  drsqd = DotProduct(draux,draux,ndim);
 	  interactlist[Ninteract] = jj;
 	  drmag[Ninteract] = sqrt(drsqd);
 	  invdrmag[Ninteract] = (FLOAT) 1.0/(drmag[Ninteract] + small_number);
 	  for (k=0; k<ndim; k++)
 	    dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
 	  Ninteract++;
-	  
-        }
+
+	}
         // --------------------------------------------------------------------
 
         // Compute all gather neighbour contributions to hydro forces
         sph->ComputeSphNeibGravForces(i,Ninteract,interactlist,
 				      drmag,invdrmag,dr,parti,neibpart);
+
+	// Now add all direct, unsmoothed contributions
+	sph->ComputeDirectGravForces(i,Ndirect,directlist,parti,data);
 
         // Add contributions to main arrays
         for (k=0; k<ndim; k++) {
@@ -552,17 +555,17 @@ void GridSearch<ndim>::UpdateAllSphGravForces
       // ----------------------------------------------------------------------
 
       // Now add all active neighbour contributions to the main arrays
-      for (jj=0; jj<Nneib; jj++) {
-        if (neibpart[jj].active) {
-          j = neiblist[jj];
-          for (k=0; k<ndim; k++) {
+      //for (jj=0; jj<Nneib; jj++) {
+      //  if (neibpart[jj].active) {
+      //    j = neiblist[jj];
+      //    for (k=0; k<ndim; k++) {
 #pragma omp atomic
-            data[j].agrav[k] += neibpart[jj].agrav[k];
-          }
+      //      data[j].agrav[k] += neibpart[jj].agrav[k];
+      //    }
 #pragma omp atomic
-          data[j].gpot += neibpart[jj].gpot;
-        }
-      }
+      //    data[j].gpot += neibpart[jj].gpot;
+      //  }
+      //}
       
     }
     // ========================================================================
