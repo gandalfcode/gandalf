@@ -1,6 +1,6 @@
 import analytical
 from data import Data
-from data_fetcher import UserQuantity
+from data_fetcher import UserQuantity, TimeData
 from facade import SimBuffer
 import numpy as np
 from swig_generated.SphSim import RenderBase, UnitInfo
@@ -90,7 +90,7 @@ class PlotCommand(Command):
                       'm': 'm', 'h': 'h', 'u': 'u',
                       'r': 'r', 'R': 'R', 'phi': '$\\phi$',
                       'theta': '$\\theta$',
-                      'vr': '$v_r$', 'ar': '$a_r$'}
+                      'vr': '$v_r$', 'ar': '$a_r$', 't': 't'}
     
     def __init__(self, xquantity, yquantity, snap, simno, 
                  overplot, autoscale, xunit="default", yunit="default"):
@@ -186,11 +186,17 @@ class PlotCommand(Command):
     def labels(self, ax):
         '''Write the labels on the x and y axes.
         Uses the quantitylabels dictionary for that.'''
-        xlabel = self.quantitylabels[self.xquantity]
+        try:
+            xlabel = self.quantitylabels[self.xquantity]
+        except KeyError:
+            xlabel = ""
         if self.xlabel != "":
             xlabel += ' [$'+self.xlabel+'$]'
         ax.set_xlabel(xlabel)
-        ylabel = self.quantitylabels[self.yquantity]
+        try:
+            ylabel = self.quantitylabels[self.yquantity]
+        except KeyError:
+            ylabel=""
         if self.ylabel != "":
             ylabel += ' [$'+self.ylabel+'$]'
         ax.set_ylabel(ylabel)
@@ -204,11 +210,7 @@ class PlotCommand(Command):
         
     def get_sim_and_snap(self):
         '''Retrieves from the buffer the desired sim and snap'''
-        sim = SimBuffer.get_sim_no(self.sim)
-        
-        if not sim.setup:
-            raise Exception("""Error: this simulation has not been set up! If you have set all the relevant parameters/
-            initial conditions, please run the setupsim command to set it up.""")
+        sim = self.get_sim()
         
         if self.snap == "current":
             snap = SimBuffer.get_current_snapshot_by_sim(sim)
@@ -221,6 +223,16 @@ class PlotCommand(Command):
         
         return sim, snap
     
+    def get_sim(self):
+        '''Retrieves from the buffer the desidered sim'''
+        sim = SimBuffer.get_sim_no(self.sim)
+        
+        if not sim.setup:
+            raise Exception("""Error: this simulation has not been set up! If you have set all the relevant parameters/
+            initial conditions, please run the setupsim command to set it up.""")
+            
+        return sim
+        
     def set_labels(self, axis, unitinfo):
         setattr(self, axis+'unitname', unitinfo.name)
         setattr(self, axis+'label', unitinfo.label)
@@ -267,7 +279,25 @@ class PlotCommand(Command):
             method = getattr(ax, 'set_'+axis+'lim')
             method(min,max)
         
-
+class PlotVsTime (PlotCommand):
+    
+    def __init__(self, yquantity,sim,overplot,autoscale,xunit,yunit):
+        PlotCommand.__init__(self, 't', yquantity, None, sim, overplot, autoscale, xunit, yunit)
+        
+    def execute(self, plotting, fig, ax, data):
+        line, = ax.plot(data.x_data, data.y_data, '.')
+        return line
+    
+    def prepareData(self, globallimits):
+        sim = self.get_sim()
+        
+        y_data = TimeData(self.yquantity).fetch(sim)
+        time = map(lambda snap: snap.t, sim.snapshots)
+        
+        data=Data(time, y_data)
+        return data
+        
+        
 class ParticlePlotCommand (PlotCommand):
     '''Inherited class that does particle plotting.
     Uses the plot method of axis for plotting, saves the line generated
