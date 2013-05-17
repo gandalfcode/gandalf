@@ -1,7 +1,8 @@
 from seren.analysis.facade import get_sim_no, Singletons
 import commandsource as Commands
-import numpy
+import numpy as np
 from scipy import interpolate
+from data_fetcher import get_fetcher
 
 '''This module collects helper functions to compute useful quantities'''
 
@@ -39,3 +40,9 @@ def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "c
     #compute error norm of particle data relative to analytical data
     L1 = numpy.linalg.norm((pdata.y_data - f(pdata.x_data)), ord=1)/pdata.x_data.size
     return L1
+
+def COM (snap, quantity='x'):
+    x=get_fetcher(quantity).fetch(snap)[1]
+    m=get_fetcher('m').fetch(snap)[1]
+    
+    return (x*m).sum()/m.sum()
