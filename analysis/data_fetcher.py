@@ -1,4 +1,5 @@
 from swig_generated.SphSim import UnitInfo
+from facade import SimBuffer
 
 direct = ['x', 'y', 'z', 'vx', 'vy', 'vz', 'ax', 'ay', 'az',
           'm', 'h', 'rho', 'u', 'dudt']
@@ -61,8 +62,11 @@ class DirectDataFetcher:
             raise Exception ("Error: the quantity" + quantity + " is not a direct quantity!")
         self._quantity = quantity
         
-    def fetch(self, snap, unit):
+    def fetch(self, snap="current", unit="default"):
         
+        if snap=="current":
+            snap=SimBuffer.get_current_snapshot()
+            
         kind = check_requested_quantity(self._quantity, snap)
         if kind != "direct":
             raise Exception ("Error: the quantity" + quantity + " is not a direct quantity!")
@@ -81,7 +85,11 @@ class FormulaDataFetcher:
         self.unitinfo.label=unitlabel
         self.unitinfo.name=unitname
         
-    def fetch(self, snap, unit):
+    def fetch(self, snap="current", unit="default"):
+        
+        if snap=="current":
+            snap=SimBuffer.get_current_snapshot()
+        
         result = evaluateStack(list(self._stack), snap)
         return self.unitinfo, result, self.scaling_factor
     
