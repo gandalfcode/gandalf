@@ -1,6 +1,6 @@
 import analytical
 from data import Data
-from data_fetcher import get_fetcher
+from data_fetcher import UserQuantity
 from facade import SimBuffer
 import numpy as np
 from swig_generated.SphSim import RenderBase, UnitInfo
@@ -248,7 +248,7 @@ class PlotCommand(Command):
         quantity = getattr(self, axis+'quantity')
         unit = getattr(self, axis+'unit')
         
-        unitinfo, data, scaling_factor = get_fetcher(quantity).fetch(snap, unit)
+        unitinfo, data, scaling_factor = UserQuantity(quantity).fetch(snap, unit)
         
         return unitinfo, data, scaling_factor
      

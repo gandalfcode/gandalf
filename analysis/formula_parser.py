@@ -3,7 +3,7 @@ import re
 from pyparsing import Word, alphas, ParseException, Literal, CaselessLiteral \
 , Combine, Optional, nums, Or, Forward, ZeroOrMore, StringEnd, alphanums, delimitedList, Group, \
 Suppress
-from data_fetcher import get_fetcher
+from data_fetcher import UserQuantity
 
 # Debugging flag can be set to either "debug_flag=True" or "debug_flag=False"
 debug_flag=False
@@ -105,7 +105,7 @@ def evaluateStack( s, snap ):
     operand2 = evaluateStack(s,snap)
     return getattr(np, op)(operand1, operand2)
   elif re.search('^[a-zA-Z][a-zA-Z0-9_]*$',op):
-      return get_fetcher(op).fetch(snap, "default")[1]
+      return UserQuantity(op).fetch(snap, "default")[1]
   elif re.search('^[-+]?[0-9]+$',op):
     return int( op )
   elif re.search('[-+]?[0-9]+[.][0-9]*',op):
