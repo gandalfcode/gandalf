@@ -1,7 +1,8 @@
 from seren.analysis.facade import get_sim_no, Singletons
 import commandsource as Commands
-import numpy
+import numpy as np
 from scipy import interpolate
+from data_fetcher import UserQuantity
 
 '''This module collects helper functions to compute useful quantities'''
 
@@ -41,7 +42,6 @@ def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "c
     return L1
 
 
-
 def lagrangian_radii(mfrac, snap = "current"):
     '''Computes the L1 error norm from the simulation data relative to the analytical solution'''
     
@@ -70,3 +70,10 @@ def lagrangian_radii(mfrac, snap = "current"):
         i = i + 1
 
     return pdata.x_data[Npart]
+
+
+def COM (snap, quantity='x'):
+    x=UserQuantity(quantity).fetch(snap)[1]
+    m=UserQuantity('m').fetch(snap)[1]
+    
+    return (x*m).sum()/m.sum()

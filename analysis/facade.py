@@ -27,6 +27,7 @@ class Singletons:
     globallimits = manager.dict()
 
 import commandsource as Commands
+from data_fetcher import CreateUserQuantity, CreateTimeData
 import signal
 from time import sleep
 
@@ -87,6 +88,13 @@ Optional arguments:
     Singletons.queue.put([command, data])
     sleep(0.001)
 
+def plot_vs_time(y,sim="current",overplot=False,autoscale=True, xunit="default", yunit="default"):
+    simno = get_sim_no(sim)
+    command = Commands.PlotVsTime(y,simno,overplot,autoscale,xunit,yunit)
+    data = command.prepareData(Singletons.globallimits)
+    Singletons.queue.put([command, data])
+    
+    
 def render(x, y, render, snap="current", sim="current", overplot=False, autoscale=True, 
            autoscalerender=True, coordlimits=None, zslice=None,
            xunit="default", yunit="default", renderunit="default",
@@ -138,6 +146,8 @@ Optional arguments:
                     used. See pyplot documentation for the full list of
                     possible values.
     '''
+    if zslice is not None:
+        zslice = float(zslice)
     simno = get_sim_no(sim)
     command = Commands.RenderPlotCommand(x, y, render, snap, simno, overplot, autoscale, autoscalerender, 
                                          coordlimits, zslice, xunit, yunit, renderunit, res, interpolation)
@@ -419,6 +429,7 @@ def snaps(simno):
 
 def set_current_sim(simno):
     '''Set the current simulation to the given number. Returns the newly set current simulation'''
+    simno = int(simno)
     return SimBuffer.set_current_sim_no(simno)
 
 def get_sim_no(sim):
@@ -442,6 +453,17 @@ def init():
     global plottingprocess
     plottingprocess = PlottingProcess(Singletons.queue, Singletons.commands, Singletons.completedqueue, Singletons.globallimits)
     plottingprocess.start()
+    CreateUserQuantity('r','sqrt(x^2+y^2+z^2)')
+    CreateUserQuantity('R','sqrt(x^2+y^2)')
+    CreateUserQuantity('phi','arctan2(y,x)')
+    CreateUserQuantity('theta','arccos(z/r)')
+    CreateUserQuantity('vr','sin(theta)*cos(phi)*vx+sin(theta)*sin(phi)*vy+cos(theta)*vz')
+    CreateUserQuantity('ar','sin(theta)*cos(phi)*ax+sin(theta)*sin(phi)*ay+cos(theta)*az')
+    
+    from compute import COM
+    CreateTimeData('com_x',COM)
+    CreateTimeData('com_y',COM,quantity='y')
+    CreateTimeData('com_z',COM,quantity='z')
 
 init()
  

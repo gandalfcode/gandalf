@@ -36,7 +36,13 @@ Nbody<ndim>::Nbody(int nbody_softening_aux, int sub_systems_aux,
   nbody_softening(nbody_softening_aux),
   sub_systems(sub_systems_aux),
   nbody_mult(nbody_mult_aux),
-  kerntab(TabulatedKernel<ndim>(KernelName))
+  kerntab(TabulatedKernel<ndim>(KernelName)),
+  Nstar(0),
+  Nstarmax(0),
+  Nsystem(0),
+  Nsystemmax(0),
+  Nnbody(0),
+  Nnbodymax(0)
 {
 }
 
