@@ -28,10 +28,9 @@ def set_fetcher(name, formula, unitlabel='', unitname='',scaling_factor=1):
     derived_fetchers[name] = fetcher
     return fetcher
 
-def set_fetcher_time(name, function):
+def set_fetcher_time(name, function, *args, **kwargs):
     '''Given a function that takes a snapshot as input, construct a FunctionTimeDataFetcher object from it'''
-    fetcher = FunctionTimeDataFetcher()
-    fetcher.compute = function
+    fetcher = FunctionTimeDataFetcher(function, *args, **kwargs)
     time_fetchers [name] = fetcher
 
 def check_requested_quantity(quantity, snap):
@@ -103,8 +102,10 @@ class FormulaDataFetcher:
     
 class FunctionTimeDataFetcher:
     
-    def __init__(self):
-        pass
+    def __init__(self, function, *args, **kwargs):
+        self._function = function
+        self._args = args
+        self._kwargs = kwargs
     
     def fetch(self, sim="current"):
         
@@ -114,19 +115,6 @@ class FunctionTimeDataFetcher:
             sim=SimBuffer.get_sim_no(sim)
         
         iterator = SimBuffer.get_sim_iterator(sim)
-        results = map(self.compute,iterator)
+        results = map(lambda snap: self._function(snap,*self._args,**self._kwargs),iterator)
         return np.asarray(results)
     
-
-def initialize():
-    
-    set_fetcher('r','sqrt(x^2+y^2+z^2)')
-    set_fetcher('R','sqrt(x^2+y^2)')
-    set_fetcher('phi','arctan2(y,x)')
-    set_fetcher('theta','arccos(z/r)')
-    set_fetcher('vr','sin(theta)*cos(phi)*vx+sin(theta)*sin(phi)*vy+cos(theta)*vz')
-    set_fetcher('ar','sin(theta)*cos(phi)*ax+sin(theta)*sin(phi)*ay+cos(theta)*az')
-    
-
-#if we are being imported, initialize quantities
-initialize()
