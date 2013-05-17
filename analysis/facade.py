@@ -138,6 +138,8 @@ Optional arguments:
                     used. See pyplot documentation for the full list of
                     possible values.
     '''
+    if zslice is not None:
+        zslice = float(zslice)
     simno = get_sim_no(sim)
     command = Commands.RenderPlotCommand(x, y, render, snap, simno, overplot, autoscale, autoscalerender, 
                                          coordlimits, zslice, xunit, yunit, renderunit, res, interpolation)
@@ -419,6 +421,7 @@ def snaps(simno):
 
 def set_current_sim(simno):
     '''Set the current simulation to the given number. Returns the newly set current simulation'''
+    simno = int(simno)
     return SimBuffer.set_current_sim_no(simno)
 
 def get_sim_no(sim):
