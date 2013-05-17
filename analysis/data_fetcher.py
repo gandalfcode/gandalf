@@ -9,7 +9,7 @@ time_fetchers={}
 
 derived_fetchers = {}
 
-def get_fetcher(quantity):
+def UserQuantity(quantity):
     '''Given a quantity, return a fetcher that we can query to get that quantity'''
     if quantity in direct:
         return DirectDataFetcher(quantity)
@@ -21,17 +21,21 @@ def get_fetcher(quantity):
 from formula_parser import evaluateStack, exprStack, varStack, pattern    
 
 
-def set_fetcher(name, formula, unitlabel='', unitname='',scaling_factor=1):
+def CreateUserQuantity(name, formula, unitlabel='', unitname='',scaling_factor=1):
     #TODO: set label
     '''Given a mathematical formula, build a data fetcher from it'''
     fetcher = FormulaDataFetcher(name, formula, unitlabel, unitname, scaling_factor)
     derived_fetchers[name] = fetcher
     return fetcher
 
-def set_fetcher_time(name, function, *args, **kwargs):
+def CreateTimeData(name, function, *args, **kwargs):
     '''Given a function that takes a snapshot as input, construct a FunctionTimeDataFetcher object from it'''
     fetcher = FunctionTimeDataFetcher(function, *args, **kwargs)
     time_fetchers [name] = fetcher
+    
+def TimeData(quantity):
+    '''Given a quantity, return the FunctionTimeDataFetcher object that we can query'''
+    return time_fetchers[quantity]
 
 def check_requested_quantity(quantity, snap):
     '''Check the requested quantity exists, depending on the dimensionality of the snapshot.
@@ -49,7 +53,7 @@ def check_requested_quantity(quantity, snap):
     if not snap.live:
         if quantity in ('ax', 'ay', 'az'):
             raise Exception ("Error: accelerations are available only for live snapshots")
-        elif quantity in ('dudt'):
+        elif quantity in ('dudt',):
             raise Exception ("Error: dudt is available only for live snapshots")
     
     #check that we know how to compute the quantity
