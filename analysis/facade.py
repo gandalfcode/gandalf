@@ -88,6 +88,13 @@ Optional arguments:
     Singletons.queue.put([command, data])
     sleep(0.001)
 
+def plot_vs_time(y,sim="current",overplot=False,autoscale=True, xunit="default", yunit="default"):
+    simno = get_sim_no(sim)
+    command = Commands.PlotVsTime(y,simno,overplot,autoscale,xunit,yunit)
+    data = command.prepareData(Singletons.globallimits)
+    Singletons.queue.put([command, data])
+    
+    
 def render(x, y, render, snap="current", sim="current", overplot=False, autoscale=True, 
            autoscalerender=True, coordlimits=None, zslice=None,
            xunit="default", yunit="default", renderunit="default",
