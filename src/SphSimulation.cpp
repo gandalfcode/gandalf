@@ -292,6 +292,8 @@ void SphSimulation<ndim>::GenerateIC(void)
     UniformSphere();
   else if (simparams->stringparams["ic"] == "cdiscontinuity")
     ContactDiscontinuity();
+  else if (simparams->stringparams["ic"] == "noh")
+    NohProblem();
   else if (simparams->stringparams["ic"] == "sedov")
     SedovBlastWave();
   else if (simparams->stringparams["ic"] == "shearflow")
@@ -1053,17 +1055,15 @@ void SphSimulation<ndim>::PostGeneration(void)
       if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
     }
 
-    CopySphDataToGhosts();
-
-    // Add contributions to ghost particles from original neighbours
-    //CopyAccelerationFromGhosts();
-
     // Add accelerations
     for (i=0; i<sph->Nsph; i++) {
       sph->sphdata[i].active = false;
       for (k=0; k<ndim; k++)
 	sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
+
+    CopySphDataToGhosts();
+
   }
 
   // Set particle values for initial step (e.g. r0, v0, a0)
@@ -1199,17 +1199,15 @@ void SphSimulation<ndim>::MainLoop(void)
     if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
     if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
 
-    if (simparams->stringparams["sph"] == "godunov")
-      sphneib->UpdateAllSphDudt(sph);
-
-    // Add contributions to ghost particles from original neighbours
-    //CopyAccelerationFromGhosts();
-
     // Add accelerations
     for (i=0; i<sph->Nsph; i++) {
       for (k=0; k<ndim; k++) 
         sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
+
+    if (simparams->stringparams["sph"] == "godunov")
+      sphneib->UpdateAllSphDudt(sph);
+
   }
 
   // Apply correction steps for both particle and energy integration

@@ -48,7 +48,7 @@ void SphSimulation<ndim>::CalculateDiagnostics(void)
     diag.ketot += sph->sphdata[i].m*
       DotProduct(sph->sphdata[i].v,sph->sphdata[i].v,ndim);
     diag.utot += sph->sphdata[i].m*sph->sphdata[i].u;
-    diag.gpetot += sph->sphdata[i].m*sph->sphdata[i].gpot;
+    diag.gpetot -= sph->sphdata[i].m*sph->sphdata[i].gpot;
     for (k=0; k<ndim; k++) {
       diag.mom[k] += sph->sphdata[i].m*sph->sphdata[i].v[k];
       diag.force[k] += sph->sphdata[i].m*sph->sphdata[i].a[k];
@@ -81,7 +81,7 @@ void SphSimulation<ndim>::CalculateDiagnostics(void)
   for (i=0; i<nbody->Nstar; i++) {
     diag.ketot += nbody->stardata[i].m*
       DotProduct(nbody->stardata[i].v,nbody->stardata[i].v,ndim);
-    diag.gpetot += nbody->stardata[i].m*nbody->stardata[i].gpot;
+    diag.gpetot -= nbody->stardata[i].m*nbody->stardata[i].gpot;
     for (k=0; k<ndim; k++) {
       diag.mom[k] += nbody->stardata[i].m*nbody->stardata[i].v[k];
       diag.force[k] += nbody->stardata[i].m*nbody->stardata[i].a[k];
@@ -92,7 +92,9 @@ void SphSimulation<ndim>::CalculateDiagnostics(void)
   // Normalise all quantities and sum all contributions to total energy
   diag.ketot *= 0.5;
   diag.gpetot *= 0.5;
-  diag.Etot = diag.ketot + diag.utot + diag.gpetot;
+  diag.Etot = diag.ketot;
+  if (sph->hydro_forces == 1) diag.Etot += diag.utot;
+  if (sph->self_gravity == 1) diag.Etot += diag.gpetot;
 
   return;
 }
@@ -113,8 +115,8 @@ void SphSimulation<ndim>::OutputDiagnostics(void)
   cout << "Nsph       : " << sph->Nsph << endl;
   cout << "Nstar      : " << nbody->Nstar << endl;
   cout << "Etot       : " << diag.Etot << endl;
-  cout << "utot       : " << diag.utot << endl;
   cout << "ketot      : " << diag.ketot << endl;
+  if (sph->hydro_forces == 1) cout << "utot       : " << diag.utot << endl;
   cout << "gpetot     : " << diag.gpetot << endl;
   if (ndim == 1) {
     cout << "mom        : " << diag.mom[0] << endl;
@@ -126,6 +128,7 @@ void SphSimulation<ndim>::OutputDiagnostics(void)
     cout << "force      : " << diag.force[0] << "   " << diag.force[1] << endl;
     cout << "force_grav : " << diag.force_grav[0] << "   " 
 	 << diag.force_grav[1] << endl;
+    cout << "ang mom    : " << diag.angmom[2] << endl;
   }
   else if (ndim == 3) {
     cout << "mom        : " << diag.mom[0] << "   " 
@@ -134,6 +137,8 @@ void SphSimulation<ndim>::OutputDiagnostics(void)
 	 << diag.force[1] << "   " << diag.force[2] << endl;
     cout << "force_grav : " << diag.force_grav[0] << "   " 
 	 << diag.force_grav[1] << "   " << diag.force_grav[2] << endl;
+    cout << "ang mom    : " << diag.angmom[0] << "   "
+	 << diag.angmom[1] << "   " << diag.angmom[2] << endl;
   }
 
   return;

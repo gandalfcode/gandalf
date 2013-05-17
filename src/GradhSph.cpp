@@ -154,13 +154,15 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
 
   // Normalise all SPH sums correctly
-  parti.h = h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim);
+  //parti.h = h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim);
   parti.invh = (FLOAT) 1.0/parti.h;
   parti.invomega = (FLOAT) 1.0 + 
     Sph<ndim>::invndim*parti.h*parti.invomega*parti.invrho;
   parti.invomega = (FLOAT) 1.0/parti.invomega;
   parti.zeta = -Sph<ndim>::invndim*parti.h*parti.zeta*
     parti.invrho*parti.invomega;
+  //parti.invomega = 1.0;
+  //parti.zeta = 0.0;
 
   // Set important thermal variables here
   parti.u = eos->SpecificInternalEnergy(parti);
@@ -344,14 +346,14 @@ void GradhSph<ndim, kernelclass>::ComputeSphNeibGravForces
 	kern.w1(drmag[jj]*neibpart[j].invh);
       gaux = (parti.invh*kern.wpot(drmag[jj]*parti.invh) + 
 	      neibpart[j].invh*kern.wpot(drmag[jj]*neibpart[j].invh));
-      
+
       // Add total hydro contribution to acceleration for particle i
-      for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
-      parti.gpot += neibpart[j].m*paux;
+      for (k=0; k<ndim; k++) parti.agrav[k] += 0.5*neibpart[j].m*draux[k]*paux;
+      parti.gpot += 0.5*neibpart[j].m*gaux;
 
       // If neighbour is also active, add contribution to force here
-      for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
-      neibpart[j].gpot += parti.m*paux;
+      //for (k=0; k<ndim; k++) neibpart[j].agrav[k] -= 0.5*parti.m*draux[k]*paux;
+      //neibpart[j].gpot += 0.5*parti.m*gaux;
 
     }
     // ------------------------------------------------------------------------
@@ -409,25 +411,25 @@ void GradhSph<ndim, kernelclass>::ComputePostHydroQuantities
 
 
 
-// ============================================================================
-// GradhSph::ComputeGravForces
-// Compute the contribution to the total gravitational force of particle 'i' 
-// due to 'Nneib' neighbouring particles in the list 'neiblist'.
-// ============================================================================
+//=============================================================================
+//  GradhSph::ComputeGravForces
+/// Compute the contribution to the total gravitational force of particle 'i' 
+/// due to 'Nneib' neighbouring particles in the list 'neiblist'.
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
-(int i,                                 // id of particle
- int Ndirect,                           // No. of nearby 'gather' neighbours
- int *directlist,                       // id of gather neighbour in neibpart
- SphParticle<ndim> &parti,                    // Particle i data
- SphParticle<ndim> *sph)                      // Neighbour particle data
+(int i,                             // id of particle
+ int Ndirect,                       // No. of nearby 'gather' neighbours
+ int *directlist,                   // id of gather neighbour in neibpart
+ SphParticle<ndim> &parti,          // Particle i data
+ SphParticle<ndim> *sph)            // Neighbour particle data
 {
-  int j;                                // ..
-  int jj;                               // ..
-  int k;                                // ..
-  FLOAT dr[ndim];                    // ..
-  FLOAT drsqd;                          // ..
-  FLOAT invdrmag;                       // ..
+  int j;                            // ..
+  int jj;                           // ..
+  int k;                            // ..
+  FLOAT dr[ndim];                   // ..
+  FLOAT drsqd;                      // ..
+  FLOAT invdrmag;                   // ..
 
   // Loop over all neighbouring particles in list
   // --------------------------------------------------------------------------
@@ -438,9 +440,9 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
     drsqd = DotProduct(dr,dr,ndim);
     invdrmag = 1.0/(sqrt(drsqd) + small_number);
 
-    parti.gpot -= sph[j].m*invdrmag;
+    parti.gpot += sph[j].m*invdrmag;
     for (k=0; k<ndim; k++) 
-      parti.agrav[k] += sph[j].m*dr[ndim*jj + k]*pow(invdrmag,3);
+      parti.agrav[k] += sph[j].m*dr[k]*pow(invdrmag,3);
 
   }
   // --------------------------------------------------------------------------
