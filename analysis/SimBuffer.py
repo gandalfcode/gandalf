@@ -122,6 +122,8 @@ class SimBuffer:
             snap = sim.live
         except AttributeError:
             snap = SphSnapshotBase.SphSnapshotFactory("",sim,sim.simparams.intparams["ndim"])
+            snap.sim = sim
+            snap.live = True
             #TODO: check this is correct
             snap.units = sim.simunits
         snap.CopyDataFromSimulation()
@@ -160,7 +162,6 @@ class SimBuffer:
         sim = SphSimulationBase.SphSimulationFactory(ndim, parameters);
         SimBuffer._add_simulation(sim)
         sim.ProcessParameters()
-        sim.setup = True
         fileformat = parameters.stringparams["in_file_form"]
         
         #get the list of all files in the directory where the parameter file is
@@ -174,9 +175,15 @@ class SimBuffer:
         sim.snapshots = []
         for filename in folderfiles:
             if fnmatch.fnmatch(filename, filetest):
-                sim.snapshots.append(SphSnapshotBase.SphSnapshotFactory(os.path.join(dirname,filename),sim,ndim))              
+                snap = SphSnapshotBase.SphSnapshotFactory(os.path.join(dirname,filename),sim,ndim)
+                snap.sim = sim
+                snap.live = False
+                sim.snapshots.append(snap)              
         if len(sim.snapshots) == 0:
-            print "Warning: no snapshots files found for simulation " + run_id 
+            raise BufferException("Warning: no snapshots files found for simulation " + run_id)
+            return
+            
+        sim.setup = True    
             
         for snapshot in sim.snapshots:
             print snapshot.filename      

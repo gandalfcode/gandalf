@@ -1,8 +1,9 @@
 import analytical
 from data import Data
+from data_fetcher import get_fetcher
 from facade import SimBuffer
 import numpy as np
-from swig_generated.SphSim import RenderBase
+from swig_generated.SphSim import RenderBase, UnitInfo
 
 '''This module contains all the source code for the commands that
 are used to make the main process communicate with the plotting process.
@@ -87,12 +88,9 @@ class PlotCommand(Command):
                       'vx': '$v_x$', 'vy': '$v_y$', 'vz': '$v_z$', 
                       'ax': '$a_x$', 'ay': '$a_y$', 'az': '$a_z$',
                       'm': 'm', 'h': 'h', 'u': 'u',
-                      'r': 'r', 'rcyl': '', 'phi': '$\\phi$',
-                      'theta': '$\\theta$'}
-    derived = {'r' : 'compute_r',
-               'rcyl': 'compute_rcyl',
-               'phi': 'compute_phi',
-               'theta': 'compute_theta'}
+                      'r': 'r', 'R': 'R', 'phi': '$\\phi$',
+                      'theta': '$\\theta$',
+                      'vr': '$v_r$', 'ar': '$a_r$'}
     
     def __init__(self, xquantity, yquantity, snap, simno, 
                  overplot, autoscale, xunit="default", yunit="default"):
@@ -130,6 +128,26 @@ class PlotCommand(Command):
                 #if we are not overplotting, clear what is there
                 ax.clear()
                 self.labels(ax)
+                
+                #hack for deleting the old colorbar
+                #first we retrieve the colorbar axes
+                try:
+                    products = plotting.axesimages[ax]
+                except KeyError:
+                    products = None
+                if isinstance(products, tuple):
+                    #cbar is the colorbar object
+                    cbar = products[1]
+                    #here we get the old geometry
+                    gs = ax.get_subplotspec()
+                    row, cols, num1, num2 = gs.get_geometry()
+                    try:
+                        #here we delete the colorbar
+                        fig.delaxes(cbar.ax)
+                    except KeyError:
+                        pass
+                    #here we change the geometry, reducing the number of columns by one
+                    ax.change_geometry(row,cols-1,num1+1)
             #call the function in the child class to do the plot
             product = self.execute(plotting, fig, ax, data)
             #set the autoscales on the axis
@@ -203,6 +221,10 @@ class PlotCommand(Command):
         
         return sim, snap
     
+    def set_labels(self, axis, unitinfo):
+        setattr(self, axis+'unitname', unitinfo.name)
+        setattr(self, axis+'label', unitinfo.label)
+    
     def get_array(self, axis, snap):
         '''Helper function to get the array of the quantity on the x, y or
         rendered axis.
@@ -219,54 +241,17 @@ class PlotCommand(Command):
             scaling_factor
                 The scaling factor for unit conversion (multiply data by this
                 to get the requested unit)
+            unitinfo
+                UnitInfo object with the label and the name of the unit
         '''
         
         quantity = getattr(self, axis+'quantity')
         unit = getattr(self, axis+'unit')
         
-        data, scaling_factor = self.get_array_by_name(quantity, snap, unit)
-    
-        setattr(self,axis+'label',snap.label)
-        setattr(self,axis+'unitname',snap.unitname)
+        unitinfo, data, scaling_factor = get_fetcher(quantity).fetch(snap, unit)
         
-        return data, scaling_factor
-    
-    def check_requested_quantity(self, quantity, snap):
-        '''Check the requested quantity exists, depending on the dimensionality of the snapshot.
-        Also return information about the kind of the quantity (direct or derived)'''
-        oned = ('x', 'vx', 'ax')
-        twod = ('y', 'vy', 'ay')
-        threed = ('z', 'vz', 'az')
-        minus3 = quantity in threed and snap.ndim<3
-        minus2 = quantity in twod and snap.ndim<2
-        if minus3 or minus2:
-            raise Exception("Error: you requested the quantity " + quantity + ", but the simulation is only in " + str(snap.ndim) + " dims")
-        if self.snap != "live":
-            if quantity in ('ax', 'ay', 'az'):
-                raise Exception ("Error: accelerations are available only for live snapshots")
-            elif quantity in ('dudt'):
-                raise Exception ("Error: dudt is available only for live snapshots")
-        other_direct = ('m', 'h', 'rho', 'u', 'dudt')
-        all_direct = oned + twod + threed + other_direct
-        
-        if quantity in all_direct:
-            return "direct"
-        elif quantity in self.derived:
-            return "derived"
-        else:
-            raise Exception("We don't know how to compute " + quantity)
-        
-    def get_array_by_name(self, quantity, snap, unit="default"):
-        kind = self.check_requested_quantity(quantity, snap)
-        
-        if kind == "direct":
-            scaling_factor=1.
-            data, scaling_factor = snap.ExtractArray(quantity, scaling_factor, unit)
-
-        else:
-            data, scaling_factor = getattr(self,self.derived[quantity])(snap, unit)
-        return data, scaling_factor
-    
+        return unitinfo, data, scaling_factor
+     
     def setlimits(self, plotting, ax, axis):
         '''Helper function to set the limits of a plot.
         Takes care of handling autoscaling on/off for different axes.
@@ -281,50 +266,6 @@ class PlotCommand(Command):
         else:
             method = getattr(ax, 'set_'+axis+'lim')
             method(min,max)
-    
-    def compute_r(self, snap, unit):
-        arrays_scalings = map(lambda quantity : self.get_array_by_name(quantity, snap, unit), ['x', 'y', 'z'])
-        arrays, scalings = zip(*arrays_scalings)
-        xfactor, yfactor, zfactor = scalings
-        #check that the factors are all the same
-        if not all([x==scalings[0] for x in scalings]):
-            raise Exception("error: different spatial coordinates have different scaling facors. Bug in units, please contact the authors")
-        
-        x,y,z = arrays        
-        return np.sqrt(x**2+y**2+z**2), xfactor
-    
-    def compute_rcyl(self, snap, unit):
-        arrays_scalings = map(lambda quantity : self.get_array_by_name(quantity, snap, unit), ['x', 'y'])
-        arrays, scalings = zip(*arrays_scalings)
-        xfactor, yfactor = scalings
-        #check that the factors are all the same
-        if not all([x==scalings[0] for x in scalings]):
-            raise Exception("error: different spatial coordinates have different scaling facors. Bug in units, please contact the authors")
-        
-        x,y = arrays        
-        return np.sqrt(x**2+y**2), xfactor
-    
-    def compute_phi(self, snap, unit):
-        arrays_scalings = map(lambda quantity : self.get_array_by_name(quantity, snap, unit), ['x', 'y'])
-        arrays, scalings = zip(*arrays_scalings)
-        xfactor, yfactor = scalings
-        #check that the factors are all the same
-        if not all([x==scalings[0] for x in scalings]):
-            raise Exception("error: different spatial coordinates have different scaling facors. Bug in units, please contact the authors")
-        
-        x,y = arrays        
-        return np.arctan2(y,x), 1.
-    
-    def compute_theta(self, snap, unit):
-        arrays_scalings = map(lambda quantity : self.get_array_by_name(quantity, snap, unit), ['r', 'z'])
-        arrays, scalings = zip(*arrays_scalings)
-        rfactor, zfactor = scalings
-        #check that the factors are all the same
-        if not all([x==scalings[0] for x in scalings]):
-            raise Exception("error: different spatial coordinates have different scaling facors. Bug in units, please contact the authors")
-        
-        r,z = arrays        
-        return np.arccos(z/r), rfactor    
         
 
 class ParticlePlotCommand (PlotCommand):
@@ -348,8 +289,10 @@ class ParticlePlotCommand (PlotCommand):
     def prepareData (self, globallimits):
         sim, snap = self.get_sim_and_snap()
 
-        x_data, xscaling_factor = self.get_array('x', snap)
-        y_data, yscaling_factor = self.get_array('y', snap)
+        xunitinfo, x_data, xscaling_factor = self.get_array('x', snap)
+        yunitinfo, y_data, yscaling_factor = self.get_array('y', snap)
+        self.set_labels('x', xunitinfo)
+        self.set_labels('y', yunitinfo)
         
         data = Data(x_data*xscaling_factor, y_data*yscaling_factor)
         return data
@@ -389,8 +332,13 @@ class AnalyticalPlotCommand (PlotCommand):
         computer = analyticalclass(sim, time)
         x_data, y_data = computer.compute(self.xquantity, self.yquantity)
         
-        dummy, xscaling_factor = self.get_array('x', snap)
-        dummy, yscaling_factor = self.get_array('y', snap)
+        xunitinfo, dummy, xscaling_factor = self.get_array('x', snap)
+        yunitinfo, dummy, yscaling_factor = self.get_array('y', snap)
+        
+        #set labels
+        self.set_labels('x', xunitinfo)
+        self.set_labels('y', yunitinfo)
+        
         
         data = Data(x_data*xscaling_factor,y_data*yscaling_factor)
         return data
@@ -462,8 +410,12 @@ class RenderPlotCommand (PlotCommand):
     def prepareData(self, globallimits):
         sim, snap = self.get_sim_and_snap()
         
-        x_data, xscaling_factor = self.get_array('x',snap)
-        y_data, yscaling_factor = self.get_array('y', snap)
+        xunitinfo, x_data, xscaling_factor = self.get_array('x',snap)
+        yunitinfo, y_data, yscaling_factor = self.get_array('y', snap)
+        
+        self.set_labels('x', xunitinfo)
+        self.set_labels('y', yunitinfo)
+        
         #create the grid
         #set resolution
         try:
@@ -499,7 +451,6 @@ class RenderPlotCommand (PlotCommand):
         
         #create the rendering object
         rendering = RenderBase.RenderFactory(sim.ndims, sim)
-        renderscaling_factor=1.
         #allocate the rendered array
         rendered = np.zeros(xres*yres, dtype=np.float32)
         
@@ -507,16 +458,16 @@ class RenderPlotCommand (PlotCommand):
         if sim.ndims < 3 or self.zslice is None:
             returncode, renderscaling_factor = rendering.CreateColumnRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.renderquantity,
                                                  self.renderunit, self.xmin, self.xmax,
-                                                 self.ymin, self.ymax, rendered, snap,renderscaling_factor)
+                                                 self.ymin, self.ymax, rendered, snap)
         else:
             quantities = ['x','y','z']
             quantities.pop(quantities.index(self.xquantity))
             quantities.pop(quantities.index(self.yquantity))
             self.zquantity = quantities[0]
-            z_data, z_scaling_factor = self.get_array('z', snap)
+            zunitinfo, z_data, z_scaling_factor = self.get_array('z', snap)
             returncode, renderscaling_factor = rendering.CreateSliceRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.zquantity, self.renderquantity,
                                                  self.renderunit, self.xmin, self.xmax,
-                                                 self.ymin, self.ymax, self.zslice, rendered, snap, renderscaling_factor)
+                                                 self.ymin, self.ymax, self.zslice, rendered, snap)
         rendered = rendered.reshape(xres,yres)
 #        data = Data(x*xscaling_factor, y*yscaling_factor, rendered*renderscaling_factor)
         data = Data(None, None, rendered*renderscaling_factor)

@@ -14,6 +14,7 @@
 #include "SphSimulation.h"
 #include "Debug.h"
 #include "InlineFuncs.h"
+#include "UnitInfo.h"
 using namespace std;
 
 SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory(string filename, SphSimulationBase* sim, int ndim) {
@@ -241,9 +242,12 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
 // Returns pointer to required array stored in snapshot buffer memory.
 // Currently also returns scaling factors for that array.
 // ============================================================================
-void SphSnapshotBase::ExtractArray(string name, float** out_array, int* size_array,
+UnitInfo SphSnapshotBase::ExtractArray(string name, float** out_array, int* size_array,
                                float& scaling_factor, string RequestedUnit)
 {
+  string unitname;
+  UnitInfo unitinfo;
+
 
   //Check that the memory is allocated. If not, fails very rumorously
   if (!allocated){
@@ -320,6 +324,12 @@ void SphSnapshotBase::ExtractArray(string name, float** out_array, int* size_arr
     *size_array = 0;
   }
 
+  if (out_array == NULL) {
+    string message = "Error: the requested array: " + name + " is not allocated! "
+        "Probably a dimensionality problem";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
   //set the size now that we have the array
   *size_array = Nsph;
 
@@ -335,7 +345,10 @@ void SphSnapshotBase::ExtractArray(string name, float** out_array, int* size_arr
   label = unit->LatexLabel(RequestedUnit);
   scaling_factor = unit->OutputScale(RequestedUnit);
 
-  return;
+  unitinfo.name = unitname;
+  unitinfo.label = label;
+
+  return unitinfo;
 }
 
 
