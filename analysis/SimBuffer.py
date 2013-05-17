@@ -331,9 +331,31 @@ class SimBuffer:
             raise BufferException ("Reached the first snapshot")
         return previous_index
     
+    @staticmethod
+    def get_sim_iterator(sim):
+        return SimIterator(sim)
+    
          
 class BufferException( Exception):   
     pass
 
 class BufferFull (BufferException):
     pass
+
+class SimIterator:
+    
+    def __init__(self, sim):
+        self._sim = sim
+        self.snapnumber = 0
+    
+    def __iter__(self):
+        return self
+    
+    def next(self):
+        try:
+            result = SimBuffer.get_snapshot_number_sim(self._sim, self.snapnumber)
+        except BufferException:
+            raise StopIteration
+        
+        self.snapnumber += 1
+        return result
