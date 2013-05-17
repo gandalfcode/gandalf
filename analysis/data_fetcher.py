@@ -1,8 +1,11 @@
+import numpy as np
 from swig_generated.SphSim import UnitInfo
 from facade import SimBuffer
 
 direct = ['x', 'y', 'z', 'vx', 'vy', 'vz', 'ax', 'ay', 'az',
           'm', 'h', 'rho', 'u', 'dudt']
+
+time_fetchers={}
 
 derived_fetchers = {}
 
@@ -25,6 +28,11 @@ def set_fetcher(name, formula, unitlabel='', unitname='',scaling_factor=1):
     derived_fetchers[name] = fetcher
     return fetcher
 
+def set_fetcher_time(name, function):
+    '''Given a function that takes a snapshot as input, construct a FunctionTimeDataFetcher object from it'''
+    fetcher = FunctionTimeDataFetcher()
+    fetcher.compute = function
+    time_fetchers [name] = fetcher
 
 def check_requested_quantity(quantity, snap):
     '''Check the requested quantity exists, depending on the dimensionality of the snapshot.
@@ -93,14 +101,32 @@ class FormulaDataFetcher:
         result = evaluateStack(list(self._stack), snap)
         return self.unitinfo, result, self.scaling_factor
     
+class FunctionTimeDataFetcher:
     
+    def __init__(self):
+        pass
+    
+    def fetch(self, sim="current"):
+        
+        if sim=="current":
+            sim=SimBuffer.get_current_sim()
+        elif isinstance(sim,int):
+            sim=SimBuffer.get_sim_no(sim)
+        
+        iterator = SimBuffer.get_sim_iterator(sim)
+        results = map(self.compute,iterator)
+        return np.asarray(results)
+    
+
 def initialize():
+    
     set_fetcher('r','sqrt(x^2+y^2+z^2)')
     set_fetcher('R','sqrt(x^2+y^2)')
     set_fetcher('phi','arctan2(y,x)')
     set_fetcher('theta','arccos(z/r)')
     set_fetcher('vr','sin(theta)*cos(phi)*vx+sin(theta)*sin(phi)*vy+cos(theta)*vz')
     set_fetcher('ar','sin(theta)*cos(phi)*ax+sin(theta)*sin(phi)*ay+cos(theta)*az')
+    
 
 #if we are being imported, initialize quantities
 initialize()
