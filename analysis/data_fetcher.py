@@ -17,10 +17,10 @@ def get_fetcher(quantity):
 from formula_parser import evaluateStack, exprStack, varStack, pattern    
 
 
-def set_fetcher(name, formula):
+def set_fetcher(name, formula, unitlabel='', unitname='',scaling_factor=1):
     #TODO: set label
     '''Given a mathematical formula, build a data fetcher from it'''
-    fetcher = FormulaDataFetcher(name, formula)
+    fetcher = FormulaDataFetcher(name, formula, unitlabel, unitname, scaling_factor)
     derived_fetchers[name] = fetcher
     return fetcher
 
@@ -71,16 +71,20 @@ class DirectDataFetcher:
     
 class FormulaDataFetcher:
     
-    def __init__(self, name, formula):
+    def __init__(self, name, formula, unitlabel='', unitname='',scaling_factor=1):
+        self.scaling_factor=int(scaling_factor)
         self._name = name
         exprStack[:]=[]
         pattern.parseString(formula)
         self._stack = list(exprStack)
+        self.unitinfo = UnitInfo()
+        self.unitinfo.label=unitlabel
+        self.unitinfo.name=unitname
         
     def fetch(self, snap, unit):
         result = evaluateStack(list(self._stack), snap)
-        unitinfo = UnitInfo()
-        return unitinfo, result, 1.
+        return self.unitinfo, result, self.scaling_factor
+    
     
 def initialize():
     set_fetcher('r','sqrt(x^2+y^2+z^2)')
