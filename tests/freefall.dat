@@ -10,7 +10,7 @@ Initial conditions variables
 Simulation run id string                    : run_id = FREEFALL1
 Select shocktube initial conditions         : ic = sphere
 Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Npart = 4000
+No. of SPH particles                        : Npart = 1000
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
 
 
@@ -35,7 +35,7 @@ RHS boundary type in z-dimension            : z_boundary_rhs = open
 -------------------------
 Simulation time variables
 -------------------------
-Simulation end time                         : tend = 0.2
+Simulation end time                         : tend = 0.3
 Regular snapshot output frequency           : dt_snap = 1.0
 Screen output frequency (in no. of steps)   : noutputstep = 1
 
@@ -79,7 +79,7 @@ No. of block timestep levels                : Nlevels = 1
 Optimisation options
 --------------------
 Tabulate SPH kernel                         : tabulated_kernel = 0
-SPH neighbour search algorithm              : neib_search = bruteforce
+SPH neighbour search algorithm              : neib_search = grid
 
 
 -------------

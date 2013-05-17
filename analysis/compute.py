@@ -39,3 +39,34 @@ def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "c
     #compute error norm of particle data relative to analytical data
     L1 = numpy.linalg.norm((pdata.y_data - f(pdata.x_data)), ord=1)/pdata.x_data.size
     return L1
+
+
+
+def lagrangian_radii(mfrac, snap = "current"):
+    '''Computes the L1 error norm from the simulation data relative to the analytical solution'''
+    
+    #get the simulation number from the buffer
+    simno = get_sim_no(snap)
+
+    #istantiate and setup the 2nd command object to retrieve particle data
+    command = Commands.ParticlePlotCommand("r","m", snap, simno)
+    pdata = command.prepareData(Singletons.globallimits)
+
+    # Find particle ids in order of increasing radial distance
+    porder = numpy.argsort(pdata.x_data)
+    mtotal = numpy.sum(pdata.y_data)
+    mlag = mfrac*mtotal
+    Npart = pdata.x_data.size
+
+    #print 'Order : ',pdata.x_data[porder]
+
+    # Now loop over all particles and find the required Lagrangian radii
+    i = 1
+    msum = 0.0
+    while i < Npart and msum < mlag:
+        msum = msum + pdata.y_data[porder[i]]
+        rlag = 0.5*(pdata.x_data[porder[i-1]] + pdata.x_data[porder[i]])
+        if msum > mlag: return rlag
+        i = i + 1
+
+    return pdata.x_data[Npart]
