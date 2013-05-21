@@ -42,21 +42,17 @@ def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "c
     return L1
 
 
-def lagrangian_radii(mfrac, snap = "current"):
-    '''Computes the L1 error norm from the simulation data relative to the analytical solution'''
+def lagrangian_radii(snap, mfrac=0.5):
+    '''Computes the Lagrangian radii from all particles in simulation'''
     
-    #get the simulation number from the buffer
-    simno = get_sim_no(snap)
-
-    #istantiate and setup the 2nd command object to retrieve particle data
-    command = Commands.ParticlePlotCommand("r","m", snap, simno)
-    pdata = command.prepareData(Singletons.globallimits)
+    r = UserQuantity('r').fetch(snap)[1]
+    m = UserQuantity('m').fetch(snap)[1]
 
     # Find particle ids in order of increasing radial distance
-    porder = numpy.argsort(pdata.x_data)
-    mtotal = numpy.sum(pdata.y_data)
+    porder = np.argsort(r)
+    mtotal = np.sum(m)
     mlag = mfrac*mtotal
-    Npart = pdata.x_data.size
+    Npart = r.size
 
     #print 'Order : ',pdata.x_data[porder]
 
@@ -64,12 +60,12 @@ def lagrangian_radii(mfrac, snap = "current"):
     i = 1
     msum = 0.0
     while i < Npart and msum < mlag:
-        msum = msum + pdata.y_data[porder[i]]
-        rlag = 0.5*(pdata.x_data[porder[i-1]] + pdata.x_data[porder[i]])
+        msum = msum + m[porder[i]]
+        rlag = 0.5*(r[porder[i-1]] + r[porder[i]])
         if msum > mlag: return rlag
         i = i + 1
 
-    return pdata.x_data[Npart]
+    return r[Npart]
 
 
 def COM (snap, quantity='x'):

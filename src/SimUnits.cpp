@@ -8,7 +8,9 @@
 #include <math.h>
 #include <map>
 #include <string>
+#include "Precision.h"
 #include "Constants.h"
+#include "Debug.h"
 #include "Exception.h"
 #include "SimUnits.h"
 using namespace std;
@@ -260,6 +262,66 @@ string DensityUnit::LatexLabel(string unit_string)
 
 
 //=============================================================================
+//  PressureUnit::SIUnit
+/// Return numerical value requested pressure unit in SI units
+//=============================================================================
+double PressureUnit::SIUnit(string unit_string)
+{
+  if (unit_string == "Pa") return 1.0;
+  else if (unit_string == "bar") return 1.0e5;
+  else if (unit_string == "") return 1.0;
+  else {
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
+  }
+}
+
+
+
+//=============================================================================
+//  PressureUnit::LatexLabel
+/// Return latex string of requested pressure unit for external plotting
+//=============================================================================
+string PressureUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "Pa") return "Pa";
+  else if (unit_string == "bar") return "bar";
+  else return "";
+}
+
+
+
+//=============================================================================
+//  ForceUnit::SIUnit
+/// Return numerical value of requested force unit in SI units
+//=============================================================================
+double ForceUnit::SIUnit(string unit_string)
+{
+  if (unit_string == "N") return 1.0;
+  else if (unit_string == "dyn") return 1.0e-5;
+  else if (unit_string == "") return 1.0;
+  else {
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
+  }
+}
+
+
+
+//=============================================================================
+//  ForceUnit::LatexLabel
+/// Return latex string of requested force unit for external plotting
+//=============================================================================
+string ForceUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "N") return "N";
+  else if (unit_string == "dyn") return "dyn";
+  else return "";
+}
+
+
+
+//=============================================================================
 //  EnergyUnit::SIUnit
 /// Return numerical value requested energy unit in SI units
 //=============================================================================
@@ -390,6 +452,40 @@ string AngularVelocityUnit::LatexLabel(string unit_string)
 
 
 //=============================================================================
+//  MassRateUnit::SIUnit
+/// Return numerical value requested Mass rate unit in SI units
+//=============================================================================
+double MassRateUnit::SIUnit(string unit_string)
+{
+  if (unit_string == "m_sun_myr") return m_sun/myr;
+  else if (unit_string == "m_sun_yr") return m_sun/yr;
+  else if (unit_string == "kg_s") return 1.0;
+  else if (unit_string == "g_s") return 1.0e-3;
+  else if (unit_string == "") return 1.0;
+  else if (unit_string != "") {
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
+  }
+}
+
+
+
+//=============================================================================
+//  MassRateUnit::LatexLabel
+/// Return latex string of requested mass rate unit for external plotting
+//=============================================================================
+string MassRateUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "m_sun_myr") return "M\\_{\\odot}\\,Myr^{-1}";
+  else if (unit_string == "m_sun_yr") return "M\\_{\\odot}\\,yr^{-1}";
+  else if (unit_string == "kg_s") return "kg\\,s^{-1}";
+  else if (unit_string == "g_s") return "g\\,s^{-1}";
+  else return "";
+}
+
+
+
+//=============================================================================
 //  SpecificEnergyUnit::SIUnit
 /// Return numerical value requested specific energy unit in SI units
 //=============================================================================
@@ -508,6 +604,11 @@ SimUnits::~SimUnits()
 //=============================================================================
 void SimUnits::SetupUnits(Parameters &params)
 {
+  debug1("[SimUnits::SetupUnits]");
+
+  // If we are using dimensionless units, then return immediately
+  dimensionless = params.intparams["dimensionless"];
+  if (dimensionless) return;
 
   // If not input units have been read from the snapshot file, then assume
   // units are the same as the output units in parameters file.
@@ -593,6 +694,30 @@ void SimUnits::SetupUnits(Parameters &params)
   rho.outscale = rho.outscale / rho.outSI;
   rho.outcgs = 1.0e-3*rho.outSI;
 
+  // Pressure units
+  // --------------------------------------------------------------------------
+  press.inSI = press.SIUnit(params.stringparams["pressinunit"]);
+  press.outSI = press.SIUnit(params.stringparams["pressoutunit"]);
+  press.inscale = (m.inscale*m.inSI) / 
+    (r.inscale*r.inSI*t.inscale*t.inSI*t.inscale*t.inSI);
+  press.inscale = press.inscale / press.inSI;
+  press.outscale = (m.outscale*m.outSI) / 
+    (r.outscale*r.outSI*t.outscale*t.outSI*t.outscale*t.outSI);
+  press.outscale = press.outscale / press.outSI;
+  press.outcgs = 0.1*press.outSI;
+
+  // Force units
+  // --------------------------------------------------------------------------
+  f.inSI = f.SIUnit(params.stringparams["forceinunit"]);
+  f.outSI = f.SIUnit(params.stringparams["forceoutunit"]);
+  f.inscale = (m.inscale*m.inSI*r.inscale*r.inSI)/
+    (t.inscale*t.inscale*t.inSI*t.inSI);
+  f.inscale = f.inscale / f.inSI;
+  f.outscale = (m.outscale*m.outSI*r.outscale*r.outSI)/
+    (t.outscale*t.outscale*t.outSI*t.outSI);
+  f.outscale = f.outscale / f.outSI;
+  f.outcgs = 1.0e5*f.outSI;
+
   // Energy units
   // --------------------------------------------------------------------------
   E.inSI = E.SIUnit(params.stringparams["Einunit"]);
@@ -634,6 +759,16 @@ void SimUnits::SetupUnits(Parameters &params)
   angvel.outscale = 1.0/(t.outscale*t.outSI);
   angvel.outscale = angvel.outscale / angvel.outSI;
   angvel.outcgs = angvel.outSI;
+
+  // Mass rate units
+  // --------------------------------------------------------------------------
+  dmdt.inSI = dmdt.SIUnit(params.stringparams["dmdtinunit"]);
+  dmdt.outSI = dmdt.SIUnit(params.stringparams["dmdtoutunit"]);
+  dmdt.inscale = m.inscale*m.inSI/(t.inscale*t.inSI);
+  dmdt.inscale = dmdt.inscale / dmdt.inSI;
+  dmdt.outscale = m.outscale*m.outSI/(t.outscale*t.outSI);
+  dmdt.outscale = dmdt.outscale / dmdt.outSI;
+  dmdt.outcgs = 1.0e3*dmdt.outSI;
 
   // Specific internal energy units
   // --------------------------------------------------------------------------

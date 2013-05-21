@@ -11,6 +11,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include "Precision.h"
 #include "Parameters.h"
 using namespace std;
 
@@ -28,15 +29,15 @@ class SimUnit
 
   SimUnit();
 
-  virtual double SIUnit(string) = 0;
+  virtual DOUBLE SIUnit(string) = 0;
   virtual string LatexLabel(string) = 0;
-  double OutputScale(string);
+  DOUBLE OutputScale(string);
 
-  double inscale;                       ///< Input scaling factor
-  double inSI;                          ///< Input SI scaling factor
-  double outcgs;                        ///< Output cgs scaling factor
-  double outscale;                      ///< Output scaling factor
-  double outSI;                         ///< Output SI scaling factor
+  DOUBLE inscale;                       ///< Input scaling factor
+  DOUBLE inSI;                          ///< Input SI scaling factor
+  DOUBLE outcgs;                        ///< Output cgs scaling factor
+  DOUBLE outscale;                      ///< Output scaling factor
+  DOUBLE outSI;                         ///< Output SI scaling factor
   string inunit;                        ///< Input unit string
   string outunit;                       ///< Output unit string
 
@@ -45,13 +46,13 @@ class SimUnit
 
 
 //=============================================================================
-// Class LengthUnit
+//  Class LengthUnit
 //=============================================================================
 class LengthUnit: public SimUnit
 {
  public:
   LengthUnit() : SimUnit() {};
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
@@ -59,13 +60,13 @@ class LengthUnit: public SimUnit
 
 
 //=============================================================================
-// Class MassUnit
+//  Class MassUnit
 //=============================================================================
 class MassUnit: public SimUnit
 {
  public:
   MassUnit() : SimUnit() {};
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
  
 };
@@ -73,13 +74,13 @@ class MassUnit: public SimUnit
 
 
 //=============================================================================
-// Class TimeUnit
+//  Class TimeUnit
 //=============================================================================
 class TimeUnit: public SimUnit
 {
  public:
   TimeUnit() : SimUnit() {};
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
@@ -87,13 +88,13 @@ class TimeUnit: public SimUnit
 
 
 //=============================================================================
-// Class VelocityUnit
+//  Class VelocityUnit
 //=============================================================================
 class VelocityUnit: public SimUnit
 {
  public:
   VelocityUnit() : SimUnit() {};
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
@@ -101,28 +102,27 @@ class VelocityUnit: public SimUnit
 
 
 //=============================================================================
-// Class AccelerationUnit
+//  Class AccelerationUnit
 //=============================================================================
 class AccelerationUnit: public SimUnit
 {
  public:
   AccelerationUnit() : SimUnit() {};
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
 
 
 
-
 //=============================================================================
-// Class DensityUnit
+//  Class DensityUnit
 //=============================================================================
 class DensityUnit: public SimUnit
 {
  public:
   DensityUnit() : SimUnit() {};
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
@@ -130,27 +130,28 @@ class DensityUnit: public SimUnit
 
 /*
 //=============================================================================
-// Class ColumnDensityUnit
+//  Class ColumnDensityUnit
 //=============================================================================
 class ColumnDensityUnit: public SimUnit
 {
  public:
 
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
+*/
 
 
 
 //=============================================================================
-// Class PressureUnit
+//  Class PressureUnit
 //=============================================================================
 class PressureUnit: public SimUnit
 {
  public:
-
-  double SIUnit(string);
+  PressureUnit() : SimUnit() {};
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
@@ -158,27 +159,27 @@ class PressureUnit: public SimUnit
 
 
 //=============================================================================
-// Class ForceUnit
+//  Class ForceUnit
 //=============================================================================
 class ForceUnit: public SimUnit
 {
  public:
 
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
-*/
+
 
 
 //=============================================================================
-// Class EnergyUnit
+//  Class EnergyUnit
 //=============================================================================
 class EnergyUnit: public SimUnit
 {
  public:
   EnergyUnit() : SimUnit() {};
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
@@ -186,13 +187,13 @@ class EnergyUnit: public SimUnit
 
 
 //=============================================================================
-// Class MomentumUnit
+//  Class MomentumUnit
 //=============================================================================
 class MomentumUnit: public SimUnit
 {
  public:
   MomentumUnit() : SimUnit() {};
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
@@ -201,13 +202,13 @@ class MomentumUnit: public SimUnit
 
 
 //=============================================================================
-// Class ColumnDensityUnit
+//  Class ColumnDensityUnit
 //=============================================================================
 class AngularMomentumUnit: public SimUnit
 {
  public:
   AngularMomentumUnit() : SimUnit() {};
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
@@ -215,27 +216,27 @@ class AngularMomentumUnit: public SimUnit
 
 
 //=============================================================================
-// Class AngularVelocityUnit
+//  Class AngularVelocityUnit
 //=============================================================================
 class AngularVelocityUnit: public SimUnit
 {
  public:
   AngularVelocityUnit() : SimUnit() {};
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
 
 
-/*
+
 //=============================================================================
-// Class MassAccretionRateUnit
+//  Class MassRateUnit
 //=============================================================================
-class MassAccretionRateUnit: public SimUnit
+class MassRateUnit: public SimUnit
 {
  public:
 
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
@@ -243,27 +244,28 @@ class MassAccretionRateUnit: public SimUnit
 
 
 //=============================================================================
-// Class LuminosityUnit
+//  Class LuminosityUnit
 //=============================================================================
 class LuminosityUnit: public SimUnit
 {
  public:
 
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
 
 
 
+/*
 //=============================================================================
-// Class OpacityUnit
+//  Class OpacityUnit
 //=============================================================================
 class OpacityUnit: public SimUnit
 {
  public:
 
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
@@ -271,13 +273,13 @@ class OpacityUnit: public SimUnit
 
 
 //=============================================================================
-// Class MagneticFieldUnit
+//  Class MagneticFieldUnit
 //=============================================================================
 class MagneticFieldUnit: public SimUnit
 {
  public:
 
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
@@ -285,13 +287,13 @@ class MagneticFieldUnit: public SimUnit
 
 
 //=============================================================================
-// Class ChargeUnit
+//  Class ChargeUnit
 //=============================================================================
 class ChargeUnit: public SimUnit
 {
  public:
 
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
@@ -299,13 +301,13 @@ class ChargeUnit: public SimUnit
 
 
 //=============================================================================
-// Class CurrentDensityUnit
+//  Class CurrentDensityUnit
 //=============================================================================
 class CurrentDensityUnit: public SimUnit
 {
  public:
 
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
@@ -313,13 +315,13 @@ class CurrentDensityUnit: public SimUnit
 
 
 //=============================================================================
-// Class SpecificEnergyUnit
+//  Class SpecificEnergyUnit
 //=============================================================================
 class SpecificEnergyUnit: public SimUnit
 {
  public:
   SpecificEnergyUnit() : SimUnit() {};
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
@@ -327,13 +329,13 @@ class SpecificEnergyUnit: public SimUnit
 
 
 //=============================================================================
-// Class SpecificEnergyRateUnit
+//  Class SpecificEnergyRateUnit
 //=============================================================================
 class SpecificEnergyRateUnit: public SimUnit
 {
  public:
   SpecificEnergyRateUnit() : SimUnit() {};
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
@@ -341,13 +343,13 @@ class SpecificEnergyRateUnit: public SimUnit
 
 
 //=============================================================================
-// Class TemperatureUnit
+//  Class TemperatureUnit
 //=============================================================================
 class TemperatureUnit: public SimUnit
 {
  public:
   TemperatureUnit() : SimUnit() {};
-  double SIUnit(string);
+  DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
@@ -370,6 +372,7 @@ class SimUnits
 
   void SetupUnits(Parameters &);
 
+  int dimensionless;                ///< Are we using dimensionless units?
   bool ReadInputUnits;              ///< Are input units read from snapshot?
 
 
@@ -382,13 +385,13 @@ class SimUnits
   AccelerationUnit a;
   DensityUnit rho;
   //ColumnDensityUnit sigma;
-  //PressureUnit press;
-  //ForceUnit f;
+  PressureUnit press;
+  ForceUnit f;
   EnergyUnit E;
   MomentumUnit mom;
   AngularMomentumUnit angmom;
   AngularVelocityUnit angvel;
-  //MassAccretionRateUnit dmdt;
+  MassRateUnit dmdt;
   //LuminosityUnit L;
   //OpacityUnit kappa;
   //MagneticFieldUnit B;

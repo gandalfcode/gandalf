@@ -86,7 +86,7 @@ class SphSimulationBase
   // --------------------------------------------------------------------------
   SphSimulationBase(Parameters* params);
   ~SphSimulationBase();
-
+  
   // Subroutine prototypes
   // --------------------------------------------------------------------------
   string GetParam(string key);
@@ -190,13 +190,14 @@ class SphSimulation : public SphSimulationBase {
 
   // Initial conditions helper routines
   // --------------------------------------------------------------------------
+  void AddAzimuthalDensityPerturbation(int, int, FLOAT, FLOAT *, FLOAT *); 
+  void AddRotationalVelocityField(int, FLOAT, FLOAT *, FLOAT *, FLOAT *); 
   void AddRandomBox(int, FLOAT *, DomainBox<ndim>);
   void AddRandomSphere(int, FLOAT *, FLOAT *, FLOAT);
   void AddCubicLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
   void AddHexagonalLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
   int AddLatticeSphere(int, FLOAT *, FLOAT *, FLOAT, string);
   int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
-
 
   // Subroutine prototypes
   // --------------------------------------------------------------------------
@@ -230,6 +231,7 @@ class SphSimulation : public SphSimulationBase {
   // Initial conditions routines
   // --------------------------------------------------------------------------
   virtual void BinaryStar(void);
+  virtual void BossBodenheimer(void);
   virtual void CheckInitialConditions(void);
   virtual void ContactDiscontinuity(void);
   virtual void KHI(void);

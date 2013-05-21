@@ -80,6 +80,39 @@ class Isothermal: public EOS<ndim>
 
 
 //=============================================================================
+//  Class Barotropic
+/// \brief   Barotropic equation of state
+/// \details Barotropic equation of state
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=============================================================================
+template <int ndim>
+class Barotropic: public EOS<ndim>
+{
+  using EOS<ndim>::gamma;
+  using EOS<ndim>::gammam1;
+
+ public:
+
+  Barotropic(FLOAT, FLOAT, FLOAT, FLOAT);
+  ~Barotropic();
+
+  FLOAT Pressure(SphParticle<ndim> &);
+  FLOAT EntropicFunction(SphParticle<ndim> &);
+  FLOAT SoundSpeed(SphParticle<ndim> &);
+  FLOAT Temperature(SphParticle<ndim> &);
+  FLOAT SpecificInternalEnergy(SphParticle<ndim> &);
+
+  FLOAT temp0;
+  FLOAT mu_bar;
+  FLOAT rho_bary;
+  FLOAT invrho_bary;
+
+};
+
+
+
+//=============================================================================
 //  Class Adiabatic
 /// \brief   Adiabatic equation of state
 /// \details Adiabatic equation of state.  Requires integrating the energy 
@@ -108,6 +141,4 @@ class Adiabatic: public EOS<ndim>
   FLOAT mu_bar;
 
 };
-
-
 #endif

@@ -528,6 +528,11 @@ void SphSimulation<ndim>::ProcessParameters(void)
     sph->eos = new Isothermal<ndim>(floatparams["temp0"],
 				    floatparams["mu_bar"],
 				    floatparams["gamma_eos"]);
+  else if (gas_eos == "barotropic")
+    sph->eos = new Barotropic<ndim>(floatparams["temp0"],
+				    floatparams["mu_bar"],
+				    floatparams["gamma_eos"],
+				    floatparams["rho_bary"]);
   else {
     string message = "Unrecognised parameter : gas_eos = " + gas_eos;
     ExceptionHandler::getIstance().raise(message);

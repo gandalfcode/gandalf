@@ -704,6 +704,103 @@ void SphSimulation<ndim>::NohProblem(void)
 
 
 //=============================================================================
+//  SphSimulation::BossBodenheimer
+/// Set-up Noh Problem initial conditions
+//=============================================================================
+template <int ndim>
+void SphSimulation<ndim>::BossBodenheimer(void)
+{
+  int i;                            // Particle counter
+  int j;                            // Aux. particle counter
+  int k;                            // Dimension counter
+  int Nsphere;                      // Actual number of particles in sphere
+  int Nlattice[3];                  // Lattice size
+  FLOAT dr[ndim];                   // Relative position vector
+  FLOAT drmag;                      // Distance
+  FLOAT drsqd;                      // Distance squared
+  FLOAT mp;                         // Mass of one particle
+  FLOAT rcentre[ndim];              // Position of sphere centre
+  FLOAT rho;                        // Fluid density
+  FLOAT volume;                     // Volume of box
+  FLOAT *r;                         // Positions of all particles
+  FLOAT *v;                         // Velocities of all particles
+
+  // Create local copies of initial conditions parameters
+  int Npart = simparams->intparams["Npart"];
+  FLOAT angvel = simparams->floatparams["angvel"];
+  FLOAT mcloud = simparams->floatparams["mcloud"];
+  FLOAT mu_bar = simparams->floatparams["mu_bar"];
+  FLOAT press = simparams->floatparams["press1"];
+  FLOAT radius = simparams->floatparams["radius"];
+  FLOAT temp0 = simparams->floatparams["temp0"];
+
+  FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
+  string particle_dist = simparams->stringparams["particle_distribution"];
+
+  debug2("[SphSimulation::BossBodenheimer]");
+
+  // Convert any parameters to code units
+  angvel /= simunits.angvel.outscale;
+  mcloud /= simunits.m.outscale;
+  press /= simunits.press.outscale;
+  radius /= simunits.r.outscale;
+  temp0 /= simunits.temp.outscale;
+
+  r = new FLOAT[ndim*Npart];
+  v = new FLOAT[ndim*Npart];
+
+  // Add a sphere of random particles with origin 'rcentre' and radius 'radius'
+  for (k=0; k<ndim; k++) rcentre[k] = (FLOAT) 0.0;
+
+  // Create the sphere depending on the choice of initial particle distribution
+  if (particle_dist == "random")
+    AddRandomSphere(Npart,r,rcentre,radius);
+  else if (particle_dist == "cubic_lattice" || 
+	   particle_dist == "hexagonal_lattice") {
+    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    if (Nsphere != Npart) 
+      cout << "Warning! Unable to converge to required " 
+	   << "no. of ptcls due to lattice symmetry" << endl;
+    Npart = Nsphere;
+  }
+  else {
+    string message = "Invalid particle distribution option";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Allocate local and main particle memory
+  sph->Nsph = Npart;
+  sph->AllocateMemory(sph->Nsph);
+  mp = mcloud / (FLOAT) Npart;
+  rho = 3.0*mcloud / (4.0*pi*pow(radius,3));
+
+  // Perturb positions of particles in cloud
+  AddAzimuthalDensityPerturbation(Npart,2,0.1,rcentre,r);
+
+  // Add solid-body rotational velocity field
+  AddRotationalVelocityField(Npart,angvel,rcentre,r,v);
+
+  // Record particle properties in main memory
+  for (i=0; i<Npart; i++) {
+    for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r[ndim*i + k];
+    for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = v[ndim*i + k];
+    sph->sphdata[i].m = mp;
+    sph->sphdata[i].u = temp0/gammaone/mu_bar;
+    //if (sph->gas_eos == "isothermal" || sph->gas_eos == "barotropic")
+    //  sph->sphdata[i].u = temp0/gammaone/mu_bar;
+    //else
+    //  sph->sphdata[i].u = press/rho/gammaone;
+  }
+
+  delete[] v;
+  delete[] r;
+
+  return;
+}
+
+
+
+//=============================================================================
 //  SphSimulation::SedovBlastWave
 /// Set-up Sedov blast wave test
 //=============================================================================
@@ -1435,3 +1532,124 @@ int SphSimulation<ndim>::CutSphere
   return Ninterior;
 }
 
+
+
+//=============================================================================
+//  SphSimulation::AddAzimuthalDensityPerturbation
+/// Add an azimuthal density perturbation for implementing Boss-Bodenheimer
+/// type initial conditions
+//=============================================================================
+template <int ndim>
+void SphSimulation<ndim>::AddAzimuthalDensityPerturbation
+(int Npart,                         ///< [in] No. of particles in sphere
+ int mpert,                         ///< [in] Perturbation mode
+ FLOAT amp,                         ///< [in] Amplitude of perturbation
+ FLOAT *rcentre,                    ///< [in] Position of sphere centre
+ FLOAT *r)                          ///< [inout] Positions of particles
+{
+  int i,k;                          // Particle and dimension counters
+  int j;
+  int tabtot;                       // ..
+  FLOAT phi,phi1,phi2,phiprime;     // ..
+  FLOAT Rsqd;                       // ..
+  FLOAT Rmag;                       // ..
+  FLOAT rpos[ndim];                 // Random position of new particle
+  FLOAT spacing;                    // ..
+
+  debug2("[SphSimulation::AddAzimuthalDensityPerturbation]");
+
+  tabtot = 10000;
+  spacing = twopi/(FLOAT)(tabtot - 1);
+
+  // Loop over all required particles
+  // --------------------------------------------------------------------------
+  for (i=0; i<Npart; i++) {
+    for (k=0; k<ndim; k++) rpos[k] = r[ndim*i + k] - rcentre[k];
+
+    // Calculate distance from z-axis and 
+    Rsqd = rpos[0]*rpos[0] + rpos[1]*rpos[1];
+    Rmag = sqrt(Rsqd);
+
+    // Find azimuthal angle around z-axis correcting for which quadrant
+    if (Rmag > small_number) phi = asin(fabs(rpos[1])/Rmag);
+    else phi = 0.0;
+
+    if (rpos[0] < 0.0 && rpos[1] > 0.0) phi = pi - phi;
+    else if (rpos[0] < 0.0 && rpos[1] < 0.0) phi = pi + phi;
+    else if (rpos[0] > 0.0 && rpos[1] < 0.0) phi = 2.0*pi + phi;
+
+    // Wrap angle to fit between 0 and two*pi
+    if (phi < amp/(FLOAT) mpert) phi = phi + twopi;
+
+    // Numerically find new phi angle for perturbation.  Search through
+    // grid of values, find upper and lower bounds, then use linear 
+    // interpolation to find new value of phi.
+    for (j=1; j<tabtot; j++) {
+      phi1 = spacing*(FLOAT) (j - 1);
+      phi2 = spacing*(FLOAT) j;
+      phi1 = phi1 + amp*cos((FLOAT) mpert*phi1)/(FLOAT) mpert;
+      phi2 = phi2 + amp*cos((FLOAT) mpert*phi2)/(FLOAT) mpert;
+
+      if (phi2 >= phi && phi1 < phi) {
+	phiprime = spacing*(FLOAT)(j - 1) + 
+	  spacing*(phi - phi1) / (phi2 - phi1);
+	break;
+      }
+    }
+
+    // Reposition particle with new angle
+    r[ndim*i] = rpos[0] + Rmag*cos(phiprime);
+    r[ndim*i + 1] = rpos[1] + Rmag*sin(phiprime);
+
+  }
+  // --------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=============================================================================
+//  SphSimulation::AddRotationalVelocityField
+/// Add a solid-body rotational velocity field
+//=============================================================================
+template <int ndim>
+void SphSimulation<ndim>::AddRotationalVelocityField
+(int Npart,                         ///< [in] No. of particles in sphere
+ FLOAT angvelaux,                   ///< [in] Angular velocity of cloud
+ FLOAT *rcentre,                    ///< [in] Position of sphere centre
+ FLOAT *r,                          ///< [in] Positions of particles
+ FLOAT *v)                          ///< [out] Velocities of particles
+{
+  int i,k;                          // Particle and dimension counters
+  FLOAT Rmag;                       // ..
+  FLOAT Rsqd;                       // ..
+  FLOAT dr[ndim];                   // ..
+  FLOAT spacing;                    // ..
+
+  debug2("[SphSimulation::AddAzimuthalDensityPerturbation]");
+
+
+  // Loop over all required particles
+  // --------------------------------------------------------------------------
+  for (i=0; i<Npart; i++) {
+    for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k] - rcentre[k];
+    for (k=0; k<ndim; k++) v[ndim*i + k] = 0.0;
+
+    // Calculate distance from z-axis and 
+    Rsqd = dr[0]*dr[0] + dr[1]*dr[1];
+    Rmag = sqrt(Rsqd);
+
+    // Find azimuthal angle around z-axis correcting for which quadrant
+    if (Rmag > small_number) {
+      dr[0] = dr[0]/Rmag;
+      dr[1] = dr[1]/Rmag;
+
+      v[ndim*i] = -angvelaux*Rmag*dr[1];
+      v[ndim*i + 1] = angvelaux*Rmag*dr[0];
+    }
+  }
+  // --------------------------------------------------------------------------
+
+  return;
+}
