@@ -37,6 +37,15 @@ using namespace std;
 //=============================================================================
 class SimulationBase
 {
+  // Stuff only for internal use of the class
+  virtual void CalculateDiagnostics(void)=0;
+  virtual void OutputDiagnostics(void)=0;
+  virtual void UpdateDiagnostics(void)=0;
+  virtual void GenerateIC(void)=0;
+  virtual bool ReadColumnSnapshotFile(string)=0;
+  virtual bool WriteColumnSnapshotFile(string)=0;
+
+
  public:
 
   static SimulationBase* SimulationFactory(int ndim, Parameters* params);
@@ -60,18 +69,13 @@ class SimulationBase
   void Run(int=-1);
   void InteractiveRun(int=-1);
   void Output(void);
-  virtual void GenerateIC(void)=0;
   virtual void ProcessParameters(void)=0;
-  virtual void CalculateDiagnostics(void)=0;
-  virtual void OutputDiagnostics(void)=0;
-  virtual void UpdateDiagnostics(void)=0;
+
 
   // Input-output routines
   // --------------------------------------------------------------------------
   bool ReadSnapshotFile(string,string);
-  virtual bool ReadColumnSnapshotFile(string)=0;
   bool WriteSnapshotFile(string,string);
-  virtual bool WriteColumnSnapshotFile(string)=0;
 
   // Variables
   // --------------------------------------------------------------------------
