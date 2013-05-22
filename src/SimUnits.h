@@ -235,26 +235,26 @@ class AngularVelocityUnit: public SimUnit
 class MassRateUnit: public SimUnit
 {
  public:
-
+  MassRateUnit() : SimUnit() {};
   DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
 
 
-
+/*
 //=============================================================================
 //  Class LuminosityUnit
 //=============================================================================
 class LuminosityUnit: public SimUnit
 {
  public:
-
+  LuminosityUnit() : SimUnit() {};
   DOUBLE SIUnit(string);
   string LatexLabel(string);
 
 };
-
+*/
 
 
 /*
