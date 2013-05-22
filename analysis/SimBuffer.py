@@ -1,6 +1,6 @@
 import fnmatch
 import os
-from swig_generated.SphSim import SphSimulationBase, SphSnapshotBase, Parameters
+from swig_generated.SphSim import SimulationBase, SphSnapshotBase, Parameters
 
 # ============================================================================
 # CLASS SIMBUFFER
@@ -110,7 +110,7 @@ class SimBuffer:
             if paramfile is None:
                 raise BufferException("You need to specify either the number of dimensions, either the parameter file")
             ndim = params.intparams["ndim"]
-        sim = SphSimulationBase.SphSimulationFactory(ndim, params);
+        sim = SimulationBase.SimulationFactory(ndim, params);
         SimBuffer._add_simulation(sim)
         sim.snapshots = []
         return sim
@@ -159,7 +159,7 @@ class SimBuffer:
         parameters = Parameters()
         parameters.ReadParamsFile(paramfile)
         ndim=parameters.intparams["ndim"]
-        sim = SphSimulationBase.SphSimulationFactory(ndim, parameters);
+        sim = SimulationBase.SimulationFactory(ndim, parameters);
         SimBuffer._add_simulation(sim)
         sim.ProcessParameters()
         fileformat = parameters.stringparams["in_file_form"]

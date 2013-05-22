@@ -5,7 +5,7 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-  SphSimulationBase* sim;
+  SimulationBase* sim;
   Parameters* params = new Parameters();
   string paramfile;
   ExceptionHandler::makeExceptionHandler(cplusplus);
@@ -20,7 +20,7 @@ int main(int argc, char** argv)
 
   params->ReadParamsFile(paramfile);
 
-  sim = SphSimulationBase::SphSimulationFactory(params->intparams["ndim"], params);
+  sim = SimulationBase::SimulationFactory(params->intparams["ndim"], params);
 
   sim->SetupSimulation();
 

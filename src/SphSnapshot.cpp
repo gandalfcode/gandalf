@@ -17,7 +17,7 @@
 #include "UnitInfo.h"
 using namespace std;
 
-SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory(string filename, SphSimulationBase* sim, int ndim) {
+SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory(string filename, SimulationBase* sim, int ndim) {
     if (ndim==1)
       return new SphSnapshot<1>(filename, sim);
     else if (ndim==2)
@@ -42,7 +42,7 @@ SphSnapshotBase::SphSnapshotBase(string auxfilename)
 }
 
 template <int ndims>
-SphSnapshot<ndims>::SphSnapshot (string filename, SphSimulationBase* sim):
+SphSnapshot<ndims>::SphSnapshot (string filename, SimulationBase* sim):
 SphSnapshotBase(filename),
 simulation(static_cast<SphSimulation<ndims>* > (sim))
 {

@@ -41,7 +41,7 @@ template class SphSimulation<3>;
 //  SphSimulationBase
 /// Creates a simulation object depending on the dimensionality.
 //=============================================================================
-SphSimulationBase* SphSimulationBase::SphSimulationFactory
+SimulationBase* SimulationBase::SimulationFactory
 (int ndim,                          ///< [in] No. of dimensions
  Parameters* params)                ///< [in] Pointer to parameters object
 {
@@ -69,7 +69,7 @@ SphSimulationBase* SphSimulationBase::SphSimulationFactory
 //  SphSimulation::SphSimulation
 /// SphSimulation constructor, initialising important simulation variables. 
 // ============================================================================
-SphSimulationBase::SphSimulationBase
+SimulationBase::SimulationBase
 (Parameters* params                 ///< [in] Pointer to parameters object
  )
 {
@@ -90,7 +90,7 @@ SphSimulationBase::SphSimulationBase
 //  SphSimulation::~SphSimulation
 /// SphSimulation destructor
 //=============================================================================
-SphSimulationBase::~SphSimulationBase()
+SimulationBase::~SimulationBase()
 {
 }
 
@@ -101,7 +101,7 @@ SphSimulationBase::~SphSimulationBase()
 /// Accessor function for modifying a string value. Also checks that the
 /// non return point has not been reached
 //=============================================================================
-void SphSimulationBase::SetParam(string key, string value) {
+void SimulationBase::SetParam(string key, string value) {
 
   //Error checking
   if (ParametersProcessed) {
@@ -123,7 +123,7 @@ void SphSimulationBase::SetParam(string key, string value) {
 /// Accessor function for modifying an int value, wrapper around the one for string value.
 /// Also checks that the non return point has not been reached
 //=============================================================================
-void SphSimulationBase::SetParam(string key, int value) {
+void SimulationBase::SetParam(string key, int value) {
   ostringstream convert;
   convert << value;
   SetParam (key, convert.str());
@@ -136,7 +136,7 @@ void SphSimulationBase::SetParam(string key, int value) {
 /// Accessor function for modifying a float value, wrapper around the one for string value.
 /// Also checks that the non return point has not been reached
 //=============================================================================
-void SphSimulationBase::SetParam(string key, float value) {
+void SimulationBase::SetParam(string key, float value) {
   ostringstream convert;
   convert << value;
   SetParam (key, convert.str());
@@ -149,7 +149,7 @@ void SphSimulationBase::SetParam(string key, float value) {
 /// Accessor function for getting a parameter value
 /// Wrapper around the corresponding function in Parameters
 //=============================================================================
-string SphSimulationBase::GetParam(string key) {
+string SimulationBase::GetParam(string key) {
 
   return simparams->GetParameter(key);
 
@@ -162,8 +162,7 @@ string SphSimulationBase::GetParam(string key) {
 /// Controls the simulation main loop, including exit conditions.  If provided
 /// (optional argument), will only advance the simulation by 'Nadvance' steps.
 //=============================================================================
-template <int ndim>
-void SphSimulation<ndim>::Run
+void SimulationBase::Run
 (int Nadvance                       ///< [in] Selected max no. of integer 
  )                                  ///< timesteps (Optional argument).
 {
@@ -189,12 +188,17 @@ void SphSimulation<ndim>::Run
 
   CalculateDiagnostics();
   OutputDiagnostics();
-  diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
-  cout << "Eerror : " << diag.Eerror << endl;
+  UpdateDiagnostics();
 
   return;
 }
 
+
+template <int ndim>
+void SphSimulation<ndim>::UpdateDiagnostics () {
+  diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
+  cout << "Eerror : " << diag.Eerror << endl;
+}
 
 
 //=============================================================================
@@ -202,8 +206,7 @@ void SphSimulation<ndim>::Run
 /// Controls the simulation main loop, including exit conditions.
 /// If provided, will only advance the simulation by 'Nadvance' steps.
 //=============================================================================
-template <int ndim>
-void SphSimulation<ndim>::InteractiveRun
+void SimulationBase::InteractiveRun
 (int Nadvance                           ///< [in] Selected max no. of integer 
  )                                      ///< timesteps (Optional argument).
 {
@@ -233,7 +236,7 @@ void SphSimulation<ndim>::InteractiveRun
   // --------------------------------------------------------------------------
 
   CalculateDiagnostics();
-  diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
+  UpdateDiagnostics();
 
   return;
 }
@@ -244,8 +247,7 @@ void SphSimulation<ndim>::InteractiveRun
 //  SphSimulation::Output
 /// Controls when regular output snapshots are written by the code.
 //=============================================================================
-template <int ndim>
-void SphSimulation<ndim>::Output(void)
+void SimulationBase::Output(void)
 {
   string filename;                  // Output snapshot filename
   string nostring;                  // ???
@@ -728,7 +730,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
 /// Initialisation routine called by python interface.
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::PreSetupForPython(void) 
+void SphSimulation<ndim>::PreSetupForPython(void)
 {
   debug1("[SphSimulation::PreSetupForPython]");
 
@@ -895,8 +897,7 @@ void SphSimulation<ndim>::ImportArray
 //  SphSimulation::SetupSimulation
 /// Main function for setting up a new SPH simulation.
 //=============================================================================
-template <int ndim>
-void SphSimulation<ndim>::SetupSimulation(void)
+void SimulationBase::SetupSimulation(void)
 {
   debug1("[SphSimulation::Setup]");
 

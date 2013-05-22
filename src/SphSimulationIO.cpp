@@ -18,8 +18,7 @@ using namespace std;
 //=============================================================================
 //  SphSimulation::ReadSnapshotFile
 //=============================================================================
-template <int ndim>
-bool SphSimulation<ndim>::ReadSnapshotFile
+bool SimulationBase::ReadSnapshotFile
 (string filename,                   ///< [in] Name of input snapshot file
  string fileform)                   ///< [in] Format of input snapshot file
 {
@@ -38,8 +37,7 @@ bool SphSimulation<ndim>::ReadSnapshotFile
 //=============================================================================
 //  SphSimulation::WriteSnapshotFile
 //=============================================================================
-template <int ndim>
-bool SphSimulation<ndim>::WriteSnapshotFile
+bool SimulationBase::WriteSnapshotFile
 (string filename,                   ///< [in] Name of output snapshot file
  string fileform)                   ///< [in] Format of output snapshot file
 {

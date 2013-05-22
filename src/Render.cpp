@@ -23,7 +23,7 @@
 using namespace std;
 
 
-RenderBase* RenderBase::RenderFactory(int ndim, SphSimulationBase* sim) {
+RenderBase* RenderBase::RenderFactory(int ndim, SimulationBase* sim) {
   RenderBase* render;
   if (ndim==1) {
     render = new Render<1> (sim);
@@ -44,7 +44,7 @@ RenderBase* RenderBase::RenderFactory(int ndim, SphSimulationBase* sim) {
 //  Render::Render
 //=============================================================================
 template <int ndim>
-Render<ndim>::Render(SphSimulationBase* sim):
+Render<ndim>::Render(SimulationBase* sim):
 sph(static_cast<Sph<ndim>* > (static_cast<SphSimulation<ndim>* > (sim)->sph))
 {
 }
