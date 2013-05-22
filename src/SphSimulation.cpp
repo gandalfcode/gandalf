@@ -31,9 +31,9 @@ using namespace std;
 
 // Create template class instances of the main SphSimulation object for 
 // each dimension used (1, 2 and 3)
-template class SphSimulation<1>;
-template class SphSimulation<2>;
-template class SphSimulation<3>;
+template class SimulationDim<1>;
+template class SimulationDim<2>;
+template class SimulationDim<3>;
 
 
 
@@ -55,11 +55,11 @@ SimulationBase* SimulationBase::SimulationFactory
 
   params->intparams["ndim"]=ndim;
   if (ndim==1)
-    return new SphSimulation<1>(params);
+    return new SimulationDim<1>(params);
   else if (ndim==2)
-    return new SphSimulation<2>(params);
+    return new SimulationDim<2>(params);
   else if (ndim==3)
-    return new SphSimulation<3>(params);
+    return new SimulationDim<3>(params);
   return NULL;
 }
 
@@ -195,7 +195,7 @@ void SimulationBase::Run
 
 
 template <int ndim>
-void SphSimulation<ndim>::UpdateDiagnostics () {
+void SimulationDim<ndim>::UpdateDiagnostics () {
   diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
   cout << "Eerror : " << diag.Eerror << endl;
 }
@@ -280,7 +280,7 @@ void SimulationBase::Output(void)
 /// Generate initial conditions for SPH simulation chosen in parameters file.
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::GenerateIC(void)
+void SimulationDim<ndim>::GenerateIC(void)
 {
   debug2("[SphSimulation::GenerateIC]");
 
@@ -330,7 +330,7 @@ void SphSimulation<ndim>::GenerateIC(void)
 /// simulation variables and creating important simulation objects.
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::ProcessParameters(void)
+void SimulationDim<ndim>::ProcessParameters(void)
 {
   aviscenum avisc;                  // Artificial viscosity enum
   acondenum acond;                  // Artificial conductivity enum
@@ -730,7 +730,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
 /// Initialisation routine called by python interface.
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::PreSetupForPython(void)
+void SimulationDim<ndim>::PreSetupForPython(void)
 {
   debug1("[SphSimulation::PreSetupForPython]");
 
@@ -759,7 +759,7 @@ void SphSimulation<ndim>::PreSetupForPython(void)
 /// Import an array containing particle properties from python to C++ arrays.
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::ImportArray
+void SimulationDim<ndim>::ImportArray
 (double* input,                         ///< ..
  int size,                              ///< ..
  string quantity)                       ///< ..
@@ -942,7 +942,7 @@ void SimulationBase::SetupSimulation(void)
 /// ..
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::PostGeneration(void)
+void SimulationDim<ndim>::PostGeneration(void)
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
@@ -1093,7 +1093,7 @@ void SphSimulation<ndim>::PostGeneration(void)
 /// Main SPH simulation integration loop.
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::MainLoop(void)
+void SimulationDim<ndim>::MainLoop(void)
 {
   int i;                            // Particle loop counter
   int k;                            // Dimension counter

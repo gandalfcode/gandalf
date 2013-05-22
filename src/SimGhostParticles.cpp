@@ -30,7 +30,7 @@ static const FLOAT ghost_range = 1.1;
 /// side of the periodic box.
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::CheckBoundaries(void)
+void SimulationDim<ndim>::CheckBoundaries(void)
 {
   int i;                            // Particle counter
   SphParticle<ndim> *part;          // Pointer to SPH particle data
@@ -69,7 +69,7 @@ void SphSimulation<ndim>::CheckBoundaries(void)
 /// Currently only searches to create periodic or mirror ghost particles.
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::SearchGhostParticles(void)
+void SimulationDim<ndim>::SearchGhostParticles(void)
 {
   int i;
   int k;
@@ -202,7 +202,7 @@ void SphSimulation<ndim>::SearchGhostParticles(void)
 /// (ii) an existing ghost particle (i >= Nsph).
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::CreateGhostParticle
+void SimulationDim<ndim>::CreateGhostParticle
 (int i,                             ///< [in] i.d. of original particle
  int k,                             ///< [in] Boundary dimension for new ghost
  FLOAT rk,                          ///< [in] k-position of original particle
@@ -239,7 +239,7 @@ void SphSimulation<ndim>::CreateGhostParticle
 /// Copy any newly calculated data from original SPH particles to ghosts.
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::CopySphDataToGhosts(void)
+void SimulationDim<ndim>::CopySphDataToGhosts(void)
 {
   int i;                            // Particle id
   int iorig;                        // Original (real) particle id
@@ -279,7 +279,7 @@ void SphSimulation<ndim>::CopySphDataToGhosts(void)
 /// (N.B. Not needed anymore; may be deleted in future).
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::CopyAccelerationFromGhosts(void)
+void SimulationDim<ndim>::CopyAccelerationFromGhosts(void)
 {
   int i;                            // Particle id
   int iorig;                        // Original particle id

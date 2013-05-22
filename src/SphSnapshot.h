@@ -89,6 +89,6 @@ public:
   void CopyDataFromSimulation();
   void ReadSnapshot(string);
 
-  SphSimulation<ndims>* simulation;
+  SimulationDim<ndims>* simulation;
 };
 #endif

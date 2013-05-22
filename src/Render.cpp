@@ -45,7 +45,7 @@ RenderBase* RenderBase::RenderFactory(int ndim, SimulationBase* sim) {
 //=============================================================================
 template <int ndim>
 Render<ndim>::Render(SimulationBase* sim):
-sph(static_cast<Sph<ndim>* > (static_cast<SphSimulation<ndim>* > (sim)->sph))
+sph(static_cast<Sph<ndim>* > (static_cast<SimulationDim<ndim>* > (sim)->sph))
 {
 }
 

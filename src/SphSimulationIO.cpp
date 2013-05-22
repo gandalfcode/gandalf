@@ -57,7 +57,7 @@ bool SimulationBase::WriteSnapshotFile
 //  SphSimulation::ReadColumnSnapshotFile
 //=============================================================================
 template <int ndim>
-bool SphSimulation<ndim>::ReadColumnSnapshotFile(string filename)
+bool SimulationDim<ndim>::ReadColumnSnapshotFile(string filename)
 {
   int i;
   int ndimaux;
@@ -141,7 +141,7 @@ bool SphSimulation<ndim>::ReadColumnSnapshotFile(string filename)
 //  SphSimulation::WriteColumnSnapshotFile
 //=============================================================================
 template <int ndim>
-bool SphSimulation<ndim>::WriteColumnSnapshotFile(string filename)
+bool SimulationDim<ndim>::WriteColumnSnapshotFile(string filename)
 {
   int i;
   int ndimaux;

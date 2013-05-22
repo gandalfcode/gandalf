@@ -115,9 +115,9 @@ class SimulationBase
 /// \date   03/04/2013
 //=============================================================================
 template <int ndim>
-class SphSimulation : public SimulationBase {
+class SimulationDim : public SimulationBase {
  public:
-  SphSimulation(Parameters* parameters) : 
+  SimulationDim(Parameters* parameters) : 
     SimulationBase(parameters) {this->ndims=ndim;};
 
 
