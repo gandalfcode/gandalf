@@ -801,6 +801,164 @@ void SphSimulation<ndim>::BossBodenheimer(void)
 
 
 //=============================================================================
+//  SphSimulation::PlummerSphere
+/// ..
+//=============================================================================
+template <int ndim>
+void SphSimulation<ndim>::PlummerSphere(void)
+{
+  bool flag;                        // Aux. flag
+  bool istar;                       // Are particles 'stars'?
+  int i,j,k;                        // Particle and dimension counter
+  int N;                            // ??
+  int s;                            // Star counter
+  int *porder;                      // ..
+  FLOAT dr[ndim];                   // ..
+  FLOAT drmag;                      // ..
+  FLOAT drsqd;                      // ..
+  FLOAT mp;                         // ..
+  FLOAT raux;                       // ..
+  FLOAT rcentre[ndim];              // ..
+  FLOAT vplummer;                   // ..
+  FLOAT *radsqd;                    // ..
+
+  int idum;
+  int mcount = 0;
+  FLOAT rpl,rlim,tcr,g,gp,rpold;
+  FLOAT mrpl,mrlim;
+  FLOAT x1,x2,x3,x4,x5,x6,x7;
+  FLOAT rad,vm,ve,t1,t2,w,z;
+  FLOAT radius;
+
+  // Local copies of important parameters
+  int Nsph = simparams->intparams["Npart"];
+  int Nstar = simparams->intparams["Nstar"];
+  FLOAT gamma_eos = simparams->floatparams["gamma_eos"];
+  FLOAT gasfrac = simparams->floatparams["gasfrac"];
+  FLOAT starfrac = simparams->floatparams["starfrac"];
+  FLOAT mplummer = simparams->floatparams["mplummer"];
+  FLOAT rplummer = simparams->floatparams["rplummer"];
+  FLOAT rstar = simparams->floatparams["rstar"];
+
+  debug1("[SphSimulation::PlummerSphere]");
+    
+  sph->Nsph = Nsph;
+  sph->Ntot = Nsph;
+  nbody->Nstar = Nstar;
+  sph->AllocateMemory(sph->Nsph);
+  nbody->AllocateMemory(nbody->Nstar);
+
+  for (k=0; k<ndim; k++) rcentre[k] = 0.0;
+  raux = gasfrac + starfrac;
+  gasfrac /= raux;
+  starfrac /= raux;
+
+  cout << "Generating Plummer sphere" << endl;
+    
+    
+  // Loop over all particles (gas and stars)
+  // ==========================================================================
+  for (j=0; j<Nsph+Nstar; j++) {
+
+    do {
+      flag = false;
+      x1 = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+      x2 = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+      x3 = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+
+      if (x1 == 0.0 && x2 == 0.0 && x3 == 0.0) flag = true;
+      rad = 1.0 / sqrt(pow(x1,-2.0/3.0) - 1.0);
+      if (rad > radius/rplummer) flag = true;
+    } while (flag);
+
+    z = (1.0 - 2.0*x2)*rad;
+
+    // Set position depending on particle type
+    // ------------------------------------------------------------------------
+    if (j >= Nstar && j < Nstar + Nsph) {
+      i = j - Nstar;
+      sph->sphdata[i].r[2] = z;
+      sph->sphdata[i].r[0] = sqrt(rad*rad - z*z)*cos(twopi*x3);
+      sph->sphdata[i].r[1] = sqrt(rad*rad - z*z)*sin(twopi*x3);
+      sph->sphdata[i].m = gasfrac / (FLOAT) Nsph;
+    }
+    else {
+      i = j;
+      nbody->stardata[i].r[2] = z;
+      nbody->stardata[i].r[0] = sqrt(rad*rad - z*z)*cos(twopi*x3);
+      nbody->stardata[i].r[1] = sqrt(rad*rad - z*z)*sin(twopi*x3);
+      nbody->stardata[i].m = starfrac / (FLOAT) Nstar;
+    }
+       
+    // Maximum velocity for this distance 
+    ve = sqrt(2.0 / sqrt(1.0 + rad*rad));
+
+
+    // Velocity of particle
+    // ------------------------------------------------------------------------
+    do {
+      x4 = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+      x5 = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+      t1 = 0.1*x5;
+      t2 = x4*x4*pow(1.0 - x4*x4,3.5);
+    } while (t1 > t2);
+
+    vm = ve*x4;
+    x6 = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+    x7 = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+    w = (1.0 - 2.0*x6)*vm;
+       
+
+    // Set velocity depending on particle type
+    // ------------------------------------------------------------------------
+    if (j >= Nstar && j < Nstar + Nsph) {
+      i = j - Nstar;
+      for(k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
+      sph->sphdata[i].sound = sqrt(0.1666666 / sqrt(1.0 + rad*rad));
+      sph->sphdata[i].rho = 1.0;
+      sph->sphdata[i].u = sph->sphdata[i].sound*
+	sph->sphdata[i].sound/(gamma_eos - 1.0);
+    }
+    else {
+      i = j;
+      nbody->stardata[i].v[2] = w;
+      nbody->stardata[i].v[0] = sqrt(vm*vm - w*w)*cos(twopi*x7);
+      nbody->stardata[i].v[1] = sqrt(vm*vm - w*w)*sin(twopi*x7);
+    }
+      
+  }
+  // ==========================================================================
+
+  // Instanly move to COM
+  //ConvertToComFrame();
+  vplummer = sqrt(mplummer/rplummer);
+
+  // Now scale variables to required physical size
+  for (i=0; i<Nsph; i++) {
+    for (k=0; k<ndim; k++) {
+      sph->sphdata[i].r[k] = sph->sphdata[i].r[k]*rplummer;
+      sph->sphdata[i].v[k] = sph->sphdata[i].v[k]*vplummer;
+    }
+    sph->sphdata[i].m    = sph->sphdata[i].m*mplummer;
+    if (i < Nsph) sph->sphdata[i].u = sph->sphdata[i].u*(mplummer/rplummer);
+  }
+  for (i=0; i<Nstar; i++) {
+    for (k=0; k<ndim; k++) {
+      nbody->stardata[i].r[k] = nbody->stardata[i].r[k]*rplummer;
+      nbody->stardata[i].v[k] = nbody->stardata[i].v[k]*vplummer;
+    }
+    nbody->stardata[i].m      = nbody->stardata[i].m*mplummer;
+    //nbody->stardata[i].radius = rstar;
+    //nbody->stardata[i].h      = invkernrange*rstar;
+    nbody->stardata[i].invh   = 1.0 / nbody->stardata[i].h;
+  }
+
+  return;
+}
+
+
+
+//=============================================================================
 //  SphSimulation::SedovBlastWave
 /// Set-up Sedov blast wave test
 //=============================================================================

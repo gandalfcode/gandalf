@@ -127,6 +127,7 @@ class SphSimulationBase
   virtual void ContactDiscontinuity(void)=0;
   virtual void KHI(void)=0;
   virtual void NohProblem(void)=0;
+  virtual void PlummerSphere(void)=0;
   virtual void ShearFlow(void) = 0;
   virtual void ShockTube(void)=0;
   virtual void SoundWave(void)=0;
@@ -236,6 +237,7 @@ class SphSimulation : public SphSimulationBase {
   virtual void ContactDiscontinuity(void);
   virtual void KHI(void);
   virtual void NohProblem(void);
+  virtual void PlummerSphere(void);
   virtual void ShockTube(void);
   virtual void SedovBlastWave(void);
   virtual void ShearFlow(void);

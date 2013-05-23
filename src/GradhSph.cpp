@@ -138,8 +138,10 @@ int GradhSph<ndim, kernelclass>::ComputeH
     }
 
     else {
-      cout << "HERE : " << parti.h << "    " << parti.rho << "    " << 
-	h_upper_bound << "     " << h_lower_bound << "    " << parti.hfactor << "     " << parti.m*parti.hfactor*kern.w0(0.0) << endl;
+      cout << "HERE : " << parti.h << "    " << parti.rho << "    " 
+	   << h_upper_bound << "     " << h_lower_bound << "    " 
+	   << parti.hfactor << "     " 
+	   << parti.m*parti.hfactor*kern.w0(0.0) << endl;
       string message = "Problem with convergence of h-rho iteration";
       ExceptionHandler::getIstance().raise(message);
     }
@@ -444,6 +446,50 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
     for (k=0; k<ndim; k++) 
       parti.agrav[k] += sph[j].m*dr[k]*pow(invdrmag,3);
 
+  }
+  // --------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=============================================================================
+//  GradhSph::ComputeStarGravForces
+/// ..
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void GradhSph<ndim, kernelclass>::ComputeStarGravForces
+(int N,
+ NbodyParticle<ndim> **nbodydata,
+ SphParticle<ndim> &parti)
+{
+  int j;
+  int k;
+  FLOAT dr[ndim];
+  FLOAT drmag;
+  FLOAT drsqd;
+  FLOAT invdrmag;
+  FLOAT paux;
+  FLOAT gaux;
+
+  // --------------------------------------------------------------------------
+  for (j=0; j<N; j++) {
+
+    for (k=0; k<ndim; k++) dr[k] = nbodydata[j]->r[k] - parti.r[k];
+    drsqd = DotProduct(dr,dr,ndim);
+    drmag = sqrt(drsqd);
+
+    paux = parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) + 
+      nbodydata[j]->invh*nbodydata[j]->invh*
+      kern.wgrav(drmag*nbodydata[j]->invh);
+    gaux = (parti.invh*kern.wpot(drmag*parti.invh) + 
+	    nbodydata[j]->invh*kern.wpot(drmag*nbodydata[j]->invh));
+
+    // Add total hydro contribution to acceleration for particle i
+    for (k=0; k<ndim; k++) parti.agrav[k] += 0.5*nbodydata[j]->m*dr[k]*paux;
+    parti.gpot += 0.5*nbodydata[j]->m*gaux;
+    
   }
   // --------------------------------------------------------------------------
 

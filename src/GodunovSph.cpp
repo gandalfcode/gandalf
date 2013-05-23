@@ -15,6 +15,7 @@
 #include "Sph.h"
 #include "SphKernel.h"
 #include "SphParticle.h"
+#include "NbodyParticle.h"
 #include "Parameters.h"
 #include "EOS.h"
 #include "RiemannSolver.h"
@@ -1192,6 +1193,20 @@ void GodunovSph<ndim, kernelclass >::ComputeDirectGravForces
   return;
 }
 
+
+
+//=============================================================================
+//  GodunovSph::ComputeStarGravForces
+/// ..
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass>::ComputeStarGravForces
+(int N,
+ NbodyParticle<ndim> **nbodydata,
+ SphParticle<ndim> &parti)
+{
+  return;
+}
 
 
 
