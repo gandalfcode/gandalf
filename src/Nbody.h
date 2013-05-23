@@ -16,6 +16,7 @@
 #include "NbodyParticle.h"
 #include "StarParticle.h"
 #include "SystemParticle.h"
+#include "SphParticle.h"
 using namespace std;
 
 
@@ -49,6 +50,8 @@ class Nbody
   // --------------------------------------------------------------------------
   //void CalculateDirectSoftenedGravForces(void);
   virtual void CalculateDirectGravForces(int,NbodyParticle<ndim> **) = 0;
+  virtual void CalculateDirectSPHForces(int,int,SphParticle<ndim> *,
+					NbodyParticle<ndim> **) = 0;
   virtual void AdvanceParticles(int,int,NbodyParticle<ndim> **,DOUBLE) = 0;
   virtual void CorrectionTerms(int,int,NbodyParticle<ndim> **,DOUBLE) = 0;
   virtual void EndTimestep(int,int,NbodyParticle<ndim> **) = 0;
@@ -73,7 +76,7 @@ class Nbody
 
   SphKernel<ndim> *kernp;               ///< Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;        ///< Tabulated version of chosen kernel
-  struct NbodyParticle<ndim> **nbodydata;  ///< ..
+  struct NbodyParticle<ndim> **nbodydata;  ///< Generic N-body array of ptrs
   struct StarParticle<ndim> *stardata;  ///< Main star particle data array
   struct SystemParticle<ndim> *system;  ///< Main system particle array
 
@@ -102,6 +105,8 @@ class NbodyLeapfrogKDK: public Nbody<ndim>
   ~NbodyLeapfrogKDK();
 
   void CalculateDirectGravForces(int,NbodyParticle<ndim> **);
+  void CalculateDirectSPHForces(int,int,SphParticle<ndim> *,
+				NbodyParticle<ndim> **);
   void AdvanceParticles(int,int,NbodyParticle<ndim> **,DOUBLE);
   void CorrectionTerms(int,int,NbodyParticle<ndim> **,DOUBLE);
   void EndTimestep(int,int,NbodyParticle<ndim> **);
@@ -135,6 +140,8 @@ class NbodyHermite4: public Nbody<ndim>
   ~NbodyHermite4();
 
   void CalculateDirectGravForces(int,NbodyParticle<ndim> **);
+  void CalculateDirectSPHForces(int,int,SphParticle<ndim> *,
+				NbodyParticle<ndim> **);
   void AdvanceParticles(int,int,NbodyParticle<ndim> **,DOUBLE);
   void CorrectionTerms(int,int,NbodyParticle<ndim> **,DOUBLE);
   void EndTimestep(int,int,NbodyParticle<ndim> **);

@@ -70,7 +70,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectGravForces
   // Loop over all (active) stars
   // --------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-    //cout << "Active? : " << star[i]->active << "   " << star[i]->r[0] << "    " << star[i]->r[1] << endl;
+
     if (star[i]->active == 0) continue;
 
     star[i]->gpot = 0.0;
@@ -89,12 +89,63 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectGravForces
       star[i]->gpot -= star[j]->m*invdrmag;
       for (k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
 
-      //cout << "ACCEL1 : " << dr[0] << "   " << dr[1] << "    " << invdrmag << "    " << pow(invdrmag,3) << endl;
-
     }
     // ------------------------------------------------------------------------
 
-    //cout << "ACCEL : " << star[i]->a[0] << "    " << star[i]->a[1] << endl;
+  }
+  // --------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=============================================================================
+//  NbodyLeapfrogKDK::CalculateDirectSPHForces
+/// Calculate all ..
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSPHForces
+(int N,                             ///< Number of stars
+ int Ngas,                          ///< Number of gas particles
+ SphParticle<ndim> *sphdata,        ///< Array of SPH particles
+ NbodyParticle<ndim> **star)        ///< Array of stars/systems
+{
+  int i,j,k;                        // Star and dimension counters
+  DOUBLE dr[ndim];                  // Relative position vector
+  DOUBLE drmag;                     // ..
+  DOUBLE drsqd;                     // Distance squared
+  DOUBLE invdrmag;                  // 1 / drmag
+  DOUBLE paux;                      // ..
+  DOUBLE gaux;                      // ..
+
+  debug2("[NbodyLeapfrogKDK::CalculateDirectSPHForces]");
+
+  // Loop over all (active) stars
+  // --------------------------------------------------------------------------
+  for (i=0; i<N; i++) {
+
+    if (star[i]->active == 0) continue;
+
+    // Sum grav. contributions for all other stars (excluding star itself)
+    // ------------------------------------------------------------------------
+    for (j=0; j<Ngas; j++) {
+
+      for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star[i]->r[k];
+      drsqd = DotProduct(dr,dr,ndim);
+      invdrmag = 1.0/sqrt(drsqd);
+
+      paux = sphdata[j].invh*sphdata[j].invh*kern.wgrav(drmag*sphdata[j].invh)
+	+ star[i]->invh*star[i]->invh*kern.wgrav(drmag*star[i]->invh);
+      gaux = sphdata[j].invh*kern.wpot(drmag*sphdata[j].invh) + 
+	star[i]->invh*kern.wpot(drmag*star[i]->invh);
+
+      // Add ..
+      for (k=0; k<ndim; k++) star[i]->a[k] += 0.5*sphdata[j].m*dr[k]*paux;
+      star[i]->gpot += 0.5*sphdata[j].m*gaux;
+
+    }
+    // ------------------------------------------------------------------------
 
   }
   // --------------------------------------------------------------------------

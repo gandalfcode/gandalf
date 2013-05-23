@@ -71,7 +71,6 @@ class SimulationBase
   void Output(void);
   virtual void ProcessParameters(void)=0;
 
-
   // Input-output routines
   // --------------------------------------------------------------------------
   bool ReadSnapshotFile(string,string);
@@ -169,6 +168,7 @@ class Simulation : public SimulationBase {
   void ContactDiscontinuity(void);
   void KHI(void);
   void NohProblem(void);
+  void PlummerSphere(void);
   void ShockTube(void);
   void SedovBlastWave(void);
   void ShearFlow(void);

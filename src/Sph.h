@@ -14,6 +14,7 @@
 #include "Constants.h"
 #include "SphParticle.h"
 #include "SphKernel.h"
+#include "NbodyParticle.h"
 #include "Parameters.h"
 #include "EOS.h"
 #include "RiemannSolver.h"
@@ -71,6 +72,8 @@ class Sph
 				     FLOAT *, SphParticle<ndim> &, 
                                      SphParticle<ndim> *) = 0;
   virtual void ComputePostHydroQuantities(SphParticle<ndim> &) = 0;
+  virtual void ComputeStarGravForces(int, NbodyParticle<ndim> **, 
+				     SphParticle<ndim> &) = 0;
 
 
   // SPH array memory allocation functions
@@ -160,6 +163,7 @@ class GradhSph: public Sph<ndim>
   void ComputeDirectGravForces(int, int, int *, 
 			       SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputePostHydroQuantities(SphParticle<ndim> &);
+  void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &);
 
   kernelclass<ndim> kern;                  ///< SPH kernel
 
@@ -210,6 +214,7 @@ class SM2012Sph: public Sph<ndim>
   void ComputeDirectGravForces(int, int, int *, 
                                SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputePostHydroQuantities(SphParticle<ndim> &);
+  void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &);
 
   kernelclass<ndim> kern;                  ///< SPH kernel
 
@@ -264,6 +269,7 @@ class GodunovSph: public Sph<ndim>
   void InitialiseRiemannProblem(SphParticle<ndim>, SphParticle<ndim>, FLOAT *,
                                 FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT &, 
                                 FLOAT &, FLOAT &, FLOAT &, FLOAT &, FLOAT &);
+  void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &);
 
   kernelclass<ndim> kern;                 ///< SPH kernel
 

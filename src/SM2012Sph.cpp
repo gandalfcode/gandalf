@@ -466,6 +466,21 @@ void SM2012Sph<ndim, kernelclass >::ComputeDirectGravForces
 
 
 
+//=============================================================================
+//  SM2012Sph::ComputeStarGravForces
+/// ..
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void SM2012Sph<ndim, kernelclass>::ComputeStarGravForces
+(int N,
+ NbodyParticle<ndim> **nbodydata,
+ SphParticle<ndim> &parti)
+{
+  return;
+}
+
+
+
 template class SM2012Sph<1, M4Kernel>;
 template class SM2012Sph<1, QuinticKernel>;
 template class SM2012Sph<1, GaussianKernel>;

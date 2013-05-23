@@ -1235,6 +1235,12 @@ void SphSimulation<ndim>::MainLoop(void)
     if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
     if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
 
+    // Compute contribution to grav. accel from stars
+    for (i=0; i<sph->Nsph; i++)
+      if (sph->sphdata[i].active)
+	sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
+				   sph->sphdata[i]);
+
     // Add accelerations
     for (i=0; i<sph->Nsph; i++) {
       for (k=0; k<ndim; k++) 

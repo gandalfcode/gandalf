@@ -172,7 +172,7 @@ void Sph<ndim>::InitialSmoothingLengthGuess(void)
 }
 
 
- 
+
 template class Sph<1>;
 template class Sph<2>;
 template class Sph<3>;
