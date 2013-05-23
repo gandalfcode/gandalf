@@ -25,7 +25,7 @@ using namespace std;
 /// Performs some simple sanity checks on all initial conditions
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::CheckInitialConditions(void)
+void Simulation<ndim>::CheckInitialConditions(void)
 {
   bool okflag;                      // Flag problem with current particle
   bool valid_ic = true;             // Valid initial conditions flag
@@ -82,7 +82,7 @@ void SimulationDim<ndim>::CheckInitialConditions(void)
 /// Generate 1D shock-tube test problem.
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::ShockTube(void)
+void Simulation<ndim>::ShockTube(void)
 {
   int i;                            // Particle counter
   int j;                            // Aux. particle counter
@@ -184,7 +184,7 @@ void SimulationDim<ndim>::ShockTube(void)
 /// Populate the simulation bounding box with random particles.
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::UniformBox(void)
+void Simulation<ndim>::UniformBox(void)
 {
   int i,k;                          // Particle and dimension counters
   int Nbox;                         // No. of particles in box
@@ -269,7 +269,7 @@ void SimulationDim<ndim>::UniformBox(void)
 /// Create a uniform-density sphere of particles of given origin and radius.
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::UniformSphere(void)
+void Simulation<ndim>::UniformSphere(void)
 {
   int i,k;                          // Particle and dimension counters
   int Nsphere;                      // Actual number of particles in sphere
@@ -341,7 +341,7 @@ void SimulationDim<ndim>::UniformSphere(void)
 /// Set-up contact discontinuity problem.
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::ContactDiscontinuity(void)
+void Simulation<ndim>::ContactDiscontinuity(void)
 {
   int i;                            // Particle counter
   int j;                            // Aux. particle counter
@@ -487,7 +487,7 @@ void SimulationDim<ndim>::ContactDiscontinuity(void)
 /// Set-up 2D Kelvin-Helmholtz instability test.
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::KHI(void)
+void Simulation<ndim>::KHI(void)
 {
   int i;
   int j;
@@ -631,7 +631,7 @@ void SimulationDim<ndim>::KHI(void)
 /// Set-up Noh Problem initial conditions
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::NohProblem(void)
+void Simulation<ndim>::NohProblem(void)
 {
   int i;                            // Particle counter
   int j;                            // Aux. particle counter
@@ -708,7 +708,7 @@ void SimulationDim<ndim>::NohProblem(void)
 /// Set-up Noh Problem initial conditions
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::BossBodenheimer(void)
+void Simulation<ndim>::BossBodenheimer(void)
 {
   int i;                            // Particle counter
   int j;                            // Aux. particle counter
@@ -805,7 +805,7 @@ void SimulationDim<ndim>::BossBodenheimer(void)
 /// Set-up Sedov blast wave test
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::SedovBlastWave(void)
+void Simulation<ndim>::SedovBlastWave(void)
 {
   int i;                            // Particle counter
   int j;                            // Aux. particle counter
@@ -971,7 +971,7 @@ void SimulationDim<ndim>::SedovBlastWave(void)
 /// Create shear-flow to test effective shear viscosity.
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::ShearFlow(void)
+void Simulation<ndim>::ShearFlow(void)
 {
   int i;                            // Particle counter
   int j;                            // Aux. particle counter
@@ -1044,7 +1044,7 @@ void SimulationDim<ndim>::ShearFlow(void)
 /// Set-up isothermal sound-wave test.
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::SoundWave(void)
+void Simulation<ndim>::SoundWave(void)
 {
   int i,k;                          // Particle and dimension counters
   int Nlattice1[ndim];              // Lattice size
@@ -1142,7 +1142,7 @@ void SimulationDim<ndim>::SoundWave(void)
 /// Create a simple binary star problem
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::BinaryStar(void)
+void Simulation<ndim>::BinaryStar(void)
 {
   int i;                            // Particle counter
   int j;                            // Aux. particle counter
@@ -1206,7 +1206,7 @@ void SimulationDim<ndim>::BinaryStar(void)
 /// Populate given bounding box with random particles.
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::AddRandomBox
+void Simulation<ndim>::AddRandomBox
 (int Npart,                         ///< [in] No. of particles
  FLOAT *r,                          ///< [out] Positions of particles
  DomainBox<ndim> box)               ///< [in] Bounding box containing particles
@@ -1230,7 +1230,7 @@ void SimulationDim<ndim>::AddRandomBox
 /// Add random sphere of particles
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::AddRandomSphere
+void Simulation<ndim>::AddRandomSphere
 (int Npart,                         ///< [in] No. of particles in sphere
  FLOAT *r,                          ///< [out] Positions of particles in sphere
  FLOAT *rcentre,                    ///< [in] Position of sphere centre
@@ -1267,7 +1267,7 @@ void SimulationDim<ndim>::AddRandomSphere
 /// Add sphere of particles cut-out of regular lattice
 //=============================================================================
 template <int ndim>
-int SimulationDim<ndim>::AddLatticeSphere
+int Simulation<ndim>::AddLatticeSphere
 (int Npart,                         ///< [in] No. of particles in sphere
  FLOAT *r,                          ///< [out] Positions of particles in sphere
  FLOAT *rcentre,                    ///< [in] Position of sphere centre
@@ -1322,7 +1322,7 @@ int SimulationDim<ndim>::AddLatticeSphere
 /// Add regular (cubic) lattice of particles
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::AddCubicLattice
+void Simulation<ndim>::AddCubicLattice
 (int Npart,                         ///< [in] No. of particles in lattice
  int Nlattice[ndim],                ///< [in] Ptcls per dimension in lattice
  FLOAT *r,                          ///< [out] Positions of particles
@@ -1389,7 +1389,7 @@ void SimulationDim<ndim>::AddCubicLattice
 /// N.B. the box is scaled to fit to the x-boxsize.
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::AddHexagonalLattice
+void Simulation<ndim>::AddHexagonalLattice
 (int Npart,                         ///< [in] No. of particles in lattice
  int Nlattice[ndim],                ///< [in] Ptcls per dimension in lattice
  FLOAT *r,                          ///< [out] Positions of particles
@@ -1464,7 +1464,7 @@ void SimulationDim<ndim>::AddHexagonalLattice
 /// box of particles.
 //=============================================================================
 template <int ndim>
-int SimulationDim<ndim>::CutSphere
+int Simulation<ndim>::CutSphere
 (int Nsphere,                       ///< [in] Desired np of particles in sphere
  int Npart,                         ///< [in] No. of particles in cube
  FLOAT radsphere,                   ///< [in] ??
@@ -1540,7 +1540,7 @@ int SimulationDim<ndim>::CutSphere
 /// type initial conditions
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::AddAzimuthalDensityPerturbation
+void Simulation<ndim>::AddAzimuthalDensityPerturbation
 (int Npart,                         ///< [in] No. of particles in sphere
  int mpert,                         ///< [in] Perturbation mode
  FLOAT amp,                         ///< [in] Amplitude of perturbation
@@ -1614,7 +1614,7 @@ void SimulationDim<ndim>::AddAzimuthalDensityPerturbation
 /// Add a solid-body rotational velocity field
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::AddRotationalVelocityField
+void Simulation<ndim>::AddRotationalVelocityField
 (int Npart,                         ///< [in] No. of particles in sphere
  FLOAT angvelaux,                   ///< [in] Angular velocity of cloud
  FLOAT *rcentre,                    ///< [in] Position of sphere centre

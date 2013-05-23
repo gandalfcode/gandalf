@@ -119,9 +119,9 @@ class SimulationBase
 /// \date   03/04/2013
 //=============================================================================
 template <int ndim>
-class SimulationDim : public SimulationBase {
+class Simulation : public SimulationBase {
  public:
-  SimulationDim(Parameters* parameters) : 
+  Simulation(Parameters* parameters) : 
     SimulationBase(parameters) {this->ndims=ndim;};
 
 
@@ -141,7 +141,6 @@ class SimulationDim : public SimulationBase {
   virtual void PreSetupForPython(void);
   virtual void ImportArray(double* input, int size, string quantity);
   virtual void PostGeneration(void);
-  virtual void MainLoop(void);
   virtual void GenerateIC(void);
   virtual void ProcessParameters(void);
   virtual void CalculateDiagnostics(void);
@@ -154,15 +153,15 @@ class SimulationDim : public SimulationBase {
   void VerifyBlockTimesteps(void);
 #endif
 
-  // Ghost particle functions
+  // Ghost particle functions -> maybe move to Sph?
   // --------------------------------------------------------------------------
   void SearchGhostParticles(void);
   void CreateGhostParticle(int,int,FLOAT,FLOAT,FLOAT);
   void CopySphDataToGhosts(void);
   void CopyAccelerationFromGhosts(void);
-  void CheckBoundaries(void);
+  void CheckBoundaries(void); //should probably go inside SphIntegration
 
-  // Initial conditions routines
+  // Initial conditions routines -> move either to Sph, either to Nbody
   // --------------------------------------------------------------------------
   void BinaryStar(void);
   void BossBodenheimer(void);
@@ -197,6 +196,45 @@ class SimulationDim : public SimulationBase {
   Nbody<ndim> *nbody;                   ///< N-body algorithm pointer
 
 };
+
+template <int ndim>
+class SphSimulation : public Simulation<ndim> {
+  using SimulationBase::simparams;
+  using Simulation<ndim>::sph;
+  using Simulation<ndim>::nbody;
+  using Simulation<ndim>::sphint;
+  using Simulation<ndim>::uint;
+  using Simulation<ndim>::sphneib;
+  using Simulation<ndim>::n;
+  using Simulation<ndim>::Nlevels;
+  using Simulation<ndim>::Nsteps;
+  using Simulation<ndim>::t;
+  using Simulation<ndim>::timestep;
+  using Simulation<ndim>::level_step;
+public:
+  SphSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
+  virtual void MainLoop(void);
+};
+
+template <int ndim>
+class GodunovSimulation : public Simulation<ndim> {
+  using SimulationBase::simparams;
+  using Simulation<ndim>::sph;
+  using Simulation<ndim>::nbody;
+  using Simulation<ndim>::sphint;
+  using Simulation<ndim>::uint;
+  using Simulation<ndim>::sphneib;
+  using Simulation<ndim>::n;
+  using Simulation<ndim>::Nlevels;
+  using Simulation<ndim>::Nsteps;
+  using Simulation<ndim>::t;
+  using Simulation<ndim>::timestep;
+  using Simulation<ndim>::level_step;
+public:
+  GodunovSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
+  virtual void MainLoop(void);
+};
+
 #endif
 
 

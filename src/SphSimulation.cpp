@@ -31,9 +31,13 @@ using namespace std;
 
 // Create template class instances of the main SphSimulation object for 
 // each dimension used (1, 2 and 3)
-template class SimulationDim<1>;
-template class SimulationDim<2>;
-template class SimulationDim<3>;
+template class SphSimulation<1>;
+template class SphSimulation<2>;
+template class SphSimulation<3>;
+
+template class GodunovSimulation<1>;
+template class GodunovSimulation<2>;
+template class GodunovSimulation<3>;
 
 
 
@@ -45,6 +49,7 @@ SimulationBase* SimulationBase::SimulationFactory
 (int ndim,                          ///< [in] No. of dimensions
  Parameters* params)                ///< [in] Pointer to parameters object
 {
+  string SimulationType;
 
   //Check ndim
   if (ndim<1 || ndim>3) {
@@ -53,13 +58,38 @@ SimulationBase* SimulationBase::SimulationFactory
     ExceptionHandler::getIstance().raise(msg.str());
   }
 
+  //Set ndim inside the parameters
   params->intparams["ndim"]=ndim;
-  if (ndim==1)
-    return new SimulationDim<1>(params);
-  else if (ndim==2)
-    return new SimulationDim<2>(params);
-  else if (ndim==3)
-    return new SimulationDim<3>(params);
+
+  //Get the simulation type from the parameters
+  //TODO: should the simulation type be passes as a parameter?
+  SimulationType = params->stringparams["sph"];
+
+  //Check simulation type
+  if (SimulationType != "gradh" || SimulationType != "sm2012" || SimulationType != "godunov" ) {
+    string msg = "Error: the simulation type " + SimulationType + " was not recognized";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+
+
+  if (ndim==1) {
+    if (SimulationType=="gradh" || SimulationType=="sm2012")
+      return new SphSimulation<1>(params);
+    else if (SimulationType=="godunov")
+      return new GodunovSimulation<1>(params);
+  }
+  else if (ndim==2) {
+    if (SimulationType=="gradh" || SimulationType=="sm2012")
+      return new SphSimulation<2>(params);
+    else if (SimulationType=="godunov")
+      return new GodunovSimulation<2>(params);
+  }
+  else if (ndim==3) {
+    if (SimulationType=="gradh" || SimulationType=="sm2012")
+      return new SphSimulation<3>(params);
+    else if (SimulationType=="godunov")
+      return new GodunovSimulation<3>(params);
+  }
   return NULL;
 }
 
@@ -195,7 +225,7 @@ void SimulationBase::Run
 
 
 template <int ndim>
-void SimulationDim<ndim>::UpdateDiagnostics () {
+void Simulation<ndim>::UpdateDiagnostics () {
   diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
   cout << "Eerror : " << diag.Eerror << endl;
 }
@@ -280,7 +310,7 @@ void SimulationBase::Output(void)
 /// Generate initial conditions for SPH simulation chosen in parameters file.
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::GenerateIC(void)
+void Simulation<ndim>::GenerateIC(void)
 {
   debug2("[SphSimulation::GenerateIC]");
 
@@ -330,7 +360,7 @@ void SimulationDim<ndim>::GenerateIC(void)
 /// simulation variables and creating important simulation objects.
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::ProcessParameters(void)
+void Simulation<ndim>::ProcessParameters(void)
 {
   aviscenum avisc;                  // Artificial viscosity enum
   acondenum acond;                  // Artificial conductivity enum
@@ -730,7 +760,7 @@ void SimulationDim<ndim>::ProcessParameters(void)
 /// Initialisation routine called by python interface.
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::PreSetupForPython(void)
+void Simulation<ndim>::PreSetupForPython(void)
 {
   debug1("[SphSimulation::PreSetupForPython]");
 
@@ -759,7 +789,7 @@ void SimulationDim<ndim>::PreSetupForPython(void)
 /// Import an array containing particle properties from python to C++ arrays.
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::ImportArray
+void Simulation<ndim>::ImportArray
 (double* input,                         ///< ..
  int size,                              ///< ..
  string quantity)                       ///< ..
@@ -942,7 +972,7 @@ void SimulationBase::SetupSimulation(void)
 /// ..
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::PostGeneration(void)
+void Simulation<ndim>::PostGeneration(void)
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
@@ -1093,7 +1123,7 @@ void SimulationDim<ndim>::PostGeneration(void)
 /// Main SPH simulation integration loop.
 //=============================================================================
 template <int ndim>
-void SimulationDim<ndim>::MainLoop(void)
+void SphSimulation<ndim>::MainLoop(void)
 {
   int i;                            // Particle loop counter
   int k;                            // Dimension counter
@@ -1102,10 +1132,10 @@ void SimulationDim<ndim>::MainLoop(void)
 
   // Compute timesteps for all particles
   if (simparams->stringparams["sph"] != "godunov") {
-    if (Nlevels == 1) 
-      ComputeGlobalTimestep();
+    if (Nlevels == 1)
+      this->ComputeGlobalTimestep();
     else 
-      ComputeBlockTimesteps();
+      this->ComputeBlockTimesteps();
   }
 
   // For Godunov SPH, compute compressional heating rates after the timestep 
@@ -1131,7 +1161,7 @@ void SimulationDim<ndim>::MainLoop(void)
   nbody->AdvanceParticles(n,nbody->Nstar,nbody->nbodydata,timestep);
 
   // Check all boundary conditions
-  CheckBoundaries();
+  this->CheckBoundaries();
 
   // --------------------------------------------------------------------------
   if (sph->Nsph > 0) {
@@ -1139,7 +1169,7 @@ void SimulationDim<ndim>::MainLoop(void)
     // Reorder particles
 
     // Search ghost particles
-    SearchGhostParticles();
+    this->SearchGhostParticles();
 
     // Update neighbour tree
     sphneib->UpdateTree(sph,*simparams);
@@ -1180,16 +1210,16 @@ void SimulationDim<ndim>::MainLoop(void)
     // Compute timesteps for all particles
     if (simparams->stringparams["sph"] == "godunov") {
       if (Nlevels == 1) 
-	ComputeGlobalTimestep();
+	this->ComputeGlobalTimestep();
       else 
-	ComputeBlockTimesteps();
+	this->ComputeBlockTimesteps();
     }
 
     if (simparams->stringparams["sph"] == "godunov")
       sphneib->UpdateAllSphDerivatives(sph);
 
     // Copy properties from original particles to ghost particles
-    CopySphDataToGhosts();
+    this->CopySphDataToGhosts();
 
     // Zero accelerations (perhaps)
     for (i=0; i<sph->Ntot; i++) {
@@ -1233,5 +1263,148 @@ void SimulationDim<ndim>::MainLoop(void)
   return;
 }
 
+//=============================================================================
+//  SphSimulation::MainLoop
+/// Main SPH simulation integration loop.
+//=============================================================================
+template <int ndim>
+void GodunovSimulation<ndim>::MainLoop(void)
+{
+  int i;                            // Particle loop counter
+  int k;                            // Dimension counter
 
+  debug2("[SphSimulation::MainLoop]");
+
+  // Compute timesteps for all particles
+  if (simparams->stringparams["sph"] != "godunov") {
+    if (Nlevels == 1)
+      this->ComputeGlobalTimestep();
+    else
+      this->ComputeBlockTimesteps();
+  }
+
+  // For Godunov SPH, compute compressional heating rates after the timestep
+  // for each particle is known
+  //if (simparams->stringparams["sph"] == "godunov") {
+  //  for (i=0; i<sph->Ntot; i++)
+  //    sph->sphdata[i].dudt = (FLOAT) 0.0;
+  //  //if (sph->sphdata[i].active) sph->sphdata[i].dudt = (FLOAT) 0.0;
+  //  sphneib->UpdateAllSphDudt(sph);
+  //}
+
+  // Advance time variables
+  n = n + 1;
+  Nsteps = Nsteps + 1;
+  t = t + timestep;
+
+  // Advance SPH particles positions and velocities
+  sphint->AdvanceParticles(n,level_step,sph->Nsph,
+               sph->sphdata,(FLOAT) timestep);
+  if (simparams->stringparams["gas_eos"] == "energy_eqn")
+    uint->EnergyIntegration(n,level_step,sph->Nsph,
+                sph->sphdata,(FLOAT) timestep);
+  nbody->AdvanceParticles(n,nbody->Nstar,nbody->nbodydata,timestep);
+
+  // Check all boundary conditions
+  this->CheckBoundaries();
+
+  // --------------------------------------------------------------------------
+  if (sph->Nsph > 0) {
+
+    // Reorder particles
+
+    // Search ghost particles
+    this->SearchGhostParticles();
+
+    // Update neighbour tree
+    sphneib->UpdateTree(sph,*simparams);
+  }
+
+
+  // --------------------------------------------------------------------------
+  if (sph->Nsph > 0) {
+
+    // Calculate all SPH properties
+    sphneib->UpdateAllSphProperties(sph);
+
+  }
+
+
+  // Compute N-body forces
+  // --------------------------------------------------------------------------
+  if (nbody->Nstar > 0) {
+
+    // Zero all acceleration terms
+    for (i=0; i<nbody->Nnbody; i++) {
+      if (nbody->nbodydata[i]->active) {
+    for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k] = 0.0;
+    for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k] = 0.0;
+    for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = 0.0;
+    for (k=0; k<ndim; k++) nbody->nbodydata[i]->a3dot[k] = 0.0;
+    nbody->nbodydata[i]->gpot = 0.0;
+      }
+    }
+
+    nbody->CalculateDirectGravForces(nbody->Nstar,nbody->nbodydata);
+  }
+
+
+  // --------------------------------------------------------------------------
+  if (sph->Nsph > 0) {
+
+    // Compute timesteps for all particles
+    if (simparams->stringparams["sph"] == "godunov") {
+      if (Nlevels == 1)
+    this->ComputeGlobalTimestep();
+      else
+    this->ComputeBlockTimesteps();
+    }
+
+    if (simparams->stringparams["sph"] == "godunov")
+      sphneib->UpdateAllSphDerivatives(sph);
+
+    // Copy properties from original particles to ghost particles
+    this->CopySphDataToGhosts();
+
+    // Zero accelerations (perhaps)
+    for (i=0; i<sph->Ntot; i++) {
+      if (sph->sphdata[i].active) {
+    for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
+    for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
+    sph->sphdata[i].gpot = (FLOAT) 0.0;
+    sph->sphdata[i].dudt = (FLOAT) 0.0;
+      }
+    }
+
+    // Calculate all SPH forces
+    if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
+    if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
+
+    // Add accelerations
+    for (i=0; i<sph->Nsph; i++) {
+      for (k=0; k<ndim; k++)
+        sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
+    }
+
+    if (simparams->stringparams["sph"] == "godunov")
+      sphneib->UpdateAllSphDudt(sph);
+
+  }
+
+  // Apply correction steps for both particle and energy integration
+  sphint->CorrectionTerms(n,level_step,sph->Nsph,
+              sph->sphdata,(FLOAT) timestep);
+  if (simparams->stringparams["gas_eos"] == "energy_eqn")
+    uint->EnergyCorrectionTerms(n,level_step,sph->Nsph,
+                sph->sphdata,(FLOAT) timestep);
+  nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
+
+  // Set all end-of-step variables
+  sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+  if (simparams->stringparams["gas_eos"] == "energy_eqn")
+    uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+  nbody->EndTimestep(n,nbody->Nnbody,nbody->nbodydata);
+
+  return;
+}
 
