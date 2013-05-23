@@ -805,7 +805,7 @@ void Simulation<ndim>::BossBodenheimer(void)
 /// ..
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::PlummerSphere(void)
+void Simulation<ndim>::PlummerSphere(void)
 {
   bool flag;                        // Aux. flag
   bool istar;                       // Are particles 'stars'?
