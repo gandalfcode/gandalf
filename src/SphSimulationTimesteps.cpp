@@ -26,7 +26,7 @@ using namespace std;
 //  Computes global timestep for SPH simulation.
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::ComputeGlobalTimestep(void)
+void SimulationDim<ndim>::ComputeGlobalTimestep(void)
 {
   int i;                            // Particle counter
   DOUBLE dt = big_number_dp;        // Particle timestep
@@ -94,7 +94,7 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 // ..
 // ============================================================================
 template <int ndim>
-void SphSimulation<ndim>::ComputeBlockTimesteps(void)
+void SimulationDim<ndim>::ComputeBlockTimesteps(void)
 {
   int i;                                    // Particle counter
   int istep;                                // ??
@@ -252,7 +252,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 // values are consistent.
 // ============================================================================
 template <int ndim>
-void SphSimulation<ndim>::VerifyBlockTimesteps(void)
+void SimulationDim<ndim>::VerifyBlockTimesteps(void)
 {
   debug2("[SphSimulation::VerifyBlockTimesteps]");
 

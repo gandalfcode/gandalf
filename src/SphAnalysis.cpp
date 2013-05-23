@@ -26,7 +26,7 @@ using namespace std;
 /// saves to the diagnostic data structure and outputs to screen.
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::CalculateDiagnostics(void)
+void SimulationDim<ndim>::CalculateDiagnostics(void)
 {
   int i;                            // Particle counter
   int k;                            // Dimensionality counter
@@ -107,7 +107,7 @@ void SphSimulation<ndim>::CalculateDiagnostics(void)
 /// saves to the diagnostic data structure and outputs to screen.
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::OutputDiagnostics(void)
+void SimulationDim<ndim>::OutputDiagnostics(void)
 {
   debug2("[SphSimulation::OutputDiagnostics]");
 

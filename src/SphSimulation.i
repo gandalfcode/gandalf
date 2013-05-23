@@ -25,7 +25,7 @@ throw StopError("CTRL-C received");
 }
 %}
 
-%exception SphSimulationBase::InteractiveRun {
+%exception SimulationBase::InteractiveRun {
 	signal(SIGINT, catch_alarm);
 	PyThreadState *_save;
     _save = PyEval_SaveThread();
@@ -45,7 +45,7 @@ throw StopError("CTRL-C received");
     }
 }
 
-%exception SphSimulationBase::GetParam {
+%exception SimulationBase::GetParam {
 	try{
 		$action
 	}
@@ -55,7 +55,7 @@ throw StopError("CTRL-C received");
 	}
 }
 
-%exception SphSimulationBase::SetParam {
+%exception SimulationBase::SetParam {
 	try{
 		$action
 	}
@@ -65,7 +65,7 @@ throw StopError("CTRL-C received");
 	}
 }
 
-%exception SphSimulationBase::PreSetupForPython {
+%exception SimulationBase::PreSetupForPython {
 	try{
 		$action
 	}
@@ -75,7 +75,7 @@ throw StopError("CTRL-C received");
 	}
 }
 
-%exception SphSimulationBase::SetupSimulation {
+%exception SimulationBase::SetupSimulation {
 	try{
 		$action
 	}
@@ -85,7 +85,7 @@ throw StopError("CTRL-C received");
 	}
 }
 
-%exception SphSimulationBase::ImportArray {
+%exception SimulationBase::ImportArray {
 	try {
 		$action
 	}

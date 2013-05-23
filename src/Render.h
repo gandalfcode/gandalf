@@ -26,7 +26,7 @@ using namespace std;
 class RenderBase
 {
 public:
-  static RenderBase* RenderFactory(int ndim, SphSimulationBase* sim);
+  static RenderBase* RenderFactory(int ndim, SimulationBase* sim);
 
   virtual int CreateColumnRenderingGrid(int, int, string, string, string, string,
                 float, float, float, float, float* values,
@@ -48,7 +48,7 @@ class Render : public RenderBase
 
   // Constructor and Destructor
   // --------------------------------------------------------------------------
-  Render(SphSimulationBase* sim);
+  Render(SimulationBase* sim);
   ~Render();
 
   // Subroutine prototypes

@@ -26,7 +26,7 @@ class SphSnapshotBase
 {
  public:
 
-  static SphSnapshotBase* SphSnapshotFactory(string filename, SphSimulationBase* sim, int ndim);
+  static SphSnapshotBase* SphSnapshotFactory(string filename, SimulationBase* sim, int ndim);
 
 
   SphSnapshotBase(string="");
@@ -85,10 +85,10 @@ class SphSnapshotBase
 template <int ndims>
 class SphSnapshot : public SphSnapshotBase {
 public:
-  SphSnapshot (string, SphSimulationBase* );
+  SphSnapshot (string, SimulationBase* );
   void CopyDataFromSimulation();
   void ReadSnapshot(string);
 
-  SphSimulation<ndims>* simulation;
+  SimulationDim<ndims>* simulation;
 };
 #endif

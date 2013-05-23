@@ -14,6 +14,8 @@
 
 #include <map>
 #include <string>
+#include "Diagnostics.h"
+#include "DomainBox.h"
 #include "Precision.h"
 #include "Parameters.h"
 #include "SimUnits.h"
@@ -28,64 +30,30 @@ using namespace std;
 
 
 //=============================================================================
-//  Structure DomainBox
-/// \brief  Bounding box data structure.
-/// \author D. A. Hubber, G. Rosotti
-/// \date   03/04/2013
-//=============================================================================
-template <int ndim>
-struct DomainBox {
-  string x_boundary_lhs;                ///< x-dimension LHS boundary condition
-  string x_boundary_rhs;                ///< x-dimension RHS boundary condition
-  string y_boundary_lhs;                ///< y-dimension LHS boundary condition
-  string y_boundary_rhs;                ///< y-dimension RHS boundary condition
-  string z_boundary_lhs;                ///< z-dimension LHS boundary condition
-  string z_boundary_rhs;                ///< z-dimension RHS boundary condition
-  FLOAT boxmin[ndim];                   ///< Minimum bounding box extent
-  FLOAT boxmax[ndim];                   ///< Maximum bounding box extent
-  FLOAT boxsize[ndim];                  ///< Side-lengths of bounding box
-  FLOAT boxhalf[ndim];                  ///< Half side-lengths of bounding box
-};
-
-
-
-//=============================================================================
-//  Structure Diagnostics
-/// \brief  Structure containing snapshot of current diagnostic quantities.
-/// \author D. A. Hubber, G. Rosotti
-/// \date   03/04/2013
-//=============================================================================
-template <int ndim>
-struct Diagnostics {
-  DOUBLE Eerror;                        ///< Total energy error
-  DOUBLE Etot;                          ///< Total energy
-  DOUBLE utot;                          ///< Total thermal energy
-  DOUBLE ketot;                         ///< Total kinetic energy
-  DOUBLE gpetot;                        ///< Total grav. potential energy
-  DOUBLE mom[ndim];                     ///< Total momentum vector
-  DOUBLE angmom[3];                     ///< Total angular momentum vector
-  DOUBLE force[ndim];                   ///< Net force
-  DOUBLE force_grav[ndim];              ///< Net gravitational force
-};
-
-
-
-//=============================================================================
-//  Class SphSimulationBase
+//  Class SimulationBase
 /// \brief  Creates a simulation object depending on the dimensionality.
 /// \author D. A. Hubber, G. Rosotti
 /// \date   03/04/2013
 //=============================================================================
-class SphSimulationBase
+class SimulationBase
 {
+  // Stuff only for internal use of the class
+  virtual void CalculateDiagnostics(void)=0;
+  virtual void OutputDiagnostics(void)=0;
+  virtual void UpdateDiagnostics(void)=0;
+  virtual void GenerateIC(void)=0;
+  virtual bool ReadColumnSnapshotFile(string)=0;
+  virtual bool WriteColumnSnapshotFile(string)=0;
+
+
  public:
 
-  static SphSimulationBase* SphSimulationFactory(int ndim, Parameters* params);
+  static SimulationBase* SimulationFactory(int ndim, Parameters* params);
 
   // Constructor and Destructor
   // --------------------------------------------------------------------------
-  SphSimulationBase(Parameters* params);
-  ~SphSimulationBase();
+  SimulationBase(Parameters* params);
+  ~SimulationBase();
   
   // Subroutine prototypes
   // --------------------------------------------------------------------------
@@ -95,51 +63,18 @@ class SphSimulationBase
   void SetParam (string ket, float value);
   virtual void PreSetupForPython(void)=0;
   virtual void ImportArray(double* input, int size, string quantity)=0;
-  virtual void SetupSimulation(void)=0;
+  void SetupSimulation(void);
   virtual void PostGeneration(void)=0;
   virtual void MainLoop(void)=0;
-  virtual void Run(int=-1)=0;
-  virtual void InteractiveRun(int=-1)=0;
-  virtual void Output(void)=0;
-  virtual void GenerateIC(void)=0;
+  void Run(int=-1);
+  void InteractiveRun(int=-1);
+  void Output(void);
   virtual void ProcessParameters(void)=0;
-  virtual void CalculateDiagnostics(void)=0;
-  virtual void OutputDiagnostics(void)=0;
-
-  virtual void ComputeGlobalTimestep(void)=0;
-  virtual void ComputeBlockTimesteps(void)=0;
-#if defined(VERIFY_ALL)
-  virtual void VerifyBlockTimesteps(void)=0;
-#endif
-
-  // Ghost particle functions
-  // --------------------------------------------------------------------------
-  virtual void SearchGhostParticles(void)=0;
-  virtual void CreateGhostParticle(int,int,FLOAT,FLOAT,FLOAT)=0;
-  virtual void CopySphDataToGhosts(void)=0;
-  virtual void CopyAccelerationFromGhosts(void)=0;
-  virtual void CheckBoundaries(void)=0;
-
-  // Initial conditions routines
-  // --------------------------------------------------------------------------
-  virtual void BinaryStar(void)=0;
-  virtual void CheckInitialConditions(void)=0;
-  virtual void ContactDiscontinuity(void)=0;
-  virtual void KHI(void)=0;
-  virtual void NohProblem(void)=0;
-  virtual void PlummerSphere(void)=0;
-  virtual void ShearFlow(void) = 0;
-  virtual void ShockTube(void)=0;
-  virtual void SoundWave(void)=0;
-  virtual void UniformBox(void)=0;
-  virtual void UniformSphere(void)=0;
 
   // Input-output routines
   // --------------------------------------------------------------------------
-  virtual bool ReadSnapshotFile(string,string)=0;
-  virtual bool ReadColumnSnapshotFile(string)=0;
-  virtual bool WriteSnapshotFile(string,string)=0;
-  virtual bool WriteColumnSnapshotFile(string)=0;
+  bool ReadSnapshotFile(string,string);
+  bool WriteSnapshotFile(string,string);
 
   // Variables
   // --------------------------------------------------------------------------
@@ -175,7 +110,7 @@ class SphSimulationBase
 };
 
 
-
+#if !defined(SWIG)
 //=============================================================================
 //  Class SphSimulation
 /// \brief  Main Sph Simulation class.
@@ -183,10 +118,10 @@ class SphSimulationBase
 /// \date   03/04/2013
 //=============================================================================
 template <int ndim>
-class SphSimulation : public SphSimulationBase {
+class SimulationDim : public SimulationBase {
  public:
-  SphSimulation(Parameters* parameters) : 
-    SphSimulationBase(parameters) {this->ndims=ndim;};
+  SimulationDim(Parameters* parameters) : 
+    SimulationBase(parameters) {this->ndims=ndim;};
 
 
   // Initial conditions helper routines
@@ -202,18 +137,15 @@ class SphSimulation : public SphSimulationBase {
 
   // Subroutine prototypes
   // --------------------------------------------------------------------------
-  void PreSetupForPython(void);
-  void ImportArray(double* input, int size, string quantity);
-  void SetupSimulation(void);
-  void PostGeneration(void);
-  void MainLoop(void);
-  void Run(int=-1);
-  void InteractiveRun(int=-1);
-  void Output(void);
-  void GenerateIC(void);
-  void ProcessParameters(void);
-  void CalculateDiagnostics(void);
-  void OutputDiagnostics(void);
+  virtual void PreSetupForPython(void);
+  virtual void ImportArray(double* input, int size, string quantity);
+  virtual void PostGeneration(void);
+  virtual void MainLoop(void);
+  virtual void GenerateIC(void);
+  virtual void ProcessParameters(void);
+  virtual void CalculateDiagnostics(void);
+  virtual void OutputDiagnostics(void);
+  virtual void UpdateDiagnostics(void);
 
   void ComputeGlobalTimestep(void);
   void ComputeBlockTimesteps(void);
@@ -227,29 +159,27 @@ class SphSimulation : public SphSimulationBase {
   void CreateGhostParticle(int,int,FLOAT,FLOAT,FLOAT);
   void CopySphDataToGhosts(void);
   void CopyAccelerationFromGhosts(void);
-  virtual void CheckBoundaries(void);
+  void CheckBoundaries(void);
 
   // Initial conditions routines
   // --------------------------------------------------------------------------
-  virtual void BinaryStar(void);
-  virtual void BossBodenheimer(void);
-  virtual void CheckInitialConditions(void);
-  virtual void ContactDiscontinuity(void);
-  virtual void KHI(void);
-  virtual void NohProblem(void);
-  virtual void PlummerSphere(void);
-  virtual void ShockTube(void);
-  virtual void SedovBlastWave(void);
-  virtual void ShearFlow(void);
-  virtual void SoundWave(void);
-  virtual void UniformBox(void);
-  virtual void UniformSphere(void);
+  void BinaryStar(void);
+  void BossBodenheimer(void);
+  void CheckInitialConditions(void);
+  void ContactDiscontinuity(void);
+  void KHI(void);
+  void NohProblem(void);
+  void PlummerSphere(void);
+  void ShockTube(void);
+  void SedovBlastWave(void);
+  void ShearFlow(void);
+  void SoundWave(void);
+  void UniformBox(void);
+  void UniformSphere(void);
 
   // Input-output routines
   // --------------------------------------------------------------------------
-  virtual bool ReadSnapshotFile(string,string);
   virtual bool ReadColumnSnapshotFile(string);
-  virtual bool WriteSnapshotFile(string,string);
   virtual bool WriteColumnSnapshotFile(string);
 
   // Variables
@@ -267,5 +197,7 @@ class SphSimulation : public SphSimulationBase {
   Nbody<ndim> *nbody;                   ///< N-body algorithm pointer
 
 };
+#endif
+
 
 #endif
