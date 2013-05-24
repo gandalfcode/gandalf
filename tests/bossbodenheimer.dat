@@ -7,13 +7,29 @@ Freefall collapse test
 ----------------------------
 Initial conditions variables
 ----------------------------
-Simulation run id string                    : run_id = FREEFALL1
-Select shocktube initial conditions         : ic = sphere
+Simulation run id string                    : run_id = BB1
+Select shocktube initial conditions         : ic = bb
 Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Npart = 1000
+No. of SPH particles                        : Npart = 2000
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
-Use dimensionless units                     : dimensionless = true
+Cloud mass                                  : mcloud = 1.0
+Radius of cloud                             : radius = 0.01037
+Angular velocity of cloud                   : angvel = 1.6e-12
+Perturbation amplitude                      : amp = 0.5
 
+
+--------------------------
+Simulation units variables
+--------------------------
+Use physical units                          : dimensionless = false
+Length units                                : routunit = pc
+Mass units                                  : moutunit = m_sun
+Time units                                  : toutunit = myr
+Velocity units                              : voutunit = km_s
+Density units                               : rhooutunit = g_cm3
+Temperature units                           : tempoutunit = K
+Specific internal energy units              : uoutunit = J_kg
+Angular velocity unit                       : angvelunit = rad_s
 
 
 -----------------------------
@@ -36,17 +52,21 @@ RHS boundary type in z-dimension            : z_boundary_rhs = open
 -------------------------
 Simulation time variables
 -------------------------
-Simulation end time                         : tend = 0.3
-Regular snapshot output frequency           : dt_snap = 0.03
+Simulation end time                         : tend = 0.03
+Regular snapshot output frequency           : dt_snap = 0.002
 Screen output frequency (in no. of steps)   : noutputstep = 1
 
 
 -----------------------
 Thermal physics options
 -----------------------
-Switch-on hydrodynamical forces             : hydro_forces = 0
-Main gas thermal physics treatment          : gas_eos = isothermal
-Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = barotropic
+Ratio of specific heats of gas              : gamma_eos = 1.6666666666666666666
+Polytropic index for adiabatic gas          : eta_eos = 1.4
+Isothermal temperature                      : temp0 = 10.0
+Mean gas particle mass                      : mu_bar = 2.35
+
 
 
 ---------------------------------------
@@ -54,7 +74,7 @@ Smoothed Particle Hydrodynamics options
 ---------------------------------------
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = m4
-SPH smoothing length iteration tolerance    : h_converge = 0.002
+SPH smoothing length iteration tolerance    : h_converge = 0.01
 
 
 --------------------------------
@@ -80,7 +100,7 @@ No. of block timestep levels                : Nlevels = 1
 Optimisation options
 --------------------
 Tabulate SPH kernel                         : tabulated_kernel = 0
-SPH neighbour search algorithm              : neib_search = grid
+SPH neighbour search algorithm              : neib_search = bruteforce
 
 
 -------------

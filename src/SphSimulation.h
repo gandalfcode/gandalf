@@ -110,6 +110,7 @@ class SimulationBase
 };
 
 
+
 #if !defined(SWIG)
 //=============================================================================
 //  Class SphSimulation

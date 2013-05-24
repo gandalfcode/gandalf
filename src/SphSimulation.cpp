@@ -266,6 +266,7 @@ void SimulationBase::InteractiveRun
   // --------------------------------------------------------------------------
 
   CalculateDiagnostics();
+  OutputDiagnostics();
   UpdateDiagnostics();
 
   return;
@@ -285,7 +286,8 @@ void SimulationBase::Output(void)
 
   debug2("[SphSimulation::Output]");
 
-  if (Nsteps%noutputstep == 0) cout << "t : " << t << "    Nsteps : " 
+  if (Nsteps%noutputstep == 0) cout << "t : " << t*simunits.t.outscale << " " 
+				    << simunits.t.outunit << "    Nsteps : " 
 				    << Nsteps << endl;
 
   // Output a data snapshot if reached required time
@@ -318,6 +320,8 @@ void Simulation<ndim>::GenerateIC(void)
   if (simparams->stringparams["ic"] == "file")
     ReadSnapshotFile(simparams->stringparams["in_file"],
 		     simparams->stringparams["in_file_form"]);
+  else if (simparams->stringparams["ic"] == "bb")
+    BossBodenheimer();
   else if (simparams->stringparams["ic"] == "box")
     UniformBox();
   else if (simparams->stringparams["ic"] == "sphere")
@@ -401,6 +405,25 @@ void Simulation<ndim>::ProcessParameters(void)
         simparams->stringparams["acond"];
     ExceptionHandler::getIstance().raise(message);
   }
+
+  // Set-up all output units for scaling parameters
+  simunits.r.outunit = stringparams["routunit"];
+  simunits.m.outunit = stringparams["moutunit"];
+  simunits.t.outunit = stringparams["toutunit"];
+  simunits.v.outunit = stringparams["voutunit"];
+  simunits.a.outunit = stringparams["aoutunit"];
+  simunits.rho.outunit = stringparams["rhooutunit"];
+  simunits.press.outunit = stringparams["pressoutunit"];
+  simunits.f.outunit = stringparams["foutunit"];
+  simunits.E.outunit = stringparams["Eoutunit"];
+  simunits.mom.outunit = stringparams["momoutunit"];
+  simunits.angmom.outunit = stringparams["angmomoutunit"];
+  simunits.angvel.outunit = stringparams["angveloutunit"];
+  simunits.dmdt.outunit = stringparams["dmdtoutunit"];
+  simunits.u.outunit = stringparams["uoutunit"];
+  simunits.dudt.outunit = stringparams["dudtoutunit"];
+  simunits.temp.outunit = stringparams["tempoutunit"];
+  simunits.SetupUnits(simparams);
 
   // Create SPH object based on chosen method in params file
   // --------------------------------------------------------------------------
@@ -559,12 +582,14 @@ void Simulation<ndim>::ProcessParameters(void)
   else if (gas_eos == "isothermal")
     sph->eos = new Isothermal<ndim>(floatparams["temp0"],
 				    floatparams["mu_bar"],
-				    floatparams["gamma_eos"]);
+				    floatparams["gamma_eos"],
+                                    &simunits);
   else if (gas_eos == "barotropic")
     sph->eos = new Barotropic<ndim>(floatparams["temp0"],
 				    floatparams["mu_bar"],
 				    floatparams["gamma_eos"],
-				    floatparams["rho_bary"]);
+				    floatparams["rho_bary"],
+                                    &simunits);
   else {
     string message = "Unrecognised parameter : gas_eos = " + gas_eos;
     ExceptionHandler::getIstance().raise(message);
@@ -720,12 +745,12 @@ void Simulation<ndim>::ProcessParameters(void)
   simbox.y_boundary_rhs = stringparams["y_boundary_rhs"];
   simbox.z_boundary_lhs = stringparams["z_boundary_lhs"];
   simbox.z_boundary_rhs = stringparams["z_boundary_rhs"];
-  simbox.boxmin[0] = floatparams["boxmin[0]"];
-  simbox.boxmin[1] = floatparams["boxmin[1]"];
-  simbox.boxmin[2] = floatparams["boxmin[2]"];
-  simbox.boxmax[0] = floatparams["boxmax[0]"];
-  simbox.boxmax[1] = floatparams["boxmax[1]"];
-  simbox.boxmax[2] = floatparams["boxmax[2]"];
+  simbox.boxmin[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
+  simbox.boxmin[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
+  simbox.boxmin[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
+  simbox.boxmax[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
+  simbox.boxmax[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
+  simbox.boxmax[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
   for (int k=0; k<3; k++) {
     simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
     simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
@@ -738,8 +763,8 @@ void Simulation<ndim>::ProcessParameters(void)
   Nstepsmax = intparams["Nstepsmax"];
   run_id = stringparams["run_id"];
   out_file_form = stringparams["out_file_form"];
-  tend = floatparams["tend"];
-  dt_snap = floatparams["dt_snap"];
+  tend = floatparams["tend"]/simunits.t.outscale;
+  dt_snap = floatparams["dt_snap"]/simunits.t.outscale;
   noutputstep = intparams["noutputstep"];
   Nlevels = intparams["Nlevels"];
   sph_single_timestep = intparams["sph_single_timestep"];

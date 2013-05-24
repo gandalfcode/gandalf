@@ -177,6 +177,8 @@ void Parameters::SetDefaultValues(void)
   floatparams["lambda"] = 0.5;
   floatparams["kefrac"] = 0.0;
   floatparams["radius"] = 1.0;
+  floatparams["angvel"] = 0.0;
+  floatparams["mcloud"] = 1.0;
 
   // Integration scheme and timestep parameters
   // --------------------------------------------------------------------------
@@ -207,6 +209,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["temp0"] = 1.0;
   floatparams["mu_bar"] = 1.0;
   floatparams["rho_bary"] = 1.0e-14;
+  floatparams["eta_eos"] = 1.4;
 
   // Artificial viscosity parameters
   // --------------------------------------------------------------------------

@@ -15,10 +15,11 @@
 /// thermal physics variables.
 //=============================================================================
 template <int ndim>
-Isothermal<ndim>::Isothermal(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux):
+Isothermal<ndim>::Isothermal(FLOAT temp0aux, FLOAT mu_bar_aux, 
+                             FLOAT gamma_aux, SimUnits *units):
   EOS<ndim>(gamma_aux)
 {
-  temp0 = temp0aux;
+  temp0 = temp0aux/units->temp.outscale;
   mu_bar = mu_bar_aux;
 }
 

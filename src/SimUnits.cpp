@@ -602,102 +602,120 @@ SimUnits::~SimUnits()
 /// Calculate all scaling variables based on the chosen units from the 
 /// parameters file (and possibly input snapshot).
 //=============================================================================
-void SimUnits::SetupUnits(Parameters &params)
+void SimUnits::SetupUnits(Parameters *params)
 {
   debug1("[SimUnits::SetupUnits]");
 
   // If we are using dimensionless units, then return immediately
-  dimensionless = params.intparams["dimensionless"];
+  dimensionless = params->intparams["dimensionless"];
   if (dimensionless) return;
 
   // If not input units have been read from the snapshot file, then assume
   // units are the same as the output units in parameters file.
   // --------------------------------------------------------------------------
   if (!ReadInputUnits) {
-    params.stringparams["rinunit"] = params.stringparams["routunit"];
-    params.stringparams["minunit"] = params.stringparams["moutunit"];
-    params.stringparams["tinunit"] = params.stringparams["toutunit"];
-    params.stringparams["vinunit"] = params.stringparams["voutunit"];
-    params.stringparams["ainunit"] = params.stringparams["aoutunit"];
-    params.stringparams["rhoinunit"] = params.stringparams["rhooutunit"];
-    params.stringparams["sigmainunit"] = params.stringparams["sigmaoutunit"];
-    params.stringparams["pressinunit"] = params.stringparams["pressoutunit"];
-    params.stringparams["finunit"] = params.stringparams["foutunit"];
-    params.stringparams["Einunit"] = params.stringparams["Eoutunit"];
-    params.stringparams["mominunit"] = params.stringparams["momoutunit"];
-    params.stringparams["angmominunit"] = params.stringparams["angmomoutunit"];
-    params.stringparams["angvelinunit"] = params.stringparams["angveloutunit"];
-    params.stringparams["dmdtinunit"] = params.stringparams["dmdtoutunit"];
-    params.stringparams["Linunit"] = params.stringparams["Loutunit"];
-    params.stringparams["kappainunit"] = params.stringparams["kappaoutunit"];
-    params.stringparams["Binunit"] = params.stringparams["Boutunit"];
-    params.stringparams["Qinunit"] = params.stringparams["Qoutunit"];
-    params.stringparams["Jcurinunit"] = params.stringparams["Jcuroutunit"];
-    params.stringparams["uinunit"] = params.stringparams["uoutunit"];
-    params.stringparams["dudtinunit"] = params.stringparams["dudtoutunit"];
-    params.stringparams["tempinunit"] = params.stringparams["tempoutunit"];
+    params->stringparams["rinunit"] = params->stringparams["routunit"];
+    params->stringparams["minunit"] = params->stringparams["moutunit"];
+    params->stringparams["tinunit"] = params->stringparams["toutunit"];
+    params->stringparams["vinunit"] = params->stringparams["voutunit"];
+    params->stringparams["ainunit"] = params->stringparams["aoutunit"];
+    params->stringparams["rhoinunit"] = params->stringparams["rhooutunit"];
+    params->stringparams["sigmainunit"] = params->stringparams["sigmaoutunit"];
+    params->stringparams["pressinunit"] = params->stringparams["pressoutunit"];
+    params->stringparams["finunit"] = params->stringparams["foutunit"];
+    params->stringparams["Einunit"] = params->stringparams["Eoutunit"];
+    params->stringparams["mominunit"] = params->stringparams["momoutunit"];
+    params->stringparams["angmominunit"] = params->stringparams["angmomoutunit"];
+    params->stringparams["angvelinunit"] = params->stringparams["angveloutunit"];
+    params->stringparams["dmdtinunit"] = params->stringparams["dmdtoutunit"];
+    params->stringparams["Linunit"] = params->stringparams["Loutunit"];
+    params->stringparams["kappainunit"] = params->stringparams["kappaoutunit"];
+    params->stringparams["Binunit"] = params->stringparams["Boutunit"];
+    params->stringparams["Qinunit"] = params->stringparams["Qoutunit"];
+    params->stringparams["Jcurinunit"] = params->stringparams["Jcuroutunit"];
+    params->stringparams["uinunit"] = params->stringparams["uoutunit"];
+    params->stringparams["dudtinunit"] = params->stringparams["dudtoutunit"];
+    params->stringparams["tempinunit"] = params->stringparams["tempoutunit"];
   }
 
   // Length units
   // --------------------------------------------------------------------------
-  r.inSI = r.SIUnit(params.stringparams["rinunit"]);
-  r.outSI = r.SIUnit(params.stringparams["routunit"]);
-  r.inscale = 1.0;
-  r.outscale = r.inscale*r.inSI/r.outSI;
+  r.inSI = r.SIUnit(params->stringparams["rinunit"]);
+  r.outSI = r.SIUnit(params->stringparams["routunit"]);
   r.outcgs = 100.0*r.outSI;
+  r.outscale = 1.0;
+  r.inscale = r.outscale*r.outSI/r.inSI;
+
+  cout << "Length unit  = " << r.outscale << params->stringparams["routunit"]
+       << "     (SI = " << r.outscale*r.outSI << " m )" << endl;
 
   // Mass units
   // --------------------------------------------------------------------------
-  m.inSI = m.SIUnit(params.stringparams["minunit"]);
-  m.outSI = m.SIUnit(params.stringparams["moutunit"]);
-  m.inscale = 1.0;
-  m.outscale = m.inscale*m.inSI/m.outSI;
+  m.inSI = m.SIUnit(params->stringparams["minunit"]);
+  m.outSI = m.SIUnit(params->stringparams["moutunit"]);
   m.outcgs = 1000.0*m.outSI;
+  m.outscale = 1.0;
+  m.inscale = m.outscale*m.outSI/m.inSI;
+
+  cout << "Mass unit    = " << m.outscale << params->stringparams["moutunit"]
+       << "     (SI = " << m.outscale*m.outSI << " kg )" << endl;
 
   // Time units
   // --------------------------------------------------------------------------
-  t.inSI = t.SIUnit(params.stringparams["tinunit"]);
-  t.outSI = t.SIUnit(params.stringparams["toutunit"]);
+  t.inSI = t.SIUnit(params->stringparams["tinunit"]);
+  t.outSI = t.SIUnit(params->stringparams["toutunit"]);
   t.inscale = pow(r.inscale*r.inSI,1.5)/sqrt(m.inscale*m.inSI*G_const);
   t.inscale /= t.inSI;
   t.outscale = pow(r.outscale*r.outSI,1.5)/sqrt(m.outscale*m.outSI*G_const);
   t.outscale /= t.outSI;
   t.outcgs = t.outSI;
 
+  cout << "Time unit    = " << t.outscale << params->stringparams["toutunit"]
+       << "     (SI = " << t.outscale*m.outSI << " s )" << endl;
+
   // Velocity units
   // --------------------------------------------------------------------------
-  v.inSI = v.SIUnit(params.stringparams["vinunit"]);
-  v.outSI = v.SIUnit(params.stringparams["voutunit"]);
+  v.inSI = v.SIUnit(params->stringparams["vinunit"]);
+  v.outSI = v.SIUnit(params->stringparams["voutunit"]);
   v.inscale = r.inscale*r.inSI/(t.inscale*t.inSI);
   v.inscale /= v.inSI;
   v.outscale = r.outscale*r.outSI/(t.outscale*t.outSI);
   v.outscale /= v.outSI;
   v.outcgs = 100.0*v.outSI;
 
+  cout << "Velocity unit = " << v.outscale << params->stringparams["voutunit"]
+       << "     (SI = " << v.outscale*v.outSI << " m_s )" << endl;
+
   // Acceleration units
   // --------------------------------------------------------------------------
-  a.inSI = a.SIUnit(params.stringparams["ainunit"]);
-  a.outSI = a.SIUnit(params.stringparams["aoutunit"]);
+  a.inSI = a.SIUnit(params->stringparams["ainunit"]);
+  a.outSI = a.SIUnit(params->stringparams["aoutunit"]);
   a.inscale = (r.inscale*r.inSI)/(t.inscale*t.inSI*t.inscale*t.inSI);
   a.inscale = a.inscale / a.inSI;
   a.outscale = (r.outscale*r.outSI)/(t.outscale*t.outSI*t.outscale*t.outSI);
   a.outscale = a.outscale / a.outSI;
   a.outcgs = 100.0*a.outSI;
 
+  cout << "Accel. unit  = " << a.outscale << params->stringparams["aoutunit"]
+       << "     (SI = " << a.outscale*m.outSI << " m_s2 )" << endl;
+
   // Density units
   // --------------------------------------------------------------------------
-  rho.inSI = rho.SIUnit(params.stringparams["rhoinunit"]);
-  rho.outSI = rho.SIUnit(params.stringparams["rhooutunit"]);
+  rho.inSI = rho.SIUnit(params->stringparams["rhoinunit"]);
+  rho.outSI = rho.SIUnit(params->stringparams["rhooutunit"]);
   rho.inscale = (m.inscale*m.inSI) / pow(r.inscale*r.inSI,3);
   rho.inscale = rho.inscale / rho.inSI;
   rho.outscale = (m.outscale*m.outSI) / pow(r.outscale*r.outSI,3);
   rho.outscale = rho.outscale / rho.outSI;
   rho.outcgs = 1.0e-3*rho.outSI;
 
+  cout << "Density unit  = " << rho.outscale << params->stringparams["rhooutunit"]
+       << "     (SI = " << rho.outscale*rho.outSI << " kg_m3 )" << endl;
+
   // Pressure units
   // --------------------------------------------------------------------------
-  press.inSI = press.SIUnit(params.stringparams["pressinunit"]);
-  press.outSI = press.SIUnit(params.stringparams["pressoutunit"]);
+  press.inSI = press.SIUnit(params->stringparams["pressinunit"]);
+  press.outSI = press.SIUnit(params->stringparams["pressoutunit"]);
   press.inscale = (m.inscale*m.inSI) / 
     (r.inscale*r.inSI*t.inscale*t.inSI*t.inscale*t.inSI);
   press.inscale = press.inscale / press.inSI;
@@ -708,8 +726,8 @@ void SimUnits::SetupUnits(Parameters &params)
 
   // Force units
   // --------------------------------------------------------------------------
-  f.inSI = f.SIUnit(params.stringparams["forceinunit"]);
-  f.outSI = f.SIUnit(params.stringparams["forceoutunit"]);
+  f.inSI = f.SIUnit(params->stringparams["forceinunit"]);
+  f.outSI = f.SIUnit(params->stringparams["forceoutunit"]);
   f.inscale = (m.inscale*m.inSI*r.inscale*r.inSI)/
     (t.inscale*t.inscale*t.inSI*t.inSI);
   f.inscale = f.inscale / f.inSI;
@@ -720,8 +738,8 @@ void SimUnits::SetupUnits(Parameters &params)
 
   // Energy units
   // --------------------------------------------------------------------------
-  E.inSI = E.SIUnit(params.stringparams["Einunit"]);
-  E.outSI = E.SIUnit(params.stringparams["Eoutunit"]);
+  E.inSI = E.SIUnit(params->stringparams["Einunit"]);
+  E.outSI = E.SIUnit(params->stringparams["Eoutunit"]);
   E.inscale = m.inscale*m.inSI*pow(r.inscale*r.inSI,2)/pow(t.inscale*t.inSI,2);
   E.inscale = E.inscale / E.inSI;
   E.outscale = m.outscale*m.outSI*pow(r.outscale*r.outSI,2)/
@@ -729,10 +747,13 @@ void SimUnits::SetupUnits(Parameters &params)
   E.outscale = E.outscale / E.outSI;
   E.outcgs = 1.0e7*E.outSI;
 
+  cout << "Energy unit  = " << E.outscale << params->stringparams["Eoutunit"]
+       << "     (SI = " << E.outscale*E.outSI << " J )" << endl;
+
   // Momentum units
   // --------------------------------------------------------------------------
-  mom.inSI = mom.SIUnit(params.stringparams["mominunit"]);
-  mom.outSI = mom.SIUnit(params.stringparams["momoutunit"]);
+  mom.inSI = mom.SIUnit(params->stringparams["mominunit"]);
+  mom.outSI = mom.SIUnit(params->stringparams["momoutunit"]);
   mom.inscale = m.inscale*m.inSI*r.inscale*r.inSI/(t.inscale*t.inSI);
   mom.inscale = mom.inscale / mom.inSI;
   mom.outscale = m.outscale*m.outSI*r.outscale*r.outSI/(t.outscale*t.outSI);
@@ -741,8 +762,8 @@ void SimUnits::SetupUnits(Parameters &params)
 
   // Angular momentum units
   // --------------------------------------------------------------------------
-  angmom.inSI = angmom.SIUnit(params.stringparams["angmominunit"]);
-  angmom.outSI = angmom.SIUnit(params.stringparams["angmomoutunit"]);
+  angmom.inSI = angmom.SIUnit(params->stringparams["angmominunit"]);
+  angmom.outSI = angmom.SIUnit(params->stringparams["angmomoutunit"]);
   angmom.inscale = m.inscale*m.inSI*pow(r.inscale*r.inSI,2)/(t.inscale*t.inSI);
   angmom.inscale = angmom.inscale / angmom.inSI;
   angmom.outscale = m.outscale*m.outSI*pow(r.outscale*r.outSI,2)/
@@ -752,18 +773,21 @@ void SimUnits::SetupUnits(Parameters &params)
 
   // Angular velocity units
   // --------------------------------------------------------------------------
-  angvel.inSI = angvel.SIUnit(params.stringparams["angvelinunit"]);
-  angvel.outSI = angvel.SIUnit(params.stringparams["angveloutunit"]);
+  angvel.inSI = angvel.SIUnit(params->stringparams["angvelinunit"]);
+  angvel.outSI = angvel.SIUnit(params->stringparams["angveloutunit"]);
   angvel.inscale = 1.0/(t.inscale*t.inSI);
   angvel.inscale = angvel.inscale / angvel.inSI;
   angvel.outscale = 1.0/(t.outscale*t.outSI);
   angvel.outscale = angvel.outscale / angvel.outSI;
   angvel.outcgs = angvel.outSI;
 
+  cout << "Ang vel unit  = " << angvel.outscale << params->stringparams["angveloutunit"]
+       << "     (SI = " << angvel.outscale*angvel.outSI << " rad_s )" << endl;
+
   // Mass rate units
   // --------------------------------------------------------------------------
-  dmdt.inSI = dmdt.SIUnit(params.stringparams["dmdtinunit"]);
-  dmdt.outSI = dmdt.SIUnit(params.stringparams["dmdtoutunit"]);
+  dmdt.inSI = dmdt.SIUnit(params->stringparams["dmdtinunit"]);
+  dmdt.outSI = dmdt.SIUnit(params->stringparams["dmdtoutunit"]);
   dmdt.inscale = m.inscale*m.inSI/(t.inscale*t.inSI);
   dmdt.inscale = dmdt.inscale / dmdt.inSI;
   dmdt.outscale = m.outscale*m.outSI/(t.outscale*t.outSI);
@@ -772,8 +796,8 @@ void SimUnits::SetupUnits(Parameters &params)
 
   // Specific internal energy units
   // --------------------------------------------------------------------------
-  u.inSI = u.SIUnit(params.stringparams["uinunit"]);
-  u.outSI = u.SIUnit(params.stringparams["uoutunit"]);
+  u.inSI = u.SIUnit(params->stringparams["uinunit"]);
+  u.outSI = u.SIUnit(params->stringparams["uoutunit"]);
   u.inscale = pow(r.inscale*r.inSI,2)/pow(t.inscale*t.inSI,2);
   u.inscale = u.inscale / u.inSI;
   u.outscale = pow(r.outscale*r.outSI,2)/pow(t.outscale*t.outSI,2);
@@ -782,8 +806,8 @@ void SimUnits::SetupUnits(Parameters &params)
 
   // Rate of change of specific internal energy units
   // --------------------------------------------------------------------------
-  dudt.inSI = dudt.SIUnit(params.stringparams["dudtinunit"]);
-  dudt.outSI = dudt.SIUnit(params.stringparams["dudtoutunit"]);
+  dudt.inSI = dudt.SIUnit(params->stringparams["dudtinunit"]);
+  dudt.outSI = dudt.SIUnit(params->stringparams["dudtoutunit"]);
   dudt.inscale = pow(r.inscale*r.inSI,2)/pow(t.inscale*t.inSI,3);
   dudt.inscale = dudt.inscale / dudt.inSI;
   dudt.outscale = pow(r.outscale*r.outSI,2)/pow(t.outscale*t.outSI,3);
@@ -792,13 +816,16 @@ void SimUnits::SetupUnits(Parameters &params)
 
   // Temperature units
   // --------------------------------------------------------------------------
-  temp.inSI = temp.SIUnit(params.stringparams["tempinunit"]);
-  temp.outSI = temp.SIUnit(params.stringparams["tempoutunit"]);
+  temp.inSI = temp.SIUnit(params->stringparams["tempinunit"]);
+  temp.outSI = temp.SIUnit(params->stringparams["tempoutunit"]);
   temp.inscale = (m_hydrogen*u.inscale*u.inSI)/k_boltzmann;
   temp.inscale = temp.inscale / temp.inSI;
   temp.outscale = (m_hydrogen*u.outscale*u.outSI)/k_boltzmann;
   temp.outscale = temp.outscale / temp.outSI;
   temp.outcgs = temp.outSI;
+
+  cout << "Temperature unit  = " << temp.outscale << params->stringparams["tempoutunit"]
+       << "     (SI = " << temp.outscale*temp.outSI << " K )" << endl;
 
   return;
 }

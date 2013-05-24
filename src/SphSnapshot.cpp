@@ -352,6 +352,7 @@ UnitInfo SphSnapshotBase::ExtractArray(string name, float** out_array, int* size
 }
 
 
+
 // ============================================================================
 // SphSnapshotBase::ReadSnapshot
 // Read snapshot into main memory and then copy into snapshot buffer.

@@ -114,10 +114,10 @@ void Simulation<ndim>::OutputDiagnostics(void)
   cout << "Printing out diagnostics" << endl;
   cout << "Nsph       : " << sph->Nsph << endl;
   cout << "Nstar      : " << nbody->Nstar << endl;
-  cout << "Etot       : " << diag.Etot << endl;
-  cout << "ketot      : " << diag.ketot << endl;
-  if (sph->hydro_forces == 1) cout << "utot       : " << diag.utot << endl;
-  cout << "gpetot     : " << diag.gpetot << endl;
+  cout << "Etot       : " << diag.Etot*simunits.E.outscale << endl;
+  cout << "ketot      : " << diag.ketot*simunits.E.outscale << endl;
+  if (sph->hydro_forces == 1) cout << "utot       : " << diag.utot*simunits.E.outscale << endl;
+  cout << "gpetot     : " << diag.gpetot*simunits.E.outscale << endl;
   if (ndim == 1) {
     cout << "mom        : " << diag.mom[0] << endl;
     cout << "force      : " << diag.force[0] << endl;
@@ -140,6 +140,9 @@ void Simulation<ndim>::OutputDiagnostics(void)
     cout << "ang mom    : " << diag.angmom[0] << "   "
 	 << diag.angmom[1] << "   " << diag.angmom[2] << endl;
   }
+
+  cout << "TEMP : " << sph->eos->Temperature(sph->sphdata[0])*simunits.temp.outscale << simunits.temp.outunit << endl;
+
 
   return;
 }

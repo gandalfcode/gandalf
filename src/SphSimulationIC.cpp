@@ -727,13 +727,13 @@ void Simulation<ndim>::BossBodenheimer(void)
 
   // Create local copies of initial conditions parameters
   int Npart = simparams->intparams["Npart"];
+  FLOAT amp = simparams->floatparams["amp"];
   FLOAT angvel = simparams->floatparams["angvel"];
   FLOAT mcloud = simparams->floatparams["mcloud"];
   FLOAT mu_bar = simparams->floatparams["mu_bar"];
   FLOAT press = simparams->floatparams["press1"];
   FLOAT radius = simparams->floatparams["radius"];
   FLOAT temp0 = simparams->floatparams["temp0"];
-
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
   string particle_dist = simparams->stringparams["particle_distribution"];
 
@@ -745,6 +745,8 @@ void Simulation<ndim>::BossBodenheimer(void)
   press /= simunits.press.outscale;
   radius /= simunits.r.outscale;
   temp0 /= simunits.temp.outscale;
+
+  cout << "ANGVEL : " << angvel*radius*simunits.v.outscale << simunits.v.outunit << endl;
 
   r = new FLOAT[ndim*Npart];
   v = new FLOAT[ndim*Npart];
@@ -775,7 +777,7 @@ void Simulation<ndim>::BossBodenheimer(void)
   rho = 3.0*mcloud / (4.0*pi*pow(radius,3));
 
   // Perturb positions of particles in cloud
-  AddAzimuthalDensityPerturbation(Npart,2,0.1,rcentre,r);
+  AddAzimuthalDensityPerturbation(Npart,2,amp,rcentre,r);
 
   // Add solid-body rotational velocity field
   AddRotationalVelocityField(Npart,angvel,rcentre,r,v);
@@ -1421,7 +1423,7 @@ void Simulation<ndim>::AddRandomSphere
 
 
 //=============================================================================
-//  SphSimulation::AddLatticesphere
+//  SphSimulation::AddLatticeSphere
 /// Add sphere of particles cut-out of regular lattice
 //=============================================================================
 template <int ndim>
@@ -1464,7 +1466,7 @@ int Simulation<ndim>::AddLatticeSphere
 
   // Copy particle positions to main position array to be returned
   for (i=0; i<Naux; i++)
-    for (k=0; k<ndim; k++) r[ndim*i + k] = raux[ndim*i + k];
+    for (k=0; k<ndim; k++) r[ndim*i + k] = radius*raux[ndim*i + k];
 
   // Free allocated memory
   delete[] raux;
@@ -1734,7 +1736,7 @@ void Simulation<ndim>::AddAzimuthalDensityPerturbation
 
     if (rpos[0] < 0.0 && rpos[1] > 0.0) phi = pi - phi;
     else if (rpos[0] < 0.0 && rpos[1] < 0.0) phi = pi + phi;
-    else if (rpos[0] > 0.0 && rpos[1] < 0.0) phi = 2.0*pi + phi;
+    else if (rpos[0] > 0.0 && rpos[1] < 0.0) phi = 2.0*pi - phi;
 
     // Wrap angle to fit between 0 and two*pi
     if (phi < amp/(FLOAT) mpert) phi = phi + twopi;
@@ -1756,8 +1758,8 @@ void Simulation<ndim>::AddAzimuthalDensityPerturbation
     }
 
     // Reposition particle with new angle
-    r[ndim*i] = rpos[0] + Rmag*cos(phiprime);
-    r[ndim*i + 1] = rpos[1] + Rmag*sin(phiprime);
+    r[ndim*i] = rcentre[0] + Rmag*cos(phiprime);
+    r[ndim*i + 1] = rcentre[1] + Rmag*sin(phiprime);
 
   }
   // --------------------------------------------------------------------------

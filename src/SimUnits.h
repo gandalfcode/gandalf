@@ -370,7 +370,7 @@ class SimUnits
   SimUnits();
   ~SimUnits();
 
-  void SetupUnits(Parameters &);
+  void SetupUnits(Parameters *);
 
   int dimensionless;                ///< Are we using dimensionless units?
   bool ReadInputUnits;              ///< Are input units read from snapshot?
