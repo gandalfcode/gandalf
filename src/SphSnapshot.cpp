@@ -44,7 +44,7 @@ SphSnapshotBase::SphSnapshotBase(string auxfilename)
 template <int ndims>
 SphSnapshot<ndims>::SphSnapshot (string filename, SimulationBase* sim):
 SphSnapshotBase(filename),
-simulation(static_cast<SimulationDim<ndims>* > (sim))
+simulation(static_cast<Simulation<ndims>* > (sim))
 {
   this->ndim = ndims;
 }

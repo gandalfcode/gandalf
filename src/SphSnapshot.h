@@ -89,6 +89,6 @@ public:
   void CopyDataFromSimulation();
   void ReadSnapshot(string);
 
-  SimulationDim<ndims>* simulation;
+  Simulation<ndims>* simulation;
 };
 #endif
