@@ -139,15 +139,14 @@ class Simulation : public SimulationBase {
   // --------------------------------------------------------------------------
   virtual void PreSetupForPython(void);
   virtual void ImportArray(double* input, int size, string quantity);
-  virtual void PostGeneration(void);
   virtual void GenerateIC(void);
-  virtual void ProcessParameters(void);
+  virtual void ProcessParameters(void)=0;
   virtual void CalculateDiagnostics(void);
   virtual void OutputDiagnostics(void);
   virtual void UpdateDiagnostics(void);
+  virtual void ComputeGlobalTimestep(void)=0;
+  virtual void ComputeBlockTimesteps(void)=0;
 
-  void ComputeGlobalTimestep(void);
-  void ComputeBlockTimesteps(void);
 #if defined(VERIFY_ALL)
   void VerifyBlockTimesteps(void);
 #endif
@@ -211,9 +210,21 @@ class SphSimulation : public Simulation<ndim> {
   using Simulation<ndim>::t;
   using Simulation<ndim>::timestep;
   using Simulation<ndim>::level_step;
+  using Simulation<ndim>::Noutsnap;
+  using Simulation<ndim>::tsnapnext;
+  using Simulation<ndim>::dt_snap;
+  using Simulation<ndim>::level_max;
+  using Simulation<ndim>::integration_step;
+  using Simulation<ndim>::nresync;
+  using Simulation<ndim>::dt_max;
+  using Simulation<ndim>::sph_single_timestep;
 public:
   SphSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
+  virtual void PostGeneration(void);
   virtual void MainLoop(void);
+  virtual void ComputeGlobalTimestep(void);
+  virtual void ComputeBlockTimesteps(void);
+  virtual void ProcessParameters(void);
 };
 
 template <int ndim>
@@ -230,9 +241,21 @@ class GodunovSimulation : public Simulation<ndim> {
   using Simulation<ndim>::t;
   using Simulation<ndim>::timestep;
   using Simulation<ndim>::level_step;
+  using Simulation<ndim>::Noutsnap;
+  using Simulation<ndim>::tsnapnext;
+  using Simulation<ndim>::dt_snap;
+  using Simulation<ndim>::level_max;
+  using Simulation<ndim>::integration_step;
+  using Simulation<ndim>::nresync;
+  using Simulation<ndim>::dt_max;
+  using Simulation<ndim>::sph_single_timestep;
 public:
   GodunovSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
+  virtual void PostGeneration(void);
   virtual void MainLoop(void);
+  virtual void ComputeGlobalTimestep(void);
+  virtual void ComputeBlockTimesteps(void);
+  virtual void ProcessParameters(void);
 };
 
 #endif
