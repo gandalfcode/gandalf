@@ -341,14 +341,14 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
   _species.clear();
 
   //Read which species are there
-  if (simulation->sph != NULL) {
+  if (simulation->sph != NULL && simulation->sph->sphdata != NULL) {
     sphaux = simulation->sph->sphdata;
     Nsph = simulation->sph->Nsph;
     if (Nsph != 0) {
       _species.push_back("sph");
     }
   }
-  if (simulation->nbody != NULL) {
+  if (simulation->nbody != NULL && simulation->nbody->stardata != NULL) {
     staraux = simulation->nbody->stardata;
     Nstar = simulation->nbody->Nstar;
     if (Nstar != 0) {
@@ -429,7 +429,28 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
   return;
 }
 
+// ============================================================================
+// SphSnapshotBase::GetRealType
+// Convert the given type into the 'real' type, meaning, if we pass default,
+// gives back the true underlying type
+// ============================================================================
+string SphSnapshotBase::GetRealType(string type) {
+  //Default is: if there is only one species, then we use that one
+  //Otherwise, we return sph particles
+  if (type=="default") {
+    if (GetNTypes() == 0){
+      string message = "Error: the requested simulation has no species!!!";
+      ExceptionHandler::getIstance().raise(message);
+    }
+    else if (GetNTypes()==1)
+      type=GetSpecies(0);
+    else
+      type="sph";
+  }
 
+  return type;
+
+}
 
 // ============================================================================
 // SphSnapshotBase::ExtractArray
@@ -458,6 +479,9 @@ UnitInfo SphSnapshotBase::ExtractArray(string name, string type, float** out_arr
 
   //Set last time used
   LastUsed = time(NULL);
+
+  //Get the real underlying type, in case we are passing "default"
+  type = GetRealType(type);
 
   //Check type
   if (type != "sph" && type != "star") {

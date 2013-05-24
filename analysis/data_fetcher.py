@@ -73,7 +73,7 @@ class DirectDataFetcher:
             raise Exception ("Error: the quantity" + quantity + " is not a direct quantity!")
         self._quantity = quantity
         
-    def fetch(self, snap="current", unit="default"):
+    def fetch(self, type="default", snap="current", unit="default"):
         
         if snap=="current":
             snap=SimBuffer.get_current_snapshot()
@@ -82,7 +82,7 @@ class DirectDataFetcher:
         if kind != "direct":
             raise Exception ("Error: the quantity" + quantity + " is not a direct quantity!")
         
-        return snap.ExtractArray(self._quantity, unit)
+        return snap.ExtractArray(self._quantity, type, unit)
     
 class FormulaDataFetcher:
     
@@ -96,12 +96,12 @@ class FormulaDataFetcher:
         self.unitinfo.label=unitlabel
         self.unitinfo.name=unitname
         
-    def fetch(self, snap="current", unit="default"):
+    def fetch(self, type="default", snap="current", unit="default"):
         
         if snap=="current":
             snap=SimBuffer.get_current_snapshot()
         
-        result = evaluateStack(list(self._stack), snap)
+        result = evaluateStack(list(self._stack), type, snap)
         return self.unitinfo, result, self.scaling_factor
     
 class FunctionTimeDataFetcher:

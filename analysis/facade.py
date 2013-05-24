@@ -6,6 +6,8 @@ from seren.analysis.SimBuffer import SimBuffer, BufferException
 
 manager= Manager()
 
+#TODO: in all the Python code, raise proper exceptions rather than a generic Exception
+#TODO: the tests should not fail
 
 class Singletons:
     '''Container class for singletons object. They are:
@@ -56,7 +58,7 @@ def loadsim(run_id, fileformat = 'ascii', buffer_flag = 'cache'):
     SimBuffer.loadsim(run_id, fileformat=fileformat, buffer_flag=buffer_flag)
     return SimBuffer.get_current_sim()
     
-def plot(x,y, snap="current", sim="current", overplot = False, autoscale = True, xunit="default", yunit="default"):
+def plot(x,y, type="default", snap="current", sim="current", overplot = False, autoscale = True, xunit="default", yunit="default", **kwargs):
     '''Plot particle data as a scatter plot.  Creates a new plotting window if
 one does not already exist.
 
@@ -79,11 +81,21 @@ Optional arguments:
                  on the x-axis.
     yunit      : Specify the unit to use for the plotting for the quantity
                  on the y-axis.
+    **kwargs   : Extra keyword arguments will be passed to the matplotlib 'plot'
+                 function used to plot
     '''
     
     
     simno = get_sim_no(sim)
-    command = Commands.ParticlePlotCommand(x, y, snap, simno, overplot, autoscale, xunit, yunit)
+    #if we are plotting all species, call plot in turn
+    if type=="all":
+        sim = SimBuffer.get_sim_no(simno)
+        snapobject = SimBuffer.get_snapshot_extended(sim, snap)
+        nspecies = snapobject.GetNTypes()
+        for ispecies in range(nspecies):
+            plot(x,y,snapobject.GetSpecies(ispecies),snap,simno,(overplot or ispecies>0),autoscale,xunit,yunit,**kwargs)
+        return
+    command = Commands.ParticlePlotCommand(x, y, type, snap, simno, overplot, autoscale, xunit, yunit,**kwargs)
     data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
     sleep(0.001)

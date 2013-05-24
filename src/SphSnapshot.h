@@ -55,7 +55,7 @@ protected:
   virtual void ReadSnapshot(string)=0;
   int GetNTypes() {return _species.size(); };
   string GetSpecies(int ispecies) { return _species.at(ispecies); };
-
+  string GetRealType(string);
 
   // All variables
   // --------------------------------------------------------------------------

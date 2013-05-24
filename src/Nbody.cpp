@@ -42,7 +42,8 @@ Nbody<ndim>::Nbody(int nbody_softening_aux, int sub_systems_aux,
   Nsystem(0),
   Nsystemmax(0),
   Nnbody(0),
-  Nnbodymax(0)
+  Nnbodymax(0),
+  allocated(false)
 {
 }
 
