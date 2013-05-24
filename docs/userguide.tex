@@ -1,18 +1,13 @@
 \documentclass[a4paper]{article}
 \usepackage{txfonts}
-%\usepackage[scaled=0.85]{luximono}
 
 \usepackage{graphicx}
-%\usepackage{psfig}
 \usepackage{amssymb}
 \usepackage{supertabular}
 \usepackage{array}
 \usepackage[colorlinks,final]{hyperref}
 
-%\newcommand{\CODENAME}{SEREN\_VIEW}
-%\newcommand{\codename}{seren\_view}
 \newcommand{\VERNO}{0.1.0 }
-
 \newcommand{\var}[1]{\texttt{#1}}
 
 
@@ -36,12 +31,13 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Overview of code}
-CODENAME is a new SPH and N-body code written in C++ and python.  Although partly on the algorithms and code structures used in SEREN (Hubber et al. 2011), it has been written from scratch and contains many new features and optimisations which significantly improve the code.  It has been written for several purposes.
+CODENAME is a new SPH and N-body code written in C++ and python.  Although partly on the algorithms and code structures used in SEREN (Hubber et al. 2011), it has been written from scratch and contains many new features and optimisations which significantly improve the speed, functionality and usability of the code.  It has been written for several purposes.
 \begin{itemize}
-\item CODENAME can be written in three different modes; as a standard executable run from the command line (like SEREN), run from a python script or run inside an interactive python environment.  Both the script and interactive python modes include a graphical output that can be used to visualise previously run simulations, or to interactively visualise simulations as they are run.
-\item CODENAME generates initial conditions at run-time, as opposed to SEREN where the initial conditions had to be prepared a priori.
-\item CODENAME uses additional parameters to switch on various physics options, as well as requiring them to be activated in the Makefile.  In comparison, SEREN controlled physics options exclusively in the Makefile.
-%\item CODENAME uses modules to contain all subroutines.  Therefore, no additional interface file (such as interface.F90) exists in CODENAME.
+\item CODENAME has been written with a fully object-oriented philosophy in C++.  This is to improve the maintainability of the code and also to allow the code to be easily extended in the future with as little disruption to the original code-base as possible.
+\item CODENAME contains a variety of SPH algorithms such as conservative 'grad-h' SPH, Saitoh \& Makino (2013) SPH and Godunov SPH.  The N-body component contains a variety of common integration schemes such as 4th/6th-order Hermite with time-symmetric integration.
+\item CODENAME can be run in three different modes; as a standard executable run from the command line (like SEREN), run from a python script or run inside an interactive python environment.  Both the script and interactive python modes include a graphical output that can be used to visualise previously run simulations, or to interactively visualise simulations as they are run on-the-fly.
+\item CODENAME can generate initial conditions at run-time, as opposed to SEREN where the initial conditions had to be prepared a priori.  The initial conditions may either be hard-coded into the C++ code, or set-up via a python script using numpy arrays.
+\item CODENAME uses additional parameters to switch on various physics options, as well as requiring them to be activated in the Makefile.  In comparison, SEREN controlled physics options exclusively in the Makefile.  Therefore, CODENAME need not be re-compiled everytime a different setting is required.
 \end{itemize}
 
 
@@ -65,11 +61,11 @@ All of these programs/libraries can be found in most standard Linux installation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Command-line code compilation}
 
-To compile CODENAME only as a C++ executable to be run from the command line without visualisation, type \\
+To compile CODENAME only as a C++ executable to be run from the command line without visualisation, first set the chosen C++ compiler in the Makefile and type \\
 \newline
 \noindent \var{make executable} \\
 
-\noindent The code is compiled and linked with the chosen C++ compiler and all python components are ignored.
+\noindent The code is compiled and linked with the chosen C++ compiler and all python components are ignored.  If you do not have python installed on your system, or are having trouble getting the python components to function correctly, then the C++ executable can still be compiled independently.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -94,7 +90,7 @@ If you are using csh, tcsh or related shells, then add
 Also, \var{make} requires the location of the python and numpy libraries.  In most cases, \var{make} will be able to locate these libraries automatically.  However, if there is a problem, or you wish to use an alternative version of these libraries installed elsewhere on your system, then these can be set by the \var{PYLIB} and \var{NUMPY} variables in the Makefile.  
 
 
-\item To compile all components of the code, including the python libraries with swig, type \\
+\item Finally, to compile all components of the code, including the python libraries with swig, type \\
 \newline
 \noindent \var{make} or \var{make all} \\
 
@@ -106,7 +102,7 @@ Also, \var{make} requires the location of the python and numpy libraries.  In mo
 \section{Basic usage}
 CODENAME can be run in three principle modes.  
 \begin{itemize} 
-\item Command-line mode, where the code is run as a C++ executable via the command line with a parameters file (similar to SEREN), 
+\item Command-line mode, where the code is run as a C++ executable via the command line with a parameters file that selects which code options are used4 (similar to SEREN), 
 \item via a python script where the code is run in a python environment with various plotting options available as well as running the code, 
 \item in interactive mode where all the code and plotting options can be run directly by typing them into an interactive python shell.
 \end{itemize}
@@ -123,9 +119,9 @@ CODENAME can be run in three principle modes.
 where PARAMSFILE is the name of the params file for that simulation.  If the parameters file does not exist, or contains invalid parameter options, then the program will quit citing an error message.
 
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Running python scripts}
-
 
 \noindent Any python script using the CODENAME python API can be run directly from the command-line as any regular python script.  To run the script PYTHONSCRIPT.py, type \\
 \newline
@@ -135,12 +131,12 @@ or, depending on the default version of python on your system (e.g. installing m
 \newline
 \var{python2.7 PYTHONSCRIPT.py} \\
 \newline
+The code will remain inside the python environment until the script is fully executed.
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Interactive mode}
-
 
 \noindent To open the interactive viewer, type : \\
 \newline
@@ -167,6 +163,7 @@ or, depending on the default version of python on your system (e.g. installing m
 \newpage
 
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Makefile options} \label{S:MAKEFILE}
 The CODENAME Makefile is used to select options which are used to compile the code with.  If the user wishes to change any compile-time options, the code must be recompiled from scratch by typing {\var make clean}, and {\var make seren} or \var{make codename}.  For users of SEREN, the CODENAME Makefile is somewhat simpler with many options either not present (since more complex algorithms have not been implemented) or have been transfered to the parameters file.  This has been done in order to make it less likely that the wrong Makefile options are used in simulations, and also to stop the need to recompile the code completely so often when using slightly different options.
@@ -181,15 +178,15 @@ The CODENAME Makefile is used to select options which are used to compile the co
 
 \item COMPILER\_MODE : Set compiler flags for production or debug runs \\
 \begin{tabular}{ll}
-DEBUG & : Set all debug compiler options, including flags to use gdb debugger \\
-STANDARD & : Standard flag options (-O3) \\
-FAST & : -O3 + fast flag options
+DEBUG & : Set all debug compiler options, including flags to use gdb debugger and full warning output (-Wall) \\
+STANDARD & : Standard optimisation options (-O3) \\
+FAST & : -O3 + fast flag options.  Uses 'potentially unsafe' fast maths optimisation.  
 \end{tabular}
 
 \item PRECISION : Floating point precision \\
 \begin{tabular}{ll}
-SINGLE & : 32-bit precision \\
-DOUBLE & : 64-bit precision
+SINGLE & : 32-bit precision floating point variables \\
+DOUBLE & : 64-bit precision floating point variables
 \end{tabular}
 
 \item OPENMP : Activate OpenMP directives during compilation (0 or 1)
@@ -212,8 +209,13 @@ DOUBLE & : 64-bit precision
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Main simulation parameters}
+\section{Parameter options}
 
+\noindent With the exception of a few compiled-time options that are selected in the Makefile, all physics and code feature options are controlled from the parameters file, including the dimensionality, simulation type and SPH options.  We list here all possible parameters, including all possible options for those parameters with a limited choice.  We note that a parameters file need not contain a value for each parameter, in which case the default value is taken.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Main simulation parameters}
 
 \begin{itemize}
 
@@ -224,6 +226,7 @@ DOUBLE & : 64-bit precision
 cdiscontinuity   & = Contact discontinuity test \\
 khi              & = Kelvin-Helmholtz instability test \\
 lattice\_cube    & = Generate cuboid with particle on a cubic lattice \\
+plummer          & = ?? \\
 random\_cube     & = Populate cubiod with random particles \\
 random\_sphere   & = Populate sphere of unit radius with random particles \\
 sedov            & = Sedov blast-wave test \\
@@ -231,23 +234,12 @@ soundwave        & = Sound wave test \\
 shocktube        & = Shocktube test
 \end{tabular}
 
-%\item \var{restart} : Is reloaded snapshot a restart or not? (\var{.true.} or \var{.false.})
-
-%\item \var{new\_sim} : Is this a new simulation? (\var{.true.} or \var{.false.})
-
-%\item \var{in\_file} : Name of input initial conditions files
 
 \item \var{in\_file\_form} : Format of initial conditions file
                       (ascii)
 
 \item \var{out\_file\_form} : Format of outputted snapshot files
                       (ascii)
-
-
-%\item \var{run\_dir} : Run directory
-
-%\item \var{com\_frame} : Do we translate system to centre-of-mass frame?
-%                      (\var{.true.} or \var{.false.})
 
 \item \var{endtime} : Termination time of the simulation
 
@@ -315,11 +307,19 @@ kg\_m3      & = kilogrammes per metre cubed \\
 g\_cm3      & = grammes per centimetre cubed
 \end{tabular}
 
-\item \var{sigmaunit} : Column/surface density unit
+%\item \var{sigmaunit} : Column/surface density unit
 
-\item \var{pressunit} : Pressure unit
+\item \var{pressunit} : Pressure unit \\
+\begin{tabular}{ll}
+Pa    & = Pascals \\
+bar   & = ???
+\end{tabular}
 
-\item \var{funit} : Force unit
+\item \var{funit} : Force unit \\
+\begin{tabular}{ll}
+N    & = newtons \\
+dyn  & = dynes
+\end{tabular}
 
 \item \var{Eunit} : Energy unit \\
 \begin{tabular}{ll}
@@ -349,7 +349,13 @@ gcm2\_s       & = Gram centimetres squared per second
 rad\_s & = Radians per second
 \end{tabular}
 
-\item \var{dmdtunit} : Mass accretion rate unit
+%\item \var{dmdtunit} : Mass (accretion) rate unit \\
+%\begin{itemize}{ll}
+%m\_sun\_myr  & = Solar masses per megayear \\
+%m\_sun\_yr   & = Solar masses per year \\
+%kg\_s        & = kilogrammes per second \\
+%g\_s         & = grammes per second
+%\end{tabular}
 
 \item \var{Lunit} : Luminosity unit
 
@@ -518,6 +524,22 @@ hllc   & = HLLC approximate Riemann Solver (????)
 
 \end{itemize}
 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{N-body parameters}
+
+\begin{itemize}
+
+\item \var{nbody} : Main N-body integration algorithm \\
+\begin{tabular}{ll}
+lfkdk        & = Leapfrog kick-drift-kick \\
+hermite4     & = 4th-order Hermite scheme
+\end{tabular}
+
+\item \var{sub\_systems} : Identify and integrate sub-systems separately?
+
+\end{itemize}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -811,20 +833,20 @@ There is a potential performance improvement in the transferring of the data alo
 & \\
 \var{sim = newsim(ndim=1)}                 & Create a new (but unspecified) 1D simulation object \\
 & \\                                       
-\var{sim.SetParam('ic','python')}          & Set all important code parameters   \\
-\var{sim.SetParam('sph','gradh')}          & \\
-\var{sim.SetParam('sph\_integration','lfkdk')} &\\
-\var{sim.SetParam('gas\_eos','energy\_eqn')} & \\
-\var{sim.SetParam('energy\_integration','PEC')} & \\
-\var{sim.SetParam('gamma\_eos',1.6666666666666666666)} & \\
-\var{sim.SetParam('Npart',200)} & \\
+\var{sim.SetParam('ic','python')}          & Initial conditions will be set in python script  \\
+\var{sim.SetParam('sph','gradh')}          & Use conservative 'grad-h' SPH \\
+\var{sim.SetParam('sph\_integration','lfkdk')} & Use leapfrog-KDK integrator for SPH \\
+\var{sim.SetParam('gas\_eos','energy\_eqn')} & Integrate energy equation \\
+\var{sim.SetParam('energy\_integration','PEC')} & Use Predict-correct-evaluate energy integration \\
+\var{sim.SetParam('gamma\_eos',1.6666666666666666666)} & gamma = 5/3\\
+\var{sim.SetParam('Npart',200)} & 200 SPH particles \\
 \var{sim.SetParam('tend',0.075)} & \\
 \var{sim.SetParam('dt\_snap',1.0)} & \\
-\var{sim.SetParam('x\_boundary\_lhs','open')} & \\
+\var{sim.SetParam('x\_boundary\_lhs','open')} & Use open/free boundaries\\
 \var{sim.SetParam('x\_boundary\_rhs','open')} & \\
 & \\                      
 \var{Npart = 200} &  Set number of particles \\
-\var{x = np.linspace(-0.995,0.995,num=Npart)} & Allocate local numpy arrays \\
+\var{x = np.linspace(-0.995,0.995,num=Npart)} & Create regularly spaced particles \\
 \var{vx = np.zeros(Npart)}  & \\
 \var{m = np.ones(Npart)*2.0/Npart} & \\
 \var{u = np.ones(Npart)*1.5} & \\
@@ -841,7 +863,7 @@ There is a potential performance improvement in the transferring of the data alo
 \var{sim.ImportArray(vx,'vx')}  & \\
 \var{sim.ImportArray(m,'m')}    & \\
 \var{sim.ImportArray(u,'u')}    & \\
-\var{sim.SetupSimulation()}     & \\
+\var{sim.SetupSimulation()}     & Finally perform all setup routines in C++ code\\
 & \\                                  
 \var{plot("x","rho")}           & First, plot the initial conditions \\ 
 & \\              
