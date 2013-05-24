@@ -34,8 +34,14 @@ SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory(string filename, Simulation
 SphSnapshotBase::SphSnapshotBase(string auxfilename)
 {
   allocated = false;
-  nallocated = 0;
+  allocatedstar = false;
+  allocatedsph = false;
+  nallocatedsph = 0;
+  nallocatedstar = 0;
   Nsph = 0;
+  Nsphmax = 0;
+  Nstar = 0;
+  Nstarmax = 0;
   t = 0.0;
   if (auxfilename != "") filename = auxfilename;
   LastUsed = time(NULL);
@@ -55,6 +61,8 @@ simulation(static_cast<Simulation<ndims>* > (sim))
 // ============================================================================
 SphSnapshotBase::~SphSnapshotBase()
 {
+  //Avoid leaking memory
+  DeallocateBufferMemory();
 }
 
 
@@ -62,17 +70,88 @@ SphSnapshotBase::~SphSnapshotBase()
 // ============================================================================
 // SphSnapshotBase::AllocateBufferMemory
 // Allocate memory for current snapshot.  Only allocates single precision 
-// to minimise memory use, even if compiled with double precision. 
+// to minimise memory use, even if compiled with double precision.
+// Wrapper around AllocateBufferMemoryStar and AllocateBufferMemorySph
 // ============================================================================
 void SphSnapshotBase::AllocateBufferMemory(void)
 {
   debug2("[SphSnapshotBase::AllocateBufferMemory]");
 
+  AllocateBufferMemoryStar();
+  AllocateBufferMemorySph();
+
+  allocated = true;
+
+  return;
+
+}
+
+// ============================================================================
+// SphSnapshotBase::AllocateBufferMemoryStar
+// Allocate memory for stars in current snapshot.
+// ============================================================================
+void SphSnapshotBase::AllocateBufferMemoryStar(void) {
+  // If memory is already allocated and more memory is needed for more particles,
+  // deallocate now before reallocating.
+  if (allocatedstar) {
+    if (Nstar > Nstarmax)
+      DeallocateBufferMemoryStar();
+    else
+      return;
+  }
+
+  // Allocate memory for all vector quantities depending on dimensionality
+  if (ndim == 1) {
+    xstar = new float[Nstar];
+    vxstar = new float[Nstar];
+    axstar = new float[Nstar];
+  }
+  else if (ndim == 2) {
+    xstar = new float[Nstar];
+    ystar = new float[Nstar];
+    vxstar = new float[Nstar];
+    vystar = new float[Nstar];
+    axstar = new float[Nstar];
+    aystar = new float[Nstar];
+
+  }
+  else if (ndim == 3) {
+    xstar = new float[Nstar];
+    ystar = new float[Nstar];
+    zstar = new float[Nstar];
+    vxstar = new float[Nstar];
+    vystar = new float[Nstar];
+    vzstar = new float[Nstar];
+    axstar = new float[Nstar];
+    aystar = new float[Nstar];
+    azstar = new float[Nstar];
+
+  }
+
+  // Stars scalar quantities
+  mstar = new float[Nstar];
+  hstar = new float[Nstar];
+
+  // Record 3 vectors of size ndim (r,v,a) and 2 scalars (m,h)
+  nallocatedstar = 3*ndim + 2;
+  allocatedstar = true;
+  Nstarmax = Nstar;
+
+  return;
+
+}
+
+// ============================================================================
+// SphSnapshotBase::AllocateBufferMemorySph
+// Allocate memory for sph particles in current snapshot.
+// ============================================================================
+void SphSnapshotBase::AllocateBufferMemorySph(void) {
+
   // If memory already allocated and more memory is needed for more particles,
   // deallocate now before reallocating.
-  if (allocated) {
-    if (Nsph > Nmax)
-      DeallocateBufferMemory();
+  if (allocatedsph) {
+    if (Nsph > Nsphmax)
+      DeallocateBufferMemorySph();
     else
       return;
   }
@@ -102,7 +181,7 @@ void SphSnapshotBase::AllocateBufferMemory(void)
     ay = new float[Nsph];
     az = new float[Nsph];
   }
-  
+
   // Allocate memory for other scalar quantities
   m = new float[Nsph];
   h = new float[Nsph];
@@ -111,13 +190,13 @@ void SphSnapshotBase::AllocateBufferMemory(void)
   dudt = new float[Nsph];
 
   // Record 3 vectors of size ndim (r,v,a) and 5 scalars (m,h,rho,u,dudt)
-  nallocated = 3*ndim + 5;
-  allocated = true;
-  Nmax = Nsph;
+  nallocatedsph = 3*ndim + 5;
+  allocatedsph = true;
+  Nsphmax = Nsph;
 
   return;
-}
 
+}
 
 
 // ============================================================================
@@ -128,46 +207,113 @@ void SphSnapshotBase::DeallocateBufferMemory(void)
 {
   debug2("[SphSnapshotBase::DeallocateBufferMemory]");
 
-  // Deallocate scalar array memory
-  delete[] dudt;
-  delete[] u;
-  delete[] rho;
-  delete[] h;
-  delete[] m;
+  DeallocateBufferMemorySph();
+  DeallocateBufferMemoryStar();
 
-  // Deallocate vector array memory
-  if (ndim == 1) {
-    delete[] ax;
-    delete[] vx;
-    delete[] x;
-  }
-  else if (ndim == 2) {
-    delete[] ay;
-    delete[] ax;
-    delete[] vy;
-    delete[] vx;
-    delete[] y;
-    delete[] x;
-  }
-  else if (ndim == 3) {
-    delete[] az;
-    delete[] ay;
-    delete[] ax;
-    delete[] vz;
-    delete[] vy;
-    delete[] vx;
-    delete[] z;
-    delete[] y;
-    delete[] x;
-  }
-  
-  allocated = false;
-  nallocated = 0;
-
+  allocated=false;
   return;
+
 }
 
+// ============================================================================
+// SphSnapshotBase::DeallocateBufferMemorySph
+// Deallocate sph particles memory for current snapshot.
+// ============================================================================
+void SphSnapshotBase::DeallocateBufferMemorySph(void)
+{
 
+  //If we are not allocated, return immediately,
+  //to avoid double deleting a pointer
+  if (!allocatedsph)
+    return;
+
+  // Deallocate scalar array memory
+    delete[] dudt;
+    delete[] u;
+    delete[] rho;
+    delete[] h;
+    delete[] m;
+
+    // Deallocate vector array memory
+    if (ndim == 1) {
+      delete[] ax;
+      delete[] vx;
+      delete[] x;
+    }
+    else if (ndim == 2) {
+      delete[] ay;
+      delete[] ax;
+      delete[] vy;
+      delete[] vx;
+      delete[] y;
+      delete[] x;
+    }
+    else if (ndim == 3) {
+      delete[] az;
+      delete[] ay;
+      delete[] ax;
+      delete[] vz;
+      delete[] vy;
+      delete[] vx;
+      delete[] z;
+      delete[] y;
+      delete[] x;
+    }
+
+    allocatedsph = false;
+    nallocatedsph = 0;
+
+    return;
+}
+
+// ============================================================================
+// SphSnapshotBase::DeallocateBufferMemoryStar
+// Deallocate star particles memory for current snapshot.
+// ============================================================================
+
+void SphSnapshotBase::DeallocateBufferMemoryStar(void)
+{
+
+  //If we are not allocated, return immediately,
+  //to avoid double deleting a pointer
+  if (!allocatedstar)
+    return;
+
+  // Deallocate scalar array memory
+    delete[] hstar;
+    delete[] mstar;
+
+    // Deallocate vector array memory
+    if (ndim == 1) {
+      delete[] axstar;
+      delete[] vxstar;
+      delete[] xstar;
+    }
+    else if (ndim == 2) {
+      delete[] aystar;
+      delete[] axstar;
+      delete[] vystar;
+      delete[] vxstar;
+      delete[] ystar;
+      delete[] xstar;
+    }
+    else if (ndim == 3) {
+      delete[] azstar;
+      delete[] aystar;
+      delete[] axstar;
+      delete[] vzstar;
+      delete[] vystar;
+      delete[] vxstar;
+      delete[] zstar;
+      delete[] ystar;
+      delete[] xstar;
+    }
+
+    allocatedstar = false;
+    nallocatedstar = 0;
+
+    return;
+}
 
 // ============================================================================
 // SphSnapshotBase::CalculateMemoryUsage
@@ -175,7 +321,7 @@ void SphSnapshotBase::DeallocateBufferMemory(void)
 // ============================================================================
 int SphSnapshotBase::CalculateMemoryUsage(void)
 {
-  return Nsph*nallocated*sizeof(float);
+  return Nsph*nallocatedsph*sizeof(float)+Nstar*nallocatedstar*sizeof(float);
 }
 
 
@@ -188,10 +334,27 @@ template <int ndims>
 void SphSnapshot<ndims>::CopyDataFromSimulation()
 {
   debug2("[SphSnapshotBase::CopyDataFromSimulation]");
+  SphParticle<ndims>* sphaux;
+  StarParticle<ndims>* staraux;
 
-  SphParticle<ndims>* sphaux = simulation->sph->sphdata;
+  //Reset the species
+  _species.clear();
 
-  Nsph = simulation->sph->Nsph;
+  //Read which species are there
+  if (simulation->sph != NULL) {
+    sphaux = simulation->sph->sphdata;
+    Nsph = simulation->sph->Nsph;
+    if (Nsph != 0) {
+      _species.push_back("sph");
+    }
+  }
+  if (simulation->nbody != NULL) {
+    staraux = simulation->nbody->stardata;
+    Nstar = simulation->nbody->Nstar;
+    if (Nstar != 0) {
+     _species.push_back("star");
+    }
+  }
 
   AllocateBufferMemory();
 
@@ -224,11 +387,42 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
     }
 
     m[i] = (float) sphaux[i].m;
-    h[i] = (float) sphaux[i].h;  //sqrt(DotProduct(sphaux[i].r,sphaux[i].r,ndim)); //sphaux[i].h;
+    h[i] = (float) sphaux[i].h;
     rho[i] = (float) sphaux[i].rho;
     u[i] = (float) sphaux[i].u;
     dudt[i] = (float) sphaux[i].dudt;
 
+  }
+
+  //Loop over star particles and record particle data
+  for (int i=0; i<Nstar; i++) {
+    if (ndim == 1) {
+      xstar[i] = (float) staraux[i].r[0];
+      vxstar[i] = (float) staraux[i].v[0];
+      axstar[i] = (float) staraux[i].a[0];
+    }
+    else if (ndim == 2) {
+      xstar[i] = (float) staraux[i].r[0];
+      ystar[i] = (float) staraux[i].r[1];
+      vxstar[i] = (float) staraux[i].v[0];
+      vystar[i] = (float) staraux[i].v[1];
+      axstar[i] = (float) staraux[i].a[0];
+      aystar[i] = (float) staraux[i].a[1];
+    }
+    else if (ndim == 3) {
+      xstar[i] = (float) staraux[i].r[0];
+      ystar[i] = (float) staraux[i].r[1];
+      zstar[i] = (float) staraux[i].r[2];
+      vxstar[i] = (float) staraux[i].v[0];
+      vystar[i] = (float) staraux[i].v[1];
+      vzstar[i] = (float) staraux[i].v[2];
+      axstar[i] = (float) staraux[i].a[0];
+      aystar[i] = (float) staraux[i].a[1];
+      azstar[i] = (float) staraux[i].a[2];
+    }
+
+    mstar[i] = (float) staraux[i].m;
+    hstar[i] = (float) staraux[i].h;
   }
 
   LastUsed = time(NULL);
@@ -242,11 +436,16 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
 // Returns pointer to required array stored in snapshot buffer memory.
 // Currently also returns scaling factors for that array.
 // ============================================================================
-UnitInfo SphSnapshotBase::ExtractArray(string name, float** out_array, int* size_array,
+UnitInfo SphSnapshotBase::ExtractArray(string name, string type, float** out_array, int* size_array,
                                float& scaling_factor, string RequestedUnit)
 {
   string unitname;
   UnitInfo unitinfo;
+  SimUnit* unit;                            // Unit pointer
+
+  //Zero initial array pointers and size
+  *out_array = NULL;
+  *size_array = 0;
 
 
   //Check that the memory is allocated. If not, fails very rumorously
@@ -256,65 +455,109 @@ UnitInfo SphSnapshotBase::ExtractArray(string name, float** out_array, int* size
     exit(-2);
   }
 
-  SimUnit* unit;                            // Unit pointer
 
+  //Set last time used
   LastUsed = time(NULL);
 
-  // If array name is valid, pass pointer to array and also set unit
+  //Check type
+  if (type != "sph" && type != "star") {
+    string message = "Error: the type " + type + " was not recognized!";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
+  // If array type and name is valid, pass pointer to array and also set unit
   if (name == "x") {
-    *out_array = x;
+    if (type=="sph")
+      *out_array = x;
+    else if (type=="star")
+      *out_array = xstar;
     unit = &(units->r);
   }
   else if (name == "y") {
-    *out_array = y;
+    if (type=="sph")
+      *out_array = y;
+    else if (type=="star")
+      *out_array = ystar;
     unit = &(units->r);
   }
   else if (name == "z") {
-    *out_array = z;
+    if (type=="sph")
+      *out_array = z;
+    else if (type=="star")
+      *out_array = zstar;
     unit = &(units->r);
   }
   else if (name == "vx") {
-    *out_array = vx;
+    if (type=="sph")
+      *out_array = vx;
+    else if (type=="star")
+      *out_array= vxstar;
     unit = &(units->v);
   }
   else if (name == "vy") {
-    *out_array = vy;
+    if (type=="sph")
+      *out_array = vy;
+    else if (type=="star")
+      *out_array = vystar;
     unit = &(units->v);
   }
   else if (name == "vz") {
-    *out_array = vz;
+    if (type=="sph")
+      *out_array = vz;
+    else if (type=="star")
+      *out_array = vzstar;
     unit = &(units->v);
   }
   else if (name == "ax") {
-    *out_array = ax;
+    if (type=="sph")
+      *out_array = ax;
+    else if (type=="star")
+      *out_array = axstar;
     unit = &(units->a);
   }
   else if (name == "ay") {
-    *out_array = ay;
+    if (type=="sph")
+      *out_array = ay;
+    else if (type=="star")
+      *out_array = aystar;
     unit = &(units->a);
   }
   else if (name == "az") {
-    *out_array = az;
+    if (type=="sph")
+      *out_array = az;
+    else if (type=="star")
+      *out_array = azstar;
     unit = &(units->a);
   }
   else if (name == "m") {
-    *out_array = m;
+    if (type=="sph")
+      *out_array = m;
+    else if (type=="star")
+      *out_array = mstar;
     unit = &(units->m);
   }
   else if (name == "h") {
-    *out_array = h;
+    if (type=="sph")
+      *out_array = h;
+    else if (type=="star")
+      *out_array = hstar;
     unit = &(units->r);
   }
   else if (name == "rho") {
-    *out_array = rho;
+    if (type=="sph") {
+      *out_array = rho;
+    }
     unit = &(units->rho);
   }
   else if (name == "u") {
-    *out_array = u;
+    if (type=="sph")
+      *out_array = u;
     unit = &(units->u);
   }
   else if (name == "dudt") {
-    *out_array = dudt;
+    if (type=="sph")
+      *out_array = dudt;
     unit = &(units->dudt);
   }
   else {
@@ -324,14 +567,23 @@ UnitInfo SphSnapshotBase::ExtractArray(string name, float** out_array, int* size
     *size_array = 0;
   }
 
+
+  //Check that we did not get a NULL
   if (out_array == NULL) {
-    string message = "Error: the requested array: " + name + " is not allocated! "
+    string message;
+    if (type=="star" && (name=="rho" || name=="u" || name=="dudt"))
+      message = "Error: for stars, you cannot request the array " + name;
+    else
+      message = "Error: the requested array: " + name + " is not allocated! "
         "Probably a dimensionality problem";
     ExceptionHandler::getIstance().raise(message);
   }
 
-  //set the size now that we have the array
-  *size_array = Nsph;
+  //Set the size now that we have the array
+  if (type=="sph")
+    *size_array = Nsph;
+  else if (type=="star")
+    *size_array = Nstar;
 
   // If no new unit is requested, pass the default scaling values.
   // Otherwise, calculate new scaling factor plus latex label.

@@ -10,6 +10,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <vector>
 #include "Precision.h"
 #include "Sph.h"
 #include "SphSimulation.h"
@@ -24,13 +25,23 @@ using namespace std;
 // ============================================================================
 class SphSnapshotBase
 {
+
+  void AllocateBufferMemorySph();
+  void AllocateBufferMemoryStar();
+
+  void DeallocateBufferMemorySph();
+  void DeallocateBufferMemoryStar();
+
+protected:
+  vector<string> _species;
+
  public:
 
   static SphSnapshotBase* SphSnapshotFactory(string filename, SimulationBase* sim, int ndim);
 
 
   SphSnapshotBase(string="");
-  ~SphSnapshotBase();
+  virtual ~SphSnapshotBase();
 
 
   // Snapshot function prototypes
@@ -39,19 +50,26 @@ class SphSnapshotBase
   void DeallocateBufferMemory(void);
   int CalculateMemoryUsage(void);
   virtual void CopyDataFromSimulation()=0;
-  UnitInfo ExtractArray(string, float** out_array, int* size_array,
+  UnitInfo ExtractArray(string, string, float** out_array, int* size_array,
 		    float& scaling_factor, string RequestedUnit);
   virtual void ReadSnapshot(string)=0;
+  int GetNTypes() {return _species.size(); };
+  string GetSpecies(int ispecies) { return _species.at(ispecies); };
 
 
   // All variables
   // --------------------------------------------------------------------------
   bool allocated;                           // Is snapshot memory allocated?
+  bool allocatedsph;
+  bool allocatedstar;
   int LastUsed;                             // ??
-  int nallocated;                           // No. of floats allocated
+  int nallocatedsph;                           // No. of floats allocated for SPH
+  int nallocatedstar;                          // No. of floats allocated for stars
   int ndim;                                 // Local copy of ndim
   int Nsph;                                 // No. of SPH particles
-  int Nmax;                                 // Max. no. of SPH particles
+  int Nsphmax;                                 // Max. no. of SPH particles
+  int Nstar;                                // No. of star particles
+  int Nstarmax;                             // Max. no. of star particles
   DOUBLE t;                                 // Simulation time of snapshot
 
   string filename;                          // Filename of snapshot
@@ -80,12 +98,25 @@ class SphSnapshotBase
   float *u;
   float *dudt;
 
+  float *xstar;
+  float *ystar;
+  float *zstar;
+  float *vxstar;
+  float *vystar;
+  float *vzstar;
+  float *axstar;
+  float *aystar;
+  float *azstar;
+  float *mstar;
+  float *hstar;
+
 };
 
 template <int ndims>
 class SphSnapshot : public SphSnapshotBase {
 public:
   SphSnapshot (string, SimulationBase* );
+  ~SphSnapshot() {};
   void CopyDataFromSimulation();
   void ReadSnapshot(string);
 
