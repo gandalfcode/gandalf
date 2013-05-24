@@ -139,7 +139,6 @@ class Simulation : public SimulationBase {
   // --------------------------------------------------------------------------
   virtual void PreSetupForPython(void);
   virtual void ImportArray(double* input, int size, string quantity);
-  virtual void PostGeneration(void);
   virtual void GenerateIC(void);
   virtual void ProcessParameters(void);
   virtual void CalculateDiagnostics(void);
@@ -211,8 +210,12 @@ class SphSimulation : public Simulation<ndim> {
   using Simulation<ndim>::t;
   using Simulation<ndim>::timestep;
   using Simulation<ndim>::level_step;
+  using Simulation<ndim>::Noutsnap;
+  using Simulation<ndim>::tsnapnext;
+  using Simulation<ndim>::dt_snap;
 public:
   SphSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
+  virtual void PostGeneration(void);
   virtual void MainLoop(void);
 };
 
@@ -230,8 +233,12 @@ class GodunovSimulation : public Simulation<ndim> {
   using Simulation<ndim>::t;
   using Simulation<ndim>::timestep;
   using Simulation<ndim>::level_step;
+  using Simulation<ndim>::Noutsnap;
+  using Simulation<ndim>::tsnapnext;
+  using Simulation<ndim>::dt_snap;
 public:
   GodunovSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
+  virtual void PostGeneration(void);
   virtual void MainLoop(void);
 };
 

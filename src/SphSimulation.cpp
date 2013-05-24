@@ -972,7 +972,7 @@ void SimulationBase::SetupSimulation(void)
 /// ..
 //=============================================================================
 template <int ndim>
-void Simulation<ndim>::PostGeneration(void)
+void GodunovSimulation<ndim>::PostGeneration(void)
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
@@ -1000,7 +1000,7 @@ void Simulation<ndim>::PostGeneration(void)
     sphneib->UpdateAllSphProperties(sph);
 
     // Search ghost particles
-    SearchGhostParticles();
+    this->SearchGhostParticles();
 
     // Update neighbour tree
     sphneib->UpdateTree(sph,*simparams);
@@ -1021,7 +1021,7 @@ void Simulation<ndim>::PostGeneration(void)
     sphneib->UpdateAllSphProperties(sph);
 
     // Search ghost particles
-    SearchGhostParticles();
+    this->SearchGhostParticles();
 
     // Update neighbour tre
     sphneib->UpdateTree(sph,*simparams);
@@ -1074,14 +1074,14 @@ void Simulation<ndim>::PostGeneration(void)
       sph->sphdata[i].nstep = 1;
     }
 
-    CopySphDataToGhosts();
+    this->CopySphDataToGhosts();
 
     // Compute timesteps for all particles
     if (simparams->stringparams["sph"] == "godunov") {
       if (Nlevels == 1) 
-	ComputeGlobalTimestep();
+	this->ComputeGlobalTimestep();
       else 
-	ComputeBlockTimesteps();
+	this->ComputeBlockTimesteps();
       if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
       if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
       sphneib->UpdateAllSphDudt(sph);
@@ -1098,7 +1098,7 @@ void Simulation<ndim>::PostGeneration(void)
 	sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
 
-    CopySphDataToGhosts();
+    this->CopySphDataToGhosts();
 
   }
 
@@ -1108,15 +1108,167 @@ void Simulation<ndim>::PostGeneration(void)
     uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
   nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
   
-  CalculateDiagnostics();
-  diag0 = diag;
+  this->CalculateDiagnostics();
+  this->diag0 = this->diag;
   
-  setup = true;
+  this->setup = true;
+
+  return;
+}
+
+//TODO: make this mess more modular (note: initial h computation
+//should be done inside the neighbour search)
+//=============================================================================
+//  SphSimulation::PostGeneration
+/// ..
+//=============================================================================
+template <int ndim>
+void SphSimulation<ndim>::PostGeneration(void)
+{
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+
+  debug2("[SphSimulation::PostGeneration]");
+
+  // Set time variables here (for now)
+  Noutsnap = 0;
+  tsnapnext = dt_snap;
+
+  // Set initial smoothing lengths and create initial ghost particles
+  // --------------------------------------------------------------------------
+  if (sph->Nsph > 0) {
+
+    // Set all relevant particle counters
+    sph->Nghost = 0;
+    sph->Nghostmax = sph->Nsphmax - sph->Nsph;
+    sph->Ntot = sph->Nsph;
+    for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
+
+    sph->InitialSmoothingLengthGuess();
+    sphneib->UpdateTree(sph,*simparams);
+
+    sphneib->neibcheck = false;
+    sphneib->UpdateAllSphProperties(sph);
+
+    // Search ghost particles
+    this->SearchGhostParticles();
+
+    // Update neighbour tree
+    sphneib->UpdateTree(sph,*simparams);
+  }
+
+  // Compute all initial SPH particle properties (if SPH particles exist)
+  // --------------------------------------------------------------------------
+  if (sph->Nsph > 0) {
+
+    cout << "Ntot : " << sph->Ntot << endl;
+    level_step = 1;
+
+    // Zero accelerations (perhaps here)
+    for (int i=0; i<sph->Ntot; i++) sph->sphdata[i].active = true;
+
+    // Calculate all SPH properties
+    sphneib->neibcheck = true;
+    sphneib->UpdateAllSphProperties(sph);
+
+    // Search ghost particles
+    this->SearchGhostParticles();
+
+    // Update neighbour tre
+    sphneib->UpdateTree(sph,*simparams);
+    sphneib->UpdateAllSphProperties(sph);
+
+
+    if (simparams->stringparams["sph"] == "godunov") {
+      sphneib->UpdateAllSphDerivatives(sph);
+      //for (int i=0; i<sph->Ntot; i++)
+      //sph->sphdata[i].dt = sph->sphdata[i].h/sph->sphdata[i].sound;
+    }
+  }
+
+
+  // Compute all initial N-body terms
+  // --------------------------------------------------------------------------
+  if (nbody->Nstar > 0) {
+
+    // Zero all acceleration terms
+    for (i=0; i<nbody->Nstar; i++) {
+
+      for (k=0; k<ndim; k++) nbody->stardata[i].a[k] = 0.0;
+      for (k=0; k<ndim; k++) nbody->stardata[i].adot[k] = 0.0;
+      for (k=0; k<ndim; k++) nbody->stardata[i].a2dot[k] = 0.0;
+      for (k=0; k<ndim; k++) nbody->stardata[i].a3dot[k] = 0.0;
+      nbody->stardata[i].gpot = 0.0;
+      nbody->stardata[i].active = true;
+      nbody->stardata[i].level = level_step;
+      nbody->stardata[i].nstep = 1;
+      nbody->nbodydata[i] = &(nbody->stardata[i]);
+    }
+
+    nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
+
+  }
+
+
+  // Compute all initial SPH force terms
+  // --------------------------------------------------------------------------
+  if (sph->Nsph > 0) {
+
+    // Zero accelerations (here for now)
+    for (i=0; i<sph->Ntot; i++) {
+      for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
+      sph->sphdata[i].gpot = (FLOAT) 0.0;
+      sph->sphdata[i].dudt = (FLOAT) 0.0;
+      sph->sphdata[i].active = true;
+      sph->sphdata[i].level = level_step;
+      sph->sphdata[i].nstep = 1;
+    }
+
+    this->CopySphDataToGhosts();
+
+    // Compute timesteps for all particles
+    if (simparams->stringparams["sph"] == "godunov") {
+      if (Nlevels == 1)
+    this->ComputeGlobalTimestep();
+      else
+    this->ComputeBlockTimesteps();
+      if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
+      if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
+      sphneib->UpdateAllSphDudt(sph);
+    }
+    else {
+      if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
+      if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
+    }
+
+    // Add accelerations
+    for (i=0; i<sph->Nsph; i++) {
+      sph->sphdata[i].active = false;
+      for (k=0; k<ndim; k++)
+    sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
+    }
+
+    this->CopySphDataToGhosts();
+
+  }
+
+  // Set particle values for initial step (e.g. r0, v0, a0)
+  sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+  if (simparams->stringparams["gas_eos"] == "energy_eqn")
+    uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+  nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
+
+  this->CalculateDiagnostics();
+  this->diag0 = this->diag;
+
+  this->setup = true;
 
   return;
 }
 
 
+//TODO: specialize the main loops
 
 //=============================================================================
 //  SphSimulation::MainLoop
