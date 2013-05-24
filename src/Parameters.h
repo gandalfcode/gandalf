@@ -1,6 +1,6 @@
-// ============================================================================
-// PARAMETERES.H
-// ============================================================================
+//=============================================================================
+//  Parameters.h
+//=============================================================================
 
 
 #ifndef _PARAMETERS_H_
@@ -11,9 +11,13 @@
 #include <string>
 
 
-// ============================================================================
-// CLASS PARAMETERS
-// ============================================================================
+//=============================================================================
+//  Class Parameters
+/// \brief   Class for continaing all simuilation parameter information.
+/// \details Class for continaing all simuilation parameter information.
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=============================================================================
 class Parameters
 {
  public:
@@ -29,7 +33,7 @@ class Parameters
   void SetParameter(std::string , std::string);
   void PrintParameters(void);
   void RecordParametersToFile(void);
-  void trim2(std::string&);
+  std::string TrimWhiteSpace(std::string);
   
 
   std::map <std::string,int> intparams;
@@ -37,7 +41,5 @@ class Parameters
   std::map <std::string,std::string> stringparams;
 
 };
-
-
 
 #endif

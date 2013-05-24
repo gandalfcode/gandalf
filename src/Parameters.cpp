@@ -99,28 +99,30 @@ void Parameters::ReadParamsFile
 /// Parse a single line read from the parameters file.
 /// Identifies if the line is in the form 'Comments : variable = value', or 
 /// 'variable = value', and if so, stores value in memory.
+/// If line begins with a hash charatcer '#', then ignore line as a comment.
 ///============================================================================
 void Parameters::ParseLine
-(string paramline                       ///< [in] Line from parameters file to be parsed.
- )
+(string paramline                       ///< [in] Line from parameters file 
+ )                                      ///< to be parsed.
 {
+  // First, trim all white space from line
+  paramline = TrimWhiteSpace(paramline);
+
   int colon_pos = paramline.find(':');  // Position of colon in string
   int equal_pos = paramline.find('=');  // Position of equals in string
+  int hash_pos = paramline.find('#');   // Position of hash in string
   int length = paramline.length();      // Length of string
+
+  // Ignore line if it is a comment (i.e. begins with a has character)
+  if (hash_pos == 0) return;
 
   // If line is not in the correct format (either equals is not present, or 
   // equals is before the colon) then skip line and return
   if (equal_pos == std::string::npos || colon_pos >= equal_pos) return;
-  //if (colon_pos == std::string::npos || equal_pos == std::string::npos || 
-  //    colon_pos >= equal_pos) return;
 
   // Extract variable name and value from line
   std::string var_name = paramline.substr(colon_pos+1,equal_pos-colon_pos-1);
   std::string var_value = paramline.substr(equal_pos+1,length-equal_pos-1);
-
-  // Trim any white space from variable and value strings
-  trim2(var_name);
-  trim2(var_value);
 
   // Finally, set parameter value in memory
   SetParameter(var_name,var_value);
@@ -278,13 +280,15 @@ void Parameters::SetDefaultValues(void)
   return;
 }
 
+
+
 //=============================================================================
 //  Parameters::SetParameter
 /// Set parameter value in memory.  Checks in turn if parameter is a 
 /// string, float or integer before recording value.
 //=============================================================================
-string Parameters::GetParameter (string key) {
-
+string Parameters::GetParameter (string key)
+{
   if (intparams.count(key) == 1) {
     std::stringstream value;
     value << intparams[key];
@@ -304,6 +308,8 @@ string Parameters::GetParameter (string key) {
 
   return NULL;
 }
+
+
 
 //=============================================================================
 //  Parameters::SetParameter
@@ -353,6 +359,7 @@ void Parameters::PrintParameters(void)
     std::cout << it3->first << " = " << it3->second << std::endl;
   }
 
+  return;
 }
 
 
@@ -390,21 +397,24 @@ void Parameters::RecordParametersToFile(void)
 
   outfile.close();
 
+  return;
 }
 
 
 
 //=============================================================================
-//  Parameters::trim2
-/// Trims string of any white space (N.B. needs to be replaced at some point).
+//  Parameters::TrimWhiteSpace
+/// Trims string of all white space
 //=============================================================================
-void Parameters::trim2(std::string& str)
+std::string Parameters::TrimWhiteSpace(std::string instr)
 {
-  std::string::size_type pos = str.find_last_not_of(' ');
-  if (pos != std::string::npos) {
-    str.erase(pos + 1);
-    pos = str.find_first_not_of(' ');
-    if (pos != std::string::npos) str.erase(0, pos);
+  int i;                             // Character counter
+  string outstr;                     // Resultant string without whitespace
+
+  // Loop over all characters and ignore any white-space characters
+  for (i=0; i < instr.length(); i++) {
+    if (instr[i] != ' ') outstr += instr[i];
   }
-  else str.erase(str.begin(), str.end());
+
+  return outstr;
 }

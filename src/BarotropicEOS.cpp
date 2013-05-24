@@ -15,14 +15,14 @@
 /// thermal physics variables.
 //=============================================================================
 template <int ndim>
-Barotropic<ndim>::Barotropic(FLOAT temp0aux, FLOAT mu_bar_aux, 
-			     FLOAT gamma_aux, FLOAT rho_bary_aux):
+Barotropic<ndim>::Barotropic(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux,
+			     FLOAT rho_bary_aux, SimUnits *units):
   EOS<ndim>(gamma_aux)
 {
-  temp0 = temp0aux;
+  temp0 = temp0aux/units->temp.outscale;
   mu_bar = mu_bar_aux;
-  rho_bary = rho_bary_aux;
-  invrho_bary = 1.0/rho_bary_aux;
+  rho_bary = rho_bary_aux/units->rho.outscale/units->rho.outcgs;
+  invrho_bary = 1.0/rho_bary;
 }
 
 

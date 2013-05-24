@@ -14,6 +14,7 @@
 #include "Constants.h"
 #include "Parameters.h"
 #include "SphParticle.h"
+#include "SimUnits.h"
 
 
 
@@ -63,7 +64,7 @@ class Isothermal: public EOS<ndim>
 
  public:
 
-  Isothermal(FLOAT, FLOAT, FLOAT);
+  Isothermal(FLOAT, FLOAT, FLOAT, SimUnits *);
   ~Isothermal();
 
   FLOAT Pressure(SphParticle<ndim> &);
@@ -94,7 +95,7 @@ class Barotropic: public EOS<ndim>
 
  public:
 
-  Barotropic(FLOAT, FLOAT, FLOAT, FLOAT);
+  Barotropic(FLOAT, FLOAT, FLOAT, FLOAT, SimUnits *);
   ~Barotropic();
 
   FLOAT Pressure(SphParticle<ndim> &);

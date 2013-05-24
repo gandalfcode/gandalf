@@ -66,7 +66,7 @@ SimulationBase* SimulationBase::SimulationFactory
   SimulationType = params->stringparams["sph"];
 
   //Check simulation type
-  if (SimulationType != "gradh" || SimulationType != "sm2012" || SimulationType != "godunov" ) {
+  if (SimulationType != "gradh" && SimulationType != "sm2012" && SimulationType != "godunov" ) {
     string msg = "Error: the simulation type " + SimulationType + " was not recognized";
     ExceptionHandler::getIstance().raise(msg);
   }
