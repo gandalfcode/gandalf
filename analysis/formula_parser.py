@@ -85,27 +85,27 @@ opn = { "+" : ( lambda a,b: a + b ),
         "^" : ( lambda a,b: a ** b ) }
 
 # Recursive function that evaluates the stack
-def evaluateStack( s, snap ):
+def evaluateStack( s, type, snap ):
   op = s.pop()
   if debug_flag:
       print op
   if op in "+-*/^":
-    op2 = evaluateStack( s, snap )
-    op1 = evaluateStack( s, snap )
+    op2 = evaluateStack( s, type, snap )
+    op1 = evaluateStack( s, type, snap )
     return opn[op]( op1, op2 )
   elif op == "pi":
     return np.pi
   elif op == "e":
     return np.e
   elif op in functions1arg:
-    operand = evaluateStack(s,snap)
+    operand = evaluateStack(s, type, snap)
     return getattr(np, op)(operand)
   elif op in functions2arg:
-    operand1 = evaluateStack(s,snap)
-    operand2 = evaluateStack(s,snap)
+    operand1 = evaluateStack(s, type, snap)
+    operand2 = evaluateStack(s, type, snap)
     return getattr(np, op)(operand1, operand2)
   elif re.search('^[a-zA-Z][a-zA-Z0-9_]*$',op):
-      return UserQuantity(op).fetch(snap, "default")[1]
+      return UserQuantity(op).fetch(type, snap, "default")[1]
   elif re.search('^[-+]?[0-9]+$',op):
     return int( op )
   elif re.search('[-+]?[0-9]+[.][0-9]*',op):

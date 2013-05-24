@@ -107,6 +107,7 @@ class PlotCommand(Command):
         self.ylabel=""
         self.xunitname = ""
         self.yunitname = ""
+        self._type = "sph"
         
     def processCommand(self, plotting, data):
         #work out if this is the first time or if the plot already exists          
@@ -211,16 +212,9 @@ class PlotCommand(Command):
     def get_sim_and_snap(self):
         '''Retrieves from the buffer the desired sim and snap'''
         sim = self.get_sim()
-        
-        if self.snap == "current":
-            snap = SimBuffer.get_current_snapshot_by_sim(sim)
-            if sim.snapshots == []:
-                self.snap = "live"
-        elif self.snap == "live":
-            snap = SimBuffer.get_live_snapshot_sim(sim)
-        else:
-            snap = SimBuffer.get_snapshot_number_sim(sim, self.snap)
-        
+        snap = SimBuffer.get_snapshot_extended(sim, self.snap)
+        if (self.snap=="current" and sim.snapshots==[]):
+            self.snap = "live"        
         return sim, snap
     
     def get_sim(self):
@@ -260,7 +254,7 @@ class PlotCommand(Command):
         quantity = getattr(self, axis+'quantity')
         unit = getattr(self, axis+'unit')
         
-        unitinfo, data, scaling_factor = UserQuantity(quantity).fetch(snap, unit)
+        unitinfo, data, scaling_factor = UserQuantity(quantity).fetch(self._type, snap, unit)
         
         return unitinfo, data, scaling_factor
      
@@ -304,20 +298,31 @@ class ParticlePlotCommand (PlotCommand):
     and calls set_data on it for a fast redrawing.
     '''
     
-    def __init__(self, xquantity, yquantity, snap, simno, overplot=False, 
-                 autoscale=True, xunit="default", yunit="default"):
+    sphstyle = {}
+    starstyle = {'color': 'red'}
+    typestyle = {'sph': sphstyle, 'star': starstyle}
+    
+    def __init__(self, xquantity, yquantity, type, snap, simno, overplot=False, 
+                 autoscale=True, xunit="default", yunit="default",**kwargs):
         PlotCommand.__init__(self, xquantity, yquantity, snap, simno, overplot, 
                              autoscale, xunit, yunit)
+        self._type = type
+        self._kwargs = kwargs
                 
     def update(self, plotting, fig, ax, line, data):
         line.set_data(data.x_data,data.y_data)
         
     def execute(self, plotting, fig, ax, data) :
-        line, = ax.plot(data.x_data, data.y_data, '.')
+        style = self.typestyle[self._realtype]
+        #Merge our dictionary with the user-provided one
+        #Note that if there are duplicates, the user-provided one will overwrite ours
+        kwargs = dict(style.items() + self._kwargs.items())
+        line, = ax.plot(data.x_data, data.y_data, '.', **kwargs)
         return line
     
     def prepareData (self, globallimits):
         sim, snap = self.get_sim_and_snap()
+        self._realtype = snap.GetRealType(self._type)
 
         xunitinfo, x_data, xscaling_factor = self.get_array('x', snap)
         yunitinfo, y_data, yscaling_factor = self.get_array('y', snap)

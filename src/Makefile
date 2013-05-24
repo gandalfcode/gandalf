@@ -128,9 +128,6 @@ TEST_OBJ = #TestScaling.o Parameters.o SimUnits.o Exception.o
 %.o: %.cpp
 	$(CC) $(OPT) $(CFLAGS) -c $< -I$(GTEST)
 
-
-
-
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 SHARED_OPTIONS = -bundle -flat_namespace -undefined suppress
@@ -162,6 +159,9 @@ shocktub.so : shocktub.f shocktub.pyf
 
 Exception.o : Exception.cpp
 	$(CC) $(OPT) $(CFLAGS) -fexceptions -c $<
+	
+SphSimulation.o : SphSimulationIO.cpp SphSimulationTimesteps.cpp SphSimulationIC.cpp SphAnalysis.cpp SimGhostParticles.cpp
+
 
 force: ;
 

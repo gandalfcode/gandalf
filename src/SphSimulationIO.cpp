@@ -156,7 +156,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   // Open file and read header information
   outfile.open(filename.c_str());
   outfile << sph->Nsph << endl;
-  outfile << 0 << endl;
+  outfile << nbody->Nstar << endl;
   outfile << ndim << endl;
   outfile << t << endl;
 

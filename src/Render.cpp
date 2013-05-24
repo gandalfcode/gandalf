@@ -104,12 +104,12 @@ int Render<ndim>::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstri
       (ystring != "x" && ystring != "y" && ystring != "z")) return -1;
 
   // First, verify x, y and render strings are valid
-  snap.ExtractArray(xstring,&xvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(ystring,&yvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(renderstring,&rendervalues,&idummy,scaling_factor,renderunit); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("m",&mvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("rho",&rhovalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("h",&hvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(xstring,"sph",&xvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(ystring,"sph",&yvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(renderstring,"sph",&rendervalues,&idummy,scaling_factor,renderunit); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("m","sph",&mvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("rho","sph",&rhovalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("h","sph",&hvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
 
   // If any are invalid, exit here with failure code
   if (arraycheck == 0) return -1;
@@ -262,13 +262,13 @@ int Render<ndim>::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstrin
 	  (ystring != "x" && ystring != "y" && ystring != "z")) return -1;
 
   // First, verify x, y and render strings are valid
-  snap.ExtractArray(xstring,&xvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(ystring,&yvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(zstring,&zvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(renderstring,&rendervalues,&idummy,scaling_factor,renderunit); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("m",&mvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("rho",&rhovalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("h",&hvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(xstring,"sph",&xvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(ystring,"sph",&yvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(zstring,"sph",&zvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(renderstring,"sph",&rendervalues,&idummy,scaling_factor,renderunit); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("m","sph",&mvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("rho","sph",&rhovalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("h","sph",&hvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
 
   // If any are invalid, exit here with failure code
   if (arraycheck == 0) return -1;

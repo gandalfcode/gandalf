@@ -332,6 +332,21 @@ class SimBuffer:
         return previous_index
     
     @staticmethod
+    def get_snapshot_extended(sim, snapno):
+        '''This function returns the desired snapshot of the given simulation object. Handle the case
+        where snapno is not only a number, but can be also a string (either "current" or "live")'''
+       
+        
+        if snapno == "current":
+            snap = SimBuffer.get_current_snapshot_by_sim(sim)
+        elif snapno == "live":
+            snap = SimBuffer.get_live_snapshot_sim(sim)
+        else:
+            snap = SimBuffer.get_snapshot_number_sim(sim, snapno)
+        return snap
+
+    
+    @staticmethod
     def get_sim_iterator(sim):
         return SimIterator(sim)
     
