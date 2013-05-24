@@ -144,9 +144,9 @@ class Simulation : public SimulationBase {
   virtual void CalculateDiagnostics(void);
   virtual void OutputDiagnostics(void);
   virtual void UpdateDiagnostics(void);
+  virtual void ComputeGlobalTimestep(void)=0;
+  virtual void ComputeBlockTimesteps(void)=0;
 
-  void ComputeGlobalTimestep(void);
-  void ComputeBlockTimesteps(void);
 #if defined(VERIFY_ALL)
   void VerifyBlockTimesteps(void);
 #endif
@@ -213,10 +213,17 @@ class SphSimulation : public Simulation<ndim> {
   using Simulation<ndim>::Noutsnap;
   using Simulation<ndim>::tsnapnext;
   using Simulation<ndim>::dt_snap;
+  using Simulation<ndim>::level_max;
+  using Simulation<ndim>::integration_step;
+  using Simulation<ndim>::nresync;
+  using Simulation<ndim>::dt_max;
+  using Simulation<ndim>::sph_single_timestep;
 public:
   SphSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
   virtual void PostGeneration(void);
   virtual void MainLoop(void);
+  virtual void ComputeGlobalTimestep(void);
+  virtual void ComputeBlockTimesteps(void);
 };
 
 template <int ndim>
@@ -236,10 +243,17 @@ class GodunovSimulation : public Simulation<ndim> {
   using Simulation<ndim>::Noutsnap;
   using Simulation<ndim>::tsnapnext;
   using Simulation<ndim>::dt_snap;
+  using Simulation<ndim>::level_max;
+  using Simulation<ndim>::integration_step;
+  using Simulation<ndim>::nresync;
+  using Simulation<ndim>::dt_max;
+  using Simulation<ndim>::sph_single_timestep;
 public:
   GodunovSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
   virtual void PostGeneration(void);
   virtual void MainLoop(void);
+  virtual void ComputeGlobalTimestep(void);
+  virtual void ComputeBlockTimesteps(void);
 };
 
 #endif
