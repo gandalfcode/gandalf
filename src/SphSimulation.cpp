@@ -754,6 +754,18 @@ void Simulation<ndim>::ProcessParameters(void)
   return;
 }
 
+template <int ndim>
+void SphSimulation<ndim>::ProcessParameters()
+{
+  Simulation<ndim>::ProcessParameters();
+}
+
+template <int ndim>
+void GodunovSimulation<ndim>::ProcessParameters()
+{
+  Simulation<ndim>::ProcessParameters();
+}
+
 
 //=============================================================================
 //  SphSimulation::PreSetupForPython
@@ -1268,7 +1280,7 @@ void SphSimulation<ndim>::PostGeneration(void)
 }
 
 
-//TODO: specialize the main loops
+//TODO: specialize the functions in SphSimulation and GodunovSimulation
 
 //=============================================================================
 //  SphSimulation::MainLoop

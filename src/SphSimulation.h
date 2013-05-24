@@ -140,7 +140,7 @@ class Simulation : public SimulationBase {
   virtual void PreSetupForPython(void);
   virtual void ImportArray(double* input, int size, string quantity);
   virtual void GenerateIC(void);
-  virtual void ProcessParameters(void);
+  virtual void ProcessParameters(void)=0;
   virtual void CalculateDiagnostics(void);
   virtual void OutputDiagnostics(void);
   virtual void UpdateDiagnostics(void);
@@ -224,6 +224,7 @@ public:
   virtual void MainLoop(void);
   virtual void ComputeGlobalTimestep(void);
   virtual void ComputeBlockTimesteps(void);
+  virtual void ProcessParameters(void);
 };
 
 template <int ndim>
@@ -254,6 +255,7 @@ public:
   virtual void MainLoop(void);
   virtual void ComputeGlobalTimestep(void);
   virtual void ComputeBlockTimesteps(void);
+  virtual void ProcessParameters(void);
 };
 
 #endif
