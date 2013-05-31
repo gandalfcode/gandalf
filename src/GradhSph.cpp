@@ -156,15 +156,13 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
 
   // Normalise all SPH sums correctly
-  //parti.h = h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim);
+  parti.h = h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim);
   parti.invh = (FLOAT) 1.0/parti.h;
   parti.invomega = (FLOAT) 1.0 + 
     Sph<ndim>::invndim*parti.h*parti.invomega*parti.invrho;
   parti.invomega = (FLOAT) 1.0/parti.invomega;
   parti.zeta = -Sph<ndim>::invndim*parti.h*parti.zeta*
     parti.invrho*parti.invomega;
-  //parti.invomega = 1.0;
-  //parti.zeta = 0.0;
 
   // Set important thermal variables here
   parti.u = eos->SpecificInternalEnergy(parti);

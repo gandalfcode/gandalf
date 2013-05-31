@@ -19,10 +19,11 @@ Density of fluid 1                          : rhofluid1 = 1.0
 Density of fluid 2                          : rhofluid2 = 2.0
 Velocity perturbation amplitude             : amp = 0.1
 Velocity perturbation wavelength            : lambda = 0.5
-No. of x-particles in fluid 1               : Nlattice1[0] = 88
-No. of y-particles in fluid 1               : Nlattice1[1] = 44
-No. of x-particles in fluid 2               : Nlattice2[0] = 128
-No. of y-particles in fluid 2               : Nlattice2[1] = 64
+No. of x-particles in fluid 1               : Nlattice1[0] = 44
+No. of y-particles in fluid 1               : Nlattice1[1] = 22
+No. of x-particles in fluid 2               : Nlattice2[0] = 64
+No. of y-particles in fluid 2               : Nlattice2[1] = 32
+Dimensionless units                         : dimensionless = 1
 
 
 -----------------------------

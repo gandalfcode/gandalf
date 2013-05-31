@@ -10,7 +10,7 @@ Initial conditions variables
 Simulation run id string                    : run_id = BB1
 Select shocktube initial conditions         : ic = bb
 Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Npart = 2000
+No. of SPH particles                        : Npart = 4000
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
 Cloud mass                                  : mcloud = 1.0
 Radius of cloud                             : radius = 0.01037

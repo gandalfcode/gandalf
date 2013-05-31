@@ -1,0 +1,54 @@
+#-------------------------------------------------------------
+# Plummer sphere initial conditions
+#-------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = PLUMMER1
+Select shocktube initial conditions         : ic = plummer
+Dimensionality of cube                      : ndim = 3
+Total mass of Plummer sphere                : mplummer = 1.0
+Radius of Plummer core                      : rplummer = 1.0
+Maximum radius of cloud                     : radius = 10.0
+Softening radius of star                    : rstar = 0.01
+Fraction of mass within stars               : starfrac = 1.0
+Fraction of mass within gas                 : gasfrac = 0.0
+No. of SPH particles                        : Nsph = 0
+No. of star particles                       : Nstar = 256
+Perform dimensionless simulation            : dimensionless = 1
+
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 2.0
+Regular snapshot output frequency           : dt_snap = 1.0
+Screen output frequency (in no. of steps)   : noutputstep = 1
+
+
+#-----------------------------
+# SPH softening kernel options
+#-----------------------------
+SPH smoothing kernel choice                 : kernel = m4
+Tabulate SPH kernel                         : tabulated_kernel = 1
+
+
+#-------------------------
+# N-body algorithm options
+#-------------------------
+Star particle integration option            : nbody = lfkdk
+Use softening?                              : nbody_softening = 0
+Identify and integrate sub-systems?         : sub_systems = 0
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+N-body timestep multiplier                  : nbody_mult = 0.2
+No. of block timestep levels                : Nlevels = 1
+
+
+
+

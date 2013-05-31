@@ -1,3 +1,7 @@
+#==============================================================================
+# facade.py
+# ..
+#==============================================================================
 import __main__
 import atexit
 from multiprocessing import Manager, Queue
@@ -9,6 +13,8 @@ manager= Manager()
 #TODO: in all the Python code, raise proper exceptions rather than a generic Exception
 #TODO: the tests should not fail
 
+
+#------------------------------------------------------------------------------
 class Singletons:
     '''Container class for singletons object. They are:
         queue
@@ -42,7 +48,7 @@ except AttributeError:
 
 
 #TODO: add function for resizing (programmatically) the figure
-
+#------------------------------------------------------------------------------
 def handle(e):
     '''This functions takes care of printing information about an error,
     if we are in interactive mode, or re-raising it, if we are in script mode
@@ -52,7 +58,9 @@ def handle(e):
         print str(e)
     else:
         raise e
-    
+
+
+#------------------------------------------------------------------------------
 def loadsim(run_id, fileformat = 'ascii', buffer_flag = 'cache'):
     '''Given the run_id of a simulation, reads it from the disk'''
     SimBuffer.loadsim(run_id, fileformat=fileformat, buffer_flag=buffer_flag)
@@ -100,13 +108,16 @@ Optional arguments:
     Singletons.queue.put([command, data])
     sleep(0.001)
 
+
+#------------------------------------------------------------------------------
 def plot_vs_time(y,sim="current",overplot=False,autoscale=True, xunit="default", yunit="default"):
     simno = get_sim_no(sim)
     command = Commands.PlotVsTime(y,simno,overplot,autoscale,xunit,yunit)
     data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
     
-    
+
+#------------------------------------------------------------------------------
 def render(x, y, render, snap="current", sim="current", overplot=False, autoscale=True, 
            autoscalerender=True, coordlimits=None, zslice=None,
            xunit="default", yunit="default", renderunit="default",
@@ -166,6 +177,8 @@ Optional arguments:
     data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
 
+
+#------------------------------------------------------------------------------
 def renderslice(x, y, renderq, zslice, **kwargs):
     '''Thin wrapper around render that does slice rendering.
 
@@ -179,7 +192,9 @@ Optional arguments:
     See render function optional arguments
 '''
     render(x, y, renderq, zslice=zslice, **kwargs)
-    
+
+
+#------------------------------------------------------------------------------
 def addrenderslice(x, y, renderq, zslice, **kwargs):
     '''Thin wrapper around renderslice that sets overplot to True.  If autoscale is
 not explicitly set, it will be set to False to preserve the existing settings.
@@ -201,6 +216,8 @@ Optional arguments:
         kwargs['autoscale']=False
     render(x, y, renderq, zslice=zslice, overplot=True, **kwargs)
 
+
+#------------------------------------------------------------------------------
 def addrender(x, y, renderq, **kwargs):
     '''Thin wrapper around render that sets overplot to True.  If autoscale is not
 explicitly set, it will be set to False to preserve the existing settings.
@@ -219,7 +236,9 @@ Optional arguments:
     except KeyError:
         kwargs['autoscale']=False
     render(x, y, renderq, overplot=True, **kwargs)
-    
+
+
+#------------------------------------------------------------------------------
 def limit (quantity, min=None, max=None, auto=False, window='current', subfigure='current'):
     '''Set plot limits. Quantity is the quantity to limit.
     
@@ -244,6 +263,8 @@ Optional arguments:
         okflag=Singletons.completedqueue.get()
         print okflag
 
+
+#------------------------------------------------------------------------------
 def addplot (x,y, **kwargs):
     '''Thin wrapper around plot that sets overplot to True.  All the other
 arguments are the same. If autoscale is not explicitly set, it will be set
@@ -261,21 +282,27 @@ Optional arguments:
     except KeyError:
         kwargs['autoscale']=False
     plot(x,y, overplot=True, **kwargs)
-    
+
+
+#------------------------------------------------------------------------------
 def next():
     '''Advances the current snapshot of the current simulation'''
     try:
         snap(SimBuffer.get_no_next_snapshot())
     except BufferException as e:
         handle(e)
-        
+
+
+#------------------------------------------------------------------------------
 def previous():
     '''Decrements the current snapshot of the current simulation'''
     try:
         snap(SimBuffer.get_no_previous_snapshot())
     except BufferException as e:
         handle(e)
-        
+
+
+#------------------------------------------------------------------------------
 def snap(no):
     '''Jump to the given snapshot number of the current simulation.  Note that you
 can use standard Numpy index notation (e.g., -1 is the last snapshot).
@@ -290,7 +317,9 @@ Required arguments:
         handle(e)
     
     update("current")
-        
+
+
+#------------------------------------------------------------------------------
 def window(no = None):
     '''Changes the current window to the number specified. If the window
 doesn\'t exist, recreate it.
@@ -302,6 +331,8 @@ Required arguments:
     data = None
     Singletons.queue.put([command,data])
 
+
+#------------------------------------------------------------------------------
 def subfigure(nx, ny, current):
     '''Creates a subplot in the current window.
 
@@ -315,17 +346,23 @@ Required arguments:
     data = None
     Singletons.queue.put([command,data])
 
+
+#------------------------------------------------------------------------------
 def newsim(paramfile=None, ndim=None):
     '''Create a new simulation object. Need to specify either the parameter file, either the number
     of dimensions. Note that it is not possible to change the number of dimensions afterwards.'''
     return SimBuffer.newsim(paramfile=paramfile, ndim=ndim)
 
+
+#------------------------------------------------------------------------------
 def setupsim():
     '''Set up the current simulation object. Note that after calling this function, no parameter change
-    it's possible!'''
+    it\'s possible!'''
     sim = SimBuffer.get_current_sim()
     sim.SetupSimulation()
 
+
+#------------------------------------------------------------------------------
 def run(no=None):
     '''Run a simulation. If no argument is given, run the current one;
     otherwise queries the buffer for the given simulation number.
@@ -353,6 +390,8 @@ def run(no=None):
         SimBuffer.load_live_snapshot(sim)
         update("live")
 
+
+#------------------------------------------------------------------------------
 def block():
     '''Stops the execution flow until the user presses enter.
     Useful in scripts, allowing to see a plot (which gets closed
@@ -360,6 +399,8 @@ def block():
     print "Press enter to quit..."
     raw_input()
 
+
+#------------------------------------------------------------------------------
 def update(type=None):
     '''Updates all the plots. You should never call directly this function,
     because all the plotting functions should call this function for you. 
@@ -380,6 +421,8 @@ def update(type=None):
             data = command.prepareData(Singletons.globallimits)
             Singletons.queue.put([command, data])
 
+
+#------------------------------------------------------------------------------
 def savefig(name):
     '''Saves the current figure with the given name.
     Note that matplotlib figures out automatically the type of the file
@@ -389,6 +432,8 @@ def savefig(name):
     Singletons.queue.put([command,data])
     time.sleep(1e-3)
 
+
+#------------------------------------------------------------------------------
 def switch_nongui():
     '''Switches matplotlib backend, disabling interactive plotting.
     Useful in scripts where no interaction is required'''
@@ -397,6 +442,8 @@ def switch_nongui():
     Singletons.queue.put([command,data])
     time.sleep(1e-3)
 
+
+#------------------------------------------------------------------------------
 def plotanalytical(x=None, y=None, snap = "current", sim = "current", overplot = True, 
                    autoscale = True, xunit="default", yunit="default"):
     '''Plots the analytical solution'''
@@ -408,6 +455,8 @@ def plotanalytical(x=None, y=None, snap = "current", sim = "current", overplot =
     data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
 
+
+#------------------------------------------------------------------------------
 def rescale(quantity, unitname, window="current", subfig="current"):
     '''Rescales the specified quantity in the specified window to the specified unit'''
     command = Commands.RescaleCommand(quantity, unitname, window)
@@ -416,12 +465,16 @@ def rescale(quantity, unitname, window="current", subfig="current"):
     print okflag
     update()
 
+
+#------------------------------------------------------------------------------
 def sims():
     '''Print a list of the simulations'''
     print "These simulations are currently loaded into memory:"
     for num, sim in enumerate(SimBuffer.simlist):
         print str(num) + ' ' + sim.simparams.stringparams["run_id"]
-        
+
+
+#------------------------------------------------------------------------------
 def snaps(simno):
     '''For the given simulation number, print a list of all the snapshots'''
     simno = int(simno)
@@ -439,11 +492,15 @@ def snaps(simno):
     if live is not None:
         print "In addition, there is a live snapshot in memory, at time " + str(live.t) 
 
+
+#------------------------------------------------------------------------------
 def set_current_sim(simno):
     '''Set the current simulation to the given number. Returns the newly set current simulation'''
     simno = int(simno)
     return SimBuffer.set_current_sim_no(simno)
 
+
+#------------------------------------------------------------------------------
 def get_sim_no(sim):
     if sim == "current":
         simno = SimBuffer.get_current_sim_no()
@@ -451,9 +508,13 @@ def get_sim_no(sim):
         simno = sim
     return simno
 
+
+#------------------------------------------------------------------------------
 def sigint(signum, frame):
     cleanup()
-    
+
+
+#------------------------------------------------------------------------------
 def cleanup():
     Singletons.queue.put(["STOP",None])
     print "Waiting for background processes to finish..."
@@ -461,6 +522,8 @@ def cleanup():
     import sys
     sys.exit()
 
+
+#------------------------------------------------------------------------------
 def init():
     global plottingprocess
     plottingprocess = PlottingProcess(Singletons.queue, Singletons.commands, Singletons.completedqueue, Singletons.globallimits)
@@ -484,6 +547,8 @@ signal.signal(signal.SIGTERM, sigint)
 signal.signal(signal.SIGSEGV, sigint)
 atexit.register(cleanup)
 
+
+#------------------------------------------------------------------------------
 if __name__=="__main__":
     loadsim('TEST')
     plot("x","rho")

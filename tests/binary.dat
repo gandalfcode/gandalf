@@ -11,6 +11,7 @@ Initial conditions variables
 Simulation run id string                    : run_id = BINARY1
 Select shocktube initial conditions         : ic = binary
 Dimensionality of cube                      : ndim = 3
+Use dimensionless units                     : dimensionless = 1
 
 
 -------------------------
@@ -28,10 +29,17 @@ SPH smoothing kernel choice                 : kernel = m4
 Tabulate SPH kernel                         : tabulated_kernel = 1
 
 
+#-------------------------
+# N-body algorithm options
+#-------------------------
+Star particle integration option            : nbody = hermite4
+Use softening?                              : nbody_softening = 0
+Identify and integrate sub-systems?         : sub_systems = 0
+
+
 ------------------------
 Time integration options
 ------------------------
-Star particle integration option            : nbody = lfkdk
 N-body timestep multiplier                  : nbody_mult = 0.2
 No. of block timestep levels                : Nlevels = 1
 

@@ -21,6 +21,7 @@ using namespace std;
 
 
 
+/*
 //=============================================================================
 //  SphSimulation::ComputeGlobalTimestep
 //  Computes global timestep for SPH simulation.
@@ -86,7 +87,10 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 
   return;
 }
+*.
 
+
+/*
 template <int ndim>
 void GodunovSimulation<ndim>::ComputeGlobalTimestep(void)
 {
@@ -148,8 +152,10 @@ void GodunovSimulation<ndim>::ComputeGlobalTimestep(void)
 
   return;
 }
+*/
 
 
+ /*
 // ============================================================================
 // SphSimulation::ComputeBlockTimesteps
 // ..
@@ -303,7 +309,10 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
   return;
 }
+ */
 
+
+  /*
 template <int ndim>
 void GodunovSimulation<ndim>::ComputeBlockTimesteps(void)
 {
@@ -453,6 +462,9 @@ void GodunovSimulation<ndim>::ComputeBlockTimesteps(void)
 
   return;
 }
+  */
+
+
 
 
 #if defined(VERIFY_ALL)

@@ -1,6 +1,6 @@
-# =============================================================================
+#==============================================================================
 # Makefile
-# =============================================================================
+#==============================================================================
 
 
 ifneq ($(PYTHON),)
@@ -94,7 +94,8 @@ endif
 SWIG_HEADERS = SphSimulation.i
 WRAP_OBJ = SphSimulation_wrap.o
 #WRAP_OBJ = Parameters_wrap.o SimUnits_wrap.o Sph_wrap.o SphSnapshot_wrap.o SphSimulation_wrap.o
-OBJ = Parameters.o SimUnits.o SphSimulation.o #SphSnapshot.o 
+OBJ = Parameters.o SimUnits.o 
+OBJ += Simulation.o SphSimulation.o GodunovSphSimulation.o  #SphSnapshot.o 
 #OBJ += SphSimulationIC.o SphSimulationIO.o 
 #OBJ += SphSimulationTimesteps.o
 #OBJ += SphAnalysis.o
@@ -104,7 +105,7 @@ OBJ += EnergyPEC.o EnergyGodunovIntegration.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o SphGodunovIntegration.o
 OBJ += RiemannSolver.o
 #OBJ += SphNeighbourSearch.o 
-OBJ += BruteForceSearch.o GridSearch.o #BinaryTree.o
+OBJ += BruteForceSearch.o GridSearch.o BinaryTree.o
 OBJ += AdiabaticEOS.o IsothermalEOS.o BarotropicEOS.o
 #OBJ += SimGhostParticles.o
 #OBJ += Render.o
@@ -159,7 +160,7 @@ shocktub.so : shocktub.f shocktub.pyf
 
 Exception.o : Exception.cpp
 	$(CC) $(OPT) $(CFLAGS) -fexceptions -c $<
-	
+
 SphSimulation.o : SphSimulationIO.cpp SphSimulationTimesteps.cpp SphSimulationIC.cpp SphAnalysis.cpp SimGhostParticles.cpp
 
 

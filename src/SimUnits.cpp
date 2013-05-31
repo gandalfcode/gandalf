@@ -29,6 +29,8 @@ SimUnit::SimUnit()
   outcgs = 1.0;
   outscale = 1.0;
   outSI = 1.0;
+  inunit = "";
+  outunit = "";
 }
 
 

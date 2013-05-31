@@ -9,9 +9,11 @@ EOS with artificial viscosity
 Initial conditions variables
 ----------------------------
 Simulation run id string                    : run_id = RELAXCUBE1
-Select shocktube initial conditions         : ic = random_cube
-Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Npart = 1024
+Select shocktube initial conditions         : ic = box
+Dimensionality of cube                      : ndim = 2
+No. of SPH particles                        : Npart = 64
+Local arrangement of particles              : particle_distribution = random
+Dimensionless units                         : dimensionless = 1
 
 
 -----------------------------
@@ -78,7 +80,7 @@ No. of block timestep levels                : Nlevels = 1
 Optimisation options
 --------------------
 Tabulate SPH kernel                         : tabulate_kernel = 1
-SPH neighbour search algorithm              : neib_search = grid
+SPH neighbour search algorithm              : neib_search = tree
 
 
 -------------

@@ -154,11 +154,11 @@ class Simulation : public SimulationBase {
 
   // Ghost particle functions -> maybe move to Sph?
   // --------------------------------------------------------------------------
-  void SearchGhostParticles(void);
+  virtual void SearchGhostParticles(void);
   void CreateGhostParticle(int,int,FLOAT,FLOAT,FLOAT);
-  void CopySphDataToGhosts(void);
+  virtual void CopySphDataToGhosts(void);
   void CopyAccelerationFromGhosts(void);
-  void CheckBoundaries(void); //should probably go inside SphIntegration
+  virtual void CheckBoundaries(void); //should probably go inside SphIntegration
 
   // Initial conditions routines -> move either to Sph, either to Nbody
   // --------------------------------------------------------------------------
@@ -197,6 +197,8 @@ class Simulation : public SimulationBase {
 
 };
 
+
+
 template <int ndim>
 class SphSimulation : public Simulation<ndim> {
   using SimulationBase::simparams;
@@ -227,6 +229,8 @@ public:
   virtual void ComputeBlockTimesteps(void);
   virtual void ProcessParameters(void);
 };
+
+
 
 template <int ndim>
 class GodunovSimulation : public Simulation<ndim> {

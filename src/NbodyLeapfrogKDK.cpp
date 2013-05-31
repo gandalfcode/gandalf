@@ -86,7 +86,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectGravForces
       drsqd = DotProduct(dr,dr,ndim);
       invdrmag = 1.0/sqrt(drsqd);
 
-      star[i]->gpot -= star[j]->m*invdrmag;
+      star[i]->gpot += star[j]->m*invdrmag;
       for (k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
 
     }
@@ -150,6 +150,20 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSPHForces
   }
   // --------------------------------------------------------------------------
 
+  return;
+}
+
+
+
+//=============================================================================
+//  NbodyLeapfrogKDK::CalculateAllStartupQuantities
+/// Empty function for Leapfrog-KDK (no additional quantities required).
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateAllStartupQuantities
+(int N,                             ///< Number of stars
+ NbodyParticle<ndim> **star)        ///< Array of stars/systems
+{
   return;
 }
 

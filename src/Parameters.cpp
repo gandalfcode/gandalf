@@ -156,6 +156,8 @@ void Parameters::SetDefaultValues(void)
   stringparams["particle_distribution"] = "random";
   intparams["smooth_ic"] = 0;
   intparams["Npart"] = 256;
+  intparams["Nsph"] = 256;
+  intparams["Nstar"] = 64;
   intparams["ndim"] = 3;
   intparams["Nlattice1[0]"] = 1;
   intparams["Nlattice1[1]"] = 1;
@@ -179,6 +181,11 @@ void Parameters::SetDefaultValues(void)
   floatparams["radius"] = 1.0;
   floatparams["angvel"] = 0.0;
   floatparams["mcloud"] = 1.0;
+  floatparams["mplummer"] = 1.0;
+  floatparams["rplummer"] = 1.0;
+  floatparams["rstar"] = 0.1;
+  floatparams["gasfrac"] = 0.0;
+  floatparams["starfrac"] = 1.0;
 
   // Integration scheme and timestep parameters
   // --------------------------------------------------------------------------

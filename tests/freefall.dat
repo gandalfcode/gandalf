@@ -12,7 +12,7 @@ Select shocktube initial conditions         : ic = sphere
 Dimensionality of cube                      : ndim = 3
 No. of SPH particles                        : Npart = 1000
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
-Use dimensionless units                     : dimensionless = true
+Use dimensionless units                     : dimensionless = 1
 
 
 

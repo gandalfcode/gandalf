@@ -1,5 +1,7 @@
 //=============================================================================
 //  SphNeighbourSearch.h
+//  Header file containing class definitions for all SPH neighbour searching 
+//  data structures and algorithms.
 //=============================================================================
 
 
@@ -35,12 +37,16 @@ struct GridCell {
 //  Structure BinaryTreeCell
 /// Neighbour grid cell data structure
 //=============================================================================
+template <int ndim>
 struct BinaryTreeCell {
   int c2;                           ///< i.d. of 2nd child cell
   int cnext;                        ///< i.d. of next cell if not opened
   int c2g;                          ///< i.d. of tree-cell c/grid-cell g
   int cL;                           ///< Level occupied by tree-cell
   int cp;                           ///< i.d. of 1st particle allocated to cell
+  FLOAT cd;                         ///< Opening distances squared
+  FLOAT r[ndim];                    ///< Position of centre of mass
+  FLOAT m;                          ///< Total mass of cell
 };
 
 
@@ -159,9 +165,11 @@ class GridSearch: public SphNeighbourSearch<ndim>
 
 //=============================================================================
 //  Class BinaryTree
-/// Class for computing SPH neighbour lists using a uniform grid.  The size 
-/// of the grid is the maximum kernel extent (e.g. 2*h_max for the M4 kernel)
-/// multiplied by some tolerance.
+/// \brief   Class containing binary tree
+/// \details Binary tree data structure used for efficient neighbour searching 
+///          and computation of gravitational forces
+/// \author  D. A. Hubber, A. P. Whitworth
+/// \date    27/05/2013
 //=============================================================================
 template <int ndim>
 class BinaryTree: public SphNeighbourSearch<ndim>
@@ -180,18 +188,15 @@ class BinaryTree: public SphNeighbourSearch<ndim>
 
   // Additional functions for grid neighbour search
   // --------------------------------------------------------------------------
-  void AllocateGridMemory(int);
-  void DeallocateGridMemory(void);
-  void ComputeTreeSize(void);
-  void CreateGrid(Sph<ndim> *);
-  int ComputeParticleGridCell(FLOAT *);
-  void ComputeCellCoordinate(int, int *);
-  int ComputeActiveCellList(int *);
-  int ComputeActiveParticleList(int, int *, Sph<ndim> *);
-  int ComputeNeighbourList(int, int *);
+  void AllocateTreeMemory(int);
+  void DeallocateTreeMemory(void);
+  void ComputeTreeSize(int, int);
+  void CreateTreeStructure(int);
+  void OrderParticlesByCartCoord(int, SphParticle<ndim> *);
+  void LoadTree(int);
+  void StockCellProperties(int, SphParticle<ndim> *);
+
 #if defined(VERIFY_ALL)
-  void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
-  void ValidateGrid(void);
 #endif
 
   // Additional variables for grid
@@ -199,24 +204,28 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   bool allocated_tree;              ///< Are grid arrays allocated?
   int Ncell;                        ///< Current no. of grid cells
   int Ncellmax;                     ///< Max. allowed no. of grid cells
-
-  int gtot;
-  int ltot;
+  int gtot;                         ///< ..
+  int ltot;                         ///< ..
   int Nleafmax;                     ///< ..
-
   int Nlistmax;                     ///< Max. length of neighbour list
   int Nsph;                         ///< Total no. of points/ptcls in grid
   int Ntot;                         ///< No. of current points in list
   int Ntotmax;                      ///< Max. no. of points in list
+  int Ntotmaxold;                   ///< ..
 
+  int *pc;                          ///< ..
   int *g2c;                         ///< ..
   int *inext;                       ///< Linked list for grid search
-  int *pw;                          ///< Particle weights
   int **porder;                     ///< ..
+
+  FLOAT *pw;                        ///< Particle weights
+  FLOAT **r;                        ///< ..
+  FLOAT theta;                      ///< ..
 
   FLOAT rmin[ndim];                 ///< Minimum extent of bounding box
   FLOAT rmax[ndim];                 ///< Maximum extent of bounding box
-  BinaryTreeCell *tree;             ///< Main grid array
+
+  BinaryTreeCell<ndim> *tree;       ///< Main grid array
 
 };
 

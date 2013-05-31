@@ -1,3 +1,7 @@
+#==============================================================================
+# analytical.py
+# ..
+#==============================================================================
 import numpy as np
 import shocktub
 
@@ -6,6 +10,7 @@ There is a template empty class, which shows that the class must expose a comput
 '''
 
 
+#------------------------------------------------------------------------------
 class AnalyticalSolution():
     '''
     Template for an analytical solution. Exposes a compute function,
@@ -23,6 +28,7 @@ class AnalyticalSolution():
         pass
 
 
+#------------------------------------------------------------------------------
 class freefall (AnalyticalSolution):
     '''Analytical solution for the Noh problem test.
     When instantiated, it gets passed the sim object and
@@ -63,7 +69,7 @@ class freefall (AnalyticalSolution):
         return x,rho
 
 
-
+#------------------------------------------------------------------------------
 class noh (AnalyticalSolution):
     '''Analytical solution for the Noh problem test.
     When instantiated, it gets passed the sim object and
@@ -104,7 +110,8 @@ class noh (AnalyticalSolution):
                 i = i + 1
         return x,rho
 
-    
+
+#------------------------------------------------------------------------------
 class shocktube (AnalyticalSolution):
     '''Analytical solution for the shocktube test.
     When instantiated, it gets passed the sim object and
@@ -145,7 +152,8 @@ class shocktube (AnalyticalSolution):
         data=np.genfromtxt('sod.out',names=['x','rho','vx','pressure','u'])
         return data[x], data[y]
     
-    
+
+#------------------------------------------------------------------------------
 class soundwave (AnalyticalSolution):
     '''Analytical solution for the soundwave.
     The initialization works in the same way as the shocktube.

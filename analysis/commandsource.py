@@ -1,3 +1,7 @@
+#==============================================================================
+# commandsource.py
+# ..
+#==============================================================================
 import analytical
 from data import Data
 from data_fetcher import UserQuantity, TimeData
@@ -5,16 +9,16 @@ from facade import SimBuffer
 import numpy as np
 from swig_generated.SphSim import RenderBase, UnitInfo
 
-'''This module contains all the source code for the commands that
-are used to make the main process communicate with the plotting process.
-Most of them correspond to functions defined in facade.
-If you want to create your own command, remember to inherit from Command
-and call the command constructor.
-Each command must implement a processCommand function, which is the one called by
-the plotting process to execute it.
+'''This module contains all the source code for the commands that are used to
+make the main process communicate with the plotting process.  Most of them
+correspond to functions defined in facade.  If you want to create your own
+command, remember to inherit from Command and call the command constructor.
+Each command must implement a processCommand function, which is the one
+called by the plotting process to execute it.
 '''
 
 
+#------------------------------------------------------------------------------
 class Command:
     '''Base class from which all the other commands inherit.
     Each command has an unique id, which gets assigned by this class.
@@ -28,6 +32,8 @@ class Command:
         Command.id += 1
         self.id = Command.id
 
+
+#------------------------------------------------------------------------------
 class SwitchNonGui(Command):
     '''Command for switching to a non gui backend.
     The implementation uses a pyplot function.'''
@@ -36,7 +42,9 @@ class SwitchNonGui(Command):
         
     def processCommand(self, plotting, data):
         plotting.plt.switch_backend('Agg')
-        
+
+
+#------------------------------------------------------------------------------
 class SaveFigCommand(Command):
     '''Command for saving the current figure. The implementation
     uses a pyplot function'''
@@ -47,6 +55,8 @@ class SaveFigCommand(Command):
     def processCommand (self, plotting, data):
         fig = plotting.plt.savefig(self.name)
 
+
+#------------------------------------------------------------------------------
 class WindowCommand(Command):
     '''Thin wrapper around the figure function
     in pyplot. Also forces the figure to be drawn.'''
@@ -58,7 +68,9 @@ class WindowCommand(Command):
         fig = plotting.plt.figure(self.no)
         fig.show()
         fig.canvas.draw()
-        
+
+
+#------------------------------------------------------------------------------
 class SubfigureCommand(Command):
     '''Thin wrapper around the subplot function
     in pyplot. Also forces the figure to be drawn.'''
@@ -73,7 +85,9 @@ class SubfigureCommand(Command):
         fig = ax.figure 
         fig.show()
         fig.canvas.draw()
-         
+
+
+#------------------------------------------------------------------------------
 class PlotCommand(Command):
     '''Base class for all the plots.
     A plot must implement execute, which describes how to plot itself the first time,
@@ -272,7 +286,9 @@ class PlotCommand(Command):
         else:
             method = getattr(ax, 'set_'+axis+'lim')
             method(min,max)
-        
+
+
+#------------------------------------------------------------------------------
 class PlotVsTime (PlotCommand):
     
     def __init__(self, yquantity,sim,overplot,autoscale,xunit,yunit):
@@ -291,7 +307,8 @@ class PlotVsTime (PlotCommand):
         data=Data(time, y_data)
         return data
         
-        
+
+#------------------------------------------------------------------------------
 class ParticlePlotCommand (PlotCommand):
     '''Inherited class that does particle plotting.
     Uses the plot method of axis for plotting, saves the line generated
@@ -331,7 +348,9 @@ class ParticlePlotCommand (PlotCommand):
         
         data = Data(x_data*xscaling_factor, y_data*yscaling_factor)
         return data
-    
+
+
+#------------------------------------------------------------------------------
 class AnalyticalPlotCommand (PlotCommand):
     '''Inherited class that does the plotting of analytical solutions.
     Like particle plotting, uses the plot method on the axis objects and
@@ -378,6 +397,8 @@ class AnalyticalPlotCommand (PlotCommand):
         data = Data(x_data*xscaling_factor,y_data*yscaling_factor)
         return data
 
+
+#------------------------------------------------------------------------------
 class RenderPlotCommand (PlotCommand):
     '''Child class that does the rendered plots.
     Uses imshow to do the plotting; to update, calls the set_array method on the returned image.'''
@@ -509,6 +530,8 @@ class RenderPlotCommand (PlotCommand):
         
         return data
 
+
+#------------------------------------------------------------------------------
 class LimitCommand(Command):
     '''This command sets the limits of a plot. It is closely connected to the limit function
     in the facade module. Refer to that to know what it does.'''
@@ -613,6 +636,8 @@ class LimitCommand(Command):
         for fig in figs:
             fig.canvas.draw()
 
+
+#------------------------------------------------------------------------------
 class RescaleCommand(Command):
     '''Rescaling command. Refer to the rescale function in facade.
     Need to be modified to work in the same way as limit.'''
@@ -657,6 +682,8 @@ class RescaleCommand(Command):
                         except AttributeError:
                             pass
             plotting.completedqueue.put("rescale completed")
-        
+
+
+#------------------------------------------------------------------------------
 class CommandException(Exception):
     pass     

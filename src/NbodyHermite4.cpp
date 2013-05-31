@@ -89,7 +89,7 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectGravForces
       invdrmag = 1.0/sqrt(drsqd);
       drdt = DotProduct(dv,dr,ndim)*invdrmag;
 
-      star[i]->gpot -= star[j]->m*invdrmag;
+      star[i]->gpot += star[j]->m*invdrmag;
       for (k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
       for (k=0; k<ndim; k++) star[i]->adot[k] +=
 	star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
@@ -149,6 +149,79 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
       for (k=0; k<ndim; k++) star[i]->a[k] += 0.5*sphdata[j].m*dr[k]*paux;
       star[i]->gpot += 0.5*sphdata[j].m*gaux;
 
+    }
+    // ------------------------------------------------------------------------
+
+  }
+  // --------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=============================================================================
+//  NbodyHermite4::CalculateAllStartupQuantities
+/// ..
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void NbodyHermite4<ndim, kernelclass>::CalculateAllStartupQuantities
+(int N,                             ///< Number of stars
+ NbodyParticle<ndim> **star)        ///< Array of stars/systems
+{
+  int i,j,k;                        // Star and dimension counters
+  DOUBLE a[ndim];                   // ..
+  DOUBLE adot[ndim];                // ..
+  DOUBLE a2dot[ndim];               // ..
+  DOUBLE afac,bfac,cfac;            // ??
+  DOUBLE da[ndim];                  // ..
+  DOUBLE dadot[ndim];               // ..
+  DOUBLE dr[ndim];                  // Relative position vector
+  DOUBLE drdt;                      // Rate of change of distance
+  DOUBLE drsqd;                     // Distance squared
+  DOUBLE dv[ndim];                  // Relative velocity vector
+  DOUBLE invdrmag;                  // 1 / drmag
+  DOUBLE invdrsqd;                  // 1 / drsqd
+  DOUBLE dvsqd;                     // Velocity squared
+
+
+  // Loop over all (active) stars
+  // --------------------------------------------------------------------------
+  for (i=0; i<N; i++) {
+
+    for (k=0; k<ndim; k++) star[i]->a2dot[k] = 0.0;
+    for (k=0; k<ndim; k++) star[i]->a3dot[k] = 0.0;
+
+    // Sum grav. contributions for all other stars (excluding star itself)
+    // ------------------------------------------------------------------------
+    for (j=0; j<N; j++) {
+      if (i == j) continue;
+
+      for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      for (k=0; k<ndim; k++) da[k] = star[j]->a[k] - star[i]->a[k];
+      for (k=0; k<ndim; k++) dadot[k] = star[j]->adot[k] - star[i]->adot[k];
+      drsqd = DotProduct(dr,dr,ndim) + small_number_dp;
+      dvsqd = DotProduct(dv,dv,ndim);
+      invdrsqd = 1.0/drsqd;
+      invdrmag = sqrt(invdrsqd);
+      drdt = DotProduct(dv,dr,ndim)*invdrmag;
+      for (k=0; k<ndim; k++) a[k] = star[j]->m*dr[k]*pow(invdrmag,3);
+      for (k=0; k<ndim; k++) adot[k] =
+	star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+
+      // Now compute 2nd and 3rd order derivatives
+      afac = DotProduct(dv,dr,ndim)*invdrsqd;
+      bfac = dvsqd*invdrsqd + afac*afac + DotProduct(da,dr,ndim)*invdrsqd;
+      cfac = 3.0*DotProduct(dv,da,ndim)*invdrsqd + 
+	DotProduct(dr,dadot,ndim)*invdrsqd + afac*(3.0*bfac - 4.0*afac*afac);
+
+      for (k=0; k<ndim; k++) a2dot[k] = 
+	star[j]->m*da[k]*invdrsqd*invdrmag - 6.0*afac*adot[k] - 3.0*bfac*a[k];
+      for (k=0; k<ndim; k++) star[i]->a2dot[k] += a2dot[k];
+      for (k=0; k<ndim; k++) star[i]->a3dot[k] += 
+	star[j]->m*dadot[k]*invdrsqd*invdrmag - 
+	9.0*afac*a2dot[k] - 9.0*bfac*adot[k] - 3.0*cfac*a[k];
     }
     // ------------------------------------------------------------------------
 
@@ -303,16 +376,25 @@ void NbodyHermite4<ndim, kernelclass>::EndTimestep
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 DOUBLE NbodyHermite4<ndim, kernelclass>::Timestep
-(NbodyParticle<ndim> *star)             ///< Reference to SPH particle
+(NbodyParticle<ndim> *star)         ///< Reference to star/system particle
 {
-  DOUBLE timestep;                      // Minimum value of particle timesteps
-  DOUBLE amag;                          // Magnitude of particle acceleration
+  DOUBLE timestep;                  // Minimum value of particle timesteps
+  DOUBLE asqd;                      // Magnitude of particle acceleration
+  DOUBLE a1sqd;                     // Magnitude of particle acceleration
+  DOUBLE a2sqd;                     // Magnitude of particle acceleration
+  DOUBLE a3sqd;                     // Magnitude of particle acceleration
 
-  // Acceleration condition
-  amag = sqrt(DotProduct(star->a,star->a,ndim));
-  timestep = nbody_mult*sqrt(star->h/(amag + small_number_dp));
+  asqd  = DotProduct(star->a,star->a,ndim);
+  a1sqd = DotProduct(star->a,star->a,ndim);
+  a2sqd = DotProduct(star->a,star->a,ndim);
+  a3sqd = DotProduct(star->a,star->a,ndim);
 
-  //cout << "TIMESTEP : " << amag << "   " << star.h << "   " << timestep << endl;
+  if (a1sqd > small_number_dp && a2sqd > small_number_dp) {
+    timestep = (sqrt(asqd*a2sqd) + a1sqd)/(sqrt(a1sqd*a3sqd) + a2sqd);
+    timestep = nbody_mult*sqrt(timestep);
+  }
+  else
+    timestep = sqrt(star->h/(sqrt(asqd) + small_number_dp));
 
   return timestep;
 }

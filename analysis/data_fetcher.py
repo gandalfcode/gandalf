@@ -1,3 +1,7 @@
+#==============================================================================
+# data_fetcher.py
+# ..
+#==============================================================================
 import numpy as np
 from swig_generated.SphSim import UnitInfo
 from facade import SimBuffer
@@ -9,6 +13,8 @@ time_fetchers={}
 
 derived_fetchers = {}
 
+
+#------------------------------------------------------------------------------
 def UserQuantity(quantity):
     '''Given a quantity, return a fetcher that we can query to get that quantity'''
     if quantity in direct:
@@ -21,6 +27,7 @@ def UserQuantity(quantity):
 from formula_parser import evaluateStack, exprStack, varStack, pattern    
 
 
+#------------------------------------------------------------------------------
 def CreateUserQuantity(name, formula, unitlabel='', unitname='',scaling_factor=1):
     #TODO: set label
     '''Given a mathematical formula, build a data fetcher from it'''
@@ -28,15 +35,21 @@ def CreateUserQuantity(name, formula, unitlabel='', unitname='',scaling_factor=1
     derived_fetchers[name] = fetcher
     return fetcher
 
+
+#------------------------------------------------------------------------------
 def CreateTimeData(name, function, *args, **kwargs):
     '''Given a function that takes a snapshot as input, construct a FunctionTimeDataFetcher object from it'''
     fetcher = FunctionTimeDataFetcher(function, *args, **kwargs)
     time_fetchers [name] = fetcher
-    
+
+
+#------------------------------------------------------------------------------
 def TimeData(quantity):
     '''Given a quantity, return the FunctionTimeDataFetcher object that we can query'''
     return time_fetchers[quantity]
 
+
+#------------------------------------------------------------------------------
 def check_requested_quantity(quantity, snap):
     '''Check the requested quantity exists, depending on the dimensionality of the snapshot.
     Also return information about the kind of the quantity (direct or derived)'''
@@ -64,7 +77,8 @@ def check_requested_quantity(quantity, snap):
     else:
         raise Exception("We don't know how to compute " + quantity)
     
-    
+
+#------------------------------------------------------------------------------
 class DirectDataFetcher:
     
     def __init__(self, quantity):
@@ -83,7 +97,9 @@ class DirectDataFetcher:
             raise Exception ("Error: the quantity" + quantity + " is not a direct quantity!")
         
         return snap.ExtractArray(self._quantity, type, unit)
-    
+
+
+#------------------------------------------------------------------------------
 class FormulaDataFetcher:
     
     def __init__(self, name, formula, unitlabel='', unitname='',scaling_factor=1):
@@ -103,7 +119,9 @@ class FormulaDataFetcher:
         
         result = evaluateStack(list(self._stack), type, snap)
         return self.unitinfo, result, self.scaling_factor
-    
+
+
+#------------------------------------------------------------------------------
 class FunctionTimeDataFetcher:
     
     def __init__(self, function, *args, **kwargs):

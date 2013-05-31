@@ -42,6 +42,7 @@ class NbodyParticle
   DOUBLE m;                         ///< Star mass
   DOUBLE h;                         ///< Smoothing length
   DOUBLE invh;                      ///< 1 / h
+  DOUBLE radius;                    ///< Softening/sink radius of particle
   DOUBLE hfactor;                   ///< invh^(ndim + 1)
   DOUBLE gpot;                      ///< Gravitational potential
   DOUBLE dt;                        ///< Particle timestep

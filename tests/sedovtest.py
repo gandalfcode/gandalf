@@ -4,11 +4,11 @@ import time
 newsim('sedov.dat')
 setupsim()
 
-plot("rcyl","rho")
+plot("R","rho")
 #plot("x","y")
 run()
 #plot("x","y")
-plot("rcyl","rho")
+plot("R","rho")
 block()
 
 

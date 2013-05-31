@@ -816,12 +816,12 @@ void Simulation<ndim>::PlummerSphere(void)
   int s;                            // Star counter
   int *porder;                      // ..
   FLOAT dr[ndim];                   // ..
-  FLOAT drmag;                      // ..
-  FLOAT drsqd;                      // ..
-  FLOAT mp;                         // ..
-  FLOAT raux;                       // ..
-  FLOAT rcentre[ndim];              // ..
-  FLOAT vplummer;                   // ..
+  FLOAT drmag;                      // Distance
+  FLOAT drsqd;                      // Distance squared
+  FLOAT mp;                         // Mass of particle
+  FLOAT raux;                       // Aux. float variable
+  FLOAT rcentre[ndim];              // Position of centre of Plummer sphere
+  FLOAT vplummer;                   // 
   FLOAT *radsqd;                    // ..
 
   int idum;
@@ -830,16 +830,16 @@ void Simulation<ndim>::PlummerSphere(void)
   FLOAT mrpl,mrlim;
   FLOAT x1,x2,x3,x4,x5,x6,x7;
   FLOAT rad,vm,ve,t1,t2,w,z;
-  FLOAT radius;
 
   // Local copies of important parameters
-  int Nsph = simparams->intparams["Npart"];
+  int Nsph = simparams->intparams["Nsph"];
   int Nstar = simparams->intparams["Nstar"];
   FLOAT gamma_eos = simparams->floatparams["gamma_eos"];
   FLOAT gasfrac = simparams->floatparams["gasfrac"];
   FLOAT starfrac = simparams->floatparams["starfrac"];
   FLOAT mplummer = simparams->floatparams["mplummer"];
   FLOAT rplummer = simparams->floatparams["rplummer"];
+  FLOAT radius = simparams->floatparams["radius"];
   FLOAT rstar = simparams->floatparams["rstar"];
 
   debug1("[SphSimulation::PlummerSphere]");
@@ -855,12 +855,15 @@ void Simulation<ndim>::PlummerSphere(void)
   gasfrac /= raux;
   starfrac /= raux;
 
-  cout << "Generating Plummer sphere" << endl;
+  cout << "Generating Plummer sphere; Nsph : " 
+       << Nsph << "    Nstar : " << Nstar << endl;
     
     
   // Loop over all particles (gas and stars)
   // ==========================================================================
   for (j=0; j<Nsph+Nstar; j++) {
+
+    cout << "Creating particle : " << j << endl;
 
     do {
       flag = false;
@@ -871,9 +874,13 @@ void Simulation<ndim>::PlummerSphere(void)
       if (x1 == 0.0 && x2 == 0.0 && x3 == 0.0) flag = true;
       rad = 1.0 / sqrt(pow(x1,-2.0/3.0) - 1.0);
       if (rad > radius/rplummer) flag = true;
+      cout << "HERE1 << " << x1 << "   " << x2 << "   " << x3 << "    " << flag << endl;
+
     } while (flag);
 
     z = (1.0 - 2.0*x2)*rad;
+
+    cout << "HERE1 << " << x1 << "   " << x2 << "   " << x3 << "    " << rad << "   " << z << endl;
 
     // Set position depending on particle type
     // ------------------------------------------------------------------------
@@ -951,9 +958,11 @@ void Simulation<ndim>::PlummerSphere(void)
     }
     nbody->stardata[i].m      = nbody->stardata[i].m*mplummer;
     //nbody->stardata[i].radius = rstar;
-    //nbody->stardata[i].h      = invkernrange*rstar;
+    nbody->stardata[i].h      = sph->kernp->invkernrange*rstar;
     nbody->stardata[i].invh   = 1.0 / nbody->stardata[i].h;
   }
+
+  cout << "Finished generating Plummer sphere" << endl;
 
   return;
 }

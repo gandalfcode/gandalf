@@ -1,10 +1,15 @@
+#==============================================================================
+# SimBuffer.py
+# ..
+#==============================================================================
 import fnmatch
 import os
 from swig_generated.SphSim import SimulationBase, SphSnapshotBase, Parameters
 
-# ============================================================================
-# CLASS SIMBUFFER
-# ============================================================================
+
+#==============================================================================
+# Class SimBuffer
+#==============================================================================
 class SimBuffer:
     '''
     This class is intended both to act as a cache for the snapshots and to
@@ -27,9 +32,6 @@ class SimBuffer:
     currentsim = -1
 
 
-    # ========================================================================
-    # SIMBUFFER __INIT__
-    # ========================================================================
     @staticmethod
     def _add_simulation(sim):
 
@@ -47,7 +49,7 @@ class SimBuffer:
         Add a new snapshot to the list of snapshots.
         Checks for memory usage, and deallocates as many snapshots as needed
         for making space. Updates the reference
-        to the parent simulation accordingly. Raises BufferFull if there isn't enough space
+        to the parent simulation accordingly. Raises BufferFull if there isn\'t enough space
         for the snapshot being loaded. 
         '''
         snapshotsize = snapshot.CalculateMemoryUsage()

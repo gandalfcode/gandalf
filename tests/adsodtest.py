@@ -28,7 +28,7 @@ plotanalytical("x","u")
 
 # Plot the thermal pressure
 subfigure(2,2,4)
-plot("x","h")
+plot("rho","h")
 
 # 'Sleep hack' (to allow matplotlib to update the figure) 
 # before running the simulation

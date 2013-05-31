@@ -11,15 +11,17 @@
 //=============================================================================
 template <int ndim>
 struct Diagnostics {
-  DOUBLE Eerror;                        ///< Total energy error
-  DOUBLE Etot;                          ///< Total energy
-  DOUBLE utot;                          ///< Total thermal energy
-  DOUBLE ketot;                         ///< Total kinetic energy
-  DOUBLE gpetot;                        ///< Total grav. potential energy
-  DOUBLE mom[ndim];                     ///< Total momentum vector
-  DOUBLE angmom[3];                     ///< Total angular momentum vector
-  DOUBLE force[ndim];                   ///< Net force
-  DOUBLE force_grav[ndim];              ///< Net gravitational force
+  DOUBLE Eerror;                    ///< Total energy error
+  DOUBLE Etot;                      ///< Total energy
+  DOUBLE utot;                      ///< Total thermal energy
+  DOUBLE ketot;                     ///< Total kinetic energy
+  DOUBLE gpetot;                    ///< Total grav. potential energy
+  DOUBLE mom[ndim];                 ///< Total momentum vector
+  DOUBLE angmom[3];                 ///< Total angular momentum vector
+  DOUBLE force[ndim];               ///< Net force
+  DOUBLE force_grav[ndim];          ///< Net gravitational force
+  DOUBLE rcom[ndim];                ///< Position of centre of mass
+  DOUBLE vcom[ndim];                ///< Velocity of centre of mass
 };
 
 #endif

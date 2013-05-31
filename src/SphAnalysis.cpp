@@ -141,7 +141,7 @@ void Simulation<ndim>::OutputDiagnostics(void)
 	 << diag.angmom[1] << "   " << diag.angmom[2] << endl;
   }
 
-  cout << "TEMP : " << sph->eos->Temperature(sph->sphdata[0])*simunits.temp.outscale << simunits.temp.outunit << endl;
+  //cout << "TEMP : " << sph->eos->Temperature(sph->sphdata[0])*simunits.temp.outscale << simunits.temp.outunit << endl;
 
 
   return;

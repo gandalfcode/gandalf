@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-
+#==============================================================================
+# interpreter.py
+# ..
+#==============================================================================
 import cmd2 as cmd
 import facade
 import inspect
@@ -16,6 +19,8 @@ def excludefunctions(function):
         return False
     return True
 
+
+#------------------------------------------------------------------------------
 class WrappedFunction:
     '''This class creates a wrapper around each one of the functions
     in facade. The wrapper code is responsible for taking the arguments passed
@@ -43,10 +48,12 @@ class WrappedFunction:
         except Exception as e:
             facade.handle(e)
 
+
+#------------------------------------------------------------------------------
 class Interpreter(cmd.Cmd):
     '''This class implements the interpreter proper.
     It gets all the functions defined in facade, filters out
-    some name that we do not want (because it's reserved), and
+    some name that we do not want (because it\'s reserved), and
     defines a command for each one of them. Also imports the
     documentation string for each one. 
     '''

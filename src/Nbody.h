@@ -52,6 +52,7 @@ class Nbody
   virtual void CalculateDirectGravForces(int,NbodyParticle<ndim> **) = 0;
   virtual void CalculateDirectSPHForces(int,int,SphParticle<ndim> *,
 					NbodyParticle<ndim> **) = 0;
+  virtual void CalculateAllStartupQuantities(int,NbodyParticle<ndim> **) = 0;
   virtual void AdvanceParticles(int,int,NbodyParticle<ndim> **,DOUBLE) = 0;
   virtual void CorrectionTerms(int,int,NbodyParticle<ndim> **,DOUBLE) = 0;
   virtual void EndTimestep(int,int,NbodyParticle<ndim> **) = 0;
@@ -107,6 +108,7 @@ class NbodyLeapfrogKDK: public Nbody<ndim>
   void CalculateDirectGravForces(int,NbodyParticle<ndim> **);
   void CalculateDirectSPHForces(int,int,SphParticle<ndim> *,
 				NbodyParticle<ndim> **);
+  void CalculateAllStartupQuantities(int,NbodyParticle<ndim> **);
   void AdvanceParticles(int,int,NbodyParticle<ndim> **,DOUBLE);
   void CorrectionTerms(int,int,NbodyParticle<ndim> **,DOUBLE);
   void EndTimestep(int,int,NbodyParticle<ndim> **);
@@ -142,6 +144,7 @@ class NbodyHermite4: public Nbody<ndim>
   void CalculateDirectGravForces(int,NbodyParticle<ndim> **);
   void CalculateDirectSPHForces(int,int,SphParticle<ndim> *,
 				NbodyParticle<ndim> **);
+  void CalculateAllStartupQuantities(int,NbodyParticle<ndim> **);
   void AdvanceParticles(int,int,NbodyParticle<ndim> **,DOUBLE);
   void CorrectionTerms(int,int,NbodyParticle<ndim> **,DOUBLE);
   void EndTimestep(int,int,NbodyParticle<ndim> **);

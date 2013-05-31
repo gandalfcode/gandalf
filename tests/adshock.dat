@@ -18,6 +18,7 @@ Density of LHS fluid                        : rhofluid1 = 1.0
 Density of RHS fluid                        : rhofluid2 = 1.0
 No. of particles in LHS fluid               : Nlattice1[0] = 512
 No. of particles in RHS fluid               : Nlattice2[0] = 512
+Dimensionless units                         : dimensionless = 1
 
 
 #------------------------------
@@ -48,7 +49,7 @@ Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 #----------------------------------------
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = m4
-SPH smoothing length iteration tolerance    : h_converge = 0.01
+SPH smoothing length iteration tolerance    : h_converge = 0.002
 
 
 #---------------------------------

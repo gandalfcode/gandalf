@@ -2,6 +2,8 @@ from seren.analysis.facade import *
 import time
 
 newsim('randomcube.dat')
+setupsim()
+
 subfigure(2,2,1)
 plot("x","y")
 subfigure(2,2,2)

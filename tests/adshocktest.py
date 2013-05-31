@@ -9,6 +9,7 @@ import time
 
 # Create new shocktube simulation from 'adshock.dat' file
 newsim('adshock.dat')
+setupsim()
 
 # Plot the density with the analytical solution
 subfigure(2,2,1)
@@ -28,7 +29,7 @@ plotanalytical("x","u")
 
 # Plot the smoothing length
 subfigure(2,2,4)
-plot("x","h")
+plot("rho","h")
 
 # 'Sleep hack' (to allow matplotlib to update the figure) 
 # before running the simulation
