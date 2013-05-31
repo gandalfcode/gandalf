@@ -504,6 +504,150 @@ void BinaryTree<ndim>::StockCellProperties
 }
 
 
+
+//=============================================================================
+//  GridSearch::ComputeActiveCellList
+/// Returns the number of cells containing active particles, 'Nactive', and
+/// the i.d. list of cells contains active particles, 'celllist'
+//=============================================================================
+template <int ndim>
+int GridSearch<ndim>::ComputeActiveCellList(int *celllist)
+{
+  int Nactive = 0;                      // No. of cells containing active ptcls
+
+  debug2("[GridSearch::ComputeActiveCellList]");
+
+  for (int c=0; c<Ncell; c++)
+    if (grid[c].Nactive > 0) celllist[Nactive++] = c;
+
+  return Nactive;
+}
+
+
+
+//=============================================================================
+//  GridSearch::ComputeActiveParticleList
+/// Returns the number (Nactive) and list of ids (activelist) of all active
+/// SPH particles in the given cell 'c'.
+//=============================================================================
+template <int ndim>
+int GridSearch<ndim>::ComputeActiveParticleList
+(int c,                             ///< [in] Cell i.d.
+ int *activelist,                   ///< [out] List of active particles in cell
+ Sph<ndim> *sph)                    ///< [in] SPH object pointer
+{
+  int Nactive = 0;                  // No. of active particles in cell
+  int i = grid[c].ifirst;           // Particle id (set to first ptcl id)
+  int ilast = grid[c].ilast;        // i.d. of last particle in cell c
+
+  // If there are no active particles in this cell, return without walking list
+  if (grid[c].Nptcls == 0) return 0;
+
+  // Else walk through linked list to obtain list and number of active ptcls.
+  do {
+    if (i < sph->Nsph && sph->sphdata[i].active) activelist[Nactive++] = i;
+    if (i == ilast) break;
+    i = inext[i];
+  } while (i != -1);
+
+  return Nactive;
+}
+
+
+
+//=============================================================================
+//  GridSearch::ComputeNeighbourList
+/// Computes and returns number of neighbour, 'Nneib', and the list
+/// of neighbour ids, 'neiblist', for all particles inside cell 'c'.
+/// Includes all particles in the selected cell, plus all particles
+/// contained in adjacent cells (including diagonal cells).
+//=============================================================================
+template <int ndim>
+int GridSearch<ndim>::ComputeNeighbourList
+(int c,                             ///< [in] i.d. of cell
+ int *neiblist)                     ///< [out] List of neighbour i.d.s
+{
+  int i;                            // Particle id
+  int ilast;                        // id of last particle in current cell
+  int caux,cx,cy,cz;                // Aux. cell counters and coordinates
+  int igrid[ndim];                  // Grid cell coordinate
+  int gridmin[ndim];                // Minimum neighbour cell coordinate
+  int gridmax[ndim];                // Maximum neighbour cell coordinate
+  int Nneib = 0;                    // No. of neighbours
+
+  // Compute the location of the cell on the grid using the id
+  ComputeCellCoordinate(c,igrid);
+
+  // --------------------------------------------------------------------------
+  if (ndim == 1) {
+    gridmin[0] = max(0,igrid[0]-1);
+    gridmax[0] = min(Ngrid[0]-1,igrid[0]+1);
+
+    for (cx=gridmin[0]; cx<=gridmax[0]; cx++) {
+      caux = cx;
+      if (grid[caux].Nptcls == 0) continue;
+      i = grid[caux].ifirst;
+      ilast = grid[caux].ilast;
+      do {
+	neiblist[Nneib++] = i;
+	if (i == ilast) break;
+	i = inext[i];
+      } while (i != -1);
+    }
+  }
+  // --------------------------------------------------------------------------
+  else if (ndim == 2) {
+    gridmin[0] = max(0,igrid[0]-1);
+    gridmax[0] = min(Ngrid[0]-1,igrid[0]+1);
+    gridmin[1] = max(0,igrid[1]-1);
+    gridmax[1] = min(Ngrid[1]-1,igrid[1]+1);
+
+    for (cy=gridmin[1]; cy<=gridmax[1]; cy++) {
+      for (cx=gridmin[0]; cx<=gridmax[0]; cx++) {
+	caux = cx + cy*Ngrid[0];
+	if (grid[caux].Nptcls == 0) continue;
+	i = grid[caux].ifirst;
+	ilast = grid[caux].ilast;
+	do {
+	  neiblist[Nneib++] = i;
+	  if (i == ilast) break;
+	  i = inext[i];
+	} while (i != -1);
+      }
+    }
+  }
+  // --------------------------------------------------------------------------
+  else if (ndim == 3) {
+    gridmin[0] = max(0,igrid[0]-1);
+    gridmax[0] = min(Ngrid[0]-1,igrid[0]+1);
+    gridmin[1] = max(0,igrid[1]-1);
+    gridmax[1] = min(Ngrid[1]-1,igrid[1]+1);
+    gridmin[2] = max(0,igrid[2]-1);
+    gridmax[2] = min(Ngrid[2]-1,igrid[2]+1);
+
+    for (cz=gridmin[2]; cz<=gridmax[2]; cz++) {
+      for (cy=gridmin[1]; cy<=gridmax[1]; cy++) {
+	for (cx=gridmin[0]; cx<=gridmax[0]; cx++) {
+	  caux = cx + cy*Ngrid[0] + cz*Ngrid[0]*Ngrid[1];
+	  if (grid[caux].Nptcls == 0) continue;
+	  i = grid[caux].ifirst;
+	  ilast = grid[caux].ilast;
+	  do {
+	    neiblist[Nneib++] = i;
+	    if (i == ilast) break;
+	    i = inext[i];
+	  } while (i != -1);
+	}
+      }
+    }
+  }
+  // --------------------------------------------------------------------------
+
+  return Nneib;
+}
+
+
+
 //=============================================================================
 //  BinaryTree::UpdateAllSphProperties
 /// Compute all local 'gather' properties of currently active particles, and 
@@ -516,6 +660,132 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 (Sph<ndim> *sph                     ///< [inout] Pointer to main SPH object
  )
 {
+  int c;                           // Cell id
+  int cc;                          // Aux. cell counter
+  int g;                           // Leaf cell counter
+  int gactive;                     // No. of active
+  int i;                           // Particle id
+  int j;                           // Aux. particle counter
+  int jj;                          // Aux. particle counter
+  int k;                           // Dimension counter
+  int okflag;                      // Flag if h-rho iteration is valid
+  int Nactive;                     // No. of active particles in cell
+  int Ngather;                     // No. of near gather neighbours
+  int Nneib;                       // No. of neighbours
+  int Nneibmax;                    // Max. no. of neighbours
+  int *activelist;                 // List of active particle ids
+  int *celllist;                   // List of active cells
+  int *neiblist;                   // List of neighbour ids
+  int *gatherlist;                 // List of nearby neighbour ids
+  FLOAT draux[ndim];               // Aux. relative position vector var
+  FLOAT drsqdaux;                  // Distance squared
+  FLOAT hrangesqd;                 // Kernel extent
+  FLOAT rp[ndim];                  // Local copy of particle position
+  FLOAT *drsqd;                    // Position vectors to gather neibs
+  FLOAT *m;                        // Distances to gather neibs
+  FLOAT *m2;                       // ..
+  FLOAT *mu;                       // mass*u for gather neibs
+  FLOAT *mu2;                      // ..
+  FLOAT *r;                        // 1/drmag to scatter neibs
+  SphParticle<ndim> *data = sph->sphdata;  // Pointer to SPH particle data
+
+  // Find list of all cells that contain active particles
+  celllist = new int[gtot];
+  cactive = ComputeActiveCellList(celllist);
+
+  // Set-up all OMP threads
+  // ==========================================================================
+#pragma omp parallel default(shared) private(activelist,c,cc,draux,drsqd,drsqdaux,gatherlist,hrangesqd,i,j,jj,k,okflag,m,m2,mu,mu2,Nactive,neiblist,Ngather,Nneib,r,rp)
+  {
+    activelist = new int[Nleafmax];
+    gatherlist = new int[Nneibmax];
+    neiblist = new int[Nneibmax];
+    drsqd = new FLOAT[Nneibmax];
+    m = new FLOAT[Nneibmax];
+    m2 = new FLOAT[Nneibmax];
+    mu = new FLOAT[Nneibmax];
+    mu2 = new FLOAT[Nneibmax];
+    r = new FLOAT[Nneibmax*ndim];
+
+    // Loop over all active cells
+    // ========================================================================
+#pragma omp for schedule(dynamic)
+    for (cc=0; cc<cactive; cc++) {
+      c = celllist[cc];
+
+      // Find list of active particles in current cell
+      Nactive = ComputeActiveParticleList(c,activelist,sph);
+
+      // Compute neighbour list for cell depending on physics options
+      Nneib = ComputeGatherNeighbourList(c,neiblist);
+
+      // Make local copies of important neib information (mass and position)
+      for (jj=0; jj<Nneib; jj++) {
+        j = neiblist[jj];
+        m[jj] = data[j].m;
+        mu[jj] = data[j].m*data[j].u;
+        for (k=0; k<ndim; k++) r[ndim*jj + k] = (FLOAT) data[j].r[k];
+      }
+
+      // Loop over all active particles in the cell
+      // ----------------------------------------------------------------------
+      for (j=0; j<Nactive; j++) {
+        i = activelist[j];
+        for (k=0; k<ndim; k++) rp[k] = data[i].r[k];
+
+        // Set gather range as current h multiplied by some tolerance factor
+        hrangesqd = pow(grid_h_tolerance*sph->kernp->kernrange*data[i].h,2);
+        Ngather = 0;
+
+        // Compute distance (squared) to all
+        // --------------------------------------------------------------------
+        for (jj=0; jj<Nneib; jj++) {
+          for (k=0; k<ndim; k++) draux[k] = r[ndim*jj + k] - rp[k];
+          drsqdaux = DotProduct(draux,draux,ndim);
+
+          // Record distance squared for all potential gather neighbours
+          if (drsqdaux <= hrangesqd) {
+            gatherlist[Ngather] = jj;
+            drsqd[Ngather] = drsqdaux;
+            m2[Ngather] = m[jj];
+            mu2[Ngather] = mu[jj];
+            Ngather++;
+       	  }
+
+        }
+        // --------------------------------------------------------------------
+
+      // Validate that gather neighbour list is correct
+#if defined(VERIFY_ALL)
+	if (neibcheck) CheckValidNeighbourList(sph,i,Ngather,
+					       gatherlist,"gather");
+#endif
+
+        // Compute smoothing length and other gather properties for particle i
+        okflag = sph->ComputeH(i,Ngather,m2,mu2,drsqd,data[i]);
+
+      }
+      // ----------------------------------------------------------------------
+
+    }
+    // ========================================================================
+
+    // Free-up all memory
+    delete[] r;
+    delete[] mu2;
+    delete[] mu;
+    delete[] m2;
+    delete[] m;
+    delete[] drsqd;
+    delete[] neiblist;
+    delete[] gatherlist;
+    delete[] activelist;
+
+  }
+  // ==========================================================================
+
+  delete[] celllist;
+
   return;
 }
 

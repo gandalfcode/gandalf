@@ -47,6 +47,7 @@ struct BinaryTreeCell {
   FLOAT cd;                         ///< Opening distances squared
   FLOAT r[ndim];                    ///< Position of centre of mass
   FLOAT m;                          ///< Total mass of cell
+  FLOAT hmax;                       ///< Maximum smoothing length inside cell
 };
 
 
