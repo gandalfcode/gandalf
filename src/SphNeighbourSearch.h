@@ -42,11 +42,14 @@ struct BinaryTreeCell {
   int c2;                           ///< i.d. of 2nd child cell
   int cnext;                        ///< i.d. of next cell if not opened
   int c2g;                          ///< i.d. of tree-cell c/grid-cell g
-  int cL;                           ///< Level occupied by tree-cell
-  int cp;                           ///< i.d. of 1st particle allocated to cell
-  FLOAT cd;                         ///< Opening distances squared
+  int clevel;                       ///< Level occupied by tree-cell
+  int ifirst;                       ///< i.d. of 1st particle allocated to cell
+  int ilast;                        ///< i.d. of last particle in cell
+  int Nactive;                      ///< No. of active particles in cell
+  FLOAT cdistsqd;                   ///< Opening distances squared
   FLOAT r[ndim];                    ///< Position of centre of mass
   FLOAT m;                          ///< Total mass of cell
+  FLOAT rmax;                       ///< Max. dist. of ptcl from COM
   FLOAT hmax;                       ///< Maximum smoothing length inside cell
 };
 
@@ -194,8 +197,12 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void ComputeTreeSize(int, int);
   void CreateTreeStructure(int);
   void OrderParticlesByCartCoord(int, SphParticle<ndim> *);
-  void LoadTree(int);
+  void LoadParticlesToTree(int);
   void StockCellProperties(int, SphParticle<ndim> *);
+  void CreateGridCells(int, SphParticle<ndim> *);
+  int ComputeActiveCellList(int *);
+  int ComputeActiveParticleList(int, int *, Sph<ndim> *);
+  //int ComputeNeighbourList(int, int *);
 
 #if defined(VERIFY_ALL)
 #endif
@@ -205,17 +212,20 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   bool allocated_tree;              ///< Are grid arrays allocated?
   int Ncell;                        ///< Current no. of grid cells
   int Ncellmax;                     ///< Max. allowed no. of grid cells
-  int gtot;                         ///< ..
-  int ltot;                         ///< ..
-  int Nleafmax;                     ///< ..
+  int gtot;                         ///< Total number of grid/leaf cells
+  int Ngridcells;                   ///< ""
+  int ltot;                         ///< Total number of levels in tree
+  int Nlevel;                       ///< ""
+  int Nleafmax;                     ///< Max. number of particles per leaf cell
   int Nlistmax;                     ///< Max. length of neighbour list
   int Nsph;                         ///< Total no. of points/ptcls in grid
   int Ntot;                         ///< No. of current points in list
   int Ntotmax;                      ///< Max. no. of points in list
-  int Ntotmaxold;                   ///< ..
+  int Ntotmaxold;                   ///< Old value of Ntotmax
 
-  int *pc;                          ///< ..
+  int *pc;                          ///< i.d. of leaf cell occupied by ptcl
   int *g2c;                         ///< ..
+  int *gactivelist;                 ///< ..
   int *inext;                       ///< Linked list for grid search
   int **porder;                     ///< ..
 
@@ -226,7 +236,8 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   FLOAT rmin[ndim];                 ///< Minimum extent of bounding box
   FLOAT rmax[ndim];                 ///< Maximum extent of bounding box
 
-  BinaryTreeCell<ndim> *tree;       ///< Main grid array
+  GridCell *grid;                   ///< Main grid array
+  BinaryTreeCell<ndim> *tree;       ///< Main tree array
 
 };
 
