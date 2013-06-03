@@ -126,7 +126,6 @@ void Sph<ndim>::SphBoundingBox
 template <int ndim>
 void Sph<ndim>::InitialSmoothingLengthGuess(void)
 {
-  int Ngather;                      // No. of neighbours (move!!)
   FLOAT h_guess;                    // Global guess of smoothing length
   FLOAT volume;                     // Volume of global bounding box
   FLOAT rmin[ndim];                 // Min. extent of bounding box
@@ -141,19 +140,19 @@ void Sph<ndim>::InitialSmoothingLengthGuess(void)
   // length assuming a uniform density distribution filling the bounding box.
   // --------------------------------------------------------------------------
   if (ndim == 1) {
-    Ngather = 5;
+    Ngather = (int) (2.0*kernp->kernrange*h_fac);
     volume = rmax[0] - rmin[0];
     h_guess = (volume*(FLOAT) Ngather)/(4.0*(FLOAT) Nsph);
   }
   // --------------------------------------------------------------------------
   else if (ndim == 2) {
-    Ngather = 20;
+    Ngather = (int) (pi*pow(kernp->kernrange*h_fac,2));
     volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1]);
     h_guess = sqrtf((volume*(FLOAT) Ngather)/(4.0*(FLOAT) Nsph));
   }
   // --------------------------------------------------------------------------
   else if (ndim == 3) {
-    Ngather = 50;
+    Ngather = (int) (4.0*pi*pow(kernp->kernrange*h_fac,3)/3.0);
     volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1])*(rmax[2] - rmin[2]);
     h_guess = powf((3.0*volume*(FLOAT) Ngather)/
 		   (32.0*pi*(FLOAT) Nsph),onethird);

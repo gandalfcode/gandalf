@@ -46,6 +46,7 @@ struct BinaryTreeCell {
   int ifirst;                       ///< i.d. of 1st particle allocated to cell
   int ilast;                        ///< i.d. of last particle in cell
   int Nactive;                      ///< No. of active particles in cell
+  int N;                            ///< No. of particles in cell
   FLOAT cdistsqd;                   ///< Opening distances squared
   FLOAT r[ndim];                    ///< Position of centre of mass
   FLOAT m;                          ///< Total mass of cell
@@ -202,7 +203,8 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void CreateGridCells(int, SphParticle<ndim> *);
   int ComputeActiveCellList(int *);
   int ComputeActiveParticleList(int, int *, Sph<ndim> *);
-  //int ComputeNeighbourList(int, int *);
+  int ComputeGatherNeighbourList(int, int, int *);
+  int ComputeNeighbourList(int, int, int *);
 
 #if defined(VERIFY_ALL)
 #endif
@@ -227,16 +229,15 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   int *g2c;                         ///< ..
   int *gactivelist;                 ///< ..
   int *inext;                       ///< Linked list for grid search
-  int **porder;                     ///< ..
+  int *porder[ndim];                     ///< ..
 
   FLOAT *pw;                        ///< Particle weights
-  FLOAT **r;                        ///< ..
+  FLOAT *r[ndim];                        ///< ..
   FLOAT theta;                      ///< ..
 
   FLOAT rmin[ndim];                 ///< Minimum extent of bounding box
   FLOAT rmax[ndim];                 ///< Maximum extent of bounding box
 
-  GridCell *grid;                   ///< Main grid array
   BinaryTreeCell<ndim> *tree;       ///< Main tree array
 
 };

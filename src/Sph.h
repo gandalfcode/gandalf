@@ -87,6 +87,7 @@ class Sph
   // SPH particle counters and main particle data array
   // --------------------------------------------------------------------------
   bool allocated;                     ///< Is SPH memory allocated?
+  int Ngather;                        ///< Average no. of gather neighbours
   int Nsph;                           ///< No. of SPH particles in simulation
   int Nghost;                         ///< No. of ghost SPH particles
   int Ntot;                           ///< No. of real + ghost particles
