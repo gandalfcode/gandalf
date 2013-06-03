@@ -154,11 +154,11 @@ class Simulation : public SimulationBase {
 
   // Ghost particle functions -> maybe move to Sph?
   // --------------------------------------------------------------------------
-  virtual void SearchGhostParticles(void);
+  void SearchGhostParticles(void);
   void CreateGhostParticle(int,int,FLOAT,FLOAT,FLOAT);
-  virtual void CopySphDataToGhosts(void);
+  void CopySphDataToGhosts(void);
   void CopyAccelerationFromGhosts(void);
-  virtual void CheckBoundaries(void); //should probably go inside SphIntegration
+  void CheckBoundaries(void); //should probably go inside SphIntegration
 
   // Initial conditions routines -> move either to Sph, either to Nbody
   // --------------------------------------------------------------------------

@@ -23,7 +23,11 @@
 #include "RiemannSolver.h"
 using namespace std;
 
-
+// Create template class instances of the main SphSimulation object for
+// each dimension used (1, 2 and 3)
+template class SphSimulation<1>;
+template class SphSimulation<2>;
+template class SphSimulation<3>;
 
 //TODO: make this mess more modular (note: initial h computation
 //should be done inside the neighbour search)
@@ -516,8 +520,4 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
 
 
-// Create template class instances of the main SphSimulation object for 
-// each dimension used (1, 2 and 3)
-template class SphSimulation<1>;
-template class SphSimulation<2>;
-template class SphSimulation<3>;
+

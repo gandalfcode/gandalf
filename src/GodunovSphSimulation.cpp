@@ -21,10 +21,15 @@
 #include "Nbody.h"
 #include "Sph.h"
 #include "RiemannSolver.h"
+#include "SimGhostParticles.cpp"
 using namespace std;
 
 
 
+
+template class GodunovSimulation<1>;
+template class GodunovSimulation<2>;
+template class GodunovSimulation<3>;
 
 
 //TODO: make this mess more modular (note: initial h computation
@@ -546,9 +551,5 @@ void GodunovSimulation<ndim>::ComputeBlockTimesteps(void)
 
 
 
-
-template class GodunovSimulation<1>;
-template class GodunovSimulation<2>;
-template class GodunovSimulation<3>;
 
 
