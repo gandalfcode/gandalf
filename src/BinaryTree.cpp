@@ -351,31 +351,31 @@ void BinaryTree<ndim>::LoadParticlesToTree(int output)
   for (i=0; i<Ntot; i++) ccap[0] += 1.0/(FLOAT) Ntot; //pw[i];
 
   // Record capacity of 1st and 2nd child-cells as half that of parent cells
-  for (c=0; c<Ncell; c++) {
-    if (tree[c].c2 == 0) continue;
-    ccap[c + 1] = 0.5*ccap[c];
-    ccap[tree[c].c2] = ccap[c + 1];
-  }
+  //for (c=0; c<Ncell; c++) {
+  //  if (tree[c].c2 == 0) continue;
+  //  ccap[c + 1] = 0.5*ccap[c];
+  //  ccap[tree[c].c2] = ccap[c + 1];
+  //}
 
 
   // Go through each tree level in turn and print info
   for (int l=0; l<ltot+1; l++) {
-	  cout << "LEVEL : " << l << endl;
-	  cout << "----------------------" << endl;
-	  for (c=0; c<Ncell; c++) {
-		  if (tree[c].clevel == l) {
-			  cout << "c : " << c << "    ccap : " << ccap[c] << "    " << tree[c].c2 << endl;
-		  }
-	  }
+    cout << "LEVEL : " << l << endl;
+    cout << "----------------------" << endl;
+    for (c=0; c<Ncell; c++) {
+      if (tree[c].clevel == l) {
+	//cout << "c : " << c << "    ccap : " << ccap[c] << "    " << tree[c].c2 << endl;
+      }
+    }
   }
 
   // Verify values
-  for (c=0; c<Ncell; c++) {
-	  if (ccap[c] < small_number) {
-		  cout << "Invalid capacity : " << c << "   " << ccap[c] << "    " << tree[c].c2 << endl;
-		  exit(0);
-	  }
-  }
+  //for (c=0; c<Ncell; c++) {
+  //  if (ccap[c] < small_number) {
+  //	  cout << "Invalid capacity : " << c << "   " << ccap[c] << "    " << tree[c].c2 << endl;
+  //	  exit(0);
+  //  }
+  //}
 
   // Initialise all particle and cell values before building tree structure
   for (i=0; i<Ntot; i++) pc[i] = 0;
@@ -404,25 +404,25 @@ void BinaryTree<ndim>::LoadParticlesToTree(int output)
       if (ccon[cc] < 0.5000000000001*ccap[cc]) {
         pc[j]++;
         cN[pc[j]]++;
+	ccap[pc[j]] += 1.0/(FLOAT) Ntot;
+        //cout << "LEFT : " << cc << "    " << ccon[cc]/ccap[cc] << endl;
       }
       else {
         pc[j] = tree[cc].c2;
         cN[pc[j]]++;
+	ccap[pc[j]] += 1.0/(FLOAT) Ntot;
+        //cout << "RHS : " << cc << "    " << ccon[cc]/ccap[cc] << endl;
       }
       if (tree[cc].c2 == 0 && cN[pc[j]] > Nleafmax) {
-    	  cout << "Problem here making lists : " << cN[pc[j]] << "   " << Nleafmax << endl;
-    	  cout << "c : " << c << "   " << cc << "   " << Ncell << "   "<<  ccon[cc] << "   " << ccap[cc]
-    	       << "    " << "    " << ccap[cc]/ccap[0] << "   " << i << "    " << Ntot << endl;
-    	  exit(0);
+	cout << "Problem here making lists : " << cN[pc[j]] << "   " << Nleafmax << endl;
+	cout << "c : " << c << "   " << cc << "   " << Ncell << "   "<<  ccon[cc] << "   " << ccap[cc]
+	     << "    " << "    " << ccap[cc]/ccap[0] << "   " << i << "    " << Ntot << endl;
+	exit(0);
       }
     }
 
     cout << "LEVEL : " << c << endl;
-	  for (cc=0; cc<Ncell; cc++) {
-		  if (tree[cc].clevel == c) {
-			  cout << "c : " << cc << "    ccap : " << ccap[cc] << "    " << ccon[cc] << "    " << cN[cc] << endl;
-		  }
-	  }
+
 
     // Move to next level and cycle through each dimension in turn
     // (Need more sophisticated algorithm here in future)
@@ -448,25 +448,24 @@ void BinaryTree<ndim>::LoadParticlesToTree(int output)
     else
       inext[tree[pc[i]].ilast] = i;
     tree[pc[i]].ilast = i;
-    //cout << "Setting values : " << i << "   " << pc[i] << "   " << tree[pc[i]].ifirst << "   " << tree[pc[i]].ilast << endl;
   }
 
   // Now check all leaf cells the correct number of particles
   for (c=0; c<Ncell; c++) {
-	  if (tree[c].c2 == 0) {
-		  cout << "Capacity ratio : " << ccon[c]/ccap[c] << endl;
-		  int N = 0;
-		  i = tree[c].ifirst;
-		  while (i != -1) {
-			N++;
-			i = inext[i];
-		  };
-		  if (N > Nleafmax) {
-			  cout << "Checking capacities : " << ccon[c] << "     " << ccap[c] << "    " << cN[c] << endl;
-			  cout << "Problem with linked lists : " << N << "   " << Nleafmax << "   " << c << endl;
-			  exit(0);
-		  }
-	  }
+    if (tree[c].c2 == 0) {
+      //cout << "Capacity ratio : " << ccon[c]/ccap[c] << endl;
+      int N = 0;
+      i = tree[c].ifirst;
+      while (i != -1) {
+	N++;
+	i = inext[i];
+      };
+      if (N > Nleafmax) {
+	cout << "Checking capacities : " << ccon[c] << "     " << ccap[c] << "    " << cN[c] << endl;
+	cout << "Problem with linked lists : " << N << "   " << Nleafmax << "   " << c << endl;
+	exit(0);
+      }
+    }
   }
 
   // Free all locally allocated memory
@@ -510,8 +509,8 @@ void BinaryTree<ndim>::StockCellProperties
     tree[c].m = 0.0;
     tree[c].hmax = 0.0;
     for (k=0; k<ndim; k++) tree[c].r[k] = 0.0;
-    for (k=0; k<ndim; k++) crmin[c*ndim + k] = -big_number;
-    for (k=0; k<ndim; k++) crmax[c*ndim + k] = big_number;
+    for (k=0; k<ndim; k++) crmin[c*ndim + k] = big_number;
+    for (k=0; k<ndim; k++) crmax[c*ndim + k] = -big_number;
   }
 
   // Loop backwards over all tree cells to ensure child cells are always 
@@ -530,7 +529,6 @@ void BinaryTree<ndim>::StockCellProperties
         if (sphdata[i].active) tree[c].Nactive++;
         tree[c].hmax = max(tree[c].hmax,sphdata[i].h);
         tree[c].m += sphdata[i].m;
-        //if (sphdata[i].m < small_number) cout << "Mass problem : " << i << "   " << Nsph << "   " << sphdata[i].m << endl;
         for (k=0; k<ndim; k++) tree[c].r[k] += sphdata[i].m*sphdata[i].r[k];
         for (k=0; k<ndim; k++) {
           if (sphdata[i].r[k] < crmin[c*ndim + k])
@@ -561,9 +559,9 @@ void BinaryTree<ndim>::StockCellProperties
         tree[c].m = tree[cc].m + tree[ccc].m;
         for (k=0; k<ndim; k++) tree[c].r[k] =
           (tree[cc].m*tree[cc].r[k] + tree[ccc].m*tree[ccc].r[k])/tree[c].m;
-        for (k=0; k<ndim; k++)
+	if (tree[cc].N > 0) for (k=0; k<ndim; k++)
           crmin[ndim*c + k] = min(crmin[ndim*cc+k],crmin[ndim*ccc+k]);
-        for (k=0; k<ndim; k++)
+        if (tree[ccc].N > 0) for (k=0; k<ndim; k++)
           crmax[ndim*c + k] = max(crmax[ndim*cc+k],crmax[ndim*ccc+k]);
         for (k=0; k<ndim; k++) dr[k] = crmax[c*ndim + k] - crmin[c*ndim + k];
         tree[c].cdistsqd = factor*DotProduct(dr,dr,ndim);
@@ -575,8 +573,10 @@ void BinaryTree<ndim>::StockCellProperties
     }
     // ------------------------------------------------------------------------
 
-    cout << "CELL : " << c << "  Nactive : " << tree[c].Nactive << "   m : " << tree[c].m << "    r : "
-    		<< tree[c].r[0] << "   " << tree[c].r[1] << endl;
+    //cout << "CELL : " << c << "  Nactive : " << tree[c].Nactive << "   m : " << tree[c].m << "    r : "
+    //	<< tree[c].r[0] << "   " << tree[c].r[1] << endl;
+    //cout << "BB : " << crmin[ndim*c] << "   " << crmax[ndim*c] 
+    // << "   " << crmin[ndim*c+1] << "   " << crmax[ndim*c+1] << endl;
 
     if (tree[c].c2 == 0 && tree[c].N > Nleafmax) {
     	cout << "Problem with tree; N > Nleafmax : " << tree[c].N << "   " << Nleafmax << endl;
@@ -594,6 +594,7 @@ void BinaryTree<ndim>::StockCellProperties
     cout << "Mass of root cell1 : " << tree[0].m << endl;
     cout << "Bounding box : " << crmin[0] << "   " << crmax[0] 
 	 << "   " << crmin[1] << "   " << crmax[1] << endl;
+    //exit(0);
   }
 //#endif
 
@@ -619,8 +620,9 @@ int BinaryTree<ndim>::ComputeActiveCellList(int *celllist)
 
   debug2("[BinaryTree::ComputeActiveCellList]");
 
-  for (c=0; c>Ncell; c++) {
+  for (c=0; c<Ncell; c++) {
     if (tree[c].Nactive > 0) celllist[Nactive++] = c;
+    //cout << "Nactive : " << c << "    " << tree[c].Nactive << "   " << Nactive << endl;
   }
 
   return Nactive;
@@ -642,9 +644,6 @@ int BinaryTree<ndim>::ComputeActiveParticleList
   int Nactive = 0;                  // No. of active particles in cell
   int i = tree[c].ifirst;           // Particle id (set to first ptcl id)
   int ilast = tree[c].ilast;        // i.d. of last particle in cell c
-
-  // If there are no active particles in this cell, return without walking list
-  //if (tree[c].Nptcls == 0) return 0;
 
   // Else walk through linked list to obtain list and number of active ptcls.
   while (i != -1) {
@@ -691,8 +690,11 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
 
   // --------------------------------------------------------------------------
   while (cc < Ncell) {
-	for (k=0; k<ndim; k++) dr[k] = tree[cc].r[k] - rc[k];
+    for (k=0; k<ndim; k++) dr[k] = tree[cc].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
+
+    //cout << "Walking tree : " << cc << "   " << drsqd << "     " 
+    // << pow(tree[cc].rmax + rmax + hmax,2) << "    " << Nneib << endl;
 
     // Check if circular range overlaps cell bounding sphere
     // ------------------------------------------------------------------------
@@ -706,6 +708,7 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
     	  if (i == ilast) break;
     	  i = inext[i];
         };
+	cc = tree[cc].cnext;
       }
 
       // If not a leaf-cell, then open cell to first child cell
@@ -764,7 +767,7 @@ int BinaryTree<ndim>::ComputeNeighbourList
 
   // --------------------------------------------------------------------------
   while (cc < Ncell) {
-	for (k=0; k<ndim; k++) dr[k] = tree[cc].r[k] - rc[k];
+    for (k=0; k<ndim; k++) dr[k] = tree[cc].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
 
     // Check if circular range overlaps cell bounding sphere
@@ -779,6 +782,7 @@ int BinaryTree<ndim>::ComputeNeighbourList
     	  if (i == ilast) break;
     	  i = inext[i];
         };
+	cc = tree[cc].cnext;
       }
 
       // If not a leaf-cell, then open cell to first child cell
@@ -848,6 +852,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
   Nneibmax = 4*sph->Ngather;
 
   cout << "Updating SPH properties for " << cactive << " active cells" << endl;
+  cout << "Ngather : " << sph->Ngather << "   Nneibmax : " << Nneibmax << endl;
 
   // Set-up all OMP threads
   // ==========================================================================
@@ -872,9 +877,11 @@ void BinaryTree<ndim>::UpdateAllSphProperties
       // Compute neighbour list for cell depending on physics options
       Nneib = ComputeGatherNeighbourList(c,Nneibmax,neiblist);
 
+      //cout << "Nactive : " << Nactive << "   Nneib : " << Nneib << endl;
+
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour lists.
-      while (Nneib != -1) {
+      while (Nneib == -1) {
         delete[] r;
         delete[] mu;
         delete[] m;
@@ -1017,7 +1024,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour lists.
-      while (Nneib != -1) {
+      while (Nneib == -1) {
         delete[] neibpart;
         delete[] invdrmag;
         delete[] drmag;

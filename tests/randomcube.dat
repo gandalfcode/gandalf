@@ -11,7 +11,7 @@ Initial conditions variables
 Simulation run id string                    : run_id = RELAXCUBE1
 Select shocktube initial conditions         : ic = box
 Dimensionality of cube                      : ndim = 2
-No. of SPH particles                        : Npart = 32
+No. of SPH particles                        : Npart = 128
 Local arrangement of particles              : particle_distribution = random
 Dimensionless units                         : dimensionless = 1
 
@@ -36,9 +36,9 @@ RHS boundary type in z-dimension            : z_boundary_rhs = periodic
 -------------------------
 Simulation time variables
 -------------------------
-Simulation end time                         : tend = 20.0
+Simulation end time                         : tend = 2.0
 Regular snapshot output frequency           : dt_snap = 1.0
-Screen output frequency (in no. of steps)   : noutputstep = 32
+Screen output frequency (in no. of steps)   : noutputstep = 1
 
 
 -----------------------
