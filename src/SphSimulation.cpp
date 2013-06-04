@@ -21,6 +21,7 @@
 #include "Nbody.h"
 #include "Sph.h"
 #include "RiemannSolver.h"
+#include "SimGhostParticles.cpp"
 using namespace std;
 
 // Create template class instances of the main SphSimulation object for
@@ -28,6 +29,8 @@ using namespace std;
 template class SphSimulation<1>;
 template class SphSimulation<2>;
 template class SphSimulation<3>;
+
+
 
 //TODO: make this mess more modular (note: initial h computation
 //should be done inside the neighbour search)
@@ -81,7 +84,6 @@ void SphSimulation<ndim>::PostGeneration(void)
     for (i=0; i<sph->Ntot; i++) sph->sphdata[i].active = true;
 
     // Calculate all SPH properties
-    sphneib->neibcheck = true;
     sphneib->UpdateAllSphProperties(sph);
 
     // Search ghost particles
@@ -89,6 +91,7 @@ void SphSimulation<ndim>::PostGeneration(void)
 
     // Update neighbour tre
     sphneib->UpdateTree(sph,*simparams);
+    sphneib->neibcheck = true;
     sphneib->UpdateAllSphProperties(sph);
 
   }
@@ -134,6 +137,7 @@ void SphSimulation<ndim>::PostGeneration(void)
     }
 
     this->CopySphDataToGhosts();
+    sphneib->UpdateTree(sph,*simparams);
 
     // ..
     if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
@@ -143,7 +147,7 @@ void SphSimulation<ndim>::PostGeneration(void)
     for (i=0; i<sph->Nsph; i++) {
       sph->sphdata[i].active = false;
       for (k=0; k<ndim; k++)
-    sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
+        sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
 
     this->CopySphDataToGhosts();
@@ -512,7 +516,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   // ==========================================================================
 
 #if defined(VERIFY_ALL)
-  VerifyBlockTimesteps();
+  //VerifyBlockTimesteps();
 #endif
 
   return;

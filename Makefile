@@ -3,13 +3,13 @@
 #==============================================================================
 
 CC                 = g++
-PYTHON             = python2.7
-F2PY               = f2py2.7
-COMPILER_MODE      = DEBUG
+PYTHON             = python
+F2PY               = f2py
+COMPILER_MODE      = FAST
 PRECISION          = DOUBLE
 OPENMP             = 0
-OUTPUT_LEVEL       = 2
-DEBUG              = 2
+OUTPUT_LEVEL       = 1
+DEBUG              = 1
 VERIFY_ALL         = 0
 
 

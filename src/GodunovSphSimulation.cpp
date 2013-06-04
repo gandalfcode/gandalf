@@ -543,7 +543,7 @@ void GodunovSimulation<ndim>::ComputeBlockTimesteps(void)
   // ==========================================================================
 
 #if defined(VERIFY_ALL)
-  VerifyBlockTimesteps();
+  //VerifyBlockTimesteps();
 #endif
 
   return;

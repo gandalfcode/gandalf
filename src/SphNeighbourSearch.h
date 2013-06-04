@@ -179,6 +179,8 @@ class GridSearch: public SphNeighbourSearch<ndim>
 template <int ndim>
 class BinaryTree: public SphNeighbourSearch<ndim>
 {
+  using SphNeighbourSearch<ndim>::neibcheck;
+
  public:
 
   BinaryTree();
@@ -207,6 +209,8 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   int ComputeNeighbourList(int, int, int *);
 
 #if defined(VERIFY_ALL)
+  void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
+  void ValidateTree(Sph<ndim> *);
 #endif
 
   // Additional variables for grid
