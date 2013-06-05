@@ -88,6 +88,7 @@ Optimisation options
 --------------------
 Tabulate SPH kernel                         : tabulated_kernel = 1
 SPH neighbour search algorithm              : neib_search = tree
+No. of particles in leaf cell               : Nleafmax = 16
 
 
 -------------

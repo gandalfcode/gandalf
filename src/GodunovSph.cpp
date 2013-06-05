@@ -69,6 +69,7 @@ template <int ndim, template<int> class kernelclass>
 int GodunovSph<ndim, kernelclass >::ComputeH
 (int i,                                 // id of particle
  int Nneib,                             // No. of potential neighbours
+ FLOAT hmax,                            // ..
  FLOAT *m,                              // Array of neib. masses
  FLOAT *mu,                             // Array of m*u (not needed here)
  FLOAT *drsqd,                          // Array of neib. distances (squared)
@@ -79,7 +80,6 @@ int GodunovSph<ndim, kernelclass >::ComputeH
   int k;                                // Dimension counter
   int iteration = 0;                    // h-rho iteration counter
   int iteration_max = 30;               // Max. no of iterations
-  FLOAT h_max = big_number;             // Max. allowed value of h
   FLOAT h_lower_bound = 0.0;            // Lower bound on h
   FLOAT h_upper_bound = big_number;     // Upper bound on h
   FLOAT invhsqd;                        // (1 / h)^2
@@ -146,7 +146,7 @@ int GodunovSph<ndim, kernelclass >::ComputeH
     // If the smoothing length is too large for the neighbour list, exit 
     // routine and flag neighbour list error in order to generate a larger
     // neighbour list (not properly implemented yet).
-    if (parti.h > h_max) return 0;
+    if (parti.h > hmax) return 0;
     
   } while (parti.h > h_lower_bound && parti.h < h_upper_bound);
   // ==========================================================================
