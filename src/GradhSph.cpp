@@ -68,6 +68,7 @@ template <int ndim, template<int> class kernelclass>
 int GradhSph<ndim, kernelclass>::ComputeH
 (int i,                             ///< [in] id of particle
  int Nneib,                         ///< [in] No. of potential neighbours
+ FLOAT hmax,                        ///< [in] Max. h permitted by neib list
  FLOAT *m,                          ///< [in] Array of neib. masses
  FLOAT *mu,                         ///< [in] Array of m*u (not needed here)
  FLOAT *drsqd,                      ///< [in] Array of neib. distances squared
@@ -78,7 +79,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
   int k;                            // Dimension counter
   int iteration = 0;                // h-rho iteration counter
   int iteration_max = 30;           // Max. no of iterations
-  FLOAT h_max = big_number;         // Max. allowed value of h
   FLOAT h_lower_bound = 0.0;        // Lower bound on h
   FLOAT h_upper_bound = big_number; // Upper bound on h
   FLOAT invhsqd;                    // (1 / h)^2
@@ -149,7 +149,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
     // If the smoothing length is too large for the neighbour list, exit 
     // routine and flag neighbour list error in order to generate a larger
     // neighbour list (not properly implemented yet).
-    if (parti.h > h_max) return 0;
+    if (parti.h > hmax) return 0;
     
   } while (parti.h > h_lower_bound && parti.h < h_upper_bound);
   // ==========================================================================
@@ -172,7 +172,9 @@ int GradhSph<ndim, kernelclass>::ComputeH
     parti.invrho*parti.invomega;
   parti.div_v = (FLOAT) 0.0;
   
-  return 1;
+  // If h is invalid (i.e. larger than maximum h), then return error code (0)
+  if (parti.h <= hmax) return 1;
+  else return -1;
 }
 
 

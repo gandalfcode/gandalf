@@ -107,7 +107,7 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
       // ----------------------------------------------------------------------
 
       // Compute all SPH gather properties
-      okflag = sph->ComputeH(i,sph->Ntot,m,mu,drsqd,sph->sphdata[i]);
+      okflag = sph->ComputeH(i,sph->Ntot,big_number,m,mu,drsqd,sph->sphdata[i]);
   
     }
     // ------------------------------------------------------------------------

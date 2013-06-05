@@ -206,8 +206,10 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void CreateGridCells(int, SphParticle<ndim> *);
   int ComputeActiveCellList(int *);
   int ComputeActiveParticleList(int, int *, Sph<ndim> *);
-  int ComputeGatherNeighbourList(int, int, int *);
+  int ComputeGatherNeighbourList(int, int, int *, FLOAT);
   int ComputeNeighbourList(int, int, int *);
+  int ComputeGravityInteractionList(int, int, int, int, int &, int &, int &,
+                                    int *, int *, int *);
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
   void ValidateTree(Sph<ndim> *);

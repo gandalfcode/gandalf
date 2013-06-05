@@ -55,7 +55,7 @@ class Sph
   // SPH functions for computing SPH sums with neighbouring particles 
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
   // --------------------------------------------------------------------------
-  virtual int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, 
+  virtual int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *,
 	               SphParticle<ndim> &) = 0;
   virtual void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *, 
                                     FLOAT *, SphParticle<ndim> &, 
@@ -151,7 +151,7 @@ class GradhSph: public Sph<ndim>
            aviscenum, acondenum, string, string);
   ~GradhSph();
 
-  int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle<ndim> &);
+  int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, SphParticle<ndim> &);
   void ComputeSphNeibGravForces(int, int, int *, FLOAT *, FLOAT *,
 				FLOAT *, SphParticle<ndim> &, 
 				SphParticle<ndim> *);
@@ -202,7 +202,7 @@ class SM2012Sph: public Sph<ndim>
             aviscenum, acondenum, string, string);
   ~SM2012Sph();
 
-  int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle<ndim> &);
+  int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, SphParticle<ndim> &);
   void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *, 
 			    FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphNeibGravForces(int, int, int *, FLOAT *, FLOAT *,
@@ -254,7 +254,7 @@ class GodunovSph: public Sph<ndim>
              aviscenum, acondenum, string, string);
   ~GodunovSph();
 
-  int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle<ndim> &);
+  int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, SphParticle<ndim> &);
   void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *, 
 			    FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphNeibGravForces(int, int, int *, FLOAT *, FLOAT *,
