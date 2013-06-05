@@ -616,7 +616,9 @@ void Simulation<ndim>::ProcessParameters(void)
   else if (stringparams["neib_search"] == "grid")
     sphneib = new GridSearch<ndim>;
   else if (stringparams["neib_search"] == "tree")
-    sphneib = new BinaryTree<ndim>;
+    sphneib = new BinaryTree<ndim>(intparams["Nleafmax"],
+                                   floatparams["thetamaxsqd"],
+                                   stringparams["gravity_mac"]);
   else {
     string message = "Unrecognised parameter : neib_search = " 
       + simparams->stringparams["neib_search"];

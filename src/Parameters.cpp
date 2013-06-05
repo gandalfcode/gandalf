@@ -202,7 +202,6 @@ void Parameters::SetDefaultValues(void)
   stringparams["sph"] = "gradh";
   stringparams["kernel"] = "m4";
   intparams["tabulated_kernel"] = 0;
-  stringparams["neib_search"] = "grid";
   floatparams["h_fac"] = 1.2;
   floatparams["h_converge"] = 0.01;
 
@@ -235,6 +234,13 @@ void Parameters::SetDefaultValues(void)
   // --------------------------------------------------------------------------
   intparams["self_gravity"] = 0;
   stringparams["grav_kernel"] = "mean_h";
+
+  // Neighbour searching and tree-gravity parameters
+  // --------------------------------------------------------------------------
+  stringparams["neib_search"] = "grid";
+  stringparams["gravity_mac"] = "geometric";
+  intparams["Nleafmax"] = 1;
+  floatparams["thetamaxsqd"] = 0.2;
 
   // N-body parameters
   // --------------------------------------------------------------------------
