@@ -815,9 +815,10 @@ void Simulation<ndim>::PreSetupForPython(void)
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::ImportArray
-(double* input,                         ///< ..
- int size,                              ///< ..
- string quantity)                       ///< ..
+(double* input,                         ///< [in] Input array
+ int size,                              ///< [in] Size of the input array
+ string quantity,                       ///< [in] Which quantity should be set equal to the given array
+ string type)                       ///< [in] Which particle type should be assigned the array
 {
   FLOAT SphParticle<ndim>::*quantityp;
   FLOAT (SphParticle<ndim>::*quantitypvec)[ndim];
