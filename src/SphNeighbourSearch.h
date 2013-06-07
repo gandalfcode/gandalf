@@ -72,6 +72,7 @@ class SphNeighbourSearch
 
   virtual void UpdateAllSphProperties(Sph<ndim> *) = 0;
   virtual void UpdateAllSphForces(Sph<ndim> *) = 0;
+  virtual void UpdateAllSphHydroForces(Sph<ndim> *) = 0;
   virtual void UpdateAllSphGravForces(Sph<ndim> *) = 0;
   virtual void UpdateAllSphDudt(Sph<ndim> *) = 0;
   virtual void UpdateAllSphDerivatives(Sph<ndim> *) = 0;
@@ -100,6 +101,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
 
   void UpdateAllSphProperties(Sph<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
+  void UpdateAllSphHydroForces(Sph<ndim> *);
   void UpdateAllSphGravForces(Sph<ndim> *);
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
@@ -127,6 +129,7 @@ class GridSearch: public SphNeighbourSearch<ndim>
 
   void UpdateAllSphProperties(Sph<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
+  void UpdateAllSphHydroForces(Sph<ndim> *);
   void UpdateAllSphGravForces(Sph<ndim> *);
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
@@ -188,6 +191,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
 
   void UpdateAllSphProperties(Sph<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
+  void UpdateAllSphHydroForces(Sph<ndim> *);
   void UpdateAllSphGravForces(Sph<ndim> *);
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
@@ -210,6 +214,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   int ComputeNeighbourList(int, int, int *);
   int ComputeGravityInteractionList(int, int, int, int, int &, int &, int &,
                                     int *, int *, int *);
+  void ComputeCellForces(int, int, int *, SphParticle<ndim> &);
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
   void ValidateTree(Sph<ndim> *);

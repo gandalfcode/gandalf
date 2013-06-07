@@ -213,14 +213,14 @@ void GridSearch<ndim>::UpdateAllSphProperties
 
 
 //=============================================================================
-//  GridSearch::UpdateAllSphForces
+//  GridSearch::UpdateAllSphHydroForces
 /// Compute all local 'gather' properties of currently active particles, and 
 /// then compute each particle's contribution to its (active) neighbour 
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
 template <int ndim>
-void GridSearch<ndim>::UpdateAllSphForces
+void GridSearch<ndim>::UpdateAllSphHydroForces
 (Sph<ndim> *sph                     ///< Pointer to SPH object
 )
 {
@@ -253,7 +253,7 @@ void GridSearch<ndim>::UpdateAllSphForces
   SphParticle<ndim> parti;          // Local copy of SPH particle
   SphParticle<ndim> *data = sph->sphdata;   // Pointer to SPH particle data
 
-  debug2("[GridSearch::UpdateAllSphProperties]");
+  debug2("[GridSearch::UpdateAllSphHydroForce]");
 
   // Find list of all cells that contain active particles
   celllist = new int[Ncell];
@@ -340,7 +340,7 @@ void GridSearch<ndim>::UpdateAllSphForces
         // --------------------------------------------------------------------
 
         // Compute all gather neighbour contributions to hydro forces
-        sph->ComputeSphNeibForces(i,Ninteract,interactlist,
+        sph->ComputeSphHydroForces(i,Ninteract,interactlist,
 				  drmag,invdrmag,dr,parti,neibpart);
 
         // Add ..
@@ -397,6 +397,20 @@ void GridSearch<ndim>::UpdateAllSphForces
     }
   }
 
+  return;
+}
+
+
+
+//=============================================================================
+//  GridSearch::UpdateAllSphGravityProperties
+/// Empty function for now
+//=============================================================================
+template <int ndim>
+void GridSearch<ndim>::UpdateAllSphForces
+(Sph<ndim> *sph                     ///< Pointer to SPH object
+)
+{
   return;
 }
 
@@ -537,11 +551,12 @@ void GridSearch<ndim>::UpdateAllSphGravForces
         // --------------------------------------------------------------------
 
         // Compute all gather neighbour contributions to hydro forces
-        sph->ComputeSphNeibGravForces(i,Ninteract,interactlist,
-				      drmag,invdrmag,dr,parti,neibpart);
+        sph->ComputeSphGravForces(i,Ninteract,interactlist,
+				  drmag,invdrmag,dr,parti,neibpart);
 
 	// Now add all direct, unsmoothed contributions
-	sph->ComputeDirectGravForces(i,Ndirect,directlist,parti,data);
+	sph->ComputeDirectGravForces(i,Ndirect,directlist,
+				     adirect,potdirect,parti,data);
 
         // Add contributions to main arrays
         for (k=0; k<ndim; k++) {

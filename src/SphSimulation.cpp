@@ -139,9 +139,13 @@ void SphSimulation<ndim>::PostGeneration(void)
     this->CopySphDataToGhosts();
     sphneib->UpdateTree(sph,*simparams);
 
-    // ..
-    if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
-    if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
+    // Calculate SPH gravity and hydro forces, depending on which are activated
+    if (sph->hydro_forces == 1 && sph->self_gravity == 1)
+      sphneib->UpdateAllSphForces(sph);
+    else if (sph->hydro_forces == 1)
+      sphneib->UpdateAllSphHydroForces(sph);
+    else if (sph->self_gravity == 1)
+      sphneib->UpdateAllSphGravForces(sph);
 
     // Add accelerations
     for (i=0; i<sph->Nsph; i++) {
@@ -263,9 +267,13 @@ void SphSimulation<ndim>::MainLoop(void)
       }
     }
 
-    // Calculate all SPH forces
-    if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
-    if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
+    // Calculate SPH gravity and hydro forces, depending on which are activated
+    if (sph->hydro_forces == 1 && sph->self_gravity == 1)
+      sphneib->UpdateAllSphForces(sph);
+    else if (sph->hydro_forces == 1)
+      sphneib->UpdateAllSphHydroForces(sph);
+    else if (sph->self_gravity == 1)
+      sphneib->UpdateAllSphGravForces(sph);
 
     // Compute contribution to grav. accel from stars
     for (i=0; i<sph->Nsph; i++)
