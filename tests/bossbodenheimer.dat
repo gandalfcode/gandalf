@@ -106,7 +106,7 @@ Tree options
 ------------
 SPH neighbour search algorithm              : neib_search = tree
 No. of particles in leaf cell               : Nleafmax = 4
-Tree opening angle (squared)                : thetamaxsqd = 0.2
+Tree opening angle (squared)                : thetamaxsqd = 0.1
 
 
 --------------------

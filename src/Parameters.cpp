@@ -155,9 +155,9 @@ void Parameters::SetDefaultValues(void)
   stringparams["ic"] = "random_cube";
   stringparams["particle_distribution"] = "random";
   intparams["smooth_ic"] = 0;
-  intparams["Npart"] = 256;
-  intparams["Nsph"] = 256;
-  intparams["Nstar"] = 64;
+  intparams["Npart"] = 0;
+  intparams["Nsph"] = 0;
+  intparams["Nstar"] = 0;
   intparams["ndim"] = 3;
   intparams["Nlattice1[0]"] = 1;
   intparams["Nlattice1[1]"] = 1;
@@ -247,6 +247,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["nbody"] = "lfkdk";
   intparams["nbody_softening"] = 0;
   intparams["sub_systems"] = 0;
+  intparams["Npec"] = 1;
 
   // Boundary conditions parameters
   // --------------------------------------------------------------------------

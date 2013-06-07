@@ -730,6 +730,43 @@ void Simulation<ndim>::ProcessParameters(void)
     }
   }
   // --------------------------------------------------------------------------
+  else if (stringparams["nbody"] == "hermite4ts") {
+    string KernelName = stringparams["kernel"];
+    if (intparams["tabulated_kernel"] == 1) {
+      nbody = new NbodyHermite4TS<ndim, TabulatedKernel>
+	(intparams["nbody_softening"], intparams["sub_systems"],
+	 floatparams["nbody_mult"], KernelName);
+    }
+    else if (intparams["tabulated_kernel"] == 0) {
+      // Depending on the kernel, instantiate a different GradSph object
+      if (KernelName == "m4") {
+	nbody = new NbodyHermite4TS<ndim, M4Kernel>
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else if (KernelName == "quintic") {
+	nbody = new NbodyHermite4TS<ndim, QuinticKernel>
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else if (KernelName == "gaussian") {
+	nbody = new NbodyHermite4TS<ndim, GaussianKernel>
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else {
+	string message = "Unrecognised parameter : kernel = " +
+	  simparams->stringparams["kernel"];
+	ExceptionHandler::getIstance().raise(message);
+      }
+    }
+    else {
+      string message = "Invalid option for the tabulated_kernel parameter: " +
+	stringparams["tabulated_kernel"];
+      ExceptionHandler::getIstance().raise(message);
+    }
+  }
+  // --------------------------------------------------------------------------
   else {
     string message = "Unrecognised parameter : nbody = " 
       + simparams->stringparams["nbody"];

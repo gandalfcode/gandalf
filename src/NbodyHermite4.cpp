@@ -208,20 +208,20 @@ void NbodyHermite4<ndim, kernelclass>::CalculateAllStartupQuantities
       drdt = DotProduct(dv,dr,ndim)*invdrmag;
       for (k=0; k<ndim; k++) a[k] = star[j]->m*dr[k]*pow(invdrmag,3);
       for (k=0; k<ndim; k++) adot[k] =
-	star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+        star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
 
       // Now compute 2nd and 3rd order derivatives
       afac = DotProduct(dv,dr,ndim)*invdrsqd;
       bfac = dvsqd*invdrsqd + afac*afac + DotProduct(da,dr,ndim)*invdrsqd;
       cfac = 3.0*DotProduct(dv,da,ndim)*invdrsqd + 
-	DotProduct(dr,dadot,ndim)*invdrsqd + afac*(3.0*bfac - 4.0*afac*afac);
+        DotProduct(dr,dadot,ndim)*invdrsqd + afac*(3.0*bfac - 4.0*afac*afac);
 
       for (k=0; k<ndim; k++) a2dot[k] = 
-	star[j]->m*da[k]*invdrsqd*invdrmag - 6.0*afac*adot[k] - 3.0*bfac*a[k];
+        star[j]->m*da[k]*invdrsqd*invdrmag - 6.0*afac*adot[k] - 3.0*bfac*a[k];
       for (k=0; k<ndim; k++) star[i]->a2dot[k] += a2dot[k];
       for (k=0; k<ndim; k++) star[i]->a3dot[k] += 
-	star[j]->m*dadot[k]*invdrsqd*invdrmag - 
-	9.0*afac*a2dot[k] - 9.0*bfac*adot[k] - 3.0*cfac*a[k];
+        star[j]->m*dadot[k]*invdrsqd*invdrmag -
+        9.0*afac*a2dot[k] - 9.0*bfac*adot[k] - 3.0*cfac*a[k];
     }
     // ------------------------------------------------------------------------
 
@@ -306,19 +306,20 @@ void NbodyHermite4<ndim, kernelclass>::CorrectionTerms
   // --------------------------------------------------------------------------
   for (i=0; i<N; i++) {
     nstep = star[i]->nstep;
-    if (n%nstep == 0) continue;
-    dt = timestep*(DOUBLE) nstep;
+
+    if (n%nstep == 0) {
+      dt = timestep*(DOUBLE) nstep;
     
-    for (k=0; k<ndim; k++) {
-      star[i]->a2dot[k] = (-6.0*(star[i]->a0[k] - star[i]->a[k]) - dt*
-			  (4.0*star[i]->adot0[k] + 2.0*star[i]->adot[k]))/dt/dt;
-      
-      star[i]->a3dot[k] = (12.0*(star[i]->a0[k] - star[i]->a[k]) + 6.0*dt*
-			  (star[i]->adot0[k] + star[i]->adot[k]))/dt/dt/dt;
-      star[i]->r[k] += star[i]->a2dot[k]*dt*dt*dt*dt/24.0 +
-	star[i]->a3dot[k]*dt*dt*dt*dt*dt/120.0;
-      star[i]->v[k] += star[i]->a2dot[k]*dt*dt*dt/6.0 +
-	star[i]->a3dot[k]*dt*dt*dt*dt/24.0;
+      for (k=0; k<ndim; k++) {
+        star[i]->a2dot[k] = (-6.0*(star[i]->a0[k] - star[i]->a[k]) - dt*
+			    (4.0*star[i]->adot0[k] + 2.0*star[i]->adot[k]))/dt/dt;
+        star[i]->a3dot[k] = (12.0*(star[i]->a0[k] - star[i]->a[k]) + 6.0*dt*
+		  	    (star[i]->adot0[k] + star[i]->adot[k]))/dt/dt/dt;
+        star[i]->r[k] += star[i]->a2dot[k]*dt*dt*dt*dt/24.0 +
+          star[i]->a3dot[k]*dt*dt*dt*dt*dt/120.0;
+        star[i]->v[k] += star[i]->a2dot[k]*dt*dt*dt/6.0 +
+          star[i]->a3dot[k]*dt*dt*dt*dt/24.0;
+      }
     }
     
   }

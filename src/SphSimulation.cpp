@@ -174,8 +174,6 @@ void SphSimulation<ndim>::PostGeneration(void)
 
 
 
-//TODO: specialize the functions in SphSimulation and GodunovSimulation
-
 //=============================================================================
 //  SphSimulation::MainLoop
 /// Main SPH simulation integration loop.
@@ -184,7 +182,10 @@ template <int ndim>
 void SphSimulation<ndim>::MainLoop(void)
 {
   int i;                            // Particle loop counter
+  int it;                           // Time-symmetric iteration counter
   int k;                            // Dimension counter
+
+  int Npec = simparams->intparams["Npec"];
 
   debug2("[SphSimulation::MainLoop]");
 
@@ -220,39 +221,9 @@ void SphSimulation<ndim>::MainLoop(void)
 
     // Update neighbour tree
     sphneib->UpdateTree(sph,*simparams);
-  }
-
-
-  // --------------------------------------------------------------------------
-  if (sph->Nsph > 0) {
 
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph);
-
-  }
-
-
-  // Compute N-body forces
-  // --------------------------------------------------------------------------
-  if (nbody->Nstar > 0) {
-
-    // Zero all acceleration terms
-    for (i=0; i<nbody->Nnbody; i++) {
-      if (nbody->nbodydata[i]->active) {
-	for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k] = 0.0;
-	for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k] = 0.0;
-	for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = 0.0;
-	for (k=0; k<ndim; k++) nbody->nbodydata[i]->a3dot[k] = 0.0;
-	nbody->nbodydata[i]->gpot = 0.0;
-      }
-    }
-
-    nbody->CalculateDirectGravForces(nbody->Nstar,nbody->nbodydata);
-  }
-
-
-  // --------------------------------------------------------------------------
-  if (sph->Nsph > 0) {
 
     // Copy properties from original particles to ghost particles
     this->CopySphDataToGhosts();
@@ -260,10 +231,10 @@ void SphSimulation<ndim>::MainLoop(void)
     // Zero accelerations (perhaps)
     for (i=0; i<sph->Ntot; i++) {
       if (sph->sphdata[i].active) {
-	for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
-	for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
-	sph->sphdata[i].gpot = (FLOAT) 0.0;
-	sph->sphdata[i].dudt = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
+        sph->sphdata[i].gpot = (FLOAT) 0.0;
+        sph->sphdata[i].dudt = (FLOAT) 0.0;
       }
     }
 
@@ -279,7 +250,7 @@ void SphSimulation<ndim>::MainLoop(void)
     for (i=0; i<sph->Nsph; i++)
       if (sph->sphdata[i].active)
 	sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
-				   sph->sphdata[i]);
+                               sph->sphdata[i]);
 
     // Add accelerations
     for (i=0; i<sph->Nsph; i++) {
@@ -288,6 +259,42 @@ void SphSimulation<ndim>::MainLoop(void)
     }
 
   }
+  // --------------------------------------------------------------------------
+
+
+  // Compute N-body forces
+  // --------------------------------------------------------------------------
+  if (nbody->Nstar > 0) {
+
+    // Iterate end-of-step
+    // ------------------------------------------------------------------------
+	for (it=0; it<Npec; it++) {
+
+	  cout << "it : " << it << "     Npec : " << Npec << endl;
+
+      // Zero all acceleration terms
+      for (i=0; i<nbody->Nnbody; i++) {
+        if (nbody->nbodydata[i]->active) {
+          for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k] = 0.0;
+          for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k] = 0.0;
+          for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = 0.0;
+          for (k=0; k<ndim; k++) nbody->nbodydata[i]->a3dot[k] = 0.0;
+          nbody->nbodydata[i]->gpot = 0.0;
+        }
+      }
+
+      // Calculate forces, force derivatives etc.., for active stars/systems
+      nbody->CalculateDirectGravForces(nbody->Nstar,nbody->nbodydata);
+
+      // Calculate correction step for all stars at end of step
+      nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
+
+	}
+    // ------------------------------------------------------------------------
+
+  }
+  // --------------------------------------------------------------------------
+
 
   // Apply correction steps for both particle and energy integration
   sphint->CorrectionTerms(n,level_step,sph->Nsph,
@@ -295,7 +302,7 @@ void SphSimulation<ndim>::MainLoop(void)
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EnergyCorrectionTerms(n,level_step,sph->Nsph,
   				sph->sphdata,(FLOAT) timestep);
-  nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
+
 
   // Set all end-of-step variables
   sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
