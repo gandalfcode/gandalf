@@ -773,6 +773,7 @@ void Simulation<ndim>::ProcessParameters(void)
   sph->riemann_solver = stringparams["riemann_solver"];
   sph->slope_limiter = stringparams["slope_limiter"];
   sph->riemann_order = intparams["riemann_order"];
+  nbody->Nstar = intparams["Nstar"];
 
   // Flag that we've processed all parameters already
   ParametersProcessed = true;
@@ -798,7 +799,7 @@ void Simulation<ndim>::PreSetupForPython(void)
   }
 
   if (ParametersProcessed) {
-    string msg = "Error: this function has been already called!";
+    string msg = "Error: the function ProcessParameters has been already called!";
     ExceptionHandler::getIstance().raise(msg);
   }
 
@@ -806,40 +807,144 @@ void Simulation<ndim>::PreSetupForPython(void)
 
   sph->AllocateMemory(sph->Nsph);
 
+  nbody->AllocateMemory(nbody->Nstar);
+
   return;
 }
 
-
-
 //=============================================================================
-//  SphSimulation::ImportArray
-/// Import an array containing particle properties from python to C++ arrays.
+//  SphSimulation::ImportArrayNbody
+/// Import an array containing nbody particle properties from python to C++ arrays.
 //=============================================================================
 template <int ndim>
-void Simulation<ndim>::ImportArray
-(double* input,                         ///< ..
- int size,                              ///< ..
- string quantity)                       ///< ..
+void Simulation<ndim>::ImportArrayNbody
+(double* input,
+    int size,
+    string quantity)
 {
-  FLOAT SphParticle<ndim>::*quantityp;
-  FLOAT (SphParticle<ndim>::*quantitypvec)[ndim];
-  bool scalar;
-  int index;
+    FLOAT StarParticle<ndim>::*quantityp; //Pointer to scalar quantity
+    FLOAT (StarParticle<ndim>::*quantitypvec)[ndim]; //Pointer to component of vector quantity
+    int index; //If it's a component of a vector quantity, we need to know its index
+    bool scalar; //Is the requested quantity a scalar?
 
-  debug2("[SphSimulation::ImportArray]");
+    //Check that the size is correct
+    if (size != nbody->Nstar) {
+      stringstream message;
+      message << "Error: the array you are passing has a size of "
+          << size << ", but memory has been allocated for "
+          << nbody->Nstar << " star particles";
+      ExceptionHandler::getIstance().raise(message.str());
+    }
 
-  //Check that PreSetup has been called
-  if (! ParametersProcessed) {
-    string msg = "Error: before calling ImportArray, you need to call PreSetupForPython!";
-    ExceptionHandler::getIstance().raise(msg);
-  }
+    // Now set pointer to the correct value inside the particle data structure
+    // --------------------------------------------------------------------------
+    if (quantity == "x") {
+      quantitypvec = &StarParticle<ndim>::r;
+      index = 0;
+      scalar = false;
+    }
+    // --------------------------------------------------------------------------
+    else if (quantity == "y") {
+      if (ndim < 2) {
+        string message = "Error: loading y-coordinate array for ndim < 2";
+        ExceptionHandler::getIstance().raise(message);
+      }
+      quantitypvec = &StarParticle<ndim>::r;
+      index = 1;
+      scalar = false;
+    }
+    // --------------------------------------------------------------------------
+    else if (quantity == "z") {
+      if (ndim < 3) {
+        string message = "Error: loading y-coordinate array for ndim < 3";
+        ExceptionHandler::getIstance().raise(message);
+      }
+      quantitypvec = &StarParticle<ndim>::r;
+      index = 2;
+      scalar = false;
+    }
+    // --------------------------------------------------------------------------
+    else if (quantity == "vx") {
+      quantitypvec = &StarParticle<ndim>::v;
+      index = 0;
+      scalar = false;
+    }
+    // --------------------------------------------------------------------------
+    else if (quantity == "vy") {
+      if (ndim < 2) {
+        string message = "Error: loading vy array for ndim < 2";
+        ExceptionHandler::getIstance().raise(message);
+      }
+      quantitypvec = &StarParticle<ndim>::v;
+      index = 1;
+      scalar = false;
+    }
+    // --------------------------------------------------------------------------
+    else if (quantity == "vz") {
+      if (ndim < 3) {
+        string message = "Error: loading vz array for ndim < 3";
+        ExceptionHandler::getIstance().raise(message);
+      }
+      quantitypvec = &StarParticle<ndim>::v;
+      index = 2;
+      scalar = false;
+    }
+    // --------------------------------------------------------------------------
+    else if (quantity=="m") {
+      quantityp = &StarParticle<ndim>::m;
+      scalar = true;
+    }
+    // --------------------------------------------------------------------------
+    else {
+      string message = "Quantity " + quantity + "not recognised";
+      ExceptionHandler::getIstance().raise(message);
+    }
+    // --------------------------------------------------------------------------
+
+
+    // Finally loop over particles and set all values
+    // (Note that the syntax for scalar is different from the one for vectors)
+    // --------------------------------------------------------------------------
+    if (scalar) {
+      int i=0;
+      for (StarParticle<ndim>* particlep = nbody->stardata;
+       particlep < nbody->stardata+size; particlep++, i++) {
+        particlep->*quantityp = input[i];
+      }
+    }
+    else {
+      int i=0;
+      for (StarParticle<ndim>* particlep = nbody->stardata;
+       particlep < nbody->stardata+size; particlep++, i++) {
+        (particlep->*quantitypvec)[index] = input[i];
+      }
+    }
+
+    return;
+}
+
+
+//=============================================================================
+//  SphSimulation::ImportArraySph
+/// Import an array containing sph particle properties from python to C++ arrays.
+//=============================================================================
+template <int ndim>
+void Simulation<ndim>::ImportArraySph
+(double* input,
+    int size,
+    string quantity)
+{
+  FLOAT SphParticle<ndim>::*quantityp; //Pointer to scalar quantity
+  FLOAT (SphParticle<ndim>::*quantitypvec)[ndim]; //Pointer to component of vector quantity
+  int index; //If it's a component of a vector quantity, we need to know its index
+  bool scalar; //Is the requested quantity a scalar?
 
   //Check that the size is correct
   if (size != sph->Nsph) {
     stringstream message;
     message << "Error: the array you are passing has a size of " 
-	    << size << ", but memory has been allocated for " 
-	    << sph->Nsph << " particles";
+        << size << ", but memory has been allocated for "
+        << sph->Nsph << " particles";
     ExceptionHandler::getIstance().raise(message.str());
   }
 
@@ -934,19 +1039,67 @@ void Simulation<ndim>::ImportArray
   if (scalar) {
     int i=0;
     for (SphParticle<ndim>* particlep = sph->sphdata; 
-	 particlep < sph->sphdata+size; particlep++, i++) {
+     particlep < sph->sphdata+size; particlep++, i++) {
       particlep->*quantityp = input[i];
     }
   }
   else {
     int i=0;
     for (SphParticle<ndim>* particlep = sph->sphdata; 
-	 particlep < sph->sphdata+size; particlep++, i++) {
+     particlep < sph->sphdata+size; particlep++, i++) {
       (particlep->*quantitypvec)[index] = input[i];
     }
   }
 
   return;
+}
+
+//=============================================================================
+//  SphSimulation::ImportArray
+/// Import an array containing particle properties from python to C++ arrays.
+// This is a wrapper around ImportArraySph and ImportArrayNbody
+//=============================================================================
+template <int ndim>
+void Simulation<ndim>::ImportArray
+(double* input,                         ///< [in] Input array
+ int size,                              ///< [in] Size of the input array
+ string quantity,                       ///< [in] Which quantity should be set equal to the given array
+ string type)                       ///< [in] Which particle type should be assigned the array
+{
+
+  debug2("[SphSimulation::ImportArray]");
+
+  //Check that PreSetup has been called
+  if (! ParametersProcessed) {
+    string msg = "Error: before calling ImportArray, you need to call PreSetupForPython!";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+
+  //Call the right function depending on the passed in type
+  if (type=="sph") {
+    //Check sph has been allocated
+    if (sph==NULL) {
+      string message = "Error: memory for sph was not allocated! Are you sure that this is not a nbody-only simulation?";
+      ExceptionHandler::getIstance().raise(message);
+    }
+    ImportArraySph(input, size, quantity);
+
+  }
+  else if (type=="star") {
+    if (nbody==NULL) {
+      string message = "Error: memory for nbody was not allocated! Are you sure that this is not a sph-only simulation?";
+      ExceptionHandler::getIstance().raise(message);
+    }
+    ImportArrayNbody(input, size, quantity);
+  }
+  else {
+    string message = "Error: we did not recognize the type " + type + ", the only allowed types are \"sph\""
+        " and \"nbody\"";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
+
 }
 
 

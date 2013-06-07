@@ -62,7 +62,7 @@ class SimulationBase
   void SetParam (string key, int value);
   void SetParam (string ket, float value);
   virtual void PreSetupForPython(void)=0;
-  virtual void ImportArray(double* input, int size, string quantity)=0;
+  virtual void ImportArray(double* input, int size, string quantity, string type="sph")=0;
   void SetupSimulation(void);
   virtual void PostGeneration(void)=0;
   virtual void MainLoop(void)=0;
@@ -120,9 +120,15 @@ class SimulationBase
 //=============================================================================
 template <int ndim>
 class Simulation : public SimulationBase {
+
+  void ImportArraySph(double* input, int size, string quantity);
+  void ImportArrayNbody(double* input, int size, string quantity);
+
  public:
   Simulation(Parameters* parameters) : 
-    SimulationBase(parameters) {this->ndims=ndim;};
+    SimulationBase(parameters),
+    nbody(NULL),
+    sph(NULL) {this->ndims=ndim;};
 
 
   // Initial conditions helper routines
@@ -139,7 +145,7 @@ class Simulation : public SimulationBase {
   // Subroutine prototypes
   // --------------------------------------------------------------------------
   virtual void PreSetupForPython(void);
-  virtual void ImportArray(double* input, int size, string quantity);
+  virtual void ImportArray(double* input, int size, string quantity, string type="sph");
   virtual void GenerateIC(void);
   virtual void ProcessParameters(void)=0;
   virtual void CalculateDiagnostics(void);
