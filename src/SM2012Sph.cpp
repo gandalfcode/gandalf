@@ -68,6 +68,7 @@ template <int ndim, template<int> class kernelclass>
 int SM2012Sph<ndim, kernelclass >::ComputeH
 (int i,                                 // id of particle
  int Nneib,                             // No. of potential neighbours
+ FLOAT hmax,                            // ..
  FLOAT *m,                              // Array of neib. masses
  FLOAT *mu,                             // Array of neib. internal energies
  FLOAT *drsqd,                          // Array of neib. distances (squared)
@@ -78,7 +79,6 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
   int k;                                // Dimension counter
   int iteration = 0;                    // h-rho iteration counter
   int iteration_max = 30;               // Max. no of iterations
-  FLOAT h_max = big_number;             // Max. allowed value of h
   FLOAT h_lower_bound = 0.0;            // Lower bound on h
   FLOAT h_upper_bound = big_number;     // Upper bound on h
   FLOAT invhsqd;                        // (1 / h)^2
@@ -145,7 +145,7 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
     // If the smoothing length is too large for the neighbour list, exit 
     // routine and flag neighbour list error in order to generate a larger
     // neighbour list (not properly implemented yet).
-    if (parti.h > h_max) return 0;
+    if (parti.h > hmax) return 0;
     
   } while (parti.h > h_lower_bound && parti.h < h_upper_bound);
   // ==========================================================================
@@ -173,7 +173,7 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
 
 
 //=============================================================================
-//  SM2012Sph::ComputeSphNeibForces
+//  SM2012Sph::ComputeSphHydroForces
 /// Compute SPH neighbour force pairs for 
 /// (i) All neighbour interactions of particle i with id j > i,
 /// (ii) Active neighbour interactions of particle j with id j > i
@@ -182,7 +182,7 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
 /// computed once only for efficiency.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
-void SM2012Sph<ndim, kernelclass >::ComputeSphNeibForces
+void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
 (int i,                                 // id of particle
  int Nneib,                             // No. of neighbours in neibpart array
  int *neiblist,                         // id of gather neighbour in neibpart
@@ -290,7 +290,7 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphNeibForces
 
 
 //=============================================================================
-//  SM2012Sph::ComputeSphNeibForces
+//  SM2012Sph::ComputeSphGravForces
 /// Compute SPH neighbour force pairs for 
 /// (i) All neighbour interactions of particle i with id j > i,
 /// (ii) Active neighbour interactions of particle j with id j > i
@@ -299,7 +299,7 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphNeibForces
 /// computed once only for efficiency.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
-void SM2012Sph<ndim, kernelclass >::ComputeSphNeibGravForces
+void SM2012Sph<ndim, kernelclass >::ComputeSphGravForces
 (int i,                                 // id of particle
  int Nneib,                             // No. of neighbours in neibpart array
  int *neiblist,                         // id of gather neighbour in neibpart
@@ -449,6 +449,24 @@ void SM2012Sph<ndim, kernelclass >::ComputePostHydroQuantities
 
 
 //=============================================================================
+//  SM2012Sph::ComputeSphHydroGravForces
+/// Empty function (for now).
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void SM2012Sph<ndim, kernelclass >::ComputeSphHydroGravForces
+(int i,                             ///< [in] id of particle
+ int Nneib,                         ///< [in] No. of neibs in neibpart array
+ int *neiblist,                     ///< [in] id of gather neibs in neibpart
+ SphParticle<ndim> &parti,          ///< [inout] Particle i data
+ SphParticle<ndim> *neibpart)       ///< [inout] Neighbour particle data
+{
+  return;
+}
+
+
+
+
+//=============================================================================
 //  SM2012Sph::ComputeGravForces
 /// Compute the contribution to the total gravitational force of particle 'i' 
 /// due to 'Nneib' neighbouring particles in the list 'neiblist'.
@@ -458,6 +476,8 @@ void SM2012Sph<ndim, kernelclass >::ComputeDirectGravForces
 (int i,                                 // id of particle
  int Ndirect,                           // No. of nearby 'gather' neighbours
  int *directlist,                       // id of gather neighbour in neibpart
+ FLOAT *agrav,
+ FLOAT *gpot,
  SphParticle<ndim> &parti,                    // Particle i data
  SphParticle<ndim> *sph)                      // Neighbour particle data
 {

@@ -1,5 +1,5 @@
 -------------------------------------------------------------
-Freefall collapse test
+Boss-Bodenheimer test
 ..
 -------------------------------------------------------------
 
@@ -68,6 +68,11 @@ Isothermal temperature                      : temp0 = 10.0
 Mean gas particle mass                      : mu_bar = 2.35
 
 
+---------------
+Gravity options
+---------------
+Switch-on self-gravity of gas               : self_gravity = 1
+
 
 ---------------------------------------
 Smoothed Particle Hydrodynamics options
@@ -96,14 +101,17 @@ SPH energy equation timestep multiplier     : energy_mult = 0.5
 No. of block timestep levels                : Nlevels = 1
 
 
+------------
+Tree options
+------------
+SPH neighbour search algorithm              : neib_search = tree
+No. of particles in leaf cell               : Nleafmax = 4
+Tree opening angle (squared)                : thetamaxsqd = 0.1
+
+
 --------------------
 Optimisation options
 --------------------
 Tabulate SPH kernel                         : tabulated_kernel = 0
-SPH neighbour search algorithm              : neib_search = bruteforce
 
 
--------------
-Misc. options
--------------
-Switch-off self-gravity of gas              : self_gravity = 1

@@ -107,7 +107,8 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
       // ----------------------------------------------------------------------
 
       // Compute all SPH gather properties
-      okflag = sph->ComputeH(i,sph->Ntot,m,mu,drsqd,sph->sphdata[i]);
+      okflag = sph->ComputeH(i,sph->Ntot,big_number,
+			     m,mu,drsqd,sph->sphdata[i]);
   
     }
     // ------------------------------------------------------------------------
@@ -127,13 +128,13 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
 
 
 //=============================================================================
-//  BruteForceSearch::UpdateAllSphForces
+//  BruteForceSearch::UpdateAllSphHydroForces
 /// Routine for computing SPH properties (smoothing lengths, densities and 
 /// forces) for all active SPH particle using neighbour lists generated 
 /// using brute force (i.e. direct summation).
 //=============================================================================
 template <int ndim>
-void BruteForceSearch<ndim>::UpdateAllSphForces
+void BruteForceSearch<ndim>::UpdateAllSphHydroForces
 (Sph<ndim> *sph                       ///< [inout] Pointer to SPH object
 )
 {
@@ -198,7 +199,7 @@ void BruteForceSearch<ndim>::UpdateAllSphForces
     // ------------------------------------------------------------------------
 
     // Compute all SPH hydro forces
-    sph->ComputeSphNeibForces(i,Nneib,neiblist,drmag,invdrmag,dr,
+    sph->ComputeSphHydroForces(i,Nneib,neiblist,drmag,invdrmag,dr,
 			      sph->sphdata[i],neibpart);
 
     // Now add all active neighbour contributions to the main arrays
@@ -228,6 +229,20 @@ void BruteForceSearch<ndim>::UpdateAllSphForces
     }
   }
 
+  return;
+}
+
+
+
+//=============================================================================
+//  BruteForceSearch::UpdateAllSphGravityProperties
+/// Empty function for now
+//=============================================================================
+template <int ndim>
+void BruteForceSearch<ndim>::UpdateAllSphForces
+(Sph<ndim> *sph                     ///< Pointer to SPH object
+)
+{
   return;
 }
 
@@ -304,8 +319,8 @@ void BruteForceSearch<ndim>::UpdateAllSphGravForces
     // ------------------------------------------------------------------------
 
     // Compute all SPH hydro forces
-    sph->ComputeSphNeibGravForces(i,Nneib,neiblist,drmag,invdrmag,dr,
-				  sph->sphdata[i],neibpart);
+    //sph->ComputeSphNeibGravForces(i,Nneib,neiblist,drmag,invdrmag,dr,
+    //				  sph->sphdata[i],neibpart);
 
     // Now add all active neighbour contributions to the main arrays
     //for (j=0; j<sph->Ntot; j++) {

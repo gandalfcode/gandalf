@@ -72,6 +72,7 @@ class SphNeighbourSearch
 
   virtual void UpdateAllSphProperties(Sph<ndim> *) = 0;
   virtual void UpdateAllSphForces(Sph<ndim> *) = 0;
+  virtual void UpdateAllSphHydroForces(Sph<ndim> *) = 0;
   virtual void UpdateAllSphGravForces(Sph<ndim> *) = 0;
   virtual void UpdateAllSphDudt(Sph<ndim> *) = 0;
   virtual void UpdateAllSphDerivatives(Sph<ndim> *) = 0;
@@ -100,6 +101,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
 
   void UpdateAllSphProperties(Sph<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
+  void UpdateAllSphHydroForces(Sph<ndim> *);
   void UpdateAllSphGravForces(Sph<ndim> *);
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
@@ -127,6 +129,7 @@ class GridSearch: public SphNeighbourSearch<ndim>
 
   void UpdateAllSphProperties(Sph<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
+  void UpdateAllSphHydroForces(Sph<ndim> *);
   void UpdateAllSphGravForces(Sph<ndim> *);
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
@@ -183,11 +186,12 @@ class BinaryTree: public SphNeighbourSearch<ndim>
 
  public:
 
-  BinaryTree();
+  BinaryTree(int, FLOAT, string);
   ~BinaryTree();
 
   void UpdateAllSphProperties(Sph<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
+  void UpdateAllSphHydroForces(Sph<ndim> *);
   void UpdateAllSphGravForces(Sph<ndim> *);
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
@@ -202,12 +206,15 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void OrderParticlesByCartCoord(int, SphParticle<ndim> *);
   void LoadParticlesToTree(int);
   void StockCellProperties(int, SphParticle<ndim> *);
+  void UpdateHmaxValues(int, SphParticle<ndim> *);
   void CreateGridCells(int, SphParticle<ndim> *);
   int ComputeActiveCellList(int *);
   int ComputeActiveParticleList(int, int *, Sph<ndim> *);
-  int ComputeGatherNeighbourList(int, int, int *);
+  int ComputeGatherNeighbourList(int, int, int *, FLOAT);
   int ComputeNeighbourList(int, int, int *);
-
+  int ComputeGravityInteractionList(int, int, int, int, int &, int &, int &,
+                                    int *, int *, int *);
+  void ComputeCellForces(int, int, int *, SphParticle<ndim> &);
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
   void ValidateTree(Sph<ndim> *);
@@ -215,6 +222,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
 
   // Additional variables for grid
   // --------------------------------------------------------------------------
+  string gravity_mac;               ///< ..
   bool allocated_tree;              ///< Are grid arrays allocated?
   int Ncell;                        ///< Current no. of grid cells
   int Ncellmax;                     ///< Max. allowed no. of grid cells
@@ -228,20 +236,15 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   int Ntot;                         ///< No. of current points in list
   int Ntotmax;                      ///< Max. no. of points in list
   int Ntotmaxold;                   ///< Old value of Ntotmax
-
   int *pc;                          ///< i.d. of leaf cell occupied by ptcl
-  int *g2c;                         ///< ..
-  int *gactivelist;                 ///< ..
+  int *g2c;                         ///< i.d. of leaf(grid) cells
+  int *gactivelist;                 ///< List of active cells
   int *inext;                       ///< Linked list for grid search
-  int *porder[ndim];                     ///< ..
-
+  int *porder[ndim];                ///< Ordered ids of Cartesian coordinates
   FLOAT *pw;                        ///< Particle weights
-  FLOAT *r[ndim];                        ///< ..
+  FLOAT *r[ndim];                   ///< Particle Cartesian coordinates
   FLOAT theta;                      ///< ..
-
-  FLOAT rmin[ndim];                 ///< Minimum extent of bounding box
-  FLOAT rmax[ndim];                 ///< Maximum extent of bounding box
-
+  FLOAT thetamaxsqd;                ///< ..
   BinaryTreeCell<ndim> *tree;       ///< Main tree array
 
 };

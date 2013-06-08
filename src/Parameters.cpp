@@ -155,9 +155,9 @@ void Parameters::SetDefaultValues(void)
   stringparams["ic"] = "random_cube";
   stringparams["particle_distribution"] = "random";
   intparams["smooth_ic"] = 0;
-  intparams["Npart"] = 256;
-  intparams["Nsph"] = 256;
-  intparams["Nstar"] = 64;
+  intparams["Npart"] = 0;
+  intparams["Nsph"] = 0;
+  intparams["Nstar"] = 0;
   intparams["ndim"] = 3;
   intparams["Nlattice1[0]"] = 1;
   intparams["Nlattice1[1]"] = 1;
@@ -202,7 +202,6 @@ void Parameters::SetDefaultValues(void)
   stringparams["sph"] = "gradh";
   stringparams["kernel"] = "m4";
   intparams["tabulated_kernel"] = 0;
-  stringparams["neib_search"] = "grid";
   floatparams["h_fac"] = 1.2;
   floatparams["h_converge"] = 0.01;
 
@@ -236,11 +235,19 @@ void Parameters::SetDefaultValues(void)
   intparams["self_gravity"] = 0;
   stringparams["grav_kernel"] = "mean_h";
 
+  // Neighbour searching and tree-gravity parameters
+  // --------------------------------------------------------------------------
+  stringparams["neib_search"] = "grid";
+  stringparams["gravity_mac"] = "geometric";
+  intparams["Nleafmax"] = 1;
+  floatparams["thetamaxsqd"] = 0.2;
+
   // N-body parameters
   // --------------------------------------------------------------------------
   stringparams["nbody"] = "lfkdk";
   intparams["nbody_softening"] = 0;
   intparams["sub_systems"] = 0;
+  intparams["Npec"] = 1;
 
   // Boundary conditions parameters
   // --------------------------------------------------------------------------

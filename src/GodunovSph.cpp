@@ -69,6 +69,7 @@ template <int ndim, template<int> class kernelclass>
 int GodunovSph<ndim, kernelclass >::ComputeH
 (int i,                                 // id of particle
  int Nneib,                             // No. of potential neighbours
+ FLOAT hmax,                            // ..
  FLOAT *m,                              // Array of neib. masses
  FLOAT *mu,                             // Array of m*u (not needed here)
  FLOAT *drsqd,                          // Array of neib. distances (squared)
@@ -79,7 +80,6 @@ int GodunovSph<ndim, kernelclass >::ComputeH
   int k;                                // Dimension counter
   int iteration = 0;                    // h-rho iteration counter
   int iteration_max = 30;               // Max. no of iterations
-  FLOAT h_max = big_number;             // Max. allowed value of h
   FLOAT h_lower_bound = 0.0;            // Lower bound on h
   FLOAT h_upper_bound = big_number;     // Upper bound on h
   FLOAT invhsqd;                        // (1 / h)^2
@@ -146,7 +146,7 @@ int GodunovSph<ndim, kernelclass >::ComputeH
     // If the smoothing length is too large for the neighbour list, exit 
     // routine and flag neighbour list error in order to generate a larger
     // neighbour list (not properly implemented yet).
-    if (parti.h > h_max) return 0;
+    if (parti.h > hmax) return 0;
     
   } while (parti.h > h_lower_bound && parti.h < h_upper_bound);
   // ==========================================================================
@@ -174,7 +174,7 @@ int GodunovSph<ndim, kernelclass >::ComputeH
 
 
 //=============================================================================
-//  GodunovSph::ComputeSphNeibForces
+//  GodunovSph::ComputeSphHydroForces
 /// Compute SPH neighbour force pairs for 
 /// (i) All neighbour interactions of particle i with i.d. j > i,
 /// (ii) Active neighbour interactions of particle j with i.d. j > i
@@ -183,7 +183,7 @@ int GodunovSph<ndim, kernelclass >::ComputeH
 /// computed once only for efficiency.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
-void GodunovSph<ndim, kernelclass >::ComputeSphNeibForces
+void GodunovSph<ndim, kernelclass >::ComputeSphHydroForces
 (int i,                             ///< [in] id of particle
  int Nneib,                         ///< [in] No. of neibs in neibpart array
  int *neiblist,                     ///< [in] id of gather neibs in neibpart
@@ -297,8 +297,25 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibForces
 
 
 
+//=============================================================================
+//  GodunovSph::ComputeSphHydroGravForces
+/// Empty function (for now).
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass >::ComputeSphHydroGravForces
+(int i,                             ///< [in] id of particle
+ int Nneib,                         ///< [in] No. of neibs in neibpart array
+ int *neiblist,                     ///< [in] id of gather neibs in neibpart
+ SphParticle<ndim> &parti,          ///< [inout] Particle i data
+ SphParticle<ndim> *neibpart)       ///< [inout] Neighbour particle data
+{
+  return;
+}
+
+
+
 // ============================================================================
-// GodunovSph::ComputeSphNeibForces
+// GodunovSph::ComputeSphGravForces
 // Compute SPH neighbour force pairs for 
 // (i) All neighbour interactions of particle i with i.d. j > i,
 // (ii) Active neighbour interactions of particle j with i.d. j > i
@@ -307,7 +324,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibForces
 // computed once only for efficiency.
 // ============================================================================
 template <int ndim, template<int> class kernelclass>
-void GodunovSph<ndim, kernelclass >::ComputeSphNeibGravForces
+void GodunovSph<ndim, kernelclass >::ComputeSphGravForces
 (int i,                                 // id of particle
  int Nneib,                             // No. of neighbours in neibpart array
  int *neiblist,                         // id of gather neighbour in neibpart
@@ -1178,7 +1195,7 @@ void GodunovSph<ndim, kernelclass >::ComputePostHydroQuantities
 
 
 // ============================================================================
-// GodunovSph::ComputeGravForces
+// GodunovSph::ComputeDirectGravForces
 // Compute the contribution to the total gravitational force of particle 'i' 
 // due to 'Nneib' neighbouring particles in the list 'neiblist'.
 // ============================================================================
@@ -1187,6 +1204,8 @@ void GodunovSph<ndim, kernelclass >::ComputeDirectGravForces
 (int i,                                 // id of particle
  int Ndirect,                           // No. of nearby 'gather' neighbours
  int *directlist,                       // id of gather neighbour in neibpart
+ FLOAT *agrav, 
+ FLOAT *gpot, 
  SphParticle<ndim> &parti,                    // Particle i data
  SphParticle<ndim> *sph)                      // Neighbour particle data
 {

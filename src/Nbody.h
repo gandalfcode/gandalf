@@ -155,6 +155,45 @@ class NbodyHermite4: public Nbody<ndim>
   kernelclass<ndim> kern;               ///< SPH kernel
 
 };
+
+
+
+//=============================================================================
+//  Class NbodyHermite4TS
+/// Class definition for N-body 4th-order Hermite integration scheme using
+/// time-symmetric iteration.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+class NbodyHermite4TS: public NbodyHermite4<ndim, kernelclass>
+{
+  using Nbody<ndim>::allocated;
+  using Nbody<ndim>::nbody_mult;
+  using Nbody<ndim>::Nstar;
+  using Nbody<ndim>::Nsystem;
+  using Nbody<ndim>::stardata;
+  using Nbody<ndim>::system;
+
+ public:
+
+  NbodyHermite4TS(int, int, DOUBLE, string);
+  ~NbodyHermite4TS();
+
+  void CorrectionTerms(int,int,NbodyParticle<ndim> **,DOUBLE);
+
+  /*void CalculateDirectGravForces(int,NbodyParticle<ndim> **);
+  void CalculateDirectSPHForces(int,int,SphParticle<ndim> *,
+				NbodyParticle<ndim> **);
+  void CalculateAllStartupQuantities(int,NbodyParticle<ndim> **);
+  void AdvanceParticles(int,int,NbodyParticle<ndim> **,DOUBLE);
+  void CorrectionTerms(int,int,NbodyParticle<ndim> **,DOUBLE);
+  void EndTimestep(int,int,NbodyParticle<ndim> **);
+  DOUBLE Timestep(NbodyParticle<ndim> *);
+
+  static const int vdim=ndim;           ///< Local copy of vdim
+  static const FLOAT invndim=1./ndim;   ///< Copy of 1/ndim
+  kernelclass<ndim> kern;               ///< SPH kernel*/
+
+};
 #endif
 
 #endif

@@ -55,15 +55,18 @@ class Sph
   // SPH functions for computing SPH sums with neighbouring particles 
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
   // --------------------------------------------------------------------------
-  virtual int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, 
+  virtual int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *,
 	               SphParticle<ndim> &) = 0;
-  virtual void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *, 
-                                    FLOAT *, SphParticle<ndim> &, 
-                                    SphParticle<ndim> *) = 0;
-  virtual void ComputeSphNeibGravForces(int, int, int *, FLOAT *, FLOAT *, 
-					FLOAT *, SphParticle<ndim> &, 
-					SphParticle<ndim> *) = 0;
-  virtual void ComputeDirectGravForces(int, int, int *, SphParticle<ndim> &, 
+  virtual void ComputeSphHydroForces(int, int, int *, FLOAT *, FLOAT *, 
+				     FLOAT *, SphParticle<ndim> &, 
+				     SphParticle<ndim> *) = 0;
+  virtual void ComputeSphHydroGravForces(int, int, int *, SphParticle<ndim> &, 
+					 SphParticle<ndim> *) = 0;
+  virtual void ComputeSphGravForces(int, int, int *, FLOAT *, FLOAT *, 
+				    FLOAT *, SphParticle<ndim> &, 
+				    SphParticle<ndim> *) = 0;
+  virtual void ComputeDirectGravForces(int, int, int *, FLOAT *, FLOAT *, 
+				       SphParticle<ndim> &, 
                                        SphParticle<ndim> *) = 0;
   virtual void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
 				  FLOAT *, SphParticle<ndim> &, 
@@ -151,17 +154,19 @@ class GradhSph: public Sph<ndim>
            aviscenum, acondenum, string, string);
   ~GradhSph();
 
-  int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle<ndim> &);
-  void ComputeSphNeibGravForces(int, int, int *, FLOAT *, FLOAT *,
-				FLOAT *, SphParticle<ndim> &, 
-				SphParticle<ndim> *);
-  void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *,
-			    FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
+  int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, SphParticle<ndim> &);
+  void ComputeSphGravForces(int, int, int *, FLOAT *, FLOAT *,
+			    FLOAT *, SphParticle<ndim> &, 
+			    SphParticle<ndim> *);
+  void ComputeSphHydroGravForces(int, int, int *, SphParticle<ndim> &, 
+				 SphParticle<ndim> *);
+  void ComputeSphHydroForces(int, int, int *, FLOAT *, FLOAT *, FLOAT *,
+			     SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
 			  FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
 			     SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeDirectGravForces(int, int, int *, 
+  void ComputeDirectGravForces(int, int, int *, FLOAT *, FLOAT *,
 			       SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputePostHydroQuantities(SphParticle<ndim> &);
   void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &);
@@ -202,17 +207,18 @@ class SM2012Sph: public Sph<ndim>
             aviscenum, acondenum, string, string);
   ~SM2012Sph();
 
-  int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle<ndim> &);
-  void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *, 
-			    FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeSphNeibGravForces(int, int, int *, FLOAT *, FLOAT *,
-				FLOAT *, SphParticle<ndim> &, 
-				SphParticle<ndim> *);
+  int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, SphParticle<ndim> &);
+  void ComputeSphHydroForces(int, int, int *, FLOAT *, FLOAT *, FLOAT *,
+			     SphParticle<ndim> &, SphParticle<ndim> *);
+  void ComputeSphHydroGravForces(int, int, int *, SphParticle<ndim> &, 
+				 SphParticle<ndim> *);
+  void ComputeSphGravForces(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
+			    SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
 			  FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
 			     SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeDirectGravForces(int, int, int *, 
+  void ComputeDirectGravForces(int, int, int *, FLOAT *, FLOAT *, 
                                SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputePostHydroQuantities(SphParticle<ndim> &);
   void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &);
@@ -254,17 +260,18 @@ class GodunovSph: public Sph<ndim>
              aviscenum, acondenum, string, string);
   ~GodunovSph();
 
-  int ComputeH(int, int, FLOAT *, FLOAT *, FLOAT *, SphParticle<ndim> &);
-  void ComputeSphNeibForces(int, int, int *, FLOAT *, FLOAT *, 
-			    FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeSphNeibGravForces(int, int, int *, FLOAT *, FLOAT *,
-				FLOAT *, SphParticle<ndim> &, 
-				SphParticle<ndim> *);
+  int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, SphParticle<ndim> &);
+  void ComputeSphHydroForces(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
+			     SphParticle<ndim> &, SphParticle<ndim> *);
+  void ComputeSphHydroGravForces(int, int, int *, SphParticle<ndim> &, 
+				 SphParticle<ndim> *);
+  void ComputeSphGravForces(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
+			    SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
   			  FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
 			     SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeDirectGravForces(int, int, int *, 
+  void ComputeDirectGravForces(int, int, int *, FLOAT *, FLOAT *, 
                                SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputePostHydroQuantities(SphParticle<ndim> &);
   void InitialiseRiemannProblem(SphParticle<ndim>, SphParticle<ndim>, FLOAT *,
