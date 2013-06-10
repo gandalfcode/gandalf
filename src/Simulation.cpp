@@ -730,7 +730,6 @@ void Simulation<ndim>::ProcessParameters(void)
     }
   }
   // --------------------------------------------------------------------------
-  /*
   else if (stringparams["nbody"] == "hermite4ts") {
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
@@ -767,7 +766,6 @@ void Simulation<ndim>::ProcessParameters(void)
       ExceptionHandler::getIstance().raise(message);
     }
   }
-  */
   // --------------------------------------------------------------------------
   else {
     string message = "Unrecognised parameter : nbody = " 

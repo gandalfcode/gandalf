@@ -373,7 +373,7 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 
   }
   // --------------------------------------------------------------------------
-  //exit(0);
+
   return;
 }
 

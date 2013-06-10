@@ -99,7 +99,8 @@ void NbodyHermite4TS<ndim, kernelclass>::CorrectionTerms
 
 
 
-// Template class instances for each dimensionality value (1, 2 and 3)
+// Template class instances for each dimensionality value (1, 2 and 3) and
+// employed kernel (M4, Quintic, Gaussian and tabulated).
 template class NbodyHermite4TS<1, M4Kernel>;
 template class NbodyHermite4TS<1, QuinticKernel>;
 template class NbodyHermite4TS<1, GaussianKernel>;
