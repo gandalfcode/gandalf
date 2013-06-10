@@ -33,7 +33,7 @@ NbodyHermite4TS<ndim, kernelclass>::NbodyHermite4TS
 (int nbody_softening_aux, int sub_systems_aux, 
  DOUBLE nbody_mult_aux, string KernelName) : 
   NbodyHermite4<ndim, kernelclass>(nbody_softening_aux, sub_systems_aux,
-                      nbody_mult_aux, KernelName)
+                                   nbody_mult_aux, KernelName)
 {
 }
 
@@ -99,7 +99,8 @@ void NbodyHermite4TS<ndim, kernelclass>::CorrectionTerms
 
 
 
-// Template class instances for each dimensionality value (1, 2 and 3)
+// Template class instances for each dimensionality value (1, 2 and 3) and
+// employed kernel (M4, Quintic, Gaussian and tabulated).
 template class NbodyHermite4TS<1, M4Kernel>;
 template class NbodyHermite4TS<1, QuinticKernel>;
 template class NbodyHermite4TS<1, GaussianKernel>;
