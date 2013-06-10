@@ -1,12 +1,13 @@
-// ============================================================================
-// EnergyEquation.h
-// Class definitions of main energy equation class plus inherited children 
-// classes for various energy integration algorithms.
-// ============================================================================
+//=============================================================================
+//  EnergyEquation.h
+//  Class definitions of main energy equation class plus inherited children 
+//  classes for various energy integration algorithms.
+//=============================================================================
 
 
 #ifndef _ENERGY_EQUATION_H_
 #define _ENERGY_EQUATION_H_
+
 
 #include "Constants.h"
 #include "Precision.h"
@@ -16,11 +17,11 @@
 
 
 
-// ============================================================================
-// EnergyEquation
-// Main energy equation class, with virtual functions that require full 
-// definitions in the children classes.
-// ============================================================================
+//=============================================================================
+//  EnergyEquation
+/// Main energy equation class, with virtual functions that require full 
+/// definitions in the children classes.
+//=============================================================================
 template <int ndim>
 class EnergyEquation
 {
@@ -29,9 +30,9 @@ class EnergyEquation
   EnergyEquation(DOUBLE);
   ~EnergyEquation();
 
-  virtual void EnergyIntegration(int, int, int, SphParticle<ndim> *, FLOAT) = 0;
-  virtual void EnergyCorrectionTerms(int, int, int, SphParticle<ndim> *, FLOAT) = 0;
-  virtual void EndTimestep(int, int, int, SphParticle<ndim> *) = 0;
+  virtual void EnergyIntegration(int, int, SphParticle<ndim> *, FLOAT) = 0;
+  virtual void EnergyCorrectionTerms(int, int, SphParticle<ndim> *, FLOAT) = 0;
+  virtual void EndTimestep(int, int, SphParticle<ndim> *) = 0;
   virtual DOUBLE Timestep(SphParticle<ndim> &) = 0;
 
   const DOUBLE energy_mult;
@@ -40,11 +41,11 @@ class EnergyEquation
 
 
 
-// ============================================================================
-// EnergyPEC
-// Class definition for energy equation integration class using a 
-// Predict-Evaluate-Correct (PEC) scheme.
-// ============================================================================
+//=============================================================================
+//  EnergyPEC
+/// Class definition for energy equation integration class using a 
+/// Predict-Evaluate-Correct (PEC) scheme.
+//=============================================================================
 template <int ndim>
 class EnergyPEC: public EnergyEquation<ndim>
 {
@@ -53,20 +54,19 @@ class EnergyPEC: public EnergyEquation<ndim>
   EnergyPEC(DOUBLE);
   ~EnergyPEC();
 
-  void EnergyIntegration(int, int, int, SphParticle<ndim> *, FLOAT);
-  void EnergyCorrectionTerms(int, int, int, SphParticle<ndim> *, FLOAT);
-  void EndTimestep(int, int, int, SphParticle<ndim> *);
+  void EnergyIntegration(int, int, SphParticle<ndim> *, FLOAT);
+  void EnergyCorrectionTerms(int, int, SphParticle<ndim> *, FLOAT);
+  void EndTimestep(int, int, SphParticle<ndim> *);
   DOUBLE Timestep(SphParticle<ndim> &);
 
 };
 
 
 
-// ============================================================================
-// EnergyGodunovIntegration
-// Class definition for energy equation integration class using a 
-// Predict-Evaluate-Correct (PEC) scheme.
-// ============================================================================
+//=============================================================================
+//  EnergyGodunovIntegration
+/// ..
+//=============================================================================
 template <int ndim>
 class EnergyGodunovIntegration: public EnergyEquation<ndim>
 {
@@ -75,13 +75,10 @@ class EnergyGodunovIntegration: public EnergyEquation<ndim>
   EnergyGodunovIntegration(DOUBLE);
   ~EnergyGodunovIntegration();
 
-  void EnergyIntegration(int, int, int, SphParticle<ndim> *, FLOAT);
-  void EnergyCorrectionTerms(int, int, int, SphParticle<ndim> *, FLOAT);
-  void EndTimestep(int, int, int, SphParticle<ndim> *);
+  void EnergyIntegration(int, int, SphParticle<ndim> *, FLOAT);
+  void EnergyCorrectionTerms(int, int, SphParticle<ndim> *, FLOAT);
+  void EndTimestep(int, int, SphParticle<ndim> *);
   DOUBLE Timestep(SphParticle<ndim> &);
 
 };
-
-
-
 #endif

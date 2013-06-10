@@ -26,10 +26,12 @@ using namespace std;
 
 
 
-
+// Create template class instances of the main GodunovSphSimulation object for
+// each dimension used (1, 2 and 3)
 template class GodunovSimulation<1>;
 template class GodunovSimulation<2>;
 template class GodunovSimulation<3>;
+
 
 
 //TODO: make this mess more modular (note: initial h computation
@@ -171,9 +173,9 @@ void GodunovSimulation<ndim>::PostGeneration(void)
   }
 
   // Set particle values for initial step (e.g. r0, v0, a0)
-  sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+  sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+    uint->EndTimestep(n,sph->Nsph,sph->sphdata);
   nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
   
   this->CalculateDiagnostics();
@@ -187,8 +189,8 @@ void GodunovSimulation<ndim>::PostGeneration(void)
 
 
 //=============================================================================
-//  SphSimulation::MainLoop
-/// Main SPH simulation integration loop.
+//  GodunovSphSimulation::MainLoop
+/// Main Godunov SPH simulation integration loop.
 //=============================================================================
 template <int ndim>
 void GodunovSimulation<ndim>::MainLoop(void)
@@ -221,15 +223,12 @@ void GodunovSimulation<ndim>::MainLoop(void)
   t = t + timestep;
 
   // Advance SPH particles positions and velocities
-  sphint->AdvanceParticles(n,level_step,sph->Nsph,
-               sph->sphdata,(FLOAT) timestep);
+  sphint->AdvanceParticles(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EnergyIntegration(n,level_step,sph->Nsph,
-                sph->sphdata,(FLOAT) timestep);
+    uint->EnergyIntegration(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
   nbody->AdvanceParticles(n,nbody->Nstar,nbody->nbodydata,timestep);
 
   // Check all boundary conditions
-  //this->CheckBoundaries();
   this->CheckBoundaries();
 
   // --------------------------------------------------------------------------
@@ -316,17 +315,15 @@ void GodunovSimulation<ndim>::MainLoop(void)
   }
 
   // Apply correction steps for both particle and energy integration
-  sphint->CorrectionTerms(n,level_step,sph->Nsph,
-              sph->sphdata,(FLOAT) timestep);
+  sphint->CorrectionTerms(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EnergyCorrectionTerms(n,level_step,sph->Nsph,
-                sph->sphdata,(FLOAT) timestep);
+    uint->EnergyCorrectionTerms(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
   nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
 
   // Set all end-of-step variables
-  sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+  sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+    uint->EndTimestep(n,sph->Nsph,sph->sphdata);
   nbody->EndTimestep(n,nbody->Nnbody,nbody->nbodydata);
 
   return;
@@ -334,7 +331,10 @@ void GodunovSimulation<ndim>::MainLoop(void)
 
 
 
-
+//=============================================================================
+//  GodunovSphSimulation::MainLoop
+/// ..
+//=============================================================================
 template <int ndim>
 void GodunovSimulation<ndim>::ComputeGlobalTimestep(void)
 {
@@ -342,7 +342,7 @@ void GodunovSimulation<ndim>::ComputeGlobalTimestep(void)
   DOUBLE dt = big_number_dp;        // Particle timestep
   DOUBLE dt_min = big_number_dp;    // Local copy of minimum timestep
 
-  debug2("[SphSimulation::ComputeGlobalTimestep]");
+  debug2("[GodunovSphSimulation::ComputeGlobalTimestep]");
 
   // --------------------------------------------------------------------------
   if (n == nresync) {
@@ -399,20 +399,24 @@ void GodunovSimulation<ndim>::ComputeGlobalTimestep(void)
 
 
 
+//=============================================================================
+//  GodunovSphSimulation::ComputeBlockTimesteps
+/// ..
+//=============================================================================
 template <int ndim>
 void GodunovSimulation<ndim>::ComputeBlockTimesteps(void)
 {
-  int i;                                    // Particle counter
-  int istep;                                // ??
-  int level;                                // Particle timestep level
-  int last_level;                           // Previous timestep level
-  int level_max_old;                        // Old level_max
-  int level_max_sph = 0;                    // level_max for SPH particles only
-  int nstep;                                // ??
-  DOUBLE dt;                                // Aux. timestep variable
-  DOUBLE dt_max_sph = 0.0;                  // Maximum SPH particle timestep
+  int i;                            // Particle counter
+  int istep;                        // ??
+  int level;                        // Particle timestep level
+  int last_level;                   // Previous timestep level
+  int level_max_old;                // Old level_max
+  int level_max_sph = 0;            // level_max for SPH particles only
+  int nstep;                        // ??
+  DOUBLE dt;                        // Aux. timestep variable
+  DOUBLE dt_max_sph = 0.0;          // Maximum SPH particle timestep
 
-  debug2("[SphSimulation::ComputeBlockTimesteps]");
+  debug2("[GodunovSphSimulation::ComputeBlockTimesteps]");
 
   timestep = big_number;
 

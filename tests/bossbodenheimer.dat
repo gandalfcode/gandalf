@@ -104,7 +104,7 @@ No. of block timestep levels                : Nlevels = 1
 ------------
 Tree options
 ------------
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = grid
 No. of particles in leaf cell               : Nleafmax = 4
 Tree opening angle (squared)                : thetamaxsqd = 0.1
 
@@ -113,5 +113,3 @@ Tree opening angle (squared)                : thetamaxsqd = 0.1
 Optimisation options
 --------------------
 Tabulate SPH kernel                         : tabulated_kernel = 0
-
-

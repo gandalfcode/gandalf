@@ -32,7 +32,7 @@ using namespace std;
 //=============================================================================
 template <int ndim>
 Nbody<ndim>::Nbody(int nbody_softening_aux, int sub_systems_aux, 
-				DOUBLE nbody_mult_aux, string KernelName):
+                   DOUBLE nbody_mult_aux, string KernelName):
   nbody_softening(nbody_softening_aux),
   sub_systems(sub_systems_aux),
   nbody_mult(nbody_mult_aux),
@@ -95,21 +95,6 @@ void Nbody<ndim>::DeallocateMemory(void)
 
   return;
 }
-
-
-
-//=============================================================================
-//  Nbody::CalculateDirectSoftenedGravForces
-/// Calculate all star-star force contributions for active systems using 
-/// direct summation with SPH kernel-softened gravity.
-//=============================================================================
-//template <int ndim>
-//void Nbody<ndim>::CalculateDirectSoftenedGravForces(void)
-//{
-//  debug2("[Nbody::CalculateDirectSoftenedGravForces]");
-//
-//  return;
-//}
 
 
 

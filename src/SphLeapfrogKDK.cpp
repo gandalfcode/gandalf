@@ -26,8 +26,8 @@ using namespace std;
 /// SphLeapfrogKDK class constructor
 //=============================================================================
 template <int ndim>
-SphLeapfrogKDK<ndim>::SphLeapfrogKDK( DOUBLE accel_mult_aux,
-			       DOUBLE courant_mult_aux) :
+SphLeapfrogKDK<ndim>::SphLeapfrogKDK(DOUBLE accel_mult_aux, 
+                                     DOUBLE courant_mult_aux) :
   SphIntegration<ndim>(accel_mult_aux, courant_mult_aux)
 {
 }
@@ -57,9 +57,8 @@ SphLeapfrogKDK<ndim>::~SphLeapfrogKDK()
 template <int ndim>
 void SphLeapfrogKDK<ndim>::AdvanceParticles
 (int n,                             ///< [in] Integer time in block time struct
- int level_step,                    ///< [in] Current block level
  int Nsph,                          ///< [in] No. of SPH particles
- SphParticle<ndim> *sph,            ///< [inout] SPH particle data array
+ SphParticle<ndim> *sphdata,        ///< [inout] SPH particle data array
  FLOAT timestep)                    ///< [in] Base timestep value
 {
   int i;                            // Particle counter
@@ -75,18 +74,19 @@ void SphLeapfrogKDK<ndim>::AdvanceParticles
   for (i=0; i<Nsph; i++) {
 
     // Compute time since beginning of current step
-    nstep = pow(2,level_step - sph[i].level);
+    nstep = sphdata[i].nstep;
     if (n%nstep == 0) dt = timestep*(FLOAT) nstep;
     else dt = timestep*(FLOAT) (n%nstep);
 
     // Advance particle positions and velocities
-    for (k=0; k<ndim; k++) sph[i].r[k] = sph[i].r0[k] + 
-      (sph[i].v0[k] + 0.5*sph[i].a[k]*sph[i].dt)*dt;
-    for (k=0; k<ndim; k++) sph[i].v[k] = sph[i].v0[k] + sph[i].a0[k]*dt;
+    for (k=0; k<ndim; k++) sphdata[i].r[k] = sphdata[i].r0[k] + 
+      (sphdata[i].v0[k] + 0.5*sphdata[i].a[k]*sphdata[i].dt)*dt;
+    for (k=0; k<ndim; k++) sphdata[i].v[k] = 
+      sphdata[i].v0[k] + sphdata[i].a0[k]*dt;
 
     // Set particle as active at end of step
-    if (n%nstep == 0) sph[i].active = true;
-    else sph[i].active = false;
+    if (n%nstep == 0) sphdata[i].active = true;
+    else sphdata[i].active = false;
   }
   // --------------------------------------------------------------------------
 
@@ -99,15 +99,14 @@ void SphLeapfrogKDK<ndim>::AdvanceParticles
 //  SphLeapfrogKDK::CorrectionTerms
 /// Compute velocity integration to second order at the end of the step by 
 /// adding a second order correction term.  The full integration becomes
-/// v(t+dt) = v(t) + 0.5*(a(t) + a(t+dt))*dt 
+/// $v(t+dt) = v(t) + 0.5*(a(t) + a(t+dt))*dt$. 
 //=============================================================================
 template <int ndim>
 void SphLeapfrogKDK<ndim>::CorrectionTerms
 (int n,                             ///< [in] Integer time in block time struct
- int level_step,                    ///< Current block level
- int Nsph,                          ///< No. of SPH particles
- SphParticle<ndim> *sph,            ///< SPH particle data array
- FLOAT timestep)                    ///< Base timestep value
+ int Nsph,                          ///< [in] No. of SPH particles
+ SphParticle<ndim> *sphdata,        ///< [inout] SPH particle data array
+ FLOAT timestep)                    ///< [in] Base timestep value
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
@@ -118,10 +117,10 @@ void SphLeapfrogKDK<ndim>::CorrectionTerms
   // --------------------------------------------------------------------------
 #pragma omp parallel for default(shared) private(k,nstep)
   for (i=0; i<Nsph; i++) {
-    nstep = pow(2,level_step - sph[i].level);
+    nstep = sphdata[i].nstep;
     if (n%nstep == 0)
-      for (k=0; k<ndim; k++) sph[i].v[k] += 
-	     (FLOAT) 0.5*(sph[i].a[k] - sph[i].a0[k])*timestep*(FLOAT) nstep;
+      for (k=0; k<ndim; k++) sphdata[i].v[k] += timestep*(FLOAT) nstep*
+        (FLOAT) 0.5*(sphdata[i].a[k] - sphdata[i].a0[k]);
   }
   // --------------------------------------------------------------------------
 
@@ -138,9 +137,8 @@ void SphLeapfrogKDK<ndim>::CorrectionTerms
 template <int ndim>
 void SphLeapfrogKDK<ndim>::EndTimestep
 (int n,                             ///< [in] Integer time in block time struct
- int level_step,                    ///< Current block level
- int Nsph,                          ///< No. of SPH particles
- SphParticle<ndim> *sph)            ///< SPH particle data array
+ int Nsph,                          ///< [in] No. of SPH particles
+ SphParticle<ndim> *sphdata)        ///< [inout] SPH particle data array
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
@@ -151,13 +149,13 @@ void SphLeapfrogKDK<ndim>::EndTimestep
   // --------------------------------------------------------------------------
 #pragma omp parallel for default(shared) private(k,nstep)
   for (i=0; i<Nsph; i++) {
-    nstep = pow(2,level_step - sph[i].level);
+    nstep = sphdata[i].nstep;
     if (n%nstep == 0) {
-      for (k=0; k<ndim; k++) sph[i].r0[k] = sph[i].r[k];
-      for (k=0; k<ndim; k++) sph[i].v0[k] = sph[i].v[k];
-      for (k=0; k<ndim; k++) sph[i].a0[k] = sph[i].a[k];
+      for (k=0; k<ndim; k++) sphdata[i].r0[k] = sphdata[i].r[k];
+      for (k=0; k<ndim; k++) sphdata[i].v0[k] = sphdata[i].v[k];
+      for (k=0; k<ndim; k++) sphdata[i].a0[k] = sphdata[i].a[k];
       //sph[i].active = false;
-      sph[i].active = true;
+      sphdata[i].active = true;
     }
   }
   // --------------------------------------------------------------------------

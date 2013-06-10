@@ -686,7 +686,7 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
   FLOAT drsqd;                      // ..
   FLOAT rc[ndim];                   // ..
   FLOAT hrangemax;                  // ..
-  FLOAT kernrange = 2.0;            // ..
+  FLOAT kernrange = 3.0;            // ..
 
   for (k=0; k<ndim; k++) rc[k] = tree[c].r[k];
   hrangemax = tree[c].rmax + kernrange*hmax;
@@ -758,7 +758,7 @@ int BinaryTree<ndim>::ComputeNeighbourList
   FLOAT drsqd;                      // ..
   FLOAT rc[ndim];                   // ..
   FLOAT hrangemax;                  // ..
-  FLOAT kernrange = 2.0;            // ..
+  FLOAT kernrange = 3.0;            // ..
   FLOAT rmax;                       // ..
 
   for (k=0; k<ndim; k++) rc[k] = tree[c].r[k];

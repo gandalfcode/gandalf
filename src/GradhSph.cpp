@@ -25,7 +25,8 @@ using namespace std;
 
 //=============================================================================
 //  GradhSph::GradhSph
-/// GradhSph class constructor
+/// GradhSph class constructor.  Calls main SPH class constructor and also 
+/// sets additional kernel-related quantities
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 GradhSph<ndim, kernelclass>::GradhSph(int hydro_forces_aux,
@@ -138,7 +139,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
     }
 
     else {
-      cout << "HERE : " << parti.h << "    " << parti.rho << "    " 
+      cout << "H ITERATION : " << parti.h << "    " << parti.rho << "    " 
 	   << h_upper_bound << "     " << h_lower_bound << "    " 
 	   << parti.hfactor << "     " 
 	   << parti.m*parti.hfactor*kern.w0(0.0) << endl;
@@ -500,7 +501,7 @@ void GradhSph<ndim, kernelclass >::ComputeSphNeibDudt
 
 //=============================================================================
 //  GradhSph::ComputeSphDerivatives
-/// Empty definition
+/// Empty definition (derivatives not needed for grad-h SPH).
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::ComputeSphDerivatives
@@ -514,7 +515,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphDerivatives
 
 //=============================================================================
 //  GradhSph::ComputePostHydroQuantities
-/// ..
+/// Normalise velocity divergence computation and compute the compressional 
+/// heating rate due to PdV work.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::ComputePostHydroQuantities
@@ -543,28 +545,31 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
  SphParticle<ndim> &parti,          ///< Particle i data
  SphParticle<ndim> *sph)            ///< Neighbour particle data
 {
-  int j;                            // ..
-  int jj;                           // ..
-  int k;                            // ..
-  FLOAT dr[ndim];                   // ..
-  FLOAT drsqd;                      // ..
-  FLOAT invdrmag;                   // ..
+  int j;                            // Neighbour particle id
+  int jj;                           // Aux. neighbour loop counter
+  int k;                            // Dimension counter
+  FLOAT dr[ndim];                   // Relative position vector
+  FLOAT drsqd;                      // Distance squared
+  FLOAT invdrmag;                   // 1 / distance
 
   // Loop over all neighbouring particles in list
   // --------------------------------------------------------------------------
   for (jj=0; jj<Ndirect; jj++) {
     j = directlist[jj];
+
+    // Skip active particles with smaller neighbour ids to prevent counting 
+    // pairwise forces twice
     if (sph[j].active && j <= i) continue;
 
     for (k=0; k<ndim; k++) dr[k] = sph[j].r[k] - parti.r[k];
     drsqd = DotProduct(dr,dr,ndim);
     invdrmag = 1.0/(sqrt(drsqd) + small_number);
 
-    // Sum current particle
+    // Add contribution to current particle
     for (k=0; k<ndim; k++) parti.agrav[k] += sph[j].m*dr[k]*pow(invdrmag,3);
     parti.gpot += sph[j].m*invdrmag;
 
-    // Sum current particle
+    // Add contribution to neighbouring particle
     for (k=0; k<ndim; k++) agrav[ndim*j + k] -= parti.m*dr[k]*pow(invdrmag,3);
     gpot[j] += parti.m*invdrmag;
 
@@ -578,23 +583,24 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
 
 //=============================================================================
 //  GradhSph::ComputeStarGravForces
-/// ..
+/// Computes contribution of gravitational force and potential due to stars.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::ComputeStarGravForces
-(int N,
- NbodyParticle<ndim> **nbodydata,
- SphParticle<ndim> &parti)
+(int N,                             ///< No. of stars
+ NbodyParticle<ndim> **nbodydata,   ///< Array of star pointers
+ SphParticle<ndim> &parti)          ///< SPH particle reference
 {
-  int j;
-  int k;
-  FLOAT dr[ndim];
-  FLOAT drmag;
-  FLOAT drsqd;
-  FLOAT invdrmag;
-  FLOAT paux;
-  FLOAT gaux;
+  int j;                            // Star counter
+  int k;                            // Dimension counter
+  FLOAT dr[ndim];                   // Relative position vector
+  FLOAT drmag;                      // Distance
+  FLOAT drsqd;                      // Distance squared
+  FLOAT invdrmag;                   // 1 / drmag
+  FLOAT paux;                       // Aux. force variable
+  FLOAT gaux;                       // Aux. potential variable
 
+  // Loop over all stars and add each contribution
   // --------------------------------------------------------------------------
   for (j=0; j<N; j++) {
 

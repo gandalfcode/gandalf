@@ -14,7 +14,7 @@
 
 //=============================================================================
 //  Structure SphParticle
-/// \brief  Bounding box data structure.
+/// \brief  SPH particle data structure.
 /// \author D. A. Hubber, G. Rosotti
 /// \date   03/04/2013
 //=============================================================================

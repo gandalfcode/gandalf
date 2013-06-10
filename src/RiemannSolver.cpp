@@ -53,7 +53,6 @@ void ExactRiemannSolver::SolveRiemannProblem
   FLOAT frprime;
   FLOAT pold;
   FLOAT tolerance = 1.e-6;
-
   FLOAT Al = 2.0/(gamma + 1.0)/rhol;
   FLOAT Ar = 2.0/(gamma + 1.0)/rhor;
   FLOAT Bl = pl*g2;

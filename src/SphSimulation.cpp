@@ -24,6 +24,8 @@
 #include "SimGhostParticles.cpp"
 using namespace std;
 
+
+
 // Create template class instances of the main SphSimulation object for
 // each dimension used (1, 2 and 3)
 template class SphSimulation<1>;
@@ -159,9 +161,9 @@ void SphSimulation<ndim>::PostGeneration(void)
   }
 
   // Set particle values for initial step (e.g. r0, v0, a0)
-  sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+  sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+    uint->EndTimestep(n,sph->Nsph,sph->sphdata);
   nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
 
   this->CalculateDiagnostics();
@@ -201,11 +203,9 @@ void SphSimulation<ndim>::MainLoop(void)
   t = t + timestep;
 
   // Advance SPH particles positions and velocities
-  sphint->AdvanceParticles(n,level_step,sph->Nsph,
-			   sph->sphdata,(FLOAT) timestep);
+  sphint->AdvanceParticles(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EnergyIntegration(n,level_step,sph->Nsph,
-			    sph->sphdata,(FLOAT) timestep);
+    uint->EnergyIntegration(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
   nbody->AdvanceParticles(n,nbody->Nstar,nbody->nbodydata,timestep);
 
   // Check all boundary conditions
@@ -250,7 +250,7 @@ void SphSimulation<ndim>::MainLoop(void)
     for (i=0; i<sph->Nsph; i++)
       if (sph->sphdata[i].active)
 	sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
-                               sph->sphdata[i]);
+                                   sph->sphdata[i]);
 
     // Add accelerations
     for (i=0; i<sph->Nsph; i++) {
@@ -297,17 +297,14 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
   // Apply correction steps for both particle and energy integration
-  sphint->CorrectionTerms(n,level_step,sph->Nsph,
-  			  sph->sphdata,(FLOAT) timestep);
+  sphint->CorrectionTerms(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EnergyCorrectionTerms(n,level_step,sph->Nsph,
-  				sph->sphdata,(FLOAT) timestep);
-
+    uint->EnergyCorrectionTerms(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
 
   // Set all end-of-step variables
-  sphint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+  sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,level_step,sph->Nsph,sph->sphdata);
+    uint->EndTimestep(n,sph->Nsph,sph->sphdata);
   nbody->EndTimestep(n,nbody->Nnbody,nbody->nbodydata);
 
   return;
@@ -317,7 +314,7 @@ void SphSimulation<ndim>::MainLoop(void)
 
 //=============================================================================
 //  SphSimulation::ComputeGlobalTimestep
-//  Computes global timestep for SPH simulation.
+/// Computes global timestep for SPH simulation.
 //=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::ComputeGlobalTimestep(void)
@@ -371,7 +368,8 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
     }
     for (i=0; i<nbody->Nnbody; i++) {
       nbody->nbodydata[i]->level = 0;
-      nbody->nbodydata[i]->nstep = pow(2,level_step - nbody->nbodydata[i]->level);
+      nbody->nbodydata[i]->nstep = 
+        pow(2,level_step - nbody->nbodydata[i]->level);
       nbody->nbodydata[i]->dt = timestep;
     }
 
@@ -383,22 +381,22 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 
 
 
-// ============================================================================
-// SphSimulation::ComputeBlockTimesteps
-// ..
-// ============================================================================
+//=============================================================================
+//  SphSimulation::ComputeBlockTimesteps
+/// ..
+//=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 {
-  int i;                                    // Particle counter
-  int istep;                                // ??
-  int level;                                // Particle timestep level
-  int last_level;                           // Previous timestep level
-  int level_max_old;                        // Old level_max
-  int level_max_sph = 0;                    // level_max for SPH particles only
-  int nstep;                                // ??
-  DOUBLE dt;                                // Aux. timestep variable
-  DOUBLE dt_max_sph = 0.0;                  // Maximum SPH particle timestep
+  int i;                            // Particle counter
+  int istep;                        // ??
+  int level;                        // Particle timestep level
+  int last_level;                   // Previous timestep level
+  int level_max_old;                // Old level_max
+  int level_max_sph = 0;            // level_max for SPH particles only
+  int nstep;                        // ??
+  DOUBLE dt;                        // Aux. timestep variable
+  DOUBLE dt_max_sph = 0.0;          // Maximum SPH particle timestep
 
   debug2("[SphSimulation::ComputeBlockTimesteps]");
 

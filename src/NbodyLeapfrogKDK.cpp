@@ -86,8 +86,9 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectGravForces
       drsqd = DotProduct(dr,dr,ndim);
       invdrmag = 1.0/sqrt(drsqd);
 
-      star[i]->gpot += star[j]->m*invdrmag;
+      // Add contribution to main star array
       for (k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
+      star[i]->gpot += star[j]->m*invdrmag;
 
     }
     // ------------------------------------------------------------------------
@@ -102,7 +103,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectGravForces
 
 //=============================================================================
 //  NbodyLeapfrogKDK::CalculateDirectSPHForces
-/// Calculate all ..
+/// Calculate all SPH forces by direct summation.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSPHForces
@@ -113,11 +114,11 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSPHForces
 {
   int i,j,k;                        // Star and dimension counters
   DOUBLE dr[ndim];                  // Relative position vector
-  DOUBLE drmag;                     // ..
+  DOUBLE drmag;                     // Distance
   DOUBLE drsqd;                     // Distance squared
   DOUBLE invdrmag;                  // 1 / drmag
-  DOUBLE paux;                      // ..
-  DOUBLE gaux;                      // ..
+  DOUBLE paux;                      // Aux. force variable
+  DOUBLE gaux;                      // Aux. grav potential variable
 
   debug2("[NbodyLeapfrogKDK::CalculateDirectSPHForces]");
 
@@ -140,7 +141,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSPHForces
       gaux = sphdata[j].invh*kern.wpot(drmag*sphdata[j].invh) + 
 	star[i]->invh*kern.wpot(drmag*star[i]->invh);
 
-      // Add ..
+      // Add contribution to main star array
       for (k=0; k<ndim; k++) star[i]->a[k] += 0.5*sphdata[j].m*dr[k]*paux;
       star[i]->gpot += 0.5*sphdata[j].m*gaux;
 
@@ -173,8 +174,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateAllStartupQuantities
 //  NbodyLeapfrogKDK::AdvanceParticles
 /// Integrate star positions to 2nd order, and star velocities to 1st
 /// order from the beginning of the step to the current simulation time, i.e. 
-/// r(t+dt) = r(t) + v(t)*dt + 0.5*a(t)*dt^2, 
-/// v(t+dt) = v(t) + a(t)*dt.
+/// $r(t+dt) = r(t) + v(t)*dt + 0.5*a(t)*dt^2$, 
+/// $v(t+dt) = v(t) + a(t)*dt$.
 /// Also set particles at the end of step as 'active' in order to compute 
 /// the end-of-step force computation and velocity correction step.
 //=============================================================================
@@ -192,6 +193,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles
 
   debug2("[NbodyLeapfrogKDK::AdvanceParticles]");
 
+  // Advance positions and velocities of all star particles
   // --------------------------------------------------------------------------
   for (i=0; i<N; i++) {
 
@@ -220,9 +222,9 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles
 //  NbodyLeapfrogKDK::CorrectionTerms
 /// Compute velocity integration to second order at the end of the step by 
 /// adding a second order correction term, 
-/// v(t+dt) -> v(t+dt) + 0.5*(a(t+dt) - a(t))*dt.
+/// $v(t+dt) -> v(t+dt) + 0.5*(a(t+dt) - a(t))*dt$.
 /// The full integration therefore becomes
-/// v(t+dt) = v(t) + 0.5*(a(t) + a(t+dt))*dt.
+/// $v(t+dt) = v(t) + 0.5*(a(t) + a(t+dt))*dt$.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectionTerms
@@ -237,6 +239,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectionTerms
 
   debug2("[NbodyLeapfrogKDK::CorrectionTerms]");
 
+  // Loop over all star particles and calculate correction terms only for 
+  // those at end of step.
   // --------------------------------------------------------------------------
   for (i=0; i<N; i++) {
     nstep = star[i]->nstep;
@@ -268,11 +272,10 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
 
   debug2("[NbodyLeapfrogKDK::EndTimestep]");
 
+  // Loop over all star particles and set values for those at end of step
   // --------------------------------------------------------------------------
   for (i=0; i<N; i++) {
     nstep = star[i]->nstep;
-    //cout << "HERE : " << i << "   " << N << "   " << nstep << endl;
-    //cout << "POS  : " << star[i]->r[0] << "    " << star[i]->r[1] << endl;
     if (n%nstep == 0) {
       for (k=0; k<ndim; k++) star[i]->r0[k] = star[i]->r[k];
       for (k=0; k<ndim; k++) star[i]->v0[k] = star[i]->v[k];
@@ -295,23 +298,22 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 DOUBLE NbodyLeapfrogKDK<ndim, kernelclass>::Timestep
-(NbodyParticle<ndim> *star)             ///< Reference to SPH particle
+(NbodyParticle<ndim> *star)         ///< Reference to SPH particle
 {
-  DOUBLE timestep;                      // Minimum value of particle timesteps
-  DOUBLE amag;                          // Magnitude of particle acceleration
+  DOUBLE timestep;                  // Minimum value of particle timesteps
+  DOUBLE amag;                      // Magnitude of particle acceleration
 
   // Acceleration condition
   amag = sqrt(DotProduct(star->a,star->a,ndim));
   timestep = nbody_mult*sqrt(star->h/(amag + small_number_dp));
-
-  //cout << "TIMESTEP : " << amag << "   " << star.h << "   " << timestep << endl;
 
   return timestep;
 }
 
 
 
-// Template class instances for each dimensionality value (1, 2 and 3)
+// Template class instances for each dimensionality value (1, 2 and 3) and 
+// employed kernel (M4, Quintic, Gaussian and tabulated).
 template class NbodyLeapfrogKDK<1, M4Kernel>;
 template class NbodyLeapfrogKDK<1, QuinticKernel>;
 template class NbodyLeapfrogKDK<1, GaussianKernel>;

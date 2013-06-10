@@ -1,9 +1,9 @@
-// ============================================================================
-// SimGhostParticles.cpp
-// Contains all routines for searching for and creating ghost particles.
-// Also contains routine to correct particle positions/velocities to keep 
-// them contained in simulation bounding box.
-// ============================================================================
+//=============================================================================
+//  SimGhostParticles.cpp
+//  Contains all routines for searching for and creating ghost particles.
+//  Also contains routine to correct particle positions/velocities to keep 
+//  them contained in simulation bounding box.
+//=============================================================================
 
 
 #include <cstdlib>
@@ -36,6 +36,8 @@ void Simulation<ndim>::CheckBoundaries(void)
   SphParticle<ndim> *part;          // Pointer to SPH particle data
 
 
+  // Loop over all particles and check if any lie outside the periodic box.
+  // If so, then re-position with periodic wrapping.
   // --------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
     part = &sph->sphdata[i];

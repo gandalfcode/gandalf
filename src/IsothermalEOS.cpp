@@ -12,7 +12,7 @@
 //=============================================================================
 //  Isothermal::Isothermal()
 /// Default constructor for isothermal EOS.  Passes and sets important 
-/// thermal physics variables.
+/// thermal physics variables, as well as scaling to dimensionless units.
 //=============================================================================
 template <int ndim>
 Isothermal<ndim>::Isothermal(FLOAT temp0aux, FLOAT mu_bar_aux, 
@@ -27,6 +27,7 @@ Isothermal<ndim>::Isothermal(FLOAT temp0aux, FLOAT mu_bar_aux,
 
 //=============================================================================
 //  Isothermal::Isothermal()
+/// Isothermal EOS destructor
 //=============================================================================
 template <int ndim>
 Isothermal<ndim>::~Isothermal()
@@ -62,7 +63,7 @@ FLOAT Isothermal<ndim>::EntropicFunction(SphParticle<ndim> &part)
 
 //=============================================================================
 //  Isothermal::SoundSpeed
-/// Returns isothermal sound speed of SPH particle
+/// Returns isothermal sound speed of referenced SPH particle
 //=============================================================================
 template <int ndim>
 FLOAT Isothermal<ndim>::SoundSpeed(SphParticle<ndim> &part)
@@ -74,6 +75,7 @@ FLOAT Isothermal<ndim>::SoundSpeed(SphParticle<ndim> &part)
 
 //=============================================================================
 //  Isothermal::SpecificInternalEnergy
+/// Returns specific internal energy of referenced SPH particle
 //=============================================================================
 template <int ndim>
 FLOAT Isothermal<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
@@ -85,7 +87,7 @@ FLOAT Isothermal<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
 
 //=============================================================================
 //  Isothermal::Temperature
-/// Return isothermal temperature of particle
+/// Return isothermal temperature, temp0, for referenced SPH particle
 //=============================================================================
 template <int ndim>
 FLOAT Isothermal<ndim>::Temperature(SphParticle<ndim> &part)

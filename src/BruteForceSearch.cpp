@@ -1,7 +1,7 @@
 //=============================================================================
-// BruteForceSearch.cpp
-// Contains all routines for generating SPH neighbour lists using 
-// brute-force (i.e. direct summation over all particles).
+//  BruteForceSearch.cpp
+//  Contains all routines for generating SPH neighbour lists using 
+//  brute-force (i.e. direct summation over all particles).
 //=============================================================================
 
 
@@ -61,7 +61,7 @@ void BruteForceSearch<ndim>::UpdateTree(Sph<ndim> *sph, Parameters &simparams)
 template <int ndim>
 void BruteForceSearch<ndim>::UpdateAllSphProperties
 (Sph<ndim> *sph                     ///< [inout] Pointer to SPH object
-)
+ )
 {
   int i,j,k;                        // Particle and dimension counters
   int okflag;                       // Flag valid smoothing length
@@ -71,9 +71,9 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
   FLOAT dr[ndim];                   // Relative distance vector
   FLOAT drsqdaux;                   // Distance squared
   FLOAT rp[ndim];                   // Position of current particle
+  FLOAT *drsqd;                     // Array of neib. distances (sqd)
   FLOAT *m;                         // Array of neib. position vectors
   FLOAT *mu;                        // Array of neib. mass*u values
-  FLOAT *drsqd;                     // Array of neib. distances (sqd)
 
   debug2("[BruteForceSearch::UpdateAllSphProperties]");
 
@@ -108,7 +108,7 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
 
       // Compute all SPH gather properties
       okflag = sph->ComputeH(i,sph->Ntot,big_number,
-			     m,mu,drsqd,sph->sphdata[i]);
+                             m,mu,drsqd,sph->sphdata[i]);
   
     }
     // ------------------------------------------------------------------------

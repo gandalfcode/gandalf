@@ -1,9 +1,9 @@
 //=============================================================================
-// EnergyPEC.cpp
-// Contains functions for energy equation integration using a 
-// Predict-Evalulate-Correct (PEC) scheme.
-// N.B. this PEC scheme is the same as integrating the particle velocities 
-// in the Leapfrog KDK scheme.
+//  EnergyPEC.cpp
+//  Contains functions for energy equation integration using a 
+//  Predict-Evalulate-Correct (PEC) scheme.
+//  N.B. this PEC scheme is the same as integrating the particle velocities 
+//  in the Leapfrog KDK scheme.
 //=============================================================================
 
 
@@ -68,7 +68,7 @@ EnergyPEC<ndim>::EnergyPEC(DOUBLE energy_mult_aux) :
 
 //=============================================================================
 //  EnergyPEC::~EnergyPEC()
-/// 
+/// EnergyPEC class destructor
 //=============================================================================
 template <int ndim>
 EnergyPEC<ndim>::~EnergyPEC()
@@ -85,10 +85,9 @@ EnergyPEC<ndim>::~EnergyPEC()
 template <int ndim>
 void EnergyPEC<ndim>::EnergyIntegration
 (int n,                             ///< [in] Integer time in block time struct
- int level_step,                    ///< Current block level
- int Nsph,                          ///< No. of SPH particles
- SphParticle<ndim> *sph,            ///< SPH particle data array
- FLOAT timestep)                    ///< Base timestep value
+ int Nsph,                          ///< [in] No. of SPH particles
+ SphParticle<ndim> *sphdata,        ///< [inout] SPH particle data array
+ FLOAT timestep)                    ///< [in] Base timestep value
 {
   int i;                            // Particle counter
   int nstep;                        // Particle (integer) step size
@@ -99,10 +98,10 @@ void EnergyPEC<ndim>::EnergyIntegration
   // --------------------------------------------------------------------------
 #pragma omp parallel for default(shared) private(dt,nstep)
   for (i=0; i<Nsph; i++) {
-    nstep = pow(2,level_step - sph[i].level);
+    nstep = sphdata[i].nstep;
     if (n%nstep == 0) dt = timestep*(FLOAT) nstep;
     else dt = timestep*(FLOAT) (n%nstep);
-    sph[i].u = sph[i].u0 + sph[i].dudt*dt;
+    sphdata[i].u = sphdata[i].u0 + sphdata[i].dudt*dt;
   }
   // --------------------------------------------------------------------------
 
@@ -111,19 +110,18 @@ void EnergyPEC<ndim>::EnergyIntegration
  
 
 
-// ============================================================================
-// EnergyPEC::CorrectionTerms
-// Compute energy integration to second order at the end of the step by 
-// adding a second order correction term.  The full integration becomes
-// u(t+dt) = u(t) + 0.5*(dudt(t) + dudt(t+dt))*dt 
-// ============================================================================
+//=============================================================================
+//  EnergyPEC::CorrectionTerms
+/// Compute energy integration to second order at the end of the step by 
+/// adding a second order correction term.  The full integration becomes
+/// $u(t+dt) = u(t) + 0.5*(dudt(t) + dudt(t+dt))*dt$.
+//=============================================================================
 template <int ndim>
 void EnergyPEC<ndim>::EnergyCorrectionTerms
 (int n,                             ///< [in] Integer time in block time struct
- int level_step,                    ///< Current block level
- int Nsph,                          ///< No. of SPH particles
- SphParticle<ndim> *sph,            ///< SPH particle data array
- FLOAT timestep)                    ///< Base timestep value
+ int Nsph,                          ///< [in] No. of SPH particles
+ SphParticle<ndim> *sphdata,        ///< [inout] SPH particle data array
+ FLOAT timestep)                    ///< [in] Base timestep value
 {
   int i;                            // Particle counter
   int nstep;                        // Particle (integer) step size
@@ -133,9 +131,9 @@ void EnergyPEC<ndim>::EnergyCorrectionTerms
   // --------------------------------------------------------------------------
 #pragma omp parallel for default(shared) private(nstep)
   for (i=0; i<Nsph; i++) {
-    nstep = pow(2,level_step - sph[i].level);
-    if (n%nstep == 0) 
-      sph[i].u += 0.5*(sph[i].dudt - sph[i].dudt0)*timestep*(FLOAT) nstep;
+    nstep = sphdata[i].nstep;
+    if (n%nstep == 0) sphdata[i].u += 
+      0.5*(sphdata[i].dudt - sphdata[i].dudt0)*timestep*(FLOAT) nstep;
   }
   // --------------------------------------------------------------------------
 
@@ -144,17 +142,16 @@ void EnergyPEC<ndim>::EnergyCorrectionTerms
 
 
 
-// ============================================================================
-// EnergyPEC::EndTimestep
-// Record all important thermal quantities at the end of the step for the 
-// start of the new timestep.
-// ============================================================================
+//=============================================================================
+//  EnergyPEC::EndTimestep
+/// Record all important thermal quantities at the end of the step for the 
+/// start of the new timestep.
+//=============================================================================
 template <int ndim>
 void EnergyPEC<ndim>::EndTimestep
 (int n,                             ///< [in] Integer time in block time struct
- int level_step,                    ///< Current block level
- int Nsph,                          ///< No. of SPH particles
- SphParticle<ndim> *sph)            ///< SPH particle data array
+ int Nsph,                          ///< [in] No. of SPH particles
+ SphParticle<ndim> *sphdata)        ///< [inout] SPH particle data array
 {
   int i;                            // Particle counter
   int nstep;                        // Particle (integer) step size
@@ -164,10 +161,10 @@ void EnergyPEC<ndim>::EndTimestep
   // --------------------------------------------------------------------------
 #pragma omp parallel for default(shared) private(nstep)
   for (i=0; i<Nsph; i++) {
-    nstep = pow(2,level_step - sph[i].level);
+    nstep = sphdata[i].nstep;
     if (n%nstep == 0) {
-      sph[i].u0 = sph[i].u;
-      sph[i].dudt0 = sph[i].dudt;
+      sphdata[i].u0 = sphdata[i].u;
+      sphdata[i].dudt0 = sphdata[i].dudt;
     }
   }
   // --------------------------------------------------------------------------
@@ -185,7 +182,7 @@ void EnergyPEC<ndim>::EndTimestep
 //=============================================================================
 template <int ndim>
 DOUBLE EnergyPEC<ndim>::Timestep
-(SphParticle<ndim> &part            ///< SPH particle reference
+(SphParticle<ndim> &part            ///< [inout] SPH particle reference
 )
 {
   return this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number));

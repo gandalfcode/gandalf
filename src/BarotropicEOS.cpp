@@ -1,6 +1,9 @@
 //=============================================================================
 //  BarotropicEOS.cpp
-//  Contains all function definitions for the Barotropic Equation of state.
+//  Contains all function definitions for a barotropic Equation of state of 
+//  the form T = temp0*(1 + (rho/rho_bary)^{gamma - 1}).
+//  Used for star formation simulations to approximate the combined isothermal 
+//  and optically-thich adiabatic regimes of the gas collapse phase.
 //=============================================================================
 
 
@@ -28,7 +31,8 @@ Barotropic<ndim>::Barotropic(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux,
 
 
 //=============================================================================
-//  Barotropic::Barotropic()
+//  Barotropic::~Barotropic()
+/// Barotropic EOS destructor
 //=============================================================================
 template <int ndim>
 Barotropic<ndim>::~Barotropic()
@@ -76,6 +80,7 @@ FLOAT Barotropic<ndim>::SoundSpeed(SphParticle<ndim> &part)
 
 //=============================================================================
 //  Barotropic::SpecificInternalEnergy
+/// Returns specific internal energy
 //=============================================================================
 template <int ndim>
 FLOAT Barotropic<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
@@ -87,7 +92,9 @@ FLOAT Barotropic<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
 
 //=============================================================================
 //  Barotropic::Temperature
-/// Return isothermal temperature of particle
+/// Returns temperature of particle.  Approximates gas in the isothermal 
+/// regime (T = temp0 for rho << rho_bary) and in the optically thick 
+/// adiabatic phase (T = const*rho^{gamma - 1} for rho >> rho_bary).
 //=============================================================================
 template <int ndim>
 FLOAT Barotropic<ndim>::Temperature(SphParticle<ndim> &part)

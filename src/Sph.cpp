@@ -22,9 +22,11 @@ template <int ndim>
 const FLOAT Sph<ndim>::invndim;
 
 
+
 //=============================================================================
 //  Sph::Sph
-/// ..
+/// Constructor for parent SPH class.  Initialises important variables and 
+/// sets important parameters using initialialisation lists.
 //=============================================================================
 template <int ndim>
 Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux, 
@@ -51,7 +53,9 @@ Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux,
 
 //=============================================================================
 //  Sph::AllocateMemory
-/// Allocate main SPH particle array.
+/// Allocate main SPH particle array.  Currently sets the maximum memory to 
+/// be 10 times the numbers of particles to allow space for ghost particles 
+/// and new particle creation.
 //=============================================================================
 template <int ndim>
 void Sph<ndim>::AllocateMemory(int N)
@@ -164,8 +168,6 @@ void Sph<ndim>::InitialSmoothingLengthGuess(void)
     sphdata[i].h = h_guess;
     sphdata[i].invh = 1.0/h_guess;
   }
-
-  cout << "hguess : " << h_guess << "    volume : " << volume << endl;
 
   return;
 }

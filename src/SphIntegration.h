@@ -1,5 +1,6 @@
 //=============================================================================
 //  SphIntegration.h
+//  Contains class definitions for all SPH integration schemes.
 //=============================================================================
 
 
@@ -19,7 +20,8 @@
 //=============================================================================
 //  Class SphIntegration
 /// \brief   Main parent Sph Integration class
-/// \details ..
+/// \details Main parent Sph Integration class.  All employed child classes 
+///          (e.g. SphLeapfrogKDK) inherit from this class.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=============================================================================
@@ -33,13 +35,11 @@ class SphIntegration
   SphIntegration(DOUBLE, DOUBLE);
   ~SphIntegration();
 
-  virtual void AdvanceParticles(int,int,int,SphParticle<ndim> *,FLOAT) = 0;
-  virtual void CorrectionTerms(int,int,int,SphParticle<ndim> *,FLOAT) = 0;
-  virtual void EndTimestep(int,int,int,SphParticle<ndim> *) = 0;
-
+  virtual void AdvanceParticles(int, int, SphParticle<ndim> *, FLOAT) = 0;
+  virtual void CorrectionTerms(int, int, SphParticle<ndim> *, FLOAT) = 0;
+  virtual void EndTimestep(int, int, SphParticle<ndim> *) = 0;
   virtual DOUBLE Timestep(SphParticle<ndim> &, int);
   
-  int level_step;
   const DOUBLE courant_mult;
   const DOUBLE accel_mult;
   static const int vdim=ndim;
@@ -51,7 +51,9 @@ class SphIntegration
 //=============================================================================
 //  Class SphLeapfrogKDK
 /// \brief   Leapfrog kick-drift-kick SPH particle integration scheme.
-/// \details ..
+/// \details Class definition for leapfrog kick-drift-kick SPH particle 
+///          integration scheme.  Inherits from main parent SphIntegration 
+///          class and provides implementations of all virtual functions.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=============================================================================
@@ -63,9 +65,9 @@ class SphLeapfrogKDK: public SphIntegration<ndim>
   SphLeapfrogKDK(DOUBLE, DOUBLE);
   ~SphLeapfrogKDK();
 
-  void AdvanceParticles(int,int,int,SphParticle<ndim> *,FLOAT);
-  void CorrectionTerms(int,int,int,SphParticle<ndim> *,FLOAT);
-  void EndTimestep(int,int,int,SphParticle<ndim> *);
+  void AdvanceParticles(int, int, SphParticle<ndim> *, FLOAT);
+  void CorrectionTerms(int, int, SphParticle<ndim> *, FLOAT);
+  void EndTimestep(int, int, SphParticle<ndim> *);
 
 };
 
@@ -73,8 +75,10 @@ class SphLeapfrogKDK: public SphIntegration<ndim>
 
 //=============================================================================
 //  Class SphGodunovIntegration
-/// \brief   ..
-/// \details ..
+/// \brief   Inutsuka (2002) Godunov SPH conservative SPH integration scheme.
+/// \details Class definition for Inutsuka (2002) Godunov SPH conservative 
+///          SPH integration scheme.  Algorithm conserves energy to 
+///          machine precision (for direct summation and global timesteps).
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=============================================================================
@@ -86,12 +90,12 @@ class SphGodunovIntegration: public SphIntegration<ndim>
   SphGodunovIntegration(DOUBLE, DOUBLE);
   ~SphGodunovIntegration();
 
-  void AdvanceParticles(int,int,int,SphParticle<ndim> *,FLOAT);
-  void CorrectionTerms(int,int,int,SphParticle<ndim> *,FLOAT);
-  void EndTimestep(int,int,int,SphParticle<ndim> *);
-  static const int vdim = ndim;
+  void AdvanceParticles(int, int, SphParticle<ndim> *, FLOAT);
+  void CorrectionTerms(int, int, SphParticle<ndim> *, FLOAT);
+  void EndTimestep(int, int, SphParticle<ndim> *);
   DOUBLE Timestep(SphParticle<ndim> &, int);
+
+  static const int vdim = ndim;
+
 };
-
-
 #endif
