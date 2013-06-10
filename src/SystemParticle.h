@@ -16,6 +16,7 @@
 static const int Ncompmax = 4;
 
 
+
 //=============================================================================
 //  Structure SystemParticle
 /// \brief  System particle data structure
@@ -25,7 +26,9 @@ static const int Ncompmax = 4;
 template <int ndim>
 class SystemParticle: public NbodyParticle<ndim>
 {
-  int Ncomp;
-  int starid[Ncompmax];
+public:
+  int Nchildren; ///Number of nbody children
+  NbodyParticle<ndim>* children[Ncompmax]; ///Array of pointers to children
+
 };
 #endif

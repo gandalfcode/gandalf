@@ -187,8 +187,6 @@ void SphSimulation<ndim>::MainLoop(void)
   int it;                           // Time-symmetric iteration counter
   int k;                            // Dimension counter
 
-  int Npec = simparams->intparams["Npec"];
-
   debug2("[SphSimulation::MainLoop]");
 
   // Compute timesteps for all particles
@@ -268,9 +266,9 @@ void SphSimulation<ndim>::MainLoop(void)
 
     // Iterate end-of-step
     // ------------------------------------------------------------------------
-	for (it=0; it<Npec; it++) {
+	for (it=0; it<nbody->Npec; it++) {
 
-	  cout << "it : " << it << "     Npec : " << Npec << endl;
+	  cout << "it : " << it << "     Npec : " << nbody->Npec << endl;
 
       // Zero all acceleration terms
       for (i=0; i<nbody->Nnbody; i++) {

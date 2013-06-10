@@ -47,6 +47,8 @@ class NbodyParticle
   DOUBLE gpot;                      ///< Gravitational potential
   DOUBLE dt;                        ///< Particle timestep
 
+  int Ncomp;
+
 
   // Star particle constructor to initialise all values
   // --------------------------------------------------------------------------
@@ -67,6 +69,7 @@ class NbodyParticle
     h = 0;
     invh = 0.0;
     hfactor = 0.0;
+    Ncomp = 1;
   } 
 
 };

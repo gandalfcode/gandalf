@@ -32,7 +32,7 @@ NbodyLeapfrogKDK<ndim, kernelclass>::NbodyLeapfrogKDK
 (int nbody_softening_aux, int sub_systems_aux, 
  DOUBLE nbody_mult_aux, string KernelName) : 
   Nbody<ndim>(nbody_softening_aux, sub_systems_aux, 
-              nbody_mult_aux, KernelName),
+              nbody_mult_aux, KernelName, 1),
   kern(kernelclass<ndim>(KernelName))
 {
 }
