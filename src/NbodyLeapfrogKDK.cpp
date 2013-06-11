@@ -137,9 +137,9 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSPHForces
       invdrmag = 1.0/sqrt(drsqd);
 
       paux = sphdata[j].invh*sphdata[j].invh*kern.wgrav(drmag*sphdata[j].invh)
-	+ star[i]->invh*star[i]->invh*kern.wgrav(drmag*star[i]->invh);
+        + star[i]->invh*star[i]->invh*kern.wgrav(drmag*star[i]->invh);
       gaux = sphdata[j].invh*kern.wpot(drmag*sphdata[j].invh) + 
-	star[i]->invh*kern.wpot(drmag*star[i]->invh);
+        star[i]->invh*kern.wpot(drmag*star[i]->invh);
 
       // Add contribution to main star array
       for (k=0; k<ndim; k++) star[i]->a[k] += 0.5*sphdata[j].m*dr[k]*paux;

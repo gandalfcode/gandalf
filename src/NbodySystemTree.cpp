@@ -203,20 +203,27 @@ void NbodySystemTree<ndim>::CreateNbodySystemTree
 
 
 //=============================================================================
-//  NbodySystemTree::StockNbodySystemTree
+//  NbodySystemTree::BuildSubSystems
 /// Calculate the properties of all nearest-neighbour tree nodes, starting from
 /// single-star child-cells and then working up through the parent nodes and
 /// finally the root node.
 //=============================================================================
 template <int ndim>
-void NbodySystemTree<ndim>::StockNbodySystemTree
+void NbodySystemTree<ndim>::BuildSubSystems
 (Nbody<ndim> *nbody)               ///< [in] Nbody object containing stars
 {
   int c,c1,c2;                     // Cell counter
   int i,ii,j,jj;                   // ..
   int k;                           // Dimension counter
-  //DOUBLE dr[ndim];                 // ..
-  //DOUBLE dv[ndim];                 // ..
+  DOUBLE dr[ndim];                 // Relative position vector
+  DOUBLE drsqd;                    // ..
+  DOUBLE dv[ndim];                 // ..
+  DOUBLE invdrmag;                 // ..
+  DOUBLE ketot = 0.0;              // ..
+  DOUBLE vmean;                    // ..
+  MergeList<NbodyParticle<ndim>* >::iterator it,it2;  // ..
+
+  DOUBLE gpefrac = 0.001;          // ..
 
 
   // Loop through all nodes of tree and compute all physical quantities
@@ -224,30 +231,32 @@ void NbodySystemTree<ndim>::StockNbodySystemTree
   for (c=0; c<Nnode; c++) {
 
 	// If node contains one star, set all properties equal to star values
-    // ------------------------------------------------------------------------
+    // ========================================================================
     if (NNtree[c].Ncomp == 1) {
       i = c;
       NNtree[c].m = nbody->stardata[i].m;
       //NNtree[c].h = nbody->stardata[i].h;
-      NNtree[c].gpe = 0.5*nbody->stardata[i].m*nbody->stardata[i].gpot;
-      NNtree[c].gpe_internal = 0.0;
-      NNtree[c].tcross = big_number;
       for (k=0; k<ndim; k++) NNtree[c].r[k] = nbody->stardata[i].r[k];
       for (k=0; k<ndim; k++) NNtree[c].v[k] = nbody->stardata[i].v[k];
       for (k=0; k<ndim; k++) NNtree[c].a[k] = nbody->stardata[i].a[k];
       for (k=0; k<ndim; k++) NNtree[c].adot[k] = nbody->stardata[i].adot[k];
-
+      NNtree[c].gpe = 0.5*nbody->stardata[i].m*nbody->stardata[i].gpot;
+      NNtree[c].gpe_internal = 0.0;
+      NNtree[c].tcross = big_number;
+      NNtree[c].clist.append(&(nbody->stardata[i]));
     }
 
 	// Else, add together both child node properties
-    // ------------------------------------------------------------------------
-    else {
+    // ========================================================================
+    else if (NNtree[c].Ncomp <= Ncompmax) {
+
+      // Merge lists of stars/systems in child nodes
+      NNtree[c].clist = NNtree[c1].clist + NNtree[c2].clist;
+
       c1 = NNtree[c].ichild1;
       c2 = NNtree[c].ichild2;
       NNtree[c].m = NNtree[c1].m + NNtree[c2].m;
       NNtree[c].gpe = NNtree[c1].gpe + NNtree[c2].gpe;
-      NNtree[c].gpe_internal = 0.0;
-      NNtree[c].tcross = big_number;
       for (k=0; k<ndim; k++) NNtree[c].r[k] = (NNtree[c1].m*NNtree[c1].r[k] +
     		  NNtree[c2].m*NNtree[c2].r[k])/NNtree[c].m;
       for (k=0; k<ndim; k++) NNtree[c].v[k] = (NNtree[c1].m*NNtree[c1].v[k] +
@@ -256,26 +265,67 @@ void NbodySystemTree<ndim>::StockNbodySystemTree
     		  NNtree[c2].m*NNtree[c2].a[k])/NNtree[c].m;
       for (k=0; k<ndim; k++) NNtree[c].adot[k] = (NNtree[c1].m*NNtree[c1].adot[k] +
     		  NNtree[c2].m*NNtree[c2].adot[k])/NNtree[c].m;
-    }
-    // ------------------------------------------------------------------------
+      NNtree[c].gpe_internal = 0.0;
+      ketot = 0.0;
 
+      // Compute internal kinetic energy
+      for (it = NNtree[c].clist.begin(); it != NNtree[c].clist.end(); ++it) {
+        for (k=0; k<ndim; k++) dv[k] = it->v[k] - NNtree[c].v[k];
+        ketot += 0.5*it->m*DotProduct(dv,dv,ndim);
+      }
+      vmean = sqrt(2.0*ketot/NNtree[c].m);
+
+      // Compute internal gravitational potential energy
+      for (it = NNtree[c].clist.begin(); it != NNtree[c].clist.end().previous(); ++it) {
+        for (it2 = it.next(); it2 != NNtree[c].clist.end(); ++it2) {
+          for (k=0; k<ndim; k++) dr[k] = it2->r[k] - it->r[k];
+          drsqd = DotProduct(dr,dr,ndim);
+          invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
+          NNtree[c].gpe_internal += it->m*it2->m*invdrmag;
+        }
+      }
+
+      // Then, estimate the crossing time as tcross = Rgrav / vdisp
+      // where Rgrav = sqrt(m^2/G/Egrav).  Should give similar
+      // timescale to binary period in case of bound binary.
+      NNtree[c].tcross = sqrt(NNtree[c].m*NNtree[c].m/NNtree[c].gpe_internal)/vmean;
+
+      // Now check energies and decide if we should create a new sub-system
+      // object
+      // ----------------------------------------------------------------------
+      if (fabs(NNtree[c] - NNtree[c].gpe_internal) < gpefrac*NNtree[c].gpe) {
+
+      }
+
+      // ----------------------------------------------------------------------
+      else {
+
+      }
+      // ----------------------------------------------------------------------
+
+
+    }
+
+    // If lists contain more than the maximum allowed number of components,
+    // then flush list of systems to main arrays
+    // ========================================================================
+    else {
+
+      // Set pointers for main Nbody array
+      for (it = NNtree[c].clist.begin(); it != NNtree[c].clist.end(); ++it) {
+        nbody->nbodydata = it;
+      }
+
+      // Now empty list
+      NNtree[c].clist.clear();
+
+    }
+    // ========================================================================
 
   }
   // ==========================================================================
 
 
-  return;
-}
-
-
-
-//=============================================================================
-//  NbodySystemTree::BuildSubSystems
-//=============================================================================
-template <int ndim>
-void NbodySystemTree<ndim>::BuildSubSystems
-(Nbody<ndim> *nbody)               ///< [in] Nbody object containing stars
-{
   return;
 }
 

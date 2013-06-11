@@ -12,6 +12,7 @@
 #include <string>
 #include "Precision.h"
 #include "Constants.h"
+#include "MergeList.h"
 #include "Nbody.h"
 #include "NbodyParticle.h"
 #include "StarParticle.h"
@@ -46,6 +47,7 @@ struct NNTreeCell {
   DOUBLE gpe;                      ///< ..
   DOUBLE gpe_internal;             ///< ..
   DOUBLE tcross;
+  MergeList<NbodyParticle<ndim> *> clist;  ///< ..
 };
 
 
@@ -68,7 +70,6 @@ class NbodySystemTree
   void AllocateMemory(int);
   void DeallocateMemory(void);
   void CreateNbodySystemTree(Nbody<ndim> *);
-  void StockNbodySystemTree(Nbody<ndim> *);
   void BuildSubSystems(Nbody<ndim> *);
   void FindPerturberLists(Nbody<ndim> *);
 

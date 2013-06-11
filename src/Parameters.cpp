@@ -248,6 +248,7 @@ void Parameters::SetDefaultValues(void)
   intparams["nbody_softening"] = 0;
   intparams["sub_systems"] = 0;
   intparams["Npec"] = 1;
+  floatparams["gpefrac"] = 1.0e-3;
 
   // Boundary conditions parameters
   // --------------------------------------------------------------------------
