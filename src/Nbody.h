@@ -19,8 +19,6 @@
 #include "SphParticle.h"
 using namespace std;
 
-
-
 //=============================================================================
 //  Class Nbody
 /// \brief   Main N-body class.
@@ -37,7 +35,7 @@ class Nbody
   // Constructor and destructor functions
   // --------------------------------------------------------------------------
   Nbody(int nbody_softening_aux, int sub_systems_aux, DOUBLE nbody_mult_aux,
-	string KernelName);
+	string KernelName, int);
 
 
   // N-body array memory allocation functions
@@ -57,6 +55,7 @@ class Nbody
   virtual void CorrectionTerms(int,int,NbodyParticle<ndim> **,DOUBLE) = 0;
   virtual void EndTimestep(int,int,NbodyParticle<ndim> **) = 0;
   virtual DOUBLE Timestep(NbodyParticle<ndim> *) = 0;
+  void IntegrateInternalMotion(SystemParticle<ndim>* system, DOUBLE tend);
 
 
   // N-body counters and main data arrays
@@ -74,6 +73,8 @@ class Nbody
   const DOUBLE nbody_mult;              ///< N-body timestep multiplier
   static const int vdim=ndim;           ///< Local copy of vdim
   static const FLOAT invndim=1./ndim;   ///< Copy of 1/ndim
+
+  const int Npec; ///< Number of iterations of the integrator
 
   SphKernel<ndim> *kernp;               ///< Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;        ///< Tabulated version of chosen kernel
@@ -138,7 +139,7 @@ class NbodyHermite4: public Nbody<ndim>
 
  public:
 
-  NbodyHermite4(int, int, DOUBLE, string);
+  NbodyHermite4(int, int, DOUBLE, string, int Npec=1);
   ~NbodyHermite4();
 
   void CalculateDirectGravForces(int,NbodyParticle<ndim> **);
@@ -175,7 +176,7 @@ class NbodyHermite4TS: public NbodyHermite4<ndim, kernelclass>
 
  public:
 
-  NbodyHermite4TS(int, int, DOUBLE, string);
+  NbodyHermite4TS(int, int, DOUBLE, string, int);
   ~NbodyHermite4TS();
 
   void CorrectionTerms(int,int,NbodyParticle<ndim> **,DOUBLE);
