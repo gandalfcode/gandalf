@@ -9,15 +9,56 @@
 #ifndef _MergeList_h
 #define _MergeList_h
 
-#include<list>
+#include <list>
+
+
 
 
 template <class T>
 class MergeList: public std::list<T> {
-    
+	
+	//Sub-class of std::list::iterator that implements
+	//also next() and previous() functions
+	template <class Q>
+	class NextIterator : public std::list<Q>::iterator {
+		
+		typedef typename std::list<T>::iterator iterator_base;
+		
+	public:
+		
+		//Default constructor
+		NextIterator<Q> () : iterator_base() {};
+		
+		//Copy constructor
+		NextIterator<Q> (const iterator_base& r) :
+		iterator_base(r) {};
+		
+		//Assignment operator
+		NextIterator<Q>& operator = (const iterator_base& rhs)
+		{
+			iterator_base::operator =(rhs);
+			return *this;
+		}
+		
+		//Next
+		NextIterator<Q> next() {
+			NextIterator<Q> temp = *this;
+			temp++;
+			return temp;
+		}
+		
+		//Previous
+		NextIterator<Q> previous() {
+			NextIterator<Q> temp = *this;
+			temp--;
+			return temp;
+		}
+		
+	};
+	
 public:
 
-    typedef typename std::list<T>::iterator iterator;
+	typedef NextIterator<T> iterator;
     
     //This function overloads the operator + between two lists,
     //so that it's possible to concatenate them (as it happens
@@ -38,6 +79,7 @@ public:
         
         return result;
     }
+	
 };
 
 #endif
