@@ -135,8 +135,6 @@ class SimBuffer:
             snap = SphSnapshotBase.SphSnapshotFactory("",sim,sim.simparams.intparams["ndim"])
             snap.sim = sim
             snap.live = True
-            #TODO: check this is correct
-            snap.units = sim.simunits
         snap.CopyDataFromSimulation()
         snap.t = sim.t
         sim.live = snap

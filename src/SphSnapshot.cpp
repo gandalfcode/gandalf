@@ -31,7 +31,8 @@ SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory(string filename, Simulation
 // ============================================================================
 // SphSnapshotBase::SphSnapshotBase
 // ============================================================================
-SphSnapshotBase::SphSnapshotBase(string auxfilename)
+SphSnapshotBase::SphSnapshotBase(SimUnits* _units, string auxfilename):
+    units(_units)
 {
   allocated = false;
   allocatedstar = false;
@@ -49,7 +50,7 @@ SphSnapshotBase::SphSnapshotBase(string auxfilename)
 
 template <int ndims>
 SphSnapshot<ndims>::SphSnapshot (string filename, SimulationBase* sim):
-SphSnapshotBase(filename),
+SphSnapshotBase(&(sim->simunits), filename),
 simulation(static_cast<Simulation<ndims>* > (sim))
 {
   this->ndim = ndims;

@@ -40,7 +40,7 @@ protected:
   static SphSnapshotBase* SphSnapshotFactory(string filename, SimulationBase* sim, int ndim);
 
 
-  SphSnapshotBase(string="");
+  SphSnapshotBase(SimUnits*, string="");
   virtual ~SphSnapshotBase();
 
 
