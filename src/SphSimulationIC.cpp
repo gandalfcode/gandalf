@@ -1371,6 +1371,61 @@ void Simulation<ndim>::BinaryStar(void)
 
 
 //=============================================================================
+//  SphSimulation::AddBinaryStar
+/// Create a simple binary star problem
+//=============================================================================
+template <int ndim>
+void Simulation<ndim>::AddBinaryStar
+(DOUBLE sma,                       ///< ..
+ DOUBLE eccent,                    ///< ..
+ DOUBLE m1,                        ///< ..
+ DOUBLE m2,                        ///< ..
+ DOUBLE h1,                        ///< ..
+ DOUBLE h2,                        ///< ..
+ DOUBLE *rbinary,                  ///< ..
+ DOUBLE *vbinary,                  ///< ..
+ NbodyParticle<ndim> &s1,          ///< ..
+ NbodyParticle<ndim> &s2)          ///< ..
+{
+  int i;                           // Particle counter
+  int j;                           // Aux. particle counter
+  int k;                           // Dimension counter
+
+  FLOAT mbin = m1 + m2;
+  FLOAT period = twopi*sqrtf(sma*sma*sma/mbin);
+  FLOAT vbin = twopi*sma/period;
+
+  debug2("[SphSimulation::AddBinaryStar]");
+
+  if (ndim == 1) {
+    string message = "Binary test not available in 1D";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Set properties of star 1
+  for (k=0; k<ndim; k++) s1.r[k] = rbinary[k];
+  for (k=0; k<ndim; k++) s2.v[k] = vbinary[k];
+  s1.m = m1;
+  s1.h = h1;
+  s1.invh = 1.0 / s1.h;
+  s1.r[0] += sma*m2/mbin;
+  s1.v[1] += vbin*m2/mbin;
+
+  // Set properties of star 2
+  for (k=0; k<ndim; k++) s2.r[k] = rbinary[k];
+  for (k=0; k<ndim; k++) s2.v[k] = vbinary[k];
+  s2.m = m2;
+  s2.h = h2;
+  s2.invh = 1.0 / s2.h;
+  s2.r[0] += -sma*m1/mbin;
+  s2.v[1] += -vbin*m1/mbin;
+
+  return;
+}
+
+
+
+//=============================================================================
 //  SphSimulation::AddRandomBox
 /// Populate given bounding box with random particles.
 //=============================================================================
