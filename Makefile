@@ -2,7 +2,7 @@
 # Makefile
 #==============================================================================
 
-CC                 = g++
+CPP                = g++
 PYTHON             = python
 F2PY               = f2py
 COMPILER_MODE      = DEBUG
