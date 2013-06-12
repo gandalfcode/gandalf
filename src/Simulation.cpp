@@ -241,6 +241,8 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
 	
   list<SphSnapshotBase*> snap_list;		// List of snapshots produced while running
 										// that will be passed back to Python
+  string filename;						//Name of the output file
+	
 
   debug2("[SphSimulation::InteractiveRun]");
 
@@ -257,13 +259,13 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
     MainLoop();
 	  
 	//Call output routine
-	filename=Output()
+    filename=Output();
 	  
 	//If we have written a snapshot, creates a new snapshot object
-	if (filename != 0) {
-		SphSnapshotBase* snapshot = new SphSnapshot<ndim> (filename, this);
-		snapshot.CopyDataFromSimulation();
-		snap_list.append(snapshot);
+	if (filename.length() != 0) {
+		SphSnapshotBase* snapshot = SphSnapshotBase::SphSnapshotFactory (filename, this, ndims);
+		snapshot->CopyDataFromSimulation();
+		snap_list.push_back(snapshot);
 	}
 
     // Measure CPU clock time difference since current function was called

@@ -29,6 +29,8 @@
 using namespace std;
 
 
+class SphSnapshotBase;
+
 //=============================================================================
 //  Class SimulationBase
 /// \brief  Creates a simulation object depending on the dimensionality.
