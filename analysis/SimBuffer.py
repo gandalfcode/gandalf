@@ -32,6 +32,15 @@ class SimBuffer:
     currentsim = -1
 
 
+	@staticmethod
+	def add_snapshot(snap, sim):
+	''' This function adds a snapshot to a given simulation. It's used for example by interactive run
+	to dynamically add snapshots while the simulation is running.'''
+		sim.snapshots.append(snap)
+		snap.sim = sim
+		snap.live = False
+	
+
     @staticmethod
     def _add_simulation(sim):
 
