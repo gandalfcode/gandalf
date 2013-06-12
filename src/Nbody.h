@@ -19,6 +19,7 @@
 #include "SphParticle.h"
 using namespace std;
 
+
 //=============================================================================
 //  Class Nbody
 /// \brief   Main N-body class.
@@ -103,7 +104,7 @@ class NbodyLeapfrogKDK: public Nbody<ndim>
 
  public:
 
-  NbodyLeapfrogKDK(int, int, DOUBLE, string, int);
+  NbodyLeapfrogKDK(int, int, DOUBLE, string);
   ~NbodyLeapfrogKDK();
 
   void CalculateDirectGravForces(int, NbodyParticle<ndim> **);
