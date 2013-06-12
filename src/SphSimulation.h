@@ -14,6 +14,7 @@
 
 #include <map>
 #include <string>
+#include <list>
 #include "Diagnostics.h"
 #include "DomainBox.h"
 #include "Precision.h"
@@ -26,7 +27,6 @@
 #include "EnergyEquation.h"
 #include "Nbody.h"
 using namespace std;
-
 
 
 //=============================================================================
@@ -67,8 +67,8 @@ class SimulationBase
   virtual void PostGeneration(void)=0;
   virtual void MainLoop(void)=0;
   void Run(int=-1);
-  void InteractiveRun(int=-1);
-  void Output(void);
+  list<SphSnapshotBase*> InteractiveRun(int=-1);
+  string Output(void);
   virtual void ProcessParameters(void)=0;
 
   // Input-output routines

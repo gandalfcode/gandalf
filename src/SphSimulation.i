@@ -2,6 +2,7 @@
 %module SphSim
 %include "std_string.i"
 %include "std_map.i"
+%include "std_list.i"
 %include exception.i
 
 %{

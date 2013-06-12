@@ -26,6 +26,7 @@
 #include "SphAnalysis.cpp"
 #include "SimGhostParticles.cpp"
 #include "SphSimulationTimesteps.cpp"
+#include "SphSnapshot.h"
 using namespace std;
 
 
@@ -229,7 +230,7 @@ void Simulation<ndim>::UpdateDiagnostics () {
 /// Controls the simulation main loop, including exit conditions.
 /// If provided, will only advance the simulation by 'Nadvance' steps.
 //=============================================================================
-void SimulationBase::InteractiveRun
+list<SphSnapshotBase*> SimulationBase::InteractiveRun
 (int Nadvance                           ///< [in] Selected max no. of integer 
  )                                      ///< timesteps (Optional argument).
 {
@@ -237,6 +238,9 @@ void SimulationBase::InteractiveRun
   DOUBLE tdiff = 0.0;                   // Measured time difference
   DOUBLE tpython = 8.0;                 // Python viewer update time
   clock_t tstart = clock();             // Initial CPU clock time
+	
+  list<SphSnapshotBase*> snap_list;		// List of snapshots produced while running
+										// that will be passed back to Python
 
   debug2("[SphSimulation::InteractiveRun]");
 
@@ -248,9 +252,19 @@ void SimulationBase::InteractiveRun
   // exeeded the maximum allowed number of steps.
   // --------------------------------------------------------------------------
   while (t < tend && Nsteps < Ntarget && tdiff < tpython) {
-
+	
+	//Evolve the simulation one step
     MainLoop();
-    Output();
+	  
+	//Call output routine
+	filename=Output()
+	  
+	//If we have written a snapshot, creates a new snapshot object
+	if (filename != 0) {
+		SphSnapshotBase* snapshot = new SphSnapshot<ndim> (filename, this);
+		snapshot.CopyDataFromSimulation();
+		snap_list.append(snapshot);
+	}
 
     // Measure CPU clock time difference since current function was called
     tdiff = (DOUBLE) (clock() - tstart) / (DOUBLE) CLOCKS_PER_SEC;
@@ -262,7 +276,7 @@ void SimulationBase::InteractiveRun
   OutputDiagnostics();
   UpdateDiagnostics();
 
-  return;
+  return snap_list;
 }
 
 
@@ -271,7 +285,7 @@ void SimulationBase::InteractiveRun
 //  SphSimulation::Output
 /// Controls when regular output snapshots are written by the code.
 //=============================================================================
-void SimulationBase::Output(void)
+string SimulationBase::Output(void)
 {
   string filename;                  // Output snapshot filename
   string nostring;                  // ???
@@ -295,7 +309,7 @@ void SimulationBase::Output(void)
     WriteSnapshotFile(filename,"column");
   }
 
-  return;
+  return filename;
 }
 
 
