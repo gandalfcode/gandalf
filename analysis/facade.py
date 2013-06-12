@@ -386,7 +386,13 @@ def run(no=None):
         #TODO: maybe some of these operations could be done in another thread, so that the computation is
         #not slowed down when compared to the stand-alone c++ executable
         #But need to think carefully, because of the bloody GIL...
-        sim.InteractiveRun()
+        snap_list = sim.InteractiveRun()
+		print snap_list
+		print sim.snapshots
+		for snap in snap_list:
+			SimBuffer.add_snapshot(snap, sim)
+		print sim.snapshots
+		
         SimBuffer.load_live_snapshot(sim)
         update("live")
 
