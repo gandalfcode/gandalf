@@ -95,14 +95,13 @@ class Nbody
 template <int ndim, template<int> class kernelclass>
 class NbodyLeapfrogKDK: public Nbody<ndim>
 {
+public:
   using Nbody<ndim>::allocated;
   using Nbody<ndim>::nbody_mult;
   using Nbody<ndim>::Nstar;
   using Nbody<ndim>::Nsystem;
   using Nbody<ndim>::stardata;
   using Nbody<ndim>::system;
-
- public:
 
   NbodyLeapfrogKDK(int, int, DOUBLE, string);
   ~NbodyLeapfrogKDK();
@@ -131,14 +130,14 @@ class NbodyLeapfrogKDK: public Nbody<ndim>
 template <int ndim, template<int> class kernelclass>
 class NbodyHermite4: public Nbody<ndim>
 {
+public:
+
   using Nbody<ndim>::allocated;
   using Nbody<ndim>::nbody_mult;
   using Nbody<ndim>::Nstar;
   using Nbody<ndim>::Nsystem;
   using Nbody<ndim>::stardata;
   using Nbody<ndim>::system;
-
- public:
 
   NbodyHermite4(int, int, DOUBLE, string, int Npec=1);
   ~NbodyHermite4();
@@ -168,14 +167,14 @@ class NbodyHermite4: public Nbody<ndim>
 template <int ndim, template<int> class kernelclass>
 class NbodyHermite4TS: public NbodyHermite4<ndim, kernelclass>
 {
-  using Nbody<ndim>::allocated;
+public:
+
+  using NbodyHermite4<ndim, kernelclass>::allocated;
   using Nbody<ndim>::nbody_mult;
   using Nbody<ndim>::Nstar;
   using Nbody<ndim>::Nsystem;
   using Nbody<ndim>::stardata;
   using Nbody<ndim>::system;
-
- public:
 
   NbodyHermite4TS(int, int, DOUBLE, string, int);
   ~NbodyHermite4TS();
