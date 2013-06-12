@@ -56,6 +56,8 @@ class MergeList: public std::list<T> {
 		
 	};
 	
+	
+	typedef typename std::list<T> list_base;
 public:
 
 	typedef NextIterator<T> iterator;
@@ -79,6 +81,16 @@ public:
         
         return result;
     }
+	
+	iterator begin() {
+		iterator it = list_base::begin();
+		return it;
+	}
+	
+	iterator end() {
+		iterator it = list_base::end();
+		return it;
+	}
 	
 };
 
