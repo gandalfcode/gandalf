@@ -158,6 +158,7 @@ ExceptionHandler::makeExceptionHandler(python);
     %template(map_string_int) map<string, int>;
     %template(map_string_string) map<string, string>;
     %template(map_string_float) map<string, float>;
+    %template(list_snap_base_pointer) list<SphSnapshotBase* >;
     /*%template(map_string_any) map<string, boost::any>;*/
 }
 
