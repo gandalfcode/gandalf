@@ -62,6 +62,8 @@ struct NNTreeCell {
 template <int ndim>
 class NbodySystemTree
 {
+protected:
+	typedef typename MergeList<NbodyParticle<ndim>* >::iterator NbodyListIterator;
  public:
 
   NbodySystemTree();

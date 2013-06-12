@@ -27,8 +27,8 @@ template <int ndim>
 class SystemParticle: public NbodyParticle<ndim>
 {
 public:
-  int Nchildren; ///Number of nbody children
-  NbodyParticle<ndim>* children[Ncompmax]; ///Array of pointers to children
+  int Nchildren;                           ///< Number of nbody children
+  NbodyParticle<ndim>* children[Ncompmax]; ///< Array of pointers to children
 
 };
 #endif
