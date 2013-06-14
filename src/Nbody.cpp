@@ -32,7 +32,7 @@ using namespace std;
 //=============================================================================
 template <int ndim>
 Nbody<ndim>::Nbody(int nbody_softening_aux, int sub_systems_aux, 
-                   DOUBLE nbody_mult_aux, string KernelName, int Npec):
+                   DOUBLE nbody_mult_aux, string KernelName, int _Npec):
   nbody_softening(nbody_softening_aux),
   sub_systems(sub_systems_aux),
   nbody_mult(nbody_mult_aux),
@@ -44,7 +44,7 @@ Nbody<ndim>::Nbody(int nbody_softening_aux, int sub_systems_aux,
   Nnbody(0),
   Nnbodymax(0),
   allocated(false),
-  Npec(1)
+  Npec(_Npec)
 {
 }
 

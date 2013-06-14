@@ -268,8 +268,6 @@ void SphSimulation<ndim>::MainLoop(void)
     // ------------------------------------------------------------------------
 	for (it=0; it<nbody->Npec; it++) {
 
-	  cout << "it : " << it << "     Npec : " << nbody->Npec << endl;
-
       // Zero all acceleration terms
       for (i=0; i<nbody->Nnbody; i++) {
         if (nbody->nbodydata[i]->active) {

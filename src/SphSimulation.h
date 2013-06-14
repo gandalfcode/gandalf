@@ -177,6 +177,7 @@ class Simulation : public SimulationBase {
   void KHI(void);
   void NohProblem(void);
   void PlummerSphere(void);
+  void QuadrupleStar(void);
   void ShockTube(void);
   void SedovBlastWave(void);
   void ShearFlow(void);

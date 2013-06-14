@@ -35,7 +35,7 @@ Tabulate SPH kernel                         : tabulated_kernel = 1
 Star particle integration option            : nbody = hermite4ts
 Use softening?                              : nbody_softening = 0
 Identify and integrate sub-systems?         : sub_systems = 0
-No. of P(EC)^n iteration steps              : Npec = 1
+No. of P(EC)^n iteration steps              : Npec = 3
 
 
 ------------------------

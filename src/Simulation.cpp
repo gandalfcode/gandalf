@@ -325,6 +325,8 @@ void Simulation<ndim>::GenerateIC(void)
     NohProblem();
   else if (simparams->stringparams["ic"] == "plummer")
     PlummerSphere();
+  else if (simparams->stringparams["ic"] == "quadruple")
+    QuadrupleStar();
   else if (simparams->stringparams["ic"] == "sedov")
     SedovBlastWave();
   else if (simparams->stringparams["ic"] == "shearflow")

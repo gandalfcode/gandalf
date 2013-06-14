@@ -1313,18 +1313,13 @@ void Simulation<ndim>::SoundWave(void)
 template <int ndim>
 void Simulation<ndim>::BinaryStar(void)
 {
-  int i;                            // Particle counter
-  int j;                            // Aux. particle counter
-  int k;                            // Dimension counter
-  FLOAT *r;                         // Positions of particles
-
-  FLOAT sma = 1.0;
-  FLOAT eccent = 0.0;
-  FLOAT m1 = 0.5;
-  FLOAT m2 = 0.5;
-  FLOAT mbin = m1 + m2;
-  FLOAT period = twopi*sqrtf(sma*sma*sma/mbin);
-  FLOAT vbin = twopi*sma/period;
+  int k;                           // Dimension counter
+  FLOAT sma = 1.0;                 // ..
+  FLOAT eccent = 0.0;              // ..
+  FLOAT m1 = 0.5;                  // ..
+  FLOAT m2 = 0.5;                  // ..
+  DOUBLE rbinary[ndim];            // ..
+  DOUBLE vbinary[ndim];            // ..
 
   debug2("[SphSimulation::BinaryStar]");
 
@@ -1339,31 +1334,69 @@ void Simulation<ndim>::BinaryStar(void)
   nbody->Nstar = 2;
   nbody->AllocateMemory(nbody->Nstar);
 
-  // Set properties of star 1
-  for (k=0; k<ndim; k++) nbody->stardata[0].r[k] = 0.0;
-  for (k=0; k<ndim; k++) nbody->stardata[0].v[k] = 0.0;
-  nbody->stardata[0].m = m1;
-  nbody->stardata[0].h = 0.1;
-  nbody->stardata[0].invh = 1.0 / nbody->stardata[0].h;
-  nbody->stardata[0].r[0] = sma*m2/mbin;
-  nbody->stardata[0].v[1] = vbin*m2/mbin;
+  // Add binary star
+  for (k=0; k<ndim; k++) rbinary[k] = 0.0;
+  for (k=0; k<ndim; k++) vbinary[k] = 0.0;
+  AddBinaryStar(sma,eccent,m1,m2,0.01,0.01,rbinary,vbinary,
+                nbody->stardata[0],nbody->stardata[1]);
 
-  // Set properties of star 2
-  for (k=0; k<ndim; k++) nbody->stardata[1].r[k] = 0.0;
-  for (k=0; k<ndim; k++) nbody->stardata[1].v[k] = 0.0;
-  nbody->stardata[1].m = m2;
-  nbody->stardata[1].h = 0.1;
-  nbody->stardata[1].invh = 1.0 / nbody->stardata[1].h;
-  nbody->stardata[1].r[0] = -sma*m1/mbin;
-  nbody->stardata[1].v[1] = -vbin*m1/mbin;
+  return;
+}
 
-  cout << "IC for star 1 : " << nbody->stardata[0].r[0] << "    " 
-       << nbody->stardata[0].r[1] << "     " 
-       << nbody->stardata[0].r[2] << endl;
 
-  cout << "IC for star 2 : " << nbody->stardata[1].r[0] << "    " 
-       << nbody->stardata[1].r[1] << "     " 
-       << nbody->stardata[1].r[2] << endl;
+
+//=============================================================================
+//  SphSimulation::QuadrupleStar
+/// Create a simple quadruple star problem
+//=============================================================================
+template <int ndim>
+void Simulation<ndim>::QuadrupleStar(void)
+{
+  int k;                           // Dimension counter
+  FLOAT sma1 = 1.0;                // ..
+  FLOAT sma2 = 0.01;              // ..
+  FLOAT eccent = 0.0;              // ..
+  FLOAT m1 = 0.5;                  // ..
+  FLOAT m2 = 0.5;                  // ..
+  DOUBLE rbinary[ndim];            // ..
+  DOUBLE vbinary[ndim];            // ..
+  NbodyParticle<ndim> b1;          // ..
+  NbodyParticle<ndim> b2;          // ..
+
+  debug2("[SphSimulation::QuadrupleStar]");
+
+  if (ndim == 1) {
+    string message = "Quadruple test not available in 1D";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Allocate local and main particle memory
+  sph->Nsph = 0;
+  sph->Ntot = 0;
+  nbody->Nstar = 4;
+  nbody->AllocateMemory(nbody->Nstar);
+
+  // Compute main binary orbit
+  for (k=0; k<ndim; k++) rbinary[k] = 0.0;
+  for (k=0; k<ndim; k++) vbinary[k] = 0.0;
+  AddBinaryStar(sma1,eccent,m1,m2,0.01,0.01,rbinary,vbinary,b1,b2);
+
+  cout << "b1, r : " << b1.r[0] << "    " << b1.r[1] << endl;
+  cout << "b1, v : " << b1.v[0] << "    " << b1.v[1] << endl;
+  cout << "b2, r : " << b2.r[0] << "    " << b2.r[1] << endl;
+  cout << "b2, v : " << b2.v[0] << "    " << b2.v[1] << endl;
+
+  // Now compute both components
+  AddBinaryStar(sma2,eccent,0.5*m1,0.5*m1,0.01,0.01,b1.r,b1.v,
+		        nbody->stardata[0],nbody->stardata[1]);
+  AddBinaryStar(sma2,eccent,0.5*m2,0.5*m2,0.01,0.01,b2.r,b2.v,
+		        nbody->stardata[2],nbody->stardata[3]);
+
+  for (int i=0; i<nbody->Nstar; i++) {
+	  cout << "Star : " << i << "   r : " << nbody->stardata[i].r[0] << "  "
+			  << nbody->stardata[i].r[1] << "     v : " << nbody->stardata[i].v[0]
+			  << "    " << nbody->stardata[i].v[1] << endl;
+  }
 
   return;
 }
@@ -1417,8 +1450,8 @@ void Simulation<ndim>::AddBinaryStar
   s2.m = m2;
   s2.h = h2;
   s2.invh = 1.0 / s2.h;
-  s2.r[0] += -sma*m1/mbin;
-  s2.v[1] += -vbin*m1/mbin;
+  s2.r[0] -= sma*m1/mbin;
+  s2.v[1] -= vbin*m1/mbin;
 
   return;
 }
