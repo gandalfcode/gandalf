@@ -1,5 +1,5 @@
 //=============================================================================
-//  SphSimulationIC.cpp
+//  SimulationIC.hpp
 //  Contains all routines for generating initial conditions on the fly.
 //=============================================================================
 
@@ -16,6 +16,7 @@
 #include "Parameters.h"
 #include "InlineFuncs.h"
 #include "Debug.h"
+#include "Ghosts.h"
 using namespace std;
 
 
@@ -457,7 +458,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
   sphneib->UpdateTree(sph,*simparams);
 
   // Search ghost particles
-  SearchGhostParticles();
+  ghosts.SearchGhostParticles(simbox,sph);
 
   sphneib->UpdateAllSphProperties(sph);
 
@@ -470,7 +471,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
   sphneib->UpdateTree(sph,*simparams);
   sphneib->UpdateAllSphProperties(sph);
 
-  CopySphDataToGhosts();
+  ghosts.CopySphDataToGhosts(sph);
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(sph);
@@ -606,7 +607,7 @@ void Simulation<ndim>::KHI(void)
   sphneib->UpdateTree(sph,*simparams);
   
   // Search ghost particles
-  SearchGhostParticles();
+  ghosts.SearchGhostParticles(simbox,sph);
 
   sphneib->UpdateAllSphProperties(sph);
 
@@ -1073,7 +1074,7 @@ void Simulation<ndim>::SedovBlastWave(void)
   sphneib->UpdateTree(sph,*simparams);
   
   // Search ghost particles
-  SearchGhostParticles();
+  ghosts.SearchGhostParticles(simbox,sph);
 
   sphneib->UpdateAllSphProperties(sph);
 

@@ -21,10 +21,9 @@
 #include "Nbody.h"
 #include "Sph.h"
 #include "RiemannSolver.h"
-#include "SphSimulationIO.cpp"
-#include "SphSimulationIC.cpp"
-#include "SimAnalysis.cpp"
-#include "SimGhostParticles.cpp"
+#include "SimulationIO.hpp"
+#include "SimulationIC.hpp"
+#include "SimAnalysis.hpp"
 #include "SphSnapshot.h"
 using namespace std;
 

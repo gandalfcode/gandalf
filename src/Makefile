@@ -12,12 +12,9 @@ PYLIB = $(shell $(PYTHON) -c "import distutils.sysconfig; print distutils.syscon
 endif
 endif
 
-#PYLIB = /sw/include/python2.7
-#NUMPY = /sw/lib/python2.7/site-packages/numpy/core/include
 
 #location of the python files produced by swig
 PYFOLDER = ../analysis/swig_generated
-
 GTEST = /Users#/david/astro/code/gtest-1.6.0/include
 
 
@@ -62,6 +59,7 @@ OPT += -fopenmp -DOPENMP
 endif
 endif
 
+
 # Precision options
 # ----------------------------------------------------------------------------
 ifeq ($(PRECISION),SINGLE)
@@ -77,6 +75,8 @@ ifeq ($(OUTPUT_LEVEL),1)
 CFLAGS += -DDEBUG1
 else ifeq ($(OUTPUT_LEVEL),2)
 CFLAGS += -DDEBUG1 -DDEBUG2
+else ifeq ($(OUTPUT_LEVEL),3)
+CFLAGS += -DDEBUG1 -DDEBUG2 -DDEBUG3
 endif
 
 
@@ -90,14 +90,10 @@ endif
 
 # Object files to be compiled
 # ----------------------------------------------------------------------------
-#SWIG_HEADERS = Parameters.i SimUnits.i Sph.i SphSnapshot.i SphSimulation.i
 SWIG_HEADERS = Simulation.i
 WRAP_OBJ = Simulation_wrap.o
-#WRAP_OBJ = Parameters_wrap.o SimUnits_wrap.o Sph_wrap.o SphSnapshot_wrap.o SphSimulation_wrap.o
 OBJ = Parameters.o SimUnits.o 
 OBJ += Simulation.o SphSimulation.o GodunovSphSimulation.o  #SphSnapshot.o 
-#OBJ += SphSimulationIC.o SphSimulationIO.o 
-#OBJ += SphSimulationTimesteps.o
 OBJ += M4Kernel.o QuinticKernel.o GaussianKernel.o TabulatedKernel.o
 OBJ += Sph.o GradhSph.o SM2012Sph.o GodunovSph.o
 OBJ += EnergyPEC.o EnergyGodunovIntegration.o
@@ -110,7 +106,9 @@ OBJ += AdiabaticEOS.o IsothermalEOS.o BarotropicEOS.o
 #OBJ += Render.o
 OBJ += Nbody.o NbodyLeapfrogKDK.o NbodyHermite4.o NbodyHermite4TS.o
 OBJ += NbodySystemTree.o
-OBJ += Sinks.o SphSnapshot.o
+OBJ += Sinks.o
+OBJ += Ghosts.o
+OBJ += SphSnapshot.o
 
 
 TEST_OBJ = #TestScaling.o Parameters.o SimUnits.o Exception.o
@@ -162,7 +160,7 @@ shocktub.so : shocktub.f shocktub.pyf
 Exception.o : Exception.cpp
 	$(CPP) $(OPT) $(CFLAGS) -fexceptions -c $<
 
-SphSimulation.o : SphSimulationIO.cpp SphSimulationIC.cpp SimAnalysis.cpp SimGhostParticles.cpp
+SphSimulation.o : SimulationIO.hpp SimulationIC.hpp SimAnalysis.hpp
 
 
 force: ;

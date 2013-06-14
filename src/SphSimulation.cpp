@@ -21,7 +21,7 @@
 #include "Nbody.h"
 #include "Sph.h"
 #include "RiemannSolver.h"
-#include "SimGhostParticles.cpp"
+#include "Ghosts.h"
 using namespace std;
 
 
@@ -69,7 +69,7 @@ void SphSimulation<ndim>::PostGeneration(void)
     sphneib->UpdateAllSphProperties(sph);
 
     // Search ghost particles
-    this->SearchGhostParticles();
+    ghosts.SearchGhostParticles(simbox,sph);
 
     // Update neighbour tree
     sphneib->UpdateTree(sph,*simparams);
@@ -89,7 +89,7 @@ void SphSimulation<ndim>::PostGeneration(void)
     sphneib->UpdateAllSphProperties(sph);
 
     // Search ghost particles
-    this->SearchGhostParticles();
+    ghosts.SearchGhostParticles(simbox,sph);
 
     // Update neighbour tre
     sphneib->UpdateTree(sph,*simparams);
@@ -138,7 +138,7 @@ void SphSimulation<ndim>::PostGeneration(void)
       sph->sphdata[i].nstep = 1;
     }
 
-    this->CopySphDataToGhosts();
+    ghosts.CopySphDataToGhosts(sph);
     sphneib->UpdateTree(sph,*simparams);
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
@@ -156,7 +156,7 @@ void SphSimulation<ndim>::PostGeneration(void)
         sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
 
-    this->CopySphDataToGhosts();
+    ghosts.CopySphDataToGhosts(sph);
 
   }
 
@@ -207,7 +207,7 @@ void SphSimulation<ndim>::MainLoop(void)
   nbody->AdvanceParticles(n,nbody->Nstar,nbody->nbodydata,timestep);
 
   // Check all boundary conditions
-  this->CheckBoundaries();
+  ghosts.CheckBoundaries(simbox,sph);
 
   // --------------------------------------------------------------------------
   if (sph->Nsph > 0) {
@@ -215,7 +215,7 @@ void SphSimulation<ndim>::MainLoop(void)
     // Reorder particles
 
     // Search ghost particles
-    this->SearchGhostParticles();
+    ghosts.SearchGhostParticles(simbox,sph);
 
     // Update neighbour tree
     sphneib->UpdateTree(sph,*simparams);
@@ -224,7 +224,7 @@ void SphSimulation<ndim>::MainLoop(void)
     sphneib->UpdateAllSphProperties(sph);
 
     // Copy properties from original particles to ghost particles
-    this->CopySphDataToGhosts();
+    ghosts.CopySphDataToGhosts(sph);
 
     // Zero accelerations (perhaps)
     for (i=0; i<sph->Ntot; i++) {
@@ -247,7 +247,7 @@ void SphSimulation<ndim>::MainLoop(void)
     // Compute contribution to grav. accel from stars
     for (i=0; i<sph->Nsph; i++)
       if (sph->sphdata[i].active)
-	sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
+        sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
                                    sph->sphdata[i]);
 
     // Add accelerations

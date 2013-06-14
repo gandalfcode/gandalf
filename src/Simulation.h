@@ -28,11 +28,13 @@
 #include "SphIntegration.h"
 #include "EnergyEquation.h"
 #include "Nbody.h"
+#include "Ghosts.h"
 using namespace std;
 
 
-//DAVID : What is this??  Delete it??
+// Forward declaration of SphSnapshotBase to prevent circular dependency
 class SphSnapshotBase;
+
 
 //=============================================================================
 //  Class SimulationBase
@@ -170,14 +172,6 @@ class Simulation : public SimulationBase {
   void VerifyBlockTimesteps(void);
 #endif
 
-  // Ghost particle functions -> maybe move to Sph?  DAVID : Yes!!
-  // --------------------------------------------------------------------------
-  void SearchGhostParticles(void);
-  void CreateGhostParticle(int,int,FLOAT,FLOAT,FLOAT);
-  void CopySphDataToGhosts(void);
-  void CopyAccelerationFromGhosts(void);
-  void CheckBoundaries(void); //should probably go inside SphIntegration
-
   // Initial conditions routines -> move either to Sph, either to Nbody
   // --------------------------------------------------------------------------
   void BinaryStar(void);
@@ -208,11 +202,13 @@ class Simulation : public SimulationBase {
   DomainBox<ndim> simbox;               ///< Simulation boundary data
   Diagnostics<ndim> diag0;              ///< Initial diagnostic state
   Diagnostics<ndim> diag;               ///< Current diagnostic state
+  Ghosts<ndim> ghosts;                  ///< Ghost particle object
   EnergyEquation<ndim> *uint;           ///< Energy equation pointer
   Sph<ndim> *sph;                       ///< SPH algorithm pointer
   SphIntegration<ndim> *sphint;         ///< SPH Integration scheme pointer
   SphNeighbourSearch<ndim> *sphneib;    ///< SPH Neighbour scheme pointer
   Nbody<ndim> *nbody;                   ///< N-body algorithm pointer
+
 
 };
 
@@ -235,6 +231,8 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::sphint;
   using Simulation<ndim>::uint;
   using Simulation<ndim>::sphneib;
+  using Simulation<ndim>::ghosts;
+  using Simulation<ndim>::simbox;
   using Simulation<ndim>::n;
   using Simulation<ndim>::Nlevels;
   using Simulation<ndim>::Nsteps;
@@ -280,6 +278,8 @@ class GodunovSphSimulation : public Simulation<ndim>
   using Simulation<ndim>::sphint;
   using Simulation<ndim>::uint;
   using Simulation<ndim>::sphneib;
+  using Simulation<ndim>::ghosts;
+  using Simulation<ndim>::simbox;
   using Simulation<ndim>::n;
   using Simulation<ndim>::Nlevels;
   using Simulation<ndim>::Nsteps;

@@ -23,6 +23,11 @@
 using namespace std;
 
 
+
+//=============================================================================
+//  RenderBase::RenderFactory
+/// ..
+//=============================================================================
 RenderBase* RenderBase::RenderFactory(int ndim, SimulationBase* sim) {
   RenderBase* render;
   if (ndim==1) {
@@ -40,8 +45,11 @@ RenderBase* RenderBase::RenderFactory(int ndim, SimulationBase* sim) {
   return render;
 }
 
+
+
 //=============================================================================
 //  Render::Render
+/// Render class constructor
 //=============================================================================
 template <int ndim>
 Render<ndim>::Render(SimulationBase* sim):
@@ -53,6 +61,7 @@ sph(static_cast<Sph<ndim>* > (static_cast<Simulation<ndim>* > (sim)->sph))
 
 //=============================================================================
 //  Render::~Render
+/// Render class destructor
 //=============================================================================
 template <int ndim>
 Render<ndim>::~Render()
@@ -67,37 +76,45 @@ Render<ndim>::~Render()
 /// generated rendered images in python code.
 //=============================================================================
 template <int ndim>
-int Render<ndim>::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstring,
-				      string ystring, string renderstring,
-				      string renderunit, float xmin, 
-				      float xmax,
-				      float ymin, float ymax, float* values,
-				      int Ngrid, SphSnapshotBase &snap,
-				      float &scaling_factor)
+int Render<ndim>::CreateColumnRenderingGrid
+(int ixgrid,                       ///< [in] No. of x-grid spacings
+ int iygrid,                       ///< [in] No. of y-grid spacings
+ string xstring,                   ///< [in] x-axis quantity
+ string ystring,                   ///< [in] y-axis quantity
+ string renderstring,              ///< [in] Rendered quantity
+ string renderunit,                ///< [in] Required unit of rendered quantity
+ float xmin,                       ///< [in] Minimum x-extent
+ float xmax,                       ///< [in] Maximum x-extent
+ float ymin,                       ///< [in] Minimum y-extent
+ float ymax,                       ///< [in] Maximum y-extent
+ float* values,                    ///< [out] Rendered values for plotting
+ int Ngrid,                        ///< [in] No. of grid points (ixgrid*iygrid)
+ SphSnapshotBase &snap,            ///< [inout] Snapshot object reference
+ float &scaling_factor)            ///< [in] Rendered quantity scaling factor
 {
-  int arraycheck = 1;                   // Verification flag
-  int c;                                // Rendering grid cell counter
-  int i;                                // Particle counter
-  int j;                                // Aux. counter
-  int k;                                // Dimension counter
-  int idummy;                           // ..
-  float dr[2];                          // Rel. position vector on grid plane
-  float drsqd;                          // Distance squared on grid plane
-  float drmag;                          // Distance
-  float wnorm;                          // Kernel normalisation value
-  float invh;                           // 1/h
-  float wkern;                          // Kernel value
-  float hrangesqd;                      // Kernel range squared
-  float dummyfloat = 0.0;               // ..
-  float *xvalues;                       // Pointer to 'x' array
-  float *yvalues;                       // Pointer to 'y' array
-  float *rendervalues;                  // Pointer to rendered quantity array
-  float *mvalues;                       // Pointer to mass array
-  float *rhovalues;                     // Pointer to density array
-  float *hvalues;                       // Pointer to smoothing length array
-  float *rendernorm;                    // Normalisation array
-  float *rgrid;                         // Grid positions
-  string dummystring = "";              // ..
+  int arraycheck = 1;              // Verification flag
+  int c;                           // Rendering grid cell counter
+  int i;                           // Particle counter
+  int j;                           // Aux. counter
+  int k;                           // Dimension counter
+  int idummy;                      // ..
+  float dr[2];                     // Rel. position vector on grid plane
+  float drsqd;                     // Distance squared on grid plane
+  float drmag;                     // Distance
+  float dummyfloat = 0.0;          // ..
+  float hrangesqd;                 // Kernel range squared
+  float invh;                      // 1/h
+  float wkern;                     // Kernel value
+  float wnorm;                     // Kernel normalisation value
+  float *xvalues;                  // Pointer to 'x' array
+  float *yvalues;                  // Pointer to 'y' array
+  float *rendervalues;             // Pointer to rendered quantity array
+  float *mvalues;                  // Pointer to mass array
+  float *rhovalues;                // Pointer to density array
+  float *hvalues;                  // Pointer to smoothing length array
+  float *rendernorm;               // Normalisation array
+  float *rgrid;                    // Grid positions
+  string dummystring = "";         // ..
 
   // Check x and y strings are actual co-ordinate strings
   if ((xstring != "x" && xstring != "y" && xstring != "z") ||
@@ -148,20 +165,19 @@ int Render<ndim>::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstri
       // Now loop over all pixels and add current particles
       // ----------------------------------------------------------------------
       for (c=0; c<Ngrid; c++) {
-	
     	dr[0] = rgrid[2*c] - xvalues[i];
-	dr[1] = rgrid[2*c + 1] - yvalues[i];
-	drsqd = dr[0]*dr[0] + dr[1]*dr[1];
+        dr[1] = rgrid[2*c + 1] - yvalues[i];
+        drsqd = dr[0]*dr[0] + dr[1]*dr[1];
 	
-	if (drsqd > hrangesqd) continue;
+        if (drsqd > hrangesqd) continue;
 	
-	drmag = sqrt(drsqd);
-	wkern = float(sph->kerntab.w0((FLOAT) (drmag*invh)));
+        drmag = sqrt(drsqd);
+        wkern = float(sph->kerntab.w0((FLOAT) (drmag*invh)));
 	
 #pragma omp atomic
-	values[c] += wnorm*rendervalues[i]*wkern;
+        values[c] += wnorm*rendervalues[i]*wkern;
 #pragma omp atomic
-	rendernorm[c] += wnorm*wkern;
+        rendernorm[c] += wnorm*wkern;
       }
       // ----------------------------------------------------------------------
       
@@ -190,16 +206,16 @@ int Render<ndim>::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstri
       for (c=0; c<Ngrid; c++) {
 	
     	dr[0] = rgrid[2*c] - xvalues[i];
-	dr[1] = rgrid[2*c + 1] - yvalues[i];
-	drsqd = dr[0]*dr[0] + dr[1]*dr[1];
+        dr[1] = rgrid[2*c + 1] - yvalues[i];
+        drsqd = dr[0]*dr[0] + dr[1]*dr[1];
 	
-	if (drsqd > hrangesqd) continue;
+        if (drsqd > hrangesqd) continue;
 	
-	drmag = sqrt(drsqd);
-	wkern = float(sph->kerntab.wLOS((FLOAT) (drmag*invh)));
+        drmag = sqrt(drsqd);
+        wkern = float(sph->kerntab.wLOS((FLOAT) (drmag*invh)));
 	
-	values[c] += wnorm*rendervalues[i]*wkern;
-	rendernorm[c] += wnorm*wkern;
+        values[c] += wnorm*rendervalues[i]*wkern;
+        rendernorm[c] += wnorm*wkern;
       }
       // ----------------------------------------------------------------------
 
@@ -221,41 +237,52 @@ int Render<ndim>::CreateColumnRenderingGrid(int ixgrid, int iygrid, string xstri
 
 //=============================================================================
 //  Render::CreateSliceRenderingGrid
+/// Calculate gridded SPH properties on a slice for slice-rendering.
 //=============================================================================
 template <int ndim>
-int Render<ndim>::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstring,
-				     string ystring, string zstring, 
-				     string renderstring,
-				     string renderunit, float xmin, float xmax,
-				     float ymin, float ymax, float zslice, 
-				     float* values,
-				     int Ngrid, SphSnapshotBase &snap,
-				     float &scaling_factor)
+int Render<ndim>::CreateSliceRenderingGrid
+(int ixgrid,                       ///< [in] No. of x-grid spacings
+ int iygrid,                       ///< [in] No. of y-grid spacings
+ string xstring,                   ///< [in] x-axis quantity
+ string ystring,                   ///< [in] y-axis quantity
+ string zstring,                   ///< [in] z-axis quantity
+ string renderstring,              ///< [in] Rendered quantity
+ string renderunit,                ///< [in] Required unit of rendered quantity
+ float xmin,                       ///< [in] Minimum x-extent
+ float xmax,                       ///< [in] Maximum x-extent
+ float ymin,                       ///< [in] Minimum y-extent
+ float ymax,                       ///< [in] Maximum y-extent
+ float zslice,                     ///< [in] z-position of slice
+ float* values,                    ///< [out] Rendered values for plotting
+ int Ngrid,                        ///< [in] No. of grid points (ixgrid*iygrid)
+ SphSnapshotBase &snap,            ///< [inout] Snapshot object reference
+ float &scaling_factor)            ///< [in] Rendered quantity scaling factor
 {
-  int arraycheck = 1;                   // ..
-  int c;                                // ..
-  int i;                                // ..
-  int j;                                // ..
-  int k;                                // ..
-  int idummy;                           // ..
-  float dr[2];                          // ..
-  float drsqd;                          // ..
-  float drmag;                          // ..
-  float wnorm;                          // ..
-  float invh;                           // ..
-  float wkern;                          // ..
-  float hrangesqd;                      // ..
-  float dummyfloat = 0.0;               // ..
-  float *xvalues;                       // ..
-  float *yvalues;                       // ..
-  float *zvalues;                       // ..
-  float *rendervalues;                  // ..
-  float *mvalues;                       // ..
-  float *rhovalues;                     // ..
-  float *hvalues;                       // ..
-  float *rendernorm;                    // ..
-  float *rgrid;                         // ..
-  string dummystring = "";              // ..
+  int arraycheck = 1;              // Verification flag
+  int c;                           // Rendering grid cell counter
+  int i;                           // Particle counter
+  int j;                           // Aux. counter
+  int k;                           // Dimension counter
+  int idummy;                      // ..
+  float dr[2];                     // Rel. position vector on grid plane
+  float drsqd;                     // Distance squared on grid plane
+  float drmag;                     // Distance
+  float dummyfloat = 0.0;          // ..
+  float hrangesqd;                 // Kernel range squared
+  float invh;                      // 1/h
+  float wkern;                     // Kernel value
+  float wnorm;                     // Kernel normalisation value
+  float *xvalues;                  // Pointer to 'x' array
+  float *yvalues;                  // Pointer to 'y' array
+  float *zvalues;                  // Pointer to 'z' array
+  float *rendervalues;             // Pointer to rendered quantity array
+  float *mvalues;                  // Pointer to mass array
+  float *rhovalues;                // Pointer to density array
+  float *hvalues;                  // Pointer to smoothing length array
+  float *rendernorm;               // Normalisation array
+  float *rgrid;                    // Grid positions
+  string dummystring = "";         // ..
+
 
   // Check x and y strings are actual co-ordinate strings
   if ((xstring != "x" && xstring != "y" && xstring != "z") ||
@@ -300,7 +327,6 @@ int Render<ndim>::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstrin
     hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
 
 
-
     // Now loop over all pixels and add current particles
     // ------------------------------------------------------------------------
     for (c=0; c<Ngrid; c++) {
@@ -329,7 +355,6 @@ int Render<ndim>::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstrin
   for (c=0; c<Ngrid; c++)
     if (rendernorm[c] > 1.e-10) values[c] /= rendernorm[c];
 
-  //if (rendernorm[c] > 0.01 && rendernorm[c] < 100.0) values[c] /= rendernorm[c];
 
   // Free all locally allocated memory
   delete[] rgrid;
@@ -337,6 +362,7 @@ int Render<ndim>::CreateSliceRenderingGrid(int ixgrid, int iygrid, string xstrin
 
   return 1;
 }
+
 
 
 template class Render<1>;

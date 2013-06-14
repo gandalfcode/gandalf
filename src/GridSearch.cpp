@@ -76,8 +76,7 @@ void GridSearch<ndim>::UpdateTree(Sph<ndim> *sph, Parameters &simparams)
 //=============================================================================
 template <int ndim>
 void GridSearch<ndim>::UpdateAllSphProperties
-(Sph<ndim> *sph                     ///< [inout] Pointer to main SPH object
- )
+(Sph<ndim> *sph)                    ///< [inout] Pointer to main SPH object
 {
   int c;                            // Cell id
   int cactive;                      // No. of active cells
@@ -221,8 +220,7 @@ void GridSearch<ndim>::UpdateAllSphProperties
 //=============================================================================
 template <int ndim>
 void GridSearch<ndim>::UpdateAllSphHydroForces
-(Sph<ndim> *sph                     ///< Pointer to SPH object
-)
+(Sph<ndim> *sph)                    ///< Pointer to SPH object
 {
   int c;                            // Cell id
   int cactive;                      // No. of active cells
@@ -409,8 +407,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
 //=============================================================================
 template <int ndim>
 void GridSearch<ndim>::UpdateAllSphForces
-(Sph<ndim> *sph                     ///< Pointer to SPH object
-)
+(Sph<ndim> *sph)                    ///< Pointer to SPH object
 {
   return;
 }

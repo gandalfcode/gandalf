@@ -10,14 +10,15 @@
 #include <iostream>
 #include <math.h>
 #include "Precision.h"
+#include "Debug.h"
+#include "InlineFuncs.h"
 #include "NbodyParticle.h"
 #include "StarParticle.h"
 #include "SystemParticle.h"
 #include "Parameters.h"
 #include "Nbody.h"
 #include "SphKernel.h"
-#include "Debug.h"
-#include "InlineFuncs.h"
+
 using namespace std;
 
 
@@ -32,7 +33,7 @@ using namespace std;
 //=============================================================================
 template <int ndim>
 Nbody<ndim>::Nbody(int nbody_softening_aux, int sub_systems_aux, 
-                   DOUBLE nbody_mult_aux, string KernelName, int _Npec):
+                   DOUBLE nbody_mult_aux, string KernelName, int Npec_aux):
   nbody_softening(nbody_softening_aux),
   sub_systems(sub_systems_aux),
   nbody_mult(nbody_mult_aux),
@@ -44,7 +45,7 @@ Nbody<ndim>::Nbody(int nbody_softening_aux, int sub_systems_aux,
   Nnbody(0),
   Nnbodymax(0),
   allocated(false),
-  Npec(_Npec)
+  Npec(Npec_aux)
 {
 }
 
@@ -98,16 +99,6 @@ void Nbody<ndim>::DeallocateMemory(void)
 }
 
 
-//=============================================================================
-//  Systems.cpp
-//  Functions for integrating systems internal motions
-//=============================================================================
-
-
-#include <algorithm>
-#include "SystemParticle.h"
-
-
 
 //=============================================================================
 //  Nbody::IntegrateInternalMotion
@@ -116,10 +107,9 @@ void Nbody<ndim>::DeallocateMemory(void)
 /// then integrates the COM of the sub-systems.
 //=============================================================================
 template <int ndim>
-void Nbody<ndim>::IntegrateInternalMotion(
-    SystemParticle<ndim>* system, /// [inout] System that we wish to integrate the internal motion
-    DOUBLE tlocal_end             /// [in]    Time to integrate the internal motion for
-    )
+void Nbody<ndim>::IntegrateInternalMotion
+(SystemParticle<ndim>* system,     /// [inout] System that we wish to integrate the internal motion
+ DOUBLE tlocal_end)                /// [in]    Time to integrate the internal motion for
 {
   int Nchildren = system->Nchildren;
   NbodyParticle<ndim>** children = system->children;
@@ -225,7 +215,9 @@ void Nbody<ndim>::IntegrateInternalMotion(
 
   }
 
+  return;
 }
+
 
 
 template class Nbody<1>;

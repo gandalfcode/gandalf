@@ -1,5 +1,5 @@
 //=============================================================================
-//  SimGhostParticles.cpp
+//  Ghosts.cpp
 //  Contains all routines for searching for and creating ghost particles.
 //  Also contains routine to correct particle positions/velocities to keep 
 //  them contained in simulation bounding box.
@@ -17,20 +17,39 @@
 #include "Simulation.h"
 #include "SphParticle.h"
 #include "Sph.h"
+#include "Ghosts.h"
 using namespace std;
 
 
-static const FLOAT ghost_range = 1.1;
+
+//=============================================================================
+//  Ghosts::Ghosts
+//=============================================================================
+template <int ndim>
+Ghosts<ndim>::Ghosts()
+{
+}
+
 
 
 //=============================================================================
-//  SphSimulation::CheckBoundaries
+//  Ghosts::Ghosts
+//=============================================================================
+template <int ndim>
+Ghosts<ndim>::~Ghosts()
+{
+}
+
+
+
+//=============================================================================
+//  Ghosts::CheckBoundaries
 /// Check all particles to see if any have crossed the simulation bounding 
 /// box.  If so, then move the particles to their new location on the other 
 /// side of the periodic box.
 //=============================================================================
 template <int ndim>
-void Simulation<ndim>::CheckBoundaries(void)
+void Ghosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
 {
   int i;                            // Particle counter
   SphParticle<ndim> *part;          // Pointer to SPH particle data
@@ -66,12 +85,12 @@ void Simulation<ndim>::CheckBoundaries(void)
 
 
 //=============================================================================
-//  SphSimulation::SearchGhostParticles
+//  Ghosts::SearchGhostParticles
 /// Search domain to create any required ghost particles near any boundaries.
 /// Currently only searches to create periodic or mirror ghost particles.
 //=============================================================================
 template <int ndim>
-void Simulation<ndim>::SearchGhostParticles(void)
+void Ghosts<ndim>::SearchGhostParticles(DomainBox<ndim> simbox, Sph<ndim> *sph)
 {
   int i;
   int k;
@@ -100,23 +119,19 @@ void Simulation<ndim>::SearchGhostParticles(void)
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.x_boundary_lhs == "periodic")
 	  CreateGhostParticle(i,0,sphdata[i].r[0] + simbox.boxsize[0],
-			      sphdata[i].v[0],
-			      sphdata[i].r[0] - simbox.boxmin[0]);
+			      sphdata[i].v[0],sph);
 	if (simbox.x_boundary_lhs == "mirror")
 	  CreateGhostParticle(i,0,2.0*simbox.boxmin[0] - 
-			      sphdata[i].r[0],-sphdata[i].v[0],
-			      sphdata[i].r[0] - simbox.boxmin[0]);
+			      sphdata[i].r[0],-sphdata[i].v[0],sph);
       }
       if (sphdata[i].r[0] > simbox.boxmax[0] - 
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.x_boundary_rhs == "periodic")
 	  CreateGhostParticle(i,0,sphdata[i].r[0] - simbox.boxsize[0],
-			      sphdata[i].v[0],
-			      simbox.boxmax[0] - sphdata[i].r[0]);
+			      sphdata[i].v[0],sph);
 	if (simbox.x_boundary_rhs == "mirror")
 	  CreateGhostParticle(i,0,2.0*simbox.boxmax[0] - 
-			      sphdata[i].r[0],-sphdata[i].v[0],
-			      simbox.boxmax[0] - sphdata[i].r[0]);
+			      sphdata[i].r[0],-sphdata[i].v[0],sph);
       }
     }
     sph->Ntot = sph->Nsph + sph->Nghost;
@@ -132,23 +147,19 @@ void Simulation<ndim>::SearchGhostParticles(void)
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.y_boundary_lhs == "periodic")
 	  CreateGhostParticle(i,1,sphdata[i].r[1] + simbox.boxsize[1],
-			      sphdata[i].v[1],
-			      sphdata[i].r[1] - simbox.boxmin[1]);
+			      sphdata[i].v[1],sph);
 	if (simbox.y_boundary_lhs == "mirror")
 	  CreateGhostParticle(i,1,2.0*simbox.boxmin[1] - 
-			      sphdata[i].r[1],-sphdata[i].v[1],
-			      sphdata[i].r[1] - simbox.boxmin[1]);
+			      sphdata[i].r[1],-sphdata[i].v[1],sph);
       }
       if (sphdata[i].r[1] > simbox.boxmax[1] - 
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.y_boundary_rhs == "periodic")
 	  CreateGhostParticle(i,1,sphdata[i].r[1] - simbox.boxsize[1],
-			      sphdata[i].v[1],
-			      simbox.boxmax[1] - sphdata[i].r[1]);
+			      sphdata[i].v[1],sph);
 	if (simbox.y_boundary_rhs == "mirror")
 	  CreateGhostParticle(i,1,2.0*simbox.boxmax[1] - 
-			      sphdata[i].r[1],-sphdata[i].v[1],
-			      simbox.boxmax[1] - sphdata[i].r[1]);
+			      sphdata[i].r[1],-sphdata[i].v[1],sph);
       }
     }
     sph->Ntot = sph->Nsph + sph->Nghost;
@@ -164,23 +175,19 @@ void Simulation<ndim>::SearchGhostParticles(void)
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.z_boundary_lhs == "periodic")
 	  CreateGhostParticle(i,2,sphdata[i].r[2] + simbox.boxsize[2],
-			      sphdata[i].v[2],
-			      sphdata[i].r[2] - simbox.boxmin[2]);
+			      sphdata[i].v[2],sph);
 	if (simbox.z_boundary_lhs == "mirror")
 	  CreateGhostParticle(i,2,2.0*simbox.boxmin[2] - 
-			      sphdata[i].r[2],-sphdata[i].v[2],
-			      sphdata[i].r[2] - simbox.boxmin[2]);
+			      sphdata[i].r[2],-sphdata[i].v[2],sph);
       }
       if (sphdata[i].r[2] > simbox.boxmax[2] - 
 	  ghost_range*kernrange*sphdata[i].h) {
 	if (simbox.z_boundary_rhs == "periodic")
 	  CreateGhostParticle(i,2,sphdata[i].r[2] - simbox.boxsize[2],
-			      sphdata[i].v[2],
-			      simbox.boxmax[2] - sphdata[i].r[2]);
+			      sphdata[i].v[2],sph);
 	if (simbox.z_boundary_rhs == "mirror")
 	  CreateGhostParticle(i,2,2.0*simbox.boxmax[2] - 
-			      sphdata[i].r[2],-sphdata[i].v[2],
-			      simbox.boxmax[2] - sphdata[i].r[2]);
+			      sphdata[i].r[2],-sphdata[i].v[2],sph);
       }
     }
     sph->Ntot = sph->Nsph + sph->Nghost;
@@ -198,18 +205,18 @@ void Simulation<ndim>::SearchGhostParticles(void)
 
 
 //=============================================================================
-//  SphSimulation::CreateGhostParticle
+//  Ghosts::CreateGhostParticle
 /// Create a new ghost particle from either 
 /// (i) a real SPH particle (i < Nsph), or 
 /// (ii) an existing ghost particle (i >= Nsph).
 //=============================================================================
 template <int ndim>
-void Simulation<ndim>::CreateGhostParticle
+void Ghosts<ndim>::CreateGhostParticle
 (int i,                             ///< [in] i.d. of original particle
  int k,                             ///< [in] Boundary dimension for new ghost
  FLOAT rk,                          ///< [in] k-position of original particle
  FLOAT vk,                          ///< [in] k-velocity of original particle
- FLOAT bdist)                       ///< (Feature removed; to be deleted)
+ Sph<ndim> *sph)                    ///< [inout] SPH particle object pointer
 {
   // Increase ghost counter and check there's enough space in memory
   if (sph->Nghost > sph->Nghostmax) {
@@ -237,11 +244,11 @@ void Simulation<ndim>::CreateGhostParticle
 
 
 //=============================================================================
-//  SphSimulation::CopySphDataToGhosts
+//  Ghosts::CopySphDataToGhosts
 /// Copy any newly calculated data from original SPH particles to ghosts.
 //=============================================================================
 template <int ndim>
-void Simulation<ndim>::CopySphDataToGhosts(void)
+void Ghosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph)
 {
   int i;                            // Particle id
   int iorig;                        // Original (real) particle id
@@ -275,41 +282,8 @@ void Simulation<ndim>::CopySphDataToGhosts(void)
 
 
 
-//=============================================================================
-//  SphSimulation::CopyAccelerationsFromGhosts
-/// Copy partial acceleration from ghosts to original particles.
-/// (N.B. Not needed anymore; may be deleted in future).
-//=============================================================================
-template <int ndim>
-void Simulation<ndim>::CopyAccelerationFromGhosts(void)
-{
-  int i;                            // Particle id
-  int iorig;                        // Original particle id
-  int j;                            // Ghost particle counter
-  int k;                            // Dimension counter
-
-  debug2("[SphSimulation::CopyAccelerationFromGhosts]");
-
-  // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(i,iorig,k)
-  for (j=0; j<sph->Nghost; j++) {
-    i = sph->Nsph + j;
-    iorig = sph->sphdata[i].iorig;
-    
-    // Only look at active ghosts
-    if (!sph->sphdata[iorig].active) continue;
-    
-    for (k=0; k<ndim; k++) {
-#pragma omp atomic
-      sph->sphdata[iorig].a[k] += sph->sphdata[i].a[k];
-    }
-#pragma omp atomic
-    sph->sphdata[iorig].dudt += sph->sphdata[i].dudt;
-#pragma omp atomic
-    sph->sphdata[iorig].div_v += sph->sphdata[i].div_v;
-    
-  }
-  // --------------------------------------------------------------------------
-
-  return;
-}
+// Create template class instances of the main SphSimulation object for
+// each dimension used (1, 2 and 3)
+template class Ghosts<1>;
+template class Ghosts<2>;
+template class Ghosts<3>;

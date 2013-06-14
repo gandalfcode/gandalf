@@ -21,7 +21,6 @@
 #include "Nbody.h"
 #include "Sph.h"
 #include "RiemannSolver.h"
-#include "SimGhostParticles.cpp"
 using namespace std;
 
 
@@ -69,7 +68,7 @@ void GodunovSphSimulation<ndim>::PostGeneration(void)
     sphneib->UpdateAllSphProperties(sph);
 
     // Search ghost particles
-    this->SearchGhostParticles();
+    ghosts.SearchGhostParticles(simbox,sph);
 
     // Update neighbour tree
     sphneib->UpdateTree(sph,*simparams);
@@ -84,7 +83,7 @@ void GodunovSphSimulation<ndim>::PostGeneration(void)
     sphneib->UpdateAllSphProperties(sph);
 
     // Search ghost particles
-    this->SearchGhostParticles();
+    ghosts.SearchGhostParticles(simbox,sph);
 
     // Update neighbour tre
     sphneib->UpdateTree(sph,*simparams);
@@ -138,7 +137,7 @@ void GodunovSphSimulation<ndim>::PostGeneration(void)
       sph->sphdata[i].nstep = 1;
     }
 
-    this->CopySphDataToGhosts();
+    ghosts.CopySphDataToGhosts(sph);
 
     // Compute timesteps for all particles
     if (simparams->stringparams["sph"] == "godunov") {
@@ -159,10 +158,10 @@ void GodunovSphSimulation<ndim>::PostGeneration(void)
     for (i=0; i<sph->Nsph; i++) {
       sph->sphdata[i].active = false;
       for (k=0; k<ndim; k++)
-	sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
+      sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
 
-    this->CopySphDataToGhosts();
+    ghosts.CopySphDataToGhosts(sph);
 
   }
 
@@ -223,7 +222,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
   nbody->AdvanceParticles(n,nbody->Nstar,nbody->nbodydata,timestep);
 
   // Check all boundary conditions
-  this->CheckBoundaries();
+  ghosts.CheckBoundaries(simbox,sph);
 
   // --------------------------------------------------------------------------
   if (sph->Nsph > 0) {
@@ -231,7 +230,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     // Reorder particles
 
     // Search ghost particles
-    this->SearchGhostParticles();
+   ghosts.SearchGhostParticles(simbox,sph);
 
     // Update neighbour tree
     sphneib->UpdateTree(sph,*simparams);
@@ -281,7 +280,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
       sphneib->UpdateAllSphDerivatives(sph);
 
     // Copy properties from original particles to ghost particles
-    this->CopySphDataToGhosts();
+    ghosts.CopySphDataToGhosts(sph);
 
     // Zero accelerations (perhaps)
     for (i=0; i<sph->Ntot; i++) {
