@@ -11,7 +11,7 @@
 #include <math.h>
 #include "Precision.h"
 #include "Exception.h"
-#include "SphSimulation.h"
+#include "Simulation.h"
 #include "Sph.h"
 #include "Parameters.h"
 #include "InlineFuncs.h"
@@ -21,7 +21,7 @@ using namespace std;
 
 
 //=============================================================================
-//  SphSimulation::CheckInitialConditions
+//  Simulation::CheckInitialConditions
 /// Performs some simple sanity checks on all initial conditions
 //=============================================================================
 template <int ndim>
@@ -78,7 +78,7 @@ void Simulation<ndim>::CheckInitialConditions(void)
 
 
 //=============================================================================
-//  SphSimulation::ShockTube
+//  Simulation::ShockTube
 /// Generate 1D shock-tube test problem.
 //=============================================================================
 template <int ndim>
@@ -111,7 +111,7 @@ void Simulation<ndim>::ShockTube(void)
   vfluid1[0] = simparams->floatparams["vfluid1[0]"];
   vfluid2[0] = simparams->floatparams["vfluid2[0]"];
 
-  debug2("[SphSimulation::ShockTube]");
+  debug2("[Simulation::ShockTube]");
 
   if (ndim != 1) {
     string message = "Wrong dimensionality : " + ndim;
@@ -180,7 +180,7 @@ void Simulation<ndim>::ShockTube(void)
 
 
 //=============================================================================
-//  SphSimulation::UniformBox
+//  Simulation::UniformBox
 /// Populate the simulation bounding box with random particles.
 //=============================================================================
 template <int ndim>
@@ -200,7 +200,7 @@ void Simulation<ndim>::UniformBox(void)
   Nlattice[1] = simparams->intparams["Nlattice1[1]"];
   Nlattice[2] = simparams->intparams["Nlattice1[2]"];
 
-  debug2("[SphSimulation::UniformBox]");
+  debug2("[Simulation::UniformBox]");
 
   // Compute volume and number of particles inside box
   if (ndim == 1) {
@@ -265,7 +265,7 @@ void Simulation<ndim>::UniformBox(void)
 
 
 //=============================================================================
-//  SphSimulation::UniformSphere
+//  Simulation::UniformSphere
 /// Create a uniform-density sphere of particles of given origin and radius.
 //=============================================================================
 template <int ndim>
@@ -285,7 +285,7 @@ void Simulation<ndim>::UniformSphere(void)
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
   string particle_dist = simparams->stringparams["particle_distribution"];
 
-  debug2("[SphSimulation::UniformSphere]");
+  debug2("[Simulation::UniformSphere]");
 
   r = new FLOAT[ndim*Npart];
 
@@ -337,7 +337,7 @@ void Simulation<ndim>::UniformSphere(void)
 
 
 //=============================================================================
-//  SphSimulation::ContactDiscontinuity
+//  Simulation::ContactDiscontinuity
 /// Set-up contact discontinuity problem.
 //=============================================================================
 template <int ndim>
@@ -374,7 +374,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
   vfluid1[0] = simparams->floatparams["vfluid1[0]"];
   vfluid2[0] = simparams->floatparams["vfluid2[0]"];
 
-  debug2("[SphSimulation::ContactDiscontinuity]");
+  debug2("[Simulation::ContactDiscontinuity]");
 
 
   // 1D simulation
@@ -483,7 +483,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
 
 
 //=============================================================================
-//  SphSimulation::KHI
+//  Simulation::KHI
 /// Set-up 2D Kelvin-Helmholtz instability test.
 //=============================================================================
 template <int ndim>
@@ -520,7 +520,7 @@ void Simulation<ndim>::KHI(void)
   vfluid1[0] = simparams->floatparams["vfluid1[0]"];
   vfluid2[0] = simparams->floatparams["vfluid2[0]"];
 
-  debug2("[SphSimulation::ShockTube]");
+  debug2("[Simulation::ShockTube]");
 
   if (ndim != 2) {
     string message = "Kelvin-Helmholtz instability only in 2D";
@@ -627,7 +627,7 @@ void Simulation<ndim>::KHI(void)
 
 
 //=============================================================================
-//  SphSimulation::NohProblem
+//  Simulation::NohProblem
 /// Set-up Noh Problem initial conditions
 //=============================================================================
 template <int ndim>
@@ -653,7 +653,7 @@ void Simulation<ndim>::NohProblem(void)
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
   string particle_dist = simparams->stringparams["particle_distribution"];
 
-  debug2("[SphSimulation::NohProblem]");
+  debug2("[Simulation::NohProblem]");
 
   r = new FLOAT[ndim*Npart];
 
@@ -704,7 +704,7 @@ void Simulation<ndim>::NohProblem(void)
 
 
 //=============================================================================
-//  SphSimulation::BossBodenheimer
+//  Simulation::BossBodenheimer
 /// Set-up Noh Problem initial conditions
 //=============================================================================
 template <int ndim>
@@ -737,7 +737,7 @@ void Simulation<ndim>::BossBodenheimer(void)
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
   string particle_dist = simparams->stringparams["particle_distribution"];
 
-  debug2("[SphSimulation::BossBodenheimer]");
+  debug2("[Simulation::BossBodenheimer]");
 
   // Convert any parameters to code units
   angvel /= simunits.angvel.outscale;
@@ -803,7 +803,7 @@ void Simulation<ndim>::BossBodenheimer(void)
 
 
 //=============================================================================
-//  SphSimulation::PlummerSphere
+//  Simulation::PlummerSphere
 /// ..
 //=============================================================================
 template <int ndim>
@@ -842,7 +842,7 @@ void Simulation<ndim>::PlummerSphere(void)
   FLOAT radius = simparams->floatparams["radius"];
   FLOAT rstar = simparams->floatparams["rstar"];
 
-  debug1("[SphSimulation::PlummerSphere]");
+  debug1("[Simulation::PlummerSphere]");
     
   sph->Nsph = Nsph;
   sph->Ntot = Nsph;
@@ -970,7 +970,7 @@ void Simulation<ndim>::PlummerSphere(void)
 
 
 //=============================================================================
-//  SphSimulation::SedovBlastWave
+//  Simulation::SedovBlastWave
 /// Set-up Sedov blast wave test
 //=============================================================================
 template <int ndim>
@@ -1006,7 +1006,7 @@ void Simulation<ndim>::SedovBlastWave(void)
   Nlattice[1] = simparams->intparams["Nlattice1[1]"];
   Nlattice[2] = simparams->intparams["Nlattice1[2]"];
 
-  debug2("[SphSimulation::SedovBlastWave]");
+  debug2("[Simulation::SedovBlastWave]");
 
 
   // Compute size and range of fluid bounding boxes
@@ -1136,7 +1136,7 @@ void Simulation<ndim>::SedovBlastWave(void)
 
 
 //=============================================================================
-//  SphSimulation::ShearFlow
+//  Simulation::ShearFlow
 /// Create shear-flow to test effective shear viscosity.
 //=============================================================================
 template <int ndim>
@@ -1162,7 +1162,7 @@ void Simulation<ndim>::ShearFlow(void)
   Nlattice1[0] = simparams->intparams["Nlattice1[0]"];
   Nlattice1[1] = simparams->intparams["Nlattice1[1]"];
 
-  debug2("[SphSimulation::ShockTube]");
+  debug2("[Simulation::ShockTube]");
 
   if (ndim != 2) {
     string message = "Shear-flow test only in 2D";
@@ -1209,7 +1209,7 @@ void Simulation<ndim>::ShearFlow(void)
 
 
 //=============================================================================
-//  SphSimulation::SoundWave
+//  Simulation::SoundWave
 /// Set-up isothermal sound-wave test.
 //=============================================================================
 template <int ndim>
@@ -1239,7 +1239,7 @@ void Simulation<ndim>::SoundWave(void)
   FLOAT mu_bar = simparams->floatparams["mu_bar"];
   Nlattice1[0] = simparams->intparams["Nlattice1[0]"];
 
-  debug2("[SphSimulation::SoundWave]");
+  debug2("[Simulation::SoundWave]");
 
   if (ndim != 1) {
     string message = "Sound wave only available in 1D";
@@ -1307,7 +1307,7 @@ void Simulation<ndim>::SoundWave(void)
 
 
 //=============================================================================
-//  SphSimulation::BinaryStar
+//  Simulation::BinaryStar
 /// Create a simple binary star problem
 //=============================================================================
 template <int ndim>
@@ -1321,7 +1321,7 @@ void Simulation<ndim>::BinaryStar(void)
   DOUBLE rbinary[ndim];            // ..
   DOUBLE vbinary[ndim];            // ..
 
-  debug2("[SphSimulation::BinaryStar]");
+  debug2("[Simulation::BinaryStar]");
 
   if (ndim == 1) {
     string message = "Binary test not available in 1D";
@@ -1404,7 +1404,7 @@ void Simulation<ndim>::QuadrupleStar(void)
 
 
 //=============================================================================
-//  SphSimulation::AddBinaryStar
+//  Simulation::AddBinaryStar
 /// Create a simple binary star problem
 //=============================================================================
 template <int ndim>
@@ -1428,7 +1428,7 @@ void Simulation<ndim>::AddBinaryStar
   FLOAT period = twopi*sqrtf(sma*sma*sma/mbin);
   FLOAT vbin = twopi*sma/period;
 
-  debug2("[SphSimulation::AddBinaryStar]");
+  debug2("[Simulation::AddBinaryStar]");
 
   if (ndim == 1) {
     string message = "Binary test not available in 1D";
@@ -1459,7 +1459,7 @@ void Simulation<ndim>::AddBinaryStar
 
 
 //=============================================================================
-//  SphSimulation::AddRandomBox
+//  Simulation::AddRandomBox
 /// Populate given bounding box with random particles.
 //=============================================================================
 template <int ndim>
@@ -1468,7 +1468,7 @@ void Simulation<ndim>::AddRandomBox
  FLOAT *r,                          ///< [out] Positions of particles
  DomainBox<ndim> box)               ///< [in] Bounding box containing particles
 {
-  debug2("[SphSimulation::AddRandomBox]");
+  debug2("[Simulation::AddRandomBox]");
 
   for (int i=0; i<Npart; i++) {
     for (int k=0; k<ndim; k++) {
@@ -1483,7 +1483,7 @@ void Simulation<ndim>::AddRandomBox
 
 
 //=============================================================================
-//  SphSimulation::AddRandomsphere
+//  Simulation::AddRandomsphere
 /// Add random sphere of particles
 //=============================================================================
 template <int ndim>
@@ -1497,7 +1497,7 @@ void Simulation<ndim>::AddRandomSphere
   FLOAT rad;                        // Radius of particle
   FLOAT rpos[ndim];                 // Random position of new particle
 
-  debug2("[SphSimulation::AddRandomSphere]");
+  debug2("[Simulation::AddRandomSphere]");
 
   // Loop over all required particles
   // --------------------------------------------------------------------------
@@ -1520,7 +1520,7 @@ void Simulation<ndim>::AddRandomSphere
 
 
 //=============================================================================
-//  SphSimulation::AddLatticeSphere
+//  Simulation::AddLatticeSphere
 /// Add sphere of particles cut-out of regular lattice
 //=============================================================================
 template <int ndim>
@@ -1537,7 +1537,7 @@ int Simulation<ndim>::AddLatticeSphere
   FLOAT *raux;                      // Temp. array to hold particle positions
   DomainBox<ndim> box1;             // Bounding box
 
-  debug2("[SphSimulation::AddLatticeSphere]");
+  debug2("[Simulation::AddLatticeSphere]");
 
   // Set parameters for box and lattice to ensure it contains enough particles
   for (k=0; k<3; k++) Nlattice[k] = 1;
@@ -1575,7 +1575,7 @@ int Simulation<ndim>::AddLatticeSphere
 
 
 //=============================================================================
-//  SphSimulation::AddCubicLattice
+//  Simulation::AddCubicLattice
 /// Add regular (cubic) lattice of particles
 //=============================================================================
 template <int ndim>
@@ -1601,7 +1601,7 @@ void Simulation<ndim>::AddCubicLattice
       spacing[k] = (box.boxmax[k] - box.boxmin[k])/(FLOAT) Nlattice[k];
   }
 
-  debug2("[SphSimulation::AddCubicLattice]");
+  debug2("[Simulation::AddCubicLattice]");
   
   // Create lattice depending on dimensionality
   // --------------------------------------------------------------------------
@@ -1641,7 +1641,7 @@ void Simulation<ndim>::AddCubicLattice
 
 
 //=============================================================================
-//  SphSimulation::AddHexagonalLattice
+//  Simulation::AddHexagonalLattice
 /// Create simple hexagonal-packed lattice using A-B-A-B pattern in z-direction
 /// N.B. the box is scaled to fit to the x-boxsize.
 //=============================================================================
@@ -1657,7 +1657,7 @@ void Simulation<ndim>::AddHexagonalLattice
   int ii,jj,kk;                     // Aux. lattice counters
   FLOAT rad[ndim];                  // 'Radius' of particle in lattice
 
-  debug2("[SphSimulation::AddHexagonalLattice]");
+  debug2("[Simulation::AddHexagonalLattice]");
 
   // If normalised, ensure equal spacing between all particles.  
   // Otherwise set spacing to fit bounding box.
@@ -1716,7 +1716,7 @@ void Simulation<ndim>::AddHexagonalLattice
 
 
 //=============================================================================
-//  SphSimulation::CutSphere
+//  Simulation::CutSphere
 /// Cut-out a sphere containing exactly 'Nsphere' particles from a uniform 
 /// box of particles.
 //=============================================================================
@@ -1738,7 +1738,7 @@ int Simulation<ndim>::CutSphere
   FLOAT radius;                     // Current radius containing Nsphere ptcls
   FLOAT rcentre[ndim];              // Centre of sphere
 
-  debug2("[SphSimulation::CutSphere]");
+  debug2("[Simulation::CutSphere]");
 
   // Find centre and shortest edge-length of bounding box
   r_high = (FLOAT) big_number;
@@ -1792,7 +1792,7 @@ int Simulation<ndim>::CutSphere
 
 
 //=============================================================================
-//  SphSimulation::AddAzimuthalDensityPerturbation
+//  Simulation::AddAzimuthalDensityPerturbation
 /// Add an azimuthal density perturbation for implementing Boss-Bodenheimer
 /// type initial conditions
 //=============================================================================
@@ -1813,7 +1813,7 @@ void Simulation<ndim>::AddAzimuthalDensityPerturbation
   FLOAT rpos[ndim];                 // Random position of new particle
   FLOAT spacing;                    // ..
 
-  debug2("[SphSimulation::AddAzimuthalDensityPerturbation]");
+  debug2("[Simulation::AddAzimuthalDensityPerturbation]");
 
   tabtot = 10000;
   spacing = twopi/(FLOAT)(tabtot - 1);
@@ -1867,7 +1867,7 @@ void Simulation<ndim>::AddAzimuthalDensityPerturbation
 
 
 //=============================================================================
-//  SphSimulation::AddRotationalVelocityField
+//  Simulation::AddRotationalVelocityField
 /// Add a solid-body rotational velocity field
 //=============================================================================
 template <int ndim>
@@ -1884,7 +1884,7 @@ void Simulation<ndim>::AddRotationalVelocityField
   FLOAT dr[ndim];                   // ..
   FLOAT spacing;                    // ..
 
-  debug2("[SphSimulation::AddAzimuthalDensityPerturbation]");
+  debug2("[Simulation::AddAzimuthalDensityPerturbation]");
 
 
   // Loop over all required particles

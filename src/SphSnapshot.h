@@ -13,7 +13,7 @@
 #include <vector>
 #include "Precision.h"
 #include "Sph.h"
-#include "SphSimulation.h"
+#include "Simulation.h"
 #include "UnitInfo.h"
 using namespace std;
 
@@ -40,7 +40,7 @@ protected:
   static SphSnapshotBase* SphSnapshotFactory(string filename, SimulationBase* sim, int ndim);
 
 
-  SphSnapshotBase(string="");
+  SphSnapshotBase(SimUnits*, string="");
   virtual ~SphSnapshotBase();
 
 

@@ -14,10 +14,10 @@
 #include <cstring>
 #include "Precision.h"
 #include "Exception.h"
-#include "SphSimulation.h"
-#include "Parameters.h"
-#include "InlineFuncs.h"
 #include "Debug.h"
+#include "InlineFuncs.h"
+#include "Simulation.h"
+#include "Parameters.h"
 #include "Nbody.h"
 #include "Sph.h"
 #include "RiemannSolver.h"

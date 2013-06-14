@@ -14,9 +14,9 @@
 #include "Constants.h"
 #include "Debug.h"
 #include "Exception.h"
-#include "Sph.h"
-#include "SphSimulation.h"
+#include "Simulation.h"
 #include "SphParticle.h"
+#include "Sph.h"
 using namespace std;
 
 

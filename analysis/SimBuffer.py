@@ -30,8 +30,17 @@ class SimBuffer:
     snapshots = []
     maxmemory = 1024**3 #now hardwired to 1 GB
     currentsim = -1
-
-
+    
+    
+    @staticmethod
+    def add_snapshot(snap, sim):
+        ''' This function adds a snapshot to a given simulation. It's used for example by interactive run
+        to dynamically add snapshots while the simulation is running.'''
+        sim.snapshots.append(snap)
+        snap.sim = sim
+        snap.live = False
+        
+        
     @staticmethod
     def _add_simulation(sim):
 
@@ -126,8 +135,6 @@ class SimBuffer:
             snap = SphSnapshotBase.SphSnapshotFactory("",sim,sim.simparams.intparams["ndim"])
             snap.sim = sim
             snap.live = True
-            #TODO: check this is correct
-            snap.units = sim.simunits
         snap.CopyDataFromSimulation()
         snap.t = sim.t
         sim.live = snap

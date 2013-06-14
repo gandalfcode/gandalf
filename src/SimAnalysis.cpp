@@ -1,6 +1,6 @@
 //=============================================================================
-//  SphAnalysis.cpp
-//  Contains various analysis routines for SphSimulation object.
+//  SimAnalysis.cpp
+//  Contains various analysis routines for Simulation object.
 //=============================================================================
 
 
@@ -12,7 +12,7 @@
 #include <cstdio>
 #include <cstring>
 #include "Exception.h"
-#include "SphSimulation.h"
+#include "Simulation.h"
 #include "Parameters.h"
 #include "InlineFuncs.h"
 #include "Debug.h"
@@ -21,7 +21,7 @@ using namespace std;
 
 
 //=============================================================================
-//  SphSimulation::CalculateDiagnostics
+//  Simulation::CalculateDiagnostics
 /// Calculates all diagnostic quantities (e.g. conserved quantities), 
 /// saves to the diagnostic data structure and outputs to screen.
 //=============================================================================
@@ -102,9 +102,9 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 
 
 //=============================================================================
-//  SphSimulation::CalculateDiagnostics
-/// Calculates all diagnostic quantities (e.g. conserved quantities),
-/// saves to the diagnostic data structure and outputs to screen.
+//  Simulation::OutputDiagnostics
+/// Output all diagnostic quantities that are calculated in 
+/// CalculateDiagnostics to screen.
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::OutputDiagnostics(void)
@@ -116,33 +116,35 @@ void Simulation<ndim>::OutputDiagnostics(void)
   cout << "Nstar      : " << nbody->Nstar << endl;
   cout << "Etot       : " << diag.Etot*simunits.E.outscale << endl;
   cout << "ketot      : " << diag.ketot*simunits.E.outscale << endl;
-  if (sph->hydro_forces == 1) cout << "utot       : " << diag.utot*simunits.E.outscale << endl;
-  cout << "gpetot     : " << diag.gpetot*simunits.E.outscale << endl;
+  if (sph->hydro_forces == 1) 
+    cout << "utot       : " << diag.utot*simunits.E.outscale << endl;
+  if (sph->self_gravity == 1 || nbody->Nstar > 0)
+    cout << "gpetot     : " << diag.gpetot*simunits.E.outscale << endl;
   if (ndim == 1) {
     cout << "mom        : " << diag.mom[0] << endl;
     cout << "force      : " << diag.force[0] << endl;
-    cout << "force_grav : " << diag.force_grav[0] << endl;
+    if (sph->self_gravity == 1 || nbody->Nstar > 0)
+      cout << "force_grav : " << diag.force_grav[0] << endl;
   }
   else if (ndim == 2) {
+    cout << "ang mom    : " << diag.angmom[2] << endl;
     cout << "mom        : " << diag.mom[0] << "   " << diag.mom[1] << endl;
     cout << "force      : " << diag.force[0] << "   " << diag.force[1] << endl;
-    cout << "force_grav : " << diag.force_grav[0] << "   " 
-	 << diag.force_grav[1] << endl;
-    cout << "ang mom    : " << diag.angmom[2] << endl;
+    if (sph->self_gravity == 1 || nbody->Nstar > 0) 
+      cout << "force_grav : " << diag.force_grav[0] << "   " 
+	   << diag.force_grav[1] << endl;
   }
   else if (ndim == 3) {
+    cout << "ang mom    : " << diag.angmom[0] << "   "
+	 << diag.angmom[1] << "   " << diag.angmom[2] << endl;
     cout << "mom        : " << diag.mom[0] << "   " 
 	 << diag.mom[1] << "   " << diag.mom[2] << endl;
     cout << "force      : " << diag.force[0] << "   " 
 	 << diag.force[1] << "   " << diag.force[2] << endl;
-    cout << "force_grav : " << diag.force_grav[0] << "   " 
-	 << diag.force_grav[1] << "   " << diag.force_grav[2] << endl;
-    cout << "ang mom    : " << diag.angmom[0] << "   "
-	 << diag.angmom[1] << "   " << diag.angmom[2] << endl;
+    if (sph->self_gravity == 1 || nbody->Nstar > 0) 
+      cout << "force_grav : " << diag.force_grav[0] << "   " 
+	   << diag.force_grav[1] << "   " << diag.force_grav[2] << endl;
   }
-
-  //cout << "TEMP : " << sph->eos->Temperature(sph->sphdata[0])*simunits.temp.outscale << simunits.temp.outunit << endl;
-
 
   return;
 }

@@ -1,13 +1,14 @@
-/* File : SphSimulation.i */
+/* File : Simulation.i */
 %module SphSim
 %include "std_string.i"
 %include "std_map.i"
+%include "std_list.i"
 %include exception.i
 
 %{
 #define SWIG_FILE_WITH_INIT
 #include "Exception.h"
-#include "SphSimulation.h"
+#include "Simulation.h"
 #include "Parameters.h"
 #include "SimUnits.h"
 #include "Sph.h"
@@ -157,6 +158,7 @@ ExceptionHandler::makeExceptionHandler(python);
     %template(map_string_int) map<string, int>;
     %template(map_string_string) map<string, string>;
     %template(map_string_float) map<string, float>;
+    %template(list_snap_base_pointer) list<SphSnapshotBase* >;
     /*%template(map_string_any) map<string, boost::any>;*/
 }
 
@@ -168,7 +170,7 @@ ExceptionHandler::makeExceptionHandler(python);
  %apply float& OUTPUT { float& scaling_factor };
  
 %include "Precision.h"
-%include "SphSimulation.h"
+%include "Simulation.h"
 %include "Parameters.h"
 %include "SimUnits.h"
 %include "Sph.h"

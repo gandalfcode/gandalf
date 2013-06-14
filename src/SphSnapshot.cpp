@@ -1,7 +1,7 @@
-// ============================================================================
-// SphSnapshot.cpp
-// Contains all snapshot functions
-// ============================================================================
+//=============================================================================
+//  SphSnapshot.cpp
+//  Contains all snapshot functions
+//=============================================================================
 
 
 #include <ctime>
@@ -11,7 +11,7 @@
 #include "SphSnapshot.h"
 #include "Sph.h"
 #include "SphParticle.h"
-#include "SphSimulation.h"
+#include "Simulation.h"
 #include "Debug.h"
 #include "InlineFuncs.h"
 #include "UnitInfo.h"
@@ -28,10 +28,11 @@ SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory(string filename, Simulation
   };
 
 
-// ============================================================================
-// SphSnapshotBase::SphSnapshotBase
-// ============================================================================
-SphSnapshotBase::SphSnapshotBase(string auxfilename)
+//=============================================================================
+//  SphSnapshotBase::SphSnapshotBase
+//=============================================================================
+SphSnapshotBase::SphSnapshotBase(SimUnits* _units, string auxfilename):
+    units(_units)
 {
   allocated = false;
   allocatedstar = false;
@@ -49,7 +50,7 @@ SphSnapshotBase::SphSnapshotBase(string auxfilename)
 
 template <int ndims>
 SphSnapshot<ndims>::SphSnapshot (string filename, SimulationBase* sim):
-SphSnapshotBase(filename),
+SphSnapshotBase(&(sim->simunits), filename),
 simulation(static_cast<Simulation<ndims>* > (sim))
 {
   this->ndim = ndims;
