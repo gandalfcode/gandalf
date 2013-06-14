@@ -91,14 +91,13 @@ endif
 # Object files to be compiled
 # ----------------------------------------------------------------------------
 #SWIG_HEADERS = Parameters.i SimUnits.i Sph.i SphSnapshot.i SphSimulation.i
-SWIG_HEADERS = SphSimulation.i
-WRAP_OBJ = SphSimulation_wrap.o
+SWIG_HEADERS = Simulation.i
+WRAP_OBJ = Simulation_wrap.o
 #WRAP_OBJ = Parameters_wrap.o SimUnits_wrap.o Sph_wrap.o SphSnapshot_wrap.o SphSimulation_wrap.o
 OBJ = Parameters.o SimUnits.o 
 OBJ += Simulation.o SphSimulation.o GodunovSphSimulation.o  #SphSnapshot.o 
 #OBJ += SphSimulationIC.o SphSimulationIO.o 
 #OBJ += SphSimulationTimesteps.o
-#OBJ += SphAnalysis.o
 OBJ += M4Kernel.o QuinticKernel.o GaussianKernel.o TabulatedKernel.o
 OBJ += Sph.o GradhSph.o SM2012Sph.o GodunovSph.o
 OBJ += EnergyPEC.o EnergyGodunovIntegration.o
@@ -163,7 +162,7 @@ shocktub.so : shocktub.f shocktub.pyf
 Exception.o : Exception.cpp
 	$(CPP) $(OPT) $(CFLAGS) -fexceptions -c $<
 
-SphSimulation.o : SphSimulationIO.cpp SphSimulationTimesteps.cpp SphSimulationIC.cpp SphAnalysis.cpp SimGhostParticles.cpp
+SphSimulation.o : SphSimulationIO.cpp SphSimulationIC.cpp SimAnalysis.cpp SimGhostParticles.cpp
 
 
 force: ;

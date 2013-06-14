@@ -8,7 +8,7 @@
 #include <string>
 #include <cstdio>
 #include <cstring>
-#include "SphSimulation.h"
+#include "Simulation.h"
 #include "Parameters.h"
 #include "Debug.h"
 using namespace std;
@@ -16,7 +16,7 @@ using namespace std;
 
 
 //=============================================================================
-//  SphSimulation::ReadSnapshotFile
+//  SimulationBase::ReadSnapshotFile
 //=============================================================================
 bool SimulationBase::ReadSnapshotFile
 (string filename,                   ///< [in] Name of input snapshot file

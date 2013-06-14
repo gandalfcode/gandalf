@@ -13,7 +13,7 @@
 #include <vector>
 #include "Precision.h"
 #include "Sph.h"
-#include "SphSimulation.h"
+#include "Simulation.h"
 #include "UnitInfo.h"
 using namespace std;
 

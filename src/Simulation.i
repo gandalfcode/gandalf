@@ -1,4 +1,4 @@
-/* File : SphSimulation.i */
+/* File : Simulation.i */
 %module SphSim
 %include "std_string.i"
 %include "std_map.i"
@@ -8,7 +8,7 @@
 %{
 #define SWIG_FILE_WITH_INIT
 #include "Exception.h"
-#include "SphSimulation.h"
+#include "Simulation.h"
 #include "Parameters.h"
 #include "SimUnits.h"
 #include "Sph.h"
@@ -170,7 +170,7 @@ ExceptionHandler::makeExceptionHandler(python);
  %apply float& OUTPUT { float& scaling_factor };
  
 %include "Precision.h"
-%include "SphSimulation.h"
+%include "Simulation.h"
 %include "Parameters.h"
 %include "SimUnits.h"
 %include "Sph.h"

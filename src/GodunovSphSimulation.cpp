@@ -14,7 +14,7 @@
 #include <cstring>
 #include "Precision.h"
 #include "Exception.h"
-#include "SphSimulation.h"
+#include "Simulation.h"
 #include "Parameters.h"
 #include "InlineFuncs.h"
 #include "Debug.h"
@@ -28,9 +28,9 @@ using namespace std;
 
 // Create template class instances of the main GodunovSphSimulation object for
 // each dimension used (1, 2 and 3)
-template class GodunovSimulation<1>;
-template class GodunovSimulation<2>;
-template class GodunovSimulation<3>;
+template class GodunovSphSimulation<1>;
+template class GodunovSphSimulation<2>;
+template class GodunovSphSimulation<3>;
 
 
 
@@ -41,7 +41,7 @@ template class GodunovSimulation<3>;
 /// ..
 //=============================================================================
 template <int ndim>
-void GodunovSimulation<ndim>::PostGeneration(void)
+void GodunovSphSimulation<ndim>::PostGeneration(void)
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
@@ -73,13 +73,7 @@ void GodunovSimulation<ndim>::PostGeneration(void)
 
     // Update neighbour tree
     sphneib->UpdateTree(sph,*simparams);
-  }
 
-  // Compute all initial SPH particle properties (if SPH particles exist)
-  // --------------------------------------------------------------------------
-  if (sph->Nsph > 0) {
-
-    cout << "Ntot : " << sph->Ntot << endl;
     level_step = 1;
 
     // Zero accelerations (perhaps here)
@@ -193,12 +187,12 @@ void GodunovSimulation<ndim>::PostGeneration(void)
 /// Main Godunov SPH simulation integration loop.
 //=============================================================================
 template <int ndim>
-void GodunovSimulation<ndim>::MainLoop(void)
+void GodunovSphSimulation<ndim>::MainLoop(void)
 {
   int i;                            // Particle loop counter
   int k;                            // Dimension counter
 
-  debug2("[SphSimulation::MainLoop]");
+  debug2("[GodunovSphSimulation::MainLoop]");
 
   // Compute timesteps for all particles
   if (simparams->stringparams["sph"] != "godunov") {
@@ -332,11 +326,11 @@ void GodunovSimulation<ndim>::MainLoop(void)
 
 
 //=============================================================================
-//  GodunovSphSimulation::MainLoop
+//  GodunovSphSimulation::ComputeGlobalTimestep
 /// ..
 //=============================================================================
 template <int ndim>
-void GodunovSimulation<ndim>::ComputeGlobalTimestep(void)
+void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
 {
   int i;                            // Particle counter
   DOUBLE dt = big_number_dp;        // Particle timestep
@@ -404,7 +398,7 @@ void GodunovSimulation<ndim>::ComputeGlobalTimestep(void)
 /// ..
 //=============================================================================
 template <int ndim>
-void GodunovSimulation<ndim>::ComputeBlockTimesteps(void)
+void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
 {
   int i;                            // Particle counter
   int istep;                        // ??

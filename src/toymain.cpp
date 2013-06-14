@@ -1,6 +1,6 @@
 #include "Exception.h"
 #include <iostream>
-#include "SphSimulation.h"
+#include "Simulation.h"
 using namespace std;
 
 int main(int argc, char** argv)

@@ -1,15 +1,17 @@
 //=============================================================================
-//  SphSimulation.h
+//  Simulation.h
 //  Contains definitions for following data structures and classes:
 //  - DomainBox
 //  - Diagnostics
-//  - SphSimulationBase
+//  - SimulationBase
+//  - Simulation
 //  - SphSimulation
+//  - GodunovSphSimulation
 //=============================================================================
 
 
-#ifndef _SPH_SIMULATION_H_
-#define _SPH_SIMULATION_H_
+#ifndef _SIMULATION_H_
+#define _SIMULATION_H_
 
 
 #include <map>
@@ -29,6 +31,7 @@
 using namespace std;
 
 
+//DAVID : What is this??  Delete it??
 class SphSnapshotBase;
 
 //=============================================================================
@@ -60,17 +63,19 @@ class SimulationBase
   // Subroutine prototypes
   // --------------------------------------------------------------------------
   string GetParam(string key);
-  void SetParam (string key, string value);
-  void SetParam (string key, int value);
-  void SetParam (string ket, float value);
-  virtual void PreSetupForPython(void)=0;
-  virtual void ImportArray(double* input, int size, string quantity, string type="sph")=0;
+  string Output(void);
+  void SetParam(string key, string value);
+  void SetParam(string key, int value);
+  void SetParam(string ket, float value);
   void SetupSimulation(void);
-  virtual void PostGeneration(void)=0;
-  virtual void MainLoop(void)=0;
   void Run(int=-1);
   list<SphSnapshotBase*> InteractiveRun(int=-1);
-  string Output(void);
+
+  virtual void ImportArray(double* input, int size, 
+                           string quantity, string type="sph") = 0;
+  virtual void MainLoop(void)=0;
+  virtual void PostGeneration(void)=0;
+  virtual void PreSetupForPython(void)=0;
   virtual void ProcessParameters(void)=0;
 
   // Input-output routines
@@ -115,10 +120,12 @@ class SimulationBase
 
 #if !defined(SWIG)
 //=============================================================================
-//  Class SphSimulation
-/// \brief  Main Sph Simulation class.
-/// \author D. A. Hubber, G. Rosotti
-/// \date   03/04/2013
+//  Class Simulation
+/// \brief   Main Simulation class.
+/// \details Main parent Simulation class from which all other simulation 
+///          objects (e.g. SphSimulation) inherit from.
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
 //=============================================================================
 template <int ndim>
 class Simulation : public SimulationBase {
@@ -136,7 +143,7 @@ class Simulation : public SimulationBase {
   // Initial conditions helper routines
   // --------------------------------------------------------------------------
   void AddBinaryStar(DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE *,
-		             DOUBLE *, NbodyParticle<ndim> &, NbodyParticle<ndim> &);
+                     DOUBLE *, NbodyParticle<ndim> &, NbodyParticle<ndim> &);
   void AddAzimuthalDensityPerturbation(int, int, FLOAT, FLOAT *, FLOAT *); 
   void AddRotationalVelocityField(int, FLOAT, FLOAT *, FLOAT *, FLOAT *); 
   void AddRandomBox(int, FLOAT *, DomainBox<ndim>);
@@ -148,21 +155,22 @@ class Simulation : public SimulationBase {
 
   // Subroutine prototypes
   // --------------------------------------------------------------------------
-  virtual void PreSetupForPython(void);
-  virtual void ImportArray(double* input, int size, string quantity, string type="sph");
-  virtual void GenerateIC(void);
-  virtual void ProcessParameters(void)=0;
   virtual void CalculateDiagnostics(void);
-  virtual void OutputDiagnostics(void);
-  virtual void UpdateDiagnostics(void);
   virtual void ComputeGlobalTimestep(void)=0;
   virtual void ComputeBlockTimesteps(void)=0;
+  virtual void GenerateIC(void);
+  virtual void ImportArray(double* input, int size, 
+                           string quantity, string type="sph");
+  virtual void PreSetupForPython(void);
+  virtual void ProcessParameters(void)=0;
+  virtual void OutputDiagnostics(void);
+  virtual void UpdateDiagnostics(void);
 
 #if defined(VERIFY_ALL)
   void VerifyBlockTimesteps(void);
 #endif
 
-  // Ghost particle functions -> maybe move to Sph?
+  // Ghost particle functions -> maybe move to Sph?  DAVID : Yes!!
   // --------------------------------------------------------------------------
   void SearchGhostParticles(void);
   void CreateGhostParticle(int,int,FLOAT,FLOAT,FLOAT);
@@ -209,8 +217,17 @@ class Simulation : public SimulationBase {
 
 
 
+//=============================================================================
+//  Class SphSimulation
+/// \brief   Main SphSimulation class.
+/// \details Main SphSimulation class definition, inherited from Simulation, 
+///          which controls the main program flow for SPH simulations.
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=============================================================================
 template <int ndim>
-class SphSimulation : public Simulation<ndim> {
+class SphSimulation : public Simulation<ndim> 
+{
   using SimulationBase::simparams;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
@@ -231,7 +248,9 @@ class SphSimulation : public Simulation<ndim> {
   using Simulation<ndim>::nresync;
   using Simulation<ndim>::dt_max;
   using Simulation<ndim>::sph_single_timestep;
+
 public:
+
   SphSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
   virtual void PostGeneration(void);
   virtual void MainLoop(void);
@@ -242,8 +261,18 @@ public:
 
 
 
+//=============================================================================
+//  Class GodunovSphSimulation
+/// \brief   Main GodunovSphSimulation class.
+/// \details Main GodunovSphSimulation class definition, inherited from 
+///          Simulation, which controls the main program flow for Godunov 
+///          SPH simulations (Inutsuka 2002).
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=============================================================================
 template <int ndim>
-class GodunovSimulation : public Simulation<ndim> {
+class GodunovSphSimulation : public Simulation<ndim> 
+{
   using SimulationBase::simparams;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
@@ -264,8 +293,11 @@ class GodunovSimulation : public Simulation<ndim> {
   using Simulation<ndim>::nresync;
   using Simulation<ndim>::dt_max;
   using Simulation<ndim>::sph_single_timestep;
+
 public:
-  GodunovSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
+
+  GodunovSphSimulation (Parameters* parameters): 
+    Simulation<ndim>(parameters) {};
   virtual void PostGeneration(void);
   virtual void MainLoop(void);
   virtual void ComputeGlobalTimestep(void);
