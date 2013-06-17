@@ -130,9 +130,10 @@ SimulationBase::~SimulationBase()
 /// Accessor function for modifying a string value. Also checks that the
 /// non return point has not been reached
 //=============================================================================
-void SimulationBase::SetParam(string key, string value) {
+void SimulationBase::SetParam(string key, string value)
+{
 
-  //Error checking
+  // Error checking
   if (ParametersProcessed) {
     string msg = 
       "Error: the non-return point for setting parameters has been reached!";
@@ -153,7 +154,8 @@ void SimulationBase::SetParam(string key, string value) {
 /// Accessor function for modifying an int value, wrapper around the one for string value.
 /// Also checks that the non return point has not been reached
 //=============================================================================
-void SimulationBase::SetParam(string key, int value) {
+void SimulationBase::SetParam(string key, int value)
+{
   ostringstream convert;
   convert << value;
   SetParam (key, convert.str());
@@ -166,7 +168,8 @@ void SimulationBase::SetParam(string key, int value) {
 /// Accessor function for modifying a float value, wrapper around the one for 
 /// string value.  Also checks that the non return point has not been reached.
 //=============================================================================
-void SimulationBase::SetParam(string key, float value) {
+void SimulationBase::SetParam(string key, float value)
+{
   ostringstream convert;
   convert << value;
   SetParam (key, convert.str());
@@ -179,10 +182,9 @@ void SimulationBase::SetParam(string key, float value) {
 /// Accessor function for getting a parameter value
 /// Wrapper around the corresponding function in Parameters
 //=============================================================================
-string SimulationBase::GetParam(string key) {
-
+string SimulationBase::GetParam(string key)
+{
   return simparams->GetParameter(key);
-
 }
 
 
@@ -233,7 +235,8 @@ void SimulationBase::Run
 /// ...
 //=============================================================================
 template <int ndim>
-void Simulation<ndim>::UpdateDiagnostics () {
+void Simulation<ndim>::UpdateDiagnostics ()
+{
   diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
   cout << "Eerror : " << diag.Eerror << endl;
 }
