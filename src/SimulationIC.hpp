@@ -1355,7 +1355,7 @@ void Simulation<ndim>::QuadrupleStar(void)
 {
   int k;                           // Dimension counter
   FLOAT sma1 = 1.0;                // ..
-  FLOAT sma2 = 0.01;              // ..
+  FLOAT sma2 = 0.1;                // ..
   FLOAT eccent = 0.0;              // ..
   FLOAT m1 = 0.5;                  // ..
   FLOAT m2 = 0.5;                  // ..
@@ -1388,15 +1388,15 @@ void Simulation<ndim>::QuadrupleStar(void)
   cout << "b2, v : " << b2.v[0] << "    " << b2.v[1] << endl;
 
   // Now compute both components
-  AddBinaryStar(sma2,eccent,0.5*m1,0.5*m1,0.01,0.01,b1.r,b1.v,
+  AddBinaryStar(sma2,eccent,0.5*m1,0.5*m1,0.0001,0.0001,b1.r,b1.v,
 		        nbody->stardata[0],nbody->stardata[1]);
-  AddBinaryStar(sma2,eccent,0.5*m2,0.5*m2,0.01,0.01,b2.r,b2.v,
+  AddBinaryStar(sma2,eccent,0.5*m2,0.5*m2,0.0001,0.0001,b2.r,b2.v,
 		        nbody->stardata[2],nbody->stardata[3]);
 
   for (int i=0; i<nbody->Nstar; i++) {
-	  cout << "Star : " << i << "   r : " << nbody->stardata[i].r[0] << "  "
-			  << nbody->stardata[i].r[1] << "     v : " << nbody->stardata[i].v[0]
-			  << "    " << nbody->stardata[i].v[1] << endl;
+    cout << "Star : " << i << "   r : " << nbody->stardata[i].r[0] << "  " 
+	 << nbody->stardata[i].r[1] << "     v : " << nbody->stardata[i].v[0]
+	 << "    " << nbody->stardata[i].v[1] << endl;
   }
 
   return;
@@ -1438,7 +1438,7 @@ void Simulation<ndim>::AddBinaryStar
 
   // Set properties of star 1
   for (k=0; k<ndim; k++) s1.r[k] = rbinary[k];
-  for (k=0; k<ndim; k++) s2.v[k] = vbinary[k];
+  for (k=0; k<ndim; k++) s1.v[k] = vbinary[k];
   s1.m = m1;
   s1.h = h1;
   s1.invh = 1.0 / s1.h;

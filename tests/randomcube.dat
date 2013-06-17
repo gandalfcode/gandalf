@@ -9,6 +9,7 @@ EOS with artificial viscosity
 Initial conditions variables
 ----------------------------
 Simulation run id string                    : run_id = RELAXCUBE1
+Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = box
 Dimensionality of cube                      : ndim = 2
 No. of SPH particles                        : Npart = 256

@@ -36,16 +36,16 @@ template class GodunovSphSimulation<3>;
 //TODO: make this mess more modular (note: initial h computation
 //should be done inside the neighbour search)
 //=============================================================================
-//  SphSimulation::PostGeneration
+//  SphSimulation::PostInitialConditionsSetup
 /// ..
 //=============================================================================
 template <int ndim>
-void GodunovSphSimulation<ndim>::PostGeneration(void)
+void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
 
-  debug2("[SphSimulation::PostGeneration]");
+  debug2("[SphSimulation::PostInitialConditionsSetup]");
 
   // Set time variables here (for now)
   Noutsnap = 0;
@@ -140,19 +140,13 @@ void GodunovSphSimulation<ndim>::PostGeneration(void)
     ghosts.CopySphDataToGhosts(sph);
 
     // Compute timesteps for all particles
-    if (simparams->stringparams["sph"] == "godunov") {
-      if (Nlevels == 1) 
-	this->ComputeGlobalTimestep();
-      else 
-	this->ComputeBlockTimesteps();
-      if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
-      if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
-      sphneib->UpdateAllSphDudt(sph);
-    }
-    else {
-      if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
-      if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
-    }
+    if (Nlevels == 1) 
+      this->ComputeGlobalTimestep();
+    else 
+      this->ComputeBlockTimesteps();
+    if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
+    if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
+    sphneib->UpdateAllSphDudt(sph);
 
     // Add accelerations
     for (i=0; i<sph->Nsph; i++) {
@@ -194,12 +188,10 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
   debug2("[GodunovSphSimulation::MainLoop]");
 
   // Compute timesteps for all particles
-  if (simparams->stringparams["sph"] != "godunov") {
-    if (Nlevels == 1)
-      this->ComputeGlobalTimestep();
-    else
-      this->ComputeBlockTimesteps();
-  }
+  if (Nlevels == 1)
+    this->ComputeGlobalTimestep();
+  else
+    this->ComputeBlockTimesteps();
 
   // For Godunov SPH, compute compressional heating rates after the timestep
   // for each particle is known
@@ -230,15 +222,10 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     // Reorder particles
 
     // Search ghost particles
-   ghosts.SearchGhostParticles(simbox,sph);
+    ghosts.SearchGhostParticles(simbox,sph);
 
     // Update neighbour tree
     sphneib->UpdateTree(sph,*simparams);
-  }
-
-
-  // --------------------------------------------------------------------------
-  if (sph->Nsph > 0) {
 
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph);
@@ -269,15 +256,12 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
   if (sph->Nsph > 0) {
 
     // Compute timesteps for all particles
-    if (simparams->stringparams["sph"] == "godunov") {
-      if (Nlevels == 1)
-    this->ComputeGlobalTimestep();
-      else
-    this->ComputeBlockTimesteps();
-    }
+    if (Nlevels == 1)
+      this->ComputeGlobalTimestep();
+    else
+      this->ComputeBlockTimesteps();
 
-    if (simparams->stringparams["sph"] == "godunov")
-      sphneib->UpdateAllSphDerivatives(sph);
+    sphneib->UpdateAllSphDerivatives(sph);
 
     // Copy properties from original particles to ghost particles
     ghosts.CopySphDataToGhosts(sph);
@@ -285,10 +269,10 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     // Zero accelerations (perhaps)
     for (i=0; i<sph->Ntot; i++) {
       if (sph->sphdata[i].active) {
-    for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
-    for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
-    sph->sphdata[i].gpot = (FLOAT) 0.0;
-    sph->sphdata[i].dudt = (FLOAT) 0.0;
+	for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
+	for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
+	sph->sphdata[i].gpot = (FLOAT) 0.0;
+	sph->sphdata[i].dudt = (FLOAT) 0.0;
       }
     }
 
@@ -302,8 +286,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
         sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
 
-    if (simparams->stringparams["sph"] == "godunov")
-      sphneib->UpdateAllSphDudt(sph);
+    sphneib->UpdateAllSphDudt(sph);
 
   }
 

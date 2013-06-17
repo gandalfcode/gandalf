@@ -9,6 +9,7 @@ EOS with artificial viscosity
 Initial conditions variables
 ----------------------------
 Simulation run id string                    : run_id = BINARY1
+Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = binary
 Dimensionality of cube                      : ndim = 3
 Use dimensionless units                     : dimensionless = 1
@@ -18,7 +19,7 @@ Use dimensionless units                     : dimensionless = 1
 Simulation time variables
 -------------------------
 Simulation end time                         : tend = 20.0
-Regular snapshot output frequency           : dt_snap = 1.0
+Regular snapshot output frequency           : dt_snap = 0.1
 Screen output frequency (in no. of steps)   : noutputstep = 32
 
 

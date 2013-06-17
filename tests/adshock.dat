@@ -8,6 +8,7 @@
 # Initial conditions variables
 #-----------------------------
 Simulation run id string                    : run_id = ADSHOCK1
+Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = shocktube
 1D shocktube test                           : ndim = 1
 x-velocity of LHS fluid                     : vfluid1[0] = 16

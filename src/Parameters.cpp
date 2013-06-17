@@ -140,6 +140,12 @@ void Parameters::SetDefaultValues(void)
 {
   debug1("[Parameters::SetDefaultValues]");
 
+  // Main simulation algorithm parameters
+  // --------------------------------------------------------------------------
+  stringparams["sim"] = "sph";
+  stringparams["sph"] = "gradh";
+  stringparams["nbody"] = "hermite4";
+
   // Simulation id, filename and output time parameters
   // --------------------------------------------------------------------------
   stringparams["run_id"] = "";
@@ -192,14 +198,14 @@ void Parameters::SetDefaultValues(void)
   stringparams["sph_integration"] = "lfkdk";
   floatparams["accel_mult"] = 0.3;
   floatparams["courant_mult"] = 0.15;
-  floatparams["nbody_mult"] = 0.075;
+  floatparams["nbody_mult"] = 0.01;
+  floatparams["subsys_mult"] = 0.05;
   intparams["Nlevels"] = 1;
   intparams["sph_single_timestep"] = 0;
   intparams["nbody_single_timestep"] = 0;
 
   // SPH parameters
   // --------------------------------------------------------------------------
-  stringparams["sph"] = "gradh";
   stringparams["kernel"] = "m4";
   intparams["tabulated_kernel"] = 0;
   floatparams["h_fac"] = 1.2;
@@ -244,10 +250,10 @@ void Parameters::SetDefaultValues(void)
 
   // N-body parameters
   // --------------------------------------------------------------------------
-  stringparams["nbody"] = "lfkdk";
+  stringparams["sub_system_integration"] = "hermite4ts";
+  intparams["Npec"] = 1;
   intparams["nbody_softening"] = 0;
   intparams["sub_systems"] = 0;
-  intparams["Npec"] = 1;
   floatparams["gpefrac"] = 1.0e-3;
 
   // Boundary conditions parameters
@@ -426,8 +432,8 @@ void Parameters::RecordParametersToFile(void)
 //=============================================================================
 std::string Parameters::TrimWhiteSpace(std::string instr)
 {
-  int i;                             // Character counter
-  string outstr;                     // Resultant string without whitespace
+  int i;                            // Character counter
+  string outstr;                    // Resultant string without whitespace
 
   // Loop over all characters and ignore any white-space characters
   for (i=0; i < instr.length(); i++) {

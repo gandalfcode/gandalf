@@ -76,7 +76,7 @@ class SimulationBase
   virtual void ImportArray(double* input, int size, 
                            string quantity, string type="sph") = 0;
   virtual void MainLoop(void)=0;
-  virtual void PostGeneration(void)=0;
+  virtual void PostInitialConditionsSetup(void)=0;
   virtual void PreSetupForPython(void)=0;
   virtual void ProcessParameters(void)=0;
 
@@ -251,7 +251,7 @@ class SphSimulation : public Simulation<ndim>
 public:
 
   SphSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
-  virtual void PostGeneration(void);
+  virtual void PostInitialConditionsSetup(void);
   virtual void MainLoop(void);
   virtual void ComputeGlobalTimestep(void);
   virtual void ComputeBlockTimesteps(void);
@@ -299,7 +299,7 @@ public:
 
   GodunovSphSimulation (Parameters* parameters): 
     Simulation<ndim>(parameters) {};
-  virtual void PostGeneration(void);
+  virtual void PostInitialConditionsSetup(void);
   virtual void MainLoop(void);
   virtual void ComputeGlobalTimestep(void);
   virtual void ComputeBlockTimesteps(void);

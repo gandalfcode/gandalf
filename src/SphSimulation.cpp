@@ -37,16 +37,16 @@ template class SphSimulation<3>;
 //TODO: make this mess more modular (note: initial h computation
 //should be done inside the neighbour search)
 //=============================================================================
-//  SphSimulation::PostGeneration
+//  SphSimulation::PostInitialConditionsSetup
 /// ..
 //=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::PostGeneration(void)
+void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
 
-  debug2("[SphSimulation::PostGeneration]");
+  debug2("[SphSimulation::PostInitialConditionsSetup]");
 
   // Set time variables here (for now)
   Noutsnap = 0;
@@ -73,13 +73,7 @@ void SphSimulation<ndim>::PostGeneration(void)
 
     // Update neighbour tree
     sphneib->UpdateTree(sph,*simparams);
-  }
 
-  // Compute all initial SPH particle properties (if SPH particles exist)
-  // --------------------------------------------------------------------------
-  if (sph->Nsph > 0) {
-
-    cout << "Ntot : " << sph->Ntot << endl;
     level_step = 1;
 
     // Zero accelerations (perhaps here)
@@ -266,7 +260,7 @@ void SphSimulation<ndim>::MainLoop(void)
 
     // Iterate end-of-step
     // ------------------------------------------------------------------------
-	for (it=0; it<nbody->Npec; it++) {
+    for (it=0; it<nbody->Npec; it++) {
 
       // Zero all acceleration terms
       for (i=0; i<nbody->Nnbody; i++) {
@@ -285,7 +279,7 @@ void SphSimulation<ndim>::MainLoop(void)
       // Calculate correction step for all stars at end of step
       nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
 
-	}
+    }
     // ------------------------------------------------------------------------
 
   }

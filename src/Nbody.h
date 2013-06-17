@@ -62,8 +62,8 @@ class Nbody
   // N-body counters and main data arrays
   // --------------------------------------------------------------------------
   bool allocated;                       ///< Is N-body memory allocated
-  int Nnbody;                           ///< ..
-  int Nnbodymax;                        ///< ..
+  int Nnbody;                           ///< No. of N-body particles
+  int Nnbodymax;                        ///< Max. no. of N-body particles
   int Nstar;                            ///< No. of star particles
   int Nstarmax;                         ///< Max. no. of star particles
   int Nsystem;                          ///< No. of system particles
@@ -71,11 +71,12 @@ class Nbody
 
   const int nbody_softening;            ///< Use softened-gravity for stars?
   const int sub_systems;                ///< Create sub-systems?
+  const int Npec;                       ///< Number of iterations (if using  
+                                        ///< a time-symmetric integrator)
   const DOUBLE nbody_mult;              ///< N-body timestep multiplier
+ 
   static const int vdim=ndim;           ///< Local copy of vdim
   static const FLOAT invndim=1./ndim;   ///< Copy of 1/ndim
-
-  const int Npec; ///< Number of iterations of the integrator
 
   SphKernel<ndim> *kernp;               ///< Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;        ///< Tabulated version of chosen kernel

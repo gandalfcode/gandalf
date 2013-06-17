@@ -8,6 +8,7 @@ Sedov Blast Wave test
 Initial conditions variables
 ----------------------------
 Simulation run id string                    : run_id = NOH1
+Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = noh
 Dimensionality of cube                      : ndim = 1
 Pressure of fluid 1                         : press1 = 0.0001

@@ -108,35 +108,36 @@ void Nbody<ndim>::DeallocateMemory(void)
 //=============================================================================
 template <int ndim>
 void Nbody<ndim>::IntegrateInternalMotion
-(SystemParticle<ndim>* system,     /// [inout] System that we wish to integrate the internal motion
- DOUBLE tlocal_end)                /// [in]    Time to integrate the internal motion for
+(SystemParticle<ndim>* system,      ///< [inout] System that we wish to 
+                                    ///<         integrate the internal motion
+ DOUBLE tlocal_end)                 ///< [in]    Time to integrate the 
+                                    ///<         internal motion for.
 {
-  int Nchildren = system->Nchildren;
-  NbodyParticle<ndim>** children = system->children;
+  int Nchildren = system->Nchildren;                  // No. of child systems
+  int nlocal_steps=0;                                 // ..
+  DOUBLE dt;                                          // ..
+  DOUBLE tlocal=0.0;                                  // ..
+  NbodyParticle<ndim>** children = system->children;  // Child systems
+  NbodyParticle<ndim> children_local[Ncompmax];       // Local copy of children
+  NbodyParticle<ndim>* children_local_ptrs[Ncompmax]; // Array of pointers to 
+                                                      // local copy of children
 
-  //-------------------------------------------------
-  //First loop over children and, if they are systems, integrate
-  //their internal motion
-  //------------------------------------------------
+
+  // First loop over children and, if they are systems, integrate
+  // their internal motion
+  // --------------------------------------------------------------------------
   for (int ichild=0; ichild<Nchildren; ichild++) {
     if (children[ichild]->Ncomp > 1)
-      //The cast is needed because the function is defined only in
-      //SystemParticle, not in NbodyParticle
-      //The safety of the cast relies on the correctness of the Ncomp value
-      IntegrateInternalMotion(static_cast<SystemParticle<ndim>* > (children[ichild]), tlocal_end);
+      // The cast is needed because the function is defined only in
+      // SystemParticle, not in NbodyParticle
+      // The safety of the cast relies on the correctness of the Ncomp value
+      IntegrateInternalMotion(static_cast<SystemParticle<ndim>* > 
+			      (children[ichild]), tlocal_end);
   }
 
 
-  //-------------------------------------------------
-  //Now integrate our internal motion
-  //-------------------------------------------------
-  DOUBLE tlocal=0.;
-  DOUBLE dt;
-  int nlocal_steps=0;
-
-  NbodyParticle<ndim> children_local[Ncompmax]; //Local copy of children
-  NbodyParticle<ndim>* children_local_pointers[Ncompmax]; //Array of pointers to local copy of children
-  //Make local copies of children (in COM frame)
+  // Make local copies of children (in COM frame)
+  // --------------------------------------------------------------------------
   for (int ichild=0; ichild<Nchildren; ichild++) {
 
     //TODO: should probably use some fancy feature of C++ (copy constructor?)
@@ -155,25 +156,28 @@ void Nbody<ndim>::IntegrateInternalMotion
 //    for (int k=0; k<ndim; k++) children_local[ichild].a3dot0[k] -=
 //        system->a3dot0[k];
 
-
-    children_local_pointers[ichild] = &(children_local[ichild]);
+    children_local_ptrs[ichild] = &(children_local[ichild]);
 
   }
 
 
+  // Main time integration loop
+  // ==========================================================================
   do {
-    //Calculate time-step
-    dt = std::min(big_number, tlocal_end-tlocal);
+
+    // Calculate time-step
+    dt = std::min(big_number, tlocal_end - tlocal);
     for (int ichild=0; ichild<Nchildren; ichild++) {
-      dt = std::min(dt, Timestep(children_local_pointers[ichild]));
+      dt = std::min(dt, Timestep(children_local_ptrs[ichild]));
     }
     tlocal += dt;
     nlocal_steps +=1;
 
     //Advance position and velocities
-    AdvanceParticles(nlocal_steps, Nchildren, children_local_pointers, dt);
+    AdvanceParticles(nlocal_steps, Nchildren, children_local_ptrs, dt);
 
-    //Iteration loop
+    // Time-symmetric iteration loop
+    // ------------------------------------------------------------------------
     for (int it=0; it<Npec; it++) {
 
       //Zero all acceleration terms
@@ -183,22 +187,24 @@ void Nbody<ndim>::IntegrateInternalMotion
         for (int k=0; k<ndim; k++) children_local[ichild].a3dot[k] = 0.0;
         children_local[ichild].gpot = 0.0;
       }
+
+      // Calculate forces, derivatives and other terms
+      CalculateDirectGravForces(Nchildren, children_local_ptrs);
+      
+      // Apply correction terms
+      CorrectionTerms(nlocal_steps, Nchildren, children_local_ptrs, dt);
     }
+    // ------------------------------------------------------------------------
 
-    //Calculate forces, derivatives, ...
-    CalculateDirectGravForces(Nchildren, children_local_pointers);
+    // Set end-of-step variables
+    EndTimestep(nlocal_steps, Nchildren, children_local_ptrs);
 
-    //Apply correction terms
-    CorrectionTerms(nlocal_steps, Nchildren, children_local_pointers, dt);
-
-    //Set end-of-step variables
-    EndTimestep(nlocal_steps, Nchildren, children_local_pointers);
+  } while (tlocal < tlocal_end);
+  // ==========================================================================
 
 
-
-  } while(tlocal < tlocal_end);
-
-  //Copy systems back to our children
+  // Copy systems back to our children
+  // --------------------------------------------------------------------------
   for (int ichild=0; ichild<Nchildren; ichild++) {
     for (int k=0; k<ndim; k++) children[ichild]->r[k] +=
          children_local[ichild].r[k];

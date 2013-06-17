@@ -7,6 +7,7 @@ Kelvin-Helmholtz instability test
 Initial conditions variables
 ----------------------------
 Simulation run id string                    : run_id = CDISC1
+Select SPH simulation                       : sim = sph
 Select Kelvin-Helmholtz initial conditions  : ic = cdiscontinuity
 1D shocktube test                           : ndim = 1
 x-velocity of LHS fluid                     : vfluid1[0] = 0.0

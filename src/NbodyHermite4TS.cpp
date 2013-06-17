@@ -67,6 +67,7 @@ void NbodyHermite4TS<ndim, kernelclass>::CorrectionTerms
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
   DOUBLE dt;                        // Physical time step size
+  DOUBLE invdt;                     // 1 / dt
 
   debug2("[NbodyHermite4TS::CorrectionTerms]");
 
@@ -78,15 +79,21 @@ void NbodyHermite4TS<ndim, kernelclass>::CorrectionTerms
     if (n%nstep == 0) {
       dt = timestep*(DOUBLE) nstep;
 
+      invdt = 1.0 / dt;
+    
       for (k=0; k<ndim; k++) {
-        star[i]->a2dot[k] = (-6.0*(star[i]->a0[k] - star[i]->a[k]) - dt*
-		  	    (4.0*star[i]->adot0[k] + 2.0*star[i]->adot[k]))/dt/dt;
-        star[i]->a3dot[k] = (12.0*(star[i]->a0[k] - star[i]->a[k]) + 6.0*dt*
-			    (star[i]->adot0[k] + star[i]->adot[k]))/dt/dt/dt;
+        star[i]->a2dot[k] = 
+	  (-6.0*(star[i]->a0[k] - star[i]->a[k]) - dt*
+	   (4.0*star[i]->adot0[k] + 2.0*star[i]->adot[k]))*invdt*invdt;
+        star[i]->a3dot[k] = 
+	  (12.0*(star[i]->a0[k] - star[i]->a[k]) + 6.0*dt*
+	   (star[i]->adot0[k] + star[i]->adot[k]))*invdt*invdt*invdt;
 
-        star[i]->v[k] = star[i]->v0[k] + 0.5*(star[i]->a0[k] + star[i]->a[k])*dt
+        star[i]->v[k] = star[i]->v0[k] 
+	  + 0.5*(star[i]->a0[k] + star[i]->a[k])*dt
           + onetwelfth*(star[i]->adot[k] - star[i]->adot0[k])*dt*dt;
-        star[i]->r[k] = star[i]->r0[k] + 0.5*(star[i]->v0[k] + star[i]->v[k])*dt
+        star[i]->r[k] = star[i]->r0[k] 
+	  + 0.5*(star[i]->v0[k] + star[i]->v[k])*dt
           + onetwelfth*(star[i]->a[k] - star[i]->a0[k])*dt*dt;
       }
     }

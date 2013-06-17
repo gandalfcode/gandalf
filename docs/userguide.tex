@@ -50,6 +50,7 @@ In order to use all features in CODENAME, the following programs and libraries m
 \item matplotlib compatible with python 2.7
 \item swig compatible with python 2.7
 \item f2py compatible with python 2.7
+\item pyparsing compatible with python 2.7
 %\item ffmpeg (for generating movies automatically)
 \end{itemize}
 
@@ -61,11 +62,11 @@ All of these programs/libraries can be found in most standard Linux installation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Command-line code compilation}
 
-To compile CODENAME only as a C++ executable to be run from the command line without visualisation, first set the chosen C++ compiler in the Makefile and type \\
+To compile CODENAME only as a C++ executable to be run from the command line without visualisation via the python program, first set the chosen C++ compiler in the Makefile and type \\
 \newline
 \noindent \var{make executable} \\
 
-\noindent The code is compiled and linked with the chosen C++ compiler and all python components are ignored.  If you do not have python installed on your system, or are having trouble getting the python components to function correctly, then the C++ executable can still be compiled independently.
+\noindent The code is compiled and linked with the chosen C++ compiler and all python components are ignored.  If you do not have python installed on your system, or are having trouble getting the python components to function correctly, then the C++ executable can still be compiled and run stand-alone.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -75,19 +76,22 @@ To compile all code elements including the python components, then complete the 
 
 \item Install all python-related programs listed in Section \ref{S:INSTALL}
 
+\begin{itemize}
+\item For Linux machines, python is usually installed by default.  The additional python libraries should be easily installed using either the main package manager (N.B. for pyparsing, you probably need to use {\var pip} or {\var easy\_install}).
+\item For Mac OS X, python is installed by default.  However, it does not have directly compatable versions of all the required libraries.  Therefore, it is required to install an additional version of python 2.7 using a 3rd party package manager like fink, Macports or homebrew.
+\end{itemize}
+
 \item Add the location of the main CODENAME directory to the \var{PYTHONPATH} environment variable.  If you are using bash or related shells, then add the line \\
 \newline
-\noindent \var{export PYTHONPATH=XXX/YYY/ZZZ:\$PYTHONPATH} \\
+\noindent \var{export PYTHONPATH=XXX/YYY/codename:\$PYTHONPATH} \\
 
-\noindent to your bashrc (or bash\_profile) script where {\var XXX/YYY/ZZZ} is the absolute path of the CODENAME directory.  
-
-If you are using csh, tcsh or related shells, then add
+\noindent to your bashrc (or bash\_profile) script where {\var XXX/YYY/codename} is the absolute path of the CODENAME directory.   If you are using csh, tcsh or related shells, then add
 \newline
-\noindent \var{setenv PYTHONPATH ``XXX/YYY/ZZZ:\$PYTHONPATH''} \\
+\noindent \var{setenv PYTHONPATH ``XXX/YYY/codename:\$PYTHONPATH''} \\
 
 \item Set the required version of python and f2py in your Makefile (See Section \ref{S:MAKEFILE}).  Since operating systems usually have more than one version of python installed, it is important to ensure that \var{make} uses the correct version when compiling the code.  These are set using the \var{PYTHON} and \var{F2PY} variables in the Makefile.
 
-Also, \var{make} requires the location of the python and numpy libraries.  In most cases, \var{make} will be able to locate these libraries automatically.  However, if there is a problem, or you wish to use an alternative version of these libraries installed elsewhere on your system, then these can be set by the \var{PYLIB} and \var{NUMPY} variables in the Makefile.  
+Also, \var{make} requires the location of the python and numpy libraries.  In most cases, \var{make} will be able to locate these libraries automatically (see description of Makefile options).  However, if there is a problem, or you wish to use an alternative version of these libraries installed elsewhere on your system, then these can be set by the \var{PYLIB} and \var{NUMPY} variables in the Makefile.  
 
 
 \item Finally, to compile all components of the code, including the python libraries with swig, type \\
@@ -170,7 +174,7 @@ The CODENAME Makefile is used to select options which are used to compile the co
 
 \begin{itemize}
 
-\item CC : C++ compiler (only gcc/g++ set-up at present)
+\item CPP : C++ compiler (only gcc/g++ set-up at present)
 
 \item PYTHON : name of python command-line executable (e.g. python, python2.7)
 
@@ -198,9 +202,11 @@ DOUBLE & : 64-bit precision floating point variables
 2 & : Code routine marker output for all steps
 \end{tabular}
 
-\item DEBUG : ?? \\
-
 \item VERIFY\_ALL : Include additional code to verify code is functioning correctly.  Increases run-time considerably, so should only be used for debugging purposes (0 or 1)
+
+\item PYLIB : Path to directory that includes prefered python libraries.  If left blank, {\var make} will use python routines to locate the libraries automatically.
+
+\item NUMPY : Path to directory that includes prefered numpy libraries.  Ase with PYLIB, If left blank, {\var make} will use python routines to locate the library locations automatically.
 
 \end{itemize}
 
@@ -219,21 +225,46 @@ DOUBLE & : 64-bit precision floating point variables
 
 \begin{itemize}
 
-\item \var{run\_id}  : Simulation run id string
+\item \var{sim} : Simulation type \vspace{0.1cm} \\
+\begin{tabular}{ll}
+godunov\_sph      & = Godunov SPH algorithm (Inutsuka 2002) \\
+nbody             & = N-body only algorithm \\
+sph               & = SPH (+ N-body) algorithn 
+\end{tabular}
+
+\item \var{sph} : SPH algorithm \\
+\begin{tabular}{ll}
+gradh    & = Conservative 'grad-h' SPH \\
+sm2012   & = Saitoh \& Makino (2012) SPH \\
+godunov  & = Godunov SPH (Inutsuka 2002)
+\end{tabular}
+
+\item \var{nbody} : Main N-body integration algorithm \\
+\begin{tabular}{ll}
+lfkdk        & = Leapfrog kick-drift-kick \\
+hermite4     & = 4th-order Hermite scheme \\
+hermite4ts   & = Time-symmeric 4th-order Hermite scheme
+\end{tabular}
 
 \item \var{ic} : Simulation initial conditions \vspace{0.1cm} \\
 \begin{tabular}{ll}
-cdiscontinuity   & = Contact discontinuity test \\
-khi              & = Kelvin-Helmholtz instability test \\
-lattice\_cube    & = Generate cuboid with particle on a cubic lattice \\
-plummer          & = ?? \\
-random\_cube     & = Populate cubiod with random particles \\
-random\_sphere   & = Populate sphere of unit radius with random particles \\
-sedov            & = Sedov blast-wave test \\
-soundwave        & = Sound wave test \\
-shocktube        & = Shocktube test
+binary            & = Simple binary star test \\
+boss\_bodenheimer & = Boss-Bodenheimer (1979) test \\
+box               & = Create a uniform box of gas \\
+cdiscontinuity    & = Contact discontinuity test \\
+khi               & = Kelvin-Helmholtz instability test \\
+noh               & = Noh problem initial conditions \\
+plummer           & = Plummer sphere test \\
+quadruple         & = Simple hierarchical quadruple test \\
+sedov             & = Sedov blast-wave test \\
+shearflow         & = Shear flow test \\
+shocktube         & = Shocktube test \\
+soundwave         & = Sound wave test \\
+sphere            & = 1D soundwave perturbation \\
+python            & = Generate initial conditions from python
 \end{tabular}
 
+\item \var{run\_id}  : Simulation run id string
 
 \item \var{in\_file\_form} : Format of initial conditions file
                       (ascii)
@@ -241,13 +272,13 @@ shocktube        & = Shocktube test
 \item \var{out\_file\_form} : Format of outputted snapshot files
                       (ascii)
 
-\item \var{endtime} : Termination time of the simulation
+\item \var{endtime} : Termination time of the simulation (given in {\var tunit}s)
 
-\item \var{dt\_snap} : Snapshot time interval
+\item \var{dt\_snap} : Snapshot time interval (given in {\var tunit}s)
 
 \item \var{nstepsmax} : Maximum no. of steps in simulation before termination
 
-\item \var{tfirstsnap} : Time of first snapshot
+\item \var{tfirstsnap} : Time of first snapshot (given in {\var tunit}s)
 
 \item \var{noutputstep} : Frequency of screen output (in units of integer steps)
 
@@ -311,7 +342,7 @@ g\_cm3      & = grammes per centimetre cubed
 
 \item \var{pressunit} : Pressure unit \\
 \begin{tabular}{ll}
-Pa    & = Pascals \\
+Pa    & = pascals/newtons per square metre \\
 bar   & = ???
 \end{tabular}
 
@@ -323,9 +354,9 @@ dyn  & = dynes
 
 \item \var{Eunit} : Energy unit \\
 \begin{tabular}{ll}
-J/GJ      & = Joules/Gigajoules \\
+J/GJ      & = joules/gigajoules \\
 erg       & = ergs \\
-10\^40erg & = 10\^40 ergs
+10\^40erg & = $10^{40}$ ergs
 \end{tabular}
 
 \item \var{momunit} : Momentum unit \\
@@ -393,13 +424,6 @@ K & = Kelvin
 
 \begin{itemize}
 
-\item \var{sph} : SPH algorithm \\
-\begin{tabular}{ll}
-gradh    & = Conservative 'grad-h' SPH \\
-sm2012   & = Saitoh \& Makino (2012) SPH \\
-godunov  & = Godunov SPH (Inutsuka 2002)
-\end{tabular}
-
 \item \var{kernel} : SPH kernel function \\
 \begin{tabular}{ll}
 m4        & = M4 Cubic spline kernel \\
@@ -407,13 +431,7 @@ quintic   & = Quintic spline kernel \\
 gaussuan  & = Gaussian kernel (truncated at 3h)
 \end{tabular}
 
-\item \var{tabulatedkernel} : Tabulate kernel function  (\var{yes} or \var{no})
-
-\item \var{neib\_search} : Neighbour searching algorithm \\
-\begin{tabular}{ll}
-bruteforce & = Brute-force (i.e. summation over all particles) \\
-grid       & = Grid with uniform spacing
-\end{tabular}
+\item \var{tabulatedkernel} : Tabulate kernel function  ($1$ or $0$)
 
 \item \var{h\_fac}     : Particles-per-smoothing length factor (eta in papers)
 
@@ -426,12 +444,13 @@ grid       & = Grid with uniform spacing
 \subsection{Hydrodynamical parameters}
 
 \begin{itemize}
-\item \var{hydro\_forces} : Compute hydro forces?  (\var{.true.} or \var{.false.})
+\item \var{hydro\_forces} : Compute hydro forces?  ($1$ or $0$)
 
 \item \var{gas\_eos} : Gas particles equation-of-state \\
 \begin{tabular}{ll}
 energy\_eqn & = Solve energy equation \\
-isothermal  & = Isothermal EOS
+isothermal  & = Isothermal EOS \\
+barotropic  & = Barotropic EOS (i.e. for mimicing isothermal + adiabatic phase during protostellar collapse)
 \end{tabular}
 
 %\item \var{cooling\_law} : Cooling law for gas particles (only applicable if solving the energy equation) \\
@@ -511,7 +530,9 @@ hllc   & = HLLC approximate Riemann Solver (????)
 
 \begin{itemize}
 
-\item \var{self\_gravity} : Compute gravitational forces?   (\var{.true.} or \var{.false.})
+\item \var{self\_gravity} : Compute gravitational forces?   ($1$ or $0$)
+
+%\item \var{grav\_kernel} : Use kernel-softened gravity
 
 %\item \var{meanh\_gravity} : Use mean-smoothing length for gravitational forces? (\var{.true.} or \var{.false.})
 
@@ -527,49 +548,47 @@ hllc   & = HLLC approximate Riemann Solver (????)
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Neighbour searching and tree parameters}
+
+\begin{itemize}
+
+\item \var{neib\_search} : Neighbour searching algorithm \vspace{0.1cm} \\
+\begin{tabular}{ll}
+bruteforce & = Brute-force (i.e. summation over all particles) \\
+grid       & = Grid with uniform spacing (N.B. doesn't currently work with self-gravity) \\
+binarytree & = Balanced binary tree
+\end{tabular}
+
+\item \var{gravity\_mac} : Gravity-tree cell-opening criteria (N.B. always defulats to geometric for now) \vspace{0.1cm} \\
+\begin{tabular} {ll}
+geometric & = Standard Barnes-Hut geomtric opening angle criterion
+\end{tabular}
+
+\item \var{Nleafmax} : Maximum no. of particles allowed in tree leaf cell
+
+\item \var{thetamaxsqd} : Maximum tree opening angle (squared)
+
+\end{itemize}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{N-body parameters}
 
 \begin{itemize}
 
-\item \var{nbody} : Main N-body integration algorithm \\
-\begin{tabular}{ll}
-lfkdk        & = Leapfrog kick-drift-kick \\
-hermite4     & = 4th-order Hermite scheme
-\end{tabular}
+\item \var{Npec} : No. of P(EC)\^n iterations in time-symmetric scheme (if non time-symmetric scheme is used, automatically sets to $1$)
+
+\item \var{nbody\_softening} : Use SPH kernel-softening between star particles? ($1$ or $0$)
 
 \item \var{sub\_systems} : Identify and integrate sub-systems separately?
 
-\end{itemize}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Boundary parameters}
-
-\begin{itemize}
-
-\item \var{x\_boundary\_lhs} : Boundary conditions for LHS of x-dimension
-\item \var{x\_boundary\_rhs} : Boundary conditions for RHS of x-dimension
-\item \var{y\_boundary\_lhs} : Boundary conditions for LHS of y-dimension
-\item \var{y\_boundary\_rhs} : Boundary conditions for RHS of y-dimension
-\item \var{z\_boundary\_lhs} : Boundary conditions for LHS of z-dimension
-\item \var{z\_boundary\_rhs} : Boundary conditions for RHS of z-dimension
-For all boundaries: \\
-\begin{tabular}{ll}
-open     & = open boundaries (i.e. extends to infinity) \\
-periodic & = periodic wrapping between LHS \& RHS boundary \\
-wall     & = wall at boundary (i.e. reflection of particles) \\
-mirror   & = mirror boundary (i.e. 'ghost' reflections)
-\end{tabular}
-
-\item \var{boxmin[0]} : Location of LHS x-boundary
-\item \var{boxmax[0]} : Location of RHS x-boundary
-\item \var{boxmin[1]} : Location of LHS y-boundary
-\item \var{boxmax[1]} : Location of RHS y-boundary
-\item \var{boxmin[2]} : Location of LHS z-boundary
-\item \var{boxmax[2]} : Location of RHS z-boundary
-
+\item \var{gpefrac} : Maximum fraction of total gravitational potential energy from external sources to allow sub-system.
 
 \end{itemize}
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -579,8 +598,7 @@ mirror   & = mirror boundary (i.e. 'ghost' reflections)
 
 \item \var{sph\_integration} : SPH particle integration scheme \\
 \begin{tabular}{ll}
-lfkdk   & = 2nd-order Leapfrog kick-drift-kick \\
-godunov & = Godunov SPH integration scheme
+lfkdk   & = 2nd-order Leapfrog kick-drift-kick
 \end{tabular}
 
 %\item \var{nbody\_integration} : N-body star particle integration scheme \\
@@ -612,7 +630,7 @@ godunov & = Godunov SPH integration scheme
 
 \item \var{nbody\_single\_timestep} : Constrain all N-body particles to a single timestep level 
 
-%\item \var{subsys\_mult} : Sub-system N-body timestep multiplier
+\item \var{subsys\_mult} : Sub-system N-body timestep multiplier
 
 
 %\item \var{rzero(1)} : Aux. x-coordinate variable
@@ -621,6 +639,7 @@ godunov & = Godunov SPH integration scheme
 
 
 \end{itemize}
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -646,6 +665,36 @@ godunov & = Godunov SPH integration scheme
 %\item \var{Npec}              : No. of iterations in P(EC)\^n integration scheme
 
 %\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Boundary parameters}
+
+\begin{itemize}
+
+\item \var{x\_boundary\_lhs} : Boundary conditions for LHS of x-dimension
+\item \var{x\_boundary\_rhs} : Boundary conditions for RHS of x-dimension
+\item \var{y\_boundary\_lhs} : Boundary conditions for LHS of y-dimension
+\item \var{y\_boundary\_rhs} : Boundary conditions for RHS of y-dimension
+\item \var{z\_boundary\_lhs} : Boundary conditions for LHS of z-dimension
+\item \var{z\_boundary\_rhs} : Boundary conditions for RHS of z-dimension
+For all boundaries: \\
+\begin{tabular}{ll}
+open     & = open boundaries (i.e. extends to infinity) \\
+periodic & = periodic wrapping between LHS \& RHS boundary \\
+wall     & = wall at boundary (i.e. reflection of particles)
+%mirror   & = mirror boundary (i.e. 'ghost' reflections)
+\end{tabular}
+
+\item \var{boxmin[0]} : Location of LHS x-boundary
+\item \var{boxmax[0]} : Location of RHS x-boundary
+\item \var{boxmin[1]} : Location of LHS y-boundary
+\item \var{boxmax[1]} : Location of RHS y-boundary
+\item \var{boxmin[2]} : Location of LHS z-boundary
+\item \var{boxmax[2]} : Location of RHS z-boundary
+
+
+\end{itemize}
 
 
 
@@ -679,20 +728,20 @@ godunov & = Godunov SPH integration scheme
 
 \item \var{kefrac}       : Fraction of energy that is kinetic (Sedov test)
 
-%\item \var{amp}       : Perturbation amplitude
-%\item \var{lambda}    : Perturbation wavelength
+\item \var{amp}          : Perturbation amplitude
+\item \var{lambda}       : Perturbation wavelength
 
-%\item \var{radius}    : Radius
+\item \var{radius}       : Radius of cloud
 %\item \var{rho0}      : Central density
 
-%\item \var{rplummer}  : Plummer radius
-%\item \var{mplummer}  : Total mass of plummer sphere
+\item \var{rplummer}     : Plummer radius
+\item \var{mplummer}     : Total mass of plummer sphere
 
 %\item \var{cdmfrac}   : Fraction of mass in cdm particles
-%\item \var{gasfrac}   : Fraction of mass in gas particles
-%\item \var{starfrac}  : Fraction of mass in star particles
+\item \var{gasfrac}      : Fraction of mass in gas particles
+\item \var{starfrac}     : Fraction of mass in star particles
 
-%\item \var{rstar}     : (Softening) radius of star particles
+\item \var{rstar}        : (Softening) radius of star particles
 
 %\item \var{Nplummer\_gas} : No. of gas particles in Plummer sphere
 %\item \var{Nplummer\_cdm} : No. of cdm particles in Plummer sphere
@@ -729,12 +778,13 @@ At present, the following initial conditions are included in the code :
 
 \noindent SPH simulations : \\
 \begin{tabular}{ll}
+- box       &: Create uniform box \\
 - khi       &: Kelvin-helmholtz instability \\
-- randcube  &: Random cube of gas particles \\
+- plummer   &: Plummer sphere (stars + gas, or just gas) \\
 - rti       &: Rayleigh-Taylor instability \\
 - sedov     &: Sedov blastwave test \\
 - shocktube &: Simple two-fluid shocktube test \\
-- plummer   &: Plummer sphere (stars + gas, or just gas)
+- sphere    &: Create uniform density sphere
 \end{tabular}
 \newline
 

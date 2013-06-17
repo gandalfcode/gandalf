@@ -16,6 +16,7 @@ struct Diagnostics {
   DOUBLE utot;                      ///< Total thermal energy
   DOUBLE ketot;                     ///< Total kinetic energy
   DOUBLE gpetot;                    ///< Total grav. potential energy
+  DOUBLE mtot;                      ///< Total mass in simulation
   DOUBLE mom[ndim];                 ///< Total momentum vector
   DOUBLE angmom[3];                 ///< Total angular momentum vector
   DOUBLE force[ndim];               ///< Net force

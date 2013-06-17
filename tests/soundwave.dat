@@ -9,6 +9,7 @@ sound-wave along a uniform density gas.
 Initial conditions variables
 ----------------------------
 Simulation run id string                    : run_id = SOUNDWAVE1
+Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = soundwave
 1D shocktube test                           : ndim = 1
 Pressure of LHS fluid                       : press1 = 1.0

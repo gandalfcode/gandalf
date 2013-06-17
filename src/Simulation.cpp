@@ -38,9 +38,10 @@ SimulationBase* SimulationBase::SimulationFactory
  Parameters* params)                ///< [in] Pointer to parameters object
 {
   string SimulationType;            // Local copy of simulation type param.
+  string SphType;                   // Local copy of SPH algorithm param.
 
-  //Check ndim
-  if (ndim<1 || ndim>3) {
+  // Check ndim is valid
+  if (ndim < 1 || ndim > 3) {
     stringstream msg;
     msg << "Error: ndim must be either 1, 2, 3; the value " 
         << ndim << "is not allowed!";
@@ -52,11 +53,12 @@ SimulationBase* SimulationBase::SimulationFactory
 
   // Get the simulation type from the parameters
   //TODO: should the simulation type be passed as a parameter?
-  SimulationType = params->stringparams["sph"];
+  SimulationType = params->stringparams["sim"];
+  SphType = params->stringparams["sph"];
 
   //Check simulation type
-  if (SimulationType != "gradh" && SimulationType != "sm2012" && 
-      SimulationType != "godunov" ) {
+  if (SimulationType != "sph" && SimulationType != "godunov_sph" && 
+      SimulationType != "nbody" ) {
     string msg = "Error: the simulation type " + SimulationType + 
       " was not recognized";
     ExceptionHandler::getIstance().raise(msg);
@@ -64,23 +66,29 @@ SimulationBase* SimulationBase::SimulationFactory
 
   // Create and return Simulation object depending on the chosen algorithm 
   // and the dimensionality.
-  if (ndim==1) {
-    if (SimulationType=="gradh" || SimulationType=="sm2012")
+  if (ndim == 1) {
+    if (SimulationType == "sph")
       return new SphSimulation<1>(params);
-    else if (SimulationType=="godunov")
+    else if (SimulationType=="godunov_sph")
       return new GodunovSphSimulation<1>(params);
+    //else if (SimulationType=="nbody")
+    //return new NbodySimulation<1>(params);
   }
   else if (ndim==2) {
-    if (SimulationType=="gradh" || SimulationType=="sm2012")
+    if (SimulationType == "sph")
       return new SphSimulation<2>(params);
-    else if (SimulationType=="godunov")
+    else if (SimulationType=="godunov_sph")
       return new GodunovSphSimulation<2>(params);
+    //else if (SimulationType=="nbody")
+    //return new NbodySimulation<2>(params);
   }
   else if (ndim==3) {
-    if (SimulationType=="gradh" || SimulationType=="sm2012")
+    if (SimulationType == "sph")
       return new SphSimulation<3>(params);
-    else if (SimulationType=="godunov")
+    else if (SimulationType=="godunov_sph")
       return new GodunovSphSimulation<3>(params);
+    //else if (SimulationType=="nbody")
+    //return new NbodySimulation<3>(params);
   }
   return NULL;
 }
@@ -92,8 +100,7 @@ SimulationBase* SimulationBase::SimulationFactory
 /// SimulationBase constructor, initialising important simulation variables. 
 // ============================================================================
 SimulationBase::SimulationBase
-(Parameters* params                 ///< [in] Pointer to parameters object
- )
+(Parameters* params)                ///< [in] Pointer to parameters object
 {
   simparams = new Parameters(*params);
   paramfile = "";
@@ -127,7 +134,8 @@ void SimulationBase::SetParam(string key, string value) {
 
   //Error checking
   if (ParametersProcessed) {
-    string msg = "Error: the non-return point for setting parameters has been reached!";
+    string msg = 
+      "Error: the non-return point for setting parameters has been reached!";
     ExceptionHandler::getIstance().raise(msg);
   }
   if (key=="ndim") {
@@ -342,8 +350,6 @@ void Simulation<ndim>::GenerateIC(void)
     BossBodenheimer();
   else if (simparams->stringparams["ic"] == "box")
     UniformBox();
-  else if (simparams->stringparams["ic"] == "sphere")
-    UniformSphere();
   else if (simparams->stringparams["ic"] == "cdiscontinuity")
     ContactDiscontinuity();
   else if (simparams->stringparams["ic"] == "khi")
@@ -362,6 +368,8 @@ void Simulation<ndim>::GenerateIC(void)
     ShockTube();
   else if (simparams->stringparams["ic"] == "soundwave")
     SoundWave();
+  else if (simparams->stringparams["ic"] == "sphere")
+    UniformSphere();
   else if (simparams->stringparams["ic"] == "python")
     return;
   else {
@@ -1205,7 +1213,7 @@ void SimulationBase::SetupSimulation(void)
   GenerateIC();
 
   // Call a messy function that does all the rest of the initialisation
-  PostGeneration();
+  PostInitialConditionsSetup();
 
   return;
 }

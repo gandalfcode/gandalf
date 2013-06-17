@@ -16,16 +16,16 @@ Softening radius of star                    : rstar = 0.01
 Fraction of mass within stars               : starfrac = 1.0
 Fraction of mass within gas                 : gasfrac = 0.0
 No. of SPH particles                        : Nsph = 0
-No. of star particles                       : Nstar = 256
+No. of star particles                       : Nstar = 64
 Perform dimensionless simulation            : dimensionless = 1
 
 
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 2.0
+Simulation end time                         : tend = 10.0
 Regular snapshot output frequency           : dt_snap = 1.0
-Screen output frequency (in no. of steps)   : noutputstep = 1
+Screen output frequency (in no. of steps)   : noutputstep = 32
 
 
 #-----------------------------
@@ -38,15 +38,16 @@ Tabulate SPH kernel                         : tabulated_kernel = 1
 #-------------------------
 # N-body algorithm options
 #-------------------------
-Star particle integration option            : nbody = lfkdk
+Star particle integration option            : nbody = hermite4
 Use softening?                              : nbody_softening = 0
 Identify and integrate sub-systems?         : sub_systems = 0
+No. of P(EC)^n iteration steps              : Npec = 1
 
 
 #-------------------------
 # Time integration options
 #-------------------------
-N-body timestep multiplier                  : nbody_mult = 0.2
+N-body timestep multiplier                  : nbody_mult = 0.1
 No. of block timestep levels                : Nlevels = 1
 
 

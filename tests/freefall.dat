@@ -8,6 +8,7 @@ Freefall collapse test
 Initial conditions variables
 ----------------------------
 Simulation run id string                    : run_id = FREEFALL1
+Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = sphere
 Dimensionality of cube                      : ndim = 3
 No. of SPH particles                        : Npart = 1000

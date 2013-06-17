@@ -9,6 +9,7 @@ given by Springel (2009).
 Initial conditions variables
 ----------------------------
 Simulation run id string                    : run_id = KHI1
+Select SPH simulation                       : sim = sph
 Select Kelvin-Helmholtz initial conditions  : ic = khi
 Select 2D                                   : ndim = 2
 x-velocity of fluid 1                       : vfluid1[0] = -0.5

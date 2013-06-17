@@ -258,7 +258,7 @@ void NbodyHermite4<ndim, kernelclass>::AdvanceParticles
 
   // Advance positions and velocities of all systems
   // --------------------------------------------------------------------------
-  for (i=0; i<Nsystem; i++) {
+  for (i=0; i<N; i++) {
 
     // Compute time since beginning of step
     nstep = star[i]->nstep;
@@ -319,6 +319,7 @@ void NbodyHermite4<ndim, kernelclass>::CorrectionTerms
         star[i]->a3dot[k] = 
 	  (12.0*(star[i]->a0[k] - star[i]->a[k]) + 6.0*dt*
 	   (star[i]->adot0[k] + star[i]->adot[k]))*invdt*invdt*invdt;
+
         star[i]->r[k] += star[i]->a2dot[k]*dt*dt*dt*dt/24.0 +
           star[i]->a3dot[k]*dt*dt*dt*dt*dt/120.0;
         star[i]->v[k] += star[i]->a2dot[k]*dt*dt*dt/6.0 +
@@ -353,7 +354,7 @@ void NbodyHermite4<ndim, kernelclass>::EndTimestep
 
   // Loop over all system particles
   // --------------------------------------------------------------------------
-  for (i=0; i<Nsystem; i++) {
+  for (i=0; i<N; i++) {
     nstep = star[i]->nstep;
 
     // If at end of the current step, set quantites for start of new step
@@ -388,9 +389,9 @@ DOUBLE NbodyHermite4<ndim, kernelclass>::Timestep
   DOUBLE a3sqd;                     // Magnitude of particle acceleration
 
   asqd  = DotProduct(star->a,star->a,ndim);
-  a1sqd = DotProduct(star->a,star->a,ndim);
-  a2sqd = DotProduct(star->a,star->a,ndim);
-  a3sqd = DotProduct(star->a,star->a,ndim);
+  a1sqd = DotProduct(star->adot,star->adot,ndim);
+  a2sqd = DotProduct(star->a2dot,star->a2dot,ndim);
+  a3sqd = DotProduct(star->a3dot,star->a3dot,ndim);
 
   if (a1sqd > small_number_dp && a2sqd > small_number_dp) {
     timestep = (sqrt(asqd*a2sqd) + a1sqd)/(sqrt(a1sqd*a3sqd) + a2sqd);
