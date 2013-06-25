@@ -198,7 +198,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["sph_integration"] = "lfkdk";
   floatparams["accel_mult"] = 0.3;
   floatparams["courant_mult"] = 0.15;
-  floatparams["nbody_mult"] = 0.01;
+  floatparams["nbody_mult"] = 0.1;
   floatparams["subsys_mult"] = 0.05;
   intparams["Nlevels"] = 1;
   intparams["sph_single_timestep"] = 0;
@@ -250,11 +250,11 @@ void Parameters::SetDefaultValues(void)
 
   // N-body parameters
   // --------------------------------------------------------------------------
-  stringparams["sub_system_integration"] = "hermite4ts";
+  intparams["sub_systems"] = 0;
   intparams["Npec"] = 1;
   intparams["nbody_softening"] = 0;
-  intparams["sub_systems"] = 0;
-  floatparams["gpefrac"] = 1.0e-3;
+  floatparams["gpefrac"] = 1.0e-2;
+  stringparams["sub_system_integration"] = "hermite4";
 
   // Boundary conditions parameters
   // --------------------------------------------------------------------------

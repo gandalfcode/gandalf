@@ -17,6 +17,7 @@ Density of LHS fluid                        : rhofluid1 = 1.0
 Sound wave amplitude                        : amp = 0.5
 No. of x-particles in lattice               : Nlattice1[0] = 32
 No. of y-particles in lattice               : Nlattice1[1] = 32
+Use dimensionless units                     : dimensionless = 1
 
 
 -----------------------------

@@ -13,7 +13,7 @@
 #include "NbodyParticle.h"
 
 
-static const int Ncompmax = 4;
+static const int Ncompmax = 2;
 
 
 

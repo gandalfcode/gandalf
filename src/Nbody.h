@@ -56,7 +56,7 @@ class Nbody
   virtual void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE) = 0;
   virtual void EndTimestep(int, int, NbodyParticle<ndim> **) = 0;
   virtual DOUBLE Timestep(NbodyParticle<ndim> *) = 0;
-  void IntegrateInternalMotion(SystemParticle<ndim>* system, DOUBLE tend);
+  virtual void IntegrateInternalMotion(SystemParticle<ndim>* system, DOUBLE tend);
 
 
   // N-body counters and main data arrays
@@ -68,6 +68,7 @@ class Nbody
   int Nstarmax;                         ///< Max. no. of star particles
   int Nsystem;                          ///< No. of system particles
   int Nsystemmax;                       ///< No. of system particles
+  int reset_tree;                       ///< Reset all star properties for tree
 
   const int nbody_softening;            ///< Use softened-gravity for stars?
   const int sub_systems;                ///< Create sub-systems?
@@ -115,6 +116,7 @@ public:
   void CorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
   void EndTimestep(int, int, NbodyParticle<ndim> **);
   DOUBLE Timestep(NbodyParticle<ndim> *);
+  void IntegrateInternalMotion(SystemParticle<ndim>* system, DOUBLE tend);
 
   static const int vdim=ndim;           ///< Local copy of vdim
   static const FLOAT invndim=1./ndim;   ///< Copy of 1/ndim
@@ -151,6 +153,7 @@ public:
   void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE);
   void EndTimestep(int, int, NbodyParticle<ndim> **);
   DOUBLE Timestep(NbodyParticle<ndim> *);
+  void IntegrateInternalMotion(SystemParticle<ndim>* system, DOUBLE tend);
 
   static const int vdim=ndim;           ///< Local copy of vdim
   static const FLOAT invndim=1./ndim;   ///< Copy of 1/ndim
@@ -172,6 +175,7 @@ public:
 
   using NbodyHermite4<ndim, kernelclass>::allocated;
   using Nbody<ndim>::nbody_mult;
+  using Nbody<ndim>::Npec;
   using Nbody<ndim>::Nstar;
   using Nbody<ndim>::Nsystem;
   using Nbody<ndim>::stardata;
@@ -181,6 +185,7 @@ public:
   ~NbodyHermite4TS();
 
   void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE);
+  void IntegrateInternalMotion(SystemParticle<ndim>* system, DOUBLE tend);
 
 };
 #endif

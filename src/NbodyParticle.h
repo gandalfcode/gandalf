@@ -29,6 +29,7 @@ class NbodyParticle
   bool active;                      ///< Flag if active (i.e. recompute step)
   int level;                        ///< Current timestep level    
   int nstep;                        ///< Integer step-size of particle
+  int Ncomp;                        ///< No. of internal components
   DOUBLE r[ndim];                   ///< Position
   DOUBLE v[ndim];                   ///< Velocity
   DOUBLE a[ndim];                   ///< Acceleration
@@ -45,9 +46,10 @@ class NbodyParticle
   DOUBLE radius;                    ///< Softening/sink radius of particle
   DOUBLE hfactor;                   ///< invh^(ndim + 1)
   DOUBLE gpot;                      ///< Gravitational potential
+  DOUBLE gpe_internal;              ///< ..
   DOUBLE dt;                        ///< Particle timestep
-
-  int Ncomp;
+  DOUBLE dt_internal;               ///< Internal timestep 
+                                    ///< (e.g. due to sub-systems)
 
 
   // Star particle constructor to initialise all values
@@ -55,6 +57,9 @@ class NbodyParticle
   NbodyParticle()
   {
     active = false;
+    level = 0;
+    nstep = 0;
+    Ncomp = 1;
     for (int k=0; k<ndim; k++) r[k] = 0.0;
     for (int k=0; k<ndim; k++) v[k] = 0.0;
     for (int k=0; k<ndim; k++) a[k] = 0.0;
@@ -69,7 +74,10 @@ class NbodyParticle
     h = 0;
     invh = 0.0;
     hfactor = 0.0;
-    Ncomp = 1;
+    gpot = 0.0;
+    gpe_internal = 0.0;
+    dt = 0.0;
+    dt_internal = big_number;
   } 
 
 };

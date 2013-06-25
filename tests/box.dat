@@ -19,7 +19,7 @@ No. of x-particles in fluid 1               : Nlattice1[0] = 32
 No. of y-particles in fluid 1               : Nlattice1[1] = 32
 No. of y-particles in fluid 1               : Nlattice1[2] = 1
 Local arrangement of particles              : particle_distribution = random
-
+Use dimensionless units                     : dimensionless = 1
 
 -----------------------------
 Simulation boundary variables

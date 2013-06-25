@@ -11,7 +11,9 @@ sim = newsim(ndim=1)
 
 # Set all important code parameters
 sim.SetParam('ic','python')
+sim.SetParam('sim','sph')
 sim.SetParam('sph','gradh')
+sim.SetParam('run_id','SHOCK1')
 sim.SetParam('sph_integration','lfkdk')
 sim.SetParam('gas_eos','energy_eqn')
 sim.SetParam('energy_integration','PEC')
@@ -21,6 +23,7 @@ sim.SetParam('tend',0.075)
 sim.SetParam('dt_snap',1.0)
 sim.SetParam('x_boundary_lhs','open')
 sim.SetParam('x_boundary_rhs','open')
+sim.SetParam('dimensionless',1)
 
 # Set number of particles and allocate local numpy arrays
 Npart = 200

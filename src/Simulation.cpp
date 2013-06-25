@@ -49,7 +49,7 @@ SimulationBase* SimulationBase::SimulationFactory
   }
 
   // Set ndim inside the parameters
-  params->intparams["ndim"]=ndim;
+  params->intparams["ndim"] = ndim;
 
   // Get the simulation type from the parameters
   //TODO: should the simulation type be passed as a parameter?
@@ -71,24 +71,24 @@ SimulationBase* SimulationBase::SimulationFactory
       return new SphSimulation<1>(params);
     else if (SimulationType=="godunov_sph")
       return new GodunovSphSimulation<1>(params);
-    //else if (SimulationType=="nbody")
-    //return new NbodySimulation<1>(params);
+    else if (SimulationType=="nbody")
+      return new NbodySimulation<1>(params);
   }
   else if (ndim==2) {
     if (SimulationType == "sph")
       return new SphSimulation<2>(params);
     else if (SimulationType=="godunov_sph")
       return new GodunovSphSimulation<2>(params);
-    //else if (SimulationType=="nbody")
-    //return new NbodySimulation<2>(params);
+    else if (SimulationType=="nbody")
+      return new NbodySimulation<2>(params);
   }
   else if (ndim==3) {
     if (SimulationType == "sph")
       return new SphSimulation<3>(params);
     else if (SimulationType=="godunov_sph")
       return new GodunovSphSimulation<3>(params);
-    //else if (SimulationType=="nbody")
-    //return new NbodySimulation<3>(params);
+    else if (SimulationType=="nbody")
+      return new NbodySimulation<3>(params);
   }
   return NULL;
 }
@@ -302,7 +302,7 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
 
 
 //=============================================================================
-//  SphSimulation::Output
+//  SimulationBase::Output
 /// Controls when regular output snapshots are written by the code.
 //=============================================================================
 string SimulationBase::Output(void)
@@ -335,7 +335,7 @@ string SimulationBase::Output(void)
 
 
 //============================================================================
-//  SphSimulation::GenerateIC
+//  Simulation::GenerateIC
 /// Generate initial conditions for SPH simulation chosen in parameters file.
 //=============================================================================
 template <int ndim>
@@ -390,7 +390,7 @@ void Simulation<ndim>::GenerateIC(void)
 
 
 //=============================================================================
-//  SphSimulation::ProcessParameters
+//  Simulation::ProcessParameters
 /// Process all the options chosen in the parameters file, setting various 
 /// simulation variables and creating important simulation objects.
 //=============================================================================
@@ -857,7 +857,7 @@ void Simulation<ndim>::ProcessParameters(void)
 
 
 //=============================================================================
-//  SphSimulation::PreSetupForPython
+//  Simulation::PreSetupForPython
 /// Initialisation routine called by python interface.
 //=============================================================================
 template <int ndim>
@@ -966,8 +966,13 @@ void Simulation<ndim>::ImportArrayNbody
     scalar = false;
   }
   // --------------------------------------------------------------------------
-  else if (quantity=="m") {
+  else if (quantity == "m") {
     quantityp = &StarParticle<ndim>::m;
+    scalar = true;
+  }
+  // --------------------------------------------------------------------------
+  else if (quantity == "h") {
+    quantityp = &StarParticle<ndim>::h;
     scalar = true;
   }
   // --------------------------------------------------------------------------
@@ -1140,10 +1145,12 @@ void Simulation<ndim>::ImportArraySph
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::ImportArray
-(double* input,                         ///< [in] Input array
- int size,                              ///< [in] Size of the input array
- string quantity,                       ///< [in] Which quantity should be set equal to the given array
- string type)                       ///< [in] Which particle type should be assigned the array
+(double* input,                     ///< [in] Input array
+ int size,                          ///< [in] Size of the input array
+ string quantity,                   ///< [in] Which quantity should be set 
+                                    ///<      equal to the given array
+ string type)                       ///< [in] Which particle type should be 
+                                    ///<      assigned the array
 {
   debug2("[Simulation::ImportArray]");
 
@@ -1222,12 +1229,12 @@ void SimulationBase::SetupSimulation(void)
 }
 
 
+//template <int ndim>
+//void SphSimulation<ndim>::ProcessParameters()
+//{
+//  Simulation<ndim>::ProcessParameters();
+//}
 
-template <int ndim>
-void SphSimulation<ndim>::ProcessParameters()
-{
-  Simulation<ndim>::ProcessParameters();
-}
 
 
 

@@ -875,13 +875,11 @@ void Simulation<ndim>::PlummerSphere(void)
       if (x1 == 0.0 && x2 == 0.0 && x3 == 0.0) flag = true;
       rad = 1.0 / sqrt(pow(x1,-2.0/3.0) - 1.0);
       if (rad > radius/rplummer) flag = true;
-      cout << "HERE1 << " << x1 << "   " << x2 << "   " << x3 << "    " << flag << endl;
 
     } while (flag);
 
     z = (1.0 - 2.0*x2)*rad;
 
-    cout << "HERE1 << " << x1 << "   " << x2 << "   " << x3 << "    " << rad << "   " << z << endl;
 
     // Set position depending on particle type
     // ------------------------------------------------------------------------
@@ -1355,7 +1353,7 @@ void Simulation<ndim>::QuadrupleStar(void)
 {
   int k;                           // Dimension counter
   FLOAT sma1 = 1.0;                // ..
-  FLOAT sma2 = 0.1;                // ..
+  FLOAT sma2 = 0.001;              // ..
   FLOAT eccent = 0.0;              // ..
   FLOAT m1 = 0.5;                  // ..
   FLOAT m2 = 0.5;                  // ..
@@ -1426,7 +1424,7 @@ void Simulation<ndim>::AddBinaryStar
   int k;                           // Dimension counter
 
   FLOAT mbin = m1 + m2;
-  FLOAT period = twopi*sqrtf(sma*sma*sma/mbin);
+  FLOAT period = twopi*sqrt(sma*sma*sma/mbin);
   FLOAT vbin = twopi*sma/period;
 
   debug2("[Simulation::AddBinaryStar]");
@@ -1435,6 +1433,8 @@ void Simulation<ndim>::AddBinaryStar
     string message = "Binary test not available in 1D";
     ExceptionHandler::getIstance().raise(message);
   }
+
+  cout << "Adding binary with : " << m1 << "   " << m2 << "    " << sma << endl;
 
   // Set properties of star 1
   for (k=0; k<ndim; k++) s1.r[k] = rbinary[k];

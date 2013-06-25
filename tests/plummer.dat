@@ -7,6 +7,7 @@
 # Initial conditions variables
 #-----------------------------
 Simulation run id string                    : run_id = PLUMMER1
+Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = plummer
 Dimensionality of cube                      : ndim = 3
 Total mass of Plummer sphere                : mplummer = 1.0
@@ -16,16 +17,16 @@ Softening radius of star                    : rstar = 0.01
 Fraction of mass within stars               : starfrac = 1.0
 Fraction of mass within gas                 : gasfrac = 0.0
 No. of SPH particles                        : Nsph = 0
-No. of star particles                       : Nstar = 64
+No. of star particles                       : Nstar = 128
 Perform dimensionless simulation            : dimensionless = 1
 
 
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 10.0
-Regular snapshot output frequency           : dt_snap = 1.0
-Screen output frequency (in no. of steps)   : noutputstep = 32
+Simulation end time                         : tend = 100.0
+Regular snapshot output frequency           : dt_snap = 10.0
+Screen output frequency (in no. of steps)   : noutputstep = 128
 
 
 #-----------------------------
@@ -38,18 +39,17 @@ Tabulate SPH kernel                         : tabulated_kernel = 1
 #-------------------------
 # N-body algorithm options
 #-------------------------
-Star particle integration option            : nbody = hermite4
+Star particle integration option            : nbody = hermite4ts
 Use softening?                              : nbody_softening = 0
 Identify and integrate sub-systems?         : sub_systems = 0
-No. of P(EC)^n iteration steps              : Npec = 1
+Grav. energy fraction for sub-systems       : gpefrac = 0.02
+No. of P(EC)^n iteration steps              : Npec = 2
+Sub-system integration scheme               : sub_system_integration = hermite4ts
 
 
 #-------------------------
 # Time integration options
 #-------------------------
 N-body timestep multiplier                  : nbody_mult = 0.1
-No. of block timestep levels                : Nlevels = 1
-
-
-
-
+Sub-system timestep multiplier              : subsys_mult = 0.1
+No. of block timestep levels                : Nlevels = 5

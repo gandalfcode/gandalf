@@ -93,7 +93,7 @@ endif
 SWIG_HEADERS = Simulation.i
 WRAP_OBJ = Simulation_wrap.o
 OBJ = Parameters.o SimUnits.o 
-OBJ += Simulation.o SphSimulation.o GodunovSphSimulation.o  #SphSnapshot.o 
+OBJ += Simulation.o SphSimulation.o GodunovSphSimulation.o NbodySimulation.o
 OBJ += M4Kernel.o QuinticKernel.o GaussianKernel.o TabulatedKernel.o
 OBJ += Sph.o GradhSph.o SM2012Sph.o GodunovSph.o
 OBJ += EnergyPEC.o EnergyGodunovIntegration.o

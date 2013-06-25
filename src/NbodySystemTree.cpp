@@ -19,6 +19,7 @@
 using namespace std;
 
 
+
 //=============================================================================
 //  NbodySystemTree::NbodySystemTree()
 /// NbodySystemTree constructor
@@ -100,7 +101,7 @@ void NbodySystemTree<ndim>::CreateNbodySystemTree
   DOUBLE dr[ndim];                 // Relative position vector
   DOUBLE drsqd;                    // Distance squared
 
-  debug2("NbodySystemTree::CreateNbodySystemTree");
+  debug2("[NbodySystemTree::CreateNbodySystemTree]");
 
   Nnode = 0;
   Nfreenode = 0;
@@ -118,15 +119,23 @@ void NbodySystemTree<ndim>::CreateNbodySystemTree
     NNtree[i].rsqdnearest = big_number_dp;
     NNtree[i].gpe = 0.0;
     NNtree[i].gpe_internal = 0.0;
+    NNtree[i].Ncomp = 0;
+    NNtree[i].Nstar = 0;
+    NNtree[i].Nchildlist = 0;
+    NNtree[i].clist.clear();
   }
 
   // Add one star to each lead node, recording the position and id
   for (i=0; i<nbody->Nstar; i++) {
     nodelist[i] = i;
     NNtree[i].Ncomp = 1;
+    NNtree[i].Nstar = 1;
     for (k=0; k<ndim; k++) NNtree[i].r[k] = nbody->stardata[i].r[k];
     Nnode++;
     Nfreenode++;
+#if defined(VERIFY_ALL)
+    cout << "Setting leaf nodes of tree : " << i << endl;
+#endif
   }
 
 
@@ -135,7 +144,7 @@ void NbodySystemTree<ndim>::CreateNbodySystemTree
   // ==========================================================================
   while (Nnode < Nnodemax) {
 
-	// Construct list of remaining nodes
+    // Construct list of remaining nodes
     Nfreenode = 0;
     for (i=0; i<Nnode; i++) {
       if (NNtree[i].iparent == -1) nodelist[Nfreenode++] = i;
@@ -183,8 +192,13 @@ void NbodySystemTree<ndim>::CreateNbodySystemTree
           NNtree[Nnode].ichild2 = j;
           for (k=0; k<ndim; k++)
             NNtree[Nnode].r[k] = 0.5*(NNtree[i].r[k] + NNtree[j].r[k]);
-          NNtree[Nnode].Ncomp = NNtree[i].Ncomp + NNtree[j].Ncomp;
+          NNtree[Nnode].Nstar = NNtree[i].Nstar + NNtree[j].Nstar;
+	  NNtree[Nnode].Ncomp = NNtree[i].Ncomp + NNtree[j].Ncomp;
           Nnode++;
+#if defined(VERIFY_ALL)
+	  cout << "Adding new node to tree : " << Nnode - 1 << "   " 
+	       << i << "    " << j << endl;
+#endif
         }
 
       }
@@ -197,6 +211,10 @@ void NbodySystemTree<ndim>::CreateNbodySystemTree
 
   // Free all locally allocated memory
   delete[] nodelist;
+
+#if defined(VERIFY_ALL)
+  cout << "Nnode : " << Nnode << endl;
+#endif
 
   return;
 }
@@ -214,31 +232,35 @@ void NbodySystemTree<ndim>::BuildSubSystems
 (Nbody<ndim> *nbody)               ///< [inout] Nbody object containing stars
 {
   int c,c1,c2;                     // Cell counter
-  int i,ii,j,jj;                   // ..
+  int i,ii,j,jj;                   // Star and system particle counters
   int k;                           // Dimension counter
-  int Nsystem;                     // ..
+  int Nsystem;                     // No. of systems
   DOUBLE dr[ndim];                 // Relative position vector
-  DOUBLE drsqd;                    // ..
-  DOUBLE dv[ndim];                 // ..
-  DOUBLE invdrmag;                 // ..
-  DOUBLE ketot = 0.0;              // ..
-  DOUBLE vmean;                    // ..
+  DOUBLE drsqd;                    // Distance squared
+  DOUBLE dv[ndim];                 // Relative velocity vector
+  DOUBLE invdrmag;                 // 1 / drmag
+  DOUBLE ketot = 0.0;              // Kinetic energy
+  DOUBLE vmean;                    // Average speed of stars in sub-cluster
   //typename MergeList
-  NbodyListIterator it;
-  NbodyListIterator it2;  // ..
+  NbodyListIterator it;            // ..
+  NbodyListIterator it2;           // ..
+  NbodyParticle<ndim> *si;         // ..
+  NbodyParticle<ndim> *sj;         // ..
 
-  DOUBLE gpefrac = 0.001;          // ..
-
+  debug2("[NbodySystemTree::BuildSubSystems]");
 
   // Set all counters
   nbody->Nnbody = 0;
   nbody->Nsystem = 0;
   Nsystem = 0;
 
-
   // Loop through all nodes of tree and compute all physical quantities
   // ==========================================================================
   for (c=0; c<Nnode; c++) {
+
+#if defined(VERIFY_ALL)
+    cout << "Stocking node : " << c << "    Ncomp : " << NNtree[c].Ncomp << endl;
+#endif
 
     // If node contains one star, set all properties equal to star values
     // ------------------------------------------------------------------------
@@ -250,23 +272,32 @@ void NbodySystemTree<ndim>::BuildSubSystems
       for (k=0; k<ndim; k++) NNtree[c].v[k] = nbody->stardata[i].v[k];
       for (k=0; k<ndim; k++) NNtree[c].a[k] = nbody->stardata[i].a[k];
       for (k=0; k<ndim; k++) NNtree[c].adot[k] = nbody->stardata[i].adot[k];
+      for (k=0; k<ndim; k++) NNtree[c].a2dot[k] = nbody->stardata[i].a2dot[k];
+      for (k=0; k<ndim; k++) NNtree[c].a3dot[k] = nbody->stardata[i].a3dot[k];
       NNtree[c].gpe = 0.5*nbody->stardata[i].m*nbody->stardata[i].gpot;
       NNtree[c].gpe_internal = 0.0;
       NNtree[c].tcross = big_number;
-      NNtree[c].clist.push_back(&(nbody->stardata[i]));
+      NNtree[c].Nchildlist = 1;
+      NNtree[c].childlist[0] = &nbody->stardata[i];
+      //NNtree[c].clist.push_back(&(nbody->stardata[i]));
+
+#if defined(VERIFY_ALL)
+      cout << "Stocking single star data : " << i << "    " << NNtree[c].r[0] 
+	   << "    " << NNtree[c].r[1] << "    " << NNtree[c].gpe << endl;
+#endif
+
     }
 
     // Else, add together both child node properties
     // ------------------------------------------------------------------------
-    else if (NNtree[c].Ncomp <= Ncompmax) {
-
-      // Merge lists of stars/systems in child nodes
-      NNtree[c].clist = NNtree[c1].clist + NNtree[c2].clist;
+    else {
 
       c1 = NNtree[c].ichild1;
       c2 = NNtree[c].ichild2;
+      NNtree[c].Ncomp = NNtree[c1].Ncomp + NNtree[c2].Ncomp;
       NNtree[c].m = NNtree[c1].m + NNtree[c2].m;
-      NNtree[c].gpe = NNtree[c1].gpe + NNtree[c2].gpe;
+      NNtree[c].gpe = NNtree[c1].gpe + NNtree[c2].gpe - 
+	NNtree[c1].gpe_internal - NNtree[c2].gpe_internal;
       for (k=0; k<ndim; k++) {
         NNtree[c].r[k] = (NNtree[c1].m*NNtree[c1].r[k] +
 			  NNtree[c2].m*NNtree[c2].r[k])/NNtree[c].m;
@@ -276,87 +307,162 @@ void NbodySystemTree<ndim>::BuildSubSystems
 			  NNtree[c2].m*NNtree[c2].a[k])/NNtree[c].m;
         NNtree[c].adot[k] = (NNtree[c1].m*NNtree[c1].adot[k] +
 			  NNtree[c2].m*NNtree[c2].adot[k])/NNtree[c].m;
+        NNtree[c].a2dot[k] = (NNtree[c1].m*NNtree[c1].a2dot[k] +
+			  NNtree[c2].m*NNtree[c2].a2dot[k])/NNtree[c].m;
+        NNtree[c].a3dot[k] = (NNtree[c1].m*NNtree[c1].a3dot[k] +
+			  NNtree[c2].m*NNtree[c2].a3dot[k])/NNtree[c].m;
       }
       NNtree[c].gpe_internal = 0.0;
       ketot = 0.0;
 
-      // Compute internal kinetic energy
-      for (it = NNtree[c].clist.begin(); it != NNtree[c].clist.end(); ++it) {
-        for (k=0; k<ndim; k++) dv[k] = (*it)->v[k] - NNtree[c].v[k];
-        ketot += 0.5*(*it)->m*DotProduct(dv,dv,ndim);
-      }
-      vmean = sqrt(2.0*ketot/NNtree[c].m);
-
-      // Compute internal gravitational potential energy
-      for (it = NNtree[c].clist.begin(); 
-	   it != NNtree[c].clist.end().previous(); ++it) {
-        for (it2 = it.next(); it2 != NNtree[c].clist.end(); ++it2) {
-          for (k=0; k<ndim; k++) dr[k] = (*it2)->r[k] - (*it)->r[k];
-          drsqd = DotProduct(dr,dr,ndim);
-          invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
-          NNtree[c].gpe_internal += (*it)->m*(*it2)->m*invdrmag;
-        }
-      }
-
-      // Then, estimate the crossing time as tcross = Rgrav / vdisp
-      // where Rgrav = sqrt(m^2/G/Egrav).  Should give similar
-      // timescale to binary period in case of bound binary.
-      NNtree[c].tcross = 
-        sqrt(NNtree[c].m*NNtree[c].m/NNtree[c].gpe_internal)/vmean;
+#if defined(VERIFY_ALL)
+      cout << "Stocking system data : " << c << "    " << NNtree[c].r[0] 
+	   << "    " << NNtree[c].r[1] << endl;
+      //cout << "Child data : " << c1 << "    " << c2 << "    " 
+      //   << NNtree[c1].gpe << "    " << NNtree[c2].gpe << endl;
+#endif
 
 
-      // Now check energies and decide if we should create a new sub-system
-      // object.  If yes, create new system in main arrays
+      // If node contains within maximum allowed number of components, then 
+      // check if node is a new system or not
       // ----------------------------------------------------------------------
-      if (fabs(NNtree[c].gpe - NNtree[c].gpe_internal) < gpefrac*NNtree[c].gpe) {
+      if (NNtree[c].Ncomp <= Ncompmax) {
 
-	    // Copy centre-of-mass properties of new sub-system
-        nbody->system[Nsystem].m = NNtree[c].m;
-        for (k=0; k<ndim; k++) {
-          nbody->system[Nsystem].r[k] = NNtree[c].r[k];
-          nbody->system[Nsystem].v[k] = NNtree[c].v[k];
-          nbody->system[Nsystem].a[k] = NNtree[c].a[k];
-         nbody->system[Nsystem].adot[k] = NNtree[c].adot[k];
-        }
+	// Merge lists of stars/systems in child nodes
+	NNtree[c].Nchildlist = NNtree[c1].Nchildlist + NNtree[c2].Nchildlist;
+	for (i=0; i<NNtree[c1].Nchildlist; i++)
+	  NNtree[c].childlist[i] = NNtree[c1].childlist[i];
+	for (i=0; i<NNtree[c2].Nchildlist; i++)
+	  NNtree[c].childlist[i+NNtree[c1].Nchildlist] = NNtree[c2].childlist[i];
+	NNtree[c].clist = NNtree[c1].clist + NNtree[c2].clist;
 
-        // Copy list of contained N-body particles (either systems or stars)
-        // to system object
-        nbody->system[Nsystem].Nchildren = 0;
-        for (it = NNtree[c].clist.begin();
-        it != NNtree[c].clist.end(); ++it) {
-          nbody->system[Nsystem].children[nbody->system[Nsystem].Nchildren++] = (*it);
-        }
+#if defined(VERIFY_ALL)
+	cout << "No. of child systems for " << c << "   :   " 
+	     << NNtree[c].Nchildlist << endl;
+#endif
+	
+	// Compute internal kinetic energy
+	ketot = 0.0;
+	for (i=0; i<NNtree[c].Nchildlist; i++) {
+	  si = NNtree[c].childlist[i];
+	  for (k=0; k<ndim; k++) dv[k] = si->v[k] - NNtree[c].v[k];
+	  ketot += 0.5*si->m*DotProduct(dv,dv,ndim);
+	}
+	vmean = sqrt(2.0*ketot/NNtree[c].m);
+	
+	// Compute internal gravitational potential energy
+	for (i=0; i<NNtree[c].Nchildlist-1; i++) {
+	  si = NNtree[c].childlist[i];
+	  for (j=i+1; j<NNtree[c].Nchildlist; j++) {
+	    sj = NNtree[c].childlist[j];
+	    for (k=0; k<ndim; k++) dr[k] = sj->r[k] - si->r[k];
+	    drsqd = DotProduct(dr,dr,ndim);
+	    invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
+	    NNtree[c].gpe_internal += si->m*sj->m*invdrmag;
+	  }
+	}
 
-        // Finally, clear list and append newly created system particle
-        NNtree[c].clist.clear();
-        NNtree[c].clist.push_back(&(nbody->system[Nsystem++]));
+	// Then, estimate the crossing time as tcross = Rgrav / vdisp
+	// where Rgrav = sqrt(m^2/G/Egrav).  Should give similar
+	// timescale to binary period in case of bound binary.
+	NNtree[c].tcross = 
+	  sqrt(NNtree[c].m*NNtree[c].m/NNtree[c].gpe_internal)/vmean;
+	
+#if defined(VERIFY_ALL)
+	cout << "gpe : " << NNtree[c].gpe << "    gpe_internal : "
+	     << NNtree[c].gpe_internal << "    ketot : " << ketot << endl;
+#endif
+	
+	// Compute and store binary properties if bound
+	//binary->AddNewBinary(NNtree[c1].m,NNtree[c2].m,NNtree[c1].r,
+	//NNtree[c2].r,NNtree[c1].v,NNtree[c2].v);
+	if (NNtree[c].Ncomp == 2) {
+	  for (k=0; k<ndim; k++) dv[k] = si->v[k] - sj->v[k];
+	  for (k=0; k<ndim; k++) dr[k] = sj->r[k] - si->r[k];
+	  drsqd = DotProduct(dr,dr,ndim);
+	  invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
+#if defined(VERIFY_ALL)
+	  cout << "sma : " << -0.5*NNtree[c].m/
+	    (0.5*DotProduct(dv,dv,ndim) - NNtree[c].m*invdrmag) << endl;
+#endif
+	}
+
+
+	//cout << "Checking system criteria : " 
+	//   << fabs(NNtree[c].gpe - NNtree[c].gpe_internal)/NNtree[c].gpe 
+	//   << "    " << gpefrac << "    " << NNtree[c].Ncomp << "     " 
+	//   << Ncompmax << endl;
+
+
+	// Now check energies and decide if we should create a new sub-system
+	// object.  If yes, create new system in main arrays
+	// --------------------------------------------------------------------
+	if (fabs(NNtree[c].gpe - NNtree[c].gpe_internal) 
+	    < gpefrac*NNtree[c].gpe) {
+	  
+	  // Copy centre-of-mass properties of new sub-system
+	  nbody->system[Nsystem].dt_internal = NNtree[c].tcross;
+	  nbody->system[Nsystem].m = NNtree[c].m;
+	  for (k=0; k<ndim; k++) {
+	    nbody->system[Nsystem].r[k] = NNtree[c].r[k];
+	    nbody->system[Nsystem].v[k] = NNtree[c].v[k];
+	    nbody->system[Nsystem].a[k] = NNtree[c].a[k];
+	    nbody->system[Nsystem].adot[k] = NNtree[c].adot[k];
+	    nbody->system[Nsystem].a2dot[k] = NNtree[c].a2dot[k];
+	    nbody->system[Nsystem].a3dot[k] = NNtree[c].a3dot[k];
+	    nbody->system[Nsystem].r0[k] = NNtree[c].r[k];
+	    nbody->system[Nsystem].v0[k] = NNtree[c].v[k];
+	    nbody->system[Nsystem].a0[k] = NNtree[c].a[k];
+	    nbody->system[Nsystem].adot0[k] = NNtree[c].adot[k];
+	  }
+	  
+	  // Copy list of contained N-body particles (either systems or stars)
+	  // to system object, and also total no. of stars/components
+	  nbody->system[Nsystem].Ncomp = NNtree[c].Ncomp;
+	  nbody->system[Nsystem].Nchildren = 0;
+	  for (i=0; i<NNtree[c].Nchildlist; i++)
+	    nbody->system[Nsystem].children[nbody->system[Nsystem].Nchildren++]
+	      = NNtree[c].childlist[i];
+
+#if defined(VERIFY_ALL)
+	  cout << "Adding binary system : " << c << "    " << c1 << "    " 
+	       << c2 << "     " << nbody->system[Nsystem].Ncomp << endl;
+	  cout << "System no. : " << Nsystem << endl;
+	  cout << "r : " << NNtree[c].r[0] << "    " << NNtree[c].r[1] << endl;
+#endif
+	  //cout << "v : " << NNtree[c].v[0] << "    " << NNtree[c].v[1] << endl;
+	  //cout << "m : " << NNtree[c].m << endl;
+	  //cout << "dt_internal : " << NNtree[c].tcross << endl;
+
+	  // Finally, clear list and append newly created system particle
+          //NNtree[c].Ncomp = 1;
+	  NNtree[c].Nchildlist = 1;
+	  NNtree[c].childlist[0] = &(nbody->system[Nsystem]);
+	  //NNtree[c].clist.clear();
+	  //NNtree[c].clist.push_back(&(nbody->system[Nsystem]));
+	  Nsystem++;
+
+	}
 
       }
 
-      // If internal energy is not dominant enough to create a sub-system, 
-      // then (Not sure if we need to do anything here!).
+      
+      // If lists contain more than the maximum allowed number of components,
+      // then flush list of systems to main arrays
       // ----------------------------------------------------------------------
       else {
 
-	
+	// Merge lists of stars/systems in child nodes
+	for (i=0; i<NNtree[c1].Nchildlist; i++)
+	  nbody->nbodydata[nbody->Nnbody++] = NNtree[c1].childlist[i];
+	for (i=0; i<NNtree[c2].Nchildlist; i++)
+	  nbody->nbodydata[nbody->Nnbody++] = NNtree[c2].childlist[i];
+	NNtree[c].Nchildlist = 0;
+	NNtree[c1].Nchildlist = 0;
+	NNtree[c2].Nchildlist = 0;
 
       }
       // ----------------------------------------------------------------------
-
-    }
-
-    // If lists contain more than the maximum allowed number of components,
-    // then flush list of systems to main arrays
-    // ------------------------------------------------------------------------
-    else {
-
-      // Set pointers for main Nbody array
-      for (it = NNtree[c].clist.begin(); it != NNtree[c].clist.end(); ++it) {
-        nbody->nbodydata[nbody->Nnbody++] = (*it);
-      }
-
-      // Now empty list
-      NNtree[c].clist.clear();
 
     }
     // ------------------------------------------------------------------------
@@ -364,7 +470,41 @@ void NbodySystemTree<ndim>::BuildSubSystems
   }
   // ==========================================================================
 
+  
+  // For root cell, push all remaining systems (or single sub-systems) to list
+  c = Nnode - 1;
+#if defined(VERIFY_ALL)
+  cout << "No. of remaining systems in root node " << c << "  :  " 
+       << NNtree[c].Nchildlist << endl;
+#endif
+  for (i=0; i<NNtree[c].Nchildlist; i++)
+    nbody->nbodydata[nbody->Nnbody++] = NNtree[c].childlist[i];
+
+  //for (it = NNtree[c].clist.begin(); it != NNtree[c].clist.end(); ++it) {
+  //  nbody->nbodydata[nbody->Nnbody++] = (*it);
+  //}
+  //NNtree[c].clist.clear();
+
+
+
   nbody->Nsystem = Nsystem;
+
+#if defined(VERIFY_ALL)
+  cout << "List all main N-body particles : " << Nsystem 
+       << "    " << nbody->Nnbody << endl;
+  for (i=0; i<nbody->Nnbody; i++) {
+    cout << "i : " << i << "    " << nbody->nbodydata[i]->r[0] 
+	 << "    " << nbody->nbodydata[i]->r[1] << "     " 
+	 << nbody->nbodydata[i]->Ncomp << endl;
+  }
+  cout << "List all main system particles : " << Nsystem 
+       << "    " << nbody->Nsystem << endl;
+  for (i=0; i<nbody->Nsystem; i++) {
+    cout << "i : " << i << "    " << nbody->system[i].r[0] 
+	 << "    " << nbody->system[i].r[1] << "     " 
+	 << nbody->system[i].Ncomp << "   " << nbody->system[i].Nchildren << endl;
+  }
+#endif
 
   return;
 }
@@ -379,6 +519,7 @@ template <int ndim>
 void NbodySystemTree<ndim>::FindPerturberLists
 (Nbody<ndim> *nbody)               ///< [in] Nbody object containing stars
 {
+  debug2("[NbodySystemTree::FindPerturberLists]");
   return;
 }
 

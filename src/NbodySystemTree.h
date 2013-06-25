@@ -36,17 +36,22 @@ struct NNTreeCell {
   int inearest;                    ///< ..
   int iparent;                     ///< ..
   int Ncomp;                       ///< ..
+  int Nstar;                       ///< ..
+  int Nchildlist;                  ///< ..
   DOUBLE rsqdnearest;              ///< ..
   DOUBLE r[ndim];                  ///< ..
   DOUBLE v[ndim];                  ///< ..
   DOUBLE a[ndim];                  ///< ..
   DOUBLE adot[ndim];               ///< ..
+  DOUBLE a2dot[ndim];              ///< ..
+  DOUBLE a3dot[ndim];              ///< ..
   DOUBLE m;                        ///< ..
   DOUBLE h;                        ///< ..
   DOUBLE gpot;                     ///< ..
   DOUBLE gpe;                      ///< ..
   DOUBLE gpe_internal;             ///< ..
-  DOUBLE tcross;
+  DOUBLE tcross;                   ///< ..
+  NbodyParticle<ndim>* childlist[Ncompmax];  ///< ..
   MergeList<NbodyParticle<ndim> *> clist;  ///< ..
 };
 
@@ -63,7 +68,7 @@ template <int ndim>
 class NbodySystemTree
 {
 protected:
-	typedef typename MergeList<NbodyParticle<ndim>* >::iterator NbodyListIterator;
+  typedef typename MergeList<NbodyParticle<ndim>* >::iterator NbodyListIterator;
  public:
 
   NbodySystemTree();
@@ -78,6 +83,7 @@ protected:
   bool allocated_tree;
   int Nnode;
   int Nnodemax;
+  DOUBLE gpefrac;
   struct NNTreeCell<ndim> *NNtree;
 
 };

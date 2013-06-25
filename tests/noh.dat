@@ -19,6 +19,7 @@ No. of x-particles in fluid 1               : Nlattice1[0] = 64
 No. of y-particles in fluid 1               : Nlattice1[1] = 64
 No. of y-particles in fluid 1               : Nlattice1[2] = 64
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
+Use dimensionless units                     : dimensionless = 1
 
 
 -----------------------------

@@ -28,6 +28,7 @@
 #include "SphIntegration.h"
 #include "EnergyEquation.h"
 #include "Nbody.h"
+#include "NbodySystemTree.h"
 #include "Ghosts.h"
 using namespace std;
 
@@ -208,7 +209,8 @@ class Simulation : public SimulationBase {
   SphIntegration<ndim> *sphint;         ///< SPH Integration scheme pointer
   SphNeighbourSearch<ndim> *sphneib;    ///< SPH Neighbour scheme pointer
   Nbody<ndim> *nbody;                   ///< N-body algorithm pointer
-
+  Nbody<ndim> *subsystem;               ///< N-body object for sub-systems
+  NbodySystemTree<ndim> nbodytree;      ///< N-body tree to create sub-systems
 
 };
 
@@ -228,11 +230,21 @@ class SphSimulation : public Simulation<ndim>
   using SimulationBase::simparams;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
+  using Simulation<ndim>::subsystem;
+  using Simulation<ndim>::nbodytree;
   using Simulation<ndim>::sphint;
   using Simulation<ndim>::uint;
   using Simulation<ndim>::sphneib;
   using Simulation<ndim>::ghosts;
   using Simulation<ndim>::simbox;
+  using Simulation<ndim>::simunits;
+  using Simulation<ndim>::Nstepsmax;
+  using Simulation<ndim>::run_id;
+  using Simulation<ndim>::out_file_form;
+  using Simulation<ndim>::tend;
+  using Simulation<ndim>::noutputstep;
+  using Simulation<ndim>::nbody_single_timestep;
+  using Simulation<ndim>::ParametersProcessed;
   using Simulation<ndim>::n;
   using Simulation<ndim>::Nlevels;
   using Simulation<ndim>::Nsteps;
@@ -275,11 +287,21 @@ class GodunovSphSimulation : public Simulation<ndim>
   using SimulationBase::simparams;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
+  using Simulation<ndim>::subsystem;
+  using Simulation<ndim>::nbodytree;
   using Simulation<ndim>::sphint;
   using Simulation<ndim>::uint;
   using Simulation<ndim>::sphneib;
   using Simulation<ndim>::ghosts;
   using Simulation<ndim>::simbox;
+  using Simulation<ndim>::simunits;
+  using Simulation<ndim>::Nstepsmax;
+  using Simulation<ndim>::run_id;
+  using Simulation<ndim>::out_file_form;
+  using Simulation<ndim>::tend;
+  using Simulation<ndim>::noutputstep;
+  using Simulation<ndim>::nbody_single_timestep;
+  using Simulation<ndim>::ParametersProcessed;
   using Simulation<ndim>::n;
   using Simulation<ndim>::Nlevels;
   using Simulation<ndim>::Nsteps;
@@ -299,6 +321,58 @@ public:
 
   GodunovSphSimulation (Parameters* parameters): 
     Simulation<ndim>(parameters) {};
+  virtual void PostInitialConditionsSetup(void);
+  virtual void MainLoop(void);
+  virtual void ComputeGlobalTimestep(void);
+  virtual void ComputeBlockTimesteps(void);
+  virtual void ProcessParameters(void);
+};
+
+
+
+//=============================================================================
+//  Class NbodySimulation
+/// \brief   Main class for running N-body only simulations.
+/// \details Main NbodySimulation class definition, inherited from Simulation, 
+///          which controls the main program flow for N-body only simulations.
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=============================================================================
+template <int ndim>
+class NbodySimulation : public Simulation<ndim> 
+{
+  using SimulationBase::simparams;
+  using Simulation<ndim>::sph;
+  using Simulation<ndim>::nbody;
+  using Simulation<ndim>::subsystem;
+  using Simulation<ndim>::nbodytree;
+  using Simulation<ndim>::ghosts;
+  using Simulation<ndim>::simbox;
+  using Simulation<ndim>::simunits;
+  using Simulation<ndim>::Nstepsmax;
+  using Simulation<ndim>::run_id;
+  using Simulation<ndim>::out_file_form;
+  using Simulation<ndim>::tend;
+  using Simulation<ndim>::noutputstep;
+  using Simulation<ndim>::nbody_single_timestep;
+  using Simulation<ndim>::ParametersProcessed;
+  using Simulation<ndim>::n;
+  using Simulation<ndim>::Nlevels;
+  using Simulation<ndim>::Nsteps;
+  using Simulation<ndim>::t;
+  using Simulation<ndim>::timestep;
+  using Simulation<ndim>::level_step;
+  using Simulation<ndim>::Noutsnap;
+  using Simulation<ndim>::tsnapnext;
+  using Simulation<ndim>::dt_snap;
+  using Simulation<ndim>::level_max;
+  using Simulation<ndim>::integration_step;
+  using Simulation<ndim>::nresync;
+  using Simulation<ndim>::dt_max;
+
+public:
+
+  NbodySimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
   virtual void PostInitialConditionsSetup(void);
   virtual void MainLoop(void);
   virtual void ComputeGlobalTimestep(void);
