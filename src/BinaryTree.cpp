@@ -973,8 +973,8 @@ void BinaryTree<ndim>::ComputeCellForces
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::UpdateAllSphProperties
-(Sph<ndim> *sph                    ///< [inout] Pointer to main SPH object
- )
+(Sph<ndim> *sph,                   ///< [inout] Pointer to main SPH object
+ Nbody<ndim> *nbody)               ///> [in] ..
 {
   int celldone;                   // ..
   int okflag;                     // ..
@@ -1112,7 +1112,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 #endif
 
           // Compute smoothing length and other gather properties for ptcl i
-          okflag = sph->ComputeH(i,Ngather,hmax,m2,mu2,drsqd,data[i]);
+          okflag = sph->ComputeH(i,Ngather,hmax,m2,mu2,drsqd,data[i],nbody);
 
           // If h-computation is invalid, then break from loop and recompute
           // larger neighbour lists

@@ -76,7 +76,8 @@ void GridSearch<ndim>::UpdateTree(Sph<ndim> *sph, Parameters &simparams)
 //=============================================================================
 template <int ndim>
 void GridSearch<ndim>::UpdateAllSphProperties
-(Sph<ndim> *sph)                    ///< [inout] Pointer to main SPH object
+(Sph<ndim> *sph,                    ///< [inout] Pointer to main SPH object
+ Nbody<ndim> *nbody)                ///< [in] Pointer to main N-body object
 {
   int c;                            // Cell id
   int cactive;                      // No. of active cells
@@ -182,7 +183,7 @@ void GridSearch<ndim>::UpdateAllSphProperties
 #endif
 
         // Compute smoothing length and other gather properties for particle i
-        okflag = sph->ComputeH(i,Ngather,big_number,m2,mu2,drsqd,data[i]);
+        okflag = sph->ComputeH(i,Ngather,big_number,m2,mu2,drsqd,data[i],nbody);
 
       }
       // ----------------------------------------------------------------------

@@ -256,6 +256,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::Noutsnap;
   using Simulation<ndim>::tsnapnext;
   using Simulation<ndim>::dt_snap;
+  using Simulation<ndim>::dt_python;
   using Simulation<ndim>::level_max;
   using Simulation<ndim>::integration_step;
   using Simulation<ndim>::nresync;
@@ -313,6 +314,7 @@ class GodunovSphSimulation : public Simulation<ndim>
   using Simulation<ndim>::Noutsnap;
   using Simulation<ndim>::tsnapnext;
   using Simulation<ndim>::dt_snap;
+  using Simulation<ndim>::dt_python;
   using Simulation<ndim>::level_max;
   using Simulation<ndim>::integration_step;
   using Simulation<ndim>::nresync;
@@ -367,6 +369,7 @@ class NbodySimulation : public Simulation<ndim>
   using Simulation<ndim>::Noutsnap;
   using Simulation<ndim>::tsnapnext;
   using Simulation<ndim>::dt_snap;
+  using Simulation<ndim>::dt_python;
   using Simulation<ndim>::level_max;
   using Simulation<ndim>::integration_step;
   using Simulation<ndim>::nresync;

@@ -65,7 +65,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->UpdateTree(sph,*simparams);
 
     sphneib->neibcheck = false;
-    sphneib->UpdateAllSphProperties(sph);
+    sphneib->UpdateAllSphProperties(sph,nbody);
 
     // Search ghost particles
     ghosts.SearchGhostParticles(simbox,sph);
@@ -80,14 +80,14 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Calculate all SPH properties
     sphneib->neibcheck = true;
-    sphneib->UpdateAllSphProperties(sph);
+    sphneib->UpdateAllSphProperties(sph,nbody);
 
     // Search ghost particles
     ghosts.SearchGhostParticles(simbox,sph);
 
     // Update neighbour tre
     sphneib->UpdateTree(sph,*simparams);
-    sphneib->UpdateAllSphProperties(sph);
+    sphneib->UpdateAllSphProperties(sph,nbody);
 
 
     if (simparams->stringparams["sph"] == "godunov") {
@@ -228,7 +228,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     sphneib->UpdateTree(sph,*simparams);
 
     // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph);
+    sphneib->UpdateAllSphProperties(sph,nbody);
 
   }
 

@@ -304,7 +304,7 @@ void Parameters::SetDefaultValues(void)
 
   // Python parameters
   // --------------------------------------------------------------------------
-  floatparams["dt_python"] = 8.0
+  floatparams["dt_python"] = 8.0;
 
   return;
 }

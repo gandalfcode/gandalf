@@ -72,7 +72,8 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
  FLOAT *m,                              // Array of neib. masses
  FLOAT *mu,                             // Array of neib. internal energies
  FLOAT *drsqd,                          // Array of neib. distances (squared)
- SphParticle<ndim> &parti)              // Particle i data
+ SphParticle<ndim> &parti,              // Particle i data
+ Nbody<ndim> *nbody)                    // ..
 {
   int j;                                // Neighbour id
   int jj;                               // Aux. neighbour counter

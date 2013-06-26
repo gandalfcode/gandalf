@@ -554,6 +554,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   sph->slope_limiter = stringparams["slope_limiter"];
   sph->riemann_order = intparams["riemann_order"];
   nbody->Nstar = intparams["Nstar"];
+  dt_python = floatparams["dt_python"];
 
   // Flag that we've processed all parameters already
   ParametersProcessed = true;
@@ -595,7 +596,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->UpdateTree(sph,*simparams);
 
     sphneib->neibcheck = false;
-    sphneib->UpdateAllSphProperties(sph);
+    sphneib->UpdateAllSphProperties(sph,nbody);
 
     // Search ghost particles
     ghosts.SearchGhostParticles(simbox,sph);
@@ -609,7 +610,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<sph->Ntot; i++) sph->sphdata[i].active = true;
 
     // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph);
+    sphneib->UpdateAllSphProperties(sph,nbody);
 
     // Search ghost particles
     ghosts.SearchGhostParticles(simbox,sph);
@@ -617,7 +618,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Update neighbour tre
     sphneib->UpdateTree(sph,*simparams);
     sphneib->neibcheck = true;
-    sphneib->UpdateAllSphProperties(sph);
+    sphneib->UpdateAllSphProperties(sph,nbody);
 
   }
 
@@ -628,11 +629,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Zero all acceleration terms
     for (i=0; i<nbody->Nstar; i++) {
-      cout << "IC : " << i << "   " << nbody->stardata[i].m << "    "
-	   << nbody->stardata[i].r[0] << "    "
-	   << nbody->stardata[i].r[1] << "    " 
-	   << nbody->stardata[i].v[0] << "    "
-	   << nbody->stardata[i].v[1] << endl;
       for (k=0; k<ndim; k++) nbody->stardata[i].a[k] = 0.0;
       for (k=0; k<ndim; k++) nbody->stardata[i].adot[k] = 0.0;
       for (k=0; k<ndim; k++) nbody->stardata[i].a2dot[k] = 0.0;
@@ -647,18 +643,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     nbody->Nnbody = nbody->Nstar;
     nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
     nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
-
-    for (i=0; i<nbody->Nstar; i++) {
-      cout << "IC : " << i << "   " 
-	   << nbody->stardata[i].a[0] << "    "
-	   << nbody->stardata[i].a[1] << "    "
-	   << nbody->stardata[i].adot[0] << "    "
-	   << nbody->stardata[i].adot[1] << "    "
-	   << nbody->stardata[i].a2dot[0] << "    "
-	   << nbody->stardata[i].a2dot[1] << "    "
-	   << nbody->stardata[i].a3dot[0] << "    "
-	   << nbody->stardata[i].a3dot[1] << endl;
-    }
 
   }
 
@@ -679,7 +663,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     }
 
     ghosts.CopySphDataToGhosts(sph);
-    sphneib->UpdateTree(sph,*simparams);
+    sphneib->UpdateTree(sph, *simparams);
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)
@@ -762,7 +746,7 @@ void SphSimulation<ndim>::MainLoop(void)
     sphneib->UpdateTree(sph,*simparams);
 
     // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph);
+    sphneib->UpdateAllSphProperties(sph,nbody);
 
     // Copy properties from original particles to ghost particles
     ghosts.CopySphDataToGhosts(sph);

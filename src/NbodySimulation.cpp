@@ -414,6 +414,7 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   nbody_single_timestep = intparams["nbody_single_timestep"];
   nbody->Nstar = intparams["Nstar"];
   nbodytree.gpefrac = floatparams["gpefrac"];
+  dt_python = floatparams["dt_python"];
 
   // Flag that we've processed all parameters already
   ParametersProcessed = true;

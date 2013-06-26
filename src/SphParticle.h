@@ -47,6 +47,7 @@ struct SphParticle {
   FLOAT div_v;                      ///< Velocity divergence
   FLOAT invomega;                   ///< grad-h omega/f correction term
   FLOAT zeta;                       ///< grad-h gravity correction term
+  FLOAT chi;                        ///< grad-h star-gravity correction term
   FLOAT q;                          ///< Internal energy density
   FLOAT invq;                       ///< 1 / q
   FLOAT sound;                      ///< Sound speed
@@ -92,6 +93,7 @@ struct SphParticle {
     pfactor = (FLOAT) 0.0;
     invomega = (FLOAT) 0.0;
     zeta = (FLOAT) 0.0;
+    chi = (FLOAT) 0.0;
     q = (FLOAT) 0.0;
     invq = (FLOAT) 0.0;
     sound = (FLOAT) 0.0;

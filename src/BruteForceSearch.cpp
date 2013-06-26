@@ -60,8 +60,8 @@ void BruteForceSearch<ndim>::UpdateTree(Sph<ndim> *sph, Parameters &simparams)
 //=============================================================================
 template <int ndim>
 void BruteForceSearch<ndim>::UpdateAllSphProperties
-(Sph<ndim> *sph                     ///< [inout] Pointer to SPH object
- )
+(Sph<ndim> *sph,                    ///< [inout] Pointer to SPH object
+ Nbody<ndim> *nbody)                ///< [in] ..
 {
   int i,j,k;                        // Particle and dimension counters
   int okflag;                       // Flag valid smoothing length
@@ -108,7 +108,7 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
 
       // Compute all SPH gather properties
       okflag = sph->ComputeH(i,sph->Ntot,big_number,
-                             m,mu,drsqd,sph->sphdata[i]);
+                             m,mu,drsqd,sph->sphdata[i],nbody);
   
     }
     // ------------------------------------------------------------------------

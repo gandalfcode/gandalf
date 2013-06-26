@@ -460,21 +460,20 @@ void Simulation<ndim>::ContactDiscontinuity(void)
   // Search ghost particles
   ghosts.SearchGhostParticles(simbox,sph);
 
-  sphneib->UpdateAllSphProperties(sph);
 
   // Update neighbour tre
   sphneib->UpdateTree(sph,*simparams);
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph);
+  sphneib->UpdateAllSphProperties(sph,nbody);
 
   sphneib->UpdateTree(sph,*simparams);
-  sphneib->UpdateAllSphProperties(sph);
+  sphneib->UpdateAllSphProperties(sph,nbody);
 
   ghosts.CopySphDataToGhosts(sph);
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph);
+  sphneib->UpdateAllSphProperties(sph,nbody);
 
   delete[] r;
 
@@ -609,13 +608,13 @@ void Simulation<ndim>::KHI(void)
   // Search ghost particles
   ghosts.SearchGhostParticles(simbox,sph);
 
-  sphneib->UpdateAllSphProperties(sph);
+  sphneib->UpdateAllSphProperties(sph,nbody);
 
   // Update neighbour tre
   sphneib->UpdateTree(sph,*simparams);
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph);
+  sphneib->UpdateAllSphProperties(sph,nbody);
   
   for (i=0; i<sph->Nsph; i++) 
     sph->sphdata[i].u = press1/sph->sphdata[i].rho/gammaone;
@@ -1074,13 +1073,13 @@ void Simulation<ndim>::SedovBlastWave(void)
   // Search ghost particles
   ghosts.SearchGhostParticles(simbox,sph);
 
-  sphneib->UpdateAllSphProperties(sph);
+  sphneib->UpdateAllSphProperties(sph,nbody);
 
   // Update neighbour tre
   sphneib->UpdateTree(sph,*simparams);
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph);
+  sphneib->UpdateAllSphProperties(sph,nbody);
 
   // Now calculate which particles are hot
   // --------------------------------------------------------------------------

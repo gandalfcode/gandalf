@@ -16,6 +16,7 @@
 #include "SphKernel.h"
 #include "SphParticle.h"
 #include "Sph.h"
+#include "Nbody.h"
 #include "Parameters.h"
 using namespace std;
 
@@ -70,7 +71,7 @@ class SphNeighbourSearch
 {
  public:
 
-  virtual void UpdateAllSphProperties(Sph<ndim> *) = 0;
+  virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphForces(Sph<ndim> *) = 0;
   virtual void UpdateAllSphHydroForces(Sph<ndim> *) = 0;
   virtual void UpdateAllSphGravForces(Sph<ndim> *) = 0;
@@ -99,7 +100,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
   BruteForceSearch();
   ~BruteForceSearch();
 
-  void UpdateAllSphProperties(Sph<ndim> *);
+  void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *);
   void UpdateAllSphGravForces(Sph<ndim> *);
@@ -127,7 +128,7 @@ class GridSearch: public SphNeighbourSearch<ndim>
   GridSearch();
   ~GridSearch();
 
-  void UpdateAllSphProperties(Sph<ndim> *);
+  void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *);
   void UpdateAllSphGravForces(Sph<ndim> *);
@@ -189,7 +190,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   BinaryTree(int, FLOAT, string);
   ~BinaryTree();
 
-  void UpdateAllSphProperties(Sph<ndim> *);
+  void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *);
   void UpdateAllSphGravForces(Sph<ndim> *);

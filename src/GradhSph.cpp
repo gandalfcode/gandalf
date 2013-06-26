@@ -73,13 +73,15 @@ int GradhSph<ndim, kernelclass>::ComputeH
  FLOAT *m,                          ///< [in] Array of neib. masses
  FLOAT *mu,                         ///< [in] Array of m*u (not needed here)
  FLOAT *drsqd,                      ///< [in] Array of neib. distances squared
- SphParticle<ndim> &parti)          ///< [inout] Particle i data
+ SphParticle<ndim> &parti,          ///< [inout] Particle i data
+ Nbody<ndim> *nbody)                ///< [in] Main N-body object
 {
   int j;                            // Neighbour id
   int jj;                           // Aux. neighbour counter
   int k;                            // Dimension counter
   int iteration = 0;                // h-rho iteration counter
   int iteration_max = 30;           // Max. no of iterations
+  FLOAT dr[ndim];                   // ..
   FLOAT h_lower_bound = 0.0;        // Lower bound on h
   FLOAT h_upper_bound = big_number; // Upper bound on h
   FLOAT invhsqd;                    // (1 / h)^2
@@ -96,6 +98,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
     parti.rho = (FLOAT) 0.0;
     parti.invomega = (FLOAT) 0.0;
     parti.zeta = (FLOAT) 0.0;
+    parti.chi = (FLOAT) 0.0;
     parti.hfactor = pow(parti.invh,ndim);
     invhsqd = parti.invh*parti.invh;
 
@@ -173,6 +176,25 @@ int GradhSph<ndim, kernelclass>::ComputeH
     parti.invrho*parti.invomega;
   parti.div_v = (FLOAT) 0.0;
   
+  // If there are star particles, compute N-body chi correction term
+  // --------------------------------------------------------------------------
+  if (nbody->nbody_softening == 1) {
+    for (j=0; j<nbody->Nstar; j++) {
+	  invhsqd = pow(2.0 / (parti.h + nbody->stardata[j].h),2);
+	  for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
+	  ssqd = DotProduct(dr,dr,ndim)*invhsqd;
+      parti.chi += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
+    }
+  }
+  else {
+	invhsqd = 4.0*parti.invh*parti.invh;
+    for (j=0; j<nbody->Nstar; j++) {
+	  for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
+	  ssqd = DotProduct(dr,dr,ndim)*invhsqd;
+      parti.chi += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
+    }
+  }
+
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;
   else return -1;

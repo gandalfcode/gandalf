@@ -268,7 +268,7 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
   // Continue to run simulation until we reach the required time, or
   // exeeded the maximum allowed number of steps.
   // --------------------------------------------------------------------------
-  while (t < tend && Nsteps < Ntarget && tdiff < tpython) {
+  while (t < tend && Nsteps < Ntarget && tdiff < dt_python) {
 	
     // Evolve the simulation one step
     MainLoop();
@@ -846,6 +846,7 @@ void Simulation<ndim>::ProcessParameters(void)
   sph->slope_limiter = stringparams["slope_limiter"];
   sph->riemann_order = intparams["riemann_order"];
   nbody->Nstar = intparams["Nstar"];
+  dt_python = floatparams["dt_python"];
 
   // Flag that we've processed all parameters already
   ParametersProcessed = true;
