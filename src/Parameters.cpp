@@ -153,6 +153,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["out_file_form"] = "ascii";
   floatparams["tend"] = 1.0;
   floatparams["dt_snap"] = 0.1;
+  floatparams["tfirstsnap"] = 0.1;
   intparams["Nstepsmax"] = 9999999;
   intparams["noutputstep"] = 32;
 
@@ -300,6 +301,10 @@ void Parameters::SetDefaultValues(void)
   stringparams["uoutunit"] = "J_kg";
   stringparams["dudtoutunit"] = "J_kg_s";
   stringparams["tempoutunit"] = "K";
+
+  // Python parameters
+  // --------------------------------------------------------------------------
+  floatparams["dt_python"] = 8.0
 
   return;
 }

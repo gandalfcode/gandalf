@@ -106,9 +106,11 @@ class SimulationBase
   int sph_single_timestep;          ///< Flag if SPH ptcls use same step
   DOUBLE dt_max;                    ///< Value of maximum timestep level
   DOUBLE dt_snap;                   ///< Snapshot time interval
+  DOUBLE dt_python;                 ///< Python window update time interval
   DOUBLE t;                         ///< Current simulation time
   DOUBLE tend;                      ///< End time of simulation
   DOUBLE timestep;                  ///< Current timestep
+  DOUBLE tsnapfirst;                ///< Time of first snapshot
   DOUBLE tsnapnext;                 ///< Time of next snapshot
   string out_file_form;             ///< Output snapshot file format
   string paramfile;                 ///< Name of parameters file

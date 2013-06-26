@@ -7,11 +7,12 @@ from seren.analysis.facade import *
 import time
 
 # Create new shocktube simulation from 'adshock.dat' file
-newsim('plummer.dat')
+newsim('hybridplummer.dat')
 setupsim()
 
 # Plot the density with the analytical solution
 plot("x","y")
+addplot("x","y",type='star')
 limit("x",-5.5,5.5,window="all")
 limit("y",-5.5,5.5,window="all")
 
@@ -20,4 +21,5 @@ limit("y",-5.5,5.5,window="all")
 time.sleep(1)
 run()
 plot("x","y")
+addplot("x","y",type='star')
 block()

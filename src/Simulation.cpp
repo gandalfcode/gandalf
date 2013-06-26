@@ -254,7 +254,6 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
 {
   int Ntarget;                      // Selected integer timestep
   DOUBLE tdiff = 0.0;               // Measured time difference
-  DOUBLE tpython = 8.0;             // Python viewer update time
   clock_t tstart = clock();         // Initial CPU clock time
   string filename;		    // Name of the output file	
   list<SphSnapshotBase*> snap_list; // List of snapshots produced while running

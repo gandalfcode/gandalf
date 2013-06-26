@@ -13,7 +13,7 @@ sim = newsim(ndim=2)
 
 # Set all important code parameters
 sim.SetParam('ic','python')
-sim.SetParam('sim','mm')
+sim.SetParam('sim','nbody')
 sim.SetParam('run_id','BURRAU1')
 sim.SetParam('nbody','hermite4ts')
 sim.SetParam('sub_systems',0)
@@ -61,11 +61,12 @@ sim.SetupSimulation()
 
 # First, plot the initial conditions
 plot("x","y",type='star')
-#limit('x',-10.0,10.0)
-#limit('y',-10.0,10.0)
+limit('x',-10.0,10.0)
+limit('y',-10.0,10.0)
 
 
 # Now run the simualtion and plot the results in a new window
+time.sleep(1)
 run()
 plot("x","y",type='star')
 addplot("x","y",type='star',snap=0,color='blue')
