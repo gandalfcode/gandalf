@@ -180,17 +180,17 @@ int GradhSph<ndim, kernelclass>::ComputeH
   // --------------------------------------------------------------------------
   if (nbody->nbody_softening == 1) {
     for (j=0; j<nbody->Nstar; j++) {
-	  invhsqd = pow(2.0 / (parti.h + nbody->stardata[j].h),2);
-	  for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
-	  ssqd = DotProduct(dr,dr,ndim)*invhsqd;
+      invhsqd = pow(2.0 / (parti.h + nbody->stardata[j].h),2);
+      for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
+      ssqd = DotProduct(dr,dr,ndim)*invhsqd;
       parti.chi += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
     }
   }
   else {
-	invhsqd = 4.0*parti.invh*parti.invh;
+    invhsqd = 4.0*parti.invh*parti.invh;
     for (j=0; j<nbody->Nstar; j++) {
-	  for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
-	  ssqd = DotProduct(dr,dr,ndim)*invhsqd;
+      for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
+      ssqd = DotProduct(dr,dr,ndim)*invhsqd;
       parti.chi += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
     }
   }
@@ -412,11 +412,11 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     // Main SPH gravity terms
     // ------------------------------------------------------------------------
     paux = 0.5*(parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) + 
-		 parti.zeta*parti.hfactor*kern.w1(drmag*parti.invh) + 
-		 neibpart[j].invh*neibpart[j].invh*
-		 kern.wgrav(drmag*neibpart[j].invh) + 
-		 neibpart[j].zeta*neibpart[j].hfactor*
-		 kern.w1(drmag*neibpart[j].invh));
+                (parti.zeta + parti.chi)*parti.hfactor*
+		kern.w1(drmag*parti.invh) + neibpart[j].invh*neibpart[j].invh*
+                kern.wgrav(drmag*neibpart[j].invh) + 
+                (neibpart[j].zeta + neibpart[j].chi)*neibpart[j].hfactor*
+                kern.w1(drmag*neibpart[j].invh));
     gaux = 0.5*(parti.invh*kern.wpot(drmag*parti.invh) + 
 		neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));
       
@@ -619,8 +619,8 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
   FLOAT drmag;                      // Distance
   FLOAT drsqd;                      // Distance squared
   FLOAT invdrmag;                   // 1 / drmag
+  FLOAT invhmean;                    // 1 / hmeansqd
   FLOAT paux;                       // Aux. force variable
-  FLOAT gaux;                       // Aux. potential variable
 
   // Loop over all stars and add each contribution
   // --------------------------------------------------------------------------
@@ -629,16 +629,15 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
     for (k=0; k<ndim; k++) dr[k] = nbodydata[j]->r[k] - parti.r[k];
     drsqd = DotProduct(dr,dr,ndim);
     drmag = sqrt(drsqd);
+    invdrmag = 1.0/drmag;
+    invhmean = 2.0/(parti.h + nbodydata[j]->h);
 
-    paux = parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) + 
-      nbodydata[j]->invh*nbodydata[j]->invh*
-      kern.wgrav(drmag*nbodydata[j]->invh);
-    gaux = (parti.invh*kern.wpot(drmag*parti.invh) + 
-	    nbodydata[j]->invh*kern.wpot(drmag*nbodydata[j]->invh));
+    paux = nbodydata[j]->m*invhmean*invhmean*
+      kern.wgrav(drmag*invhmean)*invdrmag;
 
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.agrav[k] += 0.5*nbodydata[j]->m*dr[k]*paux;
-    parti.gpot += 0.5*nbodydata[j]->m*gaux;
+    for (k=0; k<ndim; k++) parti.agrav[k] += dr[k]*paux;
+    parti.gpot += nbodydata[j]->m*invhmean*kern.wpot(drmag*invhmean);
     
   }
   // --------------------------------------------------------------------------
