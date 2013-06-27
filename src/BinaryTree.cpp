@@ -1458,12 +1458,6 @@ void BinaryTree<ndim>::UpdateAllSphForces
 					     Ngravcell,neiblist,directlist,
 					     gravcelllist);
 
-      //cout << "Computed all lists" << endl;
-      //cout << "Nneib     : " << Nneib << "     " << Nneibmax << endl;
-      //cout << "Ndirect   : " << Ndirect << "     " << Ndirectmax << endl;
-      //cout << "Ngravcell : " << Ngravcell << "     " 
-      //   << Ngravcellmax << "    " << Ncell << endl;
-
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour lists.
       while (okflag == -1) {
@@ -1472,29 +1466,24 @@ void BinaryTree<ndim>::UpdateAllSphForces
         delete[] drmag;
         delete[] dr;
         delete[] gravcelllist;
-	delete[] interactlist;
+        delete[] interactlist;
         delete[] directlist;
         delete[] neiblist;
         Nneibmax = 2*Nneibmax;
-	Ndirectmax = 2*Ndirectmax;
-	Ngravcellmax = 2*Ngravcellmax;
+        Ndirectmax = 2*Ndirectmax;
+        Ngravcellmax = 2*Ngravcellmax;
         neiblist = new int[Nneibmax];
-	interactlist = new int[Nneibmax];
+        interactlist = new int[Nneibmax];
         directlist = new int[Ndirectmax];
-	gravcelllist = new int[Ngravcellmax];
+        gravcelllist = new int[Ngravcellmax];
         dr = new FLOAT[Nneibmax*ndim];
         drmag = new FLOAT[Nneibmax];
         invdrmag = new FLOAT[Nneibmax];
         neibpart = new SphParticle<ndim>[Nneibmax];
-	okflag = ComputeGravityInteractionList(c,Nneibmax,Ndirectmax,
+        okflag = ComputeGravityInteractionList(c,Nneibmax,Ndirectmax,
 					       Ngravcellmax,Nneib,Ndirect,
 					       Ngravcell,neiblist,directlist,
 					       gravcelllist);
-	//cout << "Computed all lists (again)" << endl;
-	//cout << "Nneib     : " << Nneib << "     " << Nneibmax << endl;
-	//cout << "Ndirect   : " << Ndirect << "     " << Ndirectmax << endl;
-	//cout << "Ngravcell : " << Ngravcell << "     " 
-	//    << Ngravcellmax << "    " << Ncell << endl;
       };
 
       // Make local copies of all potential neighbours
@@ -1502,7 +1491,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
         neibpart[j] = data[neiblist[j]];
         neibpart[j].div_v = (FLOAT) 0.0;
         neibpart[j].dudt = (FLOAT) 0.0;
-	neibpart[j].gpot = (FLOAT) 0.0;
+        neibpart[j].gpot = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) neibpart[j].agrav[k] = (FLOAT) 0.0;
       }
@@ -1514,18 +1503,18 @@ void BinaryTree<ndim>::UpdateAllSphForces
         parti = data[i];
         parti.div_v = (FLOAT) 0.0;
         parti.dudt = (FLOAT) 0.0;
-	parti.gpot = (FLOAT) 0.0;
+        parti.gpot = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) parti.a[k] = (FLOAT) 0.0;
-	for (k=0; k<ndim; k++) parti.agrav[k] = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) parti.agrav[k] = (FLOAT) 0.0;
 
-	// Determine interaction list (to ensure we don't compute pair-wise
+        // Determine interaction list (to ensure we don't compute pair-wise
         // forces twice)
-	Ninteract = 0;
+        Ninteract = 0;
         for (jj=0; jj<Nneib; jj++) {
-	  if ((neiblist[jj] < i && !neibpart[jj].active) || neiblist[jj] >= i) {
-	    interactlist[Ninteract++] = jj;
-	  }
-	}
+          if ((neiblist[jj] < i && !neibpart[jj].active) || neiblist[jj] >= i) {
+            interactlist[Ninteract++] = jj;
+          }
+        }
 
         // Compute forces between SPH neighbours (hydro and gravity)
         sph->ComputeSphHydroGravForces(i,Ninteract,interactlist,
@@ -1543,7 +1532,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
 #pragma omp atomic
           data[i].a[k] += parti.a[k];
 #pragma omp atomic
-	  data[i].agrav[k] += parti.agrav[k];
+          data[i].agrav[k] += parti.agrav[k];
         }
 #pragma omp atomic
         data[i].gpot += parti.gpot;
@@ -1563,7 +1552,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
 #pragma omp atomic
             data[j].a[k] += neibpart[jj].a[k];
 #pragma omp atomic
-	    data[j].agrav[k] += neibpart[jj].agrav[k];
+            data[j].agrav[k] += neibpart[jj].agrav[k];
           }
 #pragma omp atomic
           data[j].dudt += neibpart[jj].dudt;
@@ -1630,8 +1619,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::UpdateAllSphGravForces
-(Sph<ndim> *sph                     ///< Pointer to SPH object
-)
+(Sph<ndim> *sph)                    ///< Pointer to SPH object
 {
   return;
 }

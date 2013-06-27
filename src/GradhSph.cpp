@@ -194,6 +194,9 @@ int GradhSph<ndim, kernelclass>::ComputeH
       parti.chi += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
     }
   }
+  parti.chi = -Sph<ndim>::invndim*parti.h*parti.chi*parti.invrho*parti.invomega;
+
+  //cout << "ZETA : " << parti.zeta << "    " << parti.invomega << endl;
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;
@@ -372,31 +375,31 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     if (dvdr < (FLOAT) 0.0) {
 
       winvrho = (FLOAT) 0.25*(wkerni + wkernj)*
-	(parti.invrho + neibpart[j].invrho);
+        (parti.invrho + neibpart[j].invrho);
 	
       // Artificial viscosity term
       if (avisc == mon97) {
-	vsignal = parti.sound + neibpart[j].sound - beta_visc*dvdr;
-	paux -= (FLOAT) alpha_visc*vsignal*dvdr*winvrho;
-	uaux = (FLOAT) 0.5*alpha_visc*vsignal*dvdr*dvdr*winvrho;
-	parti.dudt -= neibpart[j].m*uaux;
-	neibpart[j].dudt -= parti.m*uaux;
+        vsignal = parti.sound + neibpart[j].sound - beta_visc*dvdr;
+        paux -= (FLOAT) alpha_visc*vsignal*dvdr*winvrho;
+        uaux = (FLOAT) 0.5*alpha_visc*vsignal*dvdr*dvdr*winvrho;
+        parti.dudt -= neibpart[j].m*uaux;
+        neibpart[j].dudt -= parti.m*uaux;
       }
       
       // Artificial conductivity term
       if (acond == wadsley2008) {
-	uaux = (FLOAT) 0.5*dvdr*(neibpart[j].u - parti.u)*
-	  (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
-	parti.dudt += neibpart[j].m*uaux;
-	neibpart[j].dudt -= parti.m*uaux;
+        uaux = (FLOAT) 0.5*dvdr*(neibpart[j].u - parti.u)*
+          (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
+        parti.dudt += neibpart[j].m*uaux;
+        neibpart[j].dudt -= parti.m*uaux;
       }
       else if (acond == price2008) {
-	vsignal = sqrt(fabs(eos->Pressure(parti) -eos->Pressure(neibpart[j]))*
+        vsignal = sqrt(fabs(eos->Pressure(parti) -eos->Pressure(neibpart[j]))*
 		       0.5*(parti.invrho + neibpart[j].invrho));
-	parti.dudt += 0.5*neibpart[j].m*vsignal*
-	  (parti.u - neibpart[j].u)*winvrho;
-	neibpart[j].dudt -= 0.5*parti.m*vsignal*
-	  (parti.u - neibpart[j].u)*winvrho;
+        parti.dudt += 0.5*neibpart[j].m*vsignal*
+          (parti.u - neibpart[j].u)*winvrho;
+        neibpart[j].dudt -= 0.5*parti.m*vsignal*
+          (parti.u - neibpart[j].u)*winvrho;
       }
       
     }
@@ -408,18 +411,18 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     // If neighbour is also active, add contribution to force here
     for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*dr[k]*paux;
 
-
+continue;
     // Main SPH gravity terms
     // ------------------------------------------------------------------------
-    paux = 0.5*(parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) + 
+    paux = 0.5*(parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) +
                 (parti.zeta + parti.chi)*parti.hfactor*
-		kern.w1(drmag*parti.invh) + neibpart[j].invh*neibpart[j].invh*
-                kern.wgrav(drmag*neibpart[j].invh) + 
+                kern.w1(drmag*parti.invh) + neibpart[j].invh*neibpart[j].invh*
+                kern.wgrav(drmag*neibpart[j].invh) +
                 (neibpart[j].zeta + neibpart[j].chi)*neibpart[j].hfactor*
                 kern.w1(drmag*neibpart[j].invh));
     gaux = 0.5*(parti.invh*kern.wpot(drmag*parti.invh) + 
 		neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));
-      
+
     // Add total hydro contribution to acceleration for particle i
     for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;
     parti.gpot += neibpart[j].m*gaux;
@@ -435,9 +438,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 }
 
 
-
 //=============================================================================
-//  GradhSph::ComputeSphNeibGravForces
+//  GradhSph::ComputeSphGravForces
 /// Compute SPH neighbour force pairs for 
 /// (i) All neighbour interactions of particle i with i.d. j > i,
 /// (ii) Active neighbour interactions of particle j with i.d. j > i
@@ -450,56 +452,62 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
 (int i,                             ///< [in] id of particle
  int Nneib,                         ///< [in] No. of neins in neibpart array
  int *neiblist,                     ///< [in] id of gather neibs in neibpart
- FLOAT *drmag,                      ///< [in] Distances of gather neighbours
- FLOAT *invdrmag,                   ///< [in] Inverse distances of gather neibs
- FLOAT *dr,                         ///< [in] Position vector of gather neibs
  SphParticle<ndim> &parti,          ///< [inout] Particle i data
  SphParticle<ndim> *neibpart)       ///< [inout] Neighbour particle data
 {
   int j;                            // Neighbour list id
   int jj;                           // Aux. neighbour counter
   int k;                            // Dimension counter
-  FLOAT draux[ndim];                // Relative position vector
+  FLOAT dr[ndim];                   // Relative position vector
+  FLOAT drmag;                      // ..
   FLOAT dv[ndim];                   // Relative velocity vector
   FLOAT dvdr;                       // Dot product of dv and dr
+  FLOAT invdrmag;                   // ..
+  FLOAT wkerni;                     // Value of w1 kernel function
+  FLOAT wkernj;                     // Value of w1 kernel function
+  FLOAT vsignal;                    // Signal velocity
+  FLOAT gaux;                       // ..
   FLOAT paux;                       // Aux. pressure force variable
-  FLOAT gaux;                       // Aux. internal energy variable
+  FLOAT uaux;                       // Aux. internal energy variable
+  FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
 
 
-  // Compute hydro forces
-  // ==========================================================================
-  if (self_gravity == 1) {
+  // Loop over all potential neighbours in the list
+  // --------------------------------------------------------------------------
+  for (jj=0; jj<Nneib; jj++) {
+    j = neiblist[jj];
 
-    // Loop over all potential neighbours in the list
+    for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
+    for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
+    dvdr = DotProduct(dv,dr,ndim);
+    drmag = sqrt(DotProduct(dr,dr,ndim));
+    invdrmag = 1.0/(drmag + small_number);
+    for (k=0; k<ndim; k++) dr[k] *= invdrmag;
+
+    // Main SPH gravity terms
     // ------------------------------------------------------------------------
-    for (jj=0; jj<Nneib; jj++) {
-      j = neiblist[jj];
-      for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
+    paux = 0.5*(parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) +
+                (parti.zeta + parti.chi)*parti.hfactor*
+                kern.w1(drmag*parti.invh) + neibpart[j].invh*neibpart[j].invh*
+                kern.wgrav(drmag*neibpart[j].invh) +
+                (neibpart[j].zeta + neibpart[j].chi)*neibpart[j].hfactor*
+                kern.w1(drmag*neibpart[j].invh));
+    gaux = 0.5*(parti.invh*kern.wpot(drmag*parti.invh) +
+		neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));
 
-      // Main SPH gravity terms
-      paux = parti.invh*parti.invh*kern.wgrav(drmag[jj]*parti.invh) + 
-        parti.zeta*parti.hfactor*kern.w1(drmag[jj]*parti.invh) +
-        neibpart[j].invh*neibpart[j].invh*
-        kern.wgrav(drmag[jj]*neibpart[j].invh) +
-        neibpart[j].zeta*neibpart[j].hfactor*
-        kern.w1(drmag[jj]*neibpart[j].invh);
-      gaux = (parti.invh*kern.wpot(drmag[jj]*parti.invh) + 
-        neibpart[j].invh*kern.wpot(drmag[jj]*neibpart[j].invh));
+    // Add total hydro contribution to acceleration for particle i
+    for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;
+    parti.gpot += neibpart[j].m*gaux;
 
-      // Add total hydro contribution to acceleration for particle i
-      for (k=0; k<ndim; k++) parti.agrav[k] += 0.5*neibpart[j].m*draux[k]*paux;
-      parti.gpot += 0.5*neibpart[j].m*gaux;
-
-    }
-    // ------------------------------------------------------------------------
+    // If neighbour is also active, add contribution to force here
+    for (k=0; k<ndim; k++) neibpart[j].agrav[k] -= parti.m*dr[k]*paux;
+    neibpart[j].gpot += parti.m*gaux;
 
   }
   // ==========================================================================
 
-
   return;
 }
-
 
 
 

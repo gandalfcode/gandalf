@@ -446,9 +446,6 @@ void NbodySimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Zero all acceleration terms
     for (i=0; i<nbody->Nstar; i++) {
-      cout << "IC : " << i << "   " << nbody->stardata[i].m << "    "
-	   << nbody->stardata[i].r[0] << "    "
-	   << nbody->stardata[i].r[1] << endl;
       for (k=0; k<ndim; k++) nbody->stardata[i].a[k] = 0.0;
       for (k=0; k<ndim; k++) nbody->stardata[i].adot[k] = 0.0;
       for (k=0; k<ndim; k++) nbody->stardata[i].a2dot[k] = 0.0;
@@ -503,13 +500,13 @@ void NbodySimulation<ndim>::MainLoop(void)
       
       // Zero all acceleration terms
       for (i=0; i<nbody->Nstar; i++) {
-	for (k=0; k<ndim; k++) nbody->stardata[i].a[k] = 0.0;
-	for (k=0; k<ndim; k++) nbody->stardata[i].adot[k] = 0.0;
-	for (k=0; k<ndim; k++) nbody->stardata[i].a2dot[k] = 0.0;
-	for (k=0; k<ndim; k++) nbody->stardata[i].a3dot[k] = 0.0;
-	nbody->stardata[i].gpot = 0.0;	
-	nbody->stardata[i].active = true;
-	nbody->nbodydata[i] = &(nbody->stardata[i]);
+        for (k=0; k<ndim; k++) nbody->stardata[i].a[k] = 0.0;
+        for (k=0; k<ndim; k++) nbody->stardata[i].adot[k] = 0.0;
+        for (k=0; k<ndim; k++) nbody->stardata[i].a2dot[k] = 0.0;
+        for (k=0; k<ndim; k++) nbody->stardata[i].a3dot[k] = 0.0;
+        nbody->stardata[i].gpot = 0.0;
+        nbody->stardata[i].active = true;
+        nbody->nbodydata[i] = &(nbody->stardata[i]);
       }
       nbody->Nnbody = nbody->Nstar;
      
@@ -521,16 +518,10 @@ void NbodySimulation<ndim>::MainLoop(void)
     }
 
     nbodytree.FindPerturberLists(nbody);
-    //exit(0);
 
   }
   // --------------------------------------------------------------------------
 
-  //cout << "Checking1 : " << "     " << nbody->Nnbody << endl;
-  //for (i=0; i<nbody->Nnbody; i++) {
-  //  cout << "r : " << nbody->nbodydata[i]->r[0] << "    " 
-  //	 << nbody->nbodydata[i]->r[1] << endl;
-  //}
 
   // Compute timesteps for all particles
   if (Nlevels == 1)
@@ -545,15 +536,6 @@ void NbodySimulation<ndim>::MainLoop(void)
 
   // Advance SPH particles positions and velocities
   nbody->AdvanceParticles(n,nbody->Nnbody,nbody->nbodydata,timestep);
-
-  //cout << "Checking2 : " << "     " << nbody->Nnbody << endl;
-  //cout << "Timesteps : " << timestep << endl;
-  //for (i=0; i<nbody->Nnbody; i++) {
-  //  cout << "r : " << nbody->nbodydata[i]->r[0] << "    " 
-  // << nbody->nbodydata[i]->r[1] << endl;
-  //}
-
-  //exit(0);
 
   // Compute N-body forces
   // --------------------------------------------------------------------------
@@ -574,17 +556,9 @@ void NbodySimulation<ndim>::MainLoop(void)
         }
       }
 
-      //cout << "Accel2 : " << nbody->nbodydata[0]->a[0] << "    " 
-      //   << nbody->nbodydata[0]->a[1] << endl;
-
       // Calculate forces, force derivatives etc.., for active stars/systems
       nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
       
-      //cout << "Checking3 : " << nbody->nbodydata[0]->r[0] << "    " 
-      //   << nbody->nbodydata[0]->r[1] << endl;
-      //cout << "Accel3 : " << nbody->nbodydata[0]->a[0] << "    " 
-      //   << nbody->nbodydata[0]->a[1] << endl;
-
       // Calculate correction step for all stars at end of step
       nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
 
@@ -595,19 +569,10 @@ void NbodySimulation<ndim>::MainLoop(void)
   // --------------------------------------------------------------------------
 
 
-  //cout << "List all main system particles 2 : " << nbody->Nsystem << endl;
-  //for (i=0; i<nbody->Nsystem; i++) {
-  //cout << "i : " << i << "    " << nbody->system[i].r[0] 
-  // << "    " << nbody->system[i].r[1] << "     " 
-  // << nbody->system[i].Ncomp << "   " << nbody->system[i].Nchildren << endl;
-  //}
-
   // Now loop over children and, if they are systems, integrate
   // their internal motion
   // --------------------------------------------------------------------------
   for (i=0; i<nbody->Nnbody; i++) {
-    //cout << "Internal motion?? : " << i << "   " 
-    // << nbody->nbodydata[i]->Ncomp << endl;
     if (nbody->nbodydata[i]->Ncomp > 1) {
       // The cast is needed because the function is defined only in
       // SystemParticle, not in NbodyParticle.  
@@ -620,11 +585,6 @@ void NbodySimulation<ndim>::MainLoop(void)
 
   // Set all end-of-step variables
   nbody->EndTimestep(n,nbody->Nnbody,nbody->nbodydata);
-
-  //cout << "Checking4 : " << nbody->nbodydata[0]->r[0] << "    " 
-  //   << nbody->nbodydata[0]->r[1] << endl;
-
-  //cin >> i;
 
   return;
 }

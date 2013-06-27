@@ -386,7 +386,6 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       ay[i] = (float) sphaux[i].a[1];
       az[i] = (float) sphaux[i].a[2];
     }
-
     m[i] = (float) sphaux[i].m;
     h[i] = (float) sphaux[i].h;
     rho[i] = (float) sphaux[i].rho;
@@ -430,6 +429,8 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
   return;
 }
 
+
+
 // ============================================================================
 // SphSnapshotBase::GetRealType
 // Convert the given type into the 'real' type, meaning, if we pass default,
@@ -452,6 +453,8 @@ string SphSnapshotBase::GetRealType(string type) {
   return type;
 
 }
+
+
 
 // ============================================================================
 // SphSnapshotBase::ExtractArray

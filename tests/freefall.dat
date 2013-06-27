@@ -37,8 +37,8 @@ RHS boundary type in z-dimension            : z_boundary_rhs = open
 -------------------------
 Simulation time variables
 -------------------------
-Simulation end time                         : tend = 0.3
-Regular snapshot output frequency           : dt_snap = 0.03
+Simulation end time                         : tend = 0.03
+Regular snapshot output frequency           : dt_snap = 0.01
 Screen output frequency (in no. of steps)   : noutputstep = 1
 
 
@@ -46,7 +46,7 @@ Screen output frequency (in no. of steps)   : noutputstep = 1
 Thermal physics options
 -----------------------
 Switch-on hydrodynamical forces             : hydro_forces = 0
-Main gas thermal physics treatment          : gas_eos = isothermal
+Main gas thermal physics treatment          : gas_eos = energy_eqn
 Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 
 
@@ -81,7 +81,7 @@ No. of block timestep levels                : Nlevels = 1
 Optimisation options
 --------------------
 Tabulate SPH kernel                         : tabulated_kernel = 0
-SPH neighbour search algorithm              : neib_search = grid
+SPH neighbour search algorithm              : neib_search = bruteforce
 
 
 -------------

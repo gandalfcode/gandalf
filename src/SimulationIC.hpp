@@ -855,15 +855,10 @@ void Simulation<ndim>::PlummerSphere(void)
   gasfrac /= raux;
   starfrac /= raux;
 
-  cout << "Generating Plummer sphere; Nsph : " 
-       << Nsph << "    Nstar : " << Nstar << endl;
-    
     
   // Loop over all particles (gas and stars)
   // ==========================================================================
   for (j=0; j<Nsph+Nstar; j++) {
-
-    cout << "Creating particle : " << j << endl;
 
     do {
       flag = false;
@@ -924,7 +919,7 @@ void Simulation<ndim>::PlummerSphere(void)
       sph->sphdata[i].sound = sqrt(0.1666666 / sqrt(1.0 + rad*rad));
       sph->sphdata[i].rho = 1.0;
       sph->sphdata[i].u = sph->sphdata[i].sound*
-	sph->sphdata[i].sound/(gamma_eos - 1.0);
+        sph->sphdata[i].sound/(gamma_eos - 1.0);
     }
     else {
       i = j;

@@ -91,7 +91,7 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectGravForces
       star[i]->gpot += star[j]->m*invdrmag;
       for (k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
       for (k=0; k<ndim; k++) star[i]->adot[k] +=
-	star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+        star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
 
     }
     // ------------------------------------------------------------------------
@@ -119,9 +119,9 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
   DOUBLE dr[ndim];                  // Relative position vector
   DOUBLE drmag;                     // Distance
   DOUBLE drsqd;                     // Distance squared
+  DOUBLE invhmean;                  // ..
   DOUBLE invdrmag;                  // 1 / drmag
   DOUBLE paux;                      // Aux. force variable
-  DOUBLE gaux;                      // Aux. grav potential variable
 
   debug2("[NbodyLeapfrogKDK::CalculateDirectSPHForces]");
 
@@ -137,16 +137,16 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
 
       for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star[i]->r[k];
       drsqd = DotProduct(dr,dr,ndim);
-      invdrmag = 1.0/sqrt(drsqd);
+      drmag = sqrt(drsqd);
+      invdrmag = 1.0/drmag;
+      invhmean = 2.0/(star[i]->h + sphdata[j].h);
 
-      paux = sphdata[j].invh*sphdata[j].invh*kern.wgrav(drmag*sphdata[j].invh)
-	+ star[i]->invh*star[i]->invh*kern.wgrav(drmag*star[i]->invh);
-      gaux = sphdata[j].invh*kern.wpot(drmag*sphdata[j].invh) + 
-	star[i]->invh*kern.wpot(drmag*star[i]->invh);
+      paux = sphdata[j].m*invhmean*invhmean*
+        kern.wgrav(drmag*invhmean)*invdrmag;
 
-      // Add contributions to main star array
-      for (k=0; k<ndim; k++) star[i]->a[k] += 0.5*sphdata[j].m*dr[k]*paux;
-      star[i]->gpot += 0.5*sphdata[j].m*gaux;
+      // Add contribution to main star array
+      for (k=0; k<ndim; k++) star[i]->a[k] += dr[k]*paux;
+      star[i]->gpot += sphdata[j].m*invhmean*kern.wpot(drmag*invhmean);
 
     }
     // ------------------------------------------------------------------------

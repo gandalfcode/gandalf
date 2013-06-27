@@ -52,6 +52,7 @@ struct SphParticle {
   FLOAT invq;                       ///< 1 / q
   FLOAT sound;                      ///< Sound speed
   FLOAT gpot;                       ///< Gravitational potential
+  FLOAT gpe;                        ///< Gravitational potential energy
   FLOAT gradP[ndim];                ///< Pressure gradient
   FLOAT gradrho[ndim];              ///< Density gradient
   FLOAT gradv[ndim][ndim];          ///< Velocity gradient matrix
@@ -96,6 +97,8 @@ struct SphParticle {
     chi = (FLOAT) 0.0;
     q = (FLOAT) 0.0;
     invq = (FLOAT) 0.0;
+    gpot = (FLOAT) 0.0;
+    gpe = (FLOAT) 0.0;
     sound = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) gradP[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) gradrho[k] = (FLOAT) 0.0;

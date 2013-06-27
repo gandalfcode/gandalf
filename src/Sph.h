@@ -63,8 +63,7 @@ class Sph
 				     SphParticle<ndim> *) = 0;
   virtual void ComputeSphHydroGravForces(int, int, int *, SphParticle<ndim> &, 
 					 SphParticle<ndim> *) = 0;
-  virtual void ComputeSphGravForces(int, int, int *, FLOAT *, FLOAT *, 
-				    FLOAT *, SphParticle<ndim> &, 
+  virtual void ComputeSphGravForces(int, int, int *, SphParticle<ndim> &,
 				    SphParticle<ndim> *) = 0;
   virtual void ComputeDirectGravForces(int, int, int *, FLOAT *, FLOAT *, 
 				       SphParticle<ndim> &, 
@@ -157,8 +156,7 @@ class GradhSph: public Sph<ndim>
 
   int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
-  void ComputeSphGravForces(int, int, int *, FLOAT *, FLOAT *,
-			    FLOAT *, SphParticle<ndim> &, 
+  void ComputeSphGravForces(int, int, int *, SphParticle<ndim> &,
 			    SphParticle<ndim> *);
   void ComputeSphHydroGravForces(int, int, int *, SphParticle<ndim> &, 
 				 SphParticle<ndim> *);
@@ -215,7 +213,7 @@ class SM2012Sph: public Sph<ndim>
 			     SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphHydroGravForces(int, int, int *, SphParticle<ndim> &, 
 				 SphParticle<ndim> *);
-  void ComputeSphGravForces(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
+  void ComputeSphGravForces(int, int, int *,
 			    SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
 			  FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
@@ -269,7 +267,7 @@ class GodunovSph: public Sph<ndim>
 			     SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphHydroGravForces(int, int, int *, SphParticle<ndim> &, 
 				 SphParticle<ndim> *);
-  void ComputeSphGravForces(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
+  void ComputeSphGravForces(int, int, int *,
 			    SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
   			  FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
