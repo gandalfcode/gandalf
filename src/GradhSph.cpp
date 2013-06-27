@@ -478,21 +478,17 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
 
       // Main SPH gravity terms
       paux = parti.invh*parti.invh*kern.wgrav(drmag[jj]*parti.invh) + 
-	parti.zeta*parti.hfactor*kern.w1(drmag[jj]*parti.invh) + 
-	neibpart[j].invh*neibpart[j].invh*
-	kern.wgrav(drmag[jj]*neibpart[j].invh) + 
-	neibpart[j].zeta*neibpart[j].hfactor*
-	kern.w1(drmag[jj]*neibpart[j].invh);
+        parti.zeta*parti.hfactor*kern.w1(drmag[jj]*parti.invh) +
+        neibpart[j].invh*neibpart[j].invh*
+        kern.wgrav(drmag[jj]*neibpart[j].invh) +
+        neibpart[j].zeta*neibpart[j].hfactor*
+        kern.w1(drmag[jj]*neibpart[j].invh);
       gaux = (parti.invh*kern.wpot(drmag[jj]*parti.invh) + 
-	      neibpart[j].invh*kern.wpot(drmag[jj]*neibpart[j].invh));
+        neibpart[j].invh*kern.wpot(drmag[jj]*neibpart[j].invh));
 
       // Add total hydro contribution to acceleration for particle i
       for (k=0; k<ndim; k++) parti.agrav[k] += 0.5*neibpart[j].m*draux[k]*paux;
       parti.gpot += 0.5*neibpart[j].m*gaux;
-
-      // If neighbour is also active, add contribution to force here
-      //for (k=0; k<ndim; k++) neibpart[j].agrav[k] -= 0.5*parti.m*draux[k]*paux;
-      //neibpart[j].gpot += 0.5*parti.m*gaux;
 
     }
     // ------------------------------------------------------------------------
