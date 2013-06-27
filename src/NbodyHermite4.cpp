@@ -93,8 +93,6 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectGravForces
       for (k=0; k<ndim; k++) star[i]->adot[k] +=
 	star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
 
-      //cout << "ADDING : " << i << "    " << j << "     " << N << endl;
-
     }
     // ------------------------------------------------------------------------
 
