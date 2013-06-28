@@ -26,11 +26,8 @@ subfigure(2,2,3)
 plot("r","ar")
 
 subfigure(2,2,4)
-plot("r","vr")
-#CreateTimeData('lr1',lagrangian_radii,0.1)
-#CreateTimeData('lr2',lagrangian_radii,0.5)
-#CreateTimeData('lr3',lagrangian_radii,0.9)
-#plot_vs_time("lr2")
+plot("r","sound")
+addplot("r","vr",type='star')
 
 # 'Sleep hack' (to allow matplotlib to update the figure) 
 # before running the simulation

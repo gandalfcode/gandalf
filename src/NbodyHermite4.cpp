@@ -73,10 +73,6 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectGravForces
   for (i=0; i<N; i++) {
     if (star[i]->active == 0) continue;
 
-    star[i]->gpot = 0.0;
-    for (k=0; k<ndim; k++) star[i]->a[k] = 0.0;
-    for (k=0; k<ndim; k++) star[i]->adot[k] = 0.0;
-
     // Sum grav. contributions for all other stars (excluding star itself)
     // ------------------------------------------------------------------------
     for (j=0; j<N; j++) {
@@ -119,16 +115,18 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
   DOUBLE dr[ndim];                  // Relative position vector
   DOUBLE drmag;                     // Distance
   DOUBLE drsqd;                     // Distance squared
+  DOUBLE drdt;                      // ..
+  DOUBLE dv[ndim];                  // ..
   DOUBLE invhmean;                  // ..
   DOUBLE invdrmag;                  // 1 / drmag
   DOUBLE paux;                      // Aux. force variable
+  DOUBLE wkern;                     // ..
 
-  debug2("[NbodyLeapfrogKDK::CalculateDirectSPHForces]");
+  debug2("[NbodyHermite4::CalculateDirectSPHForces]");
 
   // Loop over all (active) stars
   // --------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-
     if (star[i]->active == 0) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
@@ -136,17 +134,31 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
     for (j=0; j<Ngas; j++) {
 
       for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star[i]->r[k];
+      for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - star[i]->v[k];
       drsqd = DotProduct(dr,dr,ndim);
       drmag = sqrt(drsqd);
       invdrmag = 1.0/drmag;
       invhmean = 2.0/(star[i]->h + sphdata[j].h);
+      drdt = DotProduct(dv,dr,ndim)*invdrmag;
 
       paux = sphdata[j].m*invhmean*invhmean*
         kern.wgrav(drmag*invhmean)*invdrmag;
+      wkern = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
 
       // Add contribution to main star array
-      for (k=0; k<ndim; k++) star[i]->a[k] += dr[k]*paux;
-      star[i]->gpot += sphdata[j].m*invhmean*kern.wpot(drmag*invhmean);
+      //if (drmag*invhmean < 2.0) {
+	for (k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
+	for (k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] - 
+	  3.0*paux*drdt*invdrmag*dr[k] + 
+	  2.0*twopi*sphdata[j].m*drdt*wkern*invdrmag*dr[k];
+	star[i]->gpot += sphdata[j].m*invhmean*kern.wpot(drmag*invhmean);
+	//}
+	//else {
+	//for (k=0; k<ndim; k++) star[i]->a[k] += sphdata[j].m*dr[k]*pow(invdrmag,3);
+	//for (k=0; k<ndim; k++) star[i]->adot[k] +=
+	//sphdata[j].m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+	//star[i]->gpot += sphdata[j].m*invhmean*kern.wpot(drmag*invhmean);
+	//}
 
     }
     // ------------------------------------------------------------------------
@@ -184,6 +196,7 @@ void NbodyHermite4<ndim, kernelclass>::CalculateAllStartupQuantities
   DOUBLE invdrsqd;                  // 1 / drsqd
   DOUBLE dvsqd;                     // Velocity squared
 
+  debug2("[NbodyHermite4::CalculateAllStartupQuantities]");
 
   // Loop over all stars
   // --------------------------------------------------------------------------
@@ -314,8 +327,8 @@ void NbodyHermite4<ndim, kernelclass>::CorrectionTerms
     
       for (k=0; k<ndim; k++) {
         star[i]->a2dot[k] = 
-	  (-6.0*(star[i]->a0[k] - star[i]->a[k]) - dt*
-	   (4.0*star[i]->adot0[k] + 2.0*star[i]->adot[k]))*invdt*invdt;
+	  (-6.0*(star[i]->a0[k] - star[i]->a[k]) - 
+	   dt*(4.0*star[i]->adot0[k] + 2.0*star[i]->adot[k]))*invdt*invdt;
         star[i]->a3dot[k] = 
 	  (12.0*(star[i]->a0[k] - star[i]->a[k]) + 6.0*dt*
 	   (star[i]->adot0[k] + star[i]->adot[k]))*invdt*invdt*invdt;
@@ -409,8 +422,8 @@ DOUBLE NbodyHermite4<ndim, kernelclass>::Timestep
     timestep = big_number_dp;
 
   //cout << "COMPUTING TIMESTEPS : " << timestep << "    " 
-  //   << star->dt_internal << "    " << a1sqd << "    " << a2sqd 
-  //  << "    " << star->h <<  endl;
+  // << asqd << "    " << a1sqd << "    " << a2sqd 
+  //<< "    " << a3sqd <<  endl;
   timestep = min(timestep,star->dt_internal);
 
 

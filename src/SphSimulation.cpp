@@ -792,6 +792,16 @@ void SphSimulation<ndim>::MainLoop(void)
       }
     }
 
+    // Apply correction steps for both particle and energy integration
+    sphint->CorrectionTerms(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
+    if (simparams->stringparams["gas_eos"] == "energy_eqn")
+      uint->EnergyCorrectionTerms(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
+    
+    // Set all end-of-step variables
+    sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
+    if (simparams->stringparams["gas_eos"] == "energy_eqn")
+      uint->EndTimestep(n,sph->Nsph,sph->sphdata);
+
   }
   // --------------------------------------------------------------------------
 
@@ -827,20 +837,11 @@ void SphSimulation<ndim>::MainLoop(void)
     }
     // ------------------------------------------------------------------------
 
+    nbody->EndTimestep(n,nbody->Nnbody,nbody->nbodydata);
+
   }
   // --------------------------------------------------------------------------
 
-
-  // Apply correction steps for both particle and energy integration
-  sphint->CorrectionTerms(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
-  if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EnergyCorrectionTerms(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
-
-  // Set all end-of-step variables
-  sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
-  if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,sph->Nsph,sph->sphdata);
-  nbody->EndTimestep(n,nbody->Nnbody,nbody->nbodydata);
 
   return;
 }

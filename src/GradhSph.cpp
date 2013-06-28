@@ -355,10 +355,10 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 
     for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
     for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
-    dvdr = DotProduct(dv,dr,ndim);
     drmag = sqrt(DotProduct(dr,dr,ndim));
     invdrmag = 1.0/(drmag + small_number);
     for (k=0; k<ndim; k++) dr[k] *= invdrmag;
+    dvdr = DotProduct(dv,dr,ndim);
 
     wkerni = parti.hfactor*kern.w1(drmag*parti.invh);
     wkernj = neibpart[j].hfactor*kern.w1(drmag*neibpart[j].invh);
@@ -411,7 +411,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     // If neighbour is also active, add contribution to force here
     for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*dr[k]*paux;
 
-continue;
+
     // Main SPH gravity terms
     // ------------------------------------------------------------------------
     paux = 0.5*(parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) +

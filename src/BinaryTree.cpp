@@ -628,7 +628,7 @@ int BinaryTree<ndim>::ComputeActiveCellList(int *celllist)
 
   for (c=0; c<Ncell; c++) {
     if (tree[c].Nactive > 0) celllist[Nactive++] = c;
-    //cout << "Nactive : " << c << "    " << tree[c].Nactive << "   " << Nactive << endl;
+    cout << "Nactive : " << c << "    " << tree[c].Nactive << "   " << Nactive << endl;
   }
 
   return Nactive;

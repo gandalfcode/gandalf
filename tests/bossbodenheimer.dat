@@ -1,12 +1,12 @@
--------------------------------------------------------------
-Boss-Bodenheimer test
-..
--------------------------------------------------------------
+#-------------------------------------------------------------
+# Boss-Bodenheimer test
+# ..
+#-------------------------------------------------------------
 
 
-----------------------------
-Initial conditions variables
-----------------------------
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
 Simulation run id string                    : run_id = BB1
 Select shocktube initial conditions         : ic = bb
 Dimensionality of cube                      : ndim = 3
@@ -18,9 +18,9 @@ Angular velocity of cloud                   : angvel = 1.6e-12
 Perturbation amplitude                      : amp = 0.5
 
 
---------------------------
-Simulation units variables
---------------------------
+#---------------------------
+# Simulation units variables
+#---------------------------
 Use physical units                          : dimensionless = false
 Length units                                : routunit = pc
 Mass units                                  : moutunit = m_sun
@@ -32,9 +32,9 @@ Specific internal energy units              : uoutunit = J_kg
 Angular velocity unit                       : angvelunit = rad_s
 
 
------------------------------
-Simulation boundary variables
------------------------------
+#------------------------------
+# Simulation boundary variables
+#------------------------------
 LHS position of boundary in x-dimension     : boxmin[0] = 0.0
 RHS position of boundary in x-dimension     : boxmax[0] = 1.0
 LHS position of boundary in y-dimension     : boxmin[1] = 0.0
@@ -49,17 +49,17 @@ LHS boundary type in z-dimension            : z_boundary_lhs = open
 RHS boundary type in z-dimension            : z_boundary_rhs = open
 
 
--------------------------
-Simulation time variables
--------------------------
+#--------------------------
+# Simulation time variables
+#--------------------------
 Simulation end time                         : tend = 0.03
 Regular snapshot output frequency           : dt_snap = 0.002
 Screen output frequency (in no. of steps)   : noutputstep = 1
 
 
------------------------
-Thermal physics options
------------------------
+#------------------------
+# Thermal physics options
+#------------------------
 Switch-on hydrodynamical forces             : hydro_forces = 1
 Main gas thermal physics treatment          : gas_eos = barotropic
 Ratio of specific heats of gas              : gamma_eos = 1.6666666666666666666
@@ -68,32 +68,32 @@ Isothermal temperature                      : temp0 = 10.0
 Mean gas particle mass                      : mu_bar = 2.35
 
 
----------------
-Gravity options
----------------
+#----------------
+# Gravity options
+#----------------
 Switch-on self-gravity of gas               : self_gravity = 1
 
 
----------------------------------------
-Smoothed Particle Hydrodynamics options
----------------------------------------
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = m4
 SPH smoothing length iteration tolerance    : h_converge = 0.01
 
 
---------------------------------
-SPH artificial viscosity options
---------------------------------
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
 Artificial viscosity choice                 : avisc = mon97
 Artificial conductivity choice              : acond = none
 Artificial viscosity alpha value            : alpha_visc = 1.0
 Artificial viscosity beta value             : beta_visc = 2.0
 
 
-------------------------
-Time integration options
-------------------------
+#-------------------------
+# Time integration options
+#-------------------------
 SPH particle integration option             : sph_integration = lfkdk
 SPH Courant timestep condition multiplier   : courant_mult = 0.1
 SPH acceleration condition multiplier       : accel_mult = 0.2
@@ -101,15 +101,15 @@ SPH energy equation timestep multiplier     : energy_mult = 0.5
 No. of block timestep levels                : Nlevels = 1
 
 
-------------
-Tree options
-------------
+#-------------
+# Tree options
+#-------------
 SPH neighbour search algorithm              : neib_search = bruteforce
 No. of particles in leaf cell               : Nleafmax = 4
 Tree opening angle (squared)                : thetamaxsqd = 0.1
 
 
---------------------
-Optimisation options
---------------------
+#---------------------
+# Optimisation options
+#---------------------
 Tabulate SPH kernel                         : tabulated_kernel = 0

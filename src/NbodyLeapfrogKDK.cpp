@@ -70,12 +70,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectGravForces
   // Loop over all (active) stars
   // --------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-
     if (star[i]->active == 0) continue;
-
-    //star[i]->gpot = 0.0;
-    //for (k=0; k<ndim; k++) star[i]->a[k] = 0.0;
-    //for (k=0; k<ndim; k++) star[i]->adot[k] = 0.0;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     // ------------------------------------------------------------------------
@@ -125,7 +120,6 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSPHForces
   // Loop over all (active) stars
   // --------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-
     if (star[i]->active == 0) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
