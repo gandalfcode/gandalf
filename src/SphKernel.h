@@ -184,10 +184,10 @@ template <int ndim>
 inline FLOAT M4Kernel<ndim>::wgrav(FLOAT s)  ///< [in] Kernel parameter, r/h
 {
   if (s < (FLOAT) 1.0)
-    return 1.33333333333333*s - 1.2*pow(s,3) + 0.5*pow(s,4);
+    return 1.333333333333333333333*s - 1.2*pow(s,3) + 0.5*pow(s,4);
   else if (s < (FLOAT)2.0)
-    return 2.66666666666667*s - 3.0*s*s + 1.2*pow(s,3) -
-      0.1666666666666667*pow(s,4) - 0.06666666666667/(s*s);
+    return 2.6666666666666666667*s - 3.0*s*s + 1.2*pow(s,3) -
+      0.166666666666666666667*pow(s,4) - 0.06666666666666666667/(s*s);
   else
     return 1.0/(s*s);
 }

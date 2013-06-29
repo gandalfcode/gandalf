@@ -329,87 +329,9 @@ void GodunovSph<ndim, kernelclass >::ComputeSphGravForces
 (int i,                                 // id of particle
  int Nneib,                             // No. of neighbours in neibpart array
  int *neiblist,                         // id of gather neighbour in neibpart
- FLOAT *drmag,                          // Distances of gather neighbours
- FLOAT *invdrmag,                       // Inverse distances of gather neibs
- FLOAT *dr,                             // Position vector of gather neibs
  SphParticle<ndim> &parti,                    // Particle i data
  SphParticle<ndim> *neibpart)                 // Neighbour particle data
 {
-  int j;                                // Neighbour list id
-  int jj;                               // Aux. neighbour counter
-  int k;                                // Dimension counter
-  FLOAT draux[ndim];                 // Relative position vector
-  FLOAT dv[ndim];                    // Relative velocity vector
-  FLOAT dvdr;                           // Dot product of dv and dr
-  FLOAT wkerni;                         // Value of w1 kernel function
-  FLOAT wkernj;                         // Value of w1 kernel function
-  FLOAT vsignal;                        // Signal velocity
-  FLOAT paux;                           // Aux. pressure force variable
-  FLOAT uaux;                           // Aux. internal energy variable
-  FLOAT winvrho;                        // 0.5*(wkerni + wkernj)*invrhomean
-
-  FLOAT Cij;                            // ..
-  FLOAT Dij;                            // ..
-  FLOAT Vsqdi;                          // ..
-  FLOAT Vsqdj;                          // ..
-  FLOAT Sij;                            // ..
-  FLOAT pl,pr;
-  FLOAT rhol,rhor;
-  FLOAT vl,vr;
-  FLOAT pstar;
-  FLOAT vstar;
-  FLOAT vtemp[ndim];
-  FLOAT hconv = powf(invsqrttwo,ndim+1);
-
-
-  // Compute hydro forces
-  // ==========================================================================
-  if (hydro_forces == 1) {
-
-    // Loop over all potential neighbours in the list
-    // ------------------------------------------------------------------------
-    for (jj=0; jj<Nneib; jj++) {
-      j = neiblist[jj];
-      wkerni = hconv*parti.hfactor*kern.w1(invsqrttwo*drmag[jj]*parti.invh);
-      wkernj = hconv*neibpart[j].hfactor*
-        kern.w1(invsqrttwo*drmag[jj]*neibpart[j].invh);
-
-      for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
-      for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
-      dvdr = DotProduct(dv,draux,ndim);
-
-      // Linear interpolate quantites between left and right states
-      Cij = -(parti.invrho - neibpart[j].invrho)*invdrmag[jj];
-      Dij = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
-      Vsqdi = (FLOAT) 0.25*parti.h*parti.h*Cij*Cij + Dij*Dij;
-      Vsqdj = (FLOAT) 0.25*neibpart[j].h*neibpart[j].h*Cij*Cij + Dij*Dij;
-      Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi + 
-				  neibpart[j].h*neibpart[j].h/Vsqdj);
-
-      // Initialise the LHS and RHS of the Riemann problem
-      InitialiseRiemannProblem(parti,neibpart[j],draux,drmag[jj],Sij,dvdr,
-    		  parti.sound,neibpart[j].sound,pl,pr,rhol,rhor,vl,vr);
-
-      // Now solve Riemann problem and return intermediate state variables
-      riemann->SolveRiemannProblem(pl,pr,rhol,rhor,parti.sound,
-				  neibpart[j].sound,vl,vr,pstar,vstar);
-
-      // Main SPH pressure force term
-      paux = pstar*(Vsqdi*wkerni + Vsqdj*wkernj);
-
-      // Add total hydro contribution to acceleration for particle i
-      for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
-      
-      // If neighbour is also active, add contribution to force here
-      for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
-
-    }
-    // ------------------------------------------------------------------------
-
-  }
-  // ==========================================================================
-
-
   return;
 }
 

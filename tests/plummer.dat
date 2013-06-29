@@ -24,7 +24,7 @@ Perform dimensionless simulation            : dimensionless = 1
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 100.0
+Simulation end time                         : tend = 20.0
 Regular snapshot output frequency           : dt_snap = 10.0
 Screen output frequency (in no. of steps)   : noutputstep = 128
 
@@ -33,7 +33,7 @@ Screen output frequency (in no. of steps)   : noutputstep = 128
 # SPH softening kernel options
 #-----------------------------
 SPH smoothing kernel choice                 : kernel = m4
-Tabulate SPH kernel                         : tabulated_kernel = 1
+Tabulate SPH kernel                         : tabulated_kernel = 0
 
 
 #-------------------------

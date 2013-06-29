@@ -551,7 +551,7 @@ void GridSearch<ndim>::UpdateAllSphGravForces
 
         // Compute all gather neighbour contributions to hydro forces
         sph->ComputeSphGravForces(i,Ninteract,interactlist,
-				  drmag,invdrmag,dr,parti,neibpart);
+				  parti,neibpart);
 
 	// Now add all direct, unsmoothed contributions
 	sph->ComputeDirectGravForces(i,Ndirect,directlist,

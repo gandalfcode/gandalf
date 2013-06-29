@@ -70,12 +70,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectGravForces
   // Loop over all (active) stars
   // --------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-
     if (star[i]->active == 0) continue;
-
-    star[i]->gpot = 0.0;
-    for (k=0; k<ndim; k++) star[i]->a[k] = 0.0;
-    for (k=0; k<ndim; k++) star[i]->adot[k] = 0.0;
 
     // Sum grav. contributions for all other stars (excluding star itself)
     // ------------------------------------------------------------------------
@@ -116,16 +111,15 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSPHForces
   DOUBLE dr[ndim];                  // Relative position vector
   DOUBLE drmag;                     // Distance
   DOUBLE drsqd;                     // Distance squared
+  DOUBLE invhmean;                  // ..
   DOUBLE invdrmag;                  // 1 / drmag
   DOUBLE paux;                      // Aux. force variable
-  DOUBLE gaux;                      // Aux. grav potential variable
 
   debug2("[NbodyLeapfrogKDK::CalculateDirectSPHForces]");
 
   // Loop over all (active) stars
   // --------------------------------------------------------------------------
   for (i=0; i<N; i++) {
-
     if (star[i]->active == 0) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
@@ -134,16 +128,16 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSPHForces
 
       for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star[i]->r[k];
       drsqd = DotProduct(dr,dr,ndim);
-      invdrmag = 1.0/sqrt(drsqd);
+      drmag = sqrt(drsqd);
+      invdrmag = 1.0/drmag;
+      invhmean = 2.0/(star[i]->h + sphdata[j].h);
 
-      paux = sphdata[j].invh*sphdata[j].invh*kern.wgrav(drmag*sphdata[j].invh)
-        + star[i]->invh*star[i]->invh*kern.wgrav(drmag*star[i]->invh);
-      gaux = sphdata[j].invh*kern.wpot(drmag*sphdata[j].invh) + 
-        star[i]->invh*kern.wpot(drmag*star[i]->invh);
+      paux = sphdata[j].m*invhmean*invhmean*
+        kern.wgrav(drmag*invhmean)*invdrmag;
 
       // Add contribution to main star array
-      for (k=0; k<ndim; k++) star[i]->a[k] += 0.5*sphdata[j].m*dr[k]*paux;
-      star[i]->gpot += 0.5*sphdata[j].m*gaux;
+      for (k=0; k<ndim; k++) star[i]->a[k] += dr[k]*paux;
+      star[i]->gpot += sphdata[j].m*invhmean*kern.wpot(drmag*invhmean);
 
     }
     // ------------------------------------------------------------------------

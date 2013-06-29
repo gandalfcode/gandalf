@@ -1,12 +1,12 @@
--------------------------------------------------------------
-Freefall collapse test
-..
--------------------------------------------------------------
+#--------------------------------------------------------------
+# Freefall collapse test
+# ..
+#--------------------------------------------------------------
 
 
-----------------------------
-Initial conditions variables
-----------------------------
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
 Simulation run id string                    : run_id = FREEFALL1
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = sphere
@@ -17,9 +17,9 @@ Use dimensionless units                     : dimensionless = 1
 
 
 
------------------------------
-Simulation boundary variables
------------------------------
+#------------------------------
+# Simulation boundary variables
+#------------------------------
 LHS position of boundary in x-dimension     : boxmin[0] = 0.0
 RHS position of boundary in x-dimension     : boxmax[0] = 1.0
 LHS position of boundary in y-dimension     : boxmin[1] = 0.0
@@ -34,42 +34,44 @@ LHS boundary type in z-dimension            : z_boundary_lhs = open
 RHS boundary type in z-dimension            : z_boundary_rhs = open
 
 
--------------------------
-Simulation time variables
--------------------------
-Simulation end time                         : tend = 0.3
-Regular snapshot output frequency           : dt_snap = 0.03
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 0.03
+Regular snapshot output frequency           : dt_snap = 0.01
 Screen output frequency (in no. of steps)   : noutputstep = 1
 
 
------------------------
-Thermal physics options
------------------------
+#------------------------
+# Thermal physics options
+#------------------------
 Switch-on hydrodynamical forces             : hydro_forces = 0
-Main gas thermal physics treatment          : gas_eos = isothermal
+Main gas thermal physics treatment          : gas_eos = energy_eqn
 Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 
 
----------------------------------------
-Smoothed Particle Hydrodynamics options
----------------------------------------
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = m4
 SPH smoothing length iteration tolerance    : h_converge = 0.002
+Tabulate SPH kernel                         : tabulated_kernel = 0
 
 
---------------------------------
-SPH artificial viscosity options
---------------------------------
+
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
 Artificial viscosity choice                 : avisc = mon97
 Artificial conductivity choice              : acond = none
 Artificial viscosity alpha value            : alpha_visc = 1.0
 Artificial viscosity beta value             : beta_visc = 2.0
 
 
-------------------------
-Time integration options
-------------------------
+#-------------------------
+# Time integration options
+#-------------------------
 SPH particle integration option             : sph_integration = lfkdk
 SPH Courant timestep condition multiplier   : courant_mult = 0.1
 SPH acceleration condition multiplier       : accel_mult = 0.2
@@ -77,14 +79,14 @@ SPH energy equation timestep multiplier     : energy_mult = 0.5
 No. of block timestep levels                : Nlevels = 1
 
 
---------------------
-Optimisation options
---------------------
-Tabulate SPH kernel                         : tabulated_kernel = 0
-SPH neighbour search algorithm              : neib_search = grid
+#-------------
+# Tree options
+#-------------
+SPH neighbour search algorithm              : neib_search = tree
+No. of particles in leaf cell               : Nleafmax = 1
 
 
--------------
-Misc. options
--------------
+#--------------
+# Misc. options
+#--------------
 Switch-off self-gravity of gas              : self_gravity = 1

@@ -22,7 +22,7 @@ class PlottingProcess (Process):
         self.axesimages = {} #dictionary that for each axis associate the corresponding image
         self.lastid = 0 #id of the last command received
     
-    def run(self):
+    def run(self):      
         import matplotlib.pyplot as plt
         import warnings
         warnings.filterwarnings("ignore", "matplotlib is currently using a non-GUI backend, so cannot show the figure")

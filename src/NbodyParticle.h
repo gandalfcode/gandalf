@@ -46,6 +46,7 @@ class NbodyParticle
   DOUBLE radius;                    ///< Softening/sink radius of particle
   DOUBLE hfactor;                   ///< invh^(ndim + 1)
   DOUBLE gpot;                      ///< Gravitational potential
+  DOUBLE gpe;                       ///< Gravitational potential energy
   DOUBLE gpe_internal;              ///< ..
   DOUBLE dt;                        ///< Particle timestep
   DOUBLE dt_internal;               ///< Internal timestep 
@@ -75,6 +76,7 @@ class NbodyParticle
     invh = 0.0;
     hfactor = 0.0;
     gpot = 0.0;
+    gpe = 0.0;
     gpe_internal = 0.0;
     dt = 0.0;
     dt_internal = big_number;

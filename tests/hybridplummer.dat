@@ -13,33 +13,60 @@ Dimensionality of cube                      : ndim = 3
 Total mass of Plummer sphere                : mplummer = 1.0
 Radius of Plummer core                      : rplummer = 1.0
 Maximum radius of cloud                     : radius = 10.0
-Softening radius of star                    : rstar = 0.01
+Softening radius of star                    : rstar = 0.001
 Fraction of mass within stars               : starfrac = 0.5
 Fraction of mass within gas                 : gasfrac = 0.5
-No. of SPH particles                        : Nsph = 1024
+No. of SPH particles                        : Nsph = 2048
 No. of star particles                       : Nstar = 64
 Perform dimensionless simulation            : dimensionless = 1
+Switch-on gas self-gravity                  : self_gravity = 1
 
 
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 16.0
+Simulation end time                         : tend = 1.0
 Regular snapshot output frequency           : dt_snap = 1.0
-Screen output frequency (in no. of steps)   : noutputstep = 128
+Screen output frequency (in no. of steps)   : noutputstep = 32
 
 
-#-----------------------------
-# SPH softening kernel options
-#-----------------------------
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = m4
-Tabulate SPH kernel                         : tabulated_kernel = 1
+SPH smoothing length iteration tolerance    : h_converge = 0.01
+Don't use tabulated kernel with gravity     : tabulated_kernel = 0
+
+
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
+Artificial viscosity choice                 : avisc = mon97
+Artificial conductivity choice              : acond = none
+Artificial viscosity alpha value            : alpha_visc = 1.0
+Artificial viscosity beta value             : beta_visc = 2.0
+
+
+#------------------------
+# SPH integration options
+#------------------------
+SPH particle integration option             : sph_integration = lfkdk
+Integration of gas thermal energy           : energy_integration = PEC
+
+
+#------------------------
+# Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = energy_eqn
+Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 
 
 #-------------------------
 # N-body algorithm options
 #-------------------------
-Star particle integration option            : nbody = hermite4
+Star particle integration option            : nbody = lfkdk
 Use softening?                              : nbody_softening = 0
 Identify and integrate sub-systems?         : sub_systems = 0
 Grav. energy fraction for sub-systems       : gpefrac = 0.02
@@ -55,3 +82,17 @@ Acceleration timestep condition multiplier  : accel_mult = 0.1
 N-body timestep multiplier                  : nbody_mult = 0.1
 Sub-system timestep multiplier              : subsys_mult = 0.1
 No. of block timestep levels                : Nlevels = 1
+
+
+#-------------
+# Tree options
+#-------------
+SPH neighbour search algorithm              : neib_search = tree
+No. of particles in leaf cell               : Nleafmax = 1
+Tree opening angle (squared)                : thetamaxsqd = 0.1
+
+
+#---------------
+# Python options
+#---------------
+Time interval between updating plots        : dt_python = 4.0
