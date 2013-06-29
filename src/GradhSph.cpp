@@ -83,7 +83,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
   int iteration_max = 30;           // Max. no of iterations
   FLOAT dr[ndim];                   // ..
   FLOAT h_lower_bound = 0.0;        // Lower bound on h
-  FLOAT h_upper_bound = big_number; // Upper bound on h
+  FLOAT h_upper_bound = hmax;       // Upper bound on h
   FLOAT invhsqd;                    // (1 / h)^2
   FLOAT ssqd;                       // Kernel parameter squared, (r/h)^2
 
@@ -110,6 +110,8 @@ int GradhSph<ndim, kernelclass>::ComputeH
       parti.rho += m[j]*parti.hfactor*kern.w0_s2(ssqd);
       parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega_s2(ssqd);
       parti.zeta += m[j]*invhsqd*kern.wzeta_s2(ssqd);
+      //cout << "WTF?? : " << j << "    " << Nneib << "   " << ssqd << "    " 
+      //   << parti.h << "    " << m[j] << "    " << parti.rho << endl;
     }
     // ------------------------------------------------------------------------
 

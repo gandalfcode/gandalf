@@ -9,7 +9,7 @@ COMPILER_MODE      = FAST
 PRECISION          = DOUBLE
 OPENMP             = 0
 OUTPUT_LEVEL       = 1
-VERIFY_ALL         = 1
+VERIFY_ALL         = 0
 
 
 # Select location of python and numpy libraries.  If blank, make will try to 

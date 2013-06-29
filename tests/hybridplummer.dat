@@ -13,10 +13,10 @@ Dimensionality of cube                      : ndim = 3
 Total mass of Plummer sphere                : mplummer = 1.0
 Radius of Plummer core                      : rplummer = 1.0
 Maximum radius of cloud                     : radius = 10.0
-Softening radius of star                    : rstar = 0.000001
+Softening radius of star                    : rstar = 0.001
 Fraction of mass within stars               : starfrac = 0.5
 Fraction of mass within gas                 : gasfrac = 0.5
-No. of SPH particles                        : Nsph = 512
+No. of SPH particles                        : Nsph = 2048
 No. of star particles                       : Nstar = 64
 Perform dimensionless simulation            : dimensionless = 1
 Switch-on gas self-gravity                  : self_gravity = 1
@@ -35,7 +35,7 @@ Screen output frequency (in no. of steps)   : noutputstep = 32
 #----------------------------------------
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = m4
-SPH smoothing length iteration tolerance    : h_converge = 0.001
+SPH smoothing length iteration tolerance    : h_converge = 0.01
 Don't use tabulated kernel with gravity     : tabulated_kernel = 0
 
 
@@ -66,11 +66,11 @@ Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 #-------------------------
 # N-body algorithm options
 #-------------------------
-Star particle integration option            : nbody = hermite4ts
+Star particle integration option            : nbody = lfkdk
 Use softening?                              : nbody_softening = 0
 Identify and integrate sub-systems?         : sub_systems = 0
 Grav. energy fraction for sub-systems       : gpefrac = 0.02
-No. of P(EC)^n iteration steps              : Npec = 3
+No. of P(EC)^n iteration steps              : Npec = 1
 Sub-system integration scheme               : sub_system_integration = hermite4ts
 
 
@@ -88,7 +88,7 @@ No. of block timestep levels                : Nlevels = 1
 # Tree options
 #-------------
 SPH neighbour search algorithm              : neib_search = tree
-No. of particles in leaf cell               : Nleafmax = 4
+No. of particles in leaf cell               : Nleafmax = 1
 Tree opening angle (squared)                : thetamaxsqd = 0.1
 
 

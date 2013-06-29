@@ -26,7 +26,7 @@ subfigure(2,2,3)
 plot("r","ar")
 
 subfigure(2,2,4)
-plot("r","sound")
+plot("r","vr")
 addplot("r","vr",type='star')
 
 # 'Sleep hack' (to allow matplotlib to update the figure) 
