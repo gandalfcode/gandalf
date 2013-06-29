@@ -7,7 +7,7 @@ from seren.analysis.facade import *
 import time
 
 # Create new shocktube simulation from 'adshock.dat' file
-newsim('hybridplummer.dat')
+newsim('plummer.dat')
 setupsim()
 
 # Plot the density with the analytical solution
