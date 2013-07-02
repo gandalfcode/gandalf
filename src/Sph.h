@@ -56,11 +56,11 @@ class Sph
   // SPH functions for computing SPH sums with neighbouring particles 
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
   // --------------------------------------------------------------------------
-  virtual int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *,
-	               SphParticle<ndim> &, Nbody<ndim> *) = 0;
+  virtual int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
+                       SphParticle<ndim> &, Nbody<ndim> *) = 0;
   virtual void ComputeSphHydroForces(int, int, int *, FLOAT *, FLOAT *, 
-				     FLOAT *, SphParticle<ndim> &, 
-				     SphParticle<ndim> *) = 0;
+                                     FLOAT *, SphParticle<ndim> &,
+                                     SphParticle<ndim> *) = 0;
   virtual void ComputeSphHydroGravForces(int, int, int *, SphParticle<ndim> &, 
 					 SphParticle<ndim> *) = 0;
   virtual void ComputeSphGravForces(int, int, int *, SphParticle<ndim> &,
@@ -105,6 +105,7 @@ class Sph
   const int hydro_forces;             ///< Compute hydro forces?
   const int self_gravity;             ///< Compute gravitational forces?
   static const FLOAT invndim=1./ndim; ///< Copy of 1/ndim
+  int create_sinks;                   ///< ..
 
   string riemann_solver;              ///< Selected Riemann solver
   string slope_limiter;               ///< Selected slope limiter
@@ -148,6 +149,7 @@ class GradhSph: public Sph<ndim>
   using Sph<ndim>::beta_visc;
   using Sph<ndim>::alpha_visc;
   using Sph<ndim>::acond;
+  using Sph<ndim>::create_sinks;
 
  public:
 
@@ -155,7 +157,7 @@ class GradhSph: public Sph<ndim>
            aviscenum, acondenum, string, string);
   ~GradhSph();
 
-  int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *,
+  int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
   void ComputeSphGravForces(int, int, int *, SphParticle<ndim> &,
 			    SphParticle<ndim> *);
@@ -208,7 +210,7 @@ class SM2012Sph: public Sph<ndim>
             aviscenum, acondenum, string, string);
   ~SM2012Sph();
 
-  int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *,
+  int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
   void ComputeSphHydroForces(int, int, int *, FLOAT *, FLOAT *, FLOAT *,
 			     SphParticle<ndim> &, SphParticle<ndim> *);
@@ -262,7 +264,7 @@ class GodunovSph: public Sph<ndim>
              aviscenum, acondenum, string, string);
   ~GodunovSph();
 
-  int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *,
+  int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
   void ComputeSphHydroForces(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
 			     SphParticle<ndim> &, SphParticle<ndim> *);

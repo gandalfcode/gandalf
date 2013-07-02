@@ -73,6 +73,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
  FLOAT *m,                          ///< [in] Array of neib. masses
  FLOAT *mu,                         ///< [in] Array of m*u (not needed here)
  FLOAT *drsqd,                      ///< [in] Array of neib. distances squared
+ FLOAT *gpot,                       ///< [in] Array of neib. grav. potentials
  SphParticle<ndim> &parti,          ///< [inout] Particle i data
  Nbody<ndim> *nbody)                ///< [in] Main N-body object
 {
@@ -99,6 +100,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
     parti.invomega = (FLOAT) 0.0;
     parti.zeta = (FLOAT) 0.0;
     parti.chi = (FLOAT) 0.0;
+    parti.gpotmin = big_number;
     parti.hfactor = pow(parti.invh,ndim);
     invhsqd = parti.invh*parti.invh;
 
@@ -110,8 +112,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
       parti.rho += m[j]*parti.hfactor*kern.w0_s2(ssqd);
       parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega_s2(ssqd);
       parti.zeta += m[j]*invhsqd*kern.wzeta_s2(ssqd);
-      //cout << "WTF?? : " << j << "    " << Nneib << "   " << ssqd << "    " 
-      //   << parti.h << "    " << m[j] << "    " << parti.rho << endl;
     }
     // ------------------------------------------------------------------------
 
@@ -178,6 +178,11 @@ int GradhSph<ndim, kernelclass>::ComputeH
     parti.invrho*parti.invomega;
   parti.div_v = (FLOAT) 0.0;
   
+  // Calculate the minimum neighbour potential
+  // (used later to identify new sinks)
+  if (create_sinks == 1)
+    for (j=0; j<Nneib; j++)  parti.gpotmin = min(parti.gpotmin,gpot[j]);
+
   // If there are star particles, compute N-body chi correction term
   // --------------------------------------------------------------------------
   if (nbody->nbody_softening == 1) {
@@ -197,8 +202,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
     }
   }
   parti.chi = -Sph<ndim>::invndim*parti.h*parti.chi*parti.invrho*parti.invomega;
-
-  //cout << "ZETA : " << parti.zeta << "    " << parti.invomega << endl;
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;

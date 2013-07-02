@@ -45,6 +45,7 @@ Simulation time variables
 -------------------------
 Simulation end time                         : tend = 1.59
 Regular snapshot output frequency           : dt_snap = 2.0
+Time of first snapshot                      : tsnapfirst = 2.0
 Screen output frequency (in no. of steps)   : noutputstep = 32
 
 
@@ -87,7 +88,7 @@ No. of block timestep levels                : Nlevels = 1
 ------------
 Tree options
 ------------
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = grid
 No. of particles in leaf cell               : Nleafmax = 16
 Tree opening angle (squared)                : thetamaxsqd = 0.2
 

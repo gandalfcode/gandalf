@@ -543,6 +543,9 @@ void SphSimulation<ndim>::ProcessParameters(void)
   // Sink particles
   // --------------------------------------------------------------------------
   sink_particles = intparams["sink_particles"];
+  sinks.sink_particles = intparams["sink_particles"];
+  sinks.create_sinks = intparams["create_sinks"];
+  sinks.smooth_accretion = intparams["smooth_accretion"];
   sinks.rho_sink = floatparams["rho_sink"]
     /simunits.rho.outscale/simunits.rho.outcgs;
   sinks.alpha_ss = floatparams["alpha_ss"];
@@ -560,6 +563,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   sph->riemann_solver   = stringparams["riemann_solver"];
   sph->slope_limiter    = stringparams["slope_limiter"];
   sph->riemann_order    = intparams["riemann_order"];
+  sph->create_sinks     = intparams["create_sinks"];
 
   nbody->Nstar          = intparams["Nstar"];
   nbody_single_timestep = intparams["nbody_single_timestep"];
@@ -678,6 +682,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
       sph->sphdata[i].gpot = (FLOAT) 0.0;
+      sph->sphdata[i].gpotmin = big_number;
       sph->sphdata[i].dudt = (FLOAT) 0.0;
       sph->sphdata[i].active = true;
       sph->sphdata[i].level = level_step;
@@ -744,11 +749,7 @@ void SphSimulation<ndim>::MainLoop(void)
 
   // Search for new sink particles (if activated)
   if (sink_particles == 1) {
-    FLOAT rho_max = 0.0;
-    for (i=0; i<sph->Nsph; i++) rho_max = max(rho_max,sph->sphdata[i].rho);
-    cout << "RHO_MAX : " << rho_max*simunits.rho.outscale << "     " 
-	 << sinks.rho_sink*simunits.rho.outscale << endl;
-    sinks.SearchForNewSinkParticles(n,sph,nbody);
+    if (sinks.create_sinks == 1) sinks.SearchForNewSinkParticles(n,sph,nbody);
     if (sinks.Nsink > 0) sinks.AccreteMassToSinks(sph,nbody);
   }
 

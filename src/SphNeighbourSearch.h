@@ -17,6 +17,7 @@
 #include "SphParticle.h"
 #include "Sph.h"
 #include "Nbody.h"
+#include "Sinks.h"
 #include "Parameters.h"
 using namespace std;
 
@@ -250,6 +251,4 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   BinaryTreeCell<ndim> *tree;       ///< Main tree array
 
 };
-
-
 #endif

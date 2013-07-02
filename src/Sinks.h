@@ -98,6 +98,9 @@ class Sinks
   bool allocated_memory;            ///< Has sink memory been allocated?
   int Nsink;                        ///< No. of sink particles
   int Nsinkmax;                     ///< Max. no. of sink particles
+  int sink_particles;               ///< Using sink particles?
+  int create_sinks;                 ///< Create new sink particles?
+  int smooth_accretion;             ///< Use smooth accretion?
   FLOAT alpha_ss;                   ///< Shakura-Sunyaev alpha viscosity
   FLOAT rho_sink;                   ///< Sink formation density
   FLOAT sink_radius;                ///< New sink radius (in units of h)

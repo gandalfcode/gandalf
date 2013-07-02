@@ -97,6 +97,8 @@ Artificial viscosity beta value             : beta_visc = 2.0
 # Sink particle options
 #----------------------
 Activate sink particles in code             : sink_particles = 1
+Allow creation of new sink particles        : create_sinks = 1
+Use smooth accretion in sinks               : smooth_accretion = 1
 Select adaptive sink radii                  : sink_radius_mode = hmult
 Set sink radius equal to kernel extent      : sink_radius = 2.0
 Sink formation density                      : rho_sink = 1.e-13

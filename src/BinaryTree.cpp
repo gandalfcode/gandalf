@@ -1052,6 +1052,8 @@ void BinaryTree<ndim>::UpdateAllSphProperties
   FLOAT hmax;                      // Maximum smoothing length
   FLOAT rp[ndim];                  // Local copy of particle position
   FLOAT *drsqd;                    // Position vectors to gather neibs
+  FLOAT *gpot;                     // Potential for particles
+  FLOAT *gpot2;                    // ..
   FLOAT *m;                        // Distances to gather neibs
   FLOAT *m2;                       // ..
   FLOAT *mu;                       // mass*u for gather neibs
@@ -1074,6 +1076,8 @@ void BinaryTree<ndim>::UpdateAllSphProperties
     activelist = new int[Nleafmax];
     gatherlist = new int[Nneibmax];
     neiblist = new int[Nneibmax];
+    gpot = new FLOAT[Nneibmax];
+    gpot2 = new FLOAT[Nneibmax];
     drsqd = new FLOAT[Nneibmax];
     m = new FLOAT[Nneibmax];
     m2 = new FLOAT[Nneibmax];
@@ -1094,7 +1098,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
       // ----------------------------------------------------------------------
       do {
         hmax = 1.05*hmax;
-	celldone = 1;
+        celldone = 1;
 
         // Find list of active particles in current cell
         Nactive = ComputeActiveParticleList(c,activelist,sph);
@@ -1111,11 +1115,15 @@ void BinaryTree<ndim>::UpdateAllSphProperties
           delete[] m2;
           delete[] m;
           delete[] drsqd;
+          delete[] gpot2;
+          delete[] gpot;
           delete[] neiblist;
           delete[] gatherlist;
           Nneibmax = 2*Nneibmax;
           gatherlist = new int[Nneibmax];
           neiblist = new int[Nneibmax];
+          gpot = new FLOAT[Nneibmax];
+          gpot2 = new FLOAT[Nneibmax];
           drsqd = new FLOAT[Nneibmax];
           m = new FLOAT[Nneibmax];
           m2 = new FLOAT[Nneibmax];
@@ -1128,6 +1136,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
         // Make local copies of important neib information (mass and position)
         for (jj=0; jj<Nneib; jj++) {
           j = neiblist[jj];
+          gpot[jj] = data[j].gpot;
           m[jj] = data[j].m;
           mu[jj] = data[j].m*data[j].u;
           for (k=0; k<ndim; k++) r[ndim*jj + k] = (FLOAT) data[j].r[k];
@@ -1152,6 +1161,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
             // Record distance squared for all potential gather neighbours
             if (drsqdaux <= hrangesqd) {
               gatherlist[Ngather] = jj;
+              gpot[Ngather] = gpot[jj];
               drsqd[Ngather] = drsqdaux;
               m2[Ngather] = m[jj];
               mu2[Ngather] = mu[jj];
@@ -1167,7 +1177,8 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 #endif
 
           // Compute smoothing length and other gather properties for ptcl i
-          okflag = sph->ComputeH(i,Ngather,hmax,m2,mu2,drsqd,data[i],nbody);
+          okflag = sph->ComputeH(i,Ngather,hmax,m2,mu2,
+                                 drsqd,gpot,data[i],nbody);
 
           // If h-computation is invalid, then break from loop and recompute
           // larger neighbour lists
@@ -1192,6 +1203,8 @@ void BinaryTree<ndim>::UpdateAllSphProperties
     delete[] m2;
     delete[] m;
     delete[] drsqd;
+    delete[] gpot2;
+    delete[] gpot;
     delete[] neiblist;
     delete[] gatherlist;
     delete[] activelist;
@@ -1218,36 +1231,35 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::UpdateAllSphHydroForces
-(Sph<ndim> *sph                     ///< Pointer to SPH object
-)
+(Sph<ndim> *sph)                   ///< Pointer to SPH object
 {
-  int c;                            // Cell id
-  int cactive;                      // No. of active cells
-  int cc;                           // Aux. cell counter
-  int i;                            // Particle id
-  int j;                            // Aux. particle counter
-  int jj;                           // Aux. particle counter
-  int k;                            // Dimension counter
-  int okflag;                       // Flag if h-rho iteration is valid
-  int Nactive;                      // No. of active particles in cell
-  int Ngrav;                        // No. of direct sum gravity ptcls
-  int Ninteract;                    // No. of near gather neighbours
-  int Nneib;                        // No. of neighbours
-  int Nneibmax;                     // Max. no. of neighbours
-  int *activelist;                  // List of active particle ids
-  int *celllist;                    // List of active cells
-  int *interactlist;                // ..
-  int *neiblist;                    // List of neighbour ids
-  FLOAT draux[ndim];                // Aux. relative position vector var
-  FLOAT drsqd;                      // Distance squared
-  FLOAT hrangesqdi;                 // Kernel extent
-  FLOAT hrangesqdj;                 // ..
-  FLOAT rp[ndim];                   // Local copy of particle position
-  FLOAT *dr;                        // Array of relative position vectors
-  FLOAT *drmag;                     // Array of neighbour distances
-  FLOAT *invdrmag;                  // Array of 1/drmag between particles
-  SphParticle<ndim> *neibpart;      // Local copy of neighbouring ptcls
-  SphParticle<ndim> parti;          // Local copy of SPH particle
+  int c;                           // Cell id
+  int cactive;                     // No. of active cells
+  int cc;                          // Aux. cell counter
+  int i;                           // Particle id
+  int j;                           // Aux. particle counter
+  int jj;                          // Aux. particle counter
+  int k;                           // Dimension counter
+  int okflag;                      // Flag if h-rho iteration is valid
+  int Nactive;                     // No. of active particles in cell
+  int Ngrav;                       // No. of direct sum gravity ptcls
+  int Ninteract;                   // No. of near gather neighbours
+  int Nneib;                       // No. of neighbours
+  int Nneibmax;                    // Max. no. of neighbours
+  int *activelist;                 // List of active particle ids
+  int *celllist;                   // List of active cells
+  int *interactlist;               // ..
+  int *neiblist;                   // List of neighbour ids
+  FLOAT draux[ndim];               // Aux. relative position vector var
+  FLOAT drsqd;                     // Distance squared
+  FLOAT hrangesqdi;                // Kernel extent
+  FLOAT hrangesqdj;                // ..
+  FLOAT rp[ndim];                  // Local copy of particle position
+  FLOAT *dr;                       // Array of relative position vectors
+  FLOAT *drmag;                    // Array of neighbour distances
+  FLOAT *invdrmag;                 // Array of 1/drmag between particles
+  SphParticle<ndim> *neibpart;     // Local copy of neighbouring ptcls
+  SphParticle<ndim> parti;         // Local copy of SPH particle
   SphParticle<ndim> *data = sph->sphdata;   // Pointer to SPH particle data
 
   debug2("[BinaryTree::UpdateAllSphHydroForces]");
@@ -1557,8 +1569,8 @@ void BinaryTree<ndim>::UpdateAllSphForces
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
 
-	// Make local copy of particle and zero all summation data, except 
-	// for potential where we set the self-gravitational contribution
+        // Make local copy of particle and zero all summation data, except
+        // for potential where we set the self-gravitational contribution
         parti = data[i];
         for (k=0; k<ndim; k++) parti.a[k] = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) parti.agrav[k] = (FLOAT) 0.0;
@@ -1577,11 +1589,11 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
         // Compute forces between SPH neighbours (hydro and gravity)
         sph->ComputeSphHydroGravForces(i,Ninteract,interactlist,
-				       parti,neibpart);
+                                       parti,neibpart);
 
         // Compute direct gravity forces between distant particles
         sph->ComputeDirectGravForces(i,Ndirect,directlist,
-				     agrav,gpot,parti,data);
+                                     agrav,gpot,parti,data);
 
         // Compute gravitational force dues to distant cells
         ComputeCellForces(i,Ngravcell,gravcelllist,parti);
@@ -1614,7 +1626,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
             data[j].agrav[k] += neibpart[jj].agrav[k];
           }
 #pragma omp atomic
-	  data[i].gpot += neibpart[jj].gpot;
+          data[i].gpot += neibpart[jj].gpot;
 #pragma omp atomic
           data[j].dudt += neibpart[jj].dudt;
 #pragma omp atomic

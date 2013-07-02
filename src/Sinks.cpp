@@ -121,7 +121,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
       if (sph->sphdata[i].rho < rho_sink) continue;
 
       // Only consider SPH particles located at a local potential minimum
-      //if (!sph->sphdata[i].potmin) continue;
+      if (sph->sphdata[i].gpotmin <= 0.9999999*sph->sphdata[i].gpot) continue;
 
       // Make sure candidate particle is at the end of its current timestep
       if (n%sph->sphdata[i].nstep != 0) continue;

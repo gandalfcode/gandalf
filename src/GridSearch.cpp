@@ -100,6 +100,8 @@ void GridSearch<ndim>::UpdateAllSphProperties
   FLOAT hrangesqd;                  // Kernel extent
   FLOAT rp[ndim];                   // Local copy of particle position
   FLOAT *drsqd;                     // Position vectors to gather neibs
+  FLOAT *gpot;                      // Potential for particles
+  FLOAT *gpot2;                     // ..
   FLOAT *m;                         // Masses of potential neighbours
   FLOAT *m2;                        // Reduced list of masses
   FLOAT *mu;                        // mass*u for potential gather neibs
@@ -121,6 +123,8 @@ void GridSearch<ndim>::UpdateAllSphProperties
     activelist = new int[Noccupymax];
     gatherlist = new int[Nneibmax];
     neiblist = new int[Nneibmax];
+    gpot = new FLOAT[Nneibmax];
+    gpot2 = new FLOAT[Nneibmax];
     drsqd = new FLOAT[Nneibmax];
     m = new FLOAT[Nneibmax];
     m2 = new FLOAT[Nneibmax];
@@ -143,6 +147,7 @@ void GridSearch<ndim>::UpdateAllSphProperties
       // Make local copies of important neib information (mass and position)
       for (jj=0; jj<Nneib; jj++) {
         j = neiblist[jj];
+        gpot[jj] = data[j].gpot;
         m[jj] = data[j].m;
         mu[jj] = data[j].m*data[j].u;
         for (k=0; k<ndim; k++) r[ndim*jj + k] = (FLOAT) data[j].r[k];
@@ -167,6 +172,7 @@ void GridSearch<ndim>::UpdateAllSphProperties
           // Record distance squared for all potential gather neighbours
           if (drsqdaux <= hrangesqd) {
             gatherlist[Ngather] = jj;
+            gpot2[Ngather] = gpot[jj];
             drsqd[Ngather] = drsqdaux;
             m2[Ngather] = m[jj];
             mu2[Ngather] = mu[jj];
@@ -183,7 +189,8 @@ void GridSearch<ndim>::UpdateAllSphProperties
 #endif
 
         // Compute smoothing length and other gather properties for particle i
-        okflag = sph->ComputeH(i,Ngather,big_number,m2,mu2,drsqd,data[i],nbody);
+        okflag = sph->ComputeH(i,Ngather,big_number,m2,mu2,
+                               drsqd,gpot,data[i],nbody);
 
       }
       // ----------------------------------------------------------------------
@@ -198,6 +205,8 @@ void GridSearch<ndim>::UpdateAllSphProperties
     delete[] m2;
     delete[] m;
     delete[] drsqd;
+    delete[] gpot2;
+    delete[] gpot;
     delete[] neiblist;
     delete[] gatherlist;
     delete[] activelist;

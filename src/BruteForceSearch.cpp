@@ -73,14 +73,17 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
   FLOAT drsqdaux;                   // Distance squared
   FLOAT rp[ndim];                   // Position of current particle
   FLOAT *drsqd;                     // Array of neib. distances (sqd)
+  FLOAT *gpot;                      // Array of neib. grav. potentials
   FLOAT *m;                         // Array of neib. position vectors
   FLOAT *mu;                        // Array of neib. mass*u values
 
   debug2("[BruteForceSearch::UpdateAllSphProperties]");
 
   // Store masses in separate array
+  gpot = new FLOAT[sph->Ntot];
   m = new FLOAT[sph->Ntot];
   mu = new FLOAT[sph->Ntot];
+  for (i=0; i<sph->Ntot; i++) gpot[i] = sph->sphdata[i].gpot;
   for (i=0; i<sph->Ntot; i++) m[i] = sph->sphdata[i].m;
   for (i=0; i<sph->Ntot; i++) mu[i] = sph->sphdata[i].m*sph->sphdata[i].u;
 
@@ -108,8 +111,8 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
       // ----------------------------------------------------------------------
 
       // Compute all SPH gather properties
-      okflag = sph->ComputeH(i,sph->Ntot,big_number,
-                             m,mu,drsqd,sph->sphdata[i],nbody);
+      okflag = sph->ComputeH(i,sph->Ntot,big_number,m,mu,drsqd,
+                             gpot,sph->sphdata[i],nbody);
   
     }
     // ------------------------------------------------------------------------

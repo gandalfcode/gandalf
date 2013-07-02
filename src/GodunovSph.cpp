@@ -73,6 +73,7 @@ int GodunovSph<ndim, kernelclass >::ComputeH
  FLOAT *m,                              // Array of neib. masses
  FLOAT *mu,                             // Array of m*u (not needed here)
  FLOAT *drsqd,                          // Array of neib. distances (squared)
+ FLOAT *gpot,                           // ..
  SphParticle<ndim> &parti,              // Particle i data
  Nbody<ndim> *nbody)                    // ..
 {

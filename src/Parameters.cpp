@@ -253,6 +253,8 @@ void Parameters::SetDefaultValues(void)
   // Sink particle parameters
   // --------------------------------------------------------------------------
   intparams["sink_particles"] = 0;
+  intparams["create_sinks"] = 0;
+  intparams["smooth_accretion"] = 0;
   floatparams["rho_sink"] = 1.e-12;
   floatparams["alpha_ss"] = 0.01;
   floatparams["sink_radius"] = 3.0;
