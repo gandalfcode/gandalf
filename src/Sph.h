@@ -112,6 +112,7 @@ class Sph
   FLOAT kernfac;                      ///< Kernel range neighbour fraction
   FLOAT kernfacsqd;                   ///< Kernel range neib. fraction squared
 
+  FLOAT *rsph;                           ///< Position array (for efficiency)
   struct SphParticle<ndim> *sphdata;  ///< Main SPH particle data array
   SphKernel<ndim> *kernp;             ///< Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;      ///< Tabulated version of chosen kernel

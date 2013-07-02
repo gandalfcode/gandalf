@@ -22,6 +22,7 @@
 #include "Sph.h"
 #include "RiemannSolver.h"
 #include "Ghosts.h"
+#include "Sinks.h"
 using namespace std;
 
 
@@ -239,6 +240,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   else if (stringparams["neib_search"] == "tree")
     sphneib = new BinaryTree<ndim>(intparams["Nleafmax"],
                                    floatparams["thetamaxsqd"],
+                                   sph->kernp->kernrange,
                                    stringparams["gravity_mac"]);
   else {
     string message = "Unrecognised parameter : neib_search = " 
@@ -538,23 +540,41 @@ void SphSimulation<ndim>::ProcessParameters(void)
   }
 
 
+  // Sink particles
+  // --------------------------------------------------------------------------
+  sink_particles = intparams["sink_particles"];
+  sinks.rho_sink = floatparams["rho_sink"]
+    /simunits.rho.outscale/simunits.rho.outcgs;
+  sinks.alpha_ss = floatparams["alpha_ss"];
+  sinks.sink_radius_mode = stringparams["sink_radius_mode"];
+
+  if (sinks.sink_radius_mode == "fixed")
+    sinks.sink_radius = floatparams["sink_radius"]/simunits.r.outscale;
+  else
+    sinks.sink_radius = floatparams["sink_radius"];
+
+
   // Set all other parameter variables
   // --------------------------------------------------------------------------
-  sph->Nsph = intparams["Npart"];
-  Nstepsmax = intparams["Nstepsmax"];
-  run_id = stringparams["run_id"];
-  out_file_form = stringparams["out_file_form"];
-  tend = floatparams["tend"]/simunits.t.outscale;
-  dt_snap = floatparams["dt_snap"]/simunits.t.outscale;
-  noutputstep = intparams["noutputstep"];
-  Nlevels = intparams["Nlevels"];
-  sph_single_timestep = intparams["sph_single_timestep"];
+  sph->Nsph             = intparams["Npart"];
+  sph->riemann_solver   = stringparams["riemann_solver"];
+  sph->slope_limiter    = stringparams["slope_limiter"];
+  sph->riemann_order    = intparams["riemann_order"];
+
+  nbody->Nstar          = intparams["Nstar"];
   nbody_single_timestep = intparams["nbody_single_timestep"];
-  sph->riemann_solver = stringparams["riemann_solver"];
-  sph->slope_limiter = stringparams["slope_limiter"];
-  sph->riemann_order = intparams["riemann_order"];
-  nbody->Nstar = intparams["Nstar"];
-  dt_python = floatparams["dt_python"];
+
+  dt_python             = floatparams["dt_python"];
+  dt_snap               = floatparams["dt_snap"]/simunits.t.outscale;
+  Nlevels               = intparams["Nlevels"];
+  noutputstep           = intparams["noutputstep"];
+  Nstepsmax             = intparams["Nstepsmax"];
+  out_file_form         = stringparams["out_file_form"];
+  run_id                = stringparams["run_id"];
+  sph_single_timestep   = intparams["sph_single_timestep"];
+  tend                  = floatparams["tend"]/simunits.t.outscale;
+  tsnapnext             = floatparams["tsnapfirst"]/simunits.t.outscale;
+
 
   // Flag that we've processed all parameters already
   ParametersProcessed = true;
@@ -580,7 +600,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Set time variables here (for now)
   Noutsnap = 0;
-  tsnapnext = dt_snap;
+  //tsnapnext = dt_snap;
 
   // Set initial smoothing lengths and create initial ghost particles
   // --------------------------------------------------------------------------
@@ -722,6 +742,16 @@ void SphSimulation<ndim>::MainLoop(void)
 
   debug2("[SphSimulation::MainLoop]");
 
+  // Search for new sink particles (if activated)
+  if (sink_particles == 1) {
+    FLOAT rho_max = 0.0;
+    for (i=0; i<sph->Nsph; i++) rho_max = max(rho_max,sph->sphdata[i].rho);
+    cout << "RHO_MAX : " << rho_max*simunits.rho.outscale << "     " 
+	 << sinks.rho_sink*simunits.rho.outscale << endl;
+    sinks.SearchForNewSinkParticles(n,sph,nbody);
+    if (sinks.Nsink > 0) sinks.AccreteMassToSinks(sph,nbody);
+  }
+
   // Compute timesteps for all particles
   if (Nlevels == 1)
     this->ComputeGlobalTimestep();
@@ -742,6 +772,7 @@ void SphSimulation<ndim>::MainLoop(void)
   // Check all boundary conditions
   ghosts.CheckBoundaries(simbox,sph);
 
+  // Compute all SPH quantities
   // --------------------------------------------------------------------------
   if (sph->Nsph > 0) {
     

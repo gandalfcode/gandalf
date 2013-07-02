@@ -64,10 +64,10 @@ void Sph<ndim>::AllocateMemory(int N)
 
   if (N > Nsphmax) {
     if (allocated) DeallocateMemory();
-    Nsph = N;
     //TODO: perhaps this 10 could be made a user-provided parameter
     //(to handle the case where one doesn't want to waste memory)
     Nsphmax = 10*N;
+    rsph = new FLOAT[ndim*Nsphmax];
     sphdata = new struct SphParticle<ndim>[Nsphmax];
     allocated = true;
   }
@@ -86,7 +86,10 @@ void Sph<ndim>::DeallocateMemory(void)
 {
   debug2("[Sph::DeallocateMemory]");
 
-  if (allocated) delete[] sphdata;
+  if (allocated) {
+    delete[] rsph;
+    delete[] sphdata;
+  }
   allocated = false;
 
   return;
@@ -100,9 +103,9 @@ void Sph<ndim>::DeallocateMemory(void)
 //=============================================================================
 template <int ndim>
 void Sph<ndim>::SphBoundingBox
-(FLOAT rmax[ndim],                  ///< Maximum extent of bounding box
- FLOAT rmin[ndim],                  ///< Minimum extent of bounding box
- int Nmax)                          ///< Maximum particle i.d. in loop
+(FLOAT rmax[ndim],                  ///< [out] Maximum extent of bounding box
+ FLOAT rmin[ndim],                  ///< [out] Minimum extent of bounding box
+ int Nmax)                          ///< [in] Maximum particle i.d. in loop
 {
   debug2("[Sph::SphBoundingBox]");
 

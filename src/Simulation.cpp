@@ -132,7 +132,6 @@ SimulationBase::~SimulationBase()
 //=============================================================================
 void SimulationBase::SetParam(string key, string value)
 {
-
   // Error checking
   if (ParametersProcessed) {
     string msg = 
@@ -151,8 +150,8 @@ void SimulationBase::SetParam(string key, string value)
 
 //=============================================================================
 //  SphSimulationBase::SetParam
-/// Accessor function for modifying an int value, wrapper around the one for string value.
-/// Also checks that the non return point has not been reached
+/// Accessor function for modifying an int value, wrapper around the one for 
+/// string value. Also checks that the non return point has not been reached
 //=============================================================================
 void SimulationBase::SetParam(string key, int value)
 {
@@ -334,6 +333,51 @@ string SimulationBase::Output(void)
 
 
 //============================================================================
+//  Simulation::AllocateParticleMemory
+/// ..
+//=============================================================================
+template <int ndim>
+void Simulation<ndim>::AllocateParticleMemory(void)
+{
+  int N;
+
+  debug2("[Simulation::AllocateParticleMemory]");
+
+  // If sink particles are employed, allow enough memory for new sinks
+  if (sink_particles == 1) {
+    N = 1024;
+  }
+  else N = 0;
+
+  // Now call all memory allocation routines
+  sph->AllocateMemory(sph->Nsph);
+  nbody->AllocateMemory(N);
+  sinks.AllocateMemory(N);
+
+  return;
+}
+
+
+
+//============================================================================
+//  Simulation::DeallocateParticleMemory
+/// ..
+//=============================================================================
+template <int ndim>
+void Simulation<ndim>::DeallocateParticleMemory(void)
+{
+  debug2("[Simulation::DellocateParticleMemory]");
+
+  sinks.DeallocateMemory();
+  nbody->DeallocateMemory();
+  sph->DeallocateMemory();
+
+  return;
+}
+
+
+
+//=============================================================================
 //  Simulation::GenerateIC
 /// Generate initial conditions for SPH simulation chosen in parameters file.
 //=============================================================================
@@ -653,6 +697,7 @@ void Simulation<ndim>::ProcessParameters(void)
   else if (stringparams["neib_search"] == "tree")
     sphneib = new BinaryTree<ndim>(intparams["Nleafmax"],
                                    floatparams["thetamaxsqd"],
+                                   sph->kernp->kernrange,
                                    stringparams["gravity_mac"]);
   else {
     string message = "Unrecognised parameter : neib_search = " 
@@ -837,6 +882,7 @@ void Simulation<ndim>::ProcessParameters(void)
   run_id = stringparams["run_id"];
   out_file_form = stringparams["out_file_form"];
   tend = floatparams["tend"]/simunits.t.outscale;
+  tsnapnext = floatparams["tsnapfirst"]/simunits.t.outscale;
   dt_snap = floatparams["dt_snap"]/simunits.t.outscale;
   noutputstep = intparams["noutputstep"];
   Nlevels = intparams["Nlevels"];

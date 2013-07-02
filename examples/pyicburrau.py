@@ -61,13 +61,12 @@ sim.SetupSimulation()
 
 # First, plot the initial conditions
 plot("x","y",type='star')
-limit('x',-10.0,10.0)
-limit('y',-10.0,10.0)
-
+limit('x',-30.0,30.0,window='global')
+limit('y',-20.0,40.0,window='global')
 
 # Now run the simualtion and plot the results in a new window
 time.sleep(1)
 run()
-plot("x","y",type='star')
+#plot("x","y",type='star')
 addplot("x","y",type='star',snap=0,color='blue')
 block()

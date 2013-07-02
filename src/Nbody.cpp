@@ -60,11 +60,10 @@ void Nbody<ndim>::AllocateMemory(int N)
 
   if (N > Nstarmax) {
     if (allocated) DeallocateMemory();
-    Nstar = N;
     Nstarmax = N;
-    Nsystem = N;
+    //Nsystem = N;
     Nsystemmax = N;
-    Nnbody = N;
+    //Nnbody = N;
     Nnbodymax = Nstarmax + Nsystemmax;
     nbodydata = new struct NbodyParticle<ndim>*[Nnbodymax];
     stardata = new struct StarParticle<ndim>[Nstarmax];

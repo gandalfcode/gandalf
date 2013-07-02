@@ -21,6 +21,7 @@
 template <int ndim>
 struct SphParticle {
   bool active;                      ///< Flag if active (i.e. recompute step)
+  bool potmin;                      ///< Is particle located at potential min?
   int iorig;                        ///< Original particle i.d.
   int itype;                        ///< SPH particle type
   int level;                        ///< Current timestep level of particle
@@ -52,6 +53,7 @@ struct SphParticle {
   FLOAT invq;                       ///< 1 / q
   FLOAT sound;                      ///< Sound speed
   FLOAT gpot;                       ///< Gravitational potential
+  FLOAT gpotold;                    ///< Old gravitational potential
   FLOAT gpe;                        ///< Gravitational potential energy
   FLOAT gradP[ndim];                ///< Pressure gradient
   FLOAT gradrho[ndim];              ///< Density gradient
@@ -98,6 +100,7 @@ struct SphParticle {
     q = (FLOAT) 0.0;
     invq = (FLOAT) 0.0;
     gpot = (FLOAT) 0.0;
+    gpotold = (FLOAT) 0.0;
     gpe = (FLOAT) 0.0;
     sound = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) gradP[k] = (FLOAT) 0.0;

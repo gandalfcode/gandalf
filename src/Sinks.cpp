@@ -1,6 +1,7 @@
 //=============================================================================
 //  Sinks.cpp
-//  ..
+//  All routines for creating new sinks and accreting gas and updating all 
+//  sink particle propterties.
 //=============================================================================
 
 
@@ -30,6 +31,8 @@ using namespace std;
 template <int ndim>
 Sinks<ndim>::Sinks()
 {
+  allocated_memory = false;
+  Nsink = 0;
 }
 
 
@@ -50,8 +53,15 @@ Sinks<ndim>::~Sinks()
 /// ..
 //=============================================================================
 template <int ndim>
-void Sinks<ndim>::AllocateMemory(void)
+void Sinks<ndim>::AllocateMemory(int N)
 {
+  if (N > Nsinkmax) {
+    if (allocated_memory) DeallocateMemory();
+    Nsinkmax = N;
+    sink = new SinkParticle<ndim>[Nsinkmax];
+    allocated_memory = true;
+  }
+
   return;
 }
 
@@ -64,6 +74,9 @@ void Sinks<ndim>::AllocateMemory(void)
 template <int ndim>
 void Sinks<ndim>::DeallocateMemory(void)
 {
+  if (allocated_memory) delete[] sink;
+  allocated_memory = false;
+
   return;
 }
 
@@ -86,7 +99,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
   int s;                            // Sink counter
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drsqd;                      // Distance squared
-  FLOAT rho_max;                    // Maximum density of sink candidates
+  FLOAT rho_max = 0.0;              // Maximum density of sink candidates
 
   debug2("[Sinks::SearchForNewSinkParticles]");
 
@@ -105,21 +118,24 @@ void Sinks<ndim>::SearchForNewSinkParticles
       sink_flag = true;
       
       // If density of SPH particle is too low, skip to next particle
-      if (sph->sphdata[i].rho > rho_sink) continue;
+      if (sph->sphdata[i].rho < rho_sink) continue;
 
       // Only consider SPH particles located at a local potential minimum
-      if (!sph->sphdata[i].potmin) continue;
+      //if (!sph->sphdata[i].potmin) continue;
 
       // Make sure candidate particle is at the end of its current timestep
-      if (n%sph[i]->sphdata[i].nstep != 0) continue;
+      if (n%sph->sphdata[i].nstep != 0) continue;
 
       // If SPH particle neighbours a nearby sink, skip to next particle
       for (s=0; s<Nsink; s++) {
-        for (k=0; k<ndim; k++) dr[k] = sph->sphdata[i].r[k] - sink[s].r[k];
+        for (k=0; k<ndim; k++) 
+	  dr[k] = sph->sphdata[i].r[k] - sink[s].star->r[k];
         drsqd = DotProduct(dr,dr,ndim);
         if (drsqd < pow(sink_radius*sph->sphdata[i].h + sink[s].radius,2))
           sink_flag = false;
       }
+
+      cout << "SINK?? : " << i << "    " << sph->sphdata[i].rho << "    " << rho_sink << endl;
 
       // If candidate particle has passed all the tests, then check if it is 
       // the most dense candidate.  If yes, record the particle id and density
@@ -134,14 +150,15 @@ void Sinks<ndim>::SearchForNewSinkParticles
 
     // If all conditions have been met, then create a new sink particle
     if (isink != -1) {
-      CreateNewSinkParticle(isink);
+      CreateNewSinkParticle(isink,sph,nbody);
+      cout << "Found sink particle : " << isink << "    " 
+           << sph->sphdata[isink].rho << "     " << rho_sink << endl;
+      exit(0);
     }
 
 
   } while (isink != -1);
   // ==========================================================================
-
-
 
   return;
 }
@@ -153,15 +170,48 @@ void Sinks<ndim>::SearchForNewSinkParticles
 /// ..
 //=============================================================================
 template <int ndim>
-void Sinks<ndim>::CreateNewSinkParticle(int isink)
+void Sinks<ndim>::CreateNewSinkParticle
+(int isink,                         ///< [in] i.d. of SPH ptcl
+ Sph<ndim> *sph,                    ///< [inout] Object containing SPH ptcls
+ Nbody<ndim> *nbody)                ///< [inout] Object containing star ptcls
 {
+  int k;                            // Dimension counter
+
   debug2("[Sinks::CreateNewSinkParticle]");
 
   // If we've reached the maximum number of sinks, then throw exception
-  if (Nsink == Nsinkmax) {
-    
-
+  if (Nsink == Nsinkmax || nbody->Nstar == nbody->Nstarmax) {
+    cout << "Run out of memory : " << Nsink << "    " << Nsinkmax << endl;
+    exit(0);
   }
+
+  // First create new star and set pointer
+  sink[Nsink].star = &nbody->stardata[nbody->Nstar];
+
+  cout << "CHECKING : " << sink[Nsink].star << "    " << &nbody->stardata[nbody->Nstar] << endl;
+  cout << "CHECKING2 : " << sph->sphdata[isink].m << endl;
+
+  // If we have space in main arrays, then create sink
+  sink[Nsink].star->m = sph->sphdata[isink].m;
+  sink[Nsink].star->radius = sph->kernp->kernrange*sph->sphdata[isink].h;
+  sink[Nsink].radius = sph->kernp->kernrange*sph->sphdata[isink].h;
+  sink[Nsink].star->h = sph->sphdata[isink].h;
+  sink[Nsink].star->invh = 1.0/sph->sphdata[isink].h;
+  sink[Nsink].star->nstep = sph->sphdata[isink].nstep;
+  sink[Nsink].star->level = sph->sphdata[isink].level;
+  for (k=0; k<ndim; k++) sink[Nsink].star->r[k] = sph->sphdata[isink].r[k];
+  for (k=0; k<ndim; k++) sink[Nsink].star->v[k] = sph->sphdata[isink].v[k];
+  for (k=0; k<ndim; k++) sink[Nsink].star->a[k] = sph->sphdata[isink].a[k];
+  for (k=0; k<ndim; k++) sink[Nsink].star->adot[k] = 0.0; //sph->sphdata[isink].a[k];
+  for (k=0; k<ndim; k++) sink[Nsink].star->r0[k] = sph->sphdata[isink].r0[k];
+  for (k=0; k<ndim; k++) sink[Nsink].star->v0[k] = sph->sphdata[isink].v0[k];
+  for (k=0; k<ndim; k++) sink[Nsink].star->a0[k] = sph->sphdata[isink].a0[k];
+  for (k=0; k<ndim; k++) sink[Nsink].star->adot0[k] = 0.0;//sph->sphdata[isink].a[k];
+  for (k=0; k<3; k++) sink[Nsink].angmom[k] = 0.0;
+
+  // Increment star and sink counters
+  nbody->Nstar++;
+  Nsink++;
 
   return;
 }
@@ -173,7 +223,9 @@ void Sinks<ndim>::CreateNewSinkParticle(int isink)
 /// ..
 //=============================================================================
 template <int ndim>
-void Sinks<ndim>::AccreteMassToSinks(void)
+void Sinks<ndim>::AccreteMassToSinks
+(Sph<ndim> *sph,                    ///< [inout] Object containing SPH ptcls
+ Nbody<ndim> *nbody)                ///< [inout] Object containing star ptcls
 {
   debug2("[Sinks::AccreteMassToSinks]");
 
@@ -182,27 +234,8 @@ void Sinks<ndim>::AccreteMassToSinks(void)
 
 
 
-//=============================================================================
-//  Sinks::UpdateSinkProperties
-/// ..
-//=============================================================================
-template <int ndim>
-void Sinks<ndim>::UpdateSinkProperties(void)
-{
-  debug2("[Sinks::UpdateSinkProperties]");
-
-  return;
-}
-
-
-
-//=============================================================================
-//  Sinks::UpdateStarProperties
-/// ..
-//=============================================================================
-template <int ndim>
-void Sinks<ndim>::UpdateStarProperties(void)
-{
-  debug2("[Sinks::UpdateStarProperties]");
-  return;
-}
+// Create template class instances of the main SphSimulation object for
+// each dimension used (1, 2 and 3)
+template class Sinks<1>;
+template class Sinks<2>;
+template class Sinks<3>;

@@ -10,7 +10,7 @@
 Simulation run id string                    : run_id = BB1
 Select shocktube initial conditions         : ic = bb
 Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Npart = 4000
+No. of SPH particles                        : Npart = 2000
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
 Cloud mass                                  : mcloud = 1.0
 Radius of cloud                             : radius = 0.01037
@@ -54,7 +54,8 @@ RHS boundary type in z-dimension            : z_boundary_rhs = open
 #--------------------------
 Simulation end time                         : tend = 0.03
 Regular snapshot output frequency           : dt_snap = 0.002
-Screen output frequency (in no. of steps)   : noutputstep = 1
+Time of first snapshot                      : tsnapfirst = 0.015;
+Screen output frequency (in no. of steps)   : noutputstep = 16
 
 
 #------------------------
@@ -66,6 +67,7 @@ Ratio of specific heats of gas              : gamma_eos = 1.6666666666666666666
 Polytropic index for adiabatic gas          : eta_eos = 1.4
 Isothermal temperature                      : temp0 = 10.0
 Mean gas particle mass                      : mu_bar = 2.35
+Barotropic optically thick density          : rho_bary = 1.0e-14
 
 
 #----------------
@@ -91,6 +93,15 @@ Artificial viscosity alpha value            : alpha_visc = 1.0
 Artificial viscosity beta value             : beta_visc = 2.0
 
 
+#----------------------
+# Sink particle options
+#----------------------
+Activate sink particles in code             : sink_particles = 1
+Select adaptive sink radii                  : sink_radius_mode = hmult
+Set sink radius equal to kernel extent      : sink_radius = 2.0
+Sink formation density                      : rho_sink = 1.e-13
+
+
 #-------------------------
 # Time integration options
 #-------------------------
@@ -104,8 +115,8 @@ No. of block timestep levels                : Nlevels = 1
 #-------------
 # Tree options
 #-------------
-SPH neighbour search algorithm              : neib_search = bruteforce
-No. of particles in leaf cell               : Nleafmax = 4
+SPH neighbour search algorithm              : neib_search = tree
+No. of particles in leaf cell               : Nleafmax = 16
 Tree opening angle (squared)                : thetamaxsqd = 0.1
 
 

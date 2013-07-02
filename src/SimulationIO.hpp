@@ -22,7 +22,7 @@ bool SimulationBase::ReadSnapshotFile
 (string filename,                   ///< [in] Name of input snapshot file
  string fileform)                   ///< [in] Format of input snapshot file
 {
-  debug1("[Simulation::ReadSnapshotFile]");
+  debug2("[Simulation::ReadSnapshotFile]");
 
   if (fileform == "ascii")
     return ReadColumnSnapshotFile(filename);
@@ -41,7 +41,7 @@ bool SimulationBase::WriteSnapshotFile
 (string filename,                   ///< [in] Name of output snapshot file
  string fileform)                   ///< [in] Format of output snapshot file
 {
-  debug1("[Simulation::WriteSnapshotFile]");
+  debug2("[Simulation::WriteSnapshotFile]");
 
   if (fileform == "column")
     return WriteColumnSnapshotFile(filename);
@@ -66,7 +66,7 @@ bool Simulation<ndim>::ReadColumnSnapshotFile(string filename)
   ifstream infile;
   FLOAT raux;
 
-  debug1("[Simulation::ReadColumnSnapshotFile]");
+  debug2("[Simulation::ReadColumnSnapshotFile]");
 
   // Open file and read header information
   infile.open(filename.c_str());
@@ -149,7 +149,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   int Nstar;
   ofstream outfile;
 
-  debug1("[Simulation::WriteColumnSnapshotFile]");
+  debug2("[Simulation::WriteColumnSnapshotFile]");
 
   cout << "Writing current data to snapshot file : " << filename << endl;
 

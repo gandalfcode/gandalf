@@ -187,7 +187,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
 
  public:
 
-  BinaryTree(int, FLOAT, string);
+  BinaryTree(int, FLOAT, FLOAT, string);
   ~BinaryTree();
 
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
@@ -211,10 +211,10 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void CreateGridCells(int, SphParticle<ndim> *);
   int ComputeActiveCellList(int *);
   int ComputeActiveParticleList(int, int *, Sph<ndim> *);
-  int ComputeGatherNeighbourList(int, int, int *, FLOAT);
-  int ComputeNeighbourList(int, int, int *);
+  int ComputeGatherNeighbourList(int, int, int *, FLOAT, SphParticle<ndim> *);
+  int ComputeNeighbourList(int, int, int *, SphParticle<ndim> *);
   int ComputeGravityInteractionList(int, int, int, int, int &, int &, int &,
-                                    int *, int *, int *);
+                                    int *, int *, int *, SphParticle<ndim> *);
   void ComputeCellForces(int, int, int *, SphParticle<ndim> &);
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
@@ -243,7 +243,8 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   int *inext;                       ///< Linked list for grid search
   int *porder[ndim];                ///< Ordered ids of Cartesian coordinates
   FLOAT *pw;                        ///< Particle weights
-  FLOAT *r[ndim];                   ///< Particle Cartesian coordinates
+  FLOAT *rk[ndim];                  ///< Particle Cartesian coordinates
+  FLOAT kernrange;                  ///< Extent of employed kernel
   FLOAT theta;                      ///< ..
   FLOAT thetamaxsqd;                ///< ..
   BinaryTreeCell<ndim> *tree;       ///< Main tree array

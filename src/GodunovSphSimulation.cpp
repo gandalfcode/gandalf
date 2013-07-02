@@ -49,7 +49,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Set time variables here (for now)
   Noutsnap = 0;
-  tsnapnext = dt_snap;
+  //tsnapnext = dt_snap;
 
   // Set initial smoothing lengths and create initial ghost particles
   // --------------------------------------------------------------------------

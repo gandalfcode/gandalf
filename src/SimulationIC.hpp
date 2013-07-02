@@ -133,7 +133,7 @@ void Simulation<ndim>::ShockTube(void)
 
   // Allocate local and main particle memory
   sph->Nsph = Nbox1 + Nbox2;
-  sph->AllocateMemory(sph->Nsph);
+  AllocateParticleMemory();
   r = new FLOAT[ndim*sph->Nsph];
   cout << "Allocating memory : " << sph->Nsph << endl;
 
@@ -243,7 +243,7 @@ void Simulation<ndim>::UniformBox(void)
 
   // Allocate global and local memory for all particles
   sph->Nsph = Npart;
-  sph->AllocateMemory(sph->Nsph);
+  AllocateParticleMemory();
 
   // Copy positions to main array and initialise all other variables
   for (i=0; i<sph->Nsph; i++) {
@@ -310,7 +310,7 @@ void Simulation<ndim>::UniformSphere(void)
   }
 
   sph->Nsph = Npart;
-  sph->AllocateMemory(sph->Nsph);
+  AllocateParticleMemory();
 
   if (ndim == 1) volume = 2.0*radius;
   else if (ndim == 2) volume = pi*radius*radius;
@@ -391,7 +391,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
 
     // Allocate local and main particle memory
     sph->Nsph = Nbox1 + Nbox2;
-    sph->AllocateMemory(sph->Nsph);
+    AllocateParticleMemory();
     r = new FLOAT[ndim*sph->Nsph];
     cout << "Allocating memory : " << sph->Nsph << endl;
 
@@ -545,7 +545,7 @@ void Simulation<ndim>::KHI(void)
 
   // Allocate local and main particle memory
   sph->Nsph = Nbox1 + Nbox2;
-  sph->AllocateMemory(sph->Nsph);
+  AllocateParticleMemory();
   r = new FLOAT[ndim*sph->Nsph];
   cout << "Nbox1 : " << Nbox1 << "    Nbox2 : " << Nbox2 << endl;
   cout << "Allocating memory : " << sph->Nsph << endl;
@@ -678,7 +678,7 @@ void Simulation<ndim>::NohProblem(void)
 
   // Allocate local and main particle memory
   sph->Nsph = Npart;
-  sph->AllocateMemory(sph->Nsph);
+  AllocateParticleMemory();
 
   if (ndim == 1) volume = 2.0*radius;
   else if (ndim == 2) volume = pi*radius*radius;
@@ -772,7 +772,7 @@ void Simulation<ndim>::BossBodenheimer(void)
 
   // Allocate local and main particle memory
   sph->Nsph = Npart;
-  sph->AllocateMemory(sph->Nsph);
+  AllocateParticleMemory();
   mp = mcloud / (FLOAT) Npart;
   rho = 3.0*mcloud / (4.0*pi*pow(radius,3));
 
@@ -847,8 +847,7 @@ void Simulation<ndim>::PlummerSphere(void)
   sph->Nsph = Nsph;
   sph->Ntot = Nsph;
   nbody->Nstar = Nstar;
-  sph->AllocateMemory(sph->Nsph);
-  nbody->AllocateMemory(nbody->Nstar);
+  AllocateParticleMemory();
 
   for (k=0; k<ndim; k++) rcentre[k] = 0.0;
   raux = gasfrac + starfrac;
@@ -1027,7 +1026,7 @@ void Simulation<ndim>::SedovBlastWave(void)
 
   // Allocate local and main particle memory
   sph->Nsph = Nbox;
-  sph->AllocateMemory(sph->Nsph);
+  AllocateParticleMemory();
   r = new FLOAT[ndim*sph->Nsph];
   hotlist = new int[sph->Nsph];
   cout << "Here??? : " << endl;
@@ -1173,7 +1172,7 @@ void Simulation<ndim>::ShearFlow(void)
 
   // Allocate local and main particle memory
   sph->Nsph = Nbox;
-  sph->AllocateMemory(sph->Nsph);
+  AllocateParticleMemory();
   r = new FLOAT[ndim*sph->Nsph];
   cout << "Nbox1 : " << Nbox << endl;
   cout << "Allocating memory : " << sph->Nsph << endl;
@@ -1260,7 +1259,7 @@ void Simulation<ndim>::SoundWave(void)
   // Allocate local and main particle memory
   sph->Nsph = Npart;
   Nlattice1[0] = Npart;
-  sph->AllocateMemory(sph->Nsph);
+  AllocateParticleMemory();
   r = new FLOAT[ndim*sph->Nsph];
   cout << "Allocating memory : " << sph->Nsph << endl;
 
@@ -1325,7 +1324,7 @@ void Simulation<ndim>::BinaryStar(void)
   sph->Nsph = 0;
   sph->Ntot = 0;
   nbody->Nstar = 2;
-  nbody->AllocateMemory(nbody->Nstar);
+  AllocateParticleMemory();
 
   // Add binary star
   for (k=0; k<ndim; k++) rbinary[k] = 0.0;
@@ -1367,7 +1366,7 @@ void Simulation<ndim>::QuadrupleStar(void)
   sph->Nsph = 0;
   sph->Ntot = 0;
   nbody->Nstar = 4;
-  nbody->AllocateMemory(nbody->Nstar);
+  AllocateParticleMemory();
 
   // Compute main binary orbit
   for (k=0; k<ndim; k++) rbinary[k] = 0.0;

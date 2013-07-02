@@ -30,6 +30,7 @@
 #include "Nbody.h"
 #include "NbodySystemTree.h"
 #include "Ghosts.h"
+#include "Sinks.h"
 using namespace std;
 
 
@@ -103,6 +104,7 @@ class SimulationBase
   int Nstepsmax;                    ///< Max. allowed no. of steps
   int Nlevels;                      ///< No. of timestep levels
   int Noutsnap;                     ///< No. of output snapshots
+  int sink_particles;               ///< Switch on sink particles
   int sph_single_timestep;          ///< Flag if SPH ptcls use same step
   DOUBLE dt_max;                    ///< Value of maximum timestep level
   DOUBLE dt_snap;                   ///< Snapshot time interval
@@ -133,8 +135,8 @@ class SimulationBase
 /// \date    03/04/2013
 //=============================================================================
 template <int ndim>
-class Simulation : public SimulationBase {
-
+class Simulation : public SimulationBase 
+{
   void ImportArraySph(double* input, int size, string quantity);
   void ImportArrayNbody(double* input, int size, string quantity);
 
@@ -143,6 +145,12 @@ class Simulation : public SimulationBase {
     SimulationBase(parameters),
     nbody(NULL),
     sph(NULL) {this->ndims=ndim;};
+
+
+  // Memory allocation routines
+  // --------------------------------------------------------------------------
+  void AllocateParticleMemory(void);
+  void DeallocateParticleMemory(void);
 
 
   // Initial conditions helper routines
@@ -206,6 +214,7 @@ class Simulation : public SimulationBase {
   Diagnostics<ndim> diag0;              ///< Initial diagnostic state
   Diagnostics<ndim> diag;               ///< Current diagnostic state
   Ghosts<ndim> ghosts;                  ///< Ghost particle object
+  Sinks<ndim> sinks;                    ///< Sink particle object
   EnergyEquation<ndim> *uint;           ///< Energy equation pointer
   Sph<ndim> *sph;                       ///< SPH algorithm pointer
   SphIntegration<ndim> *sphint;         ///< SPH Integration scheme pointer
@@ -232,6 +241,7 @@ class SphSimulation : public Simulation<ndim>
   using SimulationBase::simparams;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
+  using Simulation<ndim>::sinks;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
   using Simulation<ndim>::sphint;
@@ -262,6 +272,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::nresync;
   using Simulation<ndim>::dt_max;
   using Simulation<ndim>::sph_single_timestep;
+  using Simulation<ndim>::sink_particles;
 
 public:
 
@@ -271,6 +282,7 @@ public:
   virtual void ComputeGlobalTimestep(void);
   virtual void ComputeBlockTimesteps(void);
   virtual void ProcessParameters(void);
+
 };
 
 

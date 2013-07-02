@@ -408,6 +408,7 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   run_id = stringparams["run_id"];
   out_file_form = stringparams["out_file_form"];
   tend = floatparams["tend"]/simunits.t.outscale;
+  tsnapnext = floatparams["tsnapfirst"]/simunits.t.outscale;
   dt_snap = floatparams["dt_snap"]/simunits.t.outscale;
   noutputstep = intparams["noutputstep"];
   Nlevels = intparams["Nlevels"];
@@ -438,7 +439,7 @@ void NbodySimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Set time variables here (for now)
   Noutsnap = 0;
-  tsnapnext = dt_snap;
+  //tsnapnext = dt_snap;
 
   // Compute all initial N-body terms
   // --------------------------------------------------------------------------

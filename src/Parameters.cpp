@@ -153,7 +153,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["out_file_form"] = "ascii";
   floatparams["tend"] = 1.0;
   floatparams["dt_snap"] = 0.1;
-  floatparams["tfirstsnap"] = 0.1;
+  floatparams["tsnapfirst"] = 0.1;
   intparams["Nstepsmax"] = 9999999;
   intparams["noutputstep"] = 32;
 
@@ -242,13 +242,6 @@ void Parameters::SetDefaultValues(void)
   intparams["self_gravity"] = 0;
   stringparams["grav_kernel"] = "mean_h";
 
-  // Neighbour searching and tree-gravity parameters
-  // --------------------------------------------------------------------------
-  stringparams["neib_search"] = "grid";
-  stringparams["gravity_mac"] = "geometric";
-  intparams["Nleafmax"] = 1;
-  floatparams["thetamaxsqd"] = 0.2;
-
   // N-body parameters
   // --------------------------------------------------------------------------
   intparams["sub_systems"] = 0;
@@ -256,6 +249,21 @@ void Parameters::SetDefaultValues(void)
   intparams["nbody_softening"] = 0;
   floatparams["gpefrac"] = 1.0e-2;
   stringparams["sub_system_integration"] = "hermite4";
+
+  // Sink particle parameters
+  // --------------------------------------------------------------------------
+  intparams["sink_particles"] = 0;
+  floatparams["rho_sink"] = 1.e-12;
+  floatparams["alpha_ss"] = 0.01;
+  floatparams["sink_radius"] = 3.0;
+  stringparams["sink_radius_mode"] = "hmult";
+
+  // Neighbour searching and tree-gravity parameters
+  // --------------------------------------------------------------------------
+  stringparams["neib_search"] = "grid";
+  stringparams["gravity_mac"] = "geometric";
+  intparams["Nleafmax"] = 1;
+  floatparams["thetamaxsqd"] = 0.2;
 
   // Boundary conditions parameters
   // --------------------------------------------------------------------------

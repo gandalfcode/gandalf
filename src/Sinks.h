@@ -37,16 +37,8 @@ class SinkParticle
 {
  public:
 
-  bool active;                      ///< Flag if active (i.e. recompute step)
-  int level;                        ///< Current timestep level    
-  int nstep;                        ///< Integer step-size of particle
-  DOUBLE r[ndim];                   ///< Position
-  DOUBLE v[ndim];                   ///< Velocity
-  DOUBLE a[ndim];                   ///< Acceleration
-  DOUBLE adot[ndim];                ///< Time derivative of acceleration (jerk)
-  DOUBLE m;                         ///< Star mass
-  DOUBLE h;                         ///< Smoothing length
-  DOUBLE invh;                      ///< 1 / h
+  StarParticle<ndim> *star;         ///< Pointer to connected star particle
+  int istar;                        ///< i.d. of connected star particle
   DOUBLE radius;                    ///< Softening/sink radius of particle
   DOUBLE dt;                        ///< Particle timestep
   DOUBLE dmdt;                      ///< Accretion rate
@@ -54,22 +46,13 @@ class SinkParticle
   DOUBLE ketot;                     ///< Internal kinetic energy
   DOUBLE gpetot;                    ///< Internal grav. pot. energy
   DOUBLE rotketot;                  ///< Internal rotational kinetic energy
+  DOUBLE angmom[3];                 ///< Internal sink angular momentum
 
 
   // Star particle constructor to initialise all values
   // --------------------------------------------------------------------------
   SinkParticle()
   {
-    active = false;
-    level = 0;
-    nstep = 0;
-    for (int k=0; k<ndim; k++) r[k] = 0.0;
-    for (int k=0; k<ndim; k++) v[k] = 0.0;
-    for (int k=0; k<ndim; k++) a[k] = 0.0;
-    for (int k=0; k<ndim; k++) adot[k] = 0.0;
-    m = 0;
-    h = 0;
-    invh = 0.0;
     radius = 0.0;
     dt = 0.0;
     dmdt = 0.0;
@@ -77,6 +60,7 @@ class SinkParticle
     ketot = 0.0;
     gpetot = 0.0;
     rotketot = 0.0;
+    for (int k=0; k<3; k++) angmom[k] = 0.0;
   } 
 
 };
@@ -100,21 +84,24 @@ class Sinks
   Sinks();
   ~Sinks();
 
-  void AllocateMemory(void);
+  // Function prototypes
+  // --------------------------------------------------------------------------
+  void AllocateMemory(int);
   void DeallocateMemory(void);
   void SearchForNewSinkParticles(int, Sph<ndim> *, Nbody<ndim> *);
-  void CreateNewSinkParticle(int);
-  void AccreteMassToSinks(void);
-  void UpdateSinkProperties(void);
-  void UpdateStarProperties(void);
+  void CreateNewSinkParticle(int, Sph<ndim> *, Nbody<ndim> *);
+  void AccreteMassToSinks(Sph<ndim> *, Nbody<ndim> *);
   //void UpdateSystemProperties(void);
 
-  
+  // Local class variables
+  // --------------------------------------------------------------------------
+  bool allocated_memory;            ///< Has sink memory been allocated?
   int Nsink;                        ///< No. of sink particles
   int Nsinkmax;                     ///< Max. no. of sink particles
   FLOAT alpha_ss;                   ///< Shakura-Sunyaev alpha viscosity
   FLOAT rho_sink;                   ///< Sink formation density
   FLOAT sink_radius;                ///< New sink radius (in units of h)
+  string sink_radius_mode;          ///< Sink radius mode
 
   SinkParticle<ndim> *sink;         ///< Main sink particle array
 
