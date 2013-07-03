@@ -61,11 +61,11 @@ class SimBuffer:
         to the parent simulation accordingly. Raises BufferFull if there isn\'t enough space
         for the snapshot being loaded. 
         '''
-        snapshotsize = snapshot.CalculateMemoryUsage()
+        snapshotsize = snapshot.CalculatePredictedMemoryUsage()
         if snapshotsize > SimBuffer.maxmemory:
             raise BufferFull("The requested snapshot can't fit inside the buffer memory")
         while 1:
-            usedmemory = SimBuffer.total_memory_usage()-snapshotsize
+            usedmemory = SimBuffer.total_memory_usage()
             available_memory = SimBuffer.maxmemory - usedmemory
             if snapshotsize > available_memory:
                 SimBuffer._deallocateSnapshot(snapshot)
@@ -74,8 +74,8 @@ class SimBuffer:
     
     @staticmethod
     def _fillsnapshot(snapshot):
-        snapshot.ReadSnapshot(snapshot.sim.simparams.stringparams["in_file_form"])
         SimBuffer._findmemoryfor(snapshot)
+        snapshot.ReadSnapshot(snapshot.sim.simparams.stringparams["in_file_form"])
     
     @staticmethod
     def _deallocateSnapshot(snapshottest):
