@@ -31,6 +31,7 @@
 #include "NbodySystemTree.h"
 #include "Ghosts.h"
 #include "Sinks.h"
+#include "HeaderInfo.h"
 using namespace std;
 
 
@@ -51,6 +52,7 @@ class SimulationBase
   virtual void OutputDiagnostics(void)=0;
   virtual void UpdateDiagnostics(void)=0;
   virtual void GenerateIC(void)=0;
+  virtual void ReadColumnHeaderFile(ifstream& infile, HeaderInfo& info)=0;
   virtual bool ReadColumnSnapshotFile(string)=0;
   virtual bool WriteColumnSnapshotFile(string)=0;
 
@@ -86,6 +88,7 @@ class SimulationBase
   // --------------------------------------------------------------------------
   bool ReadSnapshotFile(string,string);
   bool WriteSnapshotFile(string,string);
+  HeaderInfo ReadHeaderSnapshotFile(string filename, string format);
 
   // Variables
   // --------------------------------------------------------------------------
@@ -202,6 +205,7 @@ class Simulation : public SimulationBase
 
   // Input-output routines
   // --------------------------------------------------------------------------
+  virtual void ReadColumnHeaderFile(ifstream& infile, HeaderInfo& info);
   virtual bool ReadColumnSnapshotFile(string);
   virtual bool WriteColumnSnapshotFile(string);
 
