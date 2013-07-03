@@ -33,6 +33,8 @@ class SphSnapshotBase
   void DeallocateBufferMemoryStar();
 
 protected:
+  int nneededsph;     // How many variables we need to store for sph particle
+  int nneededstar;    // How many variables we need to store for star particle
   vector<string> _species;
 
  public:
@@ -49,6 +51,7 @@ protected:
   void AllocateBufferMemory(void);
   void DeallocateBufferMemory(void);
   int CalculateMemoryUsage(void);
+  int CalculatePredictedMemoryUsage(void);
   virtual void CopyDataFromSimulation()=0;
   UnitInfo ExtractArray(string, string, float** out_array, int* size_array,
 		    float& scaling_factor, string RequestedUnit);
