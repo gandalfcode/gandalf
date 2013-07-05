@@ -4,6 +4,7 @@
 
 
 #include <iostream>
+#include <ostream>
 #include <fstream>
 #include <string>
 #include <cstdio>
@@ -11,6 +12,7 @@
 #include "Simulation.h"
 #include "Parameters.h"
 #include "Debug.h"
+#include "HeaderInfo.h"
 using namespace std;
 
 
@@ -51,6 +53,55 @@ bool SimulationBase::WriteSnapshotFile
   }
 }
 
+//=============================================================================
+//  SimulationBase::ReadHeaderSnapshotFile
+/// Read the header of a snapshot file, given the filename and the format.
+/// Return information in a HeaderInfo struct. This is designed to be called
+/// from Python.
+//=============================================================================
+HeaderInfo SimulationBase::ReadHeaderSnapshotFile(string filename, string format) {
+
+  ifstream infile;
+  infile.open(filename.c_str());
+  HeaderInfo info;
+
+  if (format=="ascii") {
+    ReadColumnHeaderFile(infile, info);
+  }
+  else {
+    ExceptionHandler::getIstance().raise("Unrecognised file format");
+  }
+
+  return info;
+
+}
+
+//=============================================================================
+//  Simulation::ReadColumnHeaderFile
+/// Function for reading the header file of a snapshot. Does not modify the
+/// variables of the Simulation class, but rather returns information in a HeaderInfo
+/// struct
+//=============================================================================
+template <int ndim>
+void Simulation<ndim>::ReadColumnHeaderFile(ifstream& infile, HeaderInfo& info) {
+
+  // Open file and read header information
+  infile >> info.Nsph;
+  infile >> info.Nstar;
+  infile >> info.ndim;
+  infile >> info.t;
+
+  // Check dimensionality matches if using fixed dimensions
+  if (info.ndim != ndim) {
+    std::ostringstream stream;
+    stream << "Incorrect no. of dimensions in file : "
+     << info.ndim << "  [ndim : " << ndim << "]" << endl;
+    ExceptionHandler::getIstance().raise(stream.str());
+  }
+
+  return;
+
+}
 
 
 //=============================================================================
@@ -60,29 +111,18 @@ template <int ndim>
 bool Simulation<ndim>::ReadColumnSnapshotFile(string filename)
 {
   int i;
-  int ndimaux;
-  int Npart;
-  int Nstar;
   ifstream infile;
   FLOAT raux;
+  HeaderInfo info;
 
   debug2("[Simulation::ReadColumnSnapshotFile]");
 
-  // Open file and read header information
   infile.open(filename.c_str());
-  infile >> Npart;
-  infile >> Nstar;
-  infile >> ndimaux;
-  infile >> t;
 
-  // Check dimensionality matches if using fixed dimensions
-  if (ndimaux != ndim) {
-    cout << "Incorrect no. of dimensions in file : " 
-	 << ndimaux << "  [ndim : " << ndim << "]" << endl;
-    return false;
-  }
+  ReadColumnHeaderFile(infile, info);
+  t=info.t;
 
-  sph->Nsph = Npart;
+  sph->Nsph = info.Nsph;
   sph->AllocateMemory(sph->Nsph);
   i = 0;
 
@@ -104,7 +144,7 @@ bool Simulation<ndim>::ReadColumnSnapshotFile(string filename)
     i++;
   }
 
-  nbody->Nstar = Nstar;
+  nbody->Nstar = info.Nstar;
   nbody->AllocateMemory(nbody->Nstar);
   i = 0;
 

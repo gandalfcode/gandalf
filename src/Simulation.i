@@ -19,6 +19,7 @@
 #include "Render.h"
 #include "SphKernel.h"
 #include "UnitInfo.h"
+#include "HeaderInfo.h"
 
 void catch_alarm (int SIG) {
 signal(SIGINT, catch_alarm);
@@ -166,9 +167,11 @@ ExceptionHandler::makeExceptionHandler(python);
  %apply (float** ARGOUTVIEW_ARRAY1, int *DIM1) {(float** out_array, int* size_array)}
  %apply (float* INPLACE_ARRAY1, int DIM1) {(float* values, int Ngrid)}
  %apply (double* IN_ARRAY1, int DIM1) {(double* input, int size)}
- 
+
  %apply float& OUTPUT { float& scaling_factor };
  
+ %include "HeaderInfo.h" 
+  
 %include "Precision.h"
 %include "Simulation.h"
 %include "Parameters.h"

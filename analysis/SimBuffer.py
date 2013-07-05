@@ -37,6 +37,7 @@ class SimBuffer:
         ''' This function adds a snapshot to a given simulation. It's used for example by interactive run
         to dynamically add snapshots while the simulation is running.'''
         sim.snapshots.append(snap)
+        SimBuffer.snapshots.append(snap)
         snap.sim = sim
         snap.live = False
         
@@ -61,11 +62,11 @@ class SimBuffer:
         to the parent simulation accordingly. Raises BufferFull if there isn\'t enough space
         for the snapshot being loaded. 
         '''
-        snapshotsize = snapshot.CalculateMemoryUsage()
+        snapshotsize = snapshot.CalculatePredictedMemoryUsage()
         if snapshotsize > SimBuffer.maxmemory:
             raise BufferFull("The requested snapshot can't fit inside the buffer memory")
         while 1:
-            usedmemory = SimBuffer.total_memory_usage()-snapshotsize
+            usedmemory = SimBuffer.total_memory_usage()
             available_memory = SimBuffer.maxmemory - usedmemory
             if snapshotsize > available_memory:
                 SimBuffer._deallocateSnapshot(snapshot)
@@ -74,8 +75,8 @@ class SimBuffer:
     
     @staticmethod
     def _fillsnapshot(snapshot):
-        snapshot.ReadSnapshot(snapshot.sim.simparams.stringparams["in_file_form"])
         SimBuffer._findmemoryfor(snapshot)
+        snapshot.ReadSnapshot(snapshot.sim.simparams.stringparams["in_file_form"])
     
     @staticmethod
     def _deallocateSnapshot(snapshottest):

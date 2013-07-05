@@ -15,6 +15,7 @@
 #include "Debug.h"
 #include "InlineFuncs.h"
 #include "UnitInfo.h"
+#include "HeaderInfo.h"
 using namespace std;
 
 SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory(string filename, SimulationBase* sim, int ndim) {
@@ -54,6 +55,20 @@ SphSnapshotBase(&(sim->simunits), filename),
 simulation(static_cast<Simulation<ndims>* > (sim))
 {
   this->ndim = ndims;
+
+  this->fileform = sim->GetParam("in_file_form");
+
+  //Computes how numbers we need to store for each sph/star particle
+  nneededsph = 3*ndims+5;
+  nneededstar = 3*ndims+2;
+
+  if (filename != "") {
+    HeaderInfo info;
+    info = sim->ReadHeaderSnapshotFile(filename, this->fileform);
+    this->t = info.t;
+    this->Nstar = info.Nstar;
+    this->Nsph = info.Nsph;
+  }
 }
 
 
@@ -318,13 +333,22 @@ void SphSnapshotBase::DeallocateBufferMemoryStar(void)
 
 // ============================================================================
 // SphSnapshotBase::CalculateMemoryUsage
-// Returns no. of bytes required for current snapshot
+// Returns no. of bytes allocated for current snapshot
 // ============================================================================
 int SphSnapshotBase::CalculateMemoryUsage(void)
 {
   return Nsph*nallocatedsph*sizeof(float)+Nstar*nallocatedstar*sizeof(float);
 }
 
+
+// ============================================================================
+// SphSnapshotBase::CalculatePredictedMemoryUsage
+// Returns no. of bytes that the current snapshot would use, if allocated
+// ============================================================================
+int SphSnapshotBase::CalculatePredictedMemoryUsage(void)
+{
+  return Nsph*nneededsph*sizeof(float)+Nstar*nneededstar*sizeof(float);
+}
 
 
 // ============================================================================

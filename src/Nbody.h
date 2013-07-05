@@ -180,6 +180,10 @@ public:
   using Nbody<ndim>::Nsystem;
   using Nbody<ndim>::stardata;
   using Nbody<ndim>::system;
+  using Nbody<ndim>::Timestep;
+  using Nbody<ndim>::AdvanceParticles;
+  using Nbody<ndim>::EndTimestep;
+  using Nbody<ndim>::CalculateDirectGravForces;
 
   NbodyHermite4TS(int, int, DOUBLE, string, int);
   ~NbodyHermite4TS();
