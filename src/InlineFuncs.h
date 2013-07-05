@@ -91,7 +91,6 @@ static inline int sgn(T val)
 
 
 
-
 //=============================================================================
 //  Heapsort
 //  Sorts a 1D array of values using the Heapsort algorithm.
@@ -99,8 +98,7 @@ static inline int sgn(T val)
 //=============================================================================
 template <typename T>
 static inline void Heapsort
-(int output,                        ///< Flag to regulate diagnostic output
- int q_TOT,                         ///< No. of values to be sorted
+(int q_TOT,                         ///< No. of values to be sorted
  int *qV,                           ///< Sorted ids of q-values
  T *V)                              ///< Array of values to sort
 {
@@ -123,10 +121,10 @@ static inline void Heapsort
   }
 
   // Check local ordering
-  if (output == 1) {
-    for (q=1; q<q_TOT; q++)
-      if (V[qV[q]] > V[qV[q/2]]) cout << "Tree not locally hierarchical" << endl;
-  }
+#if defined(VERIFY_ALL)
+  for (q=1; q<q_TOT; q++)
+    if (V[qV[q]] > V[qV[q/2]]) cout << "Tree not locally hierarchical" << endl;
+#endif
 
   // Invert heap
   for (q=q_TOT-1; q>0; q--) {
@@ -142,7 +140,7 @@ static inline void Heapsort
     }
   }
 
-  // Check ordering
+#if defined(VERIFY_ALL)
   if (output == 1) {
     for (q=1; q<q_TOT; q++)
       if (V[qV[q]] < V[qV[q-1]]) 
@@ -154,6 +152,7 @@ static inline void Heapsort
 	     << V[qV[q]] << "   " 
 	     << V[qV[q+1]] << endl;
   }
+#endif
 
   return;
 }

@@ -106,6 +106,7 @@ class Sph
   const int self_gravity;             ///< Compute gravitational forces?
   static const FLOAT invndim=1./ndim; ///< Copy of 1/ndim
   int create_sinks;                   ///< ..
+    FLOAT mmean;                        ///< ..
 
   string riemann_solver;              ///< Selected Riemann solver
   string slope_limiter;               ///< Selected slope limiter

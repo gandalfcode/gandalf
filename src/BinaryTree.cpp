@@ -295,13 +295,13 @@ void BinaryTree<ndim>::OrderParticlesByCartCoord
       porder[k][i] = i;
 
   // Sort x-values
-  Heapsort(output,Ntot,porder[0],rk[0]);
+  Heapsort(Ntot,porder[0],rk[0]);
 
   // Sort y-values
-  if (ndim >= 2) Heapsort(output,Ntot,porder[1],rk[1]);
+  if (ndim >= 2) Heapsort(Ntot,porder[1],rk[1]);
 
   // Sort z-values
-  if (ndim == 3) Heapsort(output,Ntot,porder[2],rk[2]);
+  if (ndim == 3) Heapsort(Ntot,porder[2],rk[2]);
 
   // Check that particles are ordered correctly
 #if defined(VERIFY_ALL)

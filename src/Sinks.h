@@ -39,13 +39,21 @@ class SinkParticle
 
   StarParticle<ndim> *star;         ///< Pointer to connected star particle
   int istar;                        ///< i.d. of connected star particle
+  int Ngas;                         ///< No. of gas particles inside sink
   DOUBLE radius;                    ///< Softening/sink radius of particle
   DOUBLE dt;                        ///< Particle timestep
   DOUBLE dmdt;                      ///< Accretion rate
+  DOUBLE menc;                      ///< ..
+  DOUBLE mmax;                      ///< ..
   DOUBLE racc;                      ///< Accretion radius
   DOUBLE ketot;                     ///< Internal kinetic energy
   DOUBLE gpetot;                    ///< Internal grav. pot. energy
   DOUBLE rotketot;                  ///< Internal rotational kinetic energy
+  DOUBLE utot;                      ///< Internal energy accrted by sink
+  DOUBLE taccrete;                  ///< ..
+  DOUBLE trad;                      ///< ..
+  DOUBLE trot;                      ///< ..
+  DOUBLE tvisc;                     ///< ..
   DOUBLE angmom[3];                 ///< Internal sink angular momentum
 
 
@@ -60,6 +68,7 @@ class SinkParticle
     ketot = 0.0;
     gpetot = 0.0;
     rotketot = 0.0;
+    utot = 0.0;
     for (int k=0; k<3; k++) angmom[k] = 0.0;
   } 
 
@@ -104,6 +113,8 @@ class Sinks
   FLOAT alpha_ss;                   ///< Shakura-Sunyaev alpha viscosity
   FLOAT rho_sink;                   ///< Sink formation density
   FLOAT sink_radius;                ///< New sink radius (in units of h)
+  FLOAT smooth_accrete_frac;        ///< ..
+  FLOAT smooth_accrete_dt;          ///< ..
   string sink_radius_mode;          ///< Sink radius mode
 
   SinkParticle<ndim> *sink;         ///< Main sink particle array
