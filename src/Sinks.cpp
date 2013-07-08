@@ -117,15 +117,18 @@ void Sinks<ndim>::SearchForNewSinkParticles
     // ------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       sink_flag = true;
-      
+
+      // Only consider SPH particles located at a local potential minimum
+      if (!sph->sphdata[i].potmin) continue;
+
+      //cout << "Found candidate : " << i << "    " << sph->sphdata[i].r[0] 
+      //   << "    " << sph->sphdata[i].r[1] << endl;
+
       // If density of SPH particle is too low, skip to next particle
       if (sph->sphdata[i].rho < rho_sink) continue;
 
-      // Only consider SPH particles located at a local potential minimum
-      if (sph->sphdata[i].gpotmin <= 0.9999999*sph->sphdata[i].gpot) continue;
-
       // Make sure candidate particle is at the end of its current timestep
-      if (n%sph->sphdata[i].nstep != 0) continue;
+      //if (n%sph->sphdata[i].nstep != 0) continue;
 
       // If SPH particle neighbours a nearby sink, skip to next particle
       for (s=0; s<Nsink; s++) {
@@ -152,7 +155,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
       CreateNewSinkParticle(isink,sph,nbody);
       cout << "Found sink particle : " << isink << "    " 
            << sph->sphdata[isink].rho << "     " << rho_sink << endl;
-      exit(0);
+      //exit(0);
     }
 
 

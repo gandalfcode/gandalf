@@ -100,7 +100,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
     parti.invomega = (FLOAT) 0.0;
     parti.zeta = (FLOAT) 0.0;
     parti.chi = (FLOAT) 0.0;
-    parti.gpotmin = big_number;
     parti.hfactor = pow(parti.invh,ndim);
     invhsqd = parti.invh*parti.invh;
 
@@ -180,8 +179,12 @@ int GradhSph<ndim, kernelclass>::ComputeH
   
   // Calculate the minimum neighbour potential
   // (used later to identify new sinks)
-  if (create_sinks == 1)
-    for (j=0; j<Nneib; j++)  parti.gpotmin = min(parti.gpotmin,gpot[j]);
+  if (create_sinks == 1) {
+    parti.potmin = true;
+    for (j=0; j<Nneib; j++)
+      if (gpot[j] > 1.00000001*parti.gpot && 
+	  drsqd[j]*invhsqd < kern.kernrangesqd) parti.potmin = false;
+  }
 
   // If there are star particles, compute N-body chi correction term
   // --------------------------------------------------------------------------

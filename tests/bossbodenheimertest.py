@@ -4,9 +4,9 @@ import time
 
 newsim('bossbodenheimer.dat')
 setupsim()
-render("x","y","rho",res=128,zslice=0.0)
-#render("x","y","rho",res=128) #,xunit="pc",yunit="pc")
-#plot("x","y")
+#render("x","y","rho",res=128,zslice=0.0)
+#render("x","y","rho",res=32) #,xunit="pc",yunit="pc")
+plot("x","m")
 run()
 #render("x","y","rho",res=128,zslice=0.0)
 #plot("x","y") #,xunit="pc",yunit="pc")

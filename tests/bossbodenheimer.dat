@@ -52,7 +52,7 @@ RHS boundary type in z-dimension            : z_boundary_rhs = open
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.03
+Simulation end time                         : tend = 0.04
 Regular snapshot output frequency           : dt_snap = 0.002
 Time of first snapshot                      : tsnapfirst = 0.015;
 Screen output frequency (in no. of steps)   : noutputstep = 16
@@ -117,7 +117,7 @@ No. of block timestep levels                : Nlevels = 1
 #-------------
 # Tree options
 #-------------
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = bruteforce
 No. of particles in leaf cell               : Nleafmax = 16
 Tree opening angle (squared)                : thetamaxsqd = 0.1
 

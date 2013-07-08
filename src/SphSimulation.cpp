@@ -682,7 +682,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
       sph->sphdata[i].gpot = (FLOAT) 0.0;
-      sph->sphdata[i].gpotmin = big_number;
       sph->sphdata[i].dudt = (FLOAT) 0.0;
       sph->sphdata[i].active = true;
       sph->sphdata[i].level = level_step;

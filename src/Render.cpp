@@ -264,12 +264,13 @@ int Render<ndim>::CreateSliceRenderingGrid
   int j;                           // Aux. counter
   int k;                           // Dimension counter
   int idummy;                      // ..
-  float dr[2];                     // Rel. position vector on grid plane
+  float dr[3];                     // Rel. position vector on grid plane
   float drsqd;                     // Distance squared on grid plane
   float drmag;                     // Distance
   float dummyfloat = 0.0;          // ..
   float hrangesqd;                 // Kernel range squared
   float invh;                      // 1/h
+  float skern;                     // r/h
   float wkern;                     // Kernel value
   float wnorm;                     // Kernel normalisation value
   float *xvalues;                  // Pointer to 'x' array
@@ -322,7 +323,7 @@ int Render<ndim>::CreateSliceRenderingGrid
   // --------------------------------------------------------------------------
   for (i=0; i<snap.Nsph; i++) {
 
-    invh = 1.0f/hvalues[i];
+    invh = 1.0/hvalues[i];
     wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);
     hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
 
@@ -339,7 +340,8 @@ int Render<ndim>::CreateSliceRenderingGrid
       if (drsqd > hrangesqd) continue;
 
       drmag = sqrt(drsqd);
-      wkern = float(sph->kerntab.w0((FLOAT) (drmag*invh)));
+      skern = (FLOAT) (drmag*invh);
+      wkern = float(sph->kerntab.w0(skern));
 
       values[c] += wnorm*rendervalues[i]*wkern;
       rendernorm[c] += wnorm*wkern;
@@ -354,7 +356,6 @@ int Render<ndim>::CreateSliceRenderingGrid
   // Normalise all grid cells
   for (c=0; c<Ngrid; c++)
     if (rendernorm[c] > 1.e-10) values[c] /= rendernorm[c];
-
 
   // Free all locally allocated memory
   delete[] rgrid;
