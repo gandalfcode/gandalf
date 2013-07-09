@@ -33,6 +33,7 @@ Sinks<ndim>::Sinks()
 {
   allocated_memory = false;
   Nsink = 0;
+  Nsinkmax = 0;
 }
 
 
@@ -152,9 +153,9 @@ void Sinks<ndim>::SearchForNewSinkParticles
 
     // If all conditions have been met, then create a new sink particle
     if (isink != -1) {
-      CreateNewSinkParticle(isink,sph,nbody);
-      cout << "Found sink particle : " << isink << "    " 
+      cout << "Found sink particle : " << isink << "    "
            << sph->sphdata[isink].rho << endl;
+      CreateNewSinkParticle(isink,sph,nbody);
       //exit(0);
     }
 
@@ -195,16 +196,17 @@ void Sinks<ndim>::CreateNewSinkParticle
   sink[Nsink].star = &(nbody->stardata[nbody->Nstar]);
   nbody->nbodydata[nbody->Nnbody] = &(nbody->stardata[nbody->Nstar]);
 
+
   // If we have space in main arrays, then create sink
   sink[Nsink].star->m = sph->sphdata[isink].m;
   sink[Nsink].radius = sph->kernp->kernrange*sph->sphdata[isink].h;
   sink[Nsink].star->h = sph->sphdata[isink].h;
   sink[Nsink].star->invh = 1.0/sph->sphdata[isink].h;
-  sink[Nsink].star->hfactor = sph->sphdata[i].hfactor;
+  sink[Nsink].star->hfactor = pow(sink[Nsink].star->invh,ndim);
   sink[Nsink].star->radius = sph->kernp->kernrange*sph->sphdata[isink].h;
-  sink[Nsink].star->gpot = sph->sphdata[i].gpot;
+  sink[Nsink].star->gpot = sph->sphdata[isink].gpot;
   sink[Nsink].star->gpe_internal = 0.0;
-  sink[Nsink].star->dt = sph->sphdata[i].dt;
+  sink[Nsink].star->dt = sph->sphdata[isink].dt;
   sink[Nsink].star->nstep = sph->sphdata[isink].nstep;
   sink[Nsink].star->level = sph->sphdata[isink].level;
   sink[Nsink].star->active = sph->sphdata[isink].active;
@@ -213,6 +215,8 @@ void Sinks<ndim>::CreateNewSinkParticle
   for (k=0; k<ndim; k++) sink[Nsink].star->v[k] = sph->sphdata[isink].v[k];
   for (k=0; k<ndim; k++) sink[Nsink].star->a[k] = sph->sphdata[isink].a[k];
   for (k=0; k<ndim; k++) sink[Nsink].star->adot[k] = 0.0;
+  for (k=0; k<ndim; k++) sink[Nsink].star->a2dot[k] = 0.0;
+  for (k=0; k<ndim; k++) sink[Nsink].star->a3dot[k] = 0.0;
   for (k=0; k<ndim; k++) sink[Nsink].star->r0[k] = sph->sphdata[isink].r0[k];
   for (k=0; k<ndim; k++) sink[Nsink].star->v0[k] = sph->sphdata[isink].v0[k];
   for (k=0; k<ndim; k++) sink[Nsink].star->a0[k] = sph->sphdata[isink].a0[k];
@@ -299,7 +303,9 @@ void Sinks<ndim>::AccreteMassToSinks
   // Allocate local memory and initialise values
   accrete_list = new int[sph->Ntot];
   for (i=0; i<sph->Ntot; i++) accrete_list[i] = -1;
+  cout << "HERE!!!" << "      " << Nsinkmax << endl;
   for (s=0; s<Nsinkmax; s++) sink[s].Ngas = 0;
+  cout << "NOW HERE!!!" << endl;
 
 
   FLOAT mcom = 0.0;
@@ -367,7 +373,7 @@ void Sinks<ndim>::AccreteMassToSinks
   // Calculate the accretion timescale and the total mass accreted from all 
   // particles for each sink.
   // ==========================================================================
-  s = ssink; //for (s=0; s<Nsink; s++) {
+  s = ssink;  //for (s=0; s<Nsink; s++) {
     //if (s == 0) continue;
     cout << "Accreting sink " << s << endl;
     cout << "Ngas : " << sink[s].Ngas << endl;
@@ -583,7 +589,7 @@ void Sinks<ndim>::AccreteMassToSinks
     asqd = DotProduct(sink[s].star->a,sink[s].star->a,ndim);
     sink[s].star->dt_internal = 0.4*sqrt(sink[s].radius/(sqrt(asqd) + small_number));
 
-    //}
+  //}
   // ==========================================================================
 
 

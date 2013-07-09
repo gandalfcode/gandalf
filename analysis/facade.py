@@ -62,11 +62,21 @@ def handle(e):
 
 #------------------------------------------------------------------------------
 def loadsim(run_id, fileformat = 'ascii', buffer_flag = 'cache'):
-    '''Given the run_id of a simulation, reads it from the disk'''
+    '''Given the run_id of a simulation, reads it from the disk
+    
+Required arguments:
+    run_id      : Simulation run identification string.
+    
+Optional qrguments:
+    fileformat  : Format of all snapshot files of simulation.
+    buffer_flag : Record snapshot data in simulation buffer.
+'''
     SimBuffer.loadsim(run_id, fileformat=fileformat, buffer_flag=buffer_flag)
     return SimBuffer.get_current_sim()
-    
-def plot(x,y, type="default", snap="current", sim="current", overplot = False, autoscale = True, xunit="default", yunit="default", **kwargs):
+   
+   
+#------------------------------------------------------------------------------ 
+def plot(x, y, type="default", snap="current", sim="current", overplot = False, autoscale = True, xunit="default", yunit="default", **kwargs):
     '''Plot particle data as a scatter plot.  Creates a new plotting window if
 one does not already exist.
 
@@ -91,9 +101,7 @@ Optional arguments:
                  on the y-axis.
     **kwargs   : Extra keyword arguments will be passed to the matplotlib 'plot'
                  function used to plot
-    '''
-    
-    
+'''
     simno = get_sim_no(sim)
     #if we are plotting all species, call plot in turn
     if type=="all":
@@ -110,7 +118,28 @@ Optional arguments:
 
 
 #------------------------------------------------------------------------------
-def plot_vs_time(y,sim="current",overplot=False,autoscale=True, xunit="default", yunit="default"):
+def plot_vs_time(y, sim="current", overplot=False, autoscale=True, xunit="default", yunit="default"):
+    '''Plot given data as a function of time.  Creates a new plotting window if
+one does not already exist.
+
+Required arguments:
+    y          : Quantity on y-axis.  Must be a string.
+    
+Optional arguments:     
+    sim        : Number of the simulation to plot. Defaults to 'current'.    
+    overplot   : If True, overplots on the previous existing plot rather
+                 than deleting it. Defaults to False.
+    autoscale  : If True (default), the limits of the plot are set
+                 automatically.  Can also be set to 'x' or 'y' to specify
+                 that only one of the axis has to use autoscaling.
+                 If False, autoscaling is not used. On an axis that does
+                 not have autoscaling turned on, global limits are used
+                 if defined for the plotted quantity.
+    xunit      : Specify the unit to use for the plotting for the quantity
+                 on the x-axis.
+    yunit      : Specify the unit to use for the plotting for the quantity
+                 on the y-axis.
+'''
     simno = get_sim_no(sim)
     command = Commands.PlotVsTime(y,simno,overplot,autoscale,xunit,yunit)
     data = command.prepareData(Singletons.globallimits)
@@ -168,7 +197,7 @@ Optional arguments:
                     wants to smooth the image, bilinear or bicubic could be
                     used. See pyplot documentation for the full list of
                     possible values.
-    '''
+'''
     if zslice is not None:
         zslice = float(zslice)
     simno = get_sim_no(sim)
@@ -207,9 +236,7 @@ Required arguments:
 
 Optional arguments:
     See render function optional arguments
-'''
-
-
+'''  
     try:
         kwargs['autoscale']
     except KeyError:
@@ -229,8 +256,7 @@ Required arguments:
         
 Optional arguments:
     See render function optional arguments
-
-    '''
+''' 
     try:
         kwargs['autoscale']
     except KeyError:
@@ -253,8 +279,9 @@ Optional arguments:
     window     : If window is set to 'global' is available, then any changes
                  will affect also future plots that do not have autoscaling 
                  turned on.
-    subfigure  : If subfigure is set to 'all', the limits in all the figures or                 in all the subfigures of the current figure are set.
-    '''
+    subfigure  : If subfigure is set to 'all', the limits in all the figures or
+                 in all the subfigures of the current figure are set.
+''' 
     if window=='all' and subfigure=='current':
         subfigure=='all'
     command = Commands.LimitCommand (quantity, min, max, auto, window, subfigure)
@@ -276,7 +303,7 @@ Required arguments:
         
 Optional arguments:
     See plot function optional arguments
-    '''
+'''  
     try:
         kwargs['autoscale']
     except KeyError:
@@ -326,7 +353,7 @@ doesn\'t exist, recreate it.
 
 Required arguments:
     winno      : Window number
-    '''
+'''
     command = Commands.WindowCommand(no)
     data = None
     Singletons.queue.put([command,data])
@@ -341,7 +368,7 @@ Required arguments:
     ny         : y-grid size
     current    : id of active sub-figure.  If sub-figure already exists,
                  then this sets the new active sub-figure.
-    '''
+'''
     command = Commands.SubfigureCommand(nx, ny, current)
     data = None
     Singletons.queue.put([command,data])
@@ -349,15 +376,18 @@ Required arguments:
 
 #------------------------------------------------------------------------------
 def newsim(paramfile=None, ndim=None):
-    '''Create a new simulation object. Need to specify either the parameter file, either the number
-    of dimensions. Note that it is not possible to change the number of dimensions afterwards.'''
+    '''Create a new simulation object. Need to specify either the parameter file, 
+either the number of dimensions. Note that it is not possible to change the 
+number of dimensions afterwards.
+'''
     return SimBuffer.newsim(paramfile=paramfile, ndim=ndim)
 
 
 #------------------------------------------------------------------------------
 def setupsim():
-    '''Set up the current simulation object. Note that after calling this function, no parameter change
-    it\'s possible!'''
+    '''Set up the current simulation object. Note that after calling this function, 
+no parameter change it\'s possible.
+'''  
     sim = SimBuffer.get_current_sim()
     sim.SetupSimulation()
 
@@ -365,9 +395,12 @@ def setupsim():
 #------------------------------------------------------------------------------
 def run(no=None):
     '''Run a simulation. If no argument is given, run the current one;
-    otherwise queries the buffer for the given simulation number.
-    If the simulation has not been setup, does it before running. 
-    '''
+otherwise queries the buffer for the given simulation number.
+If the simulation has not been setup, does it before running. 
+
+Optional arguments:
+    no         : Simulation number
+'''
     #gets the correct simulation object from the buffer
     try:
         if no is None:
@@ -396,9 +429,10 @@ def run(no=None):
 
 #------------------------------------------------------------------------------
 def block():
-    '''Stops the execution flow until the user presses enter.
-    Useful in scripts, allowing to see a plot (which gets closed
-    when the execution flow reaches the end of the script'''
+    '''Stops the execution flow until the user presses 'enter'. 
+Useful in scripts, allowing to see a plot (which gets closed
+when the execution flow reaches the end of the script
+'''
     print "Press enter to quit..."
     raw_input()
 
@@ -406,9 +440,10 @@ def block():
 #------------------------------------------------------------------------------
 def update(type=None):
     '''Updates all the plots. You should never call directly this function,
-    because all the plotting functions should call this function for you. 
-    If you run into a situation when you need it, please contact the authors, because
-    you probably just spotted a bug in the code.''' 
+because all the plotting functions should call this function for you. 
+If you run into a situation when you need it, please contact the authors, because
+you probably just spotted a bug in the code.
+''' 
     #updates the plots
     for command in Singletons.commands:
         updateplot=False
@@ -428,8 +463,13 @@ def update(type=None):
 #------------------------------------------------------------------------------
 def savefig(name):
     '''Saves the current figure with the given name.
-    Note that matplotlib figures out automatically the type of the file
-    from the extension'''
+Note that matplotlib figures out automatically the type of the file
+from the extension
+
+Require arguments:
+    name       : filename (including extension)
+
+'''
     command = Commands.SaveFigCommand(name)
     data = None
     Singletons.queue.put([command,data])
@@ -439,7 +479,8 @@ def savefig(name):
 #------------------------------------------------------------------------------
 def switch_nongui():
     '''Switches matplotlib backend, disabling interactive plotting.
-    Useful in scripts where no interaction is required'''
+Useful in scripts where no interaction is required
+'''
     command = Commands.SwitchNonGui()
     data = None
     Singletons.queue.put([command,data])
@@ -447,10 +488,28 @@ def switch_nongui():
 
 
 #------------------------------------------------------------------------------
-def plotanalytical(x=None, y=None, snap = "current", sim = "current", overplot = True, 
-                   autoscale = True, xunit="default", yunit="default"):
-    '''Plots the analytical solution'''
-        
+def plotanalytical(x=None, y=None, snap="current", sim="current", overplot=True, 
+                   autoscale=True, xunit="default", yunit="default"):
+    '''Plots the analytical solution
+    
+Optional arguments:
+    x          : Quantity on the x-axis. Must be a string.
+    y          : Quantity on the y-axis. Must be a string.
+    snap       : Number of the snapshot to plot. Defaults to 'current'.       
+    sim        : Number of the simulation to plot. Defaults to 'current'.    
+    overplot   : If True, overplots on the previous existing plot rather
+                 than deleting it. Defaults to False.
+    autoscale  : If True (default), the limits of the plot are set
+                 automatically.  Can also be set to 'x' or 'y' to specify
+                 that only one of the axis has to use autoscaling.
+                 If False, autoscaling is not used. On an axis that does
+                 not have autoscaling turned on, global limits are used
+                 if defined for the plotted quantity.
+    xunit      : Specify the unit to use for the plotting for the quantity
+                 on the x-axis.
+    yunit      : Specify the unit to use for the plotting for the quantity
+                 on the y-axis.   
+'''   
     #TODO: figure out automatically the quantities to plot depending on current window    
     
     simno = get_sim_no(sim)
@@ -461,7 +520,16 @@ def plotanalytical(x=None, y=None, snap = "current", sim = "current", overplot =
 
 #------------------------------------------------------------------------------
 def rescale(quantity, unitname, window="current", subfig="current"):
-    '''Rescales the specified quantity in the specified window to the specified unit'''
+    '''Rescales the specified quantity in the specified window to the specified unit
+
+Required arguments:
+    quantity   : Quantity to be rescaled.  Must be a string.
+    unitname   : Required unit for quantity.
+    
+Optional qrguments:
+    window     : Window containing plot
+    subfig     : Sub-figure in window containing plot
+'''
     command = Commands.RescaleCommand(quantity, unitname, window)
     Singletons.queue.put([command,None])
     okflag = Singletons.completedqueue.get()
@@ -471,7 +539,7 @@ def rescale(quantity, unitname, window="current", subfig="current"):
 
 #------------------------------------------------------------------------------
 def sims():
-    '''Print a list of the simulations'''
+    '''Print a list of the simulations to screen'''
     print "These simulations are currently loaded into memory:"
     for num, sim in enumerate(SimBuffer.simlist):
         print str(num) + ' ' + sim.simparams.stringparams["run_id"]
@@ -479,7 +547,11 @@ def sims():
 
 #------------------------------------------------------------------------------
 def snaps(simno):
-    '''For the given simulation number, print a list of all the snapshots'''
+    '''For the given simulation number, print a list of all the snapshots
+
+Required argument:
+    simno      : Simulation number from which to print the snapshot list.    
+'''
     simno = int(simno)
     sim=SimBuffer.get_sim_no(simno)
     print "The run_id of the requested simulation is " + sim.simparams.stringparams["run_id"]
@@ -498,7 +570,11 @@ def snaps(simno):
 
 #------------------------------------------------------------------------------
 def set_current_sim(simno):
-    '''Set the current simulation to the given number. Returns the newly set current simulation'''
+    '''Set the current simulation to the given number. Returns the newly set current simulation
+
+Required argument:
+    simno      : Simulation number
+'''
     simno = int(simno)
     return SimBuffer.set_current_sim_no(simno)
 
