@@ -99,7 +99,7 @@ class Sinks
   void DeallocateMemory(void);
   void SearchForNewSinkParticles(int, Sph<ndim> *, Nbody<ndim> *);
   void CreateNewSinkParticle(int, Sph<ndim> *, Nbody<ndim> *);
-  void AccreteMassToSinks(Sph<ndim> *, Nbody<ndim> *);
+  void AccreteMassToSinks(Sph<ndim> *, Nbody<ndim> *, int, DOUBLE);
   //void UpdateSystemProperties(void);
 
   // Local class variables

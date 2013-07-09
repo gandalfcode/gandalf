@@ -749,7 +749,11 @@ void SphSimulation<ndim>::MainLoop(void)
   // Search for new sink particles (if activated)
   if (sink_particles == 1) {
     if (sinks.create_sinks == 1) sinks.SearchForNewSinkParticles(n,sph,nbody);
-    if (sinks.Nsink > 0) sinks.AccreteMassToSinks(sph,nbody);
+    if (sinks.Nsink > 0) {
+      sinks.AccreteMassToSinks(sph,nbody,n,timestep);
+      this->CalculateDiagnostics();
+      this->OutputDiagnostics();
+    }
   }
 
   // Compute timesteps for all particles

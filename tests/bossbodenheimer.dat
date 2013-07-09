@@ -55,7 +55,7 @@ RHS boundary type in z-dimension            : z_boundary_rhs = open
 Simulation end time                         : tend = 0.04
 Regular snapshot output frequency           : dt_snap = 0.002
 Time of first snapshot                      : tsnapfirst = 0.015;
-Screen output frequency (in no. of steps)   : noutputstep = 16
+Screen output frequency (in no. of steps)   : noutputstep = 1
 
 
 #------------------------
@@ -96,9 +96,10 @@ Artificial viscosity beta value             : beta_visc = 2.0
 #----------------------
 # Sink particle options
 #----------------------
+Use leapfrog N-body integration scheme      : nbody = lfkdk
 Activate sink particles in code             : sink_particles = 1
 Allow creation of new sink particles        : create_sinks = 1
-Use smooth accretion in sinks               : smooth_accretion = 1
+Use smooth accretion in sinks               : smooth_accretion = 0
 Select adaptive sink radii                  : sink_radius_mode = hmult
 Set sink radius equal to kernel extent      : sink_radius = 2.0
 Sink formation density                      : rho_sink = 1.e-13

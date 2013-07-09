@@ -67,6 +67,7 @@ void Sph<ndim>::AllocateMemory(int N)
     //TODO: perhaps this 10 could be made a user-provided parameter
     //(to handle the case where one doesn't want to waste memory)
     Nsphmax = 10*N;
+    iorder = new int[Nsphmax];
     rsph = new FLOAT[ndim*Nsphmax];
     sphdata = new struct SphParticle<ndim>[Nsphmax];
     allocated = true;
@@ -87,13 +88,73 @@ void Sph<ndim>::DeallocateMemory(void)
   debug2("[Sph::DeallocateMemory]");
 
   if (allocated) {
-    delete[] rsph;
     delete[] sphdata;
+    delete[] rsph;
+    delete[] iorder;
   }
   allocated = false;
 
   return;
 }
+
+
+
+//=============================================================================
+//  Sph::DeleteParticles
+/// Delete selected SPH particles from the main arrays.
+//=============================================================================
+template <int ndim>
+void Sph<ndim>::DeleteParticles
+(int Ndead,                         ///< No. of 'dead' particles
+ int *deadlist)                     ///< List of 'dead' particle ids
+{
+  int i;                            // ..
+  int idead = 0;                    // ..
+  int ilive = 0;                    // ..
+
+  debug2("[Sph::DeleteParticles]");
+
+  // Determine new order of particles in arrays
+  for (i=0; i<Nsph; i++) {
+    if (idead < Ndead) {
+      if (i == deadlist[idead]) iorder[Nsph - Ndead + idead++] = i;
+      else iorder[ilive++] = i;
+    }
+    else iorder[ilive++] = i;
+  }
+
+  // Reorder all arrays following with new order, with dead particles at end
+  ReorderParticles();
+
+  // Reduce particle counters once dead particles have been removed
+  Nsph = Nsph - Ndead;
+  Ntot = Nsph;
+
+  return;
+}
+
+
+
+//=============================================================================
+//  Sph::ReorderParticles
+/// Delete selected SPH particles from the main arrays.
+//=============================================================================
+template <int ndim>
+void Sph<ndim>::ReorderParticles(void)
+{
+  int i;                            // ..
+  SphParticle<ndim> *sphdataaux;    // ..
+
+  sphdataaux = new SphParticle<ndim>[Nsph];
+
+  for (i=0; i<Nsph; i++) sphdataaux[i] = sphdata[i];
+  for (i=0; i<Nsph; i++) sphdata[i] = sphdataaux[iorder[i]];
+
+  delete[] sphdataaux;
+
+  return;
+}
+
 
 
 
