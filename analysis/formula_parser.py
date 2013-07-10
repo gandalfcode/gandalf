@@ -101,8 +101,8 @@ def evaluateStack( s, type, snap ):
     operand = evaluateStack(s, type, snap)
     return getattr(np, op)(operand)
   elif op in functions2arg:
-    operand1 = evaluateStack(s, type, snap)
     operand2 = evaluateStack(s, type, snap)
+    operand1 = evaluateStack(s, type, snap)
     return getattr(np, op)(operand1, operand2)
   elif re.search('^[a-zA-Z][a-zA-Z0-9_]*$',op):
       return UserQuantity(op).fetch(type, snap, "default")[1]

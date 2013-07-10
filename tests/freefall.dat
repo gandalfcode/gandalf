@@ -37,8 +37,8 @@ RHS boundary type in z-dimension            : z_boundary_rhs = open
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.03
-Regular snapshot output frequency           : dt_snap = 0.01
+Simulation end time                         : tend = 0.4
+Regular snapshot output frequency           : dt_snap = 0.1
 Screen output frequency (in no. of steps)   : noutputstep = 1
 
 
@@ -50,6 +50,12 @@ Main gas thermal physics treatment          : gas_eos = energy_eqn
 Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 
 
+#----------------
+# Gravity options
+#----------------
+Switch-off self-gravity of gas              : self_gravity = 1
+
+
 #----------------------------------------
 # Smoothed Particle Hydrodynamics options
 #----------------------------------------
@@ -57,7 +63,6 @@ SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = m4
 SPH smoothing length iteration tolerance    : h_converge = 0.002
 Tabulate SPH kernel                         : tabulated_kernel = 0
-
 
 
 #---------------------------------
@@ -82,11 +87,10 @@ No. of block timestep levels                : Nlevels = 1
 #-------------
 # Tree options
 #-------------
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = bruteforce
 No. of particles in leaf cell               : Nleafmax = 1
 
 
 #--------------
 # Misc. options
 #--------------
-Switch-off self-gravity of gas              : self_gravity = 1

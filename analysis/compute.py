@@ -55,9 +55,7 @@ def lagrangian_radii(snap, mfrac=0.5, type="default"):
     Npart = r.size
 
     #print 'Order : ',pdata.x_data[porder]
-
-#TODO: rewrite without loop
-
+    #TODO: rewrite without loop
     # Now loop over all particles and find the required Lagrangian radii
     i = 1
     msum = 0.0
