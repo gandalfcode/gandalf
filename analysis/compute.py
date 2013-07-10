@@ -50,22 +50,12 @@ def lagrangian_radii(snap, mfrac=0.5, type="default"):
 
     # Find particle ids in order of increasing radial distance
     porder = np.argsort(r)
-    mtotal = np.sum(m)
+    m_ordered=m[porder]
+    mcumulative = np.cumsum(m_ordered)
+    mtotal = mcumulative[-1]
     mlag = mfrac*mtotal
-    Npart = r.size
-
-    #print 'Order : ',pdata.x_data[porder]
-    #TODO: rewrite without loop
-    # Now loop over all particles and find the required Lagrangian radii
-    i = 1
-    msum = 0.0
-    while i < Npart and msum < mlag:
-        msum = msum + m[porder[i]]
-        rlag = 0.5*(r[porder[i-1]] + r[porder[i]])
-        if msum > mlag: return rlag
-        i = i + 1
-
-    return r[Npart]
+    index = np.searchsorted(mcumulative,mlag)
+    return 0.5*(r[index-1]+r[index])
 
 
 def COM (snap, quantity='x', type="default"):
