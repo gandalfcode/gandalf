@@ -13,6 +13,10 @@ time_fetchers={}
 
 derived_fetchers = {}
 
+#------------------------------------------------------------------------------
+def _KnownQuantities():
+  '''Return the list of the quantities that we know'''
+  return derived_fetchers.keys()+direct
 
 #------------------------------------------------------------------------------
 def UserQuantity(quantity):
@@ -35,7 +39,7 @@ def CreateUserQuantity(name, formula, unitlabel='', unitname='',scaling_factor=1
     derived_fetchers[name] = fetcher
     return fetcher
 
-
+  
 #------------------------------------------------------------------------------
 def CreateTimeData(name, function, *args, **kwargs):
     '''Given a function that takes a snapshot as input, construct a FunctionTimeDataFetcher object from it'''

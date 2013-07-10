@@ -56,6 +56,7 @@ class SimulationBase
   virtual bool ReadColumnSnapshotFile(string)=0;
   virtual bool WriteColumnSnapshotFile(string)=0;
 
+  std::list<string> keys;
 
  public:
 
@@ -73,6 +74,7 @@ class SimulationBase
   void SetParam(string key, string value);
   void SetParam(string key, int value);
   void SetParam(string ket, float value);
+  std::list<string>* GetIntAndFloatParameterKeys();
   void SetupSimulation(void);
   void Run(int=-1);
   list<SphSnapshotBase*> InteractiveRun(int=-1);

@@ -186,7 +186,27 @@ string SimulationBase::GetParam(string key)
   return simparams->GetParameter(key);
 }
 
+//=============================================================================
+//  SimulationBase::GetIntAndFloatParameterKeys
+/// Returns a list containing the keys of all the int and float parameters
+//=============================================================================
+std::list<string>* SimulationBase::GetIntAndFloatParameterKeys()
+{
 
+  if (! keys.empty())
+    return &keys;
+  
+  for (std::map<string, int>::iterator it=simparams->intparams.begin() ; it != simparams->intparams.end(); it++) {
+    keys.push_back(it->first);
+  }
+  
+  for (std::map<string, float>::iterator it=simparams->floatparams.begin() ; it != simparams->floatparams.end(); it++) {
+    keys.push_back(it->first);
+  }
+  
+  return &keys;
+  
+}
 
 //=============================================================================
 //  SphSimulation::Run
