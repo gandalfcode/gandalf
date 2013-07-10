@@ -82,7 +82,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
   int k;                            // Dimension counter
   int iteration = 0;                // h-rho iteration counter
   int iteration_max = 30;           // Max. no of iterations
-  FLOAT dr[ndim];                   // ..
+  FLOAT dr[ndim];                   // Relative position vector
   FLOAT h_lower_bound = 0.0;        // Lower bound on h
   FLOAT h_upper_bound = hmax;       // Upper bound on h
   FLOAT invhsqd;                    // (1 / h)^2

@@ -37,8 +37,8 @@ RHS boundary type in z-dimension            : z_boundary_rhs = open
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.4
-Regular snapshot output frequency           : dt_snap = 0.1
+Simulation end time                         : tend = 0.5
+Regular snapshot output frequency           : dt_snap = 0.025
 Screen output frequency (in no. of steps)   : noutputstep = 1
 
 

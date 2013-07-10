@@ -73,12 +73,6 @@ DOUBLE SphIntegration<ndim>::Timestep
   amag = sqrt(DotProduct(part.a,part.a,ndim));
   timestep = min(timestep, accel_mult*sqrt(part.h/(amag + small_number_dp)));
 
-  cout << "CHECKING DT : " << part.h << endl;
-  cout <<  amag << "    " << endl;
-  cout << part.div_v << endl;
-  cout << timestep << endl;
-
-
   return timestep;
 }
 

@@ -431,7 +431,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       ay[i] = (float) sphaux[i].a[1];
       az[i] = (float) sphaux[i].a[2];
     }
-    m[i] = (float) sphaux[i].gpot; //sphaux[i].m;
+    m[i] = (float) sphaux[i].m;
     h[i] = (float) sphaux[i].h;
     rho[i] = (float) sphaux[i].rho;
     u[i] = (float) sphaux[i].u;

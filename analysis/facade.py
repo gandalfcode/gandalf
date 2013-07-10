@@ -118,7 +118,7 @@ Optional arguments:
 
 
 #------------------------------------------------------------------------------
-def plot_vs_time(y, sim="current", overplot=False, autoscale=True, xunit="default", yunit="default"):
+def plot_vs_time(y, sim="current", overplot=False, autoscale=True, xunit="default", yunit="default", **kwargs):
     '''Plot given data as a function of time.  Creates a new plotting window if
 one does not already exist.
 
@@ -141,7 +141,7 @@ Optional arguments:
                  on the y-axis.
 '''
     simno = get_sim_no(sim)
-    command = Commands.PlotVsTime(y,simno,overplot,autoscale,xunit,yunit)
+    command = Commands.PlotVsTime(y,simno,overplot,autoscale,xunit,yunit,**kwargs)
     data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
     
@@ -612,7 +612,11 @@ def init():
     CreateUserQuantity('phi','arctan2(y,x)')
     CreateUserQuantity('theta','arccos(z/r)')
     CreateUserQuantity('vr','sin(theta)*cos(phi)*vx+sin(theta)*sin(phi)*vy+cos(theta)*vz')
+    CreateUserQuantity('vtheta','cos(theta)*cos(phi)*vx+cos(theta)*sin(phi)*vy-sin(theta)*vz')
+    CreateUserQuantity('vphi','cos(phi)*vy-sin(phi)*vx')
     CreateUserQuantity('ar','sin(theta)*cos(phi)*ax+sin(theta)*sin(phi)*ay+cos(theta)*az')
+    CreateUserQuantity('atheta','cos(theta)*cos(phi)*vx+cos(theta)*sin(phi)*vy-sin(theta)*vz')
+    CreateUserQuantity('aphi','cos(phi)*vy-sin(phi)*vx')
     
     from compute import COM
     CreateTimeData('com_x',COM)

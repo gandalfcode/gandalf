@@ -7,6 +7,7 @@ from data_fetcher import UserQuantity
 '''This module collects helper functions to compute useful quantities'''
 
 
+#------------------------------------------------------------------------------
 def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "current"):
     '''Computes the L1 error norm from the simulation data relative to the analytical solution'''
     
@@ -42,6 +43,7 @@ def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "c
     return L1
 
 
+#------------------------------------------------------------------------------
 def lagrangian_radii(snap, mfrac=0.5, type="default"):
     '''Computes the Lagrangian radii from all particles in simulation'''
     
@@ -58,6 +60,7 @@ def lagrangian_radii(snap, mfrac=0.5, type="default"):
     return 0.5*(r[index-1]+r[index])
 
 
+#------------------------------------------------------------------------------
 def COM (snap, quantity='x', type="default"):
     x=UserQuantity(quantity).fetch(type, snap)[1]
     m=UserQuantity('m').fetch(type, snap)[1]
