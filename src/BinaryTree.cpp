@@ -1440,8 +1440,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::UpdateAllSphForces
-(Sph<ndim> *sph                     ///< Pointer to SPH object
-)
+(Sph<ndim> *sph)                    ///< Pointer to SPH object
 {
   int c;                            // Cell id
   int cactive;                      // No. of active cells

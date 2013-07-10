@@ -617,6 +617,9 @@ def init():
     CreateUserQuantity('ar','sin(theta)*cos(phi)*ax+sin(theta)*sin(phi)*ay+cos(theta)*az')
     CreateUserQuantity('atheta','cos(theta)*cos(phi)*vx+cos(theta)*sin(phi)*vy-sin(theta)*vz')
     CreateUserQuantity('aphi','cos(phi)*vy-sin(phi)*vx')
+    CreateUserQuantity('pressure','(gamma_eos - 1)*rho*u')
+    CreateUserQuantity('sound','sqrt(gamma_eos*(gamma_eos - 1)*u)')
+    CreateUserQuantity('temp','(gamma_eos - 1)*u')
     
     from compute import COM
     CreateTimeData('com_x',COM)
