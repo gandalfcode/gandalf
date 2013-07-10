@@ -7,6 +7,7 @@ from data_fetcher import UserQuantity
 '''This module collects helper functions to compute useful quantities'''
 
 
+#------------------------------------------------------------------------------
 def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "current"):
     '''Computes the L1 error norm from the simulation data relative to the analytical solution'''
     
@@ -40,6 +41,7 @@ def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "c
     #compute error norm of particle data relative to analytical data
     L1 = np.linalg.norm((pdata.y_data - f(pdata.x_data)), ord=1)/pdata.x_data.size
     return L1
+
 
 
 def lagrangian_radii(snap, mfrac=0.5, type="default"):

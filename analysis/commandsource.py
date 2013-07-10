@@ -291,11 +291,16 @@ class PlotCommand(Command):
 #------------------------------------------------------------------------------
 class PlotVsTime (PlotCommand):
     
-    def __init__(self, yquantity,sim,overplot,autoscale,xunit,yunit):
+    def __init__(self, yquantity,sim,overplot,autoscale,xunit,yunit,**kwargs):
         PlotCommand.__init__(self, 't', yquantity, None, sim, overplot, autoscale, xunit, yunit)
+        self._type = type
+        self._kwargs = kwargs
         
     def execute(self, plotting, fig, ax, data):
-        line, = ax.plot(data.x_data, data.y_data, '.')
+        #Merge our dictionary with the user-provided one
+        #Note that if there are duplicates, the user-provided one will overwrite ours
+        kwargs = dict(self._kwargs.items())
+        line, = ax.plot(data.x_data, data.y_data, '.', **kwargs)
         return line
     
     def prepareData(self, globallimits):
@@ -304,7 +309,7 @@ class PlotVsTime (PlotCommand):
         y_data = TimeData(self.yquantity).fetch(sim)
         time = map(lambda snap: snap.t, sim.snapshots)
         
-        data=Data(time, y_data)
+        data = Data(time, y_data)
         return data
         
 
