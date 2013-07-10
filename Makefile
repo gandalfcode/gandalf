@@ -5,10 +5,10 @@
 CPP                = g++
 PYTHON             = python
 F2PY               = f2py
-COMPILER_MODE      = DEBUG
+COMPILER_MODE      = FAST
 PRECISION          = DOUBLE
 OPENMP             = 0
-OUTPUT_LEVEL       = 2
+OUTPUT_LEVEL       = 1
 VERIFY_ALL         = 0
 
 
