@@ -45,8 +45,8 @@ def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "c
 def lagrangian_radii(snap, mfrac=0.5, type="default"):
     '''Computes the Lagrangian radii from all particles in simulation'''
     
-    r = UserQuantity('r').fetch(snap, type)[1]
-    m = UserQuantity('m').fetch(snap, type)[1]
+    r = UserQuantity('r').fetch(type, snap)[1]
+    m = UserQuantity('m').fetch(type, snap)[1]
 
     # Find particle ids in order of increasing radial distance
     porder = np.argsort(r)
@@ -69,7 +69,7 @@ def lagrangian_radii(snap, mfrac=0.5, type="default"):
 
 
 def COM (snap, quantity='x', type="default"):
-    x=UserQuantity(quantity).fetch(snap, type)[1]
-    m=UserQuantity('m').fetch(snap, type)[1]
+    x=UserQuantity(quantity).fetch(type, snap)[1]
+    m=UserQuantity('m').fetch(type, snap)[1]
     
     return (x*m).sum()/m.sum()
