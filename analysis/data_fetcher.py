@@ -33,8 +33,18 @@ from formula_parser import evaluateStack, exprStack, varStack, pattern
 
 #------------------------------------------------------------------------------
 def CreateUserQuantity(name, formula, unitlabel='', unitname='',scaling_factor=1):
-    #TODO: set label
-    '''Given a mathematical formula, build a data fetcher from it'''
+    '''Given a mathematical formula, build a data fetcher from it.
+    The quantity is given a name, which can now be used in plots and in other formulae.
+    When you construct a quantity, you can rely on one of the units we provide, in which case
+    you can just pass as the scaling_factor parameter the name of the unit you want inside
+    the SimUnits class. For example, if your unit has dimensions of acceleration, you can pass
+    'a' as the scaling_factor parameter. Doing this allows the unit system to work seamlessly
+    when plotting (i.e., you can specify the units you want the plot in).
+    Alternatively, you can build your own unit passing a numerical value for the scaling_factor,
+    a unitname and a latex label.
+    In this case, however, no rescaling is possible, as the unit system does not
+    know how to rescale your unit.    
+    '''
     fetcher = FormulaDataFetcher(name, formula, unitlabel, unitname, scaling_factor)
     derived_fetchers[name] = fetcher
     return fetcher
@@ -107,7 +117,7 @@ class DirectDataFetcher:
 class FormulaDataFetcher:
     
     def __init__(self, name, formula, unitlabel='', unitname='',scaling_factor=1):
-        self.scaling_factor=int(scaling_factor)
+        self.scaling_factor=scaling_factor
         self._name = name
         exprStack[:]=[]
         pattern.parseString(formula)
@@ -122,7 +132,20 @@ class FormulaDataFetcher:
             snap=SimBuffer.get_current_snapshot()
         
         result = evaluateStack(list(self._stack), type, snap)
-        return self.unitinfo, result, self.scaling_factor
+
+        if isinstance(self.scaling_factor,basestring):
+            try:
+                unitobj=getattr(snap.sim.simunits, self.scaling_factor)
+                if unit=="default":
+                    unit=unitobj.outunit
+                scaling_factor=unitobj.OutputScale(unit)
+                self.unitinfo.name=unit
+                self.unitinfo.label=unitobj.LatexLabel(unit)
+            except AttributeError:
+                raise AttributeError("Sorry, we do not know the unit " + self.scaling_factor)
+        else:
+            scaling_factor=float(self.scaling_factor)
+        return self.unitinfo, result, scaling_factor
 
 
 #------------------------------------------------------------------------------
