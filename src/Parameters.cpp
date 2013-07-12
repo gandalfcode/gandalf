@@ -258,6 +258,8 @@ void Parameters::SetDefaultValues(void)
   floatparams["rho_sink"] = 1.e-12;
   floatparams["alpha_ss"] = 0.01;
   floatparams["sink_radius"] = 3.0;
+  floatparams["smooth_accrete_frac"] = 0.01;
+  floatparams["smooth_accrete_dt"] = 0.01;
   stringparams["sink_radius_mode"] = "hmult";
 
   // Neighbour searching and tree-gravity parameters

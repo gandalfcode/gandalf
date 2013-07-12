@@ -89,6 +89,10 @@ int GradhSph<ndim, kernelclass>::ComputeH
   FLOAT ssqd;                       // Kernel parameter squared, (r/h)^2
 
 
+  // If there are sink particles present, check if the particle is inside one
+  if (parti.sinkid != -1) h_lower_bound = hmin_sink;
+
+
   // Main smoothing length iteration loop
   // ==========================================================================
   do {
@@ -161,7 +165,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
 
   // Normalise all SPH sums correctly
-  parti.h = h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim);
+  parti.h = max(h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim),h_lower_bound);
   parti.invh = (FLOAT) 1.0/parti.h;
   parti.invomega = (FLOAT) 1.0 + 
     Sph<ndim>::invndim*parti.h*parti.invomega*parti.invrho;
@@ -182,7 +186,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
   if (create_sinks == 1) {
     parti.potmin = true;
     for (j=0; j<Nneib; j++)
-      if (gpot[j] > 1.00000001*parti.gpot && 
+      if (gpot[j] > 1.000000001*parti.gpot && 
 	  drsqd[j]*invhsqd < kern.kernrangesqd) parti.potmin = false;
   }
 

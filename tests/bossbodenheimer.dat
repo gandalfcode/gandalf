@@ -99,7 +99,9 @@ Artificial viscosity beta value             : beta_visc = 2.0
 Use leapfrog N-body integration scheme      : nbody = lfkdk
 Activate sink particles in code             : sink_particles = 1
 Allow creation of new sink particles        : create_sinks = 1
-Use smooth accretion in sinks               : smooth_accretion = 0
+Use smooth accretion in sinks               : smooth_accretion = 1
+Mass cut-off for smooth accretion           : smooth_accrete_frac = 0.05
+Timestep cup-off for smooth accretion       : smooth_accrete_dt = 0.05
 Select adaptive sink radii                  : sink_radius_mode = hmult
 Set sink radius equal to kernel extent      : sink_radius = 2.0
 Sink formation density                      : rho_sink = 1.e-13
@@ -118,7 +120,7 @@ No. of block timestep levels                : Nlevels = 1
 #-------------
 # Tree options
 #-------------
-SPH neighbour search algorithm              : neib_search = bruteforce
+SPH neighbour search algorithm              : neib_search = tree
 No. of particles in leaf cell               : Nleafmax = 16
 Tree opening angle (squared)                : thetamaxsqd = 0.1
 
