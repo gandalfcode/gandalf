@@ -76,7 +76,7 @@ Optional qrguments:
    
    
 #------------------------------------------------------------------------------ 
-def plot(x, y, type="default", snap="current", sim="current", overplot = False, autoscale = True, xunit="default", yunit="default", **kwargs):
+def plot(x, y, type="default", snap="current", sim="current", overplot = False, autoscale = True, xunit="default", yunit="default", xaxis="linear", yaxis="linear", **kwargs):
     '''Plot particle data as a scatter plot.  Creates a new plotting window if
 one does not already exist.
 
@@ -109,16 +109,16 @@ Optional arguments:
         snapobject = SimBuffer.get_snapshot_extended(sim, snap)
         nspecies = snapobject.GetNTypes()
         for ispecies in range(nspecies):
-            plot(x,y,snapobject.GetSpecies(ispecies),snap,simno,(overplot or ispecies>0),autoscale,xunit,yunit,**kwargs)
+            plot(x,y,snapobject.GetSpecies(ispecies),snap,simno,(overplot or ispecies>0),autoscale,xunit,yunit,xaxis,yaxis,**kwargs)
         return
-    command = Commands.ParticlePlotCommand(x, y, type, snap, simno, overplot, autoscale, xunit, yunit,**kwargs)
+    command = Commands.ParticlePlotCommand(x, y, type, snap, simno, overplot, autoscale, xunit, yunit, xaxis, yaxis, **kwargs)
     data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
     sleep(0.001)
 
 
 #------------------------------------------------------------------------------
-def plot_vs_time(y, sim="current", overplot=False, autoscale=True, xunit="default", yunit="default", **kwargs):
+def plot_vs_time(y, sim="current", overplot=False, autoscale=True, xunit="default", yunit="default", xaxis="linear", yaxis="linear", **kwargs):
     '''Plot given data as a function of time.  Creates a new plotting window if
 one does not already exist.
 
@@ -308,7 +308,7 @@ Optional arguments:
         kwargs['autoscale']
     except KeyError:
         kwargs['autoscale']=False
-    plot(x,y, overplot=True, **kwargs)
+    plot(x, y, overplot=True, **kwargs)
 
 
 #------------------------------------------------------------------------------

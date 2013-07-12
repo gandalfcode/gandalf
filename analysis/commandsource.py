@@ -98,8 +98,8 @@ class PlotCommand(Command):
     The class also contains various helper functions that are needed to do the plots.
     '''
       
-    def __init__(self, xquantity, yquantity, snap, simno, 
-                 overplot, autoscale, xunit="default", yunit="default"):
+    def __init__(self, xquantity, yquantity, snap, simno, overplot, autoscale, 
+                 xunit="default", yunit="default", xaxis="linear", yaxis="linear"):
         Command.__init__(self)
         self.xquantity = xquantity
         self.yquantity = yquantity
@@ -109,6 +109,8 @@ class PlotCommand(Command):
         self.autoscale = autoscale
         self.xunit = xunit
         self.yunit = yunit
+        self.xaxis = xaxis
+        self.yaxis = yaxis
         self.xlabel=""
         self.ylabel=""
         self.xunitname = ""
@@ -126,6 +128,7 @@ class PlotCommand(Command):
             self.update(plotting, fig, ax, product, data)
             self.labels(ax)
             self.autolimits(ax)
+            self.axes(ax)
             fig.canvas.draw()
         elif self.id > plotting.lastid:
             #firs time - get current figure and axis
@@ -207,6 +210,17 @@ class PlotCommand(Command):
         ax.relim()
         ax.autoscale_view()
         
+    def axes(self, ax):
+        '''Sets the axis type (either linear or log)'''
+        if self.xaxis == "log":
+            ax.set_xscale("log")
+        else:
+            ax.set_xscale("linear")
+        if self.yaxis == "log":
+            ax.set_yscale("log")
+        else:
+            ax.set_yscale("linear")        
+        
     def get_sim_and_snap(self):
         '''Retrieves from the buffer the desired sim and snap'''
         sim = self.get_sim()
@@ -278,8 +292,10 @@ class PlotCommand(Command):
 #------------------------------------------------------------------------------
 class PlotVsTime (PlotCommand):
     
-    def __init__(self, yquantity,sim,overplot,autoscale,xunit,yunit,**kwargs):
-        PlotCommand.__init__(self, 't', yquantity, None, sim, overplot, autoscale, xunit, yunit)
+    def __init__(self, yquantity, sim, overplot, autoscale, 
+                 xunit, yunit, xaxis, yaxis, **kwargs):
+        PlotCommand.__init__(self, 't', yquantity, None, sim, overplot, 
+                              autoscale, xunit, yunit, xaxis, yaxis)
         self._type = type
         self._kwargs = kwargs
         
@@ -328,9 +344,10 @@ class ParticlePlotCommand (PlotCommand):
     typestyle = {'sph': sphstyle, 'star': starstyle}
     
     def __init__(self, xquantity, yquantity, type, snap, simno, overplot=False, 
-                 autoscale=True, xunit="default", yunit="default",**kwargs):
+                 autoscale=True, xunit="default", yunit="default", 
+                 xaxis="linear", yaxis="linear", **kwargs):
         PlotCommand.__init__(self, xquantity, yquantity, snap, simno, overplot, 
-                             autoscale, xunit, yunit)
+                            autoscale, xunit, yunit, xaxis, yaxis)
         self._type = type
         self._kwargs = kwargs
                 
@@ -364,10 +381,11 @@ class AnalyticalPlotCommand (PlotCommand):
     Like particle plotting, uses the plot method on the axis objects and
     the set_data method on the returned line object.'''
     
-    def __init__(self, xquantity, yquantity, snap, simno, overplot=True, autoscale=True,
+    def __init__(self, xquantity, yquantity, snap, simno, overplot=True, 
+                 xaxis="linear", yaxis="linear", autoscale=True, 
                  xunit="default", yunit="default"):
         PlotCommand.__init__(self, xquantity, yquantity, snap, simno, overplot, 
-                             autoscale, xunit, yunit)
+                             autoscale, xunit, yunit, xaxis, yaxis)
         
     def update(self, plotting, fig, ax, line, data):
         line.set_data(data.x_data, data.y_data)
