@@ -97,15 +97,7 @@ class PlotCommand(Command):
     function, which calls execute or update depending on the plot already existing or not.
     The class also contains various helper functions that are needed to do the plots.
     '''
-    
-    quantitylabels = {'x': 'x', 'y': 'y', 'z': 'z', 'rho': '$\\rho$',
-                      'vx': '$v_x$', 'vy': '$v_y$', 'vz': '$v_z$', 
-                      'ax': '$a_x$', 'ay': '$a_y$', 'az': '$a_z$',
-                      'm': 'm', 'h': 'h', 'u': 'u',
-                      'r': 'r', 'R': 'R', 'phi': '$\\phi$',
-                      'theta': '$\\theta$',
-                      'vr': '$v_r$', 'ar': '$a_r$', 't': 't'}
-    
+      
     def __init__(self, xquantity, yquantity, snap, simno, 
                  overplot, autoscale, xunit="default", yunit="default"):
         Command.__init__(self)
@@ -201,20 +193,12 @@ class PlotCommand(Command):
     def labels(self, ax):
         '''Write the labels on the x and y axes.
         Uses the quantitylabels dictionary for that.'''
-        try:
-            xlabel = self.quantitylabels[self.xquantity]
-        except KeyError:
-            xlabel = ""
         if self.xlabel != "":
-            xlabel += ' [$'+self.xlabel+'$]'
-        ax.set_xlabel(xlabel)
-        try:
-            ylabel = self.quantitylabels[self.yquantity]
-        except KeyError:
-            ylabel=""
+            self.xquantity_label += ' [$'+self.xlabel+'$]'
+        ax.set_xlabel(self.xquantity_label)
         if self.ylabel != "":
-            ylabel += ' [$'+self.ylabel+'$]'
-        ax.set_ylabel(ylabel)
+            self.yquantity_label += ' [$'+self.ylabel+'$]'
+        ax.set_ylabel(self.yquantity_label)
         
     def autolimits(self, ax):
         '''Recomputes limits from the data and use them to update
@@ -241,9 +225,10 @@ class PlotCommand(Command):
             
         return sim
         
-    def set_labels(self, axis, unitinfo):
+    def set_labels(self, axis, unitinfo, label):
         setattr(self, axis+'unitname', unitinfo.name)
         setattr(self, axis+'label', unitinfo.label)
+        setattr(self, axis+'quantity_label', label)
     
     def get_array(self, axis, snap):
         '''Helper function to get the array of the quantity on the x, y or
@@ -263,14 +248,16 @@ class PlotCommand(Command):
                 to get the requested unit)
             unitinfo
                 UnitInfo object with the label and the name of the unit
+            label
+                The label of the quantity (what will go on the axis before the unit)
         '''
         
         quantity = getattr(self, axis+'quantity')
         unit = getattr(self, axis+'unit')
         
-        unitinfo, data, scaling_factor = UserQuantity(quantity).fetch(self._type, snap, unit)
+        unitinfo, data, scaling_factor, label = UserQuantity(quantity).fetch(self._type, snap, unit)
         
-        return unitinfo, data, scaling_factor
+        return unitinfo, data, scaling_factor, label
      
     def setlimits(self, plotting, ax, axis):
         '''Helper function to set the limits of a plot.
@@ -308,8 +295,24 @@ class PlotVsTime (PlotCommand):
         
         y_data = TimeData(self.yquantity).fetch(sim)
         time = map(lambda snap: snap.t, sim.snapshots)
+        time=np.asarray(time)
         
-        data = Data(time, y_data)
+        time_unit_obj = sim.simunits.t
+        xunitinfo=UnitInfo()
+        if self.xunit=="default":
+            self.xunit=time_unit_obj.outunit
+        xscaling_factor=time_unit_obj.OutputScale(self.xunit)
+        xunitinfo.name=self.xunit
+        xunitinfo.label=time_unit_obj.LatexLabel(self.xunit)
+        xlabel='t'
+        
+        yunitinfo=UnitInfo()
+        ylabel=''
+        
+        self.set_labels('x', xunitinfo, xlabel)
+        self.set_labels('y', yunitinfo, ylabel)
+        
+        data = Data(xscaling_factor*time, y_data)
         return data
         
 
@@ -346,10 +349,10 @@ class ParticlePlotCommand (PlotCommand):
         sim, snap = self.get_sim_and_snap()
         self._realtype = snap.GetRealType(self._type)
 
-        xunitinfo, x_data, xscaling_factor = self.get_array('x', snap)
-        yunitinfo, y_data, yscaling_factor = self.get_array('y', snap)
-        self.set_labels('x', xunitinfo)
-        self.set_labels('y', yunitinfo)
+        xunitinfo, x_data, xscaling_factor, xlabel = self.get_array('x', snap)
+        yunitinfo, y_data, yscaling_factor, ylabel = self.get_array('y', snap)
+        self.set_labels('x', xunitinfo, xlabel)
+        self.set_labels('y', yunitinfo, ylabel)
         
         data = Data(x_data*xscaling_factor, y_data*yscaling_factor)
         return data
@@ -391,12 +394,12 @@ class AnalyticalPlotCommand (PlotCommand):
         computer = analyticalclass(sim, time)
         x_data, y_data = computer.compute(self.xquantity, self.yquantity)
         
-        xunitinfo, dummy, xscaling_factor = self.get_array('x', snap)
-        yunitinfo, dummy, yscaling_factor = self.get_array('y', snap)
+        xunitinfo, dummy, xscaling_factor, xlabel = self.get_array('x', snap)
+        yunitinfo, dummy, yscaling_factor, ylabel = self.get_array('y', snap)
         
         #set labels
-        self.set_labels('x', xunitinfo)
-        self.set_labels('y', yunitinfo)
+        self.set_labels('x', xunitinfo, xlabel)
+        self.set_labels('y', yunitinfo, ylabel)
         
         
         data = Data(x_data*xscaling_factor,y_data*yscaling_factor)
@@ -471,11 +474,11 @@ class RenderPlotCommand (PlotCommand):
     def prepareData(self, globallimits):
         sim, snap = self.get_sim_and_snap()
         
-        xunitinfo, x_data, xscaling_factor = self.get_array('x',snap)
-        yunitinfo, y_data, yscaling_factor = self.get_array('y', snap)
+        xunitinfo, x_data, xscaling_factor, xlabel = self.get_array('x',snap)
+        yunitinfo, y_data, yscaling_factor, ylabel = self.get_array('y', snap)
         
-        self.set_labels('x', xunitinfo)
-        self.set_labels('y', yunitinfo)
+        self.set_labels('x', xunitinfo, xlabel)
+        self.set_labels('y', yunitinfo, ylabel)
         
         #create the grid
         #set resolution
@@ -525,7 +528,7 @@ class RenderPlotCommand (PlotCommand):
             quantities.pop(quantities.index(self.xquantity))
             quantities.pop(quantities.index(self.yquantity))
             self.zquantity = quantities[0]
-            zunitinfo, z_data, z_scaling_factor = self.get_array('z', snap)
+            zunitinfo, z_data, z_scaling_factor, zlabel = self.get_array('z', snap)
             returncode, renderscaling_factor = rendering.CreateSliceRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.zquantity, self.renderquantity,
                                                  self.renderunit, self.xmin, self.xmax,
                                                  self.ymin, self.ymax, self.zslice, rendered, snap)

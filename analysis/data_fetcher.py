@@ -32,7 +32,7 @@ from formula_parser import evaluateStack, exprStack, varStack, pattern
 
 
 #------------------------------------------------------------------------------
-def CreateUserQuantity(name, formula, unitlabel='', unitname='',scaling_factor=1):
+def CreateUserQuantity(name, formula, unitlabel='', unitname='',scaling_factor=1, label=''):
     '''Given a mathematical formula, build a data fetcher from it.
     The quantity is given a name, which can now be used in plots and in other formulae.
     When you construct a quantity, you can rely on one of the units we provide, in which case
@@ -45,7 +45,7 @@ def CreateUserQuantity(name, formula, unitlabel='', unitname='',scaling_factor=1
     In this case, however, no rescaling is possible, as the unit system does not
     know how to rescale your unit.    
     '''
-    fetcher = FormulaDataFetcher(name, formula, unitlabel, unitname, scaling_factor)
+    fetcher = FormulaDataFetcher(name, formula, unitlabel, unitname, scaling_factor, label)
     derived_fetchers[name] = fetcher
     return fetcher
 
@@ -60,7 +60,11 @@ def CreateTimeData(name, function, *args, **kwargs):
 #------------------------------------------------------------------------------
 def TimeData(quantity):
     '''Given a quantity, return the FunctionTimeDataFetcher object that we can query'''
-    return time_fetchers[quantity]
+    try:
+        fetcher = time_fetchers[quantity]
+    except KeyError:
+        raise KeyError("We do not know how to compute " + quantity)
+    return fetcher
 
 
 #------------------------------------------------------------------------------
@@ -95,6 +99,11 @@ def check_requested_quantity(quantity, snap):
 #------------------------------------------------------------------------------
 class DirectDataFetcher:
     
+    quantitylabels = {'x': 'x', 'y': 'y', 'z': 'z', 'rho': '$\\rho$',
+                      'vx': '$v_x$', 'vy': '$v_y$', 'vz': '$v_z$', 
+                      'ax': '$a_x$', 'ay': '$a_y$', 'az': '$a_z$',
+                      'm': 'm', 'h': 'h', 'u': 'u', 't': 't'}
+    
     def __init__(self, quantity):
         
         if quantity not in direct:
@@ -110,13 +119,13 @@ class DirectDataFetcher:
         if kind != "direct":
             raise Exception ("Error: the quantity" + quantity + " is not a direct quantity!")
         
-        return snap.ExtractArray(self._quantity, type, unit)
+        return snap.ExtractArray(self._quantity, type, unit) + [self.quantitylabels[self._quantity]]
 
 
 #------------------------------------------------------------------------------
 class FormulaDataFetcher:
     
-    def __init__(self, name, formula, unitlabel='', unitname='',scaling_factor=1):
+    def __init__(self, name, formula, unitlabel='', unitname='',scaling_factor=1,label=''):
         self.scaling_factor=scaling_factor
         self._name = name
         exprStack[:]=[]
@@ -125,6 +134,7 @@ class FormulaDataFetcher:
         self.unitinfo = UnitInfo()
         self.unitinfo.label=unitlabel
         self.unitinfo.name=unitname
+        self.label=label
         
     def fetch(self, type="default", snap="current", unit="default"):
         
@@ -145,7 +155,7 @@ class FormulaDataFetcher:
                 raise AttributeError("Sorry, we do not know the unit " + self.scaling_factor)
         else:
             scaling_factor=float(self.scaling_factor)
-        return self.unitinfo, result, scaling_factor
+        return self.unitinfo, result, scaling_factor, self.label
 
 
 #------------------------------------------------------------------------------
