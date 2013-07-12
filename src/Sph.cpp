@@ -16,6 +16,7 @@
 #include "Parameters.h"
 #include "EOS.h"
 #include "Debug.h"
+#include "InlineFuncs.h"
 using namespace std;
 
 template <int ndim>
@@ -39,6 +40,7 @@ Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux,
   beta_visc(beta_visc_aux),
   h_fac(h_fac_aux),
   h_converge(h_converge_aux),
+  hmin_sink(big_number),
   gas_eos(gas_eos_aux),
   kerntab(TabulatedKernel<ndim>(KernelName)),
   allocated(false),
@@ -108,11 +110,22 @@ void Sph<ndim>::DeleteParticles
 (int Ndead,                         ///< No. of 'dead' particles
  int *deadlist)                     ///< List of 'dead' particle ids
 {
-  int i;                            // ..
-  int idead = 0;                    // ..
-  int ilive = 0;                    // ..
+  int i;                            // Particle counter
+  int idead = 0;                    // Aux. dead particle counter
+  int ilive = 0;                    // 'Live' particle counter
 
   debug2("[Sph::DeleteParticles]");
+
+  // Make sure list of dead particles is in ascending order
+  InsertionSortIds(Ndead,deadlist);
+
+  for (i=0; i<Ndead-1; i++) {
+    if (deadlist[i+1] < deadlist[i]) {
+      cout << "PROBLEM WITH DEADLIST : " << i << "    " 
+	   << deadlist[i] << "    " << deadlist[i+1] << endl;
+      exit(0);
+    }
+  }
 
   // Determine new order of particles in arrays
   for (i=0; i<Nsph; i++) {

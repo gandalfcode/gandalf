@@ -159,6 +159,28 @@ static inline void Heapsort
 
 
 
+//=============================================================================
+//  InsertionSortIds
+//  ..
+//=============================================================================
+static inline void InsertionSortIds
+(int Nsort,                         ///< No. of values to be sorted
+ int *ids)                          ///< List of particle ids
+{
+  int i,iaux,j;
+
+  for (j=1; j<Nsort; j++) {
+    iaux = ids[j];
+    for (i=j-1; i>=0; i--) {
+      if (ids[i] <= iaux) break;
+      ids[i+1] = ids[i];
+    }
+    ids[i+1] = iaux;
+  }
+
+  return;
+}
+
 
 
 template <typename T>

@@ -107,8 +107,9 @@ class Sph
   const int hydro_forces;             ///< Compute hydro forces?
   const int self_gravity;             ///< Compute gravitational forces?
   static const FLOAT invndim=1./ndim; ///< Copy of 1/ndim
-  int create_sinks;                   ///< ..
-  FLOAT mmean;                        ///< ..
+  int create_sinks;                   ///< Create new sink particles?
+  FLOAT mmean;                        ///< Mean SPH particle mass
+  FLOAT hmin_sink;                    ///< Minimum smoothing length of sinks
 
   string riemann_solver;              ///< Selected Riemann solver
   string slope_limiter;               ///< Selected slope limiter
@@ -154,6 +155,7 @@ class GradhSph: public Sph<ndim>
   using Sph<ndim>::alpha_visc;
   using Sph<ndim>::acond;
   using Sph<ndim>::create_sinks;
+  using Sph<ndim>::hmin_sink;
 
  public:
 

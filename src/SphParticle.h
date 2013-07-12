@@ -26,6 +26,7 @@ struct SphParticle {
   int itype;                        ///< SPH particle type
   int level;                        ///< Current timestep level of particle
   int nstep;                        ///< Integer step-size of particle
+  int sinkid;                       ///< i.d. of sink particle
   FLOAT r[ndim];                    ///< Position
   FLOAT v[ndim];                    ///< Velocity
   FLOAT a[ndim];                    ///< Total acceleration
@@ -75,6 +76,7 @@ struct SphParticle {
     iorig = -1;
     itype = -1;
     level = 0;
+    sinkid = -1;
     for (int k=0; k<ndim; k++) r[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) v[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a[k] = (FLOAT) 0.0;

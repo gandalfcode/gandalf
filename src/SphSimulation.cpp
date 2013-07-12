@@ -549,6 +549,8 @@ void SphSimulation<ndim>::ProcessParameters(void)
   sinks.rho_sink = floatparams["rho_sink"]
     /simunits.rho.outscale/simunits.rho.outcgs;
   sinks.alpha_ss = floatparams["alpha_ss"];
+  sinks.smooth_accrete_frac = floatparams["smooth_accrete_frac"];
+  sinks.smooth_accrete_dt = floatparams["smooth_accrete_dt"];
   sinks.sink_radius_mode = stringparams["sink_radius_mode"];
 
   if (sinks.sink_radius_mode == "fixed")
@@ -615,6 +617,11 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sph->Nghostmax = sph->Nsphmax - sph->Nsph;
     sph->Ntot = sph->Nsph;
     for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
+
+    // Compute mean mass
+    sph->mmean = 0.0;
+    for (i=0; i<sph->Nsph; i++) sph->mmean += sph->sphdata[i].m;
+    sph->mmean /= (FLOAT) sph->Nsph;
 
     sph->InitialSmoothingLengthGuess();
     sphneib->UpdateTree(sph,*simparams);
@@ -751,8 +758,8 @@ void SphSimulation<ndim>::MainLoop(void)
     if (sinks.create_sinks == 1) sinks.SearchForNewSinkParticles(n,sph,nbody);
     if (sinks.Nsink > 0) {
       for (int s=0; s<sinks.Nsink; s++) sinks.AccreteMassToSinks(sph,nbody,n,timestep,s);
-      this->CalculateDiagnostics();
-      this->OutputDiagnostics();
+      //this->CalculateDiagnostics();
+      //this->OutputDiagnostics();
     }
   }
 
