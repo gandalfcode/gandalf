@@ -1,16 +1,19 @@
+#==============================================================================
+# nohtest.py
+# Run Noh test using initial conditions file 'noh.dat'.
+#==============================================================================
 from seren.analysis.facade import *
 import time
 
+# Create new Noh test simulation object from 'noh.dat' file
 newsim('noh.dat')
 setupsim()
 
-plot("x","rho")
-plotanalytical("x","rho")
-#plot("x","y")
+# Plot density distribution along with analytical solution
+plot("R","rho")
+plotanalytical("R","rho")
+
 run()
-#plot("x","y")
-plot("x","rho")
-plotanalytical("x","rho")
 block()
 
 

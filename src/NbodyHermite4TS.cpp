@@ -63,6 +63,7 @@ void NbodyHermite4TS<ndim, kernelclass>::CorrectionTerms
  NbodyParticle<ndim> **star,        ///< Main star/system array
  DOUBLE timestep)                   ///< Smallest timestep value
 {
+  int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
@@ -74,9 +75,10 @@ void NbodyHermite4TS<ndim, kernelclass>::CorrectionTerms
   // Loop over all system particles
   // --------------------------------------------------------------------------
   for (i=0; i<N; i++) {
+    dn = n - star[i]->nlast;
     nstep = star[i]->nstep;
-    
-    if (n%nstep == 0) {
+
+    if (dn == nstep) {
       dt = timestep*(DOUBLE) nstep;
       invdt = 1.0 / dt;
     

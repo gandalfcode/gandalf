@@ -29,6 +29,7 @@ class NbodyParticle
   bool active;                      ///< Flag if active (i.e. recompute step)
   int level;                        ///< Current timestep level    
   int nstep;                        ///< Integer step-size of particle
+  int nlast;                        ///< Integer time at beginning of step
   int Ncomp;                        ///< No. of internal components
   DOUBLE r[ndim];                   ///< Position
   DOUBLE v[ndim];                   ///< Velocity
@@ -60,6 +61,7 @@ class NbodyParticle
     active = false;
     level = 0;
     nstep = 0;
+    nlast = 0;
     Ncomp = 1;
     for (int k=0; k<ndim; k++) r[k] = 0.0;
     for (int k=0; k<ndim; k++) v[k] = 0.0;

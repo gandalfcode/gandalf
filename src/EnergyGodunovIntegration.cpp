@@ -59,6 +59,7 @@ void EnergyGodunovIntegration<ndim>::EnergyIntegration
  SphParticle<ndim> *sphdata,        ///< [inout] SPH particle data array
  FLOAT timestep)                    ///< [in] Base timestep value
 {
+  int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int nstep;                        // Particle (integer) step size
   FLOAT dt;                         // Timestep since start of step
@@ -69,9 +70,12 @@ void EnergyGodunovIntegration<ndim>::EnergyIntegration
 #pragma omp parallel for default(shared) private(dt,nstep)
   for (i=0; i<Nsph; i++) {
     nstep = sphdata[i].nstep;
-    if (n%nstep == 0) dt = timestep*(FLOAT) nstep;
-    else dt = timestep*(FLOAT) (n%nstep);
-    sphdata[i].u = sphdata[i].u0 + sphdata[i].dudt*dt;
+    dn = n - sphdata[i].nlast;
+    dt = timestep*(FLOAT) dn;
+    sphdata[i].u = sphdata[i].u0 + sphdata[i].dudt0*dt;
+
+    //cout << "CHECKING UINT : " << i << "   " << nstep << "    " << dn << "    " << dt << "    " << sphdata[i].u << "    " << sphdata[i].u0 << "    " << sphdata[i].dudt0 << endl;
+
     //if (sphdata[i].u < small_number && sphdata[i].dudt < 0.0)
     //  sphdata[i].u = sphdata[i].u0*exp(dt*sphdata[i].dudt/sphdata[i].u0);
     if (sphdata[i].u != sphdata[i].u) {
@@ -122,6 +126,7 @@ void EnergyGodunovIntegration<ndim>::EndTimestep
  int Nsph,                          ///< [in] No. of SPH particles
  SphParticle<ndim> *sphdata)        ///< [inout] SPH particle data array
 {
+  int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int nstep;                        // Particle (integer) step size
 
@@ -130,11 +135,13 @@ void EnergyGodunovIntegration<ndim>::EndTimestep
   // --------------------------------------------------------------------------
 #pragma omp parallel for default(shared) private(nstep)
   for (i=0; i<Nsph; i++) {
+    dn = n - sphdata[i].nlast;
     nstep = sphdata[i].nstep;
-    if (n%nstep == 0) {
+    if (n == sphdata[i].nlast) {
       sphdata[i].u0 = sphdata[i].u;
       sphdata[i].dudt0 = sphdata[i].dudt;
     }
+    //cout << "CHECKING TEND : " << i << "   " << nstep << "    " << dn << "    " << n << "    " << sphdata[i].nlast << "    " << sphdata[i].u << "    " << sphdata[i].dudt << endl;
   }
   // --------------------------------------------------------------------------
 

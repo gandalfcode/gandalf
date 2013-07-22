@@ -20,7 +20,6 @@ using namespace std;
 
 
 
-
 //=============================================================================
 //  SphLeapfrogKDK::SphLeapfrogKDK
 /// SphLeapfrogKDK class constructor
@@ -61,6 +60,7 @@ void SphLeapfrogKDK<ndim>::AdvanceParticles
  SphParticle<ndim> *sphdata,        ///< [inout] SPH particle data array
  FLOAT timestep)                    ///< [in] Base timestep value
 {
+  int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
@@ -70,22 +70,22 @@ void SphLeapfrogKDK<ndim>::AdvanceParticles
 
   // Advance positions and velocities of all SPH particles
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(dt,k,nstep)
+#pragma omp parallel for default(shared) private(dn,dt,k,nstep)
   for (i=0; i<Nsph; i++) {
 
     // Compute time since beginning of current step
     nstep = sphdata[i].nstep;
-    if (n%nstep == 0) dt = timestep*(FLOAT) nstep;
-    else dt = timestep*(FLOAT) (n%nstep);
+    dn = n - sphdata[i].nlast;
+    dt = timestep*(FLOAT) dn;
 
     // Advance particle positions and velocities
     for (k=0; k<ndim; k++) sphdata[i].r[k] = sphdata[i].r0[k] + 
-      (sphdata[i].v0[k] + 0.5*sphdata[i].a[k]*sphdata[i].dt)*dt;
+      sphdata[i].v0[k]*dt + 0.5*sphdata[i].a0[k]*dt*dt;
     for (k=0; k<ndim; k++) sphdata[i].v[k] = 
       sphdata[i].v0[k] + sphdata[i].a0[k]*dt;
 
     // Set particle as active at end of step
-    if (n%nstep == 0) sphdata[i].active = true;
+    if (dn == nstep) sphdata[i].active = true;
     else sphdata[i].active = false;
   }
   // --------------------------------------------------------------------------
@@ -108,6 +108,7 @@ void SphLeapfrogKDK<ndim>::CorrectionTerms
  SphParticle<ndim> *sphdata,        ///< [inout] SPH particle data array
  FLOAT timestep)                    ///< [in] Base timestep value
 {
+  int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
@@ -115,10 +116,11 @@ void SphLeapfrogKDK<ndim>::CorrectionTerms
   debug2("[SphLeapfrogKDK::CorrectionTerms]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(k,nstep)
+#pragma omp parallel for default(shared) private(dn,k,nstep)
   for (i=0; i<Nsph; i++) {
+    dn = n - sphdata[i].nlast;
     nstep = sphdata[i].nstep;
-    if (n%nstep == 0)
+    if (dn == nstep)
       for (k=0; k<ndim; k++) sphdata[i].v[k] += timestep*(FLOAT) nstep*
         (FLOAT) 0.5*(sphdata[i].a[k] - sphdata[i].a0[k]);
   }
@@ -140,6 +142,7 @@ void SphLeapfrogKDK<ndim>::EndTimestep
  int Nsph,                          ///< [in] No. of SPH particles
  SphParticle<ndim> *sphdata)        ///< [inout] SPH particle data array
 {
+  int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
@@ -147,20 +150,73 @@ void SphLeapfrogKDK<ndim>::EndTimestep
   debug2("[SphLeapfrogKDK::EndTimestep]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(k,nstep)
+#pragma omp parallel for default(shared) private(dn,k,nstep)
   for (i=0; i<Nsph; i++) {
+    dn = n - sphdata[i].nlast;
     nstep = sphdata[i].nstep;
-    if (n%nstep == 0) {
+
+    if (dn == nstep) {
       for (k=0; k<ndim; k++) sphdata[i].r0[k] = sphdata[i].r[k];
       for (k=0; k<ndim; k++) sphdata[i].v0[k] = sphdata[i].v[k];
       for (k=0; k<ndim; k++) sphdata[i].a0[k] = sphdata[i].a[k];
-      //sph[i].active = false;
-      sphdata[i].active = true;
+      sphdata[i].active = false;
+      sphdata[i].nlast = n;
     }
   }
   // --------------------------------------------------------------------------
 
   return;
+}
+
+
+
+//=============================================================================
+//  SphLeapfrogKDK::CheckTimesteps
+/// Record all important SPH particle quantities at the end of the step for  
+/// the start of the new timestep.
+// ============================================================================
+template <int ndim>
+int SphLeapfrogKDK<ndim>::CheckTimesteps
+(int level_diff_max,                ///< [in] Max. allowed SPH neib dt diff
+ int n,                             ///< [in] Integer time in block time struct
+ int Nsph,                          ///< [in] No. of SPH particles
+ SphParticle<ndim> *sphdata)        ///< [inout] SPH particle data array
+{
+  int activecount = 0;              // ..
+  int dn;                           // Integer time since beginning of step
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+  int level_new;                    // ..
+  int nnewstep;                     // ..
+  int nstep;                        // Particle (integer) step size
+
+  debug2("[SphLeapfrogKDK::CheckTimesteps]");
+
+  // --------------------------------------------------------------------------
+#pragma omp parallel for default(shared) private(dn,k,level_new,nnewstep,nstep)
+  for (i=0; i<Nsph; i++) {
+    dn = n - sphdata[i].nlast;
+    nstep = sphdata[i].nstep;
+
+    // Check if neighbour timesteps are too small.  If so, then reduce 
+    // timestep if possible
+    if (sphdata[i].levelneib - sphdata[i].level > level_diff_max) {
+      level_new = sphdata[i].levelneib - level_diff_max;
+      nnewstep = sphdata[i].nstep/pow(2,level_new - sphdata[i].level);
+
+      // If new level is correctly synchronised, then change all quantities
+      if (n%nnewstep == 0) {
+	nstep = dn;
+	sphdata[i].level = level_new;
+	if (dn > 0) sphdata[i].nstep = nstep;
+	sphdata[i].active = true;
+	activecount++;
+      }
+    }
+  }
+  // --------------------------------------------------------------------------
+
+  return activecount;
 }
 
 

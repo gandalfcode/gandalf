@@ -25,7 +25,9 @@ struct SphParticle {
   int iorig;                        ///< Original particle i.d.
   int itype;                        ///< SPH particle type
   int level;                        ///< Current timestep level of particle
+  int levelneib;                    ///< Min. timestep level of neighbours
   int nstep;                        ///< Integer step-size of particle
+  int nlast;                        ///< Integer time at beginning of step
   int sinkid;                       ///< i.d. of sink particle
   FLOAT r[ndim];                    ///< Position
   FLOAT v[ndim];                    ///< Velocity
@@ -76,6 +78,9 @@ struct SphParticle {
     iorig = -1;
     itype = -1;
     level = 0;
+    levelneib = 0;
+    nstep = 0;
+    nlast = 0;
     sinkid = -1;
     for (int k=0; k<ndim; k++) r[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) v[k] = (FLOAT) 0.0;

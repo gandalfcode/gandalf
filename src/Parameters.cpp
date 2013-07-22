@@ -202,6 +202,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["nbody_mult"] = 0.1;
   floatparams["subsys_mult"] = 0.05;
   intparams["Nlevels"] = 1;
+  intparams["level_diff_max"] = 1;
   intparams["sph_single_timestep"] = 0;
   intparams["nbody_single_timestep"] = 0;
 

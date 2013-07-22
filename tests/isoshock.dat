@@ -1,26 +1,89 @@
-     : boxmin[0] = -6.0
-     : boxmax[0] = 6.0
-     : Nlattice1[0] = 128
-     : Nlattice2[0] = 128
-     : vfluid1[0] = 4
-     : vfluid2[0] = -4
-     : ndim = 1
+#------------------------------------------------------------------------------
+# Isothermal wall shock tube test
+# Creates a wall-shock test problem with an isothermal gas.
+#------------------------------------------------------------------------------
 
-     : ic = shocktube
-     : gas_eos = isothermal
-     : neib_search = grid
-     : kernel = m4
 
-     : h_converge = 0.005
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = ISOSHOCK1
+Select SPH simulation                       : sim = sph
+Select shocktube initial conditions         : ic = shocktube
+1D shocktube test                           : ndim = 1
+x-velocity of LHS fluid                     : vfluid1[0] = 32
+x-velocity of RHS fluid                     : vfluid2[0] = -32
+Pressure of LHS fluid                       : press1 = 1.0
+Pressure of RHS fluid                       : press2 = 1.0
+Density of LHS fluid                        : rhofluid1 = 1.0
+Density of RHS fluid                        : rhofluid2 = 1.0
+No. of particles in LHS fluid               : Nlattice1[0] = 512
+No. of particles in RHS fluid               : Nlattice2[0] = 512
+Dimensionless units                         : dimensionless = 1
 
-     : avisc = pf2010
-     : alpha_visc = 1.0
-     : beta_visc = 2.0
 
-     : Nlevels = 1
-     : courant_mult = 0.15
-     : accel_mult = 0.3
-     : tend = 1.0
-     : dt_snap = 0.1
+#------------------------------
+# Simulation boundary variables
+#------------------------------
+LHS position of boundary in x-dimension     : boxmin[0] = -64.0
+RHS position of boundary in x-dimension     : boxmax[0] = 64.0
 
- 
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 1.0
+Regular snapshot output frequency           : dt_snap = 1.2
+Screen output frequency (in no. of steps)   : noutputstep = 128
+#asas : Nstepsmax = 48
+
+
+#------------------------
+# Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = isothermal
+Ratio of specific heats of gas              : gamma_eos = 1.6666666666666666
+
+
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH algorithm choice                        : sph = gradh
+SPH smoothing kernel choice                 : kernel = m4
+SPH smoothing length iteration tolerance    : h_converge = 0.0001
+
+
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
+Artificial viscosity choice                 : avisc = mon97
+Artificial conductivity choice              : acond = none
+Artificial viscosity alpha value            : alpha_visc = 1.0
+Artificial viscosity beta value             : beta_visc = 2.0
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+SPH particle integration option             : sph_integration = lfkdk
+Integration of gas thermal energy           : energy_integration = PEC
+SPH Courant timestep condition multiplier   : courant_mult = 0.1
+SPH acceleration condition multiplier       : accel_mult = 0.2
+SPH energy equation timestep multiplier     : energy_mult = 0.5
+No. of block timestep levels                : Nlevels = 8
+Max. timestep difference                    : level_diff_max = 1
+asda : sph_single_timestep = 0
+
+
+#---------------------
+# Optimisation options
+#---------------------
+Tabulate SPH kernel                         : tabulated_kernel = 0
+SPH neighbour search algorithm              : neib_search = grid
+
+
+#--------------
+# Misc. options
+#--------------
+Switch-off self-gravity of gas              : self_gravity = 0

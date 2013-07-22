@@ -78,7 +78,8 @@ class SphNeighbourSearch
   virtual void UpdateAllSphGravForces(Sph<ndim> *) = 0;
   virtual void UpdateAllSphDudt(Sph<ndim> *) = 0;
   virtual void UpdateAllSphDerivatives(Sph<ndim> *) = 0;
-  virtual void UpdateTree(Sph<ndim>*, Parameters &) = 0;
+  virtual void UpdateTree(Sph<ndim> *, Parameters &) = 0;
+  virtual void UpdateActiveParticleCounters(Sph<ndim> *) = 0;
 
   bool neibcheck;
 
@@ -108,6 +109,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
   void UpdateTree(Sph<ndim> *, Parameters &);
+  void UpdateActiveParticleCounters(Sph<ndim> *);
 
 };
 
@@ -136,6 +138,7 @@ class GridSearch: public SphNeighbourSearch<ndim>
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
   void UpdateTree(Sph<ndim> *, Parameters &);
+  void UpdateActiveParticleCounters(Sph<ndim> *);
 
   // Additional functions for grid neighbour search
   // --------------------------------------------------------------------------
@@ -198,6 +201,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
   void UpdateTree(Sph<ndim> *, Parameters &);
+  void UpdateActiveParticleCounters(Sph<ndim> *);
 
   // Additional functions for grid neighbour search
   // --------------------------------------------------------------------------

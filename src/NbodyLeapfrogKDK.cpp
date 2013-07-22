@@ -180,6 +180,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles
  NbodyParticle<ndim> **star,        ///< Main star/system array
  DOUBLE timestep)                   ///< Smallest timestep value
 {
+  int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
@@ -193,8 +194,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles
 
     // Compute time since beginning of step
     nstep = star[i]->nstep;
-    if (n%nstep == 0) dt = timestep*(DOUBLE) nstep;
-    else dt = timestep*(DOUBLE) (n%nstep);
+    dn = n - star[i]->nlast;
+    dt = timestep*(FLOAT) dn;
 
     // Advance positions to second order and velocities to first order
     for (k=0; k<ndim; k++) star[i]->r[k] = star[i]->r0[k] +
@@ -203,7 +204,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles
       star[i]->v[k] = star[i]->v0[k] + star[i]->a0[k]*dt;
 
     // If at end of step, set system particle as active
-    if (n%nstep == 0) star[i]->active = true;
+    if (dn == nstep) star[i]->active = true;
+    else star[i]->active = false;
   }
   // --------------------------------------------------------------------------
 
@@ -227,6 +229,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectionTerms
  NbodyParticle<ndim> **star,        ///< Main star/system array
  DOUBLE timestep)                   ///< Smallest timestep value
 {
+  int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
@@ -237,8 +240,9 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectionTerms
   // those at end of step.
   // --------------------------------------------------------------------------
   for (i=0; i<N; i++) {
+    dn = n - star[i]->nlast;
     nstep = star[i]->nstep;
-    if (n%nstep == 0)
+    if (dn == nstep)
       for (k=0; k<ndim; k++) star[i]->v[k] +=
 	0.5*(star[i]->a[k] - star[i]->a0[k])*timestep*(DOUBLE) nstep;
   }
@@ -260,6 +264,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
  int N,                             ///< No. of stars/systems
  NbodyParticle<ndim> **star)        ///< Main star/system array
 {
+  int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
@@ -269,8 +274,10 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
   // Loop over all star particles and set values for those at end of step
   // --------------------------------------------------------------------------
   for (i=0; i<N; i++) {
+    dn = n - star[i]->nlast;
     nstep = star[i]->nstep;
-    if (n%nstep == 0) {
+
+    if (dn == nstep) {
       for (k=0; k<ndim; k++) star[i]->r0[k] = star[i]->r[k];
       for (k=0; k<ndim; k++) star[i]->v0[k] = star[i]->v[k];
       for (k=0; k<ndim; k++) star[i]->a0[k] = star[i]->a[k];

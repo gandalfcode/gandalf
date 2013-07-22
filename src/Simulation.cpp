@@ -331,9 +331,10 @@ string SimulationBase::Output(void)
 
   debug2("[Simulation::Output]");
 
-  if (Nsteps%noutputstep == 0) cout << "t : " << t*simunits.t.outscale << " " 
-				    << simunits.t.outunit << "    Nsteps : " 
-				    << Nsteps << endl;
+  if (Nsteps%noutputstep == 0) 
+    cout << "t : " << t*simunits.t.outscale << " " << simunits.t.outunit 
+	 << "    dt : " << timestep*simunits.t.outscale << " " 
+	 << simunits.t.outunit << "    Nsteps : " << Nsteps << endl;
 
   // Output a data snapshot if reached required time
   if (t >= tsnapnext) {
@@ -365,9 +366,9 @@ void Simulation<ndim>::AllocateParticleMemory(void)
 
   // If sink particles are employed, allow enough memory for new sinks
   if (sink_particles == 1) {
-    N = 1024;
+    N = max(nbody->Nstar,1024);
   }
-  else N = 0;
+  else N = nbody->Nstar;
 
   // Now call all memory allocation routines
   sph->AllocateMemory(sph->Nsph);
@@ -1304,8 +1305,8 @@ void SimulationBase::SetupSimulation(void)
 
 
 
-template <int ndim>
-void GodunovSphSimulation<ndim>::ProcessParameters()
-{
-  Simulation<ndim>::ProcessParameters();
-}
+//template <int ndim>
+//void GodunovSphSimulation<ndim>::ProcessParameters()
+//{
+//  Simulation<ndim>::ProcessParameters();
+//}

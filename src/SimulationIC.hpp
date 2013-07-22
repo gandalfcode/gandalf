@@ -92,10 +92,16 @@ void Simulation<ndim>::ShockTube(void)
   int Nbox2;                        // No. of particles in RHS box
   int Nlattice1[ndim];              // Particles per dimension for LHS lattice
   int Nlattice2[ndim];              // Particles per dimension for RHS lattice
+  FLOAT dr[ndim];                   // ..
+  FLOAT drmag;                      // ..
+  FLOAT drsqd;                      // ..
   FLOAT volume;                     // Volume of box
   FLOAT vfluid1[ndim];              // Velocity vector of LHS fluid
   FLOAT vfluid2[ndim];              // Velocity vector of RHS fluid
+  FLOAT wnorm;                      // ..
   FLOAT *r;                         // Position vectors
+  FLOAT *uaux;                      // ..
+  FLOAT *vaux;                      // ..
   DomainBox<ndim> box1;             // LHS box
   DomainBox<ndim> box2;             // RHS box
 
@@ -171,6 +177,78 @@ void Simulation<ndim>::ShockTube(void)
       else
 	    sph->sphdata[i].u = press2/rhofluid2/gammaone;
     }
+  }
+
+  bool smooth_ic = true;
+
+  // Smooth the initial conditions
+  // --------------------------------------------------------------------------
+  if (smooth_ic) {
+
+    // Set initial smoothing lengths and create initial ghost particles
+    // ------------------------------------------------------------------------
+    sph->Nghost = 0;
+    sph->Nghostmax = sph->Nsphmax - sph->Nsph;
+    sph->Ntot = sph->Nsph;
+    for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
+    
+    sph->InitialSmoothingLengthGuess();
+    sphneib->UpdateTree(sph,*simparams);
+    
+    // Search ghost particles
+    ghosts.SearchGhostParticles(simbox,sph);
+    
+    // Update neighbour tre
+    sphneib->UpdateTree(sph,*simparams);
+    
+    // Calculate all SPH properties
+    sphneib->UpdateAllSphProperties(sph,nbody);
+    
+    sphneib->UpdateTree(sph,*simparams);
+    sphneib->UpdateAllSphProperties(sph,nbody);
+    
+    ghosts.CopySphDataToGhosts(sph);
+    
+    // Calculate all SPH properties
+    sphneib->UpdateAllSphProperties(sph,nbody);
+    
+
+    uaux = new FLOAT[sph->Nsph];
+    vaux = new FLOAT[sph->Nsph*ndim];
+    
+    // Now compute smoothed quantities
+    for (i=0; i<sph->Nsph; i++) {
+      uaux[i] = 0.0;
+      for (k=0; k<ndim; k++) vaux[ndim*i + k] = 0.0;
+      wnorm = 0.0;
+      for (j=0; j<sph->Ntot; j++) {
+	for (k=0; k<ndim; k++) 
+	  dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
+	drsqd = DotProduct(dr,dr,ndim);
+	if (drsqd > pow(sph->kernp->kernrange*sph->sphdata[i].h,2)) continue;
+	drmag = sqrt(drsqd);
+	uaux[i] += sph->sphdata[j].m*sph->sphdata[j].u*
+	  sph->kernp->w0(drmag*sph->sphdata[i].invh)*
+	  pow(sph->sphdata[i].invh,ndim)*sph->sphdata[i].invrho;
+	for (k=0; k<ndim; k++) vaux[ndim*i + k] += 
+	  sph->sphdata[j].m*sph->sphdata[j].v[k]*
+	  sph->kernp->w0(drmag*sph->sphdata[i].invh)*
+	  pow(sph->sphdata[i].invh,ndim)*sph->sphdata[i].invrho;
+	wnorm += sph->sphdata[j].m*sph->kernp->w0(drmag*sph->sphdata[i].invh)*
+	  pow(sph->sphdata[i].invh,ndim)*sph->sphdata[i].invrho;
+      }
+      uaux[i] /= wnorm;
+      for (k=0; k<ndim; k++) vaux[ndim*i + k] /= wnorm;
+    }
+
+    for (i=0; i<sph->Nsph; i++) {
+      sph->sphdata[i].u = uaux[i];
+      for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = vaux[ndim*i + k];
+    }
+
+    delete[] vaux;
+    delete[] uaux;
+
   }
 
   delete[] r;

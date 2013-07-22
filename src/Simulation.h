@@ -97,6 +97,7 @@ class SimulationBase
   bool setup;                       ///< Flag if simulation is setup
   bool ParametersProcessed;         ///< Flag if params are already processed
   int integration_step;             ///< Steps per complete integration step
+  int level_diff_max;               ///< Max. allowed neib timestep level diff
   int level_max;                    ///< Maximum timestep level
   int level_step;                   ///< Level of smallest timestep unit
   int n;                            ///< Integer time counter
@@ -273,6 +274,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::tsnapnext;
   using Simulation<ndim>::dt_snap;
   using Simulation<ndim>::dt_python;
+  using Simulation<ndim>::level_diff_max;
   using Simulation<ndim>::level_max;
   using Simulation<ndim>::integration_step;
   using Simulation<ndim>::nresync;
@@ -308,6 +310,7 @@ class GodunovSphSimulation : public Simulation<ndim>
   using SimulationBase::simparams;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
+  using Simulation<ndim>::sinks;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
   using Simulation<ndim>::sphint;
@@ -333,11 +336,13 @@ class GodunovSphSimulation : public Simulation<ndim>
   using Simulation<ndim>::tsnapnext;
   using Simulation<ndim>::dt_snap;
   using Simulation<ndim>::dt_python;
+  using Simulation<ndim>::level_diff_max;
   using Simulation<ndim>::level_max;
   using Simulation<ndim>::integration_step;
   using Simulation<ndim>::nresync;
   using Simulation<ndim>::dt_max;
   using Simulation<ndim>::sph_single_timestep;
+  using Simulation<ndim>::sink_particles;
 
 public:
 

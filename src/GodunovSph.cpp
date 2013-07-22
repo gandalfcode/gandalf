@@ -339,10 +339,10 @@ void GodunovSph<ndim, kernelclass >::ComputeSphGravForces
 
 
 
-// ============================================================================
-// GodunovSph::InitialiseRiemannProblem
-// ..
-// ============================================================================
+//=============================================================================
+//  GodunovSph::InitialiseRiemannProblem
+/// ..
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
 (SphParticle<ndim> partl,

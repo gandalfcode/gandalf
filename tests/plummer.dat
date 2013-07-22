@@ -17,16 +17,17 @@ Softening radius of star                    : rstar = 0.01
 Fraction of mass within stars               : starfrac = 1.0
 Fraction of mass within gas                 : gasfrac = 0.0
 No. of SPH particles                        : Nsph = 0
-No. of star particles                       : Nstar = 128
+No. of star particles                       : Nstar = 2048
 Perform dimensionless simulation            : dimensionless = 1
 
 
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 20.0
+Simulation end time                         : tend = 10.0
+Time of first snapshot                      : tsnapfirst = 0.0
 Regular snapshot output frequency           : dt_snap = 10.0
-Screen output frequency (in no. of steps)   : noutputstep = 128
+Screen output frequency (in no. of steps)   : noutputstep = 512
 
 
 #-----------------------------
@@ -52,4 +53,4 @@ Sub-system integration scheme               : sub_system_integration = hermite4t
 #-------------------------
 N-body timestep multiplier                  : nbody_mult = 0.1
 Sub-system timestep multiplier              : subsys_mult = 0.1
-No. of block timestep levels                : Nlevels = 1
+No. of block timestep levels                : Nlevels = 8

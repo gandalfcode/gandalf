@@ -152,6 +152,18 @@ void BinaryTree<ndim>::UpdateTree
 
 
 //=============================================================================
+//  BinaryTree::UpdateActiveParticleCounters
+/// ..
+//=============================================================================
+template <int ndim>
+void BinaryTree<ndim>::UpdateActiveParticleCounters(Sph<ndim> *sph)
+{
+  return;
+}
+
+
+
+//=============================================================================
 //  BinaryTree::ComputeTreeSize
 /// Compute the maximum size (i.e. no. of levels, cells and leaf cells) of 
 /// the binary tree.

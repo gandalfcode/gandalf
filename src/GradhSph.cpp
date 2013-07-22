@@ -138,6 +138,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
 
     else if (iteration < 5*iteration_max) {
+      //cout << "ITERATING : " << iteration << "    " << parti.rho << "    " << parti.h << "      " << h_lower_bound << "     " << h_upper_bound << "      " << fabs(parti.h - h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim)) << endl;
       if (parti.rho < small_number ||
 	  parti.rho*pow(parti.h,ndim) > pow(h_fac,ndim)*parti.m)
 	h_upper_bound = parti.h;
@@ -151,6 +152,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
 	   << h_upper_bound << "     " << h_lower_bound << "    " 
 	   << parti.hfactor << "     " 
 	   << parti.m*parti.hfactor*kern.w0(0.0) << endl;
+      cout << "rp : " << parti.r[0] << "     " << parti.v[0] << "    " << parti.a[0] << endl;
       string message = "Problem with convergence of h-rho iteration";
       ExceptionHandler::getIstance().raise(message);
     }
@@ -279,6 +281,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
 
     	winvrho = (FLOAT) 0.25*(wkerni + wkernj)*
 	  (parti.invrho + neibpart[j].invrho);
+	//winvrho = (FLOAT) (wkerni + wkernj)/
+	// (parti.rho + neibpart[j].rho);
 	
         // Artificial viscosity term
         if (avisc == mon97) {
@@ -311,9 +315,11 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
 
       // Add total hydro contribution to acceleration for particle i
       for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
+      parti.levelneib = max(parti.levelneib,neibpart[j].level);
       
       // If neighbour is also active, add contribution to force here
       for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
+      neibpart[j].levelneib = max(neibpart[j].levelneib,parti.level);
 
     }
     // ------------------------------------------------------------------------

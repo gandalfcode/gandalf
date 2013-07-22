@@ -8,7 +8,7 @@
 # Initial conditions variables
 #-----------------------------
 Simulation run id string                    : run_id = ADSOD1
-Select SPH simulation                       : sim = sph
+Select SPH simulation                       : sim = godunov_sph
 Select shocktube initial conditions         : ic = shocktube
 1D shocktube test                           : ndim = 1
 x-velocity of LHS fluid                     : vfluid1[0] = 0.0
@@ -34,7 +34,7 @@ RHS position of boundary in x-dimension     : boxmax[0] = 2.0
 #--------------------------
 Simulation end time                         : tend = 0.5
 Regular snapshot output frequency           : dt_snap = 0.6
-Screen output frequency (in no. of steps)   : noutputstep = 128
+Screen output frequency (in no. of steps)   : noutputstep = 1
 
 
 #------------------------
@@ -49,7 +49,7 @@ Ratio of specific heats of gas              : gamma_eos = 1.4
 # Smoothed Particle Hydrodynamics options
 #----------------------------------------
 SPH algorithm choice                        : sph = gradh
-SPH smoothing kernel choice                 : kernel = m4
+SPH smoothing kernel choice                 : kernel = gaussian
 SPH smoothing length iteration tolerance    : h_converge = 0.002
 
 
@@ -67,17 +67,25 @@ Artificial viscosity beta value             : beta_visc = 2.0
 #-------------------------
 SPH particle integration option             : sph_integration = lfkdk
 Integration of gas thermal energy           : energy_integration = PEC
-SPH Courant timestep condition multiplier   : courant_mult = 0.1
-SPH acceleration condition multiplier       : accel_mult = 0.2
+SPH Courant timestep condition multiplier   : courant_mult = 0.4
+SPH acceleration condition multiplier       : accel_mult = 0.8
 SPH energy equation timestep multiplier     : energy_mult = 0.5
 No. of block timestep levels                : Nlevels = 1
+
+
+#-----------------------
+# Riemann solver options
+#-----------------------
+Choice of Riemann solver                    : riemann_solver = exact
+Order or Riemann solver                     : riemann_order = 2
+Choice of slope limiter                     : slope_limiter = none
 
 
 #---------------------
 # Optimisation options
 #---------------------
-Tabulate SPH kernel                         : tabulated_kernel = 0
-SPH neighbour search algorithm              : neib_search = tree
+Tabulate SPH kernel                         : tabulated_kernel = 1
+SPH neighbour search algorithm              : neib_search = grid
 
 
 #--------------
