@@ -265,7 +265,7 @@ void Parameters::SetDefaultValues(void)
 
   // Neighbour searching and tree-gravity parameters
   // --------------------------------------------------------------------------
-  stringparams["neib_search"] = "grid";
+  stringparams["neib_search"] = "bruteforce";
   stringparams["gravity_mac"] = "geometric";
   intparams["Nleafmax"] = 1;
   floatparams["thetamaxsqd"] = 0.2;

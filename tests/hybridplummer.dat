@@ -45,6 +45,7 @@ SPH algorithm choice                        : sph = gradh
 SPH smoothing length iteration tolerance    : h_converge = 0.0001
 SPH smoothing kernel choice                 : kernel = m4
 Tabulate SPH kernel                         : tabulated_kernel = 0
+Switch on self-gravity                      : self_gravity = 1
 
 
 #---------------------------------
@@ -77,7 +78,8 @@ SPH acceleration condition multiplier       : accel_mult = 0.2
 SPH energy equation timestep multiplier     : energy_mult = 0.4
 N-body timestep multiplier                  : nbody_mult = 0.1
 Sub-system timestep multiplier              : subsys_mult = 0.1
-No. of block timestep levels                : Nlevels = 1
+Set all SPH particles to same level         : sph_single_timestep = 0
+No. of block timestep levels                : Nlevels = 6
 
 
 #-------------

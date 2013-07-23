@@ -132,7 +132,6 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
     // Sum grav. contributions for all other stars (excluding star itself)
     // ------------------------------------------------------------------------
     for (j=0; j<Ngas; j++) {
-
       for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star[i]->r[k];
       for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - star[i]->v[k];
       drsqd = DotProduct(dr,dr,ndim);

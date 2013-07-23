@@ -9,7 +9,7 @@ from seren.analysis.compute import lagrangian_radii
 import time
 
 # Create new shocktube simulation from 'adshock.dat' file
-newsim('plummer.dat')
+newsim('hybridplummer.dat')
 setupsim()
 
 # Plot the density with the analytical solution

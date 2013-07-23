@@ -295,6 +295,7 @@ void BruteForceSearch<ndim>::UpdateAllSphForces
     neibpart[j].div_v = (FLOAT) 0.0;
     neibpart[j].dudt = (FLOAT) 0.0;
     neibpart[j].gpot = (FLOAT) 0.0;
+    neibpart[j].levelneib = 0;
     for (k=0; k<ndim; k++) neibpart[j].agrav[k] = (FLOAT) 0.0;
     for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
   }
@@ -314,11 +315,8 @@ void BruteForceSearch<ndim>::UpdateAllSphForces
     // Determine interaction list (to ensure we don't compute pair-wise
     // forces twice)
     Nneib = 0;
-    for (j=0; j<sph->Nsph; j++) {
-      if ((j < i && !sph->sphdata[j].active) || j > i) {
-        neiblist[Nneib++] = j;
-      }
-    }
+    for (j=0; j<sph->Nsph; j++)
+      if ((j < i && !sph->sphdata[j].active) || j > i) neiblist[Nneib++] = j;
 
     // Compute forces between SPH neighbours (hydro and gravity)
     sph->ComputeSphHydroGravForces(i,Nneib,neiblist,sph->sphdata[i],neibpart);
@@ -336,6 +334,8 @@ void BruteForceSearch<ndim>::UpdateAllSphForces
       sph->sphdata[j].dudt += neibpart[j].dudt;
       sph->sphdata[j].div_v += neibpart[j].div_v;
     }
+    sph->sphdata[j].levelneib = max(sph->sphdata[j].levelneib,
+				    neibpart[j].levelneib);
   }
   
 

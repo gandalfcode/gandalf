@@ -138,12 +138,11 @@ int GradhSph<ndim, kernelclass>::ComputeH
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
 
     else if (iteration < 5*iteration_max) {
-      //cout << "ITERATING : " << iteration << "    " << parti.rho << "    " << parti.h << "      " << h_lower_bound << "     " << h_upper_bound << "      " << fabs(parti.h - h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim)) << endl;
       if (parti.rho < small_number ||
 	  parti.rho*pow(parti.h,ndim) > pow(h_fac,ndim)*parti.m)
-	h_upper_bound = parti.h;
+        h_upper_bound = parti.h;
       else 
-	h_lower_bound = parti.h;
+        h_lower_bound = parti.h;
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
 
@@ -211,6 +210,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
     }
   }
   parti.chi = -Sph<ndim>::invndim*parti.h*parti.chi*parti.invrho*parti.invomega;
+
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;
@@ -280,9 +280,9 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
       if (dvdr < (FLOAT) 0.0) {
 
     	winvrho = (FLOAT) 0.25*(wkerni + wkernj)*
-	  (parti.invrho + neibpart[j].invrho);
-	//winvrho = (FLOAT) (wkerni + wkernj)/
-	// (parti.rho + neibpart[j].rho);
+          (parti.invrho + neibpart[j].invrho);
+        //winvrho = (FLOAT) (wkerni + wkernj)/
+        // (parti.rho + neibpart[j].rho);
 	
         // Artificial viscosity term
         if (avisc == mon97) {
@@ -444,10 +444,12 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     // Add total hydro contribution to acceleration for particle i
     for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;
     parti.gpot += neibpart[j].m*gaux;
+    parti.levelneib = max(parti.levelneib,neibpart[j].level);
     
     // If neighbour is also active, add contribution to force here
     for (k=0; k<ndim; k++) neibpart[j].agrav[k] -= parti.m*dr[k]*paux;
     neibpart[j].gpot += parti.m*gaux;
+    neibpart[j].levelneib = max(neibpart[j].levelneib,parti.level);
 
   }
   // ==========================================================================

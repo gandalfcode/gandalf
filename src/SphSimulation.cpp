@@ -816,49 +816,39 @@ void SphSimulation<ndim>::MainLoop(void)
       
       // Zero accelerations (perhaps)
       for (i=0; i<sph->Ntot; i++) {
-	if (sph->sphdata[i].active) {
-	  for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
-	  for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
-	  sph->sphdata[i].gpot = (FLOAT) 0.0;
-	  sph->sphdata[i].gpe = (FLOAT) 0.0;
-	  sph->sphdata[i].dudt = (FLOAT) 0.0;
-	  sph->sphdata[i].levelneib = 0;
-	}
+        if (sph->sphdata[i].active) {
+          for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
+          for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
+          sph->sphdata[i].gpot = (FLOAT) 0.0;
+          sph->sphdata[i].gpe = (FLOAT) 0.0;
+          sph->sphdata[i].dudt = (FLOAT) 0.0;
+          sph->sphdata[i].levelneib = 0;
+        }
       }
       
       // Calculate SPH gravity and hydro forces, depending on which are activated
       if (sph->hydro_forces == 1 && sph->self_gravity == 1)
-	sphneib->UpdateAllSphForces(sph);
+        sphneib->UpdateAllSphForces(sph);
       else if (sph->hydro_forces == 1)
-	sphneib->UpdateAllSphHydroForces(sph);
+        sphneib->UpdateAllSphHydroForces(sph);
       else if (sph->self_gravity == 1)
-	sphneib->UpdateAllSphGravForces(sph);
+        sphneib->UpdateAllSphGravForces(sph);
       
       // Compute contribution to grav. accel from stars
       for (i=0; i<sph->Nsph; i++)
-	if (sph->sphdata[i].active)
-	  sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
-				     sph->sphdata[i]);
+        if (sph->sphdata[i].active)
+          sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
+                                     sph->sphdata[i]);
       
       // Add accelerations
       if (sph->self_gravity == 1) {
-	for (i=0; i<sph->Nsph; i++) {
-	  if (sph->sphdata[i].active) {
-	    for (k=0; k<ndim; k++)
-	      sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
-	  }
-	}
+        for (i=0; i<sph->Nsph; i++) {
+          if (sph->sphdata[i].active) {
+            for (k=0; k<ndim; k++)
+              sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
+          }
+        }
       }
-
-      // Apply correction steps for both particle and energy integration
-      sphint->CorrectionTerms(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
-      if (simparams->stringparams["gas_eos"] == "energy_eqn")
-	uint->EnergyCorrectionTerms(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
-      
-      // Set all end-of-step variables
-      if (simparams->stringparams["gas_eos"] == "energy_eqn")
-	uint->EndTimestep(n,sph->Nsph,sph->sphdata);
-      sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
 
       // Check if all neighbouring timesteps are acceptable
       activecount = sphint->CheckTimesteps(level_diff_max,n,
@@ -904,6 +894,25 @@ void SphSimulation<ndim>::MainLoop(void)
     // ------------------------------------------------------------------------
 
     nbody->EndTimestep(n,nbody->Nnbody,nbody->nbodydata);
+
+  }
+  // --------------------------------------------------------------------------
+
+
+
+  // Finally compute correction steps for all SPH particles
+  // --------------------------------------------------------------------------
+  if (sph->Nsph > 0) {
+
+    // Apply correction steps for both particle and energy integration
+    sphint->CorrectionTerms(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
+    if (simparams->stringparams["gas_eos"] == "energy_eqn")
+      uint->EnergyCorrectionTerms(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
+
+    // Set all end-of-step variables
+    if (simparams->stringparams["gas_eos"] == "energy_eqn")
+      uint->EndTimestep(n,sph->Nsph,sph->sphdata);
+    sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
 
   }
   // --------------------------------------------------------------------------
@@ -1066,18 +1075,20 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     // the timestep levels with SPH particles.
     if (sph_single_timestep == 1) 
       for (i=0; i<sph->Nsph; i++) {
-	sph->sphdata[i].level = level_max_sph;
-	sph->sphdata[i].levelneib = level_max_sph;
+        sph->sphdata[i].level = level_max_sph;
+        sph->sphdata[i].levelneib = level_max_sph;
+        sph->sphdata[i].nlast = n;
+        sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
       }
     else {
       for (i=0; i<sph->Nsph; i++) {
-	dt = sph->sphdata[i].dt;
-	level = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
-	level = max(level,0);
-	sph->sphdata[i].level = level;
-	sph->sphdata[i].levelneib = level;
-	sph->sphdata[i].nlast = n;
-	sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+        dt = sph->sphdata[i].dt;
+        level = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
+        level = max(level,0);
+        sph->sphdata[i].level = level;
+        sph->sphdata[i].levelneib = level;
+        sph->sphdata[i].nlast = n;
+        sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
       }
     }
 
@@ -1089,7 +1100,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       nbody->nbodydata[i]->level = level;
       nbody->nbodydata[i]->nlast = n;
       nbody->nbodydata[i]->nstep = 
-	pow(2,level_step - nbody->nbodydata[i]->level);
+        pow(2,level_step - nbody->nbodydata[i]->level);
     }
 
     nresync = pow(2,level_step);
@@ -1111,28 +1122,28 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
       // Skip particles that are not at end of step
       if (sph->sphdata[i].nlast == n) {
-	nstep = sph->sphdata[i].nstep;
-	last_level = sph->sphdata[i].level;
+        nstep = sph->sphdata[i].nstep;
+        last_level = sph->sphdata[i].level;
 	
-	// Compute new timestep value and level number
-	dt = sphint->Timestep(sph->sphdata[i],sph->hydro_forces);
-	if (sph->gas_eos == "energy_eqn") 
-	  dt = min(dt,uint->Timestep(sph->sphdata[i]));
-	sph->sphdata[i].dt = dt;
-	level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
-	level = max(level,sph->sphdata[i].levelneib - level_diff_max);
+        // Compute new timestep value and level number
+        dt = sphint->Timestep(sph->sphdata[i],sph->hydro_forces);
+        if (sph->gas_eos == "energy_eqn")
+          dt = min(dt,uint->Timestep(sph->sphdata[i]));
+        sph->sphdata[i].dt = dt;
+        level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
+        level = max(level,sph->sphdata[i].levelneib - level_diff_max);
 
-	// Move up one level (if levels are correctly synchronised) or 
-	// down several levels if required
-	if (level < last_level && last_level > 1 && n%(2*nstep) == 0) 
-	  sph->sphdata[i].level = last_level - 1;
-	else if (level > last_level)
-	  sph->sphdata[i].level = level;
-	else
-	  sph->sphdata[i].level = last_level;
+        // Move up one level (if levels are correctly synchronised) or
+        // down several levels if required
+        if (level < last_level && last_level > 1 && n%(2*nstep) == 0)
+          sph->sphdata[i].level = last_level - 1;
+        else if (level > last_level)
+          sph->sphdata[i].level = level;
+        else
+          sph->sphdata[i].level = last_level;
 
-	sph->sphdata[i].nlast = n;
-	sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+        sph->sphdata[i].nlast = n;
+        sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
       }
 
       // Find maximum level of all SPH particles
@@ -1148,26 +1159,26 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
       // Skip particles that are not at end of step
       if (nbody->nbodydata[i]->nlast == n) {
-	nstep = nbody->nbodydata[i]->nstep;
-	last_level = nbody->nbodydata[i]->level;
+        nstep = nbody->nbodydata[i]->nstep;
+        last_level = nbody->nbodydata[i]->level;
 
-	// Compute new timestep value and level number
-	dt = nbody->Timestep(nbody->nbodydata[i]);
-	nbody->nbodydata[i]->dt = dt;
-	level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
+        // Compute new timestep value and level number
+        dt = nbody->Timestep(nbody->nbodydata[i]);
+        nbody->nbodydata[i]->dt = dt;
+        level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
 
-	// Move up one level (if levels are correctly synchronised) or 
-	// down several levels if required
-	if (level < last_level && last_level > 1 && n%(2*nstep) == 0) 
-	  nbody->nbodydata[i]->level = last_level - 1;
-	else if (level > last_level)
-	  nbody->nbodydata[i]->level = level;
-	else
-	  nbody->nbodydata[i]->level = last_level;
+        // Move up one level (if levels are correctly synchronised) or
+        // down several levels if required
+        if (level < last_level && last_level > 1 && n%(2*nstep) == 0)
+          nbody->nbodydata[i]->level = last_level - 1;
+        else if (level > last_level)
+          nbody->nbodydata[i]->level = level;
+        else
+          nbody->nbodydata[i]->level = last_level;
 
-	nbody->nbodydata[i]->nlast = n;
-	nbody->nbodydata[i]->nstep = 
-	  pow(2,level_step - nbody->nbodydata[i]->level);
+        nbody->nbodydata[i]->nlast = n;
+        nbody->nbodydata[i]->nstep =
+          pow(2,level_step - nbody->nbodydata[i]->level);
       }
 
       // Find maximum level of all N-body particles
@@ -1180,8 +1191,10 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     // Set fixed SPH timestep level here in case maximum has changed
     if (sph_single_timestep == 1) {
       for (i=0; i<sph->Nsph; i++) {
-	sph->sphdata[i].level = level_max_sph;
-	sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+        if (sph->sphdata[i].nlast == n)  {
+          sph->sphdata[i].level = level_max_sph;
+          sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+        }
       }
     }
 
@@ -1191,11 +1204,11 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
     for (i=0; i<sph->Nsph; i++) {
       if (sph->sphdata[i].nlast == n)
-	sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+        sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
     }
     for (i=0; i<nbody->Nnbody; i++) {
       if (nbody->nbodydata[i]->nlast == n) nbody->nbodydata[i]->nstep = 
-	pow(2,level_step - nbody->nbodydata[i]->level);
+        pow(2,level_step - nbody->nbodydata[i]->level);
     }
 
     // Update all timestep variables if we have removed or added any levels
@@ -1205,26 +1218,26 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       // Increase maximum timestep level if correctly synchronised
       istep = pow(2,level_step - level_max_old + 1);
       if (level_max <= level_max_old - 1 && level_max_old > 1 && n%istep == 0)
-	level_max = level_max_old - 1;
+        level_max = level_max_old - 1;
       else if (level_max == level_max_old)
-	level_max = level_max_old;
+        level_max = level_max_old;
 
       // Adjust integer time if levels added or removed
       if (level_max > level_max_old) {
-	nfactor = pow(2,level_max - level_max_old);
-	n *= nfactor;
-	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nlast *= nfactor;
-	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nstep *= nfactor;
-	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast *= nfactor;
-	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep *= nfactor;
+        nfactor = pow(2,level_max - level_max_old);
+        n *= nfactor;
+        for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nlast *= nfactor;
+        for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nstep *= nfactor;
+        for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast *= nfactor;
+        for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep *= nfactor;
       }
       else if (level_max < level_max_old) {
-	nfactor = pow(2,level_max_old - level_max);
-	n /= nfactor;
-	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nlast /= nfactor;
-	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nstep /= nfactor;
-	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast /= nfactor;
-	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep /= nfactor;
+        nfactor = pow(2,level_max_old - level_max);
+        n /= nfactor;
+        for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nlast /= nfactor;
+        for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nstep /= nfactor;
+        for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast /= nfactor;
+        for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep /= nfactor;
       }
 
     }
