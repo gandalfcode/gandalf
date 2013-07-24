@@ -85,6 +85,8 @@ class SimulationBase
   virtual void PostInitialConditionsSetup(void)=0;
   virtual void PreSetupForPython(void)=0;
   virtual void ProcessParameters(void)=0;
+  virtual void SetComFrame(void)=0;
+
 
   // Input-output routines
   // --------------------------------------------------------------------------
@@ -184,6 +186,7 @@ class Simulation : public SimulationBase
   virtual void ProcessParameters(void)=0;
   virtual void OutputDiagnostics(void);
   virtual void UpdateDiagnostics(void);
+  virtual void SetComFrame(void);
 
 #if defined(VERIFY_ALL)
   void VerifyBlockTimesteps(void);

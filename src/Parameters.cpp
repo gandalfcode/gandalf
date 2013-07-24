@@ -162,6 +162,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["ic"] = "random_cube";
   stringparams["particle_distribution"] = "random";
   intparams["smooth_ic"] = 0;
+  intparams["com_frame"] = 0;
   intparams["Npart"] = 0;
   intparams["Nsph"] = 0;
   intparams["Nstar"] = 0;

@@ -186,6 +186,8 @@ string SimulationBase::GetParam(string key)
   return simparams->GetParameter(key);
 }
 
+
+
 //=============================================================================
 //  SimulationBase::GetIntAndFloatParameterKeys
 /// Returns a list containing the keys of all the int and float parameters
@@ -205,8 +207,9 @@ std::list<string>* SimulationBase::GetIntAndFloatParameterKeys()
   }
   
   return &keys;
-  
 }
+
+
 
 //=============================================================================
 //  SphSimulation::Run
@@ -947,8 +950,7 @@ void Simulation<ndim>::PreSetupForPython(void)
   ProcessParameters();
 
   // Allocate all memory for both SPH and N-body particles
-  sph->AllocateMemory(sph->Nsph);
-  nbody->AllocateMemory(nbody->Nstar);
+  AllocateParticleMemory();
 
   return;
 }
@@ -1290,11 +1292,45 @@ void SimulationBase::SetupSimulation(void)
   // Generate initial conditions for simulation
   GenerateIC();
 
+  // Change to COM frame if selected
+  if (simparams->intparams["com_frame"] == 1) SetComFrame();
+
   // Call a messy function that does all the rest of the initialisation
   PostInitialConditionsSetup();
 
   return;
 }
+
+
+
+//=============================================================================
+//  Simulation::SetComFrame
+/// Move all particles to centre-of-mass frame.
+//=============================================================================
+template<int ndim>
+void Simulation<ndim>::SetComFrame(void)
+{
+  int i,k;                         // ..
+
+  debug2("[Simulation::SetComFrame]");
+
+  CalculateDiagnostics();
+
+  for (i=0; i<sph->Nsph; i++) {
+    for (k=0; k<ndim; k++) sph->sphdata[i].r[k] -= diag.rcom[k];
+    for (k=0; k<ndim; k++) sph->sphdata[i].v[k] -= diag.vcom[k];
+  }
+
+  for (i=0; i<nbody->Nstar; i++) {
+    for (k=0; k<ndim; k++) nbody->stardata[i].r[k] -= diag.rcom[k];
+    for (k=0; k<ndim; k++) nbody->stardata[i].v[k] -= diag.vcom[k];
+  }
+
+  CalculateDiagnostics();
+
+  return;
+}
+
 
 
 //template <int ndim>
