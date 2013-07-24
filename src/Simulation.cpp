@@ -719,7 +719,8 @@ void Simulation<ndim>::ProcessParameters(void)
     sphneib = new BinaryTree<ndim>(intparams["Nleafmax"],
                                    floatparams["thetamaxsqd"],
                                    sph->kernp->kernrange,
-                                   stringparams["gravity_mac"]);
+                                   stringparams["gravity_mac"],
+                                   stringparams["multipole"]);
   else {
     string message = "Unrecognised parameter : neib_search = " 
       + simparams->stringparams["neib_search"];

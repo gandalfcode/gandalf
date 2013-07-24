@@ -54,6 +54,7 @@ struct BinaryTreeCell {
   FLOAT m;                          ///< Total mass of cell
   FLOAT rmax;                       ///< Max. dist. of ptcl from COM
   FLOAT hmax;                       ///< Maximum smoothing length inside cell
+  FLOAT q[5];                       ///< Quadrupole moment tensor
 };
 
 
@@ -191,7 +192,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
 
  public:
 
-  BinaryTree(int, FLOAT, FLOAT, string);
+  BinaryTree(int, FLOAT, FLOAT, string, string);
   ~BinaryTree();
 
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
@@ -220,7 +221,8 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   int ComputeNeighbourList(int, int, int *, SphParticle<ndim> *);
   int ComputeGravityInteractionList(int, int, int, int, int &, int &, int &,
                                     int *, int *, int *, SphParticle<ndim> *);
-  void ComputeCellForces(int, int, int *, SphParticle<ndim> &);
+  void ComputeCellMonopoleForces(int, int, int *, SphParticle<ndim> &);
+  void ComputeCellQuadrupoleForces(int, int, int *, SphParticle<ndim> &);
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
   void ValidateTree(Sph<ndim> *);
@@ -228,7 +230,8 @@ class BinaryTree: public SphNeighbourSearch<ndim>
 
   // Additional variables for grid
   // --------------------------------------------------------------------------
-  string gravity_mac;               ///< ..
+  string gravity_mac;               ///< Multipole-acceptance criteria for tree
+  string multipole;                 ///< Multipole-order for cell gravity
   bool allocated_tree;              ///< Are grid arrays allocated?
   int Ncell;                        ///< Current no. of grid cells
   int Ncellmax;                     ///< Max. allowed no. of grid cells

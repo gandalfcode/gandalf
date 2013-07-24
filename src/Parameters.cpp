@@ -267,6 +267,7 @@ void Parameters::SetDefaultValues(void)
   // --------------------------------------------------------------------------
   stringparams["neib_search"] = "bruteforce";
   stringparams["gravity_mac"] = "geometric";
+  stringparams["multipole"] = "quadrupole";
   intparams["Nleafmax"] = 1;
   floatparams["thetamaxsqd"] = 0.2;
 

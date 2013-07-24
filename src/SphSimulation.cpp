@@ -237,11 +237,13 @@ void SphSimulation<ndim>::ProcessParameters(void)
     sphneib = new BruteForceSearch<ndim>;
   else if (stringparams["neib_search"] == "grid")
     sphneib = new GridSearch<ndim>;
-  else if (stringparams["neib_search"] == "tree")
+  else if (stringparams["neib_search"] == "tree") {
     sphneib = new BinaryTree<ndim>(intparams["Nleafmax"],
                                    floatparams["thetamaxsqd"],
                                    sph->kernp->kernrange,
-                                   stringparams["gravity_mac"]);
+                                   stringparams["gravity_mac"],
+                                   stringparams["multipole"]);
+  }
   else {
     string message = "Unrecognised parameter : neib_search = " 
       + simparams->stringparams["neib_search"];

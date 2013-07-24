@@ -27,7 +27,8 @@ using namespace std;
 //=============================================================================
 template <int ndim>
 BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux, 
-			     FLOAT kernrangeaux, string gravity_mac_aux)
+			     FLOAT kernrangeaux, string gravity_mac_aux,
+                             string multipole_aux)
 {
   allocated_tree = false;
   Ncell = 0;
@@ -39,6 +40,7 @@ BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
   kernrange = kernrangeaux;
   thetamaxsqd = thetamaxsqdaux;
   gravity_mac = gravity_mac_aux;
+  multipole = multipole_aux;
 }
 
 
@@ -990,22 +992,23 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
 
 
 //=============================================================================
-//  BinaryTree::ComputeCellForces
-/// ...
+//  BinaryTree::ComputeCellMonopoleForces
+/// Compute the force on particle 'parti' due to all cells obtained in the 
+/// gravity tree walk.  Uses only monopole moments of the cell.
 //=============================================================================
 template <int ndim>
-void BinaryTree<ndim>::ComputeCellForces
+void BinaryTree<ndim>::ComputeCellMonopoleForces
 (int i,                             ///< [in] i.d. of particle
- int Ngravcell,                     ///< [in] ..
- int *gravcelllist,                 ///< [in] ..
- SphParticle<ndim> &parti)          ///< [inout] ..
+ int Ngravcell,                     ///< [in] No. of tree cells in list
+ int *gravcelllist,                 ///< [in] List of tree cell ids
+ SphParticle<ndim> &parti)          ///< [inout] SPH particle
 {
-  int c;                            // ..
-  int cc;                           // ..
-  int k;                            // ..
-  FLOAT dr[ndim];                   // ..
-  FLOAT drsqd;                      // ..
-  FLOAT invdrmag;                   // ..
+  int c;                            // Cell id
+  int cc;                           // Aux. cell counter
+  int k;                            // Dimension counter
+  FLOAT dr[ndim];                   // Relative position vector
+  FLOAT drsqd;                      // Distance squared
+  FLOAT invdrmag;                   // 1 / distance
 
   // Loop over all neighbouring particles in list
   // --------------------------------------------------------------------------
@@ -1019,6 +1022,79 @@ void BinaryTree<ndim>::ComputeCellForces
     parti.gpot += tree[c].m*invdrmag;
     for (k=0; k<ndim; k++) 
       parti.agrav[k] += tree[c].m*dr[k]*pow(invdrmag,3);
+
+  }
+  // --------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=============================================================================
+//  BinaryTree::ComputeCellQuadrupoleForces
+/// Compute the force on particle 'parti' due to all cells obtained in the 
+/// gravity tree walk.  Uses only monopole moments of the cell.
+//=============================================================================
+template <int ndim>
+void BinaryTree<ndim>::ComputeCellQuadrupoleForces
+(int i,                             ///< [in] i.d. of particle
+ int Ngravcell,                     ///< [in] No. of tree cells in list
+ int *gravcelllist,                 ///< [in] List of tree cell ids
+ SphParticle<ndim> &parti)          ///< [inout] SPH particle
+{
+  int c;                            // Cell id
+  int cc;                           // Aux. cell counter
+  int k;                            // Dimension counter
+  FLOAT dr[ndim];                   // Relative position vector
+  FLOAT drsqd;                      // Distance squared
+  FLOAT invdrsqd;                   // 1 / drsqd
+  FLOAT invdrmag;                   // 1 / distance
+  FLOAT invdr5;                     // 1 / distance^5
+  FLOAT qscalar;                    // Quadrupole moment scalar quantity
+
+  // Loop over all neighbouring particles in list
+  // --------------------------------------------------------------------------
+  for (cc=0; cc<Ngravcell; cc++) {
+    c = gravcelllist[cc];
+
+    for (k=0; k<ndim; k++) dr[k] = tree[c].r[k] - parti.r[k];
+    drsqd = DotProduct(dr,dr,ndim);
+    invdrsqd = 1.0/(drsqd + small_number);
+    invdrmag = sqrt(invdrsqd);
+    invdr5 = invdrsqd*invdrsqd*invdrmag;
+
+    // First add monopole terms
+    parti.gpot += tree[c].m*invdrmag;
+    for (k=0; k<ndim; k++) 
+      parti.agrav[k] += tree[c].m*dr[k]*invdrsqd*invdrmag;
+
+    // Now add quadrupole terms depending on dimensionality
+    if (ndim == 3) {
+      qscalar = tree[c].q[0]*dr[0]*dr[0] + tree[c].q[2]*dr[1]*dr[1] - 
+	(tree[c].q[0] + tree[c].q[2])*dr[2]*dr[2] + 
+	2.0*(tree[c].q[1]*dr[0]*dr[1] + tree[c].q[3]*dr[0]*dr[2] + 
+	     tree[c].q[4]*dr[1]*dr[2]);
+      parti.agrav[0] += 
+	(tree[c].q[0]*dr[0] + tree[c].q[1]*dr[1] + tree[c].q[3]*dr[2])*invdr5 
+	- 2.5*qscalar*dr[0]*invdr5*invdrsqd;
+      parti.agrav[1] += 
+	(tree[c].q[1]*dr[0] + tree[c].q[2]*dr[1] + tree[c].q[4]*dr[2])*invdr5 
+	- 2.5*qscalar*dr[1]*invdr5*invdrsqd;
+      parti.agrav[2] += 
+	(tree[c].q[3]*dr[0] + tree[c].q[4]*dr[1] - 
+	 (tree[c].q[0] + tree[c].q[2])*dr[2])*invdr5 
+	- 2.5*qscalar*dr[1]*invdr5*invdrsqd;
+    }
+    else if (ndim == 2) {
+      qscalar = tree[c].q[0]*dr[0]*dr[0] + tree[c].q[2]*dr[1]*dr[1] + 
+	2.0*tree[c].q[1]*dr[0]*dr[1];
+      parti.agrav[0] += (tree[c].q[0]*dr[0] + tree[c].q[1]*dr[1])*invdr5 - 
+	2.5*qscalar*dr[0]*invdr5*invdrsqd;
+      parti.agrav[1] += (tree[c].q[1]*dr[0] + tree[c].q[2]*dr[1])*invdr5 - 
+	2.5*qscalar*dr[1]*invdr5*invdrsqd;
+    }
+    parti.gpot += 0.5*qscalar*invdr5;
 
   }
   // --------------------------------------------------------------------------
@@ -1607,7 +1683,10 @@ void BinaryTree<ndim>::UpdateAllSphForces
                                      agrav,gpot,parti,data);
 
         // Compute gravitational force dues to distant cells
-        ComputeCellForces(i,Ngravcell,gravcelllist,parti);
+	if (multipole == "monopole")
+	  ComputeCellMonopoleForces(i,Ngravcell,gravcelllist,parti);
+	else if (multipole == "quadrupole")
+	  ComputeCellQuadrupoleForces(i,Ngravcell,gravcelllist,parti);
 
         // Add summed variables (acceleration, etc..) to main arrays
         for (k=0; k<ndim; k++) {
@@ -1775,12 +1854,12 @@ void BinaryTree<ndim>::CheckValidNeighbourList
     }
   }
   else if (neibtype == "all") {
-     for (j=0; j<sph->Ntot; j++) {
-       for (k=0; k<ndim; k++)
- 	     dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
-       drsqd = DotProduct(dr,dr,ndim);
-       if (drsqd < sph->kernp->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h ||
-    		   drsqd < sph->kernp->kernrangesqd*sph->sphdata[j].h*sph->sphdata[j].h)
+    for (j=0; j<sph->Ntot; j++) {
+      for (k=0; k<ndim; k++) 
+        dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
+      drsqd = DotProduct(dr,dr,ndim);
+      if (drsqd < sph->kernp->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h ||
+    	  drsqd < sph->kernp->kernrangesqd*sph->sphdata[j].h*sph->sphdata[j].h)
  	     trueneiblist[Ntrueneib++] = j;
      }
    }
