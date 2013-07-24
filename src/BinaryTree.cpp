@@ -451,7 +451,9 @@ void BinaryTree<ndim>::StockCellProperties
   int i;                            // Particle counter
   int k;                            // Dimension counter
   FLOAT dr[ndim];                   // Relative position vector
+  FLOAT drsqd;                      // ..
   FLOAT factor = 1.0/thetamaxsqd;   // ??
+  FLOAT mi;                         // Mass of particle i
   FLOAT *crmax;                     // Max. extent of cell bounding boxes
   FLOAT *crmin;                     // Min. extent of cell bounding boxes
 
@@ -470,6 +472,7 @@ void BinaryTree<ndim>::StockCellProperties
     tree[c].rmax = 0.0;
     tree[c].cdistsqd = big_number;
     for (k=0; k<ndim; k++) tree[c].r[k] = 0.0;
+    for (k=0; k<5; k++) tree[c].q[k] = 0.0;
   }
 
   for (c=0; c<Ncell; c++)
@@ -515,6 +518,29 @@ void BinaryTree<ndim>::StockCellProperties
         tree[c].rmax = sqrt(DotProduct(dr,dr,ndim));
       }
 
+      // Compute quadrupole moment terms if selected
+      if (multipole == "quadrupole") {
+        i = tree[c].ifirst;
+        while (i != -1) {
+          mi = sphdata[i].m;
+          for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - tree[c].r[k];
+          drsqd = DotProduct(dr,dr,ndim);
+          if (ndim == 3) {
+            tree[c].q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
+            tree[c].q[1] += mi*3.0*dr[0]*dr[1];
+            tree[c].q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+            tree[c].q[3] += mi*3.0*dr[2]*dr[0];
+            tree[c].q[4] += mi*3.0*dr[2]*dr[1];
+          }
+          else if (ndim == 2) {
+            tree[c].q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
+            tree[c].q[1] += mi*3.0*dr[0]*dr[1];
+            tree[c].q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+          }
+          i = inext[i];
+        }
+      }
+
     }
     // For non-leaf cells, sum together two children cells
     // ------------------------------------------------------------------------
@@ -537,6 +563,43 @@ void BinaryTree<ndim>::StockCellProperties
         for (k=0; k<ndim; k++) dr[k] = max(crmax[c*ndim + k] - tree[c].r[k],
                                            tree[c].r[k] - crmin[c*ndim + k]);
         tree[c].rmax = sqrt(DotProduct(dr,dr,ndim));
+      }
+
+      // Now add individual quadrupole moment terms
+      if (multipole == "quadrupole" && tree[cc].N > 0) {
+        mi = tree[cc].m;
+        for (k=0; k<ndim; k++) dr[k] = tree[cc].r[k] - tree[c].r[k];
+        drsqd = DotProduct(dr,dr,ndim);
+        if (ndim == 3) {
+          tree[c].q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
+          tree[c].q[1] += mi*3.0*dr[0]*dr[1];
+          tree[c].q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+          tree[c].q[3] += mi*3.0*dr[2]*dr[0];
+          tree[c].q[4] += mi*3.0*dr[2]*dr[1];
+        }
+        else if (ndim == 2) {
+          tree[c].q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
+          tree[c].q[1] += mi*3.0*dr[0]*dr[1];
+          tree[c].q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+        }
+      }
+
+      if (multipole == "quadrupole" && tree[ccc].N > 0) {
+        mi = tree[ccc].m;
+        for (k=0; k<ndim; k++) dr[k] = tree[ccc].r[k] - tree[c].r[k];
+        drsqd = DotProduct(dr,dr,ndim);
+        if (ndim == 3) {
+          tree[c].q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
+          tree[c].q[1] += mi*3.0*dr[0]*dr[1];
+          tree[c].q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+          tree[c].q[3] += mi*3.0*dr[2]*dr[0];
+          tree[c].q[4] += mi*3.0*dr[2]*dr[1];
+        }
+        else if (ndim == 2) {
+          tree[c].q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
+          tree[c].q[1] += mi*3.0*dr[0]*dr[1];
+          tree[c].q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+        }
       }
 
     }
