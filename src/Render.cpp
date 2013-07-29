@@ -26,7 +26,7 @@ using namespace std;
 
 //=============================================================================
 //  RenderBase::RenderFactory
-/// ..
+/// Create new render object for simulation object depending on dimensionality.
 //=============================================================================
 RenderBase* RenderBase::RenderFactory(int ndim, SimulationBase* sim) {
   RenderBase* render;
@@ -121,12 +121,19 @@ int Render<ndim>::CreateColumnRenderingGrid
       (ystring != "x" && ystring != "y" && ystring != "z")) return -1;
 
   // First, verify x, y and render strings are valid
-  snap.ExtractArray(xstring,"sph",&xvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(ystring,"sph",&yvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(renderstring,"sph",&rendervalues,&idummy,scaling_factor,renderunit); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("m","sph",&mvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("rho","sph",&rhovalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("h","sph",&hvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(xstring,"sph",&xvalues,&idummy,dummyfloat,dummystring);
+  arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(ystring,"sph",&yvalues,&idummy,dummyfloat,dummystring);
+  arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(renderstring,"sph",&rendervalues,&idummy,
+                    scaling_factor,renderunit);
+  arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("m","sph",&mvalues,&idummy,dummyfloat,dummystring);
+  arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("rho","sph",&rhovalues,&idummy,dummyfloat,dummystring);
+  arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("h","sph",&hvalues,&idummy,dummyfloat,dummystring);
+  arraycheck = min(idummy,arraycheck);
 
   // If any are invalid, exit here with failure code
   if (arraycheck == 0) return -1;
@@ -135,7 +142,7 @@ int Render<ndim>::CreateColumnRenderingGrid
   rendernorm = new float[Ngrid];
   rgrid = new float[2*Ngrid];
 
-  // Create grid positions here
+  // Create grid positions here (need to improve in the future)
   c = 0;
   for (j=iygrid-1; j>=0; j--) {
     for (i=0; i<ixgrid; i++) {
@@ -158,7 +165,7 @@ int Render<ndim>::CreateColumnRenderingGrid
     // -----------------------------------------------------------------------
 #pragma omp parallel for default(shared) private(c,dr,drmag,drsqd,hrangesqd,invh,wkern,wnorm)
     for (i=0; i<snap.Nsph; i++) {
-      invh = 1.0f/hvalues[i];
+      invh = 1.0/hvalues[i];
       wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);
       hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
       
@@ -196,6 +203,7 @@ int Render<ndim>::CreateColumnRenderingGrid
 
     // Loop over all particles in snapshot
     // ------------------------------------------------------------------------
+#pragma omp parallel for default(shared) private(c,dr,drmag,drsqd,hrangesqd,invh,wkern,wnorm)
     for (i=0; i<snap.Nsph; i++) {
       invh = 1.0f/hvalues[i];
       wnorm = mvalues[i]/rhovalues[i]*pow(invh,(ndim - 1));
@@ -214,7 +222,9 @@ int Render<ndim>::CreateColumnRenderingGrid
         drmag = sqrt(drsqd);
         wkern = float(sph->kerntab.wLOS((FLOAT) (drmag*invh)));
 	
+#pragma omp atomic
         values[c] += wnorm*rendervalues[i]*wkern;
+#pragma omp atomic
         rendernorm[c] += wnorm*wkern;
       }
       // ----------------------------------------------------------------------
@@ -290,13 +300,21 @@ int Render<ndim>::CreateSliceRenderingGrid
 	  (ystring != "x" && ystring != "y" && ystring != "z")) return -1;
 
   // First, verify x, y and render strings are valid
-  snap.ExtractArray(xstring,"sph",&xvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(ystring,"sph",&yvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(zstring,"sph",&zvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(renderstring,"sph",&rendervalues,&idummy,scaling_factor,renderunit); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("m","sph",&mvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("rho","sph",&rhovalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("h","sph",&hvalues,&idummy,dummyfloat,dummystring); arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(xstring,"sph",&xvalues,&idummy,dummyfloat,dummystring); 
+  arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(ystring,"sph",&yvalues,&idummy,dummyfloat,dummystring); 
+  arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(zstring,"sph",&zvalues,&idummy,dummyfloat,dummystring); 
+  arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray(renderstring,"sph",&rendervalues,&idummy,
+                    scaling_factor,renderunit); 
+  arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("m","sph",&mvalues,&idummy,dummyfloat,dummystring); 
+  arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("rho","sph",&rhovalues,&idummy,dummyfloat,dummystring); 
+  arraycheck = min(idummy,arraycheck);
+  snap.ExtractArray("h","sph",&hvalues,&idummy,dummyfloat,dummystring); 
+  arraycheck = min(idummy,arraycheck);
 
   // If any are invalid, exit here with failure code
   if (arraycheck == 0) return -1;
@@ -321,12 +339,11 @@ int Render<ndim>::CreateSliceRenderingGrid
 
   // Loop over all particles in snapshot
   // --------------------------------------------------------------------------
+#pragma omp parallel for default(shared) private(c,dr,drmag,drsqd,hrangesqd,invh,skern,wkern,wnorm)
   for (i=0; i<snap.Nsph; i++) {
-
     invh = 1.0/hvalues[i];
     wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);
     hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
-
 
     // Now loop over all pixels and add current particles
     // ------------------------------------------------------------------------
@@ -343,12 +360,13 @@ int Render<ndim>::CreateSliceRenderingGrid
       skern = (FLOAT) (drmag*invh);
       wkern = float(sph->kerntab.w0(skern));
 
+#pragma omp atomic
       values[c] += wnorm*rendervalues[i]*wkern;
+#pragma omp atomic
       rendernorm[c] += wnorm*wkern;
 
     }
     // ------------------------------------------------------------------------
-
 
   }
   // --------------------------------------------------------------------------

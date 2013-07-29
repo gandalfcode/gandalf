@@ -100,7 +100,7 @@ template <typename T>
 static inline void Heapsort
 (int q_TOT,                         ///< No. of values to be sorted
  int *qV,                           ///< Sorted ids of q-values
- T *V)                              ///< Array of values to sort
+ T *V)                              ///< (Templated) array of values to sort
 {
   int q,qq;                         // Dummy ids
   int q1;                           // Dummy id (for comparison)
@@ -141,17 +141,15 @@ static inline void Heapsort
   }
 
 #if defined(VERIFY_ALL)
-  if (output == 1) {
-    for (q=1; q<q_TOT; q++)
-      if (V[qV[q]] < V[qV[q-1]]) 
-	cout << "Not properly ranked : "
-	     << q << "   " 
-	     << q_TOT << "   "
-	     << V[qV[q-2]] << "   "
-	     << V[qV[q-1]] << "   "
-	     << V[qV[q]] << "   " 
-	     << V[qV[q+1]] << endl;
-  }
+  for (q=1; q<q_TOT; q++)
+    if (V[qV[q]] < V[qV[q-1]]) 
+      cout << "Not properly ranked : "
+	   << q << "   " 
+	   << q_TOT << "   "
+	   << V[qV[q-2]] << "   "
+	   << V[qV[q-1]] << "   "
+	   << V[qV[q]] << "   " 
+	   << V[qV[q+1]] << endl;
 #endif
 
   return;

@@ -13,22 +13,26 @@
 #include "NbodyParticle.h"
 
 
-static const int Ncompmax = 2;
+static const int Ncompmax = 4;
+static const int Npertmax = 4;
 
 
 
 //=============================================================================
 //  Structure SystemParticle
 /// \brief  System particle data structure
-/// \author D. A. Hubber
+/// \author D. A. Hubber, G. Rosotti
 /// \date   10/05/2013
 //=============================================================================
 template <int ndim>
 class SystemParticle: public NbodyParticle<ndim>
 {
 public:
-  int Nchildren;                           ///< Number of nbody children
-  NbodyParticle<ndim>* children[Ncompmax]; ///< Array of pointers to children
+  int inode;                                ///< NN-tree node id
+  int Nchildren;                            ///< Number of nbody children
+  int Npert;                                ///< Number of perturbers
+  NbodyParticle<ndim>* children[Ncompmax];  ///< Array of ptrs to children
+  NbodyParticle<ndim>* perturber[Npertmax]; ///< Array of ptrs to perturbers
 
 };
 #endif

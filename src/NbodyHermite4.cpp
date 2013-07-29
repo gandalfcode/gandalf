@@ -447,18 +447,22 @@ void NbodyHermite4<ndim, kernelclass>::IntegrateInternalMotion
  DOUBLE tlocal_end)                 ///< [in]    Time to integrate the 
                                     ///<         internal motion for.
 {
-  int i;                                              // ..
+  int i;                                              // Particle counter
   int it;                                             // Iteration counter
-  int k;                                              // ..
+  int k;                                              // Dimension counter
   int Nchildren = systemi->Nchildren;                 // No. of child systems
-  int nlocal_steps = 0;                               // ..
-  DOUBLE dt;                                          // ..
-  DOUBLE tlocal=0.0;                                  // ..
-  DOUBLE rcom[ndim];                                  // ..
-  DOUBLE vcom[ndim];                                  // ..
-  DOUBLE acom[ndim];                                  // ..
-  DOUBLE adotcom[ndim];                               // ..
+  int nsteps_local = 0;                               // No. of local steps
+  int nlocal = 0;                                     // ..
+  DOUBLE dt;                                          // Timestep
+  DOUBLE tlocal=0.0;                                  // Local time
+  DOUBLE msystem=0.0;                                 // Mass of system
+  DOUBLE rcom[ndim];                                  // Position of COM
+  DOUBLE vcom[ndim];                                  // Velocity of COM
+  DOUBLE acom[ndim];                                  // Acceleration of COM
+  DOUBLE adotcom[ndim];                               // Jerk of COM
   NbodyParticle<ndim>** children = systemi->children; // Child systems
+
+  cout << "Integrating internal motion : " << Nchildren << "   " << tlocal_end << endl;
 
   // Zero all COM summation variables
   for (k=0; k<ndim; k++) rcom[k] = 0.0;
@@ -469,6 +473,7 @@ void NbodyHermite4<ndim, kernelclass>::IntegrateInternalMotion
   // Make local copies of children and calculate COM properties
   // --------------------------------------------------------------------------
   for (i=0; i<Nchildren; i++) {
+    msystem += children[i]->m;
     for (k=0; k<ndim; k++) rcom[k] += children[i]->m*children[i]->r[k];
     for (k=0; k<ndim; k++) vcom[k] += children[i]->m*children[i]->v[k];
     for (k=0; k<ndim; k++) acom[k] += children[i]->m*children[i]->a[k];
@@ -476,11 +481,13 @@ void NbodyHermite4<ndim, kernelclass>::IntegrateInternalMotion
   }
 
   // Normalise COM values
-  for (k=0; k<ndim; k++) rcom[k] /= systemi->m;
-  for (k=0; k<ndim; k++) vcom[k] /= systemi->m;
-  for (k=0; k<ndim; k++) acom[k] /= systemi->m;
-  for (k=0; k<ndim; k++) adotcom[k] /= systemi->m;
+  for (k=0; k<ndim; k++) rcom[k] /= msystem;
+  for (k=0; k<ndim; k++) vcom[k] /= msystem;
+  for (k=0; k<ndim; k++) acom[k] /= msystem;
+  for (k=0; k<ndim; k++) adotcom[k] /= msystem;
 
+
+  cout << "Initial system COM : " << rcom[0] << "    " << rcom[1] << endl;
 
   // Now convert to COM frame
   // --------------------------------------------------------------------------
@@ -489,54 +496,83 @@ void NbodyHermite4<ndim, kernelclass>::IntegrateInternalMotion
     for (k=0; k<ndim; k++) children[i]->r0[k] -= rcom[k];
     for (k=0; k<ndim; k++) children[i]->v[k] -= vcom[k];
     for (k=0; k<ndim; k++) children[i]->v0[k] -= vcom[k];
-    for (k=0; k<ndim; k++) children[i]->a[k] -= acom[k];
-    for (k=0; k<ndim; k++) children[i]->a0[k] -= acom[k];
-    for (k=0; k<ndim; k++) children[i]->adot[k] -= adotcom[k];
-    for (k=0; k<ndim; k++) children[i]->adot0[k] -= adotcom[k];
-    for (k=0; k<ndim; k++) children[i]->a2dot[k] -= 0.0;
-    for (k=0; k<ndim; k++) children[i]->a3dot[k] -= 0.0;
+    for (k=0; k<ndim; k++) children[i]->a[k] = 0.0; //acom[k];
+    for (k=0; k<ndim; k++) children[i]->a0[k] = 0.0; //acom[k];
+    for (k=0; k<ndim; k++) children[i]->adot[k] = 0.0; //adotcom[k];
+    for (k=0; k<ndim; k++) children[i]->adot0[k] = 0.0; //adotcom[k];
     children[i]->active = true;
     children[i]->nstep = 1;
+    children[i]->nlast = 0;
     children[i]->level = 0;
+
+    /*
+    cout << "initial pos : " << i << "   " << children[i]->r0[0] 
+	 << "    " << children[i]->r0[1] << "     " 
+	 << sqrt(DotProduct(children[i]->r,children[i]->r,ndim)) << endl;
+    cout << "initial vel : " << i << "   " << children[i]->v0[0] 
+	 << "    " << children[i]->v0[1] << "     "
+	 << sqrt(DotProduct(children[i]->v,children[i]->v,ndim)) << endl;
+    cout << "initial accel : " << i << "   " << children[i]->a0[0] 
+	 << "    " << children[i]->a0[1] << "     "
+	 << sqrt(DotProduct(children[i]->a,children[i]->a,ndim)) << endl;
+    */
+
   }
+
+
+  // Calculate forces, derivatives and other terms
+  CalculateDirectGravForces(Nchildren, children);
+  for (i=0; i<Nchildren; i++) {
+    for (k=0; k<ndim; k++) children[i]->a0[k] = children[i]->a[k];
+    for (k=0; k<ndim; k++) children[i]->adot0[k] = children[i]->adot[k];
+  }
+
+  // Calculate higher order derivatives
+  CalculateAllStartupQuantities(Nchildren, children);
 
 
   // Main time integration loop
   // ==========================================================================
   do {
 
-    // Calculate time-step
-    dt = std::min(big_number, tlocal_end - tlocal);
+    // Calculate global time-step for sub-system
+    nlocal = 0;
+    dt = std::min(big_number, 1.000000000001*(tlocal_end - tlocal));
     for (i=0; i<Nchildren; i++) {
+      children[i]->nlast = 0;
       dt = std::min(dt, Timestep(children[i]));
     }
     tlocal += dt;
-    nlocal_steps +=1;
+    nsteps_local +=1;
+    nlocal += 1;
 
     // Advance position and velocities
-    AdvanceParticles(nlocal_steps, Nchildren, children, dt);
+    AdvanceParticles(nlocal, Nchildren, children, dt);
 
-    //Zero all acceleration terms
+    // Zero all acceleration terms
     for (i=0; i<Nchildren; i++) {
+      children[i]->active = true;
       children[i]->gpot = 0.0;
-      children[i]->gpe_internal = 0.0;
       for (k=0; k<ndim; k++) children[i]->a[k] = 0.0;
       for (k=0; k<ndim; k++) children[i]->adot[k] = 0.0;
-      for (k=0; k<ndim; k++) children[i]->a2dot[k] = 0.0;
-      for (k=0; k<ndim; k++) children[i]->a3dot[k] = 0.0;
     }
     
     // Calculate forces, derivatives and other terms
     CalculateDirectGravForces(Nchildren, children);
     
     // Apply correction terms
-    CorrectionTerms(nlocal_steps, Nchildren, children, dt);
+    CorrectionTerms(nlocal, Nchildren, children, dt);
+
+    //for (i=0; i<Nchildren; i++)
+    //cout << "(correction) pos : " << i << "   " << children[i]->r[0] 
+    // << "    " << children[i]->r[1] << "     " 
+    // << sqrt(DotProduct(children[i]->r,children[i]->r,ndim)) << endl;
+    //cin >> i;
 
     // Now loop over children and, if they are systems, integrate
     // their internal motion
     // ------------------------------------------------------------------------
     for (i=0; i<Nchildren; i++) {
-
       if (children[i]->Ncomp > 1)
 	// The cast is needed because the function is defined only in
 	// SystemParticle, not in NbodyParticle.  
@@ -546,11 +582,25 @@ void NbodyHermite4<ndim, kernelclass>::IntegrateInternalMotion
     }
 
     // Set end-of-step variables
-    EndTimestep(nlocal_steps, Nchildren, children);
+    EndTimestep(nlocal, Nchildren, children);
 
   } while (tlocal < tlocal_end);
   // ==========================================================================
 
+
+  /*cout << "Done!!" << endl;
+  for (i=0; i<Nchildren; i++) {
+    cout << "Final pos : " << i << "   " << children[i]->r[0] 
+	 << "    " << children[i]->r[1] << "     " 
+	 << sqrt(DotProduct(children[i]->r,children[i]->r,ndim)) << endl;
+    cout << "Final vel : " << i << "   " << children[i]->v[0] 
+	 << "    " << children[i]->v[1] << "     "
+	 << sqrt(DotProduct(children[i]->v,children[i]->v,ndim)) << endl;
+    cout << "Final accel : " << i << "   " << children[i]->a[0] 
+	 << "    " << children[i]->a[1] << "     "
+	 << sqrt(DotProduct(children[i]->a,children[i]->a,ndim)) << endl;
+	 }*/
+ 
 
   // Copy children back to main coordinate system
   // --------------------------------------------------------------------------
@@ -565,6 +615,8 @@ void NbodyHermite4<ndim, kernelclass>::IntegrateInternalMotion
     for (k=0; k<ndim; k++) children[i]->adot0[k] += systemi->adot[k];
     children[i]->gpot = children[i]->gpot + systemi->gpot;
   }
+
+  //cin >> i;
 
   return;
 }

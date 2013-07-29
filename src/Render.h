@@ -55,10 +55,11 @@ class Render : public RenderBase
   // --------------------------------------------------------------------------
   int CreateColumnRenderingGrid(int, int, string, string, string, string,
 				float, float, float, float, float* values, 
-				int Ngrid, SphSnapshotBase &, float& scaling_factor);
-  int CreateSliceRenderingGrid(int, int, string, string, string, string, string,
-			       float, float, float, float, float, float* values, 
-			       int Ngrid,
+				int Ngrid, SphSnapshotBase &, 
+                                float& scaling_factor);
+  int CreateSliceRenderingGrid(int, int, string, string, string, string, 
+                               string, float, float, float, float, float, 
+                               float* values, int Ngrid,
 			       SphSnapshotBase &, float& scaling_factor);
 
 

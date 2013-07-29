@@ -115,8 +115,8 @@ public:
   void AdvanceParticles(int, int, NbodyParticle<ndim> **,DOUBLE);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
   void EndTimestep(int, int, NbodyParticle<ndim> **);
-  DOUBLE Timestep(NbodyParticle<ndim> *);
   void IntegrateInternalMotion(SystemParticle<ndim>* system, DOUBLE tend);
+  DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;           ///< Local copy of vdim
   static const FLOAT invndim=1./ndim;   ///< Copy of 1/ndim
@@ -152,8 +152,8 @@ public:
   void AdvanceParticles(int, int, NbodyParticle<ndim> **,DOUBLE);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE);
   void EndTimestep(int, int, NbodyParticle<ndim> **);
-  DOUBLE Timestep(NbodyParticle<ndim> *);
   void IntegrateInternalMotion(SystemParticle<ndim>* system, DOUBLE tend);
+  DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;           ///< Local copy of vdim
   static const FLOAT invndim=1./ndim;   ///< Copy of 1/ndim

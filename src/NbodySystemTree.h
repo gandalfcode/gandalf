@@ -1,6 +1,6 @@
 //=============================================================================
 //  NbodySystemTree.h
-//  Header file containing class definition for ..
+//  Contains definitions for Nearest neighbour tree class and data structures.
 //=============================================================================
 
 
@@ -24,43 +24,46 @@ using namespace std;
 
 //=============================================================================
 //  Structure NNTreeCell
-/// \brief   ..
-/// \details ..
+/// \brief   Class definition for N-body nearest neighbour tree data structure.
+/// \details Class definition for N-body nearest neighbour tree data structure.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    10/06/2013
 //=============================================================================
 template <int ndim>
 struct NNTreeCell {
-  int ichild1;                     ///< ..
-  int ichild2;                     ///< ..
-  int inearest;                    ///< ..
-  int iparent;                     ///< ..
-  int Ncomp;                       ///< ..
-  int Nstar;                       ///< ..
-  int Nchildlist;                  ///< ..
-  DOUBLE rsqdnearest;              ///< ..
-  DOUBLE r[ndim];                  ///< ..
-  DOUBLE v[ndim];                  ///< ..
-  DOUBLE a[ndim];                  ///< ..
-  DOUBLE adot[ndim];               ///< ..
-  DOUBLE a2dot[ndim];              ///< ..
-  DOUBLE a3dot[ndim];              ///< ..
-  DOUBLE m;                        ///< ..
-  DOUBLE h;                        ///< ..
-  DOUBLE gpot;                     ///< ..
-  DOUBLE gpe;                      ///< ..
-  DOUBLE gpe_internal;             ///< ..
-  DOUBLE tcross;                   ///< ..
-  NbodyParticle<ndim>* childlist[Ncompmax];  ///< ..
-  MergeList<NbodyParticle<ndim> *> clist;  ///< ..
+  int ichild1;                     ///< i.d. of child 1
+  int ichild2;                     ///< i.d. of child 2
+  int inearest;                    ///< i.d. of nearest node (for building)
+  int iparent;                     ///< i.d. of parent node
+  int Ncomp;                       ///< No. of components in node
+  int Nstar;                       ///< No. of stars in node
+  int Nchildlist;                  ///< No. of systems in list
+  DOUBLE rsqdnearest;              ///< Distance squared to nearest node
+  DOUBLE r[ndim];                  ///< Position of node
+  DOUBLE v[ndim];                  ///< Velocity of node
+  DOUBLE a[ndim];                  ///< Acceleration of node
+  DOUBLE adot[ndim];               ///< Jerk of node
+  DOUBLE a2dot[ndim];              ///< 2nd derivative of node
+  DOUBLE a3dot[ndim];              ///< 3rd derivative of node
+  DOUBLE m;                        ///< Mass contained in node
+  DOUBLE h;                        ///< Smoothing length of node
+  DOUBLE gpot;                     ///< Gravitational potential at node centre
+  DOUBLE gpe;                      ///< Total gpe of node components
+  DOUBLE gpe_internal;             ///< Total internal gpe of node components
+  DOUBLE tcross;                   ///< Crossing time of node components
+  NbodyParticle<ndim>* childlist[Ncompmax];  ///< List of child components
+  MergeList<NbodyParticle<ndim> *> clist;    ///< (To be deleted??)
 };
 
 
 
 //=============================================================================
 //  Class NbodySystemTree
-/// \brief   ..
-/// \details ..
+/// \brief   Class definition for N-body nearest neighbour tree.
+/// \details Class definition for N-body nearest neighbour tree.  Used to 
+///          identify and construct sub-systems for efficient integration of 
+///          bound mutiple systems and high-accuracy integration of close 
+///          encounters.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    10/06/2013
 //=============================================================================
@@ -80,11 +83,11 @@ protected:
   void BuildSubSystems(Nbody<ndim> *);
   void FindPerturberLists(Nbody<ndim> *);
 
-  bool allocated_tree;
-  int Nnode;
-  int Nnodemax;
-  DOUBLE gpefrac;
-  struct NNTreeCell<ndim> *NNtree;
+  bool allocated_tree;              ///< Is NN-tree memory allocated?
+  int Nnode;                        ///< No. of nodes of NN-tree
+  int Nnodemax;                     ///< Max. no. of nodes on NN-tree.
+  DOUBLE gpefrac;                   ///< Grav. energy limit for sub-system
+  struct NNTreeCell<ndim> *NNtree;  ///< Main NN-tree array
 
 };
 #endif

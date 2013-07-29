@@ -128,7 +128,8 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
   int it;                                             // Iteration counter
   int k;                                              // ..
   int Nchildren = systemi->Nchildren;                 // No. of child systems
-  int nlocal_steps = 0;                               // ..
+  int nlocal = 0;                                     // ..
+  int nsteps_local = 0;                               // ..
   DOUBLE dt;                                          // ..
   DOUBLE tlocal=0.0;                                  // ..
   DOUBLE rcom[ndim];                                  // ..
@@ -166,16 +167,26 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
     for (k=0; k<ndim; k++) children[i]->r0[k] -= rcom[k];
     for (k=0; k<ndim; k++) children[i]->v[k] -= vcom[k];
     for (k=0; k<ndim; k++) children[i]->v0[k] -= vcom[k];
-    for (k=0; k<ndim; k++) children[i]->a[k] -= acom[k];
-    for (k=0; k<ndim; k++) children[i]->a0[k] -= acom[k];
-    for (k=0; k<ndim; k++) children[i]->adot[k] -= adotcom[k];
-    for (k=0; k<ndim; k++) children[i]->adot0[k] -= adotcom[k];
-    for (k=0; k<ndim; k++) children[i]->a2dot[k] -= 0.0;
-    for (k=0; k<ndim; k++) children[i]->a3dot[k] -= 0.0;
+    for (k=0; k<ndim; k++) children[i]->a[k] = 0.0;//-= acom[k];
+    for (k=0; k<ndim; k++) children[i]->a0[k] =0.0; //-= acom[k];
+    for (k=0; k<ndim; k++) children[i]->adot[k] = 0.0; //-= adotcom[k];
+    for (k=0; k<ndim; k++) children[i]->adot0[k] = 0.0; //-= adotcom[k];
     children[i]->active = true;
     children[i]->nstep = 1;
+    children[i]->nlast = 0;
     children[i]->level = 0;
   }
+
+
+  // Calculate forces, derivatives and other terms
+  CalculateDirectGravForces(Nchildren, children);
+  for (i=0; i<Nchildren; i++) {
+    for (k=0; k<ndim; k++) children[i]->a0[k] = children[i]->a[k];
+    for (k=0; k<ndim; k++) children[i]->adot0[k] = children[i]->adot[k];
+  }
+
+  // Calculate higher order derivatives
+  CalculateAllStartupQuantities(Nchildren, children);
 
 
   // Main time integration loop
@@ -183,15 +194,18 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
   do {
 
     // Calculate time-step
-    dt = std::min(big_number, tlocal_end - tlocal);
+    nlocal = 0;
+    dt = std::min(big_number, 1.00000000001*(tlocal_end - tlocal));
     for (i=0; i<Nchildren; i++) {
+      children[i]->nlast = 0;
       dt = std::min(dt, Timestep(children[i]));
     }
     tlocal += dt;
-    nlocal_steps +=1;
+    nsteps_local +=1;
+    nlocal += 1;
 
     // Advance position and velocities
-    AdvanceParticles(nlocal_steps, Nchildren, children, dt);
+    AdvanceParticles(nlocal, Nchildren, children, dt);
 
     // Time-symmetric iteration loop
     // ------------------------------------------------------------------------
@@ -199,21 +213,25 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
 
       //Zero all acceleration terms
       for (i=0; i<Nchildren; i++) {
+	children[i]->active = true;
         children[i]->gpot = 0.0;
-	children[i]->gpe_internal = 0.0;
         for (k=0; k<ndim; k++) children[i]->a[k] = 0.0;
         for (k=0; k<ndim; k++) children[i]->adot[k] = 0.0;
-        for (k=0; k<ndim; k++) children[i]->a2dot[k] = 0.0;
-        for (k=0; k<ndim; k++) children[i]->a3dot[k] = 0.0;
       }
 
       // Calculate forces, derivatives and other terms
       CalculateDirectGravForces(Nchildren, children);
       
       // Apply correction terms
-      CorrectionTerms(nlocal_steps, Nchildren, children, dt);
+      CorrectionTerms(nlocal, Nchildren, children, dt);
     }
     // ------------------------------------------------------------------------
+
+    //for (i=0; i<Nchildren; i++)
+    //cout << "(correction) pos : " << i << "   " << children[i]->r[0] 
+    // << "    " << children[i]->r[1] << "     " 
+    // << sqrt(DotProduct(children[i]->r,children[i]->r,ndim)) << endl;
+    //cin >> i;
 
     // Now loop over children and, if they are systems, integrate
     // their internal motion
@@ -229,7 +247,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
     }
 
     // Set end-of-step variables
-    EndTimestep(nlocal_steps, Nchildren, children);
+    EndTimestep(nlocal, Nchildren, children);
 
   } while (tlocal < tlocal_end);
   // ==========================================================================
@@ -251,7 +269,6 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
 
   return;
 }
-
 
 
 

@@ -307,7 +307,7 @@ DOUBLE NbodyLeapfrogKDK<ndim, kernelclass>::Timestep
   // Acceleration condition
   amag = sqrt(DotProduct(star->a,star->a,ndim));
   timestep = nbody_mult*sqrt(star->h/(amag + small_number_dp));
-
+  //cout << "TIMESTEPS : " << amag << "     " << star->h << "    " << timestep << "    " << star->dt_internal << endl;
   timestep = min(timestep,star->dt_internal);
 
   return timestep;
@@ -333,7 +333,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::IntegrateInternalMotion
   int it;                                             // Iteration counter
   int k;                                              // ..
   int Nchildren = systemi->Nchildren;                 // No. of child systems
-  int nlocal_steps = 0;                               // ..
+  int nlocal = 0;                                     // ..
+  int nsteps_local = 0;                               // ..
   DOUBLE dt;                                          // ..
   DOUBLE tlocal=0.0;                                  // ..
   DOUBLE rcom[ndim];                                  // ..
@@ -368,33 +369,46 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::IntegrateInternalMotion
     for (k=0; k<ndim; k++) children[i]->r0[k] -= rcom[k];
     for (k=0; k<ndim; k++) children[i]->v[k] -= vcom[k];
     for (k=0; k<ndim; k++) children[i]->v0[k] -= vcom[k];
-    for (k=0; k<ndim; k++) children[i]->a[k] -= acom[k];
-    for (k=0; k<ndim; k++) children[i]->a0[k] -= acom[k];
+    for (k=0; k<ndim; k++) children[i]->a[k] = 0.0; //acom[k];
+    for (k=0; k<ndim; k++) children[i]->a0[k] = 0.0; //acom[k];
     children[i]->active = true;
     children[i]->nstep = 1;
+    children[i]->nlast = 0;
     children[i]->level = 0;
   }
 
+
+  // Calculate forces, derivatives and other terms
+  CalculateDirectGravForces(Nchildren, children);
+  for (i=0; i<Nchildren; i++) {
+    for (k=0; k<ndim; k++) children[i]->a0[k] = children[i]->a[k];
+  }
+
+  // Calculate higher order derivatives
+  CalculateAllStartupQuantities(Nchildren, children);
 
   // Main time integration loop
   // ==========================================================================
   do {
 
     // Calculate time-step
+    nlocal = 0;
     dt = std::min(big_number, tlocal_end - tlocal);
     for (i=0; i<Nchildren; i++) {
+      children[i]->nlast = 0;
       dt = std::min(dt, Timestep(children[i]));
     }
     tlocal += dt;
-    nlocal_steps +=1;
+    nsteps_local +=1;
+    nlocal += 1;
 
     // Advance position and velocities
-    AdvanceParticles(nlocal_steps, Nchildren, children, dt);
+    AdvanceParticles(nlocal, Nchildren, children, dt);
 
     //Zero all acceleration terms
     for (i=0; i<Nchildren; i++) {
+      children[i]->active = true;
       children[i]->gpot = 0.0;
-      children[i]->gpe_internal = 0.0;
       for (k=0; k<ndim; k++) children[i]->a[k] = 0.0;
     }
     
@@ -402,7 +416,13 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::IntegrateInternalMotion
     CalculateDirectGravForces(Nchildren, children);
     
     // Apply correction terms
-    CorrectionTerms(nlocal_steps, Nchildren, children, dt);
+    CorrectionTerms(nlocal, Nchildren, children, dt);
+
+    //for (i=0; i<Nchildren; i++)
+    //cout << "(correction) pos : " << i << "   " << children[i]->r[0] 
+    //	 << "    " << children[i]->r[1] << "     " 
+    // << sqrt(DotProduct(children[i]->r,children[i]->r,ndim)) << endl;
+    //cin >> i;
 
     // Now loop over children and, if they are systems, integrate
     // their internal motion
@@ -418,10 +438,25 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::IntegrateInternalMotion
     }
 
     // Set end-of-step variables
-    EndTimestep(nlocal_steps, Nchildren, children);
+    EndTimestep(nlocal, Nchildren, children);
 
   } while (tlocal < tlocal_end);
   // ==========================================================================
+
+
+
+  /*cout << "Done!!" << endl;
+  for (i=0; i<Nchildren; i++) {
+    cout << "Final pos : " << i << "   " << children[i]->r[0] 
+	 << "    " << children[i]->r[1] << "     " 
+	 << sqrt(DotProduct(children[i]->r,children[i]->r,ndim)) << endl;
+    cout << "Final vel : " << i << "   " << children[i]->v[0] 
+	 << "    " << children[i]->v[1] << "     "
+       << sqrt(DotProduct(children[i]->v,children[i]->v,ndim)) << endl;
+    cout << "Final accel : " << i << "   " << children[i]->a[0] 
+	 << "    " << children[i]->a[1] << "     "
+	 << sqrt(DotProduct(children[i]->a,children[i]->a,ndim)) << endl;
+	 }*/
 
 
   // Copy children back to main coordinate system
