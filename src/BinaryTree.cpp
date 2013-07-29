@@ -1756,10 +1756,10 @@ void BinaryTree<ndim>::UpdateAllSphForces
                                      agrav,gpot,parti,data);
 
         // Compute gravitational force dues to distant cells
-	if (multipole == "monopole")
-	  ComputeCellMonopoleForces(i,Ngravcell,gravcelllist,parti);
-	else if (multipole == "quadrupole")
-	  ComputeCellQuadrupoleForces(i,Ngravcell,gravcelllist,parti);
+        if (multipole == "monopole")
+          ComputeCellMonopoleForces(i,Ngravcell,gravcelllist,parti);
+        else if (multipole == "quadrupole")
+          ComputeCellQuadrupoleForces(i,Ngravcell,gravcelllist,parti);
 
         // Add summed variables (acceleration, etc..) to main arrays
         for (k=0; k<ndim; k++) {

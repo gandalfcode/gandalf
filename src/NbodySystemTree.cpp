@@ -542,7 +542,7 @@ void NbodySystemTree<ndim>::FindPerturberLists
   for (s=0; s<nbody->Nsystem; s++) {
 
     // Find node on NN-tree corresponding to system particle
-    c = nbody->system[s].c;
+    c = nbody->system[s].inode;
 
     // Now walk up the tree in turn finding the nearest perturbers
 
