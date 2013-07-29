@@ -147,9 +147,9 @@ all : $(TEST_OBJ) $(WRAP_OBJ) $(OBJ) Exception.o shocktub.so _SphSim.so executab
 
 # =============================================================================
 
-executable : $(OBJ) toymain.o Exception.o
-	$(CPP) $(CFLAGS) $(OPT) -o toymain $(OBJ) Exception.o toymain.o
-	cp toymain ../bin/toymain
+executable : $(OBJ) gandalf.o Exception.o
+	$(CPP) $(CFLAGS) $(OPT) -o gandalf $(OBJ) Exception.o gandalf.o
+	cp gandalf ../bin/gandalf
 
 _SphSim.so : $(WRAP_OBJ) $(OBJ) Exception.o Render.o
 	$(CPP) $(CFLAGS) $(OPT) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o Render.o -o _SphSim.so
