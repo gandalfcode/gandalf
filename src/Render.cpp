@@ -23,7 +23,6 @@
 using namespace std;
 
 
-
 //=============================================================================
 //  RenderBase::RenderFactory
 /// Create new render object for simulation object depending on dimensionality.
@@ -163,10 +162,17 @@ int Render<ndim>::CreateColumnRenderingGrid
 
     // Loop over all particles in snapshot
     // -----------------------------------------------------------------------
+#ifndef __APPLE_CC__
 #pragma omp parallel for default(none) private(c,dr,drmag,drsqd,hrangesqd,invh,i)\
-  private(wkern,wnorm)\
-  shared(snap,hvalues,mvalues,rhovalues,rgrid,xvalues,yvalues,rendervalues,values)\
+  private(wkern,wnorm) \
+  shared(snap,hvalues,mvalues,rhovalues,rgrid,xvalues,yvalues,rendervalues,values) \
   shared(rendernorm,Ngrid)
+#else
+#pragma omp parallel for default(none) private(c,dr,drmag,drsqd,hrangesqd,invh,i)\
+  private(wkern,wnorm) \
+  shared(hvalues,mvalues,rhovalues,rgrid,xvalues,yvalues,rendervalues,values) \
+  shared(rendernorm,Ngrid)
+#endif
     for (i=0; i<snap.Nsph; i++) {
       invh = 1.0/hvalues[i];
       wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);
@@ -206,7 +212,6 @@ int Render<ndim>::CreateColumnRenderingGrid
 
     // Loop over all particles in snapshot
     // ------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(c,dr,drmag,drsqd,hrangesqd,invh,wkern,wnorm)
     for (i=0; i<snap.Nsph; i++) {
       invh = 1.0f/hvalues[i];
       wnorm = mvalues[i]/rhovalues[i]*pow(invh,(ndim - 1));
@@ -225,9 +230,7 @@ int Render<ndim>::CreateColumnRenderingGrid
         drmag = sqrt(drsqd);
         wkern = float(sph->kerntab.wLOS((FLOAT) (drmag*invh)));
 	
-#pragma omp atomic
         values[c] += wnorm*rendervalues[i]*wkern;
-#pragma omp atomic
         rendernorm[c] += wnorm*wkern;
       }
       // ----------------------------------------------------------------------
@@ -342,7 +345,6 @@ int Render<ndim>::CreateSliceRenderingGrid
 
   // Loop over all particles in snapshot
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(c,dr,drmag,drsqd,hrangesqd,invh,skern,wkern,wnorm)
   for (i=0; i<snap.Nsph; i++) {
     invh = 1.0/hvalues[i];
     wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);

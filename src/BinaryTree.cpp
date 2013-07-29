@@ -1422,16 +1422,16 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
   // Find list of all cells that contain active particles
   celllist = new int[gtot];
   cactive = ComputeActiveCellList(celllist);
-  Nneibmax = 2*sph->Ngather;
 
 
   // Set-up all OMP threads
   // ==========================================================================
-#pragma omp parallel default(none) private(activelist,c,cc,dr,draux,drmag,drsqd)\
-  private(hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag,Nactive)\
-  private(neiblist,neibpart,Ninteract,Nneib,parti,rp)\
-  shared(celllist,cactive,Nneibmax,sph,data)
+#pragma omp parallel default(none) private(activelist,c,cc,dr,draux,drmag)\
+  private(drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag)\
+  private(Nactive,neiblist,neibpart,Ninteract,Nneib,Nneibmax,parti,rp)\
+  shared(celllist,cactive,sph,data)
   {
+    Nneibmax = 2*sph->Ngather;
     activelist = new int[Nleafmax];
     neiblist = new int[Nneibmax];
     interactlist = new int[Nneibmax];
@@ -1642,9 +1642,6 @@ void BinaryTree<ndim>::UpdateAllSphForces
   // Find list of all cells that contain active particles
   celllist = new int[gtot];
   cactive = ComputeActiveCellList(celllist);
-  Nneibmax = 2*sph->Ngather;
-  Ndirectmax = 2*Nneibmax;
-  Ngravcellmax = 4*Nneibmax;
 
 
   // Set-up all OMP threads
@@ -1652,9 +1649,12 @@ void BinaryTree<ndim>::UpdateAllSphForces
 #pragma omp parallel default(none) private(activelist,agrav,c,cc,dr,draux,drmag)\
   private(drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag)\
   private(Nactive,neiblist,neibpart,Ninteract,Nneib,parti,rp,gpot,directlist)\
-  private(gravcelllist,Ngravcell,Ndirect)\
-  shared(celllist,cactive,Nneibmax,Ndirectmax,Ngravcellmax,sph,data)
+  private(gravcelllist,Ngravcell,Ndirect,Nneibmax,Ndirectmax,Ngravcellmax)\
+  shared(celllist,cactive,sph,data)
   {
+    Nneibmax = 2*sph->Ngather;
+    Ndirectmax = 2*Nneibmax;
+    Ngravcellmax = 4*Nneibmax;
     agrav = new FLOAT[ndim*sph->Nsph];
     gpot = new FLOAT[ndim*sph->Nsph];
     activelist = new int[Nleafmax];
