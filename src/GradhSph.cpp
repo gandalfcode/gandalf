@@ -140,9 +140,9 @@ int GradhSph<ndim, kernelclass>::ComputeH
     else if (iteration < 5*iteration_max) {
       if (parti.rho < small_number ||
 	  parti.rho*pow(parti.h,ndim) > pow(h_fac,ndim)*parti.m)
-	h_upper_bound = parti.h;
+        h_upper_bound = parti.h;
       else 
-	h_lower_bound = parti.h;
+        h_lower_bound = parti.h;
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
 
@@ -151,6 +151,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
 	   << h_upper_bound << "     " << h_lower_bound << "    " 
 	   << parti.hfactor << "     " 
 	   << parti.m*parti.hfactor*kern.w0(0.0) << endl;
+      cout << "rp : " << parti.r[0] << "     " << parti.v[0] << "    " << parti.a[0] << endl;
       string message = "Problem with convergence of h-rho iteration";
       ExceptionHandler::getIstance().raise(message);
     }
@@ -209,6 +210,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
     }
   }
   parti.chi = -Sph<ndim>::invndim*parti.h*parti.chi*parti.invrho*parti.invomega;
+
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;
@@ -278,7 +280,9 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
       if (dvdr < (FLOAT) 0.0) {
 
     	winvrho = (FLOAT) 0.25*(wkerni + wkernj)*
-	  (parti.invrho + neibpart[j].invrho);
+          (parti.invrho + neibpart[j].invrho);
+        //winvrho = (FLOAT) (wkerni + wkernj)/
+        // (parti.rho + neibpart[j].rho);
 	
         // Artificial viscosity term
         if (avisc == mon97) {
@@ -311,9 +315,11 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
 
       // Add total hydro contribution to acceleration for particle i
       for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
+      parti.levelneib = max(parti.levelneib,neibpart[j].level);
       
       // If neighbour is also active, add contribution to force here
       for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
+      neibpart[j].levelneib = max(neibpart[j].levelneib,parti.level);
 
     }
     // ------------------------------------------------------------------------
@@ -438,10 +444,12 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     // Add total hydro contribution to acceleration for particle i
     for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;
     parti.gpot += neibpart[j].m*gaux;
+    parti.levelneib = max(parti.levelneib,neibpart[j].level);
     
     // If neighbour is also active, add contribution to force here
     for (k=0; k<ndim; k++) neibpart[j].agrav[k] -= parti.m*dr[k]*paux;
     neibpart[j].gpot += parti.m*gaux;
+    neibpart[j].levelneib = max(neibpart[j].levelneib,parti.level);
 
   }
   // ==========================================================================

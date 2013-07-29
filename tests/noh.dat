@@ -10,14 +10,14 @@ Initial conditions variables
 Simulation run id string                    : run_id = NOH1
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = noh
-Dimensionality of cube                      : ndim = 1
+Dimensionality of cube                      : ndim = 2
 Pressure of fluid 1                         : press1 = 0.0001
 Density of fluid 1                          : rhofluid1 = 1.0
 Radius of initial fluid sphere              : radius = 1.0
-No. of particles in sphere                  : Npart = 8000
-No. of x-particles in fluid 1               : Nlattice1[0] = 64
-No. of y-particles in fluid 1               : Nlattice1[1] = 64
-No. of y-particles in fluid 1               : Nlattice1[2] = 64
+No. of particles in sphere                  : Npart = 32000
+No. of x-particles in fluid 1               : Nlattice1[0] = 128
+No. of y-particles in fluid 1               : Nlattice1[1] = 128
+No. of y-particles in fluid 1               : Nlattice1[2] = 128
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
 Use dimensionless units                     : dimensionless = 1
 
@@ -36,7 +36,7 @@ RHS position of boundary in z-dimension     : boxmax[2] = 1.0
 -------------------------
 Simulation time variables
 -------------------------
-Simulation end time                         : tend = 0.5
+Simulation end time                         : tend = 0.6
 Regular snapshot output frequency           : dt_snap = 1.0
 Screen output frequency (in no. of steps)   : noutputstep = 1
 
@@ -61,7 +61,7 @@ SPH smoothing length iteration tolerance    : h_converge = 0.02
 SPH artificial viscosity options
 --------------------------------
 Artificial viscosity choice                 : avisc = mon97
-Artificial conductivity choice              : acond = none
+Artificial conductivity choice              : acond = wadsley2008
 Artificial viscosity alpha value            : alpha_visc = 1.0
 Artificial viscosity beta value             : beta_visc = 2.0
 

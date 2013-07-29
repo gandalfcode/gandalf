@@ -410,7 +410,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
     if (ndim == 1) {
       x[i] = (float) sphaux[i].r[0];
       vx[i] = (float) sphaux[i].v[0];
-      ax[i] = (float) sphaux[i].a[0];
+      ax[i] = (float) pow(2,simulation->level_step - sphaux[i].level)*simulation->timestep; //(float) sphaux[i].a[0];
     }
     else if (ndim == 2) {
       x[i] = (float) sphaux[i].r[0];
@@ -435,7 +435,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
     h[i] = (float) sphaux[i].h;
     rho[i] = (float) sphaux[i].rho;
     u[i] = (float) sphaux[i].u;
-    dudt[i] = (float) sphaux[i].dudt;
+    dudt[i] = sphaux[i].dudt;
 
   }
 
@@ -519,18 +519,17 @@ UnitInfo SphSnapshotBase::ExtractArray
   UnitInfo unitinfo;                // ..
   SimUnit* unit;                    // Unit pointer
 
-  //Zero initial array pointers and size
+  // Zero initial array pointers and size
   *out_array = NULL;
   *size_array = 0;
 
 
   // Check that the memory is allocated. If not, fails very rumorously
   if (!allocated){
-    cout << "Error: requested a snapshot that it's not allocated!!!!" << endl;
+    cout << "Error: requested a snapshot that is not allocated!!!!" << endl;
     cout << "This means there's a bug in the memory management: please inform the authors" << endl;
     exit(-2);
   }
-
 
   // Set last time used
   LastUsed = time(NULL);
@@ -547,9 +546,9 @@ UnitInfo SphSnapshotBase::ExtractArray
 
   // If array type and name is valid, pass pointer to array and also set unit
   if (name == "x") {
-    if (type=="sph")
+    if (type=="sph") 
       *out_array = x;
-    else if (type=="star")
+    else if (type=="star") 
       *out_array = xstar;
     unit = &(units->r);
   }

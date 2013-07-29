@@ -85,6 +85,8 @@ class SimulationBase
   virtual void PostInitialConditionsSetup(void)=0;
   virtual void PreSetupForPython(void)=0;
   virtual void ProcessParameters(void)=0;
+  virtual void SetComFrame(void)=0;
+
 
   // Input-output routines
   // --------------------------------------------------------------------------
@@ -97,6 +99,7 @@ class SimulationBase
   bool setup;                       ///< Flag if simulation is setup
   bool ParametersProcessed;         ///< Flag if params are already processed
   int integration_step;             ///< Steps per complete integration step
+  int level_diff_max;               ///< Max. allowed neib timestep level diff
   int level_max;                    ///< Maximum timestep level
   int level_step;                   ///< Level of smallest timestep unit
   int n;                            ///< Integer time counter
@@ -183,6 +186,7 @@ class Simulation : public SimulationBase
   virtual void ProcessParameters(void)=0;
   virtual void OutputDiagnostics(void);
   virtual void UpdateDiagnostics(void);
+  virtual void SetComFrame(void);
 
 #if defined(VERIFY_ALL)
   void VerifyBlockTimesteps(void);
@@ -273,6 +277,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::tsnapnext;
   using Simulation<ndim>::dt_snap;
   using Simulation<ndim>::dt_python;
+  using Simulation<ndim>::level_diff_max;
   using Simulation<ndim>::level_max;
   using Simulation<ndim>::integration_step;
   using Simulation<ndim>::nresync;
@@ -308,6 +313,7 @@ class GodunovSphSimulation : public Simulation<ndim>
   using SimulationBase::simparams;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
+  using Simulation<ndim>::sinks;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
   using Simulation<ndim>::sphint;
@@ -333,11 +339,13 @@ class GodunovSphSimulation : public Simulation<ndim>
   using Simulation<ndim>::tsnapnext;
   using Simulation<ndim>::dt_snap;
   using Simulation<ndim>::dt_python;
+  using Simulation<ndim>::level_diff_max;
   using Simulation<ndim>::level_max;
   using Simulation<ndim>::integration_step;
   using Simulation<ndim>::nresync;
   using Simulation<ndim>::dt_max;
   using Simulation<ndim>::sph_single_timestep;
+  using Simulation<ndim>::sink_particles;
 
 public:
 

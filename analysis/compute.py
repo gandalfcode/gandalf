@@ -8,7 +8,28 @@ from data_fetcher import UserQuantity
 
 
 #------------------------------------------------------------------------------
-def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "current"):
+def particle_data(snap, quantity, type="default", id=None):
+    '''Returns ...
+'''
+    values = UserQuantity(quantity).fetch(type, snap)[1]
+    if id == None:
+        return values
+    else:
+        return values[id]
+
+
+#------------------------------------------------------------------------------
+def COM(snap, quantity='x', type="default"):
+    x = UserQuantity(quantity).fetch(type, snap)[1]
+    m = UserQuantity('m').fetch(type, snap)[1]
+    
+    return (x*m).sum()/m.sum()
+
+
+
+#------------------------------------------------------------------------------
+def L1errornorm(x=None, y=None, xmin=None, xmax=None,
+                sim="current", snap="current"):
     '''Computes the L1 error norm from the simulation data relative to the analytical solution'''
     
     #get the simulation number from the buffer
@@ -31,9 +52,7 @@ def L1errornorm(x=None, y=None, xmin=None, xmax=None, sim = "current", snap = "c
                                     pdata.x_data < adata.x_data.max() )
         pdata.x_data = pdata.x_data[pindex]
         pdata.y_data = pdata.y_data[pindex]
-
-    
-        
+   
     #prepare interpolation function from analytical data
     #f = interpolate.interp1d(adata.x_data[::-1], adata.y_data[::-1], kind = 'linear', axis=0, bounds_error = False)
     f = interpolate.interp1d(adata.x_data[::], adata.y_data[::], kind = 'linear', axis=0, bounds_error = False)
@@ -52,7 +71,7 @@ def lagrangian_radii(snap, mfrac=0.5, type="default"):
 
     # Find particle ids in order of increasing radial distance
     porder = np.argsort(r)
-    m_ordered=m[porder]
+    m_ordered = m[porder]
     mcumulative = np.cumsum(m_ordered)
     mtotal = mcumulative[-1]
     mlag = mfrac*mtotal
@@ -60,9 +79,3 @@ def lagrangian_radii(snap, mfrac=0.5, type="default"):
     return 0.5*(r[index-1]+r[index])
 
 
-#------------------------------------------------------------------------------
-def COM (snap, quantity='x', type="default"):
-    x=UserQuantity(quantity).fetch(type, snap)[1]
-    m=UserQuantity('m').fetch(type, snap)[1]
-    
-    return (x*m).sum()/m.sum()

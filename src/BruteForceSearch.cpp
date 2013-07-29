@@ -54,6 +54,18 @@ void BruteForceSearch<ndim>::UpdateTree(Sph<ndim> *sph, Parameters &simparams)
 
 
 //=============================================================================
+//  BruteForceSearch::UpdateActiveParticleCounters
+/// For Brute Force neighbour searching, there are no counters.
+//=============================================================================
+template <int ndim>
+void BruteForceSearch<ndim>::UpdateActiveParticleCounters(Sph<ndim> *sph)
+{
+  return;
+}
+
+
+
+//=============================================================================
 //  BruteForceSearch::UpdateAllSphProperties
 /// Routine for computing SPH properties (smoothing lengths, densities and 
 /// forces) for all active SPH particle using neighbour lists generated 
@@ -99,6 +111,10 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
     // ------------------------------------------------------------------------
 #pragma omp for
     for (i=0; i<sph->Nsph; i++) {
+
+      // Skip over inactive particles
+      if (!sph->sphdata[i].active) continue;
+
       for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
 
       // Compute distances and the reciprical between the current particle 
@@ -157,7 +173,7 @@ void BruteForceSearch<ndim>::UpdateAllSphHydroForces
   FLOAT *invdrmag;                    // Array of neib. inverse distances
   struct SphParticle<ndim> *neibpart; // Local copies of neib. particles
 
-  debug2("[BruteForceSearch::UpdateAllSphForces]");
+  debug2("[BruteForceSearch::UpdateAllSphHydroForces]");
 
   // Allocate memory for storing neighbour ids and position data
   neiblist = new int[sph->Ntot];
@@ -172,6 +188,7 @@ void BruteForceSearch<ndim>::UpdateAllSphHydroForces
   for (j=0; j<sph->Ntot; j++) {
     neibpart[j].div_v = (FLOAT) 0.0;
     neibpart[j].dudt = (FLOAT) 0.0;
+    neibpart[j].levelneib = 0;
     for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
   }
 
@@ -207,7 +224,7 @@ void BruteForceSearch<ndim>::UpdateAllSphHydroForces
 
     // Compute all SPH hydro forces
     sph->ComputeSphHydroForces(i,Nneib,neiblist,drmag,invdrmag,dr,
-			      sph->sphdata[i],neibpart);
+			       sph->sphdata[i],neibpart);
 
   }
   // --------------------------------------------------------------------------
@@ -220,9 +237,11 @@ void BruteForceSearch<ndim>::UpdateAllSphHydroForces
       sph->sphdata[j].dudt += neibpart[j].dudt;
       sph->sphdata[j].div_v += neibpart[j].div_v;
     }
+    sph->sphdata[j].levelneib = max(sph->sphdata[j].levelneib,
+				    neibpart[j].levelneib);
   }
-
   
+  // Free all allocated memory
   delete[] neibpart;
   delete[] invdrmag;
   delete[] drmag;
@@ -278,6 +297,7 @@ void BruteForceSearch<ndim>::UpdateAllSphForces
     neibpart[j].div_v = (FLOAT) 0.0;
     neibpart[j].dudt = (FLOAT) 0.0;
     neibpart[j].gpot = (FLOAT) 0.0;
+    neibpart[j].levelneib = 0;
     for (k=0; k<ndim; k++) neibpart[j].agrav[k] = (FLOAT) 0.0;
     for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
   }
@@ -297,11 +317,8 @@ void BruteForceSearch<ndim>::UpdateAllSphForces
     // Determine interaction list (to ensure we don't compute pair-wise
     // forces twice)
     Nneib = 0;
-    for (j=0; j<sph->Nsph; j++) {
-      if ((j < i && !sph->sphdata[j].active) || j > i) {
-        neiblist[Nneib++] = j;
-      }
-    }
+    for (j=0; j<sph->Nsph; j++)
+      if ((j < i && !sph->sphdata[j].active) || j > i) neiblist[Nneib++] = j;
 
     // Compute forces between SPH neighbours (hydro and gravity)
     sph->ComputeSphHydroGravForces(i,Nneib,neiblist,sph->sphdata[i],neibpart);
@@ -319,6 +336,8 @@ void BruteForceSearch<ndim>::UpdateAllSphForces
       sph->sphdata[j].dudt += neibpart[j].dudt;
       sph->sphdata[j].div_v += neibpart[j].div_v;
     }
+    sph->sphdata[j].levelneib = max(sph->sphdata[j].levelneib,
+				    neibpart[j].levelneib);
   }
   
 
@@ -440,8 +459,7 @@ void BruteForceSearch<ndim>::UpdateAllSphGravForces
 //=============================================================================
 template <int ndim>
 void BruteForceSearch<ndim>::UpdateAllSphDerivatives
-(Sph<ndim> *sph                       ///< Pointer to SPH object
-)
+(Sph<ndim> *sph)                      ///< Pointer to SPH object
 {
   int i,j,k;                          // Particle and dimension counters
   int okflag;                         // Flag valid smoothing length
@@ -519,8 +537,7 @@ void BruteForceSearch<ndim>::UpdateAllSphDerivatives
 //=============================================================================
 template <int ndim>
 void BruteForceSearch<ndim>::UpdateAllSphDudt
-(Sph<ndim> *sph                       ///< Pointer to SPH object
-)
+(Sph<ndim> *sph)                      ///< Pointer to SPH object
 {
   int i,j,k;                          // Particle and dimension counters
   int okflag;                         // Flag valid smoothing length
@@ -537,7 +554,7 @@ void BruteForceSearch<ndim>::UpdateAllSphDudt
   FLOAT *invdrmag;                    // Array of neib. inverse distances
   struct SphParticle<ndim> *neibpart; // Local copies of neighbour particles
 
-  debug2("[BruteForceSearch::UpdateAllSphForces]");
+  debug2("[BruteForceSearch::UpdateAllSphDudt]");
 
   // The potential number of neighbours is given by ALL the particles
   Nneib = sph->Ntot;
@@ -550,6 +567,8 @@ void BruteForceSearch<ndim>::UpdateAllSphDudt
   neibpart = new SphParticle<ndim>[sph->Ntot];
 
   for (j=0; j<sph->Ntot; j++) neibpart[j] = sph->sphdata[j];
+  for (j=0; j<sph->Ntot; j++) neibpart[j].dudt = (FLOAT) 0.0;
+
 
   // Compute smoothing lengths of all SPH particles
   // --------------------------------------------------------------------------
@@ -557,11 +576,6 @@ void BruteForceSearch<ndim>::UpdateAllSphDudt
     for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
     hrangesqdi = pow(sph->kernfac*sph->kernp->kernrange*sph->sphdata[i].h,2);
     Nneib = 0;
-
-    // Make local copies of all potential neighbours
-     for (j=0; j<sph->Ntot; j++) {
-       neibpart[j].dudt = (FLOAT) 0.0;
-     }
 
     // Compute distances and the reciprical between the current particle 
     // and all neighbours here
@@ -585,15 +599,16 @@ void BruteForceSearch<ndim>::UpdateAllSphDudt
     sph->ComputeSphNeibDudt(i,Nneib,neiblist,drmag,invdrmag,dr,
 			    sph->sphdata[i],neibpart);
 
-    // Now add all active neighbour contributions to the main arrays
-    for (j=0; j<sph->Ntot; j++) {
-      if (neibpart[j].active) {
-        sph->sphdata[j].dudt += neibpart[j].dudt;
-      }
-    }
-
   }
   // --------------------------------------------------------------------------
+
+
+  // Now add all active neighbour contributions to the main arrays
+  for (j=0; j<sph->Ntot; j++) {
+    if (neibpart[j].active) {
+      sph->sphdata[j].dudt += neibpart[j].dudt;
+    }
+  }
 
   delete[] neibpart;
   delete[] invdrmag;

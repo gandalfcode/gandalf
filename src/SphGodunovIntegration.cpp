@@ -62,6 +62,7 @@ void SphGodunovIntegration<ndim>::AdvanceParticles
  SphParticle<ndim> *sphdata,        ///< [inout] SPH particle data array
  FLOAT timestep)                    ///< [in] Minimum timestep level
 {
+  int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
@@ -70,14 +71,14 @@ void SphGodunovIntegration<ndim>::AdvanceParticles
   debug2("[SphGodunovIntegration::AdvanceParticles]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dt,k,nstep,i)\
+#pragma omp parallel for default(none) private(dt,k,nstep,i,dn)\
   shared(n,Nsph,sphdata,timestep)
   for (i=0; i<Nsph; i++) {
 
     // Compute time since beginning of current step
     nstep = sphdata[i].nstep;
-    if (n%nstep == 0) dt = timestep*(FLOAT) nstep;
-    else dt = timestep*(FLOAT) (n%nstep);
+    dn = n - sphdata[i].nlast;
+    dt = timestep*(FLOAT) dn;
 
     // Advance particle positions and velocities
     for (k=0; k<ndim; k++) sphdata[i].r[k] = sphdata[i].r0[k] + 
@@ -86,7 +87,7 @@ void SphGodunovIntegration<ndim>::AdvanceParticles
       sphdata[i].a0[k]*dt;
 
     // Set particle as active at end of step
-    if (n%nstep == 0) sphdata[i].active = true;
+    if (dn == nstep) sphdata[i].active = true;
     else sphdata[i].active = false;
   }
   // --------------------------------------------------------------------------
@@ -120,6 +121,7 @@ void SphGodunovIntegration<ndim>::EndTimestep
  int Nsph,                          ///< [in] No. of SPH particles
  SphParticle<ndim> *sphdata)        ///< [inout] SPH particle data array
 {
+  int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
@@ -127,21 +129,74 @@ void SphGodunovIntegration<ndim>::EndTimestep
   debug2("[SphGodunovIntegration::EndTimestep]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(k,nstep,i)\
+#pragma omp parallel for default(none) private(k,nstep,i,dn)\
   shared(n,Nsph,sphdata)
   for (i=0; i<Nsph; i++) {
+    dn = n - sphdata[i].nlast;
     nstep = sphdata[i].nstep;
-    if (n%nstep == 0) {
+
+    if (n == sphdata[i].nlast) {
       for (k=0; k<ndim; k++) sphdata[i].r0[k] = sphdata[i].r[k];
       for (k=0; k<ndim; k++) sphdata[i].v0[k] = sphdata[i].v[k];
       for (k=0; k<ndim; k++) sphdata[i].a0[k] = sphdata[i].a[k];
-      //sphdata[i].active = false;
-      sphdata[i].active = true;
+      sphdata[i].active = false;
+      sphdata[i].nlast = n;
     }
   }
   // --------------------------------------------------------------------------
 
   return;
+}
+
+
+
+//=============================================================================
+//  SphGodunovIntegration::CheckTimesteps
+/// Record all important SPH particle quantities at the end of the step for  
+/// the start of the new timestep.
+// ============================================================================
+template <int ndim>
+int SphGodunovIntegration<ndim>::CheckTimesteps
+(int level_diff_max, int n,                             ///< [in] Integer time in block time struct
+ int Nsph,                          ///< [in] No. of SPH particles
+ SphParticle<ndim> *sphdata)        ///< [inout] SPH particle data array
+{
+  int activecount = 0;              // ..
+  int dn;                           // Integer time since beginning of step
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+  int level_new;                    // ..
+  int nnewstep;                     // ..
+  int nstep;                        // Particle (integer) step size
+
+  debug2("[SphLeapfrogKDK::CheckTimesteps]");
+
+  // --------------------------------------------------------------------------
+#pragma omp parallel for default(none) private(dn,k,level_new,nnewstep,nstep)\
+  shared(level_diff_max,n,Nsph,sphdata) reduction(+:activecount)
+  for (i=0; i<Nsph; i++) {
+    dn = n - sphdata[i].nlast;
+    nstep = sphdata[i].nstep;
+
+    // Check if neighbour timesteps are too small.  If so, then reduce 
+    // timestep if possible
+    if (sphdata[i].levelneib - sphdata[i].level > level_diff_max) {
+      level_new = sphdata[i].levelneib - level_diff_max;
+      nnewstep = sphdata[i].nstep/pow(2,level_new - sphdata[i].level);
+
+      // If new level is correctly synchronised, then change all quantities
+      if (n%nnewstep == 0) {
+	nstep = dn;
+	sphdata[i].level = level_new;
+	if (dn > 0) sphdata[i].nstep = nstep;
+	sphdata[i].active = true;
+	activecount++;
+      }
+    }
+  }
+  // --------------------------------------------------------------------------
+
+  return activecount;
 }
 
 

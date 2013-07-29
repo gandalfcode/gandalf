@@ -68,6 +68,42 @@ void GridSearch<ndim>::UpdateTree(Sph<ndim> *sph, Parameters &simparams)
 
 
 //=============================================================================
+//  GridSearch::UpdateActiveParticleCounters
+/// ..
+//=============================================================================
+template <int ndim>
+void GridSearch<ndim>::UpdateActiveParticleCounters(Sph<ndim> *sph)
+{
+  int c;
+  int i;
+  int ilast;
+
+  // Loop through all grid cells in turn
+  // --------------------------------------------------------------------------
+  for (c=0; c<Ncell; c++) {
+    grid[c].Nactive = 0;
+
+    if (grid[c].Nptcls == 0) continue;
+    i = grid[c].ifirst;
+    ilast = grid[c].ilast;
+
+    // Else walk through linked list to obtain list and number of active ptcls.
+    do {
+      if (i < sph->Nsph && sph->sphdata[i].active) grid[c].Nactive++;
+      if (i == ilast) break;
+      i = inext[i];
+    } while (i != -1);
+
+  }
+  // --------------------------------------------------------------------------
+
+
+  return;
+}
+
+
+
+//=============================================================================
 //  GridSearch::UpdateAllSphProperties
 /// Compute all local 'gather' properties of currently active particles, and 
 /// then compute each particle's contribution to its (active) neighbour 
@@ -308,6 +344,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
         neibpart[j] = data[neiblist[j]];
         neibpart[j].div_v = (FLOAT) 0.0;
         neibpart[j].dudt = (FLOAT) 0.0;
+	neibpart[j].levelneib = 0;
         for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
       }
 
@@ -318,6 +355,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
         parti = data[i];
         parti.div_v = (FLOAT) 0.0;
         parti.dudt = (FLOAT) 0.0;
+	parti.levelneib = 0;
         for (k=0; k<ndim; k++) parti.a[k] = (FLOAT) 0.0;
 
         for (k=0; k<ndim; k++) rp[k] = parti.r[k];
@@ -355,7 +393,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
 
         // Compute all gather neighbour contributions to hydro forces
         sph->ComputeSphHydroForces(i,Ninteract,interactlist,
-				  drmag,invdrmag,dr,parti,neibpart);
+				   drmag,invdrmag,dr,parti,neibpart);
 
         // Add all particle i contributions to main array
         for (k=0; k<ndim; k++) {
@@ -366,14 +404,15 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
         data[i].dudt += parti.dudt;
 #pragma omp atomic
         data[i].div_v += parti.div_v;
+	data[i].levelneib = max(data[i].levelneib,parti.levelneib);
 	
       }
       // ----------------------------------------------------------------------
 
       // Now add all active neighbour contributions to the main arrays
       for (jj=0; jj<Nneib; jj++) {
+	j = neiblist[jj];
         if (neibpart[jj].active) {
-          j = neiblist[jj];
           for (k=0; k<ndim; k++) {
 #pragma omp atomic
             data[j].a[k] += neibpart[jj].a[k];
@@ -383,6 +422,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
 #pragma omp atomic
           data[j].div_v += neibpart[jj].div_v;
         }
+	data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
       }
       
     }

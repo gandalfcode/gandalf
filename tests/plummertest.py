@@ -9,7 +9,7 @@ from seren.analysis.compute import lagrangian_radii
 import time
 
 # Create new shocktube simulation from 'adshock.dat' file
-newsim('plummer.dat')
+newsim('hybridplummer.dat')
 setupsim()
 
 # Plot the density with the analytical solution
@@ -24,9 +24,10 @@ plot("r","rho")
 
 subfigure(2,2,3)
 plot("r","ar")
+addplot("r","ar",type='star')
 
 subfigure(2,2,4)
-plot("r","vr")
+plot("r","sound")
 addplot("r","vr",type='star')
 
 # 'Sleep hack' (to allow matplotlib to update the figure) 

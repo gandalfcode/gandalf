@@ -89,6 +89,7 @@ void EnergyPEC<ndim>::EnergyIntegration
  SphParticle<ndim> *sphdata,        ///< [inout] SPH particle data array
  FLOAT timestep)                    ///< [in] Base timestep value
 {
+  int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int nstep;                        // Particle (integer) step size
   FLOAT dt;                         // Timestep since start of step
@@ -96,13 +97,13 @@ void EnergyPEC<ndim>::EnergyIntegration
   debug2("[EnergyPEC::EnergyIntegration]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dt,nstep) \
+#pragma omp parallel for default(none) private(dt,nstep,i,dn) \
      shared(sphdata, n, timestep, Nsph)
   for (i=0; i<Nsph; i++) {
     nstep = sphdata[i].nstep;
-    if (n%nstep == 0) dt = timestep*(FLOAT) nstep;
-    else dt = timestep*(FLOAT) (n%nstep);
-    sphdata[i].u = sphdata[i].u0 + sphdata[i].dudt*dt;
+    dn = n - sphdata[i].nlast;
+    dt = timestep*(FLOAT) dn;
+    sphdata[i].u = sphdata[i].u0 + sphdata[i].dudt0*dt;
   }
   // --------------------------------------------------------------------------
 
@@ -124,17 +125,19 @@ void EnergyPEC<ndim>::EnergyCorrectionTerms
  SphParticle<ndim> *sphdata,        ///< [inout] SPH particle data array
  FLOAT timestep)                    ///< [in] Base timestep value
 {
+  int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int nstep;                        // Particle (integer) step size
 
   debug2("[EnergyPEC::EnergyCorrectionTerms]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(nstep) \
+#pragma omp parallel for default(none) private(nstep,dn,i) \
      shared(n, Nsph, sphdata, timestep)
   for (i=0; i<Nsph; i++) {
+    dn = n - sphdata[i].nlast;
     nstep = sphdata[i].nstep;
-    if (n%nstep == 0) sphdata[i].u += 
+    if (dn == nstep) sphdata[i].u += 
       0.5*(sphdata[i].dudt - sphdata[i].dudt0)*timestep*(FLOAT) nstep;
   }
   // --------------------------------------------------------------------------
@@ -155,17 +158,19 @@ void EnergyPEC<ndim>::EndTimestep
  int Nsph,                          ///< [in] No. of SPH particles
  SphParticle<ndim> *sphdata)        ///< [inout] SPH particle data array
 {
+  int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int nstep;                        // Particle (integer) step size
 
   debug2("[EnergyPEC::EndTimestep]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(nstep) \
+#pragma omp parallel for default(none) private(dn,i,nstep) \
       shared(n, Nsph, sphdata)
   for (i=0; i<Nsph; i++) {
+    dn = n - sphdata[i].nlast;
     nstep = sphdata[i].nstep;
-    if (n%nstep == 0) {
+    if (dn == nstep) {
       sphdata[i].u0 = sphdata[i].u;
       sphdata[i].dudt0 = sphdata[i].dudt;
     }

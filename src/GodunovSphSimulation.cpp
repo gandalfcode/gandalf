@@ -21,6 +21,7 @@
 #include "Nbody.h"
 #include "Sph.h"
 #include "RiemannSolver.h"
+#include "Sinks.h"
 using namespace std;
 
 
@@ -30,6 +31,512 @@ using namespace std;
 template class GodunovSphSimulation<1>;
 template class GodunovSphSimulation<2>;
 template class GodunovSphSimulation<3>;
+
+
+
+//=============================================================================
+//  GodunovSphSimulation::ProcessParameters
+/// Process all the options chosen in the parameters file, setting various 
+/// simulation variables and creating important simulation objects.
+//=============================================================================
+template <int ndim>
+void GodunovSphSimulation<ndim>::ProcessParameters(void)
+{
+  aviscenum avisc;                  // Artificial viscosity enum
+  acondenum acond;                  // Artificial conductivity enum
+
+  // Local references to parameter variables for brevity
+  map<string, int> &intparams = simparams->intparams;
+  map<string, float> &floatparams = simparams->floatparams;
+  map<string, string> &stringparams = simparams->stringparams;
+
+  debug2("[SphSimulation::ProcessParameters]");
+
+  // Sanity check for valid dimensionality
+  if (ndim < 1 || ndim > 3) {
+    string message = "Invalid dimensionality chosen : ndim = " + ndim;
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Set the enum for artificial viscosity
+  if (stringparams["avisc"] == "none")
+    avisc = noneav;
+  else if (stringparams["avisc"] == "mon97")
+    avisc = mon97;
+  else {
+    string message = "Unrecognised parameter : avisc = " +
+      simparams->stringparams["avisc"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Set the enum for artificial conductivity
+  if (stringparams["acond"] == "none")
+    acond = noneac;
+  else if (stringparams["acond"] == "wadsley2008")
+    acond = wadsley2008;
+  else if (stringparams["acond"] == "price2008")
+    acond = price2008;
+  else {
+    string message = "Unrecognised parameter : acond = " +
+        simparams->stringparams["acond"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Set-up all output units for scaling parameters
+  if (intparams["dimensionless"] == 0) {
+    simunits.r.outunit = stringparams["routunit"];
+    simunits.m.outunit = stringparams["moutunit"];
+    simunits.t.outunit = stringparams["toutunit"];
+    simunits.v.outunit = stringparams["voutunit"];
+    simunits.a.outunit = stringparams["aoutunit"];
+    simunits.rho.outunit = stringparams["rhooutunit"];
+    simunits.press.outunit = stringparams["pressoutunit"];
+    simunits.f.outunit = stringparams["foutunit"];
+    simunits.E.outunit = stringparams["Eoutunit"];
+    simunits.mom.outunit = stringparams["momoutunit"];
+    simunits.angmom.outunit = stringparams["angmomoutunit"];
+    simunits.angvel.outunit = stringparams["angveloutunit"];
+    simunits.dmdt.outunit = stringparams["dmdtoutunit"];
+    simunits.u.outunit = stringparams["uoutunit"];
+    simunits.dudt.outunit = stringparams["dudtoutunit"];
+    simunits.temp.outunit = stringparams["tempoutunit"];
+    simunits.SetupUnits(simparams);
+  }
+
+  // Create SPH object based on chosen method in params file
+  // --------------------------------------------------------------------------
+  string KernelName = stringparams["kernel"];
+  if (intparams["tabulated_kernel"] == 1) {
+    sph = new GodunovSph<ndim, TabulatedKernel> 
+      (intparams["hydro_forces"], intparams["self_gravity"],
+       floatparams["alpha_visc"], floatparams["beta_visc"],
+       floatparams["h_fac"], floatparams["h_converge"], 
+       avisc, acond, stringparams["gas_eos"], KernelName);
+  }
+  else if (intparams["tabulated_kernel"] == 0) {
+    // Depending on the kernel, instantiate a different GradSph object
+    if (KernelName == "m4") {
+      sph = new GodunovSph<ndim, M4Kernel> 
+	(intparams["hydro_forces"], intparams["self_gravity"],
+	 floatparams["alpha_visc"], floatparams["beta_visc"],
+	 floatparams["h_fac"], floatparams["h_converge"],
+	 avisc, acond, stringparams["gas_eos"], KernelName);
+    }
+    else if (KernelName == "quintic") {
+      sph = new GodunovSph<ndim, QuinticKernel> 
+	(intparams["hydro_forces"], intparams["self_gravity"],
+	 floatparams["alpha_visc"], floatparams["beta_visc"],
+	 floatparams["h_fac"], floatparams["h_converge"],
+	 avisc, acond, stringparams["gas_eos"], KernelName);
+    }
+    else if (KernelName == "gaussian") {
+      sph = new GodunovSph<ndim, GaussianKernel> 
+	(intparams["hydro_forces"], intparams["self_gravity"],
+	 floatparams["alpha_visc"], floatparams["beta_visc"],
+	 floatparams["h_fac"], floatparams["h_converge"],
+	 avisc, acond, stringparams["gas_eos"], KernelName);
+    }
+    else {
+      string message = "Unrecognised parameter : kernel = " +
+	simparams->stringparams["kernel"];
+      ExceptionHandler::getIstance().raise(message);
+    }
+  }
+  else {
+    string message = "Invalid option for the tabulated_kernel parameter: " +
+      stringparams["tabulated_kernel"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
+  // Thermal physics object.  If energy equation is chosen, also initiate
+  // the energy integration object.
+  // --------------------------------------------------------------------------
+  string gas_eos = stringparams["gas_eos"];
+  if (gas_eos == "energy_eqn") {
+    sph->eos = new Adiabatic<ndim>(floatparams["temp0"],
+				   floatparams["mu_bar"],
+				   floatparams["gamma_eos"]);
+  }
+  else if (gas_eos == "isothermal")
+    sph->eos = new Isothermal<ndim>(floatparams["temp0"],
+				    floatparams["mu_bar"],
+				    floatparams["gamma_eos"],
+                                    &simunits);
+  else if (gas_eos == "barotropic")
+    sph->eos = new Barotropic<ndim>(floatparams["temp0"],
+				    floatparams["mu_bar"],
+				    floatparams["gamma_eos"],
+				    floatparams["rho_bary"],
+                                    &simunits);
+  else {
+    string message = "Unrecognised parameter : gas_eos = " + gas_eos;
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
+  // Riemann solver object
+  // --------------------------------------------------------------------------
+  string riemann = stringparams["riemann_solver"];
+  if (riemann == "exact") {
+    sph->riemann = new ExactRiemannSolver(floatparams["gamma_eos"]);
+  }
+  else if (riemann == "hllc") {
+    sph->riemann = new HllcRiemannSolver(floatparams["gamma_eos"]);
+  }
+  else {
+    string message = "Unrecognised parameter : riemann_solver = "
+      + riemann;
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
+  // Create neighbour searching object based on chosen method in params file
+  // --------------------------------------------------------------------------
+  if (stringparams["neib_search"] == "bruteforce")
+    sphneib = new BruteForceSearch<ndim>;
+  else if (stringparams["neib_search"] == "grid")
+    sphneib = new GridSearch<ndim>;
+  else if (stringparams["neib_search"] == "tree")
+    sphneib = new BinaryTree<ndim>(intparams["Nleafmax"],
+                                   floatparams["thetamaxsqd"],
+                                   sph->kernp->kernrange,
+                                   stringparams["gravity_mac"],
+                                   stringparams["multipole"]);
+  else {
+    string message = "Unrecognised parameter : neib_search = " 
+      + simparams->stringparams["neib_search"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
+  // Create SPH particle integration object
+  // --------------------------------------------------------------------------
+  sphint = new SphGodunovIntegration<ndim>(floatparams["accel_mult"],
+					   floatparams["courant_mult"]);
+
+
+  // Energy integration object
+  // --------------------------------------------------------------------------
+  uint = new EnergyGodunovIntegration<ndim>(floatparams["energy_mult"]);
+
+  
+  // Create N-body object based on chosen method in params file
+  // --------------------------------------------------------------------------
+  if (stringparams["nbody"] == "lfkdk") {
+    string KernelName = stringparams["kernel"];
+    if (intparams["tabulated_kernel"] == 1) {
+      nbody = new NbodyLeapfrogKDK<ndim, TabulatedKernel> 
+	(intparams["nbody_softening"], intparams["sub_systems"],
+	 floatparams["nbody_mult"], KernelName);
+    }
+    else if (intparams["tabulated_kernel"] == 0) {
+      // Depending on the kernel, instantiate a different GradSph object
+      if (KernelName == "m4") {
+	nbody = new NbodyLeapfrogKDK<ndim, M4Kernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else if (KernelName == "quintic") {
+	nbody = new NbodyLeapfrogKDK<ndim, QuinticKernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else if (KernelName == "gaussian") {
+	nbody = new NbodyLeapfrogKDK<ndim, GaussianKernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else {
+	string message = "Unrecognised parameter : kernel = " +
+	  simparams->stringparams["kernel"];
+	ExceptionHandler::getIstance().raise(message);
+      }
+    }
+    else {
+      string message = "Invalid option for the tabulated_kernel parameter: " +
+	stringparams["tabulated_kernel"];
+      ExceptionHandler::getIstance().raise(message);
+    }
+  }
+  // --------------------------------------------------------------------------
+  else if (stringparams["nbody"] == "hermite4") {
+    string KernelName = stringparams["kernel"];
+    if (intparams["tabulated_kernel"] == 1) {
+      nbody = new NbodyHermite4<ndim, TabulatedKernel> 
+	(intparams["nbody_softening"], intparams["sub_systems"],
+	 floatparams["nbody_mult"], KernelName);
+    }
+    else if (intparams["tabulated_kernel"] == 0) {
+      // Depending on the kernel, instantiate a different GradSph object
+      if (KernelName == "m4") {
+	nbody = new NbodyHermite4<ndim, M4Kernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else if (KernelName == "quintic") {
+	nbody = new NbodyHermite4<ndim, QuinticKernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else if (KernelName == "gaussian") {
+	nbody = new NbodyHermite4<ndim, GaussianKernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else {
+	string message = "Unrecognised parameter : kernel = " +
+	  simparams->stringparams["kernel"];
+	ExceptionHandler::getIstance().raise(message);
+      }
+    }
+    else {
+      string message = "Invalid option for the tabulated_kernel parameter: " +
+	stringparams["tabulated_kernel"];
+      ExceptionHandler::getIstance().raise(message);
+    }
+  }
+  // --------------------------------------------------------------------------
+  else if (stringparams["nbody"] == "hermite4ts") {
+    string KernelName = stringparams["kernel"];
+    if (intparams["tabulated_kernel"] == 1) {
+      nbody = new NbodyHermite4TS<ndim, TabulatedKernel>
+	(intparams["nbody_softening"], intparams["sub_systems"],
+	 floatparams["nbody_mult"], KernelName, intparams["Npec"]);
+    }
+    else if (intparams["tabulated_kernel"] == 0) {
+      // Depending on the kernel, instantiate a different GradSph object
+      if (KernelName == "m4") {
+	nbody = new NbodyHermite4TS<ndim, M4Kernel>
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName, intparams["Npec"]);
+      }
+      else if (KernelName == "quintic") {
+	nbody = new NbodyHermite4TS<ndim, QuinticKernel>
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName, intparams["Npec"]);
+      }
+      else if (KernelName == "gaussian") {
+	nbody = new NbodyHermite4TS<ndim, GaussianKernel>
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName, intparams["Npec"]);
+      }
+      else {
+	string message = "Unrecognised parameter : kernel = " +
+	  simparams->stringparams["kernel"];
+	ExceptionHandler::getIstance().raise(message);
+      }
+    }
+    else {
+      string message = "Invalid option for the tabulated_kernel parameter: " +
+	stringparams["tabulated_kernel"];
+      ExceptionHandler::getIstance().raise(message);
+    }
+  }
+  // --------------------------------------------------------------------------
+  else {
+    string message = "Unrecognised parameter : nbody = " 
+      + simparams->stringparams["nbody"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+  // --------------------------------------------------------------------------
+
+
+  // Create sub-system object based on chosen method in params file
+  // --------------------------------------------------------------------------
+  if (intparams["sub_systems"] == 1) {
+
+    // ------------------------------------------------------------------------
+    if (stringparams["sub_system_integration"] == "lfkdk") {
+      string KernelName = stringparams["kernel"];
+      if (intparams["tabulated_kernel"] == 1) {
+	subsystem = new NbodyLeapfrogKDK<ndim, TabulatedKernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else if (intparams["tabulated_kernel"] == 0) {
+	// Depending on the kernel, instantiate a different GradSph object
+	if (KernelName == "m4") {
+	  subsystem = new NbodyLeapfrogKDK<ndim, M4Kernel> 
+	    (intparams["nbody_softening"], intparams["sub_systems"],
+	     floatparams["nbody_mult"], KernelName);
+	}
+	else if (KernelName == "quintic") {
+	  subsystem = new NbodyLeapfrogKDK<ndim, QuinticKernel> 
+	    (intparams["nbody_softening"], intparams["sub_systems"],
+	     floatparams["nbody_mult"], KernelName);
+	}
+	else if (KernelName == "gaussian") {
+	  subsystem = new NbodyLeapfrogKDK<ndim, GaussianKernel> 
+	    (intparams["nbody_softening"], intparams["sub_systems"],
+	     floatparams["nbody_mult"], KernelName);
+	}
+	else {
+	  string message = "Unrecognised parameter : kernel = " +
+	    simparams->stringparams["kernel"];
+	  ExceptionHandler::getIstance().raise(message);
+	}
+      }
+      else {
+	string message = "Invalid option for the tabulated_kernel parameter: "
+	  + stringparams["tabulated_kernel"];
+	ExceptionHandler::getIstance().raise(message);
+      }
+    }
+    // ------------------------------------------------------------------------
+    else if (stringparams["sub_system_integration"] == "hermite4") {
+      string KernelName = stringparams["kernel"];
+      if (intparams["tabulated_kernel"] == 1) {
+	subsystem = new NbodyHermite4<ndim, TabulatedKernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else if (intparams["tabulated_kernel"] == 0) {
+	// Depending on the kernel, instantiate a different GradSph object
+	if (KernelName == "m4") {
+	  subsystem = new NbodyHermite4<ndim, M4Kernel> 
+	    (intparams["nbody_softening"], intparams["sub_systems"],
+	     floatparams["nbody_mult"], KernelName);
+	}
+	else if (KernelName == "quintic") {
+	  subsystem = new NbodyHermite4<ndim, QuinticKernel> 
+	    (intparams["nbody_softening"], intparams["sub_systems"],
+	     floatparams["nbody_mult"], KernelName);
+	}
+	else if (KernelName == "gaussian") {
+	  subsystem = new NbodyHermite4<ndim, GaussianKernel> 
+	    (intparams["nbody_softening"], intparams["sub_systems"],
+	     floatparams["nbody_mult"], KernelName);
+	}
+	else {
+	string message = "Unrecognised parameter : kernel = " +
+	  simparams->stringparams["kernel"];
+	ExceptionHandler::getIstance().raise(message);
+	}
+      }
+      else {
+	string message = "Invalid option for the tabulated_kernel parameter: "
+	  + stringparams["tabulated_kernel"];
+	ExceptionHandler::getIstance().raise(message);
+      }
+    }
+    // ------------------------------------------------------------------------
+    else if (stringparams["sub_system_integration"] == "hermite4ts") {
+      string KernelName = stringparams["kernel"];
+      if (intparams["tabulated_kernel"] == 1) {
+	subsystem = new NbodyHermite4TS<ndim, TabulatedKernel>
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName, intparams["Npec"]);
+      }
+      else if (intparams["tabulated_kernel"] == 0) {
+	// Depending on the kernel, instantiate a different GradSph object
+	if (KernelName == "m4") {
+	  subsystem = new NbodyHermite4TS<ndim, M4Kernel>
+	    (intparams["nbody_softening"], intparams["sub_systems"],
+	     floatparams["nbody_mult"], KernelName, intparams["Npec"]);
+	}
+	else if (KernelName == "quintic") {
+	  subsystem = new NbodyHermite4TS<ndim, QuinticKernel>
+	    (intparams["nbody_softening"], intparams["sub_systems"],
+	     floatparams["nbody_mult"], KernelName, intparams["Npec"]);
+	}
+	else if (KernelName == "gaussian") {
+	  subsystem = new NbodyHermite4TS<ndim, GaussianKernel>
+	    (intparams["nbody_softening"], intparams["sub_systems"],
+	     floatparams["nbody_mult"], KernelName, intparams["Npec"]);
+	}
+	else {
+	  string message = "Unrecognised parameter : kernel = " +
+	    simparams->stringparams["kernel"];
+	  ExceptionHandler::getIstance().raise(message);
+	}
+      }
+      else {
+	string message = "Invalid option for the tabulated_kernel parameter: "
+	  + stringparams["tabulated_kernel"];
+	ExceptionHandler::getIstance().raise(message);
+      }
+    }
+    // ------------------------------------------------------------------------
+    else {
+      string message = "Unrecognised parameter : sub_system_integration = " 
+	+ simparams->stringparams["sub_system_integration"];
+      ExceptionHandler::getIstance().raise(message);
+    }
+    // ------------------------------------------------------------------------
+
+  }
+  // --------------------------------------------------------------------------
+
+
+  // Boundary condition variables
+  // --------------------------------------------------------------------------
+  simbox.x_boundary_lhs = stringparams["x_boundary_lhs"];
+  simbox.x_boundary_rhs = stringparams["x_boundary_rhs"];
+  simbox.y_boundary_lhs = stringparams["y_boundary_lhs"];
+  simbox.y_boundary_rhs = stringparams["y_boundary_rhs"];
+  simbox.z_boundary_lhs = stringparams["z_boundary_lhs"];
+  simbox.z_boundary_rhs = stringparams["z_boundary_rhs"];
+  simbox.boxmin[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
+  simbox.boxmin[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
+  simbox.boxmin[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
+  simbox.boxmax[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
+  simbox.boxmax[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
+  simbox.boxmax[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
+  for (int k=0; k<3; k++) {
+    simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
+    simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
+  }
+
+
+  // Sink particles
+  // --------------------------------------------------------------------------
+  sink_particles = intparams["sink_particles"];
+  sinks.sink_particles = intparams["sink_particles"];
+  sinks.create_sinks = intparams["create_sinks"];
+  sinks.smooth_accretion = intparams["smooth_accretion"];
+  sinks.rho_sink = floatparams["rho_sink"]
+    /simunits.rho.outscale/simunits.rho.outcgs;
+  sinks.alpha_ss = floatparams["alpha_ss"];
+  sinks.smooth_accrete_frac = floatparams["smooth_accrete_frac"];
+  sinks.smooth_accrete_dt = floatparams["smooth_accrete_dt"];
+  sinks.sink_radius_mode = stringparams["sink_radius_mode"];
+
+  if (sinks.sink_radius_mode == "fixed")
+    sinks.sink_radius = floatparams["sink_radius"]/simunits.r.outscale;
+  else
+    sinks.sink_radius = floatparams["sink_radius"];
+
+
+  // Set all other parameter variables
+  // --------------------------------------------------------------------------
+  sph->Nsph             = intparams["Npart"];
+  sph->riemann_solver   = stringparams["riemann_solver"];
+  sph->slope_limiter    = stringparams["slope_limiter"];
+  sph->riemann_order    = intparams["riemann_order"];
+  sph->create_sinks     = intparams["create_sinks"];
+
+  nbody->Nstar          = intparams["Nstar"];
+  nbody_single_timestep = intparams["nbody_single_timestep"];
+
+  dt_python             = floatparams["dt_python"];
+  dt_snap               = floatparams["dt_snap"]/simunits.t.outscale;
+  level_diff_max        = intparams["level_diff_max"];
+  Nlevels               = intparams["Nlevels"];
+  noutputstep           = intparams["noutputstep"];
+  Nstepsmax             = intparams["Nstepsmax"];
+  out_file_form         = stringparams["out_file_form"];
+  run_id                = stringparams["run_id"];
+  sph_single_timestep   = intparams["sph_single_timestep"];
+  tend                  = floatparams["tend"]/simunits.t.outscale;
+  tsnapnext             = floatparams["tsnapfirst"]/simunits.t.outscale;
+
+  // Flag that we've processed all parameters already
+  ParametersProcessed = true;
+
+  return;
+}
+
 
 
 
@@ -49,6 +556,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Set time variables here (for now)
   Noutsnap = 0;
+  nresync = 0;
   //tsnapnext = dt_snap;
 
   // Set initial smoothing lengths and create initial ghost particles
@@ -60,6 +568,11 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     sph->Nghostmax = sph->Nsphmax - sph->Nsph;
     sph->Ntot = sph->Nsph;
     for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
+
+    // Compute mean mass
+    sph->mmean = 0.0;
+    for (i=0; i<sph->Nsph; i++) sph->mmean += sph->sphdata[i].m;
+    sph->mmean /= (FLOAT) sph->Nsph;
     
     sph->InitialSmoothingLengthGuess();
     sphneib->UpdateTree(sph,*simparams);
@@ -70,16 +583,13 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Search ghost particles
     ghosts.SearchGhostParticles(simbox,sph);
 
-    // Update neighbour tree
-    sphneib->UpdateTree(sph,*simparams);
-
     level_step = 1;
 
     // Zero accelerations (perhaps here)
     for (i=0; i<sph->Ntot; i++) sph->sphdata[i].active = true;
 
     // Calculate all SPH properties
-    sphneib->neibcheck = true;
+    sphneib->UpdateTree(sph,*simparams);
     sphneib->UpdateAllSphProperties(sph,nbody);
 
     // Search ghost particles
@@ -87,14 +597,10 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Update neighbour tre
     sphneib->UpdateTree(sph,*simparams);
+    sphneib->neibcheck = true;
     sphneib->UpdateAllSphProperties(sph,nbody);
+    sphneib->UpdateAllSphDerivatives(sph);
 
-
-    if (simparams->stringparams["sph"] == "godunov") {
-      sphneib->UpdateAllSphDerivatives(sph);
-      //for (int i=0; i<sph->Ntot; i++) 
-      //sph->sphdata[i].dt = sph->sphdata[i].h/sph->sphdata[i].sound;
-    }
   }
 
 
@@ -104,7 +610,6 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Zero all acceleration terms
     for (i=0; i<nbody->Nstar; i++) {
-
       for (k=0; k<ndim; k++) nbody->stardata[i].a[k] = 0.0;
       for (k=0; k<ndim; k++) nbody->stardata[i].adot[k] = 0.0;
       for (k=0; k<ndim; k++) nbody->stardata[i].a2dot[k] = 0.0;
@@ -112,11 +617,15 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
       nbody->stardata[i].gpot = 0.0;
       nbody->stardata[i].active = true;
       nbody->stardata[i].level = level_step;
-      nbody->stardata[i].nstep = 1;
+      nbody->stardata[i].nstep = 0;
+      nbody->stardata[i].nlast = 0;
       nbody->nbodydata[i] = &(nbody->stardata[i]);
     }
 
+    nbody->Nnbody = nbody->Nstar;
     nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
+    nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nsph,
+                                    sph->sphdata,nbody->nbodydata);
     nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
 
   }
@@ -133,26 +642,41 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
       sph->sphdata[i].gpot = (FLOAT) 0.0;
       sph->sphdata[i].dudt = (FLOAT) 0.0;
       sph->sphdata[i].active = true;
-      sph->sphdata[i].level = level_step;
-      sph->sphdata[i].nstep = 1;
+      sph->sphdata[i].level = 0;
+      sph->sphdata[i].nstep = 0;
+      sph->sphdata[i].nlast = 0;
     }
 
     ghosts.CopySphDataToGhosts(sph);
+    sphneib->UpdateTree(sph, *simparams);
 
     // Compute timesteps for all particles
     if (Nlevels == 1) 
       this->ComputeGlobalTimestep();
     else 
       this->ComputeBlockTimesteps();
-    if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
-    if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
+
+    // Calculate SPH gravity and hydro forces, depending on which are activated
+    if (sph->hydro_forces == 1 && sph->self_gravity == 1)
+      sphneib->UpdateAllSphForces(sph);
+    else if (sph->hydro_forces == 1)
+      sphneib->UpdateAllSphHydroForces(sph);
+    else if (sph->self_gravity == 1)
+      sphneib->UpdateAllSphGravForces(sph);
+
+    // Compute contribution to grav. accel from stars
+    for (i=0; i<sph->Nsph; i++)
+      if (sph->sphdata[i].active)
+        sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
+                                   sph->sphdata[i]);
+
     sphneib->UpdateAllSphDudt(sph);
 
     // Add accelerations
     for (i=0; i<sph->Nsph; i++) {
       sph->sphdata[i].active = false;
       for (k=0; k<ndim; k++)
-      sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
+        sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
 
     ghosts.CopySphDataToGhosts(sph);
@@ -160,9 +684,9 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
   }
 
   // Set particle values for initial step (e.g. r0, v0, a0)
-  sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EndTimestep(n,sph->Nsph,sph->sphdata);
+  sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
   nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
   
   this->CalculateDiagnostics();
@@ -182,25 +706,12 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 template <int ndim>
 void GodunovSphSimulation<ndim>::MainLoop(void)
 {
+  int activecount;                  // ..
   int i;                            // Particle loop counter
+  int it;                           // Time-symmetric iteration counter
   int k;                            // Dimension counter
 
   debug2("[GodunovSphSimulation::MainLoop]");
-
-  // Compute timesteps for all particles
-  if (Nlevels == 1)
-    this->ComputeGlobalTimestep();
-  else
-    this->ComputeBlockTimesteps();
-
-  // For Godunov SPH, compute compressional heating rates after the timestep
-  // for each particle is known
-  //if (simparams->stringparams["sph"] == "godunov") {
-  //  for (i=0; i<sph->Ntot; i++)
-  //    sph->sphdata[i].dudt = (FLOAT) 0.0;
-  //  //if (sph->sphdata[i].active) sph->sphdata[i].dudt = (FLOAT) 0.0;
-  //  sphneib->UpdateAllSphDudt(sph);
-  //}
 
   // Advance time variables
   n = n + 1;
@@ -227,34 +738,12 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     // Update neighbour tree
     sphneib->UpdateTree(sph,*simparams);
 
+    // Update cells containing active particles
+    sphneib->UpdateActiveParticleCounters(sph);
+    
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph,nbody);
-
-  }
-
-
-  // Compute N-body forces
-  // --------------------------------------------------------------------------
-  if (nbody->Nstar > 0) {
-
-    // Zero all acceleration terms
-    for (i=0; i<nbody->Nnbody; i++) {
-      if (nbody->nbodydata[i]->active) {
-    for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k] = 0.0;
-    for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k] = 0.0;
-    for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = 0.0;
-    for (k=0; k<ndim; k++) nbody->nbodydata[i]->a3dot[k] = 0.0;
-    nbody->nbodydata[i]->gpot = 0.0;
-      }
-    }
-
-    nbody->CalculateDirectGravForces(nbody->Nstar,nbody->nbodydata);
-  }
-
-
-  // --------------------------------------------------------------------------
-  if (sph->Nsph > 0) {
-
+    
     // Compute timesteps for all particles
     if (Nlevels == 1)
       this->ComputeGlobalTimestep();
@@ -272,35 +761,83 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
 	for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
 	for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
 	sph->sphdata[i].gpot = (FLOAT) 0.0;
+	sph->sphdata[i].gpe = (FLOAT) 0.0;
 	sph->sphdata[i].dudt = (FLOAT) 0.0;
+	sph->sphdata[i].levelneib = 0;
+      }
+    }
+    
+    // Calculate SPH gravity and hydro forces, depending on which are activated
+    if (sph->hydro_forces == 1 && sph->self_gravity == 1)
+      sphneib->UpdateAllSphForces(sph);
+    else if (sph->hydro_forces == 1)
+      sphneib->UpdateAllSphHydroForces(sph);
+    else if (sph->self_gravity == 1)
+      sphneib->UpdateAllSphGravForces(sph);
+    
+    // Compute contribution to grav. accel from stars
+    for (i=0; i<sph->Nsph; i++)
+      if (sph->sphdata[i].active)
+	sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
+				   sph->sphdata[i]);
+    
+    // Add accelerations
+    if (sph->self_gravity == 1) {
+      for (i=0; i<sph->Nsph; i++) {
+	if (sph->sphdata[i].active) {
+	  for (k=0; k<ndim; k++)
+	    sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
+	}
       }
     }
 
-    // Calculate all SPH forces
-    if (sph->hydro_forces == 1) sphneib->UpdateAllSphForces(sph);
-    if (sph->self_gravity == 1) sphneib->UpdateAllSphGravForces(sph);
-
-    // Add accelerations
-    for (i=0; i<sph->Nsph; i++) {
-      for (k=0; k<ndim; k++)
-        sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
-    }
-
+    // Now update compressional heating rate
     sphneib->UpdateAllSphDudt(sph);
+
+    // Set all end-of-step variables
+    if (simparams->stringparams["gas_eos"] == "energy_eqn")
+      uint->EndTimestep(n,sph->Nsph,sph->sphdata);
+    sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
 
   }
 
-  // Apply correction steps for both particle and energy integration
-  sphint->CorrectionTerms(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
-  if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EnergyCorrectionTerms(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
-  nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
 
-  // Set all end-of-step variables
-  sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
-  if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,sph->Nsph,sph->sphdata);
-  nbody->EndTimestep(n,nbody->Nnbody,nbody->nbodydata);
+  // Compute N-body forces
+  // --------------------------------------------------------------------------
+  if (nbody->Nnbody > 0) {
+
+    // Iterate end-of-step
+    // ------------------------------------------------------------------------
+    for (it=0; it<nbody->Npec; it++) {
+
+      // Zero all acceleration terms
+      for (i=0; i<nbody->Nnbody; i++) {
+        if (nbody->nbodydata[i]->active) {
+          for (k=0; k<ndim; k++) nbody->nbodydata[i]->a[k] = 0.0;
+          for (k=0; k<ndim; k++) nbody->nbodydata[i]->adot[k] = 0.0;
+          for (k=0; k<ndim; k++) nbody->nbodydata[i]->a2dot[k] = 0.0;
+          for (k=0; k<ndim; k++) nbody->nbodydata[i]->a3dot[k] = 0.0;
+          nbody->nbodydata[i]->gpot = 0.0;
+          nbody->nbodydata[i]->gpe = 0.0;
+        }
+      }
+
+      // Calculate forces, force derivatives etc.., for active stars/systems
+      nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
+      nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nsph,
+                                      sph->sphdata,nbody->nbodydata);
+
+      // Calculate correction step for all stars at end of step
+      nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
+
+    }
+    // ------------------------------------------------------------------------
+
+    nbody->EndTimestep(n,nbody->Nnbody,nbody->nbodydata);
+
+  }
+  // --------------------------------------------------------------------------
+
 
   return;
 }
@@ -318,7 +855,7 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
   DOUBLE dt;        // Particle timestep
   DOUBLE dt_min = big_number_dp;    // Local copy of minimum timestep
 
-  debug2("[GodunovSphSimulation::ComputeGlobalTimestep]");
+  debug2("[SphSimulation::ComputeGlobalTimestep]");
 
   // --------------------------------------------------------------------------
   if (n == nresync) {
@@ -335,14 +872,21 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
     {
       dt=big_number_dp;
 #pragma omp for
-      for (i=0; i<sph->Nsph; i++)
-        dt = min(dt,sphint->Timestep(sph->sphdata[i],sph->hydro_forces));
-
+      for (i=0; i<sph->Nsph; i++) {
+	sph->sphdata[i].dt = sphint->Timestep(sph->sphdata[i],
+					      sph->hydro_forces);
+        dt = min(dt,sph->sphdata[i].dt);
+      }
+      
       // If integrating energy equation, include energy timestep
       if (simparams->stringparams["gas_eos"] == "energy_eqn") {
 #pragma omp for
-        for (i=0; i<sph->Nsph; i++)
-          dt = min(dt,uint->Timestep(sph->sphdata[i]));
+        for (i=0; i<sph->Nsph; i++) {
+          sph->sphdata[i].dt = min(sph->sphdata[i].dt,
+				   uint->Timestep(sph->sphdata[i]));
+          dt = min(dt,sph->sphdata[i].dt);
+	}
+
       }
 
 #pragma omp critical
@@ -352,22 +896,27 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
 
 
     // Now compute minimum timestep due to stars/systems
-    for (i=0; i<nbody->Nstar; i++)
+    for (i=0; i<nbody->Nnbody; i++)
       dt_min = min(dt_min,nbody->Timestep(nbody->nbodydata[i]));
 
-
+    
     // Set all particles to same timestep
     timestep = dt_min;
     for (i=0; i<sph->Nsph; i++) {
       sph->sphdata[i].level = 0;
+      sph->sphdata[i].levelneib = 0;
       sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+      sph->sphdata[i].nlast = n;
       sph->sphdata[i].dt = timestep;
     }
     for (i=0; i<nbody->Nnbody; i++) {
       nbody->nbodydata[i]->level = 0;
-      nbody->nbodydata[i]->nstep = pow(2,level_step - nbody->nbodydata[i]->level);
+      nbody->nbodydata[i]->nstep = 
+        pow(2,level_step - nbody->nbodydata[i]->level);
+      nbody->nbodydata[i]->nlast = n;
       nbody->nbodydata[i]->dt = timestep;
     }
+
 
   }
   // --------------------------------------------------------------------------
@@ -384,71 +933,103 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
 template <int ndim>
 void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
 {
-  int i;                            // Particle counter
-  int istep;                        // ??
-  int level;                        // Particle timestep level
-  int last_level;                   // Previous timestep level
-  int level_max_old;                // Old level_max
-  int level_max_sph = 0;            // level_max for SPH particles only
-  int nstep;                        // ??
-  DOUBLE dt;                        // Aux. timestep variable
-  DOUBLE dt_max_sph = 0.0;          // Maximum SPH particle timestep
+  int i;                                // Particle counter
+  int istep;                            // ??
+  int level;                            // Particle timestep level
+  int last_level;                       // Previous timestep level
+  int level_max_old;                    // Old level_max
+  int level_max_sph = 0;                // level_max for SPH particles only
+  int level_max_nbody = 0;              // level_max for SPH particles only
+  int nstep;                            // ??
+  int nfactor;                          // ??
+  DOUBLE dt;                            // Aux. timestep variable
+  DOUBLE dt_min_sph = big_number_dp;    // Maximum SPH particle timestep
+  DOUBLE dt_min_nbody = big_number_dp;  // Maximum N-body particle timestep
 
-  debug2("[GodunovSphSimulation::ComputeBlockTimesteps]");
+  int *ninlevel;
 
-  timestep = big_number;
+  debug2("[SphSimulation::ComputeBlockTimesteps]");
 
   // Synchronise all timesteps and reconstruct block timestep structure.
   // ==========================================================================
   if (n == nresync) {
 
     n = 0;
+    timestep = big_number_dp;
+    for (i=0; i<sph->Nsph; i++) sph->sphdata[i].dt = big_number_dp;
+    for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->dt = big_number_dp;
+
+    // If integrating energy equation, calculate the explicit energy timestep
+    if (sph->gas_eos == "energy_eqn") {
+      for (i=0; i<sph->Nsph; i++)
+	sph->sphdata[i].dt = uint->Timestep(sph->sphdata[i]);
+    }
 
     // Find minimum timestep from all SPH particles
     for (i=0; i<sph->Nsph; i++) {
-      dt = sphint->Timestep(sph->sphdata[i],sph->hydro_forces);
+      dt = min(sph->sphdata[i].dt,
+	       sphint->Timestep(sph->sphdata[i],sph->hydro_forces));
       if (dt < timestep) timestep = dt;
-      if (dt > dt_max_sph) dt_max_sph = dt;
+      if (dt < dt_min_sph) dt_min_sph = dt;
       sph->sphdata[i].dt = dt;
     }
-
-    // If integrating energy equation, include energy timestep
-    if (sph->gas_eos == "energy_eqn") {
-      for (i=0; i<sph->Nsph; i++) {
-    dt = uint->Timestep(sph->sphdata[i]);
-    if (dt < timestep) timestep = dt;
-    sph->sphdata[i].dt = min(sph->sphdata[i].dt,dt);
-      }
+    
+    // Now compute minimum timestep due to stars/systems
+    for (i=0; i<nbody->Nnbody; i++) {
+      dt = nbody->Timestep(nbody->nbodydata[i]);
+      if (dt < timestep) timestep = dt;
+      if (dt < dt_min_nbody) dt_min_nbody = dt;
+      nbody->nbodydata[i]->dt = dt;
     }
 
     // Calculate new block timestep levels
     level_max = Nlevels - 1;
     level_step = level_max + integration_step - 1;
     dt_max = timestep*powf(2.0,level_max);
-    nresync = pow(2,level_step);
-    timestep = dt_max / (DOUBLE) nresync;
-
+    
     // Calculate the maximum level occupied by all SPH particles
-    level_max_sph = max((int) (invlogetwo*log(dt_max/dt_max_sph)) + 1, 0);
+    level_max_sph = min((int) (invlogetwo*log(dt_max/dt_min_sph)) + 1, 
+			level_max);
+    level_max_nbody = min((int) (invlogetwo*log(dt_max/dt_min_nbody)) + 1, 
+			  level_max);
 
-    // If enforcing a single SPH timestep, set it here.  Otherwise, populate
+    // If enforcing a single SPH timestep, set it here.  Otherwise, populate 
     // the timestep levels with SPH particles.
-    if (sph_single_timestep == 1)
-      for (i=0; i<sph->Nsph; i++) sph->sphdata[i].level = level_max_sph;
+    if (sph_single_timestep == 1) 
+      for (i=0; i<sph->Nsph; i++) {
+	sph->sphdata[i].level = level_max_sph;
+	sph->sphdata[i].levelneib = level_max_sph;
+      }
     else {
       for (i=0; i<sph->Nsph; i++) {
-    level = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
-    level = max(level,0);
-    sph->sphdata[i].level = level;
-    sph->sphdata[i].dt =
-      (DOUBLE) pow(2,level_step - sph->sphdata[i].level)*timestep;
+	dt = sph->sphdata[i].dt;
+	level = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
+	level = max(level,0);
+	sph->sphdata[i].level = level;
+	sph->sphdata[i].levelneib = level;
+	sph->sphdata[i].nlast = n;
+	sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
       }
     }
 
+    // Populate timestep levels with N-body particles
+    for (i=0; i<nbody->Nnbody; i++) {
+      dt = nbody->Timestep(nbody->nbodydata[i]);
+      level = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
+      level = max(level,0);
+      nbody->nbodydata[i]->level = level;
+      nbody->nbodydata[i]->nlast = n;
+      nbody->nbodydata[i]->nstep = 
+	pow(2,level_step - nbody->nbodydata[i]->level);
+    }
+
+    nresync = pow(2,level_step);
+    timestep = dt_max / (DOUBLE) nresync;
+
   }
 
-  // If not resynchronising, check if any SPH particles need to move up
-  // or down timestep levels
+  // If not resynchronising, check if any SPH/N-body particles need to move  
+  // up or down timestep levels.
   // ==========================================================================
   else {
 
@@ -458,28 +1039,31 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
     // Find all SPH particles at the beginning of a new timestep
     // ------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
-      last_level = sph->sphdata[i].level;
-
-      nstep = pow(2,level_step - last_level);
-      istep = pow(2,level_step - last_level + 1);
 
       // Skip particles that are not at end of step
-      if (n%nstep == 0) {
-    last_level = sph->sphdata[i].level;
-    dt = sphint->Timestep(sph->sphdata[i],sph->hydro_forces);
-    if (sph->gas_eos == "energy_eqn")
-      dt = min(dt,uint->Timestep(sph->sphdata[i]));
-    sph->sphdata[i].dt = dt;
-    level = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
-    level = max(level,0);
+      if (sph->sphdata[i].nlast == n) {
+	nstep = sph->sphdata[i].nstep;
+	last_level = sph->sphdata[i].level;
+	
+	// Compute new timestep value and level number
+	dt = sphint->Timestep(sph->sphdata[i],sph->hydro_forces);
+	if (sph->gas_eos == "energy_eqn") 
+	  dt = min(dt,uint->Timestep(sph->sphdata[i]));
+	sph->sphdata[i].dt = dt;
+	level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
+	level = max(level,sph->sphdata[i].levelneib - level_diff_max);
 
-    // Move up one level (if levels are correctly synchronised) or
-    // down several levels if required
-    if (level < last_level && last_level > 1 && n%istep == 0)
-      sph->sphdata[i].level--;
-    else if (level > last_level) {
-      sph->sphdata[i].level = level;
-    }
+	// Move up one level (if levels are correctly synchronised) or 
+	// down several levels if required
+	if (level < last_level && last_level > 1 && n%(2*nstep) == 0) 
+	  sph->sphdata[i].level = last_level - 1;
+	else if (level > last_level)
+	  sph->sphdata[i].level = level;
+	else
+	  sph->sphdata[i].level = last_level;
+
+	sph->sphdata[i].nlast = n;
+	sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
       }
 
       // Find maximum level of all SPH particles
@@ -487,12 +1071,63 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
       level_max = max(level_max,sph->sphdata[i].level);
     }
     // ------------------------------------------------------------------------
+      
 
+    // Now find all N-body particles at the beginning of a new timestep
+    // ------------------------------------------------------------------------
+    for (i=0; i<nbody->Nnbody; i++) {
+
+      // Skip particles that are not at end of step
+      if (nbody->nbodydata[i]->nlast == n) {
+	nstep = nbody->nbodydata[i]->nstep;
+	last_level = nbody->nbodydata[i]->level;
+
+	// Compute new timestep value and level number
+	dt = nbody->Timestep(nbody->nbodydata[i]);
+	nbody->nbodydata[i]->dt = dt;
+	level = min((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
+
+	// Move up one level (if levels are correctly synchronised) or 
+	// down several levels if required
+	if (level < last_level && last_level > 1 && n%(2*nstep) == 0) 
+	  nbody->nbodydata[i]->level = last_level - 1;
+	else if (level > last_level)
+	  nbody->nbodydata[i]->level = level;
+	else
+	  nbody->nbodydata[i]->level = last_level;
+
+	nbody->nbodydata[i]->nlast = n;
+	nbody->nbodydata[i]->nstep = 
+	  pow(2,level_step - nbody->nbodydata[i]->level);
+      }
+
+      // Find maximum level of all N-body particles
+      level_max_nbody = max(level_max_nbody,nbody->nbodydata[i]->level);
+      level_max = max(level_max,nbody->nbodydata[i]->level);
+    }
+    // ------------------------------------------------------------------------
+      
 
     // Set fixed SPH timestep level here in case maximum has changed
-    if (sph_single_timestep == 1)
-      for (i=0; i<sph->Nsph; i++) sph->sphdata[i].level = level_max_sph;
+    if (sph_single_timestep == 1) {
+      for (i=0; i<sph->Nsph; i++) {
+	sph->sphdata[i].level = level_max_sph;
+	sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+      }
+    }
 
+    // For now, don't allow levels to be removed
+    level_max = max(level_max,level_max_old);
+    level_step = level_max + integration_step - 1;
+
+    for (i=0; i<sph->Nsph; i++) {
+      if (sph->sphdata[i].nlast == n)
+	sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+    }
+    for (i=0; i<nbody->Nnbody; i++) {
+      if (nbody->nbodydata[i]->nlast == n) nbody->nbodydata[i]->nstep = 
+	pow(2,level_step - nbody->nbodydata[i]->level);
+    }
 
     // Update all timestep variables if we have removed or added any levels
     // ------------------------------------------------------------------------
@@ -501,16 +1136,27 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
       // Increase maximum timestep level if correctly synchronised
       istep = pow(2,level_step - level_max_old + 1);
       if (level_max <= level_max_old - 1 && level_max_old > 1 && n%istep == 0)
-    level_max = level_max_old - 1;
+	level_max = level_max_old - 1;
       else if (level_max == level_max_old)
-    level_max = level_max_old;
-      level_step = level_max + integration_step - 1;
+	level_max = level_max_old;
 
       // Adjust integer time if levels added or removed
-      if (level_max > level_max_old)
-    n *= pow(2,level_max - level_max_old);
-      else if (level_max < level_max_old)
-    n /= pow(2,level_max_old - level_max);
+      if (level_max > level_max_old) {
+	nfactor = pow(2,level_max - level_max_old);
+	n *= nfactor;
+	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nlast *= nfactor;
+	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nstep *= nfactor;
+	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast *= nfactor;
+	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep *= nfactor;
+      }
+      else if (level_max < level_max_old) {
+	nfactor = pow(2,level_max_old - level_max);
+	n /= nfactor;
+	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nlast /= nfactor;
+	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nstep /= nfactor;
+	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast /= nfactor;
+	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep /= nfactor;
+      }
 
     }
     // ------------------------------------------------------------------------
@@ -518,15 +1164,44 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
     nresync = pow(2,level_step);
     timestep = dt_max / (DOUBLE) nresync;
 
-    for (i=0; i<sph->Nsph; i++) sph->sphdata[i].dt =
-      (DOUBLE) pow(2,level_step - sph->sphdata[i].level)*timestep;
-
   }
   // ==========================================================================
+
 
 #if defined(VERIFY_ALL)
   //VerifyBlockTimesteps();
 #endif
+
+  return;
+
+  // Some validations
+  // --------------------------------------------------------------------------
+  ninlevel = new int[level_max+1];
+  for (int l=0; l<level_max+1; l++) ninlevel[l] = 0;
+
+  //cout << "Checking : " << nresync << "    " << level_max << endl;
+  for (i=0; i<sph->Nsph; i++) {
+    //cout << "WTF?? : " <<  sph->sphdata[i].level << "    " << level_max << "    " << sph->sphdata[i].nlast << "    " << sph->sphdata[i].nstep << endl;
+    ninlevel[sph->sphdata[i].level]++;
+    //continue;
+    dt=sphint->Timestep(sph->sphdata[i],sph->hydro_forces);
+    cout << "Timestep : " << i << "    " 
+	 << sph->sphdata[i].nstep << "    "
+	 << sph->sphdata[i].nlast << "    " 
+	 << sph->sphdata[i].level << "    " 
+	 << sph->sphdata[i].r[0] << "    "
+	 << dt << "    "
+	 << invlogetwo*log(dt_max/dt) << endl;
+    int imirror = sph->Nsph - i - 1;
+    if (sph->sphdata[i].level != sph->sphdata[imirror].level)
+      cout << "WARNING : Assymetry!!" << endl;
+  }
+
+  cout << "Level occupancy" << endl;
+  for (int l=0; l<level_max+1; l++) 
+    cout << "level : " << l << "     N : " << ninlevel[l] << endl;
+  //cin >> i;
+  delete[] ninlevel;
 
   return;
 }

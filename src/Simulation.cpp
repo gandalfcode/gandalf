@@ -186,6 +186,8 @@ string SimulationBase::GetParam(string key)
   return simparams->GetParameter(key);
 }
 
+
+
 //=============================================================================
 //  SimulationBase::GetIntAndFloatParameterKeys
 /// Returns a list containing the keys of all the int and float parameters
@@ -205,8 +207,9 @@ std::list<string>* SimulationBase::GetIntAndFloatParameterKeys()
   }
   
   return &keys;
-  
 }
+
+
 
 //=============================================================================
 //  SphSimulation::Run
@@ -331,9 +334,10 @@ string SimulationBase::Output(void)
 
   debug2("[Simulation::Output]");
 
-  if (Nsteps%noutputstep == 0) cout << "t : " << t*simunits.t.outscale << " " 
-				    << simunits.t.outunit << "    Nsteps : " 
-				    << Nsteps << endl;
+  if (Nsteps%noutputstep == 0) 
+    cout << "t : " << t*simunits.t.outscale << " " << simunits.t.outunit 
+	 << "    dt : " << timestep*simunits.t.outscale << " " 
+	 << simunits.t.outunit << "    Nsteps : " << Nsteps << endl;
 
   // Output a data snapshot if reached required time
   if (t >= tsnapnext) {
@@ -365,9 +369,9 @@ void Simulation<ndim>::AllocateParticleMemory(void)
 
   // If sink particles are employed, allow enough memory for new sinks
   if (sink_particles == 1) {
-    N = 1024;
+    N = max(nbody->Nstar,1024);
   }
-  else N = 0;
+  else N = nbody->Nstar;
 
   // Now call all memory allocation routines
   sph->AllocateMemory(sph->Nsph);
@@ -718,7 +722,8 @@ void Simulation<ndim>::ProcessParameters(void)
     sphneib = new BinaryTree<ndim>(intparams["Nleafmax"],
                                    floatparams["thetamaxsqd"],
                                    sph->kernp->kernrange,
-                                   stringparams["gravity_mac"]);
+                                   stringparams["gravity_mac"],
+                                   stringparams["multipole"]);
   else {
     string message = "Unrecognised parameter : neib_search = " 
       + simparams->stringparams["neib_search"];
@@ -945,8 +950,7 @@ void Simulation<ndim>::PreSetupForPython(void)
   ProcessParameters();
 
   // Allocate all memory for both SPH and N-body particles
-  sph->AllocateMemory(sph->Nsph);
-  nbody->AllocateMemory(nbody->Nstar);
+  AllocateParticleMemory();
 
   return;
 }
@@ -1288,11 +1292,45 @@ void SimulationBase::SetupSimulation(void)
   // Generate initial conditions for simulation
   GenerateIC();
 
+  // Change to COM frame if selected
+  if (simparams->intparams["com_frame"] == 1) SetComFrame();
+
   // Call a messy function that does all the rest of the initialisation
   PostInitialConditionsSetup();
 
   return;
 }
+
+
+
+//=============================================================================
+//  Simulation::SetComFrame
+/// Move all particles to centre-of-mass frame.
+//=============================================================================
+template<int ndim>
+void Simulation<ndim>::SetComFrame(void)
+{
+  int i,k;                         // ..
+
+  debug2("[Simulation::SetComFrame]");
+
+  CalculateDiagnostics();
+
+  for (i=0; i<sph->Nsph; i++) {
+    for (k=0; k<ndim; k++) sph->sphdata[i].r[k] -= diag.rcom[k];
+    for (k=0; k<ndim; k++) sph->sphdata[i].v[k] -= diag.vcom[k];
+  }
+
+  for (i=0; i<nbody->Nstar; i++) {
+    for (k=0; k<ndim; k++) nbody->stardata[i].r[k] -= diag.rcom[k];
+    for (k=0; k<ndim; k++) nbody->stardata[i].v[k] -= diag.vcom[k];
+  }
+
+  CalculateDiagnostics();
+
+  return;
+}
+
 
 
 //template <int ndim>
@@ -1304,8 +1342,8 @@ void SimulationBase::SetupSimulation(void)
 
 
 
-template <int ndim>
-void GodunovSphSimulation<ndim>::ProcessParameters()
-{
-  Simulation<ndim>::ProcessParameters();
-}
+//template <int ndim>
+//void GodunovSphSimulation<ndim>::ProcessParameters()
+//{
+//  Simulation<ndim>::ProcessParameters();
+//}

@@ -19,14 +19,16 @@ Fraction of mass within gas                 : gasfrac = 0.0
 No. of SPH particles                        : Nsph = 0
 No. of star particles                       : Nstar = 128
 Perform dimensionless simulation            : dimensionless = 1
+Change to COM frame                         : com_frame = 1
 
 
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 20.0
+Simulation end time                         : tend = 10.0
+Time of first snapshot                      : tsnapfirst = 0.0
 Regular snapshot output frequency           : dt_snap = 10.0
-Screen output frequency (in no. of steps)   : noutputstep = 128
+Screen output frequency (in no. of steps)   : noutputstep = 512
 
 
 #-----------------------------
@@ -39,11 +41,11 @@ Tabulate SPH kernel                         : tabulated_kernel = 0
 #-------------------------
 # N-body algorithm options
 #-------------------------
-Star particle integration option            : nbody = hermite4ts
+Star particle integration option            : nbody = hermite4
 Use softening?                              : nbody_softening = 0
 Identify and integrate sub-systems?         : sub_systems = 0
 Grav. energy fraction for sub-systems       : gpefrac = 0.02
-No. of P(EC)^n iteration steps              : Npec = 2
+No. of P(EC)^n iteration steps              : Npec = 1
 Sub-system integration scheme               : sub_system_integration = hermite4ts
 
 

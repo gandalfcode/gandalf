@@ -72,14 +72,14 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   else if (ndim == 3) {
     for (i=0; i<sph->Nsph; i++) {
       diag.angmom[0] += sph->sphdata[i].m*
-	(sph->sphdata[i].r[1]*sph->sphdata[i].v[2] - 
-	 sph->sphdata[i].r[2]*sph->sphdata[i].v[1]);
+        (sph->sphdata[i].r[1]*sph->sphdata[i].v[2] -
+         sph->sphdata[i].r[2]*sph->sphdata[i].v[1]);
       diag.angmom[1] += sph->sphdata[i].m*
-	(sph->sphdata[i].r[2]*sph->sphdata[i].v[0] - 
-	 sph->sphdata[i].r[0]*sph->sphdata[i].v[2]);
+        (sph->sphdata[i].r[2]*sph->sphdata[i].v[0] -
+         sph->sphdata[i].r[0]*sph->sphdata[i].v[2]);
       diag.angmom[2] += sph->sphdata[i].m*
-	(sph->sphdata[i].r[0]*sph->sphdata[i].v[1] - 
-	 sph->sphdata[i].r[1]*sph->sphdata[i].v[0]);
+        (sph->sphdata[i].r[0]*sph->sphdata[i].v[1] -
+         sph->sphdata[i].r[1]*sph->sphdata[i].v[0]);
     }
   }
 
@@ -95,6 +95,27 @@ void Simulation<ndim>::CalculateDiagnostics(void)
       diag.mom[k] += nbody->stardata[i].m*nbody->stardata[i].v[k];
       diag.force[k] += nbody->stardata[i].m*nbody->stardata[i].a[k];
       diag.force_grav[k] += nbody->stardata[i].m*nbody->stardata[i].a[k];
+    }
+  }
+
+  // Add contributions to angular momentum depending on dimensionality
+  if (ndim == 2) {
+    for (i=0; i<nbody->Nstar; i++)
+      diag.angmom[2] += nbody->stardata[i].m*
+	(nbody->stardata[i].r[0]*nbody->stardata[i].v[1] -
+	 nbody->stardata[i].r[1]*nbody->stardata[i].v[0]);
+  }
+  else if (ndim == 3) {
+    for (i=0; i<nbody->Nstar; i++) {
+      diag.angmom[0] += nbody->stardata[i].m*
+        (nbody->stardata[i].r[1]*nbody->stardata[i].v[2] -
+         nbody->stardata[i].r[2]*nbody->stardata[i].v[1]);
+      diag.angmom[1] += nbody->stardata[i].m*
+        (nbody->stardata[i].r[2]*nbody->stardata[i].v[0] -
+         nbody->stardata[i].r[0]*nbody->stardata[i].v[2]);
+      diag.angmom[2] += nbody->stardata[i].m*
+        (nbody->stardata[i].r[0]*nbody->stardata[i].v[1] -
+         nbody->stardata[i].r[1]*nbody->stardata[i].v[0]);
     }
   }
 

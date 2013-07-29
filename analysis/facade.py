@@ -17,18 +17,14 @@ manager= Manager()
 #------------------------------------------------------------------------------
 class Singletons:
     '''Container class for singletons object. They are:
-        queue
-            Queue for sending commands to the plotting process
-        commands
-            List of the commands shared with the plotting process.
-            Caution: if you modify a command, you need to reassign it in the list
-            to make the changes propagate to the other process
-        completedqueue
-            Queue used from the plotting process to signal the completion
-            of a command
-        globallimits
-            Dict that for each quantity gives the limits
-    '''
+queue          : Queue for sending commands to the plotting process
+commands       : List of the commands shared with the plotting process.
+                 Caution: if you modify a command, you must reassign it in the
+                 list to make the changes propagate to the other process
+completedqueue : Queue used from the plotting process to signal the completion
+                 of a command
+globallimits   : Dict that for each quantity gives the limits
+'''
     queue = Queue()
     commands = manager.list()
     completedqueue = Queue()
@@ -51,8 +47,8 @@ except AttributeError:
 #------------------------------------------------------------------------------
 def handle(e):
     '''This functions takes care of printing information about an error,
-    if we are in interactive mode, or re-raising it, if we are in script mode
-    (so that the execution of the script can stop if nobody catches the exception)
+if we are in interactive mode, or re-raising it, if we are in script mode
+(so that the execution of the script can stop if nobody catches the exception)
     '''
     if interactive:
         print str(e)
@@ -75,8 +71,10 @@ Optional qrguments:
     return SimBuffer.get_current_sim()
    
    
-#------------------------------------------------------------------------------ 
-def plot(x, y, type="default", snap="current", sim="current", overplot = False, autoscale = True, xunit="default", yunit="default", xaxis="linear", yaxis="linear", **kwargs):
+#------------------------------------------------------------------------------
+def plot(x, y, type="default", snap="current", sim="current",
+         overplot=False, autoscale=True, xunit="default", yunit="default",
+         xaxis="linear", yaxis="linear", **kwargs):
     '''Plot particle data as a scatter plot.  Creates a new plotting window if
 one does not already exist.
 
@@ -99,8 +97,7 @@ Optional arguments:
                  on the x-axis.
     yunit      : Specify the unit to use for the plotting for the quantity
                  on the y-axis.
-    **kwargs   : Extra keyword arguments will be passed to the matplotlib 'plot'
-                 function used to plot
+    **kwargs   : Extra keyword arguments will be passed to matplotlib.
 '''
     simno = get_sim_no(sim)
     #if we are plotting all species, call plot in turn
@@ -109,16 +106,22 @@ Optional arguments:
         snapobject = SimBuffer.get_snapshot_extended(sim, snap)
         nspecies = snapobject.GetNTypes()
         for ispecies in range(nspecies):
-            plot(x,y,snapobject.GetSpecies(ispecies),snap,simno,(overplot or ispecies>0),autoscale,xunit,yunit,xaxis,yaxis,**kwargs)
+            plot(x,y,snapobject.GetSpecies(ispecies),snap,simno,
+                 (overplot or ispecies>0),autoscale,xunit,yunit,
+                 xaxis,yaxis,**kwargs)
         return
-    command = Commands.ParticlePlotCommand(x, y, type, snap, simno, overplot, autoscale, xunit, yunit, xaxis, yaxis, **kwargs)
+    command = Commands.ParticlePlotCommand(x, y, type, snap, simno, overplot,
+                                           autoscale, xunit, yunit,
+                                           xaxis, yaxis, **kwargs)
     data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
     sleep(0.001)
 
 
 #------------------------------------------------------------------------------
-def plot_vs_time(y, sim="current", overplot=False, autoscale=True, xunit="default", yunit="default", xaxis="linear", yaxis="linear", **kwargs):
+def plot_vs_time(y, sim="current", overplot=False, autoscale=True,
+                 xunit="default", yunit="default", xaxis="linear",
+                 yaxis="linear", **kwargs):
     '''Plot given data as a function of time.  Creates a new plotting window if
 one does not already exist.
 
@@ -141,14 +144,15 @@ Optional arguments:
                  on the y-axis.
 '''
     simno = get_sim_no(sim)
-    command = Commands.PlotVsTime(y,simno,overplot,autoscale,xunit,yunit,**kwargs)
+    command = Commands.PlotVsTime(y,simno,overplot,autoscale,
+                                  xunit,yunit,xaxis,yaxis,**kwargs)
     data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
     
 
 #------------------------------------------------------------------------------
-def render(x, y, render, snap="current", sim="current", overplot=False, autoscale=True, 
-           autoscalerender=True, coordlimits=None, zslice=None,
+def render(x, y, render, snap="current", sim="current", overplot=False,
+           autoscale=True, autoscalerender=True, coordlimits=None, zslice=None,
            xunit="default", yunit="default", renderunit="default",
            res=64, interpolation='nearest'):
     '''Create a rendered plot from selected particle data.
@@ -159,8 +163,8 @@ Required arguments:
     renderdata : Quantity to be rendered. Must be a string.
         
 Optional arguments:
-    snap       : Number of the snapshot to plot. Defaults to 'current'.       
-    sim        : Number of the simulation to plot. Defaults to 'current'.    
+    snap       : Number of the snapshot to plot. Defaults to \'current\'.
+    sim        : Number of the simulation to plot. Defaults to \'current\'.
     overplot   : If True, overplots on the previous existing plot rather
                  than deleting it. Defaults to False.
     autoscale  : If True (default), the coordinate limits of the plot are
@@ -201,8 +205,10 @@ Optional arguments:
     if zslice is not None:
         zslice = float(zslice)
     simno = get_sim_no(sim)
-    command = Commands.RenderPlotCommand(x, y, render, snap, simno, overplot, autoscale, autoscalerender, 
-                                         coordlimits, zslice, xunit, yunit, renderunit, res, interpolation)
+    command = Commands.RenderPlotCommand(x, y, render, snap, simno, overplot,
+                                         autoscale, autoscalerender,
+                                         coordlimits, zslice, xunit, yunit,
+                                         renderunit, res, interpolation)
     data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
 
@@ -265,7 +271,8 @@ Optional arguments:
 
 
 #------------------------------------------------------------------------------
-def limit (quantity, min=None, max=None, auto=False, window='current', subfigure='current'):
+def limit (quantity, min=None, max=None, auto=False,
+           window='current', subfigure='current'):
     '''Set plot limits. Quantity is the quantity to limit.
     
 Required arguments:
@@ -441,8 +448,8 @@ when the execution flow reaches the end of the script
 def update(type=None):
     '''Updates all the plots. You should never call directly this function,
 because all the plotting functions should call this function for you. 
-If you run into a situation when you need it, please contact the authors, because
-you probably just spotted a bug in the code.
+If you run into a situation when you need it, please contact the authors,
+because you probably just spotted a bug in the code.
 ''' 
     #updates the plots
     for command in Singletons.commands:
@@ -488,8 +495,9 @@ Useful in scripts where no interaction is required
 
 
 #------------------------------------------------------------------------------
-def plotanalytical(x=None, y=None, snap="current", sim="current", overplot=True, 
-                   autoscale=True, xunit="default", yunit="default"):
+def plotanalytical(x=None, y=None, snap="current", sim="current",
+                   overplot=True, autoscale=True, xunit="default",
+                   yunit="default"):
     '''Plots the analytical solution
     
 Optional arguments:
@@ -513,7 +521,8 @@ Optional arguments:
     #TODO: figure out automatically the quantities to plot depending on current window    
     
     simno = get_sim_no(sim)
-    command = Commands.AnalyticalPlotCommand(x, y, snap, simno, overplot, autoscale, xunit, yunit)
+    command = Commands.AnalyticalPlotCommand(x, y, snap, simno, overplot,
+                                             autoscale, xunit, yunit)
     data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
 
@@ -553,15 +562,15 @@ Required argument:
     simno      : Simulation number from which to print the snapshot list.    
 '''
     simno = int(simno)
-    sim=SimBuffer.get_sim_no(simno)
+    sim = SimBuffer.get_sim_no(simno)
     print "The run_id of the requested simulation is " + sim.simparams.stringparams["run_id"]
     print "These are the snapshots that we know about for this simulation:"
     for num, snap in enumerate(sim.snapshots):
         #TODO: snap.t is set correctly only the first time that the snapshot is read from the disc, should be fixed
         print str(num) + ' ' + snap.filename + " " + str(snap.t)
     try:
-        live=None
-        live=sim.live
+        live = None
+        live = sim.live
     except AttributeError:
         pass
     if live is not None:

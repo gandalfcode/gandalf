@@ -92,23 +92,23 @@ class noh (AnalyticalSolution):
     def compute(self, x, y):
         '''Computes the exact solution of the Noh problem for
         1, 2 and 3 dimensions'''
-        x = np.arange(0.0,self.radius,1.0/self.iMAX)
+        r = np.arange(0.0,self.radius,1.0/self.iMAX)
         rho = self.rho*np.ones(self.iMAX)
         if self.time > 0:
             bound = 0.3333333333333*self.time
             i = 0
             while i < self.iMAX:
                 if self.ndim == 1:
-                    if x[i] < bound: rho[i] = 4.0*self.rho
+                    if r[i] < bound: rho[i] = 4.0*self.rho
                     else: rho[i] = self.rho
                 elif self.ndim == 2:
-                    if x[i] < bound: rho[i] = 16.0*self.rho
-                    else: rho[i] = self.rho*(1.0 + self.time/x[i])
-                elif self.ndim == 1:
-                    if x[i] < bound: rho[i] = 64.0*self.rho
-                    else: rho[i] = self.rho*pow(1.0 + self.time/x[i],2.0)
+                    if r[i] < bound: rho[i] = 16.0*self.rho
+                    else: rho[i] = self.rho*(1.0 + self.time/r[i])
+                elif self.ndim == 3:
+                    if r[i] < bound: rho[i] = 64.0*self.rho
+                    else: rho[i] = self.rho*pow(1.0 + self.time/r[i],2.0)
                 i = i + 1
-        return x,rho
+        return r,rho
 
 
 #------------------------------------------------------------------------------
@@ -134,7 +134,7 @@ class shocktube (AnalyticalSolution):
         self.x0 = 0.
         self.xR = simfloatparams["boxmax[0]"]
         self.time = time
-        self.iMAX = 1000
+        self.iMAX = 50000
         if sim.simparams.stringparams["gas_eos"] == "isothermal":
             self.gamma = 1+1e-5
         else:
@@ -143,7 +143,7 @@ class shocktube (AnalyticalSolution):
     def compute(self, x, y):
         '''Computes the exact solution of the Riemann problem.
         Gets passed two strings with the quantities that are needed
-        (e.g., 'rho' and 'pressure').'''
+        (e.g., \'rho\' and \'pressure\').'''
         #calls the fortran module that computes the state
         shocktub.shocktub(self.RHOinL, self.RHOinR, self.UinL, self.UinR,
                  self.PinL, self.PinR, self.xL, self.x0, self.xR,

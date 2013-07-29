@@ -162,6 +162,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["ic"] = "random_cube";
   stringparams["particle_distribution"] = "random";
   intparams["smooth_ic"] = 0;
+  intparams["com_frame"] = 0;
   intparams["Npart"] = 0;
   intparams["Nsph"] = 0;
   intparams["Nstar"] = 0;
@@ -202,6 +203,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["nbody_mult"] = 0.1;
   floatparams["subsys_mult"] = 0.05;
   intparams["Nlevels"] = 1;
+  intparams["level_diff_max"] = 1;
   intparams["sph_single_timestep"] = 0;
   intparams["nbody_single_timestep"] = 0;
 
@@ -264,8 +266,9 @@ void Parameters::SetDefaultValues(void)
 
   // Neighbour searching and tree-gravity parameters
   // --------------------------------------------------------------------------
-  stringparams["neib_search"] = "grid";
+  stringparams["neib_search"] = "bruteforce";
   stringparams["gravity_mac"] = "geometric";
+  stringparams["multipole"] = "quadrupole";
   intparams["Nleafmax"] = 1;
   floatparams["thetamaxsqd"] = 0.2;
 
