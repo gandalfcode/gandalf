@@ -118,7 +118,9 @@ void GridSearch<ndim>::UpdateAllSphProperties
 
   // Set-up all OMP threads
   // ==========================================================================
-#pragma omp parallel default(shared) private(activelist,c,cc,draux,drsqd,drsqdaux,gatherlist,hrangesqd,i,j,jj,k,okflag,m,m2,mu,mu2,Nactive,neiblist,Ngather,Nneib,r,rp)
+#pragma omp parallel default(none) private(activelist,c,cc,draux,drsqd,drsqdaux) \
+  private(gatherlist,hrangesqd,i,j,jj,k,okflag,m,m2,mu,mu2,Nactive,neiblist) \
+  private(Ngather,Nneib,r,rp, gpot2, gpot) shared(sph, data, nbody, Nneibmax, cactive, celllist)
   {
     activelist = new int[Noccupymax];
     gatherlist = new int[Nneibmax];
@@ -271,7 +273,10 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
 
   // Set-up all OMP threads
   // ==========================================================================
-#pragma omp parallel default(shared) private(activelist,c,cc,dr,draux,drmag,drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,parti,rp)
+#pragma omp parallel default(none) private(activelist,c,cc,dr,draux,drmag,drsqd) \
+  private(hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag,Nactive) \
+  private(neiblist,neibpart,Ninteract,Nneib,parti,rp) \
+  shared(sph, Nneibmax, cactive, celllist, data)
   {
     activelist = new int[Noccupymax];
     neiblist = new int[Nneibmax];
@@ -479,7 +484,10 @@ void GridSearch<ndim>::UpdateAllSphGravForces
 
   // Set-up all OMP threads
   // ==========================================================================
-#pragma omp parallel default(shared) private(activelist,adirect,c,cc,directlist,dr,draux,drmag,drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag,potdirect,Nactive,neibflag,neiblist,neibpart,Ninteract,Nneib,parti,rp)
+#pragma omp parallel default(none) private(activelist,adirect,c,cc,directlist) \
+  private(dr,draux,drmag,drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j)\
+  private(jj,k,okflag,potdirect,Nactive,neibflag,neiblist,neibpart,Ninteract)\
+  private(Nneib,parti,rp, Ndirect) shared(sph,celllist,cactive,Nneibmax, data)
   {
     neibflag = new bool[sph->Nsph];
     activelist = new int[Noccupymax];
@@ -575,20 +583,6 @@ void GridSearch<ndim>::UpdateAllSphGravForces
         data[i].gpot += parti.gpot;
 	
       }
-      // ----------------------------------------------------------------------
-
-      // Now add all active neighbour contributions to the main arrays
-      //for (jj=0; jj<Nneib; jj++) {
-      //  if (neibpart[jj].active) {
-      //    j = neiblist[jj];
-      //    for (k=0; k<ndim; k++) {
-#pragma omp atomic
-      //      data[j].agrav[k] += neibpart[jj].agrav[k];
-      //    }
-#pragma omp atomic
-      //    data[j].gpot += neibpart[jj].gpot;
-      //  }
-      //}
       
     }
     // ========================================================================
@@ -669,7 +663,10 @@ void GridSearch<ndim>::UpdateAllSphDerivatives(Sph<ndim> *sph)
 
   // Set-up all OMP threads
   // ==========================================================================
-#pragma omp parallel default(shared) private(activelist,c,cc,dr,draux,drmag,drsqd,hrangesqd,i,interactlist,invdrmag,j,jj,k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,parti,rp)
+#pragma omp parallel default(none) private(activelist,c,cc,dr,draux,drmag,drsqd)\
+  private(hrangesqd,i,interactlist,invdrmag,j,jj,k,okflag,Nactive,neiblist)\
+  private(neibpart,Ninteract,Nneib,parti,rp) shared(celllist, cactive, Nneibmax, data)\
+  shared(sph)
   {
     activelist = new int[Noccupymax];
     neiblist = new int[Nneibmax];
@@ -807,7 +804,10 @@ void GridSearch<ndim>::UpdateAllSphDudt(Sph<ndim> *sph)
 
   // Set-up all OMP threads
   // ==========================================================================
-#pragma omp parallel default(shared) private(activelist,c,cc,dr,draux,drmag,drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,parti,rp)
+#pragma omp parallel default(none) private(activelist,c,cc,dr,draux,drmag,drsqd)\
+  private(hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag,Nactive) \
+  private(neiblist,neibpart,Ninteract,Nneib,parti,rp) shared(sph, data, celllist)\
+  shared(Nneibmax, cactive)
   {
     activelist = new int[Noccupymax];
     neiblist = new int[Nneibmax];

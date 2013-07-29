@@ -156,7 +156,10 @@ int Render<ndim>::CreateColumnRenderingGrid
 
     // Loop over all particles in snapshot
     // -----------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(c,dr,drmag,drsqd,hrangesqd,invh,wkern,wnorm)
+#pragma omp parallel for default(none) private(c,dr,drmag,drsqd,hrangesqd,invh,i)\
+  private(wkern,wnorm)\
+  shared(snap,hvalues,mvalues,rhovalues,rgrid,xvalues,yvalues,rendervalues,values)\
+  shared(rendernorm,Ngrid)
     for (i=0; i<snap.Nsph; i++) {
       invh = 1.0f/hvalues[i];
       wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);

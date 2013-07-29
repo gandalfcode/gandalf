@@ -315,7 +315,7 @@ template <int ndim>
 void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
 {
   int i;                            // Particle counter
-  DOUBLE dt = big_number_dp;        // Particle timestep
+  DOUBLE dt;        // Particle timestep
   DOUBLE dt_min = big_number_dp;    // Local copy of minimum timestep
 
   debug2("[GodunovSphSimulation::ComputeGlobalTimestep]");
@@ -330,8 +330,10 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
 
     // Find minimum timestep from all SPH particles
     // ------------------------------------------------------------------------
-#pragma omp parallel default(shared) private(i,dt)
+#pragma omp parallel default(none) private(i,dt)\
+  shared(dt_min)
     {
+      dt=big_number_dp;
 #pragma omp for
       for (i=0; i<sph->Nsph; i++)
         dt = min(dt,sphint->Timestep(sph->sphdata[i],sph->hydro_forces));

@@ -70,7 +70,8 @@ void SphLeapfrogKDK<ndim>::AdvanceParticles
 
   // Advance positions and velocities of all SPH particles
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(dt,k,nstep)
+#pragma omp parallel for default(none) private(dt,k,nstep,i)\
+  shared(sphdata,Nsph,n,timestep)
   for (i=0; i<Nsph; i++) {
 
     // Compute time since beginning of current step
@@ -115,7 +116,8 @@ void SphLeapfrogKDK<ndim>::CorrectionTerms
   debug2("[SphLeapfrogKDK::CorrectionTerms]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(k,nstep)
+#pragma omp parallel for default(none) private(k,nstep,i)\
+  shared(n,Nsph,sphdata,timestep)
   for (i=0; i<Nsph; i++) {
     nstep = sphdata[i].nstep;
     if (n%nstep == 0)
@@ -147,7 +149,8 @@ void SphLeapfrogKDK<ndim>::EndTimestep
   debug2("[SphLeapfrogKDK::EndTimestep]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(k,nstep)
+#pragma omp parallel for default(none) private(k,nstep,i)\
+  shared(n,Nsph,sphdata)
   for (i=0; i<Nsph; i++) {
     nstep = sphdata[i].nstep;
     if (n%nstep == 0) {

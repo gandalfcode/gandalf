@@ -260,7 +260,8 @@ void Ghosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph)
   debug2("[SphSimulation::CopySphDataToGhosts]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(i,iorig,k,rp,vp)
+#pragma omp parallel for default(none) private(i,iorig,k,rp,vp,j)\
+  shared(sph)
   for (j=0; j<sph->Nghost; j++) {
     i = sph->Nsph + j;
     iorig = sph->sphdata[i].iorig;

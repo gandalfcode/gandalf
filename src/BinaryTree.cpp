@@ -1070,7 +1070,10 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 
   // Set-up all OMP threads
   // ==========================================================================
-#pragma omp parallel default(shared) private(activelist,c,cc,celldone,draux,drsqd,drsqdaux,hmax,hrangesqd,i,j,jj,k,okflag,m,mu,Nactive,neiblist,Nneib,Nneibmax,r,rp)
+#pragma omp parallel default(none) private(activelist,c,cc,celldone,draux,drsqd)\
+  private(drsqdaux,hmax,hrangesqd,i,j,jj,k,okflag,m,mu,Nactive,neiblist,Nneib)\
+  private(Nneibmax,r,rp, gatherlist, gpot, gpot2, m2, mu2, Ngather)\
+  shared(sph, celllist, cactive, data, nbody)
   {
     Nneibmax = 2*sph->Ngather;
     activelist = new int[Nleafmax];
@@ -1273,7 +1276,10 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 
   // Set-up all OMP threads
   // ==========================================================================
-#pragma omp parallel default(shared) private(activelist,c,cc,dr,draux,drmag,drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,parti,rp)
+#pragma omp parallel default(none) private(activelist,c,cc,dr,draux,drmag,drsqd)\
+  private(hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag,Nactive)\
+  private(neiblist,neibpart,Ninteract,Nneib,parti,rp)\
+  shared(celllist,cactive,Nneibmax,sph,data)
   {
     activelist = new int[Nleafmax];
     neiblist = new int[Nneibmax];
@@ -1492,7 +1498,11 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
   // Set-up all OMP threads
   // ==========================================================================
-#pragma omp parallel default(shared) private(activelist,agrav,c,cc,dr,draux,drmag,drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,parti,rp)
+#pragma omp parallel default(none) private(activelist,agrav,c,cc,dr,draux,drmag)\
+  private(drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag)\
+  private(Nactive,neiblist,neibpart,Ninteract,Nneib,parti,rp,gpot,directlist)\
+  private(gravcelllist,Ngravcell,Ndirect)\
+  shared(celllist,cactive,Nneibmax,Ndirectmax,Ngravcellmax,sph,data)
   {
     agrav = new FLOAT[ndim*sph->Nsph];
     gpot = new FLOAT[ndim*sph->Nsph];
