@@ -71,7 +71,8 @@ void SphGodunovIntegration<ndim>::AdvanceParticles
   debug2("[SphGodunovIntegration::AdvanceParticles]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(dt,k,nstep)
+#pragma omp parallel for default(none) private(dt,k,nstep,i,dn)\
+  shared(n,Nsph,sphdata,timestep)
   for (i=0; i<Nsph; i++) {
 
     // Compute time since beginning of current step
@@ -128,7 +129,8 @@ void SphGodunovIntegration<ndim>::EndTimestep
   debug2("[SphGodunovIntegration::EndTimestep]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(k,nstep)
+#pragma omp parallel for default(none) private(k,nstep,i,dn)\
+  shared(n,Nsph,sphdata)
   for (i=0; i<Nsph; i++) {
     dn = n - sphdata[i].nlast;
     nstep = sphdata[i].nstep;
@@ -170,7 +172,8 @@ int SphGodunovIntegration<ndim>::CheckTimesteps
   debug2("[SphLeapfrogKDK::CheckTimesteps]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(dn,k,level_new,nnewstep,nstep)
+#pragma omp parallel for default(none) private(dn,k,level_new,nnewstep,nstep)\
+  shared(level_diff_max,n,Nsph,sphdata) reduction(+:activecount)
   for (i=0; i<Nsph; i++) {
     dn = n - sphdata[i].nlast;
     nstep = sphdata[i].nstep;

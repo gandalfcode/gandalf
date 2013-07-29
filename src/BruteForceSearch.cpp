@@ -101,7 +101,8 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
 
   // Create parallel threads
   // ==========================================================================
-#pragma omp parallel default(shared) private(dr,drsqd,i,j,k,neiblist,okflag,rp)
+#pragma omp parallel default(none) private(dr,drsqd,i,j,k,neiblist,okflag,rp) \
+    shared(sph, nbody, gpot, m, mu)
   {
     neiblist = new int[sph->Ntot];
     drsqd = new FLOAT[sph->Ntot];
@@ -141,6 +142,7 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
 
   delete[] mu;
   delete[] m;
+  delete[] gpot;
 
   return;
 }

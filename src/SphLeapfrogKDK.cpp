@@ -20,6 +20,7 @@ using namespace std;
 
 
 
+
 //=============================================================================
 //  SphLeapfrogKDK::SphLeapfrogKDK
 /// SphLeapfrogKDK class constructor
@@ -70,7 +71,8 @@ void SphLeapfrogKDK<ndim>::AdvanceParticles
 
   // Advance positions and velocities of all SPH particles
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(dn,dt,k,nstep)
+#pragma omp parallel for default(none) private(dt,k,nstep,i, dn)\
+  shared(sphdata,Nsph,n,timestep)
   for (i=0; i<Nsph; i++) {
 
     // Compute time since beginning of current step
@@ -116,7 +118,8 @@ void SphLeapfrogKDK<ndim>::CorrectionTerms
   debug2("[SphLeapfrogKDK::CorrectionTerms]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(dn,k,nstep)
+#pragma omp parallel for default(none) private(dn,k,nstep,i)\
+  shared(n,Nsph,sphdata,timestep)
   for (i=0; i<Nsph; i++) {
     dn = n - sphdata[i].nlast;
     nstep = sphdata[i].nstep;
@@ -150,7 +153,8 @@ void SphLeapfrogKDK<ndim>::EndTimestep
   debug2("[SphLeapfrogKDK::EndTimestep]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(dn,k,nstep)
+#pragma omp parallel for default(none) private(dn,k,nstep,i)\
+  shared(n,Nsph,sphdata)
   for (i=0; i<Nsph; i++) {
     dn = n - sphdata[i].nlast;
     nstep = sphdata[i].nstep;
@@ -193,7 +197,8 @@ int SphLeapfrogKDK<ndim>::CheckTimesteps
   debug2("[SphLeapfrogKDK::CheckTimesteps]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(shared) private(dn,k,level_new,nnewstep,nstep)
+#pragma omp parallel for default(none) private(dn,k,level_new,nnewstep,nstep)\
+  shared(level_diff_max,n,Nsph,sphdata) reduction(+:activecount)
   for (i=0; i<Nsph; i++) {
     dn = n - sphdata[i].nlast;
     nstep = sphdata[i].nstep;
