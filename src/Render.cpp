@@ -97,6 +97,7 @@ int Render<ndim>::CreateColumnRenderingGrid
   int j;                           // Aux. counter
   int k;                           // Dimension counter
   int idummy;                      // ..
+  int Nsph = snap.Nsph;            // ..
   float dr[2];                     // Rel. position vector on grid plane
   float drsqd;                     // Distance squared on grid plane
   float drmag;                     // Distance
@@ -162,18 +163,11 @@ int Render<ndim>::CreateColumnRenderingGrid
 
     // Loop over all particles in snapshot
     // -----------------------------------------------------------------------
-#ifndef __APPLE_CC__
 #pragma omp parallel for default(none) private(c,dr,drmag,drsqd,hrangesqd,invh,i)\
   private(wkern,wnorm) \
-  shared(snap,hvalues,mvalues,rhovalues,rgrid,xvalues,yvalues,rendervalues,values) \
+  shared(hvalues,mvalues,Nsph,rhovalues,rgrid,xvalues,yvalues,rendervalues,values) \
   shared(rendernorm,Ngrid)
-#else
-#pragma omp parallel for default(none) private(c,dr,drmag,drsqd,hrangesqd,invh,i)\
-  private(wkern,wnorm) \
-  shared(hvalues,mvalues,rhovalues,rgrid,xvalues,yvalues,rendervalues,values) \
-  shared(rendernorm,Ngrid)
-#endif
-    for (i=0; i<snap.Nsph; i++) {
+    for (i=0; i<Nsph; i++) {
       invh = 1.0/hvalues[i];
       wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);
       hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];

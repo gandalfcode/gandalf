@@ -186,7 +186,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
   }
 
   // Calculate higher order derivatives
-  CalculateAllStartupQuantities(Nchildren, children);
+  this->CalculateAllStartupQuantities(Nchildren, children);
 
 
   // Main time integration loop

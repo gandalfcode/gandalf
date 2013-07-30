@@ -304,16 +304,16 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
   // Find list of all cells that contain active particles
   celllist = new int[Ncell];
   cactive = ComputeActiveCellList(celllist);
-  Nneibmax = Nlistmax;
 
 
   // Set-up all OMP threads
   // ==========================================================================
 #pragma omp parallel default(none) private(activelist,c,cc,dr,draux,drmag,drsqd) \
   private(hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag,Nactive) \
-  private(neiblist,neibpart,Ninteract,Nneib,parti,rp) \
-  shared(sph, Nneibmax, cactive, celllist, data)
+  private(neiblist,neibpart,Ninteract,Nneib,Nneibmax,parti,rp) \
+  shared(sph,cactive,celllist,data)
   {
+    Nneibmax = Nlistmax;
     activelist = new int[Noccupymax];
     neiblist = new int[Nneibmax];
     interactlist = new int[Nneibmax];
@@ -396,33 +396,39 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
 				   drmag,invdrmag,dr,parti,neibpart);
 
         // Add all particle i contributions to main array
-        for (k=0; k<ndim; k++) {
-#pragma omp atomic
-          data[i].a[k] += parti.a[k];
-        }
-#pragma omp atomic
-        data[i].dudt += parti.dudt;
-#pragma omp atomic
-        data[i].div_v += parti.div_v;
-	data[i].levelneib = max(data[i].levelneib,parti.levelneib);
+#pragma omp critical
+	{
+	  for (k=0; k<ndim; k++) {
+	    //#pragma omp atomic
+	    data[i].a[k] += parti.a[k];
+	  }
+	  //#pragma omp atomic
+	  data[i].dudt += parti.dudt;
+	  //#pragma omp atomic
+	  data[i].div_v += parti.div_v;
+	  data[i].levelneib = max(data[i].levelneib,parti.levelneib);
+	}
 	
       }
       // ----------------------------------------------------------------------
 
       // Now add all active neighbour contributions to the main arrays
-      for (jj=0; jj<Nneib; jj++) {
-	j = neiblist[jj];
-        if (neibpart[jj].active) {
-          for (k=0; k<ndim; k++) {
-#pragma omp atomic
-            data[j].a[k] += neibpart[jj].a[k];
-          }
-#pragma omp atomic
-          data[j].dudt += neibpart[jj].dudt;
-#pragma omp atomic
-          data[j].div_v += neibpart[jj].div_v;
-        }
-	data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
+#pragma omp critical
+      {
+	for (jj=0; jj<Nneib; jj++) {
+	  j = neiblist[jj];
+	  if (neibpart[jj].active) {
+	    for (k=0; k<ndim; k++) {
+	      //#pragma omp atomic
+	      data[j].a[k] += neibpart[jj].a[k];
+	    }
+	    //#pragma omp atomic
+	    data[j].dudt += neibpart[jj].dudt;
+	    //#pragma omp atomic
+	    data[j].div_v += neibpart[jj].div_v;
+	  }
+	  data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
+	}
       }
       
     }

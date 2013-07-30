@@ -2,7 +2,7 @@
 # Makefile
 #==============================================================================
 
-CPP                = g++
+CPP                = /sw/bin/g++-4
 PYTHON             = python2.7
 F2PY               = f2py2.7
 COMPILER_MODE      = FAST

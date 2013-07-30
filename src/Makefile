@@ -31,6 +31,17 @@ OPT += -fopenmp -DOPENMP
 endif
 endif
 
+ifeq ($(CPP),/sw/bin/g++-4)
+ifeq ($(COMPILER_MODE),FAST)
+OPT += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
+else ifeq ($(COMPILER_MODE),DEBUG)
+OPT += -g -pg -Wall -fbounds-check -fPIC #-fprofile-arcs -ftest-coverage
+endif
+ifeq ($(OPENMP),1)
+OPT += -fopenmp -DOPENMP
+endif
+endif
+
 
 # Compiler mode flags
 # ----------------------------------------------------------------------------
