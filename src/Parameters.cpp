@@ -142,12 +142,14 @@ void Parameters::SetDefaultValues(void)
 
   // Main simulation algorithm parameters
   // --------------------------------------------------------------------------
+  intparams["ndim"] = 3;
   stringparams["sim"] = "sph";
   stringparams["sph"] = "gradh";
   stringparams["nbody"] = "hermite4";
 
   // Simulation id, filename and output time parameters
   // --------------------------------------------------------------------------
+  stringparams["ic"] = "random_cube";
   stringparams["run_id"] = "";
   stringparams["in_file_form"] = "ascii";
   stringparams["out_file_form"] = "ascii";
@@ -157,47 +159,42 @@ void Parameters::SetDefaultValues(void)
   intparams["Nstepsmax"] = 9999999;
   intparams["noutputstep"] = 32;
 
-  // Initial conditions parameters
+  // Unit and scaling parameters
   // --------------------------------------------------------------------------
-  stringparams["ic"] = "random_cube";
-  stringparams["particle_distribution"] = "random";
-  intparams["smooth_ic"] = 0;
-  intparams["com_frame"] = 0;
-  intparams["Npart"] = 0;
-  intparams["Nsph"] = 0;
-  intparams["Nstar"] = 0;
-  intparams["ndim"] = 3;
-  intparams["Nlattice1[0]"] = 1;
-  intparams["Nlattice1[1]"] = 1;
-  intparams["Nlattice1[2]"] = 1;
-  intparams["Nlattice2[0]"] = 1;
-  intparams["Nlattice2[1]"] = 1;
-  intparams["Nlattice2[2]"] = 1;
-  floatparams["vfluid1[0]"] = 0.0;
-  floatparams["vfluid1[1]"] = 0.0;
-  floatparams["vfluid1[2]"] = 0.0;
-  floatparams["vfluid2[0]"] = 0.0;
-  floatparams["vfluid2[1]"] = 0.0;
-  floatparams["vfluid2[2]"] = 0.0;
-  floatparams["rhofluid1"] = 1.0;
-  floatparams["rhofluid2"] = 1.0;
-  floatparams["press1"] = 1.0;
-  floatparams["press2"] = 1.0;
-  floatparams["amp"] = 0.1;
-  floatparams["lambda"] = 0.5;
-  floatparams["kefrac"] = 0.0;
-  floatparams["radius"] = 1.0;
-  floatparams["angvel"] = 0.0;
-  floatparams["mcloud"] = 1.0;
-  floatparams["mplummer"] = 1.0;
-  floatparams["rplummer"] = 1.0;
-  floatparams["rstar"] = 0.1;
-  floatparams["gasfrac"] = 0.0;
-  floatparams["starfrac"] = 1.0;
+  intparams["dimensionless"] = 0;
+  stringparams["rinunit"] = "";
+  stringparams["minunit"] = "";
+  stringparams["tinunit"] = "";
+  stringparams["vinunit"] = "";
+  stringparams["ainunit"] = "";
+  stringparams["rhoinunit"] = "";
+  stringparams["pressinunit"] = "";
+  stringparams["finunit"] = "";
+  stringparams["Einunit"] = "";
+  stringparams["mominunit"] = "";
+  stringparams["angmominunit"] = "";
+  stringparams["angvelinunit"] = "";
+  stringparams["uinunit"] = "";
+  stringparams["dudtinunit"] = "";
+  stringparams["tempinunit"] = "";
+  stringparams["routunit"] = "pc";
+  stringparams["moutunit"] = "m_sun";
+  stringparams["toutunit"] = "myr";
+  stringparams["voutunit"] = "km_s";
+  stringparams["aoutunit"] = "km_s2";
+  stringparams["rhooutunit"] = "g_cm3";
+  stringparams["pressoutunit"] = "Pa";
+  stringparams["foutunit"] = "N";
+  stringparams["Eoutunit"] = "J";
+  stringparams["momoutunit"] = "m_sunkm_s";
+  stringparams["angmomoutunit"] = "m_sunkm2_s";
+  stringparams["angveloutunit"] = "rad_s";
+  stringparams["uoutunit"] = "J_kg";
+  stringparams["dudtoutunit"] = "J_kg_s";
+  stringparams["tempoutunit"] = "K";
 
   // Integration scheme and timestep parameters
   // --------------------------------------------------------------------------
-  stringparams["sph_integration"] = "lfkdk";
   floatparams["accel_mult"] = 0.3;
   floatparams["courant_mult"] = 0.15;
   floatparams["nbody_mult"] = 0.1;
@@ -209,6 +206,7 @@ void Parameters::SetDefaultValues(void)
 
   // SPH parameters
   // --------------------------------------------------------------------------
+  stringparams["sph_integration"] = "lfkdk";
   stringparams["kernel"] = "m4";
   intparams["tabulated_kernel"] = 0;
   floatparams["h_fac"] = 1.2;
@@ -244,6 +242,14 @@ void Parameters::SetDefaultValues(void)
   intparams["self_gravity"] = 0;
   stringparams["grav_kernel"] = "mean_h";
 
+  // Neighbour searching and tree-gravity parameters
+  // --------------------------------------------------------------------------
+  stringparams["neib_search"] = "bruteforce";
+  stringparams["gravity_mac"] = "geometric";
+  stringparams["multipole"] = "quadrupole";
+  intparams["Nleafmax"] = 1;
+  floatparams["thetamaxsqd"] = 0.2;
+
   // N-body parameters
   // --------------------------------------------------------------------------
   intparams["sub_systems"] = 0;
@@ -264,14 +270,6 @@ void Parameters::SetDefaultValues(void)
   floatparams["smooth_accrete_dt"] = 0.01;
   stringparams["sink_radius_mode"] = "hmult";
 
-  // Neighbour searching and tree-gravity parameters
-  // --------------------------------------------------------------------------
-  stringparams["neib_search"] = "bruteforce";
-  stringparams["gravity_mac"] = "geometric";
-  stringparams["multipole"] = "quadrupole";
-  intparams["Nleafmax"] = 1;
-  floatparams["thetamaxsqd"] = 0.2;
-
   // Boundary conditions parameters
   // --------------------------------------------------------------------------
   stringparams["x_boundary_lhs"] = "open";
@@ -287,35 +285,40 @@ void Parameters::SetDefaultValues(void)
   floatparams["boxmax[1]"] = 1.0;
   floatparams["boxmax[2]"] = 1.0;
 
-  // Unit and scaling parameters
+  // Initial conditions parameters
   // --------------------------------------------------------------------------
-  intparams["dimensionless"] = 0;
-  stringparams["rinunit"] = "";
-  stringparams["minunit"] = "";
-  stringparams["tinunit"] = "";
-  stringparams["vinunit"] = "";
-  stringparams["ainunit"] = "";
-  stringparams["rhoinunit"] = "";
-  stringparams["Einunit"] = "";
-  stringparams["mominunit"] = "";
-  stringparams["angmominunit"] = "";
-  stringparams["angvelinunit"] = "";
-  stringparams["uinunit"] = "";
-  stringparams["dudtinunit"] = "";
-  stringparams["tempinunit"] = "";
-  stringparams["routunit"] = "pc";
-  stringparams["moutunit"] = "m_sun";
-  stringparams["toutunit"] = "myr";
-  stringparams["voutunit"] = "km_s";
-  stringparams["aoutunit"] = "km_s2";
-  stringparams["rhooutunit"] = "g_cm3";
-  stringparams["Eoutunit"] = "J";
-  stringparams["momoutunit"] = "m_sunkm_s";
-  stringparams["angmomoutunit"] = "m_sunkm2_s";
-  stringparams["angveloutunit"] = "rad_s";
-  stringparams["uoutunit"] = "J_kg";
-  stringparams["dudtoutunit"] = "J_kg_s";
-  stringparams["tempoutunit"] = "K";
+  stringparams["particle_distribution"] = "random";
+  intparams["smooth_ic"] = 0;
+  intparams["com_frame"] = 0;
+  intparams["Nsph"] = 0;
+  intparams["Nstar"] = 0;
+  intparams["Nlattice1[0]"] = 1;
+  intparams["Nlattice1[1]"] = 1;
+  intparams["Nlattice1[2]"] = 1;
+  intparams["Nlattice2[0]"] = 1;
+  intparams["Nlattice2[1]"] = 1;
+  intparams["Nlattice2[2]"] = 1;
+  floatparams["vfluid1[0]"] = 0.0;
+  floatparams["vfluid1[1]"] = 0.0;
+  floatparams["vfluid1[2]"] = 0.0;
+  floatparams["vfluid2[0]"] = 0.0;
+  floatparams["vfluid2[1]"] = 0.0;
+  floatparams["vfluid2[2]"] = 0.0;
+  floatparams["rhofluid1"] = 1.0;
+  floatparams["rhofluid2"] = 1.0;
+  floatparams["press1"] = 1.0;
+  floatparams["press2"] = 1.0;
+  floatparams["amp"] = 0.1;
+  floatparams["lambda"] = 0.5;
+  floatparams["kefrac"] = 0.0;
+  floatparams["radius"] = 1.0;
+  floatparams["angvel"] = 0.0;
+  floatparams["mcloud"] = 1.0;
+  floatparams["mplummer"] = 1.0;
+  floatparams["rplummer"] = 1.0;
+  floatparams["rstar"] = 0.1;
+  floatparams["gasfrac"] = 0.0;
+  floatparams["starfrac"] = 1.0;
 
   // Python parameters
   // --------------------------------------------------------------------------

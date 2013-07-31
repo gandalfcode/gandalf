@@ -6,7 +6,7 @@ import __main__
 import atexit
 from multiprocessing import Manager, Queue
 from plotting import PlottingProcess
-from seren.analysis.SimBuffer import SimBuffer, BufferException
+from gandalf.analysis.SimBuffer import SimBuffer, BufferException
 
 manager= Manager()
 

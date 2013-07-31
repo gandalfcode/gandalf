@@ -4,7 +4,7 @@
 # Burrau/pythagorean problem in python and then running the simulation and
 # displaying the results.
 #==============================================================================
-from seren.analysis.facade import *
+from gandalf.analysis.facade import *
 import numpy as np
 import time
 

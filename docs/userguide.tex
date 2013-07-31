@@ -7,7 +7,7 @@
 \usepackage{array}
 \usepackage[colorlinks,final]{hyperref}
 
-\newcommand{\VERNO}{0.1.0 }
+\newcommand{\VERNO}{0.2.0 }
 \newcommand{\var}[1]{\texttt{#1}}
 
 
@@ -20,7 +20,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
 
-\title{CODENAME v\VERNO userguide}
+\title{GANDALF v\VERNO userguide}
 \author{David Hubber \& Giovanni Rosotti}
 
 \maketitle
@@ -31,19 +31,19 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Overview of code}
-CODENAME is a new SPH and N-body code written in C++ and python.  Although partly on the algorithms and code structures used in SEREN (Hubber et al. 2011), it has been written from scratch and contains many new features and optimisations which significantly improve the speed, functionality and usability of the code.  It has been written for several purposes.
+GANDALF is a new SPH and N-body code written in C++ and python.  Although partly based on some of the algorithms and code structures used in SEREN (Hubber et al. 2011), it has been written from scratch and contains many new features and optimisations which significantly improve the speed, functionality and usability of the code.  It has been written for several purposes.
 \begin{itemize}
-\item CODENAME has been written with a fully object-oriented philosophy in C++.  This is to improve the maintainability of the code and also to allow the code to be easily extended in the future with as little disruption to the original code-base as possible.
-\item CODENAME contains a variety of SPH algorithms such as conservative 'grad-h' SPH, Saitoh \& Makino (2013) SPH and Godunov SPH.  The N-body component contains a variety of common integration schemes such as 4th/6th-order Hermite with time-symmetric integration.
-\item CODENAME can be run in three different modes; as a standard executable run from the command line (like SEREN), run from a python script or run inside an interactive python environment.  Both the script and interactive python modes include a graphical output that can be used to visualise previously run simulations, or to interactively visualise simulations as they are run on-the-fly.
-\item CODENAME can generate initial conditions at run-time, as opposed to SEREN where the initial conditions had to be prepared a priori.  The initial conditions may either be hard-coded into the C++ code, or set-up via a python script using numpy arrays.
-\item CODENAME uses additional parameters to switch on various physics options, as well as requiring them to be activated in the Makefile.  In comparison, SEREN controlled physics options exclusively in the Makefile.  Therefore, CODENAME need not be re-compiled everytime a different setting is required.
+\item GANDALF has been written with a fully object-oriented philosophy in C++.  This is to improve the maintainability of the code and also to allow the code to be easily extended in the future with as little disruption to the original code-base as possible.
+\item GANDALF contains a variety of SPH algorithms such as conservative 'grad-h' SPH, Saitoh \& Makino (2013) SPH and Godunov SPH.  The N-body component contains a variety of common integration schemes such as 4th/6th-order Hermite with time-symmetric integration.
+\item GANDALF can be run in three different modes; as a standard executable run from the command line (like SEREN), run from a python script or run inside an interactive python environment.  Both the script and interactive python modes include a graphical output that can be used to visualise previously run simulations, or to interactively visualise simulations as they are run on-the-fly.
+\item GANDALF can generate initial conditions at run-time, as opposed to SEREN where the initial conditions had to be prepared a priori.  The initial conditions may either be hard-coded into the C++ code, or set-up via a python script using numpy arrays.
+\item GANDALF uses additional parameters to switch on various physics options, as well as requiring them to be activated in the Makefile.  In comparison, SEREN controlled physics options exclusively in the Makefile.  Therefore, GANDALF need not be re-compiled everytime a different setting is required.
 \end{itemize}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Installation} \label{S:INSTALL}
-In order to use all features in CODENAME, the following programs and libraries must be installed : 
+In order to use all features in GANDALF, the following programs and libraries must be installed : 
 \begin{itemize}
 \item C++ compiler; at present, only gcc/g++ has been tested with the code
 \item Python 2.7
@@ -62,7 +62,7 @@ All of these programs/libraries can be found in most standard Linux installation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Command-line code compilation}
 
-To compile CODENAME only as a C++ executable to be run from the command line without visualisation via the python program, first set the chosen C++ compiler in the Makefile and type \\
+To compile GANDALF only as a C++ executable to be run from the command line without visualisation via the python program, first set the chosen C++ compiler in the Makefile and type \\
 \newline
 \noindent \var{make executable} \\
 
@@ -81,13 +81,13 @@ To compile all code elements including the python components, then complete the 
 \item For Mac OS X, python is installed by default.  However, it does not have directly compatable versions of all the required libraries.  Therefore, it is required to install an additional version of python 2.7 using a 3rd party package manager like fink, Macports or homebrew.
 \end{itemize}
 
-\item Add the location of the main CODENAME directory to the \var{PYTHONPATH} environment variable.  If you are using bash or related shells, then add the line \\
+\item Add the location of the main GANDALF directory to the \var{PYTHONPATH} environment variable.  If you are using bash or related shells, then add the line \\
 \newline
-\noindent \var{export PYTHONPATH=XXX/YYY/codename:\$PYTHONPATH} \\
+\noindent \var{export PYTHONPATH=XXX/YYY/gandalf:\$PYTHONPATH} \\
 
-\noindent to your bashrc (or bash\_profile) script where {\var XXX/YYY/codename} is the absolute path of the CODENAME directory.   If you are using csh, tcsh or related shells, then add
+\noindent to your bashrc (or bash\_profile) script where {\var XXX/YYY/gandalf} is the absolute path of the GANDALF directory.   If you are using csh, tcsh or related shells, then add
 \newline
-\noindent \var{setenv PYTHONPATH ``XXX/YYY/codename:\$PYTHONPATH''} \\
+\noindent \var{setenv PYTHONPATH ``XXX/YYY/gandalf:\$PYTHONPATH''} \\
 
 \item Set the required version of python and f2py in your Makefile (See Section \ref{S:MAKEFILE}).  Since operating systems usually have more than one version of python installed, it is important to ensure that \var{make} uses the correct version when compiling the code.  These are set using the \var{PYTHON} and \var{F2PY} variables in the Makefile.
 
@@ -104,7 +104,7 @@ Also, \var{make} requires the location of the python and numpy libraries.  In mo
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Basic usage}
-CODENAME can be run in three principle modes.  
+GANDALF can be run in three principle modes.  
 \begin{itemize} 
 \item Command-line mode, where the code is run as a C++ executable via the command line with a parameters file that selects which code options are used4 (similar to SEREN), 
 \item via a python script where the code is run in a python environment with various plotting options available as well as running the code, 
@@ -118,16 +118,16 @@ CODENAME can be run in three principle modes.
 
 \noindent To run a simulation with the C++ executable on the command line, type : \\
 \newline
-\var{./codename PARAMSFILE} \\
+\var{./gandalf PARAMSFILE} \\
 \newline
-where PARAMSFILE is the name of the params file for that simulation.  If the parameters file does not exist, or contains invalid parameter options, then the program will quit citing an error message.
+where PARAMSFILE is the name of the parameters file for that simulation.  If that parameters file does not exist in the current directory, or contains invalid parameter options, then the program will quit citing an error message.
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Running python scripts}
 
-\noindent Any python script using the CODENAME python API can be run directly from the command-line as any regular python script.  To run the script PYTHONSCRIPT.py, type \\
+\noindent Any python script using the GANDALF python API can be run directly from the command-line as any regular python script.  To run the script PYTHONSCRIPT.py, type \\
 \newline
 \var{python PYTHONSCRIPT.py} \\
 \newline
@@ -150,7 +150,7 @@ or, depending on the default version of python on your system (e.g. installing m
 \newline
 \var{python2.7 analysis/interpreter.py} \\
 \newline
-\noindent The code should open with a splash screen containing the code title followed by a command prompt of the form '\var{codename >'}'.  To run a simulation defined by a parameter file, then type \\
+\noindent The code should open with a splash screen containing the code title followed by a command prompt of the form '\var{gandalf >'}'.  To run a simulation defined by a parameter file, then type \\
 \newline
 \var{newsim PARAMSFILE} \\
 \newline
@@ -170,7 +170,7 @@ or, depending on the default version of python on your system (e.g. installing m
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Makefile options} \label{S:MAKEFILE}
-The CODENAME Makefile is used to select options which are used to compile the code with.  If the user wishes to change any compile-time options, the code must be recompiled from scratch by typing {\var make clean}, and {\var make seren} or \var{make codename}.  For users of SEREN, the CODENAME Makefile is somewhat simpler with many options either not present (since more complex algorithms have not been implemented) or have been transfered to the parameters file.  This has been done in order to make it less likely that the wrong Makefile options are used in simulations, and also to stop the need to recompile the code completely so often when using slightly different options.
+The GANDALF Makefile is used to select options which are used to compile the code with.  If the user wishes to change any compile-time options, the code must be recompiled from scratch by typing {\var make clean} and then \var{make}.  For users of SEREN, the GANDALF Makefile has been simplified with many options either not present (since various specialist algorithms have not been implemented) or have been transfered to the parameters file.  This has been done in order to make it less likely that the wrong Makefile options are used in simulations, and also to stop the need to recompile the code completely so often when using slightly different options.
 
 \begin{itemize}
 
@@ -225,6 +225,8 @@ DOUBLE & : 64-bit precision floating point variables
 
 \begin{itemize}
 
+\item \var{ndim} : Simulation dimensionality ($1$, $2$ or $3$)
+
 \item \var{sim} : Simulation type \vspace{0.1cm} \\
 \begin{tabular}{ll}
 godunov\_sph      & = Godunov SPH algorithm (Inutsuka 2002) \\
@@ -232,24 +234,23 @@ nbody             & = N-body only algorithm \\
 sph               & = SPH (+ N-body) algorithn 
 \end{tabular}
 
-\item \var{sph} : SPH algorithm \\
+\item \var{sph} : SPH algorithm (when using sim = sph) \\
 \begin{tabular}{ll}
 gradh    & = Conservative 'grad-h' SPH \\
-sm2012   & = Saitoh \& Makino (2012) SPH \\
-godunov  & = Godunov SPH (Inutsuka 2002)
+sm2012   & = Saitoh \& Makino (2012) SPH
 \end{tabular}
 
 \item \var{nbody} : Main N-body integration algorithm \\
 \begin{tabular}{ll}
-lfkdk        & = Leapfrog kick-drift-kick \\
+lfkdk        & = 2nd-order Leapfrog kick-drift-kick \\
 hermite4     & = 4th-order Hermite scheme \\
-hermite4ts   & = Time-symmeric 4th-order Hermite scheme
+hermite4ts   & = Time-symmetric 4th-order Hermite scheme
 \end{tabular}
 
 \item \var{ic} : Simulation initial conditions \vspace{0.1cm} \\
 \begin{tabular}{ll}
 binary            & = Simple binary star test \\
-boss\_bodenheimer & = Boss-Bodenheimer (1979) test \\
+bb                & = Boss-Bodenheimer (1979) test \\
 box               & = Create a uniform box of gas \\
 cdiscontinuity    & = Contact discontinuity test \\
 khi               & = Kelvin-Helmholtz instability test \\
@@ -272,17 +273,17 @@ python            & = Generate initial conditions from python
 \item \var{out\_file\_form} : Format of outputted snapshot files
                       (ascii)
 
-\item \var{endtime} : Termination time of the simulation (given in {\var tunit}s)
+\item \var{tend} : Termination time of the simulation (given in {\var tunit}s)
 
 \item \var{dt\_snap} : Snapshot time interval (given in {\var tunit}s)
 
-\item \var{nstepsmax} : Maximum no. of steps in simulation before termination
-
 \item \var{tfirstsnap} : Time of first snapshot (given in {\var tunit}s)
+
+\item \var{Nstepsmax} : Maximum no. of steps in simulation before termination
 
 \item \var{noutputstep} : Frequency of screen output (in units of integer steps)
 
-\item \var{ndiagstep} : No. of complete block steps between diagnostic output
+%\item \var{ndiagstep} : No. of complete block steps between diagnostic output
 
 \end{itemize}
 
@@ -292,10 +293,9 @@ python            & = Generate initial conditions from python
 \subsection{Unit parameters}
 
 \begin{itemize}
-%\item \var{dimensionless} : Are all particle quantities dimensionless?
-%                      (\var{.true.} or \var{.false.})
+\item \var{dimensionless} : Are all particle quantities dimensionless? ($0$ or $1$)
 
-\item \var{runit} : Position unit \vspace{0.1cm} \\
+\item \var{routunit} : Position unit \vspace{0.1cm} \\
 \begin{tabular}{ll}
 pc/kpc/mpc & = parsec/kiloparsec/megaparsec \\
 au         & = astronomical unit \\
@@ -304,7 +304,7 @@ r\_earth   & = Earth radius \\
 cm/m/km    & = centimetre/metre/kilometre
 \end{tabular}
 
-\item \var{munit} : Mass unit \vspace{0.1cm} \\
+\item \var{moutunit} : Mass unit \vspace{0.1cm} \\
 \begin{tabular}{ll}
 m\_sun          & = Solar mass \\
 m\_jup/m\_earth & = Jupiter mass/Earth mass \\
@@ -312,26 +312,26 @@ g/kg            & = gram/kilogram
 \end{tabular}
 
 
-\item \var{tunit} : Time unit \\
+\item \var{toutunit} : Time unit \\
 \begin{tabular}{ll}
 yr/myr/gyr & = year/megayear/gigayear \\
 day        & = day \\
 sec        & = second
 \end{tabular}
 
-\item \var{vunit} : Velocity unit \\
+\item \var{voutunit} : Velocity unit \\
 \begin{tabular}{ll}
 cm\_s/m\_s/km\_s & = centimetres/metres/kilometres per second \\
 au\_yr           & = astronomical units per year
 \end{tabular}
 
-\item \var{aunit} : Acceleration unit \\
+\item \var{aoutunit} : Acceleration unit \\
 \begin{tabular}{ll}
 cm\_s2/m\_s2/km\_s2 & = cm/m/km per second squared \\
 au\_yr2             & = astronomical units per year squared
 \end{tabular}
 
-\item \var{rhounit} : Density unit \\
+\item \var{rhooutunit} : Density unit \\
 \begin{tabular}{ll}
 m\_sun\_pc3 & = Solar masses per parsec cubed \\
 kg\_m3      & = kilogrammes per metre cubed \\
@@ -340,26 +340,26 @@ g\_cm3      & = grammes per centimetre cubed
 
 %\item \var{sigmaunit} : Column/surface density unit
 
-\item \var{pressunit} : Pressure unit \\
+\item \var{pressoutunit} : Pressure unit \\
 \begin{tabular}{ll}
 Pa    & = pascals/newtons per square metre \\
 bar   & = ???
 \end{tabular}
 
-\item \var{funit} : Force unit \\
+\item \var{foutunit} : Force unit \\
 \begin{tabular}{ll}
 N    & = newtons \\
 dyn  & = dynes
 \end{tabular}
 
-\item \var{Eunit} : Energy unit \\
+\item \var{Eoutunit} : Energy unit \\
 \begin{tabular}{ll}
 J/GJ      & = joules/gigajoules \\
 erg       & = ergs \\
 10\^40erg & = $10^{40}$ ergs
 \end{tabular}
 
-\item \var{momunit} : Momentum unit \\
+\item \var{momoutunit} : Momentum unit \\
 \begin{tabular}{ll}
 m\_sunkm\_s  & = Solar masses kilometres per second \\
 m\_sunau\_yr & = Solar masses A.U. per year \\
@@ -367,7 +367,7 @@ kgm\_s       & = Kilogram metres per second \\
 gcm\_s       & = Gram centimetres per second
 \end{tabular}
 
-\item \var{angmomunit} : Angular momentum unit \\
+\item \var{angmomoutunit} : Angular momentum unit \\
 \begin{tabular}{ll}
 m\_sunkm2\_s  & = Solar masses kilometres squared per second \\
 m\_sunau2\_yr & = Solar masses A.U. squared per year \\
@@ -375,12 +375,12 @@ kgm2\_s       & = Kilogram metres squared per second \\
 gcm2\_s       & = Gram centimetres squared per second
 \end{tabular}
 
-\item \var{angvelunit} : Angular velocity unit \\
+\item \var{angveloutunit} : Angular velocity unit \\
 \begin{tabular}{ll}
 rad\_s & = Radians per second
 \end{tabular}
 
-%\item \var{dmdtunit} : Mass (accretion) rate unit \\
+%\item \var{dmdtoutunit} : Mass (accretion) rate unit \\
 %\begin{itemize}{ll}
 %m\_sun\_myr  & = Solar masses per megayear \\
 %m\_sun\_yr   & = Solar masses per year \\
@@ -388,13 +388,13 @@ rad\_s & = Radians per second
 %g\_s         & = grammes per second
 %\end{tabular}
 
-\item \var{Lunit} : Luminosity unit
+%\item \var{Loutunit} : Luminosity unit
 
-\item \var{kappaunit} : Volume opacity unit
+%\item \var{kappaoutunit} : Volume opacity unit
 
-\item \var{Bunit} : Magnetic field unit
+%\item \var{Bunit} : Magnetic field unit
 
-\item \var{Qunit} : Charge unit
+%\item \var{Qunit} : Charge unit
 
 \item \var{uunit} : Specific energy unit \\
 \begin{tabular}{ll}
@@ -402,7 +402,7 @@ J\_kg  & = Joules per kilogram \\
 erg\_g & = ergs per gram
 \end{tabular}
 
-\item \var{Jcurunit} : Current density unit
+%\item \var{Jcurunit} : Current density unit
 
 \item \var{dudtunit} : Heating rate unit \\
 \begin{tabular}{ll}
@@ -420,9 +420,41 @@ K & = Kelvin
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Integration and timestep parameters}
+
+\begin{itemize}
+
+\item \var{accel\_mult} : Acceleration timestep multiplier
+
+\item \var{courant\_mult} : Courant timestep multiplier
+
+\item \var{nbody\_mult} : N-body timestep multiplier
+
+\item \var{subsys\_mult} : Sub-system N-body timestep multiplier
+
+\item \var{Nlevels} : No. of initial timestep levels
+
+\item \var{level\_diff\_max} : Maximum allowed SPH neighbour timestep difference
+
+\item \var{sph\_single\_timestep} : Constrain all SPH particles to a single timestep level 
+
+\item \var{nbody\_single\_timestep} : Constrain all N-body particles to a single timestep level 
+
+
+\end{itemize}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{SPH parameters}
 
 \begin{itemize}
+
+\item \var{sph\_integration} : SPH particle integration scheme \\
+\begin{tabular}{ll}
+lfkdk   & = 2nd-order Leapfrog kick-drift-kick
+\end{tabular}
 
 \item \var{kernel} : SPH kernel function \\
 \begin{tabular}{ll}
@@ -461,8 +493,7 @@ barotropic  & = Barotropic EOS (i.e. for mimicing isothermal + adiabatic phase d
 
 \item \var{energy\_integration} : Energy integration scheme (only applicable if solving the energy equation) \\
 \begin{tabular}{ll}
-PEC         & = Explicit integration using predict-correct-evaluate scheme \\
-godunov     & = Explicit integration for use with Godunov SPH scheme
+PEC         & = Explicit integration using predict-correct-evaluate scheme
 \end{tabular}
 
 \item \var{energy\_mult} : Explicit energy integration timestep multiplier
@@ -473,9 +504,9 @@ godunov     & = Explicit integration for use with Godunov SPH scheme
 
 \item \var{mu\_bar}    : Mean gas particle mass (in units of hydrogen mass)
 
-%\item \var{eta\_eos}   : Polytropic exponent
+\item \var{rho\_bary} : Adiabatic density turnover in barotropic EOS (in g/cm\^3)
 
-%\item \var{rho\_bary} : Adiabatic density turnover in barotropic EOS (in g/cm\^3)
+\item \var{eta\_eos}   : Polytropic exponent (for barotropic EOS)
 
 %\item \var{Acool} : Simple cooling rate factor
 
@@ -491,6 +522,7 @@ mon97 & = Monaghan (1997) viscosity
 \item \var{acond} : Artificial conductivity options \\
 \begin{tabular}{ll}
 none        & = No artificial conductivity \\
+price2008   & = Price (2008) conductivity \\
 wadsley2008 & = Wadsley et al. (2008) conductivity
 \end{tabular}
 
@@ -532,7 +564,7 @@ hllc   & = HLLC approximate Riemann Solver (????)
 
 \item \var{self\_gravity} : Compute gravitational forces?   ($1$ or $0$)
 
-%\item \var{grav\_kernel} : Use kernel-softened gravity
+%\item \var{grav\_kernel} : 
 
 %\item \var{meanh\_gravity} : Use mean-smoothing length for gravitational forces? (\var{.true.} or \var{.false.})
 
@@ -564,6 +596,12 @@ binarytree & = Balanced binary tree
 geometric & = Standard Barnes-Hut geomtric opening angle criterion
 \end{tabular}
 
+\item \var{multipole} : Multipole expansion for tree-gravity \vspace{0.1cm} \\
+\begin{tabular} {ll}
+monopole & = Monopole-only terms for cell gravity \\
+quadrupole & = Include quadrupole moment terms for cell gravity
+\end{tabular}
+
 \item \var{Nleafmax} : Maximum no. of particles allowed in tree leaf cell
 
 \item \var{thetamaxsqd} : Maximum tree opening angle (squared)
@@ -579,11 +617,18 @@ geometric & = Standard Barnes-Hut geomtric opening angle criterion
 
 \begin{itemize}
 
+\item \var{sub\_systems} : Identify and integrate sub-systems separately?
+
+\item \var{sub\_system\_integration} : Main N-body integration algorithm \\
+\begin{tabular}{ll}
+lfkdk        & = 2nd-order Leapfrog kick-drift-kick \\
+hermite4     & = 4th-order Hermite scheme \\
+hermite4ts   & = Time-symmetric 4th-order Hermite scheme
+\end{tabular}
+
 \item \var{Npec} : No. of P(EC)\^n iterations in time-symmetric scheme (if non time-symmetric scheme is used, automatically sets to $1$)
 
 \item \var{nbody\_softening} : Use SPH kernel-softening between star particles? ($1$ or $0$)
-
-\item \var{sub\_systems} : Identify and integrate sub-systems separately?
 
 \item \var{gpefrac} : Maximum fraction of total gravitational potential energy from external sources to allow sub-system.
 
@@ -591,80 +636,36 @@ geometric & = Standard Barnes-Hut geomtric opening angle criterion
 
 
 
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Integration and timestep parameters}
+\subsection{Sink particle parameters}
 
 \begin{itemize}
 
-\item \var{sph\_integration} : SPH particle integration scheme \\
+\item \var{sink\_particles}   : Do stars/sinks accrete?  ($0$ or $1$)
+
+\item \var{create\_sinks}     : Create new sink particles?  ($0$ or $1$)
+
+\item \var{smooth\_accretion} : Use smooth accretion?  ($0$ or $1$)
+
+\item \var{rho\_sink}         : Sink particle creation density
+
+\item \var{sink\_radius}      : Sink particle radius (in units of smoothing length)
+
+\item \var{alpha\_ss}         : Sunyaev-Shakura alpha
+
+\item \var{smooth\_accrete\_frac} : Smooth accretion instantaneous accretion mass frac.
+
+\item \var{smooth\_accrete\_dt} : Smooth accretion instantaneous accretion timestep frac.
+
+\item \var{sink\_radius\_mode} : How to calculate new sink radius \\
 \begin{tabular}{ll}
-lfkdk   & = 2nd-order Leapfrog kick-drift-kick
+hmult   &= sink radius a multiple of SPH particle smoothing length
 \end{tabular}
-
-%\item \var{nbody\_integration} : N-body star particle integration scheme \\
-%\begin{tabular}{ll}
-%lfkdk        & = 2nd-order Leapfrog kick-drift-kick \\
-%lfdkd        & = 2nd-order Leapfrog drift-kick-drift \\
-%hermite4     & = Standard 4th-order Hermite scheme \\
-%hermite4\_ts & = Time-symmetric 4th-order Hermite scheme \\
-%hermite6\_ts & = Time-symmetric 6th-order Hermite scheme
-%\end{tabular}
-
-%\item \var{sub\_system\_integration} : N-body sub-system integration scheme \\
-%\begin{tabular}{ll}
-%lfkdk        & = 2nd-order Leapfrog kick-drift-kick \\
-%hermite4     & = Standard 4th-order Hermite scheme \\
-%hermite4\_ts & = Time-symmetric 4th-order Hermite scheme \\
-%hermite6\_ts & = Time-symmetric 6th-order Hermite scheme
-%\end{tabular}
-
-\item \var{Nlevels} : No. of initial timestep levels
-
-\item \var{accel\_mult} : Acceleration timestep multiplier
-
-\item \var{courant\_mult} : Courant timestep multiplier
-
-\item \var{nbody\_mult} : N-body timestep multiplier
-
-\item \var{sph\_single\_timestep} : Constrain all SPH particles to a single timestep level 
-
-\item \var{nbody\_single\_timestep} : Constrain all N-body particles to a single timestep level 
-
-\item \var{subsys\_mult} : Sub-system N-body timestep multiplier
-
-
-%\item \var{rzero(1)} : Aux. x-coordinate variable
-%\item \var{rzero(2)} : Aux. y-coordinate variable
-%\item \var{rzero(3)} : Aux. z-coordinate variable
 
 
 \end{itemize}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\subsection{Sink particle parameters}
-
-%\begin{itemize}
-
-%\item \var{sink\_particles}   : Do stars/sinks accrete?  (.true. or .false.)
-
-%\item \var{create\_sinks}     : Create new sink particles?  (.true. or .false.)
-
-%\item \var{smooth\_accretion} : Use smooth accretion?  (.true. or .false.)
-
-%\item \var{rho\_sink}         : Sink particle creation density
-
-%\item \var{sink\_radius}      : Sink particle radius (in units of smoothing length)
-
-%\item \var{alpha\_ss}         : Sunyaev-Shakura alpha
-%\item \var{smooth\_accrete\_frac} : Smooth accretion instantaneous accretion mass frac.
-%\item \var{smooth\_accrete\_dt} : Smooth accretion instantaneous accretion timestep frac.
-
-
-%\item \var{Npec}              : No. of iterations in P(EC)\^n integration scheme
-
-%\end{itemize}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -703,6 +704,13 @@ wall     & = wall at boundary (i.e. reflection of particles)
 
 \begin{itemize}
 
+\item \var{smooth\_ic} : Smooth any particle quantities around discontinuities
+
+\item \var{com\_frame} : Translatr ICs to COM frame before starting simulation
+
+\item \var{Nsph} : No. of SPH particles
+\item \var{Nstar} : No. of star particles
+
 \item \var{Nlattice1[0]} : No. of ptcls on lattice 1 in x-dimension
 \item \var{Nlattice1[1]} : No. of ptcls on lattice 1 in y-dimension
 \item \var{Nlattice1[2]} : No. of ptcls on lattice 1 in z-dimension
@@ -727,41 +735,30 @@ wall     & = wall at boundary (i.e. reflection of particles)
 \item \var{lambda}       : Wavelength of applied perturbation
 
 \item \var{kefrac}       : Fraction of energy that is kinetic (Sedov test)
-
-\item \var{amp}          : Perturbation amplitude
-\item \var{lambda}       : Perturbation wavelength
-
 \item \var{radius}       : Radius of cloud
-%\item \var{rho0}      : Central density
+\item \var{angvel}       : Angular velocity of cloud (in radians per second)
+\item \var{mcloud}       : Mass of cloud
 
 \item \var{rplummer}     : Plummer radius
 \item \var{mplummer}     : Total mass of plummer sphere
+
+\item \var{rstar}        : (Softening) radius of star particles
 
 %\item \var{cdmfrac}   : Fraction of mass in cdm particles
 \item \var{gasfrac}      : Fraction of mass in gas particles
 \item \var{starfrac}     : Fraction of mass in star particles
 
-\item \var{rstar}        : (Softening) radius of star particles
-
-%\item \var{Nplummer\_gas} : No. of gas particles in Plummer sphere
-%\item \var{Nplummer\_cdm} : No. of cdm particles in Plummer sphere
-%\item \var{Nplummer\_star} : No. of star particles in Plummer sphere
-
 \end{itemize}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\subsection{Python viewer parameters}
+\subsection{Python viewer parameters}
 
-%\begin{itemize}
+\begin{itemize}
 
-%\item \var{dt\_python} : Time interval (in seconds) between view window updates
+\item \var{dt\_python} : Time interval (in seconds) between view window updates
 
-%\item \var{xslice} : x-coordinate for slice in y-z plane
-%\item \var{yslice} : y-coordinate for slice in x-z plane
-%\item \var{zslice} : z-coordinate for slice in x-y plane
-
-%\end{itemize}
+\end{itemize}
 
 
 \newpage
@@ -772,9 +769,9 @@ wall     & = wall at boundary (i.e. reflection of particles)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Generating initial conditions}
 
-One important difference between SEREN and CODENAME is that initial conditions can be generated on-the-fly in CODENAME, i.e. while running the code, unlike SEREN where initial conditions always had to be generated before the simulation.  While they are still situations where it is appropriate to prepare initial conditions prior to running the simulations, it is more convenient to generate the initial conditions at the same time as running the simulation. It's also possible to generate the initial conditions in python (see next section).
+One important difference between SEREN and GANDALF is that initial conditions can be generated on-the-fly in GANDALF, i.e. while running the code, unlike SEREN where initial conditions always had to be generated before the simulation.  While they are still situations where it is appropriate to prepare initial conditions prior to running the simulations, it is more convenient to generate the initial conditions at the same time as running the simulation. It's also possible to generate the initial conditions in python (see next section).
 
-At present, the following initial conditions are included in the code : 
+At present, the following initial conditions are included in the code : \newline
 
 \noindent SPH simulations : \\
 \begin{tabular}{ll}
@@ -797,11 +794,14 @@ At present, the following initial conditions are included in the code :
 - quadruple &: Simple hierarchical quadruple test
 \end{tabular}
 
+\newpage
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Python scripting usage}
 
-While the numerical part of CODENAME  is implemented in C++ for efficiency, we provide bindings to Python to control the simulation and a large set of analysis and plotting tools to inspect the results. Therefore, from Python you are able to set up the simulation (including initial conditions), run it, load existing snapshots and plot quantities. There are two main ways to use the Python side of CODENAME.
+While the numerical part of GANDALF  is implemented in C++ for efficiency, we provide bindings to Python to control the simulation and a large set of analysis and plotting tools to inspect the results. Therefore, from Python you are able to set up the simulation (including initial conditions), run it, load existing snapshots and plot quantities. There are two main ways to use the Python side of GANDALF.
 
 The first one is an interpreter, that works similarly to a shell (e.g., bash, csh) and understands specific commands to load a simulation and plot quantities. We provide a large set of commands to do standard operations when running and analyzing a simulation, so that this solution can be satisfactory where you need to quickly analyze a simulation.
 
@@ -811,7 +811,7 @@ The second way is writing your own python script. You still have access to the s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Interpreter usage}
 
-The interpreter is located in the analysis/ folder in the main directory of CODENAME. To start it, just type 'python interpreter.py' or './interpeter.py'.
+The interpreter is located in the analysis/ folder in the main directory of GANDALF. To start it, just type 'python interpreter.py' or './interpeter.py'.
 Information on commands for the python interpeter is available using the 'help' command.  Typing 'help' gives a list of all the principle commands available.  Typing 'help command' gives more information on the chosen command.
 Like in a shell, you can use the interpreter interactively or you can write little scripts for it (that is, texts files with a list of the commands that you want to be executed). \textbf{TODO: must actually implement reading from a script}. Any script can be read in and processed by typing : \var{read SCRIPTNAME}.
 
@@ -846,7 +846,7 @@ In addition, in your script you can also perform other tasks that are not possib
 
 \item It is possible to get access to the raw data of the simulation, in order to compute whatever quantity you need. \textbf{Actually, this is not possible yet in an easy way... I need to write a proper wrapper around the C++ method which is too low level. Remember -> give 'snap' attribute to the array to save reference counting. Implement it!}
 
-\item Everything else that you can think. The point is, it's CODENAME that takes care of reading the snapshots, getting the data, and all this boring parts; you can concentrate on what to do with the data and on the science, and forget about the details.
+\item Everything else that you can think. The point is, it's GANDALF that takes care of reading the snapshots, getting the data, and all this boring parts; you can concentrate on what to do with the data and on the science, and forget about the details.
 
 \end{itemize}
 
@@ -889,7 +889,7 @@ There is a potential performance improvement in the transferring of the data alo
 \var{sim.SetParam('gas\_eos','energy\_eqn')} & Integrate energy equation \\
 \var{sim.SetParam('energy\_integration','PEC')} & Use Predict-correct-evaluate energy integration \\
 \var{sim.SetParam('gamma\_eos',1.6666666666666666666)} & gamma = 5/3\\
-\var{sim.SetParam('Npart',200)} & 200 SPH particles \\
+\var{sim.SetParam('Nsph',200)} & 200 SPH particles \\
 \var{sim.SetParam('tend',0.075)} & \\
 \var{sim.SetParam('dt\_snap',1.0)} & \\
 \var{sim.SetParam('x\_boundary\_lhs','open')} & Use open/free boundaries\\
@@ -897,11 +897,11 @@ There is a potential performance improvement in the transferring of the data alo
 & \\                      
 \var{Npart = 200} &  Set number of particles \\
 \var{x = np.linspace(-0.995,0.995,num=Npart)} & Create regularly spaced particles \\
-\var{vx = np.zeros(Npart)}  & \\
-\var{m = np.ones(Npart)*2.0/Npart} & \\
-\var{u = np.ones(Npart)*1.5} & \\
+\var{vx = np.zeros(Nsph)}  & \\
+\var{m = np.ones(Nsph)*2.0/Nsph} & \\
+\var{u = np.ones(Nsph)*1.5} & \\
 & \\          
-\var{for i in range(Npart):}   & Loop over all particles \\
+\var{for i in range(Nsph):}   & Loop over all particles \\
 \hspace{0.5cm}\var{if x[i] < 0.0:}   & Set velocity depending on whether particle \\
 \hspace{1cm}\var{vx[i] = 4.0}   & is in LHS or RHS shock region \\
 \hspace{0.5cm}\var{else:} & \\

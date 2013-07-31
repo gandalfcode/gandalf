@@ -510,7 +510,7 @@ void GodunovSphSimulation<ndim>::ProcessParameters(void)
 
   // Set all other parameter variables
   // --------------------------------------------------------------------------
-  sph->Nsph             = intparams["Npart"];
+  sph->Nsph             = intparams["Nsph"];
   sph->riemann_solver   = stringparams["riemann_solver"];
   sph->slope_limiter    = stringparams["slope_limiter"];
   sph->riemann_order    = intparams["riemann_order"];

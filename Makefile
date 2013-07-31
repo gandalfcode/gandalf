@@ -1,13 +1,13 @@
 #==============================================================================
-# Makefile
+# GANDALF v0.2.0 Makefile frontend
 #==============================================================================
 
-CPP                = /sw/bin/g++-4
+CPP                = g++
 PYTHON             = python2.7
 F2PY               = f2py2.7
-COMPILER_MODE      = FAST
+COMPILER_MODE      = STANDARD
 PRECISION          = DOUBLE
-OPENMP             = 1
+OPENMP             = 0
 OUTPUT_LEVEL       = 1
 VERIFY_ALL         = 0
 
@@ -24,6 +24,9 @@ NUMPY =
 # Don't delete this command! Makes sure that defined variables here are passed
 # to the others make
 export
+
+gandalf:
+	@+$(MAKE) -C src
 
 all:
 	@+$(MAKE) -C src

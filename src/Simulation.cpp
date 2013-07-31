@@ -194,7 +194,6 @@ string SimulationBase::GetParam(string key)
 //=============================================================================
 std::list<string>* SimulationBase::GetIntAndFloatParameterKeys()
 {
-
   if (! keys.empty())
     return &keys;
   
@@ -902,7 +901,7 @@ void Simulation<ndim>::ProcessParameters(void)
 
   // Set all other parameter variables
   // --------------------------------------------------------------------------
-  sph->Nsph = intparams["Npart"];
+  sph->Nsph = intparams["Nsph"];
   Nstepsmax = intparams["Nstepsmax"];
   run_id = stringparams["run_id"];
   out_file_form = stringparams["out_file_form"];
@@ -936,7 +935,7 @@ void Simulation<ndim>::PreSetupForPython(void)
 {
   debug1("[Simulation::PreSetupForPython]");
 
-  //Check that IC type is really python
+  // Check that IC type is really python
   if (simparams->stringparams["ic"] != "python") {
     string msg = "Error: you should call this function only if you are using \"python\" as \"ic\" parameter";
     ExceptionHandler::getIstance().raise(msg);

@@ -1,4 +1,4 @@
-from seren.analysis.facade import get_sim_no, Singletons
+from gandalf.analysis.facade import get_sim_no, Singletons
 import commandsource as Commands
 import numpy as np
 from scipy import interpolate

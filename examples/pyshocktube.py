@@ -2,7 +2,7 @@
 # pyshocktube.py
 # Example of setting-up a 1D shocktube simulation inside a python script.
 #==============================================================================
-from seren.analysis.facade import *
+from gandalf.analysis.facade import *
 import numpy as np
 import time
 
@@ -17,8 +17,8 @@ sim.SetParam('run_id','SHOCK1')
 sim.SetParam('sph_integration','lfkdk')
 sim.SetParam('gas_eos','energy_eqn')
 sim.SetParam('energy_integration','PEC')
-sim.SetParam('gamma_eos',1.6666666666666666666)
-sim.SetParam('Npart',200)
+sim.SetParam('gamma_eos',1.6666666666666666)
+sim.SetParam('Nsph',200)
 sim.SetParam('tend',0.075)
 sim.SetParam('dt_snap',1.0)
 sim.SetParam('x_boundary_lhs','open')
@@ -26,15 +26,15 @@ sim.SetParam('x_boundary_rhs','open')
 sim.SetParam('dimensionless',1)
 
 # Set number of particles and allocate local numpy arrays
-Npart = 200
-x = np.linspace(-0.995,0.995,num=Npart)
-vx = np.zeros(Npart)
-m = np.ones(Npart)*2.0/Npart
-u = np.ones(Npart)*1.5
+Nsph = 200
+x = np.linspace(-0.995,0.995,num=Nsph)
+vx = np.zeros(Nsph)
+m = np.ones(Nsph)*2.0/Nsph
+u = np.ones(Nsph)*1.5
 
 # Loop over all particles and set properties, depending on whether the 
 # particle is in the LHS shock region or the RHS shock region
-for i in range(Npart):
+for i in range(Nsph):
     if x[i] < 0.0:
         vx[i] = 4.0
     else:

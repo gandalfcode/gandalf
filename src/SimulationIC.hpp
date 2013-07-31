@@ -273,7 +273,7 @@ void Simulation<ndim>::UniformBox(void)
 
   // Local copy of important parameters
   string particle_dist = simparams->stringparams["particle_distribution"];
-  int Npart = simparams->intparams["Npart"];
+  int Npart = simparams->intparams["Nsph"];
   FLOAT rhobox = simparams->intparams["rhofluid1"];
   Nlattice[0] = simparams->intparams["Nlattice1[0]"];
   Nlattice[1] = simparams->intparams["Nlattice1[1]"];
@@ -357,7 +357,7 @@ void Simulation<ndim>::UniformSphere(void)
   FLOAT *r;                         // Particle position vectors
 
   // Local copies of important parameters
-  int Npart = simparams->intparams["Npart"];
+  int Npart = simparams->intparams["Nsph"];
   FLOAT radius = simparams->floatparams["radius"];
   FLOAT rhofluid = simparams->floatparams["rhofluid1"];
   FLOAT press = simparams->floatparams["press1"];
@@ -724,7 +724,7 @@ void Simulation<ndim>::NohProblem(void)
   FLOAT *r;                         // Positions of all particles
 
   // Create local copies of initial conditions parameters
-  int Npart = simparams->intparams["Npart"];
+  int Npart = simparams->intparams["Nsph"];
   FLOAT rhofluid = simparams->floatparams["rhofluid1"];
   FLOAT press = simparams->floatparams["press1"];
   FLOAT radius = simparams->floatparams["radius"];
@@ -804,7 +804,7 @@ void Simulation<ndim>::BossBodenheimer(void)
   FLOAT *v;                         // Velocities of all particles
 
   // Create local copies of initial conditions parameters
-  int Npart = simparams->intparams["Npart"];
+  int Npart = simparams->intparams["Nsph"];
   FLOAT amp = simparams->floatparams["amp"];
   FLOAT angvel = simparams->floatparams["angvel"];
   FLOAT mcloud = simparams->floatparams["mcloud"];
@@ -1299,7 +1299,7 @@ void Simulation<ndim>::SoundWave(void)
   FLOAT *r;                         // Particle positions
 
   // Make local copies of parameters for setting up problem
-  int Npart = simparams->intparams["Npart"];
+  int Npart = simparams->intparams["Nsph"];
   FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
   FLOAT press1 = simparams->floatparams["press1"];
   FLOAT gamma = simparams->floatparams["gamma_eos"];

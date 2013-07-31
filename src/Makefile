@@ -1,5 +1,5 @@
 #==============================================================================
-#  Makefile
+# GANDALF v0.2.0 Makefile
 #==============================================================================
 
 
@@ -23,6 +23,8 @@ GTEST = /Users#/david/astro/code/gtest-1.6.0/include
 ifeq ($(CPP),g++)
 ifeq ($(COMPILER_MODE),FAST)
 OPT += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
+else ifeq ($(COMPILER_MODE),STANDARD)
+OPT += -O3 -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),DEBUG)
 OPT += -g -pg -Wall -fbounds-check -fPIC #-fprofile-arcs -ftest-coverage
 endif
@@ -34,6 +36,8 @@ endif
 ifeq ($(CPP),/sw/bin/g++-4)
 ifeq ($(COMPILER_MODE),FAST)
 OPT += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
+else ifeq ($(COMPILER_MODE),STANDARD)
+OPT += -O3 -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),DEBUG)
 OPT += -g -pg -Wall -fbounds-check -fPIC #-fprofile-arcs -ftest-coverage
 endif
