@@ -853,9 +853,10 @@ void SphSimulation<ndim>::MainLoop(void)
       }
 
       // Check if all neighbouring timesteps are acceptable
-      activecount = sphint->CheckTimesteps(level_diff_max,n,
-					   sph->Nsph,sph->sphdata);
-      //activecount = 0;
+      if (Nlevels > 1)
+        activecount = sphint->CheckTimesteps(level_diff_max,n,
+		  			   sph->Nsph,sph->sphdata);
+      else activecount = 0;
 
     } while (activecount > 0);
     // ------------------------------------------------------------------------
@@ -952,11 +953,11 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 #pragma omp parallel default(none) private(i,dt) \
   shared(dt_min)
     {
-      dt=big_number_dp;
+      dt = big_number_dp;
 #pragma omp for
       for (i=0; i<sph->Nsph; i++) {
-	sph->sphdata[i].dt = sphint->Timestep(sph->sphdata[i],
-					      sph->hydro_forces);
+        sph->sphdata[i].dt = sphint->Timestep(sph->sphdata[i],
+                                              sph->hydro_forces);
         dt = min(dt,sph->sphdata[i].dt);
       }
       
@@ -965,9 +966,9 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 #pragma omp for
         for (i=0; i<sph->Nsph; i++) {
           sph->sphdata[i].dt = min(sph->sphdata[i].dt,
-				   uint->Timestep(sph->sphdata[i]));
+                                   uint->Timestep(sph->sphdata[i]));
           dt = min(dt,sph->sphdata[i].dt);
-	}
+        }
 
       }
 

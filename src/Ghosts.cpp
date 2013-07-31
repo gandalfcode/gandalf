@@ -58,6 +58,8 @@ void Ghosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
   // Loop over all particles and check if any lie outside the periodic box.
   // If so, then re-position with periodic wrapping.
   // --------------------------------------------------------------------------
+#pragma omp parallel for default(none) private(i,part)\
+  shared(simbox,sph)
   for (i=0; i<sph->Nsph; i++) {
     part = &sph->sphdata[i];
 
@@ -116,22 +118,22 @@ void Ghosts<ndim>::SearchGhostParticles(DomainBox<ndim> simbox, Sph<ndim> *sph)
        simbox.x_boundary_rhs == "open") == 0) {
     for (i=0; i<sph->Ntot; i++) {
       if (sphdata[i].r[0] < simbox.boxmin[0] + 
-	  ghost_range*kernrange*sphdata[i].h) {
-	if (simbox.x_boundary_lhs == "periodic")
-	  CreateGhostParticle(i,0,sphdata[i].r[0] + simbox.boxsize[0],
-			      sphdata[i].v[0],sph);
-	if (simbox.x_boundary_lhs == "mirror")
-	  CreateGhostParticle(i,0,2.0*simbox.boxmin[0] - 
-			      sphdata[i].r[0],-sphdata[i].v[0],sph);
+          ghost_range*kernrange*sphdata[i].h) {
+        if (simbox.x_boundary_lhs == "periodic")
+          CreateGhostParticle(i,0,sphdata[i].r[0] + simbox.boxsize[0],
+                              sphdata[i].v[0],sph);
+        if (simbox.x_boundary_lhs == "mirror")
+          CreateGhostParticle(i,0,2.0*simbox.boxmin[0] -
+                              sphdata[i].r[0],-sphdata[i].v[0],sph);
       }
       if (sphdata[i].r[0] > simbox.boxmax[0] - 
-	  ghost_range*kernrange*sphdata[i].h) {
-	if (simbox.x_boundary_rhs == "periodic")
-	  CreateGhostParticle(i,0,sphdata[i].r[0] - simbox.boxsize[0],
-			      sphdata[i].v[0],sph);
-	if (simbox.x_boundary_rhs == "mirror")
-	  CreateGhostParticle(i,0,2.0*simbox.boxmax[0] - 
-			      sphdata[i].r[0],-sphdata[i].v[0],sph);
+          ghost_range*kernrange*sphdata[i].h) {
+        if (simbox.x_boundary_rhs == "periodic")
+          CreateGhostParticle(i,0,sphdata[i].r[0] - simbox.boxsize[0],
+                              sphdata[i].v[0],sph);
+        if (simbox.x_boundary_rhs == "mirror")
+          CreateGhostParticle(i,0,2.0*simbox.boxmax[0] -
+                              sphdata[i].r[0],-sphdata[i].v[0],sph);
       }
     }
     sph->Ntot = sph->Nsph + sph->Nghost;

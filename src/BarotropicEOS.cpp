@@ -4,6 +4,23 @@
 //  the form T = temp0*(1 + (rho/rho_bary)^{gamma - 1}).
 //  Used for star formation simulations to approximate the combined isothermal 
 //  and optically-thich adiabatic regimes of the gas collapse phase.
+//
+//  This file is part of GANDALF :
+//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  https://github.com/gandalfcode/gandalf
+//  Contact : gandalfcode@gmail.com
+//
+//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//
+//  GANDALF is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 2 of the License, or
+//  (at your option) any later version.
+//
+//  GANDALF is distributed in the hope that it will be useful, but
+//  WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//  General Public License (http://www.gnu.org/licenses) for more details.
 //=============================================================================
 
 

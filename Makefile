@@ -3,11 +3,11 @@
 #==============================================================================
 
 CPP                = g++
-PYTHON             = python2.7
-F2PY               = f2py2.7
-COMPILER_MODE      = STANDARD
+PYTHON             = python
+F2PY               = f2py
+COMPILER_MODE      = FAST
 PRECISION          = DOUBLE
-OPENMP             = 0
+OPENMP             = 1
 OUTPUT_LEVEL       = 1
 VERIFY_ALL         = 0
 

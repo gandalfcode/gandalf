@@ -133,7 +133,7 @@ void EnergyPEC<ndim>::EnergyCorrectionTerms
 
   // --------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(nstep,dn,i) \
-     shared(n, Nsph, sphdata, timestep)
+     shared(n,Nsph,sphdata,timestep)
   for (i=0; i<Nsph; i++) {
     dn = n - sphdata[i].nlast;
     nstep = sphdata[i].nstep;
@@ -166,7 +166,7 @@ void EnergyPEC<ndim>::EndTimestep
 
   // --------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,nstep) \
-      shared(n, Nsph, sphdata)
+      shared(n,Nsph,sphdata)
   for (i=0; i<Nsph; i++) {
     dn = n - sphdata[i].nlast;
     nstep = sphdata[i].nstep;
