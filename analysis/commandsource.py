@@ -132,6 +132,7 @@ class PlotCommand(Command):
         self.ylabel=""
         self.xunitname = ""
         self.yunitname = ""
+        self.ic = ""
         self._type = "sph"
         
     def processCommand(self, plotting, data):
@@ -398,11 +399,12 @@ class AnalyticalPlotCommand (PlotCommand):
     Like particle plotting, uses the plot method on the axis objects and
     the set_data method on the returned line object.'''
     
-    def __init__(self, xquantity, yquantity, snap, simno, overplot=True, 
+    def __init__(self, xquantity, yquantity, ic, snap, simno, overplot=True, 
                  xaxis="linear", yaxis="linear", autoscale=True, 
                  xunit="default", yunit="default"):
         PlotCommand.__init__(self, xquantity, yquantity, snap, simno, overplot, 
                              autoscale, xunit, yunit, xaxis, yaxis)
+        self.ic = ic
         
     def update(self, plotting, fig, ax, line, data):
         line.set_data(data.x_data, data.y_data)
@@ -414,7 +416,10 @@ class AnalyticalPlotCommand (PlotCommand):
     def prepareData(self, globallimits):
         sim, snap = self.get_sim_and_snap()
         time = snap.t
-        ictype = sim.simparams.stringparams["ic"]
+        if self.ic == "default":
+            ictype = sim.simparams.stringparams["ic"]
+        else:
+            ictype = self.ic
         try:
             #try to find an analytical solution class
             #with the same name as the initial conditions

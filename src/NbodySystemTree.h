@@ -75,6 +75,30 @@ struct NNTreeCell {
 
 
 //=============================================================================
+//  Structure BinaryStar
+/// \brief   Class definition for individual binary star system.
+/// \details Class definition for individual binary star system.
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    01/08/2013
+//=============================================================================
+template <int ndim>
+struct BinaryStar {
+  int ichild1;                     ///< ..
+  int ichild2;                     ///< ..
+  FLOAT r[ndim];                   ///< ..
+  FLOAT v[ndim];                   ///< ..
+  FLOAT m;                         ///< ..
+  FLOAT angmom[3];                 ///< ..
+  FLOAT binen;                     ///< Specific binding energy
+  FLOAT sma;                       ///< Semi-major axis
+  FLOAT ecc;                       ///< Orbital eccentricity
+  FLOAT period;                    ///< Orbital period
+  FLOAT q;                         ///< Mass ratio
+};
+
+
+
+//=============================================================================
 //  Class NbodySystemTree
 /// \brief   Class definition for N-body nearest neighbour tree.
 /// \details Class definition for N-body nearest neighbour tree.  Used to 
@@ -100,11 +124,14 @@ protected:
   void BuildSubSystems(Nbody<ndim> *);
   void FindPerturberLists(Nbody<ndim> *);
 
-  bool allocated_tree;              ///< Is NN-tree memory allocated?
-  int Nnode;                        ///< No. of nodes of NN-tree
-  int Nnodemax;                     ///< Max. no. of nodes on NN-tree.
-  DOUBLE gpefrac;                   ///< Grav. energy limit for sub-system
-  struct NNTreeCell<ndim> *NNtree;  ///< Main NN-tree array
+  bool allocated_tree;               ///< Is NN-tree memory allocated?
+  int Nbinary;                       ///< ..
+  int Nbinarymax;                    ///< ..
+  int Nnode;                         ///< No. of nodes of NN-tree
+  int Nnodemax;                      ///< Max. no. of nodes on NN-tree.
+  DOUBLE gpefrac;                    ///< Grav. energy limit for sub-system
+  struct NNTreeCell<ndim> *NNtree;   ///< Main NN-tree array
+  struct BinaryStar<ndim> *binary;   ///< Main binary star array
 
 };
 #endif

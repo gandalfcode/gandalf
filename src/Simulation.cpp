@@ -293,7 +293,7 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
   int Ntarget;                      // Selected integer timestep
   DOUBLE tdiff = 0.0;               // Measured time difference
   clock_t tstart = clock();         // Initial CPU clock time
-  string filename;		    // Name of the output file	
+  string filename;                  // Name of the output file
   list<SphSnapshotBase*> snap_list; // List of snapshots produced while running
                                     // that will be passed back to Python
 
@@ -1224,6 +1224,8 @@ void Simulation<ndim>::ImportArraySph
   return;
 }
 
+
+
 //=============================================================================
 //  Simulation::ImportArray
 /// Import an array containing particle properties from python to C++ arrays.
@@ -1240,15 +1242,15 @@ void Simulation<ndim>::ImportArray
 {
   debug2("[Simulation::ImportArray]");
 
-  //Check that PreSetup has been called
+  // Check that PreSetup has been called
   if (! ParametersProcessed) {
     string msg = "Error: before calling ImportArray, you need to call PreSetupForPython!";
     ExceptionHandler::getIstance().raise(msg);
   }
 
-  //Call the right function depending on the passed in type
+  // Call the right function depending on the passed in type
   if (type=="sph") {
-    //Check sph has been allocated
+    // Check sph has been allocated
     if (sph==NULL) {
       string message = "Error: memory for sph was not allocated! Are you sure that this is not a nbody-only simulation?";
       ExceptionHandler::getIstance().raise(message);
@@ -1269,9 +1271,9 @@ void Simulation<ndim>::ImportArray
     ExceptionHandler::getIstance().raise(message);
   }
 
-
-
+  return;
 }
+
 
 
 //=============================================================================

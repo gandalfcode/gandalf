@@ -1,6 +1,6 @@
 #==============================================================================
-# pyshocktube.py
-# Example of setting-up a 1D shocktube simulation inside a python script.
+#  pyshocktube.py
+#  Example of setting-up a 1D shocktube simulation inside a python script.
 #==============================================================================
 from gandalf.analysis.facade import *
 import numpy as np
@@ -25,20 +25,35 @@ sim.SetParam('x_boundary_lhs','open')
 sim.SetParam('x_boundary_rhs','open')
 sim.SetParam('dimensionless',1)
 
-# Set number of particles and allocate local numpy arrays
+# Set main initial conditions parameters, plus set parameters needed 
+# to plot analytical solutions.
 Nsph = 200
-x = np.linspace(-0.995,0.995,num=Nsph)
+xmin = -2.0
+xmax = 2.0
+vfluid = 8.0
+sim.SetParam('rhofluid1',1.0)
+sim.SetParam('rhofluid2',1.0)
+sim.SetParam('press1',1.0)
+sim.SetParam('press2',1.0)
+sim.SetParam('vfluid1[0]',vfluid)
+sim.SetParam('vfluid2[0]',-vfluid)
+sim.SetParam('boxmin[0]',xmin)
+sim.SetParam('boxmax[0]',xmax)
+deltax = (xmax - xmin) / Nsph
+
+# Allocate arrays for particles and set main values
+x = np.linspace(xmin + 0.5*deltax,xmax - 0.5*deltax,num=Nsph)
 vx = np.zeros(Nsph)
-m = np.ones(Nsph)*2.0/Nsph
+m = np.ones(Nsph)*(xmax - xmin)/Nsph
 u = np.ones(Nsph)*1.5
 
 # Loop over all particles and set properties, depending on whether the 
 # particle is in the LHS shock region or the RHS shock region
 for i in range(Nsph):
     if x[i] < 0.0:
-        vx[i] = 4.0
+        vx[i] = vfluid
     else:
-        vx[i] = -4.0
+        vx[i] = -vfluid
 
 # Now call setup routines to create objects and allocate memory 
 # (N.B. parameters are now fixed and cannot be changed after this point)
@@ -51,10 +66,30 @@ sim.ImportArray(m,'m')
 sim.ImportArray(u,'u')
 sim.SetupSimulation()
 
-# First, plot the initial conditions
+# Plot the density with the analytical solution
+subfigure(2,2,1)
 plot("x","rho")
+plotanalytical("x","rho",ic="shocktube")
+limit("x",-0.45,0.45,window="all")
 
-# Now run the simualtion and plot the results in a new window
+# Plot the x-velocity with the analytical solution
+subfigure(2,2,2)
+plot("x","vx")
+plotanalytical("x","vx",ic="shocktube")
+limit("x",-0.45,0.45,window="all")
+
+# Plot the specific internal energy with the solution
+subfigure(2,2,3)
+plot("x","u")
+plotanalytical("x","u",ic="shocktube")
+limit("x",-0.45,0.45,window="all")
+
+# Plot the smoothing length
+subfigure(2,2,4)
+plot("rho","h")
+
+# 'Sleep hack' (to allow matplotlib to update the figure) 
+# before running the simulation
+time.sleep(1)
 run()
-plot("x","rho")
 block()

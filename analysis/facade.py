@@ -512,7 +512,7 @@ Useful in scripts where no interaction is required
 
 
 #------------------------------------------------------------------------------
-def plotanalytical(x=None, y=None, snap="current", sim="current",
+def plotanalytical(x=None, y=None, ic="default", snap="current", sim="current",
                    overplot=True, autoscale=True, xunit="default",
                    yunit="default"):
     '''Plots the analytical solution
@@ -538,7 +538,7 @@ Optional arguments:
     #TODO: figure out automatically the quantities to plot depending on current window    
     
     simno = get_sim_no(sim)
-    command = Commands.AnalyticalPlotCommand(x, y, snap, simno, overplot,
+    command = Commands.AnalyticalPlotCommand(x, y, ic, snap, simno, overplot,
                                              autoscale, xunit, yunit)
     data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])

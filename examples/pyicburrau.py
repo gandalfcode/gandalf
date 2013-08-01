@@ -23,7 +23,8 @@ sim.SetParam('Nsph',0)
 sim.SetParam('tend',80.0)
 sim.SetParam('nbody_mult',0.025)
 sim.SetParam('dt_snap',1.0)
-sim.SetParam('nlevels',1)
+sim.SetParam('Nlevels',1)
+sim.SetParam('noutputstep',1024)
 sim.SetParam('x_boundary_lhs','open')
 sim.SetParam('x_boundary_rhs','open')
 sim.SetParam('y_boundary_lhs','open')
@@ -42,10 +43,6 @@ m = np.zeros(Nstar)
 m[0] = 3.0;  x[0] = 1.0;   y[0] = 3.0
 m[1] = 4.0;  x[1] = -2.0;  y[1] = -1.0
 m[2] = 5.0;  x[2] = 1.0;   y[2] = -1.0
-
-print m
-print x
-print y
 
 # Now call setup routines to create objects and allocate memory 
 # (N.B. parameters are now fixed and cannot be changed after this point)

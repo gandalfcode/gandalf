@@ -656,7 +656,7 @@ void Simulation<ndim>::KHI(void)
       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
       sph->sphdata[i].r[1] -= 0.25*simbox.boxsize[1];
       if (sph->sphdata[i].r[1] < simbox.boxmin[1]) 
-	sph->sphdata[i].r[1] += simbox.boxsize[1];
+        sph->sphdata[i].r[1] += simbox.boxsize[1];
       sph->sphdata[i].v[0] = vfluid1[0];
       sph->sphdata[i].m = rhofluid1*volume/(FLOAT) Nbox1;
       sph->sphdata[i].u = press1/rhofluid1/gammaone;
@@ -674,7 +674,7 @@ void Simulation<ndim>::KHI(void)
       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
       sph->sphdata[i].r[1] -= 0.25*simbox.boxsize[1];
       if (sph->sphdata[i].r[1] < simbox.boxmin[1]) 
-	sph->sphdata[i].r[1] += simbox.boxsize[1];
+        sph->sphdata[i].r[1] += simbox.boxsize[1];
       sph->sphdata[i].v[0] = vfluid2[0];
       sph->sphdata[i].m = rhofluid2*volume/(FLOAT) Nbox2;
       sph->sphdata[i].u = press2/rhofluid2/gammaone;
@@ -1370,7 +1370,7 @@ void Simulation<ndim>::SoundWave(void)
       xold = xnew;
       xnew = r[ndim*i] - amp*(1.0 - cos(kwave*xnew))/kwave;
       diff = fabs((xnew - xold)/lambda);
-    } while(diff > 1.0e-6);
+    } while (diff > 1.0e-6);
 
     if (xnew > simbox.boxmax[0]) xnew -= simbox.boxsize[0];
     if (xnew < simbox.boxmin[0]) xnew += simbox.boxsize[0];
@@ -1679,6 +1679,8 @@ void Simulation<ndim>::AddCubicLattice
   int ii,jj,kk;                     // Aux. lattice counters
   FLOAT spacing[ndim];              // Lattice spacing in each direction
 
+  debug2("[Simulation::AddCubicLattice]");
+
   // If normalised, ensure equal spacing between all lattice layers.  
   // Otherwise set spacing to fit bounding box
   if (normalise) {
@@ -1690,7 +1692,6 @@ void Simulation<ndim>::AddCubicLattice
       spacing[k] = (box.boxmax[k] - box.boxmin[k])/(FLOAT) Nlattice[k];
   }
 
-  debug2("[Simulation::AddCubicLattice]");
   
   // Create lattice depending on dimensionality
   // --------------------------------------------------------------------------
@@ -1704,9 +1705,9 @@ void Simulation<ndim>::AddCubicLattice
   else if (ndim == 2) {
     for (jj=0; jj<Nlattice[1]; jj++) {
       for (ii=0; ii<Nlattice[0]; ii++) {
-	i = jj*Nlattice[0] + ii;
-	r[ndim*i] = box.boxmin[0] + ((FLOAT)ii + 0.5)*spacing[0];
-	r[ndim*i + 1] = box.boxmin[1] + ((FLOAT)jj + 0.5)*spacing[1];
+        i = jj*Nlattice[0] + ii;
+        r[ndim*i] = box.boxmin[0] + ((FLOAT)ii + 0.5)*spacing[0];
+        r[ndim*i + 1] = box.boxmin[1] + ((FLOAT)jj + 0.5)*spacing[1];
       }
     }
   }
@@ -1937,9 +1938,9 @@ void Simulation<ndim>::AddAzimuthalDensityPerturbation
       phi2 = phi2 + amp*cos((FLOAT) mpert*phi2)/(FLOAT) mpert;
 
       if (phi2 >= phi && phi1 < phi) {
-	phiprime = spacing*(FLOAT)(j - 1) + 
-	  spacing*(phi - phi1) / (phi2 - phi1);
-	break;
+        phiprime = spacing*(FLOAT)(j - 1) +
+          spacing*(phi - phi1) / (phi2 - phi1);
+        break;
       }
     }
 

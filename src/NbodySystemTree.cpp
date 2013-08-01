@@ -47,6 +47,8 @@ NbodySystemTree<ndim>::NbodySystemTree()
   allocated_tree = false;
   Nnode = 0;
   Nnodemax = 0;
+  Nbinary = 0;
+  Nbinarymax = 0;
 }
 
 
@@ -72,10 +74,12 @@ void NbodySystemTree<ndim>::AllocateMemory(int N)
 {
   debug2("[NbodySystemTree::AllocateMemory]");
 
-  if (N > Nnodemax || !allocated_tree) {
+  if (2*N > Nnodemax || !allocated_tree) {
     if (allocated_tree) DeallocateMemory();
-    Nnodemax = N;
+    Nnodemax = 2*N;
+    Nbinarymax = N;
     NNtree = new NNTreeCell<ndim>[Nnodemax];
+    binary = new BinaryStar<ndim>[Nbinarymax];
   }
 
   return;
@@ -124,7 +128,7 @@ void NbodySystemTree<ndim>::CreateNbodySystemTree
   Nfreenode = 0;
 
   // Allocate memory for tree
-  AllocateMemory(2*nbody->Nstar);
+  AllocateMemory(nbody->Nstar);
   nodelist = new int[Nnodemax];
 
   // Initialise all node variables before adding stars
@@ -267,6 +271,7 @@ void NbodySystemTree<ndim>::BuildSubSystems
   nbody->Nnbody = 0;
   nbody->Nsystem = 0;
   Nsystem = 0;
+  Nbinary = 0;
 
   // Loop through all nodes of tree and compute all physical quantities
   // ==========================================================================
@@ -398,17 +403,7 @@ void NbodySystemTree<ndim>::BuildSubSystems
 	}
 #endif
 	
-	// Compute and store binary properties if bound
-	if (NNtree[c].Ncomp == 2) {
-	  for (k=0; k<ndim; k++) dv[k] = si->v[k] - sj->v[k];
-	  for (k=0; k<ndim; k++) dr[k] = sj->r[k] - si->r[k];
-	  drsqd = DotProduct(dr,dr,ndim);
-	  invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
-#if defined(VERIFY_ALL)
-	  cout << "sma : " << -0.5*NNtree[c].m/
-	    (0.5*DotProduct(dv,dv,ndim) - NNtree[c].m*invdrmag) << endl;
-#endif
-	}
+
 
 
 #if defined(VERIFY_ALL)
@@ -442,6 +437,28 @@ void NbodySystemTree<ndim>::BuildSubSystems
 	    nbody->system[Nsystem].a0[k] = NNtree[c].a[k];
 	    nbody->system[Nsystem].adot0[k] = NNtree[c].adot[k];
 	  }
+
+	  // Compute and store binary properties if bound
+	  if (NNtree[c].Ncomp == 2) {
+	    for (k=0; k<ndim; k++) dv[k] = si->v[k] - sj->v[k];
+	    for (k=0; k<ndim; k++) dr[k] = sj->r[k] - si->r[k];
+	    drsqd = DotProduct(dr,dr,ndim);
+	    invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
+	    binary[Nbinary].ichild1 = c1;
+	    binary[Nbinary].ichild2 = c2;
+	    binary[Nbinary].m = NNtree[c].m;
+	    for (k=0; k<ndim; k++) binary[Nbinary].r[k] = NNtree[c].r[k];
+	    for (k=0; k<ndim; k++) binary[Nbinary].v[k] = NNtree[c].v[k];
+	    binary[Nbinary].binen =
+          0.5*DotProduct(dv,dv,ndim) - NNtree[c].m*invdrmag;
+	    binary[Nbinary].sma = -0.5*NNtree[c].m/
+          binary[Nbinary].binen;
+	    binary[Nbinary].period = 0.0;
+	    binary[Nbinary].ecc = 0.0;
+	    if (si->m > sj->m) binary[Nbinary].q = sj->m/si->m;
+	    else binary[Nbinary].q = si->m/sj->m;
+	    Nbinary++;
+	}
 	  
 	  // Copy list of contained N-body particles (either systems or stars)
 	  // to system object, and also total no. of stars/components
@@ -465,7 +482,7 @@ void NbodySystemTree<ndim>::BuildSubSystems
 	  // Finally, clear list and append newly created system particle.
 	  // Also, zero internal energy to allow detection of hierarchical 
 	  // systems.
-          NNtree[c].Ncomp = 1;
+      NNtree[c].Ncomp = 1;
 	  NNtree[c].Nchildlist = 1;
 	  NNtree[c].childlist[0] = &(nbody->system[Nsystem]);
 	  NNtree[c].gpe = NNtree[c].gpe - NNtree[c].gpe_internal;
