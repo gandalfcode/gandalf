@@ -2,6 +2,23 @@
 //  InlineFuncs.h
 //  Contains definitions of any useful small utility functions that can be 
 //  inlined to improve readability/performance of the code.
+//
+//  This file is part of GANDALF :
+//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  https://github.com/gandalfcode/gandalf
+//  Contact : gandalfcode@gmail.com
+//
+//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//
+//  GANDALF is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 2 of the License, or
+//  (at your option) any later version.
+//
+//  GANDALF is distributed in the hope that it will be useful, but
+//  WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//  General Public License (http://www.gnu.org/licenses) for more details.
 //=============================================================================
 
 
@@ -178,45 +195,4 @@ static inline void InsertionSortIds
 
   return;
 }
-
-
-
-template <typename T>
-static inline T CubicHermite(T x0, T xdot0, T x1, T xdot1, T t)
-{
-  return (2.0*t*t*t - 3.0*t*t + 1.0)*x0 + (-2.0*t*t*t + 3.0*t*t)*x1 +  
-    (t*t*t - 2.0*t*t + t)*xdot0 + (t*t*t - t*t)*xdot1;
-}
-
-
-//file wave.c
-/*
-+ wave - Nonlinear wave speeds.
-     Description :
-         This function calculates the wave speed for a wave connecting
-         states with pressures pi, p ahead an behind respectively.
-*/
-static inline FLOAT wave(FLOAT p, FLOAT pi, FLOAT g3, FLOAT g4)
-{
-  FLOAT x, w;
-  x = p/pi;
-  if (fabs(x - 1.0) < 1.0e-03)
-    /* Use linear expression */
-    w = 1.0 + 0.5*g3*(x - 1.0);
-  else{
-    /* Use non-linear expression */
-    if (x >= 1.0)
-      /* Shock */
-      w = sqrt(1.0 + g3*(x - 1.0));
-    else
-      /* Rarefaction */
-      w = g4*(1.0 - x)/(1.0 - (FLOAT)pow((DOUBLE)x, (DOUBLE)g4));
-  }
-  return(w);
-}
-//end wave.c
-
-
-
-
 #endif

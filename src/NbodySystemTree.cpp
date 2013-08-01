@@ -2,6 +2,23 @@
 //  NbodySystemTree.cpp
 //  Contains all function definitions for constructing N-body nearest-neighbour
 //  tree for creating systems and sub-systems.
+//
+//  This file is part of GANDALF :
+//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  https://github.com/gandalfcode/gandalf
+//  Contact : gandalfcode@gmail.com
+//
+//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//
+//  GANDALF is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 2 of the License, or
+//  (at your option) any later version.
+//
+//  GANDALF is distributed in the hope that it will be useful, but
+//  WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//  General Public License (http://www.gnu.org/licenses) for more details.
 //=============================================================================
 
 
@@ -529,7 +546,9 @@ void NbodySystemTree<ndim>::FindPerturberLists
   int c;                            // Node id
   int i;                            // Particle id
   int k;                            // Dimension counter
+  int Nstack;                       // ..
   int s;                            // System counter
+  int *cellstack;                   // ..
 
   debug2("[NbodySystemTree::FindPerturberLists]");
 
@@ -544,8 +563,19 @@ void NbodySystemTree<ndim>::FindPerturberLists
     // Find node on NN-tree corresponding to system particle
     c = nbody->system[s].inode;
 
-    // Now walk up the tree in turn finding the nearest perturbers
+    // Add 'sister' cell to stack
+    Nstack = 1;
+    //cparent = NNtree[c].iparent;
+    //if (NNtree[c].c1 == c) cellstack[Nstack++] = NNtree[c]
+    
 
+    // Now walk up the tree in turn finding the nearest perturbers
+    do {
+
+      
+
+    } while (Nstack > 0);
+    
 
   }
   // --------------------------------------------------------------------------

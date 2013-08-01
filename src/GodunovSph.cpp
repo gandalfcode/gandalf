@@ -2,6 +2,23 @@
 //  GodunovSph.cpp
 //  Contains all functions for calculating conservative 'grad-h' SPH quantities
 //  (See Springel & Hernquist (2002) and Price & Monaghan (2007).
+//
+//  This file is part of GANDALF :
+//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  https://github.com/gandalfcode/gandalf
+//  Contact : gandalfcode@gmail.com
+//
+//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//
+//  GANDALF is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 2 of the License, or
+//  (at your option) any later version.
+//
+//  GANDALF is distributed in the hope that it will be useful, but
+//  WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//  General Public License (http://www.gnu.org/licenses) for more details.
 //=============================================================================
 
 
@@ -682,51 +699,6 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
 
     vl += 0.5*limiterl*(1.0 - min(1.0,partl.sound*partl.dt/drmag));
     vr -= 0.5*limiterr*(1.0 - min(1.0,partr.sound*partr.dt/drmag));
-
-  }
-  // ..
-  // --------------------------------------------------------------------------
-  else if (riemann_order == 2 && slope_limiter == "hermite") {
-
-    // Slope limiter for pressure gradients
-    deltal = DotProduct(partl.gradP,draux,ndim)*drmag;
-    deltar = DotProduct(partr.gradP,draux,ndim)*drmag;
-    FLOAT pmid = CubicHermite(pl,deltal,pr,deltar,0.5);
-
-    R = min(deltal/(deltar + small_number),deltar/(deltal + small_number));
-    R = max(R,0.0);
-    limiter = 4.0*R/powf(R + 1.0,2.0);
-
-    pl += 0.5*min(limiter*deltal,pmid-pl)*(1.0 - partl.sound*partl.dt/drmag);
-    pr -= 0.5*min(limiter*deltar,pr-pmid)*(1.0 - partr.sound*partr.dt/drmag);
-
-
-    // Slope limiter for pressure gradients
-    deltal = DotProduct(partl.gradrho,draux,ndim)*drmag;
-    deltar = DotProduct(partr.gradrho,draux,ndim)*drmag;
-    FLOAT rhomid = CubicHermite(rhol,deltal,rhor,deltar,0.5);
-
-    R = min(deltal/(deltar + small_number),deltar/(deltal + small_number));
-    R = max(R,0.0);
-    limiter = 4.0*R/powf(R + 1.0,2.0);
-
-    rhol += 0.5*min(limiter*deltal,rhomid-rhol)*(1.0 - partl.sound*partl.dt/drmag);
-    rhor -= 0.5*min(limiter*deltar,rhor-rhomid)*(1.0 - partr.sound*partr.dt/drmag);
-
-
-    // Slope limiter for pressure gradients
-    for (k=0; k<ndim; k++) vec1[k] = DotProduct(partl.gradv[k],draux,ndim);
-    for (k=0; k<ndim; k++) vec2[k] = DotProduct(partr.gradv[k],draux,ndim);
-    deltal = DotProduct(vec1,draux,ndim)*drmag;
-    deltar = DotProduct(vec2,draux,ndim)*drmag;
-    FLOAT vmid = CubicHermite(vl,deltal,vr,deltar,0.5);
-    
-    R = min(deltal/(deltar + small_number),deltar/(deltal + small_number));
-    R = max(R,0.0);
-    limiter = 4.0*R/powf(R + 1.0,2.0);
-
-    vl += 0.5*min(limiter*deltal,vmid-vl)*(1.0 - partl.sound*partl.dt/drmag);
-    vr -= 0.5*min(limiter*deltar,vr-vmid)*(1.0 - partr.sound*partr.dt/drmag);
 
   }
   // Springel (2009) limiter
