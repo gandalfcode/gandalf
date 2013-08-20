@@ -737,7 +737,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   this->CalculateDiagnostics();
   this->OutputDiagnostics();
   this->diag0 = this->diag;
-
   this->setup = true;
 
   return;
@@ -763,7 +762,8 @@ void SphSimulation<ndim>::MainLoop(void)
   if (sink_particles == 1) {
     if (sinks.create_sinks == 1) sinks.SearchForNewSinkParticles(n,sph,nbody);
     if (sinks.Nsink > 0) {
-      for (int s=0; s<sinks.Nsink; s++) sinks.AccreteMassToSinks(sph,nbody,n,timestep,s);
+      for (int s=0; s<sinks.Nsink; s++) 
+        sinks.AccreteMassToSinks(sph,nbody,n,timestep,s);
       //this->CalculateDiagnostics();
       //this->OutputDiagnostics();
     }
@@ -900,7 +900,6 @@ void SphSimulation<ndim>::MainLoop(void)
 
   }
   // --------------------------------------------------------------------------
-
 
 
   // Finally compute correction steps for all SPH particles

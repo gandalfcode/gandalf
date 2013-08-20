@@ -65,7 +65,7 @@ RenderBase* RenderBase::RenderFactory(int ndim, SimulationBase* sim) {
 
 //=============================================================================
 //  Render::Render
-/// Render class constructor
+/// Render class constructor.
 //=============================================================================
 template <int ndim>
 Render<ndim>::Render(SimulationBase* sim):
@@ -77,7 +77,7 @@ sph(static_cast<Sph<ndim>* > (static_cast<Simulation<ndim>* > (sim)->sph))
 
 //=============================================================================
 //  Render::~Render
-/// Render class destructor
+/// Render class destructor.
 //=============================================================================
 template <int ndim>
 Render<ndim>::~Render()
@@ -137,7 +137,7 @@ int Render<ndim>::CreateColumnRenderingGrid
   if ((xstring != "x" && xstring != "y" && xstring != "z") ||
       (ystring != "x" && ystring != "y" && ystring != "z")) return -1;
 
-  // First, verify x, y and render strings are valid
+  // First, verify x, y, m, rho, h and render strings are valid
   snap.ExtractArray(xstring,"sph",&xvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
   snap.ExtractArray(ystring,"sph",&yvalues,&idummy,dummyfloat,dummystring);
@@ -180,10 +180,9 @@ int Render<ndim>::CreateColumnRenderingGrid
 
     // Loop over all particles in snapshot
     // -----------------------------------------------------------------------
-#pragma omp parallel for default(none) private(c,dr,drmag,drsqd,hrangesqd,invh,i)\
-  private(wkern,wnorm) \
-  shared(hvalues,mvalues,Nsph,rhovalues,rgrid,xvalues,yvalues,rendervalues,values) \
-  shared(rendernorm,Ngrid)
+#pragma omp parallel for default(none) private(c,dr,drmag,drsqd,hrangesqd) \
+  private(invh,i,wkern,wnorm) shared(hvalues,mvalues,Nsph,rhovalues,rgrid) \
+  shared(xvalues,yvalues,rendervalues,values,rendernorm,Ngrid)
     for (i=0; i<Nsph; i++) {
       invh = 1.0/hvalues[i];
       wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);
@@ -316,7 +315,7 @@ int Render<ndim>::CreateSliceRenderingGrid
   if ((xstring != "x" && xstring != "y" && xstring != "z") ||
 	  (ystring != "x" && ystring != "y" && ystring != "z")) return -1;
 
-  // First, verify x, y and render strings are valid
+  // First, verify x, y, z, m, rho, h and render strings are valid
   snap.ExtractArray(xstring,"sph",&xvalues,&idummy,dummyfloat,dummystring); 
   arraycheck = min(idummy,arraycheck);
   snap.ExtractArray(ystring,"sph",&yvalues,&idummy,dummyfloat,dummystring); 

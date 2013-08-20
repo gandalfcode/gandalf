@@ -42,6 +42,7 @@ using namespace std;
 
 //=============================================================================
 //  SM2012Sph::SM2012Sph
+/// Saitoh & Makino (2012) SPH object constructor.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 SM2012Sph<ndim, kernelclass >::SM2012Sph(int hydro_forces_aux,
@@ -64,6 +65,7 @@ SM2012Sph<ndim, kernelclass >::SM2012Sph(int hydro_forces_aux,
 
 //=============================================================================
 //  SM2012Sph::~SM2012Sph
+/// Saitoh & Makino (2012) SPH object destructor.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 SM2012Sph<ndim, kernelclass >::~SM2012Sph()
@@ -85,13 +87,13 @@ template <int ndim, template<int> class kernelclass>
 int SM2012Sph<ndim, kernelclass >::ComputeH
 (int i,                                 // id of particle
  int Nneib,                             // No. of potential neighbours
- FLOAT hmax,                            // ..
+ FLOAT hmax,                            // Maximum allowed smoothing length
  FLOAT *m,                              // Array of neib. masses
  FLOAT *mu,                             // Array of neib. internal energies
  FLOAT *drsqd,                          // Array of neib. distances (squared)
- FLOAT *gpot,                           // ..
+ FLOAT *gpot,                           // Gravitational potential
  SphParticle<ndim> &parti,              // Particle i data
- Nbody<ndim> *nbody)                    // ..
+ Nbody<ndim> *nbody)                    // N-body object pointer
 {
   int j;                                // Neighbour id
   int jj;                               // Aux. neighbour counter

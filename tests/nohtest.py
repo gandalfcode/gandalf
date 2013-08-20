@@ -2,7 +2,7 @@
 # nohtest.py
 # Run Noh test using initial conditions file 'noh.dat'.
 #==============================================================================
-from seren.analysis.facade import *
+from gandalf.analysis.facade import *
 import time
 
 # Create new Noh test simulation object from 'noh.dat' file

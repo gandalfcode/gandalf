@@ -22,9 +22,12 @@ using namespace std;
 
 //=============================================================================
 //  SphSnapshotBase::SphSnapshotFactory
-/// ..
+/// Creates and returns a new snapshot object based on dimensionality of sim.
 //=============================================================================
-SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory(string filename, SimulationBase* sim, int ndim) 
+SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory
+(string filename,                   ///< Filename containing snapshot data
+ SimulationBase* sim,               ///< Simulation object pointer
+ int ndim)                          ///< Dimensionality of simulation
 {
   if (ndim==1)
     return new SphSnapshot<1>(filename, sim);
@@ -39,7 +42,7 @@ SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory(string filename, Simulation
 
 //=============================================================================
 //  SphSnapshotBase::SphSnapshotBase
-/// ..
+/// Constructor for SphSnapshotBase class.
 //=============================================================================
 SphSnapshotBase::SphSnapshotBase(SimUnits* _units, string auxfilename):
     units(_units)
@@ -54,17 +57,20 @@ SphSnapshotBase::SphSnapshotBase(SimUnits* _units, string auxfilename):
   Nstar = 0;
   Nstarmax = 0;
   t = 0.0;
-  if (auxfilename != "") filename = auxfilename;
   LastUsed = time(NULL);
+  if (auxfilename != "") filename = auxfilename;
 }
 
 
 
 //=============================================================================
 //  SphSnapshot::SphSnapshot
+/// Constructor for SphSnapshot class.
 //=============================================================================
 template <int ndims>
-SphSnapshot<ndims>::SphSnapshot (string filename, SimulationBase* sim):
+SphSnapshot<ndims>::SphSnapshot
+(string filename,                   ///< Filename containing snapshot data
+ SimulationBase* sim):              ///< Simulation object pointer
 SphSnapshotBase(&(sim->simunits), filename),
 simulation(static_cast<Simulation<ndims>* > (sim))
 {
@@ -73,8 +79,8 @@ simulation(static_cast<Simulation<ndims>* > (sim))
   this->fileform = sim->GetParam("in_file_form");
 
   // Computes how numbers we need to store for each sph/star particle
-  nneededsph = 3*ndims+5;
-  nneededstar = 3*ndims+2;
+  nneededsph = 3*ndims + 5;
+  nneededstar = 3*ndims + 2;
 
   if (filename != "") {
     HeaderInfo info;
@@ -383,10 +389,10 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
   SphParticle<ndims>* sphaux;
   StarParticle<ndims>* staraux;
 
-  //Reset the species
+  // Reset the species
   _species.clear();
 
-  //Read which species are there
+  // Read which species are there
   if (simulation->sph != NULL && simulation->sph->sphdata != NULL) {
     sphaux = simulation->sph->sphdata;
     Nsph = simulation->sph->Nsph;
@@ -410,7 +416,8 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
     if (ndim == 1) {
       x[i] = (float) sphaux[i].r[0];
       vx[i] = (float) sphaux[i].v[0];
-      ax[i] = (float) pow(2,simulation->level_step - sphaux[i].level)*simulation->timestep; //(float) sphaux[i].a[0];
+      ax[i] = (float) pow(2,simulation->level_step - sphaux[i].level)*
+	simulation->timestep; //(float) sphaux[i].a[0];
     }
     else if (ndim == 2) {
       x[i] = (float) sphaux[i].r[0];
@@ -490,14 +497,13 @@ string SphSnapshotBase::GetRealType(string type)
       string message = "Error: the requested simulation has no species!!!";
       ExceptionHandler::getIstance().raise(message);
     }
-    else if (GetNTypes()==1)
-      type=GetSpecies(0);
+    else if (GetNTypes() == 1)
+      type = GetSpecies(0);
     else
-      type="sph";
+      type = "sph";
   }
 
   return type;
-
 }
 
 
@@ -546,95 +552,95 @@ UnitInfo SphSnapshotBase::ExtractArray
 
   // If array type and name is valid, pass pointer to array and also set unit
   if (name == "x") {
-    if (type=="sph") 
+    if (type == "sph") 
       *out_array = x;
-    else if (type=="star") 
+    else if (type == "star") 
       *out_array = xstar;
     unit = &(units->r);
   }
   else if (name == "y") {
-    if (type=="sph")
+    if (type == "sph")
       *out_array = y;
-    else if (type=="star")
+    else if (type == "star")
       *out_array = ystar;
     unit = &(units->r);
   }
   else if (name == "z") {
-    if (type=="sph")
+    if (type == "sph")
       *out_array = z;
-    else if (type=="star")
+    else if (type == "star")
       *out_array = zstar;
     unit = &(units->r);
   }
   else if (name == "vx") {
-    if (type=="sph")
+    if (type == "sph")
       *out_array = vx;
-    else if (type=="star")
+    else if (type == "star")
       *out_array= vxstar;
     unit = &(units->v);
   }
   else if (name == "vy") {
-    if (type=="sph")
+    if (type == "sph")
       *out_array = vy;
-    else if (type=="star")
+    else if (type == "star")
       *out_array = vystar;
     unit = &(units->v);
   }
   else if (name == "vz") {
-    if (type=="sph")
+    if (type == "sph")
       *out_array = vz;
-    else if (type=="star")
+    else if (type == "star")
       *out_array = vzstar;
     unit = &(units->v);
   }
   else if (name == "ax") {
-    if (type=="sph")
+    if (type == "sph")
       *out_array = ax;
-    else if (type=="star")
+    else if (type == "star")
       *out_array = axstar;
     unit = &(units->a);
   }
   else if (name == "ay") {
-    if (type=="sph")
+    if (type == "sph")
       *out_array = ay;
-    else if (type=="star")
+    else if (type == "star")
       *out_array = aystar;
     unit = &(units->a);
   }
   else if (name == "az") {
-    if (type=="sph")
+    if (type == "sph")
       *out_array = az;
-    else if (type=="star")
+    else if (type == "star")
       *out_array = azstar;
     unit = &(units->a);
   }
   else if (name == "m") {
-    if (type=="sph")
+    if (type == "sph")
       *out_array = m;
-    else if (type=="star")
+    else if (type == "star")
       *out_array = mstar;
     unit = &(units->m);
   }
   else if (name == "h") {
-    if (type=="sph")
+    if (type == "sph")
       *out_array = h;
-    else if (type=="star")
+    else if (type == "star")
       *out_array = hstar;
     unit = &(units->r);
   }
   else if (name == "rho") {
-    if (type=="sph") {
+    if (type == "sph") {
       *out_array = rho;
     }
     unit = &(units->rho);
   }
   else if (name == "u") {
-    if (type=="sph")
+    if (type == "sph")
       *out_array = u;
     unit = &(units->u);
   }
   else if (name == "dudt") {
-    if (type=="sph")
+    if (type == "sph")
       *out_array = dudt;
     unit = &(units->dudt);
   }
@@ -649,7 +655,7 @@ UnitInfo SphSnapshotBase::ExtractArray
   // Check that we did not get a NULL
   if (out_array == NULL) {
     string message;
-    if (type=="star" && (name=="rho" || name=="u" || name=="dudt"))
+    if (type == "star" && (name == "rho" || name == "u" || name == "dudt"))
       message = "Error: for stars, you cannot request the array " + name;
     else
       message = "Error: the requested array: " + name + " is not allocated! "
@@ -658,9 +664,9 @@ UnitInfo SphSnapshotBase::ExtractArray
   }
 
   // Set the size now that we have the array
-  if (type=="sph")
+  if (type == "sph")
     *size_array = Nsph;
-  else if (type=="star")
+  else if (type == "star")
     *size_array = Nstar;
 
   // If no new unit is requested, pass the default scaling values.
@@ -704,4 +710,5 @@ void SphSnapshot<ndims>::ReadSnapshot(string format)
   // Record simulation snapshot time
   t = simulation->t;
 
+  return;
 }

@@ -499,7 +499,7 @@ void NbodySimulation<ndim>::PostInitialConditionsSetup(void)
 
 //=============================================================================
 //  NbodySimulation::MainLoop
-/// Main SPH simulation integration loop.
+/// Main N-body simulation integration loop.
 //=============================================================================
 template <int ndim>
 void NbodySimulation<ndim>::MainLoop(void)
@@ -754,15 +754,6 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
 	nbody->nbodydata[i]->nlast = n;
 	nbody->nbodydata[i]->nstep = 
 	  pow(2,level_step - nbody->nbodydata[i]->level);
-
-	/*if (last_level != nbody->nbodydata[i]->level) {
-	  cout << "Changing level : " << i << "    " << last_level << "    "
-	       << level << "     " << nbody->nbodydata[i]->level << "     "
-	       << invlogetwo*log(dt_max/dt) << "    " << dt << "    " 
-	       << timestep*(FLOAT) nbody->nbodydata[i]->nstep << "    " 
-	       << dt_max << endl;
-	       }*/
-
       }
 
       // Find maximum level of all N-body particles

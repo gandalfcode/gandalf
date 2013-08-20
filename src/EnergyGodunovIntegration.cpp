@@ -92,10 +92,6 @@ void EnergyGodunovIntegration<ndim>::EnergyIntegration
     dt = timestep*(FLOAT) dn;
     sphdata[i].u = sphdata[i].u0 + sphdata[i].dudt0*dt;
 
-    //cout << "CHECKING UINT : " << i << "   " << nstep << "    " << dn << "    " << dt << "    " << sphdata[i].u << "    " << sphdata[i].u0 << "    " << sphdata[i].dudt0 << endl;
-
-    //if (sphdata[i].u < small_number && sphdata[i].dudt < 0.0)
-    //  sphdata[i].u = sphdata[i].u0*exp(dt*sphdata[i].dudt/sphdata[i].u0);
     if (sphdata[i].u != sphdata[i].u) {
       cout << "Something wrong with energy integration (NaN) : " << endl;
       cout << sphdata[i].u << "   " << sphdata[i].u0 << "  " << sphdata[i].dudt
@@ -160,7 +156,6 @@ void EnergyGodunovIntegration<ndim>::EndTimestep
       sphdata[i].u0 = sphdata[i].u;
       sphdata[i].dudt0 = sphdata[i].dudt;
     }
-    //cout << "CHECKING TEND : " << i << "   " << nstep << "    " << dn << "    " << n << "    " << sphdata[i].nlast << "    " << sphdata[i].u << "    " << sphdata[i].dudt << endl;
   }
   // --------------------------------------------------------------------------
 
@@ -172,8 +167,8 @@ void EnergyGodunovIntegration<ndim>::EndTimestep
 //=============================================================================
 //  EnergyGodunovIntegration::Timestep
 /// Compute explicit timestep such that u cannot change by a large fraction 
-/// in one step, i.e. dt = const*u/|dudt + epsilon| 
-/// where epsilon is to prevent the denominator becoming zero.
+/// in one step, i.e. dt = const*u/|dudt + epsilon| where epsilon is a small 
+/// number to prevent the denominator becoming zero.
 //=============================================================================
 template <int ndim>
 DOUBLE EnergyGodunovIntegration<ndim>::Timestep(SphParticle<ndim> &part)

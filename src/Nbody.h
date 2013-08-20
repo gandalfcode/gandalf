@@ -64,12 +64,13 @@ class Nbody
 
   // Other functions
   // --------------------------------------------------------------------------
-  //void CalculateDirectSoftenedGravForces(void);
+  virtual void AdvanceParticles(int, int, NbodyParticle<ndim> **,DOUBLE) = 0;
+  virtual void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **) = 0;
   virtual void CalculateDirectGravForces(int, NbodyParticle<ndim> **) = 0;
   virtual void CalculateDirectSPHForces(int, int, SphParticle<ndim> *,
 					NbodyParticle<ndim> **) = 0;
-  virtual void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **) = 0;
-  virtual void AdvanceParticles(int, int, NbodyParticle<ndim> **,DOUBLE) = 0;
+  virtual void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
+                                        NbodyParticle<ndim> *) = 0;
   virtual void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE) = 0;
   virtual void EndTimestep(int, int, NbodyParticle<ndim> **) = 0;
   virtual DOUBLE Timestep(NbodyParticle<ndim> *) = 0;
@@ -125,11 +126,13 @@ public:
   NbodyLeapfrogKDK(int, int, DOUBLE, string);
   ~NbodyLeapfrogKDK();
 
+  void AdvanceParticles(int, int, NbodyParticle<ndim> **,DOUBLE);
+  void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
   void CalculateDirectGravForces(int, NbodyParticle<ndim> **);
   void CalculateDirectSPHForces(int, int, SphParticle<ndim> *,
 				NbodyParticle<ndim> **);
-  void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
-  void AdvanceParticles(int, int, NbodyParticle<ndim> **,DOUBLE);
+  void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
+				NbodyParticle<ndim> *);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
   void EndTimestep(int, int, NbodyParticle<ndim> **);
   void IntegrateInternalMotion(SystemParticle<ndim>* system, DOUBLE tend);
@@ -162,11 +165,13 @@ public:
   NbodyHermite4(int, int, DOUBLE, string, int Npec=1);
   ~NbodyHermite4();
 
+  void AdvanceParticles(int, int, NbodyParticle<ndim> **,DOUBLE);
+  void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
   void CalculateDirectGravForces(int, NbodyParticle<ndim> **);
   void CalculateDirectSPHForces(int, int, SphParticle<ndim> *,
 				NbodyParticle<ndim> **);
-  void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
-  void AdvanceParticles(int, int, NbodyParticle<ndim> **,DOUBLE);
+  void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
+				NbodyParticle<ndim> *);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE);
   void EndTimestep(int, int, NbodyParticle<ndim> **);
   void IntegrateInternalMotion(SystemParticle<ndim>* system, DOUBLE tend);

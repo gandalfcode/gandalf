@@ -10,7 +10,7 @@
 Simulation run id string                    : run_id = BB1
 Select shocktube initial conditions         : ic = bb
 Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Npart = 2000
+No. of SPH particles                        : Nsph = 3200
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
 Cloud mass                                  : mcloud = 1.0
 Radius of cloud                             : radius = 0.01037
@@ -99,7 +99,7 @@ Artificial viscosity beta value             : beta_visc = 2.0
 Use leapfrog N-body integration scheme      : nbody = lfkdk
 Activate sink particles in code             : sink_particles = 1
 Allow creation of new sink particles        : create_sinks = 1
-Use smooth accretion in sinks               : smooth_accretion = 1
+Use smooth accretion in sinks               : smooth_accretion = 0
 Mass cut-off for smooth accretion           : smooth_accrete_frac = 0.05
 Timestep cup-off for smooth accretion       : smooth_accrete_dt = 0.05
 Select adaptive sink radii                  : sink_radius_mode = hmult
@@ -122,7 +122,7 @@ No. of block timestep levels                : Nlevels = 1
 #-------------
 SPH neighbour search algorithm              : neib_search = tree
 No. of particles in leaf cell               : Nleafmax = 16
-Tree opening angle (squared)                : thetamaxsqd = 0.1
+Tree opening angle (squared)                : thetamaxsqd = 0.05
 
 
 #---------------------

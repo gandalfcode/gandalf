@@ -3,8 +3,8 @@
 # Run the Boss-Bodenheimer test using initial conditions specified in the 
 # file 'bossbodenheimer.dat'.
 #==============================================================================
-from seren.analysis.facade import *
-from seren.analysis.data_fetcher import *
+from gandalf.analysis.facade import *
+from gandalf.analysis.data_fetcher import *
 import time
 
 # Create and set-up simulation object from 'bossbodenheimer.dat' file

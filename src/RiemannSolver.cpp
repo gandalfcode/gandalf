@@ -52,28 +52,28 @@ RiemannSolver::RiemannSolver(FLOAT gamma_aux):
 /// Exact Riemann solver, based on approach outlined by Toro (19??).
 //=============================================================================
 void ExactRiemannSolver::SolveRiemannProblem
-(FLOAT pl,                          ///< LHS pressure
- FLOAT pr,                          ///< RHS pressure
- FLOAT rhol,                        ///< LHS density
- FLOAT rhor,                        ///< RHS density
- FLOAT soundl,                      ///< LHS sound speed
- FLOAT soundr,                      ///< RHS sound speed
- FLOAT vl,                          ///< LHS velocity
- FLOAT vr,                          ///< RHS velocity
- FLOAT &pstar,                      ///< Intermediate pressure state
- FLOAT &vstar)                      ///< Velocity of intermediate state
+(FLOAT pl,                            ///< LHS pressure
+ FLOAT pr,                            ///< RHS pressure
+ FLOAT rhol,                          ///< LHS density
+ FLOAT rhor,                          ///< RHS density
+ FLOAT soundl,                        ///< LHS sound speed
+ FLOAT soundr,                        ///< RHS sound speed
+ FLOAT vl,                            ///< LHS velocity
+ FLOAT vr,                            ///< RHS velocity
+ FLOAT &pstar,                        ///< Intermediate pressure state
+ FLOAT &vstar)                        ///< Velocity of intermediate state
 {
-  int niteration = 0;
-  FLOAT fl;
-  FLOAT flprime;
-  FLOAT fr;
-  FLOAT frprime;
-  FLOAT pold;
-  FLOAT tolerance = 1.e-6;
-  FLOAT Al = 2.0/(gamma + 1.0)/rhol;
-  FLOAT Ar = 2.0/(gamma + 1.0)/rhor;
-  FLOAT Bl = pl*g2;
-  FLOAT Br = pr*g2;
+  int niteration = 0;                 // No. of iterations
+  FLOAT fl;                           // Left-state variable
+  FLOAT flprime;                      // Left-state variable gradient
+  FLOAT fr;                           // Right-state variable
+  FLOAT frprime;                      // Right-state variable gradient
+  FLOAT pold;                         // Old intermediate pressure
+  FLOAT tolerance = 1.0e-6;           // Iteration tolerance
+  FLOAT Al = 2.0/(gamma + 1.0)/rhol;  // Aux. variable for efficiency
+  FLOAT Ar = 2.0/(gamma + 1.0)/rhor;  // ""
+  FLOAT Bl = pl*g2;                   // ""
+  FLOAT Br = pr*g2;                   // ""
 
 
   // Make guess of solution for first iteration
@@ -81,9 +81,6 @@ void ExactRiemannSolver::SolveRiemannProblem
   pstar = (soundl + soundr - 0.5*g1*(vr - vl))/
     (soundl/pow(pl,g4) + soundr/pow(pr,g4));
   pstar = pow(pstar,1.0/g4);
-
-  // Print out pstar and vstar
-  //cout << "Initial guess of pstar : " << pstar << endl;
 
   // Main iteration loop
   // --------------------------------------------------------------------------
@@ -118,17 +115,11 @@ void ExactRiemannSolver::SolveRiemannProblem
     if (pstar < small_number) pstar = small_number;
     else if (2.0*fabs(pstar - pold)/(pstar + pold) < tolerance) break;
 
-    //cout << "Iteration : " << niteration << "   pstar : " << pstar << endl;
-
   } while(2 > 1);
   // --------------------------------------------------------------------------
 
   // Compute velocity of star region
   vstar = 0.5*(vl + vr) + 0.5*(fr - fl);
-
-  // Print out pstar and vstar
-  //cout << "Exact Riemann solver; pstar : " << pstar << "     vstar : " 
-  //     << vstar << endl;
 
   return;
 }
@@ -137,7 +128,7 @@ void ExactRiemannSolver::SolveRiemannProblem
 
 //=============================================================================
 //  HllcRiemannSolver::SolveRiemannProblem
-/// ..
+/// HLLC Riemann solver for pstar and vstar.
 //=============================================================================
 void HllcRiemannSolver::SolveRiemannProblem
 (FLOAT pl,                          ///< LHS pressure
@@ -159,10 +150,6 @@ void HllcRiemannSolver::SolveRiemannProblem
     (rhol*(Sl - vl) - rhor*(Sr - vr));
   pstar = ((Sr - vr)*rhor*pl - (Sl - vl)*rhol*pr + rhol*rhor*(Sr - vr)*
 	   (Sl - vl)*(vr - vl))/((Sr - vr)*rhor - (Sl - vl)*rhol);
-
-  // Print out pstar and vstar
-  //cout << "HLLC Riemann solver; pstar : " << pstar << "     vstar : " 
-  //     << vstar << endl;
 
   return;
 }

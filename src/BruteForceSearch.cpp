@@ -60,7 +60,8 @@ BruteForceSearch<ndim>::~BruteForceSearch()
 
 //=============================================================================
 //  BruteForceSearch::UpdateTree
-/// For Brute Force neighbour searching, there is no tree to construct.
+/// For Brute Force neighbour searching, there is no tree to construct so 
+/// the function is empty.
 //=============================================================================
 template <int ndim>
 void BruteForceSearch<ndim>::UpdateTree(Sph<ndim> *sph, Parameters &simparams)
@@ -91,7 +92,7 @@ void BruteForceSearch<ndim>::UpdateActiveParticleCounters(Sph<ndim> *sph)
 template <int ndim>
 void BruteForceSearch<ndim>::UpdateAllSphProperties
 (Sph<ndim> *sph,                    ///< [inout] Pointer to SPH object
- Nbody<ndim> *nbody)                ///< [in] ..
+ Nbody<ndim> *nbody)                ///< [in] Pointer to N-body object
 {
   int i,j,k;                        // Particle and dimension counters
   int okflag;                       // Flag valid smoothing length
@@ -472,7 +473,8 @@ void BruteForceSearch<ndim>::UpdateAllSphGravForces
 
 //=============================================================================
 //  BruteForceSearch::UpdateAllSphDerivatives
-/// ..
+/// Compute all SPH derivatives required for 2nd-order Riemann solver in 
+/// Godunov SPH method.
 //=============================================================================
 template <int ndim>
 void BruteForceSearch<ndim>::UpdateAllSphDerivatives

@@ -114,6 +114,22 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectGravForces
 
 
 //=============================================================================
+//  NbodyLeapfrogKDK::CalculatePerturberForces
+/// ..
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void NbodyLeapfrogKDK<ndim, kernelclass>::CalculatePerturberForces
+(int N,                             ///< Number of stars
+ int Npert,                         ///< Number of perturbing stars
+ NbodyParticle<ndim> **star,        ///< Array of stars/systems
+ NbodyParticle<ndim> *perturber)    ///< Array of perturbing stars/systems
+{
+  return;
+}
+
+
+
+//=============================================================================
 //  NbodyLeapfrogKDK::CalculateDirectSPHForces
 /// Calculate all SPH forces by direct summation.
 //=============================================================================

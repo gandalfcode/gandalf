@@ -212,6 +212,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   BinaryTree(int, FLOAT, FLOAT, string, string);
   ~BinaryTree();
 
+  // --------------------------------------------------------------------------
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *);
@@ -267,11 +268,11 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   int *gactivelist;                 ///< List of active cells
   int *inext;                       ///< Linked list for grid search
   int *porder[ndim];                ///< Ordered ids of Cartesian coordinates
-  FLOAT *pw;                        ///< Particle weights
-  FLOAT *rk[ndim];                  ///< Particle Cartesian coordinates
   FLOAT kernrange;                  ///< Extent of employed kernel
   FLOAT theta;                      ///< ..
   FLOAT thetamaxsqd;                ///< ..
+  FLOAT *pw;                        ///< Particle weights
+  FLOAT *rk[ndim];                  ///< Particle Cartesian coordinates
   BinaryTreeCell<ndim> *tree;       ///< Main tree array
 
 };

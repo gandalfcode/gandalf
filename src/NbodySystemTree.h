@@ -29,7 +29,6 @@
 #include <string>
 #include "Precision.h"
 #include "Constants.h"
-#include "MergeList.h"
 #include "Nbody.h"
 #include "NbodyParticle.h"
 #include "StarParticle.h"
@@ -55,10 +54,12 @@ struct NNTreeCell {
   int Ncomp;                       ///< No. of components in node
   int Nstar;                       ///< No. of stars in node
   int Nchildlist;                  ///< No. of systems in list
+  DOUBLE radius;                   ///< Radius of bounding sphere of node
   DOUBLE rsqdnearest;              ///< Distance squared to nearest node
-  DOUBLE r[ndim];                  ///< Position of node
-  DOUBLE v[ndim];                  ///< Velocity of node
-  DOUBLE a[ndim];                  ///< Acceleration of node
+  DOUBLE r[ndim];                  ///< Position of centre of mass
+  DOUBLE rpos[ndim];               ///< Centre of position of node
+  DOUBLE v[ndim];                  ///< Velocity of centre of mass
+  DOUBLE a[ndim];                  ///< Acceleration of centre of mass
   DOUBLE adot[ndim];               ///< Jerk of node
   DOUBLE a2dot[ndim];              ///< 2nd derivative of node
   DOUBLE a3dot[ndim];              ///< 3rd derivative of node
@@ -69,7 +70,6 @@ struct NNTreeCell {
   DOUBLE gpe_internal;             ///< Total internal gpe of node components
   DOUBLE tcross;                   ///< Crossing time of node components
   NbodyParticle<ndim>* childlist[Ncompmax];  ///< List of child components
-  MergeList<NbodyParticle<ndim> *> clist;    ///< (To be deleted??)
 };
 
 
@@ -83,12 +83,12 @@ struct NNTreeCell {
 //=============================================================================
 template <int ndim>
 struct BinaryStar {
-  int ichild1;                     ///< ..
-  int ichild2;                     ///< ..
-  FLOAT r[ndim];                   ///< ..
-  FLOAT v[ndim];                   ///< ..
-  FLOAT m;                         ///< ..
-  FLOAT angmom[3];                 ///< ..
+  int ichild1;                     ///< id of first component (system or star)
+  int ichild2;                     ///< id of second component (system or star)
+  FLOAT r[ndim];                   ///< Position of COM of binary
+  FLOAT v[ndim];                   ///< Velocity of COM of binary
+  FLOAT m;                         ///< Total mass of binary
+  FLOAT angmom[3];                 ///< Angular momentum of binary
   FLOAT binen;                     ///< Specific binding energy
   FLOAT sma;                       ///< Semi-major axis
   FLOAT ecc;                       ///< Orbital eccentricity
@@ -111,8 +111,6 @@ struct BinaryStar {
 template <int ndim>
 class NbodySystemTree
 {
-protected:
-  typedef typename MergeList<NbodyParticle<ndim>* >::iterator NbodyListIterator;
  public:
 
   NbodySystemTree();
@@ -123,10 +121,11 @@ protected:
   void CreateNbodySystemTree(Nbody<ndim> *);
   void BuildSubSystems(Nbody<ndim> *);
   void FindPerturberLists(Nbody<ndim> *);
+  void RestockTreeNodes(Nbody<ndim> *);
 
   bool allocated_tree;               ///< Is NN-tree memory allocated?
-  int Nbinary;                       ///< ..
-  int Nbinarymax;                    ///< ..
+  int Nbinary;                       ///< No. of binary stars
+  int Nbinarymax;                    ///< Max. no. of binary stars
   int Nnode;                         ///< No. of nodes of NN-tree
   int Nnodemax;                      ///< Max. no. of nodes on NN-tree.
   DOUBLE gpefrac;                    ///< Grav. energy limit for sub-system

@@ -118,6 +118,78 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectGravForces
 
 
 //=============================================================================
+//  NbodyHermite4::CalculatePerturberForces
+/// ..
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
+(int N,                             ///< Number of stars
+ int Npert,                         ///< Number of perturbing stars
+ NbodyParticle<ndim> **star,        ///< Array of stars/systems
+ NbodyParticle<ndim> *perturber)    ///< Array of perturbing stars/systems
+{
+  int i,j,k;                        // Star and dimension counters
+  DOUBLE dr[ndim];                  // Relative position vector
+  DOUBLE drdt;                      // Rate of change of distance
+  DOUBLE drsqd;                     // Distance squared
+  DOUBLE dv[ndim];                  // Relative velocity vector
+  DOUBLE invdrmag;                  // 1 / drmag
+  DOUBLE acom[ndim];                // ..
+  DOUBLE adotcom[ndim];             // ..
+
+  debug2("[NbodyHermite4::CalculatePerturberForces]");
+
+  // First, compute perturber force and jerk on COM
+  for (k=0; k<ndim; k++) acom[k] = 0.0;
+  for (k=0; k<ndim; k++) adotcom[k] = 0.0;
+  for (j=0; j<Npert; j++) {
+    for (k=0; k<ndim; k++) dr[k] = perturber[j].r[k];
+    for (k=0; k<ndim; k++) dv[k] = perturber[j].v[k];
+    drsqd = DotProduct(dr,dr,ndim);
+    invdrmag = 1.0/sqrt(drsqd);
+    drdt = DotProduct(dv,dr,ndim)*invdrmag;    
+    for (k=0; k<ndim; k++) acom[k] += perturber[j].m*dr[k]*pow(invdrmag,3);
+    for (k=0; k<ndim; k++) adotcom[k] +=
+      perturber[j].m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+    cout << "PERT : " << j << "   " << k << "   " << acom[0] << "   " << acom[1] << endl;
+  }
+
+  // Loop over all (active) stars
+  // --------------------------------------------------------------------------
+  for (i=0; i<N; i++) {
+    if (star[i]->active == 0) continue;
+
+    // Sum grav. contributions for all perturbing stars.  
+    // ------------------------------------------------------------------------
+    for (j=0; j<Npert; j++) {
+
+      for (k=0; k<ndim; k++) dr[k] = perturber[j].r[k] - star[i]->r[k];
+      for (k=0; k<ndim; k++) dv[k] = perturber[j].v[k] - star[i]->v[k];
+      drsqd = DotProduct(dr,dr,ndim);
+      invdrmag = 1.0/sqrt(drsqd);
+      drdt = DotProduct(dv,dr,ndim)*invdrmag;
+
+      star[i]->gpe_pert += perturber[j].m*invdrmag;
+      for (k=0; k<ndim; k++) star[i]->a[k] += 
+	perturber[j].m*dr[k]*pow(invdrmag,3);
+      for (k=0; k<ndim; k++) star[i]->adot[k] += perturber[j].m*
+	pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+
+    }
+    // ------------------------------------------------------------------------
+
+    for (k=0; k<ndim; k++) star[i]->a[k] -= acom[k];
+    for (k=0; k<ndim; k++) star[i]->adot[k] -= adotcom[k];
+
+  }
+  // --------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=============================================================================
 //  NbodyHermite4::CalculateDirectSPHForces
 /// Calculate all ..
 //=============================================================================

@@ -65,7 +65,8 @@ class NbodyParticle
   DOUBLE hfactor;                   ///< invh^(ndim + 1)
   DOUBLE gpot;                      ///< Gravitational potential
   DOUBLE gpe;                       ///< Gravitational potential energy
-  DOUBLE gpe_internal;              ///< ..
+  DOUBLE gpe_internal;              ///< Internal grav. potential energy
+  DOUBLE gpe_pert;                  ///< Perturber grav. potential energy
   DOUBLE dt;                        ///< Particle timestep
   DOUBLE dt_internal;               ///< Internal timestep 
                                     ///< (e.g. due to sub-systems)
@@ -97,6 +98,7 @@ class NbodyParticle
     gpot = 0.0;
     gpe = 0.0;
     gpe_internal = 0.0;
+    gpe_pert = 0.0;
     dt = 0.0;
     dt_internal = big_number;
   } 

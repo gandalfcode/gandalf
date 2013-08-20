@@ -80,7 +80,8 @@ BinaryTree<ndim>::~BinaryTree()
 /// than currently allocated, tree is deallocated and reallocated here.
 //=============================================================================
 template <int ndim>
-void BinaryTree<ndim>::AllocateTreeMemory(int Npart)
+void BinaryTree<ndim>::AllocateTreeMemory
+(int Npart)                         ///< No. of particles stored in tree
 {
   debug2("[BinaryTree::AllocateTreeMemory]");
 
@@ -468,8 +469,8 @@ void BinaryTree<ndim>::StockCellProperties
   int i;                            // Particle counter
   int k;                            // Dimension counter
   FLOAT dr[ndim];                   // Relative position vector
-  FLOAT drsqd;                      // ..
-  FLOAT factor = 1.0/thetamaxsqd;   // ??
+  FLOAT drsqd;                      // Distance squared
+  FLOAT factor = 1.0/thetamaxsqd;   // Geometric MAC aux. variable
   FLOAT mi;                         // Mass of particle i
   FLOAT *crmax;                     // Max. extent of cell bounding boxes
   FLOAT *crmin;                     // Min. extent of cell bounding boxes
@@ -941,20 +942,23 @@ int BinaryTree<ndim>::ComputeNeighbourList
 
 //=============================================================================
 //  BinaryTree::ComputeGravityInteractionList
-/// ..
+/// Computes and returns number of SPH neighbours (Nneib), direct sum particles
+/// (Ndirect) and number of cells (Ngravcell), including lists of ids, from 
+/// the gravity tree walk for active particles inside cell c.
+/// Currently defaults to the geometric opening criteria.
 //=============================================================================
 template <int ndim>
 int BinaryTree<ndim>::ComputeGravityInteractionList
 (int c,                             ///< [in] i.d. of cell
- int Nneibmax,                      ///< [in] Max. no. of neighbours
- int Ndirectmax,                    ///< [in] ..
- int Ngravcellmax,                  ///< [in] ..
- int &Nneib,                        ///< [out] ..
- int &Ndirect,                      ///< [out] ..
- int &Ngravcell,                    ///< [out] ..
- int *neiblist,                     ///< [out] List of neighbour i.d.s
- int *directlist,                   ///< [out] ..
- int *gravcelllist,                 ///< [out] ..
+ int Nneibmax,                      ///< [in] Max. no. of SPH neighbours
+ int Ndirectmax,                    ///< [in] Max. no. of direct-sum neighbours
+ int Ngravcellmax,                  ///< [in] Max. no. of cell interactions
+ int &Nneib,                        ///< [out] No. of SPH neighbours
+ int &Ndirect,                      ///< [out] No. of direct-sum neighbours
+ int &Ngravcell,                    ///< [out] No. of cell interactions
+ int *neiblist,                     ///< [out] List of SPH neighbour ids
+ int *directlist,                   ///< [out] List of direct-sum neighbour ids
+ int *gravcelllist,                 ///< [out] List of cell ids
  SphParticle<ndim> *sphdata)        ///< [in] SPH particle data
 {
   int cc;                           // Cell counter
@@ -962,12 +966,12 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
   int j;                            // Aux. particle counter
   int ilast;                        // id of last particle in current cell
   int k;                            // Neighbour counter
-  int Nneibtemp = 0;                // ..
-  FLOAT dr[ndim];                   // ..
-  FLOAT drsqd;                      // ..
-  FLOAT rc[ndim];                   // ..
-  FLOAT hrangemax;                  // ..
-  FLOAT rmax;                       // ..
+  int Nneibtemp = 0;                // Aux. counter
+  FLOAT dr[ndim];                   // Relative position vector
+  FLOAT drsqd;                      // Distance squared
+  FLOAT rc[ndim];                   // Position of cell
+  FLOAT hrangemax;                  // Maximum kernel extent 
+  FLOAT rmax;                       // Radius of sphere containing particles
 
   for (k=0; k<ndim; k++) rc[k] = tree[c].r[k];
   hrangemax = tree[c].rmax + kernrange*tree[c].hmax;

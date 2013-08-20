@@ -1,6 +1,6 @@
 //=============================================================================
 //  RiemannSolver.h
-//  ..
+//  Contains all class definitions for Riemann solvers used in Godunov scheme.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
@@ -33,8 +33,8 @@
 
 //=============================================================================
 //  Class RiemannSolver
-/// \brief   Main parent class for Riemann solvers
-/// \details ..
+/// \brief   Main parent class for Riemann solvers.
+/// \details Main parent class for Riemann solvers.
 /// \author  D. A. Hubber
 /// \date    26/04/2013
 //=============================================================================
@@ -61,8 +61,8 @@ class RiemannSolver
 
 //=============================================================================
 //  Class ExactRiemannSolver
-/// \brief   Exact Riemann solver as described by Toro (19??)
-/// \details ..
+/// \brief   Class for exact Riemann solver as described by Toro (19??).
+/// \details Class for exact Riemann solver as described by Toro (19??).
 /// \author  D. A. Hubber
 /// \date    26/04/2013
 //=============================================================================
@@ -89,8 +89,8 @@ class ExactRiemannSolver: public RiemannSolver
 
 //=============================================================================
 //  Class HllcRiemannSolver
-/// \brief   HLLC Riemann Solver
-/// \details ..
+/// \brief   Class definition for HLLC Riemann Solver.
+/// \details Class definition for HLLC Riemann Solver.
 /// \author  D. A. Hubber
 /// \date    26/04/2013
 //=============================================================================

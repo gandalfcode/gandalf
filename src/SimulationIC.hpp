@@ -1441,7 +1441,7 @@ void Simulation<ndim>::QuadrupleStar(void)
 {
   int k;                           // Dimension counter
   FLOAT sma1 = 1.0;                // ..
-  FLOAT sma2 = 0.001;              // ..
+  FLOAT sma2 = 0.05;               // ..
   FLOAT eccent = 0.0;              // ..
   FLOAT m1 = 0.5;                  // ..
   FLOAT m2 = 0.5;                  // ..

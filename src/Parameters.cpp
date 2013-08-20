@@ -54,6 +54,10 @@ Parameters::~Parameters()
 
 
 
+//=============================================================================
+//  Parameters::Parameters
+/// ..
+//=============================================================================
 Parameters::Parameters(const Parameters& other) {
   this->intparams = other.intparams;
   this->stringparams = other.stringparams;
@@ -68,8 +72,7 @@ Parameters::Parameters(const Parameters& other) {
 /// file does not contain a simulation run id, then quit program here.
 //=============================================================================
 void Parameters::ReadParamsFile
-(string filename                    ///< [in] Parameters file to be read
- )
+(string filename)                   ///< [in] Parameters file to be read
 {
   ifstream inputfile;               // Input file stream
   std::string line;                 // Parameter file line
@@ -119,8 +122,8 @@ void Parameters::ReadParamsFile
 /// If line begins with a hash charatcer '#', then ignore line as a comment.
 ///============================================================================
 void Parameters::ParseLine
-(string paramline                       ///< [in] Line from parameters file 
- )                                      ///< to be parsed.
+(string paramline)                      ///< [in] Line from parameters file 
+                                        ///< to be parsed.
 {
   // First, trim all white space from line
   paramline = TrimWhiteSpace(paramline);

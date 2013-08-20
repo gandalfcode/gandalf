@@ -34,9 +34,10 @@
 GANDALF is a new SPH and N-body code written in C++ and python.  Although partly based on some of the algorithms and code structures used in SEREN (Hubber et al. 2011), it has been written from scratch and contains many new features and optimisations which significantly improve the speed, functionality and usability of the code.  It has been written for several purposes.
 \begin{itemize}
 \item GANDALF has been written with a fully object-oriented philosophy in C++.  This is to improve the maintainability of the code and also to allow the code to be easily extended in the future with as little disruption to the original code-base as possible.
-\item GANDALF contains a variety of SPH algorithms such as conservative 'grad-h' SPH, Saitoh \& Makino (2013) SPH and Godunov SPH.  The N-body component contains a variety of common integration schemes such as 4th/6th-order Hermite with time-symmetric integration.
+\item GANDALF contains a variety of SPH algorithms such as conservative 'grad-h' SPH (Springel \& Hernquist 2002, Price \& Monaghan 2004), Saitoh \& Makino (2013) SPH and Godunov SPH (Inutsuka 2002).
+\item The N-body component of GANDALF contains a variety of common integration schemes such as 4th/6th-order Hermite with time-symmetric integration.
 \item GANDALF can be run in three different modes; as a standard executable run from the command line (like SEREN), run from a python script or run inside an interactive python environment.  Both the script and interactive python modes include a graphical output that can be used to visualise previously run simulations, or to interactively visualise simulations as they are run on-the-fly.
-\item GANDALF can generate initial conditions at run-time, as opposed to SEREN where the initial conditions had to be prepared a priori.  The initial conditions may either be hard-coded into the C++ code, or set-up via a python script using numpy arrays.
+\item GANDALF can generate initial conditions at run-time, as opposed to SEREN where the initial conditions had to be prepared a priori to running the simulation.  The initial conditions may either be hard-coded into the C++ code, or set-up via a python script using numpy arrays.
 \item GANDALF uses additional parameters to switch on various physics options, as well as requiring them to be activated in the Makefile.  In comparison, SEREN controlled physics options exclusively in the Makefile.  Therefore, GANDALF need not be re-compiled everytime a different setting is required.
 \end{itemize}
 
@@ -56,7 +57,11 @@ In order to use all features in GANDALF, the following programs and libraries mu
 \end{itemize}
 
 
-All of these programs/libraries can be found in most standard Linux installations, and if not, will be available to download from most package managers.  For Mac users, all programs can be installed with either fink, MacPorts or homebrew.  It is preferable that all (except the Fortran compiler) are downloaded with just the one package manager in order to ensure they are compatible and function together correctly.
+\subsection{Linux}
+All of these programs/libraries can be found in most standard Linux installations, and if not, will be available to download from most package managers.  
+
+\subsection{Mac OS X} 
+For Mac users, all programs can be installed with either fink, MacPorts or homebrew.  It is preferable that all (except the Fortran compiler) are downloaded with just the one package manager in order to ensure they are compatible and function together correctly.
 
 
 
@@ -101,7 +106,7 @@ Also, \var{make} requires the location of the python and numpy libraries.  In mo
 
 \end{itemize}
 
-
+\newpage
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Basic usage}
@@ -261,8 +266,8 @@ quadruple         & = Simple hierarchical quadruple test \\
 sedov             & = Sedov blast-wave test \\
 shearflow         & = Shear flow test \\
 shocktube         & = Shocktube test \\
-soundwave         & = Sound wave test \\
-sphere            & = 1D soundwave perturbation \\
+soundwave         & = 1D soundwave perturbation \\
+sphere            & = Uniform density sphere \\
 python            & = Generate initial conditions from python
 \end{tabular}
 
@@ -806,7 +811,7 @@ While the numerical part of GANDALF  is implemented in C++ for efficiency, we pr
 
 The first one is an interpreter, that works similarly to a shell (e.g., bash, csh) and understands specific commands to load a simulation and plot quantities. We provide a large set of commands to do standard operations when running and analyzing a simulation, so that this solution can be satisfactory where you need to quickly analyze a simulation.
 
-The second way is writing your own python script. You still have access to the same commands available in the interpeter, but combining the power of the python language you are free to do much more. You can access the raw data from the simulation and compute the quantities that you are interested in, and you can still use the provided functions to plot them. Many of the C++ objects are also available at runtime, so that you can inspect them if you want. It's also possible to generate the initial conditions of the simulation in python, and run it from your script. This is very useful, for example, if you want to do parameter studies.
+ The second way is writing your own python script. You still have access to the same commands available in the interpeter, but combining the power of the python language you are free to do much more. You can access the raw data from the simulation and compute the quantities that you are interested in, and you can still use the provided functions to plot them. Many of the C++ objects are also available at runtime, so that you can inspect them if you want. It's also possible to generate the initial conditions of the simulation in python, and run it from your script. This is very useful, for example, if you want to do parameter studies.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

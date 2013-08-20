@@ -4,7 +4,7 @@
 # the file 'adsod.dat' and then plotting important quantities together 
 # with the analytical solutions.
 #==============================================================================
-from seren.analysis.facade import *
+from gandalf.analysis.facade import *
 import time
 
 # Create new shocktube simulation from 'adsod.dat' file

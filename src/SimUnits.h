@@ -1,6 +1,6 @@
 //=============================================================================
 //  SimUnits.h
-//  Contains class definitions for all unit scaling classes.
+//  Contains definitions for all unit scaling classes.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
@@ -152,7 +152,7 @@ class DensityUnit: public SimUnit
 class ColumnDensityUnit: public SimUnit
 {
  public:
-
+  ColumnDensityUnit() : SimUnit() {};
   DOUBLE SIUnit(string);
   string LatexLabel(string);
 
@@ -181,7 +181,7 @@ class PressureUnit: public SimUnit
 class ForceUnit: public SimUnit
 {
  public:
-
+  ForceUnit() : SimUnit() {};
   DOUBLE SIUnit(string);
   string LatexLabel(string);
 
@@ -281,7 +281,7 @@ class LuminosityUnit: public SimUnit
 class OpacityUnit: public SimUnit
 {
  public:
-
+  OpacityUnit() : SimUnit() {};
   DOUBLE SIUnit(string);
   string LatexLabel(string);
 
@@ -295,7 +295,7 @@ class OpacityUnit: public SimUnit
 class MagneticFieldUnit: public SimUnit
 {
  public:
-
+  MagneticFieldUnit() : SimUnit() {};
   DOUBLE SIUnit(string);
   string LatexLabel(string);
 
@@ -309,7 +309,7 @@ class MagneticFieldUnit: public SimUnit
 class ChargeUnit: public SimUnit
 {
  public:
-
+  ChargeUnit() : SimUnit() {};
   DOUBLE SIUnit(string);
   string LatexLabel(string);
 
@@ -323,7 +323,7 @@ class ChargeUnit: public SimUnit
 class CurrentDensityUnit: public SimUnit
 {
  public:
-
+  CurrentDensityUnit() : SimUnit() {};
   DOUBLE SIUnit(string);
   string LatexLabel(string);
 
@@ -376,7 +376,7 @@ class TemperatureUnit: public SimUnit
 //=============================================================================
 //  Class SimUnits
 /// \brief   Main simulation scaling class containing an instance of each unit.
-/// \details ..
+/// \details Main simulation scaling class containing an instance of each unit.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=============================================================================
@@ -395,34 +395,28 @@ class SimUnits
 
   // Instances of all unit classes
   // --------------------------------------------------------------------------
-  LengthUnit r;
-  MassUnit m;
-  TimeUnit t;
-  VelocityUnit v;
-  AccelerationUnit a;
-  DensityUnit rho;
-  //ColumnDensityUnit sigma;
-  PressureUnit press;
-  ForceUnit f;
-  EnergyUnit E;
-  MomentumUnit mom;
-  AngularMomentumUnit angmom;
-  AngularVelocityUnit angvel;
-  MassRateUnit dmdt;
-  //LuminosityUnit L;
-  //OpacityUnit kappa;
-  //MagneticFieldUnit B;
-  //ChargeUnit Q;
-  //CurrentDensityUnit Jcur;
-  SpecificEnergyUnit u;
-  SpecificEnergyRateUnit dudt;
-  TemperatureUnit temp;
+  LengthUnit r;                     ///< Length unit
+  MassUnit m;                       ///< Mass unit
+  TimeUnit t;                       ///< Time unit
+  VelocityUnit v;                   ///< Velocity unit
+  AccelerationUnit a;               ///< Acceleration unit
+  DensityUnit rho;                  ///< Density unit
+  //ColumnDensityUnit sigma;          ///< Column density unit
+  PressureUnit press;               ///< Pressure unit
+  ForceUnit f;                      ///< Force unit
+  EnergyUnit E;                     ///< Energy unit
+  MomentumUnit mom;                 ///< Linear momentum unit
+  AngularMomentumUnit angmom;       ///< Angular momentum unit
+  AngularVelocityUnit angvel;       ///< Angular velocity unit
+  MassRateUnit dmdt;                ///< Mass (accretion) rate unit
+  //LuminosityUnit L;                 ///< Luminosity unit
+  //OpacityUnit kappa;                ///< Volume opacity unit
+  //MagneticFieldUnit B;              ///< Magnetic field unit
+  //ChargeUnit Q;                     ///< Charge unit
+  //CurrentDensityUnit Jcur;          ///< Current density unit
+  SpecificEnergyUnit u;             ///< Specific internal energy unit
+  SpecificEnergyRateUnit dudt;      ///< Rate of change of internal energy unit
+  TemperatureUnit temp;             ///< Temperature unit
 
 };
-
-
 #endif
-
-
-
-
