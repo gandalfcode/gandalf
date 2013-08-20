@@ -353,7 +353,7 @@ void Sinks<ndim>::AccreteMassToSinks
 
     // Skip sink particle if it contains no gas, or unless it's at the 
     // beginning of its current step
-    if (sink[s].Ngas == 0 || n%sph->sphdata[i].nstep != 0) continue;
+    if (sink[s].Ngas == 0 || n%sink[s].star->nstep != 0) continue;
 
     // Initialise all variables for current sink
     sink[s].menc  = 0.0;
@@ -368,12 +368,12 @@ void Sinks<ndim>::AccreteMassToSinks
     // Calculate distances (squared) from sink to all neighbouring particles
     for (i=0; i<sph->Nsph; i++) {
       if (sph->sphdata[i].sinkid == s) {
-	for (k=0; k<ndim; k++)
-	  dr[k] = sph->sphdata[i].r[k] - sink[s].star->r[k];
+        for (k=0; k<ndim; k++)
+          dr[k] = sph->sphdata[i].r[k] - sink[s].star->r[k];
         drsqd = DotProduct(dr,dr,ndim);
-	ilist[Nneib] = i;
-	rsqdlist[Nneib] = drsqd;
-	Nneib++;
+        ilist[Nneib] = i;
+        rsqdlist[Nneib] = drsqd;
+        Nneib++;
       }
     }
 
@@ -399,25 +399,25 @@ void Sinks<ndim>::AccreteMassToSinks
 
       sink[s].menc += sph->sphdata[i].m;
       wnorm += sph->sphdata[i].m*sph->kernp->w0(drmag*sink[s].star->invh)*
-	pow(sink[s].star->invh,ndim)*sph->sphdata[i].invrho;
+        pow(sink[s].star->invh,ndim)*sph->sphdata[i].invrho;
 
       // Sum total grav. potential energy of all particles inside sink
       sink[s].gpetot += 0.5*sph->sphdata[i].m*(sink[s].star->m + sink[s].menc)*
-	sink[s].star->invh*sph->kernp->wpot(drmag*sink[s].star->invh);
+        sink[s].star->invh*sph->kernp->wpot(drmag*sink[s].star->invh);
 
       // Compute rotational component of kinetic energy
       for (k=0; k<ndim; k++) dv[k] = sph->sphdata[i].v[k] - sink[s].star->v[k];
       for (k=0; k<ndim; k++) dv[k] -= DotProduct(dv,dr,ndim)*dr[k];
 
       sink[s].rotketot += sph->sphdata[i].m*DotProduct(dv,dv,ndim)*
-	sph->kernp->w0(drmag*sink[s].star->invh)*
-	pow(sink[s].star->invh,ndim)*sph->sphdata[i].invrho;
+        sph->kernp->w0(drmag*sink[s].star->invh)*
+        pow(sink[s].star->invh,ndim)*sph->sphdata[i].invrho;
 
       // Compute total kinetic energy
       for (k=0; k<ndim; k++) dv[k] = sph->sphdata[i].v[k] - sink[s].star->v[k];
       sink[s].ketot += sph->sphdata[i].m*DotProduct(dv,dv,ndim)*
-	sph->kernp->w0(drmag*sink[s].star->invh)*
-	pow(sink[s].star->invh,ndim)*sph->sphdata[i].invrho;
+        sph->kernp->w0(drmag*sink[s].star->invh)*
+        pow(sink[s].star->invh,ndim)*sph->sphdata[i].invrho;
 
       // Add contributions to average timescales from particles
       sink[s].tvisc *= pow(sqrt(drmag)/sph->sphdata[i].sound/
@@ -449,9 +449,9 @@ void Sinks<ndim>::AccreteMassToSinks
           
       // Finally calculate accretion timescale and mass accreted
       sink[s].taccrete = pow(sink[s].trad,1.0 - efrac)*
-	pow(sink[s].tvisc,efrac);
+        pow(sink[s].tvisc,efrac);
       if (sink[s].menc > sink[s].mmax)
-	sink[s].taccrete *= pow(sink[s].mmax/sink[s].menc,2);
+        sink[s].taccrete *= pow(sink[s].mmax/sink[s].menc,2);
       dt = (FLOAT) sink[s].star->nstep*timestep;
       macc = sink[s].menc*max(1.0 - exp(-dt/sink[s].taccrete),0.0);
       //cout << "Accreting sink " << s << "     Nneib : " << Nneib << endl;
@@ -489,9 +489,9 @@ void Sinks<ndim>::AccreteMassToSinks
 
       // Special conditions for total particle accretion
       if (smooth_accretion == 0 || 
-	  sph->sphdata[i].m - mtemp < smooth_accrete_frac*sph->mmean ||
-	  dt < smooth_accrete_dt*sink[s].trot) {
-	mtemp = sph->sphdata[i].m;
+          sph->sphdata[i].m - mtemp < smooth_accrete_frac*sph->mmean ||
+          dt < smooth_accrete_dt*sink[s].trot) {
+        mtemp = sph->sphdata[i].m;
       }
       macc_temp -= mtemp;
 
@@ -533,10 +533,10 @@ void Sinks<ndim>::AccreteMassToSinks
 
       // Special conditions for total particle accretion
       if (smooth_accretion == 0 || 
-	  sph->sphdata[i].m - mtemp < smooth_accrete_frac*sph->mmean ||
-	  dt < smooth_accrete_dt*sink[s].trot) {
-	mtemp = sph->sphdata[i].m;
-	deadlist[Ndead++] = i;
+	      sph->sphdata[i].m - mtemp < smooth_accrete_frac*sph->mmean ||
+	      dt < smooth_accrete_dt*sink[s].trot) {
+        mtemp = sph->sphdata[i].m;
+        deadlist[Ndead++] = i;
       }
       else sph->sphdata[i].m -= mtemp;
       macc -= mtemp;
@@ -546,8 +546,8 @@ void Sinks<ndim>::AccreteMassToSinks
       for (k=0; k<ndim; k++) dv[k] = sph->sphdata[i].v[k] - sink[s].star->v[k];
       sink[s].angmom[2] += mtemp*(dr[0]*dv[1] - dr[1]*dv[0]);
       if (ndim == 3) {
-	sink[s].angmom[0] += mtemp*(dr[1]*dv[2] - dr[2]*dv[1]);
-	sink[s].angmom[1] += mtemp*(dr[2]*dv[0] - dr[0]*dv[2]);
+        sink[s].angmom[0] += mtemp*(dr[1]*dv[2] - dr[2]*dv[1]);
+        sink[s].angmom[1] += mtemp*(dr[2]*dv[0] - dr[0]*dv[2]);
       }
 
       // If we've reached/exceeded the mass limit, do not include more ptcls

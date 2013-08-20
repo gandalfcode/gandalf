@@ -136,6 +136,11 @@ void Simulation<ndim>::CalculateDiagnostics(void)
     }
   }
 
+  // Add internal angular momentum (due to sink accretion)
+  for (i=0; i<sinks.Nsink; i++) {
+    for (k=0; k<3; k++) diag.angmom[k] += sinks.sink[i].angmom[k];
+  }
+
   // Normalise all quantities and sum all contributions to total energy
   diag.ketot *= 0.5;
   diag.gpetot *= 0.5;
