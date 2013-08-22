@@ -19,12 +19,13 @@ Fraction of mass within gas                 : gasfrac = 0.5
 No. of SPH particles                        : Nsph = 1024
 No. of star particles                       : Nstar = 128
 Perform dimensionless simulation            : dimensionless = 1
+Change to COM frame                         : com_frame = 1
 
 
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.2
+Simulation end time                         : tend = 0.1
 Time of first snapshot                      : tsnapfirst = 0.0
 Regular snapshot output frequency           : dt_snap = 1.0
 Screen output frequency (in no. of steps)   : noutputstep = 1
@@ -42,7 +43,7 @@ Ratio of specific heats of gas              : gamma_eos = 1.66666666666666
 # Smoothed Particle Hydrodynamics options
 #----------------------------------------
 SPH algorithm choice                        : sph = gradh
-SPH smoothing length iteration tolerance    : h_converge = 0.0001
+SPH smoothing length iteration tolerance    : h_converge = 0.00001
 SPH smoothing kernel choice                 : kernel = m4
 Tabulate SPH kernel                         : tabulated_kernel = 0
 Switch on self-gravity                      : self_gravity = 1
@@ -75,11 +76,11 @@ SPH particle integration option             : sph_integration = lfkdk
 Integration of gas thermal energy           : energy_integration = PEC
 SPH Courant timestep condition multiplier   : courant_mult = 0.1
 SPH acceleration condition multiplier       : accel_mult = 0.2
-SPH energy equation timestep multiplier     : energy_mult = 0.4
-N-body timestep multiplier                  : nbody_mult = 0.1
+SPH energy equation timestep multiplier     : energy_mult = 0.3
+N-body timestep multiplier                  : nbody_mult = 0.075
 Sub-system timestep multiplier              : subsys_mult = 0.1
-Set all SPH particles to same level         : sph_single_timestep = 0
-No. of block timestep levels                : Nlevels = 6
+Set all SPH particles to same level         : sph_single_timestep = 1
+No. of block timestep levels                : Nlevels = 5
 
 
 #-------------

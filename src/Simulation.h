@@ -72,6 +72,9 @@ class SimulationBase
   virtual void ReadColumnHeaderFile(ifstream& infile, HeaderInfo& info)=0;
   virtual bool ReadColumnSnapshotFile(string)=0;
   virtual bool WriteColumnSnapshotFile(string)=0;
+  virtual void ReadSerenFormHeaderFile(ifstream& infile, HeaderInfo& info)=0;
+  virtual bool ReadSerenFormSnapshotFile(string)=0;
+  virtual bool WriteSerenFormSnapshotFile(string)=0;
 
   std::list<string> keys;
 
@@ -231,6 +234,9 @@ class Simulation : public SimulationBase
   virtual void ReadColumnHeaderFile(ifstream& infile, HeaderInfo& info);
   virtual bool ReadColumnSnapshotFile(string);
   virtual bool WriteColumnSnapshotFile(string);
+  virtual void ReadSerenFormHeaderFile(ifstream& infile, HeaderInfo& info);
+  virtual bool ReadSerenFormSnapshotFile(string);
+  virtual bool WriteSerenFormSnapshotFile(string);
 
   // Variables
   // --------------------------------------------------------------------------

@@ -899,7 +899,8 @@ void Simulation<ndim>::BossBodenheimer(void)
 
 //=============================================================================
 //  Simulation::PlummerSphere
-/// ..
+/// Generate a Plummer sphere containing either stars, gas or a mixture of 
+/// both.  Uses the algorithm described by Aarseth et al. (197?).
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::PlummerSphere(void)
@@ -948,7 +949,6 @@ void Simulation<ndim>::PlummerSphere(void)
   raux = gasfrac + starfrac;
   gasfrac /= raux;
   starfrac /= raux;
-
     
   // Loop over all particles (gas and stars)
   // ==========================================================================
@@ -963,7 +963,6 @@ void Simulation<ndim>::PlummerSphere(void)
       if (x1 == 0.0 && x2 == 0.0 && x3 == 0.0) flag = true;
       rad = 1.0 / sqrt(pow(x1,-2.0/3.0) - 1.0);
       if (rad > radius/rplummer) flag = true;
-
     } while (flag);
 
     z = (1.0 - 2.0*x2)*rad;

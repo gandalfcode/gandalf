@@ -168,6 +168,7 @@ void Simulation<ndim>::OutputDiagnostics(void)
   cout << "Printing out diagnostics" << endl;
   cout << "Nsph       : " << sph->Nsph << endl;
   cout << "Nstar      : " << nbody->Nstar << endl;
+  cout << "mtot       : " << diag.mtot*simunits.m.outscale << endl;
   cout << "Etot       : " << diag.Etot*simunits.E.outscale << endl;
   cout << "ketot      : " << diag.ketot*simunits.E.outscale << endl;
   if (sph->hydro_forces == 1) 

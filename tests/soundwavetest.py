@@ -2,7 +2,7 @@
 # soundwavetest.py
 # Run isothermal soundwave test using initial conditions file 'soundwave.dat'
 #==============================================================================
-from seren.analysis.facade import *
+from gandalf.analysis.facade import *
 import time
 
 # Create new simulation object and generate initial conditions

@@ -12,7 +12,7 @@ Simulation run id string                    : run_id = RELAXCUBE1
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = box
 Dimensionality of cube                      : ndim = 2
-No. of SPH particles                        : Npart = 256
+No. of SPH particles                        : Nsph = 256
 Local arrangement of particles              : particle_distribution = random
 Dimensionless units                         : dimensionless = 1
 

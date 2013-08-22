@@ -144,7 +144,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSPHForces
   DOUBLE dr[ndim];                  // Relative position vector
   DOUBLE drmag;                     // Distance
   DOUBLE drsqd;                     // Distance squared
-  DOUBLE invhmean;                  // ..
+  DOUBLE invhmean;                  // 1 / hmean
   DOUBLE invdrmag;                  // 1 / drmag
   DOUBLE paux;                      // Aux. force variable
 
@@ -315,6 +315,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
       for (k=0; k<ndim; k++) star[i]->v0[k] = star[i]->v[k];
       for (k=0; k<ndim; k++) star[i]->a0[k] = star[i]->a[k];
       star[i]->active = false;
+      star[i]->nlast = n;
     }
   }
   // --------------------------------------------------------------------------
@@ -340,7 +341,6 @@ DOUBLE NbodyLeapfrogKDK<ndim, kernelclass>::Timestep
   // Acceleration condition
   amag = sqrt(DotProduct(star->a,star->a,ndim));
   timestep = nbody_mult*sqrt(star->h/(amag + small_number_dp));
-  //cout << "TIMESTEPS : " << amag << "     " << star->h << "    " << timestep << "    " << star->dt_internal << endl;
   timestep = min(timestep,star->dt_internal);
 
   return timestep;

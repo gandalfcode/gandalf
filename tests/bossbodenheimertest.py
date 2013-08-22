@@ -15,8 +15,8 @@ setupsim()
 subfigure(2,2,1)
 plot("x","y")
 addplot("x","y",type="star")
-limit("x",-0.01,0.01)
-limit("y",-0.01,0.01)
+limit("x",-0.005,0.005)
+limit("y",-0.005,0.005)
 
 # Create rendered slice of density
 subfigure(2,2,2)
@@ -31,7 +31,9 @@ plot("rho","temp",xaxis="log",yaxis="log")
 
 # Plot sink properties
 subfigure(2,2,4)
-plot("h","rho",xaxis="log",yaxis="log")
+plot("x","vx")
+limit("vx",-1.3,1.3)
+addplot("x","vx",type="star")
 
 run()
 block()
