@@ -44,6 +44,8 @@ bool SimulationBase::ReadSnapshotFile
 {
   debug2("[Simulation::ReadSnapshotFile]");
 
+  cout << "Read file : " << filename << "   format : " << fileform << endl;
+
   if (fileform == "column")
     return ReadColumnSnapshotFile(filename);
   else if (fileform == "sf" || fileform == "seren_form")
@@ -357,15 +359,17 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   DOUBLE ddata[50];            // ..
   string format_id;            // File format (for verification)
   string data_id[50];          // String ids of arrays written
-  string unit_data[50];      // String ids of units written
+  string unit_data[50];        // String ids of units written
   ifstream infile;             // ..
   FLOAT raux;                  // ..
   HeaderInfo info;             // ..
   int sink_data_length;        // ..
-  string dummystring;
-  bool booldummy;
+  string dummystring;          // ..
+  bool booldummy;              // ..
 
   debug2("[Simulation::ReadColumnSnapshotFile]");
+
+  cout << "Opening file : " << filename << endl;
 
   infile.open(filename.c_str());
 
@@ -374,7 +378,10 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   // Then check if each value corresponds to the current values.
   // --------------------------------------------------------------------------
   infile >> format_id;
-  if (format_id != "SERENASCIIDUMPV2" || format_id != "SERENASCIIDUMPV3") {
+  simparams->TrimWhiteSpace(format_id);
+
+  cout << "Checking format : " << format_id << endl;
+  if (format_id != "SERENASCIIDUMPV2" && format_id != "SERENASCIIDUMPV3") {
     cout << "Incorrect format of IC file : " << format_id << endl;
     exit(0);
   }

@@ -805,7 +805,8 @@ void SphSimulation<ndim>::MainLoop(void)
       // Copy properties from original particles to ghost particles
       ghosts.CopySphDataToGhosts(sph);
       
-      // Zero accelerations (perhaps)
+      // Zero accelerations
+#pragma parallel for default(none) private(k) shared(sph)
       for (i=0; i<sph->Ntot; i++) {
         if (sph->sphdata[i].active) {
           for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
@@ -846,6 +847,7 @@ void SphSimulation<ndim>::MainLoop(void)
         activecount = sphint->CheckTimesteps(level_diff_max,n,
 		  			     sph->Nsph,sph->sphdata);
       else activecount = 0;
+      activecount = 0;
 
     } while (activecount > 0);
     // ------------------------------------------------------------------------

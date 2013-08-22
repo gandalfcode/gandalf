@@ -83,8 +83,8 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   if (ndim == 2) {
     for (i=0; i<sph->Nsph; i++)
       diag.angmom[2] += sph->sphdata[i].m*
-	(sph->sphdata[i].r[0]*sph->sphdata[i].v[1] - 
-	 sph->sphdata[i].r[1]*sph->sphdata[i].v[0]);
+        (sph->sphdata[i].r[0]*sph->sphdata[i].v[1] -
+         sph->sphdata[i].r[1]*sph->sphdata[i].v[0]);
   }
   else if (ndim == 3) {
     for (i=0; i<sph->Nsph; i++) {
@@ -119,8 +119,8 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   if (ndim == 2) {
     for (i=0; i<nbody->Nstar; i++)
       diag.angmom[2] += nbody->stardata[i].m*
-	(nbody->stardata[i].r[0]*nbody->stardata[i].v[1] -
-	 nbody->stardata[i].r[1]*nbody->stardata[i].v[0]);
+        (nbody->stardata[i].r[0]*nbody->stardata[i].v[1] -
+         nbody->stardata[i].r[1]*nbody->stardata[i].v[0]);
   }
   else if (ndim == 3) {
     for (i=0; i<nbody->Nstar; i++) {

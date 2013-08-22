@@ -53,7 +53,6 @@ Parameters::~Parameters()
 }
 
 
-
 //=============================================================================
 //  Parameters::Parameters
 /// ..
@@ -171,8 +170,9 @@ void Parameters::SetDefaultValues(void)
   // --------------------------------------------------------------------------
   stringparams["ic"] = "random_cube";
   stringparams["run_id"] = "";
-  stringparams["in_file_form"] = "ascii";
-  stringparams["out_file_form"] = "ascii";
+  stringparams["in_file"] = "";
+  stringparams["in_file_form"] = "column";
+  stringparams["out_file_form"] = "column";
   floatparams["tend"] = 1.0;
   floatparams["dt_snap"] = 0.1;
   floatparams["tsnapfirst"] = 0.1;

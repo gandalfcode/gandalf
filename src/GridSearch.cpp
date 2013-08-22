@@ -329,7 +329,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
 #pragma omp parallel default(none) private(activelist,activepart,c,cc,dr,draux,drmag,drsqd) \
   private(hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag,Nactive) \
   private(neiblist,neibpart,Ninteract,Nneib,Nneibmax,rp) \
-  shared(sph,cactive,celllist,data)
+  shared(cactive,celllist,data,sph)
   {
     Nneibmax = Nlistmax;
     activelist = new int[Noccupymax];
@@ -399,8 +399,8 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
           // Compute list of particle-neighbour interactions and also
           // compute
           if ((drsqd <= hrangesqdi || drsqd <= hrangesqdj) &&
-	      ((neiblist[jj] < i && !neibpart[jj].active) ||
-	       neiblist[jj] > i)) {
+              ((neiblist[jj] < i && !neibpart[jj].active) ||
+               neiblist[jj] > i)) {
             interactlist[Ninteract] = jj;
             drmag[Ninteract] = sqrt(drsqd);
             invdrmag[Ninteract] = (FLOAT) 1.0/

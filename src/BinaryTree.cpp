@@ -326,14 +326,22 @@ void BinaryTree<ndim>::OrderParticlesByCartCoord
     for (i=0; i<Ntot; i++)
       porder[k][i] = i;
 
-  // Sort x-values
-  Heapsort(Ntot,porder[0],rk[0]);
+  // Divide sorting routines amongst (up to 3) threads
+  // --------------------------------------------------------------------------
+#pragma omp sections
+  {
+    // Sort x-values
+#pragma omp section
+    Heapsort(Ntot,porder[0],rk[0]);
 
-  // Sort y-values
+    // Sort y-values
+#pragma omp section
   if (ndim >= 2) Heapsort(Ntot,porder[1],rk[1]);
 
-  // Sort z-values
-  if (ndim == 3) Heapsort(Ntot,porder[2],rk[2]);
+    // Sort z-values
+#pragma omp section
+    if (ndim == 3) Heapsort(Ntot,porder[2],rk[2]);
+  }
 
   // Check that particles are ordered correctly
 #if defined(VERIFY_ALL)
@@ -362,8 +370,6 @@ void BinaryTree<ndim>::OrderParticlesByCartCoord
 template <int ndim>
 void BinaryTree<ndim>::LoadParticlesToTree(int output)
 {
-  debug2("[BinaryTree::LoadParticleToTree]");
-
   int c;                            // Cell counter
   int cc;                           // Secondary cell counter
   int k;                            // Dimensionality counter
@@ -372,6 +378,8 @@ void BinaryTree<ndim>::LoadParticlesToTree(int output)
   int l;                            // Level counter
   FLOAT *ccap;                      // Maximum capacity of cell
   FLOAT *ccon;                      // Current contents of cell
+
+  debug2("[BinaryTree::LoadParticleToTree]");
 
   // Allocate memory for local arrays
   ccap = new FLOAT[Ncellmax];
@@ -482,6 +490,7 @@ void BinaryTree<ndim>::StockCellProperties
   crmin = new FLOAT[ndim*Ncellmax];
 
   // Zero all summation variables for all cells
+#pragma parallel for private(c,k) shared(tree)
   for (c=0; c<Ncell; c++) {
     tree[c].Nactive = 0;
     tree[c].N = 0;
@@ -1156,27 +1165,27 @@ void BinaryTree<ndim>::ComputeCellQuadrupoleForces
     // Now add quadrupole terms depending on dimensionality
     if (ndim == 3) {
       qscalar = tree[c].q[0]*dr[0]*dr[0] + tree[c].q[2]*dr[1]*dr[1] - 
-	(tree[c].q[0] + tree[c].q[2])*dr[2]*dr[2] + 
-	2.0*(tree[c].q[1]*dr[0]*dr[1] + tree[c].q[3]*dr[0]*dr[2] + 
-	     tree[c].q[4]*dr[1]*dr[2]);
+        (tree[c].q[0] + tree[c].q[2])*dr[2]*dr[2] +
+         2.0*(tree[c].q[1]*dr[0]*dr[1] + tree[c].q[3]*dr[0]*dr[2] +
+         tree[c].q[4]*dr[1]*dr[2]);
       parti.agrav[0] += 
-	(tree[c].q[0]*dr[0] + tree[c].q[1]*dr[1] + tree[c].q[3]*dr[2])*invdr5 
-	- 2.5*qscalar*dr[0]*invdr5*invdrsqd;
+        (tree[c].q[0]*dr[0] + tree[c].q[1]*dr[1] + tree[c].q[3]*dr[2])*invdr5
+         - 2.5*qscalar*dr[0]*invdr5*invdrsqd;
       parti.agrav[1] += 
-	(tree[c].q[1]*dr[0] + tree[c].q[2]*dr[1] + tree[c].q[4]*dr[2])*invdr5 
-	- 2.5*qscalar*dr[1]*invdr5*invdrsqd;
+        (tree[c].q[1]*dr[0] + tree[c].q[2]*dr[1] + tree[c].q[4]*dr[2])*invdr5
+         - 2.5*qscalar*dr[1]*invdr5*invdrsqd;
       parti.agrav[2] += 
-	(tree[c].q[3]*dr[0] + tree[c].q[4]*dr[1] - 
-	 (tree[c].q[0] + tree[c].q[2])*dr[2])*invdr5 
-	- 2.5*qscalar*dr[1]*invdr5*invdrsqd;
+        (tree[c].q[3]*dr[0] + tree[c].q[4]*dr[1] -
+         (tree[c].q[0] + tree[c].q[2])*dr[2])*invdr5
+          - 2.5*qscalar*dr[1]*invdr5*invdrsqd;
     }
     else if (ndim == 2) {
       qscalar = tree[c].q[0]*dr[0]*dr[0] + tree[c].q[2]*dr[1]*dr[1] + 
-	2.0*tree[c].q[1]*dr[0]*dr[1];
+        2.0*tree[c].q[1]*dr[0]*dr[1];
       parti.agrav[0] += (tree[c].q[0]*dr[0] + tree[c].q[1]*dr[1])*invdr5 - 
-	2.5*qscalar*dr[0]*invdr5*invdrsqd;
+        2.5*qscalar*dr[0]*invdr5*invdrsqd;
       parti.agrav[1] += (tree[c].q[1]*dr[0] + tree[c].q[2]*dr[1])*invdr5 - 
-	2.5*qscalar*dr[1]*invdr5*invdrsqd;
+        2.5*qscalar*dr[1]*invdr5*invdrsqd;
     }
     parti.gpot += 0.5*qscalar*invdr5;
 
@@ -1427,8 +1436,8 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
   int *neiblist;                   // List of neighbour ids
   FLOAT draux[ndim];               // Aux. relative position vector var
   FLOAT drsqd;                     // Distance squared
-  FLOAT hrangesqdi;                // Kernel extent
-  FLOAT hrangesqdj;                // ..
+  FLOAT hrangesqdi;                // Kernel gather extent
+  FLOAT hrangesqdj;                // Kernel scatter extent
   FLOAT rp[ndim];                  // Local copy of particle position
   FLOAT *dr;                       // Array of relative position vectors
   FLOAT *drmag;                    // Array of neighbour distances

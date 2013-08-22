@@ -114,8 +114,8 @@ void EnergyPEC<ndim>::EnergyIntegration
   debug2("[EnergyPEC::EnergyIntegration]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dt,nstep,i,dn) \
-     shared(sphdata, n, timestep, Nsph)
+#pragma omp parallel for default(none) private(dn,dt,i,nstep) \
+     shared(n,Nsph,sphdata,timestep)
   for (i=0; i<Nsph; i++) {
     nstep = sphdata[i].nstep;
     dn = n - sphdata[i].nlast;
@@ -149,7 +149,7 @@ void EnergyPEC<ndim>::EnergyCorrectionTerms
   debug2("[EnergyPEC::EnergyCorrectionTerms]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(nstep,dn,i) \
+#pragma omp parallel for default(none) private(dn,i,nstep) \
      shared(n,Nsph,sphdata,timestep)
   for (i=0; i<Nsph; i++) {
     dn = n - sphdata[i].nlast;
@@ -207,8 +207,7 @@ void EnergyPEC<ndim>::EndTimestep
 //=============================================================================
 template <int ndim>
 DOUBLE EnergyPEC<ndim>::Timestep
-(SphParticle<ndim> &part            ///< [inout] SPH particle reference
-)
+(SphParticle<ndim> &part)           ///< [inout] SPH particle reference
 {
   return this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number));
 }

@@ -42,6 +42,8 @@ ifeq ($(COMPILER_MODE),FAST)
 OPT += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),STANDARD)
 OPT += -O3 -fPIC -fno-exceptions -fno-rtti
+else ifeq ($(COMPILER_MODE),PROFILE)
+OPT += -O3 -fPIC -fno-exceptions -fno-rtti -pg
 else ifeq ($(COMPILER_MODE),DEBUG)
 OPT += -g -pg -Wall -fbounds-check -fPIC #-fprofile-arcs -ftest-coverage
 endif

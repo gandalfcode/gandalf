@@ -75,8 +75,7 @@ void Ghosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
   // Loop over all particles and check if any lie outside the periodic box.
   // If so, then re-position with periodic wrapping.
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(i,part)\
-  shared(simbox,sph)
+#pragma omp parallel for default(none) private(i,part) shared(simbox,sph)
   for (i=0; i<sph->Nsph; i++) {
     part = &sph->sphdata[i];
 
@@ -163,22 +162,22 @@ void Ghosts<ndim>::SearchGhostParticles(DomainBox<ndim> simbox, Sph<ndim> *sph)
 		    simbox.y_boundary_rhs == "open") == 0) {
     for (i=0; i<sph->Ntot; i++) {
       if (sphdata[i].r[1] < simbox.boxmin[1] + 
-	  ghost_range*kernrange*sphdata[i].h) {
-	if (simbox.y_boundary_lhs == "periodic")
-	  CreateGhostParticle(i,1,sphdata[i].r[1] + simbox.boxsize[1],
-			      sphdata[i].v[1],sph);
-	if (simbox.y_boundary_lhs == "mirror")
-	  CreateGhostParticle(i,1,2.0*simbox.boxmin[1] - 
-			      sphdata[i].r[1],-sphdata[i].v[1],sph);
+	      ghost_range*kernrange*sphdata[i].h) {
+        if (simbox.y_boundary_lhs == "periodic")
+          CreateGhostParticle(i,1,sphdata[i].r[1] + simbox.boxsize[1],
+                              sphdata[i].v[1],sph);
+	    if (simbox.y_boundary_lhs == "mirror")
+          CreateGhostParticle(i,1,2.0*simbox.boxmin[1] -
+                              sphdata[i].r[1],-sphdata[i].v[1],sph);
       }
       if (sphdata[i].r[1] > simbox.boxmax[1] - 
-	  ghost_range*kernrange*sphdata[i].h) {
-	if (simbox.y_boundary_rhs == "periodic")
-	  CreateGhostParticle(i,1,sphdata[i].r[1] - simbox.boxsize[1],
-			      sphdata[i].v[1],sph);
-	if (simbox.y_boundary_rhs == "mirror")
-	  CreateGhostParticle(i,1,2.0*simbox.boxmax[1] - 
-			      sphdata[i].r[1],-sphdata[i].v[1],sph);
+	      ghost_range*kernrange*sphdata[i].h) {
+        if (simbox.y_boundary_rhs == "periodic")
+          CreateGhostParticle(i,1,sphdata[i].r[1] - simbox.boxsize[1],
+                              sphdata[i].v[1],sph);
+        if (simbox.y_boundary_rhs == "mirror")
+          CreateGhostParticle(i,1,2.0*simbox.boxmax[1] -
+                              sphdata[i].r[1],-sphdata[i].v[1],sph);
       }
     }
     sph->Ntot = sph->Nsph + sph->Nghost;
@@ -191,22 +190,22 @@ void Ghosts<ndim>::SearchGhostParticles(DomainBox<ndim> simbox, Sph<ndim> *sph)
 		    simbox.z_boundary_rhs == "open") == 0) {
     for (i=0; i<sph->Ntot; i++) {
       if (sphdata[i].r[2] < simbox.boxmin[2] + 
-	  ghost_range*kernrange*sphdata[i].h) {
-	if (simbox.z_boundary_lhs == "periodic")
-	  CreateGhostParticle(i,2,sphdata[i].r[2] + simbox.boxsize[2],
-			      sphdata[i].v[2],sph);
-	if (simbox.z_boundary_lhs == "mirror")
-	  CreateGhostParticle(i,2,2.0*simbox.boxmin[2] - 
-			      sphdata[i].r[2],-sphdata[i].v[2],sph);
+	      ghost_range*kernrange*sphdata[i].h) {
+        if (simbox.z_boundary_lhs == "periodic")
+          CreateGhostParticle(i,2,sphdata[i].r[2] + simbox.boxsize[2],
+                              sphdata[i].v[2],sph);
+        if (simbox.z_boundary_lhs == "mirror")
+          CreateGhostParticle(i,2,2.0*simbox.boxmin[2] -
+                              sphdata[i].r[2],-sphdata[i].v[2],sph);
       }
       if (sphdata[i].r[2] > simbox.boxmax[2] - 
-	  ghost_range*kernrange*sphdata[i].h) {
-	if (simbox.z_boundary_rhs == "periodic")
-	  CreateGhostParticle(i,2,sphdata[i].r[2] - simbox.boxsize[2],
-			      sphdata[i].v[2],sph);
-	if (simbox.z_boundary_rhs == "mirror")
-	  CreateGhostParticle(i,2,2.0*simbox.boxmax[2] - 
-			      sphdata[i].r[2],-sphdata[i].v[2],sph);
+	      ghost_range*kernrange*sphdata[i].h) {
+        if (simbox.z_boundary_rhs == "periodic")
+          CreateGhostParticle(i,2,sphdata[i].r[2] - simbox.boxsize[2],
+                              sphdata[i].v[2],sph);
+        if (simbox.z_boundary_rhs == "mirror")
+          CreateGhostParticle(i,2,2.0*simbox.boxmax[2] -
+                              sphdata[i].r[2],-sphdata[i].v[2],sph);
       }
     }
     sph->Ntot = sph->Nsph + sph->Nghost;
@@ -279,8 +278,7 @@ void Ghosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph)
   debug2("[SphSimulation::CopySphDataToGhosts]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(i,iorig,k,rp,vp,j)\
-  shared(sph)
+#pragma omp parallel for default(none) private(i,iorig,j,k,rp,vp) shared(sph)
   for (j=0; j<sph->Nghost; j++) {
     i = sph->Nsph + j;
     iorig = sph->sphdata[i].iorig;
