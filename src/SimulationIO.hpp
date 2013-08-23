@@ -546,15 +546,15 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
       for (ii=0; ii<6; ii++) infile >> idata[ii];
       if (nbody->Nstar > 0) {
         for (i=0; i<nbody->Nstar; i++) {
-	  for (ii=0; ii<2; ii++) infile >> booldummy;
-	  for (ii=0; ii<2; ii++) infile >> idata[ii];
-	  for (ii=0; ii<sink_data_length; ii++) infile >> sdata[ii];
-	  for (k=0; k<ndim; k++) nbody->stardata[i].r[k] = sdata[k+1];
-	  for (k=0; k<ndim; k++) nbody->stardata[i].v[k] = sdata[k+1+ndim];
-	  nbody->stardata[i].m = sdata[1+2*ndim];
-	  nbody->stardata[i].h = sdata[2+2*ndim];
-	  nbody->stardata[i].radius = sdata[3+2*ndim];
-	}
+          for (ii=0; ii<2; ii++) infile >> booldummy;
+          for (ii=0; ii<2; ii++) infile >> idata[ii];
+          for (ii=0; ii<sink_data_length; ii++) infile >> sdata[ii];
+          for (k=0; k<ndim; k++) nbody->stardata[i].r[k] = sdata[k+1];
+          for (k=0; k<ndim; k++) nbody->stardata[i].v[k] = sdata[k+1+ndim];
+          nbody->stardata[i].m = sdata[1+2*ndim];
+          nbody->stardata[i].h = sdata[2+2*ndim];
+          nbody->stardata[i].radius = sdata[3+2*ndim];
+        }
       }
     }
 
@@ -563,7 +563,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     else if (typedata[i][0] >= 1) {
       int kk = typedata[i][0];
       for (i=ifirst-1; i<ilast; i++)
-	for (k=0; k<kk; k++) infile >> dummystring;
+        for (k=0; k<kk; k++) infile >> dummystring;
     }
 
   }

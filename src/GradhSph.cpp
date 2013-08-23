@@ -614,6 +614,7 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drsqd;                      // Distance squared
   FLOAT invdrmag;                   // 1 / distance
+  FLOAT invdr3;                     // 1 / dist^3
 
   // Loop over all neighbouring particles in list
   // --------------------------------------------------------------------------
@@ -622,18 +623,19 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
 
     // Skip active particles with smaller neighbour ids to prevent counting 
     // pairwise forces twice
-    if (sph[j].active && j <= i) continue;
+    if (j<= i && sph[j].active) continue;
 
     for (k=0; k<ndim; k++) dr[k] = sph[j].r[k] - parti.r[k];
     drsqd = DotProduct(dr,dr,ndim);
     invdrmag = 1.0/(sqrt(drsqd) + small_number);
+    invdr3 = pow(invdrmag,3);
 
     // Add contribution to current particle
-    for (k=0; k<ndim; k++) parti.agrav[k] += sph[j].m*dr[k]*pow(invdrmag,3);
+    for (k=0; k<ndim; k++) parti.agrav[k] += sph[j].m*dr[k]*invdr3;
     parti.gpot += sph[j].m*invdrmag;
 
     // Add contribution to neighbouring particle
-    for (k=0; k<ndim; k++) agrav[ndim*j + k] -= parti.m*dr[k]*pow(invdrmag,3);
+    for (k=0; k<ndim; k++) agrav[ndim*j + k] -= parti.m*dr[k]*invdr3;
     gpot[j] += parti.m*invdrmag;
 
   }

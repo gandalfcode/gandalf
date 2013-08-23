@@ -814,7 +814,7 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
 
     // Check if circular range overlaps cell bounding sphere
     // ------------------------------------------------------------------------
-    if (drsqd < pow(tree[cc].rmax + hrangemax,2)) {
+    if (drsqd < (tree[cc].rmax + hrangemax)*(tree[cc].rmax + hrangemax)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (tree[cc].c2 != 0)
@@ -999,7 +999,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
 
     // Check if cells contain SPH neighbours
     // ------------------------------------------------------------------------
-    if (drsqd < pow(tree[cc].rmax + hrangemax,2) ||
+    if (drsqd < (tree[cc].rmax + hrangemax)*(tree[cc].rmax + hrangemax) ||
         drsqd < pow(tree[cc].rmax + rmax + kernrange*tree[cc].hmax,2)) {
 
       // If not a leaf-cell, then open cell to first child cell
@@ -1060,7 +1060,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (tree[cc].c2 == 0 && Ndirect + Nleafmax >= Ndirectmax)
+      else if (tree[cc].c2 == 0 && Ndirect + Nleafmax > Ndirectmax)
        	return -1;
 
     }
@@ -1080,10 +1080,12 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
     i = neiblist[j];
     for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
-    if (drsqd < hrangemax || drsqd < pow(rmax + kernrange*sphdata[i].h,2))
+    if (drsqd < hrangemax || drsqd < (rmax + kernrange*sphdata[i].h)*(rmax + kernrange*sphdata[i].h))
       neiblist[Nneibtemp++] = i;
-    else
+    else if (Ndirect < Ndirectmax)
       directlist[Ndirect++] = i;
+    else
+     return -1;
   }
   Nneib = Nneibtemp;
 
@@ -1110,19 +1112,24 @@ void BinaryTree<ndim>::ComputeCellMonopoleForces
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drsqd;                      // Distance squared
   FLOAT invdrmag;                   // 1 / distance
+  FLOAT invdr3;                     // 1 / dist^3
+  FLOAT rp[ndim];
+
+  for (k=0; k<ndim; k++) rp[k] = parti.r[k];
 
   // Loop over all neighbouring particles in list
   // --------------------------------------------------------------------------
   for (cc=0; cc<Ngravcell; cc++) {
     c = gravcelllist[cc];
 
-    for (k=0; k<ndim; k++) dr[k] = tree[c].r[k] - parti.r[k];
-    drsqd = DotProduct(dr,dr,ndim);
-    invdrmag = 1.0/(sqrt(drsqd) + small_number);
+    for (k=0; k<ndim; k++) dr[k] = tree[c].r[k] - rp[k];
+    drsqd = DotProduct(dr,dr,ndim) + small_number;
+    invdrmag = 1.0/sqrt(drsqd);
+    invdr3 = invdrmag*invdrmag*invdrmag; //pow(invdrmag,3);
 
     parti.gpot += tree[c].m*invdrmag;
     for (k=0; k<ndim; k++) 
-      parti.agrav[k] += tree[c].m*dr[k]*pow(invdrmag,3);
+      parti.agrav[k] += tree[c].m*dr[k]*invdr3;
 
   }
   // --------------------------------------------------------------------------
@@ -1666,10 +1673,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
   FLOAT hrangesqdj;                 // ..
   FLOAT rp[ndim];                   // Local copy of particle position
   FLOAT *agrav;                     // Local copy of gravitational accel.
-  FLOAT *dr;                        // Array of relative position vectors
-  FLOAT *drmag;                     // Array of neighbour distances
   FLOAT *gpot;                      // ..
-  FLOAT *invdrmag;                  // Array of 1/drmag between particles
   SphParticle<ndim> *neibpart;      // Local copy of neighbouring ptcls
   SphParticle<ndim> parti;          // Local copy of SPH particle
   SphParticle<ndim> *data = sph->sphdata;   // Pointer to SPH particle data
@@ -1684,8 +1688,8 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
   // Set-up all OMP threads
   // ==========================================================================
-#pragma omp parallel default(none) private(activelist,agrav,c,cc,dr,draux)\
-  private(drmag,drsqd,gpot,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj)\
+#pragma omp parallel default(none) private(activelist,agrav,c,cc)\
+  private(gpot,hrangesqdi,hrangesqdj,i,interactlist,j,jj)\
   private(k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,parti,directlist)\
   private(rp,gravcelllist,Ngravcell,Ndirect,Nneibmax,Ndirectmax,Ngravcellmax) \
   shared(celllist,cactive,sph,data)
@@ -1700,14 +1704,12 @@ void BinaryTree<ndim>::UpdateAllSphForces
     interactlist = new int[Nneibmax];
     directlist = new int[Ndirectmax];
     gravcelllist = new int[Ngravcellmax];
-    dr = new FLOAT[Nneibmax*ndim];
-    drmag = new FLOAT[Nneibmax];
-    invdrmag = new FLOAT[Nneibmax];
     neibpart = new SphParticle<ndim>[Nneibmax];
 
     // Zero temporary grav. accel array
     for (i=0; i<ndim*sph->Nsph; i++) agrav[i] = 0.0;
     for (i=0; i<sph->Nsph; i++) gpot[i] = 0.0;
+
 
     // Loop over all active cells
     // ========================================================================
@@ -1731,9 +1733,6 @@ void BinaryTree<ndim>::UpdateAllSphForces
       // recompute the neighbour lists.
       while (okflag == -1) {
         delete[] neibpart;
-        delete[] invdrmag;
-        delete[] drmag;
-        delete[] dr;
         delete[] gravcelllist;
         delete[] directlist;
         delete[] interactlist;
@@ -1745,15 +1744,19 @@ void BinaryTree<ndim>::UpdateAllSphForces
         interactlist = new int[Nneibmax];
         directlist = new int[Ndirectmax];
         gravcelllist = new int[Ngravcellmax];
-        dr = new FLOAT[Nneibmax*ndim];
-        drmag = new FLOAT[Nneibmax];
-        invdrmag = new FLOAT[Nneibmax];
         neibpart = new SphParticle<ndim>[Nneibmax];
         okflag = ComputeGravityInteractionList(c,Nneibmax,Ndirectmax,
 					       Ngravcellmax,Nneib,Ndirect,
 					       Ngravcell,neiblist,directlist,
 					       gravcelllist,sph->sphdata);
       };
+
+      for (j=0; j<Ngravcell; j++) {
+        if (gravcelllist[j] > Ncell) {
+          cout << "Problem with grav cell list : " << j << "   " << gravcelllist[j]
+               << "   " << Ncell << "    " << Ngravcell << "    " << Ngravcellmax << endl;
+        }
+      }
 
       // Make local copies of all potential neighbours
       for (j=0; j<Nneib; j++) {
@@ -1857,9 +1860,6 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
     // Free-up local memory for OpenMP thread
     delete[] neibpart;
-    delete[] invdrmag;
-    delete[] drmag;
-    delete[] dr;
     delete[] gravcelllist;
     delete[] directlist;
     delete[] interactlist;
