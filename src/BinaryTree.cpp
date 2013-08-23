@@ -1007,7 +1007,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
         cc++;
 
       // If leaf-cell, add particles to list
-      else if (tree[cc].c2 == 0 && Nneib + Nleafmax < Nneibmax) {
+      else if (tree[cc].c2 == 0 && Nneib + Nleafmax <= Nneibmax) {
         i = tree[cc].ifirst;
     	while (i != -1) {
           neiblist[Nneib++] = i;
@@ -1017,12 +1017,15 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (tree[cc].c2 == 0 && Nneib + Nleafmax >= Nneibmax)
+      else if (tree[cc].c2 == 0 && Nneib + Nleafmax > Nneibmax)
     	return -1;
 
     }
+
+    // Check if cell is far enough away to be use the COM approximation
     // ------------------------------------------------------------------------
-    else if (drsqd >= tree[c].cdistsqd + tree[cc].cdistsqd) {
+    //else if (drsqd >= tree[c].cdistsqd + tree[cc].cdistsqd) {
+    else if (drsqd >= max(tree[c].cdistsqd,tree[cc].cdistsqd)) {
 
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
@@ -1035,15 +1038,19 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
       cc = tree[cc].cnext;
 
     }
+
+    // If cell is too close, open cell to interogate children cells.
+    // If cell is too close and a leaf cell, then add particles to direct list.
     // ------------------------------------------------------------------------
-    else if (drsqd < tree[c].cdistsqd + tree[cc].cdistsqd) {
+    //else if (drsqd < tree[c].cdistsqd + tree[cc].cdistsqd) {
+    else if (drsqd < max(tree[c].cdistsqd,tree[cc].cdistsqd)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (tree[cc].c2 != 0)
          cc++;
 
       // If leaf-cell, add particles to list
-      else if (tree[cc].c2 == 0 && Ndirect + Nleafmax < Ndirectmax) {
+      else if (tree[cc].c2 == 0 && Ndirect + Nleafmax <= Ndirectmax) {
         i = tree[cc].ifirst;
         while (i != -1) {
           directlist[Ndirect++] = i;
@@ -1062,6 +1069,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
     // ------------------------------------------------------------------------
     else
       cc = tree[cc].cnext;
+
   };
   // ==========================================================================
 
@@ -1251,10 +1259,10 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 
   // Set-up all OMP threads
   // ==========================================================================
-#pragma omp parallel default(none) private(activelist,c,cc,celldone,draux,drsqd)\
-  private(drsqdaux,hmax,hrangesqd,i,j,jj,k,okflag,m,mu,Nactive,neiblist,Nneib)\
-  private(Nneibmax,r,rp, gatherlist, gpot, gpot2, m2, mu2, Ngather)\
-  shared(sph, celllist, cactive, data, nbody)
+#pragma omp parallel default(none) private(activelist,c,cc,celldone,draux)\
+  private(drsqd,drsqdaux,hmax,hrangesqd,i,j,jj,k,okflag,m,mu,Nactive,neiblist)\
+  private(Nneib,Nneibmax,r,rp,gatherlist,gpot,gpot2,m2,mu2,Ngather) \
+  shared(sph,celllist,cactive,data,nbody)
   {
     Nneibmax = 2*sph->Ngather;
     activelist = new int[Nleafmax];
@@ -1676,15 +1684,15 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
   // Set-up all OMP threads
   // ==========================================================================
-#pragma omp parallel default(none) private(activelist,agrav,c,cc,dr,draux,drmag)\
-  private(drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag)\
-  private(Nactive,neiblist,neibpart,Ninteract,Nneib,parti,rp,gpot,directlist)\
-  private(gravcelllist,Ngravcell,Ndirect,Nneibmax,Ndirectmax,Ngravcellmax)\
+#pragma omp parallel default(none) private(activelist,agrav,c,cc,dr,draux)\
+  private(drmag,drsqd,gpot,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj)\
+  private(k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,parti,directlist)\
+  private(rp,gravcelllist,Ngravcell,Ndirect,Nneibmax,Ndirectmax,Ngravcellmax) \
   shared(celllist,cactive,sph,data)
   {
-    Nneibmax = 2*sph->Ngather;
+    Nneibmax = 4*sph->Ngather;
     Ndirectmax = 2*Nneibmax;
-    Ngravcellmax = 4*Nneibmax;
+    Ngravcellmax = 8*Nneibmax;
     agrav = new FLOAT[ndim*sph->Nsph];
     gpot = new FLOAT[ndim*sph->Nsph];
     activelist = new int[Nleafmax];
@@ -1715,6 +1723,9 @@ void BinaryTree<ndim>::UpdateAllSphForces
 					     Ngravcellmax,Nneib,Ndirect,
 					     Ngravcell,neiblist,directlist,
 					     gravcelllist,sph->sphdata);
+
+      //cout << "Lists too small? : " << cc << "    " << Nneib << "   " << Nneibmax << "    " << Ndirect << "    " << Ndirectmax << "    " << Ngravcell << "    " << Ngravcellmax << endl;
+
 
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour lists.

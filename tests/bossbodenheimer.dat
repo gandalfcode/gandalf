@@ -54,7 +54,7 @@ RHS boundary type in z-dimension            : z_boundary_rhs = open
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.05
+Simulation end time                         : tend = 0.018
 Regular snapshot output frequency           : dt_snap = 0.002
 Time of first snapshot                      : tsnapfirst = 0.015;
 Screen output frequency (in no. of steps)   : noutputstep = 1
@@ -116,7 +116,7 @@ SPH particle integration option             : sph_integration = lfkdk
 SPH Courant timestep condition multiplier   : courant_mult = 0.1
 SPH acceleration condition multiplier       : accel_mult = 0.2
 SPH energy equation timestep multiplier     : energy_mult = 0.5
-No. of block timestep levels                : Nlevels = 6
+No. of block timestep levels                : Nlevels = 1
 Max. timestep level difference              : level_diff_max = 2
 
 
@@ -124,7 +124,7 @@ Max. timestep level difference              : level_diff_max = 2
 # Tree options
 #-------------
 SPH neighbour search algorithm              : neib_search = tree
-No. of particles in leaf cell               : Nleafmax = 16
+No. of particles in leaf cell               : Nleafmax = 8
 Tree opening angle (squared)                : thetamaxsqd = 0.1
 
 
