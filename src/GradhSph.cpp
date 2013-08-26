@@ -275,10 +275,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
 
 
-  // Compute hydro forces
-  // ==========================================================================
-  if (hydro_forces == 1) {
-
     // Loop over all potential neighbours in the list
     // ------------------------------------------------------------------------
     for (jj=0; jj<Nneib; jj++) {
@@ -346,8 +342,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
     }
     // ------------------------------------------------------------------------
 
-  }
-  // ==========================================================================
 
   return;
 }
@@ -384,7 +378,9 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
   FLOAT vsignal;                    // Signal velocity
   FLOAT gaux;                       // ..
   FLOAT paux;                       // Aux. pressure force variable
+  //FLOAT rp[ndim];
   FLOAT uaux;                       // Aux. internal energy variable
+  //FLOAT vp[ndim];
   FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
 
 
@@ -395,17 +391,14 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 
     for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
     for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
-    drmag = sqrt(DotProduct(dr,dr,ndim));
-    invdrmag = 1.0/(drmag + small_number);
+    drmag = sqrt(DotProduct(dr,dr,ndim) + small_number);
+    invdrmag = 1.0/drmag;
     for (k=0; k<ndim; k++) dr[k] *= invdrmag;
     dvdr = DotProduct(dv,dr,ndim);
 
     wkerni = parti.hfactor*kern.w1(drmag*parti.invh);
     wkernj = neibpart[j].hfactor*kern.w1(drmag*neibpart[j].invh);
 
-    // Add contribution to velocity divergence
-    parti.div_v -= neibpart[j].m*dvdr*wkerni;
-    neibpart[j].div_v -= parti.m*dvdr*wkernj;
     
     // Main SPH pressure force term
     paux = parti.pfactor*wkerni + neibpart[j].pfactor*wkernj;
@@ -466,18 +459,22 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     // Add total hydro contribution to acceleration for particle i
     for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;
     parti.gpot += neibpart[j].m*gaux;
+    parti.div_v -= neibpart[j].m*dvdr*wkerni;
     parti.levelneib = max(parti.levelneib,neibpart[j].level);
-    
+
     // If neighbour is also active, add contribution to force here
     for (k=0; k<ndim; k++) neibpart[j].agrav[k] -= parti.m*dr[k]*paux;
     neibpart[j].gpot += parti.m*gaux;
+    neibpart[j].div_v -= parti.m*dvdr*wkernj;
     neibpart[j].levelneib = max(neibpart[j].levelneib,parti.level);
+
 
   }
   // ==========================================================================
 
   return;
 }
+
 
 
 //=============================================================================

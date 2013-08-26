@@ -514,7 +514,7 @@ void BinaryTree<ndim>::StockCellProperties
   // ==========================================================================
   for (c=Ncell-1; c>=0; c--) {
 
-    // If this is a leaf cell, some over all particles
+    // If this is a leaf cell, sum over all particles
     // ------------------------------------------------------------------------
     if (tree[c].c2 == 0) {
       i = tree[c].ifirst;
@@ -538,7 +538,7 @@ void BinaryTree<ndim>::StockCellProperties
       // Normalise all cell values
       if (tree[c].N > 0) {
         for (k=0; k<ndim; k++) tree[c].r[k] /= tree[c].m;
-        for (k=0; k<ndim; k++) dr[k] = crmax[c*ndim + k] - crmin[c*ndim + k];
+        for (k=0; k<ndim; k++) dr[k] = 0.5*(crmax[c*ndim + k] - crmin[c*ndim + k]);
         tree[c].cdistsqd = factor*DotProduct(dr,dr,ndim);
         for (k=0; k<ndim; k++) dr[k] = max(crmax[c*ndim + k] - tree[c].r[k],
 		  			 tree[c].r[k] - crmin[c*ndim + k]);
@@ -585,7 +585,7 @@ void BinaryTree<ndim>::StockCellProperties
           crmin[ndim*c + k] = min(crmin[ndim*cc+k],crmin[ndim*ccc+k]);
         for (k=0; k<ndim; k++)
           crmax[ndim*c + k] = max(crmax[ndim*cc+k],crmax[ndim*ccc+k]);
-        for (k=0; k<ndim; k++) dr[k] = crmax[c*ndim + k] - crmin[c*ndim + k];
+        for (k=0; k<ndim; k++) dr[k] = 0.5*(crmax[c*ndim + k] - crmin[c*ndim + k]);
         tree[c].cdistsqd = factor*DotProduct(dr,dr,ndim);
         for (k=0; k<ndim; k++) dr[k] = max(crmax[c*ndim + k] - tree[c].r[k],
                                            tree[c].r[k] - crmin[c*ndim + k]);
@@ -800,6 +800,7 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
   FLOAT drsqd;                      // Distance squared
   FLOAT rc[ndim];                   // Position of cell
   FLOAT hrangemax;                  // Maximum SPH kernel extent
+  //FLOAT neibrange;                  // Max. range of gather neighbours
 
   for (k=0; k<ndim; k++) rc[k] = tree[c].r[k];
   hrangemax = tree[c].rmax + kernrange*hmax;
@@ -811,10 +812,11 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
   while (cc < Ncell) {
     for (k=0; k<ndim; k++) dr[k] = tree[cc].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
+    //neibrange = tree[cc].rmax + hrangemax;
 
     // Check if circular range overlaps cell bounding sphere
     // ------------------------------------------------------------------------
-    if (drsqd < (tree[cc].rmax + hrangemax)*(tree[cc].rmax + hrangemax)) {
+    if (drsqd < pow(tree[cc].rmax + hrangemax,2)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (tree[cc].c2 != 0)
@@ -886,6 +888,8 @@ int BinaryTree<ndim>::ComputeNeighbourList
   FLOAT rc[ndim];                   // Position of cell
   FLOAT hrangemax;                  // Maximum kernel extent
   FLOAT rmax;                       // ..
+  //FLOAT gatherrange;                // ..
+  //FLOAT scatterrange;               // ..
 
   for (k=0; k<ndim; k++) rc[k] = tree[c].r[k];
   hrangemax = tree[c].rmax + kernrange*tree[c].hmax;
@@ -898,11 +902,15 @@ int BinaryTree<ndim>::ComputeNeighbourList
   while (cc < Ncell) {
     for (k=0; k<ndim; k++) dr[k] = tree[cc].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
+    //scatterrange = tree[cc].rmax + rmax + kernrange*tree[cc].hmax;
+    //gatherrange = tree[cc].rmax + hrangemax;
 
     // Check if circular range overlaps cell bounding sphere
     // ------------------------------------------------------------------------
-    if (drsqd < (tree[cc].rmax + hrangemax)*(tree[cc].rmax + hrangemax) ||
-        drsqd < pow(tree[cc].rmax + rmax + kernrange*tree[cc].hmax,2)) {
+    //if (drsqd < gatherrange*gatherrange ||
+      //  drsqd < scatterrange*scatterrange) {
+    if (drsqd < pow(tree[cc].rmax + hrangemax,2) ||
+        drsqd < pow(rmax + tree[cc].rmax + kernrange*tree[cc].hmax,2)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (tree[cc].c2 != 0)
@@ -938,8 +946,8 @@ int BinaryTree<ndim>::ComputeNeighbourList
     i = neiblist[j];
     for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
-    if (drsqd < hrangemax || drsqd < 
-	(rmax + kernrange*sphdata[i].h)*(rmax + kernrange*sphdata[i].h));
+    if (drsqd < hrangemax || drsqd <
+        (rmax + kernrange*sphdata[i].h)*(rmax + kernrange*sphdata[i].h));
       neiblist[Ntemp++] = i;
   }
   Nneib = Ntemp;
@@ -995,6 +1003,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
   Ndirect = 0;
   Ngravcell = 0;
 
+
   // ==========================================================================
   while (cc < Ncell) {
     for (k=0; k<ndim; k++) dr[k] = tree[cc].r[k] - rc[k];
@@ -1025,10 +1034,10 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
 
     }
 
-    // Check if cell is far enough away to be use the COM approximation
+    // Check if cell is far enough away to use the COM approximation
     // ------------------------------------------------------------------------
     //else if (drsqd >= tree[c].cdistsqd + tree[cc].cdistsqd) {
-    else if (drsqd > cdistsqd && drsqd > tree[cc].cdistsqd) {
+    else if (drsqd > cdistsqd || drsqd > tree[cc].cdistsqd) {
 
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
@@ -1046,7 +1055,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
     // If cell is too close and a leaf cell, then add particles to direct list.
     // ------------------------------------------------------------------------
     //else if (drsqd < tree[c].cdistsqd + tree[cc].cdistsqd) {
-    else if (drsqd < cdistsqd || drsqd < tree[cc].cdistsqd) {
+    else if (drsqd <= cdistsqd && drsqd <= tree[cc].cdistsqd) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (tree[cc].c2 != 0)
@@ -1539,8 +1548,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
         for (k=0; k<ndim; k++) parti.a[k] = (FLOAT) 0.0;
 
         for (k=0; k<ndim; k++) rp[k] = parti.r[k]; //data[i].r[k];
-        hrangesqdi = (sph->kernfac*sph->kernp->kernrange*parti.h)*
-          (sph->kernfac*sph->kernp->kernrange*parti.h);
+        hrangesqdi = sph->kernfacsqd*sph->kernp->kernrangesqd*parti.h*parti.h;
         Ninteract = 0;
 
         // Validate that gather neighbour list is correct
@@ -1555,22 +1563,19 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
         // --------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
-	  // Skip neighbour if it's not the correct part of an active pair
-          if (!(neiblist[jj] > i || 
-		(neiblist[jj] < i && !neibpart[jj].active))) continue;
+	      // Skip neighbour if it's not the correct part of an active pair
+          if (neiblist[jj] <= i && neibpart[jj].active) continue;
 
-          hrangesqdj = sph->kernfac*sph->kernfac*sph->kernp->kernrangesqd*
+          hrangesqdj = sph->kernfacsqd*sph->kernp->kernrangesqd*
             neibpart[jj].h*neibpart[jj].h;
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
-          drsqd = DotProduct(draux,draux,ndim);
+          drsqd = DotProduct(draux,draux,ndim) + small_number;
 
-          // Compute list of particle-neighbour interactions and also
-          // compute ..
-	  if (drsqd <= hrangesqdi || drsqd <= hrangesqdj) {
+          // Compute relative position and distance quantities for pair
+          if (drsqd <= hrangesqdi || drsqd <= hrangesqdj) {
             interactlist[Ninteract] = jj;
             drmag[Ninteract] = sqrt(drsqd);
-            invdrmag[Ninteract] = (FLOAT) 1.0/
-              (drmag[Ninteract] + small_number);
+            invdrmag[Ninteract] = (FLOAT) 1.0/drmag[Ninteract];
             for (k=0; k<ndim; k++)
               dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
             Ninteract++;
@@ -1705,7 +1710,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
   {
     Nneibmax = 4*sph->Ngather;
     Ndirectmax = 2*Nneibmax;
-    Ngravcellmax = 8*Nneibmax;
+    Ngravcellmax = 2*Nneibmax;
     agrav = new FLOAT[ndim*sph->Nsph];
     gpot = new FLOAT[ndim*sph->Nsph];
     activelist = new int[Nleafmax];
@@ -1756,6 +1761,8 @@ void BinaryTree<ndim>::UpdateAllSphForces
 					       Ngravcell,neiblist,directlist,
 					       gravcelllist,sph->sphdata);
       };
+
+      //cout << "Neib lists : "  << Nneib << "   " << Ndirect << "   " << Ngravcell << endl;
 
       // Make local copies of all potential neighbours
       for (j=0; j<Nneib; j++) {

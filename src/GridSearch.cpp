@@ -217,7 +217,7 @@ void GridSearch<ndim>::UpdateAllSphProperties
 
         // Set gather range as current h multiplied by some tolerance factor
         hrangesqd = grid_h_tolerance*grid_h_tolerance*
-	  sph->kernp->kernrangesqd*data[i].h*data[i].h;
+          sph->kernp->kernrangesqd*data[i].h*data[i].h;
         Ngather = 0;
 
         // Compute distance (squared) to all
@@ -228,11 +228,11 @@ void GridSearch<ndim>::UpdateAllSphProperties
 
           // Record distance squared for all potential gather neighbours
           if (drsqdaux < hrangesqd) {
-            gatherlist[Ngather] = jj;
-            gpot2[Ngather] = gpot[jj];
             drsqd[Ngather] = drsqdaux;
+            gpot2[Ngather] = gpot[jj];
             m2[Ngather] = m[jj];
             mu2[Ngather] = mu[jj];
+            gatherlist[Ngather] = jj;
             Ngather++;
        	  }
 	  
@@ -241,8 +241,8 @@ void GridSearch<ndim>::UpdateAllSphProperties
 
         // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-	if (neibcheck) CheckValidNeighbourList(sph,i,Ngather,
-					       gatherlist,"gather");
+        if (neibcheck) CheckValidNeighbourList(sph,i,Ngather,
+                                               gatherlist,"gather");
 #endif
 
         // Compute smoothing length and other gather properties for particle i
@@ -382,8 +382,8 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
         activepart[j].levelneib = 0;
         for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
-        hrangesqdi = sph->kernfac*sph->kernfac*sph->kernp->kernrangesqd*
-	  activepart[j].h*activepart[j].h;
+        hrangesqdi = sph->kernfacsqd*sph->kernp->kernrangesqd*
+          activepart[j].h*activepart[j].h;
         Ninteract = 0;
 
         // Compute distances and the inverse between the current particle
@@ -393,22 +393,23 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
         // --------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
-          hrangesqdj = 
-            pow(sph->kernfac*sph->kernp->kernrange*neibpart[jj].h,2);
+  	      // Skip neighbour if it's not the correct part of an active pair
+          if (neiblist[jj] <= i && neibpart[jj].active) continue;
+
+          hrangesqdj = sph->kernfacsqd*sph->kernp->kernrangesqd*neibpart[jj].h*neibpart[jj].h;
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
           drsqd = DotProduct(draux,draux,ndim);
 
           // Compute list of particle-neighbour interactions and also
           // compute
-          if ((drsqd <= hrangesqdi || drsqd <= hrangesqdj) &&
-              ((neiblist[jj] < i && !neibpart[jj].active) ||
-               neiblist[jj] > i)) {
-            interactlist[Ninteract] = jj;
-            drmag[Ninteract] = sqrt(drsqd);
-            invdrmag[Ninteract] = (FLOAT) 1.0/
-              (drmag[Ninteract] + small_number);
+          if ((drsqd <= hrangesqdi || drsqd <= hrangesqdj)) { //&&
+              //((neiblist[jj] < i && !neibpart[jj].active) ||
+               //neiblist[jj] > i)) {
+            drmag[Ninteract] = sqrt(drsqd) + small_number;
+            invdrmag[Ninteract] = (FLOAT) 1.0/drmag[Ninteract];
             for (k=0; k<ndim; k++)
               dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
+            interactlist[Ninteract] = jj;
             Ninteract++;
           }
 	  
@@ -423,7 +424,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
       // ----------------------------------------------------------------------
 
 
-        // Add all particle i contributions to main array
+    // Add all particle i contributions to main array
 //#pragma omp critical
 	{
       for (jj=0; jj<Nactive; jj++) {
