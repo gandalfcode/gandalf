@@ -129,11 +129,15 @@ int GradhSph<ndim, kernelclass>::ComputeH
     // ------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       ssqd = drsqd[j]*invhsqd;
-      parti.rho += m[j]*parti.hfactor*kern.w0_s2(ssqd);
-      parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega_s2(ssqd);
-      parti.zeta += m[j]*invhsqd*kern.wzeta_s2(ssqd);
+      parti.rho += m[j]*kern.w0_s2(ssqd);
+      parti.invomega += m[j]*parti.invh*kern.womega_s2(ssqd);
+      parti.zeta += m[j]*kern.wzeta_s2(ssqd);
     }
     // ------------------------------------------------------------------------
+
+    parti.rho *= parti.hfactor;
+    parti.invomega *= parti.hfactor;
+    parti.zeta *= invhsqd;
 
     if (parti.rho > (FLOAT) 0.0) parti.invrho = (FLOAT) 1.0/parti.rho;
 
@@ -183,7 +187,8 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
 
   // Normalise all SPH sums correctly
-  parti.h = max(h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim),h_lower_bound);
+  parti.h = max(h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim),
+                h_lower_bound);
   parti.invh = (FLOAT) 1.0/parti.h;
   parti.invomega = (FLOAT) 1.0 + 
     Sph<ndim>::invndim*parti.h*parti.invomega*parti.invrho;
@@ -615,6 +620,9 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
   FLOAT drsqd;                      // Distance squared
   FLOAT invdrmag;                   // 1 / distance
   FLOAT invdr3;                     // 1 / dist^3
+  FLOAT rp[ndim];                   // Local copy of particle position
+
+  for (k=0; k<ndim; k++) rp[k] = parti.r[k];
 
   // Loop over all neighbouring particles in list
   // --------------------------------------------------------------------------
@@ -623,12 +631,12 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
 
     // Skip active particles with smaller neighbour ids to prevent counting 
     // pairwise forces twice
-    if (j<= i && sph[j].active) continue;
+    if (j <= i && sph[j].active) continue;
 
     for (k=0; k<ndim; k++) dr[k] = sph[j].r[k] - parti.r[k];
-    drsqd = DotProduct(dr,dr,ndim);
-    invdrmag = 1.0/(sqrt(drsqd) + small_number);
-    invdr3 = pow(invdrmag,3);
+    drsqd = DotProduct(dr,dr,ndim) + small_number;
+    invdrmag = 1.0/sqrt(drsqd);
+    invdr3 = invdrmag*invdrmag*invdrmag;
 
     // Add contribution to current particle
     for (k=0; k<ndim; k++) parti.agrav[k] += sph[j].m*dr[k]*invdr3;

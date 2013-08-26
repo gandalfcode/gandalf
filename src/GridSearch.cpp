@@ -171,9 +171,9 @@ void GridSearch<ndim>::UpdateAllSphProperties
 
   // Set-up all OMP threads
   // ==========================================================================
-#pragma omp parallel default(none) private(activelist,c,cc,draux,drsqd,drsqdaux) \
-  private(gatherlist,hrangesqd,i,j,jj,k,okflag,m,m2,mu,mu2,Nactive,neiblist) \
-  private(Ngather,Nneib,r,rp,gpot,gpot2) \
+#pragma omp parallel default(none) private(activelist,c,cc,draux,drsqd) \
+  private(drsqdaux,gatherlist,hrangesqd,i,j,jj,k,okflag,m,m2,mu,mu2,Nactive) \
+  private(neiblist,Ngather,Nneib,r,rp,gpot,gpot2) \
   shared(sph,data,nbody,Nneibmax,cactive,celllist)
   {
     activelist = new int[Noccupymax];
@@ -216,7 +216,8 @@ void GridSearch<ndim>::UpdateAllSphProperties
         for (k=0; k<ndim; k++) rp[k] = data[i].r[k];
 
         // Set gather range as current h multiplied by some tolerance factor
-        hrangesqd = pow(grid_h_tolerance*sph->kernp->kernrange*data[i].h,2);
+        hrangesqd = grid_h_tolerance*grid_h_tolerance*
+	  sph->kernp->kernrangesqd*data[i].h*data[i].h;
         Ngather = 0;
 
         // Compute distance (squared) to all
@@ -226,7 +227,7 @@ void GridSearch<ndim>::UpdateAllSphProperties
           drsqdaux = DotProduct(draux,draux,ndim);
 
           // Record distance squared for all potential gather neighbours
-          if (drsqdaux <= hrangesqd) {
+          if (drsqdaux < hrangesqd) {
             gatherlist[Ngather] = jj;
             gpot2[Ngather] = gpot[jj];
             drsqd[Ngather] = drsqdaux;
@@ -381,7 +382,8 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
         activepart[j].levelneib = 0;
         for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
-        hrangesqdi = pow(sph->kernfac*sph->kernp->kernrange*activepart[j].h,2);
+        hrangesqdi = sph->kernfac*sph->kernfac*sph->kernp->kernrangesqd*
+	  activepart[j].h*activepart[j].h;
         Ninteract = 0;
 
         // Compute distances and the inverse between the current particle
