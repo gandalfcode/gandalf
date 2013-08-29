@@ -171,9 +171,9 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
 
       star[i]->gpe_pert += perturber[j].m*invdrmag;
       for (k=0; k<ndim; k++) star[i]->a[k] += 
-	perturber[j].m*dr[k]*pow(invdrmag,3);
+        perturber[j].m*dr[k]*pow(invdrmag,3);
       for (k=0; k<ndim; k++) star[i]->adot[k] += perturber[j].m*
-	pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+        pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
 
     }
     // ------------------------------------------------------------------------

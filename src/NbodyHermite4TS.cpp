@@ -224,16 +224,13 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
     for (k=0; k<ndim; k++) perturber[i].v[k] -= vcom[k];
     for (k=0; k<ndim; k++) perturber[i].a[k] -= acom[k];
     for (k=0; k<ndim; k++) perturber[i].adot[k] -= adotcom[k];
+    for (k=0; k<ndim; k++) perturber[i].r0[k] = perturber[i].r[k];
+    for (k=0; k<ndim; k++) perturber[i].v0[k] = perturber[i].v[k];
+    for (k=0; k<ndim; k++) perturber[i].a0[k] = perturber[i].a[k];
+    for (k=0; k<ndim; k++) perturber[i].adot0[k] = perturber[i].adot[k];
   }
 
-  // Advance positions and velocities of perturbers to half-step values
-  // (i.e. use half-step values for now for average pertubing force).
-  for (i=0; i<Npert; i++) {
-    dt = 0.5*tlocal_end;
-    for (k=0; k<ndim; k++) perturber[i].r[k] += perturber[i].v[k]*dt;
-    for (k=0; k<ndim; k++) perturber[i].v[k] += perturber[i].a[k]*dt;
-    for (k=0; k<ndim; k++) perturber[i].a[k] += perturber[i].adot[k]*dt;
-  }
+
 
   // Calculate forces, derivatives and other terms
   CalculateDirectGravForces(Nchildren, children);
@@ -267,13 +264,26 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
     // Advance position and velocities
     AdvanceParticles(nlocal, Nchildren, children, dt);
 
+    // Advance positions and velocities of perturbers to half-step values
+    // (i.e. use half-step values for now for average pertubing force).
+    for (i=0; i<Npert; i++) {
+      dt = 0.5*tlocal_end;
+      for (k=0; k<ndim; k++) perturber[i].r[k] = perturber[i].r0[k] +
+    		  perturber[i].v[k]*tlocal + 0.5*perturber[i].a0[k]*tlocal*tlocal +
+    		  onesixth*perturber[i].adot0[k]*tlocal;
+      for (k=0; k<ndim; k++) perturber[i].v[k] = perturber[i].v0[k]*dt +
+    		  perturber[i].a0[k]*tlocal + 0.5*perturber[i].adot0[k]*tlocal*tlocal;
+      for (k=0; k<ndim; k++) perturber[i].a[k] = perturber[i].a0[k] +
+    		  perturber[i].adot0[k]*tlocal;
+    }
+
     // Time-symmetric iteration loop
     // ------------------------------------------------------------------------
     for (it=0; it<Npec; it++) {
 
       // Zero all acceleration terms
       for (i=0; i<Nchildren; i++) {
-	children[i]->active = true;
+        children[i]->active = true;
         children[i]->gpot = 0.0;
         children[i]->gpe_pert = 0.0;
         for (k=0; k<ndim; k++) children[i]->a[k] = 0.0;

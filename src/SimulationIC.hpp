@@ -1491,25 +1491,25 @@ void Simulation<ndim>::QuadrupleStar(void)
 
 //=============================================================================
 //  Simulation::AddBinaryStar
-/// Create a simple binary star problem
+/// Add a binary star of given mass, eccentricity and separation.
+/// (Code provided courtesy of S. Goodwin; 29/09/2013)
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::AddBinaryStar
-(DOUBLE sma,                       ///< ..
- DOUBLE eccent,                    ///< ..
- DOUBLE m1,                        ///< ..
- DOUBLE m2,                        ///< ..
- DOUBLE h1,                        ///< ..
- DOUBLE h2,                        ///< ..
- DOUBLE *rbinary,                  ///< ..
- DOUBLE *vbinary,                  ///< ..
- NbodyParticle<ndim> &s1,          ///< ..
- NbodyParticle<ndim> &s2)          ///< ..
+(DOUBLE sma,                       ///< Semi-major axis
+ DOUBLE eccent,                    ///< Orbital eccentricity
+ DOUBLE m1,                        ///< Mass of star 1
+ DOUBLE m2,                        ///< Mass of star 2
+ DOUBLE h1,                        ///< Smoothing length of star 1
+ DOUBLE h2,                        ///< Smoothing length of star 2
+ DOUBLE *rbinary,                  ///< Position of COM of binary
+ DOUBLE *vbinary,                  ///< Velocity of COM of binary
+ NbodyParticle<ndim> &s1,          ///< Star 1
+ NbodyParticle<ndim> &s2)          ///< Star 2
 {
   int i;                           // Particle counter
   int j;                           // Aux. particle counter
   int k;                           // Dimension counter
-
   FLOAT mbin = m1 + m2;
   FLOAT period = twopi*sqrt(sma*sma*sma/mbin);
   FLOAT vbin = twopi*sma/period;
@@ -1523,14 +1523,44 @@ void Simulation<ndim>::AddBinaryStar
 
   cout << "Adding binary with : " << m1 << "   " << m2 << "    " << sma << endl;
 
+  // randomly sample M to get theta
+  FLOAT M = 2.0*pi*(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+
+  // from this solve to get eccentric anomoly E - e sin(theta) = M
+  // N-R method x_1 = x_0 - f(x_0)/f'(x_0)
+  FLOAT Ee = M;
+  FLOAT old = M;
+  do {
+    old = Ee;
+    Ee = Ee - (Ee - eccent*sin(Ee) - M)/(1.0 - eccent*cos(Ee));
+  } while (fabs(old - Ee) > 1.0e-6);
+
+  // Next get theta tan(t/2) = sqrt((1+e)/(1-e))*tan(E/2)
+  FLOAT theta = sqrt((1.0 + eccent)/(1.0 - eccent))*tan(0.5*Ee);
+  theta = 2.0*atan(theta);
+
+  // Total separation
+  FLOAT sep = sma*(1.0 - eccent*eccent)/(1.0 + eccent*cos(theta));
+
+  // Get velocity
+  FLOAT vel = (m1 + m2)*(2.0/sep - 1.0/sma);
+  vel = sqrt(vel);
+
+  // ..
+  FLOAT hc = sqrt((1.0 + eccent*cos(theta))/(2.0 - sep/sma));
+  FLOAT phi = acos(hc);
+
   // Set properties of star 1
+  // put on x-y plane to start
   for (k=0; k<ndim; k++) s1.r[k] = rbinary[k];
   for (k=0; k<ndim; k++) s1.v[k] = vbinary[k];
   s1.m = m1;
   s1.h = h1;
   s1.invh = 1.0 / s1.h;
-  s1.r[0] += sma*m2/mbin;
-  s1.v[1] += vbin*m2/mbin;
+  s1.r[0] += sep*cos(theta)*m2/mbin;
+  s1.r[1] += sep*sin(theta)*m2/mbin;
+  s1.v[0] += -vel*cos(0.5*pi - theta + phi)*m2/mbin;
+  s1.v[1] += vel*sin(0.5*pi - theta + phi)*m2/mbin;
 
   // Set properties of star 2
   for (k=0; k<ndim; k++) s2.r[k] = rbinary[k];
@@ -1538,8 +1568,10 @@ void Simulation<ndim>::AddBinaryStar
   s2.m = m2;
   s2.h = h2;
   s2.invh = 1.0 / s2.h;
-  s2.r[0] -= sma*m1/mbin;
-  s2.v[1] -= vbin*m1/mbin;
+  s2.r[0] -= sep*cos(theta)*m2/mbin;
+  s2.r[1] -= sep*sin(theta)*m2/mbin;
+  s2.v[0] -= -vel*cos(0.5*pi - theta + phi)*m1/mbin;
+  s2.v[1] -= vel*sin(0.5*pi - theta + phi)*m1/mbin;
 
   return;
 }
