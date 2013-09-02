@@ -359,22 +359,49 @@ template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogKDK<ndim, kernelclass>::IntegrateInternalMotion
 (SystemParticle<ndim>* systemi,     ///< [inout] System that we wish to 
                                     ///<         integrate the internal motion
+ int n,                             ///< [in]    ...
+ DOUBLE timestep,                   ///< [in]    ...
  DOUBLE tlocal_end)                 ///< [in]    Time to integrate the 
                                     ///<         internal motion for.
 {
-  int i;                                              // ..
-  int it;                                             // Iteration counter
-  int k;                                              // ..
-  int Nchildren = systemi->Nchildren;                 // No. of child systems
-  int nlocal = 0;                                     // ..
-  int nsteps_local = 0;                               // ..
-  DOUBLE dt;                                          // ..
-  DOUBLE tlocal=0.0;                                  // ..
-  DOUBLE rcom[ndim];                                  // ..
-  DOUBLE vcom[ndim];                                  // ..
-  DOUBLE acom[ndim];                                  // ..
-  DOUBLE adotcom[ndim];                               // ..
-  NbodyParticle<ndim>** children = systemi->children; // Child systems
+  int i;                            // Particle counter
+  int it;                           // Iteration counter
+  int k;                            // Dimension counter
+  int Nchildren;                    // No. of child systems
+  int Npert;                        // No. of perturbing systems
+  int Nstar;                        // Total no. of stars
+  int nlocal=0;                     // ..
+  int nsteps_local=0;               // ..
+  DOUBLE dt;                        // Local timestep
+  DOUBLE tlocal=0.0;                // Local time counter
+  DOUBLE tpert;                     // ..
+  DOUBLE rcom[ndim];                // Position of COM
+  DOUBLE vcom[ndim];                // Velocity of COM
+  DOUBLE acom[ndim];                // Acceleration of COM
+  NbodyParticle<ndim>** children;   // Child systems
+  NbodyParticle<ndim>* perturber;   // Local array of perturber properties
+
+  // Allocate memory for both stars and perturbers
+  Nchildren = systemi->Nchildren;
+  Npert = systemi->Npert;
+  Nstar = Nchildren + Npert;
+  children = systemi->children;
+
+  //Npert = 0;
+
+  if (Npert > 0) {
+    perturber = new NbodyParticle<ndim>[Npert];
+    for (i=0; i<Npert; i++) {
+      perturber[i].m = systemi->perturber[i]->m;
+      for (k=0; k<ndim; k++) perturber[i].r[k] = systemi->perturber[i]->r[k];
+      for (k=0; k<ndim; k++) perturber[i].v[k] = systemi->perturber[i]->v[k];
+      for (k=0; k<ndim; k++) perturber[i].a[k] = systemi->perturber[i]->a[k];
+      for (k=0; k<ndim; k++) perturber[i].r0[k] = systemi->perturber[i]->r[k];
+      for (k=0; k<ndim; k++) perturber[i].v0[k] = systemi->perturber[i]->v[k];
+      for (k=0; k<ndim; k++) perturber[i].a0[k] = systemi->perturber[i]->a[k];
+    }
+  }
+
 
   // Zero all COM summation variables
   for (k=0; k<ndim; k++) rcom[k] = 0.0;
@@ -402,23 +429,39 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::IntegrateInternalMotion
     for (k=0; k<ndim; k++) children[i]->r0[k] -= rcom[k];
     for (k=0; k<ndim; k++) children[i]->v[k] -= vcom[k];
     for (k=0; k<ndim; k++) children[i]->v0[k] -= vcom[k];
-    for (k=0; k<ndim; k++) children[i]->a[k] = 0.0; //acom[k];
-    for (k=0; k<ndim; k++) children[i]->a0[k] = 0.0; //acom[k];
+    for (k=0; k<ndim; k++) children[i]->a[k] = 0.0; //-= acom[k];
+    for (k=0; k<ndim; k++) children[i]->a0[k] = 0.0; //-= acom[k];
+    children[i]->gpot = 0.0;
+    children[i]->gpe_pert = 0.0;
     children[i]->active = true;
     children[i]->nstep = 1;
     children[i]->nlast = 0;
     children[i]->level = 0;
   }
 
+  // Convert perturbers to COM frame
+  for (i=0; i<Npert; i++) {
+    for (k=0; k<ndim; k++) perturber[i].r[k] -= rcom[k];
+    for (k=0; k<ndim; k++) perturber[i].v[k] -= vcom[k];
+    for (k=0; k<ndim; k++) perturber[i].a[k] -= acom[k];
+    for (k=0; k<ndim; k++) perturber[i].r0[k] -= rcom[k]; //= perturber[i].r[k];
+    for (k=0; k<ndim; k++) perturber[i].v0[k] -= vcom[k]; //= perturber[i].v[k];
+    for (k=0; k<ndim; k++) perturber[i].a0[k] -= acom[k]; //= perturber[i].a[k];
+  }
+
 
   // Calculate forces, derivatives and other terms
   CalculateDirectGravForces(Nchildren, children);
+  if (Npert > 0)
+    CalculatePerturberForces(Nchildren, Npert, children, perturber);
+
   for (i=0; i<Nchildren; i++) {
     for (k=0; k<ndim; k++) children[i]->a0[k] = children[i]->a[k];
   }
 
   // Calculate higher order derivatives
-  CalculateAllStartupQuantities(Nchildren, children);
+  this->CalculateAllStartupQuantities(Nchildren, children);
+
 
   // Main time integration loop
   // ==========================================================================
@@ -426,7 +469,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::IntegrateInternalMotion
 
     // Calculate time-step
     nlocal = 0;
-    dt = std::min(big_number, tlocal_end - tlocal);
+    dt = std::min(big_number, 1.00000000001*(tlocal_end - tlocal));
     for (i=0; i<Nchildren; i++) {
       children[i]->nlast = 0;
       dt = std::min(dt, Timestep(children[i]));
@@ -435,27 +478,39 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::IntegrateInternalMotion
     nsteps_local +=1;
     nlocal += 1;
 
+    //cout << "Timestep : " << dt << "    tlocal : " << tlocal << endl;
+
     // Advance position and velocities
     AdvanceParticles(nlocal, Nchildren, children, dt);
 
-    //Zero all acceleration terms
+    // Advance positions and velocities of perturbers.
+    if (Npert > 0) {
+      for (i=0; i<Npert; i++) {
+        tpert = tlocal_end - tlocal;
+        for (k=0; k<ndim; k++) perturber[i].r[k] = perturber[i].r0[k] -
+          perturber[i].v0[k]*tpert - 0.5*perturber[i].a0[k]*tpert*tpert;
+        for (k=0; k<ndim; k++) perturber[i].v[k] = perturber[i].v0[k] -
+          perturber[i].a0[k]*tpert;
+      }
+    }
+
+    // Zero all acceleration terms
     for (i=0; i<Nchildren; i++) {
       children[i]->active = true;
       children[i]->gpot = 0.0;
+      children[i]->gpe_pert = 0.0;
       for (k=0; k<ndim; k++) children[i]->a[k] = 0.0;
     }
-    
+
     // Calculate forces, derivatives and other terms
     CalculateDirectGravForces(Nchildren, children);
-    
+
+    // Add perturbation terms
+    if (Npert > 0)
+      CalculatePerturberForces(Nchildren, Npert, children, perturber);
+
     // Apply correction terms
     CorrectionTerms(nlocal, Nchildren, children, dt);
-
-    //for (i=0; i<Nchildren; i++)
-    //cout << "(correction) pos : " << i << "   " << children[i]->r[0] 
-    //	 << "    " << children[i]->r[1] << "     " 
-    // << sqrt(DotProduct(children[i]->r,children[i]->r,ndim)) << endl;
-    //cin >> i;
 
     // Now loop over children and, if they are systems, integrate
     // their internal motion
@@ -463,11 +518,11 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::IntegrateInternalMotion
     for (i=0; i<Nchildren; i++) {
 
       if (children[i]->Ncomp > 1)
-	// The cast is needed because the function is defined only in
-	// SystemParticle, not in NbodyParticle.  
-	// The safety of the cast relies on the correctness of the Ncomp value
-	IntegrateInternalMotion(static_cast<SystemParticle<ndim>* > 
-				(children[i]), dt);
+        // The cast is needed because the function is defined only in
+        // SystemParticle, not in NbodyParticle.
+        // The safety of the cast relies on the correctness of the Ncomp value
+        IntegrateInternalMotion(static_cast<SystemParticle<ndim>* >
+                                (children[i]), n, timestep, dt);
     }
 
     // Set end-of-step variables
@@ -475,21 +530,6 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::IntegrateInternalMotion
 
   } while (tlocal < tlocal_end);
   // ==========================================================================
-
-
-
-  /*cout << "Done!!" << endl;
-  for (i=0; i<Nchildren; i++) {
-    cout << "Final pos : " << i << "   " << children[i]->r[0] 
-	 << "    " << children[i]->r[1] << "     " 
-	 << sqrt(DotProduct(children[i]->r,children[i]->r,ndim)) << endl;
-    cout << "Final vel : " << i << "   " << children[i]->v[0] 
-	 << "    " << children[i]->v[1] << "     "
-       << sqrt(DotProduct(children[i]->v,children[i]->v,ndim)) << endl;
-    cout << "Final accel : " << i << "   " << children[i]->a[0] 
-	 << "    " << children[i]->a[1] << "     "
-	 << sqrt(DotProduct(children[i]->a,children[i]->a,ndim)) << endl;
-	 }*/
 
 
   // Copy children back to main coordinate system
@@ -502,7 +542,12 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::IntegrateInternalMotion
     for (k=0; k<ndim; k++) children[i]->a[k] += systemi->a[k];
     for (k=0; k<ndim; k++) children[i]->a0[k] += systemi->a[k];
     children[i]->gpot = children[i]->gpot + systemi->gpot;
+    children[i]->gpe *= children[i]->m;
+    children[i]->gpe_internal *= children[i]->gpe;
+    children[i]->gpe_pert *= children[i]->m;
   }
+
+  if (Npert > 0) delete[] perturber;
 
   return;
 }

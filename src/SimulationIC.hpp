@@ -908,22 +908,9 @@ void Simulation<ndim>::PlummerSphere(void)
   bool flag;                        // Aux. flag
   bool istar;                       // Are particles 'stars'?
   int i,j,k;                        // Particle and dimension counter
-  int N;                            // ??
-  int s;                            // Star counter
-  int *porder;                      // ..
-  FLOAT dr[ndim];                   // ..
-  FLOAT drmag;                      // Distance
-  FLOAT drsqd;                      // Distance squared
-  FLOAT mp;                         // Mass of particle
   FLOAT raux;                       // Aux. float variable
   FLOAT rcentre[ndim];              // Position of centre of Plummer sphere
   FLOAT vplummer;                   // 
-  FLOAT *radsqd;                    // ..
-
-  int idum;
-  int mcount = 0;
-  FLOAT rpl,rlim,tcr,g,gp,rpold;
-  FLOAT mrpl,mrlim;
   FLOAT x1,x2,x3,x4,x5,x6,x7;
   FLOAT rad,vm,ve,t1,t2,w,z;
 
@@ -1063,7 +1050,6 @@ template <int ndim>
 void Simulation<ndim>::SedovBlastWave(void)
 {
   int i;                            // Particle counter
-  int j;                            // Aux. particle counter
   int k;                            // Dimension counter
   int Nbox;                         // No. of particles in box
   int Ncold;                        // No. of cold particles
@@ -1083,9 +1069,6 @@ void Simulation<ndim>::SedovBlastWave(void)
   // Create local copies of initial conditions parameters
   int smooth_ic = simparams->intparams["smooth_ic"];
   FLOAT rhofluid = simparams->floatparams["rhofluid1"];
-  FLOAT press = simparams->floatparams["press1"];
-  FLOAT mu_bar = simparams->floatparams["mu_bar"];
-  FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
   FLOAT kefrac = simparams->floatparams["kefrac"];
   string particle_dist = simparams->stringparams["particle_distribution"];
   Nlattice[0] = simparams->intparams["Nlattice1[0]"];
@@ -1229,7 +1212,6 @@ template <int ndim>
 void Simulation<ndim>::ShearFlow(void)
 {
   int i;                            // Particle counter
-  int j;                            // Aux. particle counter
   int k;                            // Dimension counter
   int Nbox;                         // No. of particles in box
   int Nlattice1[ndim];              // Lattice size
@@ -1241,8 +1223,6 @@ void Simulation<ndim>::ShearFlow(void)
   // Make local copies of important parameters
   FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
   FLOAT press1 = simparams->floatparams["press1"];
-  FLOAT temp0 = simparams->floatparams["temp0"];
-  FLOAT mu_bar = simparams->floatparams["mu_bar"];
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
   FLOAT amp = simparams->floatparams["amp"];
   Nlattice1[0] = simparams->intparams["Nlattice1[0]"];
@@ -1432,6 +1412,58 @@ void Simulation<ndim>::BinaryStar(void)
 
 
 //=============================================================================
+//  SphSimulation::TripleStar
+/// Create a simple quadruple star problem
+//=============================================================================
+template <int ndim>
+void Simulation<ndim>::TripleStar(void)
+{
+  int k;                           // Dimension counter
+  FLOAT sma1 = 1.0;                // Outer semi-major axis
+  FLOAT sma2 = 0.1;               // Inner semi-major axis
+  FLOAT eccent = 0.0;              // Orbital eccentricity (of all orbits)
+  FLOAT m1 = 0.5;                  // Mass of binary 1
+  FLOAT m2 = 0.5;                  // Mass of binary 2
+  DOUBLE rbinary[ndim];            // Position of binary COM
+  DOUBLE vbinary[ndim];            // Velocity of binary COM
+  NbodyParticle<ndim> b1;          // Star/binary 1
+  NbodyParticle<ndim> b2;          // Star/binary 2
+
+  debug2("[SphSimulation::TripleStar]");
+
+  if (ndim == 1) {
+    string message = "Quadruple test not available in 1D";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Allocate local and main particle memory
+  sph->Nsph = 0;
+  sph->Ntot = 0;
+  nbody->Nstar = 3;
+  AllocateParticleMemory();
+
+  // Compute main binary orbit
+  for (k=0; k<ndim; k++) rbinary[k] = 0.0;
+  for (k=0; k<ndim; k++) vbinary[k] = 0.0;
+  AddBinaryStar(sma1,eccent,m1,m2,0.01,0.01,
+                rbinary,vbinary,b1,nbody->stardata[2]);
+
+  // Now compute both components
+  AddBinaryStar(sma2,eccent,0.5*m1,0.5*m1,0.0001,0.0001,b1.r,b1.v,
+		        nbody->stardata[0],nbody->stardata[1]);
+
+  for (int i=0; i<nbody->Nstar; i++) {
+    cout << "Star : " << i << "   r : " << nbody->stardata[i].r[0] << "  "
+	 << nbody->stardata[i].r[1] << "     v : " << nbody->stardata[i].v[0]
+	 << "    " << nbody->stardata[i].v[1] << endl;
+  }
+
+  return;
+}
+
+
+
+//=============================================================================
 //  SphSimulation::QuadrupleStar
 /// Create a simple quadruple star problem
 //=============================================================================
@@ -1440,7 +1472,7 @@ void Simulation<ndim>::QuadrupleStar(void)
 {
   int k;                           // Dimension counter
   FLOAT sma1 = 1.0;                // Outer semi-major axis
-  FLOAT sma2 = 0.02;               // Inner semi-major axis
+  FLOAT sma2 = 0.1;               // Inner semi-major axis
   FLOAT eccent = 0.0;              // Orbital eccentricity (of all orbits)
   FLOAT m1 = 0.5;                  // Mass of binary 1
   FLOAT m2 = 0.5;                  // Mass of binary 2
@@ -1507,12 +1539,9 @@ void Simulation<ndim>::AddBinaryStar
  NbodyParticle<ndim> &s1,          ///< Star 1
  NbodyParticle<ndim> &s2)          ///< Star 2
 {
-  int i;                           // Particle counter
-  int j;                           // Aux. particle counter
   int k;                           // Dimension counter
   FLOAT mbin = m1 + m2;
   FLOAT period = twopi*sqrt(sma*sma*sma/mbin);
-  FLOAT vbin = twopi*sma/period;
 
   debug2("[Simulation::AddBinaryStar]");
 

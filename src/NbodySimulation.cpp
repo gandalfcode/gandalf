@@ -600,7 +600,7 @@ void NbodySimulation<ndim>::MainLoop(void)
       // SystemParticle, not in NbodyParticle.  
       // The safety of the cast relies on the correctness of the Ncomp value
       subsystem->IntegrateInternalMotion(static_cast<SystemParticle<ndim>* > 
-					 (nbody->nbodydata[i]), timestep);
+                                         (nbody->nbodydata[i]), n, timestep, timestep);
     }
   }
 

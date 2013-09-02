@@ -17,7 +17,7 @@ Use dimensionless units                     : dimensionless = 1
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 1.0
+Simulation end time                         : tend = 10.0
 Regular snapshot output frequency           : dt_snap = 1.0
 Screen output frequency (in no. of steps)   : noutputstep = 1024
 

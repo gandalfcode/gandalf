@@ -74,7 +74,8 @@ class Nbody
   virtual void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE) = 0;
   virtual void EndTimestep(int, int, NbodyParticle<ndim> **) = 0;
   virtual DOUBLE Timestep(NbodyParticle<ndim> *) = 0;
-  virtual void IntegrateInternalMotion(SystemParticle<ndim>* system, DOUBLE tend);
+  virtual void IntegrateInternalMotion(SystemParticle<ndim>* system,
+                                       int, DOUBLE, DOUBLE tend);
 
 
   // N-body counters and main data arrays
@@ -135,7 +136,8 @@ public:
 				NbodyParticle<ndim> *);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
   void EndTimestep(int, int, NbodyParticle<ndim> **);
-  void IntegrateInternalMotion(SystemParticle<ndim>* system, DOUBLE tend);
+  void IntegrateInternalMotion(SystemParticle<ndim>* system,
+                               int, DOUBLE, DOUBLE tend);
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;           ///< Local copy of vdim
@@ -174,7 +176,8 @@ public:
 				NbodyParticle<ndim> *);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE);
   void EndTimestep(int, int, NbodyParticle<ndim> **);
-  void IntegrateInternalMotion(SystemParticle<ndim>* system, DOUBLE tend);
+  void IntegrateInternalMotion(SystemParticle<ndim>* system,
+                               int, DOUBLE, DOUBLE tend);
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;           ///< Local copy of vdim
@@ -211,7 +214,8 @@ public:
   ~NbodyHermite4TS();
 
   void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE);
-  void IntegrateInternalMotion(SystemParticle<ndim>* system, DOUBLE tend);
+  void IntegrateInternalMotion(SystemParticle<ndim>* system,
+                               int, DOUBLE, DOUBLE tend);
 
 };
 #endif

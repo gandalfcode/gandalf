@@ -456,6 +456,8 @@ void Simulation<ndim>::GenerateIC(void)
     SoundWave();
   else if (simparams->stringparams["ic"] == "sphere")
     UniformSphere();
+  else if (simparams->stringparams["ic"] == "triple")
+    TripleStar();
   else if (simparams->stringparams["ic"] == "python")
     return;
   else {

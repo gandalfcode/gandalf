@@ -545,6 +545,8 @@ template <int ndim, template<int> class kernelclass>
 void NbodyHermite4<ndim, kernelclass>::IntegrateInternalMotion
 (SystemParticle<ndim>* systemi,     ///< [inout] System that we wish to 
                                     ///<         integrate the internal motion
+ int n,                             ///< [in]    ...
+ DOUBLE timestep,                   ///< [in]    ...
  DOUBLE tlocal_end)                 ///< [in]    Time to integrate the 
                                     ///<         internal motion for.
 {
@@ -679,7 +681,7 @@ void NbodyHermite4<ndim, kernelclass>::IntegrateInternalMotion
 	// SystemParticle, not in NbodyParticle.  
 	// The safety of the cast relies on the correctness of the Ncomp value
 	IntegrateInternalMotion(static_cast<SystemParticle<ndim>* > 
-				(children[i]), dt);
+                            (children[i]), n, timestep, dt);
     }
 
     // Set end-of-step variables

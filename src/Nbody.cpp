@@ -124,6 +124,8 @@ template <int ndim>
 void Nbody<ndim>::IntegrateInternalMotion
 (SystemParticle<ndim>* systemi,     ///< [inout] System that we wish to 
                                     ///<         integrate the internal motion
+ int n,                             ///< [in]    ...
+ DOUBLE timestep,                   ///< [in]    ...
  DOUBLE tlocal_end)                 ///< [in]    Time to integrate the 
                                     ///<         internal motion for.
 {
@@ -203,7 +205,7 @@ void Nbody<ndim>::IntegrateInternalMotion
       //Zero all acceleration terms
       for (i=0; i<Nchildren; i++) {
         children[i]->gpot = 0.0;
-	children[i]->gpe_internal = 0.0;
+        children[i]->gpe_internal = 0.0;
         for (k=0; k<ndim; k++) children[i]->a[k] = 0.0;
         for (k=0; k<ndim; k++) children[i]->adot[k] = 0.0;
         for (k=0; k<ndim; k++) children[i]->a2dot[k] = 0.0;
@@ -228,7 +230,7 @@ void Nbody<ndim>::IntegrateInternalMotion
 	// SystemParticle, not in NbodyParticle.  
 	// The safety of the cast relies on the correctness of the Ncomp value
 	IntegrateInternalMotion(static_cast<SystemParticle<ndim>* > 
-				(children[i]), dt);
+				(children[i]), n, timestep, dt);
     }
 
     // Set end-of-step variables

@@ -226,6 +226,7 @@ class Simulation : public SimulationBase
   void SedovBlastWave(void);
   void ShearFlow(void);
   void SoundWave(void);
+  void TripleStar(void);
   void UniformBox(void);
   void UniformSphere(void);
 
