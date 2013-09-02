@@ -423,7 +423,8 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   // --------------------------------------------------------------------------
   nbody_single_timestep = intparams["nbody_single_timestep"];
   nbody->Nstar          = intparams["Nstar"];
-  nbodytree.gpefrac     = floatparams["gpefrac"];
+  nbodytree.gpehard     = floatparams["gpehard"];
+  nbodytree.gpesoft     = floatparams["gpesoft"];
 
   dt_snap               = floatparams["dt_snap"]/simunits.t.outscale;
   dt_python             = floatparams["dt_python"];

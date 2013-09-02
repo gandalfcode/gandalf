@@ -147,11 +147,10 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
     for (k=0; k<ndim; k++) dv[k] = perturber[j].v[k];
     drsqd = DotProduct(dr,dr,ndim);
     invdrmag = 1.0/sqrt(drsqd);
-    drdt = DotProduct(dv,dr,ndim)*invdrmag;    
+    drdt = DotProduct(dv,dr,ndim)*invdrmag; 
     for (k=0; k<ndim; k++) acom[k] += perturber[j].m*dr[k]*pow(invdrmag,3);
     for (k=0; k<ndim; k++) adotcom[k] +=
       perturber[j].m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
-    cout << "PERT : " << j << "   " << k << "   " << acom[0] << "   " << acom[1] << endl;
   }
 
   // Loop over all (active) stars
@@ -178,11 +177,14 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
     }
     // ------------------------------------------------------------------------
 
+
     for (k=0; k<ndim; k++) star[i]->a[k] -= acom[k];
     for (k=0; k<ndim; k++) star[i]->adot[k] -= adotcom[k];
 
   }
   // --------------------------------------------------------------------------
+
+  //cin >> i;
 
   return;
 }
@@ -204,12 +206,12 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
   DOUBLE dr[ndim];                  // Relative position vector
   DOUBLE drmag;                     // Distance
   DOUBLE drsqd;                     // Distance squared
-  DOUBLE drdt;                      // ..
-  DOUBLE dv[ndim];                  // ..
-  DOUBLE invhmean;                  // ..
+  DOUBLE drdt;                      // Rate of change of distance
+  DOUBLE dv[ndim];                  // Relative velocity vector
+  DOUBLE invhmean;                  // 1 / hmean
   DOUBLE invdrmag;                  // 1 / drmag
   DOUBLE paux;                      // Aux. force variable
-  DOUBLE wkern;                     // ..
+  DOUBLE wkern;                     // SPH kernel value
 
   debug2("[NbodyHermite4::CalculateDirectSPHForces]");
 
@@ -286,6 +288,7 @@ void NbodyHermite4<ndim, kernelclass>::CalculateAllStartupQuantities
 
   debug2("[NbodyHermite4::CalculateAllStartupQuantities]");
 
+
   // Loop over all stars
   // --------------------------------------------------------------------------
   for (i=0; i<N; i++) {
@@ -323,8 +326,15 @@ void NbodyHermite4<ndim, kernelclass>::CalculateAllStartupQuantities
       for (k=0; k<ndim; k++) star[i]->a3dot[k] += 
         star[j]->m*dadot[k]*invdrsqd*invdrmag -
         9.0*afac*a2dot[k] - 9.0*bfac*adot[k] - 3.0*cfac*a[k];
+      
+      //cout << "WTF?? : " << i << "   " << j << "    " << drsqd << "    " << dvsqd << "    " << da[0] << "    " << da[1] << "    " << dadot[0] << "    " << dadot[1] << "     " << a2dot[0] << "    " << a2dot[1] << endl;
+      //cout << "WTF2? : " << drdt << "    " << star[j]->m*pow(invdrmag,3)*dv[k] << "    " << afac << "   " << bfac << "    " << cfac << "    " << dvsqd*invdrsqd << "    " << afac*afac << "    " << DotProduct(da,dr,ndim)*invdrsqd << endl;
+
     }
     // ------------------------------------------------------------------------
+
+    //cout << "a2dot : " << i << "   " << star[i]->a2dot[0] << "    " << star[i]->a2dot[1] << endl;
+    //cout << "a3dot : " << i << "   " << star[i]->a3dot[0] << "    " << star[i]->a3dot[1] << endl;
 
   }
   // --------------------------------------------------------------------------
@@ -517,6 +527,8 @@ DOUBLE NbodyHermite4<ndim, kernelclass>::Timestep
     timestep = big_number_dp;
 
   timestep = min(timestep,star->dt_internal);
+
+  //cout << "Timesteps : " << timestep << "    " << star->dt_internal << "    " << asqd << "    " << a1sqd << "    " << a2sqd << "    " << a3sqd << endl;
 
   return timestep;
 }

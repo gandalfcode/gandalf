@@ -128,7 +128,8 @@ class NbodySystemTree
   int Nbinarymax;                    ///< Max. no. of binary stars
   int Nnode;                         ///< No. of nodes of NN-tree
   int Nnodemax;                      ///< Max. no. of nodes on NN-tree.
-  DOUBLE gpefrac;                    ///< Grav. energy limit for sub-system
+  DOUBLE gpehard;                    ///< Grav. energy limit hard sub-systems
+  DOUBLE gpesoft;                    ///< Grav. energy limit soft sub-systems
   struct NNTreeCell<ndim> *NNtree;   ///< Main NN-tree array
   struct BinaryStar<ndim> *binary;   ///< Main binary star array
 

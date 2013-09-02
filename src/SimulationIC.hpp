@@ -1400,12 +1400,12 @@ template <int ndim>
 void Simulation<ndim>::BinaryStar(void)
 {
   int k;                           // Dimension counter
-  FLOAT sma = 1.0;                 // ..
-  FLOAT eccent = 0.0;              // ..
-  FLOAT m1 = 0.5;                  // ..
-  FLOAT m2 = 0.5;                  // ..
-  DOUBLE rbinary[ndim];            // ..
-  DOUBLE vbinary[ndim];            // ..
+  FLOAT sma = 1.0;                 // Binary semi-major axis
+  FLOAT eccent = 0.0;              // Orbital eccentricity
+  FLOAT m1 = 0.5;                  // Mass of star 1
+  FLOAT m2 = 0.5;                  // Mass of star 2
+  DOUBLE rbinary[ndim];            // Position of binary COM
+  DOUBLE vbinary[ndim];            // Velocity of binary COM
 
   debug2("[Simulation::BinaryStar]");
 
@@ -1439,15 +1439,15 @@ template <int ndim>
 void Simulation<ndim>::QuadrupleStar(void)
 {
   int k;                           // Dimension counter
-  FLOAT sma1 = 1.0;                // ..
-  FLOAT sma2 = 0.05;               // ..
-  FLOAT eccent = 0.0;              // ..
-  FLOAT m1 = 0.5;                  // ..
-  FLOAT m2 = 0.5;                  // ..
-  DOUBLE rbinary[ndim];            // ..
-  DOUBLE vbinary[ndim];            // ..
-  NbodyParticle<ndim> b1;          // ..
-  NbodyParticle<ndim> b2;          // ..
+  FLOAT sma1 = 1.0;                // Outer semi-major axis
+  FLOAT sma2 = 0.02;               // Inner semi-major axis
+  FLOAT eccent = 0.0;              // Orbital eccentricity (of all orbits)
+  FLOAT m1 = 0.5;                  // Mass of binary 1
+  FLOAT m2 = 0.5;                  // Mass of binary 2
+  DOUBLE rbinary[ndim];            // Position of binary COM
+  DOUBLE vbinary[ndim];            // Velocity of binary COM
+  NbodyParticle<ndim> b1;          // Star/binary 1
+  NbodyParticle<ndim> b2;          // Star/binary 2
 
   debug2("[SphSimulation::QuadrupleStar]");
 

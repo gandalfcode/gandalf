@@ -402,7 +402,7 @@ void NbodySystemTree<ndim>::BuildSubSystems
         }
         cout << "Checking system criteria : "
           << fabs(NNtree[c].gpe - NNtree[c].gpe_internal)/NNtree[c].gpe
-          << "    " << gpefrac << "    " << NNtree[c].Ncomp << "     "
+          << "    " << gpesoft << "    " << NNtree[c].Ncomp << "     "
           << Ncompmax << endl;
 #endif
 
@@ -411,13 +411,14 @@ void NbodySystemTree<ndim>::BuildSubSystems
         // object.  If yes, create new system in main arrays
         // --------------------------------------------------------------------
         if (fabs(NNtree[c].gpe - NNtree[c].gpe_internal)
-            < gpefrac*NNtree[c].gpe) {
+            < gpesoft*NNtree[c].gpe) {
 	  
           // Copy centre-of-mass properties of new sub-system
           nbody->system[Nsystem].inode = c;
           nbody->system[Nsystem].dt_internal = NNtree[c].tcross;
           nbody->system[Nsystem].m = NNtree[c].m;
           nbody->system[Nsystem].h = NNtree[c].h;
+	  nbody->system[Nsystem].gpe_internal = NNtree[c].gpe_internal;
           for (k=0; k<ndim; k++) {
             nbody->system[Nsystem].r[k] = NNtree[c].r[k];
             nbody->system[Nsystem].v[k] = NNtree[c].v[k];
@@ -551,6 +552,12 @@ void NbodySystemTree<ndim>::FindPerturberLists
   int Nstack;                       // No. of unprocessed nodes on stack
   int s;                            // System counter
   int *cellstack;                   // ids of unprocessed nodes
+  DOUBLE dr[ndim];                  // ..
+  DOUBLE drsqd;                     // ..
+  DOUBLE gpeaux;                    // ..
+  DOUBLE gpe_internal;              // ..
+  DOUBLE ms;                        // ..
+  DOUBLE rs[ndim];                  // ..
   SystemParticle<ndim> *s1;         // ..
 
   debug2("[NbodySystemTree::FindPerturberLists]");
@@ -558,54 +565,90 @@ void NbodySystemTree<ndim>::FindPerturberLists
 
   cellstack = new int[nbody->Nstar];
 
+  cout << "Nsystem : " << nbody->Nsystem << "    Nnode : " << Nnode << endl;
+
 
   // Loop over all systems to find nearest perturbers
-  // --------------------------------------------------------------------------
+  // ==========================================================================
   for (s=0; s<nbody->Nsystem; s++) {
     s1 = &(nbody->system[s]);
     s1->Npert = 0;
 
+    //continue;
+
     // Find node on NN-tree corresponding to system particle
     c = s1->inode;
+    ms = NNtree[c].m;
+    gpe_internal = s1->gpe_internal;
+    for (k=0; k<ndim; k++) rs[k] = s1->r[k];
+
 
     // If system contains all N-body particles, no perturbers exist
+    if (c == Nnode - 1) cout << "System contains all stars; no perturbers : " << c << endl;
     if (c == Nnode - 1) continue;
 
-    cout << "Finding perturbers for system " << s << endl;
+    cout << "Finding perturbers for system " << s << "   " << nbody->Nsystem << endl;
+    cout << "gpe_internal : " << s << "    " << gpe_internal << endl;
 
     // Add 'sister' cell to stack
     Nstack = 0;
-    cparent = NNtree[c].iparent;
-    cellstack[Nstack++] = NNtree[c].inearest;
-    
 
-    // Now walk through the stack finding any perturbers
+
     // ------------------------------------------------------------------------
     do {
-      Nstack--;
-      caux = cellstack[Nstack];
 
-      // If node is star/system, add to perturber list.
-      // Else, open cell and add child cells to stack.
-      if (NNtree[caux].Ncomp == 1 && caux != Nnode - 1) {
-        s1->perturber[s1->Npert++] =  NNtree[caux].childlist[0];
-        cout << "Added perturber for system " << s << "  c : " << caux << endl;
-      }
-      else {
-        cellstack[Nstack++] = NNtree[caux].ichild1;
-        cellstack[Nstack++] = NNtree[caux].ichild2;
-      }
+      // Check if nearest node contains potential perturbers
+      caux = NNtree[c].inearest;
+      c = NNtree[c].iparent;
+      cellstack[Nstack++] = caux;
 
-    } while (Nstack > 0);
-    // ------------------------------------------------------------------------
+      //cout << "Now looking at parent node " << caux << "   " << c << endl;
+
+
+      // Now walk through the stack finding any perturbers
+      // ----------------------------------------------------------------------
+      do {
+	Nstack--;
+	caux = cellstack[Nstack];
+
+	// Check if node may contain potential perturbers or not
+	for (k=0; k<ndim; k++) dr[k] = rs[k] - NNtree[caux].r[k];
+	drsqd = DotProduct(dr,dr,ndim);
+	gpeaux = ms*NNtree[caux].m/sqrt(drsqd);
+
+	//cout << "Checking perturber;  s : " << s << "    c : " << c << "    caux : " << caux << "    drsqd : " << drsqd << "    gpeaux : " << gpeaux << "      " << gpehard*gpe_internal << endl;
+
+	if (gpeaux > gpehard*gpe_internal) {
+	
+	  // If node is star/system, add to perturber list.
+	  // Else, open cell and add child cells to stack.
+	  if (NNtree[caux].Ncomp == 1 && caux != Nnode - 1) { 
+	    cout << "Adding perturber to list : " << caux << endl;
+	    if (s1->Npert < Npertmax) 
+	      s1->perturber[s1->Npert++] = NNtree[caux].childlist[0];
+	  }
+	  else {
+	    cellstack[Nstack++] = NNtree[caux].ichild1;
+	    cellstack[Nstack++] = NNtree[caux].ichild2;
+	  }
+	}
+
+	//cout << "Nstack : " << Nstack << "     Npert : " << s1->Npert << endl;
+	
+      } while (Nstack > 0 && s1->Npert < Npertmax);
+      // ----------------------------------------------------------------------
     
+    } while (s1->Npert > 0 && s1->Npert < Npertmax && c < Nnode - 1);
+    // ------------------------------------------------------------------------
+
+    cout << "Found " << s1->Npert << " perturbers for system " << s << endl;
 
   }
-  // --------------------------------------------------------------------------
+  // ==========================================================================
+
 
   delete[] cellstack;
   
-
   return;
 }
 

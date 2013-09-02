@@ -44,6 +44,7 @@ class NbodyParticle
  public:
 
   bool active;                      ///< Flag if active (i.e. recompute step)
+  int istar;                        ///< Internal i.d.
   int level;                        ///< Current timestep level    
   int nstep;                        ///< Integer step-size of particle
   int nlast;                        ///< Integer time at beginning of step
