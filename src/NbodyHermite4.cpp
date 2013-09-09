@@ -127,7 +127,8 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
  int Npert,                         ///< Number of perturbing stars
  NbodyParticle<ndim> **star,        ///< Array of stars/systems
  NbodyParticle<ndim> *perturber,    ///< Array of perturbing stars/systems
- DOUBLE dt)                         ///< Current sub-system timestep
+ DOUBLE *apert,                     ///< ..
+ DOUBLE *apertdot)                  ///< ..
 {
   int i,j,k;                        // Star and dimension counters
   DOUBLE dr[ndim];                  // Relative position vector
@@ -138,6 +139,8 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
   DOUBLE acom[ndim];                // ..
   DOUBLE adotcom[ndim];             // ..
   DOUBLE msystot = 0.0;             // ..
+  DOUBLE apertcom[ndim*Npertmax];   // ..
+  DOUBLE apertdotcom[ndim*Npertmax]; // ..
 
   debug2("[NbodyHermite4::CalculatePerturberForces]");
 
@@ -154,8 +157,8 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
     for (k=0; k<ndim; k++) acom[k] += perturber[j].m*dr[k]*pow(invdrmag,3);
     for (k=0; k<ndim; k++) adotcom[k] +=
       perturber[j].m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
-    for (k=0; k<ndim; k++) perturber[j].apert[k] = -msystot*dr[k]*pow(invdrmag,3);
-    for (k=0; k<ndim; k++) perturber[j].adotpert[k] = 
+    for (k=0; k<ndim; k++) apert[ndim*j + k] = -msystot*dr[k]*pow(invdrmag,3);
+    for (k=0; k<ndim; k++) adotpert[ndim*j + k] =
       -msystot*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
   }
 
@@ -182,10 +185,10 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
         pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
 
       // Next, add contribution of star to perturber
-      for (k=0; k<ndim; k++) perturber[j].apert[k] -= 
+      for (k=0; k<ndim; k++) apert[ndim*j + k] -=
         star[i]->m*dr[k]*pow(invdrmag,3);
-      for (k=0; k<ndim; k++) perturber[j].adotpert[k] -= 
-	star[i]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+      for (k=0; k<ndim; k++) adotpert[ndim*j + k] -=
+        star[i]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
 
     }
     // ------------------------------------------------------------------------

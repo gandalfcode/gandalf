@@ -68,8 +68,10 @@ class Nbody
   virtual void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **) = 0;
   virtual void CalculateDirectGravForces(int, NbodyParticle<ndim> **) = 0;
   virtual void CalculateDirectSPHForces(int, int, SphParticle<ndim> *,
-					NbodyParticle<ndim> **) = 0;
+                                        NbodyParticle<ndim> **) = 0;
   virtual void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
+                                        NbodyParticle<ndim> *, DOUBLE) = 0;
+  virtual void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **,
                                         NbodyParticle<ndim> *, DOUBLE) = 0;
   virtual void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE) = 0;
   virtual void EndTimestep(int, int, NbodyParticle<ndim> **) = 0;
@@ -88,6 +90,7 @@ class Nbody
   int Nsystem;                          ///< No. of system particles
   int Nsystemmax;                       ///< No. of system particles
   int reset_tree;                       ///< Reset all star properties for tree
+  int perturbers;                       ///< Use perturbers or not
 
   const int nbody_softening;            ///< Use softened-gravity for stars?
   const int sub_systems;                ///< Create sub-systems?
@@ -209,6 +212,7 @@ public:
   using Nbody<ndim>::AdvanceParticles;
   using Nbody<ndim>::EndTimestep;
   using Nbody<ndim>::CalculateDirectGravForces;
+  using Nbody<ndim>::perturbers
 
   NbodyHermite4TS(int, int, DOUBLE, string, int);
   ~NbodyHermite4TS();

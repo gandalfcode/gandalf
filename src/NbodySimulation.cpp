@@ -425,6 +425,7 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   nbody->Nstar          = intparams["Nstar"];
   nbodytree.gpehard     = floatparams["gpehard"];
   nbodytree.gpesoft     = floatparams["gpesoft"];
+  nbody->perturbers     = intparams["perturbers"];
 
   dt_snap               = floatparams["dt_snap"]/simunits.t.outscale;
   dt_python             = floatparams["dt_python"];

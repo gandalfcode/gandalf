@@ -1,0 +1,52 @@
+#-------------------------------------------------------------
+# triple.dat
+# ..
+#-------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = TRIPLE1
+Select SPH simulation                       : sim = nbody
+Select shocktube initial conditions         : ic = triple
+Dimensionality of cube                      : ndim = 3
+Use dimensionless units                     : dimensionless = 1
+
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 10.0
+Regular snapshot output frequency           : dt_snap = 1.0
+Screen output frequency (in no. of steps)   : noutputstep = 1024
+
+
+#-----------------------------
+# SPH softening kernel options
+#-----------------------------
+SPH smoothing kernel choice                 : kernel = m4
+Tabulate SPH kernel                         : tabulated_kernel = 1
+
+
+#-------------------------
+# N-body algorithm options
+#-------------------------
+Star particle integration option            : nbody = lfkdk
+Use softening?                              : nbody_softening = 0
+Identify and integrate sub-systems?         : sub_systems = 1
+Grav. energy fraction for sub-systems       : gpesoft = 0.1
+Grav. energy fraction for sub-systems       : gpehard = 0.01
+No. of P(EC)^n iteration steps              : Npec = 1
+Sub-system integration scheme               : sub_system_integration = lfkdk
+
+#-------------------------
+# Time integration options
+#-------------------------
+N-body timestep multiplier                  : nbody_mult = 0.1
+Sub-system timestep multiplier              : subsys_mult = 0.1
+No. of block timestep levels                : Nlevels = 1
+
+
+
+

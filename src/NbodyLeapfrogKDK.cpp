@@ -452,16 +452,17 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::IntegrateInternalMotion
 
 
   // Calculate forces, derivatives and other terms
-  CalculateDirectGravForces(Nchildren, children);
-  if (Npert > 0)
-    CalculatePerturberForces(Nchildren, Npert, children, perturber, dt);
+  //CalculateDirectGravForces(Nchildren, children);
+  //if (Npert > 0)
+  // CalculatePerturberForces(Nchildren, Npert, children, perturber, dt);
 
-  for (i=0; i<Nchildren; i++) {
-    for (k=0; k<ndim; k++) children[i]->a0[k] = children[i]->a[k];
-  }
+  //for (i=0; i<Nchildren; i++) {
+  //  for (k=0; k<ndim; k++) children[i]->a0[k] = children[i]->a[k];
+  //  for (k=0; k<ndim; k++) children[i]->adot0[k] = children[i]->adot[k];
+  //}
 
   // Calculate higher order derivatives
-  this->CalculateAllStartupQuantities(Nchildren, children);
+  //this->CalculateAllStartupQuantities(Nchildren, children);
 
 
   // Main time integration loop
