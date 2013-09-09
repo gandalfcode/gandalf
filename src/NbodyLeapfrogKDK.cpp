@@ -122,7 +122,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculatePerturberForces
 (int N,                             ///< Number of stars
  int Npert,                         ///< Number of perturbing stars
  NbodyParticle<ndim> **star,        ///< Array of stars/systems
- NbodyParticle<ndim> *perturber)    ///< Array of perturbing stars/systems
+ NbodyParticle<ndim> *perturber,    ///< Array of perturbing stars/systems
+ DOUBLE dt)                         ///< Current sub-system timestep
 {
   return;
 }
@@ -453,7 +454,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::IntegrateInternalMotion
   // Calculate forces, derivatives and other terms
   CalculateDirectGravForces(Nchildren, children);
   if (Npert > 0)
-    CalculatePerturberForces(Nchildren, Npert, children, perturber);
+    CalculatePerturberForces(Nchildren, Npert, children, perturber, dt);
 
   for (i=0; i<Nchildren; i++) {
     for (k=0; k<ndim; k++) children[i]->a0[k] = children[i]->a[k];
@@ -507,7 +508,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::IntegrateInternalMotion
 
     // Add perturbation terms
     if (Npert > 0)
-      CalculatePerturberForces(Nchildren, Npert, children, perturber);
+      CalculatePerturberForces(Nchildren, Npert, children, perturber, dt);
 
     // Apply correction terms
     CorrectionTerms(nlocal, Nchildren, children, dt);

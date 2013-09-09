@@ -126,7 +126,8 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
 (int N,                             ///< Number of stars
  int Npert,                         ///< Number of perturbing stars
  NbodyParticle<ndim> **star,        ///< Array of stars/systems
- NbodyParticle<ndim> *perturber)    ///< Array of perturbing stars/systems
+ NbodyParticle<ndim> *perturber,    ///< Array of perturbing stars/systems
+ DOUBLE dt)                         ///< Current sub-system timestep
 {
   int i,j,k;                        // Star and dimension counters
   DOUBLE dr[ndim];                  // Relative position vector
@@ -136,12 +137,14 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
   DOUBLE invdrmag;                  // 1 / drmag
   DOUBLE acom[ndim];                // ..
   DOUBLE adotcom[ndim];             // ..
+  DOUBLE msystot = 0.0;             // ..
 
   debug2("[NbodyHermite4::CalculatePerturberForces]");
 
   // First, compute perturber force and jerk on COM
   for (k=0; k<ndim; k++) acom[k] = 0.0;
   for (k=0; k<ndim; k++) adotcom[k] = 0.0;
+  for (i=0; i<N; i++) msystot += star[i]->m;
   for (j=0; j<Npert; j++) {
     for (k=0; k<ndim; k++) dr[k] = perturber[j].r[k];
     for (k=0; k<ndim; k++) dv[k] = perturber[j].v[k];
@@ -151,6 +154,9 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
     for (k=0; k<ndim; k++) acom[k] += perturber[j].m*dr[k]*pow(invdrmag,3);
     for (k=0; k<ndim; k++) adotcom[k] +=
       perturber[j].m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+    for (k=0; k<ndim; k++) perturber[j].apert[k] = -msystot*dr[k]*pow(invdrmag,3);
+    for (k=0; k<ndim; k++) perturber[j].adotpert[k] = 
+      -msystot*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
   }
 
   // Loop over all (active) stars
@@ -168,11 +174,18 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
       invdrmag = 1.0/sqrt(drsqd);
       drdt = DotProduct(dv,dr,ndim)*invdrmag;
 
+      // First, add contribution of perturber to star
       star[i]->gpe_pert += perturber[j].m*invdrmag;
       for (k=0; k<ndim; k++) star[i]->a[k] += 
         perturber[j].m*dr[k]*pow(invdrmag,3);
       for (k=0; k<ndim; k++) star[i]->adot[k] += perturber[j].m*
         pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+
+      // Next, add contribution of star to perturber
+      for (k=0; k<ndim; k++) perturber[j].apert[k] -= 
+        star[i]->m*dr[k]*pow(invdrmag,3);
+      for (k=0; k<ndim; k++) perturber[j].adotpert[k] -= 
+	star[i]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
 
     }
     // ------------------------------------------------------------------------

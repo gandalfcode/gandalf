@@ -183,6 +183,8 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
       for (k=0; k<ndim; k++) perturber[i].a0[k] = systemi->perturber[i]->a[k];
       for (k=0; k<ndim; k++)
         perturber[i].adot[k] = systemi->perturber[i]->adot[k];
+      for (k=0; k<ndim; k++) perturber[i].apert[k] = 0.0;
+      for (k=0; k<ndim; k++) perturber[i].adotpert[k] = 0.0;
     }
   }
 
@@ -194,7 +196,6 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
   for (k=0; k<ndim; k++) adotcom[k] = 0.0;
 
   // Make local copies of children and calculate COM properties
-  // --------------------------------------------------------------------------
   for (i=0; i<Nchildren; i++) {
     for (k=0; k<ndim; k++) rcom[k] += children[i]->m*children[i]->r[k];
     for (k=0; k<ndim; k++) vcom[k] += children[i]->m*children[i]->v[k];
@@ -244,7 +245,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
   // Calculate forces, derivatives and other terms
   CalculateDirectGravForces(Nchildren, children);
   if (Npert > 0)
-    CalculatePerturberForces(Nchildren, Npert, children, perturber);
+    CalculatePerturberForces(Nchildren, Npert, children, perturber, 0.0);
 
   for (i=0; i<Nchildren; i++) {
     for (k=0; k<ndim; k++) children[i]->a0[k] = children[i]->a[k];
@@ -307,7 +308,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
 
       // Add perturbation terms
       if (Npert > 0)
-        CalculatePerturberForces(Nchildren, Npert, children, perturber);
+        CalculatePerturberForces(Nchildren, Npert, children, perturber, dt);
       
       // Apply correction terms
       CorrectionTerms(nlocal, Nchildren, children, dt);
@@ -352,7 +353,17 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
     children[i]->gpe_pert *= children[i]->m;
   }
 
-  if (Npert > 0) delete[] perturber;
+
+  // Finally, add perturbations on perturber itself to main arrays
+  if (Npert > 0) {
+    for (i=0; i<Npert; i++) {
+      for (k=0; k<ndim; k++)
+	systemi->perturber[i]->apert[k] = perturber[i].apert[k];
+      for (k=0; k<ndim; k++)
+	systemi->perturber[i]->adotpert[k] = perturber[i].adotpert[k];
+    }
+    delete[] perturber;
+  }
 
   return;
 }

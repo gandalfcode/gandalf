@@ -471,6 +471,8 @@ void NbodySimulation<ndim>::PostInitialConditionsSetup(void)
       for (k=0; k<ndim; k++) nbody->stardata[i].adot[k] = 0.0;
       for (k=0; k<ndim; k++) nbody->stardata[i].a2dot[k] = 0.0;
       for (k=0; k<ndim; k++) nbody->stardata[i].a3dot[k] = 0.0;
+      for (k=0; k<ndim; k++) nbody->stardata[i].apert[k] = 0.0;
+      for (k=0; k<ndim; k++) nbody->stardata[i].adotpert[k] = 0.0;
       nbody->stardata[i].gpot = 0.0;
       nbody->stardata[i].active = true;
       nbody->stardata[i].level = level_step;
@@ -603,7 +605,6 @@ void NbodySimulation<ndim>::MainLoop(void)
                                          (nbody->nbodydata[i]), n, timestep, timestep);
     }
   }
-
 
   // Set all end-of-step variables
   nbody->EndTimestep(n,nbody->Nnbody,nbody->nbodydata);

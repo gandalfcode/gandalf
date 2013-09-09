@@ -1420,7 +1420,7 @@ void Simulation<ndim>::TripleStar(void)
 {
   int k;                           // Dimension counter
   FLOAT sma1 = 1.0;                // Outer semi-major axis
-  FLOAT sma2 = 0.1;               // Inner semi-major axis
+  FLOAT sma2 = 0.01;               // Inner semi-major axis
   FLOAT eccent = 0.0;              // Orbital eccentricity (of all orbits)
   FLOAT m1 = 0.5;                  // Mass of binary 1
   FLOAT m2 = 0.5;                  // Mass of binary 2
@@ -1472,7 +1472,7 @@ void Simulation<ndim>::QuadrupleStar(void)
 {
   int k;                           // Dimension counter
   FLOAT sma1 = 1.0;                // Outer semi-major axis
-  FLOAT sma2 = 0.1;               // Inner semi-major axis
+  FLOAT sma2 = 0.01;               // Inner semi-major axis
   FLOAT eccent = 0.0;              // Orbital eccentricity (of all orbits)
   FLOAT m1 = 0.5;                  // Mass of binary 1
   FLOAT m2 = 0.5;                  // Mass of binary 2

@@ -59,6 +59,8 @@ class NbodyParticle
   DOUBLE v0[ndim];                  ///< Velocity at beginning of step
   DOUBLE a0[ndim];                  ///< Acceleration at beginning of step
   DOUBLE adot0[ndim];               ///< Jerk at beginning of step
+  DOUBLE apert[ndim];               ///< Acceleration due to perturbers
+  DOUBLE adotpert[ndim];            ///< Jerk due to perturbers
   DOUBLE m;                         ///< Star mass
   DOUBLE h;                         ///< Smoothing length
   DOUBLE invh;                      ///< 1 / h
@@ -92,6 +94,8 @@ class NbodyParticle
     for (int k=0; k<ndim; k++) v0[k] = 0.0;
     for (int k=0; k<ndim; k++) a0[k] = 0.0;
     for (int k=0; k<ndim; k++) adot0[k] = 0.0;
+    for (int k=0; k<ndim; k++) apert[k] = 0.0;
+    for (int k=0; k<ndim; k++) adotpert[k] = 0.0;
     m = 0;
     h = 0;
     invh = 0.0;

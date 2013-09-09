@@ -70,7 +70,7 @@ class Nbody
   virtual void CalculateDirectSPHForces(int, int, SphParticle<ndim> *,
 					NbodyParticle<ndim> **) = 0;
   virtual void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
-                                        NbodyParticle<ndim> *) = 0;
+                                        NbodyParticle<ndim> *, DOUBLE) = 0;
   virtual void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE) = 0;
   virtual void EndTimestep(int, int, NbodyParticle<ndim> **) = 0;
   virtual DOUBLE Timestep(NbodyParticle<ndim> *) = 0;
@@ -133,7 +133,7 @@ public:
   void CalculateDirectSPHForces(int, int, SphParticle<ndim> *,
 				NbodyParticle<ndim> **);
   void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
-				NbodyParticle<ndim> *);
+				NbodyParticle<ndim> *, DOUBLE);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
   void EndTimestep(int, int, NbodyParticle<ndim> **);
   void IntegrateInternalMotion(SystemParticle<ndim>* system,
@@ -173,7 +173,7 @@ public:
   void CalculateDirectSPHForces(int, int, SphParticle<ndim> *,
 				NbodyParticle<ndim> **);
   void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
-				NbodyParticle<ndim> *);
+				NbodyParticle<ndim> *, DOUBLE);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE);
   void EndTimestep(int, int, NbodyParticle<ndim> **);
   void IntegrateInternalMotion(SystemParticle<ndim>* system,
