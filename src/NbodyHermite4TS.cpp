@@ -150,34 +150,46 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
   int Nchildren;                    // No. of child systems
   int Npert;                        // No. of perturbing systems
   int Nstar;                        // Total no. of stars
-  int nlocal=0;                     // ..
-  int nsteps_local=0;               // ..
+  int nlocal=0;                     // Local block step integer time
+  int nsteps_local=0;               // Local no. of steps
   DOUBLE dt;                        // Local timestep
   DOUBLE tlocal=0.0;                // Local time counter
   DOUBLE tpert;                     // ..
-  DOUBLE rcom[ndim];                // Position of COM
-  DOUBLE vcom[ndim];                // Velocity of COM
-  DOUBLE acom[ndim];                // Acceleration of COM
-  DOUBLE adotcom[ndim];             // Jerk of COM
-  DOUBLE aext[ndim];                // ..
-  DOUBLE adotext[ndim];             // ..
+  DOUBLE aext[ndim];                // Acceleration due to external stars
+  DOUBLE adotext[ndim];             // Jerk due to external stars
   DOUBLE *apert;                    // ..
   DOUBLE *adotpert;                 // ..
   NbodyParticle<ndim>** children;   // Child systems
   NbodyParticle<ndim>* perturber;   // Local array of perturber properties
 
+  debug2("[NbodyHermite4TS::IntegrateInternalMotion]");
+
   // Allocate memory for both stars and perturbers
   Nchildren = systemi->Nchildren;
   Npert = systemi->Npert;
+  //Npert = 0;
   Nstar = Nchildren + Npert;
   children = systemi->children;
 
-  //Npert = 0;
 
+  // Calculate total external acceleration and jerk terms
+  for (k=0; k<ndim; k++) aext[k] = systemi->a0[k];
+  for (k=0; k<ndim; k++) adotext[k] = systemi->adot0[k];
+
+
+  // If using perturbers, record local copies and remove contribution to 
+  // external acceleration and jerk terms
+  // --------------------------------------------------------------------------
   if (perturbers == 1 && Npert > 0) {
     perturber = new NbodyParticle<ndim>[Npert];
     apert = new DOUBLE[ndim*Npert];
     adotpert = new DOUBLE[ndim*Npert];
+
+    // Zero all COM summation variables
+    //for (k=0; k<ndim; k++) apertcom[k] = 0.0;
+    //for (k=0; k<ndim; k++) adotpertcom[k] = 0.0;
+    
+    // Create local copies of perturbers
     for (i=0; i<Npert; i++) {
       perturber[i].m = systemi->perturber[i]->m;
       for (k=0; k<ndim; k++) perturber[i].r[k] = systemi->perturber[i]->r[k];
@@ -196,38 +208,11 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
   }
 
 
-  // Zero all COM summation variables
-  for (k=0; k<ndim; k++) rcom[k] = 0.0;
-  for (k=0; k<ndim; k++) vcom[k] = 0.0;
-  for (k=0; k<ndim; k++) acom[k] = 0.0;
-  for (k=0; k<ndim; k++) adotcom[k] = 0.0;
-
-  // Make local copies of children and calculate COM properties
-  for (i=0; i<Nchildren; i++) {
-    for (k=0; k<ndim; k++) rcom[k] += children[i]->m*children[i]->r[k];
-    for (k=0; k<ndim; k++) vcom[k] += children[i]->m*children[i]->v[k];
-    for (k=0; k<ndim; k++) acom[k] += children[i]->m*children[i]->a[k];
-    for (k=0; k<ndim; k++) adotcom[k] += children[i]->m*children[i]->adot[k];
-  }
-
-  // Normalise COM values
-  for (k=0; k<ndim; k++) rcom[k] /= systemi->m;
-  for (k=0; k<ndim; k++) vcom[k] /= systemi->m;
-  for (k=0; k<ndim; k++) acom[k] /= systemi->m;
-  for (k=0; k<ndim; k++) adotcom[k] /= systemi->m;
-
-
-  // Now convert to COM frame
+  // ..
   // --------------------------------------------------------------------------
   for (i=0; i<Nchildren; i++) {
-    for (k=0; k<ndim; k++) children[i]->r[k] -= rcom[k];
-    for (k=0; k<ndim; k++) children[i]->r0[k] children[i]->r[k] //-= rcom[k];
-    for (k=0; k<ndim; k++) children[i]->v[k] -= vcom[k];
-    for (k=0; k<ndim; k++) children[i]->v0[k] children[i]->v[k]; //-= vcom[k];
-    for (k=0; k<ndim; k++) children[i]->a[k] = 0.0; //-= acom[k];
-    for (k=0; k<ndim; k++) children[i]->a0[k] = 0.0; //-= acom[k];
-    for (k=0; k<ndim; k++) children[i]->adot[k] = 0.0; //-= adotcom[k];
-    for (k=0; k<ndim; k++) children[i]->adot0[k] = 0.0; //-= adotcom[k];
+    for (k=0; k<ndim; k++) children[i]->a[k] = 0.0;
+    for (k=0; k<ndim; k++) children[i]->adot[k] = 0.0;
     for (k=0; k<ndim; k++) children[i]->apert[k] = 0.0;
     for (k=0; k<ndim; k++) children[i]->adotpert[k] = 0.0;
     children[i]->gpot = 0.0;
@@ -238,24 +223,11 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
     children[i]->level = 0;
   }
 
-  // Convert perturbers to COM frame
-  if (perturbers == 1 && Npert > 0) {
-    for (i=0; i<Npert; i++) {
-      for (k=0; k<ndim; k++) perturber[i].r[k] -= rcom[k];
-      for (k=0; k<ndim; k++) perturber[i].v[k] -= vcom[k];
-      for (k=0; k<ndim; k++) perturber[i].a[k] -= acom[k];
-      for (k=0; k<ndim; k++) perturber[i].adot[k] -= adotcom[k];
-      for (k=0; k<ndim; k++) perturber[i].r0[k] -= rcom[k]; //= perturber[i].r[k];
-      for (k=0; k<ndim; k++) perturber[i].v0[k] -= vcom[k]; //= perturber[i].v[k];
-      for (k=0; k<ndim; k++) perturber[i].a0[k] -= acom[k]; //= perturber[i].a[k];
-      for (k=0; k<ndim; k++) perturber[i].adot0[k] -= adotcom[k]; //= perturber[i].adot[k];
-    }
-  }
-
   // Calculate forces, derivatives and other terms
   CalculateDirectGravForces(Nchildren, children);
   if (perturbers == 1 && Npert > 0)
-    CalculatePerturberForces(Nchildren, Npert, children, perturber, apert, adotpert);
+    CalculatePerturberForces(Nchildren, Npert, children, 
+                             perturber, apert, adotpert);
 
   for (i=0; i<Nchildren; i++) {
     for (k=0; k<ndim; k++) children[i]->a0[k] = children[i]->a[k];
@@ -282,12 +254,10 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
     nlocal += 1;
     subflag = false;
 
-    //cout << "Timestep : " << dt << "    tlocal : " << tlocal << endl;
-
     // Advance position and velocities
     AdvanceParticles(nlocal, Nchildren, children, dt);
 
-    // Advance positions and velocities of perturbers.
+    // Advance positions and velocities of perturbers
     if (perturbers == 1 && Npert > 0) {
       for (i=0; i<Npert; i++) {
         tpert = tlocal_end - tlocal;
@@ -300,6 +270,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
           perturber[i].adot0[k]*tpert;
       }
     }
+
 
     // Time-symmetric iteration loop
     // ------------------------------------------------------------------------
@@ -319,8 +290,8 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
 
       // Add perturbation terms
       if (perturbers == 1 && Npert > 0)
-        CalculatePerturberForces(Nchildren, Npert, children, perturber,
-                                 apert, adotpert);
+        CalculatePerturberForces(Nchildren, Npert, children, 
+                                 perturber, apert, adotpert);
       
       // Apply correction terms
       CorrectionTerms(nlocal, Nchildren, children, dt);
@@ -345,11 +316,12 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
     }
 
     // Calculate correction terms on perturbing stars due to sub-systems
-    if (perturbers == 1 && Npert > 0)
-      PerturberCorrectionTerms(nlocal, Nchildren, children, dt);
+    //if (perturbers == 1 && Npert > 0)
+    //PerturberCorrectionTerms(nlocal, Nchildren, children, dt);
 
     // Set end-of-step variables
     EndTimestep(nlocal, Nchildren, children);
+
 
   } while (tlocal < tlocal_end);
   // ==========================================================================
@@ -358,15 +330,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
   // Copy children back to main coordinate system
   // --------------------------------------------------------------------------
   for (i=0; i<Nchildren; i++) {
-    for (k=0; k<ndim; k++) children[i]->r[k] += systemi->r[k];
-    for (k=0; k<ndim; k++) children[i]->r0[k] += systemi->r[k];
-    for (k=0; k<ndim; k++) children[i]->v[k] += systemi->v[k];
-    for (k=0; k<ndim; k++) children[i]->v0[k] += systemi->v[k];
-    for (k=0; k<ndim; k++) children[i]->a[k] += systemi->a[k];
-    for (k=0; k<ndim; k++) children[i]->a0[k] += systemi->a[k];
-    for (k=0; k<ndim; k++) children[i]->adot[k] += systemi->adot[k];
-    for (k=0; k<ndim; k++) children[i]->adot0[k] += systemi->adot[k];
-    children[i]->gpot = children[i]->gpot + systemi->gpot;
+    //children[i]->gpot = children[i]->gpot + systemi->gpot;
     children[i]->gpe *= children[i]->m;
     children[i]->gpe_internal *= children[i]->gpe;
     children[i]->gpe_pert *= children[i]->m;
@@ -377,9 +341,9 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
   if (perturbers == 1 && Npert > 0) {
     for (i=0; i<Npert; i++) {
       for (k=0; k<ndim; k++)
-        systemi->perturber[i]->apert[k] = perturber[i].apert[k];
+        systemi->perturber[i]->apert[k] += perturber[i].apert[k];
       for (k=0; k<ndim; k++)
-        systemi->perturber[i]->adotpert[k] = perturber[i].adotpert[k];
+        systemi->perturber[i]->adotpert[k] += perturber[i].adotpert[k];
     }
     delete[] adotpert;
     delete[] apert;

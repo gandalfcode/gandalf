@@ -123,7 +123,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculatePerturberForces
  int Npert,                         ///< Number of perturbing stars
  NbodyParticle<ndim> **star,        ///< Array of stars/systems
  NbodyParticle<ndim> *perturber,    ///< Array of perturbing stars/systems
- DOUBLE dt)                         ///< Current sub-system timestep
+ DOUBLE *apert,                     ///< Current sub-system timestep
+ DOUBLE *adotpert)                  ///< ..
 {
   return;
 }
@@ -508,8 +509,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::IntegrateInternalMotion
     CalculateDirectGravForces(Nchildren, children);
 
     // Add perturbation terms
-    if (Npert > 0)
-      CalculatePerturberForces(Nchildren, Npert, children, perturber, dt);
+    //if (Npert > 0)
+    //CalculatePerturberForces(Nchildren, Npert, children, perturber, dt);
 
     // Apply correction terms
     CorrectionTerms(nlocal, Nchildren, children, dt);

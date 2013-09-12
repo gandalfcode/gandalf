@@ -128,7 +128,7 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
  NbodyParticle<ndim> **star,        ///< Array of stars/systems
  NbodyParticle<ndim> *perturber,    ///< Array of perturbing stars/systems
  DOUBLE *apert,                     ///< ..
- DOUBLE *apertdot)                  ///< ..
+ DOUBLE *adotpert)                  ///< ..
 {
   int i,j,k;                        // Star and dimension counters
   DOUBLE dr[ndim];                  // Relative position vector
@@ -136,27 +136,31 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
   DOUBLE drsqd;                     // Distance squared
   DOUBLE dv[ndim];                  // Relative velocity vector
   DOUBLE invdrmag;                  // 1 / drmag
-  DOUBLE acom[ndim];                // ..
-  DOUBLE adotcom[ndim];             // ..
+  DOUBLE rcom[ndim];                // ..
+  DOUBLE vcom[ndim];                // ..
   DOUBLE msystot = 0.0;             // ..
   DOUBLE apertcom[ndim*Npertmax];   // ..
   DOUBLE apertdotcom[ndim*Npertmax]; // ..
 
   debug2("[NbodyHermite4::CalculatePerturberForces]");
 
-  // First, compute perturber force and jerk on COM
-  for (k=0; k<ndim; k++) acom[k] = 0.0;
-  for (k=0; k<ndim; k++) adotcom[k] = 0.0;
-  for (i=0; i<N; i++) msystot += star[i]->m;
+  // First, compute position and velocity of system COM
+  for (k=0; k<ndim; k++) rcom[k] = 0.0;
+  for (k=0; k<ndim; k++) vcom[k] = 0.0;
+  for (i=0; i<N; i++) {
+    msystot += star[i]->m;
+    for (k=0; k<ndim; k++) rcom[k] += star[i]->m*star[i]->r[k];
+    for (k=0; k<ndim; k++) vcom[k] += star[i]->m*star[i]->v[k];
+  }
+  for (k=0; k<ndim; k++) rcom[k] /= msystot;
+  for (k=0; k<ndim; k++) vcom[k] /= msystot;
+
   for (j=0; j<Npert; j++) {
-    for (k=0; k<ndim; k++) dr[k] = perturber[j].r[k];
-    for (k=0; k<ndim; k++) dv[k] = perturber[j].v[k];
+    for (k=0; k<ndim; k++) dr[k] = rcom[k] - perturber[j].r[k];
+    for (k=0; k<ndim; k++) dv[k] = vcom[k] - perturber[j].v[k];
     drsqd = DotProduct(dr,dr,ndim);
     invdrmag = 1.0/sqrt(drsqd);
     drdt = DotProduct(dv,dr,ndim)*invdrmag; 
-    for (k=0; k<ndim; k++) acom[k] += perturber[j].m*dr[k]*pow(invdrmag,3);
-    for (k=0; k<ndim; k++) adotcom[k] +=
-      perturber[j].m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
     for (k=0; k<ndim; k++) apert[ndim*j + k] = -msystot*dr[k]*pow(invdrmag,3);
     for (k=0; k<ndim; k++) adotpert[ndim*j + k] =
       -msystot*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
@@ -192,10 +196,6 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
 
     }
     // ------------------------------------------------------------------------
-
-
-    for (k=0; k<ndim; k++) star[i]->a[k] -= acom[k];
-    for (k=0; k<ndim; k++) star[i]->adot[k] -= adotcom[k];
 
   }
   // --------------------------------------------------------------------------

@@ -70,9 +70,10 @@ class Nbody
   virtual void CalculateDirectSPHForces(int, int, SphParticle<ndim> *,
                                         NbodyParticle<ndim> **) = 0;
   virtual void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
-                                        NbodyParticle<ndim> *, DOUBLE) = 0;
-  virtual void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **,
-                                        NbodyParticle<ndim> *, DOUBLE) = 0;
+                                        NbodyParticle<ndim> *,
+                                        DOUBLE *, DOUBLE *) = 0;
+  //virtual void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **,
+  //                                    NbodyParticle<ndim> *, DOUBLE) = 0;
   virtual void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE) = 0;
   virtual void EndTimestep(int, int, NbodyParticle<ndim> **) = 0;
   virtual DOUBLE Timestep(NbodyParticle<ndim> *) = 0;
@@ -136,7 +137,7 @@ public:
   void CalculateDirectSPHForces(int, int, SphParticle<ndim> *,
 				NbodyParticle<ndim> **);
   void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
-				NbodyParticle<ndim> *, DOUBLE);
+				NbodyParticle<ndim> *, DOUBLE *, DOUBLE *);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
   void EndTimestep(int, int, NbodyParticle<ndim> **);
   void IntegrateInternalMotion(SystemParticle<ndim>* system,
@@ -176,7 +177,7 @@ public:
   void CalculateDirectSPHForces(int, int, SphParticle<ndim> *,
 				NbodyParticle<ndim> **);
   void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
-				NbodyParticle<ndim> *, DOUBLE);
+				NbodyParticle<ndim> *, DOUBLE *, DOUBLE *);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE);
   void EndTimestep(int, int, NbodyParticle<ndim> **);
   void IntegrateInternalMotion(SystemParticle<ndim>* system,
@@ -212,7 +213,7 @@ public:
   using Nbody<ndim>::AdvanceParticles;
   using Nbody<ndim>::EndTimestep;
   using Nbody<ndim>::CalculateDirectGravForces;
-  using Nbody<ndim>::perturbers
+  using Nbody<ndim>::perturbers;
 
   NbodyHermite4TS(int, int, DOUBLE, string, int);
   ~NbodyHermite4TS();
