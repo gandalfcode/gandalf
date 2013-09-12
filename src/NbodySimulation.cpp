@@ -607,6 +607,12 @@ void NbodySimulation<ndim>::MainLoop(void)
     }
   }
 
+  // Calculate correction terms on perturbing stars due to sub-systems
+  if (nbody->perturbers == 1) {
+    nbody->PerturberCorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
+    nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
+  }
+
   // Set all end-of-step variables
   nbody->EndTimestep(n,nbody->Nnbody,nbody->nbodydata);
 

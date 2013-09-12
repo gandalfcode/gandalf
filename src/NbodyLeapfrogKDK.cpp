@@ -289,6 +289,47 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectionTerms
 
 
 //=============================================================================
+//  NbodyLeapfrogKDK::PerturberCorrectionTerms
+/// ..
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void NbodyLeapfrogKDK<ndim, kernelclass>::PerturberCorrectionTerms
+(int n,                             ///< Integer time
+ int N,                             ///< No. of stars/systems
+ NbodyParticle<ndim> **star,        ///< Main star/system array
+ DOUBLE timestep)                   ///< Smallest timestep value
+{
+  int dn;                           // Integer time since beginning of step
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+  int nstep;                        // Particle (integer) step size
+  DOUBLE dt;                        // Physical time step size
+  DOUBLE invdt;                     // 1 / dt
+
+  debug2("[NbodyHermite4::PerturberCorrectionTerms]")
+
+  // Loop over all system particles
+  // --------------------------------------------------------------------------
+   for (i=0; i<N; i++) {
+     dn = n - star[i]->nlast;
+     nstep = star[i]->nstep;
+
+     if (dn == nstep) {
+       dt = timestep*(DOUBLE) nstep;
+       invdt = 1.0 / dt;
+
+       for (k=0; k<ndim; k++) star[i]->a[k] += star[i]->apert[k]*invdt;
+     }
+
+   }
+   // --------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=============================================================================
 //  NbodyLeapfrogKDK::EndTimestep
 /// Record all important star particle quantities at the end of the step 
 /// for the start of the new timestep.
@@ -552,6 +593,24 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::IntegrateInternalMotion
 
   if (Npert > 0) delete[] perturber;
 
+  return;
+}
+
+
+
+//=============================================================================
+//  NbodyLeapfrogKDK::CorrectPerturbedChildStars
+/// ..
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectPerturbedChildStars
+(SystemParticle<ndim>* systemi,     ///< [inout] System that we wish to
+                                    ///<         integrate the internal motion
+ int n,                             ///< [in]    ...
+ DOUBLE timestep,                   ///< [in]    ...
+ DOUBLE tlocal_end)                 ///< [in]    Time to integrate the
+                                    ///<         internal motion for.
+{
   return;
 }
 

@@ -72,9 +72,10 @@ class Nbody
   virtual void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
                                         NbodyParticle<ndim> *,
                                         DOUBLE *, DOUBLE *) = 0;
-  //virtual void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **,
-  //                                    NbodyParticle<ndim> *, DOUBLE) = 0;
+  virtual void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE) = 0;
   virtual void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE) = 0;
+  virtual void CorrectPerturbedChildStars(SystemParticle<ndim>* system,
+                                          int, DOUBLE, DOUBLE tend) = 0;
   virtual void EndTimestep(int, int, NbodyParticle<ndim> **) = 0;
   virtual DOUBLE Timestep(NbodyParticle<ndim> *) = 0;
   virtual void IntegrateInternalMotion(SystemParticle<ndim>* system,
@@ -139,9 +140,12 @@ public:
   void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
 				NbodyParticle<ndim> *, DOUBLE *, DOUBLE *);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
+  void CorrectPerturbedChildStars(SystemParticle<ndim>* system,
+                                  int, DOUBLE, DOUBLE tend);
   void EndTimestep(int, int, NbodyParticle<ndim> **);
   void IntegrateInternalMotion(SystemParticle<ndim>* system,
                                int, DOUBLE, DOUBLE tend);
+  void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;           ///< Local copy of vdim
@@ -182,6 +186,9 @@ public:
   void EndTimestep(int, int, NbodyParticle<ndim> **);
   void IntegrateInternalMotion(SystemParticle<ndim>* system,
                                int, DOUBLE, DOUBLE tend);
+  void CorrectPerturbedChildStars(SystemParticle<ndim>* system,
+                                  int, DOUBLE, DOUBLE tend);
+  void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;           ///< Local copy of vdim

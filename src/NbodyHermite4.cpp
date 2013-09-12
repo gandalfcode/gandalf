@@ -207,6 +207,10 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
 
 
 
+
+
+
+
 //=============================================================================
 //  NbodyHermite4::CalculateDirectSPHForces
 /// Calculate all ..
@@ -445,11 +449,11 @@ void NbodyHermite4<ndim, kernelclass>::CorrectionTerms
     
       for (k=0; k<ndim; k++) {
         star[i]->a2dot[k] = 
-	  (-6.0*(star[i]->a0[k] - star[i]->a[k]) - 
-	   dt*(4.0*star[i]->adot0[k] + 2.0*star[i]->adot[k]))*invdt*invdt;
+          (-6.0*(star[i]->a0[k] - star[i]->a[k]) -
+           dt*(4.0*star[i]->adot0[k] + 2.0*star[i]->adot[k]))*invdt*invdt;
         star[i]->a3dot[k] = 
-	  (12.0*(star[i]->a0[k] - star[i]->a[k]) + 6.0*dt*
-	   (star[i]->adot0[k] + star[i]->adot[k]))*invdt*invdt*invdt;
+          (12.0*(star[i]->a0[k] - star[i]->a[k]) + 6.0*dt*
+           (star[i]->adot0[k] + star[i]->adot[k]))*invdt*invdt*invdt;
       }
 
       for (k=0; k<ndim; k++) {
@@ -462,6 +466,48 @@ void NbodyHermite4<ndim, kernelclass>::CorrectionTerms
     
   }
   // --------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=============================================================================
+//  NbodyHermite4::PerturberCorrectionTerms
+/// ..
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void NbodyHermite4<ndim, kernelclass>::PerturberCorrectionTerms
+(int n,                             ///< Integer time
+ int N,                             ///< No. of stars/systems
+ NbodyParticle<ndim> **star,        ///< Main star/system array
+ DOUBLE timestep)                   ///< Smallest timestep value
+{
+  int dn;                           // Integer time since beginning of step
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+  int nstep;                        // Particle (integer) step size
+  DOUBLE dt;                        // Physical time step size
+  DOUBLE invdt;                     // 1 / dt
+
+  debug2("[NbodyHermite4::PerturberCorrectionTerms]")
+
+  // Loop over all system particles
+  // --------------------------------------------------------------------------
+   for (i=0; i<N; i++) {
+     dn = n - star[i]->nlast;
+     nstep = star[i]->nstep;
+
+     if (dn == nstep) {
+       dt = timestep*(DOUBLE) nstep;
+       invdt = 1.0 / dt;
+
+       for (k=0; k<ndim; k++) star[i]->a[k] += star[i]->apert[k]*invdt;
+       for (k=0; k<ndim; k++) star[i]->adot[k] += star[i]->adotpert[k]*invdt;
+     }
+
+   }
+   // --------------------------------------------------------------------------
 
   return;
 }
@@ -737,6 +783,24 @@ void NbodyHermite4<ndim, kernelclass>::IntegrateInternalMotion
 
   //cin >> i;
 
+  return;
+}
+
+
+
+//=============================================================================
+//  NbodyHermite4::CorrectPerturbedChildStars
+/// ..
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void NbodyHermite4<ndim, kernelclass>::CorrectPerturbedChildStars
+(SystemParticle<ndim>* systemi,     ///< [inout] System that we wish to
+                                    ///<         integrate the internal motion
+ int n,                             ///< [in]    ...
+ DOUBLE timestep,                   ///< [in]    ...
+ DOUBLE tlocal_end)                 ///< [in]    Time to integrate the
+                                    ///<         internal motion for.
+{
   return;
 }
 
