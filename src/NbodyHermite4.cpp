@@ -181,12 +181,16 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
       invdrmag = 1.0/sqrt(drsqd);
       drdt = DotProduct(dv,dr,ndim)*invdrmag;
 
+      //cout << "PERT1 : " << i << "   " << j << "    " << drsqd << "    " << "    " << star[0]->a[0] + star[1]->a[0] << endl;
+
       // First, add contribution of perturber to star
       star[i]->gpe_pert += perturber[j].m*invdrmag;
       for (k=0; k<ndim; k++) star[i]->a[k] += 
         perturber[j].m*dr[k]*pow(invdrmag,3);
       for (k=0; k<ndim; k++) star[i]->adot[k] += perturber[j].m*
         pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+
+      //cout << "PERT2 : " << i << "   " << j << "    " << drsqd << "    " << "    " << star[0]->a[0] + star[1]->a[0] << endl;
 
       // Next, add contribution of star to perturber
       for (k=0; k<ndim; k++) apert[ndim*j + k] -=
@@ -204,10 +208,6 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
 
   return;
 }
-
-
-
-
 
 
 
@@ -490,24 +490,24 @@ void NbodyHermite4<ndim, kernelclass>::PerturberCorrectionTerms
   DOUBLE dt;                        // Physical time step size
   DOUBLE invdt;                     // 1 / dt
 
-  debug2("[NbodyHermite4::PerturberCorrectionTerms]")
+  debug2("[NbodyHermite4::PerturberCorrectionTerms]");
 
   // Loop over all system particles
   // --------------------------------------------------------------------------
-   for (i=0; i<N; i++) {
-     dn = n - star[i]->nlast;
-     nstep = star[i]->nstep;
-
-     if (dn == nstep) {
-       dt = timestep*(DOUBLE) nstep;
-       invdt = 1.0 / dt;
-
-       for (k=0; k<ndim; k++) star[i]->a[k] += star[i]->apert[k]*invdt;
-       for (k=0; k<ndim; k++) star[i]->adot[k] += star[i]->adotpert[k]*invdt;
-     }
-
-   }
-   // --------------------------------------------------------------------------
+  for (i=0; i<N; i++) {
+    dn = n - star[i]->nlast;
+    nstep = star[i]->nstep;
+    
+    if (dn == nstep) {
+      dt = timestep*(DOUBLE) nstep;
+      invdt = 1.0 / dt;
+      
+      for (k=0; k<ndim; k++) star[i]->a[k] += star[i]->apert[k]*invdt;
+      for (k=0; k<ndim; k++) star[i]->adot[k] += star[i]->adotpert[k]*invdt;
+    }
+    
+  }
+  // --------------------------------------------------------------------------
 
   return;
 }
@@ -544,6 +544,8 @@ void NbodyHermite4<ndim, kernelclass>::EndTimestep
       for (k=0; k<ndim; k++) star[i]->v0[k] = star[i]->v[k];
       for (k=0; k<ndim; k++) star[i]->a0[k] = star[i]->a[k];
       for (k=0; k<ndim; k++) star[i]->adot0[k] = star[i]->adot[k];
+      for (k=0; k<ndim; k++) star[i]->apert[k] = 0.0;
+      for (k=0; k<ndim; k++) star[i]->adotpert[k] = 0.0;
       star[i]->active = false;
       star[i]->nlast = n;
     }
@@ -789,11 +791,11 @@ void NbodyHermite4<ndim, kernelclass>::IntegrateInternalMotion
 
 
 //=============================================================================
-//  NbodyHermite4::CorrectPerturbedChildStars
+//  NbodyHermite4::UpdateChildStars
 /// ..
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
-void NbodyHermite4<ndim, kernelclass>::CorrectPerturbedChildStars
+void NbodyHermite4<ndim, kernelclass>::UpdateChildStars
 (SystemParticle<ndim>* systemi,     ///< [inout] System that we wish to
                                     ///<         integrate the internal motion
  int n,                             ///< [in]    ...
@@ -801,6 +803,73 @@ void NbodyHermite4<ndim, kernelclass>::CorrectPerturbedChildStars
  DOUBLE tlocal_end)                 ///< [in]    Time to integrate the
                                     ///<         internal motion for.
 {
+  int i;                            // ..
+  int k;                            // ..
+  int Nchildren;                    // ..
+  DOUBLE msystot=0.0;               // ..
+  DOUBLE rcom[ndim];                // ..
+  DOUBLE vcom[ndim];                // ..
+  DOUBLE acom[ndim];                // ..
+  DOUBLE adotcom[ndim];             // ..
+  NbodyParticle<ndim>** children;   // Child systems
+
+  // Only correct positions at end of step
+  if (n - systemi->nlast != systemi->nstep) return;
+
+  debug2("[NbodyHermite4::CorrectPerturbedChildStars]");
+
+  // Allocate memory for both stars and perturbers
+  Nchildren = systemi->Nchildren;
+  children = systemi->children;
+
+  // Set time variables of child stars equal to parent stars
+  for (i=0; i<Nchildren; i++) {
+    children[i]->nlast = systemi->nlast;
+    children[i]->nstep = systemi->nstep;
+    children[i]->level = systemi->level;
+  }
+
+  // If using perturbers, then correct child star positions to confirm to new 
+  // perturbed COM of parent system particle
+  // --------------------------------------------------------------------------
+  if (perturbers == 1) {
+    
+    // First calculate old COM
+    for (k=0; k<ndim; k++) rcom[k] = 0.0;
+    for (k=0; k<ndim; k++) vcom[k] = 0.0;
+    for (k=0; k<ndim; k++) acom[k] = 0.0;
+    for (k=0; k<ndim; k++) adotcom[k] = 0.0;
+    for (i=0; i<Nchildren; i++) {
+      msystot += children[i]->m;
+      for (k=0; k<ndim; k++) rcom[k] += children[i]->m*children[i]->r[k];
+      for (k=0; k<ndim; k++) vcom[k] += children[i]->m*children[i]->v[k];
+      for (k=0; k<ndim; k++) acom[k] += children[i]->m*children[i]->a[k];
+      for (k=0; k<ndim; k++) adotcom[k] += children[i]->m*children[i]->adot[k];
+    }
+    for (k=0; k<ndim; k++) rcom[k] /= msystot;
+    for (k=0; k<ndim; k++) vcom[k] /= msystot;
+    for (k=0; k<ndim; k++) acom[k] /= msystot;
+    for (k=0; k<ndim; k++) adotcom[k] /= msystot;
+    
+    
+    // Now translate positions to new COM
+    for (i=0; i<Nchildren; i++) {
+      for (k=0; k<ndim; k++) children[i]->r[k] += systemi->r[k] - rcom[k];
+      for (k=0; k<ndim; k++) children[i]->v[k] += systemi->v[k] - vcom[k];
+      for (k=0; k<ndim; k++) children[i]->a[k] += systemi->a[k] - acom[k];
+      for (k=0; k<ndim; k++) children[i]->adot[k] += systemi->adot[k] - adotcom[k];
+    }
+    
+    // Now update the positions of any 'grand-children' (i.e. for hierarchies)
+    for (i=0; i<Nchildren; i++) {
+      if (children[i]->Ncomp > 1)
+	UpdateChildStars(static_cast<SystemParticle<ndim>* > (children[i]), 
+			 n, timestep, timestep);
+    }
+
+  }
+  // --------------------------------------------------------------------------
+
   return;
 }
 

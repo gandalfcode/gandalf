@@ -74,7 +74,7 @@ class Nbody
                                         DOUBLE *, DOUBLE *) = 0;
   virtual void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE) = 0;
   virtual void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE) = 0;
-  virtual void CorrectPerturbedChildStars(SystemParticle<ndim>* system,
+  virtual void UpdateChildStars(SystemParticle<ndim>* system,
                                           int, DOUBLE, DOUBLE tend) = 0;
   virtual void EndTimestep(int, int, NbodyParticle<ndim> **) = 0;
   virtual DOUBLE Timestep(NbodyParticle<ndim> *) = 0;
@@ -140,7 +140,7 @@ public:
   void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
 				NbodyParticle<ndim> *, DOUBLE *, DOUBLE *);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
-  void CorrectPerturbedChildStars(SystemParticle<ndim>* system,
+  void UpdateChildStars(SystemParticle<ndim>* system,
                                   int, DOUBLE, DOUBLE tend);
   void EndTimestep(int, int, NbodyParticle<ndim> **);
   void IntegrateInternalMotion(SystemParticle<ndim>* system,
@@ -171,6 +171,7 @@ public:
   using Nbody<ndim>::Nsystem;
   using Nbody<ndim>::stardata;
   using Nbody<ndim>::system;
+  using Nbody<ndim>::perturbers;
 
   NbodyHermite4(int, int, DOUBLE, string, int Npec=1);
   ~NbodyHermite4();
@@ -186,13 +187,13 @@ public:
   void EndTimestep(int, int, NbodyParticle<ndim> **);
   void IntegrateInternalMotion(SystemParticle<ndim>* system,
                                int, DOUBLE, DOUBLE tend);
-  void CorrectPerturbedChildStars(SystemParticle<ndim>* system,
+  void UpdateChildStars(SystemParticle<ndim>* system,
                                   int, DOUBLE, DOUBLE tend);
   void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;           ///< Local copy of vdim
-  static const FLOAT invndim=1./ndim;   ///< Copy of 1/ndim
+  static const FLOAT invndim=1.0/ndim;  ///< Copy of 1/ndim
   kernelclass<ndim> kern;               ///< SPH kernel
 
 };

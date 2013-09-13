@@ -270,7 +270,7 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   }
   // --------------------------------------------------------------------------
 
-
+  cout << "Sub-systems?? : " << intparams["sub_systems"] << endl;
 
   // Create sub-system object based on chosen method in params file
   // --------------------------------------------------------------------------
@@ -426,6 +426,8 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   nbodytree.gpehard     = floatparams["gpehard"];
   nbodytree.gpesoft     = floatparams["gpesoft"];
   nbody->perturbers     = intparams["perturbers"];
+  if (intparams["sub_systems"] == 1) 
+    subsystem->perturbers = intparams["perturbers"];
 
   dt_snap               = floatparams["dt_snap"]/simunits.t.outscale;
   dt_python             = floatparams["dt_python"];
@@ -603,14 +605,26 @@ void NbodySimulation<ndim>::MainLoop(void)
       // SystemParticle, not in NbodyParticle.  
       // The safety of the cast relies on the correctness of the Ncomp value
       subsystem->IntegrateInternalMotion(static_cast<SystemParticle<ndim>* > 
-                                         (nbody->nbodydata[i]), n, timestep, timestep);
+                                         (nbody->nbodydata[i]), n, 
+					 timestep, timestep);
     }
   }
 
   // Calculate correction terms on perturbing stars due to sub-systems
-  if (nbody->perturbers == 1) {
+  if (nbody->sub_systems == 1 && nbody->perturbers == 1) {
     nbody->PerturberCorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
     nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
+  }
+
+  // Update properties of child stars in sub-systems to correctly 
+  // match updates to the parent system particle
+  if (nbody->sub_systems == 1) {
+    for (i=0; i<nbody->Nnbody; i++) {
+      if (nbody->nbodydata[i]->Ncomp > 1)
+	subsystem->UpdateChildStars(static_cast<SystemParticle<ndim>* > 
+				    (nbody->nbodydata[i]),  
+				    n, timestep, timestep);
+    }
   }
 
   // Set all end-of-step variables

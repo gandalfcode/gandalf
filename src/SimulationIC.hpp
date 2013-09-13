@@ -1403,6 +1403,7 @@ void Simulation<ndim>::BinaryStar(void)
   // Add binary star
   for (k=0; k<ndim; k++) rbinary[k] = 0.0;
   for (k=0; k<ndim; k++) vbinary[k] = 0.0;
+  vbinary[0] = 0.25;
   AddBinaryStar(sma,eccent,m1,m2,0.01,0.01,rbinary,vbinary,
                 nbody->stardata[0],nbody->stardata[1]);
 
