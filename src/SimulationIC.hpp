@@ -96,6 +96,230 @@ void Simulation<ndim>::CheckInitialConditions(void)
 
 
 //=============================================================================
+//  Simulation::BinaryAccretion
+/// Set-up Sedov blast wave test
+//=============================================================================
+template <int ndim>
+void Simulation<ndim>::BinaryAccretion(void)
+{
+  int i;                            // Particle counter
+  int j;                            // Aux. particle counter
+  int k;                            // Dimension counter
+  int Nbox1;                        // ..
+  int Nbox2;                        // ..
+  int Nlattice1[3];                 // Lattice size
+  int Nlattice2[3];                 // Lattice size
+  FLOAT rbinary[ndim];              // ..
+  FLOAT vbinary[ndim];              // ..
+  FLOAT sound1;                     // Sound speed of fluid 1
+  FLOAT volume1;                    // Volume of box1
+  FLOAT volume2;                    // Volume of box1
+  FLOAT *r1;                        // Positions for particles in fluid 1
+  FLOAT *r2;                        // Positions for particles in fluid 2
+  DomainBox<ndim> box1;             // LHS box
+  DomainBox<ndim> box2;             // RHS box
+
+  // Create local copies of initial conditions parameters
+  int Nstar = simparams->intparams["Nstar"];
+  int smooth_ic = simparams->intparams["smooth_ic"];
+  FLOAT abin = simparams->floatparams["abin"];
+  FLOAT ebin = simparams->floatparams["ebin"];
+  FLOAT vmachbin = simparams->floatparams["vmachbin"];
+  FLOAT m1 = simparams->floatparams["m1"];
+  FLOAT m2 = simparams->floatparams["m2"];
+  FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
+  FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
+  FLOAT rhofluid2 = simparams->floatparams["rhofluid2"];
+  FLOAT press1 = simparams->floatparams["press1"];
+  string particle_dist = simparams->stringparams["particle_distribution"];
+  Nlattice1[0] = simparams->intparams["Nlattice1[0]"];
+  Nlattice1[1] = simparams->intparams["Nlattice1[1]"];
+  Nlattice1[2] = simparams->intparams["Nlattice1[2]"];
+  Nlattice2[0] = simparams->intparams["Nlattice2[0]"];
+  Nlattice2[1] = simparams->intparams["Nlattice2[1]"];
+  Nlattice2[2] = simparams->intparams["Nlattice2[2]"];
+
+  debug2("[Simulation::BinaryAccretion]");
+
+  // Convert parameters to dimensionless units
+  rhofluid1 /= simunits.rho.inscale;
+  rhofluid2 /= simunits.rho.inscale;
+  press1 /= simunits.press.inscale;
+
+  // Compute number of particles in each fluid box
+  if (ndim == 2) {
+    Nbox1 = Nlattice1[0]*Nlattice1[1];
+    Nbox2 = Nlattice2[0]*Nlattice2[1];
+  }
+  else if (ndim == 3) {
+    Nbox1 = Nlattice1[0]*Nlattice1[1]*Nlattice1[2];
+    Nbox2 = Nlattice2[0]*Nlattice2[1]*Nlattice2[2];
+  }
+
+
+  // Set box limits for both fluids, depending on the selected number
+  if (Nbox1 > 0 && Nbox2 == 0) {
+    box1 = simbox;
+  }
+  else if (Nbox1 > 0 && Nbox2 > 0) {
+    box1 = simbox;
+    box2 = simbox;
+    box1.boxmin[0] = simbox.boxmin[0];
+    box1.boxmax[0] = simbox.boxmin[0] + simbox.boxhalf[0];
+    box2.boxmin[0] = simbox.boxmin[0] + simbox.boxhalf[0];
+    box2.boxmax[0] = simbox.boxmax[0];
+  }    
+  else {
+    string message = "Invalid number of particles chosen";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
+  // Compute size and range of fluid bounding boxes
+  // --------------------------------------------------------------------------
+  if (ndim == 2) {
+    volume1 = (box1.boxmax[0] - box1.boxmin[0])*
+      (box1.boxmax[1] - box1.boxmin[1]);
+    volume2 = (box2.boxmax[0] - box2.boxmin[0])*
+      (box2.boxmax[1] - box2.boxmin[1]);
+  }
+  else if (ndim == 3) {
+    volume1 = (box1.boxmax[0] - box1.boxmin[0])*
+      (box1.boxmax[1] - box1.boxmin[1])*
+      (box1.boxmax[2] - box1.boxmin[2]);
+    volume2 = (box2.boxmax[0] - box2.boxmin[0])*
+      (box2.boxmax[1] - box2.boxmin[1])*
+      (box2.boxmax[2] - box2.boxmin[2]);
+  }
+
+
+  // Allocate local and main particle memory
+  sph->Nsph = Nbox1 + Nbox2;
+  nbody->Nstar = 2;
+  AllocateParticleMemory();
+
+  cout << "Nbox1 : " << Nbox1 << "    volume1 : " << volume1 << endl;
+  cout << "Nbox2 : " << Nbox2 << "    volume2 : " << volume2 << endl;
+
+
+  // Add a cube of random particles defined by the simulation bounding box and 
+  // depending on the chosen particle distribution
+  // --------------------------------------------------------------------------
+  if (Nbox1 > 0) {
+    r1 = new FLOAT[ndim*Nbox1];
+    if (particle_dist == "random")
+      AddRandomBox(Nbox1,r1,box1);
+    else if (particle_dist == "cubic_lattice")
+      AddCubicLattice(Nbox1,Nlattice1,r1,box1,true);
+    else if (particle_dist == "hexagonal_lattice")
+      AddHexagonalLattice(Nbox1,Nlattice1,r1,box1,true);
+    else {
+      string message = "Invalid particle distribution option";
+      ExceptionHandler::getIstance().raise(message);
+    }
+    
+    // Record positions in main memory
+    for (i=0; i<Nbox1; i++) {
+      for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r1[ndim*i + k];
+      sph->sphdata[i].r[0] += 0.25*simbox.boxsize[0];
+      if (sph->sphdata[i].r[0] > simbox.boxmax[0])
+	sph->sphdata[i].r[0] -= simbox.boxsize[0];
+      for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
+      sph->sphdata[i].m = rhofluid1*volume1/(FLOAT) Nbox1;
+      sph->sphdata[i].u = press1/rhofluid1/gammaone;
+    }
+    delete[] r1;
+  }
+
+
+  // Add a cube of random particles defined by the simulation bounding box and 
+  // depending on the chosen particle distribution
+  // --------------------------------------------------------------------------
+  if (Nbox2 > 0) {
+    r2 = new FLOAT[ndim*Nbox2];
+    if (particle_dist == "random")
+      AddRandomBox(Nbox2,r2,box2);
+    else if (particle_dist == "cubic_lattice")
+      AddCubicLattice(Nbox2,Nlattice2,r2,box2,true);
+    else if (particle_dist == "hexagonal_lattice")
+      AddHexagonalLattice(Nbox2,Nlattice2,r2,box2,true);
+    else {
+      string message = "Invalid particle distribution option";
+      ExceptionHandler::getIstance().raise(message);
+    }
+    
+    // Record positions in main memory
+    for (j=0; j<Nbox2; j++) {
+      i = Nbox1 + j;
+      for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r2[ndim*j + k];
+      sph->sphdata[i].r[0] += 0.25*simbox.boxsize[0];
+      if (sph->sphdata[i].r[0] > simbox.boxmax[0])
+	sph->sphdata[i].r[0] -= simbox.boxsize[0];
+      for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
+      sph->sphdata[i].m = rhofluid2*volume2/(FLOAT) Nbox1;
+      sph->sphdata[i].u = press1/rhofluid2/gammaone;
+    }
+    delete[] r2;
+  }
+
+  sph->InitialSmoothingLengthGuess();
+
+  // Add star particles to simulation
+  // --------------------------------------------------------------------------
+  if (Nstar == 1) {
+    for (k=0; k<ndim; k++) nbody->stardata[0].r[k] = 0.0;
+    for (k=0; k<ndim; k++) nbody->stardata[0].v[k] = 0.0;
+    nbody->stardata[0].r[0] = simbox.boxmin[0] + 0.25*simbox.boxsize[0];
+    nbody->stardata[0].v[0] = vmachbin*sph->eos->SoundSpeed(sph->sphdata[0]);
+    nbody->stardata[0].m = m1;
+    nbody->stardata[0].h = sph->sphdata[0].h;
+    nbody->stardata[0].radius = sph->kernp->kernrange*sph->sphdata[0].h;
+  }
+  if (Nstar == 2) {
+    for (k=0; k<ndim; k++) rbinary[k] = 0.0;
+    for (k=0; k<ndim; k++) vbinary[k] = 0.0;
+    rbinary[0] = simbox.boxmin[0] + 0.25*simbox.boxsize[0];
+    vbinary[0] = vmachbin*sph->eos->SoundSpeed(sph->sphdata[0]);
+    AddBinaryStar(abin,ebin,m1,m2,sph->sphdata[0].h,sph->sphdata[0].h,
+                  rbinary,vbinary,nbody->stardata[0],nbody->stardata[1]);
+  }
+  else {
+    string message = "Invalid number of star particles";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  cout << "Added stars; vx : " << vmachbin*sph->eos->SoundSpeed(sph->sphdata[0]) << endl;
+  cout << "vbin : " << vbinary[0] << "   " << vbinary[1] << endl;
+
+
+  // Set initial smoothing lengths and create initial ghost particles
+  // --------------------------------------------------------------------------
+  sph->Nghost = 0;
+  sph->Nghostmax = sph->Nsphmax - sph->Nsph;
+  sph->Ntot = sph->Nsph;
+  for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
+  
+  sph->InitialSmoothingLengthGuess();
+  sphneib->UpdateTree(sph,*simparams);
+  
+  // Search ghost particles
+  ghosts.SearchGhostParticles(simbox,sph);
+
+  sphneib->UpdateAllSphProperties(sph,nbody);
+
+  // Update neighbour tre
+  sphneib->UpdateTree(sph,*simparams);
+
+  // Calculate all SPH properties
+  sphneib->UpdateAllSphProperties(sph,nbody);
+
+
+  return;
+}
+
+
+
+//=============================================================================
 //  Simulation::ShockTube
 /// Generate 1D shock-tube test problem.
 //=============================================================================
@@ -190,9 +414,9 @@ void Simulation<ndim>::ShockTube(void)
       sph->sphdata[i].v[0] = vfluid2[0];
       sph->sphdata[i].m = rhofluid2*volume/(FLOAT) Nbox2;
       if (sph->gas_eos == "isothermal")
-	    sph->sphdata[i].u = temp0/gammaone/mu_bar;
+        sph->sphdata[i].u = temp0/gammaone/mu_bar;
       else
-	    sph->sphdata[i].u = press2/rhofluid2/gammaone;
+        sph->sphdata[i].u = press2/rhofluid2/gammaone;
     }
   }
 
@@ -729,10 +953,8 @@ template <int ndim>
 void Simulation<ndim>::NohProblem(void)
 {
   int i;                            // Particle counter
-  int j;                            // Aux. particle counter
   int k;                            // Dimension counter
   int Nsphere;                      // Actual number of particles in sphere
-  int Nlattice[3];                  // Lattice size
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drmag;                      // Distance
   FLOAT drsqd;                      // Distance squared
@@ -910,9 +1132,9 @@ void Simulation<ndim>::PlummerSphere(void)
   int i,j,k;                        // Particle and dimension counter
   FLOAT raux;                       // Aux. float variable
   FLOAT rcentre[ndim];              // Position of centre of Plummer sphere
-  FLOAT vplummer;                   // 
-  FLOAT x1,x2,x3,x4,x5,x6,x7;
-  FLOAT rad,vm,ve,t1,t2,w,z;
+  FLOAT vplummer;                   // ..
+  FLOAT x1,x2,x3,x4,x5,x6,x7;       // ..
+  FLOAT rad,vm,ve,t1,t2,w,z;        // ..
 
   // Local copies of important parameters
   int Nsph = simparams->intparams["Nsph"];
@@ -1289,7 +1511,6 @@ void Simulation<ndim>::SoundWave(void)
   FLOAT kwave;                      // Wave number of perturbing sound wave
   FLOAT omegawave;                  // Angular frequency of sound wave
   FLOAT ugas;                       // Internal energy of gas
-  FLOAT volume;                     // Total gas volume
   FLOAT xold;                       // Old x-position (for iteration)
   FLOAT xnew;                       // New x-position (for iteration)
   FLOAT *r;                         // Particle positions
@@ -1542,7 +1763,6 @@ void Simulation<ndim>::AddBinaryStar
 {
   int k;                           // Dimension counter
   FLOAT mbin = m1 + m2;
-  FLOAT period = twopi*sqrt(sma*sma*sma/mbin);
 
   debug2("[Simulation::AddBinaryStar]");
 
@@ -2033,7 +2253,6 @@ void Simulation<ndim>::AddRotationalVelocityField
   FLOAT Rmag;                       // ..
   FLOAT Rsqd;                       // ..
   FLOAT dr[ndim];                   // ..
-  FLOAT spacing;                    // ..
 
   debug2("[Simulation::AddAzimuthalDensityPerturbation]");
 

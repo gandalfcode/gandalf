@@ -1,0 +1,135 @@
+#------------------------------------------------------------------------------
+# Binary accretion test
+# ..
+#------------------------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = BINARYACC1
+Select SPH simulation                       : sim = sph
+Select shocktube initial conditions         : ic = binaryacc
+1D shocktube test                           : ndim = 2
+Pressure of LHS fluid                       : press1 = 1.0
+Density of LHS fluid                        : rhofluid1 = 1.0
+Density of RHS fluid                        : rhofluid2 = 0.1
+No. of particles in LHS fluid               : Nlattice1[0] = 64
+No. of particles in LHS fluid               : Nlattice1[1] = 64
+No. of particles in LHS fluid               : Nlattice1[2] = 64
+No. of particles in RHS fluid               : Nlattice2[0] = 0
+No. of particles in RHS fluid               : Nlattice2[1] = 0
+No. of particles in RHS fluid               : Nlattice2[2] = 0
+Local arrangement of particles              : particle_distribution = cubic_lattice
+#asdas : Nstepsmax = 1
+
+#---------------------------
+# Star and binary parameters
+#---------------------------
+No. of stars/sinks in simulation            : Nstar = 2
+Mass of star 1                              : m1 = 0.5
+Mass of star 2                              : m2 = 0.5
+Semi-major axis of binary                   : abin = 0.2
+Eccentricity of binary                      : ebin = 0.0
+Velocity of binary COM through gas          : vmachbin = 0.5
+
+
+#---------------------------
+# Simulation units variables
+#---------------------------
+Use physical units                          : dimensionless = 1
+Length units                                : routunit = pc
+Mass units                                  : moutunit = m_sun
+Time units                                  : toutunit = myr
+Velocity units                              : voutunit = km_s
+Density units                               : rhooutunit = g_cm3
+Temperature units                           : tempoutunit = K
+Specific internal energy units              : uoutunit = J_kg
+Angular velocity unit                       : angveloutunit = rad_s
+
+
+#------------------------------
+# Simulation boundary variables
+#------------------------------
+LHS position of boundary in x-dimension     : boxmin[0] = -0.5
+LHS position of boundary in x-dimension     : boxmax[0] = 0.5
+RHS position of boundary in x-dimension     : boxmin[1] = -0.5
+LHS position of boundary in x-dimension     : boxmax[1] = 0.5
+RHS position of boundary in x-dimension     : boxmin[2] = -0.5
+RHS position of boundary in x-dimension     : boxmax[2] = 0.5
+LHS boundary type in x-dimension            : x_boundary_lhs = periodic
+RHS boundary type in x-dimension            : x_boundary_rhs = periodic
+LHS boundary type in y-dimension            : y_boundary_lhs = periodic
+RHS boundary type in y-dimension            : y_boundary_rhs = periodic
+LHS boundary type in z-dimension            : z_boundary_lhs = periodic
+RHS boundary type in z-dimension            : z_boundary_rhs = periodic
+
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 2.0
+Regular snapshot output frequency           : dt_snap = 1.2
+Screen output frequency (in no. of steps)   : noutputstep = 128
+
+
+#------------------------
+# Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = energy_eqn
+Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
+
+
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH algorithm choice                        : sph = gradh
+SPH smoothing kernel choice                 : kernel = m4
+SPH smoothing length iteration tolerance    : h_converge = 0.002
+
+
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
+Artificial viscosity choice                 : avisc = mon97
+Artificial conductivity choice              : acond = none
+Artificial viscosity alpha value            : alpha_visc = 1.0
+Artificial viscosity beta value             : beta_visc = 2.0
+
+
+#----------------------
+# Sink particle options
+#----------------------
+Use leapfrog N-body integration scheme      : nbody = lfkdk
+Activate sink particles in code             : sink_particles = 0
+Allow creation of new sink particles        : create_sinks = 0
+Use smooth accretion in sinks               : smooth_accretion = 0
+Mass cut-off for smooth accretion           : smooth_accrete_frac = 0.05
+Timestep cup-off for smooth accretion       : smooth_accrete_dt = 0.05
+Select adaptive sink radii                  : sink_radius_mode = hmult
+Set sink radius equal to kernel extent      : sink_radius = 2.0
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+SPH particle integration option             : sph_integration = lfkdk
+Integration of gas thermal energy           : energy_integration = PEC
+SPH Courant timestep condition multiplier   : courant_mult = 0.1
+SPH acceleration condition multiplier       : accel_mult = 0.2
+SPH energy equation timestep multiplier     : energy_mult = 0.5
+No. of block timestep levels                : Nlevels = 1
+
+
+#---------------------
+# Optimisation options
+#---------------------
+Tabulate SPH kernel                         : tabulated_kernel = 0
+SPH neighbour search algorithm              : neib_search = grid
+
+
+#--------------
+# Misc. options
+#--------------
+Switch-off self-gravity of gas              : self_gravity = 0

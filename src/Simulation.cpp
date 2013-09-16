@@ -430,6 +430,8 @@ void Simulation<ndim>::GenerateIC(void)
   if (simparams->stringparams["ic"] == "file")
     ReadSnapshotFile(simparams->stringparams["in_file"],
 		     simparams->stringparams["in_file_form"]);
+  else if (simparams->stringparams["ic"] == "binaryacc")
+    BinaryAccretion();
   else if (simparams->stringparams["ic"] == "binary")
     BinaryStar();
   else if (simparams->stringparams["ic"] == "bb")

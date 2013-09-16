@@ -677,8 +677,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     nbody->Nnbody = nbody->Nstar;
     nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
-    nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nsph,
-                                    sph->sphdata,nbody->nbodydata);
+    if (sph->self_gravity == 1)
+      nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nsph,
+				      sph->sphdata,nbody->nbodydata);
     nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
 
   }
@@ -833,14 +834,14 @@ void SphSimulation<ndim>::MainLoop(void)
                                      sph->sphdata[i]);
       
       // Add accelerations
-      if (sph->self_gravity == 1) {
+      //if (sph->self_gravity == 1) {
         for (i=0; i<sph->Nsph; i++) {
           if (sph->sphdata[i].active) {
             for (k=0; k<ndim; k++)
               sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
           }
         }
-      }
+	//}
 
       // Check if all neighbouring timesteps are acceptable
       if (Nlevels > 1)
@@ -878,8 +879,10 @@ void SphSimulation<ndim>::MainLoop(void)
 
       // Calculate forces, force derivatives etc.., for active stars/systems
       nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
-      nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nsph,
-                                      sph->sphdata,nbody->nbodydata);
+
+      if (sph->self_gravity == 1)
+	nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nsph,
+					sph->sphdata,nbody->nbodydata);
 
       // Calculate correction step for all stars at end of step
       nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);

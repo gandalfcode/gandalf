@@ -214,6 +214,7 @@ class Simulation : public SimulationBase
 
   // Initial conditions routines -> move either to Sph, either to Nbody
   // --------------------------------------------------------------------------
+  void BinaryAccretion(void);
   void BinaryStar(void);
   void BossBodenheimer(void);
   void CheckInitialConditions(void);
