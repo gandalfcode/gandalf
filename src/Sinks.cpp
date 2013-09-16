@@ -479,6 +479,8 @@ void Sinks<ndim>::AccreteMassToSinks
     for (k=0; k<ndim; k++) sink[s].star->v[k] *= sink[s].star->m;
     for (k=0; k<ndim; k++) sink[s].star->a[k] *= sink[s].star->m;
 
+    cout << "Mass accreted : " << s << "    " << macc << "    " << sink[s].star->m + mtemp << endl;
+
     // Loop over all neighbouring particles
     // ------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {

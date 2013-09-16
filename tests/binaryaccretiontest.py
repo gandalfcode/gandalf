@@ -26,7 +26,7 @@ render("x","y","rho",res=128)
 
 # Create rendered slice of density
 subfigure(2,2,3)
-render("x","y","vx",res=128)
+render("x","y","u",res=128)
 #limit("x",-0.5,0.5)
 #limit("y",-0.5,0.5)
 
@@ -36,8 +36,9 @@ render("x","y","vx",res=128)
 
 # Plot sound and star speed
 subfigure(2,2,4)
-plot("x","sound")
-addplot("x","vx",type="star")
+plot("phi","vphi",type="star")
+addplot("phi","vphi")
+limit("vphi",0.0,2.0)
 
 run()
 block()

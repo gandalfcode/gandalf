@@ -105,19 +105,24 @@ void Simulation<ndim>::BinaryAccretion(void)
   int i;                            // Particle counter
   int j;                            // Aux. particle counter
   int k;                            // Dimension counter
-  int Nbox1;                        // ..
-  int Nbox2;                        // ..
-  int Nlattice1[3];                 // Lattice size
-  int Nlattice2[3];                 // Lattice size
-  FLOAT rbinary[ndim];              // ..
-  FLOAT vbinary[ndim];              // ..
+  int Nbox1;                        // No. of particles in fluid 1
+  int Nbox2;                        // No. of particles in fluid 2
+  int Nlattice1[3];                 // Lattice dimensions for fluid 1
+  int Nlattice2[3];                 // Lattice dimensions for fluid 2
+  int Nneib;                        // Average no. of SPH neighbours
+  FLOAT hfluid1;                    // Smoothing length of fluid 1
+  FLOAT hsink;                      // Smoothing length of sink
+  FLOAT rbinary[ndim];              // Initial position of binary COM
+  FLOAT vbinary[ndim];              // Initial velocity of binary COM
+  FLOAT rsonic;                     // Sonic radius
+  FLOAT rsink;                      // Sink radius
   FLOAT sound1;                     // Sound speed of fluid 1
   FLOAT volume1;                    // Volume of box1
   FLOAT volume2;                    // Volume of box1
   FLOAT *r1;                        // Positions for particles in fluid 1
   FLOAT *r2;                        // Positions for particles in fluid 2
-  DomainBox<ndim> box1;             // LHS box
-  DomainBox<ndim> box2;             // RHS box
+  DomainBox<ndim> box1;             // Bounding box for fluid 1
+  DomainBox<ndim> box2;             // Bounding box for fluid 2
 
   // Create local copies of initial conditions parameters
   int Nstar = simparams->intparams["Nstar"];
@@ -182,6 +187,8 @@ void Simulation<ndim>::BinaryAccretion(void)
       (box1.boxmax[1] - box1.boxmin[1]);
     volume2 = (box2.boxmax[0] - box2.boxmin[0])*
       (box2.boxmax[1] - box2.boxmin[1]);
+    Nneib = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac,2));
+    hfluid1 = sqrtf((volume1*(FLOAT) Nneib)/(4.0*(FLOAT) Nbox1));
   }
   else if (ndim == 3) {
     volume1 = (box1.boxmax[0] - box1.boxmin[0])*
@@ -190,6 +197,9 @@ void Simulation<ndim>::BinaryAccretion(void)
     volume2 = (box2.boxmax[0] - box2.boxmin[0])*
       (box2.boxmax[1] - box2.boxmin[1])*
       (box2.boxmax[2] - box2.boxmin[2]);
+    Nneib = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac,2));
+    hfluid1 = powf((3.0*volume1*(FLOAT) Nneib)/
+ 		   (32.0*pi*(FLOAT) Nbox1),onethird);
   }
 
 
@@ -223,7 +233,7 @@ void Simulation<ndim>::BinaryAccretion(void)
       for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r1[ndim*i + k];
       sph->sphdata[i].r[0] += 0.25*simbox.boxsize[0];
       if (sph->sphdata[i].r[0] > simbox.boxmax[0])
-	sph->sphdata[i].r[0] -= simbox.boxsize[0];
+        sph->sphdata[i].r[0] -= simbox.boxsize[0];
       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
       sph->sphdata[i].m = rhofluid1*volume1/(FLOAT) Nbox1;
       sph->sphdata[i].u = press1/rhofluid1/gammaone;
@@ -254,13 +264,19 @@ void Simulation<ndim>::BinaryAccretion(void)
       for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r2[ndim*j + k];
       sph->sphdata[i].r[0] += 0.25*simbox.boxsize[0];
       if (sph->sphdata[i].r[0] > simbox.boxmax[0])
-	sph->sphdata[i].r[0] -= simbox.boxsize[0];
+        sph->sphdata[i].r[0] -= simbox.boxsize[0];
       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
       sph->sphdata[i].m = rhofluid2*volume2/(FLOAT) Nbox1;
       sph->sphdata[i].u = press1/rhofluid2/gammaone;
     }
     delete[] r2;
   }
+
+  rsonic = 0.5*m1/sph->eos->SoundSpeed(sph->sphdata[0]);
+  hsink = sph->kernp->invkernrange*rsink;
+  hsink = 0.1*hfluid1;  //min(hsink,0.1*hfluid1);
+  rsink = sph->kernp->kernrange*hsink;
+  cout << "rsonic : " << rsonic << "    hfluid1 : " << hfluid1 << endl;
 
   sph->InitialSmoothingLengthGuess();
 
@@ -269,19 +285,27 @@ void Simulation<ndim>::BinaryAccretion(void)
   if (Nstar == 1) {
     for (k=0; k<ndim; k++) nbody->stardata[0].r[k] = 0.0;
     for (k=0; k<ndim; k++) nbody->stardata[0].v[k] = 0.0;
-    nbody->stardata[0].r[0] = simbox.boxmin[0] + 0.25*simbox.boxsize[0];
+    nbody->stardata[0].r[0] = simbox.boxmin[0] + 0.5*simbox.boxsize[0];
     nbody->stardata[0].v[0] = vmachbin*sph->eos->SoundSpeed(sph->sphdata[0]);
     nbody->stardata[0].m = m1;
-    nbody->stardata[0].h = sph->sphdata[0].h;
-    nbody->stardata[0].radius = sph->kernp->kernrange*sph->sphdata[0].h;
+    nbody->stardata[0].h = hsink;
+    nbody->stardata[0].radius = rsink;
+    sinks.sink[0].star = &(nbody->stardata[0]);
+    sinks.sink[0].radius = rsink;
+    sinks.Nsink = Nstar;
   }
   if (Nstar == 2) {
     for (k=0; k<ndim; k++) rbinary[k] = 0.0;
     for (k=0; k<ndim; k++) vbinary[k] = 0.0;
-    rbinary[0] = simbox.boxmin[0] + 0.25*simbox.boxsize[0];
+    rbinary[0] = simbox.boxmin[0] + 0.5*simbox.boxsize[0];
     vbinary[0] = vmachbin*sph->eos->SoundSpeed(sph->sphdata[0]);
-    AddBinaryStar(abin,ebin,m1,m2,sph->sphdata[0].h,sph->sphdata[0].h,
+    AddBinaryStar(abin,ebin,m1,m2,hsink,hsink,
                   rbinary,vbinary,nbody->stardata[0],nbody->stardata[1]);
+    sinks.sink[0].star = &(nbody->stardata[0]);
+    sinks.sink[1].star = &(nbody->stardata[1]);
+    sinks.sink[0].radius = rsink;
+    sinks.sink[1].radius = rsink;
+    sinks.Nsink = Nstar;
   }
   else {
     string message = "Invalid number of star particles";

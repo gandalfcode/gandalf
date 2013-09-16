@@ -23,15 +23,16 @@ No. of particles in RHS fluid               : Nlattice2[2] = 0
 Local arrangement of particles              : particle_distribution = cubic_lattice
 #asdas : Nstepsmax = 1
 
+
 #---------------------------
 # Star and binary parameters
 #---------------------------
 No. of stars/sinks in simulation            : Nstar = 2
-Mass of star 1                              : m1 = 0.5
-Mass of star 2                              : m2 = 0.5
+Mass of star 1                              : m1 = 0.25
+Mass of star 2                              : m2 = 0.25
 Semi-major axis of binary                   : abin = 0.2
 Eccentricity of binary                      : ebin = 0.0
-Velocity of binary COM through gas          : vmachbin = 0.5
+Velocity of binary COM through gas          : vmachbin = 0.0
 
 
 #---------------------------
@@ -102,7 +103,7 @@ Artificial viscosity beta value             : beta_visc = 2.0
 # Sink particle options
 #----------------------
 Use leapfrog N-body integration scheme      : nbody = lfkdk
-Activate sink particles in code             : sink_particles = 0
+Activate sink particles in code             : sink_particles = 1
 Allow creation of new sink particles        : create_sinks = 0
 Use smooth accretion in sinks               : smooth_accretion = 0
 Mass cut-off for smooth accretion           : smooth_accrete_frac = 0.05
@@ -126,7 +127,8 @@ No. of block timestep levels                : Nlevels = 1
 # Optimisation options
 #---------------------
 Tabulate SPH kernel                         : tabulated_kernel = 0
-SPH neighbour search algorithm              : neib_search = grid
+SPH neighbour search algorithm              : neib_search = tree
+Max. no. of particles in leaf cell
 
 
 #--------------
