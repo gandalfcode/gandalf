@@ -255,7 +255,13 @@ void SphSimulation<ndim>::ProcessParameters(void)
   // --------------------------------------------------------------------------
   if (stringparams["sph_integration"] == "lfkdk") {
     sphint = new SphLeapfrogKDK<ndim>(floatparams["accel_mult"],
-			              floatparams["courant_mult"]);}
+			              floatparams["courant_mult"]);
+  }
+  else if (stringparams["sph_integration"] == "lfdkd") {
+    sphint = new SphLeapfrogDKD<ndim>(floatparams["accel_mult"],
+			              floatparams["courant_mult"]);
+    integration_step = max(integration_step,2);
+  }
   else {
     string message = "Unrecognised parameter : sph_integration = " 
       + simparams->stringparams["sph_integration"];
@@ -311,6 +317,45 @@ void SphSimulation<ndim>::ProcessParameters(void)
 	stringparams["tabulated_kernel"];
       ExceptionHandler::getIstance().raise(message);
     }
+  }
+  // Create N-body object based on chosen method in params file
+  // --------------------------------------------------------------------------
+  else if (stringparams["nbody"] == "lfdkd") {
+    string KernelName = stringparams["kernel"];
+    if (intparams["tabulated_kernel"] == 1) {
+      nbody = new NbodyLeapfrogDKD<ndim, TabulatedKernel> 
+	(intparams["nbody_softening"], intparams["sub_systems"],
+	 floatparams["nbody_mult"], KernelName);
+    }
+    else if (intparams["tabulated_kernel"] == 0) {
+      // Depending on the kernel, instantiate a different GradSph object
+      if (KernelName == "m4") {
+	nbody = new NbodyLeapfrogDKD<ndim, M4Kernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else if (KernelName == "quintic") {
+	nbody = new NbodyLeapfrogDKD<ndim, QuinticKernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else if (KernelName == "gaussian") {
+	nbody = new NbodyLeapfrogDKD<ndim, GaussianKernel> 
+	  (intparams["nbody_softening"], intparams["sub_systems"],
+	   floatparams["nbody_mult"], KernelName);
+      }
+      else {
+	string message = "Unrecognised parameter : kernel = " +
+	  simparams->stringparams["kernel"];
+	ExceptionHandler::getIstance().raise(message);
+      }
+    }
+    else {
+      string message = "Invalid option for the tabulated_kernel parameter: " +
+	stringparams["tabulated_kernel"];
+      ExceptionHandler::getIstance().raise(message);
+    }
+    integration_step = max(integration_step,2);
   }
   // --------------------------------------------------------------------------
   else if (stringparams["nbody"] == "hermite4") {
@@ -937,7 +982,7 @@ template <int ndim>
 void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 {
   int i;                            // Particle counter
-  DOUBLE dt;        // Particle timestep
+  DOUBLE dt;                        // Particle timestep
   DOUBLE dt_min = big_number_dp;    // Local copy of minimum timestep
 
   debug2("[SphSimulation::ComputeGlobalTimestep]");

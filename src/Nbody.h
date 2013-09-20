@@ -157,6 +157,48 @@ public:
 
 
 //=============================================================================
+//  Class NbodyLeapfrogDKD
+/// Class definition for N-body Leapfrog drift-kick-drift integration scheme.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+class NbodyLeapfrogDKD: public Nbody<ndim>
+{
+public:
+  using Nbody<ndim>::allocated;
+  using Nbody<ndim>::nbody_mult;
+  using Nbody<ndim>::Nstar;
+  using Nbody<ndim>::Nsystem;
+  using Nbody<ndim>::stardata;
+  using Nbody<ndim>::system;
+
+  NbodyLeapfrogDKD(int, int, DOUBLE, string);
+  ~NbodyLeapfrogDKD();
+
+  void AdvanceParticles(int, int, NbodyParticle<ndim> **,DOUBLE);
+  void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
+  void CalculateDirectGravForces(int, NbodyParticle<ndim> **);
+  void CalculateDirectSPHForces(int, int, SphParticle<ndim> *,
+				NbodyParticle<ndim> **);
+  void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
+				NbodyParticle<ndim> *, DOUBLE *, DOUBLE *);
+  void CorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
+  void UpdateChildStars(SystemParticle<ndim>* system,
+                                  int, DOUBLE, DOUBLE tend);
+  void EndTimestep(int, int, NbodyParticle<ndim> **);
+  void IntegrateInternalMotion(SystemParticle<ndim>* system,
+                               int, DOUBLE, DOUBLE tend);
+  void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
+  DOUBLE Timestep(NbodyParticle<ndim> *);
+
+  static const int vdim=ndim;           ///< Local copy of vdim
+  static const FLOAT invndim=1./ndim;   ///< Copy of 1/ndim
+  kernelclass<ndim> kern;               ///< SPH kernel
+
+};
+
+
+
+//=============================================================================
 //  Class NbodyHermite4
 /// Class definition for N-body 4th-order Hermite integration scheme.
 //=============================================================================

@@ -8,7 +8,7 @@ from gandalf.analysis.data_fetcher import *
 import time
 
 # Create and set-up simulation object from 'bossbodenheimer.dat' file
-newsim('bb2.dat')
+newsim('bossbodenheimer.dat')
 setupsim()
 
 # Plot the particle positions

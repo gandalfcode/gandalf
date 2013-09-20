@@ -93,6 +93,32 @@ class SphLeapfrogKDK: public SphIntegration<ndim>
 
 
 //=============================================================================
+//  Class SphLeapfrogDKD
+/// \brief   Leapfrog drift-kick-drift SPH particle integration scheme.
+/// \details Class definition for leapfrog drift-kick-drift SPH particle 
+///          integration scheme.  Inherits from main parent SphIntegration 
+///          class and provides implementations of all virtual functions.
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=============================================================================
+template <int ndim>
+class SphLeapfrogDKD: public SphIntegration<ndim>
+{
+ public:
+
+  SphLeapfrogDKD(DOUBLE, DOUBLE);
+  ~SphLeapfrogDKD();
+
+  void AdvanceParticles(int, int, SphParticle<ndim> *, FLOAT);
+  void CorrectionTerms(int, int, SphParticle<ndim> *, FLOAT);
+  void EndTimestep(int, int, SphParticle<ndim> *);
+  int CheckTimesteps(int, int, int, SphParticle<ndim> *);
+
+};
+
+
+
+//=============================================================================
 //  Class SphGodunovIntegration
 /// \brief   Inutsuka (2002) Godunov SPH conservative SPH integration scheme.
 /// \details Class definition for Inutsuka (2002) Godunov SPH conservative 

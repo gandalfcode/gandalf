@@ -7,10 +7,10 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = BB1-L5
+Simulation run id string                    : run_id = BB1
 Run SPH simulation                          : sim = sph
-Select shocktube initial conditions         : ic = file
-Input filename                              : in_file = /Users/david/astro/code/gandalf/tests/204800_BBSIT.sf.dat
+Select shocktube initial conditions         : ic = bb
+Input filename                              : in_file = /Users/david/astro/code/gandalf/tests/3200_BBSIT.sf.dat
 Input file format                           : in_file_form = sf
 Output file format                          : out_file_form = sf
 Dimensionality of cube                      : ndim = 3
@@ -57,7 +57,7 @@ RHS boundary type in z-dimension            : z_boundary_rhs = open
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.005
+Simulation end time                         : tend = 0.03
 Regular snapshot output frequency           : dt_snap = 0.002
 Time of first snapshot                      : tsnapfirst = 0.035;
 Screen output frequency (in no. of steps)   : noutputstep = 1
@@ -126,7 +126,7 @@ Max. timestep level difference              : level_diff_max = 2
 #-------------
 # Tree options
 #-------------
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = bruteforce
 No. of particles in leaf cell               : Nleafmax = 4
 Tree opening angle (squared)                : thetamaxsqd = 0.1
 Multipole option                            : multipole = monopole
