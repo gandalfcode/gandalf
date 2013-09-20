@@ -437,7 +437,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
 	    data[j].dudt += activepart[jj].dudt;
 #pragma omp atomic
 	    data[j].div_v += activepart[jj].div_v;
-	  //data[j].levelneib = max(data[i].levelneib,activepart[jj].levelneib);
+	    //data[j].levelneib = max(data[i].levelneib,activepart[jj].levelneib);
 	  }
 	}
 

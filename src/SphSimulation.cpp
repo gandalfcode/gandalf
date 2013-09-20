@@ -271,8 +271,12 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   // Energy integration object
   // --------------------------------------------------------------------------
-  if (stringparams["energy_integration"] == "PEC")
+  if (stringparams["energy_integration"] == "PEC") {
     uint = new EnergyPEC<ndim>(floatparams["energy_mult"]);
+  }
+  else if (stringparams["energy_integration"] == "lfdkd") {
+    uint = new EnergyLeapfrogDKD<ndim>(floatparams["energy_mult"]);
+  }
   else {
     string message = "Unrecognised parameter : energy_integration = "
       + simparams->stringparams["energy_integration"];
@@ -879,19 +883,17 @@ void SphSimulation<ndim>::MainLoop(void)
                                      sph->sphdata[i]);
       
       // Add accelerations
-      //if (sph->self_gravity == 1) {
-        for (i=0; i<sph->Nsph; i++) {
-          if (sph->sphdata[i].active) {
-            for (k=0; k<ndim; k++)
-              sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
-          }
+      for (i=0; i<sph->Nsph; i++) {
+        if (sph->sphdata[i].active) {
+          for (k=0; k<ndim; k++)
+            sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
         }
-	//}
+      }
 
       // Check if all neighbouring timesteps are acceptable
       if (Nlevels > 1)
         activecount = sphint->CheckTimesteps(level_diff_max,n,
-		  			     sph->Nsph,sph->sphdata);
+                                             sph->Nsph,sph->sphdata);
       else activecount = 0;
       activecount = 0;
 

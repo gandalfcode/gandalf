@@ -57,7 +57,7 @@ Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 Smoothed Particle Hydrodynamics options
 ---------------------------------------
 SPH algorithm choice                        : sph = gradh
-SPH smoothing kernel choice                 : kernel = quintic
+SPH smoothing kernel choice                 : kernel = m4
 SPH smoothing length iteration tolerance    : h_converge = 0.02
 
 
@@ -75,10 +75,11 @@ Time integration options
 ------------------------
 SPH particle integration option             : sph_integration = lfkdk
 Integration of gas thermal energy           : energy_integration = PEC
-SPH Courant timestep condition multiplier   : courant_mult = 0.1
-SPH acceleration condition multiplier       : accel_mult = 0.2
+SPH Courant timestep condition multiplier   : courant_mult = 0.15
+SPH acceleration condition multiplier       : accel_mult = 0.3
 SPH energy equation timestep multiplier     : energy_mult = 0.5
 No. of block timestep levels                : Nlevels = 1
+Maximum timestep level difference           : level_diff_max = 1
 
 
 --------------------

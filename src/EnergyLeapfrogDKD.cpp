@@ -1,9 +1,7 @@
 //=============================================================================
-//  EnergyPEC.cpp
-//  Contains functions for energy equation integration using a 
-//  Predict-Evalulate-Correct (PEC) scheme.
-//  N.B. this PEC scheme is the same as integrating the particle velocities 
-//  in the Leapfrog KDK scheme.
+//  EnergyLeapfrogDKD.cpp
+//  Contains functions for energy equation integration using the Leapfrog
+//  drift-kick-drift integration scheme.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
@@ -41,41 +39,11 @@ using namespace std;
 
 
 //=============================================================================
-//  EnergyEquation::EnergyEquation()
-/// EnergyEquation constructor
+//  EnergyLeapfrogDKD::EnergyLeapfrogDKD()
+/// EnergyLeapfrogDKD class constructor
 //=============================================================================
 template <int ndim>
-EnergyEquation<ndim>::EnergyEquation(DOUBLE energy_mult_aux) :
-  energy_mult(energy_mult_aux)
-{
-}
-
-
-
-//=============================================================================
-//  EnergyEquation::~EnergyEquation()
-/// EnergyEquation destructor
-//=============================================================================
-template <int ndim>
-EnergyEquation<ndim>::~EnergyEquation()
-{
-}
-
-
-
-// Class instances for each dimensionality (1, 2 and 3)
-template class EnergyEquation<1>;
-template class EnergyEquation<2>;
-template class EnergyEquation<3>;
-
-
-
-//=============================================================================
-//  EnergyPEC::EnergyPEC()
-/// EnergyPEC class constructor
-//=============================================================================
-template <int ndim>
-EnergyPEC<ndim>::EnergyPEC(DOUBLE energy_mult_aux) :
+EnergyLeapfrogDKD<ndim>::EnergyLeapfrogDKD(DOUBLE energy_mult_aux) :
   EnergyEquation<ndim>(energy_mult_aux)
 {
 }
@@ -83,23 +51,23 @@ EnergyPEC<ndim>::EnergyPEC(DOUBLE energy_mult_aux) :
 
 
 //=============================================================================
-//  EnergyPEC::~EnergyPEC()
-/// EnergyPEC class destructor
+//  EnergyLeapfrogDKD::~EnergyLeapfrogDKD()
+/// EnergyLeapfrogDKD class destructor
 //=============================================================================
 template <int ndim>
-EnergyPEC<ndim>::~EnergyPEC()
+EnergyLeapfrogDKD<ndim>::~EnergyLeapfrogDKD()
 {
 }
 
 
 
 //=============================================================================
-//  EnergyPEC::EnergyIntegration
+//  EnergyLeapfrogDKD::EnergyIntegration
 /// Integrate internal energy to first order from the beginning of the step to 
 /// the current simulation time, i.e. u(t+dt) = u(t) + dudt(t)*dt
 //=============================================================================
 template <int ndim>
-void EnergyPEC<ndim>::EnergyIntegration
+void EnergyLeapfrogDKD<ndim>::EnergyIntegration
 (int n,                             ///< [in] Integer time in block time struct
  int Nsph,                          ///< [in] No. of SPH particles
  SphParticle<ndim> *sphdata,        ///< [inout] SPH particle data array
@@ -110,7 +78,7 @@ void EnergyPEC<ndim>::EnergyIntegration
   int nstep;                        // Particle (integer) step size
   FLOAT dt;                         // Timestep since start of step
 
-  debug2("[EnergyPEC::EnergyIntegration]");
+  debug2("[EnergyLeapfrogDKD::EnergyIntegration]");
 
   // --------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,dt,i,nstep) \
@@ -119,7 +87,7 @@ void EnergyPEC<ndim>::EnergyIntegration
     nstep = sphdata[i].nstep;
     dn = n - sphdata[i].nlast;
     dt = timestep*(FLOAT) dn;
-    sphdata[i].u = sphdata[i].u0 + sphdata[i].dudt0*dt;
+    sphdata[i].u = sphdata[i].u0 + sphdata[i].dudt*dt;
   }
   // --------------------------------------------------------------------------
 
@@ -129,47 +97,28 @@ void EnergyPEC<ndim>::EnergyIntegration
 
 
 //=============================================================================
-//  EnergyPEC::CorrectionTerms
-/// Compute energy integration to second order at the end of the step by 
-/// adding a second order correction term.  The full integration becomes
-/// $u(t+dt) = u(t) + 0.5*(dudt(t) + dudt(t+dt))*dt$.
+//  EnergyLeapfrogDKD::CorrectionTerms
+/// Empty function.  No correction terms for Leapfrog DKD scheme
 //=============================================================================
 template <int ndim>
-void EnergyPEC<ndim>::EnergyCorrectionTerms
+void EnergyLeapfrogDKD<ndim>::EnergyCorrectionTerms
 (int n,                             ///< [in] Integer time in block time struct
  int Nsph,                          ///< [in] No. of SPH particles
  SphParticle<ndim> *sphdata,        ///< [inout] SPH particle data array
  FLOAT timestep)                    ///< [in] Base timestep value
 {
-  int dn;                           // Integer time since beginning of step
-  int i;                            // Particle counter
-  int nstep;                        // Particle (integer) step size
-
-  debug2("[EnergyPEC::EnergyCorrectionTerms]");
-
-  // --------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,nstep) \
-     shared(n,Nsph,sphdata,timestep)
-  for (i=0; i<Nsph; i++) {
-    dn = n - sphdata[i].nlast;
-    nstep = sphdata[i].nstep;
-    if (dn == nstep) sphdata[i].u += 
-      0.5*(sphdata[i].dudt - sphdata[i].dudt0)*timestep*(FLOAT) nstep;
-  }
-  // --------------------------------------------------------------------------
-
   return;
 }
 
 
 
 //=============================================================================
-//  EnergyPEC::EndTimestep
+//  EnergyLeapfrogDKD::EndTimestep
 /// Record all important thermal quantities at the end of the step for the 
 /// start of the new timestep.
 //=============================================================================
 template <int ndim>
-void EnergyPEC<ndim>::EndTimestep
+void EnergyLeapfrogDKD<ndim>::EndTimestep
 (int n,                             ///< [in] Integer time in block time struct
  int Nsph,                          ///< [in] No. of SPH particles
  SphParticle<ndim> *sphdata)        ///< [inout] SPH particle data array
@@ -178,7 +127,7 @@ void EnergyPEC<ndim>::EndTimestep
   int i;                            // Particle counter
   int nstep;                        // Particle (integer) step size
 
-  debug2("[EnergyPEC::EndTimestep]");
+  debug2("[EnergyLeapfrogDKD::EndTimestep]");
 
   // --------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,nstep) \
@@ -199,13 +148,13 @@ void EnergyPEC<ndim>::EndTimestep
 
 
 //=============================================================================
-//  EnergyPEC::Timestep
+//  EnergyLeapfrogDKD::Timestep
 /// Compute explicit timestep such that u cannot change by a large fraction 
 /// in one step, i.e. dt = const*u/|dudt + epsilon| 
 /// where epsilon is to prevent the denominator becoming zero.
 //=============================================================================
 template <int ndim>
-DOUBLE EnergyPEC<ndim>::Timestep
+DOUBLE EnergyLeapfrogDKD<ndim>::Timestep
 (SphParticle<ndim> &part)           ///< [inout] SPH particle reference
 {
   return this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number));
@@ -213,9 +162,8 @@ DOUBLE EnergyPEC<ndim>::Timestep
 
 
 
-template class EnergyPEC<1>;
-template class EnergyPEC<2>;
-template class EnergyPEC<3>;
-
+template class EnergyLeapfrogDKD<1>;
+template class EnergyLeapfrogDKD<2>;
+template class EnergyLeapfrogDKD<3>;
 
 

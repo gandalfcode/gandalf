@@ -207,8 +207,8 @@ int SphLeapfrogKDK<ndim>::CheckTimesteps
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
-  int level_new;                    // ..
-  int nnewstep;                     // ..
+  int level_new;                    // New level of particle
+  int nnewstep;                     // New step size of particle
   int nstep;                        // Particle (integer) step size
 
   debug2("[SphLeapfrogKDK::CheckTimesteps]");
@@ -219,6 +219,7 @@ int SphLeapfrogKDK<ndim>::CheckTimesteps
   for (i=0; i<Nsph; i++) {
     dn = n - sphdata[i].nlast;
     nstep = sphdata[i].nstep;
+    if (dn == nstep) continue;
 
     // Check if neighbour timesteps are too small.  If so, then reduce 
     // timestep if possible
@@ -228,11 +229,11 @@ int SphLeapfrogKDK<ndim>::CheckTimesteps
 
       // If new level is correctly synchronised, then change all quantities
       if (n%nnewstep == 0) {
-	nstep = dn;
-	sphdata[i].level = level_new;
-	if (dn > 0) sphdata[i].nstep = nstep;
-	sphdata[i].active = true;
-	activecount++;
+        nstep = dn;
+        sphdata[i].level = level_new;
+        if (dn > 0) sphdata[i].nstep = dn; //nstep;
+        sphdata[i].active = true;
+        activecount++;
       }
     }
   }

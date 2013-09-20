@@ -101,7 +101,7 @@ void SphLeapfrogDKD<ndim>::AdvanceParticles
     for (k=0; k<ndim; k++) sphdata[i].r[k] = 
       sphdata[i].r0[k] + sphdata[i].v0[k]*dt;
     for (k=0; k<ndim; k++) sphdata[i].v[k] = 
-      sphdata[i].v0[k] + sphdata[i].a0[k]*dt;
+      sphdata[i].v0[k] + sphdata[i].a[k]*dt;
 
     // Set particle as active at end of step
     if (dn == nstep/2) sphdata[i].active = true;
@@ -207,11 +207,11 @@ int SphLeapfrogDKD<ndim>::CheckTimesteps
 
       // If new level is correctly synchronised, then change all quantities
       if (n%nnewstep == 0) {
-	nstep = dn;
-	sphdata[i].level = level_new;
-	if (dn > 0) sphdata[i].nstep = nstep;
-	if (dn == nnewstep/2) sphdata[i].active = true;
-	activecount++;
+        nstep = dn;
+        sphdata[i].level = level_new;
+        if (dn > 0) sphdata[i].nstep = dn; //nstep;
+        if (dn == nnewstep/2) sphdata[i].active = true;
+        activecount++;
       }
     }
   }
