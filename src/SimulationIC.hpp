@@ -203,13 +203,10 @@ void Simulation<ndim>::BinaryAccretion(void)
   }
 
 
-  // Allocate local and main particle memory
+  // Allocate main particle memory
   sph->Nsph = Nbox1 + Nbox2;
-  nbody->Nstar = 2;
+  nbody->Nstar = Nstar;
   AllocateParticleMemory();
-
-  cout << "Nbox1 : " << Nbox1 << "    volume1 : " << volume1 << endl;
-  cout << "Nbox2 : " << Nbox2 << "    volume2 : " << volume2 << endl;
 
 
   // Add a cube of random particles defined by the simulation bounding box and 
@@ -272,13 +269,13 @@ void Simulation<ndim>::BinaryAccretion(void)
     delete[] r2;
   }
 
-  rsonic = 0.5*m1/sph->eos->SoundSpeed(sph->sphdata[0]);
+  rsonic = 0.5*m1/pow(sph->eos->SoundSpeed(sph->sphdata[0]),2);
+  rsink = 0.25*rsonic;
   hsink = sph->kernp->invkernrange*rsink;
-  hsink = 0.1*hfluid1;  //min(hsink,0.1*hfluid1);
+  hsink = min(hsink,hfluid1);
   rsink = sph->kernp->kernrange*hsink;
   cout << "rsonic : " << rsonic << "    hfluid1 : " << hfluid1 << endl;
 
-  sph->InitialSmoothingLengthGuess();
 
   // Add star particles to simulation
   // --------------------------------------------------------------------------
@@ -294,7 +291,7 @@ void Simulation<ndim>::BinaryAccretion(void)
     sinks.sink[0].radius = rsink;
     sinks.Nsink = Nstar;
   }
-  if (Nstar == 2) {
+  else if (Nstar == 2) {
     for (k=0; k<ndim; k++) rbinary[k] = 0.0;
     for (k=0; k<ndim; k++) vbinary[k] = 0.0;
     rbinary[0] = simbox.boxmin[0] + 0.5*simbox.boxsize[0];
@@ -357,16 +354,16 @@ void Simulation<ndim>::ShockTube(void)
   int Nbox2;                        // No. of particles in RHS box
   int Nlattice1[ndim];              // Particles per dimension for LHS lattice
   int Nlattice2[ndim];              // Particles per dimension for RHS lattice
-  FLOAT dr[ndim];                   // ..
-  FLOAT drmag;                      // ..
-  FLOAT drsqd;                      // ..
+  FLOAT dr[ndim];                   // Relative position vector
+  FLOAT drmag;                      // Distance
+  FLOAT drsqd;                      // Distance squared
   FLOAT volume;                     // Volume of box
   FLOAT vfluid1[ndim];              // Velocity vector of LHS fluid
   FLOAT vfluid2[ndim];              // Velocity vector of RHS fluid
-  FLOAT wnorm;                      // ..
+  FLOAT wnorm;                      // Kernel normalisation
   FLOAT *r;                         // Position vectors
-  FLOAT *uaux;                      // ..
-  FLOAT *vaux;                      // ..
+  FLOAT *uaux;                      // Temp. array for internal energy
+  FLOAT *vaux;                      // Temp. array for x-velocities
   DomainBox<ndim> box1;             // LHS box
   DomainBox<ndim> box2;             // RHS box
 

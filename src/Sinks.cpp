@@ -184,7 +184,8 @@ void Sinks<ndim>::SearchForNewSinkParticles
 
 //=============================================================================
 //  Sinks::CreateNewSinkParticle
-/// Create a new sink particle from specified SPH particle 'isink'.
+/// Create a new sink particle from specified SPH particle 'isink' and then 
+/// removes particle from main arrays.
 //=============================================================================
 template <int ndim>
 void Sinks<ndim>::CreateNewSinkParticle
@@ -206,18 +207,18 @@ void Sinks<ndim>::CreateNewSinkParticle
     exit(0);
   }
 
-  // First create new star and set pointer
+  // First create new star and set N-body pointer to star
   sink[Nsink].star = &(nbody->stardata[nbody->Nstar]);
   nbody->nbodydata[nbody->Nnbody] = &(nbody->stardata[nbody->Nstar]);
 
 
-  // If we have space in main arrays, then create sink
+  // Create a new sink particle from the SPH particle's properties
   sink[Nsink].radius = sph->kernp->kernrange*sph->sphdata[isink].h;
-  sink[Nsink].star->m = sph->sphdata[isink].m;
   sink[Nsink].star->h = sph->sphdata[isink].h;
   sink[Nsink].star->invh = 1.0/sph->sphdata[isink].h;
   sink[Nsink].star->hfactor = pow(sink[Nsink].star->invh,ndim);
   sink[Nsink].star->radius = sph->kernp->kernrange*sph->sphdata[isink].h;
+  sink[Nsink].star->m = sph->sphdata[isink].m;
   sink[Nsink].star->gpot = sph->sphdata[isink].gpot;
   sink[Nsink].star->gpe_internal = 0.0;
   sink[Nsink].star->dt = sph->sphdata[isink].dt;
@@ -238,7 +239,8 @@ void Sinks<ndim>::CreateNewSinkParticle
   for (k=0; k<ndim; k++) sink[Nsink].star->adot0[k] = 0.0;
   for (k=0; k<3; k++) sink[Nsink].angmom[k] = 0.0;
 
-  // Calculate total mass inside sink
+  // Calculate total mass inside sink (direct sum for now since this is not 
+  // computed that often).
   sink[Nsink].mmax = 0.0;
   for (i=0; i<sph->Nsph; i++) {
     for (k=0; k<ndim; k++) 
@@ -247,11 +249,12 @@ void Sinks<ndim>::CreateNewSinkParticle
     if (drsqd < pow(sink[Nsink].radius,2)) 
       sink[Nsink].mmax += sph->sphdata[i].m;
   }
-
+  cout << "-------------------------------------------------" << endl;
   cout << "Created new sink particle : " << isink << "    " << Nsink << endl;
   cout << "radius : " << sink[Nsink].radius << endl;
   cout << "m : " << sink[Nsink].star->m << "    mmax : " << sink[Nsink].mmax << endl;
   cout << "r : " << sink[Nsink].star->r[0] << "   " << sink[Nsink].star->r[0] << endl;
+  cout << "-------------------------------------------------" << endl;
 
   // Remove SPH particle from main arrays
   deadlist[0] = isink;
@@ -297,6 +300,7 @@ void Sinks<ndim>::AccreteMassToSinks
   FLOAT drsqd;                      // Distance squared
   FLOAT dt;                         // Sink/star timestep
   FLOAT dv[ndim];                   // Relative velocity vector
+  FLOAT dvtang[ndim];               // Relative tangential velocity vector
   FLOAT efrac;                      // Energy fraction
   FLOAT macc;                       // Accreted mass
   FLOAT macc_temp;                  // Temp. accreted mass variable
@@ -333,9 +337,7 @@ void Sinks<ndim>::AccreteMassToSinks
     }
   }
 
-  cout << "Accretion Nlist : " << Nlist << endl;
-
-  // If there are no particles inside any sink, return
+  // If there are no particles inside any sink, return to main loop.
   if (Nlist == 0) return;
 
   // Otherwise, allocate additional memory and proceed to accrete mass
@@ -351,7 +353,7 @@ void Sinks<ndim>::AccreteMassToSinks
   for (s=0; s<Nsink; s++) {
 
     // Skip sink particle if it contains no gas, or unless it's at the 
-    // beginning of its current step
+    // beginning of its current step.
     if (sink[s].Ngas == 0 || !sink[s].star->active) continue;
 
     // Initialise all variables for current sink
@@ -406,15 +408,13 @@ void Sinks<ndim>::AccreteMassToSinks
 
       // Compute rotational component of kinetic energy
       for (k=0; k<ndim; k++) dv[k] = sph->sphdata[i].v[k] - sink[s].star->v[k];
-      for (k=0; k<ndim; k++) dv[k] -= DotProduct(dv,dr,ndim)*dr[k];
+      for (k=0; k<ndim; k++) dvtang[k] = dv[k] - DotProduct(dv,dr,ndim)*dr[k];
 
-      sink[s].rotketot += sph->sphdata[i].m*DotProduct(dv,dv,ndim)*
+      // Compute total and rotational kinetic energies
+      sink[s].ketot += sph->sphdata[i].m*DotProduct(dv,dv,ndim)*
         sph->kernp->w0(drmag*sink[s].star->invh)*
         pow(sink[s].star->invh,ndim)*sph->sphdata[i].invrho;
-
-      // Compute total kinetic energy
-      for (k=0; k<ndim; k++) dv[k] = sph->sphdata[i].v[k] - sink[s].star->v[k];
-      sink[s].ketot += sph->sphdata[i].m*DotProduct(dv,dv,ndim)*
+      sink[s].rotketot += sph->sphdata[i].m*DotProduct(dvtang,dvtang,ndim)*
         sph->kernp->w0(drmag*sink[s].star->invh)*
         pow(sink[s].star->invh,ndim)*sph->sphdata[i].invrho;
 
@@ -427,8 +427,7 @@ void Sinks<ndim>::AccreteMassToSinks
 			   pow(sink[s].star->invh,ndim));  
     }
 
-
-    // Normalise sums
+    // Normalise SPH sums correctly
     sink[s].ketot *= 0.5*sink[s].menc/wnorm;
     sink[s].rotketot *= 0.5*sink[s].menc/wnorm;
 
@@ -468,7 +467,7 @@ void Sinks<ndim>::AccreteMassToSinks
     }
 
 
-    // Now accrete particles to sink
+    // Now accrete SPH particles to sink
     // ------------------------------------------------------------------------
     macc_temp = macc;
     for (k=0; k<ndim; k++) rold[k] = sink[s].star->r[k];
@@ -479,7 +478,6 @@ void Sinks<ndim>::AccreteMassToSinks
     for (k=0; k<ndim; k++) sink[s].star->v[k] *= sink[s].star->m;
     for (k=0; k<ndim; k++) sink[s].star->a[k] *= sink[s].star->m;
 
-    cout << "Mass accreted : " << s << "    " << macc << "    " << sink[s].star->m + mtemp << endl;
 
     // Loop over all neighbouring particles
     // ------------------------------------------------------------------------
@@ -512,18 +510,15 @@ void Sinks<ndim>::AccreteMassToSinks
     for (k=0; k<ndim; k++) sink[s].star->v[k] /= sink[s].star->m;
     for (k=0; k<ndim; k++) sink[s].star->a[k] /= sink[s].star->m;
 
-    //for (k=0; k<ndim; k++) sink[s].star->r0[k] = sink[s].star->r[k];
-    //for (k=0; k<ndim; k++) sink[s].star->v0[k] = sink[s].star->v[k];
-    //for (k=0; k<ndim; k++) sink[s].star->a0[k] = sink[s].star->a[k];
-
     // Calculate angular momentum of old COM around new COM
     for (k=0; k<ndim; k++) dr[k] = rold[k] - sink[s].star->r[k];
     for (k=0; k<ndim; k++) dv[k] = vold[k] - sink[s].star->v[k];
-    sink[s].angmom[2] += mold*(dr[0]*dv[1] - dr[1]*dv[0]);
     if (ndim == 3) {
       sink[s].angmom[0] += mold*(dr[1]*dv[2] - dr[2]*dv[1]);
       sink[s].angmom[1] += mold*(dr[2]*dv[0] - dr[0]*dv[2]);
     }
+    sink[s].angmom[2] += mold*(dr[0]*dv[1] - dr[1]*dv[0]);
+
 
     // Now add angular momentum contribution of individual SPH particles
     // ------------------------------------------------------------------------
@@ -534,8 +529,8 @@ void Sinks<ndim>::AccreteMassToSinks
 
       // Special conditions for total particle accretion
       if (smooth_accretion == 0 || 
-	      sph->sphdata[i].m - mtemp < smooth_accrete_frac*sph->mmean ||
-	      dt < smooth_accrete_dt*sink[s].trot) {
+          sph->sphdata[i].m - mtemp < smooth_accrete_frac*sph->mmean ||
+          dt < smooth_accrete_dt*sink[s].trot) {
         mtemp = sph->sphdata[i].m;
         deadlist[Ndead++] = i;
       }
@@ -545,16 +540,17 @@ void Sinks<ndim>::AccreteMassToSinks
       // Calculate angular momentum of old COM around new COM
       for (k=0; k<ndim; k++) dr[k] = sph->sphdata[i].r[k] - sink[s].star->r[k];
       for (k=0; k<ndim; k++) dv[k] = sph->sphdata[i].v[k] - sink[s].star->v[k];
-      sink[s].angmom[2] += mtemp*(dr[0]*dv[1] - dr[1]*dv[0]);
       if (ndim == 3) {
         sink[s].angmom[0] += mtemp*(dr[1]*dv[2] - dr[2]*dv[1]);
         sink[s].angmom[1] += mtemp*(dr[2]*dv[0] - dr[0]*dv[2]);
       }
+      sink[s].angmom[2] += mtemp*(dr[0]*dv[1] - dr[1]*dv[0]);
 
       // If we've reached/exceeded the mass limit, do not include more ptcls
       if (macc < small_number) break;
     }
     
+
     // Calculate internal sink timestep here
     asqd = DotProduct(sink[s].star->a,sink[s].star->a,ndim);
     sink[s].star->dt_internal = 

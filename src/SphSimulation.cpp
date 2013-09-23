@@ -208,7 +208,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   // the energy integration object.
   // --------------------------------------------------------------------------
   string gas_eos = stringparams["gas_eos"];
-  if (gas_eos == "energy_eqn") {
+  if (gas_eos == "energy_eqn" || gas_eos == "constant_temp") {
     sph->eos = new Adiabatic<ndim>(floatparams["temp0"],
 				   floatparams["mu_bar"],
 				   floatparams["gamma_eos"]);

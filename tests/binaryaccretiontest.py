@@ -36,9 +36,7 @@ render("x","y","u",res=128)
 
 # Plot sound and star speed
 subfigure(2,2,4)
-plot("phi","vphi",type="star")
-addplot("phi","vphi")
-limit("vphi",0.0,2.0)
+render("x","y","vx")
 
 run()
 block()
