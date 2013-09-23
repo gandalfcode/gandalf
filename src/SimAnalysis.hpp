@@ -150,6 +150,14 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   if (sph->hydro_forces == 1) diag.Etot += diag.utot;
   if (sph->self_gravity == 1 || nbody->Nstar > 0) diag.Etot += diag.gpetot;
 
+
+  // Calculate binary statistics if required
+  if (simparams->intparams["binary_stats"] == 1) {
+    nbodytree.CreateNbodySystemTree(nbody);
+    nbodytree.FindBinarySystems(nbody);
+  }
+
+
   return;
 }
 
@@ -203,6 +211,11 @@ void Simulation<ndim>::OutputDiagnostics(void)
     if (sph->self_gravity == 1 || nbody->Nstar > 0) 
       cout << "force_grav : " << diag.force_grav[0] << "   " 
 	   << diag.force_grav[1] << "   " << diag.force_grav[2] << endl;
+  }
+
+  // Calculate binary statistics if required
+  if (simparams->intparams["binary_stats"] == 1) {
+    nbodytree.OutputBinaryProperties(nbody);
   }
 
   return;

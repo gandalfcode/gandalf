@@ -276,6 +276,7 @@ void Parameters::SetDefaultValues(void)
   intparams["Npec"] = 1;
   intparams["nbody_softening"] = 0;
   intparams["perturbers"] = 0;
+  intparams["binary_stats"] = 0;
   floatparams["gpefrac"] = 5.0e-2;
   floatparams["gpesoft"] = 2.0e-2;
   floatparams["gpehard"] = 1.0e-3;

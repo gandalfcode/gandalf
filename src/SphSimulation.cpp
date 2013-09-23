@@ -808,6 +808,7 @@ void SphSimulation<ndim>::MainLoop(void)
 
   debug2("[SphSimulation::MainLoop]");
 
+
   // Compute timesteps for all particles
   if (Nlevels == 1)
     this->ComputeGlobalTimestep();
@@ -928,8 +929,8 @@ void SphSimulation<ndim>::MainLoop(void)
       nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
 
       if (sph->self_gravity == 1)
-	nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nsph,
-					sph->sphdata,nbody->nbodydata);
+        nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nsph,
+                                        sph->sphdata,nbody->nbodydata);
 
       // Calculate correction step for all stars at end of step
       nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);

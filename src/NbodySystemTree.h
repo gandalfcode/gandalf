@@ -94,6 +94,7 @@ struct BinaryStar {
   FLOAT ecc;                       ///< Orbital eccentricity
   FLOAT period;                    ///< Orbital period
   FLOAT q;                         ///< Mass ratio
+  string systemtype;               ///< Type of system (binary, triple, etc..)
 };
 
 
@@ -120,7 +121,9 @@ class NbodySystemTree
   void DeallocateMemory(void);
   void CreateNbodySystemTree(Nbody<ndim> *);
   void BuildSubSystems(Nbody<ndim> *);
+  void FindBinarySystems(Nbody<ndim> *);
   void FindPerturberLists(Nbody<ndim> *);
+  void OutputBinaryProperties(Nbody<ndim> *);
   void RestockTreeNodes(Nbody<ndim> *);
 
   bool allocated_tree;               ///< Is NN-tree memory allocated?
@@ -128,6 +131,8 @@ class NbodySystemTree
   int Nbinarymax;                    ///< Max. no. of binary stars
   int Nnode;                         ///< No. of nodes of NN-tree
   int Nnodemax;                      ///< Max. no. of nodes on NN-tree.
+  int Ntriple;                       ///< No. of triple systems
+  int Nquadruple;                    ///< No. of quadruple systems
   DOUBLE gpehard;                    ///< Grav. energy limit hard sub-systems
   DOUBLE gpesoft;                    ///< Grav. energy limit soft sub-systems
   struct NNTreeCell<ndim> *NNtree;   ///< Main NN-tree array

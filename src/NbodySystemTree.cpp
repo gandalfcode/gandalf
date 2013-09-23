@@ -434,7 +434,7 @@ void NbodySystemTree<ndim>::BuildSubSystems
 
           // Compute and store binary properties if bound
           if (NNtree[c].Ncomp == 2) {
-            for (k=0; k<ndim; k++) dv[k] = si->v[k] - sj->v[k];
+            for (k=0; k<ndim; k++) dv[k] = sj->v[k] - si->v[k];
             for (k=0; k<ndim; k++) dr[k] = sj->r[k] - si->r[k];
             drsqd = DotProduct(dr,dr,ndim);
             invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
@@ -533,6 +533,149 @@ void NbodySystemTree<ndim>::BuildSubSystems
 
   return;
 }
+
+
+
+//=============================================================================
+//  NbodySystemTree::FindBinarySystems
+/// ..
+//=============================================================================
+template <int ndim>
+void NbodySystemTree<ndim>::FindBinarySystems
+(Nbody<ndim> *nbody)               ///< [inout] Nbody object containing stars
+{
+  int c,c1,c2;                     // Cell counter
+  int i;                           // Star and system particle counters
+  int k;                           // Dimension counter
+  DOUBLE dr[ndim];                 // Relative position vector
+  DOUBLE drsqd;                    // Distance squared
+  DOUBLE dv[ndim];                 // Relative velocity vector
+  DOUBLE invdrmag;                 // 1 / drmag
+
+  debug2("[NbodySystemTree::FindBinarySystems]");
+
+  // Set all counters
+  Nbinary = 0;
+  Ntriple = 0;
+  Nquadruple = 0;
+
+  // Loop through all nodes of tree and compute all physical quantities
+  // ==========================================================================
+  for (c=0; c<Nnode; c++) {
+
+    // If node contains one star, set all properties equal to star values
+    // ------------------------------------------------------------------------
+    if (NNtree[c].Ncomp == 1) {
+      i = c;
+      NNtree[c].m = nbody->stardata[i].m;
+      NNtree[c].h = nbody->stardata[i].h;
+      for (k=0; k<ndim; k++) NNtree[c].r[k] = nbody->stardata[i].r[k];
+      for (k=0; k<ndim; k++) NNtree[c].v[k] = nbody->stardata[i].v[k];
+      for (k=0; k<ndim; k++) NNtree[c].a[k] = nbody->stardata[i].a[k];
+      for (k=0; k<ndim; k++) NNtree[c].adot[k] = nbody->stardata[i].adot[k];
+      NNtree[c].gpe = 0.5*nbody->stardata[i].m*nbody->stardata[i].gpot;
+      NNtree[c].gpe_internal = 0.0;
+    }
+
+    // Else, add together both child node properties
+    // ------------------------------------------------------------------------
+    else {
+
+      c1 = NNtree[c].ichild1;
+      c2 = NNtree[c].ichild2;
+      NNtree[c].Ncomp = NNtree[c1].Ncomp + NNtree[c2].Ncomp;
+      NNtree[c].m = NNtree[c1].m + NNtree[c2].m;
+      NNtree[c].h = max(NNtree[c1].h,NNtree[c2].h);
+      NNtree[c].gpe = NNtree[c1].gpe + NNtree[c2].gpe;
+      for (k=0; k<ndim; k++) {
+        NNtree[c].r[k] = (NNtree[c1].m*NNtree[c1].r[k] +
+			  NNtree[c2].m*NNtree[c2].r[k])/NNtree[c].m;
+        NNtree[c].v[k] = (NNtree[c1].m*NNtree[c1].v[k] +
+			  NNtree[c2].m*NNtree[c2].v[k])/NNtree[c].m;
+        NNtree[c].a[k] = (NNtree[c1].m*NNtree[c1].a[k] +
+			  NNtree[c2].m*NNtree[c2].a[k])/NNtree[c].m;
+        NNtree[c].adot[k] = (NNtree[c1].m*NNtree[c1].adot[k] +
+			  NNtree[c2].m*NNtree[c2].adot[k])/NNtree[c].m;
+      }
+      NNtree[c].gpe_internal = 0.0;
+
+
+      // If node contains within maximum allowed number of components, then
+      // check if node is a new system or not
+      // ----------------------------------------------------------------------
+      if (NNtree[c].Ncomp <= Ncompmax) {
+
+        // Compute internal gravitational potential energy
+        for (k=0; k<ndim; k++) dr[k] = NNtree[c1].r[k] - NNtree[c2].r[k];
+        drsqd = DotProduct(dr,dr,ndim);
+        invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
+        NNtree[c].gpe_internal += NNtree[c1].m*NNtree[c2].m*invdrmag;
+
+
+        // Now check energies and decide if we should create a new sub-system
+        // object.  If yes, create new system in main arrays
+        // --------------------------------------------------------------------
+        if (fabs(NNtree[c].gpe - NNtree[c].gpe_internal)
+            < gpesoft*NNtree[c].gpe) {
+
+          // Compute and store binary properties if bound
+          if (NNtree[c].Ncomp == 2) {
+            for (k=0; k<ndim; k++) dv[k] = NNtree[c1].v[k] - NNtree[c2].v[k];
+            for (k=0; k<ndim; k++) dr[k] = NNtree[c1].r[k] - NNtree[c2].r[k];
+            drsqd = DotProduct(dr,dr,ndim);
+            invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
+            binary[Nbinary].ichild1 = c1;
+            binary[Nbinary].ichild2 = c2;
+            binary[Nbinary].m = NNtree[c].m;
+            for (k=0; k<ndim; k++) binary[Nbinary].r[k] = NNtree[c].r[k];
+            for (k=0; k<ndim; k++) binary[Nbinary].v[k] = NNtree[c].v[k];
+            binary[Nbinary].binen =
+              0.5*DotProduct(dv,dv,ndim) - NNtree[c].m*invdrmag;
+            binary[Nbinary].sma = -0.5*NNtree[c].m/binary[Nbinary].binen;
+            binary[Nbinary].period = 0.0;
+            binary[Nbinary].ecc = 0.0;
+            if (NNtree[c1].m > NNtree[c2].m)
+              binary[Nbinary].q = NNtree[c2].m/NNtree[c1].m;
+            else
+              binary[Nbinary].q = NNtree[c1].m/NNtree[c2].m;
+            if (c1 < nbody->Nstar && c2 < nbody->Nstar)
+              binary[Nbinary].systemtype = "binary";
+            else if (c1 < nbody->Nstar || c2 < nbody->Nstar) {
+              binary[Nbinary].systemtype = "triple";
+              Ntriple++;
+            }
+            else {
+              binary[Nbinary].systemtype = "quadruple";
+              Nquadruple++;
+            }
+            Nbinary++;
+          }
+
+
+          // Finally, clear list and append newly created system particle.
+          // Also, zero internal energy to allow detection of hierarchical
+          // systems.
+          NNtree[c].Ncomp = 1;
+          NNtree[c].gpe = NNtree[c].gpe - NNtree[c].gpe_internal;
+          NNtree[c].gpe_internal = 0.0;
+
+        }
+        // --------------------------------------------------------------------
+
+      }
+      // ----------------------------------------------------------------------
+
+    }
+    // ------------------------------------------------------------------------
+
+  }
+  // ==========================================================================
+
+
+  return;
+}
+
+
 
 
 
@@ -663,6 +806,33 @@ void NbodySystemTree<ndim>::RestockTreeNodes
 (Nbody<ndim> *nbody)                ///< [in] Nbody object containing stars
 {
   debug2("[NbodySystemTree::RestockTreeNodes]");
+
+  return;
+}
+
+
+
+//=============================================================================
+//  NbodySystemTree::FindPerturberLists
+/// Walk the N-body tree top-down and compute all perturber lists
+//=============================================================================
+template <int ndim>
+void NbodySystemTree<ndim>::OutputBinaryProperties
+(Nbody<ndim> *nbody)                ///< [in] Nbody object containing stars
+{
+  int i;
+
+  cout << "No. of binary systems    : " << Nbinary << endl;
+  cout << "No. of triple systems    : " << Ntriple << endl;
+  cout << "No. of quadruple systems : " << Nquadruple << endl;
+
+  for (i=0; i<Nbinary; i++) {
+    cout << "System " << i << " : " << binary[i].systemtype << endl;
+    cout << "Components : " << binary[i].ichild1 << "    " << binary[i].ichild2 << endl;
+    cout << "Semi-major axis      : " << binary[i].sma << endl;
+    cout << "Orbital period       : " << binary[i].period << endl;
+    cout << "Orbital eccentricity : " << binary[i].ecc << endl;
+  }
 
   return;
 }
