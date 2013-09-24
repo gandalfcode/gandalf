@@ -523,6 +523,23 @@ string SphSnapshotBase::GetRealType(string type)
 }
 
 
+//=============================================================================
+///  SphSnapshotBase::GetNparticlesType
+///  Get the number of particles for the given type
+//=============================================================================
+int SphSnapshotBase::GetNparticlesType(string type) {
+  type=GetRealType(type);
+  if (type=="sph")
+    return Nsph;
+  else if (type=="star")
+    return Nstar;
+  else {
+    string message="Error: we do not know the type " + type + "that you are requesting!!!";
+    ExceptionHandler::getIstance().raise(message);
+  }
+  return 0;
+}
+
 
 //=============================================================================
 //  SphSnapshotBase::ExtractArray

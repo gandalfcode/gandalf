@@ -63,6 +63,7 @@ protected:
   int GetNTypes() {return _species.size(); };
   string GetSpecies(int ispecies) { return _species.at(ispecies); };
   string GetRealType(string);
+  int GetNparticlesType(string species);
 
   // All variables
   // --------------------------------------------------------------------------
