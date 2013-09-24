@@ -282,8 +282,8 @@ void Simulation<ndim>::BinaryAccretion(void)
   if (Nstar == 1) {
     for (k=0; k<ndim; k++) nbody->stardata[0].r[k] = 0.0;
     for (k=0; k<ndim; k++) nbody->stardata[0].v[k] = 0.0;
-    nbody->stardata[0].r[0] = simbox.boxmin[0] + 0.5*simbox.boxsize[0];
-    nbody->stardata[0].v[0] = vmachbin*sph->eos->SoundSpeed(sph->sphdata[0]);
+    nbody->stardata[0].r[0] = simbox.boxmin[0] + 0.25*simbox.boxsize[0];
+    nbody->stardata[0].v[0] = vmachbin; //*sph->eos->SoundSpeed(sph->sphdata[0]);
     nbody->stardata[0].m = m1;
     nbody->stardata[0].h = hsink;
     nbody->stardata[0].radius = rsink;
@@ -294,8 +294,8 @@ void Simulation<ndim>::BinaryAccretion(void)
   else if (Nstar == 2) {
     for (k=0; k<ndim; k++) rbinary[k] = 0.0;
     for (k=0; k<ndim; k++) vbinary[k] = 0.0;
-    rbinary[0] = simbox.boxmin[0] + 0.5*simbox.boxsize[0];
-    vbinary[0] = vmachbin*sph->eos->SoundSpeed(sph->sphdata[0]);
+    rbinary[0] = simbox.boxmin[0] + 0.25*simbox.boxsize[0];
+    vbinary[0] = vmachbin; //*sph->eos->SoundSpeed(sph->sphdata[0]);
     AddBinaryStar(abin,ebin,m1,m2,hsink,hsink,
                   rbinary,vbinary,nbody->stardata[0],nbody->stardata[1]);
     sinks.sink[0].star = &(nbody->stardata[0]);
@@ -309,7 +309,7 @@ void Simulation<ndim>::BinaryAccretion(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
-  cout << "Added stars; vx : " << vmachbin*sph->eos->SoundSpeed(sph->sphdata[0]) << endl;
+  cout << "Added stars; vx : " << vmachbin << endl; //*sph->eos->SoundSpeed(sph->sphdata[0]) << endl;
   cout << "vbin : " << vbinary[0] << "   " << vbinary[1] << endl;
 
 
@@ -328,12 +328,11 @@ void Simulation<ndim>::BinaryAccretion(void)
 
   sphneib->UpdateAllSphProperties(sph,nbody);
 
-  // Update neighbour tre
+  // Update neighbour tree
   sphneib->UpdateTree(sph,*simparams);
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(sph,nbody);
-
 
   return;
 }

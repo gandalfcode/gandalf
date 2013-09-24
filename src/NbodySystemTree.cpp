@@ -30,6 +30,7 @@
 #include "StarParticle.h"
 #include "SystemParticle.h"
 #include "NbodySystemTree.h"
+#include "BinaryOrbit.h"
 #include "MergeList.h"
 #include "InlineFuncs.h"
 #include "Debug.h"
@@ -48,7 +49,10 @@ NbodySystemTree<ndim>::NbodySystemTree()
   Nnode = 0;
   Nnodemax = 0;
   Nbinary = 0;
-  Nbinarymax = 0;
+  Ntriple = 0;
+  Nquadruple = 0;
+  Norbit = 0;
+  Norbitmax = 0;
 }
 
 
@@ -77,9 +81,10 @@ void NbodySystemTree<ndim>::AllocateMemory(int N)
   if (2*N > Nnodemax || !allocated_tree) {
     if (allocated_tree) DeallocateMemory();
     Nnodemax = 2*N;
-    Nbinarymax = N;
+    Norbitmax = N;
     NNtree = new NNTreeCell<ndim>[Nnodemax];
-    binary = new BinaryStar<ndim>[Nbinarymax];
+    orbit = new BinaryOrbit[Norbitmax];
+    allocated_tree = true;
   }
 
   return;
@@ -97,6 +102,7 @@ void NbodySystemTree<ndim>::DeallocateMemory(void)
   debug2("[NbodySystemTree::DeallocateMemory]");
 
   if (allocated_tree) {
+    delete[] orbit;
     delete[] NNtree;
   }
   allocated_tree = false;
@@ -259,11 +265,14 @@ void NbodySystemTree<ndim>::BuildSubSystems
   int i,ii,j,jj;                   // Star and system particle counters
   int k;                           // Dimension counter
   int Nsystem;                     // No. of systems
+  DOUBLE angmomsqd;                // Angular momentum squared
+
   DOUBLE dr[ndim];                 // Relative position vector
   DOUBLE drsqd;                    // Distance squared
   DOUBLE dv[ndim];                 // Relative velocity vector
   DOUBLE invdrmag;                 // 1 / drmag
   DOUBLE ketot = 0.0;              // Kinetic energy
+  DOUBLE mu;                       // Reduced mass of binary system
   DOUBLE vmean;                    // Average speed of stars in sub-cluster
   NbodyParticle<ndim> *si;         // Pointer to star/system i
   NbodyParticle<ndim> *sj;         // Pointer to star/system j
@@ -274,7 +283,10 @@ void NbodySystemTree<ndim>::BuildSubSystems
   nbody->Nnbody = 0;
   nbody->Nsystem = 0;
   Nsystem = 0;
+  Norbit = 0;
   Nbinary = 0;
+  Ntriple = 0;
+  Nquadruple = 0;
 
   // Loop through all nodes of tree and compute all physical quantities
   // ==========================================================================
@@ -436,21 +448,49 @@ void NbodySystemTree<ndim>::BuildSubSystems
           if (NNtree[c].Ncomp == 2) {
             for (k=0; k<ndim; k++) dv[k] = sj->v[k] - si->v[k];
             for (k=0; k<ndim; k++) dr[k] = sj->r[k] - si->r[k];
+            if (ndim == 2) {
+              orbit[Norbit].angmom[2] = mu*(dr[0]*dv[1] - dr[1]*dv[0]);
+              angmomsqd = orbit[Norbit].angmom[2]*orbit[Norbit].angmom[2];
+            }
+            else if (ndim == 3) {
+              orbit[Norbit].angmom[0] = mu*(dr[1]*dv[2] - dr[2]*dv[1]);
+              orbit[Norbit].angmom[1] = mu*(dr[2]*dv[0] - dr[0]*dv[2]);
+              orbit[Norbit].angmom[2] = mu*(dr[0]*dv[1] - dr[1]*dv[0]);
+              angmomsqd = DotProduct(orbit[Norbit].angmom,
+                                     orbit[Norbit].angmom,ndim);
+            }
             drsqd = DotProduct(dr,dr,ndim);
             invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
-            binary[Nbinary].ichild1 = c1;
-            binary[Nbinary].ichild2 = c2;
-            binary[Nbinary].m = NNtree[c].m;
-            for (k=0; k<ndim; k++) binary[Nbinary].r[k] = NNtree[c].r[k];
-            for (k=0; k<ndim; k++) binary[Nbinary].v[k] = NNtree[c].v[k];
-            binary[Nbinary].binen =
+            orbit[Norbit].ichild1 = c1;
+            orbit[Norbit].ichild2 = c2;
+            orbit[Norbit].m = NNtree[c].m;
+            for (k=0; k<ndim; k++) orbit[Norbit].r[k] = NNtree[c].r[k];
+            for (k=0; k<ndim; k++) orbit[Norbit].v[k] = NNtree[c].v[k];
+            orbit[Norbit].binen =
               0.5*DotProduct(dv,dv,ndim) - NNtree[c].m*invdrmag;
-            binary[Nbinary].sma = -0.5*NNtree[c].m/binary[Nbinary].binen;
-            binary[Nbinary].period = 0.0;
-            binary[Nbinary].ecc = 0.0;
-            if (si->m > sj->m) binary[Nbinary].q = sj->m/si->m;
-            else binary[Nbinary].q = si->m/sj->m;
-            Nbinary++;
+            orbit[Norbit].sma = -0.5*NNtree[c].m/orbit[Norbit].binen;
+            orbit[Norbit].period =
+              twopi*sqrt(pow(orbit[Norbit].sma,3)/orbit[Norbit].m);
+            orbit[Norbit].ecc =
+              1.0 - angmomsqd/(orbit[Norbit].m*orbit[Norbit].sma*mu*mu);
+            orbit[Norbit].ecc = sqrt(max(0.0,orbit[Norbit].ecc));
+            if (NNtree[c1].m > NNtree[c2].m)
+              orbit[Norbit].q = NNtree[c2].m/NNtree[c1].m;
+            else
+              orbit[Norbit].q = NNtree[c1].m/NNtree[c2].m;
+            if (c1 < nbody->Nstar && c2 < nbody->Nstar) {
+              orbit[Norbit].systemtype = "binary";
+              Nbinary++;
+            }
+            else if (c1 < nbody->Nstar || c2 < nbody->Nstar) {
+              orbit[Norbit].systemtype = "triple";
+              Ntriple++;
+            }
+            else {
+              orbit[Norbit].systemtype = "quadruple";
+              Nquadruple++;
+            }
+            Norbit++;
           }
 	  
           // Copy list of contained N-body particles (either systems or stars)
@@ -557,6 +597,7 @@ void NbodySystemTree<ndim>::FindBinarySystems
   debug2("[NbodySystemTree::FindBinarySystems]");
 
   // Set all counters
+  Norbit = 0;
   Nbinary = 0;
   Ntriple = 0;
   Nquadruple = 0;
@@ -614,7 +655,10 @@ void NbodySystemTree<ndim>::FindBinarySystems
         invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
         NNtree[c].gpe_internal += NNtree[c1].m*NNtree[c2].m*invdrmag;
 
-	cout << "INTERNAL?? : " << NNtree[c].gpe << "    " << NNtree[c].gpe_internal << "     " << fabs(NNtree[c].gpe - NNtree[c].gpe_internal) << "    " << gpesoft*NNtree[c].gpe << endl;
+        cout << "INTERNAL?? : " << NNtree[c].gpe << "    "
+             << NNtree[c].gpe_internal << "     "
+             << fabs(NNtree[c].gpe - NNtree[c].gpe_internal) << "    "
+              << gpesoft*NNtree[c].gpe << endl;
 
         // Now check energies and decide if we should create a new sub-system
         // object.  If yes, create new system in main arrays
@@ -628,46 +672,48 @@ void NbodySystemTree<ndim>::FindBinarySystems
             for (k=0; k<ndim; k++) dv[k] = NNtree[c1].v[k] - NNtree[c2].v[k];
             for (k=0; k<ndim; k++) dr[k] = NNtree[c1].r[k] - NNtree[c2].r[k];
             if (ndim == 2) {
-	      binary[Nbinary].angmom[2] = mu*(dr[0]*dv[1] - dr[1]*dv[0]);
-              angmomsqd = binary[Nbinary].angmom[2]*binary[Nbinary].angmom[2];
-	    }
-	    else if (ndim == 3) {
-	      binary[Nbinary].angmom[0] = mu*(dr[1]*dv[2] - dr[2]*dv[1]);
-	      binary[Nbinary].angmom[1] = mu*(dr[2]*dv[0] - dr[0]*dv[2]);
-	      binary[Nbinary].angmom[2] = mu*(dr[0]*dv[1] - dr[1]*dv[0]);
-              angmomsqd = DotProduct(binary[Nbinary].angmom,
-                                     binary[Nbinary].angmom,ndim);
-	    }
+              orbit[Norbit].angmom[2] = mu*(dr[0]*dv[1] - dr[1]*dv[0]);
+              angmomsqd = orbit[Norbit].angmom[2]*orbit[Norbit].angmom[2];
+            }
+            else if (ndim == 3) {
+              orbit[Norbit].angmom[0] = mu*(dr[1]*dv[2] - dr[2]*dv[1]);
+              orbit[Norbit].angmom[1] = mu*(dr[2]*dv[0] - dr[0]*dv[2]);
+              orbit[Norbit].angmom[2] = mu*(dr[0]*dv[1] - dr[1]*dv[0]);
+              angmomsqd = DotProduct(orbit[Norbit].angmom,
+                                     orbit[Norbit].angmom,ndim);
+            }
             drsqd = DotProduct(dr,dr,ndim);
             invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
-            binary[Nbinary].ichild1 = c1;
-            binary[Nbinary].ichild2 = c2;
-            binary[Nbinary].m = NNtree[c].m;
-            for (k=0; k<ndim; k++) binary[Nbinary].r[k] = NNtree[c].r[k];
-            for (k=0; k<ndim; k++) binary[Nbinary].v[k] = NNtree[c].v[k];
-            binary[Nbinary].binen =
+            orbit[Norbit].ichild1 = c1;
+            orbit[Norbit].ichild2 = c2;
+            orbit[Norbit].m = NNtree[c].m;
+            for (k=0; k<ndim; k++) orbit[Norbit].r[k] = NNtree[c].r[k];
+            for (k=0; k<ndim; k++) orbit[Norbit].v[k] = NNtree[c].v[k];
+            orbit[Norbit].binen =
               0.5*DotProduct(dv,dv,ndim) - NNtree[c].m*invdrmag;
-            binary[Nbinary].sma = -0.5*NNtree[c].m/binary[Nbinary].binen;
-            binary[Nbinary].period = 
-	      twopi*sqrt(pow(binary[Nbinary].sma,3)/binary[Nbinary].m);
-            binary[Nbinary].ecc = 
-	      1.0 - angmomsqd/(binary[Nbinary].m*binary[Nbinary].sma*mu*mu);
-	    binary[Nbinary].ecc = sqrt(max(0.0,binary[Nbinary].ecc));
+            orbit[Norbit].sma = -0.5*NNtree[c].m/orbit[Norbit].binen;
+            orbit[Norbit].period =
+              twopi*sqrt(pow(orbit[Norbit].sma,3)/orbit[Norbit].m);
+            orbit[Norbit].ecc =
+              1.0 - angmomsqd/(orbit[Norbit].m*orbit[Norbit].sma*mu*mu);
+            orbit[Norbit].ecc = sqrt(max(0.0,orbit[Norbit].ecc));
             if (NNtree[c1].m > NNtree[c2].m)
-              binary[Nbinary].q = NNtree[c2].m/NNtree[c1].m;
+              orbit[Norbit].q = NNtree[c2].m/NNtree[c1].m;
             else
-              binary[Nbinary].q = NNtree[c1].m/NNtree[c2].m;
-            if (c1 < nbody->Nstar && c2 < nbody->Nstar)
-              binary[Nbinary].systemtype = "binary";
+              orbit[Norbit].q = NNtree[c1].m/NNtree[c2].m;
+            if (c1 < nbody->Nstar && c2 < nbody->Nstar) {
+              orbit[Norbit].systemtype = "binary";
+              Nbinary++;
+            }
             else if (c1 < nbody->Nstar || c2 < nbody->Nstar) {
-              binary[Nbinary].systemtype = "triple";
+              orbit[Norbit].systemtype = "triple";
               Ntriple++;
             }
             else {
-              binary[Nbinary].systemtype = "quadruple";
+              orbit[Norbit].systemtype = "quadruple";
               Nquadruple++;
             }
-            Nbinary++;
+            Norbit++;
           }
 
 
@@ -844,20 +890,19 @@ void NbodySystemTree<ndim>::OutputBinaryProperties
   cout << "---------------------------------------" << endl;
   cout << "Binary statistics" << endl;
   cout << "---------------------------------------" << endl;
-  cout << "No. of binary orbits     : " << Nbinary << endl;
-  cout << "No. of binary systems    : " 
-       << Nbinary - 2*Ntriple - 3*Nquadruple << endl;
+  cout << "No. of orbits            : " << Norbit << endl;
+  cout << "No. of binary systems    : " << Norbit - 2*Ntriple - 3*Nquadruple << endl;
   cout << "No. of triple systems    : " << Ntriple << endl;
   cout << "No. of quadruple systems : " << Nquadruple << endl;
 
-  for (i=0; i<Nbinary; i++) {
-    cout << "System " << i << " : " << binary[i].systemtype << endl;
-    cout << "Components : " << binary[i].ichild1 << "    " 
-         << binary[i].ichild2 << endl;
-    cout << "Semi-major axis      : " << binary[i].sma << endl;
-    cout << "Orbital period       : " << binary[i].period << endl;
-    cout << "Orbital eccentricity : " << binary[i].ecc << endl;
-    cout << "Total mass           : " << binary[i].m << "    " << binary[i].q << endl;
+  for (i=0; i<Norbit; i++) {
+    cout << "System " << i << " : " << orbit[i].systemtype << endl;
+    cout << "Components : " << orbit[i].ichild1 << "    "
+         << orbit[i].ichild2 << endl;
+    cout << "Semi-major axis      : " << orbit[i].sma << endl;
+    cout << "Orbital period       : " << orbit[i].period << endl;
+    cout << "Orbital eccentricity : " << orbit[i].ecc << endl;
+    cout << "Total mass           : " << orbit[i].m << "    " << orbit[i].q << endl;
   }
 
   return;

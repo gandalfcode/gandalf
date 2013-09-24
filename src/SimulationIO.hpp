@@ -1,6 +1,7 @@
 //=============================================================================
 //  SimulationIO.hpp
-//  ..
+//  Contains all functions for reading and writing simulation data
+//  to/from snapshot files.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
@@ -37,6 +38,7 @@ using namespace std;
 
 //=============================================================================
 //  SimulationBase::ReadSnapshotFile
+/// Read snapshot file with specified filename and format.
 //=============================================================================
 bool SimulationBase::ReadSnapshotFile
 (string filename,                   ///< [in] Name of input snapshot file
@@ -60,6 +62,7 @@ bool SimulationBase::ReadSnapshotFile
 
 //=============================================================================
 //  SimulationBase::WriteSnapshotFile
+/// Write snapshot file with specified filename and format.
 //=============================================================================
 bool SimulationBase::WriteSnapshotFile
 (string filename,                   ///< [in] Name of output snapshot file
@@ -84,17 +87,20 @@ bool SimulationBase::WriteSnapshotFile
 /// from Python.
 //=============================================================================
 HeaderInfo SimulationBase::ReadHeaderSnapshotFile
-(string filename,                   ///< ..
- string format)                     ///< ..
+(string filename,                   ///< [in] Name of output snapshot file
+ string fileform)                   ///< [in] Format of output snapshot file
 {
-  HeaderInfo info;
-  ifstream infile;
+  HeaderInfo info;                  // ..
+  ifstream infile;                  // ..
+
+  debug2("[Simulation::ReadHeaderSnapshotFile]");
+
   infile.open(filename.c_str());
 
-  if (format == "column")
+  if (fileform == "column")
     ReadColumnHeaderFile(infile, info);
-  else if (format == "sf" || format == "seren_form")
-    ReadColumnHeaderFile(infile, info);
+  else if (fileform == "sf" || fileform == "seren_form")
+    ReadSerenFormHeaderFile(infile, info);
   else
     ExceptionHandler::getIstance().raise("Unrecognised file format");
 
@@ -114,6 +120,7 @@ void Simulation<ndim>::ReadColumnHeaderFile
 (ifstream& infile,                  ///< ..
  HeaderInfo& info)                  ///< ..
 {
+  debug2("[Simulation::ReadColumnHeaderFile]");
 
   // Open file and read header information
   infile >> info.Nsph;
@@ -133,11 +140,14 @@ void Simulation<ndim>::ReadColumnHeaderFile
 }
 
 
+
 //=============================================================================
 //  Simulation::ReadColumnSnapshotFile
+/// Reads a column format data snapshot of given filename.
 //=============================================================================
 template <int ndim>
-bool Simulation<ndim>::ReadColumnSnapshotFile(string filename)
+bool Simulation<ndim>::ReadColumnSnapshotFile
+(string filename)                  ///< Filename of column data snapshot file
 {
   int i;
   ifstream infile;
@@ -308,14 +318,34 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::ReadSerenFormHeaderFile
-(ifstream& infile,                  ///< ..
- HeaderInfo& info)                  ///< ..
+(ifstream& infile,                 ///< ..
+ HeaderInfo& info)                 ///< ..
 {
-  // Open file and read header information
-  infile >> info.Nsph;
-  infile >> info.Nstar;
+  int i;                           // Aux. counter
+  int idata[50];                   // Integer data
+  int ilpdata[50];                 // ..
+  FLOAT rdata[50];                 // Real data array
+  DOUBLE ddata[50];                // ..
+  string dummy;                    // ..
+
+  // Read information identifying format and precision of file.
+  // Then check if each value corresponds to the current values.
+  // --------------------------------------------------------------------------
+  infile >> dummy;
+  infile >> dummy;
   infile >> info.ndim;
-  infile >> info.t;
+  infile >> dummy;
+  infile >> dummy;
+
+  // Read infile header integer data
+  for (i=0; i<50; i++) infile >> idata[i];
+  for (i=0; i<50; i++) infile >> ilpdata[i];
+  for (i=0; i<50; i++) infile >> rdata[i];
+  for (i=0; i<50; i++) infile >> ddata[i];
+
+  info.Nsph  = idata[0];
+  info.Nstar = idata[1];
+  info.t     = ddata[0];
 
   // Check dimensionality matches if using fixed dimensions
   if (info.ndim != ndim) {
@@ -330,7 +360,6 @@ void Simulation<ndim>::ReadSerenFormHeaderFile
 
 
 
-
 //=============================================================================
 //  Simulation::ReadSerenFormSnapshotFile
 //=============================================================================
@@ -340,12 +369,10 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   int dim_check;               // Dimension check
   int dmdt_range_aux;          // Accretion history array size
   int i;                       // Aux. counter
-  int ifirst;                  // ..
-  int ilast;                   // ..
-  int j;
-  int k;
-  //int j;                       // Aux. counter
-  //int itemp;                   // Dummy integer variable
+  int ifirst;                  // i.d. of first particle
+  int ilast;                   // i.d. of last particle
+  int j;                       // Aux. counter
+  int k;                       // Dimension counter
   int ndata;                   // No. of data arrays written
   int nunit;                   // No. of unit strings
   int p;                       // Particle counter
@@ -354,20 +381,19 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   int ilpdata[50];             // ..
   int typedata[50][5];         // ..
   FLOAT rdata[50];             // Real data array
-  //FLOAT taux;                  // Aux. time variable
   FLOAT rtemp;                 // Dummy float variable
   DOUBLE ddata[50];            // ..
   string format_id;            // File format (for verification)
   string data_id[50];          // String ids of arrays written
   string unit_data[50];        // String ids of units written
-  ifstream infile;             // ..
-  FLOAT raux;                  // ..
+  ifstream infile;             // Stream of input file
+  FLOAT raux;                  // Aux. float variable
   HeaderInfo info;             // ..
   int sink_data_length;        // ..
   string dummystring;          // ..
   bool booldummy;              // ..
 
-  debug2("[Simulation::ReadColumnSnapshotFile]");
+  debug2("[Simulation::ReadSerenFormSnapshotFile]");
 
   cout << "Opening file : " << filename << endl;
 
@@ -583,5 +609,225 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 template <int ndim>
 bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 {
+  int dim_check;               // Dimension check
+  int dmdt_range_aux;          // Accretion history array size
+  int i;                       // Aux. counter
+  int ifirst;                  // i.d. of first particle
+  int ilast;                   // i.d. of last particle
+  int j;                       // Aux. counter
+  int k;                       // Dimension counter
+  int ndata;                   // No. of data arrays written
+  int nunit;                   // No. of unit strings
+  int p;                       // Particle counter
+  int pr_check;                // Precision check
+  int idata[50];               // Integer data
+  int ilpdata[50];             // ..
+  int typedata[50][5];         // ..
+  FLOAT rdata[50];             // Real data array
+  FLOAT rtemp;                 // Dummy float variable
+  DOUBLE ddata[50];            // ..
+  string format_id;            // File format (for verification)
+  string data_id[50];          // String ids of arrays written
+  string unit_data[50];        // String ids of units written
+  FLOAT raux;                  // Aux. float variable
+  HeaderInfo info;             // ..
+  int sink_data_length;        // ..
+  string dummystring;          // ..
+  bool booldummy;              // ..
+  ofstream outfile;            // ..
+
+  debug2("[Simulation::WriteSerenFormSnapshotFile]");
+
+  cout << "Opening file : " << filename << endl;
+
+  outfile.open(filename.c_str());
+
+  for (i=0; i<50; i++) idata[i] = 0;
+  for (i=0; i<50; i++) ilpdata[i] = 0;
+  for (i=0; i<50; i++) rdata[i] = 0.0;
+  for (i=0; i<50; i++) ddata[i] = 0.0;
+  for (i=0; i<50; i++) unit_data[i] = '';
+  for (i=0; i<50; i++) data_id[i] = '';
+  nunit = 0;
+  ndata = 0;
+
+  // Set units
+  unit_data[0] = simunits.r.outunit;
+  unit_data[1] = simunits.m.outunit;
+  unit_data[2] = simunits.t.outunit;
+  unit_data[3] = simunits.v.outunit;
+  unit_data[4] = simunits.a.outunit;
+  unit_data[5] = simunits.rho.outunit;
+  //unit_data[6] = simunits.sigma.outunit;
+  unit_data[7] = simunits.press.outunit;
+  unit_data[8] = simunits.f.outunit;
+  unit_data[9] = simunits.E.outunit;
+  unit_data[10] = simunits.mom.outunit;
+  unit_data[11] = simunits.angmom.outunit;
+  unit_data[12] = simunits.angvel.outunit;
+  unit_data[13] = simunits.dmdt.outunit;
+  //unit_data[14] = simunits.L.outunit;
+  //unit_data[15] = simunits.kappa.outunit;
+  //unit_data[16] = simunits.B.outunit;
+  //unit_data[17] = simunits.Q.outunit;
+  //unit_data[18] = simunits.J.outunit;
+  nunit = 21;
+
+
+  // Set array ids and array information data if there are any SPH particles
+  // --------------------------------------------------------------------------
+  if (sph->Nsph > 0) {
+	data_id[ndata] = 'porig';
+	typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+	typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 2;
+	typedata[ndata][4] = 0; ndata++;
+
+	data_id[ndata] = 'r';
+	typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
+	typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+	typedata[ndata][4] = 1; ndata++;
+
+	data_id[ndata] = 'm';
+	typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+	typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+	typedata[ndata][4] = 2; ndata++;
+
+	data_id[ndata] = 'h';
+	typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+	typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+	typedata[ndata][4] = 1; ndata++;
+
+	data_id[ndata] = 'v';
+	typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
+	typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+	typedata[ndata][4] = 4; ndata++;
+
+	data_id[ndata] = 'rho';
+	typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+	typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+	typedata[ndata][4] = 6; ndata++;
+
+	data_id[ndata] = 'u';
+	typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+	typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+	typedata[ndata][4] = 20; ndata++;
+  }
+
+  if (nbody->Nstar > 0) {
+	data_id[ndata] = 'sink_v1';
+	typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+	typedata[ndata][2] = nbody->Nstar; typedata[ndata][3] = 7;
+	typedata[ndata][4] = 0; ndata++;
+  }
+
+  // Set important header information
+  idata[0] = sph->Nsph;
+  idata[1] = nbody->Nstar;
+  idata[19] = nunit;
+  idata[20] = ndata;
+  ilpdata[0] = 0;
+  ilpdata[1] = Nsteps;
+  rdata[0] = sph->h_fac;
+  rdata[1] = 0.0;
+  ddata[0] = t*simunits.t.outscale;
+
+  // Write header information to file
+  // --------------------------------------------------------------------------
+  outfile << 'SERENASCIIDUMPV2';
+  outfile << 4 << endl;
+  outfile << ndim << endl;
+  outfile << ndim << endl;
+  outfile << ndim << endl;
+  for (i=0; i<50; i++) outfile << idata[i] << endl;
+  for (i=0; i<50; i++) outfile << ilpdata[i] << endl;
+  for (i=0; i<50; i++) outfile << rdata[i] << endl;
+  for (i=0; i<50; i++) outfile << ddata[i] << endl;
+  if (nunit > 0)
+    for (i=0; i<nunit; i++) outfile << unit_data[i] << endl;
+  if (ndata > 0)
+    for (i=0; i<ndata; i++) outfile << data_id[i] << endl;
+  if (ndata > 0)
+    for (i=0; i<ndata; i++)
+      outfile << typedata[i][0] << "    " << typedata[i][1] << "    "
+              << typedata[i][2] << "    " << typedata[i][3] << "    "
+              << typedata[i][4] << endl;
+
+  // Write arrays for SPH particles
+  // --------------------------------------------------------------------------
+  if (sph->Nsph > 0) {
+
+    // porig
+    // ------------------------------------------------------------------------
+    for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].iorig;
+
+    // Positions
+    // ------------------------------------------------------------------------
+    if (ndim == 1)
+	  for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].r[0] << endl;
+    else if (ndim == 2)
+	  for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].r[0] << "    "
+                                          << sph->sphdata[i].r[1] << endl;
+    else if (ndim == 3)
+	  for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].r[0] << "    "
+                                          << sph->sphdata[i].r[1] << "    "
+                                          << sph->sphdata[i].r[2] << endl;
+
+    // Masses
+    // ------------------------------------------------------------------------
+    for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].m << endl;
+
+    // Smoothing lengths
+    // ------------------------------------------------------------------------
+    for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].h << endl;
+
+    // Velocities
+    // ------------------------------------------------------------------------
+    if (ndim == 1)
+	  for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].v[0] << endl;
+    else if (ndim == 2)
+	  for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].v[0] << "    "
+                                          << sph->sphdata[i].v[1] << endl;
+    else if (ndim == 3)
+	  for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].v[0] << "    "
+                                          << sph->sphdata[i].v[1] << "    "
+                                          << sph->sphdata[i].v[2] << endl;
+
+    // Densities
+    // ------------------------------------------------------------------------
+    for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].rho << endl;;
+
+    // Specific internal energies
+    // ------------------------------------------------------------------------
+    for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].u;
+
+  }
+
+  // Sinks/stars
+  // --------------------------------------------------------------------------
+  if (nbody->Nstar > 0) {
+    sink_data_length = 12 + 2*ndim; //+ 2*dmdt_range_aux;
+    int ii;
+    FLOAT sdata[sink_data_length];
+    for (ii=0; ii<6; ii++) outfile << 2 << "    " << 2 << "    " << 0 << "    "
+    		                       << sink_data_length << "    " << 0 << "    "
+    		                       << 0 << endl;
+    for (i=0; i<nbody->Nstar; i++) {
+      for (ii=0; ii<2; ii++) outfile << true << "   " << true << endl;
+      for (ii=0; ii<2; ii++) outfile << i+1 << "    " << 0 << endl;
+      for (k=0; k<ndim; k++) sdata[k+1] = nbody->stardata[i].r[k];
+      for (k=0; k<ndim; k++) sdata[k+1+ndim] = nbody->stardata[i].v[k];
+      sdata[1+2*ndim] = nbody->stardata[i].m;
+      sdata[2+2*ndim] = nbody->stardata[i].h;
+      sdata[3+2*ndim] = nbody->stardata[i].radius;
+      for (ii=0; ii<sink_data_length; ii++) outfile << sdata[ii] << "    ";
+      outfile << endl;
+    }
+  }
+  // --------------------------------------------------------------------------
+
+  // Close file
+  infile.close();
+
+  return true;
   return true;
 }

@@ -50,17 +50,17 @@ from formula_parser import evaluateStack, exprStack, varStack, pattern
 #------------------------------------------------------------------------------
 def CreateUserQuantity(name, formula, unitlabel='', unitname='',scaling_factor=1, label=''):
     '''Given a mathematical formula, build a data fetcher from it.
-    The quantity is given a name, which can now be used in plots and in other formulae.
-    When you construct a quantity, you can rely on one of the units we provide, in which case
-    you can just pass as the scaling_factor parameter the name of the unit you want inside
-    the SimUnits class. For example, if your unit has dimensions of acceleration, you can pass
-    'a' as the scaling_factor parameter. Doing this allows the unit system to work seamlessly
-    when plotting (i.e., you can specify the units you want the plot in).
-    Alternatively, you can build your own unit passing a numerical value for the scaling_factor,
-    a unitname and a latex label.
-    In this case, however, no rescaling is possible, as the unit system does not
-    know how to rescale your unit.    
-    '''
+The quantity is given a name, which can now be used in plots and in other 
+formulae.  When you construct a quantity, you can rely on one of the units we 
+provide, in which case you can just pass as the scaling_factor parameter the 
+name of the unit you want inside the SimUnits class. For example, if your unit 
+has dimensions of acceleration, you can pass 'a' as the scaling_factor 
+parameter. Doing this allows the unit system to work seamlessly when plotting 
+(i.e., you can specify the units you want the plot in).  Alternatively, you can 
+build your own unit passing a numerical value for the scaling_factor, 
+a unitname and a latex label.  In this case, however, no rescaling is possible, 
+as the unit system does not know how to rescale your unit.    
+'''
     fetcher = FormulaDataFetcher(name, formula, unitlabel, unitname, scaling_factor, label)
     derived_fetchers[name] = fetcher
     return fetcher
@@ -68,7 +68,8 @@ def CreateUserQuantity(name, formula, unitlabel='', unitname='',scaling_factor=1
   
 #------------------------------------------------------------------------------
 def CreateTimeData(name, function, *args, **kwargs):
-    '''Given a function that takes a snapshot as input, construct a FunctionTimeDataFetcher object from it'''
+    '''Given a function that takes a snapshot as input, construct a 
+FunctionTimeDataFetcher object from it'''
     fetcher = FunctionTimeDataFetcher(function, *args, **kwargs)
     time_fetchers [name] = fetcher
 

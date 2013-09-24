@@ -33,6 +33,7 @@
 #include "NbodyParticle.h"
 #include "StarParticle.h"
 #include "SystemParticle.h"
+#include "BinaryOrbit.h"
 #include "Parameters.h"
 using namespace std;
 
@@ -75,31 +76,6 @@ struct NNTreeCell {
 
 
 //=============================================================================
-//  Structure BinaryStar
-/// \brief   Class definition for individual binary star system.
-/// \details Class definition for individual binary star system.
-/// \author  D. A. Hubber, G. Rosotti
-/// \date    01/08/2013
-//=============================================================================
-template <int ndim>
-struct BinaryStar {
-  int ichild1;                     ///< id of first component (system or star)
-  int ichild2;                     ///< id of second component (system or star)
-  FLOAT r[ndim];                   ///< Position of COM of binary
-  FLOAT v[ndim];                   ///< Velocity of COM of binary
-  FLOAT m;                         ///< Total mass of binary
-  FLOAT angmom[3];                 ///< Angular momentum of binary
-  FLOAT binen;                     ///< Specific binding energy
-  FLOAT sma;                       ///< Semi-major axis
-  FLOAT ecc;                       ///< Orbital eccentricity
-  FLOAT period;                    ///< Orbital period
-  FLOAT q;                         ///< Mass ratio
-  string systemtype;               ///< Type of system (binary, triple, etc..)
-};
-
-
-
-//=============================================================================
 //  Class NbodySystemTree
 /// \brief   Class definition for N-body nearest neighbour tree.
 /// \details Class definition for N-body nearest neighbour tree.  Used to 
@@ -128,15 +104,16 @@ class NbodySystemTree
 
   bool allocated_tree;               ///< Is NN-tree memory allocated?
   int Nbinary;                       ///< No. of binary stars
-  int Nbinarymax;                    ///< Max. no. of binary stars
   int Nnode;                         ///< No. of nodes of NN-tree
   int Nnodemax;                      ///< Max. no. of nodes on NN-tree.
-  int Ntriple;                       ///< No. of triple systems
+  int Norbit;                        ///< No. of binary orbits
+  int Norbitmax;                     ///< Max. no. of binary orbits
   int Nquadruple;                    ///< No. of quadruple systems
+  int Ntriple;                       ///< No. of triple systems
   DOUBLE gpehard;                    ///< Grav. energy limit hard sub-systems
   DOUBLE gpesoft;                    ///< Grav. energy limit soft sub-systems
   struct NNTreeCell<ndim> *NNtree;   ///< Main NN-tree array
-  struct BinaryStar<ndim> *binary;   ///< Main binary star array
+  struct BinaryOrbit *orbit;         ///< Main binary star array
 
 };
 #endif

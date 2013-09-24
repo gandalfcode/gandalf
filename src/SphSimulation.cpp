@@ -1005,8 +1005,7 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 
     // Find minimum timestep from all SPH particles
     // ------------------------------------------------------------------------
-#pragma omp parallel default(none) private(i,dt) \
-  shared(dt_min)
+#pragma omp parallel default(none) private(i,dt) shared(dt_min)
     {
       dt = big_number_dp;
 #pragma omp for
