@@ -14,9 +14,9 @@ Select shocktube initial conditions         : ic = binaryacc
 Pressure of LHS fluid                       : press1 = 1.0
 Density of LHS fluid                        : rhofluid1 = 0.1
 Density of RHS fluid                        : rhofluid2 = 0.01
-No. of particles in LHS fluid               : Nlattice1[0] = 64
-No. of particles in LHS fluid               : Nlattice1[1] = 64
-No. of particles in LHS fluid               : Nlattice1[2] = 64
+No. of particles in LHS fluid               : Nlattice1[0] = 128
+No. of particles in LHS fluid               : Nlattice1[1] = 128
+No. of particles in LHS fluid               : Nlattice1[2] = 128
 No. of particles in RHS fluid               : Nlattice2[0] = 0
 No. of particles in RHS fluid               : Nlattice2[1] = 0
 No. of particles in RHS fluid               : Nlattice2[2] = 0
@@ -105,11 +105,12 @@ Artificial viscosity beta value             : beta_visc = 2.0
 Use leapfrog N-body integration scheme      : nbody = lfkdk
 Activate sink particles in code             : sink_particles = 1
 Allow creation of new sink particles        : create_sinks = 0
-Use smooth accretion in sinks               : smooth_accretion = 0
+Use smooth accretion in sinks               : smooth_accretion = 1
 Mass cut-off for smooth accretion           : smooth_accrete_frac = 0.05
 Timestep cup-off for smooth accretion       : smooth_accrete_dt = 0.05
 Select adaptive sink radii                  : sink_radius_mode = hmult
 Set sink radius equal to kernel extent      : sink_radius = 2.0
+Output binary statistics                    : binary_stats = 1
 
 
 #-------------------------

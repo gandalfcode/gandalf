@@ -547,10 +547,12 @@ void NbodySystemTree<ndim>::FindBinarySystems
   int c,c1,c2;                     // Cell counter
   int i;                           // Star and system particle counters
   int k;                           // Dimension counter
+  DOUBLE angmomsqd;                // Angular momentum squared
   DOUBLE dr[ndim];                 // Relative position vector
   DOUBLE drsqd;                    // Distance squared
   DOUBLE dv[ndim];                 // Relative velocity vector
   DOUBLE invdrmag;                 // 1 / drmag
+  DOUBLE mu;                       // Reduced mass of binary system
 
   debug2("[NbodySystemTree::FindBinarySystems]");
 
@@ -575,6 +577,7 @@ void NbodySystemTree<ndim>::FindBinarySystems
       for (k=0; k<ndim; k++) NNtree[c].adot[k] = nbody->stardata[i].adot[k];
       NNtree[c].gpe = 0.5*nbody->stardata[i].m*nbody->stardata[i].gpot;
       NNtree[c].gpe_internal = 0.0;
+      cout << "WTF?? : " << i << "    " << NNtree[c].gpe << "    " << NNtree[c].m << endl;
     }
 
     // Else, add together both child node properties
@@ -611,6 +614,7 @@ void NbodySystemTree<ndim>::FindBinarySystems
         invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
         NNtree[c].gpe_internal += NNtree[c1].m*NNtree[c2].m*invdrmag;
 
+	cout << "INTERNAL?? : " << NNtree[c].gpe << "    " << NNtree[c].gpe_internal << "     " << fabs(NNtree[c].gpe - NNtree[c].gpe_internal) << "    " << gpesoft*NNtree[c].gpe << endl;
 
         // Now check energies and decide if we should create a new sub-system
         // object.  If yes, create new system in main arrays
@@ -620,8 +624,20 @@ void NbodySystemTree<ndim>::FindBinarySystems
 
           // Compute and store binary properties if bound
           if (NNtree[c].Ncomp == 2) {
+            mu = NNtree[c1].m*NNtree[c2].m/NNtree[c].m;
             for (k=0; k<ndim; k++) dv[k] = NNtree[c1].v[k] - NNtree[c2].v[k];
             for (k=0; k<ndim; k++) dr[k] = NNtree[c1].r[k] - NNtree[c2].r[k];
+            if (ndim == 2) {
+	      binary[Nbinary].angmom[2] = mu*(dr[0]*dv[1] - dr[1]*dv[0]);
+              angmomsqd = binary[Nbinary].angmom[2]*binary[Nbinary].angmom[2];
+	    }
+	    else if (ndim == 3) {
+	      binary[Nbinary].angmom[0] = mu*(dr[1]*dv[2] - dr[2]*dv[1]);
+	      binary[Nbinary].angmom[1] = mu*(dr[2]*dv[0] - dr[0]*dv[2]);
+	      binary[Nbinary].angmom[2] = mu*(dr[0]*dv[1] - dr[1]*dv[0]);
+              angmomsqd = DotProduct(binary[Nbinary].angmom,
+                                     binary[Nbinary].angmom,ndim);
+	    }
             drsqd = DotProduct(dr,dr,ndim);
             invdrmag = 1.0 / (sqrt(drsqd) + small_number_dp);
             binary[Nbinary].ichild1 = c1;
@@ -632,8 +648,11 @@ void NbodySystemTree<ndim>::FindBinarySystems
             binary[Nbinary].binen =
               0.5*DotProduct(dv,dv,ndim) - NNtree[c].m*invdrmag;
             binary[Nbinary].sma = -0.5*NNtree[c].m/binary[Nbinary].binen;
-            binary[Nbinary].period = 0.0;
-            binary[Nbinary].ecc = 0.0;
+            binary[Nbinary].period = 
+	      twopi*sqrt(pow(binary[Nbinary].sma,3)/binary[Nbinary].m);
+            binary[Nbinary].ecc = 
+	      1.0 - angmomsqd/(binary[Nbinary].m*binary[Nbinary].sma*mu*mu);
+	    binary[Nbinary].ecc = sqrt(max(0.0,binary[Nbinary].ecc));
             if (NNtree[c1].m > NNtree[c2].m)
               binary[Nbinary].q = NNtree[c2].m/NNtree[c1].m;
             else
@@ -674,8 +693,6 @@ void NbodySystemTree<ndim>::FindBinarySystems
 
   return;
 }
-
-
 
 
 
@@ -759,7 +776,7 @@ void NbodySystemTree<ndim>::FindPerturberLists
         drsqd = DotProduct(dr,dr,ndim);
         gpeaux = ms*NNtree[caux].m/sqrt(drsqd);
 
-	    //cout << "Checking perturber;  s : " << s << "    c : " << c << "    caux : " << caux << "    drsqd : " << drsqd << "    gpeaux : " << gpeaux << "      " << gpehard*gpe_internal << endl;
+        //cout << "Checking perturber;  s : " << s << "    c : " << c << "    caux : " << caux << "    drsqd : " << drsqd << "    gpeaux : " << gpeaux << "      " << gpehard*gpe_internal << endl;
 
         if (gpeaux > gpehard*gpe_internal) {
 	
@@ -820,18 +837,27 @@ template <int ndim>
 void NbodySystemTree<ndim>::OutputBinaryProperties
 (Nbody<ndim> *nbody)                ///< [in] Nbody object containing stars
 {
-  int i;
+  int i;                            // Binary counter
 
-  cout << "No. of binary systems    : " << Nbinary << endl;
+  debug2("[NbodySystemTree::FindPerturberLists]");
+
+  cout << "---------------------------------------" << endl;
+  cout << "Binary statistics" << endl;
+  cout << "---------------------------------------" << endl;
+  cout << "No. of binary orbits     : " << Nbinary << endl;
+  cout << "No. of binary systems    : " 
+       << Nbinary - 2*Ntriple - 3*Nquadruple << endl;
   cout << "No. of triple systems    : " << Ntriple << endl;
   cout << "No. of quadruple systems : " << Nquadruple << endl;
 
   for (i=0; i<Nbinary; i++) {
     cout << "System " << i << " : " << binary[i].systemtype << endl;
-    cout << "Components : " << binary[i].ichild1 << "    " << binary[i].ichild2 << endl;
+    cout << "Components : " << binary[i].ichild1 << "    " 
+         << binary[i].ichild2 << endl;
     cout << "Semi-major axis      : " << binary[i].sma << endl;
     cout << "Orbital period       : " << binary[i].period << endl;
     cout << "Orbital eccentricity : " << binary[i].ecc << endl;
+    cout << "Total mass           : " << binary[i].m << "    " << binary[i].q << endl;
   }
 
   return;

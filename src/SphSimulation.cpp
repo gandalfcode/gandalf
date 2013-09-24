@@ -620,6 +620,11 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   nbody->Nstar          = intparams["Nstar"];
   nbody_single_timestep = intparams["nbody_single_timestep"];
+  nbodytree.gpehard     = floatparams["gpehard"];
+  nbodytree.gpesoft     = floatparams["gpesoft"];
+  nbody->perturbers     = intparams["perturbers"];
+  if (intparams["sub_systems"] == 1) 
+    subsystem->perturbers = intparams["perturbers"];
 
   dt_python             = floatparams["dt_python"];
   dt_snap               = floatparams["dt_snap"]/simunits.t.outscale;

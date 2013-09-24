@@ -1623,7 +1623,7 @@ void Simulation<ndim>::BinaryStar(void)
 {
   int k;                           // Dimension counter
   FLOAT sma = 1.0;                 // Binary semi-major axis
-  FLOAT eccent = 0.0;              // Orbital eccentricity
+  FLOAT eccent = 0.1;              // Orbital eccentricity
   FLOAT m1 = 0.5;                  // Mass of star 1
   FLOAT m2 = 0.5;                  // Mass of star 2
   DOUBLE rbinary[ndim];            // Position of binary COM
@@ -1716,7 +1716,8 @@ void Simulation<ndim>::QuadrupleStar(void)
   int k;                           // Dimension counter
   FLOAT sma1 = 1.0;                // Outer semi-major axis
   FLOAT sma2 = 0.01;               // Inner semi-major axis
-  FLOAT eccent = 0.0;              // Orbital eccentricity (of all orbits)
+  FLOAT eccent1 = 0.1;             // Main orbital eccentricity
+  FLOAT eccent2 = 0.2;             // Minor orbital eccentricity
   FLOAT m1 = 0.5;                  // Mass of binary 1
   FLOAT m2 = 0.5;                  // Mass of binary 2
   DOUBLE rbinary[ndim];            // Position of binary COM
@@ -1740,7 +1741,7 @@ void Simulation<ndim>::QuadrupleStar(void)
   // Compute main binary orbit
   for (k=0; k<ndim; k++) rbinary[k] = 0.0;
   for (k=0; k<ndim; k++) vbinary[k] = 0.0;
-  AddBinaryStar(sma1,eccent,m1,m2,0.01,0.01,rbinary,vbinary,b1,b2);
+  AddBinaryStar(sma1,eccent1,m1,m2,0.01,0.01,rbinary,vbinary,b1,b2);
 
   cout << "b1, r : " << b1.r[0] << "    " << b1.r[1] << endl;
   cout << "b1, v : " << b1.v[0] << "    " << b1.v[1] << endl;
@@ -1748,10 +1749,10 @@ void Simulation<ndim>::QuadrupleStar(void)
   cout << "b2, v : " << b2.v[0] << "    " << b2.v[1] << endl;
 
   // Now compute both components
-  AddBinaryStar(sma2,eccent,0.5*m1,0.5*m1,0.0001,0.0001,b1.r,b1.v,
-		        nbody->stardata[0],nbody->stardata[1]);
-  AddBinaryStar(sma2,eccent,0.5*m2,0.5*m2,0.0001,0.0001,b2.r,b2.v,
-		        nbody->stardata[2],nbody->stardata[3]);
+  AddBinaryStar(sma2,eccent2,0.5*m1,0.5*m1,0.0001,0.0001,b1.r,b1.v,
+                nbody->stardata[0],nbody->stardata[1]);
+  AddBinaryStar(sma2,eccent2,0.5*m2,0.5*m2,0.0001,0.0001,b2.r,b2.v,
+                nbody->stardata[2],nbody->stardata[3]);
 
   for (int i=0; i<nbody->Nstar; i++) {
     cout << "Star : " << i << "   r : " << nbody->stardata[i].r[0] << "  " 
