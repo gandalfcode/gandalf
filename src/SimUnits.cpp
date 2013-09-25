@@ -57,7 +57,7 @@ SimUnit::SimUnit()
 /// Compute scaling factor to convert between dimensionless units and the 
 /// requested unit (unit_string).
 //=============================================================================
-double SimUnit::OutputScale(string unit_string)
+DOUBLE SimUnit::OutputScale(string unit_string)
 {
   return inscale*inSI/SIUnit(unit_string);
 }
@@ -68,7 +68,7 @@ double SimUnit::OutputScale(string unit_string)
 //  LengthUnit::SIUnit
 /// Return numerical value requested length unit in SI units
 //=============================================================================
-double LengthUnit::SIUnit(string unit)
+DOUBLE LengthUnit::SIUnit(string unit)
 {
   if (unit == "mpc") return 1.0E6*r_pc;
   else if (unit == "kpc") return 1.0E3*r_pc;
@@ -112,7 +112,7 @@ string LengthUnit::LatexLabel(string unit)
 //  MassUnit::SIUnit
 /// Return numerical value requested mass unit in SI units
 //=============================================================================
-double MassUnit::SIUnit(string unit_string)
+DOUBLE MassUnit::SIUnit(string unit_string)
 {
   if (unit_string == "m_sun") return m_sun;
   else if (unit_string == "m_jup") return m_jup;
@@ -148,7 +148,7 @@ string MassUnit::LatexLabel(string unit_string)
 //  TimeUnit::SIUnit
 /// Return numerical value requested time unit in SI units
 //=============================================================================
-double TimeUnit::SIUnit(string unit_string)
+DOUBLE TimeUnit::SIUnit(string unit_string)
 {
   if (unit_string == "gyr") return 1000.0*myr;
   else if (unit_string == "myr") return myr;
@@ -184,7 +184,7 @@ string TimeUnit::LatexLabel(string unit_string)
 //  VelocityUnit::SIUnit
 /// Return numerical value requested velocity unit in SI units
 //=============================================================================
-double VelocityUnit::SIUnit(string unit_string)
+DOUBLE VelocityUnit::SIUnit(string unit_string)
 {
   if (unit_string == "km_s") return 1000.0;
   else if (unit_string == "au_yr") return r_au/yr;
@@ -218,7 +218,7 @@ string VelocityUnit::LatexLabel(string unit_string)
 //  AccelerationUnit::SIUnit
 /// Return numerical value requested acceleration unit in SI units
 //=============================================================================
-double AccelerationUnit::SIUnit(string unit_string)
+DOUBLE AccelerationUnit::SIUnit(string unit_string)
 {
   if (unit_string == "km_s2") return 1000.0;
   else if (unit_string == "au_yr2") return r_au/yr/yr;
@@ -252,7 +252,7 @@ string AccelerationUnit::LatexLabel(string unit_string)
 //  DensityUnit::SIUnit
 /// Return numerical value requested density unit in SI units
 //=============================================================================
-double DensityUnit::SIUnit(string unit_string)
+DOUBLE DensityUnit::SIUnit(string unit_string)
 {
   if (unit_string == "m_sun_pc3") return m_sun/(r_pc*r_pc*r_pc);
   else if (unit_string == "kg_m3") return 1.0;
@@ -281,10 +281,42 @@ string DensityUnit::LatexLabel(string unit_string)
 
 
 //=============================================================================
+//  DensityUnit::SIUnit
+/// Return numerical value requested density unit in SI units
+//=============================================================================
+DOUBLE ColumnDensityUnit::SIUnit(string unit_string)
+{
+  if (unit_string == "m_sun_pc2") return m_sun/(r_pc*r_pc);
+  else if (unit_string == "kg_m2") return 1.0;
+  else if (unit_string == "g_cm2") return 10.0;
+  else if (unit_string == "") return 1.0;
+  else {
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
+  }
+}
+
+
+
+//=============================================================================
+//  ColumnDensityUnit::LatexLabel
+/// Return latex string of requested density unit for external plotting
+//=============================================================================
+string ColumnDensityUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "m_sun_pc2") return "M_{\\odot}\\,pc^{-2}";
+  else if (unit_string == "kg_m2") return "kg\\,m^{-2}";
+  else if (unit_string == "g_cm2") return "g\\,cm^{-2}";
+  else return "";
+}
+
+
+
+//=============================================================================
 //  PressureUnit::SIUnit
 /// Return numerical value requested pressure unit in SI units
 //=============================================================================
-double PressureUnit::SIUnit(string unit_string)
+DOUBLE PressureUnit::SIUnit(string unit_string)
 {
   if (unit_string == "Pa") return 1.0;
   else if (unit_string == "bar") return 1.0e5;
@@ -314,7 +346,7 @@ string PressureUnit::LatexLabel(string unit_string)
 //  ForceUnit::SIUnit
 /// Return numerical value of requested force unit in SI units
 //=============================================================================
-double ForceUnit::SIUnit(string unit_string)
+DOUBLE ForceUnit::SIUnit(string unit_string)
 {
   if (unit_string == "N") return 1.0;
   else if (unit_string == "dyn") return 1.0e-5;
@@ -344,7 +376,7 @@ string ForceUnit::LatexLabel(string unit_string)
 //  EnergyUnit::SIUnit
 /// Return numerical value requested energy unit in SI units
 //=============================================================================
-double EnergyUnit::SIUnit(string unit_string)
+DOUBLE EnergyUnit::SIUnit(string unit_string)
 {
   if (unit_string == "J") return 1.0;
   else if (unit_string == "erg") return 1.0e-7;
@@ -378,7 +410,7 @@ string EnergyUnit::LatexLabel(string unit_string)
 //  MomentumUnit::SIUnit
 /// Return numerical value requested momentum unit in SI units
 //=============================================================================
-double MomentumUnit::SIUnit(string unit_string)
+DOUBLE MomentumUnit::SIUnit(string unit_string)
 {
   if (unit_string == "m_sunkm_s") return m_sun*1000.0;
   else if (unit_string == "m_sunau_yr") return m_sun*r_au/yr;
@@ -412,7 +444,7 @@ string MomentumUnit::LatexLabel(string unit_string)
 //  AngularMomentumUnit::SIUnit
 /// Return numerical value requested angular momentum unit in SI units
 //=============================================================================
-double AngularMomentumUnit::SIUnit(string unit_string)
+DOUBLE AngularMomentumUnit::SIUnit(string unit_string)
 {
   if (unit_string == "m_sunkm2_s") return m_sun*1000.0*1000.0;
   else if (unit_string == "m_sunau2_yr") return m_sun*r_au*r_au/yr;
@@ -446,7 +478,7 @@ string AngularMomentumUnit::LatexLabel(string unit_string)
 //  AngularVelocityUnit::SIUnit
 /// Return numerical value requested angular velocity unit in SI units
 //=============================================================================
-double AngularVelocityUnit::SIUnit(string unit_string)
+DOUBLE AngularVelocityUnit::SIUnit(string unit_string)
 {
   if (unit_string == "rad_s") return 1.0;
   else if (unit_string == "") return 1.0;
@@ -474,7 +506,7 @@ string AngularVelocityUnit::LatexLabel(string unit_string)
 //  MassRateUnit::SIUnit
 /// Return numerical value requested Mass rate unit in SI units
 //=============================================================================
-double MassRateUnit::SIUnit(string unit_string)
+DOUBLE MassRateUnit::SIUnit(string unit_string)
 {
   if (unit_string == "m_sun_myr") return m_sun/myr;
   else if (unit_string == "m_sun_yr") return m_sun/yr;
@@ -505,10 +537,42 @@ string MassRateUnit::LatexLabel(string unit_string)
 
 
 //=============================================================================
+//  LuminosityUnit::SIUnit
+/// Return numerical value requested Mass rate unit in SI units
+//=============================================================================
+DOUBLE LuminosityUnit::SIUnit(string unit_string)
+{
+  if (unit_string == "L_sun") return L_sun;
+  else if (unit_string == "W") return 1.0;
+  else if (unit_string == "erg_s") return 1.0e-7;
+  else if (unit_string == "") return 1.0;
+  else if (unit_string != "") {
+    string message = "Parameter error : Unrecognised unit = " + unit_string;
+    ExceptionHandler::getIstance().raise(message);
+  }
+}
+
+
+
+//=============================================================================
+//  LuminosityUnit::LatexLabel
+/// Return latex string of requested mass rate unit for external plotting
+//=============================================================================
+string LuminosityUnit::LatexLabel(string unit_string)
+{
+  if (unit_string == "L_sun") return "L\\_{\\odot}";
+  else if (unit_string == "W") return "W";
+  else if (unit_string == "erg_s") return "erg\\,s^{-1}";
+  else return "";
+}
+
+
+
+//=============================================================================
 //  SpecificEnergyUnit::SIUnit
 /// Return numerical value requested specific energy unit in SI units
 //=============================================================================
-double SpecificEnergyUnit::SIUnit(string unit_string)
+DOUBLE SpecificEnergyUnit::SIUnit(string unit_string)
 {
   if (unit_string == "J_kg") return 1.0;
   else if (unit_string == "erg_g") return 1.0e-4;
@@ -539,7 +603,7 @@ string SpecificEnergyUnit::LatexLabel(string unit_string)
 //  SpecificEnergyRateUnit::SIUnit
 /// Return numerical value requested specific energy rate unit in SI units
 //=============================================================================
-double SpecificEnergyRateUnit::SIUnit(string unit_string)
+DOUBLE SpecificEnergyRateUnit::SIUnit(string unit_string)
 {
   if (unit_string == "J_kg_s") return 1.0;
   else if (unit_string == "erg_g_s") return 1.0e-4;
@@ -570,7 +634,7 @@ string SpecificEnergyRateUnit::LatexLabel(string unit_string)
 //  TemperatureUnit::SIUnit
 /// Return numerical value requested temperature unit in SI units
 //=============================================================================
-double TemperatureUnit::SIUnit(string unit_string)
+DOUBLE TemperatureUnit::SIUnit(string unit_string)
 {
   if (unit_string == "K") return 1.0;
   else if (unit_string == "") return 1.0;
@@ -665,7 +729,8 @@ void SimUnits::SetupUnits(Parameters *params)
   r.outscale = 1.0;
   r.inscale = r.outscale*r.outSI/r.inSI;
 
-  cout << "Length unit  = " << r.outscale << params->stringparams["routunit"]
+  cout << "Length unit  = " 
+       << r.outscale << " " << params->stringparams["routunit"]
        << "     (SI = " << r.outscale*r.outSI << " m )" << endl;
 
   // Mass units
@@ -676,7 +741,8 @@ void SimUnits::SetupUnits(Parameters *params)
   m.outscale = 1.0;
   m.inscale = m.outscale*m.outSI/m.inSI;
 
-  cout << "Mass unit    = " << m.outscale << params->stringparams["moutunit"]
+  cout << "Mass unit    = " 
+       << m.outscale << " " << params->stringparams["moutunit"]
        << "     (SI = " << m.outscale*m.outSI << " kg )" << endl;
 
   // Time units
@@ -689,7 +755,8 @@ void SimUnits::SetupUnits(Parameters *params)
   t.outscale /= t.outSI;
   t.outcgs = t.outSI;
 
-  cout << "Time unit    = " << t.outscale << params->stringparams["toutunit"]
+  cout << "Time unit    = " 
+       << t.outscale << " " << params->stringparams["toutunit"]
        << "     (SI = " << t.outscale*m.outSI << " s )" << endl;
 
   // Velocity units
@@ -702,7 +769,8 @@ void SimUnits::SetupUnits(Parameters *params)
   v.outscale /= v.outSI;
   v.outcgs = 100.0*v.outSI;
 
-  cout << "Velocity unit = " << v.outscale << params->stringparams["voutunit"]
+  cout << "Velocity unit = " 
+       << v.outscale << " " << params->stringparams["voutunit"]
        << "     (SI = " << v.outscale*v.outSI << " m_s )" << endl;
 
   // Acceleration units
@@ -715,7 +783,8 @@ void SimUnits::SetupUnits(Parameters *params)
   a.outscale = a.outscale / a.outSI;
   a.outcgs = 100.0*a.outSI;
 
-  cout << "Accel. unit  = " << a.outscale << params->stringparams["aoutunit"]
+  cout << "Accel. unit  = " 
+       << a.outscale << " " << params->stringparams["aoutunit"]
        << "     (SI = " << a.outscale*m.outSI << " m_s2 )" << endl;
 
   // Density units
@@ -728,8 +797,23 @@ void SimUnits::SetupUnits(Parameters *params)
   rho.outscale = rho.outscale / rho.outSI;
   rho.outcgs = 1.0e-3*rho.outSI;
 
-  cout << "Density unit  = " << rho.outscale << params->stringparams["rhooutunit"]
+  cout << "Density unit  = " 
+       << rho.outscale << " " << params->stringparams["rhooutunit"]
        << "     (SI = " << rho.outscale*rho.outSI << " kg_m3 )" << endl;
+
+  // Column density units
+  // --------------------------------------------------------------------------
+  sigma.inSI = sigma.SIUnit(params->stringparams["sigmainunit"]);
+  sigma.outSI = sigma.SIUnit(params->stringparams["sigmaoutunit"]);
+  sigma.inscale = (m.inscale*m.inSI) / pow(r.inscale*r.inSI,2);
+  sigma.inscale = sigma.inscale / sigma.inSI;
+  sigma.outscale = (m.outscale*m.outSI) / pow(r.outscale*r.outSI,2);
+  sigma.outscale = sigma.outscale / sigma.outSI;
+  sigma.outcgs = 0.1*sigma.outSI;
+
+  cout << "Column density unit  = " 
+       << sigma.outscale << " " << params->stringparams["sigmaoutunit"]
+       << "     (SI = " << sigma.outscale*sigma.outSI << " kg_m2 )" << endl;
 
   // Pressure units
   // --------------------------------------------------------------------------
@@ -800,7 +884,8 @@ void SimUnits::SetupUnits(Parameters *params)
   angvel.outscale = angvel.outscale / angvel.outSI;
   angvel.outcgs = angvel.outSI;
 
-  cout << "Ang vel unit  = " << angvel.outscale << params->stringparams["angveloutunit"]
+  cout << "Ang vel unit  = " 
+       << angvel.outscale << " " << params->stringparams["angveloutunit"]
        << "     (SI = " << angvel.outscale*angvel.outSI << " rad_s )" << endl;
 
   // Mass rate units
@@ -812,6 +897,16 @@ void SimUnits::SetupUnits(Parameters *params)
   dmdt.outscale = m.outscale*m.outSI/(t.outscale*t.outSI);
   dmdt.outscale = dmdt.outscale / dmdt.outSI;
   dmdt.outcgs = 1.0e3*dmdt.outSI;
+
+  // Luminosity units
+  // --------------------------------------------------------------------------
+  L.inSI = L.SIUnit(params->stringparams["Linunit"]);
+  L.outSI = L.SIUnit(params->stringparams["Loutunit"]);
+  L.inscale = m.inscale*m.inSI/(t.inscale*t.inSI);
+  L.inscale = L.inscale / L.inSI;
+  L.outscale = m.outscale*m.outSI/(t.outscale*t.outSI);
+  L.outscale = L.outscale / L.outSI;
+  L.outcgs = 1.0e7*L.outSI;
 
   // Specific internal energy units
   // --------------------------------------------------------------------------

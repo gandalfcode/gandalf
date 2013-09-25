@@ -72,6 +72,8 @@ bool SimulationBase::WriteSnapshotFile
 
   if (fileform == "column")
     return WriteColumnSnapshotFile(filename);
+  else if (fileform == "sf" || fileform == "seren_form")
+    return WriteSerenFormSnapshotFile(filename);
   else {
     cout << "Unrecognised file format" << endl;
     return false;
@@ -404,6 +406,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   // Then check if each value corresponds to the current values.
   // --------------------------------------------------------------------------
   infile >> format_id;
+  cout << "Checking format : " << format_id << endl;
   simparams->TrimWhiteSpace(format_id);
 
   cout << "Checking format : " << format_id << endl;
@@ -463,7 +466,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   simunits.v.inunit = unit_data[3];
   simunits.a.inunit = unit_data[4];
   simunits.rho.inunit = unit_data[5];
-  //simunits.sigma.inunit = unit_data[6];
+  simunits.sigma.inunit = unit_data[6];
   simunits.press.inunit = unit_data[7];
   simunits.f.inunit = unit_data[8];
   simunits.E.inunit = unit_data[9];
@@ -471,11 +474,14 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   simunits.angmom.inunit = unit_data[11];
   simunits.angvel.inunit = unit_data[12];
   simunits.dmdt.inunit = unit_data[13];
-  //simunits.L.inunit = unit_data[14];
+  simunits.L.inunit = unit_data[14];
   //simunits.kappa.inunit = unit_data[15];
   //simunits.B.inunit = unit_data[16];
   //simunits.Q.inunit = unit_data[17];
   //simunits.J.inunit = unit_data[18];
+  simunits.u.inunit = unit_data[19];
+  simunits.temp.inunit = unit_data[20];
+  if (nunit > 21) simunits.dudt.inunit = unit_data[21];
 
   // Read infile ids of arrays contained in file
   if (ndata > 0)
@@ -638,7 +644,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
   debug2("[Simulation::WriteSerenFormSnapshotFile]");
 
-  cout << "Opening file : " << filename << endl;
+  cout << "Writing snapshot file : " << filename << endl;
 
   outfile.open(filename.c_str());
 
@@ -646,8 +652,8 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   for (i=0; i<50; i++) ilpdata[i] = 0;
   for (i=0; i<50; i++) rdata[i] = 0.0;
   for (i=0; i<50; i++) ddata[i] = 0.0;
-  for (i=0; i<50; i++) unit_data[i] = '';
-  for (i=0; i<50; i++) data_id[i] = '';
+  for (i=0; i<50; i++) unit_data[i] = 'm';
+  //for (i=0; i<50; i++) data_id[i] = '';
   nunit = 0;
   ndata = 0;
 
@@ -658,7 +664,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   unit_data[3] = simunits.v.outunit;
   unit_data[4] = simunits.a.outunit;
   unit_data[5] = simunits.rho.outunit;
-  //unit_data[6] = simunits.sigma.outunit;
+  unit_data[6] = simunits.sigma.outunit;
   unit_data[7] = simunits.press.outunit;
   unit_data[8] = simunits.f.outunit;
   unit_data[9] = simunits.E.outunit;
@@ -666,58 +672,60 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   unit_data[11] = simunits.angmom.outunit;
   unit_data[12] = simunits.angvel.outunit;
   unit_data[13] = simunits.dmdt.outunit;
-  //unit_data[14] = simunits.L.outunit;
+  unit_data[14] = simunits.L.outunit;
   //unit_data[15] = simunits.kappa.outunit;
   //unit_data[16] = simunits.B.outunit;
   //unit_data[17] = simunits.Q.outunit;
   //unit_data[18] = simunits.J.outunit;
+  unit_data[19] = simunits.u.outunit;
+  unit_data[20] = simunits.temp.outunit;
   nunit = 21;
 
 
   // Set array ids and array information data if there are any SPH particles
   // --------------------------------------------------------------------------
   if (sph->Nsph > 0) {
-	data_id[ndata] = 'porig';
-	typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-	typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 2;
-	typedata[ndata][4] = 0; ndata++;
+    data_id[ndata] = "porig";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 2;
+    typedata[ndata][4] = 0; ndata++;
 
-	data_id[ndata] = 'r';
-	typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
-	typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
-	typedata[ndata][4] = 1; ndata++;
+    data_id[ndata] = "r";
+    typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 1; ndata++;
 
-	data_id[ndata] = 'm';
-	typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-	typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
-	typedata[ndata][4] = 2; ndata++;
+    data_id[ndata] = "m";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 2; ndata++;
 
-	data_id[ndata] = 'h';
-	typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-	typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
-	typedata[ndata][4] = 1; ndata++;
+    data_id[ndata] = "h";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 1; ndata++;
 
-	data_id[ndata] = 'v';
-	typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
-	typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
-	typedata[ndata][4] = 4; ndata++;
+    data_id[ndata] = "v";
+    typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 4; ndata++;
 
-	data_id[ndata] = 'rho';
-	typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-	typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
-	typedata[ndata][4] = 6; ndata++;
+    data_id[ndata] = "rho";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 6; ndata++;
 
-	data_id[ndata] = 'u';
-	typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-	typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
-	typedata[ndata][4] = 20; ndata++;
+    data_id[ndata] = "u";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 20; ndata++;
   }
 
   if (nbody->Nstar > 0) {
-	data_id[ndata] = 'sink_v1';
-	typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-	typedata[ndata][2] = nbody->Nstar; typedata[ndata][3] = 7;
-	typedata[ndata][4] = 0; ndata++;
+    data_id[ndata] = "sink_v1";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = nbody->Nstar; typedata[ndata][3] = 7;
+    typedata[ndata][4] = 0; ndata++;
   }
 
   // Set important header information
@@ -733,7 +741,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
   // Write header information to file
   // --------------------------------------------------------------------------
-  outfile << 'SERENASCIIDUMPV2';
+  outfile << "SERENASCIIDUMPV2" << endl;;
   outfile << 4 << endl;
   outfile << ndim << endl;
   outfile << ndim << endl;
@@ -758,47 +766,57 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
     // porig
     // ------------------------------------------------------------------------
-    for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].iorig;
+    for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].iorig << endl;;
 
     // Positions
     // ------------------------------------------------------------------------
     if (ndim == 1)
-	  for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].r[0] << endl;
+      for (i=0; i<sph->Nsph; i++) 
+        outfile << sph->sphdata[i].r[0]*simunits.r.outscale << endl;
     else if (ndim == 2)
-	  for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].r[0] << "    "
-                                          << sph->sphdata[i].r[1] << endl;
+      for (i=0; i<sph->Nsph; i++) 
+        outfile << sph->sphdata[i].r[0]*simunits.r.outscale << "    "
+                << sph->sphdata[i].r[1]*simunits.r.outscale << endl;
     else if (ndim == 3)
-	  for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].r[0] << "    "
-                                          << sph->sphdata[i].r[1] << "    "
-                                          << sph->sphdata[i].r[2] << endl;
+      for (i=0; i<sph->Nsph; i++) 
+        outfile << sph->sphdata[i].r[0]*simunits.r.outscale << "    "
+                << sph->sphdata[i].r[1]*simunits.r.outscale << "    "
+                << sph->sphdata[i].r[2]*simunits.r.outscale << endl;
 
     // Masses
     // ------------------------------------------------------------------------
-    for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].m << endl;
+    for (i=0; i<sph->Nsph; i++) 
+      outfile << sph->sphdata[i].m*simunits.m.outscale << endl;
 
     // Smoothing lengths
     // ------------------------------------------------------------------------
-    for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].h << endl;
+    for (i=0; i<sph->Nsph; i++)
+      outfile << sph->sphdata[i].h*simunits.r.outscale << endl;
 
     // Velocities
     // ------------------------------------------------------------------------
     if (ndim == 1)
-	  for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].v[0] << endl;
+      for (i=0; i<sph->Nsph; i++)
+        outfile << sph->sphdata[i].v[0]*simunits.v.outscale << endl;
     else if (ndim == 2)
-	  for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].v[0] << "    "
-                                          << sph->sphdata[i].v[1] << endl;
+      for (i=0; i<sph->Nsph; i++)
+        outfile << sph->sphdata[i].v[0]*simunits.v.outscale << "    "
+                << sph->sphdata[i].v[1]*simunits.v.outscale << endl;
     else if (ndim == 3)
-	  for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].v[0] << "    "
-                                          << sph->sphdata[i].v[1] << "    "
-                                          << sph->sphdata[i].v[2] << endl;
+      for (i=0; i<sph->Nsph; i++)
+        outfile << sph->sphdata[i].v[0]*simunits.v.outscale << "    "
+                << sph->sphdata[i].v[1]*simunits.v.outscale << "    "
+                << sph->sphdata[i].v[2]*simunits.v.outscale << endl;
 
     // Densities
     // ------------------------------------------------------------------------
-    for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].rho << endl;;
+    for (i=0; i<sph->Nsph; i++)
+      outfile << sph->sphdata[i].rho*simunits.rho.outscale << endl;;
 
     // Specific internal energies
     // ------------------------------------------------------------------------
-    for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].u;
+    for (i=0; i<sph->Nsph; i++)
+      outfile << sph->sphdata[i].u*simunits.u.outscale << endl;
 
   }
 
@@ -809,16 +827,18 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
     int ii;
     FLOAT sdata[sink_data_length];
     for (ii=0; ii<6; ii++) outfile << 2 << "    " << 2 << "    " << 0 << "    "
-    		                       << sink_data_length << "    " << 0 << "    "
-    		                       << 0 << endl;
+                                   << sink_data_length << "    " << 0 << "    "
+                                   << 0 << endl;
     for (i=0; i<nbody->Nstar; i++) {
       for (ii=0; ii<2; ii++) outfile << true << "   " << true << endl;
       for (ii=0; ii<2; ii++) outfile << i+1 << "    " << 0 << endl;
-      for (k=0; k<ndim; k++) sdata[k+1] = nbody->stardata[i].r[k];
-      for (k=0; k<ndim; k++) sdata[k+1+ndim] = nbody->stardata[i].v[k];
-      sdata[1+2*ndim] = nbody->stardata[i].m;
-      sdata[2+2*ndim] = nbody->stardata[i].h;
-      sdata[3+2*ndim] = nbody->stardata[i].radius;
+      for (k=0; k<ndim; k++) 
+        sdata[k+1] = nbody->stardata[i].r[k]*simunits.r.outscale;
+      for (k=0; k<ndim; k++)
+        sdata[k+1+ndim] = nbody->stardata[i].v[k]*simunits.v.outscale;
+      sdata[1+2*ndim] = nbody->stardata[i].m*simunits.m.outscale;
+      sdata[2+2*ndim] = nbody->stardata[i].h*simunits.r.outscale;
+      sdata[3+2*ndim] = nbody->stardata[i].radius*simunits.r.outscale;
       for (ii=0; ii<sink_data_length; ii++) outfile << sdata[ii] << "    ";
       outfile << endl;
     }
@@ -826,7 +846,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   // --------------------------------------------------------------------------
 
   // Close file
-  infile.close();
+  outfile.close();
 
   return true;
   return true;

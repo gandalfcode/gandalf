@@ -91,6 +91,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
     simunits.v.outunit = stringparams["voutunit"];
     simunits.a.outunit = stringparams["aoutunit"];
     simunits.rho.outunit = stringparams["rhooutunit"];
+    simunits.sigma.outunit = stringparams["sigmaoutunit"];
     simunits.press.outunit = stringparams["pressoutunit"];
     simunits.f.outunit = stringparams["foutunit"];
     simunits.E.outunit = stringparams["Eoutunit"];
@@ -98,6 +99,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
     simunits.angmom.outunit = stringparams["angmomoutunit"];
     simunits.angvel.outunit = stringparams["angveloutunit"];
     simunits.dmdt.outunit = stringparams["dmdtoutunit"];
+    simunits.L.outunit = stringparams["Loutunit"];
     simunits.u.outunit = stringparams["uoutunit"];
     simunits.dudt.outunit = stringparams["dudtoutunit"];
     simunits.temp.outunit = stringparams["tempoutunit"];

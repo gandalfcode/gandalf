@@ -364,7 +364,7 @@ string SimulationBase::Output(void)
     nostring = ss.str();
     filename = run_id + '.' + out_file_form + '.' + nostring;
     ss.str(std::string());
-    WriteSnapshotFile(filename,"column");
+    WriteSnapshotFile(filename,out_file_form);
   }
 
   return filename;

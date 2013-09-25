@@ -145,7 +145,7 @@ class DensityUnit: public SimUnit
 };
 
 
-/*
+
 //=============================================================================
 //  Class ColumnDensityUnit
 //=============================================================================
@@ -157,7 +157,6 @@ class ColumnDensityUnit: public SimUnit
   string LatexLabel(string);
 
 };
-*/
 
 
 
@@ -259,7 +258,7 @@ class MassRateUnit: public SimUnit
 };
 
 
-/*
+
 //=============================================================================
 //  Class LuminosityUnit
 //=============================================================================
@@ -271,7 +270,7 @@ class LuminosityUnit: public SimUnit
   string LatexLabel(string);
 
 };
-*/
+
 
 
 /*
@@ -401,7 +400,7 @@ class SimUnits
   VelocityUnit v;                   ///< Velocity unit
   AccelerationUnit a;               ///< Acceleration unit
   DensityUnit rho;                  ///< Density unit
-  //ColumnDensityUnit sigma;          ///< Column density unit
+  ColumnDensityUnit sigma;          ///< Column density unit
   PressureUnit press;               ///< Pressure unit
   ForceUnit f;                      ///< Force unit
   EnergyUnit E;                     ///< Energy unit
@@ -409,7 +408,7 @@ class SimUnits
   AngularMomentumUnit angmom;       ///< Angular momentum unit
   AngularVelocityUnit angvel;       ///< Angular velocity unit
   MassRateUnit dmdt;                ///< Mass (accretion) rate unit
-  //LuminosityUnit L;                 ///< Luminosity unit
+  LuminosityUnit L;                 ///< Luminosity unit
   //OpacityUnit kappa;                ///< Volume opacity unit
   //MagneticFieldUnit B;              ///< Magnetic field unit
   //ChargeUnit Q;                     ///< Charge unit

@@ -380,7 +380,7 @@ void Sinks<ndim>::AccreteMassToSinks
 
     // Double-check that numbers add up here
     if (Nneib != sink[s].Ngas) 
-      cout << "WTF?? : " << Nneib << "   " << sink[s].Ngas << endl;
+      cout << "Error with neibs : " << Nneib << "   " << sink[s].Ngas << endl;
     if (Nneib > Nlist) cout << "ERROR!!!" << Nneib << "   " << Nlist << endl;
 
     // Sort particle ids by increasing distance from the sink
