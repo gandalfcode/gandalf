@@ -273,7 +273,7 @@ class LuminosityUnit: public SimUnit
 
 
 
-/*
+
 //=============================================================================
 //  Class OpacityUnit
 //=============================================================================
@@ -327,7 +327,7 @@ class CurrentDensityUnit: public SimUnit
   string LatexLabel(string);
 
 };
-*/
+
 
 
 //=============================================================================
@@ -387,6 +387,7 @@ class SimUnits
   ~SimUnits();
 
   void SetupUnits(Parameters *);
+  void OutputScalingFactors(Parameters *);
 
   int dimensionless;                ///< Are we using dimensionless units?
   bool ReadInputUnits;              ///< Are input units read from snapshot?
@@ -409,10 +410,10 @@ class SimUnits
   AngularVelocityUnit angvel;       ///< Angular velocity unit
   MassRateUnit dmdt;                ///< Mass (accretion) rate unit
   LuminosityUnit L;                 ///< Luminosity unit
-  //OpacityUnit kappa;                ///< Volume opacity unit
-  //MagneticFieldUnit B;              ///< Magnetic field unit
-  //ChargeUnit Q;                     ///< Charge unit
-  //CurrentDensityUnit Jcur;          ///< Current density unit
+  OpacityUnit kappa;                ///< Volume opacity unit
+  MagneticFieldUnit B;              ///< Magnetic field unit
+  ChargeUnit Q;                     ///< Charge unit
+  CurrentDensityUnit Jcur;          ///< Current density unit
   SpecificEnergyUnit u;             ///< Specific internal energy unit
   SpecificEnergyRateUnit dudt;      ///< Rate of change of internal energy unit
   TemperatureUnit temp;             ///< Temperature unit

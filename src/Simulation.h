@@ -203,7 +203,10 @@ class Simulation : public SimulationBase
   virtual void ImportArray(double* input, int size, 
                            string quantity, string type="sph");
   virtual void PreSetupForPython(void);
-  virtual void ProcessParameters(void)=0;
+  virtual void ProcessGodunovSphParameters(void);
+  virtual void ProcessNbodyParameters(void);
+  virtual void ProcessParameters(void);
+  virtual void ProcessSphParameters(void);
   virtual void OutputDiagnostics(void);
   virtual void UpdateDiagnostics(void);
   virtual void SetComFrame(void);
@@ -317,7 +320,7 @@ public:
   virtual void MainLoop(void);
   virtual void ComputeGlobalTimestep(void);
   virtual void ComputeBlockTimesteps(void);
-  virtual void ProcessParameters(void);
+  //virtual void ProcessParameters(void);
 
 };
 
@@ -380,7 +383,7 @@ public:
   virtual void MainLoop(void);
   virtual void ComputeGlobalTimestep(void);
   virtual void ComputeBlockTimesteps(void);
-  virtual void ProcessParameters(void);
+  //virtual void ProcessParameters(void);
 };
 
 
@@ -433,7 +436,7 @@ public:
   virtual void MainLoop(void);
   virtual void ComputeGlobalTimestep(void);
   virtual void ComputeBlockTimesteps(void);
-  virtual void ProcessParameters(void);
+  //virtual void ProcessParameters(void);
 };
 
 #endif
