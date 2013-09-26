@@ -75,7 +75,8 @@ if we are in interactive mode, or re-raising it, if we are in script mode
 
 #------------------------------------------------------------------------------
 def loadsim(run_id, fileformat = 'ascii', buffer_flag = 'cache'):
-    '''Given the run_id of a simulation, reads it from the disk
+    '''Given the run_id of a simulation, reads it from the disk.
+    Returns the newly created simulation object.
     
 Required arguments:
     run_id      : Simulation run identification string.
@@ -337,18 +338,22 @@ Optional arguments:
 
 #------------------------------------------------------------------------------
 def next():
-    '''Advances the current snapshot of the current simulation'''
+    '''Advances the current snapshot of the current simulation.
+    Return the new snapshot, or None if the call failed.'''
     try:
-        snap(SimBuffer.get_no_next_snapshot())
+        snapshot=snap(SimBuffer.get_no_next_snapshot())
+        return snapshot
     except BufferException as e:
         handle(e)
 
 
 #------------------------------------------------------------------------------
 def previous():
-    '''Decrements the current snapshot of the current simulation'''
+    '''Decrements the current snapshot of the current simulation.
+    Return the new snapshot, or None if the call failed.'''
     try:
-        snap(SimBuffer.get_no_previous_snapshot())
+        snapshot=snap(SimBuffer.get_no_previous_snapshot())
+        return snapshot
     except BufferException as e:
         handle(e)
 
@@ -357,18 +362,20 @@ def previous():
 def snap(no):
     '''Jump to the given snapshot number of the current simulation.  Note that you
 can use standard Numpy index notation (e.g., -1 is the last snapshot).
+    Return the new snapshot, or None if the call failed.
 
 Required arguments:
     snapno     : Snapshot number
 '''
     no = int(no)
+    snapshot=None
     try:
-        SimBuffer.set_current_snapshot_number(no)
+        snapshot=SimBuffer.set_current_snapshot_number(no)
     except BufferException as e:
         handle(e)
     
     update("current")
-
+    return snapshot
 
 #------------------------------------------------------------------------------
 def window(no = None):
