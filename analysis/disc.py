@@ -12,16 +12,29 @@ class Blob:
     def n_particles(self):
         return self.ids.sum()
     
-    def mass(self):
-        mass_type=UserQuantity('m').fetch(self.type, self.snap)[1]
-        return mass_type[self.ids].sum()
+    def mass(self, unit='default'):
+        mass_info=UserQuantity('m').fetch(self.type, self.snap, unit=unit)
+        mass_type=mass_info[1]
+        scaling_factor=mass_info[2]
+        return mass_type[self.ids].sum()*scaling_factor
     
-    def SPH_positions_sim_frame(self):
+    def SPH_positions_sim_frame(self,unit='default'):
         positions = np.zeros((self.n_particles(),3))
-        positions[:,0]=UserQuantity('x').fetch(self.type,self.snap)[1][self.ids]
-        positions[:,1]=UserQuantity('y').fetch(self.type,self.snap)[1][self.ids]
-        positions[:,2]=UserQuantity('z').fetch(self.type,self.snap)[1][self.ids]
-        return positions
+        first_coordinate_info=UserQuantity('x').fetch(self.type,self.snap,unit=unit)
+        scaling_factor=first_coordinate_info[2]
+        positions[:,0]=first_coordinate_info[1][self.ids]
+        positions[:,1]=UserQuantity('y').fetch(self.type,self.snap,unit=unit)[1][self.ids]
+        positions[:,2]=UserQuantity('z').fetch(self.type,self.snap,unit=unit)[1][self.ids]
+        return positions*scaling_factor
+    
+    def SPH_velocities_sim_frame(self):
+        velocities = np.zeros((self.n_particles(),3))
+        first_coordinate_info=UserQuantity('vx').fetch(self.type,self.snap,unit=unit)
+        scaling_factor=first_coordinate_info[2]
+        velocities[:,0]=first_coordinate_info[1][self.ids]
+        velocities[:,1]=UserQuantity('vy').fetch(self.type,self.snap,unit=unit)[1][self.ids]
+        velocities[:,2]=UserQuantity('vz').fetch(self.type,self.snap,unit=unit)[1][self.ids]
+        return velocities*scaling_factor
 
 class Ambient_gas(Blob):
     pass
@@ -50,8 +63,7 @@ class Disc(Blob):
     def SPH_velocities_star_frame(self):
         raise NotImplementedError
     
-    def SPH_velocities_sim_frame(self):
-        raise NotImplementedError
+
 
     
 def extract_discs (snap, type='default', eccenlimit=0.9, distancelimit=1., limiteigenvalues=0.2):
