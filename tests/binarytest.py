@@ -3,7 +3,7 @@
 # Run the binary star test using initial conditions specified in the file 
 # 'binary.dat' and then plot the orbital quantities.
 #==============================================================================
-from seren.analysis.facade import *
+from gandalf.analysis.facade import *
 import time
 
 # Create new shocktube simulation from 'adshock.dat' file

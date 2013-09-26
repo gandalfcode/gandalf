@@ -3,9 +3,9 @@
 # Run the freefall collapse test using initial conditions specified in the
 # file 'freefall.dat'.
 #==============================================================================
-from seren.analysis.facade import *
-from seren.analysis.data_fetcher import *
-from seren.analysis.compute import lagrangian_radii
+from gandalf.analysis.facade import *
+from gandalf.analysis.data_fetcher import *
+from gandalf.analysis.compute import lagrangian_radii
 import time
 
 # Create new freefall collapse simulation from 'freefall.dat' file and then

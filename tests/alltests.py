@@ -1,4 +1,4 @@
-from seren.analysis.facade import *
+from gandalf.analysis.facade import *
 import os
 import sys
 import subprocess

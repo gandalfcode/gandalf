@@ -3,7 +3,7 @@
 # Run the adiabatic Sod shocktube test for various values of the timestep
 # multiplier to determine the energy error scaling relative to the timestep.
 #==============================================================================
-from seren.analysis.facade import *
+from gandalf.analysis.facade import *
 import time
 
 
