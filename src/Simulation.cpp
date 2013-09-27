@@ -315,14 +315,15 @@ void Simulation<ndim>::ProcessParameters(void)
 
 
   // Process all N-body parameters and set-up main N-body objects
+  if (sim == "nbody") ProcessSphParameters();
   ProcessNbodyParameters();
 
 
   // Set all other SPH parameter variables
   sph->Nsph           = intparams["Nsph"];
-  sph->riemann_solver = stringparams["riemann_solver"];
-  sph->slope_limiter  = stringparams["slope_limiter"];
-  sph->riemann_order  = intparams["riemann_order"];
+  //sph->riemann_solver = stringparams["riemann_solver"];
+  //sph->slope_limiter  = stringparams["slope_limiter"];
+  //sph->riemann_order  = intparams["riemann_order"];
   sph->create_sinks   = intparams["create_sinks"];
   sph->time_dependent_avisc = intparams["time_dependent_avisc"];
   sph->alpha_visc_min = floatparams["alpha_visc_min"];
