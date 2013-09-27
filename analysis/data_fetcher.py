@@ -23,7 +23,8 @@ from swig_generated.SphSim import UnitInfo
 from facade import SimBuffer
 
 direct = ['x', 'y', 'z', 'vx', 'vy', 'vz', 'ax', 'ay', 'az',
-          'm', 'h', 'rho', 'u', 'dudt']
+          'm', 'h', 'rho', 'u', 'dudt','sma','ecc', 'mbin','period',
+          'qbin']
 
 time_fetchers={}
 
@@ -119,7 +120,10 @@ class DirectDataFetcher:
     quantitylabels = {'x': 'x', 'y': 'y', 'z': 'z', 'rho': '$\\rho$',
                       'vx': '$v_x$', 'vy': '$v_y$', 'vz': '$v_z$', 
                       'ax': '$a_x$', 'ay': '$a_y$', 'az': '$a_z$',
-                      'm': 'm', 'h': 'h', 'u': 'u', 't': 't'}
+                      'm': 'm', 'h': 'h', 'u': 'u', 't': 't','sma': 'Semi-major axis',
+                      'ecc': 'Orbital eccentricity', 'mbin': 'Binary mass',
+                      'period': 'Orbital period', 'qbin': 'Mass ratio'
+                      }
     
     def __init__(self, quantity):
         
