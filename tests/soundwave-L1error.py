@@ -3,8 +3,8 @@
 # Run the soundwave test at various resolutions calculating the L1 error norm
 # for each case.  For a second-order scheme (as SPH is in smooth-flow), 
 #==============================================================================
-from seren.analysis.facade import *
-from seren.analysis.compute import L1errornorm
+from gandalf.analysis.facade import *
+from gandalf.analysis.compute import L1errornorm
 import time
 
 

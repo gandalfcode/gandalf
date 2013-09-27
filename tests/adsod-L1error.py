@@ -1,5 +1,5 @@
-from seren.analysis.facade import *
-from seren.analysis.compute import L1errornorm
+from gandalf.analysis.facade import *
+from gandalf.analysis.compute import L1errornorm
 import time
 
 
