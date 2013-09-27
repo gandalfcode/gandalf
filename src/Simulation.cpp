@@ -1066,19 +1066,15 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
 	
     // Evolve the simulation one step
     MainLoop();
+
+    // Update all diagnostics (including binaries) here for now
+    if (t >= tsnapnext) CalculateDiagnostics();
 	  
     // Call output routine
     filename=Output();
 	  
     // If we have written a snapshot, create a new snapshot object
     if (filename.length() != 0) {
-
-      // Update binary statistics for snapshot (here for now)
-      if (simparams->intparams["binary_stats"] == 1) {
-        nbodytree.CreateNbodySystemTree(nbody);
-        nbodytree.FindBinarySystems(nbody);
-      }
-
       SphSnapshotBase* snapshot =
         SphSnapshotBase::SphSnapshotFactory(filename, this, ndims);
       snapshot->CopyDataFromSimulation();
