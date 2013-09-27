@@ -70,7 +70,8 @@ as the unit system does not know how to rescale your unit.
 #------------------------------------------------------------------------------
 def CreateTimeData(name, function, *args, **kwargs):
     '''Given a function that takes a snapshot as input, construct a 
-FunctionTimeDataFetcher object from it'''
+FunctionTimeDataFetcher object from it and register it.
+    Return the FunctionTimeDataFetcher newly constructed.'''
     fetcher = FunctionTimeDataFetcher(function, *args, **kwargs)
     time_fetchers [name] = fetcher
 

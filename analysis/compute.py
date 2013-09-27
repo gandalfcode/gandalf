@@ -30,8 +30,11 @@ from data_fetcher import UserQuantity
 
 #------------------------------------------------------------------------------
 def particle_data(snap, quantity, type="default", id=None):
-    '''Returns ...
-'''
+    '''Return for a given snapshot, a given quantity of a given
+    type. If id is not specified, return an array with the quantity
+    for each particle. Otherwise, return a scalar quantity only for
+    the given particle. 
+    '''
     values = UserQuantity(quantity).fetch(type, snap)[1]
     if id == None:
         return values
