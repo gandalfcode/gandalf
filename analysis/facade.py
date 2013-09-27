@@ -136,6 +136,17 @@ Optional arguments:
     sleep(0.001)
 
 
+def plot_vs_time_quantiy_particle(quantity, type='default',id=0):
+    '''Plot as a function of time a given quantity for a given particle.
+    Type specifies the type of particle to retrieve the information from.
+    id is an integer specifying the desired particle.
+    '''
+    from compute import particle_data
+    name='part_'+quantity+'_'+str(id)
+    CreateTimeData(name,particle_data,quantity=quantity,type=type,id=id)
+    plot_vs_time(name)
+    
+
 #------------------------------------------------------------------------------
 def plot_vs_time(y, sim="current", overplot=False, autoscale=True,
                  xunit="default", yunit="default", xaxis="linear",
