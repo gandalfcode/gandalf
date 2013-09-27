@@ -65,10 +65,20 @@ SphSnapshotBase::SphSnapshotBase(SimUnits* _units, string auxfilename):
     units(_units)
 {
   allocated = false;
+  allocatedbinary = false;
   allocatedstar = false;
   allocatedsph = false;
+  computedbinary = false;
+  computedsph = false;
+  computednbody = false;
+  nallocatedbinary = 0;
   nallocatedsph = 0;
   nallocatedstar = 0;
+  Nbinary = 0;
+  Norbit = 0;
+  Norbitmax = 0;
+  Nquadruple = 0;
+  Ntriple = 0;
   Nsph = 0;
   Nsphmax = 0;
   Nstar = 0;
@@ -97,6 +107,7 @@ simulation(static_cast<Simulation<ndims>* > (sim))
   // Computes how numbers we need to store for each sph/star particle
   nneededsph = 3*ndims + 5;
   nneededstar = 3*ndims + 2;
+  nneededbinary = 5;
 
   if (filename != "") {
     HeaderInfo info;
@@ -106,6 +117,7 @@ simulation(static_cast<Simulation<ndims>* > (sim))
     this->Nsph = info.Nsph;
   }
 }
+
 
 
 //=============================================================================
@@ -131,12 +143,14 @@ void SphSnapshotBase::AllocateBufferMemory(void)
 
   AllocateBufferMemoryStar();
   AllocateBufferMemorySph();
+  AllocateBufferMemoryBinary();
 
   allocated = true;
 
   return;
-
 }
+
+
 
 //=============================================================================
 //  SphSnapshotBase::AllocateBufferMemoryStar
@@ -254,6 +268,38 @@ void SphSnapshotBase::AllocateBufferMemorySph(void)
 
 
 //=============================================================================
+//  SphSnapshotBase::AllocateBufferMemoryBinary
+/// Allocate memory for binary orbits in current snapshot.
+//=============================================================================
+void SphSnapshotBase::AllocateBufferMemoryBinary(void) 
+{
+  // If memory already allocated and more memory is needed for more particles,
+  // deallocate now before reallocating.
+  if (allocatedbinary) {
+    if (Norbit > Norbitmax)
+      DeallocateBufferMemoryBinary();
+    else
+      return;
+  }
+
+  // Allocate arrays for orbital quantities
+  ecc = new float[Norbit];
+  mbin = new float[Norbit];
+  period = new float[Norbit];
+  qbin = new float[Norbit];
+  sma = new float[Norbit];
+
+  // Record 5 floats
+  nallocatedbinary = 5;
+  allocatedbinary = true;
+  Norbitmax = Norbit;
+
+  return;
+}
+
+
+
+//=============================================================================
 //  SphSnapshotBase::DeallocateBufferMemory
 /// Deallocate memory for current snapshot.
 //=============================================================================
@@ -261,10 +307,11 @@ void SphSnapshotBase::DeallocateBufferMemory(void)
 {
   debug2("[SphSnapshotBase::DeallocateBufferMemory]");
 
+  DeallocateBufferMemoryBinary();
   DeallocateBufferMemorySph();
   DeallocateBufferMemoryStar();
 
-  allocated=false;
+  allocated = false;
   return;
 }
 
@@ -372,24 +419,51 @@ void SphSnapshotBase::DeallocateBufferMemoryStar(void)
 
 
 //=============================================================================
+//  SphSnapshotBase::DeallocateBufferMemoryBinary
+/// Deallocate binary orbit memory for current snapshot.
+//=============================================================================
+void SphSnapshotBase::DeallocateBufferMemoryBinary(void)
+{
+  // If we are not allocated, return immediately,
+  // to avoid double deleting a pointer
+  if (!allocatedbinary)
+    return;
+
+  delete[] sma;
+  delete[] qbin;
+  delete[] period;
+  delete[] mbin;
+  delete[] ecc;
+
+  allocatedbinary = false;
+  nallocatedbinary = 0;
+
+  return;
+}
+
+
+
+//=============================================================================
 //  SphSnapshotBase::CalculateMemoryUsage
-/// Returns no. of bytes allocated for current snapshot
+/// Returns no. of bytes allocated for current snapshot.
 //=============================================================================
 int SphSnapshotBase::CalculateMemoryUsage(void)
 {
   return Nsph*nallocatedsph*sizeof(float) + 
-    Nstar*nallocatedstar*sizeof(float);
+    Nstar*nallocatedstar*sizeof(float) + 
+    Norbit*nallocatedbinary*sizeof(float);
 }
 
 
 
 //=============================================================================
 //  SphSnapshotBase::CalculatePredictedMemoryUsage
-/// Returns no. of bytes that the current snapshot would use, if allocated
+/// Returns no. of bytes that the current snapshot would use, if allocated.
 //=============================================================================
 int SphSnapshotBase::CalculatePredictedMemoryUsage(void)
 {
-  return Nsph*nneededsph*sizeof(float) + Nstar*nneededstar*sizeof(float);
+  return Nsph*nneededsph*sizeof(float) + Nstar*nneededstar*sizeof(float) + 
+    Norbit*nneededbinary*sizeof(float);
 }
 
 
@@ -401,9 +475,11 @@ int SphSnapshotBase::CalculatePredictedMemoryUsage(void)
 template <int ndims>
 void SphSnapshot<ndims>::CopyDataFromSimulation()
 {
-  debug2("[SphSnapshotBase::CopyDataFromSimulation]");
   SphParticle<ndims>* sphaux;
   StarParticle<ndims>* staraux;
+  BinaryOrbit *orbitaux;
+
+  debug2("[SphSnapshotBase::CopyDataFromSimulation]");
 
   // Reset the species
   _species.clear();
@@ -418,9 +494,14 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
   }
   if (simulation->nbody != NULL && simulation->nbody->stardata != NULL) {
     staraux = simulation->nbody->stardata;
+    orbitaux = simulation->nbodytree.orbit;
     Nstar = simulation->nbody->Nstar;
+    Norbit = simulation->nbodytree.Norbit;
     if (Nstar != 0) {
-     _species.push_back("star");
+      _species.push_back("star");
+    }
+    if (Norbit != 0) {
+      _species.push_back("binary");
     }
   }
 
@@ -493,6 +574,15 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
     hstar[i] = (float) staraux[i].h;
   }
 
+  // Loop over all binary orbits and record data
+  for (int i=0; i<Norbit; i++) {
+    ecc[i] = (float) orbitaux[i].ecc;
+    mbin[i] = (float) orbitaux[i].m;
+    period[i] = (float) orbitaux[i].period;
+    qbin[i] = (float) orbitaux[i].q;
+    sma[i] = (float) orbitaux[i].sma;
+  }
+
   LastUsed = time(NULL);
   return;
 }
@@ -508,7 +598,7 @@ string SphSnapshotBase::GetRealType(string type)
 {
   // Default is: if there is only one species, then we use that one
   // Otherwise, we return sph particles
-  if (type=="default") {
+  if (type == "default") {
     if (GetNTypes() == 0){
       string message = "Error: the requested simulation has no species!!!";
       ExceptionHandler::getIstance().raise(message);
@@ -523,16 +613,20 @@ string SphSnapshotBase::GetRealType(string type)
 }
 
 
+
 //=============================================================================
 ///  SphSnapshotBase::GetNparticlesType
 ///  Get the number of particles for the given type
 //=============================================================================
-int SphSnapshotBase::GetNparticlesType(string type) {
-  type=GetRealType(type);
-  if (type=="sph")
+int SphSnapshotBase::GetNparticlesType(string type) 
+{
+  type = GetRealType(type);
+  if (type == "sph")
     return Nsph;
-  else if (type=="star")
+  else if (type == "star")
     return Nstar;
+  else if (type == "binary")
+    return Norbit;
   else {
     string message="Error: we do not know the type " + type + "that you are requesting!!!";
     ExceptionHandler::getIstance().raise(message);
@@ -541,20 +635,21 @@ int SphSnapshotBase::GetNparticlesType(string type) {
 }
 
 
+
 //=============================================================================
 //  SphSnapshotBase::ExtractArray
 /// Returns pointer to required array stored in snapshot buffer memory.
 /// Currently also returns scaling factors for that array.
 //=============================================================================
 UnitInfo SphSnapshotBase::ExtractArray
-(string name,                       ///< ..
- string type,                       ///< ..
- float** out_array,                 ///< ..
- int* size_array,                   ///< ..
- float& scaling_factor,             ///< ..
- string RequestedUnit)              ///< ..
+(string name,                       ///< Name of variable to extract
+ string type,                       ///< Particle type
+ float** out_array,                 ///< Outputted array
+ int* size_array,                   ///< No. of elements in outputted array
+ float& scaling_factor,             ///< Scaling factor for outputted variable
+ string RequestedUnit)              ///< Requested unit for outputted variable
 {
-  string unitname;                  // ..
+  string unitname;                  // Name of unit
   UnitInfo unitinfo;                // ..
   SimUnit* unit;                    // Unit pointer
 
@@ -577,7 +672,7 @@ UnitInfo SphSnapshotBase::ExtractArray
   type = GetRealType(type);
 
   // Check type
-  if (type != "sph" && type != "star") {
+  if (type != "sph" && type != "star" && type != "binary") {
     string message = "Error: the type " + type + " was not recognized!";
     ExceptionHandler::getIstance().raise(message);
   }
@@ -585,97 +680,91 @@ UnitInfo SphSnapshotBase::ExtractArray
 
   // If array type and name is valid, pass pointer to array and also set unit
   if (name == "x") {
-    if (type == "sph") 
-      *out_array = x;
-    else if (type == "star") 
-      *out_array = xstar;
+    if (type == "sph") *out_array = x;
+    else if (type == "star") *out_array = xstar;
     unit = &(units->r);
   }
   else if (name == "y") {
-    if (type == "sph")
-      *out_array = y;
-    else if (type == "star")
-      *out_array = ystar;
+    if (type == "sph") *out_array = y;
+    else if (type == "star") *out_array = ystar;
     unit = &(units->r);
   }
   else if (name == "z") {
-    if (type == "sph")
-      *out_array = z;
-    else if (type == "star")
-      *out_array = zstar;
+    if (type == "sph") *out_array = z;
+    else if (type == "star") *out_array = zstar;
     unit = &(units->r);
   }
   else if (name == "vx") {
-    if (type == "sph")
-      *out_array = vx;
-    else if (type == "star")
-      *out_array= vxstar;
+    if (type == "sph") *out_array = vx;
+    else if (type == "star") *out_array= vxstar;
     unit = &(units->v);
   }
   else if (name == "vy") {
-    if (type == "sph")
-      *out_array = vy;
-    else if (type == "star")
-      *out_array = vystar;
+    if (type == "sph") *out_array = vy;
+    else if (type == "star") *out_array = vystar;
     unit = &(units->v);
   }
   else if (name == "vz") {
-    if (type == "sph")
-      *out_array = vz;
-    else if (type == "star")
-      *out_array = vzstar;
+    if (type == "sph") *out_array = vz;
+    else if (type == "star") *out_array = vzstar;
     unit = &(units->v);
   }
   else if (name == "ax") {
-    if (type == "sph")
-      *out_array = ax;
-    else if (type == "star")
-      *out_array = axstar;
+    if (type == "sph") *out_array = ax;
+    else if (type == "star") *out_array = axstar;
     unit = &(units->a);
   }
   else if (name == "ay") {
-    if (type == "sph")
-      *out_array = ay;
-    else if (type == "star")
-      *out_array = aystar;
+    if (type == "sph") *out_array = ay;
+    else if (type == "star") *out_array = aystar;
     unit = &(units->a);
   }
   else if (name == "az") {
-    if (type == "sph")
-      *out_array = az;
-    else if (type == "star")
-      *out_array = azstar;
+    if (type == "sph") *out_array = az;
+    else if (type == "star") *out_array = azstar;
     unit = &(units->a);
   }
   else if (name == "m") {
-    if (type == "sph")
-      *out_array = m;
-    else if (type == "star")
-      *out_array = mstar;
+    if (type == "sph") *out_array = m;
+    else if (type == "star") *out_array = mstar;
     unit = &(units->m);
   }
   else if (name == "h") {
-    if (type == "sph")
-      *out_array = h;
-    else if (type == "star")
-      *out_array = hstar;
+    if (type == "sph") *out_array = h;
+    else if (type == "star") *out_array = hstar;
     unit = &(units->r);
   }
   else if (name == "rho") {
-    if (type == "sph") {
-      *out_array = rho;
-    }
+    if (type == "sph") *out_array = rho;
     unit = &(units->rho);
   }
   else if (name == "u") {
-    if (type == "sph")
-      *out_array = u;
+    if (type == "sph") *out_array = u;
     unit = &(units->u);
   }
   else if (name == "dudt") {
-    if (type == "sph")
-      *out_array = dudt;
+    if (type == "sph") *out_array = dudt;
     unit = &(units->dudt);
+  }
+  else if (name == "ecc") {
+    if (type == "binary") *out_array = ecc;
+    unit = &(units->nounits);
+  }
+  else if (name == "mbin") {
+    if (type == "binary") *out_array = mbin;
+    unit = &(units->m);
+  }
+  else if (name == "period") {
+    if (type == "binary") *out_array = period;
+    unit = &(units->t);
+  }
+  else if (name == "qbin") {
+    if (type == "binary") *out_array = qbin;
+    unit = &(units->nounits);
+  }
+  else if (name == "sma") {
+    if (type == "binary") *out_array = sma;
+    unit = &(units->r);
   }
   else {
     string message = "Warning: the selected array: " + name + 
@@ -701,6 +790,8 @@ UnitInfo SphSnapshotBase::ExtractArray
     *size_array = Nsph;
   else if (type == "star")
     *size_array = Nstar;
+  else if (type == "binary")
+    *size_array = Norbit;
 
   // If no new unit is requested, pass the default scaling values.
   // Otherwise, calculate new scaling factor plus latex label.

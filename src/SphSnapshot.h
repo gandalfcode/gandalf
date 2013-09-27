@@ -30,15 +30,17 @@ using namespace std;
 //=============================================================================
 class SphSnapshotBase
 {
-
+  void AllocateBufferMemoryBinary();
   void AllocateBufferMemorySph();
   void AllocateBufferMemoryStar();
+  void DeallocateBufferMemoryBinary();
   void DeallocateBufferMemorySph();
   void DeallocateBufferMemoryStar();
 
 protected:
-  int nneededsph;     ///< How many variables we need to store for sph ptcl
-  int nneededstar;    ///< How many variables we need to store for star ptcl
+  int nneededbinary;        ///< No. of variables needed to store binary orbit
+  int nneededsph;           ///< No. of variables needed to store for sph ptcl
+  int nneededstar;          ///< No. of variables needed to store for star ptcl
   vector<string> _species;
 
  public:
@@ -68,9 +70,14 @@ protected:
   // All variables
   // --------------------------------------------------------------------------
   bool allocated;                   ///< Is snapshot memory allocated?
+  bool allocatedbinary;             ///< Is SPH particle memory allocated?
   bool allocatedsph;                ///< Is SPH particle memory allocated?
   bool allocatedstar;               ///< Is star particle memory allocated?
+  bool computedbinary;              ///< Are binary properties computed?
+  bool computedsph;                 ///< Are additional SPH values computed?
+  bool computednbody;               ///< Are additional star values computed?
   int LastUsed;                     ///< ??
+  int nallocatedbinary;             ///< No. of floats allocated for SPH
   int nallocatedsph;                ///< No. of floats allocated for SPH
   int nallocatedstar;               ///< No. of floats allocated for stars
   int ndim;                         ///< Local copy of ndim
@@ -123,7 +130,11 @@ protected:
   float *mstar;                     /// Masses for star particles
   float *hstar;                     /// Smoothing length for star particles
 
-  BinaryOrbit *orbit;               /// Orbital information of binary stars
+  float *ecc;                       /// Binary orbital eccentricity
+  float *mbin;                      /// Binary total mass 
+  float *period;                    /// Binary orbital period
+  float *qbin;                      /// Binary mass ratio
+  float *sma;                       /// Binary orbital semi-major axis
 
 };
 

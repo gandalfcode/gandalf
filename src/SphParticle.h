@@ -66,6 +66,8 @@ struct SphParticle {
   FLOAT press;                      ///< Thermal pressure
   FLOAT pfactor;                    ///< Pressure factor in SPH EOM
   FLOAT div_v;                      ///< Velocity divergence
+  FLOAT alpha;                      ///< Artificial viscosity alpha value
+  FLOAT dalphadt;                   ///< Rate of change of alpha
   FLOAT invomega;                   ///< grad-h omega/f correction term
   FLOAT zeta;                       ///< grad-h gravity correction term
   FLOAT chi;                        ///< grad-h star-gravity correction term

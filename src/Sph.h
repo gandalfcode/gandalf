@@ -125,12 +125,14 @@ class Sph
   const int self_gravity;             ///< Compute gravitational forces?
   static const FLOAT invndim=1./ndim; ///< Copy of 1/ndim
   int create_sinks;                   ///< Create new sink particles?
+  int time_dependent_avisc;           ///< ..
   FLOAT mmean;                        ///< Mean SPH particle mass
   FLOAT hmin_sink;                    ///< Minimum smoothing length of sinks
 
   string riemann_solver;              ///< Selected Riemann solver
   string slope_limiter;               ///< Selected slope limiter
   int riemann_order;                  ///< Order of Riemann solver
+  FLOAT alpha_visc_min;               ///< Min. time-dependent viscosity alpha
   FLOAT kernfac;                      ///< Kernel range neighbour fraction
   FLOAT kernfacsqd;                   ///< Kernel range neib. fraction squared
 
@@ -170,9 +172,11 @@ class GradhSph: public Sph<ndim>
   using Sph<ndim>::avisc;
   using Sph<ndim>::beta_visc;
   using Sph<ndim>::alpha_visc;
+  using Sph<ndim>::alpha_visc_min;
   using Sph<ndim>::acond;
   using Sph<ndim>::create_sinks;
   using Sph<ndim>::hmin_sink;
+  using Sph<ndim>::time_dependent_avisc;
 
  public:
 
@@ -225,7 +229,9 @@ class SM2012Sph: public Sph<ndim>
   using Sph<ndim>::avisc;
   using Sph<ndim>::beta_visc;
   using Sph<ndim>::alpha_visc;
+  using Sph<ndim>::alpha_visc_min;
   using Sph<ndim>::acond;
+  using Sph<ndim>::time_dependent_avisc;
 
  public:
 

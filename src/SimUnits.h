@@ -373,6 +373,20 @@ class TemperatureUnit: public SimUnit
 
 
 //=============================================================================
+//  Class DimensionlessUnit
+//=============================================================================
+class DimensionlessUnit: public SimUnit
+{
+ public:
+  DimensionlessUnit() : SimUnit() {};
+  DOUBLE SIUnit(string) { return 1.0; }
+  string LatexLabel(string) { return ""; }
+
+};
+
+
+
+//=============================================================================
 //  Class SimUnits
 /// \brief   Main simulation scaling class containing an instance of each unit.
 /// \details Main simulation scaling class containing an instance of each unit.
@@ -417,6 +431,7 @@ class SimUnits
   SpecificEnergyUnit u;             ///< Specific internal energy unit
   SpecificEnergyRateUnit dudt;      ///< Rate of change of internal energy unit
   TemperatureUnit temp;             ///< Temperature unit
+  DimensionlessUnit nounits;        ///< Dimensionless unit
 
 };
 #endif

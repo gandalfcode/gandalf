@@ -264,6 +264,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   int j;                            // Neighbour list id
   int jj;                           // Aux. neighbour counter
   int k;                            // Dimension counter
+  FLOAT alpha_mean;                 // Mean articial viscosity alpha value
   FLOAT draux[ndim];                // Relative position vector
   FLOAT dv[ndim];                   // Relative velocity vector
   FLOAT dvdr;                       // Dot product of dv and dr
@@ -275,72 +276,73 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
 
 
-    // Loop over all potential neighbours in the list
+  // Loop over all potential neighbours in the list
+  // --------------------------------------------------------------------------
+  for (jj=0; jj<Nneib; jj++) {
+    j = neiblist[jj];
+    wkerni = parti.hfactor*kern.w1(drmag[jj]*parti.invh);
+    wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*neibpart[j].invh);
+
+    for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
+    for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
+    dvdr = DotProduct(dv,draux,ndim);
+
+    // Add contribution to velocity divergence
+    parti.div_v -= neibpart[j].m*dvdr*wkerni;
+    neibpart[j].div_v -= parti.m*dvdr*wkernj;
+
+    // Main SPH pressure force term
+    paux = parti.pfactor*wkerni + neibpart[j].pfactor*wkernj;
+    
+    // Add dissipation terms (for approaching particle pairs)
     // ------------------------------------------------------------------------
-    for (jj=0; jj<Nneib; jj++) {
-      j = neiblist[jj];
-      wkerni = parti.hfactor*kern.w1(drmag[jj]*parti.invh);
-      wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*neibpart[j].invh);
+    if (dvdr < (FLOAT) 0.0) {
 
-      for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
-      for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
-      dvdr = DotProduct(dv,draux,ndim);
-
-      // Add contribution to velocity divergence
-      parti.div_v -= neibpart[j].m*dvdr*wkerni;
-      neibpart[j].div_v -= parti.m*dvdr*wkernj;
-
-      // Main SPH pressure force term
-      paux = parti.pfactor*wkerni + neibpart[j].pfactor*wkernj;
-      
-      // Add dissipation terms (for approaching particle pairs)
-      // ----------------------------------------------------------------------
-      if (dvdr < (FLOAT) 0.0) {
-
-    	winvrho = (FLOAT) 0.25*(wkerni + wkernj)*
-          (parti.invrho + neibpart[j].invrho);
-        //winvrho = (FLOAT) (wkerni + wkernj)/
-        // (parti.rho + neibpart[j].rho);
+      winvrho = (FLOAT) 0.25*(wkerni + wkernj)*
+      (parti.invrho + neibpart[j].invrho);
+      //winvrho = (FLOAT) (wkerni + wkernj)/
+      // (parti.rho + neibpart[j].rho);
 	
-        // Artificial viscosity term
-        if (avisc == mon97) {
-          vsignal = parti.sound + neibpart[j].sound - beta_visc*dvdr;
-          paux -= (FLOAT) alpha_visc*vsignal*dvdr*winvrho;
-          uaux = (FLOAT) 0.5*alpha_visc*vsignal*dvdr*dvdr*winvrho;
-          parti.dudt -= neibpart[j].m*uaux;
-          neibpart[j].dudt -= parti.m*uaux;
-        }
-
-        // Artificial conductivity term
-        if (acond == wadsley2008) {
-          uaux = (FLOAT) 0.5*dvdr*(neibpart[j].u - parti.u)*
-	    (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
-          parti.dudt += neibpart[j].m*uaux;
-          neibpart[j].dudt -= parti.m*uaux;
-        }
-        else if (acond == price2008) {
-    	  vsignal = sqrt(fabs(eos->Pressure(parti) -
-			      eos->Pressure(neibpart[j]))*0.5*
-			 (parti.invrho + neibpart[j].invrho));
-          parti.dudt += 0.5*neibpart[j].m*vsignal*
-            (parti.u - neibpart[j].u)*winvrho;
-          neibpart[j].dudt -= 0.5*parti.m*vsignal*
-            (parti.u - neibpart[j].u)*winvrho;
-        }
-	
+      // Artificial viscosity term
+      if (avisc == mon97) {
+        alpha_mean = 0.5*(parti.alpha + neibpart[j].alpha);
+        vsignal = parti.sound + neibpart[j].sound - beta_visc*alpha_mean*dvdr;
+        paux -= (FLOAT) alpha_mean*vsignal*dvdr*winvrho;
+        uaux = (FLOAT) 0.5*alpha_mean*vsignal*dvdr*dvdr*winvrho;
+        parti.dudt -= neibpart[j].m*uaux;
+        neibpart[j].dudt -= parti.m*uaux;
       }
-      // ----------------------------------------------------------------------
 
-      // Add total hydro contribution to acceleration for particle i
-      for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
-      parti.levelneib = max(parti.levelneib,neibpart[j].level);
-      
-      // If neighbour is also active, add contribution to force here
-      for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
-      neibpart[j].levelneib = max(neibpart[j].levelneib,parti.level);
-
+      // Artificial conductivity term
+      if (acond == wadsley2008) {
+        uaux = (FLOAT) 0.5*dvdr*(neibpart[j].u - parti.u)*
+	      (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
+        parti.dudt += neibpart[j].m*uaux;
+        neibpart[j].dudt -= parti.m*uaux;
+      }
+      else if (acond == price2008) {
+    	vsignal = sqrt(fabs(eos->Pressure(parti) -
+      		      eos->Pressure(neibpart[j]))*0.5*
+      		 (parti.invrho + neibpart[j].invrho));
+        parti.dudt += 0.5*neibpart[j].m*vsignal*
+          (parti.u - neibpart[j].u)*winvrho;
+        neibpart[j].dudt -= 0.5*parti.m*vsignal*
+          (parti.u - neibpart[j].u)*winvrho;
+      }
+	
     }
     // ------------------------------------------------------------------------
+
+    // Add total hydro contribution to acceleration for particle i
+    for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
+    parti.levelneib = max(parti.levelneib,neibpart[j].level);
+      
+    // If neighbour is also active, add contribution to force here
+    for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
+    neibpart[j].levelneib = max(neibpart[j].levelneib,parti.level);
+
+  }
+  // --------------------------------------------------------------------------
 
 
   return;

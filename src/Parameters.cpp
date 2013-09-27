@@ -252,9 +252,11 @@ void Parameters::SetDefaultValues(void)
 
   // Artificial viscosity parameters
   // --------------------------------------------------------------------------
+  intparams["time_dependent_avisc"] = 0;
   stringparams["avisc"] = "mon97";
   stringparams["acond"] = "none";
   floatparams["alpha_visc"] = 1.0;
+  floatparams["alpha_visc_min"] = 0.1;
   floatparams["beta_visc"] = 2.0;
 
   // Riemann solver parameters

@@ -324,6 +324,8 @@ void Simulation<ndim>::ProcessParameters(void)
   sph->slope_limiter  = stringparams["slope_limiter"];
   sph->riemann_order  = intparams["riemann_order"];
   sph->create_sinks   = intparams["create_sinks"];
+  sph->time_dependent_avisc = intparams["time_dependent_avisc"];
+  sph->alpha_visc_min = floatparams["alpha_visc_min"];
 
 
   // Set important variables for N-body objects
@@ -1577,7 +1579,7 @@ void SimulationBase::SetupSimulation(void)
 
 
   // Process the parameters file setting up all simulation objects
-  if (simparams->stringparams["ic"]=="python") {
+  if (simparams->stringparams["ic"] == "python") {
     if (!ParametersProcessed) {
       string msg = "Error: you are attempting to setup a simulation with initial conditions generated"
           "from Python. Before setting up the simulation, you need to import the initial conditions";
@@ -1614,7 +1616,8 @@ void SimulationBase::SetupSimulation(void)
 template<int ndim>
 void Simulation<ndim>::SetComFrame(void)
 {
-  int i,k;                         // ..
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
 
   debug2("[Simulation::SetComFrame]");
 

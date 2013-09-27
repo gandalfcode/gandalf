@@ -64,6 +64,14 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sph->Ntot = sph->Nsph;
     for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
 
+    // Set inital artificial viscosity alpha values
+    if (sph->time_dependent_avisc == 1)
+      for (i=0; i<sph->Nsph; i++) {
+	sph->sphdata[i].alpha = sph->alpha_visc_min;
+      }
+    else
+      for (i=0; i<sph->Nsph; i++) sph->sphdata[i].alpha = sph->alpha_visc;
+
     // Compute mean mass
     sph->mmean = 0.0;
     for (i=0; i<sph->Nsph; i++) sph->mmean += sph->sphdata[i].m;
@@ -83,7 +91,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     level_step = 1;
 
-    // Zero accelerations (perhaps here)
+    // Zero accelerations
     for (i=0; i<sph->Ntot; i++) sph->sphdata[i].active = true;
 
     // Calculate all SPH properties
@@ -138,6 +146,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
       sph->sphdata[i].gpot = (FLOAT) 0.0;
       sph->sphdata[i].dudt = (FLOAT) 0.0;
+      sph->sphdata[i].dalphadt = (FLOAT) 0.0;
       sph->sphdata[i].active = true;
       sph->sphdata[i].level = 0;
       sph->sphdata[i].nstep = 0;
@@ -277,11 +286,16 @@ void SphSimulation<ndim>::MainLoop(void)
           sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
                                      sph->sphdata[i]);
       
-      // Add accelerations
+      // Compute additional terms now accelerations and other derivatives 
+      // have been computed for active particles
       for (i=0; i<sph->Nsph; i++) {
         if (sph->sphdata[i].active) {
           for (k=0; k<ndim; k++)
             sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
+          sph->sphdata[i].dalphadt = 0.1*sph->sphdata[i].sound*
+	    (sph->alpha_visc_min - sph->sphdata[i].alpha)*
+	    sph->sphdata[i].invh + max(sph->sphdata[i].div_v,0.0)*
+	    (sph->alpha_visc - sph->sphdata[i].alpha);
         }
       }
 
