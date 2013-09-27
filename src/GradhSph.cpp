@@ -305,6 +305,13 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
 	
       // Artificial viscosity term
       if (avisc == mon97) {
+        vsignal = parti.sound + neibpart[j].sound - beta_visc*alpha_visc*dvdr;
+        paux -= (FLOAT) alpha_visc*vsignal*dvdr*winvrho;
+        uaux = (FLOAT) 0.5*alpha_visc*vsignal*dvdr*dvdr*winvrho;
+        parti.dudt -= neibpart[j].m*uaux;
+        neibpart[j].dudt -= parti.m*uaux;
+      }
+      else if (avisc == mon97td) {
         alpha_mean = 0.5*(parti.alpha + neibpart[j].alpha);
         vsignal = parti.sound + neibpart[j].sound - beta_visc*alpha_mean*dvdr;
         paux -= (FLOAT) alpha_mean*vsignal*dvdr*winvrho;

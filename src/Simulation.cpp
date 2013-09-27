@@ -420,6 +420,9 @@ void Simulation<ndim>::ProcessSphParameters(void)
   // Set the enum for artificial viscosity
   if (stringparams["avisc"] == "none")
     avisc = noneav;
+  else if (stringparams["avisc"] == "mon97" &&
+           intparams["time_dependent_avsic"] == 1)
+    avisc = mon97td;
   else if (stringparams["avisc"] == "mon97")
     avisc = mon97;
   else {

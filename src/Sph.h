@@ -39,7 +39,7 @@
 using namespace std;
 
 
-enum aviscenum{noneav, mon97};
+enum aviscenum{noneav, mon97, mon97td};
 enum acondenum{noneac, wadsley2008, price2008};
 
 
