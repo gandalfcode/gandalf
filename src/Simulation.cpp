@@ -1070,10 +1070,17 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
     // Call output routine
     filename=Output();
 	  
-    // If we have written a snapshot, creates a new snapshot object
+    // If we have written a snapshot, create a new snapshot object
     if (filename.length() != 0) {
-      SphSnapshotBase* snapshot = SphSnapshotBase::SphSnapshotFactory
-	(filename, this, ndims);
+
+      // Update binary statistics for snapshot (here for now)
+      if (simparams->intparams["binary_stats"] == 1) {
+        nbodytree.CreateNbodySystemTree(nbody);
+        nbodytree.FindBinarySystems(nbody);
+      }
+
+      SphSnapshotBase* snapshot =
+        SphSnapshotBase::SphSnapshotFactory(filename, this, ndims);
       snapshot->CopyDataFromSimulation();
       snap_list.push_back(snapshot);
     }
