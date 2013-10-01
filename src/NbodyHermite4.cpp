@@ -139,8 +139,8 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
   DOUBLE rcom[ndim];                // ..
   DOUBLE vcom[ndim];                // ..
   DOUBLE msystot = 0.0;             // ..
-  DOUBLE apertcom[ndim*Npertmax];   // ..
-  DOUBLE apertdotcom[ndim*Npertmax]; // ..
+  //DOUBLE apertcom[ndim*Npertmax];   // ..
+  //DOUBLE apertdotcom[ndim*Npertmax]; // ..
 
   debug2("[NbodyHermite4::CalculatePerturberForces]");
 
@@ -615,7 +615,6 @@ void NbodyHermite4<ndim, kernelclass>::IntegrateInternalMotion
                                     ///<         internal motion for.
 {
   int i;                                              // Particle counter
-  int it;                                             // Iteration counter
   int k;                                              // Dimension counter
   int Nchildren = systemi->Nchildren;                 // No. of child systems
   int nsteps_local = 0;                               // No. of local steps

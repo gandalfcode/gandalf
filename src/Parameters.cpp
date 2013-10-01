@@ -127,10 +127,10 @@ void Parameters::ParseLine
   // First, trim all white space from line
   paramline = TrimWhiteSpace(paramline);
 
-  int colon_pos = paramline.find(':');  // Position of colon in string
-  int equal_pos = paramline.find('=');  // Position of equals in string
-  int hash_pos = paramline.find('#');   // Position of hash in string
-  int length = paramline.length();      // Length of string
+  unsigned int colon_pos = paramline.find(':'); // Position of colon in string
+  unsigned int equal_pos = paramline.find('='); // Position of equals in string
+  unsigned int hash_pos = paramline.find('#');  // Position of hash in string
+  unsigned int length = paramline.length();     // Length of string
 
   // Ignore line if it is a comment (i.e. begins with a has character)
   if (hash_pos == 0) return;

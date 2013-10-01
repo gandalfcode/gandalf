@@ -116,7 +116,7 @@ void Simulation<ndim>::BinaryAccretion(void)
   FLOAT vbinary[ndim];              // Initial velocity of binary COM
   FLOAT rsonic;                     // Sonic radius
   FLOAT rsink;                      // Sink radius
-  FLOAT sound1;                     // Sound speed of fluid 1
+  //FLOAT sound1;                     // Sound speed of fluid 1
   FLOAT volume1;                    // Volume of box1
   FLOAT volume2;                    // Volume of box1
   FLOAT *r1;                        // Positions for particles in fluid 1
@@ -126,7 +126,7 @@ void Simulation<ndim>::BinaryAccretion(void)
 
   // Create local copies of initial conditions parameters
   int Nstar = simparams->intparams["Nstar"];
-  int smooth_ic = simparams->intparams["smooth_ic"];
+  //int smooth_ic = simparams->intparams["smooth_ic"];
   FLOAT abin = simparams->floatparams["abin"];
   FLOAT ebin = simparams->floatparams["ebin"];
   FLOAT vmachbin = simparams->floatparams["vmachbin"];
@@ -451,7 +451,7 @@ void Simulation<ndim>::ShockTube(void)
     sph->Nghost = 0;
     sph->Nghostmax = sph->Nsphmax - sph->Nsph;
     sph->Ntot = sph->Nsph;
-    for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
+    for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
     
     sph->InitialSmoothingLengthGuess();
     sphneib->UpdateTree(sph,*simparams);
@@ -535,7 +535,7 @@ void Simulation<ndim>::UniformBox(void)
   // Local copy of important parameters
   string particle_dist = simparams->stringparams["particle_distribution"];
   int Npart = simparams->intparams["Nsph"];
-  FLOAT rhobox = simparams->intparams["rhofluid1"];
+  //FLOAT rhobox = simparams->intparams["rhofluid1"];
   Nlattice[0] = simparams->intparams["Nlattice1[0]"];
   Nlattice[1] = simparams->intparams["Nlattice1[1]"];
   Nlattice[2] = simparams->intparams["Nlattice1[2]"];
@@ -685,7 +685,6 @@ void Simulation<ndim>::ContactDiscontinuity(void)
 {
   int i;                            // Particle counter
   int j;                            // Aux. particle counter
-  int k;                            // Dimension counter
   int Nbox1;                        // No. of particles in LHS box
   int Nbox2;                        // No. of particles in RHS box
   int Nlattice1[ndim];              // Particles per dimension for LHS lattice
@@ -705,8 +704,6 @@ void Simulation<ndim>::ContactDiscontinuity(void)
   FLOAT temp0 = simparams->floatparams["temp0"];
   FLOAT mu_bar = simparams->floatparams["mu_bar"];
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
-  FLOAT amp = simparams->floatparams["amp"];
-  FLOAT lambda = simparams->floatparams["lambda"];
   Nlattice1[0] = simparams->intparams["Nlattice1[0]"];
   Nlattice1[1] = simparams->intparams["Nlattice1[1]"];
   Nlattice2[0] = simparams->intparams["Nlattice2[0]"];
@@ -847,8 +844,6 @@ void Simulation<ndim>::KHI(void)
   FLOAT rhofluid2 = simparams->floatparams["rhofluid2"];
   FLOAT press1 = simparams->floatparams["press1"];
   FLOAT press2 = simparams->floatparams["press2"];
-  FLOAT temp0 = simparams->floatparams["temp0"];
-  FLOAT mu_bar = simparams->floatparams["mu_bar"];
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
   FLOAT amp = simparams->floatparams["amp"];
   FLOAT lambda = simparams->floatparams["lambda"];
@@ -1042,23 +1037,18 @@ void Simulation<ndim>::NohProblem(void)
 
 //=============================================================================
 //  Simulation::BossBodenheimer
-/// Set-up Noh Problem initial conditions
+/// Set-up Boss-Bodenheimer (1979) initial conditions for collapse of a 
+/// rotating uniform sphere with an imposed m=2 azimuthal density perturbation.
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::BossBodenheimer(void)
 {
   int i;                            // Particle counter
-  int j;                            // Aux. particle counter
   int k;                            // Dimension counter
   int Nsphere;                      // Actual number of particles in sphere
-  int Nlattice[3];                  // Lattice size
-  FLOAT dr[ndim];                   // Relative position vector
-  FLOAT drmag;                      // Distance
-  FLOAT drsqd;                      // Distance squared
   FLOAT mp;                         // Mass of one particle
   FLOAT rcentre[ndim];              // Position of sphere centre
   FLOAT rho;                        // Fluid density
-  FLOAT volume;                     // Volume of box
   FLOAT *r;                         // Positions of all particles
   FLOAT *v;                         // Velocities of all particles
 
@@ -1148,7 +1138,6 @@ template <int ndim>
 void Simulation<ndim>::PlummerSphere(void)
 {
   bool flag;                        // Aux. flag
-  bool istar;                       // Are particles 'stars'?
   int i,j,k;                        // Particle and dimension counter
   FLOAT raux;                       // Aux. float variable
   FLOAT rcentre[ndim];              // Position of centre of Plummer sphere
@@ -1687,18 +1676,12 @@ void Simulation<ndim>::TripleStar(void)
   // Compute main binary orbit
   for (k=0; k<ndim; k++) rbinary[k] = 0.0;
   for (k=0; k<ndim; k++) vbinary[k] = 0.0;
-  AddBinaryStar(sma1,eccent,m1,m2,0.01,0.01,
+  AddBinaryStar(sma1,eccent,m1,m2,0.0001,0.0001,
                 rbinary,vbinary,b1,nbody->stardata[2]);
 
   // Now compute both components
   AddBinaryStar(sma2,eccent,0.5*m1,0.5*m1,0.0001,0.0001,b1.r,b1.v,
 		        nbody->stardata[0],nbody->stardata[1]);
-
-  for (int i=0; i<nbody->Nstar; i++) {
-    cout << "Star : " << i << "   r : " << nbody->stardata[i].r[0] << "  "
-	 << nbody->stardata[i].r[1] << "     v : " << nbody->stardata[i].v[0]
-	 << "    " << nbody->stardata[i].v[1] << endl;
-  }
 
   return;
 }
@@ -1715,8 +1698,8 @@ void Simulation<ndim>::QuadrupleStar(void)
   int k;                           // Dimension counter
   FLOAT sma1 = 1.0;                // Outer semi-major axis
   FLOAT sma2 = 0.01;               // Inner semi-major axis
-  FLOAT eccent1 = 0.1;             // Main orbital eccentricity
-  FLOAT eccent2 = 0.2;             // Minor orbital eccentricity
+  FLOAT eccent1 = 0.4;             // Main orbital eccentricity
+  FLOAT eccent2 = 0.1;             // Minor orbital eccentricity
   FLOAT m1 = 0.5;                  // Mass of binary 1
   FLOAT m2 = 0.5;                  // Mass of binary 2
   DOUBLE rbinary[ndim];            // Position of binary COM
@@ -1742,22 +1725,11 @@ void Simulation<ndim>::QuadrupleStar(void)
   for (k=0; k<ndim; k++) vbinary[k] = 0.0;
   AddBinaryStar(sma1,eccent1,m1,m2,0.01,0.01,rbinary,vbinary,b1,b2);
 
-  cout << "b1, r : " << b1.r[0] << "    " << b1.r[1] << endl;
-  cout << "b1, v : " << b1.v[0] << "    " << b1.v[1] << endl;
-  cout << "b2, r : " << b2.r[0] << "    " << b2.r[1] << endl;
-  cout << "b2, v : " << b2.v[0] << "    " << b2.v[1] << endl;
-
-  // Now compute both components
+  // Now compute components of both inner binaries
   AddBinaryStar(sma2,eccent2,0.5*m1,0.5*m1,0.0001,0.0001,b1.r,b1.v,
                 nbody->stardata[0],nbody->stardata[1]);
   AddBinaryStar(sma2,eccent2,0.5*m2,0.5*m2,0.0001,0.0001,b2.r,b2.v,
                 nbody->stardata[2],nbody->stardata[3]);
-
-  for (int i=0; i<nbody->Nstar; i++) {
-    cout << "Star : " << i << "   r : " << nbody->stardata[i].r[0] << "  " 
-	 << nbody->stardata[i].r[1] << "     v : " << nbody->stardata[i].v[0]
-	 << "    " << nbody->stardata[i].v[1] << endl;
-  }
 
   return;
 }
@@ -1767,7 +1739,7 @@ void Simulation<ndim>::QuadrupleStar(void)
 //=============================================================================
 //  Simulation::AddBinaryStar
 /// Add a binary star of given mass, eccentricity and separation.
-/// (Code provided courtesy of S. Goodwin; 29/09/2013)
+/// (Code provided courtesy of S. P. Goodwin; 29/09/2013)
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::AddBinaryStar
@@ -1783,7 +1755,7 @@ void Simulation<ndim>::AddBinaryStar
  NbodyParticle<ndim> &s2)          ///< Star 2
 {
   int k;                           // Dimension counter
-  FLOAT mbin = m1 + m2;
+  FLOAT mbin = m1 + m2;            // Total binary mass
 
   debug2("[Simulation::AddBinaryStar]");
 
@@ -1843,6 +1815,8 @@ void Simulation<ndim>::AddBinaryStar
   s2.r[1] -= sep*sin(theta)*m2/mbin;
   s2.v[0] -= -vel*cos(0.5*pi - theta + phi)*m1/mbin;
   s2.v[1] -= vel*sin(0.5*pi - theta + phi)*m1/mbin;
+
+  // DAVID : Need to add code to rotate binary to an arbitrary orientation.
 
   return;
 }

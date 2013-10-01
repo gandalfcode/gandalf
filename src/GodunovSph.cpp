@@ -95,8 +95,6 @@ int GodunovSph<ndim, kernelclass >::ComputeH
  Nbody<ndim> *nbody)                    // ..
 {
   int j;                                // Neighbour id
-  int jj;                               // Aux. neighbour counter
-  int k;                                // Dimension counter
   int iteration = 0;                    // h-rho iteration counter
   int iteration_max = 30;               // Max. no of iterations
   FLOAT h_lower_bound = 0.0;            // Lower bound on h
@@ -220,10 +218,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphHydroForces
   FLOAT dvdr;                       // Dot product of dv and dr
   FLOAT wkerni;                     // Value of w1 kernel function
   FLOAT wkernj;                     // Value of w1 kernel function
-  FLOAT vsignal;                    // Signal velocity
   FLOAT paux;                       // Aux. pressure force variable
-  FLOAT uaux;                       // Aux. internal energy variable
-  FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
 
   FLOAT Aij;
   FLOAT Bij;
@@ -239,7 +234,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphHydroForces
   FLOAT vl,vr;                      // ..
   FLOAT pstar;                      // ..
   FLOAT vstar;                      // ..
-  FLOAT vtemp[ndim];                // ..
+  //FLOAT vtemp[ndim];                // ..
   FLOAT hconv = pow(invsqrttwo,ndim+1);
 
   string interpolation = "linear";

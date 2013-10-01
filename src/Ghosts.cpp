@@ -110,10 +110,9 @@ void Ghosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
 template <int ndim>
 void Ghosts<ndim>::SearchGhostParticles(DomainBox<ndim> simbox, Sph<ndim> *sph)
 {
-  int i;
-  int k;
-  FLOAT kernrange = sph->kernp->kernrange*sph->kernfac;
-  SphParticle<ndim>* sphdata = sph->sphdata;
+  int i;                                                // Particle counter
+  FLOAT kernrange = sph->kernp->kernrange*sph->kernfac; // Kernel extent
+  SphParticle<ndim>* sphdata = sph->sphdata;            // SPH particle data
 
   // Set all relevant particle counters
   sph->Nghost    = 0;

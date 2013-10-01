@@ -95,7 +95,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
  Nbody<ndim> *nbody)                ///< [in] Main N-body object
 {
   int j;                            // Neighbour id
-  int jj;                           // Aux. neighbour counter
   int k;                            // Dimension counter
   int iteration = 0;                // h-rho iteration counter
   int iteration_max = 30;           // Max. no of iterations
@@ -166,13 +165,13 @@ int GradhSph<ndim, kernelclass>::ComputeH
         h_lower_bound = parti.h;
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
-
     else {
       cout << "H ITERATION : " << iteration << "    " << parti.h << "    " 
 	   << parti.rho << "    " << h_upper_bound << "     " << hmax << "   " 
 	   << h_lower_bound << "    " << parti.hfactor << "     " 
 	   << parti.m*parti.hfactor*kern.w0(0.0) << endl;
-      cout << "rp : " << parti.r[0] << "     " << parti.v[0] << "    " << parti.a[0] << endl;
+      cout << "rp : " << parti.r[0] << "     " << parti.v[0] 
+           << "    " << parti.a[0] << endl;
       string message = "Problem with convergence of h-rho iteration";
       ExceptionHandler::getIstance().raise(message);
     }
@@ -511,13 +510,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
   FLOAT dv[ndim];                   // Relative velocity vector
   FLOAT dvdr;                       // Dot product of dv and dr
   FLOAT invdrmag;                   // ..
-  FLOAT wkerni;                     // Value of w1 kernel function
-  FLOAT wkernj;                     // Value of w1 kernel function
-  FLOAT vsignal;                    // Signal velocity
   FLOAT gaux;                       // ..
   FLOAT paux;                       // Aux. pressure force variable
-  FLOAT uaux;                       // Aux. internal energy variable
-  FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
 
 
   // Loop over all potential neighbours in the list

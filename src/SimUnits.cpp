@@ -120,7 +120,7 @@ DOUBLE MassUnit::SIUnit(string unit_string)
   else if (unit_string == "kg") return 1.0;
   else if (unit_string == "g") return 1.0e-3;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
@@ -156,7 +156,7 @@ DOUBLE TimeUnit::SIUnit(string unit_string)
   else if (unit_string == "day") return day;
   else if (unit_string == "s") return 1.0;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
@@ -191,7 +191,7 @@ DOUBLE VelocityUnit::SIUnit(string unit_string)
   else if (unit_string == "m_s") return 1.0;
   else if (unit_string == "cm_s") return 0.01;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
@@ -225,7 +225,7 @@ DOUBLE AccelerationUnit::SIUnit(string unit_string)
   else if (unit_string == "m_s2") return 1.0;
   else if (unit_string == "cm_s2") return 0.01;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
@@ -383,7 +383,7 @@ DOUBLE EnergyUnit::SIUnit(string unit_string)
   else if (unit_string == "GJ") return 1.0e12;
   else if (unit_string == "10^40erg") return 1.0e33;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
@@ -417,7 +417,7 @@ DOUBLE MomentumUnit::SIUnit(string unit_string)
   else if (unit_string == "kgm_s") return 1.0;
   else if (unit_string == "gcm_s") return 1.0e-5;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
@@ -451,7 +451,7 @@ DOUBLE AngularMomentumUnit::SIUnit(string unit_string)
   else if (unit_string == "kgm2_s") return 1.0;
   else if (unit_string == "gcm2_s") return 1.0e-7;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
@@ -482,7 +482,7 @@ DOUBLE AngularVelocityUnit::SIUnit(string unit_string)
 {
   if (unit_string == "rad_s") return 1.0;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
@@ -513,7 +513,7 @@ DOUBLE MassRateUnit::SIUnit(string unit_string)
   else if (unit_string == "kg_s") return 1.0;
   else if (unit_string == "g_s") return 1.0e-3;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
@@ -546,7 +546,7 @@ DOUBLE LuminosityUnit::SIUnit(string unit_string)
   else if (unit_string == "W") return 1.0;
   else if (unit_string == "erg_s") return 1.0e-7;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
@@ -577,7 +577,7 @@ DOUBLE OpacityUnit::SIUnit(string unit_string)
   if (unit_string == "m2_kg") return 1.0;
   else if (unit_string == "cm2_g") return 0.1;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
@@ -607,7 +607,7 @@ DOUBLE MagneticFieldUnit::SIUnit(string unit_string)
   if (unit_string == "tesla") return 1.0;
   else if (unit_string == "gauss") return 0.0001;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
@@ -637,7 +637,7 @@ DOUBLE ChargeUnit::SIUnit(string unit_string)
   if (unit_string == "C") return 1.0;
   else if (unit_string == "e") return e_charge;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
@@ -666,7 +666,7 @@ DOUBLE CurrentDensityUnit::SIUnit(string unit_string)
 {
   if (unit_string == "C_s_m2") return 1.0;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
@@ -695,11 +695,10 @@ DOUBLE SpecificEnergyUnit::SIUnit(string unit_string)
   if (unit_string == "J_kg") return 1.0;
   else if (unit_string == "erg_g") return 1.0e-4;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
-  return -1;
 }
 
 
@@ -726,11 +725,10 @@ DOUBLE SpecificEnergyRateUnit::SIUnit(string unit_string)
   if (unit_string == "J_kg_s") return 1.0;
   else if (unit_string == "erg_g_s") return 1.0e-4;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
-  return -1;
 }
 
 
@@ -756,11 +754,10 @@ DOUBLE TemperatureUnit::SIUnit(string unit_string)
 {
   if (unit_string == "K") return 1.0;
   else if (unit_string == "") return 1.0;
-  else if (unit_string != "") {
+  else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
   }
-  return -1;
 }
 
 
@@ -783,6 +780,7 @@ string TemperatureUnit::LatexLabel(string unit_string)
 //=============================================================================
 SimUnits::SimUnits()
 {
+  dimensionless = 0;
   ReadInputUnits = false;
 }
 

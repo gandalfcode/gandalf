@@ -225,9 +225,6 @@ template <int ndim>
 bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 {
   int i;
-  int ndimaux;
-  int Npart;
-  int Nstar;
   ofstream outfile;
 
   debug2("[Simulation::WriteColumnSnapshotFile]");
@@ -377,7 +374,6 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   int k;                       // Dimension counter
   int ndata;                   // No. of data arrays written
   int nunit;                   // No. of unit strings
-  int p;                       // Particle counter
   int pr_check;                // Precision check
   int idata[50];               // Integer data
   int ilpdata[50];             // ..
@@ -389,8 +385,6 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   string data_id[50];          // String ids of arrays written
   string unit_data[50];        // String ids of units written
   ifstream infile;             // Stream of input file
-  FLOAT raux;                  // Aux. float variable
-  HeaderInfo info;             // ..
   int sink_data_length;        // ..
   string dummystring;          // ..
   bool booldummy;              // ..
@@ -615,31 +609,24 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 template <int ndim>
 bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 {
-  int dim_check;               // Dimension check
-  int dmdt_range_aux;          // Accretion history array size
+  //int dmdt_range_aux;          // Accretion history array size
   int i;                       // Aux. counter
-  int ifirst;                  // i.d. of first particle
-  int ilast;                   // i.d. of last particle
-  int j;                       // Aux. counter
+  //int ifirst;                  // i.d. of first particle
+  //int ilast;                   // i.d. of last particle
+  //int j;                       // Aux. counter
   int k;                       // Dimension counter
   int ndata;                   // No. of data arrays written
   int nunit;                   // No. of unit strings
-  int p;                       // Particle counter
-  int pr_check;                // Precision check
   int idata[50];               // Integer data
   int ilpdata[50];             // ..
   int typedata[50][5];         // ..
   FLOAT rdata[50];             // Real data array
-  FLOAT rtemp;                 // Dummy float variable
   DOUBLE ddata[50];            // ..
   string format_id;            // File format (for verification)
   string data_id[50];          // String ids of arrays written
   string unit_data[50];        // String ids of units written
-  FLOAT raux;                  // Aux. float variable
-  HeaderInfo info;             // ..
   int sink_data_length;        // ..
   string dummystring;          // ..
-  bool booldummy;              // ..
   ofstream outfile;            // ..
 
   debug2("[Simulation::WriteSerenFormSnapshotFile]");

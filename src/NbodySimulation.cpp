@@ -247,7 +247,6 @@ template <int ndim>
 void NbodySimulation<ndim>::ComputeGlobalTimestep(void)
 {
   int i;                            // Particle counter
-  DOUBLE dt = big_number_dp;        // Particle timestep
   DOUBLE dt_min = big_number_dp;    // Local copy of minimum timestep
 
   debug2("[NbodySimulation::ComputeGlobalTimestep]");

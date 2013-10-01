@@ -685,10 +685,6 @@ void Simulation<ndim>::ProcessGodunovSphParameters(void)
 template <int ndim>
 void Simulation<ndim>::ProcessNbodyParameters(void)
 {
-  aviscenum avisc;                  // Artificial viscosity enum
-  acondenum acond;                  // Artificial conductivity enum
-
-  // Local references to parameter variables for brevity
   map<string, int> &intparams = simparams->intparams;
   map<string, float> &floatparams = simparams->floatparams;
   map<string, string> &stringparams = simparams->stringparams;
@@ -863,24 +859,24 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
       if (intparams["tabulated_kernel"] == 1) {
 	subsystem = new NbodyLeapfrogKDK<ndim, TabulatedKernel> 
 	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["nbody_mult"], KernelName);
+	   floatparams["subsys_mult"], KernelName);
       }
       else if (intparams["tabulated_kernel"] == 0) {
 	// Depending on the kernel, instantiate a different GradSph object
 	if (KernelName == "m4") {
 	  subsystem = new NbodyLeapfrogKDK<ndim, M4Kernel> 
 	    (intparams["nbody_softening"], intparams["sub_systems"],
-	     floatparams["nbody_mult"], KernelName);
+	     floatparams["subsys_mult"], KernelName);
 	}
 	else if (KernelName == "quintic") {
 	  subsystem = new NbodyLeapfrogKDK<ndim, QuinticKernel> 
 	    (intparams["nbody_softening"], intparams["sub_systems"],
-	     floatparams["nbody_mult"], KernelName);
+	     floatparams["subsys_mult"], KernelName);
 	}
 	else if (KernelName == "gaussian") {
 	  subsystem = new NbodyLeapfrogKDK<ndim, GaussianKernel> 
 	    (intparams["nbody_softening"], intparams["sub_systems"],
-	     floatparams["nbody_mult"], KernelName);
+	     floatparams["subsys_mult"], KernelName);
 	}
 	else {
 	  string message = "Unrecognised parameter : kernel = " +
@@ -900,24 +896,24 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
       if (intparams["tabulated_kernel"] == 1) {
 	subsystem = new NbodyHermite4<ndim, TabulatedKernel> 
 	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["nbody_mult"], KernelName);
+	   floatparams["subsys_mult"], KernelName);
       }
       else if (intparams["tabulated_kernel"] == 0) {
 	// Depending on the kernel, instantiate a different GradSph object
 	if (KernelName == "m4") {
 	  subsystem = new NbodyHermite4<ndim, M4Kernel> 
 	    (intparams["nbody_softening"], intparams["sub_systems"],
-	     floatparams["nbody_mult"], KernelName);
+	     floatparams["subsys_mult"], KernelName);
 	}
 	else if (KernelName == "quintic") {
 	  subsystem = new NbodyHermite4<ndim, QuinticKernel> 
 	    (intparams["nbody_softening"], intparams["sub_systems"],
-	     floatparams["nbody_mult"], KernelName);
+	     floatparams["subsys_mult"], KernelName);
 	}
 	else if (KernelName == "gaussian") {
 	  subsystem = new NbodyHermite4<ndim, GaussianKernel> 
 	    (intparams["nbody_softening"], intparams["sub_systems"],
-	     floatparams["nbody_mult"], KernelName);
+	     floatparams["subsys_mult"], KernelName);
 	}
 	else {
 	string message = "Unrecognised parameter : kernel = " +
@@ -937,24 +933,24 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
       if (intparams["tabulated_kernel"] == 1) {
 	subsystem = new NbodyHermite4TS<ndim, TabulatedKernel>
 	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["nbody_mult"], KernelName, intparams["Npec"]);
+	   floatparams["subsys_mult"], KernelName, intparams["Npec"]);
       }
       else if (intparams["tabulated_kernel"] == 0) {
 	// Depending on the kernel, instantiate a different GradSph object
 	if (KernelName == "m4") {
 	  subsystem = new NbodyHermite4TS<ndim, M4Kernel>
 	    (intparams["nbody_softening"], intparams["sub_systems"],
-	     floatparams["nbody_mult"], KernelName, intparams["Npec"]);
+	     floatparams["subsys_mult"], KernelName, intparams["Npec"]);
 	}
 	else if (KernelName == "quintic") {
 	  subsystem = new NbodyHermite4TS<ndim, QuinticKernel>
 	    (intparams["nbody_softening"], intparams["sub_systems"],
-	     floatparams["nbody_mult"], KernelName, intparams["Npec"]);
+	     floatparams["subsys_mult"], KernelName, intparams["Npec"]);
 	}
 	else if (KernelName == "gaussian") {
 	  subsystem = new NbodyHermite4TS<ndim, GaussianKernel>
 	    (intparams["nbody_softening"], intparams["sub_systems"],
-	     floatparams["nbody_mult"], KernelName, intparams["Npec"]);
+	     floatparams["subsys_mult"], KernelName, intparams["Npec"]);
 	}
 	else {
 	  string message = "Unrecognised parameter : kernel = " +

@@ -96,8 +96,6 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
  Nbody<ndim> *nbody)                    // N-body object pointer
 {
   int j;                                // Neighbour id
-  int jj;                               // Aux. neighbour counter
-  int k;                                // Dimension counter
   int iteration = 0;                    // h-rho iteration counter
   int iteration_max = 30;               // Max. no of iterations
   FLOAT h_lower_bound = 0.0;            // Lower bound on h

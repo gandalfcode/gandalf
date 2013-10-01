@@ -251,15 +251,15 @@ class Simulation : public SimulationBase
   DomainBox<ndim> simbox;               ///< Simulation boundary data
   Diagnostics<ndim> diag0;              ///< Initial diagnostic state
   Diagnostics<ndim> diag;               ///< Current diagnostic state
-  Ghosts<ndim> ghosts;                  ///< Ghost particle object
-  Sinks<ndim> sinks;                    ///< Sink particle object
   EnergyEquation<ndim> *uint;           ///< Energy equation pointer
-  Sph<ndim> *sph;                       ///< SPH algorithm pointer
-  SphIntegration<ndim> *sphint;         ///< SPH Integration scheme pointer
-  SphNeighbourSearch<ndim> *sphneib;    ///< SPH Neighbour scheme pointer
+  Ghosts<ndim> ghosts;                  ///< Ghost particle object
   Nbody<ndim> *nbody;                   ///< N-body algorithm pointer
   Nbody<ndim> *subsystem;               ///< N-body object for sub-systems
   NbodySystemTree<ndim> nbodytree;      ///< N-body tree to create sub-systems
+  Sinks<ndim> sinks;                    ///< Sink particle object
+  Sph<ndim> *sph;                       ///< SPH algorithm pointer
+  SphIntegration<ndim> *sphint;         ///< SPH Integration scheme pointer
+  SphNeighbourSearch<ndim> *sphneib;    ///< SPH Neighbour scheme pointer
 
 };
 

@@ -100,7 +100,6 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
   int Nfar;                         // No. of 'far' neighbours
   int *neiblist;                    // List of neighbour ids
   FLOAT dr[ndim];                   // Relative distance vector
-  FLOAT drsqdaux;                   // Distance squared
   FLOAT rp[ndim];                   // Position of current particle
   FLOAT *drsqd;                     // Array of neib. distances (sqd)
   FLOAT *gpot;                      // Array of neib. grav. potentials

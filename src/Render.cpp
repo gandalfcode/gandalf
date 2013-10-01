@@ -112,7 +112,6 @@ int Render<ndim>::CreateColumnRenderingGrid
   int c;                           // Rendering grid cell counter
   int i;                           // Particle counter
   int j;                           // Aux. counter
-  int k;                           // Dimension counter
   int idummy;                      // ..
   int Nsph = snap.Nsph;            // ..
   float dr[2];                     // Rel. position vector on grid plane
@@ -288,7 +287,6 @@ int Render<ndim>::CreateSliceRenderingGrid
   int c;                           // Rendering grid cell counter
   int i;                           // Particle counter
   int j;                           // Aux. counter
-  int k;                           // Dimension counter
   int idummy;                      // ..
   float dr[3];                     // Rel. position vector on grid plane
   float drsqd;                     // Distance squared on grid plane

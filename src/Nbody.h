@@ -72,7 +72,8 @@ class Nbody
   virtual void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
                                         NbodyParticle<ndim> *,
                                         DOUBLE *, DOUBLE *) = 0;
-  virtual void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE) = 0;
+  virtual void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **, 
+                                        DOUBLE) = 0;
   virtual void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE) = 0;
   virtual void UpdateChildStars(SystemParticle<ndim>* system,
                                           int, DOUBLE, DOUBLE tend) = 0;
@@ -230,7 +231,7 @@ public:
   void IntegrateInternalMotion(SystemParticle<ndim>* system,
                                int, DOUBLE, DOUBLE tend);
   void UpdateChildStars(SystemParticle<ndim>* system,
-                                  int, DOUBLE, DOUBLE tend);
+                        int, DOUBLE, DOUBLE tend);
   void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
   DOUBLE Timestep(NbodyParticle<ndim> *);
 

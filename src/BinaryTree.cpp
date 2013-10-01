@@ -682,7 +682,6 @@ void BinaryTree<ndim>::UpdateHmaxValues
 {
   int c,cc,ccc;                     // Cell counters
   int i;                            // Particle counter
-  int k;                            // Dimension counter
 
   debug2("[BinaryTree::StockCellProperties]");
 
@@ -792,7 +791,6 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
   int cc;                           // Cell counter
   int i;                            // Particle id
   int j;                            // Aux. particle counter
-  int ilast;                        // id of last particle in current cell
   int k;                            // Neighbour counter
   int Nneib = 0;                    // No. of neighbours
   int Ntemp = 0;                    // Aux. neighbour counter
@@ -879,7 +877,6 @@ int BinaryTree<ndim>::ComputeNeighbourList
   int cc;                           // Cell counter
   int i;                            // Particle id
   int j;                            // Aux. particle counter
-  int ilast;                        // id of last particle in current cell
   int k;                            // Neighbour counter
   int Nneib = 0;                    // No. of neighbours
   int Ntemp = 0;                    // ..
@@ -1453,9 +1450,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
   int j;                           // Aux. particle counter
   int jj;                          // Aux. particle counter
   int k;                           // Dimension counter
-  int okflag;                      // Flag if h-rho iteration is valid
   int Nactive;                     // No. of active particles in cell
-  int Ngrav;                       // No. of direct sum gravity ptcls
   int Ninteract;                   // No. of near gather neighbours
   int Nneib;                       // No. of neighbours
   int Nneibmax;                    // Max. no. of neighbours
@@ -1667,7 +1662,6 @@ void BinaryTree<ndim>::UpdateAllSphForces
   int k;                            // Dimension counter
   int okflag;                       // Flag if h-rho iteration is valid
   int Nactive;                      // No. of active particles in cell
-  int Ngrav;                        // No. of direct sum gravity ptcls
   int Ndirect;                      // ..
   int Ndirectmax;                   // ..
   int Ngravcell;                    // ..
@@ -1681,11 +1675,11 @@ void BinaryTree<ndim>::UpdateAllSphForces
   int *gravcelllist;                // ..
   int *interactlist;                // ..
   int *neiblist;                    // List of neighbour ids
-  FLOAT draux[ndim];                // Aux. relative position vector var
-  FLOAT drsqd;                      // Distance squared
-  FLOAT hrangesqdi;                 // Kernel extent
-  FLOAT hrangesqdj;                 // ..
-  FLOAT rp[ndim];                   // Local copy of particle position
+  //FLOAT draux[ndim];                // Aux. relative position vector var
+  //FLOAT drsqd;                      // Distance squared
+  //FLOAT hrangesqdi;                 // Kernel extent
+  //FLOAT hrangesqdj;                 // ..
+  //FLOAT rp[ndim];                   // Local copy of particle position
   FLOAT *agrav;                     // Local copy of gravitational accel.
   FLOAT *gpot;                      // ..
   SphParticle<ndim> *neibpart;      // Local copy of neighbouring ptcls

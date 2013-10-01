@@ -310,7 +310,7 @@ void Sinks<ndim>::AccreteMassToSinks
   FLOAT vold[ndim];                 // Old sink velocity
   FLOAT wnorm;                      // Kernel normalisation factor
   FLOAT *rsqdlist;                  // Array of particle-sink distances
-  SinkParticle<ndim> *s1;           // Local reference to sink
+  //SinkParticle<ndim> *s1;           // Local reference to sink
 
   if (ssink > 0) return;
   debug2("[Sinks::AccreteMassToSinks]");

@@ -62,7 +62,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sph->Nghost = 0;
     sph->Nghostmax = sph->Nsphmax - sph->Nsph;
     sph->Ntot = sph->Nsph;
-    for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
+    for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
 
     // Set inital artificial viscosity alpha values
     if (sph->time_dependent_avisc == 1)

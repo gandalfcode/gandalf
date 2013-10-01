@@ -78,7 +78,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     sph->Nghost = 0;
     sph->Nghostmax = sph->Nsphmax - sph->Nsph;
     sph->Ntot = sph->Nsph;
-    for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
+    for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
 
     // Compute mean mass
     sph->mmean = 0.0;

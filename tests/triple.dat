@@ -34,10 +34,10 @@ Tabulate SPH kernel                         : tabulated_kernel = 1
 #-------------------------
 Star particle integration option            : nbody = hermite4ts
 Use softening?                              : nbody_softening = 0
-Identify and integrate sub-systems?         : sub_systems = 0
+Identify and integrate sub-systems?         : sub_systems = 1
 Use perturbing stars in sub-systems         : perturbers = 0
 Output binary statistics                    : binary_stats = 1
-Grav. energy fraction for sub-systems       : gpesoft = 0.02
+Grav. energy fraction for sub-systems       : gpesoft = 0.05
 Grav. energy fraction for sub-systems       : gpehard = 0.001
 No. of P(EC)^n iteration steps              : Npec = 2
 Sub-system integration scheme               : sub_system_integration = hermite4ts
@@ -46,7 +46,7 @@ Sub-system integration scheme               : sub_system_integration = hermite4t
 # Time integration options
 #-------------------------
 N-body timestep multiplier                  : nbody_mult = 0.1
-Sub-system timestep multiplier              : subsys_mult = 0.1
+Sub-system timestep multiplier              : subsys_mult = 0.05
 No. of block timestep levels                : Nlevels = 1
 
 
