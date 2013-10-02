@@ -106,7 +106,7 @@ struct SphParticle
 /// \date   01/10/2013
 //=============================================================================
 template <int ndim>
-struct GradhSphParticle : SphParticle
+struct GradhSphParticle : SphParticle<ndim>
 {
   FLOAT invomega;                   ///< grad-h omega/f correction term
   FLOAT zeta;                       ///< grad-h gravity correction term
@@ -114,7 +114,7 @@ struct GradhSphParticle : SphParticle
 
   // Grad-h SPH particle constructor to initialise all values
   // --------------------------------------------------------------------------
-  GradhSphParticle():SphParticle()
+  GradhSphParticle(): SphParticle<ndim>()
   {
     invomega = (FLOAT) 0.0;
     zeta = (FLOAT) 0.0;
@@ -132,14 +132,14 @@ struct GradhSphParticle : SphParticle
 /// \date   01/10/2013
 //=============================================================================
 template <int ndim>
-struct SM2012SphParticle : SphParticle
+struct SM2012SphParticle : SphParticle<ndim>
 {
   FLOAT q;                          ///< Internal energy density
   FLOAT invq;                       ///< 1 / q
 
   // SPH particle constructor to initialise all values
   // --------------------------------------------------------------------------
-  SM2012SphParticle():SphParticle()
+  SM2012SphParticle():SphParticle<ndim>()
   {
     q = (FLOAT) 0.0;
     invq = (FLOAT) 0.0;
@@ -156,7 +156,7 @@ struct SM2012SphParticle : SphParticle
 /// \date   01/10/2013
 //=============================================================================
 template <int ndim>
-struct GodunovSphParticle
+struct GodunovSphParticle: SphParticle<ndim>
 {
   FLOAT gradP[ndim];                ///< Pressure gradient
   FLOAT gradrho[ndim];              ///< Density gradient
@@ -172,7 +172,7 @@ struct GodunovSphParticle
 
   // SPH particle constructor to initialise all values
   // --------------------------------------------------------------------------
-  GodunovSphParticle():SphParticle()
+  GodunovSphParticle():SphParticle<ndim>()
   {
     for (int k=0; k<ndim; k++) gradP[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) gradrho[k] = (FLOAT) 0.0;
@@ -198,7 +198,7 @@ struct GodunovSphParticle
 template <int ndim>
 struct SphIntParticle
 {
-  struct SphParticle *part;         ///< Pointer to main SPH particle data
+  struct SphParticle<ndim> *part;         ///< Pointer to main SPH particle data
   int iorig;                        ///< Original particle i.d.
   int itype;                        ///< SPH particle type
   int nstep;                        ///< Integer step-size of particle

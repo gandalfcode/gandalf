@@ -170,18 +170,19 @@ bool Simulation<ndim>::ReadColumnSnapshotFile
   // Read in data depending on dimensionality
   // --------------------------------------------------------------------------
   while (infile.good() && i < sph->Nsph) {
-    if (ndim == 1) infile >> sph->sphdata[i].r[0] >> sph->sphdata[i].v[0] 
-			  >> sph->sphdata[i].m >> sph->sphdata[i].h
-			  >> sph->sphdata[i].rho >> sph->sphdata[i].u;
-    else if (ndim == 2) infile >> sph->sphdata[i].r[0] >> sph->sphdata[i].r[1] 
-			       >> sph->sphdata[i].v[0] >> sph->sphdata[i].v[1] 
-			       >> sph->sphdata[i].m >> sph->sphdata[i].h
-			       >> sph->sphdata[i].rho >> sph->sphdata[i].u;
-    else if (ndim == 3) infile >> sph->sphdata[i].r[0] >> sph->sphdata[i].r[1] 
-			       >> sph->sphdata[i].r[2] >> sph->sphdata[i].v[0] 
-			       >> sph->sphdata[i].v[1] >> sph->sphdata[i].v[2] 
-			       >> sph->sphdata[i].m >> sph->sphdata[i].h
-			       >> sph->sphdata[i].rho >> sph->sphdata[i].u;
+    SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+    if (ndim == 1) infile >> part->r[0] >> part->v[0]
+			  >> part->m >> part->h
+			  >> part->rho >> part->u;
+    else if (ndim == 2) infile >> part->r[0] >> part->r[1]
+			       >> part->v[0] >> part->v[1]
+			       >> part->m >> part->h
+			       >> part->rho >> part->u;
+    else if (ndim == 3) infile >> part->r[0] >> part->r[1]
+			       >> part->r[2] >> part->v[0]
+			       >> part->v[1] >> part->v[2]
+			       >> part->m >> part->h
+			       >> part->rho >> part->u;
     i++;
   }
 
@@ -241,32 +242,33 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   // Write data for SPH particles
   // --------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
-    if (ndim == 1) outfile << sph->sphdata[i].r[0] << "   " 
-			   << sph->sphdata[i].v[0] << "   "
-			   << sph->sphdata[i].m << "   " 
-			   << sph->sphdata[i].h << "   "
-			   << sph->sphdata[i].rho << "   " 
-			   << sph->sphdata[i].u
+    SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+    if (ndim == 1) outfile << part->r[0] << "   "
+			   << part->v[0] << "   "
+			   << part->m << "   "
+			   << part->h << "   "
+			   << part->rho << "   "
+			   << part->u
 			   << endl;
-    else if (ndim == 2) outfile << sph->sphdata[i].r[0] << "   " 
-				<< sph->sphdata[i].r[1] << "   " 
-				<< sph->sphdata[i].v[0] << "   " 
-				<< sph->sphdata[i].v[1] << "   "
-				<< sph->sphdata[i].m << "   "
-				<< sph->sphdata[i].h << "   "
-				<< sph->sphdata[i].rho << "   "
-				<< sph->sphdata[i].u
+    else if (ndim == 2) outfile << part->r[0] << "   "
+				<< part->r[1] << "   "
+				<< part->v[0] << "   "
+				<< part->v[1] << "   "
+				<< part->m << "   "
+				<< part->h << "   "
+				<< part->rho << "   "
+				<< part->u
 				<< endl;
-    else if (ndim == 3) outfile << sph->sphdata[i].r[0] << "   "
-				<< sph->sphdata[i].r[1] << "   " 
-				<< sph->sphdata[i].r[2] << "   "
-				<< sph->sphdata[i].v[0] << "   " 
-				<< sph->sphdata[i].v[1] << "   " 
-				<< sph->sphdata[i].v[2] << "   "
-				<< sph->sphdata[i].m << "   "
-				<< sph->sphdata[i].h << "   "
-				<< sph->sphdata[i].rho << "   "
-				<< sph->sphdata[i].u
+    else if (ndim == 3) outfile << part->r[0] << "   "
+				<< part->r[1] << "   "
+				<< part->r[2] << "   "
+				<< part->v[0] << "   "
+				<< part->v[1] << "   "
+				<< part->v[2] << "   "
+				<< part->m << "   "
+				<< part->h << "   "
+				<< part->rho << "   "
+				<< part->u
 				<< endl;
   }
 
@@ -502,47 +504,69 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     // porig
     // ------------------------------------------------------------------------
     if (data_id[j] == "porig") {
-      for (i=0; i<sph->Nsph; i++) infile >> sph->sphdata[i].iorig;
+      for (i=0; i<sph->Nsph; i++) infile >> sph->sphintdata[i].iorig;
     }    
 
     // Positions
     // ------------------------------------------------------------------------
     else if (data_id[j] == "r") {
       if (ndim == 1)
-	for (i=0; i<sph->Nsph; i++) infile >> sph->sphdata[i].r[0];
+	for (i=0; i<sph->Nsph; i++) {
+	  SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+	  infile >> part->r[0];
+	}
       else if (ndim == 2)
-	for (i=0; i<sph->Nsph; i++) 
-	  infile >> sph->sphdata[i].r[0] >> sph->sphdata[i].r[1];
+	for (i=0; i<sph->Nsph; i++) {
+	  SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+	  infile >> part->r[0] >> part->r[1];
+	}
       else if (ndim == 3)
-	for (i=0; i<sph->Nsph; i++) 
-	  infile >> sph->sphdata[i].r[0] >> sph->sphdata[i].r[1] 
-		 >> sph->sphdata[i].r[2];
+	for (i=0; i<sph->Nsph; i++) {
+	  SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+	  infile >> part->r[0] >> part->r[1]
+	           >> part->r[2];
+	}
     }
 
     // Masses
     // ------------------------------------------------------------------------
     else if (data_id[j] == "m") {
-      for (i=0; i<sph->Nsph; i++) infile >> sph->sphdata[i].m;
+      for (i=0; i<sph->Nsph; i++) {
+        SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+        infile >> part->m;
+      }
     }
 
     // Smoothing lengths
     // ------------------------------------------------------------------------
     else if (data_id[j] == "h") {
-      for (i=0; i<sph->Nsph; i++) infile >> sph->sphdata[i].h;
+      for (i=0; i<sph->Nsph; i++) {
+        SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+        infile >> part->h;
+      }
     }
 
     // Velocities
     // ------------------------------------------------------------------------
     else if (data_id[j] == "v") {
       if (ndim == 1)
-	for (i=0; i<sph->Nsph; i++) infile >> sph->sphdata[i].v[0];
+	for (i=0; i<sph->Nsph; i++) {
+	  SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+	  infile >> part->v[0];
+	}
       else if (ndim == 2)
-	for (i=0; i<sph->Nsph; i++) 
-	  infile >> sph->sphdata[i].v[0] >> sph->sphdata[i].v[1];
+	for (i=0; i<sph->Nsph; i++) {
+	  SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+	  infile >> part->v[0] >> part->v[1];
+	}
+
       else if (ndim == 3)
-	for (i=0; i<sph->Nsph; i++) 
-	  infile >> sph->sphdata[i].v[0] >> sph->sphdata[i].v[1] 
-		 >> sph->sphdata[i].v[2];
+	for (i=0; i<sph->Nsph; i++) {
+	  SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+	  infile >> part->v[0] >> part->v[1]
+		 >> part->v[2];
+	}
+
     }
 
     // Other 1-D redundant information
@@ -554,13 +578,19 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     // Densities
     // ------------------------------------------------------------------------
     else if (data_id[j] == "rho") {
-      for (i=0; i<sph->Nsph; i++) infile >> sph->sphdata[i].rho;
+      for (i=0; i<sph->Nsph; i++) {
+        SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+        infile >> part->rho;
+      }
     }
 
     // Specific internal energies
     // ------------------------------------------------------------------------
     else if (data_id[j] == "u") {
-      for (i=0; i<sph->Nsph; i++) infile >> sph->sphdata[i].u;
+      for (i=0; i<sph->Nsph; i++) {
+        SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+        infile >> part->u;
+      }
     }
 
     // Sinks/stars
@@ -753,57 +783,87 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
     // porig
     // ------------------------------------------------------------------------
-    for (i=0; i<sph->Nsph; i++) outfile << sph->sphdata[i].iorig << endl;;
+    for (i=0; i<sph->Nsph; i++) outfile << sph->sphintdata[i].iorig << endl;;
 
     // Positions
     // ------------------------------------------------------------------------
     if (ndim == 1)
-      for (i=0; i<sph->Nsph; i++) 
-        outfile << sph->sphdata[i].r[0]*simunits.r.outscale << endl;
+      for (i=0; i<sph->Nsph; i++) {
+        SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+        outfile << part->r[0]*simunits.r.outscale << endl;
+      }
+
     else if (ndim == 2)
-      for (i=0; i<sph->Nsph; i++) 
-        outfile << sph->sphdata[i].r[0]*simunits.r.outscale << "    "
-                << sph->sphdata[i].r[1]*simunits.r.outscale << endl;
+      for (i=0; i<sph->Nsph; i++) {
+        SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+        outfile << part->r[0]*simunits.r.outscale << "    "
+                << part->r[1]*simunits.r.outscale << endl;
+      }
+
     else if (ndim == 3)
-      for (i=0; i<sph->Nsph; i++) 
-        outfile << sph->sphdata[i].r[0]*simunits.r.outscale << "    "
-                << sph->sphdata[i].r[1]*simunits.r.outscale << "    "
-                << sph->sphdata[i].r[2]*simunits.r.outscale << endl;
+      for (i=0; i<sph->Nsph; i++) {
+        SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+        outfile << part->r[0]*simunits.r.outscale << "    "
+                << part->r[1]*simunits.r.outscale << "    "
+                << part->r[2]*simunits.r.outscale << endl;
+
+      }
 
     // Masses
     // ------------------------------------------------------------------------
-    for (i=0; i<sph->Nsph; i++) 
-      outfile << sph->sphdata[i].m*simunits.m.outscale << endl;
+    for (i=0; i<sph->Nsph; i++) {
+      SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+      outfile << part->m*simunits.m.outscale << endl;
+    }
+
 
     // Smoothing lengths
     // ------------------------------------------------------------------------
-    for (i=0; i<sph->Nsph; i++)
-      outfile << sph->sphdata[i].h*simunits.r.outscale << endl;
+    for (i=0; i<sph->Nsph; i++) {
+      SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+      outfile << part->h*simunits.r.outscale << endl;
+    }
+
 
     // Velocities
     // ------------------------------------------------------------------------
     if (ndim == 1)
-      for (i=0; i<sph->Nsph; i++)
-        outfile << sph->sphdata[i].v[0]*simunits.v.outscale << endl;
+      for (i=0; i<sph->Nsph; i++) {
+        SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+        outfile << part->v[0]*simunits.v.outscale << endl;
+      }
+
     else if (ndim == 2)
-      for (i=0; i<sph->Nsph; i++)
-        outfile << sph->sphdata[i].v[0]*simunits.v.outscale << "    "
-                << sph->sphdata[i].v[1]*simunits.v.outscale << endl;
+      for (i=0; i<sph->Nsph; i++) {
+        SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+        outfile << part->v[0]*simunits.v.outscale << "    "
+                << part->v[1]*simunits.v.outscale << endl;
+      }
+
     else if (ndim == 3)
-      for (i=0; i<sph->Nsph; i++)
-        outfile << sph->sphdata[i].v[0]*simunits.v.outscale << "    "
-                << sph->sphdata[i].v[1]*simunits.v.outscale << "    "
-                << sph->sphdata[i].v[2]*simunits.v.outscale << endl;
+      for (i=0; i<sph->Nsph; i++) {
+        SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+        outfile << part->v[0]*simunits.v.outscale << "    "
+                << part->v[1]*simunits.v.outscale << "    "
+                << part->v[2]*simunits.v.outscale << endl;
+      }
+
 
     // Densities
     // ------------------------------------------------------------------------
-    for (i=0; i<sph->Nsph; i++)
-      outfile << sph->sphdata[i].rho*simunits.rho.outscale << endl;;
+    for (i=0; i<sph->Nsph; i++) {
+      SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+      outfile << part->rho*simunits.rho.outscale << endl;;
+    }
+
 
     // Specific internal energies
     // ------------------------------------------------------------------------
-    for (i=0; i<sph->Nsph; i++)
-      outfile << sph->sphdata[i].u*simunits.u.outscale << endl;
+    for (i=0; i<sph->Nsph; i++) {
+      SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+      outfile << part->u*simunits.u.outscale << endl;
+    }
+
 
   }
 

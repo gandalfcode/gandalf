@@ -1118,7 +1118,14 @@ void GodunovSph<ndim, kernelclass>::ComputeStarGravForces
   return;
 }
 
-
+//=============================================================================
+//  GodunovSph::GetParticleIPointer
+/// Return a basic particle pointer to particle i.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+SphParticle<ndim>* GodunovSph<ndim, kernelclass>::GetParticleIPointer(int i){
+  return sphdata[i];
+}
 
 template class GodunovSph<1, M4Kernel>;
 template class GodunovSph<1, QuinticKernel>;
