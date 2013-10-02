@@ -195,7 +195,7 @@ int SphGodunovIntegration<ndim>::CheckTimesteps
   debug2("[SphLeapfrogKDK::CheckTimesteps]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,k,level_new,nnewstep,nstep,part)\
+#pragma omp parallel for default(none) private(dn,i,k,level_new,nnewstep,nstep,part)\
   shared(level_diff_max,n,Nsph,sphintdata) reduction(+:activecount)
   for (i=0; i<Nsph; i++) {
     dn = n - sphintdata[i].nlast;

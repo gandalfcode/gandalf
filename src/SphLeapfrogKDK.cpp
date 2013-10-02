@@ -90,7 +90,7 @@ void SphLeapfrogKDK<ndim>::AdvanceParticles
   // Advance positions and velocities of all SPH particles
   // --------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,dt,i,k,nstep,part)\
-  shared(sphintdata,Nsph,n,timestep)
+  shared(n,Nsph,sphintdata,timestep)
   for (i=0; i<Nsph; i++) {
 
     // Compute time since beginning of current step
