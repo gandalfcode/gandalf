@@ -108,7 +108,7 @@ class Sph
 
   // Functions needed memory
   // --------------------------------------------------------------------------
-  virtual SphParticle<ndim>* GetParticleIPointer(int i)=0;
+  SphParticle<ndim>* GetParticleIPointer(int i) {return &sphdata[i];};
 
 
   // SPH particle counters and main particle data array
@@ -208,8 +208,6 @@ class GradhSph: public Sph<ndim>
   void ComputePostHydroQuantities(SphParticle<ndim> &);
   void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &);
 
-  virtual SphParticle<ndim>* GetParticleIPointer(int i);
-
   kernelclass<ndim> kern;                  ///< SPH kernel
 
 };
@@ -265,7 +263,6 @@ class SM2012Sph: public Sph<ndim>
   void ComputePostHydroQuantities(SphParticle<ndim> &);
   void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &);
 
-  virtual SphParticle<ndim>* GetParticleIPointer(int i);
 
   kernelclass<ndim> kern;                  ///< SPH kernel
 
@@ -323,8 +320,6 @@ class GodunovSph: public Sph<ndim>
                                 FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT &, 
                                 FLOAT &, FLOAT &, FLOAT &, FLOAT &, FLOAT &);
   void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &);
-
-  virtual SphParticle<ndim>* GetParticleIPointer(int i);
 
   kernelclass<ndim> kern;                 ///< SPH kernel
 

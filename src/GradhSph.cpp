@@ -696,15 +696,6 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
   return;
 }
 
-//=============================================================================
-//  GradhSph::GetParticleIPointer
-/// Return a basic particle pointer to particle i.
-//=============================================================================
-template <int ndim, template<int> class kernelclass>
-SphParticle<ndim>* GradhSph<ndim, kernelclass>::GetParticleIPointer(int i){
-  return sphdata[i];
-}
-
 
 template class GradhSph<1, M4Kernel>;
 template class GradhSph<1, QuinticKernel>;
