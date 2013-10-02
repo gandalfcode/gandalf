@@ -136,8 +136,8 @@ void EnergyLeapfrogDKD<ndim>::EndTimestep
 #pragma omp parallel for default(none) private(dn,i,nstep,part)	\
   shared(n,Nsph,sphdata)
   for (i=0; i<Nsph; i++) {
-    dn = n - sphdata[i].nlast;
-    nstep = sphdata[i].nstep;
+    dn = n - sphintdata[i].nlast;
+    nstep = sphintdata[i].nstep;
     part = sphintdata[i].part;
     if (dn == nstep) {
       sphintdata[i].u0 = part->u;

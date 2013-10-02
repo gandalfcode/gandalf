@@ -178,8 +178,8 @@ void SphLeapfrogKDK<ndim>::EndTimestep
 #pragma omp parallel for default(none) private(dn,i,k,nstep,part)\
   shared(n,Nsph,sphintdata)
   for (i=0; i<Nsph; i++) {
-    dn = n - sphdata[i].nlast;
-    nstep = sphdata[i].nstep;
+    dn = n - sphintdata[i].nlast;
+    nstep = sphintdata[i].nstep;
     part = sphintdata[i].part;
 
     if (dn == nstep) {
@@ -239,7 +239,7 @@ int SphLeapfrogKDK<ndim>::CheckTimesteps
       if (n%nnewstep == 0) {
         nstep = dn;
         part->level = level_new;
-        if (dn > 0) sphdata[i].nstep = dn; //nstep;
+        if (dn > 0) sphintdata[i].nstep = dn; //nstep;
         part->active = true;
         activecount++;
       }

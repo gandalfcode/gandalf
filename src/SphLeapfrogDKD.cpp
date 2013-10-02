@@ -103,7 +103,7 @@ void SphLeapfrogDKD<ndim>::AdvanceParticles
     for (k=0; k<ndim; k++) part->r[k] =
       sphintdata[i].r0[k] + sphintdata[i].v0[k]*dt;
     for (k=0; k<ndim; k++) part->v[k] =
-      sphintdata[i].v0[k] + sphintdata[i].a[k]*dt;
+      sphintdata[i].v0[k] + part->a[k]*dt;
 
     // Set particle as active at end of step
     if (dn == nstep/2) part->active = true;

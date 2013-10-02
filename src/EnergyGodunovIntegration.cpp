@@ -94,13 +94,13 @@ void EnergyGodunovIntegration<ndim>::EnergyIntegration
     part = sphintdata[i].part;
     part->u = sphintdata[i].u0 + sphintdata[i].dudt0*dt;
 
-    if (sphdata[i].u != sphdata[i].u) {
+    if (part->u != part->u) {
       cout << "Something wrong with energy integration (NaN) : " << endl;
       cout << part->u << "   " << sphintdata[i].u0 << "  " << part->dudt
 	   << "   " << dt << "   " << nstep << "    " << timestep << endl;
       exit(0);
     }
-    if (sphdata[i].u < small_number) {
+    if (part->u < small_number) {
       cout << "Something wrong with energy integration (0) : " << endl;
       cout << part->u << "   " << sphintdata[i].u0 << "  " << part->dudt
 	   << "   " << dt << "   " << nstep << "    " 

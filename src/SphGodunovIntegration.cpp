@@ -156,7 +156,7 @@ void SphGodunovIntegration<ndim>::EndTimestep
     nstep = sphintdata[i].nstep;
     part = sphintdata[i].part;
 
-    if (n == sphdata[i].nlast) {
+    if (n == sphintdata[i].nlast) {
       for (k=0; k<ndim; k++) sphintdata[i].r0[k] = part->r[k];
       for (k=0; k<ndim; k++) sphintdata[i].v0[k] = part->v[k];
       for (k=0; k<ndim; k++) sphintdata[i].a0[k] = part->a[k];
@@ -212,7 +212,7 @@ int SphGodunovIntegration<ndim>::CheckTimesteps
       if (n%nnewstep == 0) {
         nstep = dn;
         part->level = level_new;
-        if (dn > 0) sphdata[i].nstep = dn; //nstep;
+        if (dn > 0) sphintdata[i].nstep = dn; //nstep;
         part->active = true;
         activecount++;
       }
