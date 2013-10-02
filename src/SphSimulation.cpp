@@ -63,11 +63,12 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sph->Nghostmax = sph->Nsphmax - sph->Nsph;
     sph->Ntot = sph->Nsph;
     for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
+    for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].part = &(sph->sphdata[i]);
 
     // Set inital artificial viscosity alpha values
     if (sph->time_dependent_avisc == 1)
       for (i=0; i<sph->Nsph; i++) {
-	sph->sphdata[i].alpha = sph->alpha_visc_min;
+        sph->sphdata[i].alpha = sph->alpha_visc_min;
       }
     else
       for (i=0; i<sph->Nsph; i++) sph->sphdata[i].alpha = sph->alpha_visc;
@@ -149,8 +150,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       sph->sphdata[i].dalphadt = (FLOAT) 0.0;
       sph->sphdata[i].active = true;
       sph->sphdata[i].level = 0;
-      sph->sphdata[i].nstep = 0;
-      sph->sphdata[i].nlast = 0;
+      sph->sphintdata[i].nstep = 0;
+      sph->sphintdata[i].nlast = 0;
     }
 
     ghosts.CopySphDataToGhosts(sph);
@@ -183,8 +184,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Set particle values for initial step (e.g. r0, v0, a0)
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,sph->Nsph,sph->sphdata);
-  sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
+    uint->EndTimestep(n,sph->Nsph,sph->sphintdata);
+  sphint->EndTimestep(n,sph->Nsph,sph->sphintdata);
   nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
 
   this->CalculateDiagnostics();
@@ -224,9 +225,9 @@ void SphSimulation<ndim>::MainLoop(void)
   t = t + timestep;
 
   // Advance SPH particles positions and velocities
-  sphint->AdvanceParticles(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
+  sphint->AdvanceParticles(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EnergyIntegration(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
+    uint->EnergyIntegration(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
   nbody->AdvanceParticles(n,nbody->Nnbody,nbody->nbodydata,timestep);
 
   // Check all boundary conditions
@@ -352,9 +353,9 @@ void SphSimulation<ndim>::MainLoop(void)
 
   // Compute correction steps for all SPH particles
   if (sph->Nsph > 0) {
-    sphint->CorrectionTerms(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
+    sphint->CorrectionTerms(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
     if (simparams->stringparams["gas_eos"] == "energy_eqn")
-      uint->EnergyCorrectionTerms(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
+      uint->EnergyCorrectionTerms(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
   }
 
 
@@ -371,8 +372,8 @@ void SphSimulation<ndim>::MainLoop(void)
   // End-step terms for all SPH particles
   if (sph->Nsph > 0) {
     if (simparams->stringparams["gas_eos"] == "energy_eqn")
-      uint->EndTimestep(n,sph->Nsph,sph->sphdata);
-    sphint->EndTimestep(n,sph->Nsph,sph->sphdata);
+      uint->EndTimestep(n,sph->Nsph,sph->sphintdata);
+    sphint->EndTimestep(n,sph->Nsph,sph->sphintdata);
   }
 
   // End-step terms for all star particles
@@ -447,9 +448,10 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
     for (i=0; i<sph->Nsph; i++) {
       sph->sphdata[i].level = 0;
       sph->sphdata[i].levelneib = 0;
-      sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
-      sph->sphdata[i].nlast = n;
       sph->sphdata[i].dt = timestep;
+      sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+      sph->sphintdata[i].nlast = n;
+
     }
     for (i=0; i<nbody->Nnbody; i++) {
       nbody->nbodydata[i]->level = 0;
@@ -505,13 +507,13 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     // If integrating energy equation, calculate the explicit energy timestep
     if (sph->gas_eos == "energy_eqn") {
       for (i=0; i<sph->Nsph; i++)
-	sph->sphdata[i].dt = uint->Timestep(sph->sphdata[i]);
+        sph->sphdata[i].dt = uint->Timestep(sph->sphdata[i]);
     }
 
     // Find minimum timestep from all SPH particles
     for (i=0; i<sph->Nsph; i++) {
       dt = min(sph->sphdata[i].dt,
-	       sphint->Timestep(sph->sphdata[i],sph->hydro_forces));
+               sphint->Timestep(sph->sphdata[i],sph->hydro_forces));
       if (dt < timestep) timestep = dt;
       if (dt < dt_min_sph) dt_min_sph = dt;
       sph->sphdata[i].dt = dt;
@@ -542,9 +544,9 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       for (i=0; i<sph->Nsph; i++) {
         sph->sphdata[i].level = level_max_sph;
         sph->sphdata[i].levelneib = level_max_sph;
-        sph->sphdata[i].nlast = n;
-        sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
-	level_min_sph = min(level_min_sph,sph->sphdata[i].level);
+        sph->sphintdata[i].nlast = n;
+        sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+        level_min_sph = min(level_min_sph,sph->sphdata[i].level);
       }
     else {
       for (i=0; i<sph->Nsph; i++) {
@@ -553,9 +555,9 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
         level = max(level,0);
         sph->sphdata[i].level = level;
         sph->sphdata[i].levelneib = level;
-        sph->sphdata[i].nlast = n;
-        sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
-	level_min_sph = min(level_min_sph,sph->sphdata[i].level);
+        sph->sphintdata[i].nlast = n;
+        sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+        level_min_sph = min(level_min_sph,sph->sphdata[i].level);
       }
     }
 
@@ -590,7 +592,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
       // Skip particles that are not at end of step
       if (sph->sphdata[i].nlast == n) {
-        nstep = sph->sphdata[i].nstep;
+        nstep = sph->sphintdata[i].nstep;
         last_level = sph->sphdata[i].level;
 	
         // Compute new timestep value and level number
@@ -610,8 +612,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
         else
           sph->sphdata[i].level = last_level;
 
-        sph->sphdata[i].nlast = n;
-        sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+        sph->sphintdata[i].nlast = n;
+        sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
       }
 
       // Find maximum level of all SPH particles
@@ -662,9 +664,9 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     // Set fixed SPH timestep level here in case maximum has changed
     if (sph_single_timestep == 1) {
       for (i=0; i<sph->Nsph; i++) {
-        if (sph->sphdata[i].nlast == n)  {
-          sph->sphdata[i].level = level_max_sph;
-          sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+        if (sph->sphintdata[i].nlast == n)  {
+          sph->sphintdata[i].level = level_max_sph;
+          sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
         }
       }
     }
@@ -674,8 +676,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     level_step = level_max + integration_step - 1;
 
     for (i=0; i<sph->Nsph; i++) {
-      if (sph->sphdata[i].nlast == n)
-        sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+      if (sph->sphintdata[i].nlast == n)
+        sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
     }
     for (i=0; i<nbody->Nnbody; i++) {
       if (nbody->nbodydata[i]->nlast == n) nbody->nbodydata[i]->nstep = 
@@ -697,16 +699,16 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       if (level_max > level_max_old) {
         nfactor = pow(2,level_max - level_max_old);
         n *= nfactor;
-        for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nlast *= nfactor;
-        for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nstep *= nfactor;
+        for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].nlast *= nfactor;
+        for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].nstep *= nfactor;
         for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast *= nfactor;
         for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep *= nfactor;
       }
       else if (level_max < level_max_old) {
         nfactor = pow(2,level_max_old - level_max);
         n /= nfactor;
-        for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nlast /= nfactor;
-        for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nstep /= nfactor;
+        for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].nlast /= nfactor;
+        for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].nstep /= nfactor;
         for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast /= nfactor;
         for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep /= nfactor;
       }

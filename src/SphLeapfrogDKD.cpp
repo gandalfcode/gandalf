@@ -89,8 +89,8 @@ void SphLeapfrogDKD<ndim>::AdvanceParticles
 
   // Advance positions and velocities of all SPH particles
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dt,k,nstep,i, dn)\
-  shared(sphintdata,Nsph,n,timestep)
+#pragma omp parallel for default(none) private(dn,dt,i,k,nstep,part)\
+  shared(n,Nsph,sphintdata,timestep)
   for (i=0; i<Nsph; i++) {
 
     // Compute time since beginning of current step
@@ -152,7 +152,7 @@ void SphLeapfrogDKD<ndim>::EndTimestep
   debug2("[SphLeapfrogDKD::EndTimestep]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,k,nstep,i)\
+#pragma omp parallel for default(none) private(dn,i,k,nstep,part)\
   shared(n,Nsph,sphintdata)
   for (i=0; i<Nsph; i++) {
     dn = n - sphintdata[i].nlast;
@@ -198,8 +198,9 @@ int SphLeapfrogDKD<ndim>::CheckTimesteps
   debug2("[SphLeapfrogDKD::CheckTimesteps]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,k,level_new,nnewstep,nstep)\
-  shared(level_diff_max,n,Nsph,sphintdata) reduction(+:activecount)
+#pragma omp parallel for default(none) reduction(+:activecount)\
+  private(dn,i,k,level_new,nnewstep,nstep,part)\
+  shared(level_diff_max,n,Nsph,sphintdata)
   for (i=0; i<Nsph; i++) {
     dn = n - sphintdata[i].nlast;
     nstep = sphintdata[i].nstep;
