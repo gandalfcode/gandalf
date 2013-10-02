@@ -145,6 +145,7 @@ class Sph
   FLOAT *rsph;                        ///< Position array (for efficiency)
 
   SphIntParticle<ndim>* sphintdata;   ///< Pointer to particle integration data
+  SphParticle<ndim> *sphdata;         ///< Pointer to particle data
   SphKernel<ndim> *kernp;             ///< Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;      ///< Tabulated version of chosen kernel
   EOS<ndim> *eos;                     ///< Equation-of-state
@@ -210,7 +211,6 @@ class GradhSph: public Sph<ndim>
   virtual SphParticle<ndim>* GetParticleIPointer(int i);
 
   kernelclass<ndim> kern;                  ///< SPH kernel
-  struct GradhSphParticle<ndim> *sphdata;  ///< Main SPH particle data array
 
 };
 
@@ -268,7 +268,6 @@ class SM2012Sph: public Sph<ndim>
   virtual SphParticle<ndim>* GetParticleIPointer(int i);
 
   kernelclass<ndim> kern;                  ///< SPH kernel
-  struct SM2012SphParticle<ndim> *sphdata;  ///< Main SPH particle data array
 
 };
 
@@ -328,7 +327,6 @@ class GodunovSph: public Sph<ndim>
   virtual SphParticle<ndim>* GetParticleIPointer(int i);
 
   kernelclass<ndim> kern;                 ///< SPH kernel
-  struct GodunovSphParticle<ndim> *sphdata;
 
 };
 #endif
