@@ -504,7 +504,10 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     // porig
     // ------------------------------------------------------------------------
     if (data_id[j] == "porig") {
-      for (i=0; i<sph->Nsph; i++) infile >> sph->sphintdata[i].iorig;
+      for (i=0; i<sph->Nsph; i++) {
+        SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+        infile >> part->iorig;
+      }
     }    
 
     // Positions
@@ -783,7 +786,10 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
     // porig
     // ------------------------------------------------------------------------
-    for (i=0; i<sph->Nsph; i++) outfile << sph->sphintdata[i].iorig << endl;;
+    for (i=0; i<sph->Nsph; i++) {
+      SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+      outfile << part->iorig << endl;
+    }
 
     // Positions
     // ------------------------------------------------------------------------
