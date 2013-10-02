@@ -54,7 +54,7 @@ void Simulation<ndim>::CheckInitialConditions(void)
   // Check that all particles reside inside any defined boundaries
   // --------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
-    part = &sph->sphdata[i];
+    part = sph->GetParticleIPointer(i);
     okflag = true;
 
     if (part->r[0] < simbox.boxmin[0])
