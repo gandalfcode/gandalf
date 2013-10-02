@@ -41,6 +41,7 @@ using namespace std;
 
 //=============================================================================
 //  Ghosts::Ghosts
+/// Empty constructor for ghost objects
 //=============================================================================
 template <int ndim>
 Ghosts<ndim>::Ghosts()
@@ -51,6 +52,7 @@ Ghosts<ndim>::Ghosts()
 
 //=============================================================================
 //  Ghosts::Ghosts
+/// Empty destructor for ghost objects
 //=============================================================================
 template <int ndim>
 Ghosts<ndim>::~Ghosts()
@@ -108,7 +110,9 @@ void Ghosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
 /// Currently only searches to create periodic or mirror ghost particles.
 //=============================================================================
 template <int ndim>
-void Ghosts<ndim>::SearchGhostParticles(DomainBox<ndim> simbox, Sph<ndim> *sph)
+void Ghosts<ndim>::SearchGhostParticles
+(DomainBox<ndim> simbox,            ///< Simulation box structure
+ Sph<ndim> *sph)                    ///< Sph object pointer
 {
   int i;                                                // Particle counter
   FLOAT kernrange = sph->kernp->kernrange*sph->kernfac; // Kernel extent

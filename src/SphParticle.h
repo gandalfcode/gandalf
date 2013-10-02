@@ -40,6 +40,7 @@ struct SphParticle
 {
   bool active;                      ///< Flag if active (i.e. recompute step)
   bool potmin;                      ///< Is particle at a potential minima?
+  int iorig;                        ///< Original particle i.d.
   int level;                        ///< Current timestep level of particle
   int levelneib;                    ///< Min. timestep level of neighbours
   int sinkid;                       ///< i.d. of sink particle
@@ -72,6 +73,7 @@ struct SphParticle
   {
     active = false;
     potmin = false;
+    iorig = -1;
     level = 0;
     levelneib = 0;
     sinkid = -1;
@@ -106,7 +108,7 @@ struct SphParticle
 /// \date   01/10/2013
 //=============================================================================
 template <int ndim>
-struct GradhSphParticle : SphParticle<ndim>
+struct GradhSphParticle: SphParticle<ndim>
 {
   FLOAT invomega;                   ///< grad-h omega/f correction term
   FLOAT zeta;                       ///< grad-h gravity correction term
@@ -137,7 +139,7 @@ struct SM2012SphParticle : SphParticle<ndim>
   FLOAT q;                          ///< Internal energy density
   FLOAT invq;                       ///< 1 / q
 
-  // SPH particle constructor to initialise all values
+  // Saitoh & Makino (2012) SPH particle constructor to initialise all values
   // --------------------------------------------------------------------------
   SM2012SphParticle():SphParticle<ndim>()
   {
@@ -170,7 +172,7 @@ struct GodunovSphParticle: SphParticle<ndim>
   DOUBLE dt;                        ///< Particle timestep
 
 
-  // SPH particle constructor to initialise all values
+  // Godunov SPH particle constructor to initialise all values
   // --------------------------------------------------------------------------
   GodunovSphParticle():SphParticle<ndim>()
   {
@@ -198,8 +200,7 @@ struct GodunovSphParticle: SphParticle<ndim>
 template <int ndim>
 struct SphIntParticle
 {
-  struct SphParticle<ndim> *part;         ///< Pointer to main SPH particle data
-  int iorig;                        ///< Original particle i.d.
+  struct SphParticle<ndim> *part;   ///< Pointer to main SPH particle data
   int itype;                        ///< SPH particle type
   int nstep;                        ///< Integer step-size of particle
   int nlast;                        ///< Integer time at beginning of step
@@ -215,7 +216,6 @@ struct SphIntParticle
   SphIntParticle()
   {
     //part = nullptr;
-    iorig = -1;
     itype = -1;
     nstep = 0;
     nlast = 0;

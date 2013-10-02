@@ -70,24 +70,26 @@ template <int ndim>
 void EnergyLeapfrogDKD<ndim>::EnergyIntegration
 (int n,                             ///< [in] Integer time in block time struct
  int Nsph,                          ///< [in] No. of SPH particles
- SphParticle<ndim> *sphdata,        ///< [inout] SPH particle data array
+ SphIntParticle<ndim> *sphintdata,  ///< [inout] SPH particle data array
  FLOAT timestep)                    ///< [in] Base timestep value
 {
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int nstep;                        // Particle (integer) step size
   FLOAT dt;                         // Timestep since start of step
+  SphParticle<ndim> *part;          // Pointer to SPH particle data
 
   debug2("[EnergyLeapfrogDKD::EnergyIntegration]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,dt,i,nstep) \
+#pragma omp parallel for default(none) private(dn,dt,i,nstep,part)	\
      shared(n,Nsph,sphdata,timestep)
   for (i=0; i<Nsph; i++) {
-    nstep = sphdata[i].nstep;
-    dn = n - sphdata[i].nlast;
+    nstep = sphintdata[i].nstep;
+    dn = n - sphintdata[i].nlast;
     dt = timestep*(FLOAT) dn;
-    sphdata[i].u = sphdata[i].u0 + sphdata[i].dudt*dt;
+    part = sphintdata[i].part;
+    part->u = sphintdata[i].u0 + part->dudt*dt;
   }
   // --------------------------------------------------------------------------
 
@@ -104,7 +106,7 @@ template <int ndim>
 void EnergyLeapfrogDKD<ndim>::EnergyCorrectionTerms
 (int n,                             ///< [in] Integer time in block time struct
  int Nsph,                          ///< [in] No. of SPH particles
- SphParticle<ndim> *sphdata,        ///< [inout] SPH particle data array
+ SphIntParticle<ndim> *sphintdata,  ///< [inout] SPH particle data array
  FLOAT timestep)                    ///< [in] Base timestep value
 {
   return;
@@ -121,23 +123,25 @@ template <int ndim>
 void EnergyLeapfrogDKD<ndim>::EndTimestep
 (int n,                             ///< [in] Integer time in block time struct
  int Nsph,                          ///< [in] No. of SPH particles
- SphParticle<ndim> *sphdata)        ///< [inout] SPH particle data array
+ SphIntParticle<ndim> *sphintdata)  ///< [inout] SPH particle data array
 {
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int nstep;                        // Particle (integer) step size
+  SphParticle<ndim> *part;          // Pointer to SPH particle data
 
   debug2("[EnergyLeapfrogDKD::EndTimestep]");
 
   // --------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,nstep) \
+#pragma omp parallel for default(none) private(dn,i,nstep,part)	\
       shared(n,Nsph,sphdata)
   for (i=0; i<Nsph; i++) {
     dn = n - sphdata[i].nlast;
     nstep = sphdata[i].nstep;
+    part = sphintdata[i].part;
     if (dn == nstep) {
-      sphdata[i].u0 = sphdata[i].u;
-      sphdata[i].dudt0 = sphdata[i].dudt;
+      sphintdata[i].u0 = part->u;
+      sphintdata[i].dudt0 = part->dudt;
     }
   }
   // --------------------------------------------------------------------------
