@@ -95,7 +95,7 @@ struct SphParticle
   FLOAT pressmin;                   ///< Minimum neighbour pressure
   FLOAT vmax[ndim];                 ///< Maximum neighbour velocity
   FLOAT vmin[ndim];                 ///< Minimum neighbour velocity
-  DOUBLE dt;                        ///< Particle timestep
+
 
   // SPH particle constructor to initialise all values
   // --------------------------------------------------------------------------

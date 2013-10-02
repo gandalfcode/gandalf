@@ -303,7 +303,7 @@ void SphSimulation<ndim>::MainLoop(void)
       // Check if all neighbouring timesteps are acceptable
       if (Nlevels > 1)
         activecount = sphint->CheckTimesteps(level_diff_max,n,
-                                             sph->Nsph,sph->sphdata);
+                                             sph->Nsph,sph->sphintdata);
       else activecount = 0;
       activecount = 0;
 
@@ -591,7 +591,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     for (i=0; i<sph->Nsph; i++) {
 
       // Skip particles that are not at end of step
-      if (sph->sphdata[i].nlast == n) {
+      if (sph->sphintdata[i].nlast == n) {
         nstep = sph->sphintdata[i].nstep;
         last_level = sph->sphdata[i].level;
 	
@@ -665,7 +665,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     if (sph_single_timestep == 1) {
       for (i=0; i<sph->Nsph; i++) {
         if (sph->sphintdata[i].nlast == n)  {
-          sph->sphintdata[i].level = level_max_sph;
+          sph->sphdata[i].level = level_max_sph;
           sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
         }
       }

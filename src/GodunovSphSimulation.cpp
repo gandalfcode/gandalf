@@ -553,7 +553,7 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
     for (i=0; i<sph->Nsph; i++) {
 
       // Skip particles that are not at end of step
-      if (sph->sphdata[i].nlast == n) {
+      if (sph->sphintdata[i].nlast == n) {
 	nstep = sph->sphintdata[i].nstep;
 	last_level = sph->sphdata[i].level;
 	
@@ -633,7 +633,7 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
     level_step = level_max + integration_step - 1;
 
     for (i=0; i<sph->Nsph; i++) {
-      if (sph->sphdata[i].nlast == n)
+      if (sph->sphintdata[i].nlast == n)
 	sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
     }
     for (i=0; i<nbody->Nnbody; i++) {

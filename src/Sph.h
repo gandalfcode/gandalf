@@ -170,6 +170,7 @@ class GradhSph: public Sph<ndim>
 {
   using Sph<ndim>::allocated;
   using Sph<ndim>::Nsph;
+  using Sph<ndim>::sphdata;
   using Sph<ndim>::eos;
   using Sph<ndim>::h_fac;
   using Sph<ndim>::invndim;
