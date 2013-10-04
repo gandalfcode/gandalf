@@ -738,7 +738,7 @@ void BinarySubTree<ndim>::StockCellProperties
 /// opening-distance, etc..) of all cells in the tree.
 //=============================================================================
 template <int ndim>
-void BinarySubTree<ndim>::UpdateHmaxValues
+FLOAT BinarySubTree<ndim>::UpdateHmaxValues
 (SphParticle<ndim> *sphdata)        ///< SPH particle data array
 {
   int c,cc,ccc;                     // Cell counters
@@ -779,7 +779,7 @@ void BinarySubTree<ndim>::UpdateHmaxValues
   }
   // ==========================================================================
 
-  return;
+  return tree[0].hmax;
 }
 
 
@@ -791,42 +791,15 @@ void BinarySubTree<ndim>::UpdateHmaxValues
 //=============================================================================
 template <int ndim>
 int BinarySubTree<ndim>::ComputeActiveCellList
-(BinaryTreeCell<ndim> **celllist)    ///< Cells id array containing active ptcls
+(   BinaryTreeCell<ndim> **celllist)    ///< Cells id array containing active ptcls
 {
   int c;                            // Cell counter
-  int Nactive = 0;                  // No. of cells containing active ptcls
+  int Nactive=0;
 
   debug2("[BinarySubTree::ComputeActiveCellList]");
 
   for (c=0; c<Ncell; c++)
     if (tree[c].Nactive > 0) celllist[Nactive++] = &tree[c];
-
-  return Nactive;
-}
-
-
-
-//=============================================================================
-//  GridSearch::ComputeActiveParticleList
-/// Returns the number (Nactive) and list of ids (activelist) of all active
-/// SPH particles in the given cell.
-//=============================================================================
-template <int ndim>
-int BinarySubTree<ndim>::ComputeActiveParticleList
-(BinaryTreeCell<ndim> *cell,       ///< [in] Pointer to cell
- int *activelist,                  ///< [out] List of active particles in cell
- Sph<ndim> *sph)                   ///< [in] SPH object pointer
-{
-  int Nactive = 0;                 // No. of active particles in cell
-  int i = cell->ifirst;            // Particle id (set to first ptcl id)
-  int ilast = cell->ilast;         // i.d. of last particle in cell c
-
-  // Walk through linked list to obtain list and number of active ptcls.
-  while (i != -1) {
-    if (i < sph->Nsph && sph->sphdata[i].active) activelist[Nactive++] = i;
-    if (i == ilast) break;
-    i = inext[i];
-  };
 
   return Nactive;
 }
