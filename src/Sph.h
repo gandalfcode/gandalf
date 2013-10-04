@@ -173,6 +173,7 @@ class GradhSph: public Sph<ndim>
   using Sph<ndim>::sphdata;
   using Sph<ndim>::eos;
   using Sph<ndim>::h_fac;
+  using Sph<ndim>::kernfacsqd;
   using Sph<ndim>::invndim;
   using Sph<ndim>::h_converge;
   using Sph<ndim>::hydro_forces;
@@ -231,6 +232,7 @@ class SM2012Sph: public Sph<ndim>
   using Sph<ndim>::Nsph;
   using Sph<ndim>::eos;
   using Sph<ndim>::h_fac;
+  using Sph<ndim>::kernfacsqd;
   using Sph<ndim>::invndim;
   using Sph<ndim>::h_converge;
   using Sph<ndim>::hydro_forces;
@@ -284,6 +286,7 @@ class GodunovSph: public Sph<ndim>
   using Sph<ndim>::Nsph;
   using Sph<ndim>::eos;
   using Sph<ndim>::h_fac;
+  using Sph<ndim>::kernfacsqd;
   using Sph<ndim>::invndim;
   using Sph<ndim>::h_converge;
   using Sph<ndim>::hydro_forces;

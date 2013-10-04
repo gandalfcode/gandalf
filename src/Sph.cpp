@@ -275,6 +275,8 @@ void Sph<ndim>::InitialSmoothingLengthGuess(void)
   for (int i=0; i<Nsph; i++) {
     sphdata[i].h = h_guess;
     sphdata[i].invh = 1.0/h_guess;
+    sphdata[i].hrangesqd = 
+      kernfacsqd*kernp->kernrangesqd*sphdata[i].h*sphdata[i].h;
   }
 
   return;

@@ -39,7 +39,6 @@ template <int ndim>
 struct SphParticle
 {
 
-  //-------------------------------------------------------------------------
   // Generic values
   //-------------------------------------------------------------------------
   bool active;                      ///< Flag if active (i.e. recompute step)
@@ -58,6 +57,7 @@ struct SphParticle
   FLOAT h;                          ///< SPH smoothing length
   FLOAT invh;                       ///< 1 / h
   FLOAT hfactor;                    ///< invh^(ndim + 1)
+  FLOAT hrangesqd;                  ///< Kernel extent (squared)
   FLOAT rho;                        ///< SPH density
   FLOAT invrho;                     ///< 1 / rho
   FLOAT press;                      ///< Thermal pressure
@@ -70,20 +70,17 @@ struct SphParticle
   FLOAT gpe;                        ///< Gravitational potential energy
   DOUBLE dt;                        ///< Particle timestep
 
-  //-------------------------------------------------------------------------
   // GradhSph specific
   //-------------------------------------------------------------------------
   FLOAT invomega;                   ///< grad-h omega/f correction term
   FLOAT zeta;                       ///< grad-h gravity correction term
   FLOAT chi;                        ///< grad-h star-gravity correction term
 
-  //-------------------------------------------------------------------------
   // SM2012 specific
   //-------------------------------------------------------------------------
   FLOAT q;                          ///< Internal energy density
   FLOAT invq;                       ///< 1 / q
 
-  //-------------------------------------------------------------------------
   // Godunov specific
   //-------------------------------------------------------------------------
   FLOAT gradP[ndim];                ///< Pressure gradient
@@ -96,11 +93,11 @@ struct SphParticle
   FLOAT vmax[ndim];                 ///< Maximum neighbour velocity
   FLOAT vmin[ndim];                 ///< Minimum neighbour velocity
 
+
   // SPH particle constructor to initialise all values
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   SphParticle()
   {
-    //-------------------------------------------------------------------------
     // Generic values
     //-------------------------------------------------------------------------
     active = false;
@@ -128,20 +125,17 @@ struct SphParticle
     gpe = (FLOAT) 0.0;
     dt = (DOUBLE) 0.0;
 
-    //-------------------------------------------------------------------------
     // GradhSph specific
     //-------------------------------------------------------------------------
     invomega = (FLOAT) 0.0;
     zeta = (FLOAT) 0.0;
     chi = (FLOAT) 0.0;
 
-    //-------------------------------------------------------------------------
     // SM2012 specific
     //-------------------------------------------------------------------------
     q = (FLOAT) 0.0;
     invq = (FLOAT) 0.0;
 
-    //-------------------------------------------------------------------------
     // Godunov specific
     //-------------------------------------------------------------------------
     for (int k=0; k<ndim; k++) gradP[k] = (FLOAT) 0.0;
@@ -182,8 +176,8 @@ struct SphIntParticle
   FLOAT dudt0;                      ///< dudt at beginning of step
 
 
-  // SPH particle constructor to initialise all values
-  // --------------------------------------------------------------------------
+  // SPH integration particle constructor to initialise all values
+  //---------------------------------------------------------------------------
   SphIntParticle()
   {
     part = NULL;

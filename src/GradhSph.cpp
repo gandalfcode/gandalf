@@ -189,6 +189,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
   parti.h = max(h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim),
                 h_lower_bound);
   parti.invh = (FLOAT) 1.0/parti.h;
+  parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
   parti.invomega = (FLOAT) 1.0 + 
     Sph<ndim>::invndim*parti.h*parti.invomega*parti.invrho;
   parti.invomega = (FLOAT) 1.0/parti.invomega;

@@ -72,6 +72,8 @@ struct BinaryTreeCell {
   FLOAT rmax;                       ///< Max. dist. of ptcl from COM
   FLOAT hmax;                       ///< Maximum smoothing length inside cell
   FLOAT q[5];                       ///< Quadrupole moment tensor
+  FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
+  FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
 };
 
 
@@ -168,6 +170,7 @@ class GridSearch: public SphNeighbourSearch<ndim>
   int ComputeActiveCellList(int *);
   int ComputeActiveParticleList(int, int *, Sph<ndim> *);
   int ComputeNeighbourList(int, int *);
+  int FindSplitAxis(int);
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
   void ValidateGrid(void);
@@ -222,17 +225,17 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void UpdateTree(Sph<ndim> *, Parameters &);
   void UpdateActiveParticleCounters(Sph<ndim> *);
 
-  // Additional functions for grid neighbour search
+  // Additional functions for binary tree neighbour search
   // --------------------------------------------------------------------------
   void AllocateTreeMemory(int);
   void DeallocateTreeMemory(void);
-  void ComputeTreeSize(int, int);
-  void CreateTreeStructure(int);
-  void OrderParticlesByCartCoord(int, SphParticle<ndim> *);
-  void LoadParticlesToTree(int);
-  void StockCellProperties(int, SphParticle<ndim> *);
-  void UpdateHmaxValues(int, SphParticle<ndim> *);
-  void CreateGridCells(int, SphParticle<ndim> *);
+  void ComputeTreeSize(int);
+  void CreateTreeStructure(void);
+  void OrderParticlesByCartCoord(SphParticle<ndim> *);
+  void LoadParticlesToTree(void);
+  void LoadParticlesToTree2(void);
+  void StockCellProperties(SphParticle<ndim> *);
+  void UpdateHmaxValues(SphParticle<ndim> *);
   int ComputeActiveCellList(int *);
   int ComputeActiveParticleList(int, int *, Sph<ndim> *);
   int ComputeGatherNeighbourList(int, int, int *, FLOAT, SphParticle<ndim> *);

@@ -144,22 +144,22 @@ void BinaryTree<ndim>::UpdateTree
   Ntot = sph->Ntot;
 
   // Compute the size of all tree-related arrays now we know number of points
-  ComputeTreeSize(output,Ntot);
+  ComputeTreeSize(Ntot);
 
   // Allocate (or reallocate if needed) all tree memory
   AllocateTreeMemory(Ntot);
 
   // Create tree data structure including linked lists and cell pointers
-  CreateTreeStructure(output);
+  CreateTreeStructure();
 
   // Find ordered list of particle positions ready for adding particles to tree
-  OrderParticlesByCartCoord(output,sph->sphdata);
+  OrderParticlesByCartCoord(sph->sphdata);
 
   // Now add particles to tree depending on Cartesian coordinates
-  LoadParticlesToTree(output);
+  LoadParticlesToTree();
 
   // Calculate all cell quantities (e.g. COM, opening distance)
-  StockCellProperties(output,sph->sphdata);
+  StockCellProperties(sph->sphdata);
 
   // Validate tree structure
 #if defined(VERIFY_ALL)
@@ -173,7 +173,8 @@ void BinaryTree<ndim>::UpdateTree
 
 //=============================================================================
 //  BinaryTree::UpdateActiveParticleCounters
-/// ..
+/// Loop through all leaf cells in binary tree and update all active 
+/// particle counters.
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::UpdateActiveParticleCounters(Sph<ndim> *sph)
@@ -189,7 +190,8 @@ void BinaryTree<ndim>::UpdateActiveParticleCounters(Sph<ndim> *sph)
 /// the binary tree.
 //=============================================================================
 template <int ndim>
-void BinaryTree<ndim>::ComputeTreeSize(int output, int Npart)
+void BinaryTree<ndim>::ComputeTreeSize
+(int Npart)                         ///< No. of particles in tree
 {
   debug2("[BinaryTree::ComputeTreeSize]");
 
@@ -206,15 +208,15 @@ void BinaryTree<ndim>::ComputeTreeSize(int output, int Npart)
   Ntotmax = Nleafmax*pow(2,ltot);
 
   // Optional output (for debugging)
-  if (output == 1) {
-    cout << "Calculating tree size variables" << endl;
-    cout << "Max. no of particles in leaf-cell : " << Nleafmax << endl;
-    cout << "Max. no of particles in tree : " << Ntotmax << endl;
-    cout << "No. of particles in tree : " << Ntot << endl;
-    cout << "No. of levels on tree : " << ltot << endl;
-    cout << "No. of tree cells : " << Ncell << endl;
-    cout << "No. of grid cells : " << gtot << endl;
-  }
+#if defined(VERIFY_ALL)
+  cout << "Calculating tree size variables" << endl;
+  cout << "Max. no of particles in leaf-cell : " << Nleafmax << endl;
+  cout << "Max. no of particles in tree : " << Ntotmax << endl;
+  cout << "No. of particles in tree : " << Ntot << endl;
+  cout << "No. of levels on tree : " << ltot << endl;
+  cout << "No. of tree cells : " << Ncell << endl;
+  cout << "No. of grid cells : " << gtot << endl;
+#endif
 
   return;
 }
@@ -227,7 +229,7 @@ void BinaryTree<ndim>::ComputeTreeSize(int output, int Npart)
 /// Sets all cell pointer variables and all cell levels.
 //=============================================================================
 template <int ndim>
-void BinaryTree<ndim>::CreateTreeStructure(int output)
+void BinaryTree<ndim>::CreateTreeStructure(void)
 {
   debug2("[BinaryTree::CreateTreeStructure]");
 
@@ -276,18 +278,16 @@ void BinaryTree<ndim>::CreateTreeStructure(int output)
 
 
 #if defined(VERIFY_ALL)
-  if (output == 1) {
-    cout << "Diagnostic output from BinaryTree::CreateTreeStructure" << endl;
-    for (c=0; c<min(20,Ncell-20); c++) {
-      cout << "c : " << c << "   " << tree[c].clevel << "   " << tree[c].c2
-	   << "   " << tree[c].cnext << "   " << tree[c].c2g << "   "
-	   << g2c[tree[c].c2g] << endl;
-    }
-    for (c=max(20,Ncell-20); c<Ncell; c++) {
-      cout << "c : " << c << "   " << tree[c].clevel << "   " << tree[c].c2
-	   << "   " << tree[c].cnext << "   " << tree[c].c2g << "   "
-	   << g2c[tree[c].c2g] << endl;
-    }
+  cout << "Diagnostic output from BinaryTree::CreateTreeStructure" << endl;
+  for (c=0; c<min(20,Ncell-20); c++) {
+    cout << "c : " << c << "   " << tree[c].clevel << "   " << tree[c].c2
+	 << "   " << tree[c].cnext << "   " << tree[c].c2g << "   "
+	 << g2c[tree[c].c2g] << endl;
+  }
+  for (c=max(20,Ncell-20); c<Ncell; c++) {
+    cout << "c : " << c << "   " << tree[c].clevel << "   " << tree[c].c2
+	 << "   " << tree[c].cnext << "   " << tree[c].c2g << "   "
+	 << g2c[tree[c].c2g] << endl;
   }
 #endif
 
@@ -308,8 +308,7 @@ void BinaryTree<ndim>::CreateTreeStructure(int output)
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::OrderParticlesByCartCoord
-(int output,                        ///< Optional output
- SphParticle<ndim> *sphdata)        ///< SPH particle data array
+(SphParticle<ndim> *sphdata)        ///< SPH particle data array
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
@@ -336,7 +335,7 @@ void BinaryTree<ndim>::OrderParticlesByCartCoord
 
     // Sort y-values
 #pragma omp section
-  if (ndim >= 2) Heapsort(Ntot,porder[1],rk[1]);
+    if (ndim >= 2) Heapsort(Ntot,porder[1],rk[1]);
 
     // Sort z-values
 #pragma omp section
@@ -368,7 +367,7 @@ void BinaryTree<ndim>::OrderParticlesByCartCoord
 /// Create tree structure by adding particles to leaf cells.
 //=============================================================================
 template <int ndim>
-void BinaryTree<ndim>::LoadParticlesToTree(int output)
+void BinaryTree<ndim>::LoadParticlesToTree(void)
 {
   int c;                            // Cell counter
   int cc;                           // Secondary cell counter
@@ -464,14 +463,81 @@ void BinaryTree<ndim>::LoadParticlesToTree(int output)
 
 
 //=============================================================================
+//  BinaryTree::LoadParticlesToTree2
+/// Create tree structure by adding particles to leaf cells.
+//=============================================================================
+/*template <int ndim>
+void BinaryTree<ndim>::LoadParticlesToTree2(void)
+{
+  int c;                            // Cell counter
+  int cc;                           // Secondary cell counter
+  int k;                            // Dimensionality counter
+  int i;                            // Particle counter
+  int j;                            // Dummy particle id
+  int l;                            // Level counter
+  FLOAT *ccap;                      // Maximum capacity of cell
+  FLOAT *ccon;                      // Current contents of cell
+
+  debug2("[BinaryTree::LoadParticleToTree]");
+
+  // Allocate memory for local arrays
+  ccap = new FLOAT[Ncellmax];
+  ccon = new FLOAT[Ncellmax];
+
+  // Set capacity of root-cell using particle weights
+  for (i=0; i<Ntot; i++) pw[i] = 1.0/(FLOAT) Ntot;
+  for (c=0; c<Ncell; c++) ccap[c] = 0.0;
+  for (i=0; i<Ntot; i++) ccap[0] += pw[i];
+
+  // Initialise all particle and cell values before building tree structure
+  for (i=0; i<Ntot; i++) pc[i] = 0;
+  for (c=0; c<Ncell; c++) ccon[c] = 0.0;
+  for (c=0; c<Ncell; c++) {
+    tree[c].ifirst = -1;
+    tree[c].ilast = -1;
+    for (k=0; k<ndim; k++) tree[c].bbmin[k] = big_number;
+    for (k=0; k<ndim; k++) tree[c].bbmax[k] = -big_number;
+  }
+
+  // Calculate bounding box of root cell
+  for (k=0; k<ndim; k++) {
+    for (i=0; i<Ntot; i++) {
+      if (rk[k][i] < tree[0].bbmin[k]) tree[0].bbmin[k] = rk[k][i];
+      if (rk[k][i] > tree[0].bbmax[k]) tree[0].bbmax[k] = rk[k][i];
+    }
+  }
+
+  // Initialise linked list to include all particles in root cell
+  tree[c].ifirst = 0;
+  tree[c].ilast = Ntot - 1;
+  for (i=0; i<Ntot-1; i++) inext[i] = i + 1;
+
+
+  // Start at top level (l = 0) dividing the cell along the x-axis (k = 0)
+  l = 0;
+  k = 0;
+
+
+  // Loop through each level of the tree
+  // --------------------------------------------------------------------------
+  while (l < ltot) {
+    
+
+    // Loop over all cells on current level
+    
+  return;
+}*/
+
+
+
+//=============================================================================
 //  BinaryTree::StockCellProperties
 /// Calculate the physical properties (e.g. total mass, centre-of-mass, 
 /// opening-distance, etc..) of all cells in the tree.
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::StockCellProperties
-(int output,                        ///< Optional output
- SphParticle<ndim> *sphdata)        ///< SPH particle data array
+(SphParticle<ndim> *sphdata)        ///< SPH particle data array
 {
   int c,cc,ccc;                     // Cell counters
   int i;                            // Particle counter
@@ -637,24 +703,20 @@ void BinaryTree<ndim>::StockCellProperties
 
 
 #if defined(VERIFY_ALL)
-  if (output == 1) {
-    cout << "Root cell position1 : " << tree[0].r[0] << "   " 
-	 << tree[0].r[1] << endl;
-    cout << "Mass of root cell1 : " << tree[0].m << endl;
-    cout << "Bounding box : " << crmin[0] << "   " << crmax[0] 
-	 << "   " << crmin[1] << "   " << crmax[1] << endl;
-  }
+  cout << "Root cell position1 : " << tree[0].r[0] << "   " 
+       << tree[0].r[1] << endl;
+  cout << "Mass of root cell1 : " << tree[0].m << endl;
+  cout << "Bounding box : " << crmin[0] << "   " << crmax[0] 
+       << "   " << crmin[1] << "   " << crmax[1] << endl;
 
   // Go through each tree level in turn and print info
-  if (output == 1) {
-    for (int l=0; l<ltot+1; l++) {
-      cout << "LEVEL : " << l << endl;
-      cout << "----------------------" << endl;
-      for (c=0; c<Ncell; c++) {
-        if (tree[c].clevel == l) {
-	      cout << "c : " << c << "   N : " 
-		   << tree[c].N << "   " << Nleafmax << endl;
-        }
+  for (int l=0; l<ltot+1; l++) {
+    cout << "LEVEL : " << l << endl;
+    cout << "----------------------" << endl;
+    for (c=0; c<Ncell; c++) {
+      if (tree[c].clevel == l) {
+	    cout << "c : " << c << "   N : " 
+      	   << tree[c].N << "   " << Nleafmax << endl;
       }
     }
   }
@@ -677,8 +739,7 @@ void BinaryTree<ndim>::StockCellProperties
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::UpdateHmaxValues
-(int output,                        ///< Optional output
- SphParticle<ndim> *sphdata)        ///< SPH particle data array
+(SphParticle<ndim> *sphdata)        ///< SPH particle data array
 {
   int c,cc,ccc;                     // Cell counters
   int i;                            // Particle counter
@@ -737,9 +798,8 @@ int BinaryTree<ndim>::ComputeActiveCellList
 
   debug2("[BinaryTree::ComputeActiveCellList]");
 
-  for (c=0; c<Ncell; c++) {
+  for (c=0; c<Ncell; c++)
     if (tree[c].Nactive > 0) celllist[Nactive++] = c;
-  }
 
   return Nactive;
 }
@@ -989,6 +1049,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
   FLOAT hrangemax;                  // Maximum kernel extent 
   FLOAT rmax;                       // Radius of sphere containing particles
 
+  // Make local copies of important cell properties
   for (k=0; k<ndim; k++) rc[k] = tree[c].r[k];
   hrangemax = tree[c].rmax + kernrange*tree[c].hmax;
   cdistsqd = tree[c].cdistsqd;
@@ -1001,6 +1062,8 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
   Ngravcell = 0;
 
 
+  // Walk through all cells in tree to determine particle and cell 
+  // interaction lists
   // ==========================================================================
   while (cc < Ncell) {
     for (k=0; k<ndim; k++) dr[k] = tree[cc].r[k] - rc[k];
@@ -1107,7 +1170,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
 //=============================================================================
 //  BinaryTree::ComputeCellMonopoleForces
 /// Compute the force on particle 'parti' due to all cells obtained in the 
-/// gravity tree walk.  Uses only monopole moments of the cell.
+/// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::ComputeCellMonopoleForces
@@ -1123,8 +1186,8 @@ void BinaryTree<ndim>::ComputeCellMonopoleForces
   FLOAT drsqd;                      // Distance squared
   FLOAT invdrmag;                   // 1 / distance
   FLOAT invdr3;                     // 1 / dist^3
-  FLOAT mc;                         // ..
-  FLOAT rp[ndim];                   // ..
+  FLOAT mc;                         // Mass of cell
+  FLOAT rp[ndim];                   // Position of particle
 
   for (k=0; k<ndim; k++) rp[k] = parti.r[k];
 
@@ -1153,7 +1216,7 @@ void BinaryTree<ndim>::ComputeCellMonopoleForces
 //=============================================================================
 //  BinaryTree::ComputeCellQuadrupoleForces
 /// Compute the force on particle 'parti' due to all cells obtained in the 
-/// gravity tree walk.  Uses only monopole moments of the cell.
+/// gravity tree walk including the quadrupole moment correction term.
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::ComputeCellQuadrupoleForces
@@ -1188,7 +1251,7 @@ void BinaryTree<ndim>::ComputeCellQuadrupoleForces
     for (k=0; k<ndim; k++) 
       parti.agrav[k] += tree[c].m*dr[k]*invdrsqd*invdrmag;
 
-    // Now add quadrupole terms depending on dimensionality
+    // Now add quadrupole moment terms depending on dimensionality
     if (ndim == 3) {
       qscalar = tree[c].q[0]*dr[0]*dr[0] + tree[c].q[2]*dr[1]*dr[1] - 
         (tree[c].q[0] + tree[c].q[2])*dr[2]*dr[2] +
@@ -1279,7 +1342,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
   // ==========================================================================
 #pragma omp parallel default(none) private(activelist,c,cc,celldone,draux)\
   private(drsqd,drsqdaux,hmax,hrangesqd,i,j,jj,k,okflag,m,mu,Nactive,neiblist)\
-  private(Nneib,Nneibmax,r,rp,gatherlist,gpot,gpot2,m2,mu2,Ngather) \
+  private(Nneib,Nneibmax,r,rp,gatherlist,gpot,gpot2,m2,mu2,Ngather)\
   shared(sph,celllist,cactive,data,nbody)
   {
     Nneibmax = 2*sph->Ngather;
@@ -1314,7 +1377,8 @@ void BinaryTree<ndim>::UpdateAllSphProperties
         Nactive = ComputeActiveParticleList(c,activelist,sph);
 
         // Compute neighbour list for cell depending on physics options
-        Nneib = ComputeGatherNeighbourList(c,Nneibmax,neiblist,hmax,sph->sphdata);
+        Nneib = ComputeGatherNeighbourList(c,Nneibmax,neiblist,
+                                           hmax,sph->sphdata);
 
         // If there are too many neighbours, reallocate the arrays and
         // recompute the neighbour lists.
@@ -1340,7 +1404,8 @@ void BinaryTree<ndim>::UpdateAllSphProperties
           mu = new FLOAT[Nneibmax];
           mu2 = new FLOAT[Nneibmax];
           r = new FLOAT[Nneibmax*ndim];
-          Nneib = ComputeGatherNeighbourList(c,Nneibmax,neiblist,hmax,sph->sphdata);
+          Nneib = ComputeGatherNeighbourList(c,Nneibmax,neiblist,
+                                             hmax,sph->sphdata);
         };
 
         // Make local copies of important neib information (mass and position)
@@ -1425,7 +1490,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
   delete[] celllist;
 
   // Update all tree smoothing length values
-  UpdateHmaxValues(0,sph->sphdata);
+  UpdateHmaxValues(sph->sphdata);
 
   return;
 }

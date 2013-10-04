@@ -309,7 +309,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
   FLOAT draux[ndim];                // Aux. relative position vector var
   FLOAT drsqd;                      // Distance squared
   FLOAT hrangesqdi;                 // Kernel extent for particle i
-  FLOAT hrangesqdj;                 // Kernek extent for particle j
+  //FLOAT hrangesqdj;                 // Kernek extent for particle j
   FLOAT rp[ndim];                   // Local copy of particle position
   FLOAT *dr;                        // Array of relative position vectors
   FLOAT *drmag;                     // Array of neighbour distances
@@ -382,8 +382,9 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
         activepart[j].levelneib = 0;
         for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
-        hrangesqdi = sph->kernfacsqd*sph->kernp->kernrangesqd*
-          activepart[j].h*activepart[j].h;
+        hrangesqdi = activepart[j].hrangesqd;
+        //hrangesqdi = sph->kernfacsqd*sph->kernp->kernrangesqd*
+	//activepart[j].h*activepart[j].h;
         Ninteract = 0;
 
         // Compute distances and the inverse between the current particle
@@ -396,13 +397,13 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
   	      // Skip neighbour if it's not the correct part of an active pair
           if (neiblist[jj] <= i && neibpart[jj].active) continue;
 
-          hrangesqdj = sph->kernfacsqd*sph->kernp->kernrangesqd*neibpart[jj].h*neibpart[jj].h;
+          //hrangesqdj = sph->kernfacsqd*sph->kernp->kernrangesqd*neibpart[jj].h*neibpart[jj].h;
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
           drsqd = DotProduct(draux,draux,ndim);
 
           // Compute list of particle-neighbour interactions and also
           // compute
-          if ((drsqd <= hrangesqdi || drsqd <= hrangesqdj)) { //&&
+          if ((drsqd <= hrangesqdi || drsqd <= neibpart[jj].hrangesqd)) { //&&
               //((neiblist[jj] < i && !neibpart[jj].active) ||
                //neiblist[jj] > i)) {
             drmag[Ninteract] = sqrt(drsqd) + small_number;
