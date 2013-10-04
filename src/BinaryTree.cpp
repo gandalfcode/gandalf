@@ -44,12 +44,11 @@ using namespace std;
 //=============================================================================
 template <int ndim>
 BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux, 
-			     FLOAT kernrangeaux, string gravity_mac_aux,
+                             FLOAT kernrangeaux, string gravity_mac_aux,
                              string multipole_aux)
 {
   allocated_tree = false;
-  Ncell = 0;
-  Ncellmax = 0;
+  Nsubtree = 1;
   Ntot = 0;
   Ntotmax = 0;
   Ntotmaxold = 0;
@@ -128,15 +127,15 @@ void BinaryTree<ndim>::DeallocateTreeMemory(void)
 
 
 //=============================================================================
-//  BinaryTree::UpdateTree
+//  BinaryTree::BuildTree
 /// Call all routines to build/re-build the binary tree.
 //=============================================================================
 template <int ndim>
-void BinaryTree<ndim>::UpdateTree
+void BinaryTree<ndim>::BuildTree
 (Sph<ndim> *sph,                    ///< Pointer to main SPH object
  Parameters &simparams)             ///< Simulation parameters
 {
-  int output = 0;
+  debug2("[BinaryTree::BuildTree]");
 
   // Set number of tree members to total number of SPH particles (inc. ghosts)
   Ntotmaxold = Ntotmax;
@@ -156,7 +155,35 @@ void BinaryTree<ndim>::UpdateTree
   OrderParticlesByCartCoord(sph->sphdata);
 
   // Now add particles to tree depending on Cartesian coordinates
-  LoadParticlesToTree();
+  LoadParticlesToSubTrees();
+
+  // Build and stock all local sub-trees
+  //---------------------------------------------------------------------------
+  for () {
+
+	// Build individual sub-trees
+	BuildSubTree();
+
+    // Calculate all cell quantities (e.g. COM, opening distance)
+    StockCellProperties(sph->sphdata);
+  }
+  //---------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=============================================================================
+//  BinaryTree::UpdateTree
+/// Call all routines to build/re-build the binary tree.
+//=============================================================================
+template <int ndim>
+void BinaryTree<ndim>::UpdateTree
+(Sph<ndim> *sph,                    ///< Pointer to main SPH object
+ Parameters &simparams)             ///< Simulation parameters
+{
+  debug2("[BinaryTree::UpdateTree]");
 
   // Calculate all cell quantities (e.g. COM, opening distance)
   StockCellProperties(sph->sphdata);
@@ -191,31 +218,22 @@ void BinaryTree<ndim>::UpdateActiveParticleCounters(Sph<ndim> *sph)
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::ComputeTreeSize
-(int Npart)                         ///< No. of particles in tree
+(int Ntree)                        ///< No. of sub-trees to create
 {
   debug2("[BinaryTree::ComputeTreeSize]");
 
   // Increase level until tree can contain all particles
   ltot = 0;
-  while (Nleafmax*pow(2,ltot) < Ntot) {
+  while (pow(2,ltot) < Ntree) {
     ltot++;
   };
 
-  // Set total number of leaf/grid cells and tree cells
-  gtot = pow(2,ltot);
-  Ncell = 2*gtot - 1;
-  Ncellmax = Ncell;
-  Ntotmax = Nleafmax*pow(2,ltot);
 
   // Optional output (for debugging)
 #if defined(VERIFY_ALL)
   cout << "Calculating tree size variables" << endl;
-  cout << "Max. no of particles in leaf-cell : " << Nleafmax << endl;
-  cout << "Max. no of particles in tree : " << Ntotmax << endl;
-  cout << "No. of particles in tree : " << Ntot << endl;
+  cout << "No. of sub-trees      : " << Ntree << endl;
   cout << "No. of levels on tree : " << ltot << endl;
-  cout << "No. of tree cells : " << Ncell << endl;
-  cout << "No. of grid cells : " << gtot << endl;
 #endif
 
   return;
@@ -275,21 +293,6 @@ void BinaryTree<ndim>::CreateTreeStructure(void)
 
   }
   // --------------------------------------------------------------------------
-
-
-#if defined(VERIFY_ALL)
-  cout << "Diagnostic output from BinaryTree::CreateTreeStructure" << endl;
-  for (c=0; c<min(20,Ncell-20); c++) {
-    cout << "c : " << c << "   " << tree[c].clevel << "   " << tree[c].c2
-	 << "   " << tree[c].cnext << "   " << tree[c].c2g << "   "
-	 << g2c[tree[c].c2g] << endl;
-  }
-  for (c=max(20,Ncell-20); c<Ncell; c++) {
-    cout << "c : " << c << "   " << tree[c].clevel << "   " << tree[c].c2
-	 << "   " << tree[c].cnext << "   " << tree[c].c2g << "   "
-	 << g2c[tree[c].c2g] << endl;
-  }
-#endif
 
 
   // Free locally allocated memory
