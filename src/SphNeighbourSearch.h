@@ -236,14 +236,14 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void LoadParticlesToTree2(void);
   void StockCellProperties(SphParticle<ndim> *);
   void UpdateHmaxValues(SphParticle<ndim> *);
-  int ComputeActiveCellList(int *);
-  int ComputeActiveParticleList(int, int *, Sph<ndim> *);
-  int ComputeGatherNeighbourList(int, int, int *, FLOAT, SphParticle<ndim> *);
-  int ComputeNeighbourList(int, int, int *, SphParticle<ndim> *);
-  int ComputeGravityInteractionList(int, int, int, int, int &, int &, int &,
-                                    int *, int *, int *, SphParticle<ndim> *);
-  void ComputeCellMonopoleForces(int, int, int *, SphParticle<ndim> &);
-  void ComputeCellQuadrupoleForces(int, int, int *, SphParticle<ndim> &);
+  int ComputeActiveCellList(BinaryTreeCell<ndim> **);
+  int ComputeActiveParticleList(BinaryTreeCell<ndim> *, int *, Sph<ndim> *);
+  int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int *, FLOAT, SphParticle<ndim> *);
+  int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int *, SphParticle<ndim> *);
+  int ComputeGravityInteractionList(BinaryTreeCell<ndim> *, int, int, int, int &, int &, int &,
+                                    int *, int *, BinaryTreeCell<ndim> **, SphParticle<ndim> *);
+  void ComputeCellMonopoleForces(int, int, BinaryTreeCell<ndim> **, SphParticle<ndim> &);
+  void ComputeCellQuadrupoleForces(int, int, BinaryTreeCell<ndim> **, SphParticle<ndim> &);
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
   void ValidateTree(Sph<ndim> *);
