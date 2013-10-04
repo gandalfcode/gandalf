@@ -159,13 +159,13 @@ void BinaryTree<ndim>::BuildTree
 
   // Build and stock all local sub-trees
   //---------------------------------------------------------------------------
-  for () {
+  for (list<BinarySubTree<ndim>* >::iterator it = subtrees.begin(); it != subtrees.end(); it++) {
 
 	// Build individual sub-trees
-	BuildSubTree();
+	(*it)->BuildSubTree();
 
     // Calculate all cell quantities (e.g. COM, opening distance)
-    StockCellProperties(sph->sphdata);
+    (*it)->StockCellProperties(sph->sphdata);
   }
   //---------------------------------------------------------------------------
 
@@ -185,8 +185,14 @@ void BinaryTree<ndim>::UpdateTree
 {
   debug2("[BinaryTree::UpdateTree]");
 
-  // Calculate all cell quantities (e.g. COM, opening distance)
-  StockCellProperties(sph->sphdata);
+  //---------------------------------------------------------------------------
+  for (list<BinarySubTree<ndim>* >::iterator it = subtrees.begin(); it != subtrees.end(); it++) {
+
+    // Calculate all cell quantities (e.g. COM, opening distance)
+    (*it)->StockCellProperties(sph->sphdata);
+
+  }
+  //---------------------------------------------------------------------------
 
   // Validate tree structure
 #if defined(VERIFY_ALL)
@@ -380,6 +386,7 @@ void BinaryTree<ndim>::LoadParticlesToTree(void)
   int l;                            // Level counter
   FLOAT *ccap;                      // Maximum capacity of cell
   FLOAT *ccon;                      // Current contents of cell
+  list<BinarySubTree<ndim>* >::iterator it;
 
   debug2("[BinaryTree::LoadParticleToTree]");
 
@@ -446,8 +453,10 @@ void BinaryTree<ndim>::LoadParticlesToTree(void)
 
   // Loop over all particles and set id of first particle in each cell, plus 
   // the linked list values
+  //---------------------------------------------------------------------------
   for (i=0; i<Ntot; i++) {
     c = pc[i];
+    subtrees[i]->
     if (tree[c].ifirst == -1)
       tree[c].ifirst = i;
     else
@@ -744,44 +753,16 @@ template <int ndim>
 void BinaryTree<ndim>::UpdateHmaxValues
 (SphParticle<ndim> *sphdata)        ///< SPH particle data array
 {
-  int c,cc,ccc;                     // Cell counters
-  int i;                            // Particle counter
 
-  debug2("[BinaryTree::StockCellProperties]");
+  FLOAT hmax_aux;
 
-  // Zero all summation variables for all cells
-  for (c=0; c<Ncell; c++) tree[c].hmax = 0.0;
-
-  // Loop backwards over all tree cells to ensure child cells are always 
-  // computed first before being summed in parent cells.
-  // ==========================================================================
-  for (c=Ncell-1; c>=0; c--) {
-
-    // If this is a leaf cell, some over all particles
-    // ------------------------------------------------------------------------
-    if (tree[c].c2 == 0) {
-      i = tree[c].ifirst;
-
-      // Loop over all particles in cell summing their contributions
-      while (i != -1) {
-        tree[c].hmax = max(tree[c].hmax,sphdata[i].h);
-        i = inext[i];
-      };
-
-    }
-    // For non-leaf cells, sum together two children cells
-    // ------------------------------------------------------------------------
-    else {
-      cc = c + 1;
-      ccc = tree[c].c2;
-      if (tree[c].N > 0) tree[c].hmax = max(tree[cc].hmax,tree[ccc].hmax);
-
-    }
-    // ------------------------------------------------------------------------
-
+  for (list<BinarySubTree<ndim>* >::iterator it = subtrees.begin(); it != subtrees.end(); it++) {
+    FLOAT subhmax = (*it)->UpdateHmaxValues(sphdata);
+    if (subhmax > hmax_aux)
+      hmax_aux = subhmax;
   }
-  // ==========================================================================
 
+  hmax = hmax_aux;
   return;
 }
 
@@ -801,12 +782,40 @@ int BinaryTree<ndim>::ComputeActiveCellList
 
   debug2("[BinaryTree::ComputeActiveCellList]");
 
-  for (c=0; c<Ncell; c++)
-    if (tree[c].Nactive > 0) celllist[Nactive++] = &tree[c];
+  for (list<BinarySubTree<ndim> * >::iterator it = subtrees.begin(); it != subtrees.end(); it++) {
+    int subNactive = (*it)->ComputeActiveCellList(celllist+Nactive);
+    Nactive += subNactive;
+  }
 
   return Nactive;
 }
 
+//=============================================================================
+//  BinaryTree::ComputeGatherNeighbourList
+/// Computes and returns number of neighbour, 'Nneib', and the list
+/// of neighbour ids, 'neiblist', for all particles inside cell 'c'.
+/// Includes all particles in the selected cell, plus all particles
+/// contained in adjacent cells (including diagonal cells).
+/// Wrapper around the true implementation inside BinarySubTree
+//=============================================================================
+template <int ndim>
+int BinaryTree<ndim>::ComputeGatherNeighbourList
+(BinaryTreeCell<ndim> *cell,        ///< [in] Pointer
+ int Nneibmax,                      ///< [in] Max. no. of neighbours
+ int *neiblist,                     ///< [out] List of neighbour i.d.s
+ FLOAT hmax,                        ///< [in] Maximum smoothing length
+ SphParticle<ndim> *sphdata)        ///< [in] SPH particle data
+ {
+
+  int Nneib=0;
+
+  for (list<BinarySubTree <ndim>* >::iterator it= subtrees.begin(); it != subtrees.end(); it++) {
+    int subNneib = (*it)->ComputeGatherNeighbourList(cell, Nneibmax, neiblist+Nneib, hmax, sphdata);
+    Nneib += subNneib;
+  }
+
+  return Nneib;
+ }
 
 
 //=============================================================================

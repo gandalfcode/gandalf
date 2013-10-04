@@ -337,6 +337,8 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   FLOAT thetamaxsqd;                ///< ..
   FLOAT *pw;                        ///< Particle weights
   FLOAT *rk[ndim];                  ///< Particle Cartesian coordinates
+  FLOAT hmax;                       ///< Store hmax in the tree
 
+  list <BinarySubTree<ndim> *> subtrees;   ///< List containing pointers to sub-trees
 };
 #endif
