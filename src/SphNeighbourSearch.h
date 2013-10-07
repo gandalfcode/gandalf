@@ -230,6 +230,7 @@ class BinarySubTree
   int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int *, SphParticle<ndim> *);
   int ComputeGravityInteractionList(BinaryTreeCell<ndim> *, int, int, int, int &, int &, int &,
                                     int *, int *, BinaryTreeCell<ndim> **, SphParticle<ndim> *);
+  int GlobalId(int local_id) {return ids[local_id];};
 
   // Additional variables for grid
   // --------------------------------------------------------------------------
