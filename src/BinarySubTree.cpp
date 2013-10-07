@@ -87,6 +87,7 @@ void BinarySubTree<ndim>::AllocateTreeMemory
 
   if (Ntotmax > Ntotmaxold || (!allocated_tree)) {
     if (allocated_tree) DeallocateTreeMemory();
+    ids = new int[Ntotmax];
     inext = new int[Ntotmax];
     pw = new FLOAT[Ntotmax];
     pc = new int[Ntotmax];
@@ -144,10 +145,10 @@ void BinarySubTree<ndim>::UpdateTree
   Ntot = sph->Ntot;
 
   // Compute the size of all tree-related arrays now we know number of points
-  ComputeTreeSize(Ntot);
+  ComputeTreeSize();
 
   // Allocate (or reallocate if needed) all tree memory
-  AllocateTreeMemory(Ntot);
+  AllocateTreeMemory();
 
   // Create tree data structure including linked lists and cell pointers
   CreateTreeStructure();
@@ -311,14 +312,18 @@ void BinarySubTree<ndim>::OrderParticlesByCartCoord
 (SphParticle<ndim> *sphdata)        ///< SPH particle data array
 {
   int i;                            // Particle counter
+  int j;                            // ..
   int k;                            // Dimension counter
 
   debug2("[BinarySubTree::OrderParticlesByCartCoord]");
 
   // First copy all values to local arrays
-  for (k=0; k<ndim; k++)
-    for (i=0; i<Ntot; i++)
-      rk[k][i] = sphdata[i].r[k];
+  for (k=0; k<ndim; k++) {
+    for (j=0; j<Ntot; j++) {
+      i = ids[j];
+      rk[k][j] = sphdata[i].r[k];
+    }
+  }
 
   // Now copy list of particle ids
   for (k=0; k<ndim; k++)
@@ -443,8 +448,9 @@ void BinarySubTree<ndim>::LoadParticlesToTree(void)
 
   // Loop over all particles and set id of first particle in each cell, plus 
   // the linked list values
-  for (i=0; i<Ntot; i++) {
-    c = pc[i];
+  for (j=0; j<Ntot; j++) {
+    c = pc[j];
+    i = ids[j];
     if (tree[c].ifirst == -1)
       tree[c].ifirst = i;
     else
@@ -459,74 +465,6 @@ void BinarySubTree<ndim>::LoadParticlesToTree(void)
 
   return;
 }
-
-
-
-//=============================================================================
-//  BinarySubTree::LoadParticlesToTree2
-/// Create tree structure by adding particles to leaf cells.
-//=============================================================================
-/*template <int ndim>
-void BinarySubTree<ndim>::LoadParticlesToTree2(void)
-{
-  int c;                            // Cell counter
-  int cc;                           // Secondary cell counter
-  int k;                            // Dimensionality counter
-  int i;                            // Particle counter
-  int j;                            // Dummy particle id
-  int l;                            // Level counter
-  FLOAT *ccap;                      // Maximum capacity of cell
-  FLOAT *ccon;                      // Current contents of cell
-
-  debug2("[BinarySubTree::LoadParticleToTree]");
-
-  // Allocate memory for local arrays
-  ccap = new FLOAT[Ncellmax];
-  ccon = new FLOAT[Ncellmax];
-
-  // Set capacity of root-cell using particle weights
-  for (i=0; i<Ntot; i++) pw[i] = 1.0/(FLOAT) Ntot;
-  for (c=0; c<Ncell; c++) ccap[c] = 0.0;
-  for (i=0; i<Ntot; i++) ccap[0] += pw[i];
-
-  // Initialise all particle and cell values before building tree structure
-  for (i=0; i<Ntot; i++) pc[i] = 0;
-  for (c=0; c<Ncell; c++) ccon[c] = 0.0;
-  for (c=0; c<Ncell; c++) {
-    tree[c].ifirst = -1;
-    tree[c].ilast = -1;
-    for (k=0; k<ndim; k++) tree[c].bbmin[k] = big_number;
-    for (k=0; k<ndim; k++) tree[c].bbmax[k] = -big_number;
-  }
-
-  // Calculate bounding box of root cell
-  for (k=0; k<ndim; k++) {
-    for (i=0; i<Ntot; i++) {
-      if (rk[k][i] < tree[0].bbmin[k]) tree[0].bbmin[k] = rk[k][i];
-      if (rk[k][i] > tree[0].bbmax[k]) tree[0].bbmax[k] = rk[k][i];
-    }
-  }
-
-  // Initialise linked list to include all particles in root cell
-  tree[c].ifirst = 0;
-  tree[c].ilast = Ntot - 1;
-  for (i=0; i<Ntot-1; i++) inext[i] = i + 1;
-
-
-  // Start at top level (l = 0) dividing the cell along the x-axis (k = 0)
-  l = 0;
-  k = 0;
-
-
-  // Loop through each level of the tree
-  // --------------------------------------------------------------------------
-  while (l < ltot) {
-    
-
-    // Loop over all cells on current level
-    
-  return;
-}*/
 
 
 

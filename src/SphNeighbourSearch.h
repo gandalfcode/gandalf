@@ -92,6 +92,7 @@ class SphNeighbourSearch
 {
  public:
 
+  virtual void BuildTree(Sph<ndim> *, Parameters &) = 0;
   virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphForces(Sph<ndim> *) = 0;
   virtual void UpdateAllSphHydroForces(Sph<ndim> *) = 0;
@@ -122,6 +123,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
   BruteForceSearch();
   ~BruteForceSearch();
 
+  void BuildTree(Sph<ndim> *, Parameters &);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *);
@@ -151,6 +153,7 @@ class GridSearch: public SphNeighbourSearch<ndim>
   GridSearch();
   ~GridSearch();
 
+  void BuildTree(Sph<ndim> *, Parameters &);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *);
@@ -233,11 +236,12 @@ class BinarySubTree
   string gravity_mac;               ///< Multipole-acceptance criteria for tree
   string multipole;                 ///< Multipole-order for cell gravity
   bool allocated_tree;              ///< Are grid arrays allocated?
+  int gtot;                         ///< Total number of grid/leaf cells
+  int ifirst;                       ///< ..
+  int ltot;                         ///< Total number of levels in tree
   int Ncell;                        ///< Current no. of grid cells
   int Ncellmax;                     ///< Max. allowed no. of grid cells
-  int gtot;                         ///< Total number of grid/leaf cells
   int Ngridcells;                   ///< ""
-  int ltot;                         ///< Total number of levels in tree
   int Nlevel;                       ///< ""
   int Nleafmax;                     ///< Max. number of particles per leaf cell
   int Nlistmax;                     ///< Max. length of neighbour list
@@ -248,12 +252,12 @@ class BinarySubTree
   int *pc;                          ///< i.d. of leaf cell occupied by ptcl
   int *g2c;                         ///< i.d. of leaf(grid) cells
   int *gactivelist;                 ///< List of active cells
+  int *ids;                         ///< Particle ids
   int *inext;                       ///< Linked list for grid search
   int *porder[ndim];                ///< Ordered ids of Cartesian coordinates
   FLOAT kernrange;                  ///< Extent of employed kernel
   FLOAT theta;                      ///< ..
   FLOAT thetamaxsqd;                ///< ..
-  FLOAT *pw;                        ///< Particle weights
   FLOAT *rk[ndim];                  ///< Particle Cartesian coordinates
   BinaryTreeCell<ndim> *tree;       ///< Main tree array
 
@@ -292,9 +296,9 @@ class BinaryTree: public SphNeighbourSearch<ndim>
 
   // Additional functions for binary tree neighbour search
   // --------------------------------------------------------------------------
-  void AllocateTreeMemory(int);
+  void AllocateTreeMemory(void);
   void DeallocateTreeMemory(void);
-  void ComputeTreeSize(int);
+  void ComputeTreeSize(void);
   void CreateTreeStructure(void);
   void OrderParticlesByCartCoord(SphParticle<ndim> *);
   void LoadParticlesToTree(void);
@@ -303,12 +307,18 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void UpdateHmaxValues(SphParticle<ndim> *);
   int ComputeActiveCellList(BinaryTreeCell<ndim> **);
   int ComputeActiveParticleList(BinaryTreeCell<ndim> *, int *, Sph<ndim> *);
-  int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int *, FLOAT, SphParticle<ndim> *);
-  int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int *, SphParticle<ndim> *);
-  int ComputeGravityInteractionList(BinaryTreeCell<ndim> *, int, int, int, int &, int &, int &,
-                                    int *, int *, BinaryTreeCell<ndim> **, SphParticle<ndim> *);
-  void ComputeCellMonopoleForces(int, int, BinaryTreeCell<ndim> **, SphParticle<ndim> &);
-  void ComputeCellQuadrupoleForces(int, int, BinaryTreeCell<ndim> **, SphParticle<ndim> &);
+  int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int *, 
+                                 FLOAT, SphParticle<ndim> *);
+  int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int *, 
+                           SphParticle<ndim> *);
+  int ComputeGravityInteractionList(BinaryTreeCell<ndim> *, int, int, int, 
+                                    int &, int &, int &, int *, int *,
+                                    BinaryTreeCell<ndim> **, 
+                                    SphParticle<ndim> *);
+  void ComputeCellMonopoleForces(int, int, BinaryTreeCell<ndim> **, 
+                                 SphParticle<ndim> &);
+  void ComputeCellQuadrupoleForces(int, int, BinaryTreeCell<ndim> **, 
+                                   SphParticle<ndim> &);
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
   void ValidateTree(Sph<ndim> *);
@@ -319,11 +329,12 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   string gravity_mac;               ///< Multipole-acceptance criteria for tree
   string multipole;                 ///< Multipole-order for cell gravity
   bool allocated_tree;              ///< Are grid arrays allocated?
+  int gtot;                         ///< Total number of grid/leaf cells
+  int ltot;                         ///< Total number of levels in tree
   int Ncell;                        ///< Current no. of grid cells
   int Ncellmax;                     ///< Max. allowed no. of grid cells
   int Nsubtree;                     ///< No. of sub-trees
-  int gtot;                         ///< Total number of grid/leaf cells
-  int ltot;                         ///< Total number of levels in tree
+  int Nsubtreemax;                  ///< No. of sub-trees
   int Nlevel;                       ///< ""
   int Nleafmax;                     ///< Max. number of particles per leaf cell
   int Nlistmax;                     ///< Max. length of neighbour list
@@ -332,13 +343,15 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   int Ntotmax;                      ///< Max. no. of points in list
   int Ntotmaxold;                   ///< Old value of Ntotmax
   int *porder[ndim];                ///< Ordered ids of Cartesian coordinates
+  FLOAT hmax;                       ///< Store hmax in the tree
   FLOAT kernrange;                  ///< Extent of employed kernel
   FLOAT theta;                      ///< ..
   FLOAT thetamaxsqd;                ///< ..
   FLOAT *pw;                        ///< Particle weights
   FLOAT *rk[ndim];                  ///< Particle Cartesian coordinates
-  FLOAT hmax;                       ///< Store hmax in the tree
-
+  BinaryTreeCell<ndim> *tree;       ///< Main tree array
+  BinarySubTree<ndim> *stree;       ///< Array of sub-tree objects
   list <BinarySubTree<ndim> *> subtrees;   ///< List containing pointers to sub-trees
 };
+
 #endif

@@ -71,6 +71,20 @@ GridSearch<ndim>::~GridSearch()
 
 
 //=============================================================================
+//  GridSearch::BuildTree
+/// Creates a new grid structure each time the neighbour 'tree' needs to be 
+/// updated.
+//=============================================================================
+template <int ndim>
+void GridSearch<ndim>::BuildTree(Sph<ndim> *sph, Parameters &simparams)
+{
+  CreateGrid(sph);
+  return;
+}
+
+
+
+//=============================================================================
 //  GridSearch::UpdateTree
 /// Creates a new grid structure each time the neighbour 'tree' needs to be 
 /// updated.

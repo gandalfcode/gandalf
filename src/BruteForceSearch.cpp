@@ -59,6 +59,19 @@ BruteForceSearch<ndim>::~BruteForceSearch()
 
 
 //=============================================================================
+//  BruteForceSearch::BuildTree
+/// For Brute Force neighbour searching, there is no tree to construct so 
+/// the function is empty.
+//=============================================================================
+template <int ndim>
+void BruteForceSearch<ndim>::BuildTree(Sph<ndim> *sph, Parameters &simparams)
+{
+  return;
+}
+
+
+
+//=============================================================================
 //  BruteForceSearch::UpdateTree
 /// For Brute Force neighbour searching, there is no tree to construct so 
 /// the function is empty.
