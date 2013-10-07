@@ -69,27 +69,25 @@ BinarySubTree<ndim>::BinarySubTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
 template <int ndim>
 BinarySubTree<ndim>::~BinarySubTree()
 {
-  if (allocated_tree) DeallocateTreeMemory();
+  if (allocated_tree) DeallocateSubTreeMemory();
 }
 
 
 
 //=============================================================================
-//  BinarySubTree::AllocateTreeMemory
+//  BinarySubTree::AllocateSubTreeMemory
 /// Allocate memory for binary tree as requested.  If more memory is required 
 /// than currently allocated, tree is deallocated and reallocated here.
 //=============================================================================
 template <int ndim>
-void BinarySubTree<ndim>::AllocateTreeMemory
-(int Npart)                         ///< No. of particles stored in tree
+void BinarySubTree<ndim>::AllocateSubTreeMemory(void)
 {
   debug2("[BinarySubTree::AllocateTreeMemory]");
 
   if (Ntotmax > Ntotmaxold || (!allocated_tree)) {
-    if (allocated_tree) DeallocateTreeMemory();
+    if (allocated_tree) DeallocateSubTreeMemory();
     ids = new int[Ntotmax];
     inext = new int[Ntotmax];
-    pw = new FLOAT[Ntotmax];
     pc = new int[Ntotmax];
     g2c = new int[gtot];
     tree = new struct BinaryTreeCell<ndim>[Ncellmax];
@@ -104,11 +102,11 @@ void BinarySubTree<ndim>::AllocateTreeMemory
 
 
 //=============================================================================
-//  BinarySubTree::DeallocateTreeMemory
+//  BinarySubTree::DeallocateSubTreeMemory
 /// Deallocates all binary tree memory
 //=============================================================================
 template <int ndim>
-void BinarySubTree<ndim>::DeallocateTreeMemory(void)
+void BinarySubTree<ndim>::DeallocateSubTreeMemory(void)
 {
   debug2("[BinarySubTree::DeallocateTreeMemory]");
 
@@ -118,8 +116,8 @@ void BinarySubTree<ndim>::DeallocateTreeMemory(void)
     delete[] tree;
     delete[] g2c;
     delete[] pc;
-    delete[] pw;
     delete[] inext;
+    delete[] ids;
     allocated_tree = false;
   }
 
@@ -143,21 +141,22 @@ void BinarySubTree<ndim>::BuildSubTree
   Ntotmaxold = Ntotmax;
   Nsph = sph->Nsph;
   Ntot = sph->Ntot;
+  Ntotmax = max(Ntotmax,Ntot);
 
   // Compute the size of all tree-related arrays now we know number of points
-  ComputeTreeSize();
+  ComputeSubTreeSize();
 
   // Allocate (or reallocate if needed) all tree memory
-  AllocateTreeMemory();
+  AllocateSubTreeMemory();
 
   // Create tree data structure including linked lists and cell pointers
-  CreateTreeStructure();
+  CreateSubTreeStructure();
 
   // Find ordered list of particle positions ready for adding particles to tree
   OrderParticlesByCartCoord(sph->sphdata);
 
   // Now add particles to tree depending on Cartesian coordinates
-  LoadParticlesToTree();
+  LoadParticlesToSubTree();
 
   // Calculate all cell quantities (e.g. COM, opening distance)
   StockCellProperties(sph->sphdata);
@@ -186,13 +185,12 @@ void BinarySubTree<ndim>::UpdateActiveParticleCounters(Sph<ndim> *sph)
 
 
 //=============================================================================
-//  BinarySubTree::ComputeTreeSize
+//  BinarySubTree::ComputeSubTreeSize
 /// Compute the maximum size (i.e. no. of levels, cells and leaf cells) of 
 /// the binary tree.
 //=============================================================================
 template <int ndim>
-void BinarySubTree<ndim>::ComputeTreeSize
-(int Npart)                         ///< No. of particles in tree
+void BinarySubTree<ndim>::ComputeSubTreeSize(void)
 {
   debug2("[BinarySubTree::ComputeTreeSize]");
 
@@ -225,12 +223,12 @@ void BinarySubTree<ndim>::ComputeTreeSize
 
 
 //=============================================================================
-//  BinarySubTree::CreateTreeStructure
+//  BinarySubTree::CreateSubTreeStructure
 /// Create the raw tree skeleton structure once the tree size is known.
 /// Sets all cell pointer variables and all cell levels.
 //=============================================================================
 template <int ndim>
-void BinarySubTree<ndim>::CreateTreeStructure(void)
+void BinarySubTree<ndim>::CreateSubTreeStructure(void)
 {
   debug2("[BinarySubTree::CreateTreeStructure]");
 
@@ -372,7 +370,7 @@ void BinarySubTree<ndim>::OrderParticlesByCartCoord
 /// Create tree structure by adding particles to leaf cells.
 //=============================================================================
 template <int ndim>
-void BinarySubTree<ndim>::LoadParticlesToTree(void)
+void BinarySubTree<ndim>::LoadParticlesToSubTree(void)
 {
   int c;                            // Cell counter
   int cc;                           // Secondary cell counter
@@ -390,9 +388,9 @@ void BinarySubTree<ndim>::LoadParticlesToTree(void)
   ccon = new FLOAT[Ncellmax];
 
   // Set capacity of root-cell using particle weights
-  for (i=0; i<Ntot; i++) pw[i] = 1.0/(FLOAT) Ntot;
+  //for (i=0; i<Ntot; i++) pw[i] = 1.0/(FLOAT) Ntot;
   for (c=0; c<Ncell; c++) ccap[c] = 0.0;
-  for (i=0; i<Ntot; i++) ccap[0] += pw[i];
+  for (i=0; i<Ntot; i++) ccap[0] += 1.0; //pw[i];
 
   // Initialise all particle and cell values before building tree structure
   for (i=0; i<Ntot; i++) pc[i] = 0;
@@ -415,17 +413,17 @@ void BinarySubTree<ndim>::LoadParticlesToTree(void)
     for (i=0; i<Ntot; i++) {
       j = porder[k][i];
       cc = pc[j];                            // Cell currently occupied by j
-      ccon[cc] += pw[j];                     // Add particle weighting to cell
+      ccon[cc] += 1.0; //pw[j];              // Add particle weighting to cell
 
       // If cell contains less than maximum allowed capacity, then add 
       // particle to the first child cell.  Otherwise add to second child.
       if (ccon[cc] < 0.5000000000001*ccap[cc]) {
         pc[j]++;
-        ccap[pc[j]] += pw[j];
+        ccap[pc[j]] += 1.0; //pw[j];
       }
       else {
         pc[j] = tree[cc].c2;
-        ccap[pc[j]] += pw[j];
+        ccap[pc[j]] += 1.0; //pw[j];
       }
     }
     // ------------------------------------------------------------------------
@@ -442,7 +440,7 @@ void BinarySubTree<ndim>::LoadParticlesToTree(void)
   // Compute capacities of leaf cells here
   for (i=0; i<Ntot; i++) {
     cc = pc[i];
-    ccon[cc] += pw[i];
+    ccon[cc] += 1.0; //pw[i];
   }
 
 
@@ -732,12 +730,10 @@ FLOAT BinarySubTree<ndim>::UpdateHmaxValues
 //=============================================================================
 template <int ndim>
 int BinarySubTree<ndim>::ComputeActiveCellList
-(   BinaryTreeCell<ndim> **celllist)    ///< Cells id array containing active ptcls
+(int Nactive,
+ BinaryTreeCell<ndim> **celllist)  ///< Cells id array containing active ptcls
 {
-  int c;                            // Cell counter
-  int Nactive=0;
-
-  debug2("[BinarySubTree::ComputeActiveCellList]");
+  int c;                           // Cell counter
 
   for (c=0; c<Ncell; c++)
     if (tree[c].Nactive > 0) celllist[Nactive++] = &tree[c];
@@ -757,6 +753,7 @@ int BinarySubTree<ndim>::ComputeActiveCellList
 template <int ndim>
 int BinarySubTree<ndim>::ComputeGatherNeighbourList
 (BinaryTreeCell<ndim> *cell,        ///< [in] Pointer
+ int Nneib,                         ///< [in] ..
  int Nneibmax,                      ///< [in] Max. no. of neighbours
  int *neiblist,                     ///< [out] List of neighbour i.d.s
  FLOAT hmax,                        ///< [in] Maximum smoothing length
@@ -766,8 +763,7 @@ int BinarySubTree<ndim>::ComputeGatherNeighbourList
   int i;                            // Particle id
   int j;                            // Aux. particle counter
   int k;                            // Neighbour counter
-  int Nneib = 0;                    // No. of neighbours
-  int Ntemp = 0;                    // Aux. neighbour counter
+  int Ntemp = Nneib;                // Aux. neighbour counter
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drsqd;                      // Distance squared
   FLOAT rc[ndim];                   // Position of cell
@@ -844,6 +840,7 @@ int BinarySubTree<ndim>::ComputeGatherNeighbourList
 template <int ndim>
 int BinarySubTree<ndim>::ComputeNeighbourList
 (BinaryTreeCell<ndim> *cell,        ///< [in] Cell pointer
+ int Nneib,                         ///< [in] ..
  int Nneibmax,                      ///< [in] Max. no. of neighbours
  int *neiblist,                     ///< [out] List of neighbour i.d.s
  SphParticle<ndim> *sphdata)        ///< [in] SPH particle data
@@ -852,8 +849,7 @@ int BinarySubTree<ndim>::ComputeNeighbourList
   int i;                            // Particle id
   int j;                            // Aux. particle counter
   int k;                            // Neighbour counter
-  int Nneib = 0;                    // No. of neighbours
-  int Ntemp = 0;                    // ..
+  int Ntemp = Nneib;                // ..
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drsqd;                      // Distance squared
   FLOAT rc[ndim];                   // Position of cell
@@ -955,7 +951,7 @@ int BinarySubTree<ndim>::ComputeGravityInteractionList
   int j;                            // Aux. particle counter
   int ilast;                        // id of last particle in current cell
   int k;                            // Neighbour counter
-  int Nneibtemp = 0;                // Aux. counter
+  int Nneibtemp = Nneib;            // Aux. counter
   FLOAT cdistsqd;                   // ..
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drsqd;                      // Distance squared
@@ -972,8 +968,8 @@ int BinarySubTree<ndim>::ComputeGravityInteractionList
   // Start with root cell and walk through entire tree
   cc = 0;
   Nneib = 0;
-  Ndirect = 0;
-  Ngravcell = 0;
+  //Ndirect = 0;
+  //Ngravcell = 0;
 
 
   // Walk through all cells in tree to determine particle and cell 
