@@ -25,7 +25,7 @@
 #ifndef _SPH_NEIGHBOUR_SEARCH_H_
 #define _SPH_NEIGHBOUR_SEARCH_H_
 
-
+#include <assert.h>
 #include <iostream>
 #include <string>
 #include "Precision.h"
@@ -230,7 +230,9 @@ class BinarySubTree
   int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int *, SphParticle<ndim> *);
   int ComputeGravityInteractionList(BinaryTreeCell<ndim> *, int, int, int, int &, int &, int &,
                                     int *, int *, BinaryTreeCell<ndim> **, SphParticle<ndim> *);
-  int GlobalId(int local_id) {return ids[local_id];};
+  int GlobalId(int local_id) {
+    assert(local_id>=0);
+    return ids[local_id];};
 
   // Additional variables for grid
   // --------------------------------------------------------------------------
