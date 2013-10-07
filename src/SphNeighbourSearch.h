@@ -217,15 +217,15 @@ class BinarySubTree
 
   // Additional functions for binary tree neighbour search
   // --------------------------------------------------------------------------
-  void AllocateTreeMemory(int);
+  void AllocateTreeMemory(void);
   void DeallocateTreeMemory(void);
-  void ComputeTreeSize(int);
+  void ComputeTreeSize(void);
   void CreateTreeStructure(void);
   void OrderParticlesByCartCoord(SphParticle<ndim> *);
   void LoadParticlesToSubTrees(void);
   void StockCellProperties(SphParticle<ndim> *);
   void UpdateHmaxValues(SphParticle<ndim> *);
-  void UpdateSubTree(Sph<ndim> *, Parameters &);
+  void BuildSubTree(Sph<ndim> *, Parameters &);
   int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int *, FLOAT, SphParticle<ndim> *);
   int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int *, SphParticle<ndim> *);
   int ComputeGravityInteractionList(BinaryTreeCell<ndim> *, int, int, int, int &, int &, int &,

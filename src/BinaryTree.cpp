@@ -472,7 +472,7 @@ void BinaryTree<ndim>::LoadParticlesToTree(void)
   //---------------------------------------------------------------------------
   for (i=0; i<Ntot; i++) {
     c = pc[i];
-    subtree[c]->id[subtree[c]->Ntot++] = i;
+    subtree[c]->ids[subtree[c]->Ntot++] = i;
   }
 
 

@@ -133,7 +133,7 @@ void BinarySubTree<ndim>::DeallocateTreeMemory(void)
 /// Call all routines to build/re-build the binary tree.
 //=============================================================================
 template <int ndim>
-void BinarySubTree<ndim>::UpdateTree
+void BinarySubTree<ndim>::BuildSubTree
 (Sph<ndim> *sph,                    ///< Pointer to main SPH object
  Parameters &simparams)             ///< Simulation parameters
 {
@@ -448,9 +448,8 @@ void BinarySubTree<ndim>::LoadParticlesToTree(void)
 
   // Loop over all particles and set id of first particle in each cell, plus 
   // the linked list values
-  for (j=0; j<Ntot; j++) {
-    c = pc[j];
-    i = ids[j];
+  for (i=0; i<Ntot; i++) {
+    c = pc[i];
     if (tree[c].ifirst == -1)
       tree[c].ifirst = i;
     else
@@ -479,6 +478,7 @@ void BinarySubTree<ndim>::StockCellProperties
 {
   int c,cc,ccc;                     // Cell counters
   int i;                            // Particle counter
+  int j;                            // ..
   int k;                            // Dimension counter
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drsqd;                      // Distance squared
@@ -521,10 +521,11 @@ void BinarySubTree<ndim>::StockCellProperties
     // If this is a leaf cell, sum over all particles
     // ------------------------------------------------------------------------
     if (tree[c].c2 == 0) {
-      i = tree[c].ifirst;
+      j = tree[c].ifirst;
 
       // Loop over all particles in cell summing their contributions
-      while (i != -1) {
+      while (j != -1) {
+        i = GlobalId(j);
         tree[c].N++;
         if (sphdata[i].active) tree[c].Nactive++;
         tree[c].hmax = max(tree[c].hmax,sphdata[i].h);
@@ -536,7 +537,7 @@ void BinarySubTree<ndim>::StockCellProperties
           if (sphdata[i].r[k] > crmax[c*ndim + k])
             crmax[c*ndim + k] = sphdata[i].r[k];
         }
-        i = inext[i];
+        j = inext[j];
       };
 
       // Normalise all cell values
@@ -551,8 +552,10 @@ void BinarySubTree<ndim>::StockCellProperties
 
       // Compute quadrupole moment terms if selected
       if (multipole == "quadrupole") {
-        i = tree[c].ifirst;
-        while (i != -1) {
+        j = tree[c].ifirst;
+
+        while (j != -1) {
+          i = GlobalId(j);
           mi = sphdata[i].m;
           for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - tree[c].r[k];
           drsqd = DotProduct(dr,dr,ndim);
@@ -568,7 +571,7 @@ void BinarySubTree<ndim>::StockCellProperties
             tree[c].q[1] += mi*3.0*dr[0]*dr[1];
             tree[c].q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
           }
-          i = inext[i];
+          j = inext[j];
         }
       }
 
@@ -819,7 +822,7 @@ int BinarySubTree<ndim>::ComputeGatherNeighbourList
   // Now, trim the list to remove particles that are definitely not neighbours
   hrangemax = hrangemax*hrangemax;
   for (j=0; j<Nneib; j++) {
-    i = neiblist[j];
+    i = GlobalId(neiblist[j]);
     for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
     if (drsqd < hrangemax) neiblist[Ntemp++] = i;
@@ -911,7 +914,7 @@ int BinarySubTree<ndim>::ComputeNeighbourList
   // Now, trim the list to remove particles that are definitely not neighbours
   hrangemax = hrangemax*hrangemax;
   for (j=0; j<Nneib; j++) {
-    i = neiblist[j];
+    i = GlobalId(neiblist[j]);
     for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
     if (drsqd < hrangemax || drsqd <
@@ -1060,11 +1063,11 @@ int BinarySubTree<ndim>::ComputeGravityInteractionList
   // If not an SPH neighbour, then add to direct gravity sum list.
   hrangemax = hrangemax*hrangemax;
   for (j=0; j<Nneib; j++) {
-    i = neiblist[j];
+    i = GlobalId(neiblist[j]);
     for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
     if (drsqd < hrangemax || drsqd < 
-	(rmax + kernrange*sphdata[i].h)*(rmax + kernrange*sphdata[i].h))
+        (rmax + kernrange*sphdata[i].h)*(rmax + kernrange*sphdata[i].h))
       neiblist[Nneibtemp++] = i;
     else if (Ndirect < Ndirectmax)
       directlist[Ndirect++] = i;
