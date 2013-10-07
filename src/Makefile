@@ -45,7 +45,7 @@ OPT += -O3 -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),PROFILE)
 OPT += -O3 -fPIC -fno-exceptions -fno-rtti -pg
 else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -g -pg -Wall -fbounds-check -fPIC -DNDEBUG -O3  #-fprofile-arcs -ftest-coverage
+OPT += -g -pg -Wall -fbounds-check -fPIC -O3  #-fprofile-arcs -ftest-coverage
 endif
 ifeq ($(OPENMP),1)
 OPT += -fopenmp -DOPENMP
@@ -117,9 +117,9 @@ endif
 # Include expensive verification code
 # ----------------------------------------------------------------------------
 ifeq ($(DEBUG_LEVEL),1)
-CFLAGS += 
+CFLAGS += -DNDEBUG
 else ifeq ($(DEBUG_LEVEL),2)
-CFLAGS += -DVERIFY_ALL
+CFLAGS += -DNDEBUG -DVERIFY_ALL
 endif
 
 

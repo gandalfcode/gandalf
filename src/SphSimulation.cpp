@@ -79,7 +79,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sph->mmean /= (FLOAT) sph->Nsph;
 
     sph->InitialSmoothingLengthGuess();
-    sphneib->UpdateTree(sph,*simparams);
+    sphneib->BuildTree(sph,*simparams);
 
     sphneib->neibcheck = false;
     sphneib->UpdateAllSphProperties(sph,nbody);
@@ -88,7 +88,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     ghosts.SearchGhostParticles(simbox,sph);
 
     // Update neighbour tree
-    sphneib->UpdateTree(sph,*simparams);
+    sphneib->BuildTree(sph,*simparams);
 
     level_step = 1;
 
@@ -102,7 +102,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     ghosts.SearchGhostParticles(simbox,sph);
 
     // Update neighbour tre
-    sphneib->UpdateTree(sph,*simparams);
+    sphneib->BuildTree(sph,*simparams);
     sphneib->neibcheck = true;
     sphneib->UpdateAllSphProperties(sph,nbody);
 
@@ -155,7 +155,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     }
 
     ghosts.CopySphDataToGhosts(sph);
-    sphneib->UpdateTree(sph, *simparams);
+    sphneib->BuildTree(sph, *simparams);
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)
@@ -244,7 +244,7 @@ void SphSimulation<ndim>::MainLoop(void)
     ghosts.SearchGhostParticles(simbox,sph);
 
     // Update neighbour tree
-    sphneib->UpdateTree(sph,*simparams);
+    sphneib->BuildTree(sph,*simparams);
 
     // Iterate if we need to immediately change SPH particle timesteps
     // (e.g. due to feedback, or sudden change in neighbour timesteps)
