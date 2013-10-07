@@ -28,6 +28,7 @@
 #include <assert.h>
 #include <iostream>
 #include <string>
+#include <list>
 #include "Precision.h"
 #include "Constants.h"
 #include "SphKernel.h"
@@ -217,17 +218,19 @@ class BinarySubTree
 
   // Additional functions for binary tree neighbour search
   // --------------------------------------------------------------------------
-  void AllocateTreeMemory(int);
-  void DeallocateTreeMemory(void);
-  void ComputeTreeSize(int);
-  void CreateTreeStructure(void);
+  void AllocateSubTreeMemory(void);
+  void DeallocateSubTreeMemory(void);
+  int ComputeActiveCellList(int ,BinaryTreeCell<ndim> **);
+  void ComputeSubTreeSize(void);
+  void CreateSubTreeStructure(void);
   void OrderParticlesByCartCoord(SphParticle<ndim> *);
-  void LoadParticlesToSubTrees(void);
+  void LoadParticlesToSubTree(void);
   void StockCellProperties(SphParticle<ndim> *);
-  void UpdateHmaxValues(SphParticle<ndim> *);
-  void UpdateSubTree(Sph<ndim> *, Parameters &);
-  int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int *, FLOAT, SphParticle<ndim> *);
-  int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int *, SphParticle<ndim> *);
+  FLOAT UpdateHmaxValues(SphParticle<ndim> *);
+  void UpdateActiveParticleCounters(Sph<ndim> *);
+  void BuildSubTree(Sph<ndim> *, Parameters &);
+  int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int, int *, FLOAT, SphParticle<ndim> *);
+  int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int, int *, SphParticle<ndim> *);
   int ComputeGravityInteractionList(BinaryTreeCell<ndim> *, int, int, int, int &, int &, int &,
                                     int *, int *, BinaryTreeCell<ndim> **, SphParticle<ndim> *);
   int GlobalId(int local_id) {
@@ -283,6 +286,8 @@ class BinaryTree: public SphNeighbourSearch<ndim>
 
  public:
 
+  typedef typename list <BinarySubTree<ndim> *>::iterator binlistiterator;
+
   BinaryTree(int, FLOAT, FLOAT, string, string);
   ~BinaryTree();
 
@@ -305,11 +310,11 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void CreateTreeStructure(void);
   void OrderParticlesByCartCoord(SphParticle<ndim> *);
   void LoadParticlesToTree(void);
-  void LoadParticlesToTree2(void);
   void StockCellProperties(SphParticle<ndim> *);
   void UpdateHmaxValues(SphParticle<ndim> *);
-  int ComputeActiveCellList(BinaryTreeCell<ndim> **);
-  int ComputeActiveParticleList(BinaryTreeCell<ndim> *, int *, Sph<ndim> *);
+  int ComputeActiveCellList(BinaryTreeCell<ndim> **, BinarySubTree<ndim> **);
+  int ComputeActiveParticleList(BinaryTreeCell<ndim> *, BinarySubTree<ndim> *,
+                                Sph<ndim> *, int *);
   int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int *, 
                                  FLOAT, SphParticle<ndim> *);
   int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int *, 
@@ -337,7 +342,8 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   int Ncell;                        ///< Current no. of grid cells
   int Ncellmax;                     ///< Max. allowed no. of grid cells
   int Nsubtree;                     ///< No. of sub-trees
-  int Nsubtreemax;                  ///< No. of sub-trees
+  int Nsubtreemax;                  ///< ..
+  int Nsubtreemaxold;               ///< No. of sub-trees
   int Nlevel;                       ///< ""
   int Nleafmax;                     ///< Max. number of particles per leaf cell
   int Nlistmax;                     ///< Max. length of neighbour list
@@ -350,6 +356,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   FLOAT kernrange;                  ///< Extent of employed kernel
   FLOAT theta;                      ///< ..
   FLOAT thetamaxsqd;                ///< ..
+  int *pc;
   FLOAT *pw;                        ///< Particle weights
   FLOAT *rk[ndim];                  ///< Particle Cartesian coordinates
   BinaryTreeCell<ndim> *tree;       ///< Main tree array
