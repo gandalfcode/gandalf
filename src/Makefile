@@ -116,7 +116,9 @@ endif
 
 # Include expensive verification code
 # ----------------------------------------------------------------------------
-ifeq ($(VERIFY_ALL),1)
+ifeq ($(DEBUG_LEVEL),1)
+CFLAGS += 
+else ifeq ($(DEBUG_LEVEL),2)
 CFLAGS += -DVERIFY_ALL
 endif
 

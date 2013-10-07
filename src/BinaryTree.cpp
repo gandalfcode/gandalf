@@ -93,9 +93,10 @@ void BinaryTree<ndim>::AllocateTreeMemory(void)
     pc = new int[Ntotmax];
     pw = new FLOAT[Ntotmax];
     tree = new struct BinaryTreeCell<ndim>[Ncellmax];
-    stree = new BinarySubTree<ndim>[Nsubtreemax](Nleafmax, thetamaxsqd,
+    for (int i=0; i<Nsubtree; i++)
+      subtrees.push_back(new BinarySubTree<ndim>(Nleafmax, thetamaxsqd,
                                                  kernrange, gravity_mac,
-                                                 multipole);
+                                                 multipole));
     for (int k=0; k<ndim; k++) porder[k] = new int[Ntotmax]; 
     for (int k=0; k<ndim; k++) rk[k] = new FLOAT[Ntotmax];
     allocated_tree = true;
@@ -150,6 +151,7 @@ void BinaryTree<ndim>::BuildTree
   Ntot = sph->Ntot;
   Ntotmaxold = Ntotmax;
   Ntotmax = max(Ntot,Ntotmax);
+  gtot = 0;
 
   // Compute the size of all tree-related arrays now we know number of points
   ComputeTreeSize();
@@ -175,6 +177,9 @@ void BinaryTree<ndim>::BuildTree
 
     // Calculate all cell quantities (e.g. COM, opening distance)
     (*it)->StockCellProperties(sph->sphdata);
+
+    // Calculate total number of leaf cells in trees
+    gtot += (*it)->gtot;
 
   }
   //---------------------------------------------------------------------------
@@ -546,9 +551,38 @@ int BinaryTree<ndim>::ComputeActiveCellList
 
   for (it = subtrees.begin(); it != subtrees.end(); it++) {
     Nactive = (*it)->ComputeActiveCellList(Nactive,celllist);
-    for (int i=Nfirst; i<Nactive; i++) treelist[i] = &(*it);
+    for (int i=Nfirst; i<Nactive; i++) treelist[i] = (*it);
     Nfirst = Nactive;
   }
+
+  return Nactive;
+}
+
+
+
+//=============================================================================
+// GridSearch::ComputeActiveParticleList
+/// Returns the number (Nactive) and list of ids (activelist) of all active
+/// SPH particles in the given cell.
+//=============================================================================
+template <int ndim>
+int BinaryTree<ndim>::ComputeActiveParticleList
+(BinaryTreeCell<ndim> *cell, ///< [in] Pointer to cell
+ BinarySubTree<ndim> *treeptr, ///< [in] List of ptrs to sub-trees
+ Sph<ndim> *sph, ///< [in] SPH object pointer
+ int *activelist) ///< [out] List of active particles in cell
+{
+  int Nactive = 0; // No. of active particles in cell
+  int i = cell->ifirst; // Particle id (set to first ptcl id)
+  int ilast = cell->ilast; // i.d. of last particle in cell c
+
+  // Walk through linked list to obtain list and number of active ptcls.
+  while (i != -1) {
+    if (i < sph->Nsph && sph->sphdata[i].active)
+      activelist[Nactive++] = treeptr->GlobalId(i);
+    if (i == ilast) break;
+    i = treeptr->inext[i];
+  };
 
   return Nactive;
 }
@@ -577,7 +611,7 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
 
   for (it = subtrees.begin(); it != subtrees.end(); it++) {
     Nneib = (*it)->ComputeGatherNeighbourList(cell,Nneib,Nneibmax,
-                                                 neiblist,hmax,sphdata);
+                                              neiblist,hmax,sphdata);
   }
 
   return Nneib;
@@ -586,30 +620,56 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
 
 
 //=============================================================================
-//  GridSearch::ComputeActiveParticleList
-/// Returns the number (Nactive) and list of ids (activelist) of all active
-/// SPH particles in the given cell.
+//  BinaryTree::ComputeNeighbourList
+/// Computes and returns number of neighbour, 'Nneib', and the list
+/// of neighbour ids, 'neiblist', for all particles inside cell 'c'.
+/// Includes all particles in the selected cell, plus all particles
+/// contained in adjacent cells (including diagonal cells).
+/// Wrapper around the true implementation inside BinarySubTree
 //=============================================================================
 template <int ndim>
-int BinaryTree<ndim>::ComputeActiveParticleList
-(BinaryTreeCell<ndim> *cell,       ///< [in] Pointer to cell
- BinarySubTree<ndim> *treeptr,     ///< [in] List of ptrs to sub-trees
- Sph<ndim> *sph,                   ///< [in] SPH object pointer
- int *activelist)                  ///< [out] List of active particles in cell
+int BinaryTree<ndim>::ComputeNeighbourList
+(BinaryTreeCell<ndim> *cell,        ///< [in] Pointer
+ int Nneibmax,                      ///< [in] Max. no. of neighbours
+ int *neiblist,                     ///< [out] List of neighbour i.d.s
+ SphParticle<ndim> *sphdata)        ///< [in] SPH particle data
 {
-  int Nactive = 0;                 // No. of active particles in cell
-  int i = cell->ifirst;            // Particle id (set to first ptcl id)
-  int ilast = cell->ilast;         // i.d. of last particle in cell c
+  binlistiterator it;               // ..
+  int Nneib = 0;                    // Total number of gather neighbours
+                                    // (summed over all sub-trees)
 
-  // Walk through linked list to obtain list and number of active ptcls.
-  while (i != -1) {
-    if (i < sph->Nsph && sph->sphdata[i].active)
-      activelist[Nactive++] = treeptr->GlobalId(i);
-    if (i == ilast) break;
-    i = treeptr->inext[i];
-  };
+  for (it = subtrees.begin(); it != subtrees.end(); it++) {
+    Nneib = (*it)->ComputeNeighbourList(cell,Nneib,Nneibmax,
+                                        neiblist,sphdata);
+  }
 
-  return Nactive;
+  return Nneib;
+}
+
+
+
+//=============================================================================
+//  BinarySubTree::ComputeGravityInteractionList
+/// Computes and returns number of SPH neighbours (Nneib), direct sum particles
+/// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
+/// the gravity tree walk for active particles inside cell c.
+/// Currently defaults to the geometric opening criteria.
+//=============================================================================
+template <int ndim>
+int BinaryTree<ndim>::ComputeGravityInteractionList
+(BinaryTreeCell<ndim> *cell,        ///< [in] Pointer to cell
+ int Nneibmax,                      ///< [in] Max. no. of SPH neighbours
+ int Ndirectmax,                    ///< [in] Max. no. of direct-sum neighbours
+ int Ngravcellmax,                  ///< [in] Max. no. of cell interactions
+ int &Nneib,                        ///< [out] No. of SPH neighbours
+ int &Ndirect,                      ///< [out] No. of direct-sum neighbours
+ int &Ngravcell,                    ///< [out] No. of cell interactions
+ int *neiblist,                     ///< [out] List of SPH neighbour ids
+ int *directlist,                   ///< [out] List of direct-sum neighbour ids
+ BinaryTreeCell<ndim> **gravcelllist,  ///< [out] List of cell ids
+ SphParticle<ndim> *sphdata)        ///< [in] SPH particle data
+{
+  return 1;
 }
 
 

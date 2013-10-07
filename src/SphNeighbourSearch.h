@@ -28,7 +28,7 @@
 
 #include <iostream>
 #include <string>
-#include <list>
+#include <vector>
 #include "Precision.h"
 #include "Constants.h"
 #include "SphKernel.h"
@@ -284,7 +284,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
 
  public:
 
-  typedef typename list <BinarySubTree<ndim> *>::iterator binlistiterator;
+  typedef typename vector <BinarySubTree<ndim> *>::iterator binlistiterator;
 
   BinaryTree(int, FLOAT, FLOAT, string, string);
   ~BinaryTree();
@@ -359,7 +359,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   FLOAT *rk[ndim];                  ///< Particle Cartesian coordinates
   BinaryTreeCell<ndim> *tree;       ///< Main tree array
   BinarySubTree<ndim> *stree;       ///< Array of sub-tree objects
-  list <BinarySubTree<ndim> *> subtrees;   ///< List containing pointers to sub-trees
+  vector <BinarySubTree<ndim> *> subtrees;   ///< List containing pointers to sub-trees
 };
 
 #endif
