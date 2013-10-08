@@ -237,6 +237,10 @@ class BinarySubTree
     assert(local_id>=0);
     return ids[local_id];};
 
+#if defined(VERIFY_ALL)
+  void ValidateTree(Sph<ndim> *);
+#endif
+
   // Additional variables for grid
   // --------------------------------------------------------------------------
   string gravity_mac;               ///< Multipole-acceptance criteria for tree
@@ -329,7 +333,6 @@ class BinaryTree: public SphNeighbourSearch<ndim>
                                    SphParticle<ndim> &);
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
-  void ValidateTree(Sph<ndim> *);
 #endif
 
   // Additional variables for grid
@@ -337,6 +340,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   string gravity_mac;               ///< Multipole-acceptance criteria for tree
   string multipole;                 ///< Multipole-order for cell gravity
   bool allocated_tree;              ///< Are grid arrays allocated?
+  bool created_sub_trees;           ///< Have sub-tree objects been created?
   int gtot;                         ///< Total number of grid/leaf cells
   int ltot;                         ///< Total number of levels in tree
   int Ncell;                        ///< Current no. of grid cells

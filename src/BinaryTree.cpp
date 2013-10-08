@@ -48,6 +48,7 @@ BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                              string multipole_aux)
 {
   allocated_tree = false;
+  created_sub_trees = false;
   Nsubtree = 1;
   Ntot = 0;
   Ntotmax = 0;
@@ -84,22 +85,45 @@ void BinaryTree<ndim>::AllocateTreeMemory(void)
 {
   debug2("[BinaryTree::AllocateTreeMemory]");
 
-  if (!allocated_tree || Ntot > Ntotmax || Nsubtree > Nsubtreemax) {
+  if (!allocated_tree || Ntotmax > Ntotmaxold || Nsubtree > Nsubtreemax) {
     if (allocated_tree) DeallocateTreeMemory();
     Ntotmax = max(Ntotmax,Ntot);
     Ntotmaxold = Ntotmax;
     Nsubtreemax = max(Nsubtreemax,Nsubtree);
     Nsubtreemaxold = Nsubtreemax;
+
     pc = new int[Ntotmax];
     pw = new FLOAT[Ntotmax];
     tree = new struct BinaryTreeCell<ndim>[Ncellmax];
-    for (int i=0; i<Nsubtree; i++)
-      subtrees.push_back(new BinarySubTree<ndim>(Nleafmax, thetamaxsqd,
-                                                 kernrange, gravity_mac,
-                                                 multipole));
     for (int k=0; k<ndim; k++) porder[k] = new int[Ntotmax]; 
     for (int k=0; k<ndim; k++) rk[k] = new FLOAT[Ntotmax];
     allocated_tree = true;
+
+    if (!created_sub_trees) {
+      for (int i=0; i<Nsubtree; i++) {
+	subtrees.push_back(new BinarySubTree<ndim>(Nleafmax, thetamaxsqd,
+						   kernrange, gravity_mac,
+						   multipole));
+      }
+    }
+
+
+    for (int i=0; i<Nsubtree; i++) {
+      // ..
+      subtrees[i]->Ntotmaxold = subtrees[i]->Ntotmax;
+      subtrees[i]->Nsph = 0;
+      subtrees[i]->Ntot = 0;
+      subtrees[i]->Ntotmax = max(subtrees[i]->Ntotmax,Ntotmax/Nsubtree + 1);
+
+      cout << "Subtrees : " << subtrees[i]->Ntot << "    " 
+	   << subtrees[i]->Ntotmax << "    " 
+	   << Ntotmax/Nsubtree + 1 << endl;
+
+      // ..
+      subtrees[i]->ComputeSubTreeSize();
+      subtrees[i]->AllocateSubTreeMemory();
+    }
+
   }
 
   return;
@@ -117,6 +141,7 @@ void BinaryTree<ndim>::DeallocateTreeMemory(void)
   debug2("[BinaryTree::DeallocateTreeMemory]");
 
   if (allocated_tree) {
+    for (int i=Nsubtree-1; i>=0; i--) subtrees[i]->DeallocateSubTreeMemory();
     for (int k=ndim-1; k>=0; k--) delete[] rk[k];
     for (int k=ndim-1; k>=0; k--) delete[] porder[k];
     delete[] stree;
@@ -211,11 +236,6 @@ void BinaryTree<ndim>::UpdateTree
   }
   //---------------------------------------------------------------------------
 
-  // Validate tree structure
-#if defined(VERIFY_ALL)
-  ValidateTree(sph);
-#endif
-
   return;
 }
 
@@ -309,7 +329,7 @@ void BinaryTree<ndim>::CreateTreeStructure(void)
     if (tree[c].clevel == ltot) {                   // If on leaf level
       tree[c].cnext = c + 1;                        // id of next cell
       tree[c].c2g = g;                              // Record leaf id
-      //g2c[g++] = c;                                 // Record inverse id
+      g++; //g2c[g++] = c;                          // Record inverse id
     }
     else {
       tree[c+1].clevel = tree[c].clevel + 1;        // Level of 1st child
@@ -347,8 +367,10 @@ void BinaryTree<ndim>::OrderParticlesByCartCoord
 
   // First copy all values to local arrays
   for (k=0; k<ndim; k++)
-    for (i=0; i<Ntot; i++)
+    for (i=0; i<Ntot; i++) {
       rk[k][i] = sphdata[i].r[k];
+      //cout << "WTF?? : " << k << "   " << i << "    " << rk[k][i] << endl;
+    }
 
   // Now copy list of particle ids
   for (k=0; k<ndim; k++)
@@ -378,9 +400,12 @@ void BinaryTree<ndim>::OrderParticlesByCartCoord
     for (int j=1; j<Ntot; j++) {
       int i1 = porder[k][j-1];
       int i2 = porder[k][j];
+      assert(i1 >= 0 && i1 < Ntot);
+      assert(i2 >= 0 && i2 < Ntot);
       if (sphdata[i2].r[k] < sphdata[i1].r[k]) {
-        cout << "Problem with particle ordering : "
-	      << k << "   " << j << endl;
+        cout << "Problem with particle ordering : " << k << "   " << j 
+	     << "    " << i1 << "    " << i2 << "    " 
+	     << sphdata[i1].r[k] << "    " << sphdata[i2].r[k] << endl;
         exit(0);
       }
     }
@@ -401,6 +426,7 @@ void BinaryTree<ndim>::LoadParticlesToTree(void)
 {
   int c;                            // Cell counter
   int cc;                           // Secondary cell counter
+  int g;                            // ..
   int k;                            // Dimensionality counter
   int i;                            // Particle counter
   int iptcl;                        // Particle id
@@ -426,6 +452,10 @@ void BinaryTree<ndim>::LoadParticlesToTree(void)
   for (c=0; c<Ncell; c++) tree[c].ifirst = -1;
   for (c=0; c<Ncell; c++) tree[c].ilast = -1;
 
+  // Zero counters for each subtree
+  for (i=0; i<Nsubtree; i++) subtrees[i]->Ntot = 0;
+  for (i=0; i<Nsubtree; i++) subtrees[i]->Nsph = 0;
+
   // Start at top level (l = 0) dividing the cell along the x-axis (k = 0)
   l = 0;
   k = 0;
@@ -439,6 +469,7 @@ void BinaryTree<ndim>::LoadParticlesToTree(void)
     // ------------------------------------------------------------------------
     for (i=0; i<Ntot; i++) {
       j = porder[k][i];
+      cout << "ALL : " << k << "   " << i << "    " << j << "    " << Ntot << endl;
       cc = pc[j];                            // Cell currently occupied by j
       ccon[cc] += pw[j];                     // Add particle weighting to cell
 
@@ -475,7 +506,11 @@ void BinaryTree<ndim>::LoadParticlesToTree(void)
   //---------------------------------------------------------------------------
   for (i=0; i<Ntot; i++) {
     c = pc[i];
-    subtrees[c]->ids[subtrees[c]->Ntot++] = i;
+    g = tree[c].c2g;
+    assert(g >= 0 && g < Nsubtree);
+    //cout << "g : " << g << "    Nsubtree : " << Nsubtree << endl;
+    //cout << "Ntot : " << subtrees[g]->Ntot << endl;
+    subtrees[g]->ids[subtrees[g]->Ntot++] = i;
   }
 
 
@@ -567,19 +602,21 @@ int BinaryTree<ndim>::ComputeActiveCellList
 //=============================================================================
 template <int ndim>
 int BinaryTree<ndim>::ComputeActiveParticleList
-(BinaryTreeCell<ndim> *cell, ///< [in] Pointer to cell
- BinarySubTree<ndim> *treeptr, ///< [in] List of ptrs to sub-trees
- Sph<ndim> *sph, ///< [in] SPH object pointer
- int *activelist) ///< [out] List of active particles in cell
+(BinaryTreeCell<ndim> *cell,        ///< [in] Pointer to cell
+ BinarySubTree<ndim> *treeptr,      ///< [in] List of ptrs to sub-trees
+ Sph<ndim> *sph,                    ///< [in] SPH object pointer
+ int *activelist)                   ///< [out] List of active particles in cell
 {
   int Nactive = 0; // No. of active particles in cell
   int i = cell->ifirst; // Particle id (set to first ptcl id)
   int ilast = cell->ilast; // i.d. of last particle in cell c
+  int j;
 
   // Walk through linked list to obtain list and number of active ptcls.
   while (i != -1) {
-    if (i < sph->Nsph && sph->sphdata[i].active)
-      activelist[Nactive++] = treeptr->GlobalId(i);
+    j = treeptr->GlobalId(i);
+    if (j < sph->Nsph && sph->sphdata[j].active)
+      activelist[Nactive++] = j;
     if (i == ilast) break;
     i = treeptr->inext[i];
   };
@@ -1589,104 +1626,6 @@ void BinaryTree<ndim>::CheckValidNeighbourList
   }
 
   delete[] trueneiblist;
-
-  return;
-}
-
-
-
-//=============================================================================
-//  BinaryTree::ValidateTree
-/// Perform various consistency checks to ensure the tree structure and all 
-/// cell values are valid.
-//=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::ValidateTree
-(Sph<ndim> *sph)                    ///< [in] SPH object pointer
-{
-  bool treeflag;                    // ..
-  int c;                            // .. 
-  int cc;                           // ..
-  int i;                            // ..
-  int k;                            // ..
-  int N;                            // ..
-  FLOAT dr[ndim];                   // ..
-  FLOAT drmag;                      // ..
-
-  debug2("[BinaryTree::ValidateTree]");
-
-
-  // Check all tree cells are on valid levels
-  // --------------------------------------------------------------------------
-  for (c=0; c<Ncell; c++) {
-    if (tree[c].clevel > ltot) {
-	cout << "Problem with tree levels : " << cc << "   " << tree[cc].clevel
-	     << "    " << ltot << endl;
-	exit(0);
-    }
-  }
-
-
-  // Check all leaf cells the correct number of particles
-  // --------------------------------------------------------------------------
-  for (c=0; c<Ncell; c++) {
-    if (tree[c].c2 == 0) {
-      N = 0;
-      i = tree[c].ifirst;
-      while (i != -1) {
-	N++;
-	i = inext[i];
-      };
-      if (N > Nleafmax) {
-	cout << "Problem with leaf cells : " << N 
-	     << "   " << Nleafmax << "   " << c << endl;
-	exit(0);
-      }
-    }
-  }
-
-
-  // Walk all cells in tree to compute quantities
-  // --------------------------------------------------------------------------
-  for (c=0; c<Ncell; c++) {
-
-    treeflag = true;
-    cc = c;
-
-    // Now loop over all child cells below cell to sum all properties
-    // ------------------------------------------------------------------------
-    while (cc < tree[c].cnext) {
-
-      if (tree[cc].c2 == 0) {
-    	i = tree[cc].ifirst;
-    	while (i != -1) {
-          for (k=0; k<ndim; k++) dr[k] = tree[c].r[k] - sph->sphdata[i].r[k];
-          drmag = sqrt(DotProduct(dr,dr,ndim));
-          if (drmag > 1.00001*tree[c].rmax) treeflag = false;
-          if (sph->sphdata[i].h > 1.00001*tree[c].hmax) treeflag = false;
-          if (!treeflag) {
-    	    cout << "Problem with tree : " << c << "   " 
-		 << cc << "   " << i << endl;
-    	    cout << "rc : " << tree[c].r[0] << "   " << tree[c].r[1] << endl;
-    	    cout << "hmax : " << tree[c].hmax << "   rmax : " 
-		 << tree[c].rmax << endl;
-    	    cout << "rp : " << sph->sphdata[i].r[0] << "    " 
-		 << sph->sphdata[i].r[1] << endl;
-    	    cout << "h : " << sph->sphdata[i].h << endl;
-    	    cout << "drmag : " << drmag << "    rmax : " 
-		 << tree[c].rmax << endl;
-    	    exit(0);
-          }
-          i = inext[i];
-    	};
-      }
-
-      cc++;
-    }
-    // ------------------------------------------------------------------------
-
-  }
-  // --------------------------------------------------------------------------
 
   return;
 }
