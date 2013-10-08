@@ -556,7 +556,7 @@ void BinaryTree<ndim>::UpdateHmaxValues
 (SphParticle<ndim> *sphdata)        ///< SPH particle data array
 {
   binlistiterator it;
-  FLOAT hmax_aux;
+  FLOAT hmax_aux = 0;
 
   for (it = subtrees.begin(); it != subtrees.end(); it++) {
     FLOAT subhmax = (*it)->UpdateHmaxValues(sphdata);
@@ -652,6 +652,7 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
   for (it = subtrees.begin(); it != subtrees.end(); it++) {
     Nneib = (*it)->ComputeGatherNeighbourList(cell,Nneib,Nneibmax,
                                               neiblist,hmax,sphdata);
+    if (Nneib == -1) return Nneib;
   }
 
   return Nneib;
@@ -681,6 +682,7 @@ int BinaryTree<ndim>::ComputeNeighbourList
   for (it = subtrees.begin(); it != subtrees.end(); it++) {
     Nneib = (*it)->ComputeNeighbourList(cell,Nneib,Nneibmax,
                                         neiblist,sphdata);
+    if (Nneib == -1) return Nneib;
   }
 
   return Nneib;
@@ -1102,9 +1104,9 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
   // Set-up all OMP threads
   // ==========================================================================
 #pragma omp parallel default(none) private(activelist,cc,cell,dr,draux,drmag)\
-  private(drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag)\
+  private(drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k)\
   private(Nactive,neiblist,neibpart,Ninteract,Nneib,Nneibmax,parti,rp)\
-  shared(celllist,cactive,sph,data)
+  shared(celllist,cactive,sph,data,treelist)
   {
     Nneibmax = 2*sph->Ngather;
     activelist = new int[Nleafmax];
@@ -1297,9 +1299,6 @@ void BinaryTree<ndim>::UpdateAllSphForces
   int *neiblist;                    // List of neighbour ids
   //FLOAT draux[ndim];                // Aux. relative position vector var
   //FLOAT drsqd;                      // Distance squared
-  //FLOAT hrangesqdi;                 // Kernel extent
-  //FLOAT hrangesqdj;                 // ..
-  //FLOAT rp[ndim];                   // Local copy of particle position
   FLOAT *agrav;                     // Local copy of gravitational accel.
   FLOAT *gpot;                      // ..
   BinarySubTree<ndim> **treelist;  // ..
@@ -1322,10 +1321,10 @@ void BinaryTree<ndim>::UpdateAllSphForces
   // Set-up all OMP threads
   // ==========================================================================
 #pragma omp parallel default(none) private(activelist,agrav,cc,cell)\
-  private(gpot,hrangesqdi,hrangesqdj,i,interactlist,j,jj)\
+  private(gpot,i,interactlist,j,jj)\
   private(k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,parti,directlist)\
-  private(rp,gravcelllist,Ngravcell,Ndirect,Nneibmax,Ndirectmax,Ngravcellmax) \
-  shared(celllist,cactive,sph,data)
+  private(gravcelllist,Ngravcell,Ndirect,Nneibmax,Ndirectmax,Ngravcellmax) \
+  shared(celllist,cactive,sph,data,treelist)
   {
     Nneibmax = 4*sph->Ngather;
     Ndirectmax = 2*Nneibmax;
