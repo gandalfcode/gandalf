@@ -214,6 +214,10 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
   // Compute timesteps for all particles
+  //---------------------------------------------------------------------------
+  // MPI : Currently, MPI commands to transmit timestep information will need
+  //       to be inside these routines, unless they are partly re-written.
+  //---------------------------------------------------------------------------
   if (Nlevels == 1)
     this->ComputeGlobalTimestep();
   else 
@@ -231,20 +235,41 @@ void SphSimulation<ndim>::MainLoop(void)
   nbody->AdvanceParticles(n,nbody->Nnbody,nbody->nbodydata,timestep);
 
   // Check all boundary conditions
+  // (DAVID : Move this function to sphint and create an analagous one for N-body)
+  // (Also, only check this on tree-build steps)
   ghosts.CheckBoundaries(simbox,sph);
+
+
+  //---------------------------------------------------------------------------
+  // MPI : On tree re-build step, determine load balancing for all MPI nodes.
+  //       (How is this done?  All computed on root node??)
+  //       Send/receive particles to their new nodes.
+  //       Compute and transmit all bounding boxes (e.g. all particles, active
+  //       particles, h-extent, ghosts, etc..) to all other MPI nodes
+  //---------------------------------------------------------------------------
 
 
   // Compute all SPH quantities
   // --------------------------------------------------------------------------
   if (sph->Nsph > 0) {
     
-    // Reorder particles
-
-    // Search ghost particles
+    // Search for new ghost particles and create on local processor
     ghosts.SearchGhostParticles(simbox,sph);
 
-    // Update neighbour tree
+
+    // Reorder particles to tree-walk order (not implemented yet)
+
+
+    // Rebuild or update local neighbour and gravity tree
     sphneib->BuildTree(sph,*simparams);
+
+
+    //-------------------------------------------------------------------------
+    // MPI : Walk local tree to determine minimum tree to be sent to all other
+    //       MPI nodes.  Pack and send minimum sub-tree, along with the
+    //       MPI-ghost particles contained in leaf cells of the sub-tree.
+    //-------------------------------------------------------------------------
+
 
     // Iterate if we need to immediately change SPH particle timesteps
     // (e.g. due to feedback, or sudden change in neighbour timesteps)
@@ -257,6 +282,13 @@ void SphSimulation<ndim>::MainLoop(void)
       // Calculate all SPH properties
       sphneib->UpdateAllSphProperties(sph,nbody);
       
+
+      //-----------------------------------------------------------------------
+      // MPI : Transmit updated particle properties from parent node to
+      //       other MPI nodes for MPI-ghost particles.
+      //-----------------------------------------------------------------------
+
+
       // Copy properties from original particles to ghost particles
       ghosts.CopySphDataToGhosts(sph);
       
@@ -294,9 +326,9 @@ void SphSimulation<ndim>::MainLoop(void)
           for (k=0; k<ndim; k++)
             sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
           sph->sphdata[i].dalphadt = 0.1*sph->sphdata[i].sound*
-	    (sph->alpha_visc_min - sph->sphdata[i].alpha)*
-	    sph->sphdata[i].invh + max(sph->sphdata[i].div_v,0.0)*
-	    (sph->alpha_visc - sph->sphdata[i].alpha);
+            (sph->alpha_visc_min - sph->sphdata[i].alpha)*
+            sph->sphdata[i].invh + max(sph->sphdata[i].div_v,0.0)*
+            (sph->alpha_visc - sph->sphdata[i].alpha);
         }
       }
 
