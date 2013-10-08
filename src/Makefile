@@ -117,9 +117,11 @@ endif
 # Include expensive verification code
 # ----------------------------------------------------------------------------
 ifeq ($(DEBUG_LEVEL),1)
-CFLAGS += -DNDEBUG
+CFLAGS +=
 else ifeq ($(DEBUG_LEVEL),2)
-CFLAGS += -DNDEBUG -DVERIFY_ALL
+CFLAGS += -DVERIFY_ALL
+else
+CFLAGS += -DNDEBUG
 endif
 
 

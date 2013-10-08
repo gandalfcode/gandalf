@@ -234,6 +234,7 @@ class BinarySubTree
   int ComputeGravityInteractionList(BinaryTreeCell<ndim> *, int, int, int, int &, int &, int &,
                                     int *, int *, BinaryTreeCell<ndim> **, SphParticle<ndim> *);
   int GlobalId(int local_id) {
+	if (local_id < 0) cout << "local_id : " << local_id << endl;
     assert(local_id>=0);
     return ids[local_id];};
 

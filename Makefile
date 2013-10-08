@@ -20,13 +20,13 @@
 #==============================================================================
 
 CPP                = g++
-PYTHON             = python2.7
-F2PY               = f2py2.7
+PYTHON             = python
+F2PY               = f2py
 COMPILER_MODE      = DEBUG
 PRECISION          = DOUBLE
 OPENMP             = 0
-OUTPUT_LEVEL       = 2
-DEBUG_LEVEL        = 1
+OUTPUT_LEVEL       = 1
+DEBUG_LEVEL        = 0
 
 
 # Select location of python and numpy libraries.  If blank, make will try to 

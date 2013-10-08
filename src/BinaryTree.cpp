@@ -23,6 +23,7 @@
 
 
 #include <cstdlib>
+#include <cassert>
 #include <iostream>
 #include <string>
 #include <math.h>
@@ -101,16 +102,15 @@ void BinaryTree<ndim>::AllocateTreeMemory(void)
 
     if (!created_sub_trees) {
       for (int i=0; i<Nsubtree; i++) {
-	subtrees.push_back(new BinarySubTree<ndim>(Nleafmax, thetamaxsqd,
-						   kernrange, gravity_mac,
-						   multipole));
+        subtrees.push_back(new BinarySubTree<ndim>(Nleafmax, thetamaxsqd,
+						   kernrange, gravity_mac, multipole));
       }
+      created_sub_trees = true;
     }
 
 
     for (int i=0; i<Nsubtree; i++) {
       // ..
-      subtrees[i]->Ntotmaxold = subtrees[i]->Ntotmax;
       subtrees[i]->Nsph = 0;
       subtrees[i]->Ntot = 0;
       subtrees[i]->Ntotmax = max(subtrees[i]->Ntotmax,Ntotmax/Nsubtree + 1);
@@ -166,15 +166,15 @@ void BinaryTree<ndim>::BuildTree
  Parameters &simparams)             ///< Simulation parameters
 {
   binlistiterator it;
+  int Ncheck = 0;
 
   debug2("[BinaryTree::BuildTree]");
 
   // Set number of tree members to total number of SPH particles (inc. ghosts)
-  Nsubtree = 1;
-  Nsubtreemax = 1;
+  Nsubtree = 16;
+  Nsubtreemax = 16;
   Nsph = sph->Nsph;
   Ntot = sph->Ntot;
-  Ntotmaxold = Ntotmax;
   Ntotmax = max(Ntot,Ntotmax);
   gtot = 0;
 
@@ -205,9 +205,12 @@ void BinaryTree<ndim>::BuildTree
 
     // Calculate total number of leaf cells in trees
     gtot += (*it)->gtot;
+    Ncheck += (*it)->Ntot;
 
   }
   //---------------------------------------------------------------------------
+
+  assert(Ncheck == sph->Ntot);
 
   return;
 }
@@ -469,7 +472,6 @@ void BinaryTree<ndim>::LoadParticlesToTree(void)
     // ------------------------------------------------------------------------
     for (i=0; i<Ntot; i++) {
       j = porder[k][i];
-      cout << "ALL : " << k << "   " << i << "    " << j << "    " << Ntot << endl;
       cc = pc[j];                            // Cell currently occupied by j
       ccon[cc] += pw[j];                     // Add particle weighting to cell
 
@@ -511,6 +513,7 @@ void BinaryTree<ndim>::LoadParticlesToTree(void)
     //cout << "g : " << g << "    Nsubtree : " << Nsubtree << endl;
     //cout << "Ntot : " << subtrees[g]->Ntot << endl;
     subtrees[g]->ids[subtrees[g]->Ntot++] = i;
+    subtrees[g]->Nsph++;
   }
 
 

@@ -85,6 +85,7 @@ void BinarySubTree<ndim>::AllocateSubTreeMemory(void)
   debug2("[BinarySubTree::AllocateTreeMemory]");
 
   if (Ntotmax > Ntotmaxold || (!allocated_tree)) {
+	//cout << "CHECKING : " << Ntotmax << "   " << Ntotmaxold << "    " << allocated_tree << endl;
     if (allocated_tree) DeallocateSubTreeMemory();
     ids = new int[Ntotmax];
     inext = new int[Ntotmax];
@@ -94,7 +95,8 @@ void BinarySubTree<ndim>::AllocateSubTreeMemory(void)
     for (int k=0; k<ndim; k++) porder[k] = new int[Ntotmax]; 
     for (int k=0; k<ndim; k++) rk[k] = new FLOAT[Ntotmax];
     allocated_tree = true;
-    cout << "Allocated " << Ntotmax << " for subtree" << endl;
+    Ntotmaxold = Ntotmax;
+    //cout << "Allocated " << Ntotmax << " for subtree" << endl;
   }
 
   return;
@@ -137,6 +139,10 @@ void BinarySubTree<ndim>::BuildSubTree
  Parameters &simparams)             ///< Simulation parameters
 {
   int output = 0;
+
+  debug2("[BinarySubTree::BuildSubTree]");
+
+  //cout << "MEMORY : " << Ntot << "    " << Ntotmax << "    " << Ntotmaxold << "     " << allocated_tree << endl;
 
   // Allocate (or reallocate if needed) all tree memory
   AllocateSubTreeMemory();
@@ -268,21 +274,6 @@ void BinarySubTree<ndim>::CreateSubTreeStructure(void)
   // --------------------------------------------------------------------------
 
 
-#if defined(VERIFY_ALL)
-  cout << "Diagnostic output from BinarySubTree::CreateTreeStructure" << endl;
-  for (c=0; c<min(20,Ncell-20); c++) {
-    cout << "c : " << c << "   " << tree[c].clevel << "   " << tree[c].c2
-	 << "   " << tree[c].cnext << "   " << tree[c].c2g << "   "
-	 << g2c[tree[c].c2g] << endl;
-  }
-  for (c=max(20,Ncell-20); c<Ncell; c++) {
-    cout << "c : " << c << "   " << tree[c].clevel << "   " << tree[c].c2
-	 << "   " << tree[c].cnext << "   " << tree[c].c2g << "   "
-	 << g2c[tree[c].c2g] << endl;
-  }
-#endif
-
-
   // Free locally allocated memory
   delete[] cNL;
   delete[] c2L;
@@ -344,9 +335,14 @@ void BinarySubTree<ndim>::OrderParticlesByCartCoord
     for (int j=1; j<Ntot; j++) {
       int i1 = porder[k][j-1];
       int i2 = porder[k][j];
+      assert(i1 >= 0 && i1 < Ntot);
+      assert(i2 >= 0 && i2 < Ntot);
+      i1 = GlobalId(i1);
+      i2 = GlobalId(i2);
       if (sphdata[i2].r[k] < sphdata[i1].r[k]) {
-        cout << "Problem with particle ordering : "
-	      << k << "   " << j << endl;
+        cout << "Problem with particle ordering : " << k << "   " << j
+ 	    << "    " << i1 << "    " << i2 << "    "
+ 	    << sphdata[i1].r[k] << "    " << sphdata[i2].r[k] << endl;
         exit(0);
       }
     }
@@ -391,6 +387,8 @@ void BinarySubTree<ndim>::LoadParticlesToSubTree(void)
   for (c=0; c<Ncell; c++) ccon[c] = 0.0;
   for (c=0; c<Ncell; c++) tree[c].ifirst = -1;
   for (c=0; c<Ncell; c++) tree[c].ilast = -1;
+
+  for (i=0; i<Ntot; i++) assert(ids[i] >= 0);
 
   // Start at top level (l = 0) dividing the cell along the x-axis (k = 0)
   l = 0;
@@ -642,7 +640,7 @@ void BinarySubTree<ndim>::StockCellProperties
        << "   " << crmin[1] << "   " << crmax[1] << endl;
 
   // Go through each tree level in turn and print info
-  for (int l=0; l<ltot+1; l++) {
+  /*for (int l=0; l<ltot+1; l++) {
     cout << "LEVEL : " << l << endl;
     cout << "----------------------" << endl;
     for (c=0; c<Ncell; c++) {
@@ -651,7 +649,7 @@ void BinarySubTree<ndim>::StockCellProperties
       	   << tree[c].N << "   " << Nleafmax << endl;
       }
     }
-  }
+  }*/
 #endif
 
 
@@ -675,8 +673,9 @@ FLOAT BinarySubTree<ndim>::UpdateHmaxValues
 {
   int c,cc,ccc;                     // Cell counters
   int i;                            // Particle counter
+  int j;
 
-  debug2("[BinarySubTree::StockCellProperties]");
+  debug2("[BinarySubTree::UpdateHmaxValues]");
 
   // Zero all summation variables for all cells
   for (c=0; c<Ncell; c++) tree[c].hmax = 0.0;
@@ -693,7 +692,8 @@ FLOAT BinarySubTree<ndim>::UpdateHmaxValues
 
       // Loop over all particles in cell summing their contributions
       while (i != -1) {
-        tree[c].hmax = max(tree[c].hmax,sphdata[i].h);
+    	j = GlobalId(i);
+        tree[c].hmax = max(tree[c].hmax,sphdata[j].h);
         i = inext[i];
       };
 
@@ -788,6 +788,7 @@ int BinarySubTree<ndim>::ComputeGatherNeighbourList
         i = tree[cc].ifirst;
     	while (i != -1) {
           neiblist[Nneib++] = i;
+          if (i == tree[cc].ilast);
     	  i = inext[i];
         };
         cc = tree[cc].cnext;
@@ -810,7 +811,7 @@ int BinarySubTree<ndim>::ComputeGatherNeighbourList
 
   // Now, trim the list to remove particles that are definitely not neighbours
   hrangemax = hrangemax*hrangemax;
-  for (j=0; j<Nneib; j++) {
+  for (j=Ntemp; j<Nneib; j++) {
     i = GlobalId(neiblist[j]);
     //cout << "i : " << i << "    " << j << "     " << Nneibmax << "    " << neiblist[j] << endl;
     for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - rc[k];
@@ -903,7 +904,7 @@ int BinarySubTree<ndim>::ComputeNeighbourList
 
   // Now, trim the list to remove particles that are definitely not neighbours
   hrangemax = hrangemax*hrangemax;
-  for (j=0; j<Nneib; j++) {
+  for (j=Ntemp; j<Nneib; j++) {
     i = GlobalId(neiblist[j]);
     for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
@@ -1085,21 +1086,23 @@ void BinarySubTree<ndim>::ValidateTree
   int c;                            // .. 
   int cc;                           // ..
   int i;                            // ..
+  int j;                            // ..
   int k;                            // ..
   int N;                            // ..
   FLOAT dr[ndim];                   // ..
   FLOAT drmag;                      // ..
+  FLOAT mc;                         // ..
 
-  debug2("[BinaryTree::ValidateTree]");
+  debug2("[BinarySubTree::ValidateTree]");
 
 
   // Check all tree cells are on valid levels
   // --------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
     if (tree[c].clevel > ltot) {
-	cout << "Problem with tree levels : " << cc << "   " << tree[cc].clevel
-	     << "    " << ltot << endl;
-	exit(0);
+      cout << "Problem with tree levels : " << cc << "   " << tree[cc].clevel
+           << "    " << ltot << endl;
+      exit(0);
     }
   }
 
@@ -1111,13 +1114,15 @@ void BinarySubTree<ndim>::ValidateTree
       N = 0;
       i = tree[c].ifirst;
       while (i != -1) {
-	N++;
-	i = inext[i];
+        N++;
+        assert(i >= 0 && i < Ntot);
+        assert(ids[i] >= 0);
+        i = inext[i];
       };
       if (N > Nleafmax) {
-	cout << "Problem with leaf cells : " << N 
-	     << "   " << Nleafmax << "   " << c << endl;
-	exit(0);
+        cout << "Problem with leaf cells : " << N
+             << "   " << Nleafmax << "   " << c << endl;
+        exit(0);
       }
     }
   }
@@ -1129,39 +1134,50 @@ void BinarySubTree<ndim>::ValidateTree
 
     treeflag = true;
     cc = c;
+    mc = 0;
 
     // Now loop over all child cells below cell to sum all properties
     // ------------------------------------------------------------------------
     while (cc < tree[c].cnext) {
 
       if (tree[cc].c2 == 0) {
+
     	i = tree[cc].ifirst;
     	while (i != -1) {
-          for (k=0; k<ndim; k++) dr[k] = tree[c].r[k] - sph->sphdata[i].r[k];
+    	  j = GlobalId(i);
+          for (k=0; k<ndim; k++) dr[k] = tree[c].r[k] - sph->sphdata[j].r[k];
+          mc += sph->sphdata[j].m;
           drmag = sqrt(DotProduct(dr,dr,ndim));
           if (drmag > 1.00001*tree[c].rmax) treeflag = false;
-          if (sph->sphdata[i].h > 1.00001*tree[c].hmax) treeflag = false;
+          if (sph->sphdata[j].h > 1.00001*tree[c].hmax) treeflag = false;
+
           if (!treeflag) {
     	    cout << "Problem with tree : " << c << "   " 
-		 << cc << "   " << i << endl;
+                 << cc << "   " << i << endl;
     	    cout << "rc : " << tree[c].r[0] << "   " << tree[c].r[1] << endl;
     	    cout << "hmax : " << tree[c].hmax << "   rmax : " 
-		 << tree[c].rmax << endl;
-    	    cout << "rp : " << sph->sphdata[i].r[0] << "    " 
-		 << sph->sphdata[i].r[1] << endl;
-    	    cout << "h : " << sph->sphdata[i].h << endl;
+                 << tree[c].rmax << endl;
+    	    cout << "rp : " << sph->sphdata[j].r[0] << "    "
+                 << sph->sphdata[j].r[1] << endl;
+    	    cout << "h : " << sph->sphdata[j].h << endl;
     	    cout << "drmag : " << drmag << "    rmax : " 
-		 << tree[c].rmax << endl;
+                 << tree[c].rmax << endl;
+
     	    exit(0);
           }
           i = inext[i];
     	};
+
       }
 
       cc++;
     }
     // ------------------------------------------------------------------------
 
+    if (fabs(mc - tree[c].m) > 0.00001*mc) {
+      cout << "mass : " << mc << "    " << tree[c].m << endl;
+      exit(0);
+    }
   }
   // --------------------------------------------------------------------------
 
