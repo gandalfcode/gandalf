@@ -48,7 +48,7 @@ else ifeq ($(COMPILER_MODE),DEBUG)
 OPT += -g -pg -Wall -fbounds-check -fPIC -O3  #-fprofile-arcs -ftest-coverage
 endif
 ifeq ($(OPENMP),1)
-OPT += -fopenmp -DOPENMP
+OPT += -fopenmp 
 endif
 endif
 

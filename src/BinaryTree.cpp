@@ -35,6 +35,9 @@
 #include "InlineFuncs.h"
 #include "SphParticle.h"
 #include "Debug.h"
+#if defined _OPENMP
+#include <omp.h>
+#endif
 using namespace std;
 
 
@@ -50,7 +53,17 @@ BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
 {
   allocated_tree = false;
   created_sub_trees = false;
+#if defined _OPENMP
+  if (omp_get_dynamic()) {
+    cout << "Warning: the dynamic adjustment of the number threads was on. For better load-balancing of the tree, we will disable it" << endl;
+  }
+  omp_set_dynamic(0);
+  Nsubtree = omp_get_max_threads();
+  Nsubtreemax = Nsubtree;
+#else
   Nsubtree = 1;
+  Nsubtreemax = 1;
+#endif
   Ntot = 0;
   Ntotmax = 0;
   Ntotmaxold = 0;
@@ -171,8 +184,6 @@ void BinaryTree<ndim>::BuildTree
   debug2("[BinaryTree::BuildTree]");
 
   // Set number of tree members to total number of SPH particles (inc. ghosts)
-  Nsubtree = 16;
-  Nsubtreemax = 16;
   Nsph = sph->Nsph;
   Ntot = sph->Ntot;
   Ntotmax = max(Ntot,Ntotmax);
