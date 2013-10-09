@@ -3,11 +3,11 @@
 //  Contains all main functions controlling SPH simulation work-flow.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ void NbodySimulation<ndim>::PostInitialConditionsSetup(void)
   //tsnapnext = dt_snap;
 
   // Compute all initial N-body terms
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (nbody->Nstar > 0) {
 
     // Zero all acceleration terms
@@ -120,7 +120,7 @@ void NbodySimulation<ndim>::MainLoop(void)
   debug2("[NbodySimulation::MainLoop]");
 
   // If we are using sub-systems, create N-body tree here
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (nbody->sub_systems == 1) {
     nbody->reset_tree = 1;
 
@@ -150,7 +150,7 @@ void NbodySimulation<ndim>::MainLoop(void)
     nbodytree.FindPerturberLists(nbody);
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
 
   // Compute timesteps for all particles
@@ -168,11 +168,11 @@ void NbodySimulation<ndim>::MainLoop(void)
   nbody->AdvanceParticles(n,nbody->Nnbody,nbody->nbodydata,timestep);
 
   // Compute N-body forces
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (nbody->Nstar > 0) {
 
     // Iterate end-of-step
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (it=0; it<nbody->Npec; it++) {
 
       // Zero all acceleration terms
@@ -193,15 +193,15 @@ void NbodySimulation<ndim>::MainLoop(void)
       nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
 
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
 
   // Now loop over children and, if they are systems, integrate
   // their internal motion
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<nbody->Nnbody; i++) {
     if (nbody->nbodydata[i]->Ncomp > 1) {
       // The cast is needed because the function is defined only in
@@ -251,7 +251,7 @@ void NbodySimulation<ndim>::ComputeGlobalTimestep(void)
 
   debug2("[NbodySimulation::ComputeGlobalTimestep]");
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (n == nresync) {
 
     n = 0;
@@ -274,7 +274,7 @@ void NbodySimulation<ndim>::ComputeGlobalTimestep(void)
     }
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -304,7 +304,7 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
   debug2("[NbodySimulation::ComputeBlockTimesteps]");
 
   // Synchronise all timesteps and reconstruct block timestep structure.
-  // ==========================================================================
+  //===========================================================================
   if (n == nresync) {
 
     n = 0;
@@ -346,7 +346,7 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
 
   // If not resynchronising, check if any SPH/N-body particles need to move  
   // up or down timestep levels.
-  // ==========================================================================
+  //===========================================================================
   else {
 
     level_max_old = level_max;
@@ -354,7 +354,7 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
 
 
     // Find all N-body particles at the beginning of a new timestep
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (i=0; i<nbody->Nnbody; i++) {
 
       // Skip particles that are not at end of step
@@ -385,7 +385,7 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
       level_max_nbody = max(level_max_nbody,nbody->nbodydata[i]->level);
       level_max = max(level_max,nbody->nbodydata[i]->level);
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
       
 
     // For now, don't allow levels to be removed
@@ -398,7 +398,7 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
     }
 
     // Update all timestep variables if we have removed or added any levels
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (level_max != level_max_old) {
 
       // Increase maximum timestep level if correctly synchronised
@@ -423,13 +423,13 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
       }
 
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
     nresync = pow(2,level_step);
     timestep = dt_max / (DOUBLE) nresync;
 
   }
-  // ==========================================================================
+  //===========================================================================
 
 
 #if defined(VERIFY_ALL)
@@ -439,7 +439,7 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
   return;
 
   // Some validations
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   ninlevel = new int[level_max+1];
   for (int l=0; l<level_max+1; l++) ninlevel[l] = 0;
   for (i=0; i<nbody->Nnbody; i++) ninlevel[nbody->nbodydata[i]->level]++;

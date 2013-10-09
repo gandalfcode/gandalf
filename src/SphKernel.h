@@ -4,11 +4,11 @@
 //  storing kernel tables for quick look-up of values.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ class SphKernel
   static SphKernel<ndim>* KernelFactory (string KernelName);
 
   // Main kernel function and associated derivative and integrated forms.
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   virtual FLOAT w0(FLOAT) = 0;
   virtual FLOAT w1(FLOAT) = 0;
   virtual FLOAT womega(FLOAT) = 0;
@@ -69,14 +69,14 @@ class SphKernel
 
   // For the versions using the squared distance, the default behaviour
   // is to call the standard one with the square root
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   virtual inline FLOAT w0_s2(FLOAT s) {return this->w0(sqrt(s));};
   virtual inline FLOAT womega_s2(FLOAT s) {return this->womega(sqrt(s));};
   virtual inline FLOAT wzeta_s2(FLOAT s) {return this->wzeta(sqrt(s));};
 
 
   // Kernel variables
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   FLOAT kernrange;                  ///< Maximum extent of kernel
   FLOAT invkernrange;               ///< 1/kernrange
   FLOAT kernrangesqd;               ///< kernrange^2
@@ -103,7 +103,7 @@ class M4Kernel: public SphKernel<ndim>
   ~M4Kernel();
 
   // M4 kernel function prototypes
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   FLOAT w0(FLOAT);
   FLOAT w1(FLOAT);
   FLOAT womega(FLOAT);
@@ -248,7 +248,7 @@ class QuinticKernel: public SphKernel<ndim>
   ~QuinticKernel();
 
   // Quintic kernel function prototypes
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   FLOAT w0(FLOAT);
   FLOAT w1(FLOAT);
   FLOAT womega(FLOAT);
@@ -427,7 +427,7 @@ class GaussianKernel: public SphKernel<ndim>
   ~GaussianKernel();
 
   // Gaussuan kernel function prototypes
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   FLOAT w0(FLOAT);
   FLOAT w1(FLOAT);
   FLOAT womega(FLOAT);

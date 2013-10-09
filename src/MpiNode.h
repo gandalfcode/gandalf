@@ -1,6 +1,6 @@
 //=============================================================================
-//  Ghosts.h
-//  Contains definitions for ghost particle class.
+//  MpiNode.h
+//  Contains MPI node data class definition.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -21,52 +21,49 @@
 //=============================================================================
 
 
-#ifndef _GHOSTS_H_
-#define _GHOSTS_H_
+#ifndef _MPI_NODE_H_
+#define _MPI_NODE_H_
 
 
-#include <map>
 #include <string>
-#include <list>
-#include "Diagnostics.h"
-#include "DomainBox.h"
 #include "Precision.h"
-#include "Parameters.h"
-#include "SimUnits.h"
-#include "SphKernel.h"
-#include "Sph.h"
-#include "Nbody.h"
 using namespace std;
 
 
 
 //=============================================================================
-//  Class Ghosts
-/// \brief   Main ghost particle class.
-/// \details Class for creating and updating ghost particles for periodic
-///          boundary conditions.
+//  Class MpiNode
+/// \brief   MPI node data class
+/// \details MPI node data class
 /// \author  D. A. Hubber, G. Rosotti
-/// \date    03/04/2013
+/// \date    09/10/2013
 //=============================================================================
 template <int ndim>
-class Ghosts
+class MpiNode
 {
  public:
 
-  Ghosts();
-  ~Ghosts();
-
-  // Main ghost particle functions
+  // Constructor and destructor
   //---------------------------------------------------------------------------
-  void SearchGhostParticles(DomainBox<ndim>, Sph<ndim> *);
-  void CreateGhostParticle(int, int, FLOAT, FLOAT, Sph<ndim> *);
-  void CopySphDataToGhosts(Sph<ndim> *);
-  void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
+  MpiNode();
+  ~MpiNode();
 
-  DomainBox<ndim> simbox;               ///< Simulation boundary data
-  Sph<ndim> *sph;                       ///< SPH algorithm pointer
 
-  static const FLOAT ghost_range = 1.1;
+  // Other functions
+  //---------------------------------------------------------------------------
+  void SendNodeData(void);
+  void ReceiveNodeData(void);
+
+
+  // MPI node variables
+  //---------------------------------------------------------------------------
+  int Nsph;                         ///< No. of SPH particles on node
+  FLOAT worktot;                    ///< Total 'work' on each node
+  FLOAT nodemin[ndim];              ///< Min. extent of node domain
+  FLOAT nodemax[ndim];              ///< Max. extent of node domain
+  FLOAT bbmin[ndim];                ///< Min. extent of particle bounding box
+  FLOAT bbmax[ndim];                ///< Max. extent of particle bounding box
+  FLOAT hboxmin[ndim];              ///< Min. extent of smoothing kernel box
+  FLOAT hboxmax[ndim];              ///< Max. extent of smoothing kernel box
 
 };
-#endif

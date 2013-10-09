@@ -5,11 +5,11 @@
 //  them contained in simulation bounding box.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -76,7 +76,7 @@ void Ghosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
 
   // Loop over all particles and check if any lie outside the periodic box.
   // If so, then re-position with periodic wrapping.
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(i,part) shared(simbox,sph)
   for (i=0; i<sph->Nsph; i++) {
     part = &sph->sphdata[i];
@@ -97,7 +97,7 @@ void Ghosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
       if (simbox.z_boundary_rhs == "periodic") part->r[2] -= simbox.boxsize[2];
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -132,7 +132,7 @@ void Ghosts<ndim>::SearchGhostParticles
   debug2("[SphSimulation::SearchGhostParticles]");
 
   // Create ghost particles in x-dimension
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if ((simbox.x_boundary_lhs == "open" && 
        simbox.x_boundary_rhs == "open") == 0) {
     for (i=0; i<sph->Ntot; i++) {
@@ -160,7 +160,7 @@ void Ghosts<ndim>::SearchGhostParticles
 
 
   // Create ghost particles in y-dimension
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (ndim >= 2 && (simbox.y_boundary_lhs == "open" && 
 		    simbox.y_boundary_rhs == "open") == 0) {
     for (i=0; i<sph->Ntot; i++) {
@@ -188,7 +188,7 @@ void Ghosts<ndim>::SearchGhostParticles
 
 
   // Create ghost particles in z-dimension
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (ndim == 3 && (simbox.z_boundary_lhs == "open" && 
 		    simbox.z_boundary_rhs == "open") == 0) {
     for (i=0; i<sph->Ntot; i++) {
@@ -280,7 +280,7 @@ void Ghosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph)
 
   debug2("[SphSimulation::CopySphDataToGhosts]");
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(i,iorig,j,k,rp,vp) shared(sph)
   for (j=0; j<sph->Nghost; j++) {
     i = sph->Nsph + j;
@@ -296,7 +296,7 @@ void Ghosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph)
     for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = vp[k];
     
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }

@@ -3,11 +3,11 @@
 //  Contains all routines for generating initial conditions on the fly.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ void Simulation<ndim>::CheckInitialConditions(void)
 
 
   // Check that all particles reside inside any defined boundaries
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
     part = sph->GetParticleIPointer(i);
     okflag = true;
@@ -83,7 +83,7 @@ void Simulation<ndim>::CheckInitialConditions(void)
     valid_ic = okflag;
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   if (!valid_ic) {
     string message = "Invalid initial conditions for SPH particles";
@@ -181,7 +181,7 @@ void Simulation<ndim>::BinaryAccretion(void)
 
 
   // Compute size and range of fluid bounding boxes
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (ndim == 2) {
     volume1 = (box1.boxmax[0] - box1.boxmin[0])*
       (box1.boxmax[1] - box1.boxmin[1]);
@@ -211,7 +211,7 @@ void Simulation<ndim>::BinaryAccretion(void)
 
   // Add a cube of random particles defined by the simulation bounding box and 
   // depending on the chosen particle distribution
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (Nbox1 > 0) {
     r1 = new FLOAT[ndim*Nbox1];
     if (particle_dist == "random")
@@ -241,7 +241,7 @@ void Simulation<ndim>::BinaryAccretion(void)
 
   // Add a cube of random particles defined by the simulation bounding box and 
   // depending on the chosen particle distribution
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (Nbox2 > 0) {
     r2 = new FLOAT[ndim*Nbox2];
     if (particle_dist == "random")
@@ -278,7 +278,7 @@ void Simulation<ndim>::BinaryAccretion(void)
 
 
   // Add star particles to simulation
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (Nstar == 1) {
     for (k=0; k<ndim; k++) nbody->stardata[0].r[k] = 0.0;
     for (k=0; k<ndim; k++) nbody->stardata[0].v[k] = 0.0;
@@ -314,7 +314,7 @@ void Simulation<ndim>::BinaryAccretion(void)
 
 
   // Set initial smoothing lengths and create initial ghost particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   sph->Nghost = 0;
   sph->Nghostmax = sph->Nsphmax - sph->Nsph;
   sph->Ntot = sph->Nsph;
@@ -387,7 +387,7 @@ void Simulation<ndim>::ShockTube(void)
   }
 
   // Compute size and range of fluid bounding boxes
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (ndim == 1) {
     box1.boxmin[0] = simbox.boxmin[0];
     box1.boxmax[0] = 0.0;
@@ -406,7 +406,7 @@ void Simulation<ndim>::ShockTube(void)
 
 
   // Add particles for LHS of the shocktube
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (Nbox1 > 0) {
     AddCubicLattice(Nbox1,Nlattice1,r,box1,false);
 
@@ -423,7 +423,7 @@ void Simulation<ndim>::ShockTube(void)
   }
 
   // Add particles for RHS of the shocktube
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (Nbox2 > 0) {
     AddCubicLattice(Nbox2,Nlattice2,r,box2,false);
 
@@ -443,11 +443,11 @@ void Simulation<ndim>::ShockTube(void)
   bool smooth_ic = true;
 
   // Smooth the initial conditions
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (smooth_ic) {
 
     // Set initial smoothing lengths and create initial ghost particles
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     sph->Nghost = 0;
     sph->Nghostmax = sph->Nsphmax - sph->Nsph;
     sph->Ntot = sph->Nsph;
@@ -715,7 +715,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
 
 
   // 1D simulation
-  // ==========================================================================
+  //===========================================================================
   if (ndim == 1) {
     box1.boxmin[0] = simbox.boxmin[0];
     box1.boxmax[0] = 0.8*simbox.boxmax[0];
@@ -732,7 +732,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
     cout << "Allocating memory : " << sph->Nsph << endl;
 
 
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (Nbox1 > 0) {
       AddCubicLattice(Nbox1,Nlattice1,r,box1,false);
       volume = box1.boxmax[0] - box1.boxmin[0];
@@ -752,7 +752,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
       }
     }
 
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (Nbox2 > 0) {
       AddCubicLattice(Nbox2,Nlattice2,r,box2,false);
       volume = box2.boxmax[0] - box2.boxmin[0];
@@ -774,17 +774,17 @@ void Simulation<ndim>::ContactDiscontinuity(void)
     }
 
   }
-  // ==========================================================================
+  //===========================================================================
   else if (ndim == 2) {
 
 
 
   }
-  // ==========================================================================
+  //===========================================================================
 
 
   // Set initial smoothing lengths and create initial ghost particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   sph->Nghost = 0;
   sph->Nghostmax = sph->Nsphmax - sph->Nsph;
   sph->Ntot = sph->Nsph;
@@ -862,7 +862,7 @@ void Simulation<ndim>::KHI(void)
   }
 
   // Compute size and range of fluid bounding boxes
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   box1.boxmin[0] = simbox.boxmin[0];
   box1.boxmax[0] = simbox.boxmax[0];
   box1.boxmin[1] = simbox.boxmin[1];
@@ -886,7 +886,7 @@ void Simulation<ndim>::KHI(void)
 
 
   // Add particles for LHS of the shocktube
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (Nbox1 > 0) {
     AddCubicLattice(Nbox1,Nlattice1,r,box1,false);
 
@@ -903,7 +903,7 @@ void Simulation<ndim>::KHI(void)
   }
 
   // Add particles for RHS of the shocktube
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (Nbox2 > 0) {
     AddCubicLattice(Nbox2,Nlattice2,r,box2,false);
 
@@ -921,7 +921,7 @@ void Simulation<ndim>::KHI(void)
   }
 
   // Add velocity perturbation here
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   FLOAT sigmapert = 0.05/sqrt(2.0);
   for (i=0; i<sph->Nsph; i++) {
     sph->sphdata[i].v[1] = amp*sin(2.0*pi*sph->sphdata[i].r[0]/lambda)*
@@ -930,7 +930,7 @@ void Simulation<ndim>::KHI(void)
   }
 
   // Set initial smoothing lengths and create initial ghost particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   sph->Nghost = 0;
   sph->Nghostmax = sph->Nsphmax - sph->Nsph;
   sph->Ntot = sph->Nsph;
@@ -1169,7 +1169,7 @@ void Simulation<ndim>::PlummerSphere(void)
   starfrac /= raux;
     
   // Loop over all particles (gas and stars)
-  // ==========================================================================
+  //===========================================================================
   for (j=0; j<Nsph+Nstar; j++) {
 
     do {
@@ -1187,7 +1187,7 @@ void Simulation<ndim>::PlummerSphere(void)
 
 
     // Set position depending on particle type
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (j >= Nstar && j < Nstar + Nsph) {
       i = j - Nstar;
       sph->sphdata[i].r[2] = z;
@@ -1208,7 +1208,7 @@ void Simulation<ndim>::PlummerSphere(void)
 
 
     // Velocity of particle
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     do {
       x4 = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
       x5 = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
@@ -1223,7 +1223,7 @@ void Simulation<ndim>::PlummerSphere(void)
        
 
     // Set velocity depending on particle type
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (j >= Nstar && j < Nstar + Nsph) {
       i = j - Nstar;
       for(k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
@@ -1240,7 +1240,7 @@ void Simulation<ndim>::PlummerSphere(void)
     }
       
   }
-  // ==========================================================================
+  //===========================================================================
 
   // Instanly move to COM
   //ConvertToComFrame();
@@ -1310,7 +1310,7 @@ void Simulation<ndim>::SedovBlastWave(void)
 
 
   // Compute size and range of fluid bounding boxes
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (ndim == 1) {
     volume = simbox.boxmax[0] - simbox.boxmin[0];
     Nbox = Nlattice[0];
@@ -1363,7 +1363,7 @@ void Simulation<ndim>::SedovBlastWave(void)
   }
 
   // Set initial smoothing lengths and create initial ghost particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   sph->Nghost = 0;
   sph->Nghostmax = sph->Nsphmax - sph->Nsph;
   sph->Ntot = sph->Nsph;
@@ -1384,7 +1384,7 @@ void Simulation<ndim>::SedovBlastWave(void)
   sphneib->UpdateAllSphProperties(sph,nbody);
 
   // Now calculate which particles are hot
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   umax = (FLOAT) 0.0;
   utot = (FLOAT) 0.0;
   for (i=0; i<sph->Nsph; i++) {
@@ -1409,7 +1409,7 @@ void Simulation<ndim>::SedovBlastWave(void)
   cout << "utot : " << utot << endl;
 
   // Normalise the energies
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
     if (hotlist[i] == 1) {
       drmag = sqrt(DotProduct(sph->sphdata[i].r,sph->sphdata[i].r,ndim));
@@ -1467,7 +1467,7 @@ void Simulation<ndim>::ShearFlow(void)
   }
 
   // Compute size and range of fluid bounding boxes
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   volume = (simbox.boxmax[0] - simbox.boxmin[0])*
     (simbox.boxmax[1] - simbox.boxmin[1]);
   Nbox = Nlattice1[0]*Nlattice1[1];
@@ -1484,7 +1484,7 @@ void Simulation<ndim>::ShearFlow(void)
 
 
   // Add particles for LHS of the shocktube
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (Nbox > 0) {
     AddCubicLattice(Nbox,Nlattice1,r,simbox,false);
     //AddHexagonalLattice(Nbox,Nlattice1,r,simbox,false);
@@ -1570,7 +1570,7 @@ void Simulation<ndim>::SoundWave(void)
   AddCubicLattice(Npart,Nlattice1,r,simbox,false);
 
   // Set positions of all particles to produce density perturbation
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<Npart; i++) {
     xnew = r[ndim*i];
 
@@ -1595,7 +1595,7 @@ void Simulation<ndim>::SoundWave(void)
     else
       sph->sphdata[i].u = press1/rhofluid1/gammaone;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -1865,7 +1865,7 @@ void Simulation<ndim>::AddRandomSphere
   debug2("[Simulation::AddRandomSphere]");
 
   // Loop over all required particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<Npart; i++) {
 
     // Continously loop until random particle lies inside sphere
@@ -1877,7 +1877,7 @@ void Simulation<ndim>::AddRandomSphere
 
     for (k=0; k<ndim; k++) r[ndim*i + k] = rcentre[k] + rpos[k];
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -1970,14 +1970,14 @@ void Simulation<ndim>::AddCubicLattice
 
   
   // Create lattice depending on dimensionality
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (ndim == 1) {
     for (ii=0; ii<Nlattice[0]; ii++) {
       i = ii;
       r[i] = box.boxmin[0] + ((FLOAT)ii + 0.5)*spacing[0];
     }
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (ndim == 2) {
     for (jj=0; jj<Nlattice[1]; jj++) {
       for (ii=0; ii<Nlattice[0]; ii++) {
@@ -1987,7 +1987,7 @@ void Simulation<ndim>::AddCubicLattice
       }
     }
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (ndim == 3) {
     for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
@@ -2038,7 +2038,7 @@ void Simulation<ndim>::AddHexagonalLattice
   
 
   // Create lattice depending on dimensionality
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (ndim == 1) {
     for (ii=0; ii<Nlattice[0]; ii++) {
       i = ii;
@@ -2046,7 +2046,7 @@ void Simulation<ndim>::AddHexagonalLattice
     }
   }
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (ndim == 2) {
     for (jj=0; jj<Nlattice[1]; jj++) {
       for (ii=0; ii<Nlattice[0]; ii++) {
@@ -2059,7 +2059,7 @@ void Simulation<ndim>::AddHexagonalLattice
     }
   }
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (ndim == 3) {
     for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
@@ -2115,7 +2115,7 @@ int Simulation<ndim>::CutSphere
 
   // Bisection iteration to determine the radius containing the desired 
   // number of particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   do {
     radius = 0.5*(r_low + r_high);
     Ninterior = 0;
@@ -2141,7 +2141,7 @@ int Simulation<ndim>::CutSphere
 
   // Now that the radius containing require number has been identified, 
   // record only the particles inside the sphere.
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   Ninterior = 0;
   for (i=0; i<Npart; i++) {
     for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k] - rcentre[k];
@@ -2185,7 +2185,7 @@ void Simulation<ndim>::AddAzimuthalDensityPerturbation
   spacing = twopi/(FLOAT)(tabtot - 1);
 
   // Loop over all required particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<Npart; i++) {
     for (k=0; k<ndim; k++) rpos[k] = r[ndim*i + k] - rcentre[k];
 
@@ -2225,7 +2225,7 @@ void Simulation<ndim>::AddAzimuthalDensityPerturbation
     r[ndim*i + 1] = rcentre[1] + Rmag*sin(phiprime);
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -2253,7 +2253,7 @@ void Simulation<ndim>::AddRotationalVelocityField
 
 
   // Loop over all required particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<Npart; i++) {
     for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k] - rcentre[k];
     for (k=0; k<ndim; k++) v[ndim*i + k] = 0.0;
@@ -2271,7 +2271,7 @@ void Simulation<ndim>::AddRotationalVelocityField
       v[ndim*i + 1] = angvelaux*Rmag*dr[0];
     }
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }

@@ -3,11 +3,11 @@
 //  Contains important default routines for Sph class.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -250,26 +250,26 @@ void Sph<ndim>::InitialSmoothingLengthGuess(void)
 
   // Depending on the dimensionality, calculate the average smoothing 
   // length assuming a uniform density distribution filling the bounding box.
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (ndim == 1) {
     Ngather = (int) (2.0*kernp->kernrange*h_fac);
     volume = rmax[0] - rmin[0];
     h_guess = (volume*(FLOAT) Ngather)/(4.0*(FLOAT) Nsph);
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (ndim == 2) {
     Ngather = (int) (pi*pow(kernp->kernrange*h_fac,2));
     volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1]);
     h_guess = sqrtf((volume*(FLOAT) Ngather)/(4.0*(FLOAT) Nsph));
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (ndim == 3) {
     Ngather = (int) (4.0*pi*pow(kernp->kernrange*h_fac,3)/3.0);
     volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1])*(rmax[2] - rmin[2]);
     h_guess = powf((3.0*volume*(FLOAT) Ngather)/
 		   (32.0*pi*(FLOAT) Nsph),onethird);
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   // Set all smoothing lengths equal to average value
   for (int i=0; i<Nsph; i++) {

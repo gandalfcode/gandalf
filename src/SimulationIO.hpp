@@ -4,11 +4,11 @@
 //  to/from snapshot files.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -168,7 +168,7 @@ bool Simulation<ndim>::ReadColumnSnapshotFile
   i = 0;
 
   // Read in data depending on dimensionality
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   while (infile.good() && i < sph->Nsph) {
     SphParticle<ndim>* part = sph->GetParticleIPointer(i);
     if (ndim == 1) infile >> part->r[0] >> part->v[0]
@@ -191,7 +191,7 @@ bool Simulation<ndim>::ReadColumnSnapshotFile
   i = 0;
 
   // Read in data depending on dimensionality
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   while (infile.good() && i < nbody->Nstar) {
     if (ndim == 1) 
       infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].v[0] 
@@ -240,7 +240,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   outfile << t << endl;
 
   // Write data for SPH particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>* part = sph->GetParticleIPointer(i);
     if (ndim == 1) outfile << part->r[0] << "   "
@@ -273,7 +273,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   }
 
   // Write data for SPH particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<nbody->Nstar; i++) {
     if (ndim == 1) outfile << nbody->stardata[i].r[0] << "   " 
 			   << nbody->stardata[i].v[0] << "   "
@@ -331,7 +331,7 @@ void Simulation<ndim>::ReadSerenFormHeaderFile
 
   // Read information identifying format and precision of file.
   // Then check if each value corresponds to the current values.
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   infile >> dummy;
   infile >> dummy;
   infile >> info.ndim;
@@ -400,7 +400,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 
   // Read information identifying format and precision of file.
   // Then check if each value corresponds to the current values.
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   infile >> format_id;
   cout << "Checking format : " << format_id << endl;
   simparams->TrimWhiteSpace(format_id);
@@ -494,7 +494,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 
 
   // Loop through array ids and read each array in turn
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (j=0; j<ndata; j++) {
     cout << "Reading data for array : " << data_id[j] << endl;
 
@@ -502,7 +502,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     ilast = typedata[i][2];
 
     // porig
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (data_id[j] == "porig") {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>* part = sph->GetParticleIPointer(i);
@@ -511,7 +511,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     }    
 
     // Positions
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else if (data_id[j] == "r") {
       if (ndim == 1)
 	for (i=0; i<sph->Nsph; i++) {
@@ -532,7 +532,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     }
 
     // Masses
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else if (data_id[j] == "m") {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>* part = sph->GetParticleIPointer(i);
@@ -541,7 +541,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     }
 
     // Smoothing lengths
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else if (data_id[j] == "h") {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>* part = sph->GetParticleIPointer(i);
@@ -550,7 +550,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     }
 
     // Velocities
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else if (data_id[j] == "v") {
       if (ndim == 1)
 	for (i=0; i<sph->Nsph; i++) {
@@ -573,13 +573,13 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     }
 
     // Other 1-D redundant information
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else if(data_id[j] == "temp") {
       for (i=0; i<sph->Nsph; i++) infile >> rtemp;
     }
 
     // Densities
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else if (data_id[j] == "rho") {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>* part = sph->GetParticleIPointer(i);
@@ -588,7 +588,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     }
 
     // Specific internal energies
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else if (data_id[j] == "u") {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>* part = sph->GetParticleIPointer(i);
@@ -597,7 +597,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     }
 
     // Sinks/stars
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else if (data_id[j] == "sink_v1") {
       sink_data_length = 12 + 2*ndim + 2*dmdt_range_aux;
       int ii;
@@ -618,7 +618,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     }
 
     // Skip through arbitrary 1D or 2D array
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else if (typedata[i][0] >= 1) {
       int kk = typedata[i][0];
       for (i=ifirst-1; i<ilast; i++)
@@ -626,7 +626,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     }
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   // Close file
   infile.close();
@@ -703,7 +703,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
 
   // Set array ids and array information data if there are any SPH particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (sph->Nsph > 0) {
     data_id[ndata] = "porig";
     typedata[ndata][0] = 1; typedata[ndata][1] = 1;
@@ -760,7 +760,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   ddata[0] = t*simunits.t.outscale;
 
   // Write header information to file
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   outfile << "SERENASCIIDUMPV2" << endl;;
   outfile << 4 << endl;
   outfile << ndim << endl;
@@ -781,18 +781,18 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
               << typedata[i][4] << endl;
 
   // Write arrays for SPH particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (sph->Nsph > 0) {
 
     // porig
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>* part = sph->GetParticleIPointer(i);
       outfile << part->iorig << endl;
     }
 
     // Positions
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (ndim == 1)
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>* part = sph->GetParticleIPointer(i);
@@ -816,7 +816,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
       }
 
     // Masses
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>* part = sph->GetParticleIPointer(i);
       outfile << part->m*simunits.m.outscale << endl;
@@ -824,7 +824,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
 
     // Smoothing lengths
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>* part = sph->GetParticleIPointer(i);
       outfile << part->h*simunits.r.outscale << endl;
@@ -832,7 +832,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
 
     // Velocities
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (ndim == 1)
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>* part = sph->GetParticleIPointer(i);
@@ -856,7 +856,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
 
     // Densities
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>* part = sph->GetParticleIPointer(i);
       outfile << part->rho*simunits.rho.outscale << endl;;
@@ -864,7 +864,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
 
     // Specific internal energies
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>* part = sph->GetParticleIPointer(i);
       outfile << part->u*simunits.u.outscale << endl;
@@ -874,7 +874,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   }
 
   // Sinks/stars
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (nbody->Nstar > 0) {
     sink_data_length = 12 + 2*ndim; //+ 2*dmdt_range_aux;
     int ii;
@@ -896,7 +896,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
       outfile << endl;
     }
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   // Close file
   outfile.close();

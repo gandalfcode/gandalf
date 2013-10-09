@@ -5,11 +5,11 @@
 //  direct sum forces and global timesteps.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -84,7 +84,7 @@ void EnergyGodunovIntegration<ndim>::EnergyIntegration
 
   debug2("[EnergyGodunovIntegration::EnergyIntegration]");
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,dt,i,nstep,part) \
   shared(n,Nsph,sphdata,timestep,cout)
   for (i=0; i<Nsph; i++) {
@@ -111,7 +111,7 @@ void EnergyGodunovIntegration<ndim>::EnergyIntegration
       ExceptionHandler::getIstance().raise(message);
     }
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -149,7 +149,7 @@ void EnergyGodunovIntegration<ndim>::EndTimestep
 
   debug2("[EnergyGodunovIntegration::EndTimestep]");
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,nstep,part)	\
   shared(n,Nsph,sphdata)
   for (i=0; i<Nsph; i++) {
@@ -161,7 +161,7 @@ void EnergyGodunovIntegration<ndim>::EndTimestep
       sphintdata[i].dudt0 = part->dudt;
     }
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }

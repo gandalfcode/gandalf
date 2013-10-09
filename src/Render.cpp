@@ -1,13 +1,13 @@
 //=============================================================================
 //  Render.cpp
-//  Contains all functions for generating rendered images from SPH data.
+//  Contains all functions for generating rendered images from SPH snapshots.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -44,15 +44,18 @@ using namespace std;
 //  RenderBase::RenderFactory
 /// Create new render object for simulation object depending on dimensionality.
 //=============================================================================
-RenderBase* RenderBase::RenderFactory(int ndim, SimulationBase* sim) {
-  RenderBase* render;
-  if (ndim==1) {
+RenderBase* RenderBase::RenderFactory
+(int ndim,                          ///< Simulation dimensionality
+ SimulationBase* sim)               ///< Simulation object pointer
+{
+  RenderBase* render;               // Pointer to new render object
+  if (ndim == 1) {
     render = new Render<1> (sim);
   }
-  else if (ndim==2) {
+  else if (ndim == 2) {
     render = new Render<2> (sim);
   }
-  else if (ndim==3) {
+  else if (ndim == 3) {
     render = new Render<3> (sim);
   }
   else {
@@ -112,12 +115,12 @@ int Render<ndim>::CreateColumnRenderingGrid
   int c;                           // Rendering grid cell counter
   int i;                           // Particle counter
   int j;                           // Aux. counter
-  int idummy;                      // ..
-  int Nsph = snap.Nsph;            // ..
+  int idummy;                      // Dummy integer to verify valid arrays
+  int Nsph = snap.Nsph;            // No. of SPH particles in snap
   float dr[2];                     // Rel. position vector on grid plane
   float drsqd;                     // Distance squared on grid plane
   float drmag;                     // Distance
-  float dummyfloat = 0.0;          // ..
+  float dummyfloat = 0.0;          // Dummy variable for function argument
   float hrangesqd;                 // Kernel range squared
   float invh;                      // 1/h
   float wkern;                     // Kernel value
@@ -130,7 +133,7 @@ int Render<ndim>::CreateColumnRenderingGrid
   float *hvalues;                  // Pointer to smoothing length array
   float *rendernorm;               // Normalisation array
   float *rgrid;                    // Grid positions
-  string dummystring = "";         // ..
+  string dummystring = "";         // Dummy string for function argument
 
   // Check x and y strings are actual co-ordinate strings
   if ((xstring != "x" && xstring != "y" && xstring != "z") ||
@@ -174,11 +177,11 @@ int Render<ndim>::CreateColumnRenderingGrid
 
 
   // Create rendered grid depending on dimensionality
-  // ==========================================================================
+  //===========================================================================
   if (ndim == 2) {
 
     // Loop over all particles in snapshot
-    // -----------------------------------------------------------------------
+    //------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(c,dr,drmag,drsqd,hrangesqd) \
   private(invh,i,wkern,wnorm) shared(hvalues,mvalues,Nsph,rhovalues,rgrid) \
   shared(xvalues,yvalues,rendervalues,values,rendernorm,Ngrid)
@@ -188,7 +191,7 @@ int Render<ndim>::CreateColumnRenderingGrid
       hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
       
       // Now loop over all pixels and add current particles
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
       for (c=0; c<Ngrid; c++) {
     	dr[0] = rgrid[2*c] - xvalues[i];
         dr[1] = rgrid[2*c + 1] - yvalues[i];
@@ -204,10 +207,10 @@ int Render<ndim>::CreateColumnRenderingGrid
 #pragma omp atomic
         rendernorm[c] += wnorm*wkern;
       }
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
       
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
     // Normalise all grid cells
     for (c=0; c<Ngrid; c++) {
@@ -216,18 +219,18 @@ int Render<ndim>::CreateColumnRenderingGrid
 
 
   }
-  // ==========================================================================
+  //===========================================================================
   else if (ndim == 3) {
 
     // Loop over all particles in snapshot
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (i=0; i<snap.Nsph; i++) {
       invh = 1.0f/hvalues[i];
       wnorm = mvalues[i]/rhovalues[i]*pow(invh,(ndim - 1));
       hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
       
       // Now loop over all pixels and add current particles
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
       for (c=0; c<Ngrid; c++) {
 	
     	dr[0] = rgrid[2*c] - xvalues[i];
@@ -242,13 +245,13 @@ int Render<ndim>::CreateColumnRenderingGrid
         values[c] += wnorm*rendervalues[i]*wkern;
         rendernorm[c] += wnorm*wkern;
       }
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
 
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
   }
-  // ==========================================================================
+  //===========================================================================
 
 
   // Free all locally allocated memory
@@ -287,11 +290,11 @@ int Render<ndim>::CreateSliceRenderingGrid
   int c;                           // Rendering grid cell counter
   int i;                           // Particle counter
   int j;                           // Aux. counter
-  int idummy;                      // ..
+  int idummy;                      // Dummy integer to verify correct array
   float dr[3];                     // Rel. position vector on grid plane
   float drsqd;                     // Distance squared on grid plane
   float drmag;                     // Distance
-  float dummyfloat = 0.0;          // ..
+  float dummyfloat = 0.0;          // Dummy float for function arguments
   float hrangesqd;                 // Kernel range squared
   float invh;                      // 1/h
   float skern;                     // r/h
@@ -306,7 +309,7 @@ int Render<ndim>::CreateSliceRenderingGrid
   float *hvalues;                  // Pointer to smoothing length array
   float *rendernorm;               // Normalisation array
   float *rgrid;                    // Grid positions
-  string dummystring = "";         // ..
+  string dummystring = "";         // Dummy string for function arguments
 
 
   // Check x and y strings are actual co-ordinate strings
@@ -352,14 +355,14 @@ int Render<ndim>::CreateSliceRenderingGrid
 
 
   // Loop over all particles in snapshot
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<snap.Nsph; i++) {
     invh = 1.0/hvalues[i];
     wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);
     hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
 
     // Now loop over all pixels and add current particles
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (c=0; c<Ngrid; c++) {
 
       dr[0] = rgrid[2*c] - xvalues[i];
@@ -379,10 +382,10 @@ int Render<ndim>::CreateSliceRenderingGrid
       rendernorm[c] += wnorm*wkern;
 
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   // Normalise all grid cells
   for (c=0; c<Ngrid; c++)

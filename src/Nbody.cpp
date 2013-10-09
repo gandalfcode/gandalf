@@ -3,11 +3,11 @@
 //  Contains main N-body class functions.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -149,7 +149,7 @@ void Nbody<ndim>::IntegrateInternalMotion
   for (k=0; k<ndim; k++) adotcom[k] = 0.0;
 
   // Make local copies of children and calculate COM properties
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<Nchildren; i++) {
     for (k=0; k<ndim; k++) rcom[k] += children[i]->m*children[i]->r[k];
     for (k=0; k<ndim; k++) vcom[k] += children[i]->m*children[i]->v[k];
@@ -165,7 +165,7 @@ void Nbody<ndim>::IntegrateInternalMotion
 
 
   // Now convert to COM frame
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<Nchildren; i++) {
     for (k=0; k<ndim; k++) children[i]->r[k] -= rcom[k];
     for (k=0; k<ndim; k++) children[i]->r0[k] -= rcom[k];
@@ -184,7 +184,7 @@ void Nbody<ndim>::IntegrateInternalMotion
 
 
   // Main time integration loop
-  // ==========================================================================
+  //===========================================================================
   do {
 
     // Calculate time-step
@@ -199,7 +199,7 @@ void Nbody<ndim>::IntegrateInternalMotion
     AdvanceParticles(nlocal_steps, Nchildren, children, dt);
 
     // Time-symmetric iteration loop
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (it=0; it<Npec; it++) {
 
       //Zero all acceleration terms
@@ -218,11 +218,11 @@ void Nbody<ndim>::IntegrateInternalMotion
       // Apply correction terms
       CorrectionTerms(nlocal_steps, Nchildren, children, dt);
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
     // Now loop over children and, if they are systems, integrate
     // their internal motion
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (i=0; i<Nchildren; i++) {
 
       if (children[i]->Ncomp > 1)
@@ -237,11 +237,11 @@ void Nbody<ndim>::IntegrateInternalMotion
     EndTimestep(nlocal_steps, Nchildren, children);
 
   } while (tlocal < tlocal_end);
-  // ==========================================================================
+  //===========================================================================
 
 
   // Copy children back to main coordinate system
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<Nchildren; i++) {
     for (k=0; k<ndim; k++) children[i]->r[k] += systemi->r[k];
     for (k=0; k<ndim; k++) children[i]->r0[k] += systemi->r[k];

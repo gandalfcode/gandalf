@@ -6,11 +6,11 @@
 //  in the Leapfrog KDK scheme.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -112,7 +112,7 @@ void EnergyPEC<ndim>::EnergyIntegration
 
   debug2("[EnergyPEC::EnergyIntegration]");
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,dt,i,nstep) \
      shared(n,Nsph,sphintdata,timestep)
   for (i=0; i<Nsph; i++) {
@@ -121,7 +121,7 @@ void EnergyPEC<ndim>::EnergyIntegration
     dt = timestep*(FLOAT) dn;
     sphintdata[i].part->u = sphintdata[i].u0 + sphintdata[i].dudt0*dt;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -147,7 +147,7 @@ void EnergyPEC<ndim>::EnergyCorrectionTerms
 
   debug2("[EnergyPEC::EnergyCorrectionTerms]");
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,nstep) \
      shared(n,Nsph,sphintdata,timestep)
   for (i=0; i<Nsph; i++) {
@@ -156,7 +156,7 @@ void EnergyPEC<ndim>::EnergyCorrectionTerms
     if (dn == nstep) sphintdata[i].part->u +=
       0.5*(sphintdata[i].part->dudt - sphintdata[i].dudt0)*timestep*(FLOAT) nstep;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -180,7 +180,7 @@ void EnergyPEC<ndim>::EndTimestep
 
   debug2("[EnergyPEC::EndTimestep]");
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,nstep) \
       shared(n,Nsph,sphintdata)
   for (i=0; i<Nsph; i++) {
@@ -191,7 +191,7 @@ void EnergyPEC<ndim>::EndTimestep
       sphintdata[i].dudt0 = sphintdata[i].part->dudt;
     }
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }

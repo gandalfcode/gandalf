@@ -5,11 +5,11 @@
 //  Inutsuka (2002).
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -88,7 +88,7 @@ void SphGodunovIntegration<ndim>::AdvanceParticles
 
   debug2("[SphGodunovIntegration::AdvanceParticles]");
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,dt,i,k,nstep,part)\
   shared(n,Nsph,sphintdata,timestep)
   for (i=0; i<Nsph; i++) {
@@ -109,7 +109,7 @@ void SphGodunovIntegration<ndim>::AdvanceParticles
     if (dn == nstep) part->active = true;
     else part->active = false;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -148,7 +148,7 @@ void SphGodunovIntegration<ndim>::EndTimestep
 
   debug2("[SphGodunovIntegration::EndTimestep]");
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,k,nstep,part)\
   shared(n,Nsph,sphintdata)
   for (i=0; i<Nsph; i++) {
@@ -164,7 +164,7 @@ void SphGodunovIntegration<ndim>::EndTimestep
       sphintdata[i].nlast = n;
     }
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -175,7 +175,7 @@ void SphGodunovIntegration<ndim>::EndTimestep
 //  SphGodunovIntegration::CheckTimesteps
 /// Record all important SPH particle quantities at the end of the step for  
 /// the start of the new timestep.
-// ============================================================================
+//=============================================================================
 template <int ndim>
 int SphGodunovIntegration<ndim>::CheckTimesteps
 (int level_diff_max,                ///< [in] Max. allowed SPH neib dt diff
@@ -194,7 +194,7 @@ int SphGodunovIntegration<ndim>::CheckTimesteps
 
   debug2("[SphLeapfrogKDK::CheckTimesteps]");
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,k,level_new,nnewstep,nstep,part)\
   shared(level_diff_max,n,Nsph,sphintdata) reduction(+:activecount)
   for (i=0; i<Nsph; i++) {
@@ -218,7 +218,7 @@ int SphGodunovIntegration<ndim>::CheckTimesteps
       }
     }
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return activecount;
 }

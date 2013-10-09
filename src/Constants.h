@@ -4,11 +4,11 @@
 //  throughout the code.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 
 
 // Physical constants in SI units (unless stated otherwise)
+//-----------------------------------------------------------------------------
 static const DOUBLE r_pc            = 3.08568025E16;
 static const DOUBLE r_au            = 1.49597870E11;
 static const DOUBLE r_sun           = 6.955E8;
@@ -52,7 +53,9 @@ static const DOUBLE mu_0            = 1.25663706144E-6;
 static const DOUBLE kappa_const     = 2.09E-4;
 static const DOUBLE L_sun           = 3.839E26;
 
+
 // Dimensionless numerical constants
+//-----------------------------------------------------------------------------
 static const FLOAT pi               = 3.14159265358979;
 static const FLOAT twopi            = 6.28318530717959;
 static const FLOAT invpi            = 0.31830988618379;
@@ -67,7 +70,9 @@ static const FLOAT onetwelfth       = 0.08333333333333333333333;
 static const FLOAT big_number       = 9.9e20;
 static const FLOAT small_number     = 1.0e-20;
 
+
 // Dimensionless numerical constants in double precision
+//-----------------------------------------------------------------------------
 static const DOUBLE pi_dp           = 3.14159265358979;
 static const DOUBLE twopi_dp        = 6.28318530717959;
 static const DOUBLE invpi_dp        = 0.31830988618379;

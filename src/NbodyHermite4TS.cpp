@@ -5,11 +5,11 @@
 //  time-symmetric iterations (Hut et al. 1995??).
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -90,7 +90,7 @@ void NbodyHermite4TS<ndim, kernelclass>::CorrectionTerms
   debug2("[NbodyHermite4TS::CorrectionTerms]");
 
   // Loop over all system particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<N; i++) {
     dn = n - star[i]->nlast;
     nstep = star[i]->nstep;
@@ -121,7 +121,7 @@ void NbodyHermite4TS<ndim, kernelclass>::CorrectionTerms
     }
     
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -185,7 +185,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
 
   // If using perturbers, record local copies and remove contribution to 
   // external acceleration and jerk terms
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (perturbers == 1 && Npert > 0) {
     perturber = new NbodyParticle<ndim>[Npert];
     apert = new DOUBLE[ndim*Npert];
@@ -211,7 +211,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
 
 
   // ..
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<Nchildren; i++) {
     for (k=0; k<ndim; k++) children[i]->a[k] = 0.0;
     for (k=0; k<ndim; k++) children[i]->adot[k] = 0.0;
@@ -255,7 +255,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
 
 
   // Main time integration loop
-  // ==========================================================================
+  //===========================================================================
   do {
 
     // Calculate time-step
@@ -288,7 +288,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
 
 
     // Time-symmetric iteration loop
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (it=0; it<Npec; it++) {
 
       // Zero all acceleration terms
@@ -314,7 +314,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
       CorrectionTerms(nlocal, Nchildren, children, dt);
 
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
     // Add perturber forces to local arrays
     if (perturbers == 1 && Npert > 0) {
@@ -326,7 +326,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
 
     // Now loop over children and, if they are systems, integrate
     // their internal motion
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (i=0; i<Nchildren; i++) {
 
       if (children[i]->Ncomp > 1)
@@ -354,11 +354,11 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
 
 
   } while (tlocal < tlocal_end);
-  // ==========================================================================
+  //===========================================================================
 
 
   // Copy children back to main coordinate system
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   systemi->gpe_internal = 0.0;
   //systemi->gpe_pert = 0.0;
   for (i=0; i<Nchildren; i++) {

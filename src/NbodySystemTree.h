@@ -3,11 +3,11 @@
 //  Contains definitions for Nearest neighbour tree class and data structures.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -90,9 +90,14 @@ class NbodySystemTree
 {
  public:
 
+  // Constructor and destructor
+  //---------------------------------------------------------------------------
   NbodySystemTree();
   ~NbodySystemTree();
 
+
+  // Other function definitions
+  //---------------------------------------------------------------------------
   void AllocateMemory(int);
   void DeallocateMemory(void);
   void CreateNbodySystemTree(Nbody<ndim> *);
@@ -102,6 +107,9 @@ class NbodySystemTree
   void OutputBinaryProperties(Nbody<ndim> *);
   void RestockTreeNodes(Nbody<ndim> *);
 
+
+  // Class variables and main arrays for nearest neighbour tree and binaries
+  //---------------------------------------------------------------------------
   bool allocated_tree;               ///< Is NN-tree memory allocated?
   int Nbinary;                       ///< No. of binary stars
   int Nnode;                         ///< No. of nodes of NN-tree
