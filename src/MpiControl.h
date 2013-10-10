@@ -1,6 +1,8 @@
 //=============================================================================
-//  MpiNode.h
-//  Contains MPI node data class definition.
+//  MpiControl.h
+//  Main MPI class for controlling the distribution of work amongst all MPI 
+//  tasks for the current simulation, including load balancing and moving 
+//  and copying particles between nodes.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -21,60 +23,54 @@
 //=============================================================================
 
 
-#ifndef _MPI_NODE_H_
-#define _MPI_NODE_H_
+#ifndef _MPI_CONTROL_H_
+#define _MPI_CONTROL_H_
 
 
 #include <string>
 #include "Precision.h"
+#include "MpiNode.h"
+#include "Nbody.h"
 #include "SphNeighbourTree.h"
+#include "SphParticle.h"
 using namespace std;
 
 
 
 //=============================================================================
-//  Class MpiNode
-/// \brief   MPI node data class
-/// \details MPI node data class
+//  Class MpiControl
+/// \brief   Main MPI control class for managing MPI simulations.
+/// \details Main MPI control class for managing MPI simulations.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    09/10/2013
 //=============================================================================
 template <int ndim>
-class MpiNode
+class MpiControl
 {
  public:
 
   // Constructor and destructor
   //---------------------------------------------------------------------------
-  MpiNode();
-  ~MpiNode();
+  MpiControl();
+  ~MpiControl();
 
 
   // Other functions
   //---------------------------------------------------------------------------
-  void PackNodeData(void);
-  void UnpackNodeData(void);
-  void UpdateBoundingBoxData(int, SphParticle<ndim> *, SphKernel<ndim> *);
+  void AllocateMemory(void);
+  void DeallocateMemory(void);
+
+  void CreateLoadBalancingTree(void);
+  void LoadBalancing(void);
+  void TransferParticlesToNode(int);
 
 
-  // MPI node variables
+  // MPI control variables
   //---------------------------------------------------------------------------
-  int ifirst;                       ///< i.d. of first ghost from node
-  int ilast;                        ///< i.d. of last ghost from node
-  int Nsph;                         ///< No. of SPH particles on node
-  int Nghost;                       ///< No. of ghost particles originally  
-                                    ///< from node exported to current node
+  int Nmpi;                         ///< No. of MPI processes
+  int Nloadbalance;                 ///< No. of steps between load-balancing
 
-  FLOAT hmax;                       ///< Maximum smoothing length on node
-  FLOAT worktot;                    ///< Total 'work' on each node
-
-  FLOAT nodemin[ndim];              ///< Min. extent of node domain
-  FLOAT nodemax[ndim];              ///< Max. extent of node domain
-  FLOAT bbmin[ndim];                ///< Min. extent of particle bounding box
-  FLOAT bbmax[ndim];                ///< Max. extent of particle bounding box
-  FLOAT hboxmin[ndim];              ///< Min. extent of smoothing kernel box
-  FLOAT hboxmax[ndim];              ///< Max. extent of smoothing kernel box
-
-  BinarySubTree<ndim> *nodetree;    ///< Pointer to current node sub-tree
+  BinaryTree<ndim> mpitree;         ///< Main MPI load balancing tree
+  MpiNode<ndim> *mpinode;           ///< Data for all MPI nodes
 
 };
