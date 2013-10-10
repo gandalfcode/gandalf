@@ -207,7 +207,7 @@ void BinaryTree<ndim>::BuildTree
 
   // Build and stock all local sub-trees
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(i) shared(sph, simparams) \
+//#pragma omp parallel for default(none) private(i) shared(sph, simparams) \
   reduction(+:localgtot,Ncheck)
   for (i = 0; i < Nsubtree; i++) {
 
@@ -556,7 +556,7 @@ void BinaryTree<ndim>::UpdateHmaxValues
   int i;
   FLOAT hmax_aux = 0;
 
-#pragma omp parallel for default(none) shared(sphdata) private(i) reduction(max:hmax_aux)
+//#pragma omp parallel for default(none) shared(sphdata) private(i) reduction(max:hmax_aux)
   for (i = 0; i < Nsubtree; i++) {
     FLOAT subhmax = subtrees[i]->UpdateHmaxValues(sphdata);
     if (subhmax > hmax_aux)

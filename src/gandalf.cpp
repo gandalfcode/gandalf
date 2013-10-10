@@ -18,11 +18,15 @@
 //=============================================================================
 
 
-#include "Exception.h"
 #include <iostream>
+#include "Exception.h"
+#include "Parameters.h"
 #include "Simulation.h"
 using namespace std;
 
+#ifdef MPI_PARALLEL
+#include "mpi.h"
+#endif
 
 //=============================================================================
 //  main
@@ -34,6 +38,12 @@ int main(int argc, char** argv)
   Parameters* params = new Parameters();             // Parameters object
   string paramfile;                                  // Name of parameters file
   ExceptionHandler::makeExceptionHandler(cplusplus); // Exception handler
+
+
+  // Initialise all MPI processes (if activated in Makefile)
+#ifdef MPI_PARALLEL
+  MPI_Init(&argc,&argv);
+#endif
 
   // Check that a valid number of arguments have been passed
   if (argc >= 2){

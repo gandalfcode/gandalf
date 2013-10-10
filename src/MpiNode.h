@@ -27,7 +27,8 @@
 
 #include <string>
 #include "Precision.h"
-#include "SphNeighbourTree.h"
+#include "SphNeighbourSearch.h"
+#include "SphParticle.h"
 using namespace std;
 
 
@@ -78,3 +79,4 @@ class MpiNode
   BinarySubTree<ndim> *nodetree;    ///< Pointer to current node sub-tree
 
 };
+#endif

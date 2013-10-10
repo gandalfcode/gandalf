@@ -24,10 +24,10 @@
 #ifndef _PRECISION_H_
 #define _PRECISION_H_
 
-#if defined(SINGLE_PRECISION)
+#if defined(GANDALF_SINGLE_PRECISION)
 typedef float FLOAT;
 typedef double DOUBLE;
-#elif defined(DOUBLE_PRECISION)
+#elif defined(GANDALF_DOUBLE_PRECISION)
 typedef double FLOAT;
 typedef double DOUBLE;
 #endif

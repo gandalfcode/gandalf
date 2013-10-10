@@ -31,7 +31,7 @@
 #include "Precision.h"
 #include "MpiNode.h"
 #include "Nbody.h"
-#include "SphNeighbourTree.h"
+#include "SphNeighbourSearch.h"
 #include "SphParticle.h"
 using namespace std;
 
@@ -60,17 +60,23 @@ class MpiControl
   void AllocateMemory(void);
   void DeallocateMemory(void);
 
+  void InitialiseMpiProcess(void);
   void CreateLoadBalancingTree(void);
   void LoadBalancing(void);
-  void TransferParticlesToNode(int);
+  void TransferParticlesToNode(void);
 
 
   // MPI control variables
   //---------------------------------------------------------------------------
+  bool allocated_mpi;               ///< ..
+  int rank;                         ///< MPI rank of process
   int Nmpi;                         ///< No. of MPI processes
   int Nloadbalance;                 ///< No. of steps between load-balancing
 
-  BinaryTree<ndim> mpitree;         ///< Main MPI load balancing tree
+  char hostname[MPI_MAX_PROCESSOR_NAME];
+
+  //BinaryTree<ndim> mpitree;         ///< Main MPI load balancing tree
   MpiNode<ndim> *mpinode;           ///< Data for all MPI nodes
 
 };
+#endif

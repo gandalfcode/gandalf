@@ -125,6 +125,7 @@ SimulationBase::SimulationBase
   nresync = 0;
   integration_step = 1;
   Nsteps = 0;
+  rank = 0;
   t = 0.0;
   setup = false;
   ParametersProcessed = false;
@@ -242,6 +243,14 @@ void Simulation<ndim>::ProcessParameters(void)
   string sim = stringparams["sim"];
 
   debug2("[SphSimulation::ProcessParameters]");
+
+
+  // Now simulation object is created, set-up various MPI variables
+#ifdef MPI_PARALLEL
+  mpicontrol.InitialiseMpiProcess();
+  rank = mpicontrol.rank;
+#endif
+
 
   // Sanity check for valid dimensionality
   if (ndim < 1 || ndim > 3) {
@@ -1580,7 +1589,6 @@ void SimulationBase::SetupSimulation(void)
     ExceptionHandler::getIstance().raise(msg);
   }
 
-
   // Process the parameters file setting up all simulation objects
   if (simparams->stringparams["ic"] == "python") {
     if (!ParametersProcessed) {
@@ -1598,11 +1606,16 @@ void SimulationBase::SetupSimulation(void)
     ProcessParameters();
   }
 
-  // Generate initial conditions for simulation
-  GenerateIC();
+  // Generate initial conditions for simulation on root process (for MPI jobs)
+  //---------------------------------------------------------------------------
+  if (rank == 0) {
+    GenerateIC();
 
-  // Change to COM frame if selected
-  if (simparams->intparams["com_frame"] == 1) SetComFrame();
+    // Change to COM frame if selected
+    if (simparams->intparams["com_frame"] == 1) SetComFrame();
+
+  }
+  //---------------------------------------------------------------------------
 
   // Call a messy function that does all the rest of the initialisation
   PostInitialConditionsSetup();
