@@ -4,11 +4,11 @@
 //  new values from the simulation parameter file.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -160,14 +160,14 @@ void Parameters::SetDefaultValues(void)
   debug1("[Parameters::SetDefaultValues]");
 
   // Main simulation algorithm parameters
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   intparams["ndim"] = 3;
   stringparams["sim"] = "sph";
   stringparams["sph"] = "gradh";
   stringparams["nbody"] = "hermite4";
 
   // Simulation id, filename and output time parameters
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   stringparams["ic"] = "random_cube";
   stringparams["run_id"] = "";
   stringparams["in_file"] = "";
@@ -180,7 +180,7 @@ void Parameters::SetDefaultValues(void)
   intparams["noutputstep"] = 32;
 
   // Unit and scaling parameters
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   intparams["dimensionless"] = 0;
   stringparams["rinunit"] = "";
   stringparams["minunit"] = "";
@@ -220,7 +220,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["tempoutunit"] = "K";
 
   // Integration scheme and timestep parameters
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   floatparams["accel_mult"] = 0.3;
   floatparams["courant_mult"] = 0.15;
   floatparams["nbody_mult"] = 0.1;
@@ -231,7 +231,7 @@ void Parameters::SetDefaultValues(void)
   intparams["nbody_single_timestep"] = 0;
 
   // SPH parameters
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   stringparams["sph_integration"] = "lfkdk";
   stringparams["kernel"] = "m4";
   intparams["tabulated_kernel"] = 0;
@@ -239,7 +239,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["h_converge"] = 0.01;
 
   // Thermal physics parameters
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   intparams["hydro_forces"] = 1;
   stringparams["gas_eos"] = "energy_eqn";
   stringparams["energy_integration"] = "PEC";
@@ -251,7 +251,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["eta_eos"] = 1.4;
 
   // Artificial viscosity parameters
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   intparams["time_dependent_avisc"] = 0;
   stringparams["avisc"] = "mon97";
   stringparams["acond"] = "none";
@@ -260,18 +260,18 @@ void Parameters::SetDefaultValues(void)
   floatparams["beta_visc"] = 2.0;
 
   // Riemann solver parameters
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   stringparams["riemann_solver"] = "exact";
   stringparams["slope_limiter"] = "mine";
   intparams["riemann_order"] = 1;
 
   // Gravity parameters
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   intparams["self_gravity"] = 0;
   stringparams["grav_kernel"] = "mean_h";
 
   // Neighbour searching and tree-gravity parameters
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   stringparams["neib_search"] = "bruteforce";
   stringparams["gravity_mac"] = "geometric";
   stringparams["multipole"] = "quadrupole";
@@ -279,7 +279,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["thetamaxsqd"] = 0.1;
 
   // N-body parameters
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   intparams["sub_systems"] = 0;
   intparams["Npec"] = 1;
   intparams["nbody_softening"] = 0;
@@ -291,7 +291,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["sub_system_integration"] = "hermite4";
 
   // Sink particle parameters
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   intparams["sink_particles"] = 0;
   intparams["create_sinks"] = 0;
   intparams["smooth_accretion"] = 0;
@@ -303,7 +303,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["sink_radius_mode"] = "hmult";
 
   // Boundary conditions parameters
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   stringparams["x_boundary_lhs"] = "open";
   stringparams["x_boundary_rhs"] = "open";
   stringparams["y_boundary_lhs"] = "open";
@@ -318,7 +318,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["boxmax[2]"] = 1.0;
 
   // Initial conditions parameters
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   stringparams["particle_distribution"] = "random";
   intparams["smooth_ic"] = 0;
   intparams["com_frame"] = 0;
@@ -358,7 +358,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["vmachbin"] = 1.0;
 
   // Python parameters
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   floatparams["dt_python"] = 8.0;
 
   return;

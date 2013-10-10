@@ -9,11 +9,11 @@
 //  - GodunovSphSimulation
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -83,12 +83,12 @@ class SimulationBase
   static SimulationBase* SimulationFactory(int ndim, Parameters* params);
 
   // Constructor and Destructor
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   SimulationBase(Parameters* params);
   ~SimulationBase();
   
   // Subroutine prototypes
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   string GetParam(string key);
   string Output(void);
   void SetParam(string key, string value);
@@ -109,13 +109,13 @@ class SimulationBase
 
 
   // Input-output routines
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   bool ReadSnapshotFile(string,string);
   bool WriteSnapshotFile(string,string);
   HeaderInfo ReadHeaderSnapshotFile(string filename, string format);
 
   // Variables
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   bool setup;                       ///< Flag if simulation is setup
   bool ParametersProcessed;         ///< Flag if params are already processed
   int integration_step;             ///< Steps per complete integration step
@@ -176,13 +176,13 @@ class Simulation : public SimulationBase
 
 
   // Memory allocation routines
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   void AllocateParticleMemory(void);
   void DeallocateParticleMemory(void);
 
 
   // Initial conditions helper routines
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   void AddBinaryStar(DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE *,
                      DOUBLE *, NbodyParticle<ndim> &, NbodyParticle<ndim> &);
   void AddAzimuthalDensityPerturbation(int, int, FLOAT, FLOAT *, FLOAT *); 
@@ -195,7 +195,7 @@ class Simulation : public SimulationBase
   int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
 
   // Subroutine prototypes
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   virtual void CalculateDiagnostics(void);
   virtual void ComputeGlobalTimestep(void)=0;
   virtual void ComputeBlockTimesteps(void)=0;
@@ -216,7 +216,7 @@ class Simulation : public SimulationBase
 #endif
 
   // Initial conditions routines -> move either to Sph, either to Nbody
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   void BinaryAccretion(void);
   void BinaryStar(void);
   void BossBodenheimer(void);
@@ -235,7 +235,7 @@ class Simulation : public SimulationBase
   void UniformSphere(void);
 
   // Input-output routines
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   virtual void ReadColumnHeaderFile(ifstream& infile, HeaderInfo& info);
   virtual bool ReadColumnSnapshotFile(string);
   virtual bool WriteColumnSnapshotFile(string);
@@ -244,7 +244,7 @@ class Simulation : public SimulationBase
   virtual bool WriteSerenFormSnapshotFile(string);
 
   // Variables
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   static const int vdim=ndim;
   static const FLOAT invndim=1.0/ndim;
 

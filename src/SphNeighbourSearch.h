@@ -4,11 +4,11 @@
 //  data structures and algorithms.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -165,7 +165,7 @@ class GridSearch: public SphNeighbourSearch<ndim>
   void UpdateActiveParticleCounters(Sph<ndim> *);
 
   // Additional functions for grid neighbour search
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   void AllocateGridMemory(int);
   void DeallocateGridMemory(void);
   void CreateGrid(Sph<ndim> *);
@@ -181,7 +181,7 @@ class GridSearch: public SphNeighbourSearch<ndim>
 #endif
 
   // Additional variables for grid
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   bool allocated_grid;              ///< Are grid arrays allocated?
   int Ncell;                        ///< Current no. of grid cells
   int Ncellmax;                     ///< Max. allowed no. of grid cells
@@ -217,7 +217,7 @@ class BinarySubTree
   ~BinarySubTree();
 
   // Additional functions for binary tree neighbour search
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   void AllocateSubTreeMemory(void);
   void DeallocateSubTreeMemory(void);
   int ComputeActiveCellList(int ,BinaryTreeCell<ndim> **);
@@ -243,7 +243,7 @@ class BinarySubTree
 #endif
 
   // Additional variables for grid
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   string gravity_mac;               ///< Multipole-acceptance criteria for tree
   string multipole;                 ///< Multipole-order for cell gravity
   bool allocated_tree;              ///< Are grid arrays allocated?
@@ -296,7 +296,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   BinaryTree(int, FLOAT, FLOAT, string, string);
   ~BinaryTree();
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   void BuildTree(Sph<ndim> *, Parameters &);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
@@ -308,7 +308,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void UpdateActiveParticleCounters(Sph<ndim> *);
 
   // Additional functions for binary tree neighbour search
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   void AllocateTreeMemory(void);
   void DeallocateTreeMemory(void);
   void ComputeTreeSize(void);
@@ -336,7 +336,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
 #endif
 
   // Additional variables for grid
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   string gravity_mac;               ///< Multipole-acceptance criteria for tree
   string multipole;                 ///< Multipole-order for cell gravity
   bool allocated_tree;              ///< Are grid arrays allocated?

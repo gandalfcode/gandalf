@@ -3,11 +3,11 @@
 //  Contains all available Riemann solver functions.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -83,7 +83,7 @@ void ExactRiemannSolver::SolveRiemannProblem
   pstar = pow(pstar,1.0/g4);
 
   // Main iteration loop
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   do {
     niteration++;
 
@@ -116,7 +116,7 @@ void ExactRiemannSolver::SolveRiemannProblem
     else if (2.0*fabs(pstar - pold)/(pstar + pold) < tolerance) break;
 
   } while(2 > 1);
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   // Compute velocity of star region
   vstar = 0.5*(vl + vr) + 0.5*(fr - fl);

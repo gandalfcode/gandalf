@@ -3,11 +3,11 @@
 //  Main N-body class
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -51,19 +51,19 @@ class Nbody
  public:
 
   // Constructor and destructor functions
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   Nbody(int nbody_softening_aux, int sub_systems_aux, DOUBLE nbody_mult_aux,
 	string KernelName, int);
 
 
   // N-body array memory allocation functions
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   void AllocateMemory(int);
   void DeallocateMemory(void);
 
 
   // Other functions
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   virtual void AdvanceParticles(int, int, NbodyParticle<ndim> **,DOUBLE) = 0;
   virtual void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **) = 0;
   virtual void CalculateDirectGravForces(int, NbodyParticle<ndim> **) = 0;
@@ -84,7 +84,7 @@ class Nbody
 
 
   // N-body counters and main data arrays
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   bool allocated;                       ///< Is N-body memory allocated
   int Nnbody;                           ///< No. of N-body particles
   int Nnbodymax;                        ///< Max. no. of N-body particles

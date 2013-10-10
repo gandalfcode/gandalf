@@ -4,11 +4,11 @@
 //  binary tree for SPH particles.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -346,7 +346,7 @@ void BinaryTree<ndim>::CreateTreeStructure(void)
   tree[0].clevel = 0;
 
   // Loop over all cells and set all other pointers
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
     if (tree[c].clevel == ltot) {                   // If on leaf level
       tree[c].cnext = c + 1;                        // id of next cell
@@ -361,7 +361,7 @@ void BinaryTree<ndim>::CreateTreeStructure(void)
     }
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
 
   // Free locally allocated memory
@@ -400,7 +400,7 @@ void BinaryTree<ndim>::OrderParticlesByCartCoord
       porder[k][i] = i;
 
   // Divide sorting routines amongst (up to 3) threads
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 #pragma omp sections
   {
     // Sort x-values
@@ -484,11 +484,11 @@ void BinaryTree<ndim>::LoadParticlesToTree(void)
 
 
   // Loop through each level of the tree
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   while (l < ltot) {
 
     // Loop over all particles (in order of current split)
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (i=0; i<Ntot; i++) {
       j = porder[k][i];
       cc = pc[j];                            // Cell currently occupied by j
@@ -505,7 +505,7 @@ void BinaryTree<ndim>::LoadParticlesToTree(void)
         ccap[pc[j]] += pw[j];
       }
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
     // Move to next level and cycle through each dimension in turn
     // (Need more sophisticated algorithm here in future)
@@ -513,7 +513,7 @@ void BinaryTree<ndim>::LoadParticlesToTree(void)
     k = (k + 1)%ndim;
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
 
   // Compute capacities of leaf cells here
@@ -741,7 +741,7 @@ void BinaryTree<ndim>::ComputeCellMonopoleForces
   for (k=0; k<ndim; k++) rp[k] = parti.r[k];
 
   // Loop over all neighbouring particles in list
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (cc=0; cc<Ngravcell; cc++) {
     cell = gravcelllist[cc];
 
@@ -755,7 +755,7 @@ void BinaryTree<ndim>::ComputeCellMonopoleForces
     for (k=0; k<ndim; k++) parti.agrav[k] += mc*dr[k]*invdr3;
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -786,7 +786,7 @@ void BinaryTree<ndim>::ComputeCellQuadrupoleForces
   BinaryTreeCell<ndim> *cell;       // Pointer to cell
 
   // Loop over all neighbouring particles in list
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (cc=0; cc<Ngravcell; cc++) {
     cell = gravcelllist[cc];
 
@@ -829,7 +829,7 @@ void BinaryTree<ndim>::ComputeCellQuadrupoleForces
     parti.gpot += 0.5*qscalar*invdr5;
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -892,7 +892,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 
 
   // Set-up all OMP threads
-  // ==========================================================================
+  //===========================================================================
 #pragma omp parallel default(none) private(activelist,cc,cell,celldone,draux)\
   private(drsqd,drsqdaux,hmax,hrangesqd,i,j,jj,k,okflag,m,mu,Nactive,neiblist)\
   private(Nneib,Nneibmax,r,rp,gatherlist,gpot,gpot2,m2,mu2,Ngather)\
@@ -912,7 +912,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
     r = new FLOAT[Nneibmax*ndim];
 
     // Loop over all active cells
-    // ========================================================================
+    //=========================================================================
 #pragma omp for schedule(dynamic)
     for (cc=0; cc<cactive; cc++) {
       cell = celllist[cc];
@@ -921,7 +921,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 
       // If hmax is too small so the neighbour lists are invalid, make hmax
       // larger and then recompute for the current active cell.
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
       do {
         hmax = 1.05*hmax;
         celldone = 1;
@@ -971,7 +971,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
         }
 
         // Loop over all active particles in the cell
-        // --------------------------------------------------------------------
+        //---------------------------------------------------------------------
         for (j=0; j<Nactive; j++) {
           i = activelist[j];
           for (k=0; k<ndim; k++) rp[k] = data[i].r[k];
@@ -981,7 +981,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
           Ngather = 0;
 
           // Compute distance (squared) to all
-          // ------------------------------------------------------------------
+          //-------------------------------------------------------------------
           for (jj=0; jj<Nneib; jj++) {
             for (k=0; k<ndim; k++) draux[k] = r[ndim*jj + k] - rp[k];
             drsqdaux = DotProduct(draux,draux,ndim);
@@ -997,7 +997,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
             }
 
           }
-          // ------------------------------------------------------------------
+          //-------------------------------------------------------------------
 
           // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
@@ -1016,13 +1016,13 @@ void BinaryTree<ndim>::UpdateAllSphProperties
           }
 
         }
-        // --------------------------------------------------------------------
+        //---------------------------------------------------------------------
 
       } while (celldone == 0);
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
 
     }
-    // ========================================================================
+    //=========================================================================
 
     // Free-up all memory
     delete[] r;
@@ -1038,7 +1038,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
     delete[] activelist;
 
   }
-  // ==========================================================================
+  //===========================================================================
 
   delete[] treelist;
   delete[] celllist;
@@ -1101,7 +1101,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 
 
   // Set-up all OMP threads
-  // ==========================================================================
+  //===========================================================================
 #pragma omp parallel default(none) private(activelist,cc,cell,dr,draux,drmag)\
   private(drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k)\
   private(Nactive,neiblist,neibpart,Ninteract,Nneib,Nneibmax,parti,rp)\
@@ -1117,7 +1117,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
     neibpart = new SphParticle<ndim>[Nneibmax];
 
     // Loop over all active cells
-    // ========================================================================
+    //=========================================================================
 #pragma omp for schedule(dynamic)
     for (cc=0; cc<cactive; cc++) {
       cell = celllist[cc];
@@ -1156,7 +1156,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
       }
 
       // Loop over all active particles in the cell
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
         parti = data[i];
@@ -1177,7 +1177,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
         // and all neighbours here, for both gather and inactive scatter neibs.
         // Only consider particles with j > i to compute pair forces once
         // unless particle j is inactive.
-        // --------------------------------------------------------------------
+        //---------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
 	      // Skip neighbour if it's not the correct part of an active pair
@@ -1199,7 +1199,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
           }
 
         }
-        // --------------------------------------------------------------------
+        //---------------------------------------------------------------------
 
         // Compute all gather neighbour contributions to hydro forces
         sph->ComputeSphHydroForces(i,Ninteract,interactlist,
@@ -1216,7 +1216,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
         data[i].div_v += parti.div_v;
 
       }
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
 
       // Now add all active neighbour contributions to the main arrays
       for (jj=0; jj<Nneib; jj++) {
@@ -1234,7 +1234,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
       }
 
     }
-    // ========================================================================
+    //=========================================================================
 
     // Free-up local memory for OpenMP thread
     delete[] neibpart;
@@ -1246,7 +1246,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
     delete[] activelist;
 
   }
-  // ==========================================================================
+  //===========================================================================
 
   delete[] treelist;
   delete[] celllist;
@@ -1318,7 +1318,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
 
   // Set-up all OMP threads
-  // ==========================================================================
+  //===========================================================================
 #pragma omp parallel default(none) private(activelist,agrav,cc,cell)\
   private(gpot,i,interactlist,j,jj)\
   private(k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,parti,directlist)\
@@ -1343,7 +1343,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
 
     // Loop over all active cells
-    // ========================================================================
+    //=========================================================================
 #pragma omp for schedule(dynamic)
     for (cc=0; cc<cactive; cc++) {
       cell = celllist[cc];
@@ -1391,7 +1391,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
       }
 
       // Loop over all active particles in the cell
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
 
@@ -1442,7 +1442,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
         data[i].div_v += parti.div_v;
 
       }
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
 
       // Now add all active neighbour contributions to the main arrays
       for (jj=0; jj<Nneib; jj++) {
@@ -1464,7 +1464,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
       }
 
     }
-    // ========================================================================
+    //=========================================================================
 
 
     // Finally, add all contributions from distant pair-wise forces to arrays
@@ -1491,7 +1491,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
     delete[] agrav;
 
   }
-  // ==========================================================================
+  //===========================================================================
 
   delete[] treelist;
   delete[] celllist;

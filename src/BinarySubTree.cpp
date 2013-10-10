@@ -4,11 +4,11 @@
 //  binary tree for SPH particles.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -256,7 +256,7 @@ void BinarySubTree<ndim>::CreateSubTreeStructure(void)
   tree[0].clevel = 0;
 
   // Loop over all cells and set all other pointers
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
     if (tree[c].clevel == ltot) {                   // If on leaf level
       tree[c].cnext = c + 1;                        // id of next cell
@@ -271,7 +271,7 @@ void BinarySubTree<ndim>::CreateSubTreeStructure(void)
     }
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
 
   // Free locally allocated memory
@@ -313,7 +313,7 @@ void BinarySubTree<ndim>::OrderParticlesByCartCoord
       porder[k][i] = i;
 
   // Divide sorting routines amongst (up to 3) threads
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   {
     // Sort x-values
     Heapsort(Ntot,porder[0],rk[0]);
@@ -392,11 +392,11 @@ void BinarySubTree<ndim>::LoadParticlesToSubTree(void)
 
 
   // Loop through each level of the tree
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   while (l < ltot) {
 
     // Loop over all particles (in order of current split)
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (i=0; i<Ntot; i++) {
       j = porder[k][i];
       cc = pc[j];                            // Cell currently occupied by j
@@ -413,7 +413,7 @@ void BinarySubTree<ndim>::LoadParticlesToSubTree(void)
         ccap[pc[j]] += 1.0; //pw[j];
       }
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
     // Move to next level and cycle through each dimension in turn
     // (Need more sophisticated algorithm here in future)
@@ -421,7 +421,7 @@ void BinarySubTree<ndim>::LoadParticlesToSubTree(void)
     k = (k + 1)%ndim;
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
 
   // Compute capacities of leaf cells here
@@ -499,11 +499,11 @@ void BinarySubTree<ndim>::StockCellProperties
 
   // Loop backwards over all tree cells to ensure child cells are always 
   // computed first before being summed in parent cells.
-  // ==========================================================================
+  //===========================================================================
   for (c=Ncell-1; c>=0; c--) {
 
     // If this is a leaf cell, sum over all particles
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (tree[c].c2 == 0) {
       j = tree[c].ifirst;
 
@@ -561,7 +561,7 @@ void BinarySubTree<ndim>::StockCellProperties
 
     }
     // For non-leaf cells, sum together two children cells
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else {
       cc = c + 1;
       ccc = tree[c].c2;
@@ -621,10 +621,10 @@ void BinarySubTree<ndim>::StockCellProperties
       }
 
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
   }
-  // ==========================================================================
+  //===========================================================================
 
 
 #if defined(VERIFY_ALL)
@@ -677,7 +677,7 @@ FLOAT BinarySubTree<ndim>::UpdateHmaxValues
 
   // Loop backwards over all tree cells to ensure child cells are always 
   // computed first before being summed in parent cells.
-  // ==========================================================================
+  //===========================================================================
   for (c=Ncell-1; c>=0; c--) {
 
     // If this is a leaf cell, sum over all particles
@@ -694,17 +694,17 @@ FLOAT BinarySubTree<ndim>::UpdateHmaxValues
 
     }
     // For non-leaf cells, sum together two children cells
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else {
       cc = c + 1;
       ccc = tree[c].c2;
       if (tree[c].N > 0) tree[c].hmax = max(tree[cc].hmax,tree[ccc].hmax);
 
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
   }
-  // ==========================================================================
+  //===========================================================================
 
   return tree[0].hmax;
 }
@@ -764,14 +764,14 @@ int BinarySubTree<ndim>::ComputeGatherNeighbourList
   // Start with root cell and walk through entire tree
   cc = 0;
 
-  // ==========================================================================
+  //===========================================================================
   while (cc < Ncell) {
     for (k=0; k<ndim; k++) dr[k] = tree[cc].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
     //neibrange = tree[cc].rmax + hrangemax;
 
     // Check if circular range overlaps cell bounding sphere
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (drsqd < pow(tree[cc].rmax + hrangemax,2)) {
 
       // If not a leaf-cell, then open cell to first child cell
@@ -796,12 +796,12 @@ int BinarySubTree<ndim>::ComputeGatherNeighbourList
     }
 
     // If not in range, then open next cell
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else
       cc = tree[cc].cnext;
 
   };
-  // ==========================================================================
+  //===========================================================================
 
 
   // Now, trim the list to remove particles that are definitely not neighbours
@@ -855,7 +855,7 @@ int BinarySubTree<ndim>::ComputeNeighbourList
   // Start with root cell and walk through entire tree
   cc = 0;
 
-  // ==========================================================================
+  //===========================================================================
   while (cc < Ncell) {
     for (k=0; k<ndim; k++) dr[k] = tree[cc].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
@@ -863,7 +863,7 @@ int BinarySubTree<ndim>::ComputeNeighbourList
     //gatherrange = tree[cc].rmax + hrangemax;
 
     // Check if circular range overlaps cell bounding sphere
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     //if (drsqd < gatherrange*gatherrange ||
       //  drsqd < scatterrange*scatterrange) {
     if (drsqd < pow(tree[cc].rmax + hrangemax,2) ||
@@ -890,11 +890,11 @@ int BinarySubTree<ndim>::ComputeNeighbourList
     }
 
     // If not in range, then open next cell
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else
       cc = tree[cc].cnext;
   };
-  // ==========================================================================
+  //===========================================================================
 
 
   // Now, trim the list to remove particles that are definitely not neighbours
@@ -964,13 +964,13 @@ int BinarySubTree<ndim>::ComputeGravityInteractionList
 
   // Walk through all cells in tree to determine particle and cell 
   // interaction lists
-  // ==========================================================================
+  //===========================================================================
   while (cc < Ncell) {
     for (k=0; k<ndim; k++) dr[k] = tree[cc].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
 
     // Check if cells contain SPH neighbours
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (drsqd < (tree[cc].rmax + hrangemax)*(tree[cc].rmax + hrangemax) ||
         drsqd < pow(tree[cc].rmax + rmax + kernrange*tree[cc].hmax,2)) {
 
@@ -995,7 +995,7 @@ int BinarySubTree<ndim>::ComputeGravityInteractionList
     }
 
     // Check if cell is far enough away to use the COM approximation
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     //else if (drsqd >= tree[c].cdistsqd + tree[cc].cdistsqd) {
     else if (drsqd > cdistsqd || drsqd > tree[cc].cdistsqd) {
 
@@ -1013,7 +1013,7 @@ int BinarySubTree<ndim>::ComputeGravityInteractionList
 
     // If cell is too close, open cell to interogate children cells.
     // If cell is too close and a leaf cell, then add particles to direct list.
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     //else if (drsqd < tree[c].cdistsqd + tree[cc].cdistsqd) {
     else if (drsqd <= cdistsqd && drsqd <= tree[cc].cdistsqd) {
 
@@ -1038,12 +1038,12 @@ int BinarySubTree<ndim>::ComputeGravityInteractionList
     }
 
     // If not in range, then open next cell
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else
       cc = tree[cc].cnext;
 
   };
-  // ==========================================================================
+  //===========================================================================
 
   // Now, trim the list to remove particles that are definitely not neighbours.
   // If not an SPH neighbour, then add to direct gravity sum list.
@@ -1092,7 +1092,7 @@ void BinarySubTree<ndim>::ValidateTree
 
 
   // Check all tree cells are on valid levels
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
     if (tree[c].clevel > ltot) {
       cout << "Problem with tree levels : " << cc << "   " << tree[cc].clevel
@@ -1103,7 +1103,7 @@ void BinarySubTree<ndim>::ValidateTree
 
 
   // Check all leaf cells the correct number of particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
     if (tree[c].c2 == 0) {
       N = 0;
@@ -1124,7 +1124,7 @@ void BinarySubTree<ndim>::ValidateTree
 
 
   // Walk all cells in tree to compute quantities
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
 
     treeflag = true;
@@ -1132,7 +1132,7 @@ void BinarySubTree<ndim>::ValidateTree
     mc = 0;
 
     // Now loop over all child cells below cell to sum all properties
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     while (cc < tree[c].cnext) {
 
       if (tree[cc].c2 == 0) {
@@ -1167,14 +1167,14 @@ void BinarySubTree<ndim>::ValidateTree
 
       cc++;
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
     if (fabs(mc - tree[c].m) > 0.00001*mc) {
       cout << "mass : " << mc << "    " << tree[c].m << endl;
       exit(0);
     }
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }

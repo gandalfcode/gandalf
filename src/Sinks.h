@@ -3,11 +3,11 @@
 //  Main sink particle class
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -75,7 +75,7 @@ class SinkParticle
 
 
   // Star particle constructor to initialise all values
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   SinkParticle()
   {
     radius = 0.0;
@@ -111,7 +111,7 @@ class Sinks
   ~Sinks();
 
   // Function prototypes
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   void AllocateMemory(int);
   void DeallocateMemory(void);
   void SearchForNewSinkParticles(int, Sph<ndim> *, Nbody<ndim> *);
@@ -120,7 +120,7 @@ class Sinks
   //void UpdateSystemProperties(void);
 
   // Local class variables
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   bool allocated_memory;            ///< Has sink memory been allocated?
   int Nsink;                        ///< No. of sink particles
   int Nsinkmax;                     ///< Max. no. of sink particles

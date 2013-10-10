@@ -4,11 +4,11 @@
 //  (See Springel & Hernquist (2002) and Price & Monaghan (2007).
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -104,7 +104,7 @@ int GodunovSph<ndim, kernelclass >::ComputeH
 
 
   // Main smoothing length iteration loop
-  // ==========================================================================
+  //===========================================================================
   do {
 
     // Initialise all variables for this value of h
@@ -118,14 +118,14 @@ int GodunovSph<ndim, kernelclass >::ComputeH
 
     // Loop over all nearest neighbours in list to calculate 
     // density, omega and zeta.
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       ssqd = drsqd[j]*invhsqd;
       parti.rho += m[j]*parti.hfactor*kern.w0_s2(ssqd);
       parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega_s2(ssqd);
       parti.zeta += m[j]*invhsqd*kern.wzeta_s2(ssqd);
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
     if (parti.rho > (FLOAT) 0.0) parti.invrho = (FLOAT) 1.0/parti.rho;
 
@@ -139,7 +139,7 @@ int GodunovSph<ndim, kernelclass >::ComputeH
     // iterations (iteration_max), then assume something is wrong and switch 
     // to a bisection method, which should be guaranteed to converge, 
     // albeit much more slowly.  (N.B. will implement Newton-Raphson soon)
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (iteration < iteration_max)
       parti.h = h_fac*pow(parti.m*parti.invrho,invndim);
 
@@ -166,7 +166,7 @@ int GodunovSph<ndim, kernelclass >::ComputeH
     if (parti.h > hmax) return 0;
     
   } while (parti.h > h_lower_bound && parti.h < h_upper_bound);
-  // ==========================================================================
+  //===========================================================================
 
 
   // Normalise all SPH sums correctly
@@ -241,11 +241,11 @@ void GodunovSph<ndim, kernelclass >::ComputeSphHydroForces
 
 
   // Compute hydro forces
-  // ==========================================================================
+  //===========================================================================
   if (hydro_forces == 1) {
 
     // Loop over all potential neighbours in the list
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (jj=0; jj<Nneib; jj++) {
       j = neiblist[jj];
       wkerni = hconv*parti.hfactor*kern.w1(invsqrttwo*drmag[jj]*parti.invh);
@@ -300,10 +300,10 @@ void GodunovSph<ndim, kernelclass >::ComputeSphHydroForces
       for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
 
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
   }
-  // ==========================================================================
+  //===========================================================================
 
 
   return;
@@ -328,7 +328,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphHydroGravForces
 
 
 
-// ============================================================================
+//=============================================================================
 // GodunovSph::ComputeSphGravForces
 // Compute SPH neighbour force pairs for 
 // (i) All neighbour interactions of particle i with i.d. j > i,
@@ -336,7 +336,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphHydroGravForces
 // (iii) All inactive neighbour interactions of particle i with i.d. j < i.
 // This ensures that all particle-particle pair interactions are only 
 // computed once only for efficiency.
-// ============================================================================
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GodunovSph<ndim, kernelclass >::ComputeSphGravForces
 (int i,                                 // id of particle
@@ -404,7 +404,7 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
   //cout << "            vl   : " << vl << "   " << vr << endl;
 
   // For 2nd-order, extrapolate quantities using SPH gradients.
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (riemann_order == 2 && slope_limiter == "none") {
 
     // Slope limiter for pressure gradients
@@ -437,7 +437,7 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
 
   }
   // ..
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (riemann_order == 2 && slope_limiter == "simple") {
 
     // Slope limiter for pressure gradients
@@ -500,7 +500,7 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
  
   }
   // For 2nd-order, extrapolate quantities using SPH gradients.
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (riemann_order == 2 && slope_limiter == "I02") {
     
     // Slope limiter for pressure gradients
@@ -529,7 +529,7 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
 
   }
   // For 2nd-order, extrapolate quantities using SPH gradients.
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (riemann_order == 2 && slope_limiter == "mine") {
 
     // Slope limiter for pressure gradients
@@ -574,7 +574,7 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
     R3 = R;
   }
   // ..
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (riemann_order == 2 && slope_limiter == "vanleer1979a") {
 
     // Slope limiter for pressure gradients
@@ -637,7 +637,7 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
  
   }
   // Van Leer (1979)b limiter
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (riemann_order == 2 && slope_limiter == "vanleer1979b") {
 
     // Slope limiter for pressure gradients
@@ -697,7 +697,7 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
 
   }
   // Springel (2009) limiter
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (riemann_order == 2 && slope_limiter == "springel2009") {
 
     // Slope limiter for pressure gradients
@@ -799,7 +799,7 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
 
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (riemann_order == 2) {
     cout << "Unrecognised slope limiter" << endl;
     exit(0);
@@ -905,7 +905,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphDerivatives
 
 
   // Loop over all potential neighbours in the list
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
     wkern = parti.hfactor*kern.w1(drmag[jj]*parti.invh);
@@ -936,7 +936,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphDerivatives
       for (kk=0; kk<ndim; kk++) parti.gradv[kk][k] -= neibpart[j].m*
 	dv[kk]*wkern*draux[k];
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   // Normalise summations
   parti.div_v *= parti.invrho;
@@ -1005,11 +1005,11 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
 
 
   // Compute hydro forces
-  // ==========================================================================
+  //===========================================================================
   if (hydro_forces == 1) {
 
     // Loop over all potential neighbours in the list
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (jj=0; jj<Nneib; jj++) {
       j = neiblist[jj];
       wkerni = hconv*parti.hfactor*kern.w1(invsqrttwo*drmag[jj]*parti.invh);
@@ -1058,20 +1058,20 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
       //}
 
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
   }
-  // ==========================================================================
+  //===========================================================================
 
   return;
 }
 
 
 
-// ============================================================================
+//=============================================================================
 // GodunovSph::ComputePostHydroQuantities
 // ..
-// ============================================================================
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GodunovSph<ndim, kernelclass >::ComputePostHydroQuantities
 (SphParticle<ndim> &parti)
@@ -1085,11 +1085,11 @@ void GodunovSph<ndim, kernelclass >::ComputePostHydroQuantities
 
 
 
-// ============================================================================
+//=============================================================================
 // GodunovSph::ComputeDirectGravForces
 // Compute the contribution to the total gravitational force of particle 'i' 
 // due to 'Nneib' neighbouring particles in the list 'neiblist'.
-// ============================================================================
+//=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GodunovSph<ndim, kernelclass >::ComputeDirectGravForces
 (int i,                                 // id of particle

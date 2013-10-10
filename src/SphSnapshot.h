@@ -53,7 +53,7 @@ protected:
 
 
   // Snapshot function prototypes
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   void AllocateBufferMemory(void);
   void DeallocateBufferMemory(void);
   int CalculateMemoryUsage(void);
@@ -68,7 +68,7 @@ protected:
   int GetNparticlesType(string species);
 
   // All variables
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   bool allocated;                   ///< Is snapshot memory allocated?
   bool allocatedbinary;             ///< Is SPH particle memory allocated?
   bool allocatedsph;                ///< Is SPH particle memory allocated?
@@ -102,7 +102,7 @@ protected:
 
   // Pointers for allocating memory required for storing all important
   // snapshot data
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   float *x;                         ///< x-position for SPH particles
   float *y;                         ///< y-position for SPH particles
   float *z;                         ///< z-position for SPH particles

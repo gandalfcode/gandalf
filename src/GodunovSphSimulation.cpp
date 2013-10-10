@@ -3,11 +3,11 @@
 //  Contains all main functions controlling Godunov SPH simulation work-flow.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -71,7 +71,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
   //tsnapnext = dt_snap;
 
   // Set initial smoothing lengths and create initial ghost particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (sph->Nsph > 0) {
 
     // Set all relevant particle counters
@@ -117,7 +117,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Compute all initial N-body terms
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (nbody->Nstar > 0) {
 
     // Zero all acceleration terms
@@ -144,7 +144,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Compute all initial SPH force terms
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (sph->Nsph > 0) {
 
     // Zero accelerations (here for now)
@@ -239,7 +239,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
   // Check all boundary conditions
   ghosts.CheckBoundaries(simbox,sph);
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (sph->Nsph > 0) {
 
     // Reorder particles
@@ -315,11 +315,11 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
 
 
   // Compute N-body forces
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (nbody->Nnbody > 0) {
 
     // Iterate end-of-step
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (it=0; it<nbody->Npec; it++) {
 
       // Zero all acceleration terms
@@ -343,12 +343,12 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
       nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
 
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
     nbody->EndTimestep(n,nbody->Nnbody,nbody->nbodydata);
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
 
   return;
@@ -369,7 +369,7 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
 
   debug2("[SphSimulation::ComputeGlobalTimestep]");
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (n == nresync) {
 
     n = 0;
@@ -378,7 +378,7 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
     nresync = integration_step;
 
     // Find minimum timestep from all SPH particles
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 #pragma omp parallel default(none) private(i,dt)\
   shared(dt_min)
     {
@@ -404,7 +404,7 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
 #pragma omp critical
       if (dt < dt_min) dt_min = dt;
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
 
     // Now compute minimum timestep due to stars/systems
@@ -431,7 +431,7 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
 
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -463,7 +463,7 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
   debug2("[SphSimulation::ComputeBlockTimesteps]");
 
   // Synchronise all timesteps and reconstruct block timestep structure.
-  // ==========================================================================
+  //===========================================================================
   if (n == nresync) {
 
     n = 0;
@@ -542,14 +542,14 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
 
   // If not resynchronising, check if any SPH/N-body particles need to move  
   // up or down timestep levels.
-  // ==========================================================================
+  //===========================================================================
   else {
 
     level_max_old = level_max;
     level_max = 0;
 
     // Find all SPH particles at the beginning of a new timestep
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
 
       // Skip particles that are not at end of step
@@ -582,11 +582,11 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
       level_max_sph = max(level_max_sph,sph->sphdata[i].level);
       level_max = max(level_max,sph->sphdata[i].level);
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
       
 
     // Now find all N-body particles at the beginning of a new timestep
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (i=0; i<nbody->Nnbody; i++) {
 
       // Skip particles that are not at end of step
@@ -617,7 +617,7 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
       level_max_nbody = max(level_max_nbody,nbody->nbodydata[i]->level);
       level_max = max(level_max,nbody->nbodydata[i]->level);
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
       
 
     // Set fixed SPH timestep level here in case maximum has changed
@@ -642,7 +642,7 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
     }
 
     // Update all timestep variables if we have removed or added any levels
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (level_max != level_max_old) {
 
       // Increase maximum timestep level if correctly synchronised
@@ -671,13 +671,13 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
       }
 
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
     nresync = pow(2,level_step);
     timestep = dt_max / (DOUBLE) nresync;
 
   }
-  // ==========================================================================
+  //===========================================================================
 
   return;
 }

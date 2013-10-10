@@ -5,11 +5,11 @@
 //  of Hopkins (2013).
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -55,7 +55,6 @@ SM2012Sph<ndim, kernelclass >::SM2012Sph(int hydro_forces_aux,
 		    acond_aux, gas_eos_aux, KernelName),
   kern(kernelclass<ndim>(KernelName))
 {
-
   this->kernp = &kern;
   this->kernfac = (FLOAT) 1.0;
   this->kernfacsqd = (FLOAT) 1.0;
@@ -85,27 +84,29 @@ SM2012Sph<ndim, kernelclass >::~SM2012Sph()
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 int SM2012Sph<ndim, kernelclass >::ComputeH
-(int i,                                 // id of particle
- int Nneib,                             // No. of potential neighbours
- FLOAT hmax,                            // Maximum allowed smoothing length
- FLOAT *m,                              // Array of neib. masses
- FLOAT *mu,                             // Array of neib. internal energies
- FLOAT *drsqd,                          // Array of neib. distances (squared)
- FLOAT *gpot,                           // Gravitational potential
- SphParticle<ndim> &parti,              // Particle i data
- Nbody<ndim> *nbody)                    // N-body object pointer
+(int i,                             ///< [in] id of particle
+ int Nneib,                         ///< [in] No. of potential neighbours
+ FLOAT hmax,                        ///< [in] Max. h permitted by neib list
+ FLOAT *m,                          ///< [in] Array of neib. masses
+ FLOAT *mu,                         ///< [in] Array of m*u (not needed here)
+ FLOAT *drsqd,                      ///< [in] Array of neib. distances squared
+ FLOAT *gpot,                       ///< [in] Array of neib. grav. potentials
+ SphParticle<ndim> &parti,          ///< [inout] Particle i data
+ Nbody<ndim> *nbody)                ///< [in] Main N-body object
 {
-  int j;                                // Neighbour id
-  int iteration = 0;                    // h-rho iteration counter
-  int iteration_max = 30;               // Max. no of iterations
-  FLOAT h_lower_bound = 0.0;            // Lower bound on h
-  FLOAT h_upper_bound = big_number;     // Upper bound on h
-  FLOAT invhsqd;                        // (1 / h)^2
-  FLOAT ssqd;                           // Kernel parameter squared, (r/h)^2
+  int j;                            // Neighbour id
+  int k;                            // Dimension counter
+  int iteration = 0;                // h-rho iteration counter
+  int iteration_max = 30;           // Max. no of iterations
+  FLOAT dr[ndim];                   // Relative position vector
+  FLOAT h_lower_bound = 0.0;        // Lower bound on h
+  FLOAT h_upper_bound = hmax;       // Upper bound on h
+  FLOAT invhsqd;                    // (1 / h)^2
+  FLOAT ssqd;                       // Kernel parameter squared, (r/h)^2
 
 
   // Main smoothing length iteration loop
-  // ==========================================================================
+  //===========================================================================
   do {
 
     // Initialise all variables for this value of h
@@ -119,14 +120,20 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
 
     // Loop over all nearest neighbours in list to calculate 
     // density, omega and zeta.
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       ssqd = drsqd[j]*invhsqd;
-      parti.rho += m[j]*parti.hfactor*kern.w0_s2(ssqd);
-      parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega_s2(ssqd);
-      parti.q += mu[j]*parti.hfactor*kern.w0_s2(ssqd);
+      parti.rho += m[j]*kern.w0_s2(ssqd);
+      parti.invomega += m[j]*parti.invh*kern.womega_s2(ssqd);
+      parti.q += mu[j]*kern.w0_s2(ssqd);
+      parti.zeta += m[j]*kern.wzeta_s2(ssqd);
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
+
+    parti.rho *= parti.hfactor;
+    parti.invomega *= parti.hfactor;
+    parti.q *= parti.hfactor;
+    parti.zeta *= invhsqd;
 
     if (parti.rho > (FLOAT) 0.0) parti.invrho = (FLOAT) 1.0/parti.rho;
 
@@ -140,9 +147,9 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
     // iterations (iteration_max), then assume something is wrong and switch 
     // to a bisection method, which should be guaranteed to converge, 
     // albeit much more slowly.  (N.B. will implement Newton-Raphson soon)
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (iteration < iteration_max)
-      parti.h = h_fac*pow(parti.m*parti.invrho,invndim);
+      parti.h = h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim);
 
     else if (iteration == iteration_max)
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
@@ -167,14 +174,19 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
     if (parti.h > hmax) return 0;
     
   } while (parti.h > h_lower_bound && parti.h < h_upper_bound);
-  // ==========================================================================
+  //===========================================================================
 
 
   // Normalise all SPH sums correctly
-  parti.h = h_fac*pow(parti.m*parti.invrho,invndim);
+  parti.h = max(h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim),
+                h_lower_bound);
   parti.invh = (FLOAT) 1.0/parti.h;
-  parti.invomega = (FLOAT) 1.0 + invndim*parti.h*parti.invomega*parti.invrho;
+  parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
+  parti.invomega = (FLOAT) 1.0 + 
+    Sph<ndim>::invndim*parti.h*parti.invomega*parti.invrho;
   parti.invomega = (FLOAT) 1.0/parti.invomega;
+  parti.zeta = -Sph<ndim>::invndim*parti.h*parti.zeta*
+    parti.invrho*parti.invomega;
   parti.invq = (FLOAT) 1.0/parti.q;
 
   // Set important thermal variables here
@@ -185,8 +197,39 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
   parti.div_v = (FLOAT) 0.0;
   parti.dudt = (FLOAT) 0.0;
   
+  // Calculate the minimum neighbour potential
+  // (used later to identify new sinks)
+  if (create_sinks == 1) {
+    parti.potmin = true;
+    for (j=0; j<Nneib; j++)
+      if (gpot[j] > 1.000000001*parti.gpot && 
+	  drsqd[j]*invhsqd < kern.kernrangesqd) parti.potmin = false;
+  }
 
-  return 1;
+  // If there are star particles, compute N-body chi correction term
+  //---------------------------------------------------------------------------
+  if (nbody->nbody_softening == 1) {
+    for (j=0; j<nbody->Nstar; j++) {
+      invhsqd = pow(2.0 / (parti.h + nbody->stardata[j].h),2);
+      for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
+      ssqd = DotProduct(dr,dr,ndim)*invhsqd;
+      parti.chi += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
+    }
+  }
+  else {
+    invhsqd = 4.0*parti.invh*parti.invh;
+    for (j=0; j<nbody->Nstar; j++) {
+      for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
+      ssqd = DotProduct(dr,dr,ndim)*invhsqd;
+      parti.chi += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
+    }
+  }
+  parti.chi = -Sph<ndim>::invndim*parti.h*parti.chi*parti.invrho*parti.invomega;
+
+
+  // If h is invalid (i.e. larger than maximum h), then return error code (0)
+  if (parti.h <= hmax) return 1;
+  else return -1;
 }
 
 
@@ -202,105 +245,111 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
-(int i,                                 // id of particle
- int Nneib,                             // No. of neighbours in neibpart array
- int *neiblist,                         // id of gather neighbour in neibpart
- FLOAT *drmag,                          // Distances of gather neighbours
- FLOAT *invdrmag,                       // Inverse distances of gather neibs
- FLOAT *dr,                             // Position vector of gather neibs
- SphParticle<ndim> &parti,                    // Particle i data
- SphParticle<ndim> *neibpart)                 // Neighbour particle data
+(int i,                             ///< [in] id of particle
+ int Nneib,                         ///< [in] No. of neins in neibpart array
+ int *neiblist,                     ///< [in] id of gather neibs in neibpart
+ FLOAT *drmag,                      ///< [in] Distances of gather neighbours
+ FLOAT *invdrmag,                   ///< [in] Inverse distances of gather neibs
+ FLOAT *dr,                         ///< [in] Position vector of gather neibs
+ SphParticle<ndim> &parti,          ///< [inout] Particle i data
+ SphParticle<ndim> *neibpart)       ///< [inout] Neighbour particle data
 {
-  int j;                                // Neighbour list id
-  int jj;                               // Aux. neighbour counter
-  int k;                                // Dimension counter
-  FLOAT draux[ndim];                 // Relative position vector
-  FLOAT dv[ndim];                    // Relative velocity vector
-  FLOAT dvdr;                           // Dot product of dv and dr
-  FLOAT wkerni;                         // Value of w1 kernel function
-  FLOAT wkernj;                         // Value of w1 kernel function
-  FLOAT vsignal;                        // Signal velocity
-  FLOAT paux;                           // Aux. pressure force variable
-  FLOAT uaux;                           // Aux. internal energy variable
-  FLOAT winvrho;                        // 0.5*(wkerni + wkernj)*invrhomean
+  int j;                            // Neighbour list id
+  int jj;                           // Aux. neighbour counter
+  int k;                            // Dimension counter
+  FLOAT alpha_mean;                 // Mean articial viscosity alpha value
+  FLOAT draux[ndim];                // Relative position vector
+  FLOAT dv[ndim];                   // Relative velocity vector
+  FLOAT dvdr;                       // Dot product of dv and dr
+  FLOAT wkerni;                     // Value of w1 kernel function
+  FLOAT wkernj;                     // Value of w1 kernel function
+  FLOAT vsignal;                    // Signal velocity
+  FLOAT paux;                       // Aux. pressure force variable
+  FLOAT uaux;                       // Aux. internal energy variable
+  FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
 
 
-  // Compute hydro forces
-  // ==========================================================================
-  if (hydro_forces == 1) {
+  // Loop over all potential neighbours in the list
+  //---------------------------------------------------------------------------
+  for (jj=0; jj<Nneib; jj++) {
+    j = neiblist[jj];
+    wkerni = parti.hfactor*kern.w1(drmag[jj]*parti.invh);
+    wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*neibpart[j].invh);
 
-    // Loop over all potential neighbours in the list
-    // ------------------------------------------------------------------------
-    for (jj=0; jj<Nneib; jj++) {
-      j = neiblist[jj];
-      wkerni = parti.hfactor*kern.w1(drmag[jj]*parti.invh);
-      wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*neibpart[j].invh);
+    for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
+    for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
+    dvdr = DotProduct(dv,draux,ndim);
 
-      for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
-      for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
-      dvdr = DotProduct(dv,draux,ndim);
+    // Add contribution to velocity divergence
+    parti.div_v -= neibpart[j].m*dvdr*wkerni;
+    neibpart[j].div_v -= parti.m*dvdr*wkernj;
 
-      // Add contribution to velocity divergence
-      parti.div_v -= neibpart[j].m*dvdr*wkerni;
-      neibpart[j].div_v -= parti.m*dvdr*wkernj;
+    // Main SPH pressure force term
+    paux = (FLOAT) 0.5*(eos->gamma - 1.0)*parti.u*neibpart[j].u*
+    	        (parti.invq + neibpart[j].invq)*(wkerni + wkernj);
 
-      // Main SPH pressure force term
-      paux = (FLOAT) 0.5*(eos->gamma - 1.0)*parti.u*neibpart[j].u*
-    		  (parti.invq + neibpart[j].invq)*(wkerni + wkernj);
 
-      
-      // Add dissipation terms (for approaching particle pairs)
-      // ----------------------------------------------------------------------
-      if (dvdr < (FLOAT) 0.0) {
+    // Add dissipation terms (for approaching particle pairs)
+    //-------------------------------------------------------------------------
+    if (dvdr < (FLOAT) 0.0) {
 
-    	winvrho = (FLOAT) 0.25*(wkerni + wkernj)*(parti.invrho + neibpart[j].invrho);
+      winvrho = (FLOAT) 0.25*(wkerni + wkernj)*
+      (parti.invrho + neibpart[j].invrho);
+      //winvrho = (FLOAT) (wkerni + wkernj)/
+      // (parti.rho + neibpart[j].rho);
 	
-        // Artificial viscosity term
-        if (avisc == mon97) {
-          vsignal = parti.sound + neibpart[j].sound - beta_visc*dvdr;
-          paux -= (FLOAT) alpha_visc*vsignal*dvdr*winvrho;
-          uaux = (FLOAT) 0.5*alpha_visc*vsignal*dvdr*dvdr*winvrho;
-          parti.dudt -= neibpart[j].m*uaux;
-          neibpart[j].dudt -= parti.m*uaux;
-        }
-
-        // Artificial conductivity term
-        if (acond == wadsley2008) {
-	      uaux = (FLOAT) 0.5*dvdr*(neibpart[j].u - parti.u)*
-	    		  (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
-	      parti.dudt += neibpart[j].m*uaux;
-	      neibpart[j].dudt -= parti.m*uaux;
-        }
-        else if (acond == price2008) {
-    	  vsignal = sqrt(fabs(eos->Pressure(parti) -
-			      eos->Pressure(neibpart[j]))*0.5*
-    			  (parti.invrho + neibpart[j].invrho));
-          parti.dudt += 0.5*neibpart[j].m*vsignal*
-            (parti.u - neibpart[j].u)*winvrho;
-          neibpart[j].dudt -= 0.5*parti.m*vsignal*
-            (parti.u - neibpart[j].u)*winvrho;
-        }
-	
+      // Artificial viscosity term
+      if (avisc == mon97) {
+        vsignal = parti.sound + neibpart[j].sound - beta_visc*alpha_visc*dvdr;
+        paux -= (FLOAT) alpha_visc*vsignal*dvdr*winvrho;
+        uaux = (FLOAT) 0.5*alpha_visc*vsignal*dvdr*dvdr*winvrho;
+        parti.dudt -= neibpart[j].m*uaux;
+        neibpart[j].dudt -= parti.m*uaux;
       }
-      // ----------------------------------------------------------------------
+      else if (avisc == mon97td) {
+        alpha_mean = 0.5*(parti.alpha + neibpart[j].alpha);
+        vsignal = parti.sound + neibpart[j].sound - beta_visc*alpha_mean*dvdr;
+        paux -= (FLOAT) alpha_mean*vsignal*dvdr*winvrho;
+        uaux = (FLOAT) 0.5*alpha_mean*vsignal*dvdr*dvdr*winvrho;
+        parti.dudt -= neibpart[j].m*uaux;
+        neibpart[j].dudt -= parti.m*uaux;
+      }
 
-      uaux = 0.5*neibpart[j].m*neibpart[j].u*dvdr*(wkerni + wkernj);
-
-      // Add total hydro contribution to acceleration for particle i
-      for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
-      parti.dudt += 0.5*neibpart[j].m*neibpart[j].u*dvdr*(wkerni + wkernj)*
-    		  parti.pfactor;
-      
-      // If neighbour is also active, add contribution to force here
-      for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
-      neibpart[j].dudt += 0.5*parti.m*parti.u*dvdr*(wkerni + wkernj)*
-    		  neibpart[j].pfactor;
-
+      // Artificial conductivity term
+      if (acond == wadsley2008) {
+        uaux = (FLOAT) 0.5*dvdr*(neibpart[j].u - parti.u)*
+	      (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
+        parti.dudt += neibpart[j].m*uaux;
+        neibpart[j].dudt -= parti.m*uaux;
+      }
+      else if (acond == price2008) {
+    	vsignal = sqrt(fabs(eos->Pressure(parti) -
+      		      eos->Pressure(neibpart[j]))*0.5*
+      		 (parti.invrho + neibpart[j].invrho));
+        parti.dudt += 0.5*neibpart[j].m*vsignal*
+          (parti.u - neibpart[j].u)*winvrho;
+        neibpart[j].dudt -= 0.5*parti.m*vsignal*
+          (parti.u - neibpart[j].u)*winvrho;
+      }
+	
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
+
+      
+    uaux = 0.5*neibpart[j].m*neibpart[j].u*dvdr*(wkerni + wkernj);
+
+    // Add total hydro contribution to acceleration for particle i
+    for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
+    parti.dudt += 0.5*neibpart[j].m*neibpart[j].u*dvdr*(wkerni + wkernj)*
+      parti.pfactor;
+      
+    // If neighbour is also active, add contribution to force here
+    for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
+    neibpart[j].dudt += 0.5*parti.m*parti.u*dvdr*(wkerni + wkernj)*
+      neibpart[j].pfactor;
 
   }
-  // ==========================================================================
+  //---------------------------------------------------------------------------
 
 
   return;

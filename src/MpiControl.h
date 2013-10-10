@@ -1,6 +1,8 @@
 //=============================================================================
-//  Ghosts.h
-//  Contains definitions for ghost particle class.
+//  MpiControl.h
+//  Main MPI class for controlling the distribution of work amongst all MPI 
+//  tasks for the current simulation, including load balancing and moving 
+//  and copying particles between nodes.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -21,52 +23,54 @@
 //=============================================================================
 
 
-#ifndef _GHOSTS_H_
-#define _GHOSTS_H_
+#ifndef _MPI_CONTROL_H_
+#define _MPI_CONTROL_H_
 
 
-#include <map>
 #include <string>
-#include <list>
-#include "Diagnostics.h"
-#include "DomainBox.h"
 #include "Precision.h"
-#include "Parameters.h"
-#include "SimUnits.h"
-#include "SphKernel.h"
-#include "Sph.h"
+#include "MpiNode.h"
 #include "Nbody.h"
+#include "SphNeighbourTree.h"
+#include "SphParticle.h"
 using namespace std;
 
 
 
 //=============================================================================
-//  Class Ghosts
-/// \brief   Main ghost particle class.
-/// \details Class for creating and updating ghost particles for periodic
-///          boundary conditions.
+//  Class MpiControl
+/// \brief   Main MPI control class for managing MPI simulations.
+/// \details Main MPI control class for managing MPI simulations.
 /// \author  D. A. Hubber, G. Rosotti
-/// \date    03/04/2013
+/// \date    09/10/2013
 //=============================================================================
 template <int ndim>
-class Ghosts
+class MpiControl
 {
  public:
 
-  Ghosts();
-  ~Ghosts();
-
-  // Main ghost particle functions
+  // Constructor and destructor
   //---------------------------------------------------------------------------
-  void SearchGhostParticles(DomainBox<ndim>, Sph<ndim> *);
-  void CreateGhostParticle(int, int, FLOAT, FLOAT, Sph<ndim> *);
-  void CopySphDataToGhosts(Sph<ndim> *);
-  void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
+  MpiControl();
+  ~MpiControl();
 
-  DomainBox<ndim> simbox;               ///< Simulation boundary data
-  Sph<ndim> *sph;                       ///< SPH algorithm pointer
 
-  static const FLOAT ghost_range = 1.1;
+  // Other functions
+  //---------------------------------------------------------------------------
+  void AllocateMemory(void);
+  void DeallocateMemory(void);
+
+  void CreateLoadBalancingTree(void);
+  void LoadBalancing(void);
+  void TransferParticlesToNode(int);
+
+
+  // MPI control variables
+  //---------------------------------------------------------------------------
+  int Nmpi;                         ///< No. of MPI processes
+  int Nloadbalance;                 ///< No. of steps between load-balancing
+
+  BinaryTree<ndim> mpitree;         ///< Main MPI load balancing tree
+  MpiNode<ndim> *mpinode;           ///< Data for all MPI nodes
 
 };
-#endif

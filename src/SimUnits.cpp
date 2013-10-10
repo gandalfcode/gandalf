@@ -4,11 +4,11 @@
 //  between dimensionless and physical units.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -811,7 +811,7 @@ void SimUnits::SetupUnits(Parameters *params)
 
   // If not input units have been read from the snapshot file, then assume
   // units are the same as the output units in parameters file.
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (!ReadInputUnits) {
     params->stringparams["rinunit"] = params->stringparams["routunit"];
     params->stringparams["minunit"] = params->stringparams["moutunit"];
@@ -838,7 +838,7 @@ void SimUnits::SetupUnits(Parameters *params)
   }
 
   // Length units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   r.inunit = params->stringparams["rinunit"];
   r.outunit = params->stringparams["routunit"];
   r.inSI = r.SIUnit(params->stringparams["rinunit"]);
@@ -848,7 +848,7 @@ void SimUnits::SetupUnits(Parameters *params)
   r.inscale = r.outscale*r.outSI/r.inSI;
 
   // Mass units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   m.inunit = params->stringparams["minunit"];
   m.outunit = params->stringparams["moutunit"];
   m.inSI = m.SIUnit(params->stringparams["minunit"]);
@@ -858,7 +858,7 @@ void SimUnits::SetupUnits(Parameters *params)
   m.inscale = m.outscale*m.outSI/m.inSI;
 
   // Time units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   t.inunit = params->stringparams["tinunit"];
   t.outunit = params->stringparams["toutunit"];
   t.inSI = t.SIUnit(params->stringparams["tinunit"]);
@@ -870,7 +870,7 @@ void SimUnits::SetupUnits(Parameters *params)
   t.outcgs = t.outSI;
 
   // Velocity units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   v.inunit = params->stringparams["vinunit"];
   v.outunit = params->stringparams["voutunit"];
   v.inSI = v.SIUnit(params->stringparams["vinunit"]);
@@ -882,7 +882,7 @@ void SimUnits::SetupUnits(Parameters *params)
   v.outcgs = 100.0*v.outSI;
 
   // Acceleration units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   a.inunit = params->stringparams["ainunit"];
   a.outunit = params->stringparams["aoutunit"];
   a.inSI = a.SIUnit(params->stringparams["ainunit"]);
@@ -894,7 +894,7 @@ void SimUnits::SetupUnits(Parameters *params)
   a.outcgs = 100.0*a.outSI;
 
   // Density units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   rho.inunit = params->stringparams["rhoinunit"];
   rho.outunit = params->stringparams["rhooutunit"];
   rho.inSI = rho.SIUnit(params->stringparams["rhoinunit"]);
@@ -906,7 +906,7 @@ void SimUnits::SetupUnits(Parameters *params)
   rho.outcgs = 1.0e-3*rho.outSI;
 
   // Column density units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   sigma.inunit = params->stringparams["sigmainunit"];
   sigma.outunit = params->stringparams["sigmaoutunit"];
   sigma.inSI = sigma.SIUnit(params->stringparams["sigmainunit"]);
@@ -918,7 +918,7 @@ void SimUnits::SetupUnits(Parameters *params)
   sigma.outcgs = 0.1*sigma.outSI;
 
   // Pressure units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   press.inunit = params->stringparams["pressinunit"];
   press.outunit = params->stringparams["pressoutunit"];
   press.inSI = press.SIUnit(params->stringparams["pressinunit"]);
@@ -932,7 +932,7 @@ void SimUnits::SetupUnits(Parameters *params)
   press.outcgs = 0.1*press.outSI;
 
   // Force units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   f.inunit = params->stringparams["finunit"];
   f.outunit = params->stringparams["foutunit"];
   f.inSI = f.SIUnit(params->stringparams["forceinunit"]);
@@ -946,7 +946,7 @@ void SimUnits::SetupUnits(Parameters *params)
   f.outcgs = 1.0e5*f.outSI;
 
   // Energy units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   E.inunit = params->stringparams["Einunit"];
   E.outunit = params->stringparams["Eoutunit"];
   E.inSI = E.SIUnit(params->stringparams["Einunit"]);
@@ -959,7 +959,7 @@ void SimUnits::SetupUnits(Parameters *params)
   E.outcgs = 1.0e7*E.outSI;
 
   // Momentum units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   mom.inunit = params->stringparams["mominunit"];
   mom.outunit = params->stringparams["momoutunit"];
   mom.inSI = mom.SIUnit(params->stringparams["mominunit"]);
@@ -971,7 +971,7 @@ void SimUnits::SetupUnits(Parameters *params)
   mom.outcgs = 1.0e5*mom.outSI;
 
   // Angular momentum units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   angmom.inunit = params->stringparams["angmominunit"];
   angmom.outunit = params->stringparams["angmomoutunit"];
   angmom.inSI = angmom.SIUnit(params->stringparams["angmominunit"]);
@@ -984,7 +984,7 @@ void SimUnits::SetupUnits(Parameters *params)
   angmom.outcgs = 1.0e7*angmom.outSI;
 
   // Angular velocity units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   angvel.inunit = params->stringparams["angvelinunit"];
   angvel.outunit = params->stringparams["angveloutunit"];
   angvel.inSI = angvel.SIUnit(params->stringparams["angvelinunit"]);
@@ -996,7 +996,7 @@ void SimUnits::SetupUnits(Parameters *params)
   angvel.outcgs = angvel.outSI;
 
   // Mass rate units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   dmdt.inunit = params->stringparams["dmdtinunit"];
   dmdt.outunit = params->stringparams["dmdtoutunit"];
   dmdt.inSI = dmdt.SIUnit(params->stringparams["dmdtinunit"]);
@@ -1008,7 +1008,7 @@ void SimUnits::SetupUnits(Parameters *params)
   dmdt.outcgs = 1.0e3*dmdt.outSI;
 
   // Luminosity units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   L.inunit = params->stringparams["Linunit"];
   L.outunit = params->stringparams["Loutunit"];
   L.inSI = L.SIUnit(params->stringparams["Linunit"]);
@@ -1020,7 +1020,7 @@ void SimUnits::SetupUnits(Parameters *params)
   L.outcgs = 1.0e7*L.outSI;
 
   // Opacity units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   kappa.inunit = params->stringparams["kappainunit"];
   kappa.outunit = params->stringparams["kappaoutunit"];
   kappa.inSI = kappa.SIUnit(params->stringparams["kappainunit"]);
@@ -1032,7 +1032,7 @@ void SimUnits::SetupUnits(Parameters *params)
   kappa.outcgs = 10.0*kappa.outSI;
 
   // Specific internal energy units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   u.inunit = params->stringparams["uinunit"];
   u.outunit = params->stringparams["uoutunit"];
   u.inSI = u.SIUnit(params->stringparams["uinunit"]);
@@ -1044,7 +1044,7 @@ void SimUnits::SetupUnits(Parameters *params)
   u.outcgs = 1.0e4*u.outSI;
 
   // Rate of change of specific internal energy units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   dudt.inunit = params->stringparams["dudtinunit"];
   dudt.outunit = params->stringparams["dudtoutunit"];
   dudt.inSI = dudt.SIUnit(params->stringparams["dudtinunit"]);
@@ -1056,7 +1056,7 @@ void SimUnits::SetupUnits(Parameters *params)
   dudt.outcgs = 1.0e4*dudt.outSI;
 
   // Temperature units
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   temp.inunit = params->stringparams["tempinunit"];
   temp.outunit = params->stringparams["tempoutunit"];
   temp.inSI = temp.SIUnit(params->stringparams["tempinunit"]);

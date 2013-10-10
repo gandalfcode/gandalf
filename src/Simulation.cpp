@@ -3,11 +3,11 @@
 //  Contains all main functions controlling SPH simulation work-flow.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -115,7 +115,7 @@ SimulationBase* SimulationBase::SimulationFactory
 //=============================================================================
 //  SimulationBase::SimulationBase
 /// SimulationBase constructor, initialising important simulation variables. 
-// ============================================================================
+//=============================================================================
 SimulationBase::SimulationBase
 (Parameters* params)                ///< [in] Pointer to parameters object
 {
@@ -254,7 +254,7 @@ void Simulation<ndim>::ProcessParameters(void)
 
 
   // Process all SPH parameters if running SPH simulations
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (sim == "sph" || sim == "godunov_sph") {
 
 
@@ -267,7 +267,7 @@ void Simulation<ndim>::ProcessParameters(void)
 
     // Thermal physics object.  If energy equation is chosen, also initiate
     // the energy integration object.
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     string gas_eos = stringparams["gas_eos"];
     if (gas_eos == "energy_eqn" || gas_eos == "constant_temp") {
       sph->eos = new Adiabatic<ndim>(floatparams["temp0"],
@@ -292,7 +292,7 @@ void Simulation<ndim>::ProcessParameters(void)
     
 
     // Create neighbour searching object based on chosen method in params file
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (stringparams["neib_search"] == "bruteforce")
       sphneib = new BruteForceSearch<ndim>;
     else if (stringparams["neib_search"] == "grid")
@@ -311,7 +311,7 @@ void Simulation<ndim>::ProcessParameters(void)
     }
  
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
 
   // Process all N-body parameters and set-up main N-body objects
@@ -340,7 +340,7 @@ void Simulation<ndim>::ProcessParameters(void)
 
 
   // Boundary condition variables
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   simbox.x_boundary_lhs = stringparams["x_boundary_lhs"];
   simbox.x_boundary_rhs = stringparams["x_boundary_rhs"];
   simbox.y_boundary_lhs = stringparams["y_boundary_lhs"];
@@ -360,7 +360,7 @@ void Simulation<ndim>::ProcessParameters(void)
 
 
   // Sink particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   sink_particles = intparams["sink_particles"];
   sinks.sink_particles = intparams["sink_particles"];
   sinks.create_sinks = intparams["create_sinks"];
@@ -447,7 +447,7 @@ void Simulation<ndim>::ProcessSphParameters(void)
 
 
   // Create 'grad-h' SPH object
-  // ==========================================================================
+  //===========================================================================
   if (stringparams["sph"] == "gradh") {
     if (intparams["tabulated_kernel"] == 1) {
       sph = new GradhSph<ndim, TabulatedKernel> 
@@ -493,7 +493,7 @@ void Simulation<ndim>::ProcessSphParameters(void)
   }
 
   // Create Saitoh-Makino (2012) SPH object
-  // ==========================================================================
+  //===========================================================================
   else if (stringparams["sph"] == "sm2012") {
     if (intparams["tabulated_kernel"] == 1) {
       sph = new SM2012Sph<ndim, TabulatedKernel> 
@@ -538,17 +538,17 @@ void Simulation<ndim>::ProcessSphParameters(void)
     }
   }
 
-  // ==========================================================================
+  //===========================================================================
   else {
     string message = "Invalid or unrecognised parameter : sph = " 
       + simparams->stringparams["sph"];
     ExceptionHandler::getIstance().raise(message);
   }
-  // ==========================================================================
+  //===========================================================================
 
 
   // Create SPH particle integration object
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (stringparams["sph_integration"] == "lfkdk") {
     sphint = new SphLeapfrogKDK<ndim>(floatparams["accel_mult"],
 			              floatparams["courant_mult"]);
@@ -566,7 +566,7 @@ void Simulation<ndim>::ProcessSphParameters(void)
 
 
   // Energy integration object
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (stringparams["energy_integration"] == "PEC") {
     uint = new EnergyPEC<ndim>(floatparams["energy_mult"]);
   }
@@ -601,7 +601,7 @@ void Simulation<ndim>::ProcessGodunovSphParameters(void)
   string KernelName = stringparams["kernel"];
 
   // Create SPH object based on chosen method in params file
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (intparams["tabulated_kernel"] == 1) {
     sph = new GodunovSph<ndim, TabulatedKernel> 
       (intparams["hydro_forces"], intparams["self_gravity"],
@@ -646,7 +646,7 @@ void Simulation<ndim>::ProcessGodunovSphParameters(void)
 
 
   // Riemann solver object
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   string riemann = stringparams["riemann_solver"];
   if (riemann == "exact") {
     sph->riemann = new ExactRiemannSolver(floatparams["gamma_eos"]);
@@ -662,13 +662,13 @@ void Simulation<ndim>::ProcessGodunovSphParameters(void)
 
  
   // Create SPH particle integration object
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   sphint = new SphGodunovIntegration<ndim>(floatparams["accel_mult"],
 					   floatparams["courant_mult"]);
 
 
   // Energy integration object
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   uint = new EnergyGodunovIntegration<ndim>(floatparams["energy_mult"]);
 
   
@@ -690,7 +690,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
   map<string, string> &stringparams = simparams->stringparams;
   
   // Create N-body object based on chosen method in params file
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (stringparams["nbody"] == "lfkdk") {
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
@@ -728,7 +728,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
     }
   }
   // Create N-body object based on chosen method in params file
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (stringparams["nbody"] == "lfdkd") {
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
@@ -766,7 +766,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
     }
     integration_step = max(integration_step,2);
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (stringparams["nbody"] == "hermite4") {
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
@@ -803,7 +803,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
       ExceptionHandler::getIstance().raise(message);
     }
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (stringparams["nbody"] == "hermite4ts") {
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
@@ -840,20 +840,20 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
       ExceptionHandler::getIstance().raise(message);
     }
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else {
     string message = "Unrecognised parameter : nbody = " 
       + simparams->stringparams["nbody"];
     ExceptionHandler::getIstance().raise(message);
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
 
   // Create sub-system object based on chosen method in params file
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (intparams["sub_systems"] == 1) {
 
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (stringparams["sub_system_integration"] == "lfkdk") {
       string KernelName = stringparams["kernel"];
       if (intparams["tabulated_kernel"] == 1) {
@@ -890,7 +890,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
 	ExceptionHandler::getIstance().raise(message);
       }
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else if (stringparams["sub_system_integration"] == "hermite4") {
       string KernelName = stringparams["kernel"];
       if (intparams["tabulated_kernel"] == 1) {
@@ -927,7 +927,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
 	ExceptionHandler::getIstance().raise(message);
       }
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else if (stringparams["sub_system_integration"] == "hermite4ts") {
       string KernelName = stringparams["kernel"];
       if (intparams["tabulated_kernel"] == 1) {
@@ -964,16 +964,16 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
 	ExceptionHandler::getIstance().raise(message);
       }
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     else {
       string message = "Unrecognised parameter : sub_system_integration = " 
 	+ simparams->stringparams["sub_system_integration"];
       ExceptionHandler::getIstance().raise(message);
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -1003,14 +1003,14 @@ void SimulationBase::Run
 
   // Continue to run simulation until we reach the required time, or 
   // exeeded the maximum allowed number of steps.
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   while (t < tend && Nsteps < Ntarget) {
 
     MainLoop();
     Output();
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   CalculateDiagnostics();
   OutputDiagnostics();
@@ -1058,7 +1058,7 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
 
   // Continue to run simulation until we reach the required time, or
   // exeeded the maximum allowed number of steps.
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   while (t < tend && Nsteps < Ntarget && tdiff < dt_python) {
 	
     // Evolve the simulation one step
@@ -1082,7 +1082,7 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
     tdiff = (DOUBLE) (clock() - tstart) / (DOUBLE) CLOCKS_PER_SEC;
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   // Calculate and process all diagnostic quantities
   CalculateDiagnostics();
@@ -1290,13 +1290,13 @@ void Simulation<ndim>::ImportArrayNbody
   }
   
   // Now set pointer to the correct value inside the particle data structure
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (quantity == "x") {
     quantitypvec = &StarParticle<ndim>::r;
     index = 0;
     scalar = false;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (quantity == "y") {
     if (ndim < 2) {
       string message = "Error: loading y-coordinate array for ndim < 2";
@@ -1306,7 +1306,7 @@ void Simulation<ndim>::ImportArrayNbody
     index = 1;
     scalar = false;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (quantity == "z") {
     if (ndim < 3) {
       string message = "Error: loading y-coordinate array for ndim < 3";
@@ -1316,13 +1316,13 @@ void Simulation<ndim>::ImportArrayNbody
     index = 2;
     scalar = false;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (quantity == "vx") {
     quantitypvec = &StarParticle<ndim>::v;
     index = 0;
     scalar = false;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (quantity == "vy") {
     if (ndim < 2) {
       string message = "Error: loading vy array for ndim < 2";
@@ -1332,7 +1332,7 @@ void Simulation<ndim>::ImportArrayNbody
     index = 1;
     scalar = false;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (quantity == "vz") {
     if (ndim < 3) {
       string message = "Error: loading vz array for ndim < 3";
@@ -1342,27 +1342,27 @@ void Simulation<ndim>::ImportArrayNbody
     index = 2;
     scalar = false;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (quantity == "m") {
     quantityp = &StarParticle<ndim>::m;
     scalar = true;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (quantity == "h") {
     quantityp = &StarParticle<ndim>::h;
     scalar = true;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else {
     string message = "Quantity " + quantity + "not recognised";
     ExceptionHandler::getIstance().raise(message);
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
 
   // Finally loop over particles and set all values
   // (Note that the syntax for scalar is different from the one for vectors)
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (scalar) {
     int i=0;
     for (StarParticle<ndim>* particlep = nbody->stardata;
@@ -1410,13 +1410,13 @@ void Simulation<ndim>::ImportArraySph
   }
 
   // Now set pointer to the correct value inside the particle data structure
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (quantity == "x") {
     quantitypvec = &SphParticle<ndim>::r;
     index = 0;
     scalar = false;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (quantity == "y") {
     if (ndim < 2) {
       string message = "Error: loading y-coordinate array for ndim < 2";
@@ -1426,7 +1426,7 @@ void Simulation<ndim>::ImportArraySph
     index = 1;
     scalar = false;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (quantity == "z") {
     if (ndim < 3) {
       string message = "Error: loading y-coordinate array for ndim < 3";
@@ -1436,13 +1436,13 @@ void Simulation<ndim>::ImportArraySph
     index = 2;
     scalar = false;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (quantity == "vx") {
     quantitypvec = &SphParticle<ndim>::v;
     index = 0;
     scalar = false;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (quantity == "vy") {
     if (ndim < 2) {
       string message = "Error: loading vy array for ndim < 2";
@@ -1452,7 +1452,7 @@ void Simulation<ndim>::ImportArraySph
     index = 1;
     scalar = false;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (quantity == "vz") {
     if (ndim < 3) {
       string message = "Error: loading vz array for ndim < 3";
@@ -1462,41 +1462,41 @@ void Simulation<ndim>::ImportArraySph
     index = 2;
     scalar = false;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (quantity=="rho") {
     //TODO: at the moment, if rho or h are uploaded, they will be just ignored.
     //Add some facility to use them
     quantityp = &SphParticle<ndim>::rho;
     scalar = true;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (quantity == "h") {
     quantityp = &SphParticle<ndim>::h;
     scalar = true;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (quantity == "u") {
     //TODO: add some facility for uploading either u, T, or cs, and compute automatically the other ones
     //depending on the EOS
     quantityp = &SphParticle<ndim>::u;
     scalar=true;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (quantity=="m") {
     quantityp = &SphParticle<ndim>::m;
     scalar = true;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else {
     string message = "Quantity " + quantity + "not recognised";
     ExceptionHandler::getIstance().raise(message);
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
 
   // Finally loop over particles and set all values
   // (Note that the syntax for scalar is different from the one for vectors)
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (scalar) {
     int i=0;
     for (SphParticle<ndim>* particlep = sph->sphdata; 

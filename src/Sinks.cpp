@@ -4,11 +4,11 @@
 //  sink particle propterties.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -126,13 +126,13 @@ void Sinks<ndim>::SearchForNewSinkParticles
   // Continuous loop to search for new sinks.  If a new sink is found, then 
   // repeat entire process to search for other sinks on current timestep. 
   // If no sinks are found, then exit and return to main program.
-  // ==========================================================================
+  //===========================================================================
   do {
     isink = -1;
 
     // Loop over all SPH particles finding the particle with the highest 
     // density that obeys all of the formation criteria, if any do.
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       sink_flag = true;
 
@@ -162,7 +162,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
       }
 
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
 
     // If all conditions have been met, then create a new sink particle
@@ -175,7 +175,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
 
 
   } while (isink != -1);
-  // ==========================================================================
+  //===========================================================================
 
   return;
 }
@@ -321,7 +321,7 @@ void Sinks<ndim>::AccreteMassToSinks
   for (s=0; s<Nsinkmax; s++) sink[s].Ngas = 0;
 
   // Determine which sink each SPH particle accretes to.  If none, flag -1
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
     saux = -1;
     for (s=0; s<Nsink; s++) {
@@ -349,7 +349,7 @@ void Sinks<ndim>::AccreteMassToSinks
 
   // Calculate the accretion timescale and the total mass accreted from all 
   // particles for each sink.
-  // ==========================================================================
+  //===========================================================================
   for (s=0; s<Nsink; s++) {
 
     // Skip sink particle if it contains no gas, or unless it's at the 
@@ -389,7 +389,7 @@ void Sinks<ndim>::AccreteMassToSinks
 
     // Calculate all important quantities (e.g. energy contributions) due to 
     // all particles inside the sink
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       i = ilist[ilist2[j]];
 
@@ -436,7 +436,7 @@ void Sinks<ndim>::AccreteMassToSinks
     // accreted by sink s this timestep.  If the contained mass is greater 
     // than the maximum allowed, accrete the excess mass.  Otherwise, 
     // accrete a small amount based on freefall/viscous timescale.
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (smooth_accretion == 1) {
       efrac = min(2.0*sink[s].rotketot/sink[s].gpetot,1.0);
       sink[s].tvisc = (sqrt(sink[s].star->m + sink[s].menc)*
@@ -468,7 +468,7 @@ void Sinks<ndim>::AccreteMassToSinks
 
 
     // Now accrete SPH particles to sink
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     macc_temp = macc;
     for (k=0; k<ndim; k++) rold[k] = sink[s].star->r[k];
     for (k=0; k<ndim; k++) vold[k] = sink[s].star->v[k];
@@ -480,7 +480,7 @@ void Sinks<ndim>::AccreteMassToSinks
 
 
     // Loop over all neighbouring particles
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       i = ilist[ilist2[j]];
       mtemp = min(sph->sphdata[i].m,macc_temp);
@@ -521,7 +521,7 @@ void Sinks<ndim>::AccreteMassToSinks
 
 
     // Now add angular momentum contribution of individual SPH particles
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       i = ilist[ilist2[j]];
       mtemp = min(sph->sphdata[i].m,macc);
@@ -557,7 +557,7 @@ void Sinks<ndim>::AccreteMassToSinks
       0.4*sqrt(sink[s].radius/(sqrt(asqd) + small_number));
 
   }
-  // ==========================================================================
+  //===========================================================================
 
 
   // If particles have been accreted, delete them from main arrays

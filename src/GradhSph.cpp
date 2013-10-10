@@ -4,11 +4,11 @@
 //  (See Springel & Hernquist (2002) and Price & Monaghan (2007).
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -110,7 +110,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
 
   // Main smoothing length iteration loop
-  // ==========================================================================
+  //===========================================================================
   do {
 
     // Initialise all variables for this value of h
@@ -125,14 +125,14 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
     // Loop over all nearest neighbours in list to calculate 
     // density, omega and zeta.
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       ssqd = drsqd[j]*invhsqd;
       parti.rho += m[j]*kern.w0_s2(ssqd);
       parti.invomega += m[j]*parti.invh*kern.womega_s2(ssqd);
       parti.zeta += m[j]*kern.wzeta_s2(ssqd);
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
     parti.rho *= parti.hfactor;
     parti.invomega *= parti.hfactor;
@@ -150,7 +150,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
     // iterations (iteration_max), then assume something is wrong and switch 
     // to a bisection method, which should be guaranteed to converge, 
     // albeit much more slowly.  (N.B. will implement Newton-Raphson soon)
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (iteration < iteration_max)
       parti.h = h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim);
 
@@ -182,7 +182,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
     if (parti.h > hmax) return 0;
     
   } while (parti.h > h_lower_bound && parti.h < h_upper_bound);
-  // ==========================================================================
+  //===========================================================================
 
 
   // Normalise all SPH sums correctly
@@ -214,7 +214,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
   }
 
   // If there are star particles, compute N-body chi correction term
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (nbody->nbody_softening == 1) {
     for (j=0; j<nbody->Nstar; j++) {
       invhsqd = pow(2.0 / (parti.h + nbody->stardata[j].h),2);
@@ -277,7 +277,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
 
 
   // Loop over all potential neighbours in the list
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
     wkerni = parti.hfactor*kern.w1(drmag[jj]*parti.invh);
@@ -295,7 +295,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
     paux = parti.pfactor*wkerni + neibpart[j].pfactor*wkernj;
     
     // Add dissipation terms (for approaching particle pairs)
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (dvdr < (FLOAT) 0.0) {
 
       winvrho = (FLOAT) 0.25*(wkerni + wkernj)*
@@ -338,7 +338,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
       }
 	
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
     // Add total hydro contribution to acceleration for particle i
     for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
@@ -349,7 +349,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
     neibpart[j].levelneib = max(neibpart[j].levelneib,parti.level);
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
 
   return;
@@ -394,7 +394,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 
 
   // Loop over all potential neighbours in the list
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
 
@@ -413,7 +413,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     paux = parti.pfactor*wkerni + neibpart[j].pfactor*wkernj;
 
     // Add dissipation terms (for approaching particle pairs)
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     if (dvdr < (FLOAT) 0.0) {
 
       winvrho = (FLOAT) 0.25*(wkerni + wkernj)*
@@ -445,7 +445,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
       }
       
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
     // Add total hydro contribution to acceleration for particle i
     for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*dr[k]*paux;
@@ -455,7 +455,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 
 
     // Main SPH gravity terms
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     paux = 0.5*(parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) +
                 (parti.zeta + parti.chi)*parti.hfactor*
                 kern.w1(drmag*parti.invh) + neibpart[j].invh*neibpart[j].invh*
@@ -479,7 +479,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 
 
   }
-  // ==========================================================================
+  //===========================================================================
 
   return;
 }
@@ -516,7 +516,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
 
 
   // Loop over all potential neighbours in the list
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
 
@@ -528,7 +528,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
     for (k=0; k<ndim; k++) dr[k] *= invdrmag;
 
     // Main SPH gravity terms
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     paux = 0.5*(parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) +
                 (parti.zeta + parti.chi)*parti.hfactor*
                 kern.w1(drmag*parti.invh) + neibpart[j].invh*neibpart[j].invh*
@@ -547,7 +547,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
     neibpart[j].gpot += parti.m*gaux;
 
   }
-  // ==========================================================================
+  //===========================================================================
 
   return;
 }
@@ -626,7 +626,7 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
   for (k=0; k<ndim; k++) rp[k] = parti.r[k];
 
   // Loop over all neighbouring particles in list
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (jj=0; jj<Ndirect; jj++) {
     j = directlist[jj];
 
@@ -648,7 +648,7 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
     gpot[j] += parti.m*invdrmag;
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -675,7 +675,7 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
   FLOAT paux;                       // Aux. force variable
 
   // Loop over all stars and add each contribution
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (j=0; j<N; j++) {
 
     for (k=0; k<ndim; k++) dr[k] = nbodydata[j]->r[k] - parti.r[k];
@@ -692,7 +692,7 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
     parti.gpot += nbodydata[j]->m*invhmean*kern.wpot(drmag*invhmean);
     
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }

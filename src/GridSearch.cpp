@@ -5,11 +5,11 @@
 //  the size of the maximum kernel range (i.e. kernrange*h_max) over all ptcls.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -110,7 +110,7 @@ void GridSearch<ndim>::UpdateActiveParticleCounters(Sph<ndim> *sph)
   int ilast;
 
   // Loop through all grid cells in turn
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
     grid[c].Nactive = 0;
 
@@ -126,7 +126,7 @@ void GridSearch<ndim>::UpdateActiveParticleCounters(Sph<ndim> *sph)
     } while (i != -1);
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
 
   return;
@@ -184,7 +184,7 @@ void GridSearch<ndim>::UpdateAllSphProperties
   Nneibmax = Nlistmax;
 
   // Set-up all OMP threads
-  // ==========================================================================
+  //===========================================================================
 #pragma omp parallel default(none) private(activelist,c,cc,draux,drsqd) \
   private(drsqdaux,gatherlist,hrangesqd,i,j,jj,k,okflag,m,m2,mu,mu2,Nactive) \
   private(neiblist,Ngather,Nneib,r,rp,gpot,gpot2) \
@@ -203,7 +203,7 @@ void GridSearch<ndim>::UpdateAllSphProperties
     r = new FLOAT[Nneibmax*ndim];
 
     // Loop over all active cells
-    // ========================================================================
+    //=========================================================================
 #pragma omp for schedule(dynamic)
     for (cc=0; cc<cactive; cc++) {
       c = celllist[cc];
@@ -224,7 +224,7 @@ void GridSearch<ndim>::UpdateAllSphProperties
       }
 
       // Loop over all active particles in the cell
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
         for (k=0; k<ndim; k++) rp[k] = data[i].r[k];
@@ -235,7 +235,7 @@ void GridSearch<ndim>::UpdateAllSphProperties
         Ngather = 0;
 
         // Compute distance (squared) to all
-        // --------------------------------------------------------------------
+        //---------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
           for (k=0; k<ndim; k++) draux[k] = r[ndim*jj + k] - rp[k];
           drsqdaux = DotProduct(draux,draux,ndim);
@@ -251,7 +251,7 @@ void GridSearch<ndim>::UpdateAllSphProperties
        	  }
 	  
         }
-        // --------------------------------------------------------------------
+        //---------------------------------------------------------------------
 
         // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
@@ -264,10 +264,10 @@ void GridSearch<ndim>::UpdateAllSphProperties
                                drsqd,gpot,data[i],nbody);
 
       }
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
 
     }
-    // ========================================================================
+    //=========================================================================
 
     // Free-up all memory
     delete[] r;
@@ -283,7 +283,7 @@ void GridSearch<ndim>::UpdateAllSphProperties
     delete[] activelist;
 
   }
-  // ==========================================================================
+  //===========================================================================
 
   delete[] celllist;
 
@@ -339,7 +339,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
 
 
   // Set-up all OMP threads
-  // ==========================================================================
+  //===========================================================================
 #pragma omp parallel default(none) private(activelist,activepart,c,cc,dr,draux,drmag,drsqd) \
   private(hrangesqdi,i,interactlist,invdrmag,j,jj,k,okflag,Nactive) \
   private(neiblist,neibpart,Ninteract,Nneib,Nneibmax,rp) \
@@ -356,7 +356,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
     neibpart = new SphParticle<ndim>[Nneibmax];
 
     // Loop over all active cells
-    // ========================================================================
+    //=========================================================================
 #pragma omp for schedule(dynamic)
     for (cc=0; cc<cactive; cc++) {
       c = celllist[cc];
@@ -387,7 +387,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
       }
 
       // Loop over all active particles in the cell
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
         activepart[j].div_v = (FLOAT) 0.0;
@@ -404,7 +404,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
         // and all neighbours here, for both gather and inactive scatter neibs.
         // Only consider particles with j > i to compute pair forces once
         // unless particle j is inactive.
-        // --------------------------------------------------------------------
+        //---------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
   	      // Skip neighbour if it's not the correct part of an active pair
@@ -427,14 +427,14 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
           }
 	  
         }
-        // --------------------------------------------------------------------
+        //---------------------------------------------------------------------
 
         // Compute all gather neighbour contributions to hydro forces
         sph->ComputeSphHydroForces(i,Ninteract,interactlist,
 				   drmag,invdrmag,dr,activepart[j],neibpart);
 
       }
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
 
 
     // Add all particle i contributions to main array
@@ -475,7 +475,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
       }
       
     }
-    // ========================================================================
+    //=========================================================================
 
     // Free-up local memory for OpenMP thread
     delete[] neibpart;
@@ -488,7 +488,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
     delete[] activelist;
     
   }
-  // ==========================================================================
+  //===========================================================================
 
   delete[] celllist;
 
@@ -575,7 +575,7 @@ void GridSearch<ndim>::UpdateAllSphDerivatives(Sph<ndim> *sph)
 
 
   // Set-up all OMP threads
-  // ==========================================================================
+  //===========================================================================
 #pragma omp parallel default(none) private(activelist,c,cc,dr,draux,drmag,drsqd)\
   private(hrangesqd,i,interactlist,invdrmag,j,jj,k,okflag,Nactive,neiblist)\
   private(neibpart,Ninteract,Nneib,parti,rp) shared(celllist, cactive, Nneibmax, data)\
@@ -590,7 +590,7 @@ void GridSearch<ndim>::UpdateAllSphDerivatives(Sph<ndim> *sph)
     neibpart = new SphParticle<ndim>[Nneibmax];
 
     // Loop over all active cells
-    // ========================================================================
+    //=========================================================================
 #pragma omp for schedule(dynamic)
     for (cc=0; cc<cactive; cc++) {
       c = celllist[cc];
@@ -603,7 +603,7 @@ void GridSearch<ndim>::UpdateAllSphDerivatives(Sph<ndim> *sph)
       for (j=0; j<Nneib; j++) neibpart[j] = data[neiblist[j]];
 
       // Loop over all active particles in the cell
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
         parti = data[i];
@@ -616,7 +616,7 @@ void GridSearch<ndim>::UpdateAllSphDerivatives(Sph<ndim> *sph)
         // and all neighbours here, for both gather and inactive scatter neibs.
         // Only consider particles with j > i to compute pair forces once
         // unless particle j is inactive.
-        // --------------------------------------------------------------------
+        //---------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
@@ -634,7 +634,7 @@ void GridSearch<ndim>::UpdateAllSphDerivatives(Sph<ndim> *sph)
           }
 	  
         }
-        // --------------------------------------------------------------------
+        //---------------------------------------------------------------------
 
         // Compute all gather neighbour contributions to hydro forces
         sph->ComputeSphDerivatives(i,Ninteract,interactlist,
@@ -643,10 +643,10 @@ void GridSearch<ndim>::UpdateAllSphDerivatives(Sph<ndim> *sph)
 	data[i] = parti;
 
       }
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
 
     }
-    // ========================================================================
+    //=========================================================================
 
     // Free-up local memory for OpenMP thread
     delete[] neibpart;
@@ -658,7 +658,7 @@ void GridSearch<ndim>::UpdateAllSphDerivatives(Sph<ndim> *sph)
     delete[] activelist;
     
   }
-  // ==========================================================================
+  //===========================================================================
 
   delete[] celllist;
 
@@ -716,7 +716,7 @@ void GridSearch<ndim>::UpdateAllSphDudt(Sph<ndim> *sph)
 
 
   // Set-up all OMP threads
-  // ==========================================================================
+  //===========================================================================
 #pragma omp parallel default(none) private(activelist,c,cc,dr,draux,drmag,drsqd)\
   private(hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag,Nactive) \
   private(neiblist,neibpart,Ninteract,Nneib,parti,rp) shared(sph, data, celllist)\
@@ -731,7 +731,7 @@ void GridSearch<ndim>::UpdateAllSphDudt(Sph<ndim> *sph)
     neibpart = new SphParticle<ndim>[Nneibmax];
 
     // Loop over all active cells
-    // ========================================================================
+    //=========================================================================
 #pragma omp for schedule(dynamic)
     for (cc=0; cc<cactive; cc++) {
       c = celllist[cc];
@@ -754,7 +754,7 @@ void GridSearch<ndim>::UpdateAllSphDudt(Sph<ndim> *sph)
       }
 
       // Loop over all active particles in the cell
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
         parti = data[i];
@@ -768,7 +768,7 @@ void GridSearch<ndim>::UpdateAllSphDudt(Sph<ndim> *sph)
         // and all neighbours here, for both gather and inactive scatter neibs.
         // Only consider particles with j > i to compute pair forces once
         // unless particle j is inactive.
-        // --------------------------------------------------------------------
+        //---------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
           hrangesqdj = 
@@ -790,7 +790,7 @@ void GridSearch<ndim>::UpdateAllSphDudt(Sph<ndim> *sph)
           }
 	  
         }
-        // --------------------------------------------------------------------
+        //---------------------------------------------------------------------
 
         // Compute all gather neighbour contributions to hydro forces
         sph->ComputeSphNeibDudt(i,Ninteract,interactlist,
@@ -801,7 +801,7 @@ void GridSearch<ndim>::UpdateAllSphDudt(Sph<ndim> *sph)
         data[i].dudt += parti.dudt;
 	
       }
-      // ----------------------------------------------------------------------
+      //-----------------------------------------------------------------------
 
       // Now add all active neighbour contributions to the main arrays
       for (jj=0; jj<Nneib; jj++) {
@@ -813,7 +813,7 @@ void GridSearch<ndim>::UpdateAllSphDudt(Sph<ndim> *sph)
       }
       
     }
-    // ========================================================================
+    //=========================================================================
 
     // Free-up local memory for OpenMP thread
     delete[] neibpart;
@@ -825,7 +825,7 @@ void GridSearch<ndim>::UpdateAllSphDudt(Sph<ndim> *sph)
     delete[] activelist;
     
   }
-  // ==========================================================================
+  //===========================================================================
 
   delete[] celllist;
 
@@ -922,7 +922,7 @@ void GridSearch<ndim>::CreateGrid(Sph<ndim> *sph)
   for (i=0; i<Ntotmax; i++) inext[i] = -1;
 
   // Now attach all particles to grid cells
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<sph->Ntot; i++) {
     c = ComputeParticleGridCell(sph->sphdata[i].r);
 
@@ -938,7 +938,7 @@ void GridSearch<ndim>::CreateGrid(Sph<ndim> *sph)
     if (i < sph->Nsph && sph->sphdata[i].active) grid[c].Nactive++;
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   // Find maximum occupations of all cells
   Noccupymax = 0;
@@ -1090,7 +1090,7 @@ int GridSearch<ndim>::ComputeNeighbourList
   // Compute the location of the cell on the grid using the id
   ComputeCellCoordinate(c,igrid);
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   if (ndim == 1) {
     gridmin[0] = max(0,igrid[0]-1);
     gridmax[0] = min(Ngrid[0]-1,igrid[0]+1);
@@ -1107,7 +1107,7 @@ int GridSearch<ndim>::ComputeNeighbourList
       } while (i != -1);
     }
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (ndim == 2) {
     gridmin[0] = max(0,igrid[0]-1);
     gridmax[0] = min(Ngrid[0]-1,igrid[0]+1);
@@ -1128,7 +1128,7 @@ int GridSearch<ndim>::ComputeNeighbourList
       }
     }
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   else if (ndim == 3) {
     gridmin[0] = max(0,igrid[0]-1);
     gridmax[0] = min(Ngrid[0]-1,igrid[0]+1);
@@ -1153,7 +1153,7 @@ int GridSearch<ndim>::ComputeNeighbourList
       }
     }
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return Nneib;
 }

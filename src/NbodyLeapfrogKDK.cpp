@@ -4,11 +4,11 @@
 //  using the leapfrog kick-drift-kick (KDK) scheme.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -85,12 +85,12 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectGravForces
   debug2("[NbodyLeapfrogKDK::CalculateDirectGravForces]");
 
   // Loop over all (active) stars
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<N; i++) {
     if (star[i]->active == 0) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (j=0; j<N; j++) {
       if (i == j) continue;
 
@@ -103,10 +103,10 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectGravForces
       star[i]->gpot += star[j]->m*invdrmag;
 
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -153,12 +153,12 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSPHForces
   debug2("[NbodyLeapfrogKDK::CalculateDirectSPHForces]");
 
   // Loop over all (active) stars
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<N; i++) {
     if (star[i]->active == 0) continue;
 
     // Sum grav. contributions for all other stars (excluding star itself)
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     for (j=0; j<Ngas; j++) {
 
       for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star[i]->r[k];
@@ -175,10 +175,10 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSPHForces
       star[i]->gpot += sphdata[j].m*invhmean*kern.wpot(drmag*invhmean);
 
     }
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -224,7 +224,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles
   debug2("[NbodyLeapfrogKDK::AdvanceParticles]");
 
   // Advance positions and velocities of all star particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<N; i++) {
 
     // Compute time since beginning of step
@@ -242,7 +242,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles
     if (dn == nstep) star[i]->active = true;
     else star[i]->active = false;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -273,7 +273,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectionTerms
 
   // Loop over all star particles and calculate correction terms only for 
   // those at end of step.
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<N; i++) {
     dn = n - star[i]->nlast;
     nstep = star[i]->nstep;
@@ -281,7 +281,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectionTerms
       for (k=0; k<ndim; k++) star[i]->v[k] +=
 	0.5*(star[i]->a[k] - star[i]->a0[k])*timestep*(DOUBLE) nstep;
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -309,7 +309,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::PerturberCorrectionTerms
   debug2("[NbodyHermite4::PerturberCorrectionTerms]");
 
   // Loop over all system particles
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
    for (i=0; i<N; i++) {
      dn = n - star[i]->nlast;
      nstep = star[i]->nstep;
@@ -322,7 +322,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::PerturberCorrectionTerms
      }
 
    }
-   // --------------------------------------------------------------------------
+   //---------------------------------------------------------------------------
 
   return;
 }
@@ -348,7 +348,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
   debug2("[NbodyLeapfrogKDK::EndTimestep]");
 
   // Loop over all star particles and set values for those at end of step
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<N; i++) {
     dn = n - star[i]->nlast;
     nstep = star[i]->nstep;
@@ -361,7 +361,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
       star[i]->nlast = n;
     }
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }

@@ -4,11 +4,11 @@
 //  algorithms that are implemented.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -63,7 +63,7 @@ class Sph
   const acondenum acond;
 
   // Constructor
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   Sph(int hydro_forces_aux, int self_gravity_aux, FLOAT alpha_visc_aux, 
       FLOAT beta_visc_aux, FLOAT h_fac_aux, FLOAT h_converge_aux, 
       aviscenum avisc_aux, acondenum acond_aux, string gas_eos_aux, 
@@ -72,7 +72,7 @@ class Sph
 
   // SPH functions for computing SPH sums with neighbouring particles 
   // (fully coded in each separate SPH implementation, and not in Sph.cpp)
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   virtual int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                        SphParticle<ndim> &, Nbody<ndim> *) = 0;
   virtual void ComputeSphHydroForces(int, int, int *, FLOAT *, FLOAT *, 
@@ -97,7 +97,7 @@ class Sph
 
 
   // SPH array memory allocation functions
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   void AllocateMemory(int);
   void DeallocateMemory(void);
   void DeleteParticles(int, int *);
@@ -107,12 +107,12 @@ class Sph
 
 
   // Functions needed memory
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   SphParticle<ndim>* GetParticleIPointer(int i) {return &sphdata[i];};
 
 
   // SPH particle counters and main particle data array
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   bool allocated;                     ///< Is SPH memory allocated?
   int Ngather;                        ///< Average no. of gather neighbours
   int Nsph;                           ///< No. of SPH particles in simulation
@@ -241,6 +241,8 @@ class SM2012Sph: public Sph<ndim>
   using Sph<ndim>::alpha_visc;
   using Sph<ndim>::alpha_visc_min;
   using Sph<ndim>::acond;
+  using Sph<ndim>::create_sinks;
+  using Sph<ndim>::hmin_sink;
   using Sph<ndim>::time_dependent_avisc;
 
  public:

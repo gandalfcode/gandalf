@@ -4,11 +4,11 @@
 //  kernel functions and derivatives.
 //
 //  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
 //  Contact : gandalfcode@gmail.com
 //
-//  Copyright (C) 2013  D. A. Hubber, G Rosotti
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 //
 //  GANDALF is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -114,7 +114,7 @@ void TabulatedKernel<ndim>::initializeTableLOS()
   const FLOAT step = kernel->kernrange/res; // Step in the tabulated variable
   const int intsteps = 4000;                // No. of steps per integration
 
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
   for (i=0; i<res; i++) {
     impactparametersqd = pow((FLOAT) i*step,2);
     sum = 0.0;
@@ -135,7 +135,7 @@ void TabulatedKernel<ndim>::initializeTableLOS()
     // Multiply by 2 because we integrated only along half of the path
     tableLOS[i] = 2.0*sum; 
   }
-  // --------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
 
   return;
 }
