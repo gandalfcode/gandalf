@@ -323,7 +323,6 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
   FLOAT draux[ndim];                // Aux. relative position vector var
   FLOAT drsqd;                      // Distance squared
   FLOAT hrangesqdi;                 // Kernel extent for particle i
-  //FLOAT hrangesqdj;                 // Kernek extent for particle j
   FLOAT rp[ndim];                   // Local copy of particle position
   FLOAT *dr;                        // Array of relative position vectors
   FLOAT *drmag;                     // Array of neighbour distances
@@ -342,7 +341,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
   // Set-up all OMP threads
   //===========================================================================
 #pragma omp parallel default(none) private(activelist,activepart,c,cc,dr,draux,drmag,drsqd) \
-  private(hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k,okflag,Nactive) \
+  private(hrangesqdi,i,interactlist,invdrmag,j,jj,k,okflag,Nactive) \
   private(neiblist,neibpart,Ninteract,Nneib,Nneibmax,rp) \
   shared(cactive,celllist,data,sph)
   {
@@ -411,7 +410,6 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
   	      // Skip neighbour if it's not the correct part of an active pair
           if (neiblist[jj] <= i && neibpart[jj].active) continue;
 
-          //hrangesqdj = sph->kernfacsqd*sph->kernp->kernrangesqd*neibpart[jj].h*neibpart[jj].h;
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
           drsqd = DotProduct(draux,draux,ndim);
 

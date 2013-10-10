@@ -685,8 +685,8 @@ FLOAT BinarySubTree<ndim>::UpdateHmaxValues
   //===========================================================================
   for (c=Ncell-1; c>=0; c--) {
 
-    // If this is a leaf cell, some over all particles
-    //-------------------------------------------------------------------------
+    // If this is a leaf cell, sum over all particles
+    // ------------------------------------------------------------------------
     if (tree[c].c2 == 0) {
       i = tree[c].ifirst;
 

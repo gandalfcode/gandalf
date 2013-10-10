@@ -228,7 +228,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
   }
 
   if (perturbers == 1 && Npert > 0) {
-    CalculatePerturberForces(Nchildren, Npert, children, 
+    this->CalculatePerturberForces(Nchildren, Npert, children,
                              perturber, apert, adotpert);
     for (i=0; i<Nchildren; i++) {
       for (k=0; k<ndim; k++) aext[k] -= children[i]->m*children[i]->a[k];
@@ -307,7 +307,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
 
       // Add perturbation terms
       if (perturbers == 1 && Npert > 0)
-	CalculatePerturberForces(Nchildren, Npert, children, 
+	this->CalculatePerturberForces(Nchildren, Npert, children,
 				 perturber, apert, adotpert);
 
       // Apply correction terms
@@ -339,14 +339,14 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
 
     // Calculate correction terms on perturbing stars due to sub-systems
     if (perturbers == 1 && Npert > 0) {
-      PerturberCorrectionTerms(nlocal, Nchildren, children, dt);
+      this->PerturberCorrectionTerms(nlocal, Nchildren, children, dt);
       CorrectionTerms(nlocal, Nchildren, children, dt);
     }
 
     // Correct positions of all child stars in any hierarchical systems
     for (i=0; i<Nchildren; i++)
       if (children[i]->Ncomp > 1)
-	UpdateChildStars(static_cast<SystemParticle<ndim>* >
+	this->UpdateChildStars(static_cast<SystemParticle<ndim>* >
 			  (children[i]), n, timestep, dt);
 
     // Set end-of-step variables

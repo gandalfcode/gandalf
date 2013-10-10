@@ -83,7 +83,7 @@ void EnergyLeapfrogDKD<ndim>::EnergyIntegration
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,dt,i,nstep,part)	\
-     shared(n,Nsph,sphdata,timestep)
+     shared(n,Nsph,timestep,sphintdata)
   for (i=0; i<Nsph; i++) {
     nstep = sphintdata[i].nstep;
     dn = n - sphintdata[i].nlast;
@@ -134,7 +134,7 @@ void EnergyLeapfrogDKD<ndim>::EndTimestep
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,nstep,part)	\
-  shared(n,Nsph,sphdata)
+  shared(n,Nsph,sphintdata)
   for (i=0; i<Nsph; i++) {
     dn = n - sphintdata[i].nlast;
     nstep = sphintdata[i].nstep;
