@@ -59,6 +59,15 @@ BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
   }
   omp_set_dynamic(0);
   Nsubtree = omp_get_max_threads();
+  //now adjust the number of subtrees until it's a power of two
+  int ltot = 0;
+  while (pow(2,ltot) < Nsubtree) {
+    ltot++;
+  };
+  if (Nsubtree != pow(2,ltot)) {
+    Nsubtree = pow(2,ltot-1);
+    cout << "Warning: the number of OpenMP threads is not a power of two. This is sub-optimal for the binary tree parallelization" << endl;
+  }
   Nsubtreemax = Nsubtree;
 #else
   Nsubtree = 1;
@@ -554,13 +563,22 @@ void BinaryTree<ndim>::UpdateHmaxValues
 (SphParticle<ndim> *sphdata)        ///< SPH particle data array
 {
   int i;
-  FLOAT hmax_aux = 0;
+  FLOAT hmax_aux=0;
 
-//#pragma omp parallel for default(none) shared(sphdata) private(i) reduction(max:hmax_aux)
-  for (i = 0; i < Nsubtree; i++) {
-    FLOAT subhmax = subtrees[i]->UpdateHmaxValues(sphdata);
-    if (subhmax > hmax_aux)
-      hmax_aux = subhmax;
+
+#pragma omp parallel default(none) shared(sphdata,hmax_aux) private(i)
+  {
+    FLOAT hmax_local = 0;
+#pragma omp for
+    for (i = 0; i < Nsubtree; i++) {
+      FLOAT subhmax = subtrees[i]->UpdateHmaxValues(sphdata);
+      if (subhmax > hmax_local)
+        hmax_local = subhmax;
+    }
+#pragma omp critical (hmax_critical)
+    {
+      if (hmax_local>hmax_aux) hmax_aux=hmax_local;
+    }
   }
 
   hmax = hmax_aux;
