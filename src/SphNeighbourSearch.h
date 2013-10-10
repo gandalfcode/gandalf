@@ -315,7 +315,6 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void CreateTreeStructure(void);
   void OrderParticlesByCartCoord(SphParticle<ndim> *);
   void LoadParticlesToTree(void);
-  void StockCellProperties(SphParticle<ndim> *);
   void UpdateHmaxValues(SphParticle<ndim> *);
   int ComputeActiveCellList(BinaryTreeCell<ndim> **, BinarySubTree<ndim> **);
   int ComputeActiveParticleList(BinaryTreeCell<ndim> *, BinarySubTree<ndim> *,

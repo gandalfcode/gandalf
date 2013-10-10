@@ -314,18 +314,14 @@ void BinarySubTree<ndim>::OrderParticlesByCartCoord
 
   // Divide sorting routines amongst (up to 3) threads
   // --------------------------------------------------------------------------
-#pragma omp sections
   {
     // Sort x-values
-#pragma omp section
     Heapsort(Ntot,porder[0],rk[0]);
 
     // Sort y-values
-#pragma omp section
     if (ndim >= 2) Heapsort(Ntot,porder[1],rk[1]);
 
     // Sort z-values
-#pragma omp section
     if (ndim == 3) Heapsort(Ntot,porder[2],rk[2]);
   }
 
@@ -483,7 +479,6 @@ void BinarySubTree<ndim>::StockCellProperties
   crmin = new FLOAT[ndim*Ncellmax];
 
   // Zero all summation variables for all cells
-#pragma parallel for private(c,k) shared(tree)
   for (c=0; c<Ncell; c++) {
     tree[c].Nactive = 0;
     tree[c].N = 0;

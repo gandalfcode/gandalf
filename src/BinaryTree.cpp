@@ -178,8 +178,9 @@ void BinaryTree<ndim>::BuildTree
 (Sph<ndim> *sph,                    ///< Pointer to main SPH object
  Parameters &simparams)             ///< Simulation parameters
 {
-  binlistiterator it;
+  int i;
   int Ncheck = 0;
+  int localgtot = 0;
 
   debug2("[BinaryTree::BuildTree]");
 
@@ -206,20 +207,26 @@ void BinaryTree<ndim>::BuildTree
 
   // Build and stock all local sub-trees
   //---------------------------------------------------------------------------
-  for (it = subtrees.begin(); it != subtrees.end(); it++) {
+#pragma omp parallel for default(none) private(i) shared(sph, simparams) \
+  reduction(+:localgtot,Ncheck)
+  for (i = 0; i < Nsubtree; i++) {
+
+    BinarySubTree<ndim>* subtree = subtrees[i];
 
     // Build individual sub-trees
-    (*it)->BuildSubTree(sph,simparams);
+    subtree->BuildSubTree(sph,simparams);
 
     // Calculate all cell quantities (e.g. COM, opening distance)
-    (*it)->StockCellProperties(sph->sphdata);
+    subtree->StockCellProperties(sph->sphdata);
 
     // Calculate total number of leaf cells in trees
-    gtot += (*it)->gtot;
-    Ncheck += (*it)->Ntot;
+    localgtot += subtree->gtot;
+    Ncheck += subtree->Ntot;
 
   }
   //---------------------------------------------------------------------------
+
+  gtot = localgtot;
 
   assert(Ncheck == sph->Ntot);
 
@@ -237,15 +244,16 @@ void BinaryTree<ndim>::UpdateTree
 (Sph<ndim> *sph,                    ///< Pointer to main SPH object
  Parameters &simparams)             ///< Simulation parameters
 {
-  binlistiterator it;
+  int i;
 
   debug2("[BinaryTree::UpdateTree]");
 
   //---------------------------------------------------------------------------
-  for (it = subtrees.begin(); it != subtrees.end(); it++) {
+#pragma omp parallel for default(none) private(i) shared(sph)
+  for (i = 0; i < Nsubtree; i++) {
 
     // Calculate all cell quantities (e.g. COM, opening distance)
-    (*it)->StockCellProperties(sph->sphdata);
+    subtrees[i]->StockCellProperties(sph->sphdata);
 
   }
   //---------------------------------------------------------------------------
@@ -536,27 +544,6 @@ void BinaryTree<ndim>::LoadParticlesToTree(void)
 }
 
 
-
-//=============================================================================
-//  BinaryTree::StockCellProperties
-/// Calculate the physical properties (e.g. total mass, centre-of-mass, 
-/// opening-distance, etc..) of all cells in the tree.
-//=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::StockCellProperties
-(SphParticle<ndim> *sphdata)        ///< SPH particle data array
-{
-  binlistiterator it;
-
-  for (it = subtrees.begin(); it != subtrees.end(); it++) {
-    (*it)->StockCellProperties(sphdata);
-  }
-
-  return;
-}
-
-
-
 //=============================================================================
 //  BinaryTree::UpdateHmaxValues
 /// Calculate the physical properties (e.g. total mass, centre-of-mass, 
@@ -566,11 +553,12 @@ template <int ndim>
 void BinaryTree<ndim>::UpdateHmaxValues
 (SphParticle<ndim> *sphdata)        ///< SPH particle data array
 {
-  binlistiterator it;
+  int i;
   FLOAT hmax_aux = 0;
 
-  for (it = subtrees.begin(); it != subtrees.end(); it++) {
-    FLOAT subhmax = (*it)->UpdateHmaxValues(sphdata);
+#pragma omp parallel for default(none) shared(sphdata) private(i) reduction(max:hmax_aux)
+  for (i = 0; i < Nsubtree; i++) {
+    FLOAT subhmax = subtrees[i]->UpdateHmaxValues(sphdata);
     if (subhmax > hmax_aux)
       hmax_aux = subhmax;
   }
