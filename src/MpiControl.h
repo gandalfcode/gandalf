@@ -67,6 +67,8 @@ class MpiControl
 
   // MPI control variables
   //---------------------------------------------------------------------------
+  bool allocated_mpi;               ///< Flag if memory has been allocated.
+
   int Nmpi;                         ///< No. of MPI processes
   int Nloadbalance;                 ///< No. of steps between load-balancing
 

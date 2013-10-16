@@ -85,7 +85,6 @@ void BinarySubTree<ndim>::AllocateSubTreeMemory(void)
   debug2("[BinarySubTree::AllocateTreeMemory]");
 
   if (Ntotmax > Ntotmaxold || (!allocated_tree)) {
-	//cout << "CHECKING : " << Ntotmax << "   " << Ntotmaxold << "    " << allocated_tree << endl;
     if (allocated_tree) DeallocateSubTreeMemory();
     ids = new int[Ntotmax];
     inext = new int[Ntotmax];
@@ -96,7 +95,6 @@ void BinarySubTree<ndim>::AllocateSubTreeMemory(void)
     for (int k=0; k<ndim; k++) rk[k] = new FLOAT[Ntotmax];
     allocated_tree = true;
     Ntotmaxold = Ntotmax;
-    //cout << "Allocated " << Ntotmax << " for subtree" << endl;
   }
 
   return;
@@ -141,8 +139,6 @@ void BinarySubTree<ndim>::BuildSubTree
   int output = 0;
 
   debug2("[BinarySubTree::BuildSubTree]");
-
-  //cout << "MEMORY : " << Ntot << "    " << Ntotmax << "    " << Ntotmaxold << "     " << allocated_tree << endl;
 
   // Allocate (or reallocate if needed) all tree memory
   AllocateSubTreeMemory();
@@ -302,7 +298,6 @@ void BinarySubTree<ndim>::OrderParticlesByCartCoord
   for (k=0; k<ndim; k++) {
     for (j=0; j<Ntot; j++) {
       i = ids[j];
-      //cout << "WTF?? : " << k << "   " << j << "    " << i << endl;
       rk[k][j] = sphdata[i].r[k];
     }
   }
@@ -527,7 +522,8 @@ void BinarySubTree<ndim>::StockCellProperties
       // Normalise all cell values
       if (tree[c].N > 0) {
         for (k=0; k<ndim; k++) tree[c].r[k] /= tree[c].m;
-        for (k=0; k<ndim; k++) dr[k] = 0.5*(crmax[c*ndim + k] - crmin[c*ndim + k]);
+        for (k=0; k<ndim; k++) 
+          dr[k] = 0.5*(crmax[c*ndim + k] - crmin[c*ndim + k]);
         tree[c].cdistsqd = factor*DotProduct(dr,dr,ndim);
         for (k=0; k<ndim; k++) dr[k] = max(crmax[c*ndim + k] - tree[c].r[k],
 		  			 tree[c].r[k] - crmin[c*ndim + k]);
@@ -576,7 +572,8 @@ void BinarySubTree<ndim>::StockCellProperties
           crmin[ndim*c + k] = min(crmin[ndim*cc+k],crmin[ndim*ccc+k]);
         for (k=0; k<ndim; k++)
           crmax[ndim*c + k] = max(crmax[ndim*cc+k],crmax[ndim*ccc+k]);
-        for (k=0; k<ndim; k++) dr[k] = 0.5*(crmax[c*ndim + k] - crmin[c*ndim + k]);
+        for (k=0; k<ndim; k++) 
+          dr[k] = 0.5*(crmax[c*ndim + k] - crmin[c*ndim + k]);
         tree[c].cdistsqd = factor*DotProduct(dr,dr,ndim);
         for (k=0; k<ndim; k++) dr[k] = max(crmax[c*ndim + k] - tree[c].r[k],
                                            tree[c].r[k] - crmin[c*ndim + k]);
@@ -633,18 +630,6 @@ void BinarySubTree<ndim>::StockCellProperties
   cout << "Mass of root cell1 : " << tree[0].m << endl;
   cout << "Bounding box : " << crmin[0] << "   " << crmax[0] 
        << "   " << crmin[1] << "   " << crmax[1] << endl;
-
-  // Go through each tree level in turn and print info
-  /*for (int l=0; l<ltot+1; l++) {
-    cout << "LEVEL : " << l << endl;
-    cout << "----------------------" << endl;
-    for (c=0; c<Ncell; c++) {
-      if (tree[c].clevel == l) {
-	    cout << "c : " << c << "   N : " 
-      	   << tree[c].N << "   " << Nleafmax << endl;
-      }
-    }
-  }*/
 #endif
 
 

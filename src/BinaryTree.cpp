@@ -122,15 +122,11 @@ void BinaryTree<ndim>::AllocateTreeMemory(void)
     }
 
 
+    // ..
     for (int i=0; i<Nsubtree; i++) {
-      // ..
       subtrees[i]->Nsph = 0;
       subtrees[i]->Ntot = 0;
       subtrees[i]->Ntotmax = max(subtrees[i]->Ntotmax,Ntotmax/Nsubtree + 1);
-
-      cout << "Subtrees : " << subtrees[i]->Ntot << "    " 
-	   << subtrees[i]->Ntotmax << "    " 
-	   << Ntotmax/Nsubtree + 1 << endl;
 
       // ..
       subtrees[i]->ComputeSubTreeSize();
@@ -391,7 +387,6 @@ void BinaryTree<ndim>::OrderParticlesByCartCoord
   for (k=0; k<ndim; k++)
     for (i=0; i<Ntot; i++) {
       rk[k][i] = sphdata[i].r[k];
-      //cout << "WTF?? : " << k << "   " << i << "    " << rk[k][i] << endl;
     }
 
   // Now copy list of particle ids
