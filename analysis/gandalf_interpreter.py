@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 #==============================================================================
-# interpreter.py
-# ..
+# gandalf_interpreter.py
+# Python program for initialising interactive interpreter for using
+# gandalf inside python.
 #==============================================================================
 import cmd2 as cmd
 import facade
@@ -23,9 +24,9 @@ def excludefunctions(function):
 #------------------------------------------------------------------------------
 class WrappedFunction:
     '''This class creates a wrapper around each one of the functions
-    in facade. The wrapper code is responsible for taking the arguments passed
-    on the command line, and converting them to proper arguments for a python
-    function call.'''
+in facade. The wrapper code is responsible for taking the arguments passed
+on the command line, and converting them to proper arguments for a python
+function call.'''
     def __init__(self, function):
         self.function = function
         self.__doc__ = function.__doc__
@@ -52,12 +53,11 @@ class WrappedFunction:
 #------------------------------------------------------------------------------
 class Interpreter(cmd.Cmd):
     '''This class implements the interpreter proper.
-    It gets all the functions defined in facade, filters out
-    some name that we do not want (because it\'s reserved), and
-    defines a command for each one of them. Also imports the
-    documentation string for each one. 
-    '''
-    
+It gets all the functions defined in facade, filters out
+some name that we do not want (because it\'s reserved), and
+defines a command for each one of them. Also imports the
+documentation string for each one.
+''' 
     abbreviations = {
                       'next': 'n',
                       'previous': 'p',
@@ -68,23 +68,23 @@ class Interpreter(cmd.Cmd):
     def __init__(self):
         cmd.Cmd.__init__(self)
         
-        #retrieve the functions in facade and filter out some
+        # Retrieve the functions in facade and filter out some
         functions = inspect.getmembers(facade, inspect.isfunction)
         functions=filter(excludefunctions, functions)
         
-        #create the wrapper for each one of them
+        # Create the wrapper for each one of them
         for function in functions:
             wrapper = WrappedFunction(function[1])
             setattr(self, 'do_'+function[0], wrapper)
         
-        #generate the abbreviated versions of the commands
+        # Generate the abbreviated versions of the commands
         for key in self.abbreviations:
             abbr = self.abbreviations[key]
             name_abbr='do_'+abbr
             name_long='do_'+key
             setattr(self, name_abbr, getattr(self, name_long))
             
-        #convince facade that we are in interactive mode
+        # Convince facade that we are in interactive mode
         facade.interactive = True
         
     def get_names(self):

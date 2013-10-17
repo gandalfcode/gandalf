@@ -15,5 +15,3 @@ plotanalytical("R","rho")
 
 run()
 block()
-
-

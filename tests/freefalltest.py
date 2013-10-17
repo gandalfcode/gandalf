@@ -24,5 +24,5 @@ plot_vs_time("lr1",linestyle='-')
 plot_vs_time("lr2",overplot=True,linestyle='-')
 plot_vs_time("lr3",overplot=True,linestyle='-')
 
-# Prevent program from closing to show plot window
+# Prevent program from closing before showing plot window
 block()

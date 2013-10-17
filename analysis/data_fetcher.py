@@ -121,8 +121,9 @@ class DirectDataFetcher:
     quantitylabels = {'x': 'x', 'y': 'y', 'z': 'z', 'rho': '$\\rho$',
                       'vx': '$v_x$', 'vy': '$v_y$', 'vz': '$v_z$', 
                       'ax': '$a_x$', 'ay': '$a_y$', 'az': '$a_z$',
-                      'm': 'm', 'h': 'h', 'u': 'u', 't': 't','sma': 'Semi-major axis',
-                      'ecc': 'Orbital eccentricity', 'mbin': 'Binary mass',
+                      'm': 'm', 'h': 'h', 'u': 'u', 't': 't',
+                      'sma': 'Semi-major axis', 'ecc': 'Orbital eccentricity',
+                      'mbin': 'Binary mass',
                       'period': 'Orbital period', 'qbin': 'Mass ratio'
                       }
     

@@ -50,6 +50,10 @@
 #include "Sinks.h"
 #include "HeaderInfo.h"
 using namespace std;
+#ifdef MPI_PARALLEL
+#include "mpi.h"
+#include "MpiControl.h"
+#endif
 
 
 // Forward declaration of SphSnapshotBase to prevent circular dependency
@@ -132,6 +136,7 @@ class SimulationBase
   int Nstepsmax;                    ///< Max. allowed no. of steps
   int Nlevels;                      ///< No. of timestep levels
   int Noutsnap;                     ///< No. of output snapshots
+  int rank;                         ///< Process i.d. (for MPI simulations)
   int sink_particles;               ///< Switch on sink particles
   int sph_single_timestep;          ///< Flag if SPH ptcls use same step
   DOUBLE dt_max;                    ///< Value of maximum timestep level
@@ -260,6 +265,9 @@ class Simulation : public SimulationBase
   Sph<ndim> *sph;                       ///< SPH algorithm pointer
   SphIntegration<ndim> *sphint;         ///< SPH Integration scheme pointer
   SphNeighbourSearch<ndim> *sphneib;    ///< SPH Neighbour scheme pointer
+#ifdef MPI_PARALLEL
+  MpiControl<ndim> mpicontrol;          ///< MPI control object
+#endif
 
 };
 

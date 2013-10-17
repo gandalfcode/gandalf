@@ -1,5 +1,5 @@
 #==============================================================================
-# adshocktest.py
+# adsodtest.py
 # Run the adiabatic Sod shocktube test using initial conditions specified in
 # the file 'adsod.dat' and then plotting important quantities together 
 # with the analytical solutions.

@@ -1,7 +1,7 @@
-#--------------------------------------------------------------
+#-------------------------------------------------------------------
 # Freefall collapse test
-# ..
-#--------------------------------------------------------------
+# Freefall (i.e. pressureless) collapse of a uniform density sphere.
+#-------------------------------------------------------------------
 
 
 #-----------------------------
@@ -11,7 +11,7 @@ Simulation run id string                    : run_id = FREEFALL1
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = sphere
 Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Nsph = 2000
+No. of SPH particles                        : Nsph = 5000
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
 Use dimensionless units                     : dimensionless = 1
 
@@ -20,12 +20,6 @@ Use dimensionless units                     : dimensionless = 1
 #------------------------------
 # Simulation boundary variables
 #------------------------------
-LHS position of boundary in x-dimension     : boxmin[0] = 0.0
-RHS position of boundary in x-dimension     : boxmax[0] = 1.0
-LHS position of boundary in y-dimension     : boxmin[1] = 0.0
-RHS position of boundary in y-dimension     : boxmax[1] = 1.0
-LHS position of boundary in z-dimension     : boxmin[2] = 0.0
-RHS position of boundary in z-dimension     : boxmax[2] = 1.0
 LHS boundary type in x-dimension            : x_boundary_lhs = open
 RHS boundary type in x-dimension            : x_boundary_rhs = open
 LHS boundary type in y-dimension            : y_boundary_lhs = open
@@ -37,8 +31,8 @@ RHS boundary type in z-dimension            : z_boundary_rhs = open
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.5
-Regular snapshot output frequency           : dt_snap = 0.025
+Simulation end time                         : tend = 0.54
+Regular snapshot output frequency           : dt_snap = 0.05
 Screen output frequency (in no. of steps)   : noutputstep = 1
 
 

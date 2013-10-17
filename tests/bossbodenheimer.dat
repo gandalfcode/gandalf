@@ -1,6 +1,6 @@
 #-------------------------------------------------------------
 # Boss-Bodenheimer test
-# ..
+# Boss & Bodenheimer (1979) rotating core collapse test
 #-------------------------------------------------------------
 
 
@@ -10,7 +10,6 @@
 Simulation run id string                    : run_id = BB1
 Run SPH simulation                          : sim = sph
 Select shocktube initial conditions         : ic = bb
-Input filename                              : in_file = /Users/davidhubber/astro/code/gandalf/tests/3200_BBSIT.sf.dat
 Input file format                           : in_file_form = sf
 Output file format                          : out_file_form = sf
 Dimensionality of cube                      : ndim = 3

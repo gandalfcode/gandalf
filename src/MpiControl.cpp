@@ -28,12 +28,14 @@
 #include <cstdlib>
 #include <iostream>
 #include <math.h>
+#include "mpi.h"
 #include "Constants.h"
 #include "Precision.h"
 #include "SphKernel.h"
 #include "Debug.h"
 #include "Exception.h"
 #include "InlineFuncs.h"
+#include "MpiControl.h"
 using namespace std;
 
 
@@ -80,6 +82,34 @@ void MpiControl<ndim>::AllocateMemory(void)
 template <int ndim>
 void MpiControl<ndim>::DeallocateMemory(void)
 {
+  return;
+}
+
+
+
+//=============================================================================
+//  MpiControl::InitialiseMpiProcess
+/// Allocate all memory for MPI control class.
+//=============================================================================
+template <int ndim>
+void MpiControl<ndim>::InitialiseMpiProcess(void)
+{
+  int len;
+  debug2("[MpiControl::InitialiseMpiProcess]");
+
+  MPI_Comm_size(MPI_COMM_WORLD,&Nmpi);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Get_processor_name(hostname, &len);
+
+  if (this->rank == 0)
+    printf("MPI working.  Nmpi : %d   rank : %d   hostname : %s\n",rank,Nmpi,hostname);
+  else
+    printf("%d is running too!!\n",this->rank);
+
+  //MPI_Finalize();
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Abort(MPI_COMM_WORLD,0);
+
   return;
 }
 

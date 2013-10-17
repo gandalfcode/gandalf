@@ -1,13 +1,13 @@
------------------------------------------------------------------
-Sound wave test
-Generates and propagates a small linear density perturbation as a 
-sound-wave along a uniform density gas.
------------------------------------------------------------------
+#------------------------------------------------------------------
+#Sound wave test
+# Generates and propagates a small linear density perturbation as a 
+# sound-wave along a uniform density gas.
+#------------------------------------------------------------------
 
 
-----------------------------
-Initial conditions variables
-----------------------------
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
 Simulation run id string                    : run_id = SOUNDWAVE1
 Select SPH simulation                       : sim = godunov_sph
 Select shocktube initial conditions         : ic = soundwave
@@ -19,42 +19,42 @@ No. of particles in wave                    : Nsph = 256
 Use dimensionless units                     : dimensionless = 1
 
 
------------------------------
-Simulation boundary variables
------------------------------
+#------------------------------
+# Simulation boundary variables
+#------------------------------
 LHS position of boundary in x-dimension     : boxmin[0] = 0.0
 RHS position of boundary in x-dimension     : boxmax[0] = 1.0
 LHS boundary type in x-dimension            : x_boundary_lhs = periodic
 RHS boundary type in x-dimension            : x_boundary_rhs = periodic
 
 
--------------------------
-Simulation time variables
--------------------------
+#--------------------------
+# Simulation time variables
+#--------------------------
 Simulation end time                         : tend = 2.0
 Regular snapshot output frequency           : dt_snap = 2.5
 Screen output frequency (in no. of steps)   : noutputstep = 999999999
 
 
------------------------
-Thermal physics options
------------------------
+#------------------------
+# Thermal physics options
+#------------------------
 Switch-on hydrodynamical forces             : hydro_forces = 1
 Main gas thermal physics treatment          : gas_eos = isothermal
 Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 
 
----------------------------------------
-Smoothed Particle Hydrodynamics options
----------------------------------------
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = gaussian
 SPH smoothing length iteration tolerance    : h_converge = 0.000000001
 
 
---------------------------------
-SPH artificial viscosity options
---------------------------------
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
 Artificial viscosity choice                 : avisc = none
 Artificial conductivity choice              : acond = none
 Artificial viscosity alpha value            : alpha_visc = 0.1
@@ -64,23 +64,23 @@ Order of Riemann solver                     : riemann_order = 2
 Slope limiter                               : slope_limiter = mine
 
 
-------------------------
-Time integration options
-------------------------
+#-------------------------
+# Time integration options
+#-------------------------
 SPH particle integration option             : sph_integration = lfkdk
 SPH Courant timestep condition multiplier   : courant_mult = 0.05
 SPH acceleration condition multiplier       : accel_mult = 0.1
 No. of block timestep levels                : Nlevels = 1
 
 
---------------------
-Optimisation options
---------------------
+#--------------------
+# Optimisation options
+#---------------------
 Tabulate SPH kernel                         : tabulated_kernel = 0
 SPH neighbour search algorithm              : neib_search = grid
 
 
--------------
-Misc. options
--------------
+#--------------
+# Misc. options
+#--------------
 Switch-off self-gravity of gas              : self_gravity = 0

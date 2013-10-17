@@ -1,6 +1,8 @@
 //=============================================================================
 //  Parameters.h
-//  ..
+//  Class definition for Parameters class.  Contains all data structures and 
+//  functions for reading and storing simulation parameters before they 
+//  are processed by the Simulation class.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -31,8 +33,8 @@
 
 //=============================================================================
 //  Class Parameters
-/// \brief   Class for continaing all simuilation parameter information.
-/// \details Class for continaing all simuilation parameter information.
+/// \brief   Class for continaing all simulation parameter information.
+/// \details Class for continaing all simulation parameter information.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=============================================================================
@@ -40,10 +42,15 @@ class Parameters
 {
  public:
 
+  // Constructors and destructor
+  //---------------------------------------------------------------------------
   Parameters();
   ~Parameters();
   Parameters(const Parameters&);
 
+  // Other function prototypes
+  //---------------------------------------------------------------------------
+  void CheckDeactivatedFeatures(void);
   void ReadParamsFile(std::string);
   void ParseLine(std::string);
   void SetDefaultValues(void);
@@ -53,10 +60,11 @@ class Parameters
   void RecordParametersToFile(void);
   std::string TrimWhiteSpace(std::string);
   
-
-  std::map <std::string,int> intparams;
-  std::map <std::string,float> floatparams;
-  std::map <std::string,std::string> stringparams;
+  // Maps containing parameters for all available data types
+  //---------------------------------------------------------------------------
+  std::map <std::string,int> intparams;             ///< Integer parameters
+  std::map <std::string,float> floatparams;         ///< Float parameters
+  std::map <std::string,std::string> stringparams;  ///< String parameters
 
 };
 

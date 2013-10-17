@@ -55,7 +55,7 @@ Parameters::~Parameters()
 
 //=============================================================================
 //  Parameters::Parameters
-/// ..
+/// Alternative Parameters constructor
 //=============================================================================
 Parameters::Parameters(const Parameters& other) {
   this->intparams = other.intparams;
@@ -99,11 +99,15 @@ void Parameters::ReadParamsFile
 
   // Now verify that parameters file contains a run id in order to generate 
   // labelled output files.  If not defined, then quit program with exception.
+  cout << "$$"<<stringparams["run_id"]<<"$$" << endl;
   if (stringparams["run_id"] == "") {
     string message = "The parameter file: " + filename +
       " does not contain a run id string, aborting";
     ExceptionHandler::getIstance().raise(message);
   }
+
+  // Check if any deactivated options have been selected or not
+  CheckDeactivatedFeatures();
 
   // Record parameters to file 'run_id.param'
   RecordParametersToFile();
@@ -121,8 +125,8 @@ void Parameters::ReadParamsFile
 /// If line begins with a hash charatcer '#', then ignore line as a comment.
 ///============================================================================
 void Parameters::ParseLine
-(string paramline)                      ///< [in] Line from parameters file 
-                                        ///< to be parsed.
+(string paramline)                  ///< [in] Line from parameters file 
+                                    ///<      to be parsed.
 {
   // First, trim all white space from line
   paramline = TrimWhiteSpace(paramline);
@@ -132,12 +136,13 @@ void Parameters::ParseLine
   unsigned int hash_pos = paramline.find('#');  // Position of hash in string
   unsigned int length = paramline.length();     // Length of string
 
-  // Ignore line if it is a comment (i.e. begins with a has character)
+  // Ignore line if it is a comment (i.e. begins with a hash character)
   if (hash_pos == 0) return;
 
-  // If line is not in the correct format (either equals is not present, or 
-  // equals is before the colon) then skip line and return
-  if (equal_pos == std::string::npos || colon_pos >= equal_pos) return;
+  // If line is not in the correct format (either equals is not present, 
+  // or equals is before the colon) then skip line and return.
+  if (equal_pos >= length || (colon_pos < length && colon_pos > equal_pos))
+    return;
 
   // Extract variable name and value from line
   std::string var_name = paramline.substr(colon_pos+1,equal_pos-colon_pos-1);
@@ -371,7 +376,8 @@ void Parameters::SetDefaultValues(void)
 /// Set parameter value in memory.  Checks in turn if parameter is a 
 /// string, float or integer before recording value.
 //=============================================================================
-string Parameters::GetParameter (string key)
+string Parameters::GetParameter
+(string key)                        ///< [in] Parameter key to be searched
 {
   if (intparams.count(key) == 1) {
     std::stringstream value;
@@ -493,7 +499,7 @@ void Parameters::RecordParametersToFile(void)
 std::string Parameters::TrimWhiteSpace(std::string instr)
 {
   int i;                            // Character counter
-  string outstr;                    // Resultant string without whitespace
+  string outstr;                    // Final string without any whitespace
 
   // Loop over all characters and ignore any white-space characters
   for (i=0; i < instr.length(); i++) {
@@ -501,4 +507,32 @@ std::string Parameters::TrimWhiteSpace(std::string instr)
   }
 
   return outstr;
+}
+
+
+
+//=============================================================================
+//  Parameters::CheckDeactivatedFeatures
+/// Check if any features deemed unstable and/or buggy are switched on in the 
+/// parameters file.  If so, then throw an exception with an error message.
+//=============================================================================
+void Parameters::CheckDeactivatedFeatures(void)
+{
+  debug2("[Parameters::CheckDeactivatedFeatures]");
+
+  // Saitoh & Makino (2012) currently deactivated while development of MPI 
+  // and other related features are underway.
+  if (stringparams["sim"] == "sph" && stringparams["sph"] == "sm2012") {
+    string message = "Saitoh & Makino (2012) SPH algorithm currently disabled";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Godunov SPH (Inutsuka 2002) currently deactivated while development of 
+  // MPI and other related features are underway.
+  if (stringparams["sim"] == "godunov_sph") {
+    string message = "Saitoh & Makino (2012) SPH algorithm currently disabled";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  return;
 }

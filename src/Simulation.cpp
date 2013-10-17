@@ -125,6 +125,7 @@ SimulationBase::SimulationBase
   nresync = 0;
   integration_step = 1;
   Nsteps = 0;
+  rank = 0;
   t = 0.0;
   setup = false;
   ParametersProcessed = false;
@@ -228,6 +229,190 @@ std::list<string>* SimulationBase::GetIntAndFloatParameterKeys()
 
 
 //=============================================================================
+//  SphSimulation::Run
+/// Controls the simulation main loop, including exit conditions.  If provided
+/// (optional argument), will only advance the simulation by 'Nadvance' steps.
+//=============================================================================
+void SimulationBase::Run
+(int Nadvance)                      ///< [in] Selected max no. of integer 
+                                    ///<      timesteps (Optional argument).
+{
+  int Ntarget;                      // Target step no before finishing 
+                                    // main code integration.
+
+  debug1("[SphSimulation::Run]");
+
+  // Set integer timestep exit condition if provided as parameter.
+  if (Nadvance < 0) Ntarget = Nstepsmax;
+  else Ntarget = Nsteps + Nadvance;
+
+  CalculateDiagnostics();
+  OutputDiagnostics();
+
+  // Continue to run simulation until we reach the required time, or 
+  // exeeded the maximum allowed number of steps.
+  //---------------------------------------------------------------------------
+  while (t < tend && Nsteps < Ntarget) {
+
+    MainLoop();
+    Output();
+
+  }
+  //---------------------------------------------------------------------------
+
+  CalculateDiagnostics();
+  OutputDiagnostics();
+  UpdateDiagnostics();
+
+  return;
+}
+
+
+
+//=============================================================================
+//  SimulationBase::InteractiveRun
+/// Controls the simulation main loop, including exit conditions.
+/// If provided, will only advance the simulation by 'Nadvance' steps.
+//=============================================================================
+list<SphSnapshotBase*> SimulationBase::InteractiveRun
+(int Nadvance)                      ///< [in] Selected max no. of integer 
+                                    ///< timesteps (Optional argument).
+{
+  int Ntarget;                      // Selected integer timestep
+  DOUBLE tdiff = 0.0;               // Measured time difference
+  clock_t tstart = clock();         // Initial CPU clock time
+  string filename;                  // Name of the output file
+  list<SphSnapshotBase*> snap_list; // List of snapshots produced while running
+                                    // that will be passed back to Python
+
+  debug2("[SimulationBase::InteractiveRun]");
+
+  // Set integer timestep exit condition if provided as parameter.
+  if (Nadvance < 0) Ntarget = Nstepsmax;
+  else Ntarget = Nsteps + Nadvance;
+
+  // Continue to run simulation until we reach the required time, or
+  // exeeded the maximum allowed number of steps.
+  //---------------------------------------------------------------------------
+  while (t < tend && Nsteps < Ntarget && tdiff < dt_python) {
+	
+    // Evolve the simulation one step
+    MainLoop();
+
+    // Update all diagnostics (including binaries) here for now
+    if (t >= tsnapnext) CalculateDiagnostics();
+	  
+    // Call output routine
+    filename=Output();
+	  
+    // If we have written a snapshot, create a new snapshot object
+    if (filename.length() != 0) {
+      SphSnapshotBase* snapshot =
+        SphSnapshotBase::SphSnapshotFactory(filename, this, ndims);
+      snapshot->CopyDataFromSimulation();
+      snap_list.push_back(snapshot);
+    }
+
+    // Measure CPU clock time difference since current function was called
+    tdiff = (DOUBLE) (clock() - tstart) / (DOUBLE) CLOCKS_PER_SEC;
+
+  }
+  //---------------------------------------------------------------------------
+
+  // Calculate and process all diagnostic quantities
+  CalculateDiagnostics();
+  OutputDiagnostics();
+  UpdateDiagnostics();
+
+  return snap_list;
+}
+
+
+
+//=============================================================================
+//  SimulationBase::Output
+/// Controls when regular output snapshots are written by the code.
+//=============================================================================
+string SimulationBase::Output(void)
+{
+  string filename;                  // Output snapshot filename
+  string nostring;                  // String of number of snapshots
+  stringstream ss;                  // Stream object for preparing filename
+
+  debug2("[SimulationBase::Output]");
+
+  if (Nsteps%noutputstep == 0) 
+    cout << "t : " << t*simunits.t.outscale << " " << simunits.t.outunit 
+	 << "    dt : " << timestep*simunits.t.outscale << " " 
+	 << simunits.t.outunit << "    Nsteps : " << Nsteps << endl;
+
+  // Output a data snapshot if reached required time
+  if (t >= tsnapnext) {
+    Noutsnap++;
+    tsnapnext += dt_snap;
+    nostring = "";
+    ss << setfill('0') << setw(5) << Noutsnap;
+    nostring = ss.str();
+    filename = run_id + '.' + out_file_form + '.' + nostring;
+    ss.str(std::string());
+    WriteSnapshotFile(filename,out_file_form);
+  }
+
+  return filename;
+}
+
+
+
+//=============================================================================
+//  SimulationBase::SetupSimulation
+/// Main function for setting up a new SPH simulation.
+//=============================================================================
+void SimulationBase::SetupSimulation(void)
+{
+  debug1("[SimulationBase::Setup]");
+
+  if (setup) {
+    string msg = "This simulation has been already set up";
+    ExceptionHandler::getIstance().raise(msg);
+  }
+
+  // Process the parameters file setting up all simulation objects
+  if (simparams->stringparams["ic"] == "python") {
+    if (!ParametersProcessed) {
+      string msg = "Error: you are attempting to setup a simulation with initial conditions generated"
+          "from Python. Before setting up the simulation, you need to import the initial conditions";
+      ExceptionHandler::getIstance().raise(msg);
+    }
+  }
+  else {
+    if (ParametersProcessed) {
+      string msg = "The parameters of the simulation have been already processed."
+          "It means that you shouldn't be calling this function, please consult the documentation.";
+      ExceptionHandler::getIstance().raise(msg);
+    }
+    ProcessParameters();
+  }
+
+  // Generate initial conditions for simulation on root process (for MPI jobs)
+  //---------------------------------------------------------------------------
+  if (rank == 0) {
+    GenerateIC();
+
+    // Change to COM frame if selected
+    if (simparams->intparams["com_frame"] == 1) SetComFrame();
+
+  }
+  //---------------------------------------------------------------------------
+
+  // Call a messy function that does all the rest of the initialisation
+  PostInitialConditionsSetup();
+
+  return;
+}
+
+
+
+//=============================================================================
 //  Simulation::ProcessParameters
 /// Process all the options chosen in the parameters file, setting various 
 /// simulation variables and creating important simulation objects.
@@ -241,7 +426,15 @@ void Simulation<ndim>::ProcessParameters(void)
   map<string, string> &stringparams = simparams->stringparams;
   string sim = stringparams["sim"];
 
-  debug2("[SphSimulation::ProcessParameters]");
+  debug2("[Simulation::ProcessParameters]");
+
+
+  // Now simulation object is created, set-up various MPI variables
+#ifdef MPI_PARALLEL
+  mpicontrol.InitialiseMpiProcess();
+  rank = mpicontrol.rank;
+#endif
+
 
   // Sanity check for valid dimensionality
   if (ndim < 1 || ndim > 3) {
@@ -587,7 +780,7 @@ void Simulation<ndim>::ProcessSphParameters(void)
 
 //=============================================================================
 //  Simulation::ProcessGodunovSphParameters
-/// ..
+/// Process parameter particular to setting up a Godunov SPH simulation object.
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::ProcessGodunovSphParameters(void)
@@ -678,9 +871,9 @@ void Simulation<ndim>::ProcessGodunovSphParameters(void)
 
 
 //=============================================================================
-//  SphSimulation::ProcessNbodyParameters
-/// Process all the options chosen in the parameters file, setting various 
-/// simulation variables and creating important simulation objects.
+//  Simulation::ProcessNbodyParameters
+/// Process all the options chosen in the parameters file for setting up 
+/// objects related to stars and N-body integration.
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::ProcessNbodyParameters(void)
@@ -980,157 +1173,9 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
 
 
 
-//=============================================================================
-//  SphSimulation::Run
-/// Controls the simulation main loop, including exit conditions.  If provided
-/// (optional argument), will only advance the simulation by 'Nadvance' steps.
-//=============================================================================
-void SimulationBase::Run
-(int Nadvance)                      ///< [in] Selected max no. of integer 
-                                    ///<      timesteps (Optional argument).
-{
-  int Ntarget;                      // Target step no before finishing 
-                                    // main code integration.
-
-  debug1("[SphSimulation::Run]");
-
-  // Set integer timestep exit condition if provided as parameter.
-  if (Nadvance < 0) Ntarget = Nstepsmax;
-  else Ntarget = Nsteps + Nadvance;
-
-  CalculateDiagnostics();
-  OutputDiagnostics();
-
-  // Continue to run simulation until we reach the required time, or 
-  // exeeded the maximum allowed number of steps.
-  //---------------------------------------------------------------------------
-  while (t < tend && Nsteps < Ntarget) {
-
-    MainLoop();
-    Output();
-
-  }
-  //---------------------------------------------------------------------------
-
-  CalculateDiagnostics();
-  OutputDiagnostics();
-  UpdateDiagnostics();
-
-  return;
-}
-
-
-
-//=============================================================================
-//  Simulation::UpdateDiagnostics
-/// ...
-//=============================================================================
-template <int ndim>
-void Simulation<ndim>::UpdateDiagnostics ()
-{
-  diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
-  cout << "Eerror : " << diag.Eerror << endl;
-}
-
-
-
-//=============================================================================
-//  SimulationBase::InteractiveRun
-/// Controls the simulation main loop, including exit conditions.
-/// If provided, will only advance the simulation by 'Nadvance' steps.
-//=============================================================================
-list<SphSnapshotBase*> SimulationBase::InteractiveRun
-(int Nadvance)                      ///< [in] Selected max no. of integer 
-                                    ///< timesteps (Optional argument).
-{
-  int Ntarget;                      // Selected integer timestep
-  DOUBLE tdiff = 0.0;               // Measured time difference
-  clock_t tstart = clock();         // Initial CPU clock time
-  string filename;                  // Name of the output file
-  list<SphSnapshotBase*> snap_list; // List of snapshots produced while running
-                                    // that will be passed back to Python
-
-  debug2("[SimulationBase::InteractiveRun]");
-
-  // Set integer timestep exit condition if provided as parameter.
-  if (Nadvance < 0) Ntarget = Nstepsmax;
-  else Ntarget = Nsteps + Nadvance;
-
-  // Continue to run simulation until we reach the required time, or
-  // exeeded the maximum allowed number of steps.
-  //---------------------------------------------------------------------------
-  while (t < tend && Nsteps < Ntarget && tdiff < dt_python) {
-	
-    // Evolve the simulation one step
-    MainLoop();
-
-    // Update all diagnostics (including binaries) here for now
-    if (t >= tsnapnext) CalculateDiagnostics();
-	  
-    // Call output routine
-    filename=Output();
-	  
-    // If we have written a snapshot, create a new snapshot object
-    if (filename.length() != 0) {
-      SphSnapshotBase* snapshot =
-        SphSnapshotBase::SphSnapshotFactory(filename, this, ndims);
-      snapshot->CopyDataFromSimulation();
-      snap_list.push_back(snapshot);
-    }
-
-    // Measure CPU clock time difference since current function was called
-    tdiff = (DOUBLE) (clock() - tstart) / (DOUBLE) CLOCKS_PER_SEC;
-
-  }
-  //---------------------------------------------------------------------------
-
-  // Calculate and process all diagnostic quantities
-  CalculateDiagnostics();
-  OutputDiagnostics();
-  UpdateDiagnostics();
-
-  return snap_list;
-}
-
-
-
-//=============================================================================
-//  SimulationBase::Output
-/// Controls when regular output snapshots are written by the code.
-//=============================================================================
-string SimulationBase::Output(void)
-{
-  string filename;                  // Output snapshot filename
-  string nostring;                  // ???
-  stringstream ss;                  // ???
-
-  debug2("[Simulation::Output]");
-
-  if (Nsteps%noutputstep == 0) 
-    cout << "t : " << t*simunits.t.outscale << " " << simunits.t.outunit 
-	 << "    dt : " << timestep*simunits.t.outscale << " " 
-	 << simunits.t.outunit << "    Nsteps : " << Nsteps << endl;
-
-  // Output a data snapshot if reached required time
-  if (t >= tsnapnext) {
-    Noutsnap++;
-    tsnapnext += dt_snap;
-    nostring = "";
-    ss << setfill('0') << setw(5) << Noutsnap;
-    nostring = ss.str();
-    filename = run_id + '.' + out_file_form + '.' + nostring;
-    ss.str(std::string());
-    WriteSnapshotFile(filename,out_file_form);
-  }
-
-  return filename;
-}
-
-
-
 //============================================================================
 //  Simulation::AllocateParticleMemory
-/// ..
+/// Allocate all memory for both SPH and N-body particles.
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::AllocateParticleMemory(void)
@@ -1157,7 +1202,7 @@ void Simulation<ndim>::AllocateParticleMemory(void)
 
 //============================================================================
 //  Simulation::DeallocateParticleMemory
-/// ..
+/// Deallocate all particle memory
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::DeallocateParticleMemory(void)
@@ -1232,8 +1277,6 @@ void Simulation<ndim>::GenerateIC(void)
 
 
 
-
-
 //=============================================================================
 //  Simulation::PreSetupForPython
 /// Initialisation routine called by python interface.
@@ -1271,9 +1314,9 @@ void Simulation<ndim>::PreSetupForPython(void)
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::ImportArrayNbody
-(double* input,                     ///< ..
- int size,                          ///< ..
- string quantity)                   ///< ..
+(double* input,                     ///< Array of values from python
+ int size,                          ///< No. of array elements
+ string quantity)                   ///< String id of quantity being imported
 {
   FLOAT StarParticle<ndim>::*quantityp; //Pointer to scalar quantity
   FLOAT (StarParticle<ndim>::*quantitypvec)[ndim]; //Pointer to component of vector quantity
@@ -1390,17 +1433,17 @@ void Simulation<ndim>::ImportArrayNbody
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::ImportArraySph
-(double* input,                     ///< ..
- int size,                          ///< ..
- string quantity)                   ///< ..
+(double* input,                     ///< Array of values imported from python
+ int size,                          ///< No. of elements in array
+ string quantity)                   ///< String id of quantity
 {
-  FLOAT SphParticle<ndim>::*quantityp; //Pointer to scalar quantity
-  FLOAT (SphParticle<ndim>::*quantitypvec)[ndim]; //Pointer to component of vector quantity
+  FLOAT SphParticle<ndim>::*quantityp; // Pointer to scalar quantity
+  FLOAT (SphParticle<ndim>::*quantitypvec)[ndim]; // Pointer to component of vector quantity
   int index;                        // If it's a component of a vector 
                                     // quantity, we need to know its index
   bool scalar;                      // Is the requested quantity a scalar?
 
-  //Check that the size is correct
+  // Check that the size is correct
   if (size != sph->Nsph) {
     stringstream message;
     message << "Error: the array you are passing has a size of " 
@@ -1463,7 +1506,7 @@ void Simulation<ndim>::ImportArraySph
     scalar = false;
   }
   //---------------------------------------------------------------------------
-  else if (quantity=="rho") {
+  else if (quantity == "rho") {
     //TODO: at the moment, if rho or h are uploaded, they will be just ignored.
     //Add some facility to use them
     quantityp = &SphParticle<ndim>::rho;
@@ -1482,7 +1525,7 @@ void Simulation<ndim>::ImportArraySph
     scalar=true;
   }
   //---------------------------------------------------------------------------
-  else if (quantity=="m") {
+  else if (quantity == "m") {
     quantityp = &SphParticle<ndim>::m;
     scalar = true;
   }
@@ -1540,17 +1583,17 @@ void Simulation<ndim>::ImportArray
   }
 
   // Call the right function depending on the passed in type
-  if (type=="sph") {
+  if (type == "sph") {
     // Check sph has been allocated
-    if (sph==NULL) {
+    if (sph == NULL) {
       string message = "Error: memory for sph was not allocated! Are you sure that this is not a nbody-only simulation?";
       ExceptionHandler::getIstance().raise(message);
     }
     ImportArraySph(input, size, quantity);
 
   }
-  else if (type=="star") {
-    if (nbody==NULL) {
+  else if (type == "star") {
+    if (nbody == NULL) {
       string message = "Error: memory for nbody was not allocated! Are you sure that this is not a sph-only simulation?";
       ExceptionHandler::getIstance().raise(message);
     }
@@ -1561,51 +1604,6 @@ void Simulation<ndim>::ImportArray
         " and \"nbody\"";
     ExceptionHandler::getIstance().raise(message);
   }
-
-  return;
-}
-
-
-
-//=============================================================================
-//  SimulationBase::SetupSimulation
-/// Main function for setting up a new SPH simulation.
-//=============================================================================
-void SimulationBase::SetupSimulation(void)
-{
-  debug1("[SimulationBase::Setup]");
-
-  if (setup) {
-    string msg = "This simulation has been already set up";
-    ExceptionHandler::getIstance().raise(msg);
-  }
-
-
-  // Process the parameters file setting up all simulation objects
-  if (simparams->stringparams["ic"] == "python") {
-    if (!ParametersProcessed) {
-      string msg = "Error: you are attempting to setup a simulation with initial conditions generated"
-          "from Python. Before setting up the simulation, you need to import the initial conditions";
-      ExceptionHandler::getIstance().raise(msg);
-    }
-  }
-  else {
-    if (ParametersProcessed) {
-      string msg = "The parameters of the simulation have been already processed."
-          "It means that you shouldn't be calling this function, please consult the documentation.";
-      ExceptionHandler::getIstance().raise(msg);
-    }
-    ProcessParameters();
-  }
-
-  // Generate initial conditions for simulation
-  GenerateIC();
-
-  // Change to COM frame if selected
-  if (simparams->intparams["com_frame"] == 1) SetComFrame();
-
-  // Call a messy function that does all the rest of the initialisation
-  PostInitialConditionsSetup();
 
   return;
 }
@@ -1642,26 +1640,14 @@ void Simulation<ndim>::SetComFrame(void)
 }
 
 
-/*
+
+//=============================================================================
+//  Simulation::UpdateDiagnostics
+/// Update energy error value after computing diagnostic quantities.
+//=============================================================================
 template <int ndim>
-void SphSimulation<ndim>::ProcessParameters()
+void Simulation<ndim>::UpdateDiagnostics ()
 {
-  Simulation<ndim>::ProcessParameters();
+  diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
+  cout << "Eerror : " << diag.Eerror << endl;
 }
-
-
-
-
-template <int ndim>
-void GodunovSphSimulation<ndim>::ProcessParameters()
-{
-  Simulation<ndim>::ProcessParameters();
-}
-
-
-template <int ndim>
-void NbodySimulation<ndim>::ProcessParameters()
-{
-  Simulation<ndim>::ProcessParameters();
-}
-*/

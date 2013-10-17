@@ -32,6 +32,7 @@
 #include "Debug.h"
 #include "Exception.h"
 #include "InlineFuncs.h"
+#include "MpiNode.h"
 using namespace std;
 
 
@@ -100,6 +101,7 @@ void MpiNode<ndim>::UpdateBoundingBoxData
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
+  FLOAT hrange;                     // ..
 
   // Initialise bounding box values
   for (k=0; k<ndim; k++) bbmin[k] = big_number;

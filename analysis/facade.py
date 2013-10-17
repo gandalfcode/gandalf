@@ -1,13 +1,13 @@
 #==============================================================================
 #  facade.py
-#  ..
+#  Main gandalf library front-end when invoking gandalf from within python.
 #
 #  This file is part of GANDALF :
-#  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+#  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 #  https://github.com/gandalfcode/gandalf
 #  Contact : gandalfcode@gmail.com
 #
-#  Copyright (C) 2013  D. A. Hubber, G Rosotti
+#  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 #
 #  GANDALF is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #==============================================================================
 import __main__
 import atexit
+import time
 from multiprocessing import Manager, Queue
 from plotting import PlottingProcess
 from gandalf.analysis.SimBuffer import SimBuffer, BufferException
@@ -66,7 +67,7 @@ def handle(e):
     '''This functions takes care of printing information about an error,
 if we are in interactive mode, or re-raising it, if we are in script mode
 (so that the execution of the script can stop if nobody catches the exception)
-    '''
+'''
     if interactive:
         print str(e)
     else:
@@ -76,7 +77,7 @@ if we are in interactive mode, or re-raising it, if we are in script mode
 #------------------------------------------------------------------------------
 def loadsim(run_id, fileformat = 'ascii', buffer_flag = 'cache'):
     '''Given the run_id of a simulation, reads it from the disk.
-    Returns the newly created simulation object.
+Returns the newly created simulation object.
     
 Required arguments:
     run_id      : Simulation run identification string.
@@ -118,7 +119,8 @@ Optional arguments:
     **kwargs   : Extra keyword arguments will be passed to matplotlib.
 '''
     simno = get_sim_no(sim)
-    #if we are plotting all species, call plot in turn
+    
+    # If we are plotting all particle species, call plot in turn
     if type=="all":
         sim = SimBuffer.get_sim_no(simno)
         snapobject = SimBuffer.get_snapshot_extended(sim, snap)
@@ -136,11 +138,12 @@ Optional arguments:
     sleep(0.001)
 
 
+#------------------------------------------------------------------------------
 def plot_vs_time_quantiy_particle(quantity, type='default',id=0):
     '''Plot as a function of time a given quantity for a given particle.
-    Type specifies the type of particle to retrieve the information from.
-    id is an integer specifying the desired particle.
-    '''
+Type specifies the type of particle to retrieve the information from.
+id is an integer specifying the desired particle.
+'''
     from compute import particle_data
     name='part_'+quantity+'_'+str(id)
     CreateTimeData(name,particle_data,quantity=quantity,type=type,id=id)
@@ -300,8 +303,8 @@ Optional arguments:
 
 
 #------------------------------------------------------------------------------
-def limit (quantity, min=None, max=None, auto=False,
-           window='current', subfigure='current'):
+def limit(quantity, min=None, max=None, auto=False,
+          window='current', subfigure='current'):
     '''Set plot limits. Quantity is the quantity to limit.
     
 Required arguments:
@@ -320,7 +323,7 @@ Optional arguments:
 ''' 
     if window=='all' and subfigure=='current':
         subfigure=='all'
-    command = Commands.LimitCommand (quantity, min, max, auto, window, subfigure)
+    command = Commands.LimitCommand(quantity, min, max, auto, window, subfigure)
     Singletons.queue.put([command,None])
     if window=='global':
         okflag=Singletons.completedqueue.get()
@@ -328,7 +331,7 @@ Optional arguments:
 
 
 #------------------------------------------------------------------------------
-def addplot (x,y, **kwargs):
+def addplot(x, y, **kwargs):
     '''Thin wrapper around plot that sets overplot to True.  All the other
 arguments are the same. If autoscale is not explicitly set, it will be set
 to False to preserve the existing settings.
@@ -350,7 +353,7 @@ Optional arguments:
 #------------------------------------------------------------------------------
 def next():
     '''Advances the current snapshot of the current simulation.
-    Return the new snapshot, or None if the call failed.'''
+Return the new snapshot, or None if the call failed.'''
     try:
         snapshot=snap(SimBuffer.get_no_next_snapshot())
         return snapshot
@@ -361,7 +364,7 @@ def next():
 #------------------------------------------------------------------------------
 def previous():
     '''Decrements the current snapshot of the current simulation.
-    Return the new snapshot, or None if the call failed.'''
+Return the new snapshot, or None if the call failed.'''
     try:
         snapshot=snap(SimBuffer.get_no_previous_snapshot())
         return snapshot
@@ -371,9 +374,9 @@ def previous():
 
 #------------------------------------------------------------------------------
 def snap(no):
-    '''Jump to the given snapshot number of the current simulation.  Note that you
-can use standard Numpy index notation (e.g., -1 is the last snapshot).
-    Return the new snapshot, or None if the call failed.
+    '''Jump to the given snapshot number of the current simulation.  Note that 
+you can use standard Numpy index notation (e.g., -1 is the last snapshot).
+Return the new snapshot, or None if the call failed.
 
 Required arguments:
     snapno     : Snapshot number
@@ -387,6 +390,7 @@ Required arguments:
     
     update("current")
     return snapshot
+
 
 #------------------------------------------------------------------------------
 def window(no = None):
@@ -460,7 +464,7 @@ Optional arguments:
     while sim.t < sim.tend and sim.Nsteps < sim.Nstepsmax:
         #TODO: maybe some of these operations could be done in another thread, so that the computation is
         #not slowed down when compared to the stand-alone c++ executable
-        #But need to think carefully, because of the bloody GIL...
+        #But need to think carefully, because of the GIL... (??)
         snap_list = sim.InteractiveRun()
         for snap in snap_list:
             SimBuffer.add_snapshot(snap, sim)
@@ -504,11 +508,10 @@ because you probably just spotted a bug in the code.
 
 #------------------------------------------------------------------------------
 def savefig(name):
-    '''Saves the current figure with the given name.
-Note that matplotlib figures out automatically the type of the file
-from the extension
+    '''Saves the current figure with the given name.  Note that matplotlib
+figures out automatically the type of the file from the extension.
 
-Require arguments:
+Required arguments:
     name       : filename (including extension)
 
 '''
@@ -533,7 +536,9 @@ Useful in scripts where no interaction is required
 def plotanalytical(x=None, y=None, ic="default", snap="current", sim="current",
                    overplot=True, autoscale=True, xunit="default",
                    yunit="default"):
-    '''Plots the analytical solution
+    '''Plots the analytical solution.  Reads the problem type from the \'ic\'
+parameter and plots the appropriate solution if implemented.  If no solution
+exists, then nothing is plotted.
     
 Optional arguments:
     x          : Quantity on the x-axis. Must be a string.
@@ -614,7 +619,8 @@ Required argument:
 
 #------------------------------------------------------------------------------
 def set_current_sim(simno):
-    '''Set the current simulation to the given number. Returns the newly set current simulation
+    '''Set the current simulation to the given number.
+Returns the newly set current simulation.
 
 Required argument:
     simno      : Simulation number
@@ -625,6 +631,11 @@ Required argument:
 
 #------------------------------------------------------------------------------
 def get_sim_no(sim):
+    '''Returns the simulation id of the currently active simulation object
+
+Required argument:
+    sim        : Simulation
+'''
     if sim == "current":
         simno = SimBuffer.get_current_sim_no()
     else:
@@ -670,6 +681,10 @@ def init():
     CreateTimeData('com_y',COM,quantity='y')
     CreateTimeData('com_z',COM,quantity='z')
 
+
+
+# Default code.  Run when facade.py is imported
+#------------------------------------------------------------------------------
 init()
  
 signal.signal(signal.SIGINT, sigint)
