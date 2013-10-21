@@ -1,13 +1,13 @@
------------------------------------------------------------------
-Sound wave test
-Generates and propagates a small linear density perturbation as a 
-sound-wave along a uniform density gas.
------------------------------------------------------------------
+#------------------------------------------------------------------
+# Sound wave test
+# Generates and propagates a small linear density perturbation as a 
+# sound-wave along a uniform density gas.
+#------------------------------------------------------------------
 
 
-----------------------------
-Initial conditions variables
-----------------------------
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
 Simulation run id string                    : run_id = SHEARFLOW1
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = shearflow
@@ -20,9 +20,9 @@ No. of y-particles in lattice               : Nlattice1[1] = 32
 Use dimensionless units                     : dimensionless = 1
 
 
------------------------------
-Simulation boundary variables
------------------------------
+#------------------------------
+# Simulation boundary variables
+#------------------------------
 LHS position of boundary in x-dimension     : boxmin[0] = 0.0
 RHS position of boundary in x-dimension     : boxmax[0] = 1.0
 LHS position of boundary in y-dimension     : boxmin[1] = 0.0
@@ -33,33 +33,34 @@ LHS boundary type in y-dimension            : y_boundary_lhs = periodic
 RHS boundary type in y-dimension            : y_boundary_rhs = periodic
 
 
--------------------------
-Simulation time variables
--------------------------
+#--------------------------
+# Simulation time variables
+#--------------------------
 Simulation end time                         : tend = 12.0
-Regular snapshot output frequency           : dt_snap = 0.2
-Screen output frequency (in no. of steps)   : noutputstep = 999999999
+Time of first snapshot                      : tsnapfirst = 15.0
+Regular snapshot output frequency           : dt_snap = 15.0
+Screen output frequency (in no. of steps)   : noutputstep = 128
 
 
------------------------
-Thermal physics options
------------------------
+#------------------------
+# Thermal physics options
+#------------------------
 Switch-on hydrodynamical forces             : hydro_forces = 1
 Main gas thermal physics treatment          : gas_eos = isothermal
 Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 
 
----------------------------------------
-Smoothed Particle Hydrodynamics options
----------------------------------------
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = quintic
 SPH smoothing length iteration tolerance    : h_converge = 0.0001
 
 
---------------------------------
-SPH artificial viscosity options
---------------------------------
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
 Artificial viscosity choice                 : avisc = mon97
 Artificial conductivity choice              : acond = none
 Artificial viscosity alpha value            : alpha_visc = 0.1
@@ -69,23 +70,23 @@ Order of Riemann solver                     : riemann_order = 1
 Slope limiter                               : slope_limiter = mine
 
 
-------------------------
-Time integration options
-------------------------
+#-------------------------
+# Time integration options
+#-------------------------
 SPH particle integration option             : sph_integration = lfkdk
-SPH Courant timestep condition multiplier   : courant_mult = 0.15
-SPH acceleration condition multiplier       : accel_mult = 0.3
+SPH Courant timestep condition multiplier   : courant_mult = 0.1
+SPH acceleration condition multiplier       : accel_mult = 0.2
 No. of block timestep levels                : Nlevels = 1
 
 
---------------------
-Optimisation options
---------------------
+#---------------------
+# Optimisation options
+#---------------------
 Tabulate SPH kernel                         : tabulated_kernel = 0
 SPH neighbour search algorithm              : neib_search = grid
 
 
--------------
-Misc. options
--------------
+#--------------
+# Misc. options
+#--------------
 Switch-off self-gravity of gas              : self_gravity = 0

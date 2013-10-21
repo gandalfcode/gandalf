@@ -39,7 +39,7 @@ template <int ndim>
 struct SphParticle
 {
 
-  // Generic values
+  // Generic variables, i.e. shared by all SPH methods
   //-------------------------------------------------------------------------
   bool active;                      ///< Flag if active (i.e. recompute step)
   bool potmin;                      ///< Is particle at a potential minima?
@@ -70,18 +70,18 @@ struct SphParticle
   FLOAT gpe;                        ///< Gravitational potential energy
   DOUBLE dt;                        ///< Particle timestep
 
-  // GradhSph specific
+  // GradhSph specific variables
   //-------------------------------------------------------------------------
   FLOAT invomega;                   ///< grad-h omega/f correction term
   FLOAT zeta;                       ///< grad-h gravity correction term
   FLOAT chi;                        ///< grad-h star-gravity correction term
 
-  // SM2012 specific
+  // SM2012 specific variables
   //-------------------------------------------------------------------------
   FLOAT q;                          ///< Internal energy density
   FLOAT invq;                       ///< 1 / q
 
-  // Godunov specific
+  // Godunov specific variables
   //-------------------------------------------------------------------------
   FLOAT gradP[ndim];                ///< Pressure gradient
   FLOAT gradrho[ndim];              ///< Density gradient
@@ -98,7 +98,7 @@ struct SphParticle
   //---------------------------------------------------------------------------
   SphParticle()
   {
-    // Generic values
+    // Generic variables, i.e. shared by all SPH methods
     //-------------------------------------------------------------------------
     active = false;
     potmin = false;
@@ -125,18 +125,18 @@ struct SphParticle
     gpe = (FLOAT) 0.0;
     dt = (DOUBLE) 0.0;
 
-    // GradhSph specific
+    // GradhSph specific variables
     //-------------------------------------------------------------------------
     invomega = (FLOAT) 0.0;
     zeta = (FLOAT) 0.0;
     chi = (FLOAT) 0.0;
 
-    // SM2012 specific
+    // SM2012 specific variables
     //-------------------------------------------------------------------------
     q = (FLOAT) 0.0;
     invq = (FLOAT) 0.0;
 
-    // Godunov specific
+    // Godunov specific variables
     //-------------------------------------------------------------------------
     for (int k=0; k<ndim; k++) gradP[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) gradrho[k] = (FLOAT) 0.0;

@@ -672,7 +672,7 @@ def init():
     CreateUserQuantity('ar','sin(theta)*cos(phi)*ax+sin(theta)*sin(phi)*ay+cos(theta)*az',scaling_factor='a',label='$a_r$')
     CreateUserQuantity('atheta','cos(theta)*cos(phi)*vx+cos(theta)*sin(phi)*vy-sin(theta)*vz',scaling_factor='a', label='$a_\\theta$')
     CreateUserQuantity('aphi','cos(phi)*vy-sin(phi)*vx',scaling_factor='a',label='$a_\\phi$')
-    CreateUserQuantity('pressure','(gamma_eos - 1)*rho*u',scaling_factor='press',label='P')
+    CreateUserQuantity('press','(gamma_eos - 1)*rho*u',scaling_factor='press',label='P')
     CreateUserQuantity('sound','sqrt(gamma_eos*(gamma_eos - 1)*u)',scaling_factor='v', label='$c_s$')
     CreateUserQuantity('temp','(gamma_eos - 1)*u',scaling_factor='temp',label='T')
     

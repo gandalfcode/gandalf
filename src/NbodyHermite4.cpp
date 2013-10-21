@@ -181,16 +181,12 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
       invdrmag = 1.0/sqrt(drsqd);
       drdt = DotProduct(dv,dr,ndim)*invdrmag;
 
-      //cout << "PERT1 : " << i << "   " << j << "    " << drsqd << "    " << "    " << star[0]->a[0] + star[1]->a[0] << endl;
-
       // First, add contribution of perturber to star
       star[i]->gpe_pert += perturber[j].m*invdrmag;
       for (k=0; k<ndim; k++) star[i]->a[k] += 
         perturber[j].m*dr[k]*pow(invdrmag,3);
       for (k=0; k<ndim; k++) star[i]->adot[k] += perturber[j].m*
         pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
-
-      //cout << "PERT2 : " << i << "   " << j << "    " << drsqd << "    " << "    " << star[0]->a[0] + star[1]->a[0] << endl;
 
       // Next, add contribution of star to perturber
       for (k=0; k<ndim; k++) apert[ndim*j + k] -=
@@ -347,14 +343,8 @@ void NbodyHermite4<ndim, kernelclass>::CalculateAllStartupQuantities
         star[j]->m*dadot[k]*invdrsqd*invdrmag -
         9.0*afac*a2dot[k] - 9.0*bfac*adot[k] - 3.0*cfac*a[k];
       
-      //cout << "WTF?? : " << i << "   " << j << "    " << drsqd << "    " << dvsqd << "    " << da[0] << "    " << da[1] << "    " << dadot[0] << "    " << dadot[1] << "     " << a2dot[0] << "    " << a2dot[1] << endl;
-      //cout << "WTF2? : " << drdt << "    " << star[j]->m*pow(invdrmag,3)*dv[k] << "    " << afac << "   " << bfac << "    " << cfac << "    " << dvsqd*invdrsqd << "    " << afac*afac << "    " << DotProduct(da,dr,ndim)*invdrsqd << endl;
-
     }
     //-------------------------------------------------------------------------
-
-    //cout << "a2dot : " << i << "   " << star[i]->a2dot[0] << "    " << star[i]->a2dot[1] << endl;
-    //cout << "a3dot : " << i << "   " << star[i]->a3dot[0] << "    " << star[i]->a3dot[1] << endl;
 
   }
   //---------------------------------------------------------------------------
@@ -592,8 +582,6 @@ DOUBLE NbodyHermite4<ndim, kernelclass>::Timestep
 
   timestep = min(timestep,star->dt_internal);
 
-  //cout << "Timesteps : " << timestep << "    " << star->dt_internal << "    " << asqd << "    " << a1sqd << "    " << a2sqd << "    " << a3sqd << endl;
-
   return timestep;
 }
 
@@ -628,7 +616,7 @@ void NbodyHermite4<ndim, kernelclass>::IntegrateInternalMotion
   DOUBLE adotcom[ndim];                               // Jerk of COM
   NbodyParticle<ndim>** children = systemi->children; // Child systems
 
-  cout << "Integrating internal motion : " << Nchildren << "   " << tlocal_end << endl;
+  //cout << "Integrating internal motion : " << Nchildren << "   " << tlocal_end << endl;
 
   // Zero all COM summation variables
   for (k=0; k<ndim; k++) rcom[k] = 0.0;
@@ -653,7 +641,7 @@ void NbodyHermite4<ndim, kernelclass>::IntegrateInternalMotion
   for (k=0; k<ndim; k++) adotcom[k] /= msystem;
 
 
-  cout << "Initial system COM : " << rcom[0] << "    " << rcom[1] << endl;
+  //cout << "Initial system COM : " << rcom[0] << "    " << rcom[1] << endl;
 
   // Now convert to COM frame
   //---------------------------------------------------------------------------

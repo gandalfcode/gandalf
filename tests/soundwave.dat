@@ -1,5 +1,5 @@
 #------------------------------------------------------------------
-#Sound wave test
+# Sound wave test
 # Generates and propagates a small linear density perturbation as a 
 # sound-wave along a uniform density gas.
 #------------------------------------------------------------------
@@ -9,7 +9,7 @@
 # Initial conditions variables
 #-----------------------------
 Simulation run id string                    : run_id = SOUNDWAVE1
-Select SPH simulation                       : sim = godunov_sph
+Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = soundwave
 1D shocktube test                           : ndim = 1
 Pressure of LHS fluid                       : press1 = 1.0
@@ -32,8 +32,9 @@ RHS boundary type in x-dimension            : x_boundary_rhs = periodic
 # Simulation time variables
 #--------------------------
 Simulation end time                         : tend = 2.0
+Time for first snapshot                     : tsnapfirst = 2.5
 Regular snapshot output frequency           : dt_snap = 2.5
-Screen output frequency (in no. of steps)   : noutputstep = 999999999
+Screen output frequency (in no. of steps)   : noutputstep = 1024
 
 
 #------------------------
@@ -57,8 +58,8 @@ SPH smoothing length iteration tolerance    : h_converge = 0.000000001
 #---------------------------------
 Artificial viscosity choice                 : avisc = none
 Artificial conductivity choice              : acond = none
-Artificial viscosity alpha value            : alpha_visc = 0.1
-Artificial viscosity beta value             : beta_visc = 0.2
+Artificial viscosity alpha value            : alpha_visc = 0.01
+Artificial viscosity beta value             : beta_visc = 0.02
 Riemann solver                              : riemann_solver = exact
 Order of Riemann solver                     : riemann_order = 2
 Slope limiter                               : slope_limiter = mine
@@ -68,8 +69,8 @@ Slope limiter                               : slope_limiter = mine
 # Time integration options
 #-------------------------
 SPH particle integration option             : sph_integration = lfkdk
-SPH Courant timestep condition multiplier   : courant_mult = 0.05
-SPH acceleration condition multiplier       : accel_mult = 0.1
+SPH Courant timestep condition multiplier   : courant_mult = 0.025
+SPH acceleration condition multiplier       : accel_mult = 0.05
 No. of block timestep levels                : Nlevels = 1
 
 

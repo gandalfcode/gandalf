@@ -12,6 +12,9 @@ setupsim()
 # Plot density distribution along with analytical solution
 plot("R","rho")
 plotanalytical("R","rho")
+limit("R",0.0,0.4,window="all")
+limit("rho",0.0,17.0,window="all")
+
 
 run()
 block()

@@ -39,6 +39,65 @@ using namespace std;
 
 
 //=============================================================================
+//  Simulation::GenerateIC
+/// Generate initial conditions for SPH simulation chosen in parameters file.
+//=============================================================================
+template <int ndim>
+void Simulation<ndim>::GenerateIC(void)
+{
+  debug2("[Simulation::GenerateIC]");
+
+  // Generate initial conditions
+  if (simparams->stringparams["ic"] == "file")
+    ReadSnapshotFile(simparams->stringparams["in_file"],
+		     simparams->stringparams["in_file_form"]);
+  else if (simparams->stringparams["ic"] == "binaryacc")
+    BinaryAccretion();
+  else if (simparams->stringparams["ic"] == "binary")
+    BinaryStar();
+  else if (simparams->stringparams["ic"] == "bb")
+    BossBodenheimer();
+  else if (simparams->stringparams["ic"] == "box")
+    UniformBox();
+  else if (simparams->stringparams["ic"] == "cdiscontinuity")
+    ContactDiscontinuity();
+  else if (simparams->stringparams["ic"] == "khi")
+    KHI();
+  else if (simparams->stringparams["ic"] == "noh")
+    NohProblem();
+  else if (simparams->stringparams["ic"] == "plummer")
+    PlummerSphere();
+  else if (simparams->stringparams["ic"] == "quadruple")
+    QuadrupleStar();
+  else if (simparams->stringparams["ic"] == "sedov")
+    SedovBlastWave();
+  else if (simparams->stringparams["ic"] == "shearflow")
+    ShearFlow();
+  else if (simparams->stringparams["ic"] == "shocktube")
+    ShockTube();
+  else if (simparams->stringparams["ic"] == "soundwave")
+    SoundWave();
+  else if (simparams->stringparams["ic"] == "sphere")
+    UniformSphere();
+  else if (simparams->stringparams["ic"] == "triple")
+    TripleStar();
+  else if (simparams->stringparams["ic"] == "python")
+    return;
+  else {
+    string message = "Unrecognised parameter : ic = " 
+      + simparams->stringparams["ic"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Check that the initial conditions are valid
+  CheckInitialConditions();
+
+  return;
+}
+
+
+
+//=============================================================================
 //  Simulation::CheckInitialConditions
 /// Performs some simple sanity checks on all initial conditions
 //=============================================================================
@@ -274,7 +333,6 @@ void Simulation<ndim>::BinaryAccretion(void)
   hsink = sph->kernp->invkernrange*rsink;
   hsink = min(hsink,hfluid1);
   rsink = sph->kernp->kernrange*hsink;
-  cout << "rsonic : " << rsonic << "    hfluid1 : " << hfluid1 << endl;
 
 
   // Add star particles to simulation
@@ -308,9 +366,6 @@ void Simulation<ndim>::BinaryAccretion(void)
     string message = "Invalid number of star particles";
     ExceptionHandler::getIstance().raise(message);
   }
-
-  cout << "Added stars; vx : " << vmachbin << endl; //*sph->eos->SoundSpeed(sph->sphdata[0]) << endl;
-  cout << "vbin : " << vbinary[0] << "   " << vbinary[1] << endl;
 
 
   // Set initial smoothing lengths and create initial ghost particles
@@ -402,7 +457,6 @@ void Simulation<ndim>::ShockTube(void)
   sph->Nsph = Nbox1 + Nbox2;
   AllocateParticleMemory();
   r = new FLOAT[ndim*sph->Nsph];
-  cout << "Allocating memory : " << sph->Nsph << endl;
 
 
   // Add particles for LHS of the shocktube
@@ -729,16 +783,12 @@ void Simulation<ndim>::ContactDiscontinuity(void)
     sph->Nsph = Nbox1 + Nbox2;
     AllocateParticleMemory();
     r = new FLOAT[ndim*sph->Nsph];
-    cout << "Allocating memory : " << sph->Nsph << endl;
 
 
     //-------------------------------------------------------------------------
     if (Nbox1 > 0) {
       AddCubicLattice(Nbox1,Nlattice1,r,box1,false);
       volume = box1.boxmax[0] - box1.boxmin[0];
-      cout << "Vol1 : " << volume << "   m1 : " 
-	   << rhofluid1*volume/(FLOAT) Nbox1 << "   rho : "
-	   << rhofluid1*volume << "   Nbox : " << Nbox1 << endl;
       for (i=0; i<Nbox1; i++) {
         sph->sphdata[i].r[0] = r[i] - 0.4*simbox.boxsize[0];
         if (sph->sphdata[i].r[0] < simbox.boxmin[0])
@@ -756,9 +806,6 @@ void Simulation<ndim>::ContactDiscontinuity(void)
     if (Nbox2 > 0) {
       AddCubicLattice(Nbox2,Nlattice2,r,box2,false);
       volume = box2.boxmax[0] - box2.boxmin[0];
-      cout << "Vol2 : " << volume << "   m2 : " 
-	   << rhofluid2*volume/(FLOAT) Nbox2 
-	   << "   rho : " << rhofluid2*volume << "   Nbox : " << Nbox2 << endl;
       for (j=0; j<Nbox2; j++) {
         i = Nbox1 + j;
         sph->sphdata[i].r[0] = r[j] - 0.4*simbox.boxsize[0];
@@ -871,18 +918,14 @@ void Simulation<ndim>::KHI(void)
   box2.boxmax[0] = simbox.boxmax[0];
   box2.boxmin[1] = simbox.boxmin[1] + simbox.boxhalf[1];
   box2.boxmax[1] = simbox.boxmax[1];
-
   volume = (box1.boxmax[0] - box1.boxmin[0])*(box1.boxmax[1] - box1.boxmin[1]);
   Nbox1 = Nlattice1[0]*Nlattice1[1];
   Nbox2 = Nlattice2[0]*Nlattice2[1];
-
 
   // Allocate local and main particle memory
   sph->Nsph = Nbox1 + Nbox2;
   AllocateParticleMemory();
   r = new FLOAT[ndim*sph->Nsph];
-  cout << "Nbox1 : " << Nbox1 << "    Nbox2 : " << Nbox2 << endl;
-  cout << "Allocating memory : " << sph->Nsph << endl;
 
 
   // Add particles for LHS of the shocktube
@@ -1072,8 +1115,6 @@ void Simulation<ndim>::BossBodenheimer(void)
   press /= simunits.press.outscale;
   radius /= simunits.r.outscale;
   temp0 /= simunits.temp.outscale;
-
-  cout << "ANGVEL : " << angvel*radius*simunits.v.outscale << simunits.v.outunit << endl;
 
   r = new FLOAT[ndim*Npart];
   v = new FLOAT[ndim*Npart];
@@ -1266,8 +1307,6 @@ void Simulation<ndim>::PlummerSphere(void)
     nbody->stardata[i].invh   = 1.0 / nbody->stardata[i].h;
   }
 
-  cout << "Finished generating Plummer sphere" << endl;
-
   return;
 }
 
@@ -1337,9 +1376,6 @@ void Simulation<ndim>::SedovBlastWave(void)
   AllocateParticleMemory();
   r = new FLOAT[ndim*sph->Nsph];
   hotlist = new int[sph->Nsph];
-  cout << "Here??? : " << endl;
-  cout << "mbox : " << mbox << "   r_hot : " << r_hot 
-       << "   Nbox : " << Nbox << endl;
 
   // Add a cube of random particles defined by the simulation bounding box and 
   // depending on the chosen particle distribution
@@ -1405,8 +1441,6 @@ void Simulation<ndim>::SedovBlastWave(void)
       Ncold++;
     }
   }
-
-  cout << "utot : " << utot << endl;
 
   // Normalise the energies
   //---------------------------------------------------------------------------
@@ -1479,8 +1513,6 @@ void Simulation<ndim>::ShearFlow(void)
   sph->Nsph = Nbox;
   AllocateParticleMemory();
   r = new FLOAT[ndim*sph->Nsph];
-  cout << "Nbox1 : " << Nbox << endl;
-  cout << "Allocating memory : " << sph->Nsph << endl;
 
 
   // Add particles for LHS of the shocktube
@@ -1542,7 +1574,6 @@ void Simulation<ndim>::SoundWave(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
-  cout << "gas_eos : " << sph->gas_eos << endl;
   if (sph->gas_eos == "isothermal") {
     ugas = temp0/gammaone/mu_bar;
     press1 = gammaone*rhofluid1*ugas;
@@ -1557,17 +1588,15 @@ void Simulation<ndim>::SoundWave(void)
   kwave = twopi/lambda;
   omegawave = twopi*csound/lambda;
 
-  cout << "amp : " << amp << "    rhofluid1" << rhofluid1 << endl;
-  cout << "kwave : " << kwave << "    csound : " << csound << endl;
-
   // Allocate local and main particle memory
   sph->Nsph = Npart;
   Nlattice1[0] = Npart;
   AllocateParticleMemory();
   r = new FLOAT[ndim*sph->Nsph];
-  cout << "Allocating memory : " << sph->Nsph << endl;
 
+  // Add regular distribution of SPH particles
   AddCubicLattice(Npart,Nlattice1,r,simbox,false);
+
 
   // Set positions of all particles to produce density perturbation
   //---------------------------------------------------------------------------
@@ -1763,8 +1792,6 @@ void Simulation<ndim>::AddBinaryStar
     string message = "Binary test not available in 1D";
     ExceptionHandler::getIstance().raise(message);
   }
-
-  cout << "Adding binary with : " << m1 << "   " << m2 << "    " << sma << endl;
 
   // randomly sample M to get theta
   FLOAT M = 2.0*pi*(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;

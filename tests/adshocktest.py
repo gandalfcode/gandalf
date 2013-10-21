@@ -12,24 +12,16 @@ newsim('adshock.dat')
 setupsim()
 
 # Plot the density with the analytical solution
-subfigure(2,2,1)
+subfigure(2,1,1)
 plot("x","rho")
 plotanalytical("x","rho")
-limit("x",-8.5,8.5,window="all")
+limit("x",-9.5,9.5,window="all")
 
 # Plot the x-velocity with the analytical solution
-subfigure(2,2,2)
+subfigure(2,1,2)
 plot("x","vx")
 plotanalytical("x","vx")
-
-# Plot the specific internal energy with the solution
-subfigure(2,2,3)
-plot("x","u")
-plotanalytical("x","u")
-
-# Plot the smoothing length
-subfigure(2,2,4)
-plot("rho","h")
+limit("x",-9.5,9.5,window="all")
 
 # 'Sleep hack' (to allow matplotlib to update the figure) 
 # before running the simulation

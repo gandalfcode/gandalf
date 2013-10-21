@@ -177,7 +177,6 @@ void Simulation<ndim>::OutputDiagnostics(void)
 {
   debug2("[SphSimulation::OutputDiagnostics]");
 
-  cout << "Printing out diagnostics" << endl;
   cout << "Nsph       : " << sph->Nsph << endl;
   cout << "Nstar      : " << nbody->Nstar << endl;
   cout << "mtot       : " << diag.mtot*simunits.m.outscale << endl;

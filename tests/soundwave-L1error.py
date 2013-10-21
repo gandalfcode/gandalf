@@ -15,68 +15,68 @@ L1values = []
 
 # Simulation 1, N = 8
 # -----------------------------------------------
-sim1 = newsimfromparams("soundwave.dat")
-sim1.simparams.intparams["Npart"] = 8
-sim1.SetupSimulation()
+sim1 = newsim("soundwave.dat")
+sim1.SetParam("Nsph",8)
+setupsim()
 run()
 Nres.append(8)
-L1values.append(L1errornorm("x","rho",0.01,0.99))
+L1values.append(L1errornorm("soundwave","x","rho",0.01,0.99))
 plot("x","rho")
 plotanalytical("x","rho")
 
 
 # Simulation 2, N = 16
 # -----------------------------------------------
-sim2 = newsimfromparams("soundwave.dat")
-sim2.simparams.intparams["Npart"] = 16
-sim2.SetupSimulation()
+sim2 = newsim("soundwave.dat")
+sim2.SetParam("Nsph",16)
+setupsim()
 run()
 Nres.append(16)
-L1values.append(L1errornorm("x","rho",0.01,0.99))
+L1values.append(L1errornorm("soundwave","x","rho",0.01,0.99))
 addplot("x","rho")
 
 
 # Simulation 3, N = 32
 # -----------------------------------------------
-sim3 = newsimfromparams("soundwave.dat")
-sim3.simparams.intparams["Npart"] = 32
-sim3.SetupSimulation()
+sim3 = newsim("soundwave.dat")
+sim3.SetParam("Nsph",32)
+setupsim()
 run()
 Nres.append(32)
-L1values.append(L1errornorm("x","rho",0.01,0.99))
+L1values.append(L1errornorm("soundwave","x","rho",0.01,0.99))
 addplot("x","rho")
 
 
 # Simulation 4, N = 64
 # -----------------------------------------------
-sim4 = newsimfromparams("soundwave.dat")
-sim4.simparams.intparams["Npart"] = 64
-sim4.SetupSimulation()
+sim4 = newsim("soundwave.dat")
+sim4.SetParam("Nsph",64)
+setupsim()
 run()
 Nres.append(64)
-L1values.append(L1errornorm("x","rho",0.01,0.99))
+L1values.append(L1errornorm("soundwave","x","rho",0.01,0.99))
 addplot("x","rho")
 
 
 # Simulation 5, N = 128
 # -----------------------------------------------
-sim5 = newsimfromparams("soundwave.dat")
-sim5.simparams.intparams["Npart"] = 128
-sim5.SetupSimulation()
+sim5 = newsim("soundwave.dat")
+sim5.SetParam("Nsph",128)
+setupsim()
 run()
 Nres.append(128)
-L1values.append(L1errornorm("x","rho",0.01,0.99))
+L1values.append(L1errornorm("soundwave","x","rho",0.01,0.99))
 addplot("x","rho")
 
 
 # Simulation 6, N = 256
 # -----------------------------------------------
-sim6 = newsimfromparams("soundwave.dat")
-sim6.simparams.intparams["Npart"] = 256
+sim6 = newsim("soundwave.dat")
+sim6.SetParam("Nsph",256)
 sim6.SetupSimulation()
 run()
 Nres.append(256)
-L1values.append(L1errornorm("x","rho",0.01,0.99))
+L1values.append(L1errornorm("soundwave","x","rho",0.01,0.99))
 addplot("x","rho")
 
 

@@ -99,15 +99,15 @@ void Parameters::ReadParamsFile
 
   // Now verify that parameters file contains a run id in order to generate 
   // labelled output files.  If not defined, then quit program with exception.
-  cout << "$$"<<stringparams["run_id"]<<"$$" << endl;
   if (stringparams["run_id"] == "") {
     string message = "The parameter file: " + filename +
       " does not contain a run id string, aborting";
     ExceptionHandler::getIstance().raise(message);
   }
 
-  // Check if any deactivated options have been selected or not
-  CheckDeactivatedFeatures();
+  // Check if any deactivated options have been selected or not, and also 
+  // verify certain key parameters are valid.
+  CheckInvalidParameters();
 
   // Record parameters to file 'run_id.param'
   RecordParametersToFile();
@@ -512,25 +512,49 @@ std::string Parameters::TrimWhiteSpace(std::string instr)
 
 
 //=============================================================================
-//  Parameters::CheckDeactivatedFeatures
+//  Parameters::CheckInvalidParameters
 /// Check if any features deemed unstable and/or buggy are switched on in the 
 /// parameters file.  If so, then throw an exception with an error message.
 //=============================================================================
-void Parameters::CheckDeactivatedFeatures(void)
+void Parameters::CheckInvalidParameters(void)
 {
-  debug2("[Parameters::CheckDeactivatedFeatures]");
+  bool errorflag = false;           ///< Flag for any invlaid parameters
 
-  // Saitoh & Makino (2012) currently deactivated while development of MPI 
-  // and other related features are underway.
-  if (stringparams["sim"] == "sph" && stringparams["sph"] == "sm2012") {
-    string message = "Saitoh & Makino (2012) SPH algorithm currently disabled";
-    ExceptionHandler::getIstance().raise(message);
+  debug2("[Parameters::CheckInvalidParameters]");
+
+  // SPH simulation specific errors
+  //---------------------------------------------------------------------------
+  if (stringparams["sim"] == "sph" || stringparams["sim"] == "godunov_sph") {
+
+    // Cannot use grid with self-gravity
+    if (stringparams["neibsearch"] == "grid" && 
+        intparams["self_gravity"] == 1) {
+      cout << "Parameter error : Cannot compute self-gravity with "
+	   << "grid neighbour search";
+      errorflag = true;
+    }
+    
+    // Saitoh & Makino (2012) currently deactivated while development of MPI 
+    // and other related features are underway.
+    if (stringparams["sim"] == "sph" && stringparams["sph"] == "sm2012") {
+      cout << "Saitoh & Makino (2012) SPH algorithm currently disabled";
+      errorflag = true;
+    }
+    
+    // Godunov SPH (Inutsuka 2002) currently deactivated while development of 
+    // MPI and other related features are underway.
+    if (stringparams["sim"] == "godunov_sph") {
+      cout << "Godunov SPH algorithm currently disabled";
+      errorflag = true;
+    }
+
   }
+  //---------------------------------------------------------------------------
 
-  // Godunov SPH (Inutsuka 2002) currently deactivated while development of 
-  // MPI and other related features are underway.
-  if (stringparams["sim"] == "godunov_sph") {
-    string message = "Saitoh & Makino (2012) SPH algorithm currently disabled";
+
+  // If any single error has been registered, throw exception and terminate.
+  if (errorflag) {
+    string message = "Aborting simulation due to invalid parameters";
     ExceptionHandler::getIstance().raise(message);
   }
 

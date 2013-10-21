@@ -25,9 +25,9 @@ Change to COM frame                         : com_frame = 1
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 10.0
-Time of first snapshot                      : tsnapfirst = 0.0
-Regular snapshot output frequency           : dt_snap = 10.0
+Simulation end time                         : tend = 40.0
+Time of first snapshot                      : tsnapfirst = 0.2
+Regular snapshot output frequency           : dt_snap = 0.2
 Screen output frequency (in no. of steps)   : noutputstep = 512
 
 

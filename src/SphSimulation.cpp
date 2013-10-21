@@ -205,7 +205,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 template <int ndim>
 void SphSimulation<ndim>::MainLoop(void)
 {
-  int activecount;                  // ..
+  int activecount;                  // Flag if we need to recompute particles
   int i;                            // Particle loop counter
   int it;                           // Time-symmetric iteration counter
   int k;                            // Dimension counter
@@ -790,7 +790,3 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
   return;
 }
-
-
-
-

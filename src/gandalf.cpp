@@ -54,11 +54,15 @@ int main(int argc, char** argv)
     exit(-1);
   }
 
+
   // Read parameters file immediately
   params->ReadParamsFile(paramfile);
 
   // Create simulation object with required dimensionality and parameters
   sim = SimulationBase::SimulationFactory(params->intparams["ndim"], params);
+
+  // Print out splash screen
+  sim->SplashScreen();
 
   // Perform all set-up procedures
   sim->SetupSimulation();

@@ -52,10 +52,9 @@ function call.'''
 
 #------------------------------------------------------------------------------
 class Interpreter(cmd.Cmd):
-    '''This class implements the interpreter proper.
-It gets all the functions defined in facade, filters out
-some name that we do not want (because it\'s reserved), and
-defines a command for each one of them. Also imports the
+    '''This class implements the interpreter proper. It gets all the functions 
+defined in facade, filters out some name that we do not want (because it\'s
+reserved), and defines a command for each one of them. Also imports the
 documentation string for each one.
 ''' 
     abbreviations = {
@@ -86,6 +85,9 @@ documentation string for each one.
             
         # Convince facade that we are in interactive mode
         facade.interactive = True
+
+        # Set command ine prompt to 'gandalf'
+        self.prompt = 'gandalf > '
         
     def get_names(self):
         names = dir(self)

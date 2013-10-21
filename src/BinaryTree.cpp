@@ -723,6 +723,22 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
  BinaryTreeCell<ndim> **gravcelllist,  ///< [out] List of cell ids
  SphParticle<ndim> *sphdata)        ///< [in] SPH particle data
 {
+  binlistiterator it;               // ..
+  int okflag;
+
+  Nneib = 0;
+  Ndirect = 0;
+  Ngravcell = 0;
+
+  for (it = subtrees.begin(); it != subtrees.end(); it++) {
+    okflag = (*it)->ComputeGravityInteractionList(cell,Nneibmax,Ndirectmax,
+						  Ngravcellmax,Nneib,Ndirect,
+						  Ngravcell,neiblist,
+						  directlist,gravcelllist,
+						  sphdata);
+    if (okflag == -1) return -1;
+  }
+
   return 1;
 }
 
@@ -977,6 +993,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
         // Make local copies of important neib information (mass and position)
         for (jj=0; jj<Nneib; jj++) {
           j = neiblist[jj];
+	  assert(j >= 0 && j < sph->Ntot);
           gpot[jj] = data[j].gpot;
           m[jj] = data[j].m;
           mu[jj] = data[j].m*data[j].u;
@@ -987,6 +1004,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
         //---------------------------------------------------------------------
         for (j=0; j<Nactive; j++) {
           i = activelist[j];
+	  assert(i >= 0 && i < sph->Nsph);
           for (k=0; k<ndim; k++) rp[k] = data[i].r[k];
 
           // Set gather range as current h multiplied by some tolerance factor
@@ -1162,6 +1180,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 
       // Make local copies of all potential neighbours
       for (j=0; j<Nneib; j++) {
+        assert(neiblist[j] >= 0 && neiblist[j] < sph->Ntot);
         neibpart[j] = data[neiblist[j]];
         neibpart[j].div_v = (FLOAT) 0.0;
         neibpart[j].dudt = (FLOAT) 0.0;
@@ -1172,6 +1191,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
       //-----------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
+        assert(i >= 0 && i < sph->Nsph);
         parti = data[i];
         parti.div_v = (FLOAT) 0.0;
         parti.dudt = (FLOAT) 0.0;
@@ -1193,7 +1213,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
         //---------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
-	      // Skip neighbour if it's not the correct part of an active pair
+          // Skip neighbour if it's not the correct part of an active pair
           if (neiblist[jj] <= i && neibpart[jj].active) continue;
 
           hrangesqdj = sph->kernfacsqd*sph->kernp->kernrangesqd*
@@ -1395,6 +1415,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
       // Make local copies of all potential neighbours
       for (j=0; j<Nneib; j++) {
+	assert(neiblist[j] >= 0 && neiblist[j] < sph->Ntot);
         neibpart[j] = data[neiblist[j]];
         neibpart[j].div_v = (FLOAT) 0.0;
         neibpart[j].dudt = (FLOAT) 0.0;
@@ -1407,6 +1428,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
       //-----------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
+	assert(i >= 0 && i < sph->Ntot);
 
         // Make local copy of particle and zero all summation data, except
         // for potential where we set the self-gravitational contribution

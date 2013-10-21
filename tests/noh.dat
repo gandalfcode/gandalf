@@ -1,6 +1,6 @@
 #-------------------------------------------------------------
 # Noh test
-# ..
+# Generate initial conditiosn to run the 'Noh' problem.
 #-------------------------------------------------------------
 
 
@@ -15,9 +15,9 @@ Pressure of fluid 1                         : press1 = 0.0001
 Density of fluid 1                          : rhofluid1 = 1.0
 Radius of initial fluid sphere              : radius = 1.0
 No. of particles in sphere                  : Nsph = 32000
-No. of x-particles in fluid 1               : Nlattice1[0] = 128
-No. of y-particles in fluid 1               : Nlattice1[1] = 128
-No. of y-particles in fluid 1               : Nlattice1[2] = 128
+No. of x-particles in fluid 1               : Nlattice1[0] = 256
+No. of y-particles in fluid 1               : Nlattice1[1] = 256
+No. of y-particles in fluid 1               : Nlattice1[2] = 256
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
 Use dimensionless units                     : dimensionless = 1
 
@@ -36,9 +36,10 @@ RHS position of boundary in z-dimension     : boxmax[2] = 1.0
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.6
+Simulation end time                         : tend = 0.9
+Time of first snapshot                      : tsnapfirst = 1.0
 Regular snapshot output frequency           : dt_snap = 1.0
-Screen output frequency (in no. of steps)   : noutputstep = 1
+Screen output frequency (in no. of steps)   : noutputstep = 128
 
 
 #------------------------
@@ -71,10 +72,10 @@ Artificial viscosity beta value             : beta_visc = 2.0
 #-------------------------
 SPH particle integration option             : sph_integration = lfkdk
 Integration of gas thermal energy           : energy_integration = PEC
-SPH Courant timestep condition multiplier   : courant_mult = 0.15
-SPH acceleration condition multiplier       : accel_mult = 0.3
-SPH energy equation timestep multiplier     : energy_mult = 0.5
-No. of block timestep levels                : Nlevels = 1
+SPH Courant timestep condition multiplier   : courant_mult = 0.1
+SPH acceleration condition multiplier       : accel_mult = 0.1
+SPH energy equation timestep multiplier     : energy_mult = 0.4
+No. of block timestep levels                : Nlevels = 4
 
 
 #---------------------

@@ -26,6 +26,7 @@
 #define _SPH_H_
 
 
+#include <assert.h>
 #include <string>
 #include "Precision.h"
 #include "Constants.h"
@@ -170,6 +171,7 @@ class GradhSph: public Sph<ndim>
 {
   using Sph<ndim>::allocated;
   using Sph<ndim>::Nsph;
+  using Sph<ndim>::Ntot;
   using Sph<ndim>::sphdata;
   using Sph<ndim>::eos;
   using Sph<ndim>::h_fac;
@@ -230,6 +232,7 @@ class SM2012Sph: public Sph<ndim>
 {
   using Sph<ndim>::allocated;
   using Sph<ndim>::Nsph;
+  using Sph<ndim>::Ntot;
   using Sph<ndim>::eos;
   using Sph<ndim>::h_fac;
   using Sph<ndim>::kernfacsqd;
@@ -286,6 +289,7 @@ class GodunovSph: public Sph<ndim>
 {
   using Sph<ndim>::allocated;
   using Sph<ndim>::Nsph;
+  using Sph<ndim>::Ntot;
   using Sph<ndim>::eos;
   using Sph<ndim>::h_fac;
   using Sph<ndim>::kernfacsqd;

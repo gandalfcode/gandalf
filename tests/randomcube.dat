@@ -12,7 +12,7 @@ Simulation run id string                    : run_id = RELAXCUBE1
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = box
 Dimensionality of cube                      : ndim = 2
-No. of SPH particles                        : Nsph = 256
+No. of SPH particles                        : Nsph = 512
 Local arrangement of particles              : particle_distribution = random
 Dimensionless units                         : dimensionless = 1
 
@@ -38,8 +38,9 @@ RHS boundary type in z-dimension            : z_boundary_rhs = periodic
 # Simulation time variables
 #--------------------------
 Simulation end time                         : tend = 10.0
-Regular snapshot output frequency           : dt_snap = 1.0
-Screen output frequency (in no. of steps)   : noutputstep = 32
+Time for first snapshot                     : tsnapfirst = 15.0
+Regular snapshot output frequency           : dt_snap = 15.0
+Screen output frequency (in no. of steps)   : noutputstep = 256
 
 
 #------------------------
@@ -80,8 +81,8 @@ No. of block timestep levels                : Nlevels = 1
 #---------------------
 # Optimisation options
 #---------------------
-Tabulate SPH kernel                         : tabulate_kernel = 1
-SPH neighbour search algorithm              : neib_search = tree
+Tabulate SPH kernel                         : tabulated_kernel = 1
+SPH neighbour search algorithm              : neib_search = bruteforce
 
 
 #--------------

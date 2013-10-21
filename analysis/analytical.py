@@ -1,13 +1,14 @@
 #==============================================================================
 #  analytical.py
-#  ..
+#  Contains all python classes for computing analytical solutions for key
+#  test problems.
 #
 #  This file is part of GANDALF :
-#  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
+#  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 #  https://github.com/gandalfcode/gandalf
 #  Contact : gandalfcode@gmail.com
 #
-#  Copyright (C) 2013  D. A. Hubber, G Rosotti
+#  Copyright (C) 2013  D. A. Hubber, G. Rosotti
 #
 #  GANDALF is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -29,14 +30,12 @@ There is a template empty class, which shows that the class must expose a comput
 
 #------------------------------------------------------------------------------
 class AnalyticalSolution():
-    '''
-    Template for an analytical solution. Exposes a compute function,
-    which is the one called by the function in facade. Takes two strings,
-    x and y, which are the names of the two quantities that get returned
-    in a tuple.
-    All the parameters should be passed to __init__, so that compute
-    doesn\'t need any other information to do its job (in this way, the
-    object can be passed around after creation if needed).
+    '''Template for an analytical solution. Exposes a compute function, which
+is the one called by the function in facade. Takes two strings, x and y, which
+are the names of the two quantities that get returned in a tuple.  All the
+parameters should be passed to __init__, so that compute doesn\'t need any
+other information to do its job (in this way, the object can be passed around
+after creation if needed).
     '''
     def __init__(self):
         pass
@@ -47,12 +46,7 @@ class AnalyticalSolution():
 
 #------------------------------------------------------------------------------
 class freefall (AnalyticalSolution):
-    '''Analytical solution for the Noh problem test.
-    When instantiated, it gets passed the sim object and
-    the time for which the solution is requested. The values
-    of the relevant variables are pulled from the simulation
-    object and saved inside the object.
-    '''
+    '''Analytical solution for the freefall collapse test.'''
     def __init__(self, sim, time):
         AnalyticalSolution.__init__(self)
         self.time = time
@@ -88,12 +82,7 @@ class freefall (AnalyticalSolution):
 
 #------------------------------------------------------------------------------
 class noh (AnalyticalSolution):
-    '''Analytical solution for the Noh problem test.
-    When instantiated, it gets passed the sim object and
-    the time for which the solution is requested. The values
-    of the relevant variables are pulled from the simulation
-    object and saved inside the object.
-    '''
+    '''Analytical solution for the Noh problem test.'''
     def __init__(self, sim, time):
         AnalyticalSolution.__init__(self)
         self.time = time
@@ -130,12 +119,7 @@ class noh (AnalyticalSolution):
 
 #------------------------------------------------------------------------------
 class shocktube (AnalyticalSolution):
-    '''Analytical solution for the shocktube test.
-    When instantiated, it gets passed the sim object and
-    the time for which the solution is requested. The values
-    of the relevant variables are pulled from the simulation
-    object and saved inside the object.
-    '''
+    '''Analytical solution for the 1D shock tube test.'''
     def __init__(self, sim, time):
         AnalyticalSolution.__init__(self)
         self.time = time
@@ -166,15 +150,13 @@ class shocktube (AnalyticalSolution):
                  self.PinL, self.PinR, self.xL, self.x0, self.xR,
                  self.time, self.iMAX, self.gamma)
         #reads the data from the text file produced
-        data=np.genfromtxt('sod.out',names=['x','rho','vx','pressure','u'])
+        data=np.genfromtxt('sod.out',names=['x','rho','vx','press','u'])
         return data[x], data[y]
     
 
 #------------------------------------------------------------------------------
 class soundwave (AnalyticalSolution):
-    '''Analytical solution for the soundwave.
-    The initialization works in the same way as the shocktube.
-    '''
+    '''Analytical solution for the 1D sound wave perturbation test.'''
     def __init__(self, sim, time):
         AnalyticalSolution.__init__(self)
         self.time = time

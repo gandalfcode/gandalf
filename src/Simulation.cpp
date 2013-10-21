@@ -144,6 +144,34 @@ SimulationBase::~SimulationBase()
 
 
 //=============================================================================
+//  SimulationBase::SplashScreen
+/// Write splash screen to standard output.
+//=============================================================================
+void SimulationBase::SplashScreen(void)
+{
+  cout << "******************************************************************************" << endl;
+  cout << "*                                                                            *" << endl;
+  cout << "*         *****     ****    *     *   *****     ****    *      ******        *" << endl;
+  cout << "*        *     *   *    *   **    *   *    *   *    *   *      *             *" << endl;
+  cout << "*        *         *    *   * *   *   *    *   *    *   *      *             *" << endl;
+  cout << "*        *    **   ******   *  *  *   *    *   ******   *      ******        *" << endl;
+  cout << "*        *     *   *    *   *   * *   *    *   *    *   *      *             *" << endl;
+  cout << "*        *     *   *    *   *    **   *    *   *    *   *      *             *" << endl;
+  cout << "*         *****    *    *   *     *   *****    *    *   *****  *             *" << endl;
+  cout << "*                                                                            *" << endl;
+  cout << "*   Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids    *" << endl;
+  cout << "*                        Version 0.1.0 - 21/10/2013                          *" << endl;
+  cout << "*                                                                            *" << endl;
+  cout << "*                    Authors : D. A. Hubber & G. Rosotti                     *" << endl;
+  cout << "*                                                                            *" << endl;
+  cout << "******************************************************************************" << endl;
+
+  return;
+}
+
+
+
+//=============================================================================
 //  SimulationBase::SetParam
 /// Accessor function for modifying a string value. Also checks that the
 /// non return point has not been reached
@@ -245,9 +273,6 @@ void SimulationBase::Run
   // Set integer timestep exit condition if provided as parameter.
   if (Nadvance < 0) Ntarget = Nstepsmax;
   else Ntarget = Nsteps + Nadvance;
-
-  CalculateDiagnostics();
-  OutputDiagnostics();
 
   // Continue to run simulation until we reach the required time, or 
   // exeeded the maximum allowed number of steps.
@@ -514,9 +539,6 @@ void Simulation<ndim>::ProcessParameters(void)
 
   // Set all other SPH parameter variables
   sph->Nsph           = intparams["Nsph"];
-  //sph->riemann_solver = stringparams["riemann_solver"];
-  //sph->slope_limiter  = stringparams["slope_limiter"];
-  //sph->riemann_order  = intparams["riemann_order"];
   sph->create_sinks   = intparams["create_sinks"];
   sph->time_dependent_avisc = intparams["time_dependent_avisc"];
   sph->alpha_visc_min = floatparams["alpha_visc_min"];
@@ -863,6 +885,12 @@ void Simulation<ndim>::ProcessGodunovSphParameters(void)
   // Energy integration object
   //---------------------------------------------------------------------------
   uint = new EnergyGodunovIntegration<ndim>(floatparams["energy_mult"]);
+
+
+  // Set other important parameters
+  sph->riemann_solver = stringparams["riemann_solver"];
+  sph->slope_limiter  = stringparams["slope_limiter"];
+  sph->riemann_order  = intparams["riemann_order"];
 
   
   return;
@@ -1212,65 +1240,6 @@ void Simulation<ndim>::DeallocateParticleMemory(void)
   sinks.DeallocateMemory();
   nbody->DeallocateMemory();
   sph->DeallocateMemory();
-
-  return;
-}
-
-
-
-//=============================================================================
-//  Simulation::GenerateIC
-/// Generate initial conditions for SPH simulation chosen in parameters file.
-//=============================================================================
-template <int ndim>
-void Simulation<ndim>::GenerateIC(void)
-{
-  debug2("[Simulation::GenerateIC]");
-
-  // Generate initial conditions
-  if (simparams->stringparams["ic"] == "file")
-    ReadSnapshotFile(simparams->stringparams["in_file"],
-		     simparams->stringparams["in_file_form"]);
-  else if (simparams->stringparams["ic"] == "binaryacc")
-    BinaryAccretion();
-  else if (simparams->stringparams["ic"] == "binary")
-    BinaryStar();
-  else if (simparams->stringparams["ic"] == "bb")
-    BossBodenheimer();
-  else if (simparams->stringparams["ic"] == "box")
-    UniformBox();
-  else if (simparams->stringparams["ic"] == "cdiscontinuity")
-    ContactDiscontinuity();
-  else if (simparams->stringparams["ic"] == "khi")
-    KHI();
-  else if (simparams->stringparams["ic"] == "noh")
-    NohProblem();
-  else if (simparams->stringparams["ic"] == "plummer")
-    PlummerSphere();
-  else if (simparams->stringparams["ic"] == "quadruple")
-    QuadrupleStar();
-  else if (simparams->stringparams["ic"] == "sedov")
-    SedovBlastWave();
-  else if (simparams->stringparams["ic"] == "shearflow")
-    ShearFlow();
-  else if (simparams->stringparams["ic"] == "shocktube")
-    ShockTube();
-  else if (simparams->stringparams["ic"] == "soundwave")
-    SoundWave();
-  else if (simparams->stringparams["ic"] == "sphere")
-    UniformSphere();
-  else if (simparams->stringparams["ic"] == "triple")
-    TripleStar();
-  else if (simparams->stringparams["ic"] == "python")
-    return;
-  else {
-    string message = "Unrecognised parameter : ic = " 
-      + simparams->stringparams["ic"];
-    ExceptionHandler::getIstance().raise(message);
-  }
-
-  // Check that the initial conditions are valid
-  CheckInitialConditions();
 
   return;
 }

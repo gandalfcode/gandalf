@@ -17,7 +17,7 @@ plot("x","rho")
 subfigure(2,2,3)
 plot("x","vy")
 subfigure(2,2,4)
-plot("h","rho")
+plot("h","ax")
 
 run()
 block()

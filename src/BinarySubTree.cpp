@@ -1,7 +1,7 @@
 //=============================================================================
 //  BinarySubTree.cpp
-//  Contains all functions for building, stocking and walking for the 
-//  binary tree for SPH particles.
+//  Contains all functions for building, stocking and walking for a single 
+//  binary sub-tree for SPH particles.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -942,7 +942,7 @@ int BinarySubTree<ndim>::ComputeGravityInteractionList
 
   // Start with root cell and walk through entire tree
   cc = 0;
-  Nneib = 0;
+  //Nneib = 0;
   //Ndirect = 0;
   //Ngravcell = 0;
 

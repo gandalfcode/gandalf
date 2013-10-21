@@ -1,5 +1,5 @@
 #==============================================================================
-#  GANDALF v0.2.0 Makefile
+#  GANDALF v0.1.0 Makefile
 #
 #  This file is part of GANDALF :
 #  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids

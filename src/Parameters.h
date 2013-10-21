@@ -50,7 +50,7 @@ class Parameters
 
   // Other function prototypes
   //---------------------------------------------------------------------------
-  void CheckDeactivatedFeatures(void);
+  void CheckInvalidParameters(void);
   void ReadParamsFile(std::string);
   void ParseLine(std::string);
   void SetDefaultValues(void);

@@ -68,7 +68,7 @@ class SphSnapshotBase;
 //=============================================================================
 class SimulationBase
 {
-  // Stuff only for internal use of the class
+  // Subroutines only for internal use of the class
   virtual void CalculateDiagnostics(void)=0;
   virtual void OutputDiagnostics(void)=0;
   virtual void UpdateDiagnostics(void)=0;
@@ -100,6 +100,7 @@ class SimulationBase
   void SetParam(string ket, float value);
   std::list<string>* GetIntAndFloatParameterKeys();
   void SetupSimulation(void);
+  void SplashScreen(void);
   void Run(int=-1);
   list<SphSnapshotBase*> InteractiveRun(int=-1);
 

@@ -1,5 +1,5 @@
 #==============================================================================
-#  GANDALF v0.2.0 Makefile frontend
+#  GANDALF v0.1.0 Makefile frontend
 #
 #  This file is part of GANDALF :
 #  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -21,13 +21,13 @@
 
 
 CPP                = g++
-PYTHON             = python
-F2PY               = f2py
+PYTHON             = python2.7
+F2PY               = f2py2.7
 COMPILER_MODE      = FAST
 PRECISION          = DOUBLE
 OPENMP             = 0
-OUTPUT_LEVEL       = 1
-DEBUG_LEVEL        = 0
+OUTPUT_LEVEL       = 0
+DEBUG_LEVEL        = 1
 
 
 # Select location of python and numpy libraries.  If blank, make will try to 
