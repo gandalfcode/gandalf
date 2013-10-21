@@ -52,20 +52,28 @@ In order to use all features in GANDALF, the following programs and libraries mu
 \begin{itemize}
 \item C++ compiler; at present, only gcc/g++ has been tested with the code
 \item Python 2.7
-\item matplotlib compatible with python 2.7
 \item swig compatible with python 2.7
-\item f2py compatible with python 2.7
-\item pyparsing compatible with python 2.7
-\item cmd2 compatible with python 2.7
+\item matplotlib compatible with python 2.7
+\item numpy
+\item scipy
+\item f2py compatible with python 2.7 (normally included in numpy)
+\item Fortran compiler
+\end{itemize}
+
+If you are not interested in the Python library, you need only a C++ compiler. To reduce the number of needed libraries, we ship together with GANDALF the following packages:
+\begin{itemize}
+\item pyparsing
+\item cmd2
 %\item ffmpeg (for generating movies automatically)
 \end{itemize}
+We thank the authors for writing these softwares and release them under the MIT license.
 
 
 \subsection{Linux}
-All of these programs/libraries can be found in most standard Linux installations, and if not, will be available to download from most package managers.  
+All of these programs/libraries can be found in most standard Linux installations, and if not, will be available to download from most package managers (e.g. apt-get, yum, pacman).  
 
 \subsection{Mac OS X} 
-For Mac users, all programs can be installed with either fink, MacPorts or homebrew.  It is preferable that all (except the Fortran compiler) are downloaded with just the one package manager in order to ensure they are compatible and function together correctly.
+For Mac users, all programs can be installed with either fink, MacPorts or homebrew.  It is preferable that all (except the Fortran compiler) are downloaded with just the one package manager in order to ensure they are compatible and function together correctly. Other options for installation are the Anaconda or Enthought Python distributions. A good reference which compares the available possibilities is the \href{http://python4astronomers.github.io/installation/recommended_options.html}{Python4Astronomers website}.
 
 
 
@@ -87,17 +95,19 @@ To compile all code elements including the python components, then complete the 
 \item Install all python-related programs listed in Section \ref{S:INSTALL}
 
 \begin{itemize}
-\item For Linux machines, python is usually installed by default.  The additional python libraries should be easily installed using either the main package manager (N.B. for pyparsing, you probably need to use {\var pip} or {\var easy\_install}).
-\item For Mac OS X, python is installed by default.  However, it does not have directly compatable versions of all the required libraries.  Therefore, it is required to install an additional version of python 2.7 using a 3rd party package manager like fink, Macports or homebrew.
+\item For Linux machines, python is usually installed by default.  The additional python libraries should be easily installed using either the main package manager,  {\var pip} or {\var easy\_install}.
+\item For Mac OS X, python is installed by default.  However, it does not have directly compatible versions of all the required libraries.  Therefore, it is required to install an additional version of python 2.7 using a 3rd party package manager like fink, Macports or homebrew.
 \end{itemize}
 
-\item Add the location of the main GANDALF directory to the \var{PYTHONPATH} environment variable.  If you are using bash or related shells, then add the line \\
+\item Add the location of the folder containing the main GANDALF directory to the \var{PYTHONPATH} environment variable.  If you are using bash or related shells, then add the line \\
 \newline
-\noindent \var{export PYTHONPATH=XXX/YYY/gandalf:\$PYTHONPATH} \\
+\noindent \var{export PYTHONPATH=XXX/YYY:\$PYTHONPATH} \\
 
-\noindent to your bashrc (or bash\_profile) script where {\var XXX/YYY/gandalf} is the absolute path of the GANDALF directory.   If you are using csh, tcsh or related shells, then add
+\noindent to your \var{.bashrc} (or \var{.bash\_profile} on a Mac) script where \var{XXX/YYY/gandalf} is the absolute path of the GANDALF directory (note that you must not include ``gandalf'' in the folder name!). If you are using csh, tcsh or related shells, then add \\
 \newline
-\noindent \var{setenv PYTHONPATH ``XXX/YYY/gandalf:\$PYTHONPATH''} \\
+\noindent \var{setenv PYTHONPATH ``XXX/YYY:\$PYTHONPATH''} \\
+
+\noindent to your relevant shell configuration file. Remember that you have to close and reopen the shell for this change to take effect, or to \var{source} the shell configuration file.
 
 \item Set the required version of python and f2py in your Makefile (See Section \ref{S:MAKEFILE}).  Since operating systems usually have more than one version of python installed, it is important to ensure that \var{make} uses the correct version when compiling the code.  These are set using the \var{PYTHON} and \var{F2PY} variables in the Makefile.
 

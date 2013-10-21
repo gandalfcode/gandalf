@@ -22,6 +22,12 @@ You can download the code by typing in a terminal:
  
 If you wish to know more in detail what git is and what you can do with it, the [github help page](https://help.github.com/articles/set-up-git) has all the references needed.
 
-User-guide
+Userguide
 ------------
-The folder docs contains a latex file with the userguide.  The userguide contains a section about the requirements fro installation and how to compile the code. You need at the very least a c++ compiler to compile the main code.
+The folder docs contains a latex file with the userguide.  The userguide contains a section about the requirements for installation and how to compile the code. You need at the very least a c++ compiler to compile the main code.
+
+Contact
+---------
+David Hubber [david.hubber@googlemail.com](mailto:david.hubber@googlemail.com)
+
+Giovanni Rosotti [rosotti@usm.lmu.de](mailto:rosotti@usm.lmu.de)
