@@ -25,6 +25,7 @@ import time
 from multiprocessing import Manager, Queue
 from plotting import PlottingProcess
 from gandalf.analysis.SimBuffer import SimBuffer, BufferException
+import types
 
 manager= Manager()
 
@@ -119,7 +120,7 @@ Optional arguments:
     **kwargs   : Extra keyword arguments will be passed to matplotlib.
 '''
     simno = get_sim_no(sim)
-    
+    overplot=to_bool(overplot)
     # If we are plotting all particle species, call plot in turn
     if type=="all":
         sim = SimBuffer.get_sim_no(simno)
@@ -144,6 +145,10 @@ def plot_vs_time_quantiy_particle(quantity, type='default',id=0):
 Type specifies the type of particle to retrieve the information from.
 id is an integer specifying the desired particle.
 '''
+    if id == 'None':
+        id = None
+    else:
+        id=int(id)
     from compute import particle_data
     name='part_'+quantity+'_'+str(id)
     CreateTimeData(name,particle_data,quantity=quantity,type=type,id=id)
@@ -176,6 +181,7 @@ Optional arguments:
                  on the y-axis.
 '''
     simno = get_sim_no(sim)
+    overplot = to_bool(overplot)
     command = Commands.PlotVsTime(y,simno,overplot,autoscale,
                                   xunit,yunit,xaxis,yaxis,**kwargs)
     data = command.prepareData(Singletons.globallimits)
@@ -237,6 +243,15 @@ Optional arguments:
     if zslice is not None:
         zslice = float(zslice)
     simno = get_sim_no(sim)
+    overplot = to_bool(overplot)
+    autoscalerender = to_bool(autoscalerender)
+    if coordlimits is not None and isinstance(coordlimits, types.StringTypes):
+        coordlimits = to_list (coordlimits, float)
+    if res is isinstance(res, types.StringTypes):
+        if res[0]=='[':
+            res = to_list(res,int)
+        else:
+            res = int(res)
     command = Commands.RenderPlotCommand(x, y, render, snap, simno, overplot,
                                          autoscale, autoscalerender,
                                          coordlimits, zslice, xunit, yunit,
@@ -314,13 +329,19 @@ Optional arguments:
     min        : Minimum value of variable range.
     max        : Maximum value of variable range.
     auto       : If auto is set to True, then the limits for that quantity are 
-                 set automatically. Otherwise, use the one given by x and y.
+                 set automatically. Otherwise, use the one given by max and min.
     window     : If window is set to 'global' is available, then any changes
                  will affect also future plots that do not have autoscaling 
                  turned on.
     subfigure  : If subfigure is set to 'all', the limits in all the figures or
                  in all the subfigures of the current figure are set.
 ''' 
+    if min is not None:
+        min = float(min)
+    if max is not None:
+        max = float(max)
+    if not auto:
+        auto=to_bool(auto)
     if window=='all' and subfigure=='current':
         subfigure=='all'
     command = Commands.LimitCommand(quantity, min, max, auto, window, subfigure)
@@ -400,6 +421,8 @@ doesn\'t exist, recreate it.
 Required arguments:
     winno      : Window number
 '''
+    if no is not None:
+        no=int(no)
     command = Commands.WindowCommand(no)
     data = None
     Singletons.queue.put([command,data])
@@ -415,6 +438,9 @@ Required arguments:
     current    : id of active sub-figure.  If sub-figure already exists,
                  then this sets the new active sub-figure.
 '''
+    nx = int(nx)
+    ny = int(ny)
+    current = int(current)
     command = Commands.SubfigureCommand(nx, ny, current)
     data = None
     Singletons.queue.put([command,data])
@@ -452,6 +478,7 @@ Optional arguments:
         if no is None:
             sim = SimBuffer.get_current_sim()
         else:
+            no = int(no)
             sim = SimBuffer.get_sim_no(no)
     except BufferError as e:
         handle(e)
@@ -561,6 +588,7 @@ Optional arguments:
     #TODO: figure out automatically the quantities to plot depending on current window    
     
     simno = get_sim_no(sim)
+    overplot = to_bool(overplot)
     command = Commands.AnalyticalPlotCommand(x, y, ic, snap, simno, overplot,
                                              autoscale, xunit, yunit)
     data = command.prepareData(Singletons.globallimits)
@@ -639,9 +667,36 @@ Required argument:
     if sim == "current":
         simno = SimBuffer.get_current_sim_no()
     else:
-        simno = sim
+        simno = int(sim)
     return simno
 
+
+def to_list(str_variable,type):
+    '''Convert the input string to a list of the specified type'''
+    parenthesis_open = ('[', '(')
+    parenthesis_closed = (']',')')
+    if str_variable[0] not in parenthesis_open or str_variable[-1] not in parenthesis_closed:
+        raise ValueError('What you passed cannot be parsed as a tuple')
+    
+    splitted = str_variable[1:-1].split(',')
+    return map(type,splitted)
+
+def to_bool(value):
+    '''Parses the input string and convert it to a boolean. If the input is not a string, passes
+    it to the built-in bool function (which means, that the result is False only if it is None or
+    False).'''
+    valid = {'true': True, 't': True, '1': True,
+             'false': False, 'f': False, '0': False,
+             }
+
+    if not isinstance(value, types.StringTypes):
+        return bool(value)
+
+    lower_value = value.lower()
+    if lower_value in valid:
+        return valid[lower_value]
+    else:
+        raise ValueError('invalid literal for boolean: "%s"' % value)
 
 #------------------------------------------------------------------------------
 def sigint(signum, frame):

@@ -308,6 +308,7 @@ class SimBuffer:
     @staticmethod
     def get_snapshot_number_sim(sim, no):
         '''This function queries the buffer for the given snapshot number of the given simulation'''
+        no=int(no)
         try:
             snap = sim.snapshots[no]
         except IndexError:

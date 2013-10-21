@@ -179,7 +179,7 @@ class PlotCommand(Command):
             #call the function in the child class to do the plot
             product = self.execute(plotting, fig, ax, data)
             #set the autoscales on the axis
-            if bool(self.autoscale):
+            if bool(self.autoscale) and self.autoscale !='False':
                 if self.autoscale=='x':
                     ax.set_autoscalex_on(True)
                     self.setlimits(plotting, ax, 'y')
