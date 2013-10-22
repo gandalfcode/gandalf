@@ -945,30 +945,45 @@ To be done
 
 \newpage 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Python script examples}
+\subsection{GANDALF Python library tutorial}
+The GANDALF Python library contains a variety of commands that are used to create and run new simulations, load in old simulations from the disk, analyse and plot results and more.  A full list of all of these commands is given in Appendix A (to be written).  The same information can be found in the source code file \var{gandalf/analysis/facade.py}.  Also, when running the interpreter, information on interactive commands can be obtained by typing \var{help} for a full list of available commands, or \var{help command} for information on that particular command.
 
-
-{\bf Example 1 - Creating and running a new simulation from a parameter file} \\
+We provide here a short tutorial demonstrating from the most basic usage to the more advanced functionality of the Python library. \\
 \newline
-\begin{tabular}{p{8.0cm}p{7.0cm}}
-\var{from gandalf.analysis.facade import *}& Import code python library \\
-\var{sim = newsim(`params.dat')}           & Create a new simulation object \\
-                                           & directly from given parameters file \\
-\var{setupsim()}                           & call all set-up routines \\
-\var{run()}                                & Run simulation
-\end{tabular}
-\vspace{1cm}
 
-\noindent {\bf Example 2 - Creating a simulation from a parameters file and modifying a parameter before running} \\
+
+\subsubsection{Example 1 - Creating and running a new simulation from a parameter file}
+This first example demonstrates how to set-up and run a new simulation from a given parameters file (nominally called \var{params.dat} in these examples).  \\
+
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{sim = newsim(`params.dat')}            \\
+\var{setupsim()} \\
+\var{run()} \\
+\end{tabular} \\
 \newline
-\begin{tabular}{p{8.0cm}p{7.0cm}}
-\var{from gandalf.analysis.facade import *}& Import code python library \\
-\var{sim = newsim(`params.dat')}           & Create a new simulation object directly from given parameters file \\
-\var{sim.SetParam('tend',2.0)}              & Modify parameters \\
-\var{setupsim()}                           & Run set-up routines after parameters have been modifed (N.B. modifying parameters after this step has no effect) \\
-\var{run()}                                & Run simulation
-\end{tabular}
-\vspace{1cm}
+
+The first line, '\var{from gandalf.analysis.facade import *}, loads in all definitions and functions from the GANDALF python frontend, \var{facade.py}.  Note that this assumes that the \var{PYTHONPATH} environment variable has been correctly set-up.  Otherwise, the full absolute path of the \var{facade.py} file must be given.  The second line, '\var{sim = newsim(`params.dat')}, reads in the parameters file \var{'params.dat'} and creates a new simulation from those parameters and returns a Python object, \var{sim}, which can be used to refer to that simulation in Python.  Note that in this case, it is assumed the parameters file is selecting an initial conditions generator in the main code to generate the particles in the simulation.  In order to fully set-up the simulation so it is ready to be run, the command \var{setupsim()} must be run.  Finally, to run the simulation to completion, we must execute the command \var{run()}. \\
+\newline
+
+\subsubsection{Example 2 - Creating a simulation from a parameters file and modifying a parameter before running}
+This example demonstrates how to modify parameters in Python that have been loaded in from a given parameters file. \\
+
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{sim = newsim(`params.dat')} \\
+\var{sim.SetParam('tend',2.0)} \\
+\var{setupsim()} \\
+\var{run()} \\
+\end{tabular} \\
+\newline
+
+The first two lines of this example are the as the first example, where we import the GANDALF Python frontend and then create a new simulation from the parameters file \var{`params.dat'}.  Once loaded in, we can now modify parameters with the command \\
+\newline
+\noindent \var{sim.SetParam(parameter\_name,new\_value)} \\
+\newline
+\noindent In this case, we set the parameter \var{tend} (the total simulation run-time) to the value \var{2.0} with \var{sim.SetParam(`tend',2.0)}.  Once all parameters have been modified, then we can set-up the simulation fully with \var{setupsim()} and run it with \var{run()}.  Note that if we attempt to modify any parameters AFTER calling \var{setupsim()}, then the code will terminate with an exception.
+
 
 \noindent {\bf Example 3 - Creating and running a new simulation using the internal initial conditions routines without a parameters file} \\
 \newline
