@@ -426,7 +426,7 @@ class GaussianKernel: public SphKernel<ndim>
   GaussianKernel(string);
   ~GaussianKernel();
 
-  // Gaussuan kernel function prototypes
+  // Gaussian kernel function prototypes
   //---------------------------------------------------------------------------
   FLOAT w0(FLOAT);
   FLOAT w1(FLOAT);

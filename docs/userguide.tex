@@ -245,7 +245,7 @@ DOUBLE & : 64-bit precision floating point variables
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Parameter options}
+\section{Parameter options} \label{S:PARAMETERS}
 
 \noindent With the exception of a few compiled-time options that are selected in the Makefile, all physics and code feature options are controlled from the parameters file, including the dimensionality, simulation type and SPH options.  We list here all possible parameters, including all possible options for those parameters with a limited choice.  We note that a parameters file need not contain a value for each parameter, in which case the default value is taken.
 
@@ -952,6 +952,7 @@ We provide here a short tutorial demonstrating from the most basic usage to the 
 \newline
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example 1 - Creating and running a new simulation from a parameter file}
 This first example demonstrates how to set-up and run a new simulation from a given parameters file (nominally called \var{params.dat} in these examples).  \\
 
@@ -966,6 +967,8 @@ This first example demonstrates how to set-up and run a new simulation from a gi
 The first line, '\var{from gandalf.analysis.facade import *}, loads in all definitions and functions from the GANDALF python frontend, \var{facade.py}.  Note that this assumes that the \var{PYTHONPATH} environment variable has been correctly set-up.  Otherwise, the full absolute path of the \var{facade.py} file must be given.  The second line, '\var{sim = newsim(`params.dat')}, reads in the parameters file \var{'params.dat'} and creates a new simulation from those parameters and returns a Python object, \var{sim}, which can be used to refer to that simulation in Python.  Note that in this case, it is assumed the parameters file is selecting an initial conditions generator in the main code to generate the particles in the simulation.  In order to fully set-up the simulation so it is ready to be run, the command \var{setupsim()} must be run.  Finally, to run the simulation to completion, we must execute the command \var{run()}. \\
 \newline
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example 2 - Creating a simulation from a parameters file and modifying a parameter before running}
 This example demonstrates how to modify parameters in Python that have been loaded in from a given parameters file. \\
 
@@ -985,53 +988,91 @@ The first two lines of this example are the as the first example, where we impor
 \noindent In this case, we set the parameter \var{tend} (the total simulation run-time) to the value \var{2.0} with \var{sim.SetParam(`tend',2.0)}.  Once all parameters have been modified, then we can set-up the simulation fully with \var{setupsim()} and run it with \var{run()}.  Note that if we attempt to modify any parameters AFTER calling \var{setupsim()}, then the code will terminate with an exception.
 
 
-\noindent {\bf Example 3 - Creating and running a new simulation using the internal initial conditions routines without a parameters file} \\
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example 3 - Creating and running a new simulation using the internal initial conditions routines without a parameters file}
+In this example, we will create and run a simulation without needing to load-in an external parameters file. \\
+
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{sim = newsim(ndim=2)} \\
+\var{sim.SetParam(`sim',`sph')} \\
+\var{sim.SetParam(`sph',`gradh')} \\
+\var{sim.SetParam(`ic',`sedov')} \\
+\var{sim.SetParam(`Nlattice[0]',64)} \\
+\var{sim.SetParam(`Nlattice[1]',64)} \\
+\var{sim.SetParam(`tend',0.5)} \\
+\var{setupsim()} \\
+\var{run()} \\
+\end{tabular} \\
 \newline
-\begin{tabular}{p{8.0cm}p{7.0cm}}
-\var{from gandalf.analysis.facade import *}& Import code python library \\
-\var{sim = newsim(ndim=2)}                 & Create a new (but unspecified) 2D simulation object \\
-\var{sim.SetParam(`sim',`sph')}            & Create SPH simulation \\
-\var{sim.SetParam(`sph',`gradh')}          & Use grad-h SPH algorithm \\
-\var{sim.SetParam(`ic',`sedov')}           & Set initial conditions routine (Sedov blast wave) \\
-\var{sim.SetParam(`Nlattice[0]',64)}       & Create 64 by 64 cube of particles \\
-\var{sim.SetParam(`Nlattice[1]',64)}       & \\
-\var{sim.SetParam(`tend',0.5)}             & Set simulation run-time \\
-\var{setupsim()}                           & Now all parameters have been set, call set-up routines \\
-\var{run()}                                & Run simulation
-\end{tabular}
-\vspace{1cm}
 
-\noindent{\bf Example 4 - Running a simulation and plotting results to screen and file} \\
+In this example, we call the \var{newsim} function passing the dimensionality of the simulation instead of a parameter file.  Therefore the line \var{sim = newsim(ndim=2)} sets up a 2-dimensional simulation, but is otherwise unspecified because no other parameters have been set.  Next, we can set all the parameters that would have otherwise been set in the parameters file.  In this example, we set up an SPH simulation (\var{sim.SetParam(`sim',`sph')}) using the grad-h SPH method (\var{sim.SetParam(`sph',`gradh')}) with initial conditions to perform the Sedov blast-wave test (\var{sim.SetParam(`ic',`sedov')}); (See Section \ref{S:PARAMETERS} for a full description of all parameters).  Once all parameters have been set, we can fully set-up and run the simulation with \var{setupsim()} and \var{run()}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example 4 - Running a simulation and plotting results to screen and file}
+In this example, we show how to plot particle data interactively during a live simulation. \\
+
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{sim = newsim(`params.dat')} \\
+\var{sim.SetParam(`dt\_python',2.0)} \\
+\var{setupsim()} \\
+\var{plot(`x',`y')} \\
+\var{run()} \\
+\var{savefig(`figure.eps')} \\
+\end{tabular} \\
 \newline
-\begin{tabular}{p{8.0cm}p{7.0cm}}
-\var{from gandalf.analysis.facade import *}& Import code python library \\
-\var{sim = newsim(`params.dat')}           & Create a new simulation object \\
-                                           & directly from given parameters file \\
-\var{setupsim()}                           & Run all set-up routines \\
-\var{plot(`x',`y')}                        & Open window and plot all particle x-y positions \\
-\var{run()}                                & Run simulation \\
-\var{savefig(`figure.eps')}                & Save plot to eps file
-\end{tabular}
-\vspace{1cm}
 
-\noindent{\bf Example 5 - Reading a simulation from disc and plotting several snapshots} \\
+In this simulation, we will run a live simulation while also plotting particle data in a matplotlib window as the simulation is still running.  We first create the simulation as in previous examples with \var{newsim}.  We then set the value of the \var{dt\_python} which is the time between python/matplotlib window updates.  After the \var{setupsim()} command, we can then plot the initial conditions from the simulation using the command \\
 \newline
-\begin{tabular}{p{8.0cm}p{7.0cm}}
-\var{from gandalf.analysis.facade import *}& Import code python library \\
-\var{loadsim('TEST1')}                     & Create a new simulation object by reading all data snapshots from simulation \var{TEST1} \\
-\var{plot(`x',`y',snap=0)}                 & Open window and plot all particle x-y positions for first snapshot (N.B. snapshot numbers start from 0) \\
-\var{savefig(`snap1.eps')}                 & Save plot to eps file \\
-\var{plot(`x',`y',snap=1)}                 & Plot x-y positions for second snapshot \\
-\var{savefig(`snap2.eps')}                 & Save second snapshot to eps file \\
-\var{plot(`x',`y',snap=0)}                 & Plot both snapshot 0 and 1 on the \\
-\var{addplot(`x',`y',snap=1)}              & same window. \\
-\var{savefig(`snap12.eps')}                & Save combined data to eps file
-\end{tabular}
-\vspace{1cm}
+\var{plot(x,y)} \\
+\newline
+\noindent where \var{x} and \var{y} are the x- and y-axis plotting variables (N.B. these can be any variables, not necessarily x and y. e.g. \var{plot(`y',`z')}).  If we now run the simulation with \var{run()}, the simulation will compute as normal while updating the plot window every \var{dt\_python} seconds (in this casem every 2 seconds).  After the simulation has finished, we can save the final plot to file with the command \\ 
+\newline
+\noindent \var{savefig(filename)} \\
+\newline
+\noindent where \var{filename} is the intended filename {\it including} the file extension (N.B. matplotlib automatically determines the correct file format from the extension).
 
-\newpage
 
-\noindent{\bf Example 6 - Create a shock-tube simualtion directly in a python script} \\
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example 5 - Reading a simulation from disc and plotting several snapshots}
+In this example, we load in a previously run simulation from the disk and generate various plots. \\
+
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{loadsim('TEST1')} \\
+\var{plot(`x',`y',snap=0)} \\
+\var{savefig(`snap1.eps')} \\
+\var{plot(`x',`y',snap=1)} \\
+\var{savefig(`snap2.eps')} \\
+\var{plot(`x',`y',snap=0)} \\
+\var{addplot(`x',`y',snap=1)} \\
+\var{savefig(`snap12.eps')} \\
+\end{tabular} \\
+\newline 
+
+Instead of a creating a new simulation with the \var{newsim} function, we will load in a previous run simulation with the command \\ 
+\newline
+\noindent \var{loadsim(runid)} \\
+\newline
+\noindent where \var{runid} is the simulation run identification string.  Note, this assumes that all files from that simulation are present in the folder, including the \var{runid.param} file which contains all the parameters used to run the simulation.  In this case, we load a simulation with the runid \var{TEST1} with the command \var{loadsim(`TEST1')}.  
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example 6 - Reading  and plotting multiple simulations}
+To be done
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example  7 - Overplotting the analytical solution with the simulation results}
+To be done
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example 8 - Creating initial conditions directly in the python script}
+
+%\begin{tabular}{p{14.0cm}}
 \begin{tabular}{p{8.0cm}p{7.0cm}}
 \var{from gandalf.analysis.facade import *}& Import code python library \\
 \var{import numpy as np}                   & and other libraries \\
@@ -1091,6 +1132,7 @@ List of known bugs as of version \VERNO.
 
 \begin{itemize}
 \item Neighbour timestep limiter (Saitoh \& Makino 20??) does not work correctly with OpenMP activated at present.
+\item For very short simulations, plots may not be updated correctly since the simulation process finishes before the plotting process has recieved its commands.
 %\item If running a simulation in interactive mode, the simulation variables can become corrupted if previous snapshots are viewed, i.e. once a previous snapshot is viewed, the simulation can no longer be continued.
 %\item If running a simulation in interactive mode and a different simulation is loaded into memory, then it is no longer possible to continue running that simulation.
 %\item Rendered images are technically not done correct if smoothing lengths are smaller than the grid size (which can often be the case, although the images are fine for viewing/movie purposes).

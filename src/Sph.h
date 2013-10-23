@@ -304,6 +304,8 @@ class GodunovSph: public Sph<ndim>
   using Sph<ndim>::riemann_solver;
   using Sph<ndim>::riemann_order;
   using Sph<ndim>::slope_limiter;
+  using Sph<ndim>::create_sinks;
+  using Sph<ndim>::hmin_sink;
 
  public:
 

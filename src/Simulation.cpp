@@ -825,22 +825,7 @@ void Simulation<ndim>::ProcessGodunovSphParameters(void)
        avisc, acond, stringparams["gas_eos"], KernelName);
   }
   else if (intparams["tabulated_kernel"] == 0) {
-    // Depending on the kernel, instantiate a different GradSph object
-    if (KernelName == "m4") {
-      sph = new GodunovSph<ndim, M4Kernel> 
-	(intparams["hydro_forces"], intparams["self_gravity"],
-	 floatparams["alpha_visc"], floatparams["beta_visc"],
-	 floatparams["h_fac"], floatparams["h_converge"],
-	 avisc, acond, stringparams["gas_eos"], KernelName);
-    }
-    else if (KernelName == "quintic") {
-      sph = new GodunovSph<ndim, QuinticKernel> 
-	(intparams["hydro_forces"], intparams["self_gravity"],
-	 floatparams["alpha_visc"], floatparams["beta_visc"],
-	 floatparams["h_fac"], floatparams["h_converge"],
-	 avisc, acond, stringparams["gas_eos"], KernelName);
-    }
-    else if (KernelName == "gaussian") {
+    if (KernelName == "gaussian") {
       sph = new GodunovSph<ndim, GaussianKernel> 
 	(intparams["hydro_forces"], intparams["self_gravity"],
 	 floatparams["alpha_visc"], floatparams["beta_visc"],

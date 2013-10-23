@@ -119,7 +119,7 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectGravForces
 
 //=============================================================================
 //  NbodyHermite4::CalculatePerturberForces
-/// ..
+/// Calculate perturber forces on all stars in a N-body sub-system.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
@@ -127,8 +127,8 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
  int Npert,                         ///< Number of perturbing stars
  NbodyParticle<ndim> **star,        ///< Array of stars/systems
  NbodyParticle<ndim> *perturber,    ///< Array of perturbing stars/systems
- DOUBLE *apert,                     ///< ..
- DOUBLE *adotpert)                  ///< ..
+ DOUBLE *apert,                     ///< Acceleration due to perturbers
+ DOUBLE *adotpert)                  ///< Jerk due to perturbers
 {
   int i,j,k;                        // Star and dimension counters
   DOUBLE dr[ndim];                  // Relative position vector
@@ -136,9 +136,9 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
   DOUBLE drsqd;                     // Distance squared
   DOUBLE dv[ndim];                  // Relative velocity vector
   DOUBLE invdrmag;                  // 1 / drmag
-  DOUBLE rcom[ndim];                // ..
-  DOUBLE vcom[ndim];                // ..
-  DOUBLE msystot = 0.0;             // ..
+  DOUBLE rcom[ndim];                // Position of centre-of-mass
+  DOUBLE vcom[ndim];                // Velocity of centre-of-mass
+  DOUBLE msystot = 0.0;             // Total system mass
   //DOUBLE apertcom[ndim*Npertmax];   // ..
   //DOUBLE apertdotcom[ndim*Npertmax]; // ..
 
@@ -199,8 +199,6 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
 
   }
   //---------------------------------------------------------------------------
-
-  //cin >> i;
 
   return;
 }
@@ -550,7 +548,9 @@ void NbodyHermite4<ndim, kernelclass>::EndTimestep
 
 //=============================================================================
 //  NbodyHermite4::Timestep
-/// ..
+/// Calculate the N-body timestep for a given star using the standard 
+/// Aarseth timestep, i.e. 
+/// $dt = gamma*\sqrt{\frac{a*a2 + a1^2}{a1*a3 + a2^2}}$.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 DOUBLE NbodyHermite4<ndim, kernelclass>::Timestep
@@ -606,7 +606,7 @@ void NbodyHermite4<ndim, kernelclass>::IntegrateInternalMotion
   int k;                                              // Dimension counter
   int Nchildren = systemi->Nchildren;                 // No. of child systems
   int nsteps_local = 0;                               // No. of local steps
-  int nlocal = 0;                                     // ..
+  int nlocal = 0;                                     // Local value of n
   DOUBLE dt;                                          // Timestep
   DOUBLE tlocal=0.0;                                  // Local time
   DOUBLE msystem=0.0;                                 // Mass of system

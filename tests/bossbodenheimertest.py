@@ -21,9 +21,9 @@ limit("y",-0.005,0.005)
 # Create rendered slice of density
 subfigure(2,2,2)
 render("x","y","rho",res=128,zslice=0.0)
-limit("x",-0.01,0.01)
-limit("y",-0.01,0.01)
-limit("rho",1.0e-17,1.0e-13)
+limit("x",-0.005,0.005)
+limit("y",-0.005,0.005)
+limit("rho",1.0e-16,1.0e-14)
 
 # Plot EOS properties
 subfigure(2,2,3)
