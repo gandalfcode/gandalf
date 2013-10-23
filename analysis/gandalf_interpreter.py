@@ -35,18 +35,18 @@ function call.'''
     def __call__ (self, line):
         args = line.split()
         dict={}
+        required_arguments = []
         for arg in args:
             potkeywords = arg.split('=')
             if len(potkeywords) == 2:
                 kw, value = potkeywords
+                dict[kw]=value
             elif len(potkeywords) >2:
                 raise Exception
             else:
-                continue
-            dict[kw]=value
-            args.remove(arg)
+                required_arguments.append(arg)
         try:
-            self.function(*args, **dict)
+            self.function(*required_arguments, **dict)
         except Exception as e:
             facade.handle(e)
 

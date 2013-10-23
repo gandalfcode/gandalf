@@ -247,8 +247,8 @@ Optional arguments:
     autoscalerender = to_bool(autoscalerender)
     if coordlimits is not None and isinstance(coordlimits, types.StringTypes):
         coordlimits = to_list (coordlimits, float)
-    if res is isinstance(res, types.StringTypes):
-        if res[0]=='[':
+    if isinstance(res, types.StringTypes):
+        if res[0]=='[' or res[0]=='(':
             res = to_list(res,int)
         else:
             res = int(res)
