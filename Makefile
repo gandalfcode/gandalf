@@ -26,8 +26,8 @@ F2PY               = f2py2.7
 COMPILER_MODE      = FAST
 PRECISION          = DOUBLE
 OPENMP             = 0
-OUTPUT_LEVEL       = 0
-DEBUG_LEVEL        = 1
+OUTPUT_LEVEL       = 1
+DEBUG_LEVEL        = 0
 
 
 # Select location of python and numpy libraries.  If blank, make will try to 

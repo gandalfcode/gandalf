@@ -73,6 +73,9 @@ Artificial conductivity choice              : acond = wadsley2008
 Use time-dependent viscosity?               : time_dependent_avisc = 0
 Artificial viscosity alpha value            : alpha_visc = 0.1
 Artificial viscosity beta value             : beta_visc = 0.2
+Riemann solver                              : riemann_solver = exact
+Order of Riemann solver                     : riemann_order = 1
+Slope limiter                               : slope_limiter = simple
 
 
 #-------------------------
@@ -89,7 +92,7 @@ No. of block timestep levels                : Nlevels = 1
 #-------------
 # Tree options
 #-------------
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = grid
 No. of particles in leaf cell               : Nleafmax = 8
 Tree opening angle (squared)                : thetamaxsqd = 0.2
 

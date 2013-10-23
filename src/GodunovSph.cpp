@@ -94,13 +94,19 @@ int GodunovSph<ndim, kernelclass >::ComputeH
  SphParticle<ndim> &parti,              // Particle i data
  Nbody<ndim> *nbody)                    // ..
 {
-  int j;                                // Neighbour id
-  int iteration = 0;                    // h-rho iteration counter
-  int iteration_max = 30;               // Max. no of iterations
-  FLOAT h_lower_bound = 0.0;            // Lower bound on h
-  FLOAT h_upper_bound = big_number;     // Upper bound on h
-  FLOAT invhsqd;                        // (1 / h)^2
-  FLOAT ssqd;                           // Kernel parameter squared, (r/h)^2
+  int j;                            // Neighbour id
+  int k;                            // Dimension counter
+  int iteration = 0;                // h-rho iteration counter
+  int iteration_max = 30;           // Max. no of iterations
+  FLOAT dr[ndim];                   // Relative position vector
+  FLOAT h_lower_bound = 0.0;        // Lower bound on h
+  FLOAT h_upper_bound = hmax;       // Upper bound on h
+  FLOAT invhsqd;                    // (1 / h)^2
+  FLOAT ssqd;                       // Kernel parameter squared, (r/h)^2
+
+
+  // If there are sink particles present, check if the particle is inside one
+  if (parti.sinkid != -1) h_lower_bound = hmin_sink;
 
 
   // Main smoothing length iteration loop
@@ -111,8 +117,6 @@ int GodunovSph<ndim, kernelclass >::ComputeH
     iteration++;
     parti.invh = (FLOAT) 1.0/parti.h;
     parti.rho = (FLOAT) 0.0;
-    parti.invomega = (FLOAT) 0.0;
-    parti.zeta = (FLOAT) 0.0;
     parti.hfactor = pow(parti.invh,ndim);
     invhsqd = parti.invh*parti.invh;
 
@@ -121,18 +125,18 @@ int GodunovSph<ndim, kernelclass >::ComputeH
     //-------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       ssqd = drsqd[j]*invhsqd;
-      parti.rho += m[j]*parti.hfactor*kern.w0_s2(ssqd);
-      parti.invomega += m[j]*parti.hfactor*parti.invh*kern.womega_s2(ssqd);
-      parti.zeta += m[j]*invhsqd*kern.wzeta_s2(ssqd);
+      parti.rho += m[j]*kern.w0_s2(ssqd);
     }
     //-------------------------------------------------------------------------
+
+    parti.rho *= parti.hfactor;
 
     if (parti.rho > (FLOAT) 0.0) parti.invrho = (FLOAT) 1.0/parti.rho;
 
     // If h changes below some fixed tolerance, exit iteration loop
     if (parti.rho > (FLOAT) 0.0 && parti.h > h_lower_bound &&
     		fabs(parti.h - h_fac*pow(parti.m*parti.invrho,
-    				invndim)) < h_converge) break;
+    				Sph<ndim>::invndim)) < h_converge) break;
 
     // Use fixed-point iteration, i.e. h_new = h_fac*(m/rho_old)^(1/ndim), 
     // for now.  If this does not converge in a reasonable number of 
@@ -141,7 +145,7 @@ int GodunovSph<ndim, kernelclass >::ComputeH
     // albeit much more slowly.  (N.B. will implement Newton-Raphson soon)
     //-------------------------------------------------------------------------
     if (iteration < iteration_max)
-      parti.h = h_fac*pow(parti.m*parti.invrho,invndim);
+      parti.h = h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim);
 
     else if (iteration == iteration_max)
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
@@ -149,13 +153,18 @@ int GodunovSph<ndim, kernelclass >::ComputeH
     else if (iteration < 5*iteration_max) {
       if (parti.rho < small_number ||
 	  parti.rho*pow(parti.h,ndim) > pow(h_fac,ndim)*parti.m)
-	h_upper_bound = parti.h;
+        h_upper_bound = parti.h;
       else 
-	h_lower_bound = parti.h;
+        h_lower_bound = parti.h;
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
-
     else {
+      cout << "H ITERATION : " << iteration << "    " << parti.h << "    " 
+	   << parti.rho << "    " << h_upper_bound << "     " << hmax << "   " 
+	   << h_lower_bound << "    " << parti.hfactor << "     " 
+	   << parti.m*parti.hfactor*kern.w0(0.0) << endl;
+      cout << "rp : " << parti.r[0] << "     " << parti.v[0] 
+           << "    " << parti.a[0] << endl;
       string message = "Problem with convergence of h-rho iteration";
       ExceptionHandler::getIstance().raise(message);
     }
@@ -170,22 +179,31 @@ int GodunovSph<ndim, kernelclass >::ComputeH
 
 
   // Normalise all SPH sums correctly
-  parti.h = h_fac*pow(parti.m*parti.invrho,invndim);
+  parti.h = max(h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim),
+                h_lower_bound);
   parti.invh = (FLOAT) 1.0/parti.h;
-  parti.invomega = (FLOAT) 1.0 + invndim*parti.h*parti.invomega*parti.invrho;
-  parti.invomega = (FLOAT) 1.0/parti.invomega;
-  parti.zeta = -invndim*parti.h*parti.zeta*parti.invrho*parti.invomega;
+  parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
 
   // Set important thermal variables here
   parti.u = eos->SpecificInternalEnergy(parti);
   parti.sound = eos->SoundSpeed(parti);
   parti.hfactor = pow(parti.invh,ndim+1);
   parti.press = eos->Pressure(parti);
-  parti.pfactor = parti.press*parti.invrho*parti.invrho*parti.invomega;
+  parti.pfactor = parti.press*parti.invrho*parti.invrho;
   parti.div_v = (FLOAT) 0.0;
+  
+  // Calculate the minimum neighbour potential
+  // (used later to identify new sinks)
+  if (create_sinks == 1) {
+    parti.potmin = true;
+    for (j=0; j<Nneib; j++)
+      if (gpot[j] > 1.000000001*parti.gpot && 
+	  drsqd[j]*invhsqd < kern.kernrangesqd) parti.potmin = false;
+  }
 
-
-  return 1;
+  // If h is invalid (i.e. larger than maximum h), then return error code (0)
+  if (parti.h <= hmax) return 1;
+  else return -1;
 }
 
 
@@ -237,40 +255,36 @@ void GodunovSph<ndim, kernelclass >::ComputeSphHydroForces
   //FLOAT vtemp[ndim];                // ..
   FLOAT hconv = pow(invsqrttwo,ndim+1);
 
-  string interpolation = "linear";
+  string interpolation = "cubic"; //"linear";
 
+  // Loop over all potential neighbours in the list
+  //---------------------------------------------------------------------------
+  for (jj=0; jj<Nneib; jj++) {
+    j = neiblist[jj];
+    
+    wkerni = hconv*parti.hfactor*kern.w1(invsqrttwo*drmag[jj]*parti.invh);
+    wkernj = hconv*neibpart[j].hfactor*
+    kern.w1(invsqrttwo*drmag[jj]*neibpart[j].invh);
 
-  // Compute hydro forces
-  //===========================================================================
-  if (hydro_forces == 1) {
+    for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
+    for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
+    dvdr = DotProduct(dv,draux,ndim);
 
-    // Loop over all potential neighbours in the list
-    //-------------------------------------------------------------------------
-    for (jj=0; jj<Nneib; jj++) {
-      j = neiblist[jj];
-      wkerni = hconv*parti.hfactor*kern.w1(invsqrttwo*drmag[jj]*parti.invh);
-      wkernj = hconv*neibpart[j].hfactor*
-        kern.w1(invsqrttwo*drmag[jj]*neibpart[j].invh);
-
-      for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
-      for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
-      dvdr = DotProduct(dv,draux,ndim);
-
-      // Linear interpolate quantites between left and right states
-
-      if (interpolation == "linear") {
-	Cij = (neibpart[j].invrho - parti.invrho)*invdrmag[jj];
-	Dij = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
-	Vsqdi = (FLOAT) 0.25*parti.h*parti.h*Cij*Cij + Dij*Dij;
-	Vsqdj = (FLOAT) 0.25*neibpart[j].h*neibpart[j].h*Cij*Cij + Dij*Dij;
-	Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi + 
-				    neibpart[j].h*neibpart[j].h/Vsqdj);
-      }
-      else if (interpolation == "cubic") {
-	Vprimei = -DotProduct(parti.gradrho,draux,ndim)*
-	  parti.invrho*parti.invrho;
-	Vprimej = -DotProduct(neibpart[j].gradrho,draux,ndim)*
-	  neibpart[j].invrho*neibpart[j].invrho;
+    // Interpolate quantites between left and right states
+    if (interpolation == "linear") {
+      Cij = (neibpart[j].invrho - parti.invrho)*invdrmag[jj];
+      Dij = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
+      Vsqdi = (FLOAT) 0.25*parti.h*parti.h*Cij*Cij + Dij*Dij;
+      Vsqdj = (FLOAT) 0.25*neibpart[j].h*neibpart[j].h*Cij*Cij + Dij*Dij;
+      Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi + 
+        neibpart[j].h*neibpart[j].h/Vsqdj);
+    }
+    else if (interpolation == "cubic") {
+      Vprimei = -DotProduct(parti.gradrho,draux,ndim)*
+        parti.invrho*parti.invrho;
+      Vprimej = -DotProduct(neibpart[j].gradrho,draux,ndim)*
+        neibpart[j].invrho*neibpart[j].invrho;
+      if (Vprimei*Vprimej > 0.0) {
 	Aij = -2.0*(neibpart[j].invrho - parti.invrho)*pow(invdrmag[jj],3) + 
 	  (Vprimei + Vprimej)*invdrmag[jj]*invdrmag[jj];
 	Bij = 0.5*(Vprimej - Vprimei)*invdrmag[jj];
@@ -278,32 +292,43 @@ void GodunovSph<ndim, kernelclass >::ComputeSphHydroForces
 	  0.25*(Vprimei + Vprimej);
 	Dij = 0.5*(neibpart[j].invrho + parti.invrho) - 
 	  0.125*(Vprimej - Vprimei)*drmag[jj];
+	Vsqdi = 15.0*pow(parti.h,6)*Aij*Aij/64.0 + 
+	  3.0*pow(parti.h,4)*(2.0*Aij*Cij + Bij*Bij)/16.0 + 
+	  0.25*parti.h*parti.h*(2.0*Bij*Dij + Cij*Cij) + Dij*Dij;
+	Vsqdj = 15.0*pow(neibpart[j].h,6)*Aij*Aij/64.0 + 
+	  3.0*pow(neibpart[j].h,4)*(2.0*Aij*Cij + Bij*Bij)/16.0 + 
+	  0.25*neibpart[j].h*neibpart[j].h*(2.0*Bij*Dij + Cij*Cij) + Dij*Dij;
       }
-
-
-      // Initialise the LHS and RHS of the Riemann problem
-      InitialiseRiemannProblem(parti,neibpart[j],draux,drmag[jj],Sij,
-			       dvdr,parti.sound,neibpart[j].sound,
-			       pl,pr,rhol,rhor,vl,vr);
-
-      // Now solve Riemann problem and return intermediate state variables
-      riemann->SolveRiemannProblem(pl,pr,rhol,rhor,parti.sound,
-				   neibpart[j].sound,vl,vr,pstar,vstar);
-
-      // Main SPH pressure force term
-      paux = pstar*(Vsqdi*wkerni + Vsqdj*wkernj);
-
-      // Add total hydro contribution to acceleration for particle i
-      for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
-      
-      // If neighbour is also active, add contribution to force here
-      for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
-
+      else {
+	Cij = (neibpart[j].invrho - parti.invrho)*invdrmag[jj];
+	Dij = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
+	Vsqdi = (FLOAT) 0.25*parti.h*parti.h*Cij*Cij + Dij*Dij;
+	Vsqdj = (FLOAT) 0.25*neibpart[j].h*neibpart[j].h*Cij*Cij + Dij*Dij;
+	Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi + 
+				  neibpart[j].h*neibpart[j].h/Vsqdj);
+      }
     }
-    //-------------------------------------------------------------------------
+
+    // Initialise the LHS and RHS of the Riemann problem
+    InitialiseRiemannProblem(parti,neibpart[j],draux,drmag[jj],Sij,
+                             dvdr,parti.sound,neibpart[j].sound,
+                             pl,pr,rhol,rhor,vl,vr);
+
+    // Now solve Riemann problem and return intermediate state variables
+    riemann->SolveRiemannProblem(pl,pr,rhol,rhor,parti.sound,
+                                 neibpart[j].sound,vl,vr,pstar,vstar);
+
+    // Main SPH pressure force term
+    paux = pstar*(Vsqdi*wkerni + Vsqdj*wkernj);
+
+    // Add total hydro contribution to acceleration for particle i
+    for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
+      
+    // If neighbour is also active, add contribution to force here
+    for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
 
   }
-  //===========================================================================
+  //---------------------------------------------------------------------------
 
 
   return;
@@ -347,7 +372,6 @@ void GodunovSph<ndim, kernelclass >::ComputeSphGravForces
 {
   return;
 }
-
 
 
 
@@ -399,9 +423,12 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
   FLOAT vlorig = vl;
   FLOAT vrorig = vr;
 
-  //cout << "Orig state; pl   : " << pl << "   " << pr << endl;
-  //cout << "            rhol : " << rhol << "   " << rhor << endl;
-  //cout << "            vl   : " << vl << "   " << vr << endl;
+  //cout << "Orig state; p   : " << pl << "   " << pr << endl;
+  //cout << "            rho : " << rhol << "   " << rhor << endl;
+  //cout << "            v   : " << vl << "   " << vr << endl;
+  //cout << "riemann_order : " << riemann_order << endl;
+  if (riemann_order == 1) return;
+
 
   // For 2nd-order, extrapolate quantities using SPH gradients.
   //---------------------------------------------------------------------------
@@ -846,7 +873,9 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
   vr -= DotProduct(partl.v,draux,ndim); //(FLOAT) 0.0;
 
 
-  if (pl != pl || pr != pr || vl != vl || vr != vr || rhol != rhol || rhor != rhor) {
+  // Check for NaNs or invalid values
+  if (pl != pl || pr != pr || vl != vl || vr != vr || rhol != rhol || 
+      rhor != rhor || pl <= 0.0 || pr <= 0.0 || rhol <= 0.0 || rhor <= 0.0) {
     cout << "Problem initialising Riemann problem" << endl;
     cout << "p   : " << pl << "    " << pr << endl;
     cout << "v   : " << vl << "    " << vr << endl;
@@ -854,7 +883,8 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
     cout << "drmag : " << drmag << "   " << partl.sound*partl.dt << "   " << partr.sound*partr.dt << endl;
     cout << "u     : " << partl.u << "   " << partr.u << endl;
     cout << "dudt  : " << partl.dudt << "   " << partr.dudt << endl;
-
+    cout << "dPdr  : " << DotProduct(partl.gradP,draux,ndim)*drmag << "    "
+	 << DotProduct(partr.gradP,draux,ndim)*drmag << endl;
 
     exit(0);
   }
@@ -862,7 +892,6 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
 
   return;
 }
-
 
 
 
@@ -985,8 +1014,12 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
   FLOAT uaux;                       // Aux. internal energy variable
   FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
 
+  FLOAT Aij;
+  FLOAT Bij;
   FLOAT Cij;                        // ..
   FLOAT Dij;                        // ..
+  FLOAT Vprimei;
+  FLOAT Vprimej;
   FLOAT Vsqdi;                      // ..
   FLOAT Vsqdj;                      // ..
   FLOAT Sij;                        // ..
@@ -1002,66 +1035,95 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
   FLOAT gradi, gradj;
 
   FLOAT hconv = powf(invsqrttwo,ndim+1);
+  string interpolation = "cubic"; //"linear";
 
 
-  // Compute hydro forces
-  //===========================================================================
-  if (hydro_forces == 1) {
-
-    // Loop over all potential neighbours in the list
-    //-------------------------------------------------------------------------
-    for (jj=0; jj<Nneib; jj++) {
-      j = neiblist[jj];
-      wkerni = hconv*parti.hfactor*kern.w1(invsqrttwo*drmag[jj]*parti.invh);
-      wkernj = hconv*neibpart[j].hfactor*
-	kern.w1(invsqrttwo*drmag[jj]*neibpart[j].invh);
-
-      for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
-      for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
-      for (k=0; k<ndim; k++) da[k] = neibpart[j].a[k] - parti.a[k];
-      dvdr = DotProduct(dv,draux,ndim);
-      vhalfi = (FLOAT) 0.5*DotProduct(parti.a,draux,ndim)*parti.dt;
-      vhalfj = dvdr + (FLOAT) 0.5*DotProduct(neibpart[j].a,draux,ndim)*neibpart[j].dt;
-
-      // Linear interpolate quantites between left and right states
+  // Loop over all potential neighbours in the list
+  //---------------------------------------------------------------------------
+  for (jj=0; jj<Nneib; jj++) {
+    j = neiblist[jj];
+    wkerni = hconv*parti.hfactor*kern.w1(invsqrttwo*drmag[jj]*parti.invh);
+    wkernj = hconv*neibpart[j].hfactor*
+      kern.w1(invsqrttwo*drmag[jj]*neibpart[j].invh);
+    
+    for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
+    for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
+    for (k=0; k<ndim; k++) da[k] = neibpart[j].a[k] - parti.a[k];
+    dvdr = DotProduct(dv,draux,ndim);
+    //vhalfi = (FLOAT) 0.5*DotProduct(parti.a,draux,ndim)*parti.dt;
+    //vhalfj = dvdr + (FLOAT) 0.5*DotProduct(neibpart[j].a,draux,ndim)*neibpart[j].dt;
+    vhalfi = DotProduct(parti.v,draux,ndim) + (FLOAT) 0.5*DotProduct(parti.a,draux,ndim)*parti.dt;
+    vhalfj = DotProduct(neibpart[j].v,draux,ndim) + (FLOAT) 0.5*DotProduct(neibpart[j].a,draux,ndim)*neibpart[j].dt;
+    
+    // Interpolate quantites between left and right states
+    if (interpolation == "linear") {
       Cij = (neibpart[j].invrho - parti.invrho)*invdrmag[jj];
       Dij = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
       Vsqdi = (FLOAT) 0.25*parti.h*parti.h*Cij*Cij + Dij*Dij;
       Vsqdj = (FLOAT) 0.25*neibpart[j].h*neibpart[j].h*Cij*Cij + Dij*Dij;
       Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi + 
 				  neibpart[j].h*neibpart[j].h/Vsqdj);
-
-      // Initialise the LHS and RHS of the Riemann problem
-      InitialiseRiemannProblem(parti,neibpart[j],draux,drmag[jj],Sij,dvdr,
-    		  parti.sound,neibpart[j].sound,pl,pr,rhol,rhor,vl,vr);
-
-      // Now solve Riemann problem and return intermediate state variables
-      riemann->SolveRiemannProblem(pl,pr,rhol,rhor,parti.sound,
-				  neibpart[j].sound,vl,vr,pstar,vstar);
-
-      // Main SPH pressure force term
-      uaux = pstar*(Vsqdi*wkerni + Vsqdj*wkernj);
-
-      // Add total hydro contribution to acceleration for particle i
-      parti.dudt += neibpart[j].m*uaux*(vstar - vhalfi);
-      //parti.dudt += 2.0*neibpart[j].m*parti.press*Vsqdi*wkerni*(vstar - vhalfi);
-      
-      // If neighbour is also active, add contribution to force here
-      neibpart[j].dudt -= parti.m*uaux*(vstar - vhalfj);
-      //neibpart[j].dudt -= 2.0*parti.m*neibpart[j].press*Vsqdj*wkernj*(vstar - vhalfj);
-
-      //if (i == 0) {
-      //	cout << "Heating rates : " << i << "    r : " << parti.r[0] 
-      //     << "   " << uaux << "   vstar : " << vstar 
-      //     << "   vhalf : " << vhalfi << "   dudt : " 
-      //     << neibpart[j].m*uaux*(vstar - vhalfi) << endl;
-      //}
-
     }
-    //-------------------------------------------------------------------------
+    else if (interpolation == "cubic") {
+      Vprimei = -DotProduct(parti.gradrho,draux,ndim)*
+	parti.invrho*parti.invrho;
+      Vprimej = -DotProduct(neibpart[j].gradrho,draux,ndim)*
+	neibpart[j].invrho*neibpart[j].invrho;
+      if (Vprimei*Vprimej >= 0.0) {
+	Aij = -2.0*(neibpart[j].invrho - parti.invrho)*pow(invdrmag[jj],3) + 
+	  (Vprimei + Vprimej)*invdrmag[jj]*invdrmag[jj];
+	Bij = 0.5*(Vprimej - Vprimei)*invdrmag[jj];
+	Cij = 1.5*(neibpart[j].invrho - parti.invrho)*invdrmag[jj] - 
+	  0.25*(Vprimei + Vprimej);
+	Dij = 0.5*(neibpart[j].invrho + parti.invrho) - 
+	  0.125*(Vprimej - Vprimei)*drmag[jj];
+	Vsqdi = 15.0*pow(parti.h,6)*Aij*Aij/64.0 + 
+	  3.0*pow(parti.h,4)*(2.0*Aij*Cij + Bij*Bij)/16.0 + 
+	  0.25*parti.h*parti.h*(2.0*Bij*Dij + Cij*Cij) + Dij*Dij;
+	Vsqdj = 15.0*pow(neibpart[j].h,6)*Aij*Aij/64.0 + 
+	  3.0*pow(neibpart[j].h,4)*(2.0*Aij*Cij + Bij*Bij)/16.0 + 
+	  0.25*neibpart[j].h*neibpart[j].h*(2.0*Bij*Dij + Cij*Cij) + Dij*Dij;
+      }
+      else {
+	Cij = (neibpart[j].invrho - parti.invrho)*invdrmag[jj];
+	Dij = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
+	Vsqdi = (FLOAT) 0.25*parti.h*parti.h*Cij*Cij + Dij*Dij;
+	Vsqdj = (FLOAT) 0.25*neibpart[j].h*neibpart[j].h*Cij*Cij + Dij*Dij;
+	Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi + 
+				  neibpart[j].h*neibpart[j].h/Vsqdj);
+      }
+    }
+    
+    // Initialise the LHS and RHS of the Riemann problem
+    InitialiseRiemannProblem(parti,neibpart[j],draux,drmag[jj],Sij,dvdr,
+			     parti.sound,neibpart[j].sound,pl,pr,rhol,rhor,vl,vr);
+    
+    // Now solve Riemann problem and return intermediate state variables
+    riemann->SolveRiemannProblem(pl,pr,rhol,rhor,parti.sound,
+				 neibpart[j].sound,vl,vr,pstar,vstar);
+    
+    // Main SPH pressure force term
+    uaux = pstar*(Vsqdi*wkerni + Vsqdj*wkernj);
+    
+    // Add total hydro contribution to acceleration for particle i
+    parti.dudt += neibpart[j].m*uaux*(vstar - vhalfi);
+    //parti.dudt += 2.0*neibpart[j].m*parti.press*Vsqdi*wkerni*(vstar - vhalfi);
+    
+    // If neighbour is also active, add contribution to force here
+    neibpart[j].dudt -= parti.m*uaux*(vstar - vhalfj);
+    //neibpart[j].dudt -= 2.0*parti.m*neibpart[j].press*Vsqdj*wkernj*(vstar - vhalfj);
 
+    //cout << "dudt : " << vhalfi << "   " << vstar << "    " << vhalfj << endl;
+    
+    //if (i == 0) {
+    //	cout << "Heating rates : " << i << "    r : " << parti.r[0] 
+    //     << "   " << uaux << "   vstar : " << vstar 
+    //     << "   vhalf : " << vhalfi << "   dudt : " 
+    //     << neibpart[j].m*uaux*(vstar - vhalfi) << endl;
+    //}
+    
   }
-  //===========================================================================
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -1117,6 +1179,8 @@ void GodunovSph<ndim, kernelclass>::ComputeStarGravForces
 {
   return;
 }
+
+
 
 template class GodunovSph<1, M4Kernel>;
 template class GodunovSph<1, QuinticKernel>;

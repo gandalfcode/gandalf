@@ -87,7 +87,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     sph->mmean /= (FLOAT) sph->Nsph;
     
     sph->InitialSmoothingLengthGuess();
-    sphneib->UpdateTree(sph,*simparams);
+    sphneib->BuildTree(sph,*simparams);
 
     sphneib->neibcheck = false;
     sphneib->UpdateAllSphProperties(sph,nbody);
@@ -101,14 +101,14 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<sph->Ntot; i++) sph->sphdata[i].active = true;
 
     // Calculate all SPH properties
-    sphneib->UpdateTree(sph,*simparams);
+    sphneib->BuildTree(sph,*simparams);
     sphneib->UpdateAllSphProperties(sph,nbody);
 
     // Search ghost particles
     ghosts.SearchGhostParticles(simbox,sph);
 
     // Update neighbour tre
-    sphneib->UpdateTree(sph,*simparams);
+    sphneib->BuildTree(sph,*simparams);
     sphneib->neibcheck = true;
     sphneib->UpdateAllSphProperties(sph,nbody);
     sphneib->UpdateAllSphDerivatives(sph);
@@ -160,7 +160,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     }
 
     ghosts.CopySphDataToGhosts(sph);
-    sphneib->UpdateTree(sph, *simparams);
+    sphneib->BuildTree(sph,*simparams);
 
     // Compute timesteps for all particles
     if (Nlevels == 1) 
@@ -200,10 +200,17 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     uint->EndTimestep(n,sph->Nsph,sph->sphintdata);
   sphint->EndTimestep(n,sph->Nsph,sph->sphintdata);
   nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
+
+  // Compute timesteps for all particles
+  nresync = n;
+  if (Nlevels == 1) 
+    this->ComputeGlobalTimestep();
+  else 
+    this->ComputeBlockTimesteps();
   
   this->CalculateDiagnostics();
+  this->OutputDiagnostics();
   this->diag0 = this->diag;
-  
   this->setup = true;
 
   return;
@@ -224,6 +231,8 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
   int k;                            // Dimension counter
 
   debug2("[GodunovSphSimulation::MainLoop]");
+
+  //cin >> i;
 
   // Advance time variables
   n = n + 1;
@@ -358,13 +367,14 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
 
 //=============================================================================
 //  GodunovSphSimulation::ComputeGlobalTimestep
-/// ..
+/// Computes global timestep for Godunov SPH simulation.  Calculates the 
+/// minimum timestep for all SPH and N-body particles in the simulation.
 //=============================================================================
 template <int ndim>
 void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
 {
   int i;                            // Particle counter
-  DOUBLE dt;        // Particle timestep
+  DOUBLE dt;                        // Particle timestep
   DOUBLE dt_min = big_number_dp;    // Local copy of minimum timestep
 
   debug2("[SphSimulation::ComputeGlobalTimestep]");
@@ -379,30 +389,33 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
 
     // Find minimum timestep from all SPH particles
     //-------------------------------------------------------------------------
-#pragma omp parallel default(none) private(i,dt)\
-  shared(dt_min)
+#pragma omp parallel default(none) private(i,dt) shared(dt_min)
     {
-      dt=big_number_dp;
+      dt = big_number_dp;
 #pragma omp for
       for (i=0; i<sph->Nsph; i++) {
         sph->sphdata[i].dt = sphint->Timestep(sph->sphdata[i],
                                               sph->hydro_forces);
         dt = min(dt,sph->sphdata[i].dt);
       }
+      //cout << "tmin : " << dt << endl;
       
       // If integrating energy equation, include energy timestep
       if (simparams->stringparams["gas_eos"] == "energy_eqn") {
 #pragma omp for
         for (i=0; i<sph->Nsph; i++) {
           sph->sphdata[i].dt = min(sph->sphdata[i].dt,
-				   uint->Timestep(sph->sphdata[i]));
+                                   uint->Timestep(sph->sphdata[i]));
+	  //cout << "tmin2 : " << i << "   " << dt << "     " << sph->sphdata[i].dt << "     " << sph->sphdata[i].div_v << "    " << sph->sphdata[i].dudt << "     " << sph->sphdata[i].a[0] << endl;
           dt = min(dt,sph->sphdata[i].dt);
-	}
+        }
 
       }
 
 #pragma omp critical
-      if (dt < dt_min) dt_min = dt;
+      {
+        if (dt < dt_min) dt_min = dt;
+      }
     }
     //-------------------------------------------------------------------------
 
@@ -417,9 +430,10 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
     for (i=0; i<sph->Nsph; i++) {
       sph->sphdata[i].level = 0;
       sph->sphdata[i].levelneib = 0;
+      sph->sphdata[i].dt = timestep;
       sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
       sph->sphintdata[i].nlast = n;
-      sph->sphdata[i].dt = timestep;
+
     }
     for (i=0; i<nbody->Nnbody; i++) {
       nbody->nbodydata[i]->level = 0;
@@ -429,9 +443,10 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
       nbody->nbodydata[i]->dt = timestep;
     }
 
-
   }
   //---------------------------------------------------------------------------
+
+  assert(timestep > 0.0);
 
   return;
 }

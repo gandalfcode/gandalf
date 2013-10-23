@@ -75,6 +75,9 @@ void ExactRiemannSolver::SolveRiemannProblem
   FLOAT Bl = pl*g2;                   // ""
   FLOAT Br = pr*g2;                   // ""
 
+  //cout << "gamma : " << gamma << "   rhol : " << rhol << "    rhor : " << rhor << endl;
+  //cout << "Al/Ar : " << Al << "    " << Ar << "    " << Bl << "    " << Br << endl;
+
 
   // Make guess of solution for first iteration
   // For now, use two-rarefaction waves approximation
@@ -115,11 +118,19 @@ void ExactRiemannSolver::SolveRiemannProblem
     if (pstar < small_number) pstar = small_number;
     else if (2.0*fabs(pstar - pold)/(pstar + pold) < tolerance) break;
 
+    if (pstar != pstar || vstar != vstar) {
+      cout << "Checking : " << pstar << "   " << vstar << "   " << niteration << endl;
+      exit(0);
+    }
+
+
   } while(2 > 1);
   //---------------------------------------------------------------------------
 
   // Compute velocity of star region
   vstar = 0.5*(vl + vr) + 0.5*(fr - fl);
+
+  //cout << "Riemann solver : " << pstar << "   " << vstar << "   " << niteration << endl;
 
   return;
 }

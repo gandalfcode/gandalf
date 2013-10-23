@@ -543,10 +543,10 @@ void Parameters::CheckInvalidParameters(void)
     
     // Godunov SPH (Inutsuka 2002) currently deactivated while development of 
     // MPI and other related features are underway.
-    if (stringparams["sim"] == "godunov_sph") {
-      cout << "Godunov SPH algorithm currently disabled";
-      errorflag = true;
-    }
+    //if (stringparams["sim"] == "godunov_sph") {
+    //  cout << "Godunov SPH algorithm currently disabled";
+    //  errorflag = true;
+    //}
 
   }
   //---------------------------------------------------------------------------

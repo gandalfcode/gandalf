@@ -155,7 +155,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     }
 
     ghosts.CopySphDataToGhosts(sph);
-    sphneib->BuildTree(sph, *simparams);
+    sphneib->BuildTree(sph,*simparams);
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)

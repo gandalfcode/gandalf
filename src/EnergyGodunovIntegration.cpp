@@ -105,8 +105,9 @@ void EnergyGodunovIntegration<ndim>::EnergyIntegration
       cout << part->u << "   " << sphintdata[i].u0 << "  " << part->dudt
 	   << "   " << dt << "   " << nstep << "    " 
 	   << sphintdata[i].u0/part->dudt << endl;
-      cout << " dt_courant : " << part->h/part->sound << "   " 
-	   << sphintdata[i].u0/(part->dudt + small_number) << endl;
+      cout << " dt_courant : " << part->h/part->sound << "    " 
+	   << sphintdata[i].u0/(part->dudt + small_number) << "    "
+	   << timestep << endl;
       string message = "Problem with energy integration (0)";
       ExceptionHandler::getIstance().raise(message);
     }

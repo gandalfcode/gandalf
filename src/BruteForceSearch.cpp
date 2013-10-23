@@ -521,6 +521,7 @@ void BruteForceSearch<ndim>::UpdateAllSphDerivatives
   // Record local copies of (all) neighbour properties
   for (j=0; j<sph->Ntot; j++) neibpart[j] = sph->sphdata[j];
 
+
   // Compute smoothing lengths of all SPH particles
   //---------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
