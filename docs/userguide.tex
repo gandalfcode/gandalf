@@ -975,7 +975,7 @@ This example demonstrates how to modify parameters in Python that have been load
 \begin{tabular}{p{14.0cm}}
 \var{from gandalf.analysis.facade import *} \\
 \var{sim = newsim(`params.dat')} \\
-\var{sim.SetParam('tend',2.0)} \\
+\var{sim.SetParam(`tend',2.0)} \\
 \var{setupsim()} \\
 \var{run()} \\
 \end{tabular} \\
@@ -1021,6 +1021,7 @@ In this example, we show how to plot particle data interactively during a live s
 \var{plot(`x',`y')} \\
 \var{run()} \\
 \var{savefig(`figure.eps')} \\
+\var{block()} \\
 \end{tabular} \\
 \newline
 
@@ -1071,56 +1072,72 @@ To be done
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example 8 - Creating initial conditions directly in the python script}
+In this example, we demonstrate how to generate some simple initial conditions inside a python script.  For simplicity, we start with a simple 1D shocktube example.
 
-%\begin{tabular}{p{14.0cm}}
-\begin{tabular}{p{8.0cm}p{7.0cm}}
-\var{from gandalf.analysis.facade import *}& Import code python library \\
-\var{import numpy as np}                   & and other libraries \\
-\var{import time}                          & \\
-& \\
-\var{sim = newsim(ndim=1)}                 & Create a new (but unspecified) 1D simulation object \\
-& \\                                       
-\var{sim.SetParam('ic','python')}          & Initial conditions will be set in python script  \\
-\var{sim.SetParam('sph','gradh')}          & Use conservative 'grad-h' SPH \\
-\var{sim.SetParam('sph\_integration','lfkdk')} & Use leapfrog-KDK integrator for SPH \\
-\var{sim.SetParam('gas\_eos','energy\_eqn')} & Integrate energy equation \\
-\var{sim.SetParam('energy\_integration','PEC')} & Use Predict-correct-evaluate energy integration \\
-\var{sim.SetParam('gamma\_eos',1.6666666666)} & gamma = 5/3\\
-\var{sim.SetParam('Nsph',200)} & 200 SPH particles \\
-\var{sim.SetParam('tend',0.075)} & \\
-\var{sim.SetParam('dt\_snap',1.0)} & \\
-\var{sim.SetParam('x\_boundary\_lhs','open')} & Use open/free boundaries\\
-\var{sim.SetParam('x\_boundary\_rhs','open')} & \\
-& \\                      
-\var{Npart = 200} &  Set number of particles \\
-\var{x = np.linspace(-0.995,0.995,num=Npart)} & Create regularly spaced particles \\
-\var{vx = np.zeros(Nsph)}  & \\
-\var{m = np.ones(Nsph)*2.0/Nsph} & \\
-\var{u = np.ones(Nsph)*1.5} & \\
-& \\          
-\var{for i in range(Nsph):}   & Loop over all particles \\
-\hspace{0.5cm}\var{if x[i] < 0.0:}   & Set velocity depending on whether particle \\
-\hspace{1cm}\var{vx[i] = 4.0}   & is in LHS or RHS shock region \\
-\hspace{0.5cm}\var{else:} & \\
-\hspace{1cm}\var{vx[i] = -4.0} & \\
-& \\  
-\var{sim.PreSetupForPython()}  & Now call setup routines to create objects and allocate memory 
-(N.B. parameters are now fixed and cannot be changed after this point) \\
-\var{sim.ImportArray(x,'x')}    & Import all arrays to main memory \\
-\var{sim.ImportArray(vx,'vx')}  & \\
-\var{sim.ImportArray(m,'m')}    & \\
-\var{sim.ImportArray(u,'u')}    & \\
-\var{sim.SetupSimulation()}     & Finally perform all setup routines in C++ code\\
-& \\                                  
-\var{plot("x","rho")}           & First, plot the initial conditions \\ 
-& \\              
-\var{run()}                     & Run simulations \\
-\var{plot("x","rho")}           & Re-plot results \\
-\var{block()}                   & Pause program to prevent window closing \\
-\end{tabular}
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{import numpy as np} \\
+\var{import time} \\
+\var{sim = newsim(ndim=1)} \\
+\var{sim.SetParam(`sim',`sph')} \\
+\var{sim.SetParam(`sph',`gradh')} \\
+\var{sim.SetParam(`sph\_integration',`lfkdk')} \\
+\var{sim.SetParam(`gas\_eos',`energy\_eqn')}  \\
+\var{sim.SetParam(`energy\_integration',`PEC')}  \\
+\var{sim.SetParam(`gamma\_eos',1.6666666666)}  \\
+\var{sim.SetParam(`tend',0.075)}  \\
+\var{sim.SetParam(`dt\_snap',1.0)} \\
+\var{sim.SetParam(`x\_boundary\_lhs',`open')} \\ 
+\var{sim.SetParam(`x\_boundary\_rhs',`open')} \\
+\var{sim.SetParam(`ic',`python')} \\
+\var{sim.SetParam(`Nsph',200)}  \\
+\var{Nsph = 200} \\
+\var{x = np.linspace(-0.995,0.995,num=Nsph)} \\
+\var{m = np.ones(Nsph)*2.0/Nsph} \\
+\var{u = np.ones(Nsph)*1.5} \\
+\var{vx = np.zeros(Nsph)}  \\
+\var{for i in range(Nsph):} \\
+\hspace{0.5cm}\var{if x[i] < 0.0:} \\
+\hspace{1cm}\var{vx[i] = 4.0} \\
+\hspace{0.5cm}\var{else:} \\
+\hspace{1cm}\var{vx[i] = -4.0} \\
+\var{sim.PreSetupForPython()} \\
+\var{sim.ImportArray(x,'x')} \\
+\var{sim.ImportArray(vx,'vx')} \\
+\var{sim.ImportArray(m,'m')}   \\
+\var{sim.ImportArray(u,'u')}   \\
+\var{sim.SetupSimulation()}  \\
+\var{plot("x","rho")} \\
+\var{run()}  \\
+\var{block()} \\
+\end{tabular} \\
 \newline
 
+As well as importing the GANDALF Python library, we must also import the NUMPY library, which is a popular mathematical library in Python for handling arrays, with the command \\
+\newline
+\noindent \var{import numpy as np} \\
+\newline
+\noindent
+We then create an undefined 1D simulation object with \var{sim = newsim(ndim=1)} and set various parameters determing the simulation type, integration scheme, equation of state, etc..  We must then inform the code that we intend to generate initial conditions in the python script (and not say from an external file or one of the internal C++ routines) by the command \var{sim.SetParam(`ic',`python')}.  We must also inform the code of the number of SPH particles to be used with the command \var{sim.SetParam(`Nsph',200)}, in order to allocate enough memory for the simulation.  
 
+At this point, we can now create the initial conditions in Python.  This can be done by creating NUMPY arrays for each variable, e.g. \var{x}, \var{m}, etc..  Note that even for vector quantities (e.g. position, velocity), we must allocate separate 1D NUMPY arrays for each component, for example the commands \\
+\newline
+\noindent \var{a1 = np.zeros(N)}, \\
+\noindent \var{a2 = np.ones(N)}, \\
+\noindent \var{a3 = np.linspace(0.0,1.0,num=N)} \\
+\newline
+return NUMPY arrays of size \var{N} with all zeros, all ones, and uniform values between 0 and 1 repsectively  (See NUMPY website and documentation for more information on NUMPY functions).  For this simple shocktube test, we set all velocities left of the shock interface to $4.0$ and right of the shock interface to $-4.0$ with the commands \var{vx = np.ones(Nsph)*4.0; vx[x > 0.0] = -4.0}.
+
+Finally, we can import the arrays into the main C++ and run the simulation.  Before doing this, we must first initialise various things in the code, including importantly allocating memory for the particles, by calling the function \\
+\newline
+\noindent \var{sim.PreSetupforPython()}\,. \\
+\newline
+\noindent
+Next, we can import the array into the C++ arrays by the command \\
+\newline
+\noindent \var{sim.ImportArray(numpyarray,varname)} \\
+\newline
+where \var{numpyarray} is the local NUMPY array and \var{varname} is the name of the variable in C++.  For example, to import the x-positions, we call the command \var{sim.ImportArray(x,`x')}.  Once all arrays have been called, we can finally call the setup function \var{sim.SetupSimulation()} and plot and run the simulation.
 \newpage
 
 
