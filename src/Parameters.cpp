@@ -527,7 +527,7 @@ void Parameters::CheckInvalidParameters(void)
   if (stringparams["sim"] == "sph" || stringparams["sim"] == "godunov_sph") {
 
     // Cannot use grid with self-gravity
-    if (stringparams["neibsearch"] == "grid" && 
+    if (stringparams["neib_search"] == "grid" &&
         intparams["self_gravity"] == 1) {
       cout << "Parameter error : Cannot compute self-gravity with "
 	   << "grid neighbour search";

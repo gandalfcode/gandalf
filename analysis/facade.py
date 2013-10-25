@@ -76,7 +76,7 @@ if we are in interactive mode, or re-raising it, if we are in script mode
 
 
 #------------------------------------------------------------------------------
-def loadsim(run_id, fileformat = 'ascii', buffer_flag = 'cache'):
+def loadsim(run_id, fileformat = 'column', buffer_flag = 'cache'):
     '''Given the run_id of a simulation, reads it from the disk.
 Returns the newly created simulation object.
     
@@ -140,7 +140,7 @@ Optional arguments:
 
 
 #------------------------------------------------------------------------------
-def plot_vs_time_quantiy_particle(quantity, type='default',id=0):
+def plot_vs_time_quantity_particle(quantity, type='default', id=0):
     '''Plot as a function of time a given quantity for a given particle.
 Type specifies the type of particle to retrieve the information from.
 id is an integer specifying the desired particle.

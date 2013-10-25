@@ -268,6 +268,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   FLOAT draux[ndim];                // Relative position vector
   FLOAT dv[ndim];                   // Relative velocity vector
   FLOAT dvdr;                       // Dot product of dv and dr
+  FLOAT mj;                         // Mass of neighbour
   FLOAT wkerni;                     // Value of w1 kernel function
   FLOAT wkernj;                     // Value of w1 kernel function
   FLOAT vsignal;                    // Signal velocity

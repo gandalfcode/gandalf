@@ -301,7 +301,7 @@ void SimulationBase::Run
 //=============================================================================
 list<SphSnapshotBase*> SimulationBase::InteractiveRun
 (int Nadvance)                      ///< [in] Selected max no. of integer 
-                                    ///< timesteps (Optional argument).
+                                    ///<      timesteps (Optional argument).
 {
   int Ntarget;                      // Selected integer timestep
   DOUBLE tdiff = 0.0;               // Measured time difference

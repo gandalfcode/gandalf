@@ -24,19 +24,13 @@ render("x","y","rho",res=128)
 #limit("x",-0.5,0.5)
 #limit("y",-0.5,0.5)
 
-# Create rendered slice of density
+# Plot star/sink masses
 subfigure(2,2,3)
-render("x","y","u",res=128)
-#limit("x",-0.5,0.5)
-#limit("y",-0.5,0.5)
-
-# Plot EOS properties
-#subfigure(2,2,3)
-#plot("x","ax")
+plot_vs_time_quantity_particle("m",type='star',id=0)
 
 # Plot sound and star speed
 subfigure(2,2,4)
-render("x","y","vx")
+plot("x","vx")
 
 run()
 block()
