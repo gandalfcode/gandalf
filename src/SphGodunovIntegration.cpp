@@ -157,10 +157,12 @@ void SphGodunovIntegration<ndim>::EndTimestep
     part = sphintdata[i].part;
 
     if (n == sphintdata[i].nlast) {
+      //if (n == 0 || n - sphintdata[i].nlast == sphintdata[i].nstep) {
       for (k=0; k<ndim; k++) sphintdata[i].r0[k] = part->r[k];
       for (k=0; k<ndim; k++) sphintdata[i].v0[k] = part->v[k];
       for (k=0; k<ndim; k++) sphintdata[i].a0[k] = part->a[k];
       part->active = false;
+      //part->active = true;
       sphintdata[i].nlast = n;
     }
   }

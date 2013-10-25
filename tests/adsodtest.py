@@ -27,7 +27,7 @@ limit("x",-0.4,0.4,window="all")
 subfigure(2,2,3)
 plot("x","u")
 plotanalytical("x","u")
-limit("x",-0.4,0.4,window="all")
+#limit("x",-0.4,0.4,window="all")
 
 # Plot the thermal pressure
 subfigure(2,2,4)

@@ -541,12 +541,13 @@ void Parameters::CheckInvalidParameters(void)
       errorflag = true;
     }
     
-    // Godunov SPH (Inutsuka 2002) currently deactivated while development of 
-    // MPI and other related features are underway.
-    //if (stringparams["sim"] == "godunov_sph") {
-    //  cout << "Godunov SPH algorithm currently disabled";
-    //  errorflag = true;
-    //}
+    // Godunov SPH (Inutsuka 2002) with 2nd-order Riemann solver currently 
+    // deactivated for the meatime
+    if (stringparams["sim"] == "godunov_sph" && 
+        intparams["riemann_order"] == 2) {
+      cout << "Godunov SPH with 2nd-order Riemann solver currently disabled";
+      errorflag = true;
+    }
 
   }
   //---------------------------------------------------------------------------

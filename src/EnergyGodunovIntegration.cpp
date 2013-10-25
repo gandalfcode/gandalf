@@ -92,7 +92,11 @@ void EnergyGodunovIntegration<ndim>::EnergyIntegration
     dn = n - sphintdata[i].nlast;
     dt = timestep*(FLOAT) dn;
     part = sphintdata[i].part;
-    part->u = sphintdata[i].u0 + sphintdata[i].dudt0*dt;
+    part->u = sphintdata[i].u0 + part->dudt*dt;
+
+    //if (i == 0) {
+    //  cout << "Energy int : " << i << "   " << sphintdata[i].u0 << "    " << part->u << "    " << part->dudt << "    " << dt << endl;
+    //}
 
     if (part->u != part->u) {
       cout << "Something wrong with energy integration (NaN) : " << endl;
@@ -158,6 +162,7 @@ void EnergyGodunovIntegration<ndim>::EndTimestep
     nstep = sphintdata[i].nstep;
     part = sphintdata[i].part;
     if (n == sphintdata[i].nlast) {
+      //if (n == 0 || n - sphintdata[i].nlast == sphintdata[i].nstep) {
       sphintdata[i].u0 = part->u;
       sphintdata[i].dudt0 = part->dudt;
     }

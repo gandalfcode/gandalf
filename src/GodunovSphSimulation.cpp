@@ -321,6 +321,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     sphint->EndTimestep(n,sph->Nsph,sph->sphintdata);
 
   }
+  //---------------------------------------------------------------------------
 
 
   // Compute N-body forces

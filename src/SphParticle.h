@@ -83,15 +83,9 @@ struct SphParticle
 
   // Godunov specific variables
   //-------------------------------------------------------------------------
-  FLOAT gradP[ndim];                ///< Pressure gradient
   FLOAT gradrho[ndim];              ///< Density gradient
-  FLOAT gradv[ndim][ndim];          ///< Velocity gradient matrix
-  FLOAT rhomax;                     ///< Maximum neighbour density
-  FLOAT rhomin;                     ///< Minimum neighbour density
-  FLOAT pressmax;                   ///< Maximum neighbour pressure
-  FLOAT pressmin;                   ///< Minimum neighbour pressure
-  FLOAT vmax[ndim];                 ///< Maximum neighbour velocity
-  FLOAT vmin[ndim];                 ///< Minimum neighbour velocity
+  //FLOAT gradP[ndim];                ///< Pressure gradient
+  //FLOAT gradv[ndim][ndim];          ///< Velocity gradient matrix
 
 
   // SPH particle constructor to initialise all values
@@ -138,16 +132,10 @@ struct SphParticle
 
     // Godunov specific variables
     //-------------------------------------------------------------------------
-    for (int k=0; k<ndim; k++) gradP[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) gradrho[k] = (FLOAT) 0.0;
-    for (int k=0; k<ndim; k++)
-      for (int kk=0; kk<ndim; kk++) gradv[k][kk] = (FLOAT) 0.0;
-    rhomin = (FLOAT) 0.0;
-    rhomax = (FLOAT) 0.0;
-    pressmin = (FLOAT) 0.0;
-    pressmax = (FLOAT) 0.0;
-    for (int k=0; k<ndim; k++) vmax[k] = 0.0;
-    for (int k=0; k<ndim; k++) vmin[k] = 0.0;
+    //for (int k=0; k<ndim; k++) gradP[k] = (FLOAT) 0.0;
+    //for (int k=0; k<ndim; k++)
+    //  for (int kk=0; kk<ndim; kk++) gradv[k][kk] = (FLOAT) 0.0;
 
   }
 
