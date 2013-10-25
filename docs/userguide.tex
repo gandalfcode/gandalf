@@ -742,7 +742,7 @@ wall     & = wall at boundary (i.e. reflection of particles)
 
 \item \var{smooth\_ic} : Smooth any particle quantities around discontinuities
 
-\item \var{com\_frame} : Translatr ICs to COM frame before starting simulation
+\item \var{com\_frame} : Translate ICs to COM frame before starting simulation
 
 \item \var{Nsph} : No. of SPH particles
 \item \var{Nstar} : No. of star particles
@@ -964,12 +964,12 @@ This first example demonstrates how to set-up and run a new simulation from a gi
 \end{tabular} \\
 \newline
 
-The first line, '\var{from gandalf.analysis.facade import *}, loads in all definitions and functions from the GANDALF python frontend, \var{facade.py}.  Note that this assumes that the \var{PYTHONPATH} environment variable has been correctly set-up.  Otherwise, the full absolute path of the \var{facade.py} file must be given.  The second line, '\var{sim = newsim(`params.dat')}, reads in the parameters file \var{'params.dat'} and creates a new simulation from those parameters and returns a Python object, \var{sim}, which can be used to refer to that simulation in Python.  Note that in this case, it is assumed the parameters file is selecting an initial conditions generator in the main code to generate the particles in the simulation.  In order to fully set-up the simulation so it is ready to be run, the command \var{setupsim()} must be run.  Finally, to run the simulation to completion, we must execute the command \var{run()}. \\
+The first line, '\var{from gandalf.analysis.facade import *}, loads in all definitions and functions from the GANDALF python frontend, \var{facade.py}.  Note that this assumes that the \var{PYTHONPATH} environment variable has been correctly set-up.  Otherwise, the full absolute path of the \var{facade.py} file must be given.  The second line, '\var{sim = newsim(`params.dat')}, reads in the parameters file \var{'params.dat'} and creates a new simulation from those parameters and returns a Python object, \var{sim}, which can be used to refer to that simulation in Python (N.B. the user can use any name for this object, as long as it does not clash with another GANDALF or Python object).  In this case, it is assumed the parameters file is selecting an initial conditions generator in the main code to generate the particles in the simulation.  In order to fully set-up the simulation so it is ready to be run, the command \var{setupsim()} must be run.  Finally, to run the simulation to completion, we must execute the command \var{run()}. \\
 \newline
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection{Example 2 - Creating a simulation from a parameters file and modifying a parameter before running}
+\subsubsection{Example 2 - Creating a simulation and modifying a parameter before running}
 This example demonstrates how to modify parameters in Python that have been loaded in from a given parameters file. \\
 
 \begin{tabular}{p{14.0cm}}
@@ -989,7 +989,7 @@ The first two lines of this example are the as the first example, where we impor
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection{Example 3 - Creating and running a new simulation using the internal initial conditions routines without a parameters file}
+\subsubsection{Example 3 - Generating initial conditions using internal routines without a parameters file}
 In this example, we will create and run a simulation without needing to load-in an external parameters file. \\
 
 \begin{tabular}{p{14.0cm}}
@@ -1057,12 +1057,28 @@ Instead of a creating a new simulation with the \var{newsim} function, we will l
 \newline
 \noindent \var{loadsim(runid)} \\
 \newline
-\noindent where \var{runid} is the simulation run identification string.  Note, this assumes that all files from that simulation are present in the folder, including the \var{runid.param} file which contains all the parameters used to run the simulation.  In this case, we load a simulation with the runid \var{TEST1} with the command \var{loadsim(`TEST1')}.  
+\noindent where \var{runid} is the simulation run identification string.  Note, this assumes that all files from that simulation are present in the folder, including the \var{runid.param} file which contains all the parameters used to run the simulation.  In this case, we load a simulation with the runid \var{TEST1} with the command \var{loadsim(`TEST1')}.  We can then plot particular snapshots of the simulation using the \var{plot} command with the optional \var{snap} argument.  Therefore to plot the first snapshot, type \var{plot(`x',`y',snap=0)}, to plot the second snapshot, type \var{plot(`x','y',snap=1)}, etc..  Note that Python uses C-style indexing, i.e. starting from zero, unlike other conventions like in FORTRAN where indexing starts from one.  If we wish to overplot one snapshot over another, we first plot the first snapshot and then use the command \\
+\newline
+\noindent \var{addplot(`x',`y',snap=1)} \\
+\newline
+\noindent to add the second snapshot plot over the first one.  This behaviour can also be replicated by adding the \var{overplot} optional boolean argument to \var{plot}, i.e. \var{plot(`x',`y',snap=1,overplot=True)}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example 6 - Reading  and plotting multiple simulations}
-To be done
+In this example, we show how to read in multiple simulations to make comparison plots. \\
+
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{sim0 = loadsim(`TEST1')} \\
+\var{sim1 = loadsim(`TEST2')} \\
+\var{plot(`x',`rho',sim=0,snap=0)} \\
+\var{addplot(`x',`rho',sim=1,snap=0)} \\
+\var{break()} \\
+\end{tabular} \\
+\newline
+
+Multiple simulations can be loaded into GANDALF using the \var{loadsim} command.  However, they must be returned to objects with different names; in this case, we name them \var{sim0} and \var{sim1} (to follow the C-style numbering convention).  A snapshot from a particular simulation can be plotted by adding the optional argument \var{sim} to the plot command, i.e. \var{plot(`x',`rho',sim=0,snap=0)} to plot the first snapshot in the first simulation.  The second simulation is then over-plotted with the command \var{addplot(`x',`rho',sim=1,snap=0)}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1128,7 +1144,7 @@ At this point, we can now create the initial conditions in Python.  This can be 
 \newline
 return NUMPY arrays of size \var{N} with all zeros, all ones, and uniform values between 0 and 1 repsectively  (See NUMPY website and documentation for more information on NUMPY functions).  For this simple shocktube test, we set all velocities left of the shock interface to $4.0$ and right of the shock interface to $-4.0$ with the commands \var{vx = np.ones(Nsph)*4.0; vx[x > 0.0] = -4.0}.
 
-Finally, we can import the arrays into the main C++ and run the simulation.  Before doing this, we must first initialise various things in the code, including importantly allocating memory for the particles, by calling the function \\
+The last step before importing the arrays to C++, we must initialise various things in the code, including importantly allocating memory for the particles, by calling the function \\
 \newline
 \noindent \var{sim.PreSetupforPython()}\,. \\
 \newline
@@ -1137,7 +1153,63 @@ Next, we can import the array into the C++ arrays by the command \\
 \newline
 \noindent \var{sim.ImportArray(numpyarray,varname)} \\
 \newline
-where \var{numpyarray} is the local NUMPY array and \var{varname} is the name of the variable in C++.  For example, to import the x-positions, we call the command \var{sim.ImportArray(x,`x')}.  Once all arrays have been called, we can finally call the setup function \var{sim.SetupSimulation()} and plot and run the simulation.
+where \var{numpyarray} is the local NUMPY array and \var{varname} is a string containing the C++ variable name.  For example, to import the x-positions, we call the command \var{sim.ImportArray(x,`x')}.  Once all arrays have been called, we can finally call the setup function \var{sim.SetupSimulation()} and plot and run the simulation.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example  9 - Creating initial conditions for N-body simulation in python script}
+To be done
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example  10 - Generating rendered images from SPH simulations}
+To be done
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example  11 - Plotting in alternative coordinate systems}
+To be done
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example  12 - Changing the plotting units}
+To be done
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example  13 - Creating and plotting user-defined quantities}
+To be done
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example  14 - Plotting time series of particle properties}
+To be done
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example  15 - Calling analysis routines and plotting results}
+To be done
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example  16 - Creating and plotting on multiple sub-plots}
+To be done
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example  17 - Creating an animation from simulation snapshot files}
+To be done
+
+
+
 \newpage
 
 
@@ -1152,7 +1224,7 @@ List of known bugs as of version \VERNO.
 \item For very short simulations, plots may not be updated correctly since the simulation process finishes before the plotting process has recieved its commands.
 %\item If running a simulation in interactive mode, the simulation variables can become corrupted if previous snapshots are viewed, i.e. once a previous snapshot is viewed, the simulation can no longer be continued.
 %\item If running a simulation in interactive mode and a different simulation is loaded into memory, then it is no longer possible to continue running that simulation.
-%\item Rendered images are technically not done correct if smoothing lengths are smaller than the grid size (which can often be the case, although the images are fine for viewing/movie purposes).
+\item Rendered images are technically not done correct if smoothing lengths are smaller than the grid size (which can often be the case, although the images are fine for viewing/movie purposes).
 \end{itemize}
 
 
@@ -1161,8 +1233,11 @@ List of possible new features for future versions.
 
 \begin{itemize}
 \item Allow ability to add titles to graphs in matplotlib
+\item Ability to create animations/movies from simulation snapshots
 \item Include analytical solutions for Sedov blast-wave test and freefall collapse test
 \item Plot star/sink-based statistics, e.g. sink mass-functions, binary statistics
+\item Include analysis routines for python for N-body specific statistics, e.g. Q-parameter, $\lambda$-parameter, etc..
+\item Strict energy-error checking for N-body simulations
 \item More sanity-checking, error-trapping and assert statements (to prevent crashing on erroneous input and to help debugging purposes).
 \end{itemize}
 
