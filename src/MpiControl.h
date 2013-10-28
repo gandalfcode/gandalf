@@ -33,6 +33,7 @@
 #include "Nbody.h"
 #include "SphNeighbourSearch.h"
 #include "SphParticle.h"
+#include "mpi.h"
 using namespace std;
 
 
@@ -77,6 +78,9 @@ class MpiControl
 
   //BinaryTree<ndim> mpitree;         ///< Main MPI load balancing tree
   MpiNode<ndim> *mpinode;           ///< Data for all MPI nodes
+
+  MPI_Datatype particle_type;        ///< Datatype for the particles
+
 
 };
 #endif
