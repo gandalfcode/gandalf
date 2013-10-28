@@ -45,6 +45,14 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   //Tell exception handler to call MPI_Abort on error
   ExceptionHandler::set_mpi(1);
+#ifdef _OPENMP
+  //Check that OpenMP and MPI can work together
+  int mpi_thread_support;
+  MPI_Query_thread(&mpi_thread_support);
+  if (mpi_thread_support == MPI_THREAD_SINGLE)
+    ExceptionHandler::getIstance().raise("This implementation of MPI is not interoperable with OpenMP, aborting!"
+        "Refer to your system administrator to know how to solve this problem");
+#endif
 #endif
 
   // Check that a valid number of arguments have been passed
