@@ -1088,7 +1088,7 @@ To be done
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example 8 - Creating initial conditions directly in the python script}
-In this example, we demonstrate how to generate some simple initial conditions inside a python script.  For simplicity, we start with a simple 1D shocktube example.
+In this example, we demonstrate how to generate some simple initial conditions inside a python script.  For simplicity, we start with a simple 1D shocktube example. \\
 
 \begin{tabular}{p{14.0cm}}
 \var{from gandalf.analysis.facade import *} \\
@@ -1164,13 +1164,46 @@ To be done
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example  10 - Generating rendered images from SPH simulations}
-To be done
+To be done \\
+
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{loadsim(`TEST1')} \\
+\var{render(`x',`y',`rho',res=256)} \\
+\var{savefig(`rendercolumn.png')} \\
+\var{render(`x',`y',`rho',res=256,zslice=0.0)} \\
+\var{savefig(`renderslice.png')} \\
+\var{block()} \\
+\end{tabular} \\
+\newline
+
+Once the GANDALF library and simulation snapshot files have been loaded in the script (or alternatively during a live simulation), rendered images from the snapshots can be generated with command \\
+\newline
+\noindent \var{render(x,y,renderquantity)} \\
+\newline
+\noindent where \var{x} and \var{y} are the x- and y-axis quantities (similar to the \var{plot} command) and \var{renderquantity} is the quantity to be rendered.  There are various optional arguments, such as \var{res} which controls the resolution.  By default, \var{render} generates a column rendered image (for 3D simulations).  Therefore, the command \var{render(`x',`y',`rho',res=256,zslice=0.0)} generates a column density plot in the x-y plane using $256$ pixels in each direction.  To generate a rendering of a slice instead of a column, the optional argument \var{zslice} (i.e. the coordinate of the slice in the z-direction) must be included.  Therefore, the command \var{render(`x',`y',`rho',res=256,zslice=0.0)} generates a rendering of density along a slice at \var{zslice = 0.0}.
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example  11 - Plotting in alternative coordinate systems}
-To be done
+GANDALF contains three coordinates systems, Cartesian, Spherical polar and Cylindricalc oordinates.  This example demonstrates how to plot in the different systems.
+
+
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{loadsim(`TEST1')} \\
+\var{plot(`x',`y')} \\
+\var{savefig(`cartesian.png')} \\
+\var{plot(`r',`rho')} \\
+\var{savefig(`sphericalpolar.png')} \\
+\var{plot(`R',`rho')} \\
+\var{savefig(`sphericalpolar.png')} \\
+\end{tabular} \\
+\newline
+
+
+
 
 
 
@@ -1199,13 +1232,20 @@ To be done
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection{Example  16 - Creating and plotting on multiple sub-plots}
+\subsubsection{Example  16 - Creating and plotting multiple sub-plots on a single window}
 To be done
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection{Example  17 - Creating an animation from simulation snapshot files}
+\subsubsection{Example  16 - Creating and plotting on multiple windows}
+To be done
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Example  18 - Creating an animation from simulation snapshot files}
 To be done
 
 
