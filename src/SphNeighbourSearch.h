@@ -293,7 +293,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
 
   typedef typename vector <BinarySubTree<ndim> *>::iterator binlistiterator;
 
-  BinaryTree(int, FLOAT, FLOAT, string, string);
+  BinaryTree(int, FLOAT, FLOAT, string, string, int, int);
   ~BinaryTree();
 
   //---------------------------------------------------------------------------
@@ -351,6 +351,8 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   int Nlevel;                       ///< ""
   int Nleafmax;                     ///< Max. number of particles per leaf cell
   int Nlistmax;                     ///< Max. length of neighbour list
+  int Nlocalsubtrees;               ///< No. of local sub-trees in main tree
+  int Nmpisubtrees;                 ///< No. of MPI ghost trees
   int Nsph;                         ///< Total no. of points/ptcls in grid
   int Ntot;                         ///< No. of current points in list
   int Ntotmax;                      ///< Max. no. of points in list

@@ -89,7 +89,7 @@ void MpiControl<ndim>::DeallocateMemory(void)
 
 //=============================================================================
 //  MpiControl::InitialiseMpiProcess
-/// Allocate all memory for MPI control class.
+/// Call all initial MPI routines, to find rank number, no. of processes etc..
 //=============================================================================
 template <int ndim>
 void MpiControl<ndim>::InitialiseMpiProcess(void)
@@ -100,6 +100,7 @@ void MpiControl<ndim>::InitialiseMpiProcess(void)
   MPI_Comm_size(MPI_COMM_WORLD,&Nmpi);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   MPI_Get_processor_name(hostname, &len);
+  MPI_Barrier(MPI_COMM_WORLD);
 
   if (this->rank == 0)
     printf("MPI working.  Nmpi : %d   rank : %d   hostname : %s\n",rank,Nmpi,hostname);
@@ -129,6 +130,36 @@ void MpiControl<ndim>::InitialiseMpiProcess(void)
 template <int ndim>
 void MpiControl<ndim>::CreateLoadBalancingTree(void)
 {
+  // Create MPI binary tree for organising domain decomposition
+  mpitree = new BinaryTree<ndim>(16,0.1,0.0,"geometric","monopole",1,Nmpi);
+
+
+  // For main process, create load balancing tree, transmit information to all
+  // other nodes including particle data
+  //---------------------------------------------------------------------------
+  if (rank == 0) {
+
+	debug2("[MpiControl::CreateLoadBalancingTree]");
+
+
+	// Create binary tree from all SPH particles
+
+
+    // Finally, broadcast all bounding boxes and domain information to all
+	// other nodes
+
+  }
+
+  // For other nodes, receive all bounding box and particle data once
+  // transmitted by main process.
+  //---------------------------------------------------------------------------
+  else {
+
+
+  }
+  //---------------------------------------------------------------------------
+
+
   return;
 }
 

@@ -49,30 +49,11 @@ using namespace std;
 template <int ndim>
 BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux, 
                              FLOAT kernrangeaux, string gravity_mac_aux,
-                             string multipole_aux)
+                             string multipole_aux, int Nthreads, int Nmpi)
 {
-  allocated_tree = false;
-  created_sub_trees = false;
-#if defined _OPENMP
-  if (omp_get_dynamic()) {
-    cout << "Warning: the dynamic adjustment of the number threads was on. For better load-balancing of the tree, we will disable it" << endl;
-  }
-  omp_set_dynamic(0);
-  Nsubtree = omp_get_max_threads();
-  //now adjust the number of subtrees until it's a power of two
-  int ltot = 0;
-  while (pow(2,ltot) < Nsubtree) {
-    ltot++;
-  };
-  if (Nsubtree != pow(2,ltot)) {
-    Nsubtree = pow(2,ltot-1);
-    cout << "Warning: the number of OpenMP threads is not a power of two. This is sub-optimal for the binary tree parallelization" << endl;
-  }
-  Nsubtreemax = Nsubtree;
-#else
-  Nsubtree = 1;
-  Nsubtreemax = 1;
-#endif
+  Nlocalsubtrees = Nthreads;
+  Nmpisubtrees = Nmpi - 1;
+  Nsubtreemax = Nlocalsubtrees + Nmpisubtrees;
   Ntot = 0;
   Ntotmax = 0;
   Ntotmaxold = 0;
@@ -81,7 +62,21 @@ BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
   thetamaxsqd = thetamaxsqdaux;
   gravity_mac = gravity_mac_aux;
   multipole = multipole_aux;
-}
+  allocated_tree = false;
+  created_sub_trees = false;
+#if defined _OPENMP
+  // Check that no. of threads is valid
+  int ltot = 0;
+  while (pow(2,ltot) < Nthreads) {
+    ltot++;
+  };
+  if (Nthreads != pow(2,ltot)) {
+    Nlocalsubtrees = pow(2,ltot-1);
+    Nsubtreemax = Nlocalsubtrees + Nmpisubtrees;
+    cout << "Warning: the number of OpenMP threads is not a power of two. This is sub-optimal for the binary tree parallelization" << endl;
+  }
+#endif
+  }
 
 
 
