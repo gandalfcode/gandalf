@@ -43,6 +43,8 @@ int main(int argc, char** argv)
   // Initialise all MPI processes (if activated in Makefile)
 #ifdef MPI_PARALLEL
   MPI_Init(&argc,&argv);
+  //Tell exception handler to call MPI_Abort on error
+  ExceptionHandler::set_mpi(1);
 #endif
 
   // Check that a valid number of arguments have been passed

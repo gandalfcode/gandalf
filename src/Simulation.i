@@ -62,7 +62,7 @@ throw StopError("CTRL-C received");
     	PyErr_SetString(PyExc_KeyboardInterrupt,e.msg.c_str());
     	return NULL;
     }
-    catch (SerenError e){
+    catch (GandalfError e){
     	PyEval_RestoreThread(_save);
     	PyErr_SetString(PyExc_Exception,e.msg.c_str());
 		return NULL;
@@ -73,7 +73,7 @@ throw StopError("CTRL-C received");
 	try{
 		$action
 	}
-	catch (SerenError e) {
+	catch (GandalfError e) {
 		PyErr_SetString(PyExc_Exception,e.msg.c_str());
 		return NULL;
 	}
@@ -83,7 +83,7 @@ throw StopError("CTRL-C received");
 	try{
 		$action
 	}
-	catch (SerenError e) {
+	catch (GandalfError e) {
 		PyErr_SetString(PyExc_Exception,e.msg.c_str());
 		return NULL;
 	}
@@ -93,7 +93,7 @@ throw StopError("CTRL-C received");
 	try{
 		$action
 	}
-	catch (SerenError &e) {
+	catch (GandalfError &e) {
 		PyErr_SetString(PyExc_Exception,e.msg.c_str());
 		return NULL;
 	}
@@ -103,7 +103,7 @@ throw StopError("CTRL-C received");
 	try{
 		$action
 	}
-	catch (SerenError &e) {
+	catch (GandalfError &e) {
 		PyErr_SetString(PyExc_Exception,e.msg.c_str());
 		return NULL;
 	}
@@ -113,7 +113,7 @@ throw StopError("CTRL-C received");
 	try {
 		$action
 	}
-	catch (SerenError &e) {
+	catch (GandalfError &e) {
 		PyErr_SetString(PyExc_Exception,e.msg.c_str());
 		return NULL;
 	}
@@ -123,7 +123,7 @@ throw StopError("CTRL-C received");
 	try{
 		$action
 	}
-	catch (SerenError &e) {
+	catch (GandalfError &e) {
 		PyErr_SetString(PyExc_Exception,e.msg.c_str());
 		return NULL;		
 	}
@@ -133,7 +133,7 @@ throw StopError("CTRL-C received");
 	try{
 		$action
 	}
-	catch (SerenError &e) {
+	catch (GandalfError &e) {
 		PyErr_SetString(PyExc_Exception,e.msg.c_str());
 		return NULL;
 	}
