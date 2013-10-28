@@ -379,7 +379,7 @@ void Simulation<ndim>::BinaryAccretion(void)
   sphneib->BuildTree(sph,*simparams);
   
   // Search ghost particles
-  ghosts.SearchGhostParticles(simbox,sph);
+  ghosts->SearchGhostParticles(simbox,sph);
 
   sphneib->UpdateAllSphProperties(sph,nbody);
 
@@ -511,7 +511,7 @@ void Simulation<ndim>::ShockTube(void)
     sphneib->BuildTree(sph,*simparams);
     
     // Search ghost particles
-    ghosts.SearchGhostParticles(simbox,sph);
+    ghosts->SearchGhostParticles(simbox,sph);
     
     // Update neighbour tre
     sphneib->BuildTree(sph,*simparams);
@@ -522,7 +522,7 @@ void Simulation<ndim>::ShockTube(void)
     sphneib->BuildTree(sph,*simparams);
     sphneib->UpdateAllSphProperties(sph,nbody);
     
-    ghosts.CopySphDataToGhosts(sph);
+    ghosts->CopySphDataToGhosts(sph);
     
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph,nbody);
@@ -841,7 +841,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
   sphneib->BuildTree(sph,*simparams);
 
   // Search ghost particles
-  ghosts.SearchGhostParticles(simbox,sph);
+  ghosts->SearchGhostParticles(simbox,sph);
 
 
   // Update neighbour tre
@@ -853,7 +853,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
   sphneib->BuildTree(sph,*simparams);
   sphneib->UpdateAllSphProperties(sph,nbody);
 
-  ghosts.CopySphDataToGhosts(sph);
+  ghosts->CopySphDataToGhosts(sph);
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(sph,nbody);
@@ -983,7 +983,7 @@ void Simulation<ndim>::KHI(void)
   sphneib->BuildTree(sph,*simparams);
   
   // Search ghost particles
-  ghosts.SearchGhostParticles(simbox,sph);
+  ghosts->SearchGhostParticles(simbox,sph);
 
   sphneib->UpdateAllSphProperties(sph,nbody);
 
@@ -1409,7 +1409,7 @@ void Simulation<ndim>::SedovBlastWave(void)
   sphneib->BuildTree(sph,*simparams);
   
   // Search ghost particles
-  ghosts.SearchGhostParticles(simbox,sph);
+  ghosts->SearchGhostParticles(simbox,sph);
 
   sphneib->UpdateAllSphProperties(sph,nbody);
 

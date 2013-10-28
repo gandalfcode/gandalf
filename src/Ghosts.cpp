@@ -39,25 +39,25 @@ using namespace std;
 
 
 
-//=============================================================================
-//  Ghosts::Ghosts
-/// Empty constructor for ghost objects
-//=============================================================================
-template <int ndim>
-Ghosts<ndim>::Ghosts()
-{
-}
-
-
-
-//=============================================================================
-//  Ghosts::Ghosts
-/// Empty destructor for ghost objects
-//=============================================================================
-template <int ndim>
-Ghosts<ndim>::~Ghosts()
-{
-}
+////=============================================================================
+////  Ghosts::Ghosts
+///// Empty constructor for ghost objects
+////=============================================================================
+//template <int ndim>
+//Ghosts<ndim>::Ghosts()
+//{
+//}
+//
+//
+//
+////=============================================================================
+////  Ghosts::Ghosts
+///// Empty destructor for ghost objects
+////=============================================================================
+//template <int ndim>
+//Ghosts<ndim>::~Ghosts()
+//{
+//}
 
 
 
@@ -68,7 +68,7 @@ Ghosts<ndim>::~Ghosts()
 /// side of the periodic box.
 //=============================================================================
 template <int ndim>
-void Ghosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
+void PeriodicGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
 {
   int i;                            // Particle counter
   SphParticle<ndim> *part;          // Pointer to SPH particle data
@@ -110,7 +110,7 @@ void Ghosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
 /// Currently only searches to create periodic or mirror ghost particles.
 //=============================================================================
 template <int ndim>
-void Ghosts<ndim>::SearchGhostParticles
+void PeriodicGhosts<ndim>::SearchGhostParticles
 (DomainBox<ndim> simbox,            ///< Simulation box structure
  Sph<ndim> *sph)                    ///< Sph object pointer
 {
@@ -269,7 +269,7 @@ void Ghosts<ndim>::CreateGhostParticle
 /// Copy any newly calculated data from original SPH particles to ghosts.
 //=============================================================================
 template <int ndim>
-void Ghosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph)
+void PeriodicGhosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph)
 {
   int i;                            // Particle id
   int iorig;                        // Original (real) particle id
@@ -301,10 +301,56 @@ void Ghosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph)
   return;
 }
 
+template <int ndim>
+void NullGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
+{
+  return;
+}
 
+template <int ndim>
+void NullGhosts<ndim>::SearchGhostParticles
+(DomainBox<ndim> simbox,            ///< Simulation box structure
+ Sph<ndim> *sph)                    ///< Sph object pointer
+{
+ return;
+}
+
+
+template <int ndim>
+void NullGhosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph) {
+  return;
+}
+
+template <int ndim>
+void MPIGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
+{
+  return;
+}
+
+template <int ndim>
+void MPIGhosts<ndim>::SearchGhostParticles
+(DomainBox<ndim> simbox,            ///< Simulation box structure
+ Sph<ndim> *sph)                    ///< Sph object pointer
+{
+ return;
+}
+
+
+template <int ndim>
+void MPIGhosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph) {
+  return;
+}
 
 // Create template class instances of the main SphSimulation object for
 // each dimension used (1, 2 and 3)
-template class Ghosts<1>;
-template class Ghosts<2>;
-template class Ghosts<3>;
+template class NullGhosts<1>;
+template class NullGhosts<2>;
+template class NullGhosts<3>;
+template class PeriodicGhosts<1>;
+template class PeriodicGhosts<2>;
+template class PeriodicGhosts<3>;
+#ifdef MPI_PARALLEL
+template class MPIGhosts<1>;
+template class MPIGhosts<2>;
+template class MPIGhosts<3>;
+#endif

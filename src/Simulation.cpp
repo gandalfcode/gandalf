@@ -572,6 +572,19 @@ void Simulation<ndim>::ProcessParameters(void)
     simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
     simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
   }
+  if (IsAnyBoundarySpecial(simbox)) {
+    ghosts = new PeriodicGhosts<ndim>();
+#ifdef MPI_PARALLEL
+    ExceptionHandler::getIstance().raise("Error: periodic/mirror boundaries and MPI at the moment can't work together");
+#endif
+  }
+  else {
+#ifdef MPI_PARALLEL
+    ghosts = new MPIGhosts<ndim>(&mpicontrol);
+#else
+    ghosts = new NullGhosts<ndim>();
+#endif
+  }
 
 
   // Sink particles

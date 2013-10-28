@@ -93,7 +93,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->UpdateAllSphProperties(sph,nbody);
 
     // Search ghost particles
-    ghosts.SearchGhostParticles(simbox,sph);
+    ghosts->SearchGhostParticles(simbox,sph);
 
     level_step = 1;
 
@@ -105,7 +105,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->UpdateAllSphProperties(sph,nbody);
 
     // Search ghost particles
-    ghosts.SearchGhostParticles(simbox,sph);
+    ghosts->SearchGhostParticles(simbox,sph);
 
     // Update neighbour tre
     sphneib->BuildTree(sph,*simparams);
@@ -159,7 +159,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
       sph->sphintdata[i].nlast = 0;
     }
 
-    ghosts.CopySphDataToGhosts(sph);
+    ghosts->CopySphDataToGhosts(sph);
     sphneib->BuildTree(sph,*simparams);
 
     // Compute timesteps for all particles
@@ -191,7 +191,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
         sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
 
-    ghosts.CopySphDataToGhosts(sph);
+    ghosts->CopySphDataToGhosts(sph);
 
   }
 
@@ -246,7 +246,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
   nbody->AdvanceParticles(n,nbody->Nstar,nbody->nbodydata,timestep);
 
   // Check all boundary conditions
-  ghosts.CheckBoundaries(simbox,sph);
+  ghosts->CheckBoundaries(simbox,sph);
 
   //---------------------------------------------------------------------------
   if (sph->Nsph > 0) {
@@ -254,7 +254,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     // Reorder particles
 
     // Search ghost particles
-    ghosts.SearchGhostParticles(simbox,sph);
+    ghosts->SearchGhostParticles(simbox,sph);
 
     // Update neighbour tree
     sphneib->UpdateTree(sph,*simparams);
@@ -274,7 +274,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     sphneib->UpdateAllSphDerivatives(sph);
 
     // Copy properties from original particles to ghost particles
-    ghosts.CopySphDataToGhosts(sph);
+    ghosts->CopySphDataToGhosts(sph);
 
     // Zero accelerations (perhaps)
     for (i=0; i<sph->Ntot; i++) {
