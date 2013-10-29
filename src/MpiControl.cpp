@@ -128,8 +128,12 @@ void MpiControl<ndim>::InitialiseMpiProcess(void)
 /// should only be called for the root process.
 //=============================================================================
 template <int ndim>
-void MpiControl<ndim>::CreateLoadBalancingTree(void)
+void MpiControl<ndim>::CreateLoadBalancingTree
+(Sph<ndim> *sph,                    ///< Pointer to main SPH object
+ Nbody<ndim> *nbody,                ///< Pointer to main N-body object
+ Parameters &simparams)             ///< Simulation parameters
 {
+
   // Create MPI binary tree for organising domain decomposition
   mpitree = new BinaryTree<ndim>(16,0.1,0.0,"geometric","monopole",1,Nmpi);
 
@@ -139,14 +143,58 @@ void MpiControl<ndim>::CreateLoadBalancingTree(void)
   //---------------------------------------------------------------------------
   if (rank == 0) {
 
-	debug2("[MpiControl::CreateLoadBalancingTree]");
+    debug2("[MpiControl::CreateLoadBalancingTree]");
 
 
-	// Create binary tree from all SPH particles
+    // Create binary tree from all SPH particles
+    // Set number of tree members to total number of SPH particles (inc. ghosts)
+    mpitree->Nsph = sph->Nsph;
+    mpitree->Ntot = sph->Ntot;
+    mpitree->Ntotmax = max(mpitree->Ntot,mpitree->Ntotmax);
+    gtot = 0;
+
+    // For periodic simulations, set bounding box of root node to be the 
+    // periodic box size.  Otherwise, set to be the particle bounding box.
+    if (simbox.x_boundary_lhs == "open") mpibox.boxmin[0] = -big_number;
+    else mpibox.boxmin[0] = simbox.boxmin[0];
+    if (simbox.x_boundary_rhs == "open") mpibox.boxmax[0] = big_number;
+    else mpibox.boxmax[0] = simbox.boxmax[0];
+    if (ndim > 1) {
+      if (simbox.y_boundary_lhs == "open") mpibox.boxmin[1] = -big_number;
+      else mpibox.boxmin[1] = simbox.boxmin[1];
+      if (simbox.y_boundary_rhs == "open") mpibox.boxmax[1] = big_number;
+      else mpibox.boxmax[1] = simbox.boxmax[1];
+    }
+    if (ndim == 3) {
+      if (simbox.z_boundary_lhs == "open") mpibox.boxmin[2] = -big_number;
+      else mpibox.boxmin[2] = simbox.boxmin[2];
+      if (simbox.z_boundary_rhs == "open") mpibox.boxmax[2] = big_number;
+      else mpibox.boxmax[2] = simbox.boxmax[2];
+    }
+
+    // Compute the size of all tree-related arrays now we know number of points
+    mpitree->ComputeTreeSize();
+
+    // Allocate (or reallocate if needed) all tree memory
+    mpitree->AllocateTreeMemory();
+
+    // Create tree data structure including linked lists and cell pointers
+    mpitree->CreateTreeStructure();
+
+    // Find ordered list of ptcl positions ready for adding particles to tree
+    mpitree->OrderParticlesByCartCoord(sph->sphdata);
+
+    // Now add particles to tree depending on Cartesian coordinates
+    mpitree->LoadParticlesToTree();
+
+    // Create bounding boxes containing particles in each sub-tree
+    for (i=0; i<Nmpi; i++) {
+
+    }
 
 
     // Finally, broadcast all bounding boxes and domain information to all
-	// other nodes
+    // other nodes
 
   }
 

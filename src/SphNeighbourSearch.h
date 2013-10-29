@@ -229,10 +229,14 @@ class BinarySubTree
   FLOAT UpdateHmaxValues(SphParticle<ndim> *);
   void UpdateActiveParticleCounters(Sph<ndim> *);
   void BuildSubTree(Sph<ndim> *, Parameters &);
-  int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int, int *, FLOAT, SphParticle<ndim> *);
-  int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int, int *, SphParticle<ndim> *);
-  int ComputeGravityInteractionList(BinaryTreeCell<ndim> *, int, int, int, int &, int &, int &,
-                                    int *, int *, BinaryTreeCell<ndim> **, SphParticle<ndim> *);
+  int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int, 
+                                 int *, FLOAT, SphParticle<ndim> *);
+  int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int, 
+                           int *, SphParticle<ndim> *);
+  int ComputeGravityInteractionList(BinaryTreeCell<ndim> *, int, int, int, 
+                                    int &, int &, int &, int *, int *, 
+                                    BinaryTreeCell<ndim> **, 
+                                    SphParticle<ndim> *);
   int GlobalId(int local_id) {
 	if (local_id < 0) cout << "local_id : " << local_id << endl;
     assert(local_id>=0);
