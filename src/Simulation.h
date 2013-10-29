@@ -131,12 +131,15 @@ class SimulationBase
   int nbody_single_timestep;        ///< Flag if stars use same timestep
   int ndims;                        ///< Aux. dimensionality variable. 
                                     ///< Required for python routines.
+
   int noutputstep;                  ///< Output frequency
   int nresync;                      ///< Integer time for resynchronisation
   int Nsteps;                       ///< Total no. of steps in simulation
   int Nstepsmax;                    ///< Max. allowed no. of steps
   int Nlevels;                      ///< No. of timestep levels
+  int Nmpi;                         ///< No. of MPI processes
   int Noutsnap;                     ///< No. of output snapshots
+  int Nthreads;                     ///< Max no. of (OpenMP) threads
   int rank;                         ///< Process i.d. (for MPI simulations)
   int sink_particles;               ///< Switch on sink particles
   int sph_single_timestep;          ///< Flag if SPH ptcls use same step

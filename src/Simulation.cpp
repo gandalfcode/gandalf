@@ -86,25 +86,25 @@ SimulationBase* SimulationBase::SimulationFactory
   if (ndim == 1) {
     if (SimulationType == "sph")
       return new SphSimulation<1>(params);
-    else if (SimulationType=="godunov_sph")
+    else if (SimulationType == "godunov_sph")
       return new GodunovSphSimulation<1>(params);
-    else if (SimulationType=="nbody")
+    else if (SimulationType == "nbody")
       return new NbodySimulation<1>(params);
   }
   else if (ndim==2) {
     if (SimulationType == "sph")
       return new SphSimulation<2>(params);
-    else if (SimulationType=="godunov_sph")
+    else if (SimulationType == "godunov_sph")
       return new GodunovSphSimulation<2>(params);
-    else if (SimulationType=="nbody")
+    else if (SimulationType == "nbody")
       return new NbodySimulation<2>(params);
   }
   else if (ndim==3) {
     if (SimulationType == "sph")
       return new SphSimulation<3>(params);
-    else if (SimulationType=="godunov_sph")
+    else if (SimulationType == "godunov_sph")
       return new GodunovSphSimulation<3>(params);
-    else if (SimulationType=="nbody")
+    else if (SimulationType == "nbody")
       return new NbodySimulation<3>(params);
   }
   return NULL;
@@ -129,6 +129,15 @@ SimulationBase::SimulationBase
   t = 0.0;
   setup = false;
   ParametersProcessed = false;
+#if defined _OPENMP
+  if (omp_get_dynamic()) {
+    cout << "Warning: the dynamic adjustment of the number threads was on. For better load-balancing, we will disable it" << endl;
+  }
+  omp_set_dynamic(0);
+  Nthreads = omp_get_max_threads();
+#else
+  Nthreads = 1;
+#endif
 }
 
 
@@ -458,6 +467,7 @@ void Simulation<ndim>::ProcessParameters(void)
 #ifdef MPI_PARALLEL
   mpicontrol.InitialiseMpiProcess();
   rank = mpicontrol.rank;
+  Nmpi = mpicontrol.Nmpi;
 #endif
 
 
@@ -520,7 +530,7 @@ void Simulation<ndim>::ProcessParameters(void)
 				     floatparams["thetamaxsqd"],
 				     sph->kernp->kernrange,
 				     stringparams["gravity_mac"],
-				     stringparams["multipole"]);
+				     stringparams["multipole"],Nthreads,Nmpi);
     }
     else {
       string message = "Unrecognised parameter : neib_search = " 

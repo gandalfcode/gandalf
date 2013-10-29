@@ -38,11 +38,13 @@ int main(int argc, char** argv)
   Parameters* params = new Parameters();             // Parameters object
   string paramfile;                                  // Name of parameters file
   ExceptionHandler::makeExceptionHandler(cplusplus); // Exception handler
+  int rank;                                          // Local copy of MPI rank
 
 
   // Initialise all MPI processes (if activated in Makefile)
 #ifdef MPI_PARALLEL
   MPI_Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   //Tell exception handler to call MPI_Abort on error
   ExceptionHandler::set_mpi(1);
 #ifdef _OPENMP
@@ -72,7 +74,7 @@ int main(int argc, char** argv)
   sim = SimulationBase::SimulationFactory(params->intparams["ndim"], params);
 
   // Print out splash screen
-  sim->SplashScreen();
+  if (rank == 0) sim->SplashScreen();
 
   // Perform all set-up procedures
   sim->SetupSimulation();
