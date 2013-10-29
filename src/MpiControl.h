@@ -30,9 +30,11 @@
 #include <string>
 #include "Precision.h"
 #include "MpiNode.h"
+#include "Sph.h";
 #include "Nbody.h"
 #include "SphNeighbourSearch.h"
 #include "SphParticle.h"
+#include "DomainBox.h"
 #include "mpi.h"
 using namespace std;
 
@@ -62,7 +64,7 @@ class MpiControl
   void DeallocateMemory(void);
 
   void InitialiseMpiProcess(void);
-  void CreateLoadBalancingTree(void);
+  void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>);
   void LoadBalancing(void);
   void TransferParticlesToNode(void);
 
@@ -75,6 +77,7 @@ class MpiControl
   int Nloadbalance;                 ///< No. of steps between load-balancing
 
   char hostname[MPI_MAX_PROCESSOR_NAME];
+  DomainBox<ndim> mpibox;           ///< ..
 
   BinaryTree<ndim> *mpitree;        ///< Main MPI load balancing tree
   MpiNode<ndim> *mpinode;           ///< Data for all MPI nodes

@@ -49,6 +49,16 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   debug2("[SphSimulation::PostInitialConditionsSetup]");
 
+
+  // Perform initial MPI decomposition
+  //---------------------------------------------------------------------------
+#ifdef MPI_PARALLEL
+  if (rank == 0) mpicontrol.CreateInitialDomainDecomposition(sph,nbody,simparams,simbox);
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Abort(MPI_COMM_WORLD,0);
+#endif
+
+
   // Set time variables here (for now)
   Noutsnap = 0;
   nresync = 0;

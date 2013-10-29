@@ -324,6 +324,10 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::dt_max;
   using Simulation<ndim>::sph_single_timestep;
   using Simulation<ndim>::sink_particles;
+  using Simulation<ndim>::rank;
+#ifdef MPI_PARALLEL
+  using Simulation<ndim>::mpicontrol;
+#endif
 
 public:
 
