@@ -261,7 +261,7 @@ class Simulation : public SimulationBase
   Diagnostics<ndim> diag0;              ///< Initial diagnostic state
   Diagnostics<ndim> diag;               ///< Current diagnostic state
   EnergyEquation<ndim> *uint;           ///< Energy equation pointer
-  Ghosts<ndim> ghosts;                  ///< Ghost particle object
+  Ghosts<ndim>* ghosts;                  ///< Ghost particle object
   Nbody<ndim> *nbody;                   ///< N-body algorithm pointer
   Nbody<ndim> *subsystem;               ///< N-body object for sub-systems
   NbodySystemTree<ndim> nbodytree;      ///< N-body tree to create sub-systems

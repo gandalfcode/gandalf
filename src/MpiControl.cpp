@@ -28,7 +28,6 @@
 #include <cstdlib>
 #include <iostream>
 #include <math.h>
-#include "mpi.h"
 #include "Constants.h"
 #include "Precision.h"
 #include "SphKernel.h"
@@ -48,6 +47,38 @@ template <int ndim>
 MpiControl<ndim>::MpiControl()
 {
   allocated_mpi = false;
+
+  MPI_Comm_size(MPI_COMM_WORLD,&Nmpi);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  int len;
+  MPI_Get_processor_name(hostname, &len);
+
+  if (this->rank == 0)
+    printf("MPI working.  Nmpi : %d   rank : %d   hostname : %s\n",rank,Nmpi,hostname);
+  else
+    printf("%d is running too!!\n",this->rank);
+
+  //Create and commit the particle datatype
+  particle_type = SphParticle<ndim>::CreateMpiDataType();
+  MPI_Type_commit(&particle_type);
+
+#ifdef VERIFY_ALL
+  if (Nmpi > 1) {
+    if (rank ==0) {
+      SphParticle<ndim> particle;
+      particle.gradrho[ndim-1]=-1;
+      MPI_Send(&particle,1,particle_type,1,0,MPI_COMM_WORLD);
+    }
+    else if (rank ==1) {
+      SphParticle<ndim> particle;
+      MPI_Status status;
+      MPI_Recv(&particle,1,particle_type,0,0,MPI_COMM_WORLD,&status);
+      if (particle.gradrho[ndim-1]!=-1)
+        cerr << "Error in transmitting particles: the last field has not been received correctly!" << endl;
+    }
+  }
+#endif
+
 }
 
 
@@ -59,6 +90,7 @@ MpiControl<ndim>::MpiControl()
 template <int ndim>
 MpiControl<ndim>::~MpiControl()
 {
+  MPI_Type_free(&particle_type);
 }
 
 
@@ -94,20 +126,9 @@ void MpiControl<ndim>::DeallocateMemory(void)
 template <int ndim>
 void MpiControl<ndim>::InitialiseMpiProcess(void)
 {
-  int len;
   debug2("[MpiControl::InitialiseMpiProcess]");
 
-  MPI_Comm_size(MPI_COMM_WORLD,&Nmpi);
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Get_processor_name(hostname, &len);
-  MPI_Barrier(MPI_COMM_WORLD);
 
-  if (this->rank == 0)
-    printf("MPI working.  Nmpi : %d   rank : %d   hostname : %s\n",rank,Nmpi,hostname);
-  else
-    printf("%d is running too!!\n",this->rank);
-
-  //MPI_Finalize();
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Abort(MPI_COMM_WORLD,0);
 
