@@ -95,6 +95,9 @@ void Sph<ndim>::AllocateMemory(int N)
     }
     allocated = true;
   }
+#if defined _OPENMP
+     InitParticleLocks();
+#endif
 
   return;
 }
@@ -115,12 +118,46 @@ void Sph<ndim>::DeallocateMemory(void)
     delete[] sphdata;
     delete[] rsph;
     delete[] iorder;
+#if defined _OPENMP
+    DestroyParticleLocks();
+#endif
   }
   allocated = false;
 
   return;
 }
 
+
+#if defined _OPENMP
+
+//=============================================================================
+//  Sph::InitParticleLocks
+/// Allocate storage for the locks and initialise them
+//=============================================================================
+template <int ndim>
+void Sph<ndim>::InitParticleLocks()
+{
+  locks = new omp_lock_t[Nsphmax];
+  for (int i=0; i<Nsphmax;i++) {
+    omp_init_lock(&locks[i]);
+  }
+}
+
+//=============================================================================
+//  Sph::DestroyParticleLocks
+/// Destroy the locks and deallocate storage for them
+//=============================================================================
+template <int ndim>
+void Sph<ndim>::DestroyParticleLocks()
+{
+  for (int i=0; i<Nsphmax; i++) {
+    omp_destroy_lock(&locks[i]);
+  }
+  delete[] locks;
+}
+
+
+#endif
 
 
 //=============================================================================

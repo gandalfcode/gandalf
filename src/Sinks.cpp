@@ -148,7 +148,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
       // If SPH particle neighbours a nearby sink, skip to next particle
       for (s=0; s<Nsink; s++) {
         for (k=0; k<ndim; k++) 
-	  dr[k] = sph->sphdata[i].r[k] - sink[s].star->r[k];
+          dr[k] = sph->sphdata[i].r[k] - sink[s].star->r[k];
         drsqd = DotProduct(dr,dr,ndim);
         if (drsqd < pow(sink_radius*sph->sphdata[i].h + sink[s].radius,2))
           sink_flag = false;

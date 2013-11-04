@@ -30,12 +30,14 @@
 #include <string>
 #include "Precision.h"
 #include "MpiNode.h"
-#include "Sph.h";
+#include "Sph.h"
 #include "Nbody.h"
 #include "SphNeighbourSearch.h"
 #include "SphParticle.h"
 #include "DomainBox.h"
+#if defined MPI_PARALLEL
 #include "mpi.h"
+#endif
 using namespace std;
 
 

@@ -52,8 +52,9 @@ BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                              string multipole_aux, int Nthreads, int Nmpi)
 {
   Nlocalsubtrees = Nthreads;
-  Nmpisubtrees = Nmpi - 1;
+  Nmpisubtrees = max(Nmpi - 1,0);
   Nsubtreemax = Nlocalsubtrees + Nmpisubtrees;
+  Nsubtree = Nsubtreemax;
   Ntot = 0;
   Ntotmax = 0;
   Ntotmaxold = 0;
@@ -76,6 +77,8 @@ BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
     cout << "Warning: the number of OpenMP threads is not a power of two. This is sub-optimal for the binary tree parallelization" << endl;
   }
 #endif
+  assert(Nlocalsubtrees > 0);
+  assert(Nsubtreemax > 0);
   }
 
 
@@ -450,6 +453,7 @@ void BinaryTree<ndim>::LoadParticlesToTree
   int cc;                          // Secondary cell counter
   int g;                           // ..
   int k;                           // Dimensionality counter
+  int kk;
   int i;                           // Particle counter
   int iptcl;                       // Particle id
   int j;                           // Dummy particle id
@@ -511,10 +515,10 @@ void BinaryTree<ndim>::LoadParticlesToTree
         ccap[pc[j]] += pw[j];
         if (tree[pc[j]].ifirst == -1) {
           tree[pc[j]].ifirst = j;
-          for (k=0; k<ndim; k++) tree[cc+1].bbmin[k] = tree[cc].bbmin[k];
-          for (k=0; k<ndim; k++) tree[cc+1].bbmax[k] = tree[cc].bbmax[k];
-          for (k=0; k<ndim; k++) tree[tree[cc].c2].bbmin[k] = tree[cc].bbmin[k];
-          for (k=0; k<ndim; k++) tree[tree[cc].c2].bbmax[k] = tree[cc].bbmax[k];
+          for (kk=0; kk<ndim; kk++) tree[cc+1].bbmin[kk] = tree[cc].bbmin[kk];
+          for (kk=0; kk<ndim; kk++) tree[cc+1].bbmax[kk] = tree[cc].bbmax[kk];
+          for (kk=0; kk<ndim; kk++) tree[tree[cc].c2].bbmin[kk] = tree[cc].bbmin[kk];
+          for (kk=0; kk<ndim; kk++) tree[tree[cc].c2].bbmax[kk] = tree[cc].bbmax[kk];
           tree[cc+1].bbmax[k] = 0.5*(r[tree[cc+1].ifirst] + r[j]);
           tree[tree[cc].c2].bbmin[k] = 0.5*(r[tree[cc+1].ifirst] + r[j]);
         }
@@ -1003,7 +1007,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
         // Make local copies of important neib information (mass and position)
         for (jj=0; jj<Nneib; jj++) {
           j = neiblist[jj];
-	  assert(j >= 0 && j < sph->Ntot);
+          assert(j >= 0 && j < sph->Ntot);
           gpot[jj] = data[j].gpot;
           m[jj] = data[j].m;
           mu[jj] = data[j].m*data[j].u;
@@ -1014,7 +1018,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
         //---------------------------------------------------------------------
         for (j=0; j<Nactive; j++) {
           i = activelist[j];
-	  assert(i >= 0 && i < sph->Nsph);
+          assert(i >= 0 && i < sph->Nsph);
           for (k=0; k<ndim; k++) rp[k] = data[i].r[k];
 
           // Set gather range as current h multiplied by some tolerance factor
@@ -1128,8 +1132,8 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
   BinarySubTree<ndim> **treelist;  // ..
   BinaryTreeCell<ndim> *cell;      // Pointer to binary tree cell
   BinaryTreeCell<ndim> **celllist; // List of binary tree pointers
+  SphParticle<ndim> *activepart;   // Local copy of active particles
   SphParticle<ndim> *neibpart;     // Local copy of neighbouring ptcls
-  SphParticle<ndim> parti;         // Local copy of SPH particle
   SphParticle<ndim> *data = sph->sphdata;   // Pointer to SPH particle data
 
   debug2("[BinaryTree::UpdateAllSphHydroForces]");
@@ -1145,11 +1149,13 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
   //===========================================================================
 #pragma omp parallel default(none) private(activelist,cc,cell,dr,draux,drmag)\
   private(drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k)\
-  private(Nactive,neiblist,neibpart,Ninteract,Nneib,Nneibmax,parti,rp)\
+  private(Nactive,neiblist,neibpart,Ninteract,Nneib,Nneibmax,rp)\
+  private(activepart)\
   shared(celllist,cactive,sph,data,treelist)
   {
     Nneibmax = 2*sph->Ngather;
     activelist = new int[Nleafmax];
+    activepart = new SphParticle<ndim>[Nleafmax];
     neiblist = new int[Nneibmax];
     interactlist = new int[Nneibmax];
     dr = new FLOAT[Nneibmax*ndim];
@@ -1166,11 +1172,21 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
       // Find list of active particles in current cell
       Nactive = ComputeActiveParticleList(cell,treelist[cc],sph,activelist);
 
+      // Make local copies of active particles
+      for (j=0; j<Nactive; j++) {
+        assert(activelist[j] >= 0 && activelist[j] < sph->Nsph);
+        activepart[j] = data[activelist[j]];
+        activepart[j].div_v = (FLOAT) 0.0;
+        activepart[j].dudt = (FLOAT) 0.0;
+        activepart[j].levelneib = 0;
+        for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
+      }
+
       // Compute neighbour list for cell depending on physics options
       Nneib = ComputeNeighbourList(cell,Nneibmax,neiblist,sph->sphdata);
 
       // If there are too many neighbours, reallocate the arrays and
-      // recompute the neighbour lists.
+      // recompute the neighbour list.
       while (Nneib == -1) {
         delete[] neibpart;
         delete[] invdrmag;
@@ -1194,6 +1210,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
         neibpart[j] = data[neiblist[j]];
         neibpart[j].div_v = (FLOAT) 0.0;
         neibpart[j].dudt = (FLOAT) 0.0;
+        neibpart[j].levelneib=0;
         for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
       }
 
@@ -1201,14 +1218,10 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
       //-----------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-        assert(i >= 0 && i < sph->Nsph);
-        parti = data[i];
-        parti.div_v = (FLOAT) 0.0;
-        parti.dudt = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) parti.a[k] = (FLOAT) 0.0;
 
-        for (k=0; k<ndim; k++) rp[k] = parti.r[k]; //data[i].r[k];
-        hrangesqdi = sph->kernfacsqd*sph->kernp->kernrangesqd*parti.h*parti.h;
+        for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k]; //data[i].r[k];
+        hrangesqdi = sph->kernfacsqd*sph->kernp->kernrangesqd*
+          activepart[j].h*activepart[j].h;
         Ninteract = 0;
 
         // Validate that gather neighbour list is correct
@@ -1246,33 +1259,47 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 
         // Compute all gather neighbour contributions to hydro forces
         sph->ComputeSphHydroForces(i,Ninteract,interactlist,
-				   drmag,invdrmag,dr,parti,neibpart);
-
-        // Add all summation variables to main arrays
-        for (k=0; k<ndim; k++) {
-#pragma omp atomic
-          data[i].a[k] += parti.a[k];
-        }
-#pragma omp atomic
-        data[i].dudt += parti.dudt;
-#pragma omp atomic
-        data[i].div_v += parti.div_v;
+				   drmag,invdrmag,dr,activepart[j],neibpart);
 
       }
       //-----------------------------------------------------------------------
 
-      // Now add all active neighbour contributions to the main arrays
+
+      // Add all active particles contributions to main array
+      for (j=0; j<Nactive; j++) {
+    	i = activelist[j];
+#if defined _OPENMP
+    	omp_lock_t& lock = sph->GetParticleILock(i);
+    	omp_set_lock(&lock);
+#endif
+        for (k=0; k<ndim; k++) {
+          data[i].a[k] += activepart[j].a[k];
+        }
+        data[i].dudt += activepart[j].dudt;
+        data[i].div_v += activepart[j].div_v;
+        data[i].levelneib = max(data[i].levelneib,activepart[j].levelneib);
+#if defined _OPENMP
+        omp_unset_lock(&lock);
+#endif
+      }
+
+      // Now add all active neighbour contributions to main array
       for (jj=0; jj<Nneib; jj++) {
         if (neibpart[jj].active) {
           j = neiblist[jj];
+#if defined _OPENMP
+        omp_lock_t& lock = sph->GetParticleILock(j);
+        omp_set_lock(&lock);
+#endif
           for (k=0; k<ndim; k++) {
-#pragma omp atomic
             data[j].a[k] += neibpart[jj].a[k];
           }
-#pragma omp atomic
           data[j].dudt += neibpart[jj].dudt;
-#pragma omp atomic
           data[j].div_v += neibpart[jj].div_v;
+          data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
+#if defined _OPENMP
+        omp_unset_lock(&lock);
+#endif
         }
       }
 
@@ -1286,6 +1313,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
     delete[] dr;
     delete[] interactlist;
     delete[] neiblist;
+    delete[] activepart;
     delete[] activelist;
 
   }
@@ -1343,12 +1371,12 @@ void BinaryTree<ndim>::UpdateAllSphForces
   //FLOAT drsqd;                      // Distance squared
   FLOAT *agrav;                     // Local copy of gravitational accel.
   FLOAT *gpot;                      // ..
-  BinarySubTree<ndim> **treelist;  // ..
+  BinarySubTree<ndim> **treelist;   // ..
   BinaryTreeCell<ndim> *cell;       // Pointer to binary tree cell
   BinaryTreeCell<ndim> **celllist;  // ..
   BinaryTreeCell<ndim> **gravcelllist; // ..
   SphParticle<ndim> *neibpart;      // Local copy of neighbouring ptcls
-  SphParticle<ndim> parti;          // Local copy of SPH particle
+  SphParticle<ndim> *activepart;    // Local copy of SPH particle
   SphParticle<ndim> *data = sph->sphdata;   // Pointer to SPH particle data
 
   debug2("[BinaryTree::UpdateAllSphForces]");
@@ -1363,8 +1391,8 @@ void BinaryTree<ndim>::UpdateAllSphForces
   // Set-up all OMP threads
   //===========================================================================
 #pragma omp parallel default(none) private(activelist,agrav,cc,cell)\
-  private(gpot,i,interactlist,j,jj)\
-  private(k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,parti,directlist)\
+  private(gpot,i,interactlist,j,jj,activepart)\
+  private(k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,directlist)\
   private(gravcelllist,Ngravcell,Ndirect,Nneibmax,Ndirectmax,Ngravcellmax) \
   shared(celllist,cactive,sph,data,treelist)
   {
@@ -1374,6 +1402,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
     agrav = new FLOAT[ndim*sph->Nsph];
     gpot = new FLOAT[ndim*sph->Nsph];
     activelist = new int[Nleafmax];
+    activepart = new SphParticle<ndim>[Nleafmax];
     neiblist = new int[Nneibmax];
     interactlist = new int[Nneibmax];
     directlist = new int[Ndirectmax];
@@ -1393,6 +1422,17 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
       // Find list of active particles in current cell
       Nactive = ComputeActiveParticleList(cell,treelist[cc],sph,activelist);
+
+      // Make local copies of active particles
+      for (j=0; j<Nactive; j++) {
+        assert(activelist[j] >= 0 && activelist[j] < sph->Nsph);
+        activepart[j] = data[activelist[j]];
+        activepart[j].div_v = (FLOAT) 0.0;
+        activepart[j].dudt = (FLOAT) 0.0;
+        activepart[j].gpot = activepart[j].m*activepart[j].invh*sph->kernp->wpot(0.0);
+        for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) activepart[j].agrav[k] = (FLOAT) 0.0;
+      }
 
       // Compute neighbour list for cell depending on physics options
       okflag = ComputeGravityInteractionList(cell,Nneibmax,Ndirectmax,
@@ -1425,7 +1465,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
       // Make local copies of all potential neighbours
       for (j=0; j<Nneib; j++) {
-	assert(neiblist[j] >= 0 && neiblist[j] < sph->Ntot);
+        assert(neiblist[j] >= 0 && neiblist[j] < sph->Ntot);
         neibpart[j] = data[neiblist[j]];
         neibpart[j].div_v = (FLOAT) 0.0;
         neibpart[j].dudt = (FLOAT) 0.0;
@@ -1438,16 +1478,6 @@ void BinaryTree<ndim>::UpdateAllSphForces
       //-----------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-	assert(i >= 0 && i < sph->Ntot);
-
-        // Make local copy of particle and zero all summation data, except
-        // for potential where we set the self-gravitational contribution
-        parti = data[i];
-        for (k=0; k<ndim; k++) parti.a[k] = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) parti.agrav[k] = (FLOAT) 0.0;
-        parti.div_v = (FLOAT) 0.0;
-        parti.dudt = (FLOAT) 0.0;
-        parti.gpot = parti.m*parti.invh*sph->kernp->wpot(0.0);
 
         // Determine interaction list (to ensure we don't compute pair-wise
         // forces twice)
@@ -1460,51 +1490,61 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
         // Compute forces between SPH neighbours (hydro and gravity)
         sph->ComputeSphHydroGravForces(i,Ninteract,interactlist,
-                                       parti,neibpart);
+                                       activepart[j],neibpart);
 
         // Compute direct gravity forces between distant particles
         sph->ComputeDirectGravForces(i,Ndirect,directlist,
-                                     agrav,gpot,parti,data);
+                                     agrav,gpot,activepart[j],data);
 
         // Compute gravitational force dues to distant cells
         if (multipole == "monopole")
-          ComputeCellMonopoleForces(i,Ngravcell,gravcelllist,parti);
+          ComputeCellMonopoleForces(i,Ngravcell,gravcelllist,activepart[j]);
         else if (multipole == "quadrupole")
-          ComputeCellQuadrupoleForces(i,Ngravcell,gravcelllist,parti);
-
-        // Add summed variables (acceleration, etc..) to main arrays
-        for (k=0; k<ndim; k++) {
-#pragma omp atomic
-          data[i].a[k] += parti.a[k];
-#pragma omp atomic
-          data[i].agrav[k] += parti.agrav[k];
-        }
-#pragma omp atomic
-        data[i].gpot += parti.gpot;
-#pragma omp atomic
-        data[i].dudt += parti.dudt;
-#pragma omp atomic
-        data[i].div_v += parti.div_v;
+          ComputeCellQuadrupoleForces(i,Ngravcell,gravcelllist,activepart[j]);
 
       }
       //-----------------------------------------------------------------------
+
+
+      // Add all active particles contributions to main array
+      for (j=0; j<Nactive; j++) {
+    	i = activelist[j];
+#if defined _OPENMP
+        omp_lock_t& lock = sph->GetParticleILock(i);
+        omp_set_lock(&lock);
+#endif
+        for (k=0; k<ndim; k++) {
+          data[i].a[k] += activepart[j].a[k];
+          data[i].agrav[k] += activepart[j].agrav[k];
+        }
+        data[i].gpot += activepart[j].gpot;
+        data[i].dudt += activepart[j].dudt;
+        data[i].div_v += activepart[j].div_v;
+        data[i].levelneib = max(data[i].levelneib,activepart[j].levelneib);
+#if defined _OPENMP
+        omp_unset_lock(&lock);
+#endif
+      }
 
       // Now add all active neighbour contributions to the main arrays
       for (jj=0; jj<Nneib; jj++) {
         if (neibpart[jj].active) {
           j = neiblist[jj];
+#if defined _OPENMP
+        omp_lock_t& lock = sph->GetParticleILock(j);
+        omp_set_lock(&lock);
+#endif
           for (k=0; k<ndim; k++) {
-#pragma omp atomic
             data[j].a[k] += neibpart[jj].a[k];
-#pragma omp atomic
             data[j].agrav[k] += neibpart[jj].agrav[k];
           }
-#pragma omp atomic
-          data[i].gpot += neibpart[jj].gpot;
-#pragma omp atomic
+          data[j].gpot += neibpart[jj].gpot;
           data[j].dudt += neibpart[jj].dudt;
-#pragma omp atomic
           data[j].div_v += neibpart[jj].div_v;
+          data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
+#if defined _OPENMP
+        omp_unset_lock(&lock);
+#endif
         }
       }
 
@@ -1531,6 +1571,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
     delete[] directlist;
     delete[] interactlist;
     delete[] neiblist;
+    delete[] activepart;
     delete[] activelist;
     delete[] gpot;
     delete[] agrav;

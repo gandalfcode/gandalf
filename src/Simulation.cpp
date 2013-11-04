@@ -135,9 +135,11 @@ SimulationBase::SimulationBase
   }
   omp_set_dynamic(0);
   Nthreads = omp_get_max_threads();
+  assert(Nthreads > 0);
 #else
   Nthreads = 1;
 #endif
+  Nmpi = 1;
 }
 
 

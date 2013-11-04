@@ -662,6 +662,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       level_max_sph = max(level_max_sph,sph->sphdata[i].level);
       level_min_sph = min(level_min_sph,sph->sphdata[i].level);
       level_max = max(level_max,sph->sphdata[i].level);
+      dt_min_sph = min(dt_min_sph,sph->sphdata[i].dt);
     }
     //-------------------------------------------------------------------------
       
@@ -699,6 +700,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       // Find maximum level of all N-body particles
       level_max_nbody = max(level_max_nbody,nbody->nbodydata[i]->level);
       level_max = max(level_max,nbody->nbodydata[i]->level);
+      dt_min_nbody = min(dt_min_nbody,nbody->nbodydata[i]->dt);
     }
     //-------------------------------------------------------------------------
       
@@ -776,6 +778,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   ninlevel = new int[level_max+1];
 
   cout << "Checking timesteps : " << level_max << "   " << level_max_sph << "    " << level_max_nbody << endl;
+  cout << "dt_min_sph : " << dt_min_sph << "    dt_min_nbody : " << dt_min_nbody << "    timestep : " << timestep << endl;
 
   for (int l=0; l<level_max+1; l++) ninlevel[l] = 0;
   for (i=0; i<sph->Nsph; i++) ninlevel[sph->sphdata[i].level]++;
