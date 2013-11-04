@@ -38,7 +38,9 @@
 #include "EOS.h"
 #include "RiemannSolver.h"
 using namespace std;
-
+#if defined _OPENMP
+#include "omp.h"
+#endif
 
 enum aviscenum{noneav, mon97, mon97td};
 enum acondenum{noneac, wadsley2008, price2008};
@@ -58,6 +60,13 @@ enum acondenum{noneac, wadsley2008, price2008};
 template <int ndim>
 class Sph
 {
+private:
+
+#if defined _OPENMP
+  void InitParticleLocks();
+  void DestroyParticleLocks();
+#endif
+
  public:
 
   const aviscenum avisc;
@@ -107,9 +116,13 @@ class Sph
   void InitialSmoothingLengthGuess(void);
 
 
-  // Functions needed memory
+  // Functions needed to hide some implementation details
   //---------------------------------------------------------------------------
   SphParticle<ndim>* GetParticleIPointer(int i) {return &sphdata[i];};
+#if defined _OPENMP
+  omp_lock_t& GetParticleILock(int i) {return locks[i];};
+  omp_lock_t* locks;
+#endif
 
 
   // SPH particle counters and main particle data array

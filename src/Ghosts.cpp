@@ -321,6 +321,7 @@ void NullGhosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph) {
   return;
 }
 
+#if defined MPI_PARALLEL
 template <int ndim>
 void MPIGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
 {
@@ -340,6 +341,9 @@ template <int ndim>
 void MPIGhosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph) {
   return;
 }
+#endif
+
+
 
 // Create template class instances of the main SphSimulation object for
 // each dimension used (1, 2 and 3)

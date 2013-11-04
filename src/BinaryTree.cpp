@@ -453,6 +453,7 @@ void BinaryTree<ndim>::LoadParticlesToTree
   int cc;                          // Secondary cell counter
   int g;                           // ..
   int k;                           // Dimensionality counter
+  int kk;
   int i;                           // Particle counter
   int iptcl;                       // Particle id
   int j;                           // Dummy particle id
@@ -514,10 +515,10 @@ void BinaryTree<ndim>::LoadParticlesToTree
         ccap[pc[j]] += pw[j];
         if (tree[pc[j]].ifirst == -1) {
           tree[pc[j]].ifirst = j;
-          for (k=0; k<ndim; k++) tree[cc+1].bbmin[k] = tree[cc].bbmin[k];
-          for (k=0; k<ndim; k++) tree[cc+1].bbmax[k] = tree[cc].bbmax[k];
-          for (k=0; k<ndim; k++) tree[tree[cc].c2].bbmin[k] = tree[cc].bbmin[k];
-          for (k=0; k<ndim; k++) tree[tree[cc].c2].bbmax[k] = tree[cc].bbmax[k];
+          for (kk=0; kk<ndim; kk++) tree[cc+1].bbmin[kk] = tree[cc].bbmin[kk];
+          for (kk=0; kk<ndim; kk++) tree[cc+1].bbmax[kk] = tree[cc].bbmax[kk];
+          for (kk=0; kk<ndim; kk++) tree[tree[cc].c2].bbmin[kk] = tree[cc].bbmin[kk];
+          for (kk=0; kk<ndim; kk++) tree[tree[cc].c2].bbmax[kk] = tree[cc].bbmax[kk];
           tree[cc+1].bbmax[k] = 0.5*(r[tree[cc+1].ifirst] + r[j]);
           tree[tree[cc].c2].bbmin[k] = 0.5*(r[tree[cc+1].ifirst] + r[j]);
         }
@@ -1148,7 +1149,8 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
   //===========================================================================
 #pragma omp parallel default(none) private(activelist,cc,cell,dr,draux,drmag)\
   private(drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k)\
-  private(Nactive,neiblist,neibpart,Ninteract,Nneib,Nneibmax,parti,rp)\
+  private(Nactive,neiblist,neibpart,Ninteract,Nneib,Nneibmax,rp)\
+  private(activepart)\
   shared(celllist,cactive,sph,data,treelist)
   {
     Nneibmax = 2*sph->Ngather;
@@ -1176,6 +1178,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
         activepart[j] = data[activelist[j]];
         activepart[j].div_v = (FLOAT) 0.0;
         activepart[j].dudt = (FLOAT) 0.0;
+        activepart[j].levelneib = 0;
         for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
       }
 
@@ -1207,6 +1210,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
         neibpart[j] = data[neiblist[j]];
         neibpart[j].div_v = (FLOAT) 0.0;
         neibpart[j].dudt = (FLOAT) 0.0;
+        neibpart[j].levelneib=0;
         for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
       }
 
@@ -1264,28 +1268,38 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
     	i = activelist[j];
+#if defined _OPENMP
+    	omp_lock_t& lock = sph->GetParticleILock(i);
+    	omp_set_lock(&lock);
+#endif
         for (k=0; k<ndim; k++) {
-#pragma omp atomic
           data[i].a[k] += activepart[j].a[k];
         }
-#pragma omp atomic
         data[i].dudt += activepart[j].dudt;
-#pragma omp atomic
         data[i].div_v += activepart[j].div_v;
+        data[i].levelneib = max(data[i].levelneib,activepart[j].levelneib);
+#if defined _OPENMP
+        omp_unset_lock(&lock);
+#endif
       }
 
       // Now add all active neighbour contributions to main array
       for (jj=0; jj<Nneib; jj++) {
         if (neibpart[jj].active) {
           j = neiblist[jj];
+#if defined _OPENMP
+        omp_lock_t& lock = sph->GetParticleILock(j);
+        omp_set_lock(&lock);
+#endif
           for (k=0; k<ndim; k++) {
-#pragma omp atomic
             data[j].a[k] += neibpart[jj].a[k];
           }
-#pragma omp atomic
           data[j].dudt += neibpart[jj].dudt;
-#pragma omp atomic
           data[j].div_v += neibpart[jj].div_v;
+          data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
+#if defined _OPENMP
+        omp_unset_lock(&lock);
+#endif
         }
       }
 
@@ -1377,8 +1391,8 @@ void BinaryTree<ndim>::UpdateAllSphForces
   // Set-up all OMP threads
   //===========================================================================
 #pragma omp parallel default(none) private(activelist,agrav,cc,cell)\
-  private(gpot,i,interactlist,j,jj)\
-  private(k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,parti,directlist)\
+  private(gpot,i,interactlist,j,jj,activepart)\
+  private(k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,directlist)\
   private(gravcelllist,Ngravcell,Ndirect,Nneibmax,Ndirectmax,Ngravcellmax) \
   shared(celllist,cactive,sph,data,treelist)
   {
@@ -1495,36 +1509,42 @@ void BinaryTree<ndim>::UpdateAllSphForces
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
     	i = activelist[j];
+#if defined _OPENMP
+        omp_lock_t& lock = sph->GetParticleILock(i);
+        omp_set_lock(&lock);
+#endif
         for (k=0; k<ndim; k++) {
-#pragma omp atomic
           data[i].a[k] += activepart[j].a[k];
-#pragma omp atomic
           data[i].agrav[k] += activepart[j].agrav[k];
         }
-#pragma omp atomic
         data[i].gpot += activepart[j].gpot;
-#pragma omp atomic
         data[i].dudt += activepart[j].dudt;
-#pragma omp atomic
         data[i].div_v += activepart[j].div_v;
+        data[i].levelneib = max(data[i].levelneib,activepart[j].levelneib);
+#if defined _OPENMP
+        omp_unset_lock(&lock);
+#endif
       }
 
       // Now add all active neighbour contributions to the main arrays
       for (jj=0; jj<Nneib; jj++) {
         if (neibpart[jj].active) {
           j = neiblist[jj];
+#if defined _OPENMP
+        omp_lock_t& lock = sph->GetParticleILock(j);
+        omp_set_lock(&lock);
+#endif
           for (k=0; k<ndim; k++) {
-#pragma omp atomic
             data[j].a[k] += neibpart[jj].a[k];
-#pragma omp atomic
             data[j].agrav[k] += neibpart[jj].agrav[k];
           }
-#pragma omp atomic
-          data[i].gpot += neibpart[jj].gpot;
-#pragma omp atomic
+          data[j].gpot += neibpart[jj].gpot;
           data[j].dudt += neibpart[jj].dudt;
-#pragma omp atomic
           data[j].div_v += neibpart[jj].div_v;
+          data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
+#if defined _OPENMP
+        omp_unset_lock(&lock);
+#endif
         }
       }
 
