@@ -1494,7 +1494,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
-    	i = activelist[jj];
+    	i = activelist[j];
         for (k=0; k<ndim; k++) {
 #pragma omp atomic
           data[i].a[k] += activepart[j].a[k];

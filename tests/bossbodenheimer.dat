@@ -56,10 +56,10 @@ RHS boundary type in z-dimension            : z_boundary_rhs = open
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.03
-Regular snapshot output frequency           : dt_snap = 0.002
-Time of first snapshot                      : tsnapfirst = 0.002;
-Screen output frequency (in no. of steps)   : noutputstep = 1
+Simulation end time                         : tend = 0.05
+Regular snapshot output frequency           : dt_snap = 0.001
+Time of first snapshot                      : tsnapfirst = 0.01
+Screen output frequency (in no. of steps)   : noutputstep = 32
 
 
 #------------------------
@@ -108,7 +108,7 @@ Mass cut-off for smooth accretion           : smooth_accrete_frac = 0.05
 Timestep cup-off for smooth accretion       : smooth_accrete_dt = 0.05
 Select adaptive sink radii                  : sink_radius_mode = hmult
 Set sink radius equal to kernel extent      : sink_radius = 2.0
-Sink formation density                      : rho_sink = 2.e-13
+Sink formation density                      : rho_sink = 1.0e-12
 
 
 #-------------------------
@@ -118,16 +118,17 @@ SPH particle integration option             : sph_integration = lfkdk
 SPH Courant timestep condition multiplier   : courant_mult = 0.15
 SPH acceleration condition multiplier       : accel_mult = 0.3
 SPH energy equation timestep multiplier     : energy_mult = 0.5
-No. of block timestep levels                : Nlevels = 1
+N-body timestep multiplier                  : nbody_mult = 0.2
+No. of block timestep levels                : Nlevels = 4
 Max. timestep level difference              : level_diff_max = 2
 
 
 #-------------
 # Tree options
 #-------------
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = bruteforce
 No. of particles in leaf cell               : Nleafmax = 8
-Tree opening angle (squared)                : thetamaxsqd = 0.1
+Tree opening angle (squared)                : thetamaxsqd = 0.15
 Multipole option                            : multipole = monopole
 
 
