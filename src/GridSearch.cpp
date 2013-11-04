@@ -443,15 +443,19 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
 	{
       for (jj=0; jj<Nactive; jj++) {
         j = activelist[jj];
+#if defined _OPENMP
+        omp_lock_t& lock = sph->GetParticleILock(j);
+        omp_set_lock(&lock);
+#endif
 	    for (k=0; k<ndim; k++) {
-#pragma omp atomic
 	      data[j].a[k] += activepart[jj].a[k];
 	    }
-#pragma omp atomic
 	    data[j].dudt += activepart[jj].dudt;
-#pragma omp atomic
 	    data[j].div_v += activepart[jj].div_v;
-	    //data[j].levelneib = max(data[i].levelneib,activepart[jj].levelneib);
+	    data[j].levelneib = max(data[j].levelneib,activepart[jj].levelneib);
+#if defined _OPENMP
+        omp_unset_lock(&lock);
+#endif
 	  }
 	}
 
@@ -461,17 +465,21 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
       {
 	for (jj=0; jj<Nneib; jj++) {
 	  j = neiblist[jj];
+#if defined _OPENMP
+        omp_lock_t& lock = sph->GetParticleILock(j);
+        omp_set_lock(&lock);
+#endif
 	  if (neibpart[jj].active) {
 	    for (k=0; k<ndim; k++) {
-#pragma omp atomic
 	      data[j].a[k] += neibpart[jj].a[k];
 	    }
-#pragma omp atomic
 	    data[j].dudt += neibpart[jj].dudt;
-#pragma omp atomic
 	    data[j].div_v += neibpart[jj].div_v;
 	  }
-	  //data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
+	  data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
+#if defined _OPENMP
+        omp_unset_lock(&lock);
+#endif
 	}
       }
       

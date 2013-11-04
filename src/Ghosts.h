@@ -36,7 +36,9 @@
 #include "SphKernel.h"
 #include "Sph.h"
 #include "Nbody.h"
+#if defined MPI_PARALLEL
 #include "MpiControl.h"
+#endif
 using namespace std;
 
 
@@ -92,6 +94,7 @@ public:
   virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
 };
 
+#if defined MPI_PARALLEL
 template <int ndim>
 class MPIGhosts : public Ghosts<ndim>
 {
@@ -107,5 +110,6 @@ public:
   virtual void CopySphDataToGhosts(Sph<ndim> *);
   virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
 };
+#endif
 
 #endif

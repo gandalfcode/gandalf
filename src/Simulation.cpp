@@ -139,6 +139,7 @@ SimulationBase::SimulationBase
 #else
   Nthreads = 1;
 #endif
+  Nmpi = 1;
 }
 
 
