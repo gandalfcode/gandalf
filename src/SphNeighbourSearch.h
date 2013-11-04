@@ -36,6 +36,7 @@
 #include "Sph.h"
 #include "Nbody.h"
 #include "Sinks.h"
+#include "DomainBox.h"
 #include "Parameters.h"
 using namespace std;
 
@@ -103,7 +104,8 @@ class SphNeighbourSearch
   virtual void UpdateTree(Sph<ndim> *, Parameters &) = 0;
   virtual void UpdateActiveParticleCounters(Sph<ndim> *) = 0;
 
-  bool neibcheck;
+  bool neibcheck;                   ///< Flag to verify neighbour lists
+  DomainBox<ndim> *box;             ///< Pointer to simulation bounding box
 
 };
 
@@ -292,6 +294,7 @@ template <int ndim>
 class BinaryTree: public SphNeighbourSearch<ndim>
 {
   using SphNeighbourSearch<ndim>::neibcheck;
+  using SphNeighbourSearch<ndim>::box;
 
  public:
 
@@ -317,8 +320,8 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void DeallocateTreeMemory(void);
   void ComputeTreeSize(void);
   void CreateTreeStructure(void);
+  void LoadParticlesToTree(FLOAT *r);
   void OrderParticlesByCartCoord(SphParticle<ndim> *);
-  void LoadParticlesToTree(void);
   void UpdateHmaxValues(SphParticle<ndim> *);
   int ComputeActiveCellList(BinaryTreeCell<ndim> **, BinarySubTree<ndim> **);
   int ComputeActiveParticleList(BinaryTreeCell<ndim> *, BinarySubTree<ndim> *,

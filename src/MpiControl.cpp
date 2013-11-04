@@ -28,10 +28,10 @@
 #include <cstdlib>
 #include <iostream>
 #include <math.h>
-#include "mpi.h"
 #include "Constants.h"
 #include "Precision.h"
 #include "SphKernel.h"
+#include "DomainBox.h"
 #include "Debug.h"
 #include "Exception.h"
 #include "InlineFuncs.h"
@@ -48,6 +48,38 @@ template <int ndim>
 MpiControl<ndim>::MpiControl()
 {
   allocated_mpi = false;
+
+  MPI_Comm_size(MPI_COMM_WORLD,&Nmpi);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  int len;
+  MPI_Get_processor_name(hostname, &len);
+
+  if (this->rank == 0)
+    printf("MPI working.  Nmpi : %d   rank : %d   hostname : %s\n",rank,Nmpi,hostname);
+  else
+    printf("%d is running too!!\n",this->rank);
+
+  //Create and commit the particle datatype
+  particle_type = SphParticle<ndim>::CreateMpiDataType();
+  MPI_Type_commit(&particle_type);
+
+#ifdef VERIFY_ALL
+  if (Nmpi > 1) {
+    if (rank ==0) {
+      SphParticle<ndim> particle;
+      particle.gradrho[ndim-1]=-1;
+      MPI_Send(&particle,1,particle_type,1,0,MPI_COMM_WORLD);
+    }
+    else if (rank ==1) {
+      SphParticle<ndim> particle;
+      MPI_Status status;
+      MPI_Recv(&particle,1,particle_type,0,0,MPI_COMM_WORLD,&status);
+      if (particle.gradrho[ndim-1]!=-1)
+        cerr << "Error in transmitting particles: the last field has not been received correctly!" << endl;
+    }
+  }
+#endif
+
 }
 
 
@@ -59,6 +91,7 @@ MpiControl<ndim>::MpiControl()
 template <int ndim>
 MpiControl<ndim>::~MpiControl()
 {
+  MPI_Type_free(&particle_type);
 }
 
 
@@ -94,22 +127,11 @@ void MpiControl<ndim>::DeallocateMemory(void)
 template <int ndim>
 void MpiControl<ndim>::InitialiseMpiProcess(void)
 {
-  int len;
   debug2("[MpiControl::InitialiseMpiProcess]");
 
-  MPI_Comm_size(MPI_COMM_WORLD,&Nmpi);
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Get_processor_name(hostname, &len);
-  MPI_Barrier(MPI_COMM_WORLD);
 
-  if (this->rank == 0)
-    printf("MPI working.  Nmpi : %d   rank : %d   hostname : %s\n",rank,Nmpi,hostname);
-  else
-    printf("%d is running too!!\n",this->rank);
-
-  //MPI_Finalize();
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Abort(MPI_COMM_WORLD,0);
+  //MPI_Barrier(MPI_COMM_WORLD);
+  //MPI_Abort(MPI_COMM_WORLD,0);
 
   return;
 }
@@ -117,7 +139,7 @@ void MpiControl<ndim>::InitialiseMpiProcess(void)
 
 
 //=============================================================================
-//  MpiControl::CreateLoadBalancingTree
+//  MpiControl::CreateInitialDomainDecomposition
 /// Creates a binary tree containing all particles in order to determine how 
 /// to distribute the particles across all MPI nodes with an equal amount of 
 /// CPU work per MPI node.  If creating the initial partition (i.e. before 
@@ -128,11 +150,13 @@ void MpiControl<ndim>::InitialiseMpiProcess(void)
 /// should only be called for the root process.
 //=============================================================================
 template <int ndim>
-void MpiControl<ndim>::CreateLoadBalancingTree
-(Sph<ndim> *sph,                    ///< Pointer to main SPH object
- Nbody<ndim> *nbody,                ///< Pointer to main N-body object
- Parameters &simparams)             ///< Simulation parameters
+void MpiControl<ndim>::CreateInitialDomainDecomposition
+(Sph<ndim> *sph,                   ///< Pointer to main SPH object
+ Nbody<ndim> *nbody,               ///< Pointer to main N-body object
+ Parameters *simparams,            ///< Simulation parameters
+ DomainBox<ndim> simbox)           ///< Simulation domain box
 {
+  int i;                           // Particle counter
 
   // Create MPI binary tree for organising domain decomposition
   mpitree = new BinaryTree<ndim>(16,0.1,0.0,"geometric","monopole",1,Nmpi);
@@ -151,7 +175,7 @@ void MpiControl<ndim>::CreateLoadBalancingTree
     mpitree->Nsph = sph->Nsph;
     mpitree->Ntot = sph->Ntot;
     mpitree->Ntotmax = max(mpitree->Ntot,mpitree->Ntotmax);
-    gtot = 0;
+    mpitree->gtot = 0;
 
     // For periodic simulations, set bounding box of root node to be the 
     // periodic box size.  Otherwise, set to be the particle bounding box.
@@ -171,6 +195,8 @@ void MpiControl<ndim>::CreateLoadBalancingTree
       if (simbox.z_boundary_rhs == "open") mpibox.boxmax[2] = big_number;
       else mpibox.boxmax[2] = simbox.boxmax[2];
     }
+    mpitree->box = &mpibox;
+
 
     // Compute the size of all tree-related arrays now we know number of points
     mpitree->ComputeTreeSize();
@@ -185,7 +211,7 @@ void MpiControl<ndim>::CreateLoadBalancingTree
     mpitree->OrderParticlesByCartCoord(sph->sphdata);
 
     // Now add particles to tree depending on Cartesian coordinates
-    mpitree->LoadParticlesToTree();
+    mpitree->LoadParticlesToTree(sph->rsph);
 
     // Create bounding boxes containing particles in each sub-tree
     for (i=0; i<Nmpi; i++) {

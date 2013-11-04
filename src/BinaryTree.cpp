@@ -203,12 +203,12 @@ void BinaryTree<ndim>::BuildTree
   OrderParticlesByCartCoord(sph->sphdata);
 
   // Now add particles to tree depending on Cartesian coordinates
-  LoadParticlesToTree();
+  LoadParticlesToTree(sph->rsph);
 
   // Build and stock all local sub-trees
   //---------------------------------------------------------------------------
 //#pragma omp parallel for default(none) private(i) shared(sph, simparams) \
-  reduction(+:localgtot,Ncheck)
+//  reduction(+:localgtot,Ncheck)
   for (i = 0; i < Nsubtree; i++) {
 
     BinarySubTree<ndim>* subtree = subtrees[i];
@@ -443,18 +443,19 @@ void BinaryTree<ndim>::OrderParticlesByCartCoord
 /// Create tree structure by adding particles to leaf cells.
 //=============================================================================
 template <int ndim>
-void BinaryTree<ndim>::LoadParticlesToTree(void)
+void BinaryTree<ndim>::LoadParticlesToTree
+(FLOAT *r)                         ///< Positions of particles
 {
-  int c;                            // Cell counter
-  int cc;                           // Secondary cell counter
-  int g;                            // ..
-  int k;                            // Dimensionality counter
-  int i;                            // Particle counter
-  int iptcl;                        // Particle id
-  int j;                            // Dummy particle id
-  int l;                            // Level counter
-  FLOAT *ccap;                      // Maximum capacity of cell
-  FLOAT *ccon;                      // Current contents of cell
+  int c;                           // Cell counter
+  int cc;                          // Secondary cell counter
+  int g;                           // ..
+  int k;                           // Dimensionality counter
+  int i;                           // Particle counter
+  int iptcl;                       // Particle id
+  int j;                           // Dummy particle id
+  int l;                           // Level counter
+  FLOAT *ccap;                     // Maximum capacity of cell
+  FLOAT *ccon;                     // Current contents of cell
 
   debug2("[BinaryTree::LoadParticleToTree]");
 
@@ -472,6 +473,10 @@ void BinaryTree<ndim>::LoadParticlesToTree(void)
   for (c=0; c<Ncell; c++) ccon[c] = 0.0;
   for (c=0; c<Ncell; c++) tree[c].ifirst = -1;
   for (c=0; c<Ncell; c++) tree[c].ilast = -1;
+
+  // Set bounding box of root cell to main bounding box
+  for (k=0; k<ndim; k++) tree[0].bbmin[k] = box->boxmin[k];
+  for (k=0; k<ndim; k++) tree[0].bbmax[k] = box->boxmax[k];
 
   // Zero counters for each subtree
   for (i=0; i<Nsubtree; i++) subtrees[i]->Ntot = 0;
@@ -498,10 +503,22 @@ void BinaryTree<ndim>::LoadParticlesToTree(void)
       if (ccon[cc] < 0.5000000000001*ccap[cc]) {
         pc[j]++;
         ccap[pc[j]] += pw[j];
+        if (tree[pc[j]].ifirst == -1) tree[pc[j]].ifirst = j;
+        tree[pc[j]].ilast = j;
       }
       else {
         pc[j] = tree[cc].c2;
         ccap[pc[j]] += pw[j];
+        if (tree[pc[j]].ifirst == -1) {
+          tree[pc[j]].ifirst = j;
+          for (k=0; k<ndim; k++) tree[cc+1].bbmin[k] = tree[cc].bbmin[k];
+          for (k=0; k<ndim; k++) tree[cc+1].bbmax[k] = tree[cc].bbmax[k];
+          for (k=0; k<ndim; k++) tree[tree[cc].c2].bbmin[k] = tree[cc].bbmin[k];
+          for (k=0; k<ndim; k++) tree[tree[cc].c2].bbmax[k] = tree[cc].bbmax[k];
+          tree[cc+1].bbmax[k] = 0.5*(r[tree[cc+1].ifirst] + r[j]);
+          tree[tree[cc].c2].bbmin[k] = 0.5*(r[tree[cc+1].ifirst] + r[j]);
+        }
+        tree[pc[j]].ilast = j;
       }
     }
     //-------------------------------------------------------------------------
@@ -528,8 +545,6 @@ void BinaryTree<ndim>::LoadParticlesToTree(void)
     c = pc[i];
     g = tree[c].c2g;
     assert(g >= 0 && g < Nsubtree);
-    //cout << "g : " << g << "    Nsubtree : " << Nsubtree << endl;
-    //cout << "Ntot : " << subtrees[g]->Ntot << endl;
     subtrees[g]->ids[subtrees[g]->Ntot++] = i;
     subtrees[g]->Nsph++;
   }

@@ -49,6 +49,16 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   debug2("[SphSimulation::PostInitialConditionsSetup]");
 
+
+  // Perform initial MPI decomposition
+  //---------------------------------------------------------------------------
+#ifdef MPI_PARALLEL
+  if (rank == 0) mpicontrol.CreateInitialDomainDecomposition(sph,nbody,simparams,simbox);
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Abort(MPI_COMM_WORLD,0);
+#endif
+
+
   // Set time variables here (for now)
   Noutsnap = 0;
   nresync = 0;
@@ -85,7 +95,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->UpdateAllSphProperties(sph,nbody);
 
     // Search ghost particles
-    ghosts.SearchGhostParticles(simbox,sph);
+    ghosts->SearchGhostParticles(simbox,sph);
 
     // Update neighbour tree
     sphneib->BuildTree(sph,*simparams);
@@ -99,7 +109,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->UpdateAllSphProperties(sph,nbody);
 
     // Search ghost particles
-    ghosts.SearchGhostParticles(simbox,sph);
+    ghosts->SearchGhostParticles(simbox,sph);
 
     // Update neighbour tre
     sphneib->BuildTree(sph,*simparams);
@@ -154,7 +164,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       sph->sphintdata[i].nlast = 0;
     }
 
-    ghosts.CopySphDataToGhosts(sph);
+    ghosts->CopySphDataToGhosts(sph);
     sphneib->BuildTree(sph,*simparams);
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
@@ -178,7 +188,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
         sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
 
-    ghosts.CopySphDataToGhosts(sph);
+    ghosts->CopySphDataToGhosts(sph);
 
   }
 
@@ -237,7 +247,7 @@ void SphSimulation<ndim>::MainLoop(void)
   // Check all boundary conditions
   // (DAVID : Move this function to sphint and create an analagous one for N-body)
   // (Also, only check this on tree-build steps)
-  ghosts.CheckBoundaries(simbox,sph);
+  ghosts->CheckBoundaries(simbox,sph);
 
 
   //---------------------------------------------------------------------------
@@ -254,7 +264,7 @@ void SphSimulation<ndim>::MainLoop(void)
   if (sph->Nsph > 0) {
     
     // Search for new ghost particles and create on local processor
-    ghosts.SearchGhostParticles(simbox,sph);
+    ghosts->SearchGhostParticles(simbox,sph);
 
 
     // Reorder particles to tree-walk order (not implemented yet)
@@ -290,7 +300,7 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
       // Copy properties from original particles to ghost particles
-      ghosts.CopySphDataToGhosts(sph);
+      ghosts->CopySphDataToGhosts(sph);
       
       // Zero accelerations
 #pragma parallel for default(none) private(k) shared(sph)

@@ -582,6 +582,20 @@ void Simulation<ndim>::ProcessParameters(void)
     simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
     simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
   }
+  if (sim == "sph" || sim == "godunov_sph") sphneib->box = &simbox;
+  if (IsAnyBoundarySpecial(simbox)) {
+    ghosts = new PeriodicGhosts<ndim>();
+#ifdef MPI_PARALLEL
+    ExceptionHandler::getIstance().raise("Error: periodic/mirror boundaries and MPI at the moment can't work together");
+#endif
+  }
+  else {
+#ifdef MPI_PARALLEL
+    ghosts = new MPIGhosts<ndim>(&mpicontrol);
+#else
+    ghosts = new NullGhosts<ndim>();
+#endif
+  }
 
 
   // Sink particles
@@ -837,10 +851,10 @@ void Simulation<ndim>::ProcessGodunovSphParameters(void)
   else if (intparams["tabulated_kernel"] == 0) {
     if (KernelName == "gaussian") {
       sph = new GodunovSph<ndim, GaussianKernel> 
-	(intparams["hydro_forces"], intparams["self_gravity"],
-	 floatparams["alpha_visc"], floatparams["beta_visc"],
-	 floatparams["h_fac"], floatparams["h_converge"],
-	 avisc, acond, stringparams["gas_eos"], KernelName);
+        (intparams["hydro_forces"], intparams["self_gravity"],
+         floatparams["alpha_visc"], floatparams["beta_visc"],
+         floatparams["h_fac"], floatparams["h_converge"],
+         avisc, acond, stringparams["gas_eos"], KernelName);
     }
     else {
       string message = "Unrecognised parameter : kernel = " +
@@ -858,12 +872,10 @@ void Simulation<ndim>::ProcessGodunovSphParameters(void)
   // Riemann solver object
   //---------------------------------------------------------------------------
   string riemann = stringparams["riemann_solver"];
-  if (riemann == "exact") {
+  if (riemann == "exact")
     sph->riemann = new ExactRiemannSolver(floatparams["gamma_eos"]);
-  }
-  else if (riemann == "hllc") {
+  else if (riemann == "hllc")
     sph->riemann = new HllcRiemannSolver(floatparams["gamma_eos"]);
-  }
   else {
     string message = "Unrecognised parameter : riemann_solver = "
       + riemann;

@@ -261,7 +261,7 @@ class Simulation : public SimulationBase
   Diagnostics<ndim> diag0;              ///< Initial diagnostic state
   Diagnostics<ndim> diag;               ///< Current diagnostic state
   EnergyEquation<ndim> *uint;           ///< Energy equation pointer
-  Ghosts<ndim> ghosts;                  ///< Ghost particle object
+  Ghosts<ndim>* ghosts;                  ///< Ghost particle object
   Nbody<ndim> *nbody;                   ///< N-body algorithm pointer
   Nbody<ndim> *subsystem;               ///< N-body object for sub-systems
   NbodySystemTree<ndim> nbodytree;      ///< N-body tree to create sub-systems
@@ -324,6 +324,10 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::dt_max;
   using Simulation<ndim>::sph_single_timestep;
   using Simulation<ndim>::sink_particles;
+  using Simulation<ndim>::rank;
+#ifdef MPI_PARALLEL
+  using Simulation<ndim>::mpicontrol;
+#endif
 
 public:
 
