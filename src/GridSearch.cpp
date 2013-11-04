@@ -375,6 +375,10 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
       // Make local copies of active particles
       for (j=0; j<Nactive; j++) {
         activepart[j] = data[activelist[j]];
+        activepart[j].div_v = (FLOAT) 0.0;
+        activepart[j].dudt = (FLOAT) 0.0;
+        activepart[j].levelneib = 0;
+        for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
       }
 
       // Make local copies of all potential neighbours
@@ -390,10 +394,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
       //-----------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-        activepart[j].div_v = (FLOAT) 0.0;
-        activepart[j].dudt = (FLOAT) 0.0;
-        activepart[j].levelneib = 0;
-        for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
+
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
         hrangesqdi = activepart[j].hrangesqd;
         //hrangesqdi = sph->kernfacsqd*sph->kernp->kernrangesqd*
