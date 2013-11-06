@@ -1147,11 +1147,10 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 
   // Set-up all OMP threads
   //===========================================================================
-#pragma omp parallel default(none) private(activelist,cc,cell,dr,draux,drmag)\
-  private(drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k)\
+#pragma omp parallel default(none) private(activelist,activepart,cc,cell,dr)\
+  private(draux,drmag,drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k) \
   private(Nactive,neiblist,neibpart,Ninteract,Nneib,Nneibmax,rp)\
-  private(activepart)\
-  shared(celllist,cactive,sph,data,treelist)
+  shared(cactive,celllist,data,sph,treelist)
   {
     Nneibmax = 2*sph->Ngather;
     activelist = new int[Nleafmax];
@@ -1220,8 +1219,9 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
         i = activelist[j];
 
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k]; //data[i].r[k];
-        hrangesqdi = sph->kernfacsqd*sph->kernp->kernrangesqd*
-          activepart[j].h*activepart[j].h;
+        hrangesqdi = activepart[j].hrangesqd;
+        //hrangesqdi = sph->kernfacsqd*sph->kernp->kernrangesqd*
+        //  activepart[j].h*activepart[j].h;
         Ninteract = 0;
 
         // Validate that gather neighbour list is correct
@@ -1239,18 +1239,18 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
           // Skip neighbour if it's not the correct part of an active pair
           if (neiblist[jj] <= i && neibpart[jj].active) continue;
 
-          hrangesqdj = sph->kernfacsqd*sph->kernp->kernrangesqd*
-            neibpart[jj].h*neibpart[jj].h;
+          //hrangesqdj = sph->kernfacsqd*sph->kernp->kernrangesqd*
+          //  neibpart[jj].h*neibpart[jj].h;
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
           drsqd = DotProduct(draux,draux,ndim) + small_number;
 
           // Compute relative position and distance quantities for pair
-          if (drsqd <= hrangesqdi || drsqd <= hrangesqdj) {
-            interactlist[Ninteract] = jj;
+          if (drsqd <= hrangesqdi || drsqd <= neibpart[jj].hrangesqd) {
             drmag[Ninteract] = sqrt(drsqd);
             invdrmag[Ninteract] = (FLOAT) 1.0/drmag[Ninteract];
             for (k=0; k<ndim; k++)
               dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
+            interactlist[Ninteract] = jj;
             Ninteract++;
           }
 
@@ -1285,22 +1285,22 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 
       // Now add all active neighbour contributions to main array
       for (jj=0; jj<Nneib; jj++) {
-        if (neibpart[jj].active) {
-          j = neiblist[jj];
+	j = neiblist[jj];
 #if defined _OPENMP
-        omp_lock_t& lock = sph->GetParticleILock(j);
-        omp_set_lock(&lock);
+	omp_lock_t& lock = sph->GetParticleILock(j);
+	omp_set_lock(&lock);
 #endif
+        if (neibpart[jj].active) {
           for (k=0; k<ndim; k++) {
             data[j].a[k] += neibpart[jj].a[k];
           }
           data[j].dudt += neibpart[jj].dudt;
           data[j].div_v += neibpart[jj].div_v;
-          data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
-#if defined _OPENMP
-        omp_unset_lock(&lock);
-#endif
         }
+	data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
+#if defined _OPENMP
+	omp_unset_lock(&lock);
+#endif
       }
 
     }
@@ -1528,12 +1528,12 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
       // Now add all active neighbour contributions to the main arrays
       for (jj=0; jj<Nneib; jj++) {
-        if (neibpart[jj].active) {
-          j = neiblist[jj];
+	j = neiblist[jj];
 #if defined _OPENMP
-        omp_lock_t& lock = sph->GetParticleILock(j);
-        omp_set_lock(&lock);
+	omp_lock_t& lock = sph->GetParticleILock(j);
+	omp_set_lock(&lock);
 #endif
+        if (neibpart[jj].active) {
           for (k=0; k<ndim; k++) {
             data[j].a[k] += neibpart[jj].a[k];
             data[j].agrav[k] += neibpart[jj].agrav[k];
@@ -1541,11 +1541,11 @@ void BinaryTree<ndim>::UpdateAllSphForces
           data[j].gpot += neibpart[jj].gpot;
           data[j].dudt += neibpart[jj].dudt;
           data[j].div_v += neibpart[jj].div_v;
-          data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
+	}
+	data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
 #if defined _OPENMP
         omp_unset_lock(&lock);
 #endif
-        }
       }
 
     }
@@ -1683,9 +1683,9 @@ void BinaryTree<ndim>::CheckValidNeighbourList
       drsqd = DotProduct(dr,dr,ndim);
       if (drsqd < sph->kernp->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h ||
     	  drsqd < sph->kernp->kernrangesqd*sph->sphdata[j].h*sph->sphdata[j].h)
- 	     trueneiblist[Ntrueneib++] = j;
-     }
-   }
+	trueneiblist[Ntrueneib++] = j;
+    }
+  }
 
   // Now compare each given neighbour with true neighbour list for validation
   for (j=0; j<Ntrueneib; j++) {

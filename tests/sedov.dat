@@ -76,10 +76,10 @@ Time integration options
 ------------------------
 SPH particle integration option             : sph_integration = lfkdk
 Integration of gas thermal energy           : energy_integration = PEC
-SPH Courant timestep condition multiplier   : courant_mult = 0.15
-SPH acceleration condition multiplier       : accel_mult = 0.3
-SPH energy equation timestep multiplier     : energy_mult = 0.5
-No. of block timestep levels                : Nlevels = 1
+SPH Courant timestep condition multiplier   : courant_mult = 0.1
+SPH acceleration condition multiplier       : accel_mult = 0.2
+SPH energy equation timestep multiplier     : energy_mult = 0.3
+No. of block timestep levels                : Nlevels = 10
 Maximum timestep level difference           : level_diff_max = 1
 
 
