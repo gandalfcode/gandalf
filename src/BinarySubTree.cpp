@@ -1033,7 +1033,7 @@ int BinarySubTree<ndim>::ComputeGravityInteractionList
   // Now, trim the list to remove particles that are definitely not neighbours.
   // If not an SPH neighbour, then add to direct gravity sum list.
   hrangemax = hrangemax*hrangemax;
-  for (j=0; j<Nneib; j++) {
+  for (j=Nneibtemp; j<Nneib; j++) {
     i = GlobalId(neiblist[j]);
     for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);

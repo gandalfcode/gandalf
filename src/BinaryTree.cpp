@@ -210,8 +210,8 @@ void BinaryTree<ndim>::BuildTree
 
   // Build and stock all local sub-trees
   //---------------------------------------------------------------------------
-//#pragma omp parallel for default(none) private(i) shared(sph, simparams) \
-//  reduction(+:localgtot,Ncheck)
+#pragma omp parallel for default(none) private(i) shared(sph) \
+  reduction(+:localgtot,Ncheck)
   for (i = 0; i < Nsubtree; i++) {
 
     BinarySubTree<ndim>* subtree = subtrees[i];
@@ -1285,10 +1285,10 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 
       // Now add all active neighbour contributions to main array
       for (jj=0; jj<Nneib; jj++) {
-	j = neiblist[jj];
+        j = neiblist[jj];
 #if defined _OPENMP
-	omp_lock_t& lock = sph->GetParticleILock(j);
-	omp_set_lock(&lock);
+        omp_lock_t& lock = sph->GetParticleILock(j);
+        omp_set_lock(&lock);
 #endif
         if (neibpart[jj].active) {
           for (k=0; k<ndim; k++) {
@@ -1297,9 +1297,9 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
           data[j].dudt += neibpart[jj].dudt;
           data[j].div_v += neibpart[jj].div_v;
         }
-	data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
+        data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
 #if defined _OPENMP
-	omp_unset_lock(&lock);
+        omp_unset_lock(&lock);
 #endif
       }
 
@@ -1394,7 +1394,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
   private(gpot,i,interactlist,j,jj,activepart)\
   private(k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,directlist)\
   private(gravcelllist,Ngravcell,Ndirect,Nneibmax,Ndirectmax,Ngravcellmax) \
-  shared(celllist,cactive,sph,data,treelist)
+  shared(celllist,cactive,sph,data,treelist,cout)
   {
     Nneibmax = 4*sph->Ngather;
     Ndirectmax = 2*Nneibmax;
@@ -1490,11 +1490,11 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
         // Compute forces between SPH neighbours (hydro and gravity)
         sph->ComputeSphHydroGravForces(i,Ninteract,interactlist,
-                                       activepart[j],neibpart);
+                                                          activepart[j],neibpart);
 
         // Compute direct gravity forces between distant particles
         sph->ComputeDirectGravForces(i,Ndirect,directlist,
-                                     agrav,gpot,activepart[j],data);
+                                                      agrav,gpot,activepart[j],data);
 
         // Compute gravitational force dues to distant cells
         if (multipole == "monopole")
@@ -1528,10 +1528,10 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
       // Now add all active neighbour contributions to the main arrays
       for (jj=0; jj<Nneib; jj++) {
-	j = neiblist[jj];
+        j = neiblist[jj];
 #if defined _OPENMP
-	omp_lock_t& lock = sph->GetParticleILock(j);
-	omp_set_lock(&lock);
+        omp_lock_t& lock = sph->GetParticleILock(j);
+        omp_set_lock(&lock);
 #endif
         if (neibpart[jj].active) {
           for (k=0; k<ndim; k++) {
@@ -1541,8 +1541,8 @@ void BinaryTree<ndim>::UpdateAllSphForces
           data[j].gpot += neibpart[jj].gpot;
           data[j].dudt += neibpart[jj].dudt;
           data[j].div_v += neibpart[jj].div_v;
-	}
-	data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
+        }
+        data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
 #if defined _OPENMP
         omp_unset_lock(&lock);
 #endif

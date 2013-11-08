@@ -38,7 +38,7 @@
 using namespace std;
 
 
-static const FLOAT grid_h_tolerance = (FLOAT) 2.0;
+static const FLOAT grid_h_tolerance = (FLOAT) 1.1;
 
 
 //=============================================================================
@@ -448,9 +448,12 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
         omp_set_lock(&lock);
 #endif
 	for (k=0; k<ndim; k++) {
+//#pragma omp atomic
 	  data[j].a[k] += activepart[jj].a[k];
 	}
+//#pragma omp atomic
 	data[j].dudt += activepart[jj].dudt;
+//#pragma omp atomic
 	data[j].div_v += activepart[jj].div_v;
 	data[j].levelneib = max(data[j].levelneib,activepart[jj].levelneib);
 #if defined _OPENMP
@@ -468,9 +471,12 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
 #endif
 	if (neibpart[jj].active) {
 	  for (k=0; k<ndim; k++) {
+//#pragma omp atomic
 	    data[j].a[k] += neibpart[jj].a[k];
 	  }
+//#pragma omp atomic
 	  data[j].dudt += neibpart[jj].dudt;
+//#pragma omp atomic
 	  data[j].div_v += neibpart[jj].div_v;
 	}
 	data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
