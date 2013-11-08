@@ -93,14 +93,11 @@ void Simulation<ndim>::CalculateDiagnostics(void)
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>* part = sph->GetParticleIPointer(i);
       diag.angmom[0] += part->m*
-        (part->r[1]*part->v[2] -
-         part->r[2]*part->v[1]);
+        (part->r[1]*part->v[2] - part->r[2]*part->v[1]);
       diag.angmom[1] += part->m*
-        (part->r[2]*part->v[0] -
-         part->r[0]*part->v[2]);
+        (part->r[2]*part->v[0] - part->r[0]*part->v[2]);
       diag.angmom[2] += part->m*
-        (part->r[0]*part->v[1] -
-         part->r[1]*part->v[0]);
+        (part->r[0]*part->v[1] - part->r[1]*part->v[0]);
     }
   }
 
@@ -140,9 +137,12 @@ void Simulation<ndim>::CalculateDiagnostics(void)
     }
   }
 
-  // Add internal angular momentum (due to sink accretion)
+  // Add internal angular momentum (due to sink accretion) and subtract 
+  // accreted hydro momentum to maintain conservation of individual impulses.
   for (i=0; i<sinks.Nsink; i++) {
     for (k=0; k<3; k++) diag.angmom[k] += sinks.sink[i].angmom[k];
+    for (k=0; k<3; k++) 
+      diag.force_grav[k] -= sinks.sink[i].star->m*sinks.sink[i].ahydro[k];
   }
 
   // Normalise all quantities and sum all contributions to total energy

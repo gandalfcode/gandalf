@@ -26,7 +26,8 @@ render("x","y","rho",res=128)
 
 # Plot star/sink masses
 subfigure(2,2,3)
-plot_vs_time_quantity_particle("m",type='star',id=0)
+plot("x","vy")
+#plot_vs_time_quantity_particle("m",type='star',id=0)
 
 # Plot sound and star speed
 subfigure(2,2,4)

@@ -13,9 +13,9 @@ Select shocktube initial conditions         : ic = sedov
 Dimensionality of cube                      : ndim = 2
 Pressure of fluid 1                         : press1 = 1.0
 Density of fluid 1                          : rhofluid1 = 1.0
-No. of x-particles in fluid 1               : Nlattice1[0] = 128
-No. of y-particles in fluid 1               : Nlattice1[1] = 128
-No. of y-particles in fluid 1               : Nlattice1[2] = 128
+No. of x-particles in fluid 1               : Nlattice1[0] = 64
+No. of y-particles in fluid 1               : Nlattice1[1] = 64
+No. of y-particles in fluid 1               : Nlattice1[2] = 64
 Local arrangement of particles              : particle_distribution = cubic_lattice
 Use dimensionless units                     : dimensionless = 1
 
@@ -43,7 +43,7 @@ Simulation time variables
 Simulation end time                         : tend = 0.6
 Time for first snapshot                     : tsnapfirst = 1.0
 Regular snapshot output frequency           : dt_snap = 1.0
-Screen output frequency (in no. of steps)   : noutputstep = 32
+Screen output frequency (in no. of steps)   : noutputstep = 128
 
 
 -----------------------

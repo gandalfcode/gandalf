@@ -132,8 +132,11 @@ class SimulationBase
   int ndims;                        ///< Aux. dimensionality variable. 
                                     ///< Required for python routines.
 
+  int ndiagstep;                    ///< Diagnostic output frequency (in units
+                                    ///< of full block timestep steps)
   int noutputstep;                  ///< Output frequency
   int nresync;                      ///< Integer time for resynchronisation
+  int Nblocksteps;                  ///< No. of full block timestep steps
   int Nsteps;                       ///< Total no. of steps in simulation
   int Nstepsmax;                    ///< Max. allowed no. of steps
   int Nlevels;                      ///< No. of timestep levels
@@ -308,6 +311,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::nbody_single_timestep;
   using Simulation<ndim>::ParametersProcessed;
   using Simulation<ndim>::n;
+  using Simulation<ndim>::Nblocksteps;
   using Simulation<ndim>::Nlevels;
   using Simulation<ndim>::Nsteps;
   using Simulation<ndim>::t;
@@ -374,6 +378,7 @@ class GodunovSphSimulation : public Simulation<ndim>
   using Simulation<ndim>::nbody_single_timestep;
   using Simulation<ndim>::ParametersProcessed;
   using Simulation<ndim>::n;
+  using Simulation<ndim>::Nblocksteps;
   using Simulation<ndim>::Nlevels;
   using Simulation<ndim>::Nsteps;
   using Simulation<ndim>::t;
@@ -431,6 +436,7 @@ class NbodySimulation : public Simulation<ndim>
   using Simulation<ndim>::nbody_single_timestep;
   using Simulation<ndim>::ParametersProcessed;
   using Simulation<ndim>::n;
+  using Simulation<ndim>::Nblocksteps;
   using Simulation<ndim>::Nlevels;
   using Simulation<ndim>::Nsteps;
   using Simulation<ndim>::t;

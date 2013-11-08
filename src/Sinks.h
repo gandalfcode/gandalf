@@ -60,18 +60,19 @@ class SinkParticle
   DOUBLE radius;                    ///< Softening/sink radius of particle
   DOUBLE dt;                        ///< Particle timestep
   DOUBLE dmdt;                      ///< Accretion rate
-  DOUBLE menc;                      ///< ..
-  DOUBLE mmax;                      ///< ..
+  DOUBLE menc;                      ///< Gas mass enclosed within sink radius
+  DOUBLE mmax;                      ///< Max. mass before increasing dmdt
   DOUBLE racc;                      ///< Accretion radius
   DOUBLE ketot;                     ///< Internal kinetic energy
   DOUBLE gpetot;                    ///< Internal grav. pot. energy
   DOUBLE rotketot;                  ///< Internal rotational kinetic energy
   DOUBLE utot;                      ///< Internal energy accrted by sink
-  DOUBLE taccrete;                  ///< ..
-  DOUBLE trad;                      ///< ..
-  DOUBLE trot;                      ///< ..
-  DOUBLE tvisc;                     ///< ..
+  DOUBLE taccrete;                  ///< Accretion timescale
+  DOUBLE trad;                      ///< Radial accretion timescale
+  DOUBLE trot;                      ///< Rotational period at sink radius
+  DOUBLE tvisc;                     ///< Viscous accretion timescale
   DOUBLE angmom[3];                 ///< Internal sink angular momentum
+  DOUBLE ahydro[ndim];              ///< Hydro accel. (from accreted ptcls)
 
 
   // Star particle constructor to initialise all values
@@ -116,7 +117,7 @@ class Sinks
   void DeallocateMemory(void);
   void SearchForNewSinkParticles(int, Sph<ndim> *, Nbody<ndim> *);
   void CreateNewSinkParticle(int, Sph<ndim> *, Nbody<ndim> *);
-  void AccreteMassToSinks(Sph<ndim> *, Nbody<ndim> *, int, DOUBLE, int);
+  void AccreteMassToSinks(Sph<ndim> *, Nbody<ndim> *, int, DOUBLE);
   //void UpdateSystemProperties(void);
 
   // Local class variables

@@ -155,7 +155,7 @@ private:
   FLOAT kernfac;                      ///< Kernel range neighbour fraction
   FLOAT kernfacsqd;                   ///< Kernel range neib. fraction squared
 
-  int *iorder;                        ///< ..
+  int *iorder;                        ///< Array containing particle ordering
   FLOAT *rsph;                        ///< Position array (for efficiency)
 
   SphIntParticle<ndim>* sphintdata;   ///< Pointer to particle integration data

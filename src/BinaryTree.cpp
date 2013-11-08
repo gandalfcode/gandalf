@@ -625,7 +625,7 @@ int BinaryTree<ndim>::ComputeActiveCellList
 
 
 //=============================================================================
-// GridSearch::ComputeActiveParticleList
+//  BinaryTree::ComputeActiveParticleList
 /// Returns the number (Nactive) and list of ids (activelist) of all active
 /// SPH particles in the given cell.
 //=============================================================================

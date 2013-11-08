@@ -7,7 +7,7 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = BINARYACC1
+Simulation run id string                    : run_id = BINARYACC2
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = binaryacc
 Use seren format for output                 : out_file_form = column
@@ -73,7 +73,8 @@ RHS boundary type in z-dimension            : z_boundary_rhs = periodic
 Simulation end time                         : tend = 5.0
 Regular snapshot output frequency           : dt_snap = 0.005
 Time for first snapshot                     : tsnapfirst = 0.005
-Screen output frequency (in no. of steps)   : noutputstep = 8
+Screen output frequency (in no. of steps)   : noutputstep = 1
+Output frequency of diagnostics             : ndiagstep = 1
 
 
 #------------------------
@@ -107,7 +108,7 @@ Artificial viscosity beta value             : beta_visc = 2.0
 Use leapfrog N-body integration scheme      : nbody = lfkdk
 Activate sink particles in code             : sink_particles = 1
 Allow creation of new sink particles        : create_sinks = 0
-Use smooth accretion in sinks               : smooth_accretion = 0
+Use smooth accretion in sinks               : smooth_accretion = 1
 Mass cut-off for smooth accretion           : smooth_accrete_frac = 0.05
 Timestep cup-off for smooth accretion       : smooth_accrete_dt = 0.05
 Select adaptive sink radii                  : sink_radius_mode = hmult

@@ -240,9 +240,10 @@ class BinarySubTree
                                     BinaryTreeCell<ndim> **, 
                                     SphParticle<ndim> *);
   int GlobalId(int local_id) {
-	if (local_id < 0) cout << "local_id : " << local_id << endl;
+    if (local_id < 0) cout << "local_id : " << local_id << endl;
     assert(local_id>=0);
-    return ids[local_id];};
+    return ids[local_id];
+  };
 
 #if defined(VERIFY_ALL)
   void ValidateTree(Sph<ndim> *);
@@ -369,7 +370,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   FLOAT kernrange;                  ///< Extent of employed kernel
   FLOAT theta;                      ///< ..
   FLOAT thetamaxsqd;                ///< ..
-  int *pc;
+  int *pc;                          ///< ..
   FLOAT *pw;                        ///< Particle weights
   FLOAT *rk[ndim];                  ///< Particle Cartesian coordinates
   BinaryTreeCell<ndim> *tree;       ///< Main tree array

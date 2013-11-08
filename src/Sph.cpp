@@ -96,7 +96,7 @@ void Sph<ndim>::AllocateMemory(int N)
     allocated = true;
   }
 #if defined _OPENMP
-     InitParticleLocks();
+  InitParticleLocks();
 #endif
 
   return;
@@ -129,7 +129,6 @@ void Sph<ndim>::DeallocateMemory(void)
 
 
 #if defined _OPENMP
-
 //=============================================================================
 //  Sph::InitParticleLocks
 /// Allocate storage for the locks and initialise them
@@ -155,8 +154,6 @@ void Sph<ndim>::DestroyParticleLocks()
   }
   delete[] locks;
 }
-
-
 #endif
 
 
@@ -170,7 +167,7 @@ void Sph<ndim>::DeleteParticles
  int *deadlist)                     ///< List of 'dead' particle ids
 {
   int i;                            // Particle counter
-  int idead = 0;                    // Aux. dead particle counter
+  int idead = 0;                    // Aux. 'dead' particle counter
   int ilive = 0;                    // 'Live' particle counter
 
   debug2("[Sph::DeleteParticles]");
@@ -228,6 +225,7 @@ void Sph<ndim>::ReorderParticles(void)
   for (i=0; i<Nsph; i++) {
     sphdata[i] = sphdataaux[iorder[i]];
     sphintdata[i] = sphintdataaux[iorder[i]];
+    sphintdata[i].part = &(sphdata[i]);
   }
 
   delete[] sphdataaux;

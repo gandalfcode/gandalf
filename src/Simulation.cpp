@@ -123,6 +123,7 @@ SimulationBase::SimulationBase
   paramfile = "";
   n = 0;
   nresync = 0;
+  Nblocksteps = 0;
   integration_step = 1;
   Nsteps = 0;
   rank = 0;
@@ -394,6 +395,12 @@ string SimulationBase::Output(void)
     WriteSnapshotFile(filename,out_file_form);
   }
 
+  // Output diagnostics to screen if passed sufficient number of block steps
+  if (Nblocksteps%ndiagstep == 0 && n == nresync) {
+    CalculateDiagnostics();
+    OutputDiagnostics();
+  }
+
   return filename;
 }
 
@@ -624,6 +631,7 @@ void Simulation<ndim>::ProcessParameters(void)
   dt_snap               = floatparams["dt_snap"]/simunits.t.outscale;
   level_diff_max        = intparams["level_diff_max"];
   Nlevels               = intparams["Nlevels"];
+  ndiagstep             = intparams["ndiagstep"];
   noutputstep           = intparams["noutputstep"];
   Nstepsmax             = intparams["Nstepsmax"];
   out_file_form         = stringparams["out_file_form"];

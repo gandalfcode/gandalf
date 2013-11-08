@@ -386,8 +386,6 @@ DOUBLE NbodyLeapfrogKDK<ndim, kernelclass>::Timestep
   timestep = nbody_mult*sqrt(star->h/(amag + small_number_dp));
   timestep = min(timestep,star->dt_internal);
 
-  cout << "DT : " << amag << "    " << star->h << "    " << star->dt_internal << "     " << timestep << endl;
-
   return timestep;
 }
 

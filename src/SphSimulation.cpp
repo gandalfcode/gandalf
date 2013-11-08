@@ -237,6 +237,7 @@ void SphSimulation<ndim>::MainLoop(void)
   n = n + 1;
   Nsteps = Nsteps + 1;
   t = t + timestep;
+  if (n == nresync) Nblocksteps = Nblocksteps + 1;
 
   // Advance SPH particles positions and velocities
   sphint->AdvanceParticles(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
@@ -347,7 +348,7 @@ void SphSimulation<ndim>::MainLoop(void)
         activecount = sphint->CheckTimesteps(level_diff_max,n,
                                              sph->Nsph,sph->sphintdata);
       else activecount = 0;
-      activecount = 0;
+      //activecount = 0;
 
     } while (activecount > 0);
     //-------------------------------------------------------------------------
@@ -404,10 +405,7 @@ void SphSimulation<ndim>::MainLoop(void)
   // Search for new sink particles (if activated)
   if (sink_particles == 1) {
     if (sinks.create_sinks == 1) sinks.SearchForNewSinkParticles(n,sph,nbody);
-    if (sinks.Nsink > 0) {
-      for (int s=0; s<sinks.Nsink; s++) 
-        sinks.AccreteMassToSinks(sph,nbody,n,timestep,s);
-    }
+    if (sinks.Nsink > 0) sinks.AccreteMassToSinks(sph,nbody,n,timestep);
   }
 
 
@@ -520,6 +518,7 @@ template <int ndim>
 void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 {
   int i;                                // Particle counter
+  int imin=-1;                          // id of particle with minimum timestep
   int istep;                            // ??
   int level;                            // Particle timestep level
   int last_level;                       // Previous timestep level
@@ -557,8 +556,10 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       dt = min(sph->sphdata[i].dt,
                sphint->Timestep(sph->sphdata[i],sph->hydro_forces));
       if (dt < timestep) timestep = dt;
+      if (dt < dt_min_sph) imin = i;
       if (dt < dt_min_sph) dt_min_sph = dt;
       sph->sphdata[i].dt = dt;
+      
     }
     
     // Now compute minimum timestep due to stars/systems
@@ -662,6 +663,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       level_max_sph = max(level_max_sph,sph->sphdata[i].level);
       level_min_sph = min(level_min_sph,sph->sphdata[i].level);
       level_max = max(level_max,sph->sphdata[i].level);
+      if (sph->sphdata[i].dt < dt_min_sph) imin = i;
       dt_min_sph = min(dt_min_sph,sph->sphdata[i].dt);
     }
     //-------------------------------------------------------------------------
@@ -777,9 +779,13 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   //---------------------------------------------------------------------------
   ninlevel = new int[level_max+1];
 
+  cout << "-----------------------------------------------------" << endl;
   cout << "Checking timesteps : " << level_max << "   " << level_max_sph << "    " << level_max_nbody << endl;
   cout << "dt_min_sph : " << dt_min_sph << "    dt_min_nbody : " << dt_min_nbody << "    timestep : " << timestep << endl;
-
+  cout << "imin : " << imin << "    " << sph->sphdata[imin].dt << "     " 
+       << sph->sphdata[imin].h << "     " 
+       << sqrt(DotProduct(sph->sphdata[imin].a,sph->sphdata[imin].a,ndim)) 
+       << endl;
   for (int l=0; l<level_max+1; l++) ninlevel[l] = 0;
   for (i=0; i<sph->Nsph; i++) ninlevel[sph->sphdata[i].level]++;
   cout << "SPH level occupancy" << endl;

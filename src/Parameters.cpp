@@ -183,6 +183,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["tsnapfirst"] = 0.1;
   intparams["Nstepsmax"] = 9999999;
   intparams["noutputstep"] = 32;
+  intparams["ndiagstep"] = 32;
 
   // Unit and scaling parameters
   //---------------------------------------------------------------------------

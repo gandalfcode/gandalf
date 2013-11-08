@@ -209,25 +209,22 @@ int SphLeapfrogKDK<ndim>::CheckTimesteps
  int Nsph,                          ///< [in] No. of SPH particles
  SphIntParticle<ndim> *sphintdata)  ///< [inout] SPH particle integration data
 {
-  int activecount = 0;              // ..
+  int activecount = 0;              // No. of ptcls with new active timesteps
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
-  int k;                            // Dimension counter
   int level_new;                    // New level of particle
   int nnewstep;                     // New step size of particle
-  int nstep;                        // Particle (integer) step size
   SphParticle<ndim> *part;          // SPH particle pointer
 
   debug2("[SphLeapfrogKDK::CheckTimesteps]");
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,k,level_new,nnewstep,nstep,part)\
+#pragma omp parallel for default(none) private(dn,level_new,nnewstep,part)\
   shared(level_diff_max,n,Nsph,sphintdata) reduction(+:activecount)
   for (i=0; i<Nsph; i++) {
     dn = n - sphintdata[i].nlast;
-    nstep = sphintdata[i].nstep;
     part = sphintdata[i].part;
-    if (dn == nstep) continue;
+    if (dn == sphintdata[i].nstep) continue;
 
     // Check if neighbour timesteps are too small.  If so, then reduce 
     // timestep if possible
@@ -237,9 +234,8 @@ int SphLeapfrogKDK<ndim>::CheckTimesteps
 
       // If new level is correctly synchronised, then change all quantities
       if (n%nnewstep == 0) {
-        nstep = dn;
         part->level = level_new;
-        if (dn > 0) sphintdata[i].nstep = dn; //nstep;
+        if (dn > 0) sphintdata[i].nstep = dn;
         part->active = true;
         activecount++;
       }
