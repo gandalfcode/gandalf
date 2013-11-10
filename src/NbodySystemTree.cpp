@@ -584,7 +584,7 @@ template <int ndim>
 void NbodySystemTree<ndim>::RestockTreeNodes
 (Nbody<ndim> *nbody)                ///< [in] Nbody object containing stars
 {
-  bool validtrue = true;            // Flag if tree is still valid or not
+  //bool validtrue = true;            // Flag if tree is still valid or not
   int c;                            // Node counter
   int c1;                           // Child cell 1 id
   int c2;                           // Child cell 2 id

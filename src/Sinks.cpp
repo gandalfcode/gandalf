@@ -230,8 +230,8 @@ void Sinks<ndim>::CreateNewSinkParticle
   for (k=0; k<ndim; k++) sink[Nsink].star->r[k] = sph->sphdata[isink].r[k];
   for (k=0; k<ndim; k++) sink[Nsink].star->v[k] = sph->sphdata[isink].v[k];
   for (k=0; k<ndim; k++) sink[Nsink].star->a[k] = sph->sphdata[isink].a[k];
-  for (k=0; k<ndim; k++) sink[Nsink].ahydro[k] = 
-    sph->sphdata[isink].a[k] - sph->sphdata[isink].agrav[k];
+  for (k=0; k<ndim; k++) sink[Nsink].fhydro[k] = sph->sphdata[isink].m*
+    (sph->sphdata[isink].a[k] - sph->sphdata[isink].agrav[k]);
   for (k=0; k<ndim; k++) sink[Nsink].star->adot[k] = 0.0;
   for (k=0; k<ndim; k++) sink[Nsink].star->a2dot[k] = 0.0;
   for (k=0; k<ndim; k++) sink[Nsink].star->a3dot[k] = 0.0;
@@ -476,7 +476,6 @@ void Sinks<ndim>::AccreteMassToSinks
     for (k=0; k<ndim; k++) sink[s].star->r[k] *= sink[s].star->m;
     for (k=0; k<ndim; k++) sink[s].star->v[k] *= sink[s].star->m;
     for (k=0; k<ndim; k++) sink[s].star->a[k] *= sink[s].star->m;
-    for (k=0; k<ndim; k++) sink[s].ahydro[k] = 0.0;
 
 
     // Loop over all neighbouring particles
@@ -499,7 +498,7 @@ void Sinks<ndim>::AccreteMassToSinks
       for (k=0; k<ndim; k++) sink[s].star->r[k] += mtemp*sph->sphdata[i].r[k];
       for (k=0; k<ndim; k++) sink[s].star->v[k] += mtemp*sph->sphdata[i].v[k];
       for (k=0; k<ndim; k++) sink[s].star->a[k] += mtemp*sph->sphdata[i].a[k];
-      for (k=0; k<ndim; k++) sink[s].ahydro[k] += 
+      for (k=0; k<ndim; k++) sink[s].fhydro[k] += 
 	mtemp*(sph->sphdata[i].a[k] - sph->sphdata[i].agrav[k]);
       sink[s].utot += mtemp*sph->sphdata[i].u;
 
@@ -511,7 +510,6 @@ void Sinks<ndim>::AccreteMassToSinks
     for (k=0; k<ndim; k++) sink[s].star->r[k] /= sink[s].star->m;
     for (k=0; k<ndim; k++) sink[s].star->v[k] /= sink[s].star->m;
     for (k=0; k<ndim; k++) sink[s].star->a[k] /= sink[s].star->m;
-    for (k=0; k<ndim; k++) sink[s].ahydro[k] /= sink[s].star->m;
 
     // Calculate angular momentum of old COM around new COM
     for (k=0; k<ndim; k++) dr[k] = rold[k] - sink[s].star->r[k];

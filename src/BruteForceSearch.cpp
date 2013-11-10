@@ -109,8 +109,6 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
 {
   int i,j,k;                        // Particle and dimension counters
   int okflag;                       // Flag valid smoothing length
-  int Nneib;                        // No. of neighbours
-  int Nfar;                         // No. of 'far' neighbours
   int *neiblist;                    // List of neighbour ids
   FLOAT dr[ndim];                   // Relative distance vector
   FLOAT rp[ndim];                   // Position of current particle
@@ -131,8 +129,8 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
 
   // Create parallel threads
   //===========================================================================
-#pragma omp parallel default(none) private(dr,drsqd,i,j,k,neiblist,okflag,rp) \
-    shared(sph, nbody, gpot, m, mu)
+#pragma omp parallel default(none) private(dr,drsqd,i,j,k,neiblist,okflag,rp)\
+  shared(gpot,m,mu,nbody,sph)
   {
     neiblist = new int[sph->Ntot];
     drsqd = new FLOAT[sph->Ntot];
@@ -190,7 +188,6 @@ void BruteForceSearch<ndim>::UpdateAllSphHydroForces
 (Sph<ndim> *sph)                      ///< [inout] Pointer to SPH object
 {
   int i,j,k;                          // Particle and dimension counters
-  int okflag;                         // Flag valid smoothing length
   int Nneib;                          // No. of neighbours
   int *neiblist;                      // List of neighbour ids
   FLOAT draux[ndim];                  // Relative distance vector
@@ -301,17 +298,8 @@ void BruteForceSearch<ndim>::UpdateAllSphForces
 (Sph<ndim> *sph)                      ///< Pointer to SPH object
 {
   int i,j,k;                          // Particle and dimension counters
-  int okflag;                         // Flag valid smoothing length
   int Nneib;                          // No. of neighbours
   int *neiblist;                      // List of neighbour ids
-  FLOAT draux[ndim];                  // Relative distance vector
-  FLOAT drsqd;                        // Distance squared
-  FLOAT hrangesqdi;                   // Gather kernel extent (squared)
-  FLOAT hrangesqdj;                   // Scatter kernel extent (squared)
-  FLOAT rp[ndim];                     // Position of current particle
-  FLOAT *dr;                          // Array of neib. position vectors
-  FLOAT *drmag;                       // Array of neib. distances
-  FLOAT *invdrmag;                    // Array of neib. inverse distances
   struct SphParticle<ndim> *neibpart; // Local copies of neib. particles
 
   debug2("[BruteForceSearch::UpdateAllSphForces]");
@@ -320,10 +308,10 @@ void BruteForceSearch<ndim>::UpdateAllSphForces
   neiblist = new int[sph->Ntot];
   neibpart = new SphParticle<ndim>[sph->Ntot];
 
-  for (j=0; j<sph->Ntot; j++) neibpart[j] = sph->sphdata[j];
 
-  // Make local copies of all potential neighbours
+  // Make local copies of all particles and zero summation variables
   for (j=0; j<sph->Ntot; j++) {
+    neibpart[j] = sph->sphdata[j];
     neibpart[j].div_v = (FLOAT) 0.0;
     neibpart[j].dudt = (FLOAT) 0.0;
     neibpart[j].gpot = (FLOAT) 0.0;
@@ -399,17 +387,8 @@ void BruteForceSearch<ndim>::UpdateAllSphGravForces
 (Sph<ndim> *sph)                      ///< [inout] Pointer to SPH object
 {
   int i,j,k;                          // Particle and dimension counters
-  int okflag;                         // Flag valid smoothing length
   int Nneib;                          // No. of neighbours
   int *neiblist;                      // List of neighbour ids
-  FLOAT draux[ndim];                  // Relative distance vector
-  FLOAT drsqd;                        // Distance squared
-  FLOAT hrangesqdi;                   // Gather kernel extent (squared)
-  FLOAT hrangesqdj;                   // Scatter kernel extent (squared)
-  FLOAT rp[ndim];                     // Position of current particle
-  FLOAT *dr;                          // Array of neib. position vectors
-  FLOAT *drmag;                       // Array of neib. distances
-  FLOAT *invdrmag;                    // Array of neib. inverse distances
   struct SphParticle<ndim> *neibpart; // Local copies of neib. particles
 
   debug2("[BruteForceSearch::UpdateAllSphForces]");
@@ -493,9 +472,7 @@ void BruteForceSearch<ndim>::UpdateAllSphDerivatives
 (Sph<ndim> *sph)                      ///< Pointer to SPH object
 {
   int i,j,k;                          // Particle and dimension counters
-  int okflag;                         // Flag valid smoothing length
   int Nneib;                          // No. of neighbours
-  int Nfar;                           // No. of 'far' neighbours
   int *neiblist;                      // List of neighbour ids
   FLOAT draux[ndim];                  // Relative distance vector
   FLOAT drsqd;                        // Distance squared
@@ -572,9 +549,7 @@ void BruteForceSearch<ndim>::UpdateAllSphDudt
 (Sph<ndim> *sph)                      ///< Pointer to SPH object
 {
   int i,j,k;                          // Particle and dimension counters
-  int okflag;                         // Flag valid smoothing length
   int Nneib;                          // No. of neighbours
-  int Nfar;                           // No. of 'far' neighbours
   int *neiblist;                      // List of neighbour ids
   FLOAT draux[ndim];                  // Relative distance vector
   FLOAT drsqd;                        // Distance squared

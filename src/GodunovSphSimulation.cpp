@@ -225,7 +225,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 template <int ndim>
 void GodunovSphSimulation<ndim>::MainLoop(void)
 {
-  int activecount;                  // ..
+  //int activecount;                  // ..
   int i;                            // Particle loop counter
   int it;                           // Time-symmetric iteration counter
   int k;                            // Dimension counter
@@ -473,8 +473,6 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
   DOUBLE dt;                            // Aux. timestep variable
   DOUBLE dt_min_sph = big_number_dp;    // Maximum SPH particle timestep
   DOUBLE dt_min_nbody = big_number_dp;  // Maximum N-body particle timestep
-
-  int *ninlevel;
 
   debug2("[SphSimulation::ComputeBlockTimesteps]");
 

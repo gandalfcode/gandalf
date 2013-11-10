@@ -136,8 +136,6 @@ void BinarySubTree<ndim>::BuildSubTree
 (Sph<ndim> *sph,                    ///< Pointer to main SPH object
  Parameters &simparams)             ///< Simulation parameters
 {
-  int output = 0;
-
   debug2("[BinarySubTree::BuildSubTree]");
 
   // Allocate (or reallocate if needed) all tree memory
@@ -924,7 +922,6 @@ int BinarySubTree<ndim>::ComputeGravityInteractionList
   int cc;                           // Cell counter
   int i;                            // Particle id
   int j;                            // Aux. particle counter
-  int ilast;                        // id of last particle in current cell
   int k;                            // Neighbour counter
   int Nneibtemp = Nneib;            // Aux. counter
   FLOAT cdistsqd;                   // ..

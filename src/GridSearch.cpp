@@ -160,7 +160,6 @@ void GridSearch<ndim>::UpdateAllSphProperties
   int Nneibmax;                     // Max. no. of neighbours
   int *activelist;                  // List of active particle ids
   int *celllist;                    // List of active cells
-  int *gatherlist;                  // List of nearby neighbour ids
   int *neiblist;                    // List of neighbour ids
   FLOAT draux[ndim];                // Aux. relative position vector var
   FLOAT drsqdaux;                   // Distance squared
@@ -181,17 +180,17 @@ void GridSearch<ndim>::UpdateAllSphProperties
   // Find list of all cells that contain active particles
   celllist = new int[Ncell];
   cactive = ComputeActiveCellList(celllist);
-  Nneibmax = Nlistmax;
+
 
   // Set-up all OMP threads
   //===========================================================================
 #pragma omp parallel default(none) private(activelist,c,cc,draux,drsqd) \
-  private(drsqdaux,gatherlist,hrangesqd,i,j,jj,k,okflag,m,m2,mu,mu2,Nactive) \
+  private(drsqdaux,hrangesqd,i,j,jj,k,okflag,m,m2,mu,mu2,Nactive) \
   private(neiblist,Ngather,Nneib,r,rp,gpot,gpot2) \
   shared(sph,data,nbody,Nneibmax,cactive,celllist)
   {
+    Nneibmax = Nlistmax;
     activelist = new int[Noccupymax];
-    gatherlist = new int[Nneibmax];
     neiblist = new int[Nneibmax];
     gpot = new FLOAT[Nneibmax];
     gpot2 = new FLOAT[Nneibmax];
@@ -214,7 +213,8 @@ void GridSearch<ndim>::UpdateAllSphProperties
       // Compute neighbour list for cell depending on physics options
       Nneib = ComputeNeighbourList(c,neiblist);
 
-      // Make local copies of important neib information (mass and position)
+      // Make local copies of important neib information 
+      // (mass and position; also gpot for finding ptcls at potential minima
       for (jj=0; jj<Nneib; jj++) {
         j = neiblist[jj];
         gpot[jj] = data[j].gpot;
@@ -246,7 +246,6 @@ void GridSearch<ndim>::UpdateAllSphProperties
             gpot2[Ngather] = gpot[jj];
             m2[Ngather] = m[jj];
             mu2[Ngather] = mu[jj];
-            gatherlist[Ngather] = jj;
             Ngather++;
        	  }
 	  
@@ -279,7 +278,6 @@ void GridSearch<ndim>::UpdateAllSphProperties
     delete[] gpot2;
     delete[] gpot;
     delete[] neiblist;
-    delete[] gatherlist;
     delete[] activelist;
 
   }
@@ -312,7 +310,6 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
   int k;                            // Dimension counter
   int okflag;                       // Flag if h-rho iteration is valid
   int Nactive;                      // No. of active particles in cell
-  int Ngrav;                        // No. of direct sum gravity ptcls
   int Ninteract;                    // No. of interaction pairs
   int Nneib;                        // No. of neighbours
   int Nneibmax;                     // Max. no. of neighbours
@@ -698,7 +695,6 @@ void GridSearch<ndim>::UpdateAllSphDudt(Sph<ndim> *sph)
   int k;                            // Dimension counter
   int okflag;                       // Flag if h-rho iteration is valid
   int Nactive;                      // No. of active particles in cell
-  int Ngrav;                        // No. of direct sum gravity ptcls
   int Ninteract;                    // No. of near gather neighbours
   int Nneib;                        // No. of neighbours
   int Nneibmax;                     // Max. no. of neighbours

@@ -453,9 +453,8 @@ void BinaryTree<ndim>::LoadParticlesToTree
   int cc;                          // Secondary cell counter
   int g;                           // ..
   int k;                           // Dimensionality counter
-  int kk;
+  int kk;                          // ..
   int i;                           // Particle counter
-  int iptcl;                       // Particle id
   int j;                           // Dummy particle id
   int l;                           // Level counter
   FLOAT *ccap;                     // Maximum capacity of cell
@@ -604,15 +603,15 @@ void BinaryTree<ndim>::UpdateHmaxValues
 template <int ndim>
 int BinaryTree<ndim>::ComputeActiveCellList
 (BinaryTreeCell<ndim> **celllist,   ///< Cells id array containing active ptcls
- BinarySubTree<ndim> **treelist)    ///< ..
+ BinarySubTree<ndim> **treelist)    ///< 
 {
-  binlistiterator it;
-  int c;                            // Cell counter
+  binlistiterator it;               // ..
   int Nactive = 0;                  // No. of cells containing active ptcls
-  int Nfirst = 0;
+  int Nfirst = 0;                   // ..
 
   debug2("[BinaryTree::ComputeActiveCellList]");
 
+  // Iterate/loop over all sub-trees to find all cells containing active ptcls
   for (it = subtrees.begin(); it != subtrees.end(); it++) {
     Nactive = (*it)->ComputeActiveCellList(Nactive,celllist);
     for (int i=Nfirst; i<Nactive; i++) treelist[i] = (*it);
@@ -675,6 +674,7 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
   int Nneib = 0;                    // Total number of gather neighbours
                                     // (summed over all sub-trees)
 
+  // Iterate/loop over all sub-trees to find all gather neighbours
   for (it = subtrees.begin(); it != subtrees.end(); it++) {
     Nneib = (*it)->ComputeGatherNeighbourList(cell,Nneib,Nneibmax,
                                               neiblist,hmax,sphdata);
@@ -692,7 +692,9 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
 /// of neighbour ids, 'neiblist', for all particles inside cell 'c'.
 /// Includes all particles in the selected cell, plus all particles
 /// contained in adjacent cells (including diagonal cells).
-/// Wrapper around the true implementation inside BinarySubTree
+/// Wrapper around the true implementation inside BinarySubTree.
+/// If allocated memory array containing neighbour ids (neiblist) overflows, 
+/// return with error code (-1) in order to reallocate more memory.
 //=============================================================================
 template <int ndim>
 int BinaryTree<ndim>::ComputeNeighbourList
@@ -722,6 +724,8 @@ int BinaryTree<ndim>::ComputeNeighbourList
 /// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
 /// the gravity tree walk for active particles inside cell c.
 /// Currently defaults to the geometric opening criteria.
+/// If any of the interactions list arrays (neiblist,directlist,gravcelllist) 
+/// overflow, return with error code (-1) to reallocate more memory.
 //=============================================================================
 template <int ndim>
 int BinaryTree<ndim>::ComputeGravityInteractionList
@@ -740,10 +744,13 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
   binlistiterator it;               // ..
   int okflag;
 
+  // Zero counters here (ComputeGravityInteractionList routine appends data)
   Nneib = 0;
   Ndirect = 0;
   Ngravcell = 0;
 
+  // Iterate/loop over all sub-trees to find all SPH neighbours, direct-sum 
+  // gravity and distant cell interaction lists
   for (it = subtrees.begin(); it != subtrees.end(); it++) {
     okflag = (*it)->ComputeGravityInteractionList(cell,Nneibmax,Ndirectmax,
 						  Ngravcellmax,Nneib,Ndirect,
@@ -770,7 +777,6 @@ void BinaryTree<ndim>::ComputeCellMonopoleForces
  BinaryTreeCell<ndim> **gravcelllist, ///< [in] List of tree cell ids
  SphParticle<ndim> &parti)            ///< [inout] SPH particle
 {
-  int c;                            // Cell id
   int cc;                           // Aux. cell counter
   int k;                            // Dimension counter
   FLOAT dr[ndim];                   // Relative position vector
@@ -779,7 +785,7 @@ void BinaryTree<ndim>::ComputeCellMonopoleForces
   FLOAT invdr3;                     // 1 / dist^3
   FLOAT mc;                         // Mass of cell
   FLOAT rp[ndim];                   // Position of particle
-  BinaryTreeCell<ndim> *cell;       // ..
+  BinaryTreeCell<ndim> *cell;       // Pointer to gravity tree cell
 
   for (k=0; k<ndim; k++) rp[k] = parti.r[k];
 
@@ -812,12 +818,11 @@ void BinaryTree<ndim>::ComputeCellMonopoleForces
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::ComputeCellQuadrupoleForces
-(int i,                             ///< [in] i.d. of particle
- int Ngravcell,                     ///< [in] No. of tree cells in list
- BinaryTreeCell<ndim> **gravcelllist,                 ///< [in] List of tree cell ids
- SphParticle<ndim> &parti)          ///< [inout] SPH particle
+(int i,                               ///< [in] i.d. of particle
+ int Ngravcell,                       ///< [in] No. of tree cells in list
+ BinaryTreeCell<ndim> **gravcelllist, ///< [in] List of tree cell ids
+ SphParticle<ndim> &parti)            ///< [inout] SPH particle
 {
-  int c;                            // Cell id
   int cc;                           // Aux. cell counter
   int k;                            // Dimension counter
   FLOAT dr[ndim];                   // Relative position vector
@@ -826,7 +831,7 @@ void BinaryTree<ndim>::ComputeCellQuadrupoleForces
   FLOAT invdrmag;                   // 1 / distance
   FLOAT invdr5;                     // 1 / distance^5
   FLOAT qscalar;                    // Quadrupole moment scalar quantity
-  BinaryTreeCell<ndim> *cell;       // Pointer to cell
+  BinaryTreeCell<ndim> *cell;       // Pointer to gravity tree cell
 
   // Loop over all neighbouring particles in list
   //---------------------------------------------------------------------------
@@ -893,9 +898,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 {
   int celldone;                    // ..
   int okflag;                      // ..
-  int c;                           // Cell id
   int cc;                          // Aux. cell counter
-  int g;                           // Leaf cell counter
   int cactive;                     // No. of active
   int i;                           // Particle id
   int j;                           // Aux. particle counter
@@ -906,7 +909,6 @@ void BinaryTree<ndim>::UpdateAllSphProperties
   int Nneib;                       // No. of neighbours
   int Nneibmax;                    // Max. no. of neighbours
   int *activelist;                 // List of active particle ids
-  int *gatherlist;                 // ..
   int *neiblist;                   // List of neighbour ids
   FLOAT draux[ndim];               // Aux. relative position vector var
   FLOAT drsqdaux;                  // Distance squared
@@ -938,12 +940,11 @@ void BinaryTree<ndim>::UpdateAllSphProperties
   //===========================================================================
 #pragma omp parallel default(none) private(activelist,cc,cell,celldone,draux)\
   private(drsqd,drsqdaux,hmax,hrangesqd,i,j,jj,k,okflag,m,mu,Nactive,neiblist)\
-  private(Nneib,Nneibmax,r,rp,gatherlist,gpot,gpot2,m2,mu2,Ngather)\
+  private(Nneib,Nneibmax,r,rp,gpot,gpot2,m2,mu2,Ngather)\
   shared(sph,celllist,cactive,data,nbody,treelist)
   {
     Nneibmax = 2*sph->Ngather;
     activelist = new int[Nleafmax];
-    gatherlist = new int[Nneibmax];
     neiblist = new int[Nneibmax];
     gpot = new FLOAT[Nneibmax];
     gpot2 = new FLOAT[Nneibmax];
@@ -988,9 +989,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
           delete[] gpot2;
           delete[] gpot;
           delete[] neiblist;
-          delete[] gatherlist;
           Nneibmax = 2*Nneibmax;
-          gatherlist = new int[Nneibmax];
           neiblist = new int[Nneibmax];
           gpot = new FLOAT[Nneibmax];
           gpot2 = new FLOAT[Nneibmax];
@@ -1033,7 +1032,6 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 
             // Record distance squared for all potential gather neighbours
             if (drsqdaux <= hrangesqd) {
-              gatherlist[Ngather] = jj;
               gpot[Ngather] = gpot[jj];
               drsqd[Ngather] = drsqdaux;
               m2[Ngather] = m[jj];
@@ -1079,7 +1077,6 @@ void BinaryTree<ndim>::UpdateAllSphProperties
     delete[] gpot2;
     delete[] gpot;
     delete[] neiblist;
-    delete[] gatherlist;
     delete[] activelist;
 
   }
@@ -1107,7 +1104,6 @@ template <int ndim>
 void BinaryTree<ndim>::UpdateAllSphHydroForces
 (Sph<ndim> *sph)                   ///< Pointer to SPH object
 {
-  int c;                           // Cell id
   int cactive;                     // No. of active cells
   int cc;                          // Aux. cell counter
   int i;                           // Particle id
@@ -1347,7 +1343,6 @@ template <int ndim>
 void BinaryTree<ndim>::UpdateAllSphForces
 (Sph<ndim> *sph)                    ///< Pointer to SPH object
 {
-  int c;                            // Cell id
   int cactive;                      // No. of active cells
   int cc;                           // Aux. cell counter
   int i;                            // Particle id

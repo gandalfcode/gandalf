@@ -499,7 +499,7 @@ void Parameters::RecordParametersToFile(void)
 //=============================================================================
 std::string Parameters::TrimWhiteSpace(std::string instr)
 {
-  int i;                            // Character counter
+  unsigned int i;                   // Character counter
   string outstr;                    // Final string without any whitespace
 
   // Loop over all characters and ignore any white-space characters

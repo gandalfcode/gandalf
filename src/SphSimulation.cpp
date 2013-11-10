@@ -53,7 +53,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Perform initial MPI decomposition
   //---------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
-  if (rank == 0) mpicontrol.CreateInitialDomainDecomposition(sph,nbody,simparams,simbox);
+  if (rank == 0) 
+    mpicontrol.CreateInitialDomainDecomposition(sph,nbody,simparams,simbox);
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Abort(MPI_COMM_WORLD,0);
 #endif
@@ -316,7 +317,7 @@ void SphSimulation<ndim>::MainLoop(void)
         }
       }
       
-      // Calculate SPH gravity and hydro forces, depending on which are activated
+      // Compute SPH gravity and hydro forces, depending on which are activated
       if (sph->hydro_forces == 1 && sph->self_gravity == 1)
         sphneib->UpdateAllSphForces(sph);
       else if (sph->hydro_forces == 1)
@@ -376,6 +377,14 @@ void SphSimulation<ndim>::MainLoop(void)
           nbody->nbodydata[i]->gpe = 0.0;
         }
       }
+      if (sink_particles == 1) {
+	for (i=0; i<sinks.Nsink; i++) {
+          if (sinks.sink[i].star->active) {
+	    for (k=0; k<ndim; k++) sinks.sink[i].fhydro[k] = 0.0;
+	  }
+	}
+      }
+	  
 
       // Calculate forces, force derivatives etc.., for active stars/systems
       nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
