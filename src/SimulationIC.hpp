@@ -334,6 +334,9 @@ void Simulation<ndim>::BinaryAccretion(void)
   hsink = min(hsink,hfluid1);
   rsink = sph->kernp->kernrange*hsink;
 
+  // Set hmin_sink here, since no other sinks will be formed
+  sph->hmin_sink = hsink;
+
 
   // Add star particles to simulation
   //---------------------------------------------------------------------------

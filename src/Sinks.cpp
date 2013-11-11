@@ -451,7 +451,7 @@ void Sinks<ndim>::AccreteMassToSinks
         sink[s].taccrete *= pow(sink[s].mmax/sink[s].menc,2);
       dt = (FLOAT) sink[s].star->nstep*timestep;
       macc = sink[s].menc*max(1.0 - exp(-dt/sink[s].taccrete),0.0);
-      cout << "Accreting sink " << s << "     Nneib : " << Nneib << endl;
+      /*cout << "Accreting sink " << s << "     Nneib : " << Nneib << endl;
       cout << "smooth_accretion : " << smooth_accretion << "     wnorm : " << wnorm << endl;
       cout << "rotke : " << sink[s].rotketot << "   " << sink[s].gpetot << endl;
       cout << "Mass enclosed " << sink[s].menc << "    " << sink[s].mmax << endl;
@@ -459,7 +459,7 @@ void Sinks<ndim>::AccreteMassToSinks
          << "    efrac : " << efrac <<endl;
       cout << "tvisc : " << sink[s].tvisc << "    trad : " << sink[s].trad 
          << "   trot : " << sink[s].trot << endl;
-      cout << "tacc : " << sink[s].taccrete << "    macc : " << macc << endl;
+	 cout << "tacc : " << sink[s].taccrete << "    macc : " << macc << endl;*/
     }
     else {
       macc = sink[s].menc;
