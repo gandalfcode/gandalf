@@ -47,11 +47,12 @@ using namespace std;
 template <int ndim>
 MpiControl<ndim>::MpiControl()
 {
+  int len;
+
   allocated_mpi = false;
 
   MPI_Comm_size(MPI_COMM_WORLD,&Nmpi);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  int len;
   MPI_Get_processor_name(hostname, &len);
 
   if (this->rank == 0)
@@ -103,6 +104,9 @@ MpiControl<ndim>::~MpiControl()
 template <int ndim>
 void MpiControl<ndim>::AllocateMemory(void)
 {
+
+  mpinode = new MpiNode<ndim>[Nmpi];
+
   return;
 }
 
@@ -115,6 +119,9 @@ void MpiControl<ndim>::AllocateMemory(void)
 template <int ndim>
 void MpiControl<ndim>::DeallocateMemory(void)
 {
+
+  delete[] mpinode;
+
   return;
 }
 
@@ -157,9 +164,10 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
  DomainBox<ndim> simbox)           ///< Simulation domain box
 {
   int i;                           // Particle counter
-
-  // Create MPI binary tree for organising domain decomposition
-  mpitree = new BinaryTree<ndim>(16,0.1,0.0,"geometric","monopole",1,Nmpi);
+  int k;                           // Dimension counter
+  int okflag;                      // ..
+  FLOAT boxbuffer[2*ndim];         // Bounding box buffer
+  MPI_Status status;               // ..
 
 
   // For main process, create load balancing tree, transmit information to all
@@ -169,6 +177,8 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
     debug2("[MpiControl::CreateLoadBalancingTree]");
 
+    // Create MPI binary tree for organising domain decomposition
+    mpitree = new BinaryTree<ndim>(16,0.1,0.0,"geometric","monopole",1,Nmpi);
 
     // Create binary tree from all SPH particles
     // Set number of tree members to total number of SPH particles (inc. ghosts)
@@ -215,12 +225,18 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
     // Create bounding boxes containing particles in each sub-tree
     for (i=0; i<Nmpi; i++) {
-
+      for (k=0; k<ndim; k++) mpinode[i].bbmin[k] = mpitree->subtrees[i]->box.boxmin[k];
+      for (k=0; k<ndim; k++) mpinode[i].bbmax[k] = mpitree->subtrees[i]->box.boxmax[k];
     }
 
 
     // Finally, broadcast all bounding boxes and domain information to all
     // other nodes
+    for (i=1; i<Nmpi; i++) {
+      for (k=0; k<ndim; k++) boxbuffer[k] = mpinode[i].bbmin[k];
+      for (k=0; k<ndim; k++) boxbuffer[ndim+k] = mpinode[i].bbmax[k];
+      okflag = MPI_Send(boxbuffer,2*ndim,MPI_DOUBLE,i,0,MPI_COMM_WORLD);
+    }
 
   }
 
@@ -229,6 +245,8 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
   //---------------------------------------------------------------------------
   else {
 
+    // Receive bounding box data for domain
+    okflag = MPI_Recv(boxbuffer,2*ndim,MPI_DOUBLE,rank,0,MPI_COMM_WORLD,&status);
 
   }
   //---------------------------------------------------------------------------

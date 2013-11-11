@@ -278,6 +278,7 @@ class BinarySubTree
   FLOAT thetamaxsqd;                ///< ..
   FLOAT *rk[ndim];                  ///< Particle Cartesian coordinates
   BinaryTreeCell<ndim> *tree;       ///< Main tree array
+  DomainBox<ndim> box;             ///< Pointer to simulation bounding box
 
 };
 

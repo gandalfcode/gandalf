@@ -553,12 +553,24 @@ void BinaryTree<ndim>::LoadParticlesToTree
   }
 
 
+  // Set bounding boxes for sub-trees
+  for (c=0; c<Ncell; c++) {
+	if (tree[c].c2 == 0) {
+      g = tree[c].c2g;
+      for (k=0; k<ndim; k++) subtrees[g]->box.boxmin[k] = tree[c].bbmin[k];
+      for (k=0; k<ndim; k++) subtrees[g]->box.boxmax[k] = tree[c].bbmax[k];
+	}
+
+  }
+
+
   // Free all locally allocated memory
   delete[] ccon;
   delete[] ccap;
 
   return;
 }
+
 
 
 //=============================================================================
@@ -1120,7 +1132,6 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
   FLOAT draux[ndim];               // Aux. relative position vector var
   FLOAT drsqd;                     // Distance squared
   FLOAT hrangesqdi;                // Kernel gather extent
-  FLOAT hrangesqdj;                // Kernel scatter extent
   FLOAT rp[ndim];                  // Local copy of particle position
   FLOAT *dr;                       // Array of relative position vectors
   FLOAT *drmag;                    // Array of neighbour distances
@@ -1144,7 +1155,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
   // Set-up all OMP threads
   //===========================================================================
 #pragma omp parallel default(none) private(activelist,activepart,cc,cell,dr)\
-  private(draux,drmag,drsqd,hrangesqdi,hrangesqdj,i,interactlist,invdrmag,j,jj,k) \
+  private(draux,drmag,drsqd,hrangesqdi,i,interactlist,invdrmag,j,jj,k) \
   private(Nactive,neiblist,neibpart,Ninteract,Nneib,Nneibmax,rp)\
   shared(cactive,celllist,data,sph,treelist)
   {
@@ -1216,8 +1227,6 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k]; //data[i].r[k];
         hrangesqdi = activepart[j].hrangesqd;
-        //hrangesqdi = sph->kernfacsqd*sph->kernp->kernrangesqd*
-        //  activepart[j].h*activepart[j].h;
         Ninteract = 0;
 
         // Validate that gather neighbour list is correct
@@ -1235,8 +1244,6 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
           // Skip neighbour if it's not the correct part of an active pair
           if (neiblist[jj] <= i && neibpart[jj].active) continue;
 
-          //hrangesqdj = sph->kernfacsqd*sph->kernp->kernrangesqd*
-          //  neibpart[jj].h*neibpart[jj].h;
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
           drsqd = DotProduct(draux,draux,ndim) + small_number;
 
