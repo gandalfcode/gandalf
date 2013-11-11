@@ -19,7 +19,7 @@
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 #  General Public License (http://www.gnu.org/licenses) for more details.
 #==============================================================================
-from gandalf.analysis.facade import get_sim_no, Singletons
+from gandalf.analysis.facade import get_sim_no, Singletons, SimBuffer, BufferException
 import commandsource as Commands
 import numpy as np
 from scipy import interpolate
@@ -39,6 +39,35 @@ return a scalar quantity only for the given particle.
         return values
     else:
         return values[id]
+
+
+
+#------------------------------------------------------------------------------
+def time_derivative(snap, quantity, type="default", id=None):
+    '''Return for a given snapshot, a given quantity of a given type. If id is
+not specified, return an array with the quantity for each particle. Otherwise,
+return a scalar quantity only for the given particle.
+'''
+    try:
+        snap1 = get_previous_snapshot_from_object(snap)
+    except:
+        snap1 = snap
+    try:
+        snap2 = get_next_snapshot_from_object(snap)
+    except:
+        snap2 = snap
+    values1 = UserQuantity(quantity).fetch(type, snap1)[1]
+    values2 = UserQuantity(quantity).fetch(type, snap2)[1]
+    tdiff = snap2.t - snap1.t
+    if tdiff > 0.0: 
+        timederiv = (values2 - values1)/tdiff
+    else:
+        timederiv = 0.0*values1
+    if id == None:
+        return timederiv
+    else:
+        return timederiv[id]
+
 
 
 #------------------------------------------------------------------------------

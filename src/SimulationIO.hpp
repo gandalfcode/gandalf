@@ -128,7 +128,8 @@ void Simulation<ndim>::ReadColumnHeaderFile
   infile >> info.Nsph;
   infile >> info.Nstar;
   infile >> info.ndim;
-  infile >> info.t/simunits.t.inscale;
+  infile >> info.t;
+  info.t /= simunits.t.inscale;
 
   // Check dimensionality matches if using fixed dimensions
   if (info.ndim != ndim) {
@@ -347,7 +348,8 @@ void Simulation<ndim>::ReadSerenFormHeaderFile
 
   info.Nsph  = idata[0];
   info.Nstar = idata[1];
-  info.t     = ddata[0]/simunits.t.inscale;
+  info.t     = ddata[0];
+  info.t /= simunits.t.inscale;
 
   // Check dimensionality matches if using fixed dimensions
   if (info.ndim != ndim) {
