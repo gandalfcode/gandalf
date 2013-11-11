@@ -377,6 +377,23 @@ class SimBuffer:
     def get_sim_iterator(sim):
         return SimIterator(sim)
     
+    @staticmethod
+    def get_next_snapshot_from_object(snap):
+        sim=snap.sim
+        snapno=sim.snapshots.index(snap)
+        next_index = snapno + 1
+        if next_index>=len(sim.snapshots):
+            raise BufferException("Reached the last snapshot")
+        return sim.snapshots[next_index]
+    
+    @staticmethod
+    def get_previous_snapshot_from_object(snap):
+        sim=snap.sim
+        snapno=sim.snapshots.index(snap)
+        previous_index = snapno-1
+        if previous_index<0:
+            raise BufferException("Reached the first snapshot")
+        return sim.snapshots[previous_index]
          
 class BufferException( Exception):   
     pass
