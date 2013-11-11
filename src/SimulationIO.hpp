@@ -46,7 +46,7 @@ bool SimulationBase::ReadSnapshotFile
 {
   debug2("[Simulation::ReadSnapshotFile]");
 
-  cout << "Read file : " << filename << "   format : " << fileform << endl;
+  cout << "Reading snapshot : " << filename << "   format : " << fileform << endl;
 
   if (fileform == "column")
     return ReadColumnSnapshotFile(filename);
@@ -599,13 +599,13 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     // Sinks/stars
     //-------------------------------------------------------------------------
     else if (data_id[j] == "sink_v1") {
-      sink_data_length = 12 + 2*ndim + 2*dmdt_range_aux;
+      sink_data_length = 12 + 2*ndim;  //+ 2*dmdt_range_aux;
       int ii;
       FLOAT sdata[sink_data_length];
       for (ii=0; ii<6; ii++) infile >> idata[ii];
       if (nbody->Nstar > 0) {
         for (i=0; i<nbody->Nstar; i++) {
-          for (ii=0; ii<2; ii++) infile >> booldummy;
+          for (ii=0; ii<2; ii++) infile >> idata[ii];
           for (ii=0; ii<2; ii++) infile >> idata[ii];
           for (ii=0; ii<sink_data_length; ii++) infile >> sdata[ii];
           for (k=0; k<ndim; k++) nbody->stardata[i].r[k] = sdata[k+1];
@@ -879,12 +879,13 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
     sink_data_length = 12 + 2*ndim; //+ 2*dmdt_range_aux;
     int ii;
     FLOAT sdata[sink_data_length];
-    for (ii=0; ii<6; ii++) outfile << 2 << "    " << 2 << "    " << 0 << "    "
-                                   << sink_data_length << "    " << 0 << "    "
-                                   << 0 << endl;
+    for (k=0; k<sink_data_length; k++) sdata[k] = 0.0;
+    outfile << 2 << "    " << 2 << "    " << 0 << "    "
+	    << sink_data_length << "    " << 0 << "    "
+	    << 0 << endl;
     for (i=0; i<nbody->Nstar; i++) {
-      for (ii=0; ii<2; ii++) outfile << true << "   " << true << endl;
-      for (ii=0; ii<2; ii++) outfile << i+1 << "    " << 0 << endl;
+      outfile << true << "   " << true << endl;
+      outfile << i+1 << "    " << 0 << endl;
       for (k=0; k<ndim; k++) 
         sdata[k+1] = nbody->stardata[i].r[k]*simunits.r.outscale;
       for (k=0; k<ndim; k++)

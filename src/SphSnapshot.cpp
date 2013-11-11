@@ -102,7 +102,8 @@ SphSnapshotBase(&(sim->simunits), filename),
 simulation(static_cast<Simulation<ndims>* > (sim))
 {
   this->ndim = ndims;
-  this->fileform = sim->GetParam("in_file_form");
+  this->fileform = sim->GetParam("out_file_form");
+  cout << "OUT_FILE_FORM : " << this->fileform << endl;
 
   // Computes how numbers we need to store for each sph/star particle
   nneededsph = 3*ndims + 5;

@@ -92,7 +92,7 @@ class SimBuffer:
     @staticmethod
     def _fillsnapshot(snapshot):
         SimBuffer._findmemoryfor(snapshot)
-        snapshot.ReadSnapshot(snapshot.sim.simparams.stringparams["in_file_form"])
+        snapshot.ReadSnapshot(snapshot.sim.simparams.stringparams["out_file_form"])
     
     @staticmethod
     def _deallocateSnapshot(snapshottest):
@@ -158,7 +158,7 @@ class SimBuffer:
         sim.current = sim.live
     
     @staticmethod        
-    def loadsim (run_id, fileformat = 'ascii', buffer_flag = 'cache'):
+    def loadsim (run_id, fileformat = 'column', buffer_flag = 'cache'):
         '''
         This method loads a simulation into the buffer.
         
@@ -188,7 +188,7 @@ class SimBuffer:
         sim = SimulationBase.SimulationFactory(ndim, parameters);
         SimBuffer._add_simulation(sim)
         sim.ProcessParameters()
-        fileformat = parameters.stringparams["in_file_form"]
+        fileformat = parameters.stringparams["out_file_form"]
         
         #get the list of all files in the directory where the parameter file is
         paramfilepath = os.path.join(os.getcwd(),paramfile)
