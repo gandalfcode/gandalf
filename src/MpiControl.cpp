@@ -286,6 +286,28 @@ void MpiControl<ndim>::TransferParticlesToNode(void)
 }
 
 
+//==================================================================================
+//  MpiControl::SendParticles
+/// Given an array of ids and a node, copy particles inside a buffer and send them to
+/// the given node
+//==================================================================================
+template <int ndim>
+void MpiControl<ndim>::SendParticles(int Node, int Nparticles, int* list) {
+  SphParticle<ndim>* main_array = sph->sphdata;
+
+  const int tag = 1;
+
+  //Ensure there is enough memory in the buffer
+  sendbuffer.reserve(Nparticles);
+
+  //Copy particles from the main arrays to the buffer
+  for (int i=0; i<Nparticles; i++) {
+    sendbuffer[i] = main_array[list[i]];
+  }
+
+  MPI_Send (&sendbuffer[0], Nparticles, particle_type, Node, tag, MPI_COMM_WORLD);
+
+}
 
 // Template class instances for each dimensionality value (1, 2 and 3)
 template class MpiControl<1>;
