@@ -35,11 +35,12 @@ not specified, return an array with the quantity for each particle. Otherwise,
 return a scalar quantity only for the given particle.
 '''
     values = UserQuantity(quantity).fetch(type, snap)[1]
+    if values.size == 0:
+        return 0.0
     if id == None:
         return values
     else:
         return values[id]
-
 
 
 #------------------------------------------------------------------------------
@@ -48,26 +49,31 @@ def time_derivative(snap, quantity, type="default", id=None):
 not specified, return an array with the quantity for each particle. Otherwise,
 return a scalar quantity only for the given particle.
 '''
+    # Find previous and next snapshots.  If first or last snapshot, then
+    # return the current snapshot to compute a value
     try:
-        snap1 = get_previous_snapshot_from_object(snap)
-    except:
+        snap1 = SimBuffer.get_previous_snapshot_from_object(snap)
+    except BufferException:
         snap1 = snap
     try:
-        snap2 = get_next_snapshot_from_object(snap)
-    except:
+        snap2 = SimBuffer.get_next_snapshot_from_object(snap)
+    except BufferException:
         snap2 = snap
+
+    # Return array of values of quantity.  If either are empty, return zero
     values1 = UserQuantity(quantity).fetch(type, snap1)[1]
     values2 = UserQuantity(quantity).fetch(type, snap2)[1]
+    if values1.size == 0 or values2.size == 0:
+        return 0.0
+
+    # Calculate the time derivative with central difference and return value
     tdiff = snap2.t - snap1.t
-    if tdiff > 0.0: 
-        timederiv = (values2 - values1)/tdiff
-    else:
-        timederiv = 0.0*values1
     if id == None:
+        timederiv = (values2 - values1)/tdiff
         return timederiv
     else:
-        return timederiv[id]
-
+        timederiv = (values2[id] - values1[id])/tdiff
+        return timederiv
 
 
 #------------------------------------------------------------------------------
@@ -76,7 +82,6 @@ def COM(snap, quantity='x', type="default"):
     m = UserQuantity('m').fetch(type, snap)[1]
     
     return (x*m).sum()/m.sum()
-
 
 
 #------------------------------------------------------------------------------
@@ -129,5 +134,3 @@ def lagrangian_radii(snap, mfrac=0.5, type="default"):
     mlag = mfrac*mtotal
     index = np.searchsorted(mcumulative,mlag)
     return 0.5*(r[porder[index-1]] + r[porder[index]])
-
-
