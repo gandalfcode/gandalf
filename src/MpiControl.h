@@ -52,7 +52,7 @@ using namespace std;
 template <int ndim>
 class MpiControl
 {
-  void SendParticles(int Node, int Nparticles, int* list);
+  void SendParticles(int Node, int Nparticles, int* list, SphParticle<ndim>* );
   void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>* array);
  public:
 

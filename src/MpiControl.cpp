@@ -167,8 +167,8 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
   int k;                           // Dimension counter
   int okflag;                      // ..
   FLOAT boxbuffer[2*ndim*Nmpi];    // Bounding box buffer
+  SphParticle<ndim> *partbuffer;   // ..
 
-  cout << "HERE!! : " << rank << endl;
 
   // For main process, create load balancing tree, transmit information to all
   // other nodes including particle data
@@ -245,6 +245,11 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
     // Now broadcast all bounding boxes to other processes
     MPI_Bcast(boxbuffer,2*ndim*Nmpi,MPI_DOUBLE,0,MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
+
+    // Finally, send particles to all other domains
+    for (i=1; i<Nmpi; i++)
+      SendParticles(i, mpitree->subtrees[i]->Nsph, mpitree->subtrees[i]->ids, sph->sphdata);
+
   }
 
   // For other nodes, receive all bounding box and particle data once
@@ -270,6 +275,9 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
       //cout << "zbox : " << mpinode[i].domain.boxmin[2] << "    " << mpinode[i].domain.boxmax[2] << endl;
       //}
     }
+
+    // Now, receive particles form main process
+    ReceiveParticles(rank, &mpinode[rank].Nsph, partbuffer);
 
   }
   //---------------------------------------------------------------------------
@@ -391,8 +399,7 @@ void MpiControl<ndim>::TransferParticlesToNode(void)
 /// the given node
 //==================================================================================
 template <int ndim>
-void MpiControl<ndim>::SendParticles(int Node, int Nparticles, int* list) {
-  SphParticle<ndim>* main_array = sph->sphdata;
+void MpiControl<ndim>::SendParticles(int Node, int Nparticles, int* list, SphParticle<ndim>* main_array) {
 
   const int tag = 1;
 
