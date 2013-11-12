@@ -385,7 +385,52 @@ void MpiControl<ndim>::TransferParticlesToNode(void)
 }
 
 
+//==================================================================================
+//  MpiControl::SendParticles
+/// Given an array of ids and a node, copy particles inside a buffer and send them to
+/// the given node
+//==================================================================================
+template <int ndim>
+void MpiControl<ndim>::SendParticles(int Node, int Nparticles, int* list) {
+  SphParticle<ndim>* main_array = sph->sphdata;
 
+  const int tag = 1;
+
+  //Ensure there is enough memory in the buffer
+  sendbuffer.reserve(Nparticles);
+
+  //Copy particles from the main arrays to the buffer
+  for (int i=0; i<Nparticles; i++) {
+    sendbuffer[i] = main_array[list[i]];
+  }
+
+  MPI_Send (&sendbuffer[0], Nparticles, particle_type, Node, tag, MPI_COMM_WORLD);
+
+}
+
+//==================================================================================
+//  MpiControl::ReceiveParticles
+/// Given a node, receive particles from it. Return the number of particles received
+/// and a pointer to the array containing the particles. The caller is reponsible
+/// to free the array after its usage
+//==================================================================================
+template <int ndim>
+void MpiControl<ndim>::ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>* array) {
+  const int tag = 1;
+  MPI_Status status;
+  //"Probe" the message to know how big the message is going to be
+  MPI_Probe(Node, tag, MPI_COMM_WORLD, &status);
+
+  //Get the number of elements
+  MPI_Get_count( &status,  particle_type, &Nparticles );
+
+  //Allocate enough memory to hold the particles
+  array = new SphParticle<ndim> [Nparticles];
+
+  //Now receive the message
+  MPI_Recv(array, Nparticles, particle_type, Node, tag, MPI_COMM_WORLD, &status);
+
+}
 // Template class instances for each dimensionality value (1, 2 and 3)
 template class MpiControl<1>;
 template class MpiControl<2>;

@@ -52,6 +52,8 @@ using namespace std;
 template <int ndim>
 class MpiControl
 {
+  void SendParticles(int Node, int Nparticles, int* list);
+  void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>* array);
  public:
 
   // Constructor and destructor
