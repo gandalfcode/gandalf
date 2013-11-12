@@ -166,9 +166,9 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
   int i;                           // Particle counter
   int k;                           // Dimension counter
   int okflag;                      // ..
-  FLOAT boxbuffer[2*ndim];         // Bounding box buffer
-  MPI_Status status;               // ..
+  FLOAT boxbuffer[2*ndim*Nmpi];    // Bounding box buffer
 
+  cout << "HERE!! : " << rank << endl;
 
   // For main process, create load balancing tree, transmit information to all
   // other nodes including particle data
@@ -180,12 +180,18 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
     // Create MPI binary tree for organising domain decomposition
     mpitree = new BinaryTree<ndim>(16,0.1,0.0,"geometric","monopole",1,Nmpi);
 
+    // Create all other MPI node objects
+    AllocateMemory();
+
     // Create binary tree from all SPH particles
     // Set number of tree members to total number of SPH particles (inc. ghosts)
     mpitree->Nsph = sph->Nsph;
-    mpitree->Ntot = sph->Ntot;
+    mpitree->Ntot = sph->Nsph;
     mpitree->Ntotmax = max(mpitree->Ntot,mpitree->Ntotmax);
     mpitree->gtot = 0;
+    for (i=0; i<sph->Nsph; i++)
+      for (k=0; k<ndim; k++) sph->rsph[ndim*i + k] = sph->sphdata[i].r[k];
+
 
     // For periodic simulations, set bounding box of root node to be the 
     // periodic box size.  Otherwise, set to be the particle bounding box.
@@ -225,20 +231,20 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
     // Create bounding boxes containing particles in each sub-tree
     for (i=0; i<Nmpi; i++) {
-      for (k=0; k<ndim; k++) mpinode[i].bbmin[k] = mpitree->subtrees[i]->box.boxmin[k];
-      for (k=0; k<ndim; k++) mpinode[i].bbmax[k] = mpitree->subtrees[i]->box.boxmax[k];
+      for (k=0; k<ndim; k++) mpinode[i].domain.boxmin[k] = mpitree->subtrees[i]->box.boxmin[k];
+      for (k=0; k<ndim; k++) mpinode[i].domain.boxmax[k] = mpitree->subtrees[i]->box.boxmax[k];
     }
 
 
-    // Finally, broadcast all bounding boxes and domain information to all
-    // other nodes
-    for (i=1; i<Nmpi; i++) {
-      for (k=0; k<ndim; k++) boxbuffer[k] = mpinode[i].bbmin[k];
-      for (k=0; k<ndim; k++) boxbuffer[ndim+k] = mpinode[i].bbmax[k];
-      okflag = MPI_Send(boxbuffer,2*ndim,MPI_DOUBLE,i,0,MPI_COMM_WORLD);
-      cout << "Root node sending to node " << i << endl;
+    // Pack all bounding box data into single array
+    for (i=0; i<Nmpi; i++) {
+      for (k=0; k<ndim; k++) boxbuffer[2*ndim*i + k] = mpinode[i].domain.boxmin[k];
+      for (k=0; k<ndim; k++) boxbuffer[2*ndim*i + ndim + k] = mpinode[i].domain.boxmax[k];
     }
 
+    // Now broadcast all bounding boxes to other processes
+    MPI_Bcast(boxbuffer,2*ndim*Nmpi,MPI_DOUBLE,0,MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
   }
 
   // For other nodes, receive all bounding box and particle data once
@@ -246,24 +252,30 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
   //---------------------------------------------------------------------------
   else {
 
+    // Create MPI node objects
+    AllocateMemory();
+
     // Receive bounding box data for domain and unpack data
+    MPI_Bcast(boxbuffer,2*ndim*Nmpi,MPI_DOUBLE,0,MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // Unpack all bounding box data
     for (i=0; i<Nmpi; i++) {
-      if (i != rank) continue;
-      okflag = MPI_Recv(boxbuffer,2*ndim,MPI_DOUBLE,i,0,MPI_COMM_WORLD,&status);
-      for (k=0; k<ndim; k++) mpinode[i].bbmin[k] = boxbuffer[k];
-      for (k=0; k<ndim; k++) mpinode[i].bbmax[k] = boxbuffer[ndim+k];
+      for (k=0; k<ndim; k++) mpinode[i].domain.boxmin[k] = boxbuffer[2*ndim*i + k];
+      for (k=0; k<ndim; k++) mpinode[i].domain.boxmax[k] = boxbuffer[2*ndim*i + ndim + k];
+      //if (rank == 1) {
+      //cout << "Node " << i << endl;
+      //cout << "xbox : " << mpinode[i].domain.boxmin[0] << "    " << mpinode[i].domain.boxmax[0] << endl;
+      //cout << "ybox : " << mpinode[i].domain.boxmin[1] << "    " << mpinode[i].domain.boxmax[1] << endl;
+      //cout << "zbox : " << mpinode[i].domain.boxmin[2] << "    " << mpinode[i].domain.boxmax[2] << endl;
+      //}
     }
-
-    cout << "Node " << rank << " receiving bounding box from root" << endl;
-    cout << "xbox : " << mpinode[rank].bbmin[0] << "    " << mpinode[rank].bbmax[0];
-    cout << "ybox : " << mpinode[rank].bbmin[1] << "    " << mpinode[rank].bbmax[1];
-
 
   }
   //---------------------------------------------------------------------------
 
   MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Abort(MPI_COMM_WORLD,0);
+
 
   return;
 }
@@ -279,17 +291,37 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 /// which particles should be transfered to new nodes.
 //=============================================================================
 template <int ndim>
-void MpiControl<ndim>::LoadBalancing(void)
+void MpiControl<ndim>::LoadBalancing
+(Sph<ndim> *sph,                   ///< Pointer to main SPH object
+ Nbody<ndim> *nbody)               ///< Pointer to main N-body object
 {
+  int i;                           // Particle counter
+  int inode;                       // MPI node counter
+  int k;                           // Dimension counter
+  int okflag;                      // Successful communication flag
+  MPI_Status status;               // ..
 
+
+  // Compute work that will be transmitted to all other domains if using
+  // current domain boxes and particle positions
+  // (DAVID : Maybe in the future once basic implementation works)
+
+  // Compute total work contained in domain at present
+  mpinode[rank].worktot = 0.0;
+  for (i=0; i<sph->Nsph; i++) mpinode[rank].worktot += 1.0/sph->sphdata[i].dt;
+
+
+  // For root process, receive all current node CPU nodes, adjust domain
+  // boundaries to balance out work more evenly and then broadcast new domain
+  // boxes to all other nodes.
   //---------------------------------------------------------------------------
   if (rank == 0) {
 
-    debug2("[MpiControl::LoadBalancing]");
-
 
     // Receive all important load balancing information from other nodes
-
+    for (inode=1; inode<Nmpi; inode++) {
+      okflag = MPI_Recv(&mpinode[inode].worktot,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD,&status);
+    }
 
 
     // Work out tree level at which we are altering the load balancing
@@ -301,7 +333,7 @@ void MpiControl<ndim>::LoadBalancing(void)
 
 
     // Transmit new bounding box sizes to all other nodes
-
+    MPI_Barrier(MPI_COMM_WORLD);
 
   }
   //---------------------------------------------------------------------------
@@ -309,11 +341,11 @@ void MpiControl<ndim>::LoadBalancing(void)
 
 
     // Transmit load balancing information to main root node
-
+    okflag = MPI_Send(&mpinode[rank].worktot,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
 
 
     // Receive new bounding box information for all nodes
-
+    MPI_Barrier(MPI_COMM_WORLD);
 
 
   }

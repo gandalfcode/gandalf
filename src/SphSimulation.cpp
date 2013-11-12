@@ -53,8 +53,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Perform initial MPI decomposition
   //---------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
-  if (rank == 0) 
-    mpicontrol.CreateInitialDomainDecomposition(sph,nbody,simparams,simbox);
+  mpicontrol.CreateInitialDomainDecomposition(sph,nbody,simparams,simbox);
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Abort(MPI_COMM_WORLD,0);
 #endif
@@ -76,7 +75,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
     for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].part = &(sph->sphdata[i]);
 
-    // Set inital artificial viscosity alpha values
+    // Set initial artificial viscosity alpha values
     if (sph->time_dependent_avisc == 1)
       for (i=0; i<sph->Nsph; i++) {
         sph->sphdata[i].alpha = sph->alpha_visc_min;

@@ -69,12 +69,9 @@ class MpiNode
   FLOAT hmax;                       ///< Maximum smoothing length on node
   FLOAT worktot;                    ///< Total 'work' on each node
 
-  FLOAT nodemin[ndim];              ///< Min. extent of node domain
-  FLOAT nodemax[ndim];              ///< Max. extent of node domain
-  FLOAT bbmin[ndim];                ///< Min. extent of particle bounding box
-  FLOAT bbmax[ndim];                ///< Max. extent of particle bounding box
-  FLOAT hboxmin[ndim];              ///< Min. extent of smoothing kernel box
-  FLOAT hboxmax[ndim];              ///< Max. extent of smoothing kernel box
+  DomainBox<ndim> domain;           ///< ..
+  DomainBox<ndim> rbox;             ///< ..
+  DomainBox<ndim> hbox;             ///< ..
 
   BinarySubTree<ndim> *nodetree;    ///< Pointer to current node sub-tree
 

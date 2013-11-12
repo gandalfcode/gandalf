@@ -67,7 +67,7 @@ class MpiControl
 
   void InitialiseMpiProcess(void);
   void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>);
-  void LoadBalancing(void);
+  void LoadBalancing(Sph<ndim> *, Nbody<ndim> *);
   void TransferParticlesToNode(void);
 
 

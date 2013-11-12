@@ -104,20 +104,20 @@ void MpiNode<ndim>::UpdateBoundingBoxData
   FLOAT hrange;                     // ..
 
   // Initialise bounding box values
-  for (k=0; k<ndim; k++) bbmin[k] = big_number;
-  for (k=0; k<ndim; k++) bbmax[k] = -big_number;
-  for (k=0; k<ndim; k++) hboxmin[k] = big_number;
-  for (k=0; k<ndim; k++) hboxmax[k] = -big_number;
+  for (k=0; k<ndim; k++) rbox.boxmin[k] = big_number;
+  for (k=0; k<ndim; k++) rbox.boxmax[k] = -big_number;
+  for (k=0; k<ndim; k++) hbox.boxmin[k] = big_number;
+  for (k=0; k<ndim; k++) hbox.boxmax[k] = -big_number;
 
   // Loop over all particles and compute new bounding boxes
   //---------------------------------------------------------------------------
   for (i=0; i<Npart; i++) {
     hrange = kernptr->kernrange*sphdata[i].h;
     for (k=0; k<ndim; k++) {
-      bbmin[k] = min(bbmin[k],sphdata[i].r[k]);
-      bbmax[k] = max(bbmax[k],sphdata[i].r[k]);
-      hboxmin[k] = min(hboxmin[k],sphdata[i].r[k] - hrange);
-      hboxmax[k] = min(hboxmax[k],sphdata[i].r[k] + hrange);
+      rbox.boxmin[k] = min(rbox.boxmin[k],sphdata[i].r[k]);
+      rbox.boxmax[k] = max(rbox.boxmax[k],sphdata[i].r[k]);
+      hbox.boxmin[k] = min(hbox.boxmin[k],sphdata[i].r[k] - hrange);
+      hbox.boxmax[k] = min(hbox.boxmax[k],sphdata[i].r[k] + hrange);
     }
   }
 

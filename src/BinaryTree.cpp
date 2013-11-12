@@ -253,7 +253,7 @@ void BinaryTree<ndim>::UpdateTree
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(i) shared(sph)
-  for (i = 0; i < Nsubtree; i++) {
+  for (i=0; i<Nsubtree; i++) {
 
     // Calculate all cell quantities (e.g. COM, opening distance)
     subtrees[i]->StockCellProperties(sph->sphdata);
@@ -494,6 +494,8 @@ void BinaryTree<ndim>::LoadParticlesToTree
   //---------------------------------------------------------------------------
   while (l < ltot) {
 
+	//cout << "LEVEL : " << l << "    " << ltot << "    " << Ntot << endl;
+
     // Loop over all particles (in order of current split)
     //-------------------------------------------------------------------------
     for (i=0; i<Ntot; i++) {
@@ -511,15 +513,17 @@ void BinaryTree<ndim>::LoadParticlesToTree
       }
       else {
         pc[j] = tree[cc].c2;
-        ccap[pc[j]] += pw[j];
-        if (tree[pc[j]].ifirst == -1) {
-          tree[pc[j]].ifirst = j;
+        ccap[tree[cc].c2] += pw[j];
+        if (tree[tree[cc].c2].ifirst == -1) {
+          tree[tree[cc].c2].ifirst = j;
           for (kk=0; kk<ndim; kk++) tree[cc+1].bbmin[kk] = tree[cc].bbmin[kk];
           for (kk=0; kk<ndim; kk++) tree[cc+1].bbmax[kk] = tree[cc].bbmax[kk];
           for (kk=0; kk<ndim; kk++) tree[tree[cc].c2].bbmin[kk] = tree[cc].bbmin[kk];
           for (kk=0; kk<ndim; kk++) tree[tree[cc].c2].bbmax[kk] = tree[cc].bbmax[kk];
-          tree[cc+1].bbmax[k] = 0.5*(r[tree[cc+1].ifirst] + r[j]);
-          tree[tree[cc].c2].bbmin[k] = 0.5*(r[tree[cc+1].ifirst] + r[j]);
+          tree[cc+1].bbmax[k] = 0.5*(r[ndim*tree[cc+1].ifirst + k] + r[ndim*j + k]);
+          tree[tree[cc].c2].bbmin[k] = 0.5*(r[ndim*tree[cc+1].ifirst + k] + r[ndim*j + k]);
+          //cout << "FOUND SPLIT : " << l << "    " << cc << "     " << k << "     "
+        	//	  << tree[cc].bbmin[k] << "    " << tree[cc+1].bbmax[k] << "     " << tree[cc].bbmax[k] << endl;
         }
         tree[pc[j]].ilast = j;
       }
@@ -543,7 +547,6 @@ void BinaryTree<ndim>::LoadParticlesToTree
 
 
   // Loop over all particles and add the particle to the list of ids
-  //---------------------------------------------------------------------------
   for (i=0; i<Ntot; i++) {
     c = pc[i];
     g = tree[c].c2g;
@@ -555,6 +558,8 @@ void BinaryTree<ndim>::LoadParticlesToTree
 
   // Set bounding boxes for sub-trees
   for (c=0; c<Ncell; c++) {
+	//cout << "CELL BB : " << tree[c].bbmin[0] << "   " << tree[c].bbmax[0] << "     " << tree[c].bbmin[1] << "     " << tree[c].bbmax[1] << endl;
+
 	if (tree[c].c2 == 0) {
       g = tree[c].c2g;
       for (k=0; k<ndim; k++) subtrees[g]->box.boxmin[k] = tree[c].bbmin[k];
