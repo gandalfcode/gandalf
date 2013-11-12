@@ -236,6 +236,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
       for (k=0; k<ndim; k++) boxbuffer[k] = mpinode[i].bbmin[k];
       for (k=0; k<ndim; k++) boxbuffer[ndim+k] = mpinode[i].bbmax[k];
       okflag = MPI_Send(boxbuffer,2*ndim,MPI_DOUBLE,i,0,MPI_COMM_WORLD);
+      cout << "Root node sending to node " << i << endl;
     }
 
   }
@@ -245,12 +246,24 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
   //---------------------------------------------------------------------------
   else {
 
-    // Receive bounding box data for domain
-    okflag = MPI_Recv(boxbuffer,2*ndim,MPI_DOUBLE,rank,0,MPI_COMM_WORLD,&status);
+    // Receive bounding box data for domain and unpack data
+    for (i=0; i<Nmpi; i++) {
+      if (i != rank) continue;
+      okflag = MPI_Recv(boxbuffer,2*ndim,MPI_DOUBLE,i,0,MPI_COMM_WORLD,&status);
+      for (k=0; k<ndim; k++) mpinode[i].bbmin[k] = boxbuffer[k];
+      for (k=0; k<ndim; k++) mpinode[i].bbmax[k] = boxbuffer[ndim+k];
+    }
+
+    cout << "Node " << rank << " receiving bounding box from root" << endl;
+    cout << "xbox : " << mpinode[rank].bbmin[0] << "    " << mpinode[rank].bbmax[0];
+    cout << "ybox : " << mpinode[rank].bbmin[1] << "    " << mpinode[rank].bbmax[1];
+
 
   }
   //---------------------------------------------------------------------------
 
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Abort(MPI_COMM_WORLD,0);
 
   return;
 }
@@ -268,6 +281,60 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 template <int ndim>
 void MpiControl<ndim>::LoadBalancing(void)
 {
+
+  //---------------------------------------------------------------------------
+  if (rank == 0) {
+
+    debug2("[MpiControl::LoadBalancing]");
+
+
+    // Receive all important load balancing information from other nodes
+
+
+
+    // Work out tree level at which we are altering the load balancing
+
+
+
+    // Adjust bounding box sizes on load balancing level
+
+
+
+    // Transmit new bounding box sizes to all other nodes
+
+
+  }
+  //---------------------------------------------------------------------------
+  else {
+
+
+    // Transmit load balancing information to main root node
+
+
+
+    // Receive new bounding box information for all nodes
+
+
+
+  }
+  //---------------------------------------------------------------------------
+
+
+
+  // Prepare lists of particles that now occupy other processor domains that 
+  // need to be transfered
+
+
+
+  // Send particles to all other nodes
+
+
+
+  // Receive particles from all other nodes
+
+
+
+
   return;
 }
 
@@ -276,7 +343,7 @@ void MpiControl<ndim>::LoadBalancing(void)
 //=============================================================================
 //  MpiControl::TransferParticlesToNode
 /// Once we know the new domain boundaries for all MPI nodes, transfer any 
-/// particles that now lie in other domain boxes to thos respective MPI 
+/// particles that now lie in other domain boxes to those respective MPI 
 /// nodes.  Also, receives particles from other domains.
 //=============================================================================
 template <int ndim>

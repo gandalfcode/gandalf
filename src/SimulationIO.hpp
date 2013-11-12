@@ -366,6 +366,7 @@ void Simulation<ndim>::ReadSerenFormHeaderFile
 
 //=============================================================================
 //  Simulation::ReadSerenFormSnapshotFile
+/// Read data from Seren format snapshot file into main arrays.
 //=============================================================================
 template <int ndim>
 bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
@@ -474,10 +475,10 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   simunits.angvel.inunit = unit_data[12];
   simunits.dmdt.inunit = unit_data[13];
   simunits.L.inunit = unit_data[14];
-  //simunits.kappa.inunit = unit_data[15];
-  //simunits.B.inunit = unit_data[16];
-  //simunits.Q.inunit = unit_data[17];
-  //simunits.J.inunit = unit_data[18];
+  simunits.kappa.inunit = unit_data[15];
+  simunits.B.inunit = unit_data[16];
+  simunits.Q.inunit = unit_data[17];
+  simunits.Jcur.inunit = unit_data[18];
   simunits.u.inunit = unit_data[19];
   simunits.temp.inunit = unit_data[20];
   if (nunit > 21) simunits.dudt.inunit = unit_data[21];
@@ -497,9 +498,8 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 
 
   // Loop through array ids and read each array in turn
-  //---------------------------------------------------------------------------
+  //===========================================================================
   for (j=0; j<ndata; j++) {
-    cout << "Reading data for array : " << data_id[j] << endl;
 
     ifirst = typedata[i][1];
     ilast = typedata[i][2];
@@ -628,7 +628,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     }
 
   }
-  //---------------------------------------------------------------------------
+  //===========================================================================
 
   // Close file
   infile.close();
@@ -640,6 +640,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 
 //=============================================================================
 //  Simulation::WriteSerenFormSnapshotFile
+/// Write SPH and N-body particle data to snapshot file in Seren format.
 //=============================================================================
 template <int ndim>
 bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
@@ -674,34 +675,36 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   for (i=0; i<50; i++) ilpdata[i] = 0;
   for (i=0; i<50; i++) rdata[i] = 0.0;
   for (i=0; i<50; i++) ddata[i] = 0.0;
-  for (i=0; i<50; i++) unit_data[i] = 'm';
+  for (i=0; i<50; i++) unit_data[i] = 'null';
   //for (i=0; i<50; i++) data_id[i] = '';
   nunit = 0;
   ndata = 0;
 
   // Set units
-  unit_data[0] = simunits.r.outunit;
-  unit_data[1] = simunits.m.outunit;
-  unit_data[2] = simunits.t.outunit;
-  unit_data[3] = simunits.v.outunit;
-  unit_data[4] = simunits.a.outunit;
-  unit_data[5] = simunits.rho.outunit;
-  unit_data[6] = simunits.sigma.outunit;
-  unit_data[7] = simunits.press.outunit;
-  unit_data[8] = simunits.f.outunit;
-  unit_data[9] = simunits.E.outunit;
-  unit_data[10] = simunits.mom.outunit;
-  unit_data[11] = simunits.angmom.outunit;
-  unit_data[12] = simunits.angvel.outunit;
-  unit_data[13] = simunits.dmdt.outunit;
-  unit_data[14] = simunits.L.outunit;
-  //unit_data[15] = simunits.kappa.outunit;
-  //unit_data[16] = simunits.B.outunit;
-  //unit_data[17] = simunits.Q.outunit;
-  //unit_data[18] = simunits.J.outunit;
-  unit_data[19] = simunits.u.outunit;
-  unit_data[20] = simunits.temp.outunit;
-  nunit = 21;
+  if (!simunits.dimensionless) {
+    unit_data[0] = simunits.r.outunit;
+    unit_data[1] = simunits.m.outunit;
+    unit_data[2] = simunits.t.outunit;
+    unit_data[3] = simunits.v.outunit;
+    unit_data[4] = simunits.a.outunit;
+    unit_data[5] = simunits.rho.outunit;
+    unit_data[6] = simunits.sigma.outunit;
+    unit_data[7] = simunits.press.outunit;
+    unit_data[8] = simunits.f.outunit;
+    unit_data[9] = simunits.E.outunit;
+    unit_data[10] = simunits.mom.outunit;
+    unit_data[11] = simunits.angmom.outunit;
+    unit_data[12] = simunits.angvel.outunit;
+    unit_data[13] = simunits.dmdt.outunit;
+    unit_data[14] = simunits.L.outunit;
+    unit_data[15] = simunits.kappa.outunit;
+    unit_data[16] = simunits.B.outunit;
+    unit_data[17] = simunits.Q.outunit;
+    unit_data[18] = simunits.Jcur.outunit;
+    unit_data[19] = simunits.u.outunit;
+    unit_data[20] = simunits.temp.outunit;
+    nunit = 21;
+  }
 
 
   // Set array ids and array information data if there are any SPH particles
@@ -760,6 +763,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   rdata[0] = sph->h_fac;
   rdata[1] = 0.0;
   ddata[0] = t*simunits.t.outscale;
+
 
   // Write header information to file
   //---------------------------------------------------------------------------
@@ -904,6 +908,5 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   // Close file
   outfile.close();
 
-  return true;
   return true;
 }
