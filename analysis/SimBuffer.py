@@ -384,7 +384,10 @@ class SimBuffer:
         next_index = snapno + 1
         if next_index>=len(sim.snapshots):
             raise BufferException("Reached the last snapshot")
-        return sim.snapshots[next_index]
+        snapret = sim.snapshots[next_index]
+        if (not snapret.allocated):
+            SimBuffer._fillsnapshot(snapret)
+        return snapret
     
     @staticmethod
     def get_previous_snapshot_from_object(snap):
@@ -393,7 +396,10 @@ class SimBuffer:
         previous_index = snapno-1
         if previous_index<0:
             raise BufferException("Reached the first snapshot")
-        return sim.snapshots[previous_index]
+        snapret = sim.snapshots[previous_index]
+        if (not snapret.allocated):
+            SimBuffer._fillsnapshot(snapret)
+        return snapret
          
 class BufferException( Exception):   
     pass
