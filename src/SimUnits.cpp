@@ -1053,6 +1053,25 @@ void SimUnits::SetupUnits(Parameters *params)
   kappa.outscale = kappa.outscale / kappa.outSI;
   kappa.outcgs = 10.0*kappa.outSI;
 
+
+  // Magnetic field units
+  //---------------------------------------------------------------------------
+  B.inunit = params->stringparams["kappainunit"];
+  B.outunit = params->stringparams["kappaoutunit"];
+
+
+  // Electrical charge units
+  //---------------------------------------------------------------------------
+  Q.inunit = params->stringparams["kappainunit"];
+  Q.outunit = params->stringparams["kappaoutunit"];
+
+
+  // Current density units
+  //---------------------------------------------------------------------------
+  Jcur.inunit = params->stringparams["kappainunit"];
+  Jcur.outunit = params->stringparams["kappaoutunit"];
+
+
   // Specific internal energy units
   //---------------------------------------------------------------------------
   u.inunit = params->stringparams["uinunit"];

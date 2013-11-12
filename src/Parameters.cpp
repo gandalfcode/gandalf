@@ -203,6 +203,10 @@ void Parameters::SetDefaultValues(void)
   stringparams["angvelinunit"] = "";
   stringparams["dmdtinunit"] = "";
   stringparams["Linunit"] = "";
+  stringparams["kappainunit"] = "";
+  stringparams["Binunit"] = "";
+  stringparams["Qinunit"] = "";
+  stringparams["Jcurinunit"] = "";
   stringparams["uinunit"] = "";
   stringparams["dudtinunit"] = "";
   stringparams["tempinunit"] = "";
@@ -221,6 +225,10 @@ void Parameters::SetDefaultValues(void)
   stringparams["angveloutunit"] = "rad_s";
   stringparams["dmdtoutunit"] = "m_sun_yr";
   stringparams["Loutunit"] = "L_sun";
+  stringparams["kappaoutunit"] = "m2_kg";
+  stringparams["Boutunit"] = "tesla";
+  stringparams["Qoutunit"] = "C";
+  stringparams["Jcuroutunit"] = "C_s_m2";
   stringparams["uoutunit"] = "J_kg";
   stringparams["dudtoutunit"] = "J_kg_s";
   stringparams["tempoutunit"] = "K";
