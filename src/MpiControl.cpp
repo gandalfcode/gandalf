@@ -404,7 +404,7 @@ void MpiControl<ndim>::SendParticles(int Node, int Nparticles, int* list, SphPar
   const int tag = 1;
 
   //Ensure there is enough memory in the buffer
-  sendbuffer.reserve(Nparticles);
+  sendbuffer.resize(Nparticles);
 
   //Copy particles from the main arrays to the buffer
   for (int i=0; i<Nparticles; i++) {
