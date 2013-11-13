@@ -501,8 +501,8 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   //===========================================================================
   for (j=0; j<ndata; j++) {
 
-    ifirst = typedata[i][1];
-    ilast = typedata[i][2];
+    ifirst = typedata[j][1];
+    ilast = typedata[j][2];
 
     // porig
     //-------------------------------------------------------------------------
