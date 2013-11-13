@@ -54,7 +54,7 @@ class MpiControl
 {
   void SendParticles(int Node, int Nparticles, int* list, SphParticle<ndim>* );
   std::vector<SphParticle<ndim> > sendbuffer;
-  void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>* array);
+  void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array);
  public:
 
   // Constructor and destructor

@@ -38,7 +38,7 @@ int main(int argc, char** argv)
   Parameters* params = new Parameters();             // Parameters object
   string paramfile;                                  // Name of parameters file
   ExceptionHandler::makeExceptionHandler(cplusplus); // Exception handler
-  int rank;                                          // Local copy of MPI rank
+  int rank=0;                                        // Local copy of MPI rank
 
 
   // Initialise all MPI processes (if activated in Makefile)

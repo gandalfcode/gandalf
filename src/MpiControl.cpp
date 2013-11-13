@@ -246,9 +246,22 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
     MPI_Bcast(boxbuffer,2*ndim*Nmpi,MPI_DOUBLE,0,MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
 
-    // Finally, send particles to all other domains
-    for (i=1; i<Nmpi; i++)
+    // Send particles to all other domains
+    for (i=1; i<Nmpi; i++) {
       SendParticles(i, mpitree->subtrees[i]->Nsph, mpitree->subtrees[i]->ids, sph->sphdata);
+      cout << "Sent " << mpitree->subtrees[i]->Nsph << " particles to node " << i << endl;
+    }
+
+    cout << "Sent all particles to other processes" << endl;
+
+    // Delete all other particles from local domain
+    sph->Nsph = mpitree->subtrees[0]->Nsph;
+    partbuffer = new SphParticle<ndim>[sph->Nsph];
+    for (i=0; i<sph->Nsph; i++) partbuffer[i] = sph->sphdata[mpitree->subtrees[0]->ids[i]];
+    for (i=0; i<sph->Nsph; i++) sph->sphdata[i] = partbuffer[i];
+    delete[] partbuffer;
+    cout << "Deleted all other particles from root node" << endl;
+    MPI_Barrier(MPI_COMM_WORLD);
 
   }
 
@@ -268,16 +281,25 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
     for (i=0; i<Nmpi; i++) {
       for (k=0; k<ndim; k++) mpinode[i].domain.boxmin[k] = boxbuffer[2*ndim*i + k];
       for (k=0; k<ndim; k++) mpinode[i].domain.boxmax[k] = boxbuffer[2*ndim*i + ndim + k];
-      //if (rank == 1) {
-      //cout << "Node " << i << endl;
-      //cout << "xbox : " << mpinode[i].domain.boxmin[0] << "    " << mpinode[i].domain.boxmax[0] << endl;
-      //cout << "ybox : " << mpinode[i].domain.boxmin[1] << "    " << mpinode[i].domain.boxmax[1] << endl;
-      //cout << "zbox : " << mpinode[i].domain.boxmin[2] << "    " << mpinode[i].domain.boxmax[2] << endl;
-      //}
+      if (rank == 1) {
+      cout << "Node " << i << endl;
+      cout << "xbox : " << mpinode[i].domain.boxmin[0] << "    " << mpinode[i].domain.boxmax[0] << endl;
+      cout << "ybox : " << mpinode[i].domain.boxmin[1] << "    " << mpinode[i].domain.boxmax[1] << endl;
+      cout << "zbox : " << mpinode[i].domain.boxmin[2] << "    " << mpinode[i].domain.boxmax[2] << endl;
+      }
     }
+    MPI_Barrier(MPI_COMM_WORLD);
+    // Now, receive particles form main process and copy to local main array
+    ReceiveParticles(0, (sph->Nsph), &partbuffer);
 
-    // Now, receive particles form main process
-    ReceiveParticles(rank, &mpinode[rank].Nsph, partbuffer);
+    sph->AllocateMemory(sph->Nsph);
+    mpinode[rank].Nsph = sph->Nsph;
+
+    cout << "Received particles on node " << rank << "   Nsph : " << sph->Nsph << endl;
+
+    for (i=0; i<sph->Nsph; i++) sph->sphdata[i] = partbuffer[i];
+    delete[] partbuffer;
+    cout << "Dellocated partbuffer" << endl;
 
   }
   //---------------------------------------------------------------------------
@@ -422,7 +444,7 @@ void MpiControl<ndim>::SendParticles(int Node, int Nparticles, int* list, SphPar
 /// to free the array after its usage
 //==================================================================================
 template <int ndim>
-void MpiControl<ndim>::ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>* array) {
+void MpiControl<ndim>::ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array) {
   const int tag = 1;
   MPI_Status status;
   //"Probe" the message to know how big the message is going to be
@@ -432,10 +454,10 @@ void MpiControl<ndim>::ReceiveParticles (int Node, int& Nparticles, SphParticle<
   MPI_Get_count( &status,  particle_type, &Nparticles );
 
   //Allocate enough memory to hold the particles
-  array = new SphParticle<ndim> [Nparticles];
+  *array = new SphParticle<ndim> [Nparticles];
 
   //Now receive the message
-  MPI_Recv(array, Nparticles, particle_type, Node, tag, MPI_COMM_WORLD, &status);
+  MPI_Recv(*array, Nparticles, particle_type, Node, tag, MPI_COMM_WORLD, &status);
 
 }
 // Template class instances for each dimensionality value (1, 2 and 3)
