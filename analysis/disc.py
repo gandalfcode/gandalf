@@ -20,7 +20,7 @@
 #  General Public License (http://www.gnu.org/licenses) for more details.
 #==============================================================================
 import numpy as np
-from data_fetcher import UserQuantity
+from data_fetcher import UserQuantity, SimBuffer
 import pyximport; pyximport.install(setup_args={'include_dirs':[np.get_include()]})
 import extract_disc_cython
 
@@ -97,14 +97,16 @@ class Disc(Blob):
         raise NotImplementedError
     
 
-
 #------------------------------------------------------------------------------
-def extract_discs (snap, type='default', eccenlimit=0.9, distancelimit=1., limiteigenvalues=0.2):
-    '''This function takes a snapshot and looks for which particles are bound
-to the stars. It returns a tuple, consisting of an Ambient_gas object
-(representing the gas that is not bound to any star) and of a list
-of Disc objects, one for each star.
-'''
+def extract_discs (snapno, sim, type='default', eccenlimit=0.9, distancelimit=1., limiteigenvalues=0.2):
+    '''This function takes a snapshot and a simulation number ("current" is also fine) and looks for which particles are bound
+    to the stars. It returns a tuple, consisting of an Ambient_gas object
+    (representing the gas that is not bound to any star) and of a list
+    of Disc objects, one for each star.
+    '''
+    
+    snap = SimBuffer.get_snapshot_extended(sim,snapno)
+
     parameters = dict(
                   eccenlimit = eccenlimit,
                   distancelimit = distancelimit,

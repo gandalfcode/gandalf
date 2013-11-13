@@ -361,15 +361,20 @@ class SimBuffer:
     @staticmethod
     def get_snapshot_extended(sim, snapno):
         '''This function returns the desired snapshot of the given simulation object. Handle the case
-        where snapno is not only a number, but can be also a string (either "current" or "live")'''
+        where snapno is not only a number, but can be also a string (either "current" or "live");
+        also handle the case where sim is the "current" string.'''
        
+        if sim=="current":
+            sim_obj = SimBuffer.get_current_sim()
+        else:
+            sim_obj = sim
         
         if snapno == "current":
-            snap = SimBuffer.get_current_snapshot_by_sim(sim)
+            snap = SimBuffer.get_current_snapshot_by_sim(sim_obj)
         elif snapno == "live":
-            snap = SimBuffer.get_live_snapshot_sim(sim)
+            snap = SimBuffer.get_live_snapshot_sim(sim_obj)
         else:
-            snap = SimBuffer.get_snapshot_number_sim(sim, snapno)
+            snap = SimBuffer.get_snapshot_number_sim(sim_obj, snapno)
         return snap
 
     
