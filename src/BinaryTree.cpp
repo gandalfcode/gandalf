@@ -174,16 +174,18 @@ void BinaryTree<ndim>::DeallocateTreeMemory(void)
 
 //=============================================================================
 //  BinaryTree::BuildTree
-/// Call all routines to build/re-build the binary tree.
+/// Call all routines to build/re-build the binary tree on the local node.
+/// If OpenMP is activated, the local domain is partitioned into sub-trees 
+/// in order to improve the scalability of building and stocking the tree.
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::BuildTree
 (Sph<ndim> *sph,                    ///< Pointer to main SPH object
  Parameters &simparams)             ///< Simulation parameters
 {
-  int i;
-  int Ncheck = 0;
-  int localgtot = 0;
+  int i;                            ///< Sub-tree counter
+  int Ncheck = 0;                   ///< ..
+  int localgtot = 0;                ///< ..
 
   debug2("[BinaryTree::BuildTree]");
 
@@ -212,7 +214,7 @@ void BinaryTree<ndim>::BuildTree
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(i) shared(sph) \
   reduction(+:localgtot,Ncheck)
-  for (i = 0; i < Nsubtree; i++) {
+  for (i=0; i<Nsubtree; i++) {
 
     BinarySubTree<ndim>* subtree = subtrees[i];
 
@@ -247,7 +249,7 @@ void BinaryTree<ndim>::UpdateTree
 (Sph<ndim> *sph,                    ///< Pointer to main SPH object
  Parameters &simparams)             ///< Simulation parameters
 {
-  int i;
+  int i;                            // Sub-tree counter
 
   debug2("[BinaryTree::UpdateTree]");
 
@@ -321,13 +323,13 @@ void BinaryTree<ndim>::ComputeTreeSize(void)
 template <int ndim>
 void BinaryTree<ndim>::CreateTreeStructure(void)
 {
-  debug2("[BinaryTree::CreateTreeStructure]");
-
   int c;                            // Dummy id of tree-level, then tree-cell
   int g;                            // Dummy id of grid-cell
   int l;                            // Dummy id of level
   int *c2L;                         // Increment to second child-cell
   int *cNL;                         // Increment to next cell if cell unopened
+
+  debug2("[BinaryTree::CreateTreeStructure]");
 
   // Allocate memory for local arrays
   c2L = new int[ltot + 1];
@@ -494,8 +496,6 @@ void BinaryTree<ndim>::LoadParticlesToTree
   //---------------------------------------------------------------------------
   while (l < ltot) {
 
-	//cout << "LEVEL : " << l << "    " << ltot << "    " << Ntot << endl;
-
     // Loop over all particles (in order of current split)
     //-------------------------------------------------------------------------
     for (i=0; i<Ntot; i++) {
@@ -516,14 +516,16 @@ void BinaryTree<ndim>::LoadParticlesToTree
         ccap[tree[cc].c2] += pw[j];
         if (tree[tree[cc].c2].ifirst == -1) {
           tree[tree[cc].c2].ifirst = j;
-          for (kk=0; kk<ndim; kk++) tree[cc+1].bbmin[kk] = tree[cc].bbmin[kk];
-          for (kk=0; kk<ndim; kk++) tree[cc+1].bbmax[kk] = tree[cc].bbmax[kk];
-          for (kk=0; kk<ndim; kk++) tree[tree[cc].c2].bbmin[kk] = tree[cc].bbmin[kk];
-          for (kk=0; kk<ndim; kk++) tree[tree[cc].c2].bbmax[kk] = tree[cc].bbmax[kk];
-          tree[cc+1].bbmax[k] = 0.5*(r[ndim*tree[cc+1].ifirst + k] + r[ndim*j + k]);
-          tree[tree[cc].c2].bbmin[k] = 0.5*(r[ndim*tree[cc+1].ifirst + k] + r[ndim*j + k]);
-          //cout << "FOUND SPLIT : " << l << "    " << cc << "     " << k << "     "
-        	//	  << tree[cc].bbmin[k] << "    " << tree[cc+1].bbmax[k] << "     " << tree[cc].bbmax[k] << endl;
+          for (kk=0; kk<ndim; kk++) {
+            tree[cc+1].bbmin[kk] = tree[cc].bbmin[kk];
+            tree[cc+1].bbmax[kk] = tree[cc].bbmax[kk];
+            tree[tree[cc].c2].bbmin[kk] = tree[cc].bbmin[kk];
+            tree[tree[cc].c2].bbmax[kk] = tree[cc].bbmax[kk];
+	  }
+          tree[cc+1].bbmax[k] = 
+            0.5*(r[ndim*tree[cc+1].ifirst + k] + r[ndim*j + k]);
+          tree[tree[cc].c2].bbmin[k] = 
+            0.5*(r[ndim*tree[cc+1].ifirst + k] + r[ndim*j + k]);
         }
         tree[pc[j]].ilast = j;
       }
@@ -558,14 +560,11 @@ void BinaryTree<ndim>::LoadParticlesToTree
 
   // Set bounding boxes for sub-trees
   for (c=0; c<Ncell; c++) {
-	//cout << "CELL BB : " << tree[c].bbmin[0] << "   " << tree[c].bbmax[0] << "     " << tree[c].bbmin[1] << "     " << tree[c].bbmax[1] << endl;
-
-	if (tree[c].c2 == 0) {
+    if (tree[c].c2 == 0) {
       g = tree[c].c2g;
       for (k=0; k<ndim; k++) subtrees[g]->box.boxmin[k] = tree[c].bbmin[k];
       for (k=0; k<ndim; k++) subtrees[g]->box.boxmax[k] = tree[c].bbmax[k];
-	}
-
+    }
   }
 
 
@@ -580,29 +579,30 @@ void BinaryTree<ndim>::LoadParticlesToTree
 
 //=============================================================================
 //  BinaryTree::UpdateHmaxValues
-/// Calculate the physical properties (e.g. total mass, centre-of-mass, 
-/// opening-distance, etc..) of all cells in the tree.
+/// Calculate the maximum smoothing length from all local (i.e. OpenMP) 
+/// subtrees.  Used for constructing bounding boxes in MPI data transfers.
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::UpdateHmaxValues
 (SphParticle<ndim> *sphdata)        ///< SPH particle data array
 {
-  int i;
-  FLOAT hmax_aux=0;
+  int i;                            ///< Subtree loop counter
+  FLOAT hmax_aux = 0;               ///< Aux. maximum reduction variable
+  FLOAT hmax_local;                 ///< ""
+  FLOAT subhmax;                    ///< Maximum smoothing length from subtree
 
-
-#pragma omp parallel default(none) shared(sphdata,hmax_aux) private(i)
+#pragma omp parallel default(none) shared(sphdata,hmax_aux)\
+  private(hmax_local,i,subhmax)
   {
-    FLOAT hmax_local = 0;
+    hmax_local = 0;
 #pragma omp for
-    for (i = 0; i < Nsubtree; i++) {
-      FLOAT subhmax = subtrees[i]->UpdateHmaxValues(sphdata);
-      if (subhmax > hmax_local)
-        hmax_local = subhmax;
+    for (i=0; i<Nsubtree; i++) {
+      subhmax = subtrees[i]->UpdateHmaxValues(sphdata);
+      if (subhmax > hmax_local) hmax_local = subhmax;
     }
 #pragma omp critical (hmax_critical)
     {
-      if (hmax_local>hmax_aux) hmax_aux=hmax_local;
+      if (hmax_local > hmax_aux) hmax_aux = hmax_local;
     }
   }
 
@@ -614,24 +614,26 @@ void BinaryTree<ndim>::UpdateHmaxValues
 
 //=============================================================================
 //  BinaryTree::ComputeActiveCellList
-/// Returns the number of cells containing active particles, 'Nactive', and
-/// the i.d. list of cells contains active particles, 'celllist'
+/// Returns the number of cells containing active particles, 'Nactive', 
+/// the i.d. list of cells contains active particles, 'celllist', and 
+/// a list of pointers to the subtrees that contain the particles.
 //=============================================================================
 template <int ndim>
 int BinaryTree<ndim>::ComputeActiveCellList
 (BinaryTreeCell<ndim> **celllist,   ///< Cells id array containing active ptcls
- BinarySubTree<ndim> **treelist)    ///< 
+ BinarySubTree<ndim> **treelist)    ///< List of pointers to subtrees
 {
   binlistiterator it;               // ..
+  int i;                            // Particle counter
   int Nactive = 0;                  // No. of cells containing active ptcls
-  int Nfirst = 0;                   // ..
+  int Nfirst = 0;                   // 
 
   debug2("[BinaryTree::ComputeActiveCellList]");
 
   // Iterate/loop over all sub-trees to find all cells containing active ptcls
   for (it = subtrees.begin(); it != subtrees.end(); it++) {
     Nactive = (*it)->ComputeActiveCellList(Nactive,celllist);
-    for (int i=Nfirst; i<Nactive; i++) treelist[i] = (*it);
+    for (i=Nfirst; i<Nactive; i++) treelist[i] = (*it);
     Nfirst = Nactive;
   }
 
@@ -652,10 +654,10 @@ int BinaryTree<ndim>::ComputeActiveParticleList
  Sph<ndim> *sph,                    ///< [in] SPH object pointer
  int *activelist)                   ///< [out] List of active particles in cell
 {
-  int Nactive = 0; // No. of active particles in cell
-  int i = cell->ifirst; // Particle id (set to first ptcl id)
-  int ilast = cell->ilast; // i.d. of last particle in cell c
-  int j;
+  int Nactive = 0;                  // No. of active particles in cell
+  int i = cell->ifirst;             // Local particle id (set to first ptcl id)
+  int ilast = cell->ilast;          // i.d. of last particle in cell c
+  int j;                            // Global particle id
 
   // Walk through linked list to obtain list and number of active ptcls.
   while (i != -1) {
@@ -687,7 +689,7 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
  FLOAT hmax,                        ///< [in] Maximum smoothing length
  SphParticle<ndim> *sphdata)        ///< [in] SPH particle data
 {
-  binlistiterator it;               // ..
+  binlistiterator it;               // Iterator to loop over all sub-trees
   int Nneib = 0;                    // Total number of gather neighbours
                                     // (summed over all sub-trees)
 
@@ -724,6 +726,7 @@ int BinaryTree<ndim>::ComputeNeighbourList
   int Nneib = 0;                    // Total number of gather neighbours
                                     // (summed over all sub-trees)
 
+  // Iterate/loop over all sub-trees to find all SPH neighbours
   for (it = subtrees.begin(); it != subtrees.end(); it++) {
     Nneib = (*it)->ComputeNeighbourList(cell,Nneib,Nneibmax,
                                         neiblist,sphdata);
@@ -755,11 +758,11 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
  int &Ngravcell,                    ///< [out] No. of cell interactions
  int *neiblist,                     ///< [out] List of SPH neighbour ids
  int *directlist,                   ///< [out] List of direct-sum neighbour ids
- BinaryTreeCell<ndim> **gravcelllist,  ///< [out] List of cell ids
+ BinaryTreeCell<ndim> **gravcelllist, ///< [out] List of cell ids
  SphParticle<ndim> *sphdata)        ///< [in] SPH particle data
 {
   binlistiterator it;               // ..
-  int okflag;
+  int okflag;                       // ..
 
   // Zero counters here (ComputeGravityInteractionList routine appends data)
   Nneib = 0;
@@ -767,7 +770,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
   Ngravcell = 0;
 
   // Iterate/loop over all sub-trees to find all SPH neighbours, direct-sum 
-  // gravity and distant cell interaction lists
+  // gravity and distant cell interaction lists.
   for (it = subtrees.begin(); it != subtrees.end(); it++) {
     okflag = (*it)->ComputeGravityInteractionList(cell,Nneibmax,Ndirectmax,
 						  Ngravcellmax,Nneib,Ndirect,
@@ -799,6 +802,7 @@ void BinaryTree<ndim>::ComputeCellMonopoleForces
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drsqd;                      // Distance squared
   FLOAT invdrmag;                   // 1 / distance
+  FLOAT invdrsqd;                   // 1 / drsqd
   FLOAT invdr3;                     // 1 / dist^3
   FLOAT mc;                         // Mass of cell
   FLOAT rp[ndim];                   // Position of particle
@@ -814,8 +818,9 @@ void BinaryTree<ndim>::ComputeCellMonopoleForces
     mc = cell->m;
     for (k=0; k<ndim; k++) dr[k] = cell->r[k] - rp[k];
     drsqd = DotProduct(dr,dr,ndim) + small_number;
-    invdrmag = 1.0/sqrt(drsqd);
-    invdr3 = invdrmag*invdrmag*invdrmag; //pow(invdrmag,3);
+    invdrsqd = 1.0/drsqd;
+    invdrmag = sqrt(invdrsqd);
+    invdr3 = invdrsqd*invdrmag;
 
     parti.gpot += mc*invdrmag;
     for (k=0; k<ndim; k++) parti.agrav[k] += mc*dr[k]*invdr3;
@@ -1132,16 +1137,16 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
   int Nneib;                       // No. of neighbours
   int Nneibmax;                    // Max. no. of neighbours
   int *activelist;                 // List of active particle ids
-  int *interactlist;               // ..
+  int *interactlist;               // List of interactng SPH neighbours
   int *neiblist;                   // List of neighbour ids
-  FLOAT draux[ndim];               // Aux. relative position vector var
+  FLOAT draux[ndim];               // Aux. relative position vector
   FLOAT drsqd;                     // Distance squared
   FLOAT hrangesqdi;                // Kernel gather extent
   FLOAT rp[ndim];                  // Local copy of particle position
   FLOAT *dr;                       // Array of relative position vectors
   FLOAT *drmag;                    // Array of neighbour distances
   FLOAT *invdrmag;                 // Array of 1/drmag between particles
-  BinarySubTree<ndim> **treelist;  // ..
+  BinarySubTree<ndim> **treelist;  // Pointer to binary sub-tree
   BinaryTreeCell<ndim> *cell;      // Pointer to binary tree cell
   BinaryTreeCell<ndim> **celllist; // List of binary tree pointers
   SphParticle<ndim> *activepart;   // Local copy of active particles
@@ -1363,25 +1368,23 @@ void BinaryTree<ndim>::UpdateAllSphForces
   int k;                            // Dimension counter
   int okflag;                       // Flag if h-rho iteration is valid
   int Nactive;                      // No. of active particles in cell
-  int Ndirect;                      // ..
-  int Ndirectmax;                   // ..
-  int Ngravcell;                    // ..
-  int Ngravcellmax;                 // ..
-  int Ninteract;                    // ..
+  int Ndirect;                      // No. of direct-sum gravity particles
+  int Ndirectmax;                   // Max. no. of direct sum particles
+  int Ngravcell;                    // No. of gravity cells
+  int Ngravcellmax;                 // Max. no. of gravity cells
+  int Ninteract;                    // No. of interactions with hydro neibs
   int Nneib;                        // No. of neighbours
   int Nneibmax;                     // Max. no. of neighbours
   int *activelist;                  // List of active particle ids
-  int *directlist;                  // ..
-  int *interactlist;                // ..
+  int *directlist;                  // List of direct sum particle ids
+  int *interactlist;                // List of interacting neighbour ids
   int *neiblist;                    // List of neighbour ids
-  //FLOAT draux[ndim];                // Aux. relative position vector var
-  //FLOAT drsqd;                      // Distance squared
   FLOAT *agrav;                     // Local copy of gravitational accel.
-  FLOAT *gpot;                      // ..
-  BinarySubTree<ndim> **treelist;   // ..
+  FLOAT *gpot;                      // Local copy of gravitational pot.
+  BinarySubTree<ndim> **treelist;   // List of pointers to binary sub-trees
   BinaryTreeCell<ndim> *cell;       // Pointer to binary tree cell
-  BinaryTreeCell<ndim> **celllist;  // ..
-  BinaryTreeCell<ndim> **gravcelllist; // ..
+  BinaryTreeCell<ndim> **celllist;  // List of pointers to binary tree cells
+  BinaryTreeCell<ndim> **gravcelllist; // List of pointers to grav. cells
   SphParticle<ndim> *neibpart;      // Local copy of neighbouring ptcls
   SphParticle<ndim> *activepart;    // Local copy of SPH particle
   SphParticle<ndim> *data = sph->sphdata;   // Pointer to SPH particle data
@@ -1400,7 +1403,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
 #pragma omp parallel default(none) private(activelist,agrav,cc,cell)\
   private(gpot,i,interactlist,j,jj,activepart)\
   private(k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,directlist)\
-  private(gravcelllist,Ngravcell,Ndirect,Nneibmax,Ndirectmax,Ngravcellmax) \
+  private(gravcelllist,Ngravcell,Ndirect,Nneibmax,Ndirectmax,Ngravcellmax)\
   shared(celllist,cactive,sph,data,treelist,cout)
   {
     Nneibmax = 4*sph->Ngather;
@@ -1486,24 +1489,23 @@ void BinaryTree<ndim>::UpdateAllSphForces
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
 
-        // Determine interaction list (to ensure we don't compute pair-wise
-        // forces twice)
+        // Determine SPH neighbour interaction list 
+        // (to ensure we don't compute pair-wise forces twice)
         Ninteract = 0;
         for (jj=0; jj<Nneib; jj++) {
-          if ((neiblist[jj] < i && !neibpart[jj].active) || neiblist[jj] > i) {
+          if ((neiblist[jj] < i && !neibpart[jj].active) || neiblist[jj] > i)
             interactlist[Ninteract++] = jj;
-          }
         }
 
         // Compute forces between SPH neighbours (hydro and gravity)
         sph->ComputeSphHydroGravForces(i,Ninteract,interactlist,
-                                                          activepart[j],neibpart);
+                                       activepart[j],neibpart);
 
         // Compute direct gravity forces between distant particles
         sph->ComputeDirectGravForces(i,Ndirect,directlist,
-                                                      agrav,gpot,activepart[j],data);
+                                     agrav,gpot,activepart[j],data);
 
-        // Compute gravitational force dues to distant cells
+        // Compute gravitational force due to distant cells
         if (multipole == "monopole")
           ComputeCellMonopoleForces(i,Ngravcell,gravcelllist,activepart[j]);
         else if (multipole == "quadrupole")

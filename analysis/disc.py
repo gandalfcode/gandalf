@@ -1,8 +1,31 @@
+#==============================================================================
+#  disc.py
+#  ..
+#
+#  This file is part of GANDALF :
+#  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
+#  https://github.com/gandalfcode/gandalf
+#  Contact : gandalfcode@gmail.com
+#
+#  Copyright (C) 2013  D. A. Hubber, G. Rosotti
+#
+#  GANDALF is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  GANDALF is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  General Public License (http://www.gnu.org/licenses) for more details.
+#==============================================================================
 import numpy as np
 from data_fetcher import UserQuantity, SimBuffer
 import pyximport; pyximport.install(setup_args={'include_dirs':[np.get_include()]})
 import extract_disc_cython
 
+
+#------------------------------------------------------------------------------
 class Blob:
     def __init__(self, ids, snap, type):
         self.ids=ids
@@ -42,9 +65,13 @@ class Blob:
             velocities[:,2]=UserQuantity('vz').fetch(self.type,self.snap,unit=unit)[1][self.ids]
         return velocities*scaling_factor
 
+
+#------------------------------------------------------------------------------
 class Ambient_gas(Blob):
     pass
 
+
+#------------------------------------------------------------------------------
 class Disc(Blob):
     
     def __init__(self, star, ids, snap, type):
@@ -70,8 +97,7 @@ class Disc(Blob):
         raise NotImplementedError
     
 
-
-    
+#------------------------------------------------------------------------------
 def extract_discs (snapno, sim, type='default', eccenlimit=0.9, distancelimit=1., limiteigenvalues=0.2):
     '''This function takes a snapshot and a simulation number ("current" is also fine) and looks for which particles are bound
     to the stars. It returns a tuple, consisting of an Ambient_gas object
@@ -80,13 +106,13 @@ def extract_discs (snapno, sim, type='default', eccenlimit=0.9, distancelimit=1.
     '''
     
     snap = SimBuffer.get_snapshot_extended(sim,snapno)
-    
+
     parameters = dict(
                   eccenlimit = eccenlimit,
                   distancelimit = distancelimit,
                   limiteigenvalues = limiteigenvalues,
                   )
-    
+
     #query the number of dimensions
     ndim=snap.ndim
     
@@ -95,23 +121,23 @@ def extract_discs (snapno, sim, type='default', eccenlimit=0.9, distancelimit=1.
     #first extract coordinates, velocities and masses for the given type
     x_type = UserQuantity('x').fetch(type, snap)[1]
     vx_type = UserQuantity('vx').fetch(type, snap)[1]
-    x_star=UserQuantity('x').fetch('star',snap)[1]
-    vx_star=UserQuantity('vx').fetch('star',snap)[1]
+    x_star = UserQuantity('x').fetch('star',snap)[1]
+    vx_star = UserQuantity('vx').fetch('star',snap)[1]
     
     if ndim>1:
         y_type = UserQuantity('y').fetch(type, snap)[1]
         vy_type = UserQuantity('vy').fetch(type, snap)[1]
-        y_star=UserQuantity('y').fetch('star',snap)[1]
-        vy_star=UserQuantity('vy').fetch('star',snap)[1]
+        y_star = UserQuantity('y').fetch('star',snap)[1]
+        vy_star = UserQuantity('vy').fetch('star',snap)[1]
     
     if ndim>2:
         z_type = UserQuantity('z').fetch(type, snap)[1]
         vz_type = UserQuantity('vz').fetch(type, snap)[1]
-        z_star=UserQuantity('z').fetch('star',snap)[1]
-        vz_star=UserQuantity('vz').fetch('star',snap)[1]
+        z_star = UserQuantity('z').fetch('star',snap)[1]
+        vz_star = UserQuantity('vz').fetch('star',snap)[1]
     
     m_type = UserQuantity('m').fetch(type, snap)[1]
-    m_star=UserQuantity('m').fetch('star',snap)[1]
+    m_star = UserQuantity('m').fetch('star',snap)[1]
     
     n_star = snap.GetNparticlesType('star')
     
@@ -123,14 +149,14 @@ def extract_discs (snapno, sim, type='default', eccenlimit=0.9, distancelimit=1.
     #now loops over the stars and create the discs
     disclist=[]
     for istar in range(n_star):
-        ids= ( owner==istar )
-        disc=Disc(istar, ids, snap, type)
+        ids = ( owner==istar )
+        disc = Disc(istar, ids, snap, type)
         disclist.append(disc)
         print 'mass disc number', istar, ':',disc.mass()
         
     #create the ambient gas object
-    ids= (owner==-1)
-    ambient=Ambient_gas(ids, snap, type)
+    ids = (owner==-1)
+    ambient = Ambient_gas(ids, snap, type)
     print 'ambient gas mass:', ambient.mass()
     
     #return a tuple with the ambient gas and a list of discs

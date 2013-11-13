@@ -671,6 +671,7 @@ Required argument:
     return simno
 
 
+#------------------------------------------------------------------------------
 def to_list(str_variable,type):
     '''Convert the input string to a list of the specified type'''
     parenthesis_open = ('[', '(')
@@ -681,6 +682,8 @@ def to_list(str_variable,type):
     splitted = str_variable[1:-1].split(',')
     return map(type,splitted)
 
+
+#------------------------------------------------------------------------------
 def to_bool(value):
     '''Parses the input string and convert it to a boolean. If the input is not a string, passes
     it to the built-in bool function (which means, that the result is False only if it is None or
@@ -697,6 +700,7 @@ def to_bool(value):
         return valid[lower_value]
     else:
         raise ValueError('invalid literal for boolean: "%s"' % value)
+
 
 #------------------------------------------------------------------------------
 def sigint(signum, frame):
