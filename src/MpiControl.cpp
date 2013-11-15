@@ -339,7 +339,7 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
   // Now receive all bounding boxes from all other nodes
   for (i=0; i<Nmpi; i++) {
     if (i == rank) continue;
-    MPI_Bcast(boxbuffer,2*ndim*Nmpi,MPI_DOUBLE,i,MPI_COMM_WORLD);
+    MPI_Bcast(boxbuffer,2*ndim,MPI_DOUBLE,i,MPI_COMM_WORLD);
     for (k=0; k<ndim; k++) mpinode[i].hbox.boxmin[k] = boxbuffer[k];
     for (k=0; k<ndim; k++) mpinode[i].hbox.boxmax[k] = boxbuffer[ndim + k];
   }
