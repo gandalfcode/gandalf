@@ -183,7 +183,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["tsnapfirst"] = 0.1;
   intparams["Nstepsmax"] = 9999999;
   intparams["noutputstep"] = 32;
-  intparams["ndiagstep"] = 32;
+  intparams["ndiagstep"] = 128;
 
   // Unit and scaling parameters
   //---------------------------------------------------------------------------
@@ -337,7 +337,9 @@ void Parameters::SetDefaultValues(void)
   intparams["smooth_ic"] = 0;
   intparams["com_frame"] = 0;
   intparams["Nsph"] = 0;
+  intparams["Nsphmax"] = -1;
   intparams["Nstar"] = 0;
+  intparams["Nstarmax"] = -1;
   intparams["Nlattice1[0]"] = 1;
   intparams["Nlattice1[1]"] = 1;
   intparams["Nlattice1[2]"] = 1;

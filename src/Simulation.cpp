@@ -558,6 +558,7 @@ void Simulation<ndim>::ProcessParameters(void)
 
   // Set all other SPH parameter variables
   sph->Nsph           = intparams["Nsph"];
+  sph->Nsphmax        = intparams["Nsphmax"];
   sph->create_sinks   = intparams["create_sinks"];
   sph->time_dependent_avisc = intparams["time_dependent_avisc"];
   sph->alpha_visc_min = floatparams["alpha_visc_min"];
@@ -565,6 +566,7 @@ void Simulation<ndim>::ProcessParameters(void)
 
   // Set important variables for N-body objects
   nbody->Nstar          = intparams["Nstar"];
+  nbody->Nstarmax       = intparams["Nstarmax"];
   nbody_single_timestep = intparams["nbody_single_timestep"];
   nbodytree.gpehard     = floatparams["gpehard"];
   nbodytree.gpesoft     = floatparams["gpesoft"];
