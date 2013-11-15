@@ -348,7 +348,7 @@ void SphSimulation<ndim>::MainLoop(void)
         activecount = sphint->CheckTimesteps(level_diff_max,n,
                                              sph->Nsph,sph->sphintdata);
       else activecount = 0;
-      //activecount = 0;
+      activecount = 0;
 
     } while (activecount > 0);
     //-------------------------------------------------------------------------
@@ -479,9 +479,8 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
       }
 
 #pragma omp critical
-      {
-        if (dt < dt_min) dt_min = dt;
-      }
+      if (dt < dt_min) dt_min = dt;
+
     }
     //-------------------------------------------------------------------------
 
@@ -490,7 +489,13 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
     for (i=0; i<nbody->Nnbody; i++)
       dt_min = min(dt_min,nbody->Timestep(nbody->nbodydata[i]));
 
-    
+    // For MPI, determine the global minimum timestep over all processors
+#ifdef MPI_PARALLEL
+    dt = dt_min;
+    MPI_Allreduce(&dt,&dt_min,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
+#endif
+
+
     // Set all particles to same timestep
     timestep = dt_min;
     for (i=0; i<sph->Nsph; i++) {
@@ -577,6 +582,14 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       if (dt < dt_min_nbody) dt_min_nbody = dt;
       nbody->nbodydata[i]->dt = dt;
     }
+
+    // For MPI, determine the global minimum timestep over all processors
+#ifdef MPI_PARALLEL
+    dt = timestep;
+    MPI_Allreduce(&dt,&timestep,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
+    dt = dt_min_sph;
+    MPI_Allreduce(&dt,&dt_min_sph,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
+#endif
 
     // Calculate new block timestep levels
     level_max = Nlevels - 1;
@@ -714,6 +727,15 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     }
     //-------------------------------------------------------------------------
       
+
+    // For MPI, find the global maximum timestep levels for each processor
+#ifdef MPI_PARALLEL
+    level = level_max;
+    MPI_Allreduce(&level,&level_max,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
+    level = level_max_sph;
+    MPI_Allreduce(&level,&level_max_sph,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
+#endif
+
 
     // Set fixed SPH timestep level here in case maximum has changed
     if (sph_single_timestep == 1) {
