@@ -175,7 +175,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
   //---------------------------------------------------------------------------
   if (rank == 0) {
 
-    debug2("[MpiControl::CreateLoadBalancingTree]");
+    debug2("[MpiControl::CreateInitialDomainDecomposition]");
 
     // Create MPI binary tree for organising domain decomposition
     mpitree = new BinaryTree<ndim>(16,0.1,0.0,"geometric","monopole",1,Nmpi);
@@ -313,6 +313,43 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
 
 //=============================================================================
+//  MpiControl::UpdateAllBoundingBoxes
+//  ..
+//=============================================================================
+template <int ndim>
+void MpiControl<ndim>::UpdateAllBoundingBoxes
+(int Npart,                        ///< No. of SPH particles
+ SphParticle<ndim> *sphdata,       ///< Pointer to SPH data
+ SphKernel<ndim> *kernptr)         ///< Pointer to kernel object
+{
+  int i;                           // Particle counter
+  int k;                           // Dimension counter
+  FLOAT boxbuffer[2*ndim];         // Bounding box buffer
+
+  // Update local bounding boxes
+  mpinode[rank].UpdateBoundingBoxData(Npart,sphdata,kernptr);
+
+  // Pack h bounding box
+  for (k=0; k<ndim; k++) boxbuffer[k] = mpinode[rank].hbox.boxmin[k];
+  for (k=0; k<ndim; k++) boxbuffer[ndim + k] = mpinode[rank].hbox.boxmax[k];
+
+  // Broadcast all bounding boxes to other processes
+  MPI_Bcast(boxbuffer,2*ndim,MPI_DOUBLE,rank,MPI_COMM_WORLD);
+
+  // Now receive all bounding boxes from all other nodes
+  for (i=0; i<Nmpi; i++) {
+    if (i == rank) continue;
+    MPI_Bcast(boxbuffer,2*ndim*Nmpi,MPI_DOUBLE,i,MPI_COMM_WORLD);
+    for (k=0; k<ndim; k++) mpinode[i].hbox.boxmin[k] = boxbuffer[k];
+    for (k=0; k<ndim; k++) mpinode[i].hbox.boxmax[k] = boxbuffer[ndim + k];
+  }
+
+  return;
+}
+
+
+
+//=============================================================================
 //  MpiControl::LoadBalancing
 /// If we are on a load balancing step, then determine which level of 
 /// the binary partition we are adjusting for load balancing.  Next, adjust 
@@ -329,6 +366,7 @@ void MpiControl<ndim>::LoadBalancing
   int inode;                       // MPI node counter
   int k;                           // Dimension counter
   int okflag;                      // Successful communication flag
+  FLOAT boxbuffer[2*ndim*Nmpi];    // Bounding box buffer
   MPI_Status status;               // ..
 
 
@@ -363,6 +401,13 @@ void MpiControl<ndim>::LoadBalancing
 
 
     // Transmit new bounding box sizes to all other nodes
+    for (i=0; i<Nmpi; i++) {
+      for (k=0; k<ndim; k++) boxbuffer[2*ndim*i + k] = mpinode[i].domain.boxmin[k];
+      for (k=0; k<ndim; k++) boxbuffer[2*ndim*i + ndim + k] = mpinode[i].domain.boxmax[k];
+    }
+
+    // Now broadcast all bounding boxes to other processes
+    MPI_Bcast(boxbuffer,2*ndim*Nmpi,MPI_DOUBLE,0,MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
 
   }
@@ -374,7 +419,20 @@ void MpiControl<ndim>::LoadBalancing
     okflag = MPI_Send(&mpinode[rank].worktot,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
 
 
-    // Receive new bounding box information for all nodes
+    // Receive bounding box data for domain and unpack data
+    MPI_Bcast(boxbuffer,2*ndim*Nmpi,MPI_DOUBLE,0,MPI_COMM_WORLD);
+
+    // Unpack all bounding box data
+    for (i=0; i<Nmpi; i++) {
+      for (k=0; k<ndim; k++) mpinode[i].domain.boxmin[k] = boxbuffer[2*ndim*i + k];
+      for (k=0; k<ndim; k++) mpinode[i].domain.boxmax[k] = boxbuffer[2*ndim*i + ndim + k];
+      if (rank == 1) {
+        cout << "Node " << i << endl;
+        cout << "xbox : " << mpinode[i].domain.boxmin[0] << "    " << mpinode[i].domain.boxmax[0] << endl;
+        cout << "ybox : " << mpinode[i].domain.boxmin[1] << "    " << mpinode[i].domain.boxmax[1] << endl;
+        cout << "zbox : " << mpinode[i].domain.boxmin[2] << "    " << mpinode[i].domain.boxmax[2] << endl;
+      }
+    }
     MPI_Barrier(MPI_COMM_WORLD);
 
 
@@ -399,6 +457,11 @@ void MpiControl<ndim>::LoadBalancing
 
   return;
 }
+
+
+
+
+
 
 
 

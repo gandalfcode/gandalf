@@ -72,6 +72,7 @@ class MpiControl
   void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>);
   void LoadBalancing(Sph<ndim> *, Nbody<ndim> *);
   void TransferParticlesToNode(void);
+  void UpdateAllBoundingBoxes(int, SphParticle<ndim> *, SphKernel<ndim> *);
 
 
   // MPI control variables
