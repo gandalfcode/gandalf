@@ -219,7 +219,7 @@ void BinaryTree<ndim>::BuildTree
     BinarySubTree<ndim>* subtree = subtrees[i];
 
     // Build individual sub-trees
-    subtree->BuildSubTree(sph,simparams);
+    subtree->BuildSubTree(sph);
 
     // Calculate all cell quantities (e.g. COM, opening distance)
     subtree->StockCellProperties(sph->sphdata);
