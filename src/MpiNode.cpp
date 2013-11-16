@@ -95,13 +95,13 @@ void MpiNode<ndim>::UnpackNodeData(void)
 //=============================================================================
 template <int ndim>
 void MpiNode<ndim>::UpdateBoundingBoxData
-(int Npart,                         ///< No. of SPH particles
- SphParticle<ndim> *sphdata,        ///< Pointer to SPH data
- SphKernel<ndim> *kernptr)          ///< Pointer to kernel object
+(int Npart,                        ///< No. of SPH particles
+ SphParticle<ndim> *sphdata,       ///< Pointer to SPH data
+ SphKernel<ndim> *kernptr)         ///< Pointer to kernel object
 {
-  int i;                            // Particle counter
-  int k;                            // Dimension counter
-  FLOAT hrange;                     // ..
+  int i;                           // Particle counter
+  int k;                           // Dimension counter
+  FLOAT hrange;                    // ..
 
   // Initialise bounding box values
   for (k=0; k<ndim; k++) rbox.boxmin[k] = big_number;

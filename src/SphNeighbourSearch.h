@@ -295,10 +295,10 @@ class BinarySubTree
 template <int ndim>
 class BinaryTree: public SphNeighbourSearch<ndim>
 {
+ public:
+
   using SphNeighbourSearch<ndim>::neibcheck;
   using SphNeighbourSearch<ndim>::box;
-
- public:
 
   typedef typename vector <BinarySubTree<ndim> *>::iterator binlistiterator;
 

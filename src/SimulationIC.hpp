@@ -328,17 +328,22 @@ void Simulation<ndim>::BinaryAccretion(void)
     delete[] r2;
   }
 
-  rsonic = 0.5*m1/pow(sph->eos->SoundSpeed(sph->sphdata[0]),2);
-  hsink = sph->kernp->invkernrange*rsonic;
-  hsink = min(hsink,hfluid1);
-  rsink = sph->kernp->kernrange*hsink;
+  rsonic = 0.5*m1/(press1/rhofluid1);
+  //hsink = sph->kernp->invkernrange*rsonic;
+  //hsink = min(hsink,hfluid1);
+  hsink = hfluid1/pow(4.4817,invndim);
+  rsink = sph->kernp->kernrange*hsink/pow(4.4817,invndim);
+  FLOAT mmax = 0.5*4.0*rhofluid1*pow(sph->kernp->kernrange*hfluid1,ndim)/3.0;
 
-  cout << "Sound speed : " << sph->eos->SoundSpeed(sph->sphdata[0]) << endl;
+
+  cout << "Sound speed : " << sqrt(press1/rhofluid1) << endl;
   cout << "rsonic      : " << rsonic << endl;
+  cout << "rbondi      : " << 4.0*rsonic << endl;
   cout << "rsink       : " << rsink << endl;
+  cout << "mmax        : " << mmax << endl;
   cout << "hfluid      : " << hfluid1 << endl;
-  cout << "vbin        : " << vmachbin*sph->eos->SoundSpeed(sph->sphdata[0]) << endl;
-  cout << "Bondi accretion, dmdt : " << 4.0*pi*0.1*(m1 + m2)*(m1 + m2)/pow(sph->eos->SoundSpeed(sph->sphdata[0]),3);
+  cout << "vbin        : " << vmachbin*sqrt(press1/rhofluid1) << endl;
+  cout << "Bondi accretion, dmdt : " << 4.0*pi*rhofluid1*(m1 + m2)*(m1 + m2)/pow(press1/rhofluid1,1.5);
 
   // Set hmin_sink here, since no other sinks will be formed
   sph->hmin_sink = hsink;
@@ -359,6 +364,7 @@ void Simulation<ndim>::BinaryAccretion(void)
     nbody->stardata[0].radius = rsink;
     sinks.sink[0].star = &(nbody->stardata[0]);
     sinks.sink[0].radius = rsink;
+    sinks.sink[0].mmax = mmax;
     sinks.Nsink = Nstar;
   }
   else if (Nstar == 2) {
@@ -375,6 +381,8 @@ void Simulation<ndim>::BinaryAccretion(void)
     sinks.sink[1].star = &(nbody->stardata[1]);
     sinks.sink[0].radius = rsink;
     sinks.sink[1].radius = rsink;
+    sinks.sink[0].mmax = mmax;
+    sinks.sink[1].mmax = mmax;
     sinks.Nsink = Nstar;
   }
   else {

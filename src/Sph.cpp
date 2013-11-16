@@ -81,11 +81,14 @@ void Sph<ndim>::AllocateMemory(int N)
 {
   debug2("[Sph::AllocateMemory]");
 
-  if (N > Nsphmax) {
+  if (N > Nsphmax || !allocated) {
     if (allocated) DeallocateMemory();
-    //TODO: perhaps this 10 could be made a user-provided parameter
-    //(to handle the case where one doesn't want to waste memory)
-    Nsphmax = 10*N;
+
+    // Set conservative estimate for maximum number of particles, assuming 
+    // extra space required for periodic ghost particles
+    if (Nsphmax < N) 
+      Nsphmax = pow(pow(N,invndim) + 6.0*kernp->kernrange,ndim);
+
     iorder = new int[Nsphmax];
     rsph = new FLOAT[ndim*Nsphmax];
     sphdata = new struct SphParticle<ndim>[Nsphmax];
@@ -114,13 +117,13 @@ void Sph<ndim>::DeallocateMemory(void)
   debug2("[Sph::DeallocateMemory]");
 
   if (allocated) {
+#if defined _OPENMP
+    DestroyParticleLocks();
+#endif
     delete[] sphintdata;
     delete[] sphdata;
     delete[] rsph;
     delete[] iorder;
-#if defined _OPENMP
-    DestroyParticleLocks();
-#endif
   }
   allocated = false;
 

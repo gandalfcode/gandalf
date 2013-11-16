@@ -1,6 +1,7 @@
 //=============================================================================
 //  Precision.h
 //  Contains macro definitions for floating point precision in all routines.
+//  Also contains locally-defined MPI data types.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -24,6 +25,22 @@
 #ifndef _PRECISION_H_
 #define _PRECISION_H_
 
+
+// MPI communication floating point data types
+//-----------------------------------------------------------------------------
+#if defined(MPI_PARALLEL)
+#include "mpi.h"
+#if defined(GANDALF_SINGLE_PRECISION)
+#define GANDALF_MPI_FLOAT MPI_FLOAT
+#define GANDALF_MPI_DOUBLE MPI_DOUBLE
+#elif defined(GANDALF_DOUBLE_PRECISION)
+#define GANDALF_MPI_FLOAT MPI_DOUBLE
+#define GANDALF_MPI_DOUBLE MPI_DOUBLE
+#endif
+#endif
+
+// Floating point data types
+//-----------------------------------------------------------------------------
 #if defined(GANDALF_SINGLE_PRECISION)
 typedef float FLOAT;
 typedef double DOUBLE;

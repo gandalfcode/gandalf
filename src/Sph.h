@@ -144,7 +144,7 @@ private:
   const int self_gravity;             ///< Compute gravitational forces?
   static const FLOAT invndim=1./ndim; ///< Copy of 1/ndim
   int create_sinks;                   ///< Create new sink particles?
-  int time_dependent_avisc;           ///< ..
+  int time_dependent_avisc;           ///< Use time-dependent viscosity?
   FLOAT mmean;                        ///< Mean SPH particle mass
   FLOAT hmin_sink;                    ///< Minimum smoothing length of sinks
 
