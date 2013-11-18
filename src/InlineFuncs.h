@@ -176,7 +176,7 @@ static inline void Heapsort
 
 //=============================================================================
 //  InsertionSortIds
-//  ..
+//  Sort list of integers (e.g. ids of particles) into ascending order.
 //=============================================================================
 static inline void InsertionSortIds
 (int Nsort,                         ///< No. of values to be sorted
@@ -195,4 +195,41 @@ static inline void InsertionSortIds
 
   return;
 }
+
+
+
+//=============================================================================
+//  EulerAngleRotation
+//  Rotate given vector around specified Euler angles
+//=============================================================================
+template <typename T>
+static inline void EulerAngleRotation
+(T phi,
+ T theta,
+ T psi,
+ T vec[3])
+{
+  int k;
+  T Arot[3][3];
+  T vecaux[3];
+
+  Arot[0][0] = cos(theta)*cos(psi);
+  Arot[1][0] = cos(phi)*cos(psi) + sin(phi)*sin(theta)*cos(psi);
+  Arot[2][0] = sin(phi)*sin(psi) - cos(phi)*sin(theta)*cos(psi);
+  Arot[0][1] = -cos(theta)*sin(psi);
+  Arot[1][1] = cos(phi)*cos(psi) - sin(phi)*sin(theta)*sin(psi);
+  Arot[2][1] = sin(phi)*cos(psi) + cos(phi)*sin(theta)*sin(psi);
+  Arot[0][2] = sin(theta);
+  Arot[1][2] = -sin(phi)*cos(theta);
+  Arot[2][2] = cos(phi)*cos(theta);
+
+  for (k=0; k<3; k++) vecaux[k] = vec[k];
+
+  for (k=0; k<3; k++)
+    vec[k] = Arot[0][k]*vecaux[k] + Arot[1][k]*vecaux[k] + Arot[2][k]*vecaux[k];
+
+  return;
+}
+
+
 #endif

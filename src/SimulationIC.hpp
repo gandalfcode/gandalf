@@ -375,7 +375,7 @@ void Simulation<ndim>::BinaryAccretion(void)
     else
       rbinary[0] = simbox.boxmin[0] + 0.25*simbox.boxsize[0];
     vbinary[0] = vmachbin*sph->eos->SoundSpeed(sph->sphdata[0]);
-    AddBinaryStar(abin,ebin,m1,m2,hsink,hsink,
+    AddBinaryStar(abin,ebin,m1,m2,hsink,hsink,0.0,0.0,0.0,0.0,
                   rbinary,vbinary,nbody->stardata[0],nbody->stardata[1]);
     sinks.sink[0].star = &(nbody->stardata[0]);
     sinks.sink[1].star = &(nbody->stardata[1]);
@@ -560,20 +560,20 @@ void Simulation<ndim>::ShockTube(void)
       for (k=0; k<ndim; k++) vaux[ndim*i + k] = 0.0;
       wnorm = 0.0;
       for (j=0; j<sph->Ntot; j++) {
-	for (k=0; k<ndim; k++) 
-	  dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
-	drsqd = DotProduct(dr,dr,ndim);
-	if (drsqd > pow(sph->kernp->kernrange*sph->sphdata[i].h,2)) continue;
-	drmag = sqrt(drsqd);
-	uaux[i] += sph->sphdata[j].m*sph->sphdata[j].u*
-	  sph->kernp->w0(drmag*sph->sphdata[i].invh)*
-	  pow(sph->sphdata[i].invh,ndim)*sph->sphdata[i].invrho;
-	for (k=0; k<ndim; k++) vaux[ndim*i + k] += 
-	  sph->sphdata[j].m*sph->sphdata[j].v[k]*
-	  sph->kernp->w0(drmag*sph->sphdata[i].invh)*
-	  pow(sph->sphdata[i].invh,ndim)*sph->sphdata[i].invrho;
-	wnorm += sph->sphdata[j].m*sph->kernp->w0(drmag*sph->sphdata[i].invh)*
-	  pow(sph->sphdata[i].invh,ndim)*sph->sphdata[i].invrho;
+        for (k=0; k<ndim; k++)
+          dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
+        drsqd = DotProduct(dr,dr,ndim);
+        if (drsqd > pow(sph->kernp->kernrange*sph->sphdata[i].h,2)) continue;
+        drmag = sqrt(drsqd);
+        uaux[i] += sph->sphdata[j].m*sph->sphdata[j].u*
+          sph->kernp->w0(drmag*sph->sphdata[i].invh)*
+          pow(sph->sphdata[i].invh,ndim)*sph->sphdata[i].invrho;
+        for (k=0; k<ndim; k++) vaux[ndim*i + k] +=
+          sph->sphdata[j].m*sph->sphdata[j].v[k]*
+          sph->kernp->w0(drmag*sph->sphdata[i].invh)*
+          pow(sph->sphdata[i].invh,ndim)*sph->sphdata[i].invrho;
+        wnorm += sph->sphdata[j].m*sph->kernp->w0(drmag*sph->sphdata[i].invh)*
+          pow(sph->sphdata[i].invh,ndim)*sph->sphdata[i].invrho;
       }
       uaux[i] /= wnorm;
       for (k=0; k<ndim; k++) vaux[ndim*i + k] /= wnorm;
@@ -1686,7 +1686,7 @@ void Simulation<ndim>::BinaryStar(void)
   for (k=0; k<ndim; k++) rbinary[k] = 0.0;
   for (k=0; k<ndim; k++) vbinary[k] = 0.0;
   vbinary[0] = 0.25;
-  AddBinaryStar(sma,eccent,m1,m2,0.01,0.01,rbinary,vbinary,
+  AddBinaryStar(sma,eccent,m1,m2,0.01,0.01,0.0,0.0,0.0,0.0,rbinary,vbinary,
                 nbody->stardata[0],nbody->stardata[1]);
 
   return;
@@ -1728,12 +1728,12 @@ void Simulation<ndim>::TripleStar(void)
   // Compute main binary orbit
   for (k=0; k<ndim; k++) rbinary[k] = 0.0;
   for (k=0; k<ndim; k++) vbinary[k] = 0.0;
-  AddBinaryStar(sma1,eccent,m1,m2,0.0001,0.0001,
+  AddBinaryStar(sma1,eccent,m1,m2,0.0001,0.0001,0.0,0.0,0.0,0.0,
                 rbinary,vbinary,b1,nbody->stardata[2]);
 
   // Now compute both components
-  AddBinaryStar(sma2,eccent,0.5*m1,0.5*m1,0.0001,0.0001,b1.r,b1.v,
-		        nbody->stardata[0],nbody->stardata[1]);
+  AddBinaryStar(sma2,eccent,0.5*m1,0.5*m1,0.0001,0.0001,0.0,0.0,0.0,0.0,
+                b1.r,b1.v,nbody->stardata[0],nbody->stardata[1]);
 
   return;
 }
@@ -1775,13 +1775,14 @@ void Simulation<ndim>::QuadrupleStar(void)
   // Compute main binary orbit
   for (k=0; k<ndim; k++) rbinary[k] = 0.0;
   for (k=0; k<ndim; k++) vbinary[k] = 0.0;
-  AddBinaryStar(sma1,eccent1,m1,m2,0.01,0.01,rbinary,vbinary,b1,b2);
+  AddBinaryStar(sma1,eccent1,m1,m2,0.01,0.01,0.0,0.0,0.0,0.0,
+                rbinary,vbinary,b1,b2);
 
   // Now compute components of both inner binaries
-  AddBinaryStar(sma2,eccent2,0.5*m1,0.5*m1,0.0001,0.0001,b1.r,b1.v,
-                nbody->stardata[0],nbody->stardata[1]);
-  AddBinaryStar(sma2,eccent2,0.5*m2,0.5*m2,0.0001,0.0001,b2.r,b2.v,
-                nbody->stardata[2],nbody->stardata[3]);
+  AddBinaryStar(sma2,eccent2,0.5*m1,0.5*m1,0.0001,0.0001,0.0,0.0,0.0,0.0,
+                b1.r,b1.v,nbody->stardata[0],nbody->stardata[1]);
+  AddBinaryStar(sma2,eccent2,0.5*m2,0.5*m2,0.0001,0.0001,0.0,0.0,0.0,0.0,
+                b2.r,b2.v,nbody->stardata[2],nbody->stardata[3]);
 
   return;
 }
@@ -1801,6 +1802,10 @@ void Simulation<ndim>::AddBinaryStar
  DOUBLE m2,                        ///< Mass of star 2
  DOUBLE h1,                        ///< Smoothing length of star 1
  DOUBLE h2,                        ///< Smoothing length of star 2
+ DOUBLE phirot,                    ///< 'phi' Euler rotation angle
+ DOUBLE thetarot,                  ///< 'theta' Euler rotation angle
+ DOUBLE phase,                     ///< Phase angle
+ DOUBLE psirot,                    ///< 'tpsi' rotation angle
  DOUBLE *rbinary,                  ///< Position of COM of binary
  DOUBLE *vbinary,                  ///< Velocity of COM of binary
  NbodyParticle<ndim> &s1,          ///< Star 1
@@ -1870,6 +1875,7 @@ void Simulation<ndim>::AddBinaryStar
 
   return;
 }
+
 
 
 

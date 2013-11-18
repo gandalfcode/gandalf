@@ -397,8 +397,6 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 
   debug2("[Simulation::ReadSerenFormSnapshotFile]");
 
-  cout << "Opening file : " << filename << endl;
-
   infile.open(filename.c_str());
 
 
@@ -406,10 +404,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   // Then check if each value corresponds to the current values.
   //---------------------------------------------------------------------------
   infile >> format_id;
-  cout << "Checking format : " << format_id << endl;
   simparams->TrimWhiteSpace(format_id);
-
-  cout << "Checking format : " << format_id << endl;
   if (format_id != "SERENASCIIDUMPV2" && format_id != "SERENASCIIDUMPV3") {
     cout << "Incorrect format of IC file : " << format_id << endl;
     exit(0);
@@ -442,10 +437,6 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   ndata          = idata[20];
   //Nsnap          = ilpdata[0];
   Nsteps         = ilpdata[1];
-
-  // Output important info to screen
-  cout << "SPH Particles  : " << sph->Nsph << endl;
-  cout << "Star particles : " << nbody->Nstar << endl;
 
   // Read infile head real data
   for (i=0; i<50; i++) infile >> rdata[i];

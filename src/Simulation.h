@@ -195,8 +195,9 @@ class Simulation : public SimulationBase
 
   // Initial conditions helper routines
   //---------------------------------------------------------------------------
-  void AddBinaryStar(DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE *,
-                     DOUBLE *, NbodyParticle<ndim> &, NbodyParticle<ndim> &);
+  void AddBinaryStar(DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE,
+                     DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE *,DOUBLE *,
+                     NbodyParticle<ndim> &, NbodyParticle<ndim> &);
   void AddAzimuthalDensityPerturbation(int, int, FLOAT, FLOAT *, FLOAT *); 
   void AddRotationalVelocityField(int, FLOAT, FLOAT *, FLOAT *, FLOAT *); 
   void AddRandomBox(int, FLOAT *, DomainBox<ndim>);
