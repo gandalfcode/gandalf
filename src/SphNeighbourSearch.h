@@ -230,7 +230,7 @@ class BinarySubTree
   void StockCellProperties(SphParticle<ndim> *);
   FLOAT UpdateHmaxValues(SphParticle<ndim> *);
   void UpdateActiveParticleCounters(Sph<ndim> *);
-  void BuildSubTree(Sph<ndim> *, Parameters &);
+  void BuildSubTree(Sph<ndim> *);
   int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int, 
                                  int *, FLOAT, SphParticle<ndim> *);
   int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int, 

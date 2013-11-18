@@ -333,7 +333,7 @@ void Simulation<ndim>::BinaryAccretion(void)
   //hsink = min(hsink,hfluid1);
   hsink = hfluid1/pow(4.4817,invndim);
   rsink = sph->kernp->kernrange*hsink/pow(4.4817,invndim);
-  FLOAT mmax = 4.0*rhofluid1*pow(sph->kernp->kernrange*hfluid1,ndim)/3.0;
+  FLOAT mmax = 0.5*4.0*rhofluid1*pow(sph->kernp->kernrange*hfluid1,ndim)/3.0;
 
 
   cout << "Sound speed : " << sqrt(press1/rhofluid1) << endl;

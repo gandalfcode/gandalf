@@ -133,8 +133,7 @@ void BinarySubTree<ndim>::DeallocateSubTreeMemory(void)
 //=============================================================================
 template <int ndim>
 void BinarySubTree<ndim>::BuildSubTree
-(Sph<ndim> *sph,                    ///< Pointer to main SPH object
- Parameters &simparams)             ///< Simulation parameters
+(Sph<ndim> *sph)                    ///< Pointer to main SPH object
 {
   debug2("[BinarySubTree::BuildSubTree]");
 
