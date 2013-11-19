@@ -964,6 +964,11 @@ void NbodySystemTree<ndim>::OutputBinaryProperties
     cout << "Semi-major axis      : " << orbit[i].sma << endl;
     cout << "Orbital period       : " << orbit[i].period << endl;
     cout << "Orbital eccentricity : " << orbit[i].ecc << endl;
+    if (ndim == 2)
+      cout << "Orbital ang. mom     : " << orbit[i].angmom[2] << endl;
+    else
+      cout << "Orbital ang. mom     : " << orbit[i].angmom[0] << "    "
+           << orbit[i].angmom[1] << "    " << orbit[i].angmom[2] << endl;
     cout << "Total mass           : " 
          << orbit[i].m << "    " << orbit[i].q << endl;
   }

@@ -369,8 +369,15 @@ void Parameters::SetDefaultValues(void)
   floatparams["starfrac"] = 1.0;
   floatparams["m1"] = 0.5;
   floatparams["m2"] = 0.5;
+  floatparams["m3"] = 0.5;
+  floatparams["m4"] = 0.5;
   floatparams["abin"] = 1.0;
+  floatparams["abin2"] = 0.1;
   floatparams["ebin"] = 0.0;
+  floatparams["ebin2"] = 0.0;
+  floatparams["phirot"] = 0.0;
+  floatparams["thetarot"] = 0.0;
+  floatparams["psirot"] = 0.0;
   floatparams["vmachbin"] = 1.0;
 
   // Python parameters

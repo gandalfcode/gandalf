@@ -214,7 +214,7 @@ static inline void EulerAngleRotation
   T vecaux[3];
 
   Arot[0][0] = cos(theta)*cos(psi);
-  Arot[1][0] = cos(phi)*cos(psi) + sin(phi)*sin(theta)*cos(psi);
+  Arot[1][0] = cos(phi)*sin(psi) + sin(phi)*sin(theta)*cos(psi);
   Arot[2][0] = sin(phi)*sin(psi) - cos(phi)*sin(theta)*cos(psi);
   Arot[0][1] = -cos(theta)*sin(psi);
   Arot[1][1] = cos(phi)*cos(psi) - sin(phi)*sin(theta)*sin(psi);
@@ -226,7 +226,11 @@ static inline void EulerAngleRotation
   for (k=0; k<3; k++) vecaux[k] = vec[k];
 
   for (k=0; k<3; k++)
-    vec[k] = Arot[0][k]*vecaux[k] + Arot[1][k]*vecaux[k] + Arot[2][k]*vecaux[k];
+    vec[k] = Arot[0][k]*vecaux[0] + Arot[1][k]*vecaux[1] + Arot[2][k]*vecaux[2];
+
+  cout << "rot angles : " << phi << "    " << theta << "    " << psi << endl;
+  cout << "vec orig : " << vecaux[0] << "   " << vecaux[1] << "   " << vecaux[2] << endl;
+  cout << "vec rot  : " << vec[0] << "   " << vec[1] << "   " << vec[2] << endl;
 
   return;
 }
