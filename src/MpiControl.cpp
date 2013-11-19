@@ -32,6 +32,7 @@
 #include "Precision.h"
 #include "SphKernel.h"
 #include "DomainBox.h"
+#include "Diagnostics.h"
 #include "Debug.h"
 #include "Exception.h"
 #include "InlineFuncs.h"
@@ -63,6 +64,11 @@ MpiControl<ndim>::MpiControl()
   //Create and commit the particle datatype
   particle_type = SphParticle<ndim>::CreateMpiDataType();
   MPI_Type_commit(&particle_type);
+
+  // Create diagnostics data structure in database
+  diagnostics_type = Diagnostics<ndim>::CreateMpiDataType();
+  MPI_Type_commit(&diagnostics_type);
+
 
 #ifdef VERIFY_ALL
   if (Nmpi > 1) {
@@ -523,6 +529,65 @@ void MpiControl<ndim>::ReceiveParticles (int Node, int& Nparticles, SphParticle<
   MPI_Recv(*array, Nparticles, particle_type, Node, tag, MPI_COMM_WORLD, &status);
 
 }
+
+
+
+//=============================================================================
+//  MpiControl::CollateDiagnosticsData
+/// ..
+//=============================================================================
+template <int ndim>
+void MpiControl<ndim>::CollateDiagnosticsData(Diagnostics<ndim> &diag)
+{
+  int i;
+  int j;
+  int k;
+  Diagnostics<ndim> diagaux;
+  MPI_Status status;
+
+  //---------------------------------------------------------------------------
+  if (rank == 0) {
+
+	// First multiply root node values by mass
+	for (k=0; k<ndim; k++) diag.rcom[k] *= diag.mtot;
+	for (k=0; k<ndim; k++) diag.vcom[k] *= diag.mtot;
+
+    for (i=1; i<Nmpi; i++) {
+      MPI_Recv(&diagaux, 1, diagnostics_type, i, 0, MPI_COMM_WORLD, &status);
+      diag.Nsph += diagaux.Nsph;
+      diag.Nstar += diagaux.Nstar;
+      diag.Etot += diagaux.Etot;
+      diag.utot += diagaux.utot;
+      diag.ketot += diagaux.ketot;
+      diag.gpetot += diagaux.gpetot;
+      diag.mtot += diagaux.mtot;
+      for (k=0; k<ndim; k++) diag.mom[k] += diagaux.mom[k];
+      for (k=0; k<3; k++) diag.angmom[k] += diagaux.angmom[k];
+      for (k=0; k<ndim; k++) diag.force[k] += diagaux.force[k];
+      for (k=0; k<ndim; k++) diag.force_hydro[k] += diagaux.force_hydro[k];
+      for (k=0; k<ndim; k++) diag.force_grav[k] += diagaux.force_grav[k];
+      for (k=0; k<ndim; k++) diag.rcom[k] += diagaux.mtot*diagaux.rcom[k];
+      for (k=0; k<ndim; k++) diag.vcom[k] += diagaux.mtot*diagaux.vcom[k];
+    }
+
+    // Renormalise centre of mass positions and velocities
+    for (k=0; k<ndim; k++) diag.rcom[k] /= diag.mtot;
+    for (k=0; k<ndim; k++) diag.vcom[k] /= diag.mtot;
+
+  }
+  //---------------------------------------------------------------------------
+  else {
+
+    MPI_Send (&diag, 1, diagnostics_type, 0, 0, MPI_COMM_WORLD);
+
+  }
+  //---------------------------------------------------------------------------
+
+  return;
+}
+
+
+
 // Template class instances for each dimensionality value (1, 2 and 3)
 template class MpiControl<1>;
 template class MpiControl<2>;

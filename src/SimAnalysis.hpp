@@ -33,6 +33,10 @@
 #include "Parameters.h"
 #include "InlineFuncs.h"
 #include "Debug.h"
+#ifdef MPI_PARALLEL
+#include <stddef.h>
+#include "mpi.h"
+#endif
 using namespace std;
 
 
@@ -163,6 +167,12 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   }
 
 
+  // For MPI, collect all diagnostic information on root node
+#ifdef MPI_PARALLEL
+  mpicontrol.CollateDiagnosticsData(diag);
+#endif
+
+
   return;
 }
 
@@ -177,6 +187,8 @@ template <int ndim>
 void Simulation<ndim>::OutputDiagnostics(void)
 {
   debug2("[SphSimulation::OutputDiagnostics]");
+
+  if (rank != 0) return;
 
   cout << "Nsph        : " << sph->Nsph << endl;
   cout << "Nstar       : " << nbody->Nstar << endl;

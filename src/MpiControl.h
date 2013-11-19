@@ -35,6 +35,7 @@
 #include "SphNeighbourSearch.h"
 #include "SphParticle.h"
 #include "DomainBox.h"
+#include "Diagnostics.h"
 #if defined MPI_PARALLEL
 #include "mpi.h"
 #endif
@@ -68,6 +69,7 @@ class MpiControl
   void AllocateMemory(void);
   void DeallocateMemory(void);
 
+  void CollateDiagnosticsData(Diagnostics<ndim> &);
   void InitialiseMpiProcess(void);
   void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>);
   void LoadBalancing(Sph<ndim> *, Nbody<ndim> *);
@@ -89,6 +91,7 @@ class MpiControl
   MpiNode<ndim> *mpinode;           ///< Data for all MPI nodes
 
   MPI_Datatype particle_type;        ///< Datatype for the particles
+  MPI_Datatype diagnostics_type;     ///< Datatype for diagnostic info
 
 
 };
