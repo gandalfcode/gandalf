@@ -19,7 +19,9 @@ Use dimensionless units                     : dimensionless = 1
 #--------------------------
 Simulation end time                         : tend = 10.0
 Regular snapshot output frequency           : dt_snap = 1.0
-Screen output frequency (in no. of steps)   : noutputstep = 1
+First snapshot                              : tsnapfirst = 1.0
+Screen output frequency (in no. of steps)   : noutputstep = 32
+Diagnostic output frequency                 : ndiagstep = 256
 
 
 #-----------------------------

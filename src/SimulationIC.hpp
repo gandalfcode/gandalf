@@ -188,6 +188,9 @@ void Simulation<ndim>::BinaryAccretion(void)
   //int smooth_ic = simparams->intparams["smooth_ic"];
   FLOAT abin = simparams->floatparams["abin"];
   FLOAT ebin = simparams->floatparams["ebin"];
+  FLOAT phirot = simparams->floatparams["phirot"];
+  FLOAT thetarot = simparams->floatparams["thetarot"];
+  FLOAT psirot = simparams->floatparams["psirot"];
   FLOAT vmachbin = simparams->floatparams["vmachbin"];
   FLOAT m1 = simparams->floatparams["m1"];
   FLOAT m2 = simparams->floatparams["m2"];
@@ -375,7 +378,7 @@ void Simulation<ndim>::BinaryAccretion(void)
     else
       rbinary[0] = simbox.boxmin[0] + 0.25*simbox.boxsize[0];
     vbinary[0] = vmachbin*sph->eos->SoundSpeed(sph->sphdata[0]);
-    AddBinaryStar(abin,ebin,m1,m2,hsink,hsink,0.0,0.0,0.0,0.0,
+    AddBinaryStar(abin,ebin,m1,m2,hsink,hsink,phirot,thetarot,psirot,0.0,
                   rbinary,vbinary,nbody->stardata[0],nbody->stardata[1]);
     sinks.sink[0].star = &(nbody->stardata[0]);
     sinks.sink[1].star = &(nbody->stardata[1]);
@@ -1662,12 +1665,17 @@ template <int ndim>
 void Simulation<ndim>::BinaryStar(void)
 {
   int k;                           // Dimension counter
-  FLOAT sma = 1.0;                 // Binary semi-major axis
-  FLOAT eccent = 0.1;              // Orbital eccentricity
-  FLOAT m1 = 0.5;                  // Mass of star 1
-  FLOAT m2 = 0.5;                  // Mass of star 2
   DOUBLE rbinary[ndim];            // Position of binary COM
   DOUBLE vbinary[ndim];            // Velocity of binary COM
+
+  // Binary star parameters
+  FLOAT abin = simparams->floatparams["abin"];
+  FLOAT ebin = simparams->floatparams["ebin"];
+  FLOAT m1 = simparams->floatparams["m1"];
+  FLOAT m2 = simparams->floatparams["m2"];
+  FLOAT phirot = simparams->floatparams["phirot"];
+  FLOAT thetarot = simparams->floatparams["thetarot"];
+  FLOAT psirot = simparams->floatparams["psirot"];
 
   debug2("[Simulation::BinaryStar]");
 
@@ -1685,9 +1693,8 @@ void Simulation<ndim>::BinaryStar(void)
   // Add binary star
   for (k=0; k<ndim; k++) rbinary[k] = 0.0;
   for (k=0; k<ndim; k++) vbinary[k] = 0.0;
-  vbinary[0] = 0.25;
-  AddBinaryStar(sma,eccent,m1,m2,0.01,0.01,0.0,0.0,0.0,0.0,rbinary,vbinary,
-                nbody->stardata[0],nbody->stardata[1]);
+  AddBinaryStar(abin,ebin,m1,m2,0.01,0.01,phirot,thetarot,psirot,0.0,
+                rbinary,vbinary,nbody->stardata[0],nbody->stardata[1]);
 
   return;
 }
@@ -1702,15 +1709,22 @@ template <int ndim>
 void Simulation<ndim>::TripleStar(void)
 {
   int k;                           // Dimension counter
-  FLOAT sma1 = 1.0;                // Outer semi-major axis
-  FLOAT sma2 = 0.01;               // Inner semi-major axis
-  FLOAT eccent = 0.0;              // Orbital eccentricity (of all orbits)
-  FLOAT m1 = 0.5;                  // Mass of binary 1
-  FLOAT m2 = 0.5;                  // Mass of binary 2
   DOUBLE rbinary[ndim];            // Position of binary COM
   DOUBLE vbinary[ndim];            // Velocity of binary COM
   NbodyParticle<ndim> b1;          // Star/binary 1
   NbodyParticle<ndim> b2;          // Star/binary 2
+
+  // Triple star parameters
+  FLOAT m1 = simparams->floatparams["m1"];
+  FLOAT m2 = simparams->floatparams["m2"];
+  FLOAT m3 = simparams->floatparams["m3"];
+  FLOAT abin1 = simparams->floatparams["abin"];
+  FLOAT abin2 = simparams->floatparams["abin2"];
+  FLOAT ebin1 = simparams->floatparams["ebin"];
+  FLOAT ebin2 = simparams->floatparams["ebin2"];
+  FLOAT phirot = simparams->floatparams["phirot"];
+  FLOAT thetarot = simparams->floatparams["thetarot"];
+  FLOAT psirot = simparams->floatparams["psirot"];
 
   debug2("[SphSimulation::TripleStar]");
 
@@ -1728,11 +1742,11 @@ void Simulation<ndim>::TripleStar(void)
   // Compute main binary orbit
   for (k=0; k<ndim; k++) rbinary[k] = 0.0;
   for (k=0; k<ndim; k++) vbinary[k] = 0.0;
-  AddBinaryStar(sma1,eccent,m1,m2,0.0001,0.0001,0.0,0.0,0.0,0.0,
-                rbinary,vbinary,b1,nbody->stardata[2]);
+  AddBinaryStar(abin1,ebin1,m1,m2+m3,0.0001,0.0001,phirot,thetarot,psirot,
+                0.0,rbinary,vbinary,b1,nbody->stardata[2]);
 
   // Now compute both components
-  AddBinaryStar(sma2,eccent,0.5*m1,0.5*m1,0.0001,0.0001,0.0,0.0,0.0,0.0,
+  AddBinaryStar(abin2,ebin2,m2,m3,0.0001,0.0001,phirot,thetarot,psirot,0.0,
                 b1.r,b1.v,nbody->stardata[0],nbody->stardata[1]);
 
   return;
@@ -1748,16 +1762,23 @@ template <int ndim>
 void Simulation<ndim>::QuadrupleStar(void)
 {
   int k;                           // Dimension counter
-  FLOAT sma1 = 1.0;                // Outer semi-major axis
-  FLOAT sma2 = 0.01;               // Inner semi-major axis
-  FLOAT eccent1 = 0.4;             // Main orbital eccentricity
-  FLOAT eccent2 = 0.1;             // Minor orbital eccentricity
-  FLOAT m1 = 0.5;                  // Mass of binary 1
-  FLOAT m2 = 0.5;                  // Mass of binary 2
   DOUBLE rbinary[ndim];            // Position of binary COM
   DOUBLE vbinary[ndim];            // Velocity of binary COM
   NbodyParticle<ndim> b1;          // Star/binary 1
   NbodyParticle<ndim> b2;          // Star/binary 2
+
+  // Quadruple star parameters
+  FLOAT m1 = simparams->floatparams["m1"];
+  FLOAT m2 = simparams->floatparams["m2"];
+  FLOAT m3 = simparams->floatparams["m3"];
+  FLOAT m4 = simparams->floatparams["m3"];
+  FLOAT abin1 = simparams->floatparams["abin"];
+  FLOAT abin2 = simparams->floatparams["abin2"];
+  FLOAT ebin1 = simparams->floatparams["ebin"];
+  FLOAT ebin2 = simparams->floatparams["ebin2"];
+  FLOAT phirot = simparams->floatparams["phirot"];
+  FLOAT thetarot = simparams->floatparams["thetarot"];
+  FLOAT psirot = simparams->floatparams["psirot"];
 
   debug2("[SphSimulation::QuadrupleStar]");
 
@@ -1775,13 +1796,13 @@ void Simulation<ndim>::QuadrupleStar(void)
   // Compute main binary orbit
   for (k=0; k<ndim; k++) rbinary[k] = 0.0;
   for (k=0; k<ndim; k++) vbinary[k] = 0.0;
-  AddBinaryStar(sma1,eccent1,m1,m2,0.01,0.01,0.0,0.0,0.0,0.0,
+  AddBinaryStar(abin1,ebin1,m1+m2,m3+m4,0.01,0.01,phirot,thetarot,psirot,0.0,
                 rbinary,vbinary,b1,b2);
 
   // Now compute components of both inner binaries
-  AddBinaryStar(sma2,eccent2,0.5*m1,0.5*m1,0.0001,0.0001,0.0,0.0,0.0,0.0,
+  AddBinaryStar(abin2,ebin2,m1,m2,0.0001,0.0001,phirot,thetarot,psirot,0.0,
                 b1.r,b1.v,nbody->stardata[0],nbody->stardata[1]);
-  AddBinaryStar(sma2,eccent2,0.5*m2,0.5*m2,0.0001,0.0001,0.0,0.0,0.0,0.0,
+  AddBinaryStar(abin2,ebin2,m3,m4,0.0001,0.0001,phirot,thetarot,psirot,0.0,
                 b2.r,b2.v,nbody->stardata[2],nbody->stardata[3]);
 
   return;
@@ -1850,8 +1871,8 @@ void Simulation<ndim>::AddBinaryStar
 
   // Set properties of star 1
   // put on x-y plane to start
-  for (k=0; k<ndim; k++) s1.r[k] = rbinary[k];
-  for (k=0; k<ndim; k++) s1.v[k] = vbinary[k];
+  for (k=0; k<ndim; k++) s1.r[k] = 0.0;
+  for (k=0; k<ndim; k++) s1.v[k] = 0.0;
   s1.m = m1;
   s1.h = h1;
   s1.invh = 1.0 / s1.h;
@@ -1861,8 +1882,8 @@ void Simulation<ndim>::AddBinaryStar
   s1.v[1] += vel*sin(0.5*pi - theta + phi)*m2/mbin;
 
   // Set properties of star 2
-  for (k=0; k<ndim; k++) s2.r[k] = rbinary[k];
-  for (k=0; k<ndim; k++) s2.v[k] = vbinary[k];
+  for (k=0; k<ndim; k++) s2.r[k] = 0.0;
+  for (k=0; k<ndim; k++) s2.v[k] = 0.0;
   s2.m = m2;
   s2.h = h2;
   s2.invh = 1.0 / s2.h;
@@ -1871,7 +1892,19 @@ void Simulation<ndim>::AddBinaryStar
   s2.v[0] -= -vel*cos(0.5*pi - theta + phi)*m1/mbin;
   s2.v[1] -= vel*sin(0.5*pi - theta + phi)*m1/mbin;
 
-  // DAVID : Need to add code to rotate binary to an arbitrary orientation.
+  // Rotate binary to given orientation using Euler angles
+  EulerAngleRotation(phirot,thetarot,psirot,s1.r);
+  EulerAngleRotation(phirot,thetarot,psirot,s1.v);
+  EulerAngleRotation(phirot,thetarot,psirot,s2.r);
+  EulerAngleRotation(phirot,thetarot,psirot,s2.v);
+
+  // Now move binary to given centre of position and velocity
+  for (k=0; k<ndim; k++) s1.r[k] += rbinary[k];
+  for (k=0; k<ndim; k++) s1.v[k] += vbinary[k];
+  for (k=0; k<ndim; k++) s2.r[k] += rbinary[k];
+  for (k=0; k<ndim; k++) s2.v[k] += vbinary[k];
+
+
 
   return;
 }
