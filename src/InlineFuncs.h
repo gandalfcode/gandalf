@@ -30,6 +30,8 @@
 #include <math.h>
 #include "Precision.h"
 #include "Constants.h"
+#include "SphParticle.h"
+#include "DomainBox.h"
 using namespace std;
 
 
@@ -197,7 +199,6 @@ static inline void InsertionSortIds
 }
 
 
-
 //=============================================================================
 //  EulerAngleRotation
 //  Rotate given vector around specified Euler angles
@@ -234,6 +235,37 @@ static inline void EulerAngleRotation
 
   return;
 }
+
+
+inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max) {
+  bool smaller = value < min;
+  if (smaller) return min;
+  bool bigger = value > max;
+  if (bigger) return max;
+  return value;
+}
+
+
+template <int ndim>
+inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box) {
+
+  // Find the closest point to the circle within the rectangle
+  FLOAT closest_coord[ndim];
+  for (int i=0; i<ndim; i++) {
+    closest_coord[i] = clamp(part.r[i],box.boxmin[i],box.boxmax[i]);
+  }
+
+  // Calculate the distance between the circle's center and this closest point
+  FLOAT distanceSquared = 0.;
+  for (int i=0; i<ndim; i++) {
+    FLOAT distance_coord = closest_coord[i] - part.r[i];
+    distanceSquared += distance_coord*distance_coord;
+  }
+
+  // If the distance is less than the circle's radius, an intersection occurs
+  return distanceSquared < part.hrangesqd;
+}
+
 
 
 #endif

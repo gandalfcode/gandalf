@@ -109,4 +109,36 @@ bool IsAnyBoundarySpecial(const DomainBox<ndim>& box) {
 }
 
 
+//=============================================================================
+/// \brief  Helper function to say if a value is contained inside an interval
+//=============================================================================
+inline bool valueInRange(FLOAT value, FLOAT min, FLOAT max)
+{ return (value >= min) && (value <= max); }
+
+
+//=============================================================================
+/// \brief  Helper function to find if two boxes overlap
+/// \author D. A. Hubber, G. Rosotti
+/// \date   12/11/2013
+/// \return A boolean saying whether the boxes overlap
+//=============================================================================
+template <int ndim>
+inline bool BoxesOverlap (Box<ndim>& A, Box<ndim>& B) {
+  bool coord_overlap[ndim];
+
+  for (int i=0; i<ndim; i++) {
+    coord_overlap[i] = valueInRange(A.boxmin[i], B.boxmin[i], B.boxmax[i]) ||
+                       valueInRange(B.boxmin[i], A.boxmin[i], A.boxmax[i]);
+  }
+
+  bool result=true;
+  for (int i=0; i<ndim; i++) {
+    result = result && coord_overlap[i];
+  }
+
+  return result;
+
+}
+
+
 #endif
