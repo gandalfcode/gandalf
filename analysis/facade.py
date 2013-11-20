@@ -721,24 +721,29 @@ def init():
     global plottingprocess
     plottingprocess = PlottingProcess(Singletons.queue, Singletons.commands, Singletons.completedqueue, Singletons.globallimits)
     plottingprocess.start()
-    CreateUserQuantity('r','sqrt(x^2+y^2+z^2)',scaling_factor='r', label='r')
-    CreateUserQuantity('R','sqrt(x^2+y^2)',scaling_factor='r', label='R')
+    CreateUserQuantity('r','sqrt(x^2+y^2+z^2)',scaling_factor='r', label='$r$')
+    CreateUserQuantity('R','sqrt(x^2+y^2)',scaling_factor='r', label='$R$')
     CreateUserQuantity('phi','arctan2(y,x)', label='$\\phi$')
     CreateUserQuantity('theta','arccos(z/r)', label='$\\theta$')
     CreateUserQuantity('vr','sin(theta)*cos(phi)*vx+sin(theta)*sin(phi)*vy+cos(theta)*vz',scaling_factor='v',label='$v_r$')
-    CreateUserQuantity('vtheta','cos(theta)*cos(phi)*vx+cos(theta)*sin(phi)*vy-sin(theta)*vz',scaling_factor='v', label='$v_\\theta$')
+    CreateUserQuantity('vR','sin(theta)*cos(phi)*vx+sin(theta)*sin(phi)*vy',scaling_factor='v',label='$v_R$')
     CreateUserQuantity('vphi','cos(phi)*vy-sin(phi)*vx',scaling_factor='v',label='$v_\\phi$')
+    CreateUserQuantity('vtheta','cos(theta)*cos(phi)*vx+cos(theta)*sin(phi)*vy-sin(theta)*vz',scaling_factor='v', label='$v_\\theta$')
     CreateUserQuantity('ar','sin(theta)*cos(phi)*ax+sin(theta)*sin(phi)*ay+cos(theta)*az',scaling_factor='a',label='$a_r$')
-    CreateUserQuantity('atheta','cos(theta)*cos(phi)*vx+cos(theta)*sin(phi)*vy-sin(theta)*vz',scaling_factor='a', label='$a_\\theta$')
+    CreateUserQuantity('aR','sin(theta)*cos(phi)*ax+sin(theta)*sin(phi)*ay',scaling_factor='a',label='$a_R$')
     CreateUserQuantity('aphi','cos(phi)*vy-sin(phi)*vx',scaling_factor='a',label='$a_\\phi$')
-    CreateUserQuantity('press','(gamma_eos - 1)*rho*u',scaling_factor='press',label='P')
+    CreateUserQuantity('atheta','cos(theta)*cos(phi)*vx+cos(theta)*sin(phi)*vy-sin(theta)*vz',scaling_factor='a', label='$a_\\theta$')
+    CreateUserQuantity('press','(gamma_eos - 1)*rho*u',scaling_factor='press',label='$P$')
     CreateUserQuantity('sound','sqrt(gamma_eos*(gamma_eos - 1)*u)',scaling_factor='v', label='$c_s$')
-    CreateUserQuantity('temp','(gamma_eos - 1)*u',scaling_factor='temp',label='T')
+    CreateUserQuantity('temp','(gamma_eos - 1)*u',scaling_factor='temp',label='$T$')
     
     from compute import COM
     CreateTimeData('com_x',COM)
     CreateTimeData('com_y',COM,quantity='y')
     CreateTimeData('com_z',COM,quantity='z')
+    CreateTimeData('com_vx',COM,quantity='vx')
+    CreateTimeData('com_vy',COM,quantity='vy')
+    CreateTimeData('com_vz',COM,quantity='vz')
 
 
 

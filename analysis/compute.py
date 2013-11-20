@@ -134,3 +134,10 @@ def lagrangian_radii(snap, mfrac=0.5, type="default"):
     mlag = mfrac*mtotal
     index = np.searchsorted(mcumulative,mlag)
     return 0.5*(r[porder[index-1]] + r[porder[index]])
+
+
+#------------------------------------------------------------------------------
+def disc_mass(snap, starno=0, type="default"):
+    '''Computes and returns the mass of the disc around a given star'''
+
+    return 0.0
