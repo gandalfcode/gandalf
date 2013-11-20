@@ -57,6 +57,9 @@ class MpiControl
   std::vector<SphParticle<ndim> > sendbuffer;
   void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array);
   MPI_Datatype box_type;             ///< Datatype for the box
+  std::vector<Box<ndim> > boxes_buffer;     ///< Buffer needed by the UpdateAllBoundingBoxes routine
+
+
  public:
 
   // Constructor and destructor
