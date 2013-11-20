@@ -117,7 +117,7 @@ void MpiNode<ndim>::UpdateBoundingBoxData
       rbox.boxmin[k] = min(rbox.boxmin[k],sphdata[i].r[k]);
       rbox.boxmax[k] = max(rbox.boxmax[k],sphdata[i].r[k]);
       hbox.boxmin[k] = min(hbox.boxmin[k],sphdata[i].r[k] - hrange);
-      hbox.boxmax[k] = min(hbox.boxmax[k],sphdata[i].r[k] + hrange);
+      hbox.boxmax[k] = max(hbox.boxmax[k],sphdata[i].r[k] + hrange);
     }
   }
 
