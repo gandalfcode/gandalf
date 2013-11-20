@@ -69,9 +69,9 @@ class MpiNode
   FLOAT hmax;                       ///< Maximum smoothing length on node
   FLOAT worktot;                    ///< Total 'work' on each node
 
-  DomainBox<ndim> domain;           ///< ..
-  DomainBox<ndim> rbox;             ///< ..
-  DomainBox<ndim> hbox;             ///< ..
+  Box<ndim> domain;           ///< ..
+  Box<ndim> rbox;             ///< ..
+  Box<ndim> hbox;             ///< ..
 
   BinarySubTree<ndim> *nodetree;    ///< Pointer to current node sub-tree
 

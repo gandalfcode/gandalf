@@ -32,6 +32,32 @@
 using namespace std;
 
 
+//=============================================================================
+//  Structure Box
+/// \brief  Simplified bounding box data structure.
+/// \author D. A. Hubber, G. Rosotti
+/// \date   15/11/2013
+//=============================================================================
+template <int ndim>
+struct Box {
+  FLOAT boxmin[ndim];                   ///< Minimum bounding box extent
+  FLOAT boxmax[ndim];                   ///< Maximum bounding box extent
+};
+
+#ifdef MPI_PARALLEL
+template <int ndim>
+MPI_Datatype CreateBoxType (Box<ndim> dummy) {
+  MPI_Datatype box_type;
+  MPI_Datatype types[1] = {MPI_BYTE};
+  MPI_Aint offsets[1] = {0};
+  int blocklen[1] = {sizeof(Box<ndim>)};
+
+  MPI_Type_create_struct(1,blocklen,offsets,types,&box_type);
+
+  return box_type;
+}
+#endif
+
 
 //=============================================================================
 //  Structure DomainBox

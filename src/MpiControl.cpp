@@ -69,6 +69,12 @@ MpiControl<ndim>::MpiControl()
   diagnostics_type = Diagnostics<ndim>::CreateMpiDataType();
   MPI_Type_commit(&diagnostics_type);
 
+  //Create and commit the box datatype
+  Box<ndim> dummy;
+  box_type = CreateBoxType(dummy);
+  MPI_Type_commit(&box_type);
+  //Allocate buffer to send and receive boxes
+  boxes_buffer.resize(Nmpi);
 
 #ifdef VERIFY_ALL
   if (Nmpi > 1) {
@@ -99,6 +105,7 @@ template <int ndim>
 MpiControl<ndim>::~MpiControl()
 {
   MPI_Type_free(&particle_type);
+  MPI_Type_free(&box_type);
 }
 
 
@@ -328,26 +335,16 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
  SphParticle<ndim> *sphdata,       ///< Pointer to SPH data
  SphKernel<ndim> *kernptr)         ///< Pointer to kernel object
 {
-  int i;                           // Particle counter
-  int k;                           // Dimension counter
-  FLOAT boxbuffer[2*ndim];         // Bounding box buffer
 
   // Update local bounding boxes
   mpinode[rank].UpdateBoundingBoxData(Npart,sphdata,kernptr);
 
-  // Pack h bounding box
-  for (k=0; k<ndim; k++) boxbuffer[k] = mpinode[rank].hbox.boxmin[k];
-  for (k=0; k<ndim; k++) boxbuffer[ndim + k] = mpinode[rank].hbox.boxmax[k];
+  // Do an all_gather to receive the new array
+  MPI_Allgather(&mpinode[rank].hbox,1,box_type,&boxes_buffer[0],1,box_type,MPI_COMM_WORLD);
 
-  // Broadcast all bounding boxes to other processes
-  MPI_Bcast(boxbuffer,2*ndim,MPI_DOUBLE,rank,MPI_COMM_WORLD);
-
-  // Now receive all bounding boxes from all other nodes
-  for (i=0; i<Nmpi; i++) {
-    if (i == rank) continue;
-    MPI_Bcast(boxbuffer,2*ndim,MPI_DOUBLE,i,MPI_COMM_WORLD);
-    for (k=0; k<ndim; k++) mpinode[i].hbox.boxmin[k] = boxbuffer[k];
-    for (k=0; k<ndim; k++) mpinode[i].hbox.boxmax[k] = boxbuffer[ndim + k];
+  // Save the information inside the nodes
+  for (int i=0; i<Nmpi; i++) {
+    mpinode[i].hbox = boxes_buffer[i];
   }
 
   return;
