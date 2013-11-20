@@ -54,6 +54,9 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 
   debug2("[SphSimulation::CalculateDiagnostics]");
 
+  diag.Nsph = sph->Nsph;
+  diag.Nstar = nbody->Nstar;
+
   // Zero all diagnostic summation variables
   diag.mtot = 0.0;
   diag.Etot = 0.0;
@@ -190,8 +193,8 @@ void Simulation<ndim>::OutputDiagnostics(void)
 
   if (rank != 0) return;
 
-  cout << "Nsph        : " << sph->Nsph << endl;
-  cout << "Nstar       : " << nbody->Nstar << endl;
+  cout << "Nsph        : " << diag.Nsph << endl;
+  cout << "Nstar       : " << diag.Nstar << endl;
   cout << "mtot        : " << diag.mtot*simunits.m.outscale << endl;
   cout << "Etot        : " << diag.Etot*simunits.E.outscale << endl;
   cout << "ketot       : " << diag.ketot*simunits.E.outscale << endl;
