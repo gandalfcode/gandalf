@@ -63,6 +63,7 @@ Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux,
   allocated(false),
   Nsph(0),
   Nsphmax(0),
+  NPeriodicGhost(0),
   avisc(avisc_aux),
   acond(acond_aux)
 {

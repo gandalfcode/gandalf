@@ -45,7 +45,6 @@
 using namespace std;
 
 
-
 //=============================================================================
 //  SimulationBase::SimulationFactory
 /// Creates a simulation object depending on the dimensionality.
@@ -378,10 +377,11 @@ string SimulationBase::Output(void)
 
   debug2("[SimulationBase::Output]");
 
-  if (Nsteps%noutputstep == 0) 
-    cout << "t : " << t*simunits.t.outscale << " " << simunits.t.outunit 
-	 << "    dt : " << timestep*simunits.t.outscale << " " 
-	 << simunits.t.outunit << "    Nsteps : " << Nsteps << endl;
+  if (rank==0)
+    if (Nsteps%noutputstep == 0)
+      cout << "t : " << t*simunits.t.outscale << " " << simunits.t.outunit
+       << "    dt : " << timestep*simunits.t.outscale << " "
+       << simunits.t.outunit << "    Nsteps : " << Nsteps << endl;
 
   // Output a data snapshot if reached required time
   if (t >= tsnapnext) {
@@ -595,18 +595,15 @@ void Simulation<ndim>::ProcessParameters(void)
   }
   if (sim == "sph" || sim == "godunov_sph") sphneib->box = &simbox;
   if (IsAnyBoundarySpecial(simbox)) {
-    ghosts = new PeriodicGhosts<ndim>();
-#ifdef MPI_PARALLEL
-    ExceptionHandler::getIstance().raise("Error: periodic/mirror boundaries and MPI at the moment can't work together");
-#endif
+    LocalGhosts = new PeriodicGhosts<ndim>();
   }
   else {
-#ifdef MPI_PARALLEL
-    ghosts = new MPIGhosts<ndim>(&mpicontrol);
-#else
-    ghosts = new NullGhosts<ndim>();
-#endif
+    LocalGhosts = new NullGhosts<ndim>();
   }
+#ifdef MPI_PARALLEL
+    MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
+#endif
+
 
 
   // Sink particles

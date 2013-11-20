@@ -55,7 +55,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #ifdef MPI_PARALLEL
   mpicontrol.CreateInitialDomainDecomposition(sph,nbody,simparams,simbox);
   MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Abort(MPI_COMM_WORLD,0);
+//  MPI_Abort(MPI_COMM_WORLD,0);
 #endif
 
 
@@ -94,8 +94,15 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->neibcheck = false;
     sphneib->UpdateAllSphProperties(sph,nbody);
 
+#ifdef MPI_PARALLEL
+    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph->sphdata, sph->kernp);
+#endif
+
     // Search ghost particles
-    ghosts->SearchGhostParticles(simbox,sph);
+    LocalGhosts->SearchGhostParticles(simbox,sph);
+#ifdef MPI_PARALLEL
+    MpiGhosts->SearchGhostParticles(simbox,sph);
+#endif
 
     // Update neighbour tree
     sphneib->BuildTree(sph,*simparams);
@@ -108,8 +115,15 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph,nbody);
 
+#ifdef MPI_PARALLEL
+    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph->sphdata, sph->kernp);
+#endif
+
     // Search ghost particles
-    ghosts->SearchGhostParticles(simbox,sph);
+    LocalGhosts->SearchGhostParticles(simbox,sph);
+#ifdef MPI_PARALLEL
+    MpiGhosts->SearchGhostParticles(simbox,sph);
+#endif
 
     // Update neighbour tre
     sphneib->BuildTree(sph,*simparams);
@@ -164,7 +178,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       sph->sphintdata[i].nlast = 0;
     }
 
-    ghosts->CopySphDataToGhosts(sph);
+    LocalGhosts->CopySphDataToGhosts(sph);
+#ifdef MPI_PARALLEL
+    MpiGhosts->CopySphDataToGhosts(sph);
+#endif
     sphneib->BuildTree(sph,*simparams);
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
@@ -188,7 +205,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
         sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
 
-    ghosts->CopySphDataToGhosts(sph);
+    LocalGhosts->CopySphDataToGhosts(sph);
+#ifdef MPI_PARALLEL
+    MpiGhosts->CopySphDataToGhosts(sph);
+#endif
 
   }
 
@@ -248,7 +268,7 @@ void SphSimulation<ndim>::MainLoop(void)
   // Check all boundary conditions
   // (DAVID : Move this function to sphint and create an analagous one for N-body)
   // (Also, only check this on tree-build steps)
-  ghosts->CheckBoundaries(simbox,sph);
+  LocalGhosts->CheckBoundaries(simbox,sph);
 
 
   //---------------------------------------------------------------------------
@@ -258,6 +278,9 @@ void SphSimulation<ndim>::MainLoop(void)
   //       Compute and transmit all bounding boxes (e.g. all particles, active
   //       particles, h-extent, ghosts, etc..) to all other MPI nodes
   //---------------------------------------------------------------------------
+#ifdef MPI_PARALLEL
+  mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph->sphdata, sph->kernp);
+#endif
 
 
   // Compute all SPH quantities
@@ -265,7 +288,10 @@ void SphSimulation<ndim>::MainLoop(void)
   if (sph->Nsph > 0) {
     
     // Search for new ghost particles and create on local processor
-    ghosts->SearchGhostParticles(simbox,sph);
+    LocalGhosts->SearchGhostParticles(simbox,sph);
+#ifdef MPI_PARALLEL
+    MpiGhosts->SearchGhostParticles(simbox,sph);
+#endif
 
 
     // Reorder particles to tree-walk order (not implemented yet)
@@ -301,7 +327,10 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
       // Copy properties from original particles to ghost particles
-      ghosts->CopySphDataToGhosts(sph);
+      LocalGhosts->CopySphDataToGhosts(sph);
+#ifdef MPI_PARALLEL
+      MpiGhosts->CopySphDataToGhosts(sph);
+#endif
       
       // Zero accelerations
 #pragma parallel for default(none) private(k) shared(sph)

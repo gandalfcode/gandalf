@@ -265,7 +265,7 @@ class Simulation : public SimulationBase
   Diagnostics<ndim> diag0;              ///< Initial diagnostic state
   Diagnostics<ndim> diag;               ///< Current diagnostic state
   EnergyEquation<ndim> *uint;           ///< Energy equation pointer
-  Ghosts<ndim>* ghosts;                  ///< Ghost particle object
+  Ghosts<ndim>* LocalGhosts;            ///< Periodic ghost particle object
   Nbody<ndim> *nbody;                   ///< N-body algorithm pointer
   Nbody<ndim> *subsystem;               ///< N-body object for sub-systems
   NbodySystemTree<ndim> nbodytree;      ///< N-body tree to create sub-systems
@@ -275,6 +275,7 @@ class Simulation : public SimulationBase
   SphNeighbourSearch<ndim> *sphneib;    ///< SPH Neighbour scheme pointer
 #ifdef MPI_PARALLEL
   MpiControl<ndim> mpicontrol;          ///< MPI control object
+  Ghosts<ndim>* MpiGhosts;              ///< MPI ghost particle object
 #endif
 
 };
@@ -301,7 +302,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::sphint;
   using Simulation<ndim>::uint;
   using Simulation<ndim>::sphneib;
-  using Simulation<ndim>::ghosts;
+  using Simulation<ndim>::LocalGhosts;
   using Simulation<ndim>::simbox;
   using Simulation<ndim>::simunits;
   using Simulation<ndim>::Nstepsmax;
@@ -332,6 +333,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::rank;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
+  using Simulation<ndim>::MpiGhosts;
 #endif
 
 public:
@@ -368,7 +370,7 @@ class GodunovSphSimulation : public Simulation<ndim>
   using Simulation<ndim>::sphint;
   using Simulation<ndim>::uint;
   using Simulation<ndim>::sphneib;
-  using Simulation<ndim>::ghosts;
+  using Simulation<ndim>::LocalGhosts;
   using Simulation<ndim>::simbox;
   using Simulation<ndim>::simunits;
   using Simulation<ndim>::Nstepsmax;
@@ -396,6 +398,9 @@ class GodunovSphSimulation : public Simulation<ndim>
   using Simulation<ndim>::dt_max;
   using Simulation<ndim>::sph_single_timestep;
   using Simulation<ndim>::sink_particles;
+#ifdef MPI_PARALLEL
+  using Simulation<ndim>::MpiGhosts;
+#endif
 
 public:
 
@@ -426,7 +431,7 @@ class NbodySimulation : public Simulation<ndim>
   using Simulation<ndim>::nbody;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
-  using Simulation<ndim>::ghosts;
+  using Simulation<ndim>::LocalGhosts;
   using Simulation<ndim>::simbox;
   using Simulation<ndim>::simunits;
   using Simulation<ndim>::Nstepsmax;

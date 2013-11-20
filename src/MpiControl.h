@@ -53,10 +53,27 @@ using namespace std;
 template <int ndim>
 class MpiControl
 {
+  //Convenience functions to send and receive particles
   void SendParticles(int Node, int Nparticles, int* list, SphParticle<ndim>* );
-  std::vector<SphParticle<ndim> > sendbuffer;
   void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array);
+  std::vector<SphParticle<ndim> > sendbuffer; ///< Used by the SendParticles routine
+
+  MPI_Datatype particle_type;        ///< Datatype for the particles
   MPI_Datatype box_type;             ///< Datatype for the box
+  MPI_Datatype diagnostics_type;     ///< Datatype for diagnostic info
+
+  //Buffers needed to send and receive particles
+  std::vector<std::vector<SphParticle<ndim>* > > particles_to_export_per_node;
+  std::vector<SphParticle<ndim> > particles_to_export;
+  std::vector<SphParticle<ndim> > particles_receive;
+  std::vector<int> num_particles_export_per_node;
+  std::vector<int> displacements_send;
+  std::vector<int> num_particles_to_be_received;
+  std::vector<int> receive_displs;
+  int tot_particles_to_receive;
+
+  std::vector<Box<ndim> > boxes_buffer;     ///< Buffer needed by the UpdateAllBoundingBoxes routine
+
  public:
 
   // Constructor and destructor
@@ -76,6 +93,8 @@ class MpiControl
   void LoadBalancing(Sph<ndim> *, Nbody<ndim> *);
   void TransferParticlesToNode(void);
   void UpdateAllBoundingBoxes(int, SphParticle<ndim> *, SphKernel<ndim> *);
+  int SendReceiveGhosts(SphParticle<ndim>** array, Sph<ndim>* sph);
+  int UpdateGhostParticles(SphParticle<ndim>** array);
 
 
   // MPI control variables
@@ -90,10 +109,6 @@ class MpiControl
 
   BinaryTree<ndim> *mpitree;        ///< Main MPI load balancing tree
   MpiNode<ndim> *mpinode;           ///< Data for all MPI nodes
-
-  MPI_Datatype particle_type;        ///< Datatype for the particles
-  MPI_Datatype diagnostics_type;     ///< Datatype for diagnostic info
-
 
 };
 #endif

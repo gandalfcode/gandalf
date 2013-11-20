@@ -120,6 +120,7 @@ void PeriodicGhosts<ndim>::SearchGhostParticles
 
   // Set all relevant particle counters
   sph->Nghost    = 0;
+  sph->NPeriodicGhost = 0;
   sph->Nghostmax = sph->Nsphmax - sph->Nsph;
   sph->Ntot      = sph->Nsph;
 
@@ -220,6 +221,8 @@ void PeriodicGhosts<ndim>::SearchGhostParticles
     ExceptionHandler::getIstance().raise(message);
   }
 
+  sph->NPeriodicGhost = sph->Nghost;
+
   return;
 }
 
@@ -232,7 +235,7 @@ void PeriodicGhosts<ndim>::SearchGhostParticles
 /// (ii) an existing ghost particle (i >= Nsph).
 //=============================================================================
 template <int ndim>
-void Ghosts<ndim>::CreateGhostParticle
+void PeriodicGhosts<ndim>::CreateGhostParticle
 (int i,                             ///< [in] i.d. of original particle
  int k,                             ///< [in] Boundary dimension for new ghost
  FLOAT rk,                          ///< [in] k-position of original particle
@@ -282,7 +285,7 @@ void PeriodicGhosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph)
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(i,iorig,j,k,rp,vp) shared(sph)
-  for (j=0; j<sph->Nghost; j++) {
+  for (j=0; j<sph->NPeriodicGhost; j++) {
     i = sph->Nsph + j;
     iorig = sph->sphdata[i].iorig;
 
@@ -312,6 +315,13 @@ void NullGhosts<ndim>::SearchGhostParticles
 (DomainBox<ndim> simbox,            ///< Simulation box structure
  Sph<ndim> *sph)                    ///< Sph object pointer
 {
+
+  // Set all relevant particle counters
+  sph->Nghost    = 0;
+  sph->NPeriodicGhost = 0;
+  sph->Nghostmax = sph->Nsphmax - sph->Nsph;
+  sph->Ntot      = sph->Nsph;
+
  return;
 }
 
@@ -328,18 +338,56 @@ void MPIGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
   return;
 }
 
+
+
+//=============================================================================
+//  MPIGhosts::SearchGhostParticles
+/// Handle control to MpiControl to compute particles to send to other nodes
+/// and receive from them, then copy received ghost particles inside the main arrays
+//=============================================================================
 template <int ndim>
 void MPIGhosts<ndim>::SearchGhostParticles
 (DomainBox<ndim> simbox,            ///< Simulation box structure
  Sph<ndim> *sph)                    ///< Sph object pointer
 {
- return;
+  SphParticle<ndim>* ghost_array;
+  int Nmpighosts = mpicontrol->SendReceiveGhosts(&ghost_array, sph);
+
+  if (sph->Ntot + Nmpighosts > sph->Nsphmax) {
+    cout << "Error: not enough memory for MPI ghosts!!! " << Nmpighosts << " " << sph->Ntot << " " << sph->Nsphmax<<endl;
+    ExceptionHandler::getIstance().raise("");
+  }
+
+  SphParticle<ndim>* main_array = sph->sphdata;
+  int start_index = sph->Nsph + sph->NPeriodicGhost;
+
+  for (int i=0; i<Nmpighosts; i++) {
+    int j = start_index + i;
+    main_array[j] =  ghost_array[i];
+    main_array[j].active = false;
+  }
+
+  sph->Nghost += Nmpighosts;
+  sph->Ntot += Nmpighosts;
+
+
 }
 
 
 template <int ndim>
 void MPIGhosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph) {
-  return;
+
+  SphParticle<ndim>* ghost_array;
+  int Nmpighosts = mpicontrol->UpdateGhostParticles(&ghost_array);
+  SphParticle<ndim>* main_array = sph->sphdata;
+  int start_index = sph->Nsph + sph->NPeriodicGhost;
+
+  for (int i=0; i<Nmpighosts; i++) {
+    int j = start_index + i;
+    main_array[j] =  ghost_array[i];
+    main_array[j].active = false;
+  }
+
 }
 #endif
 

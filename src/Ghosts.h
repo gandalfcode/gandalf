@@ -59,7 +59,6 @@ class Ghosts
   // Main ghost particle functions
   //---------------------------------------------------------------------------
   virtual void SearchGhostParticles(DomainBox<ndim>, Sph<ndim> *)=0;
-  void CreateGhostParticle(int, int, FLOAT, FLOAT, Sph<ndim> *);
   virtual void CopySphDataToGhosts(Sph<ndim> *)=0;
   virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *)=0;
 
@@ -73,9 +72,9 @@ class Ghosts
 template <int ndim>
 class PeriodicGhosts : public Ghosts<ndim>
 {
+  void CreateGhostParticle(int, int, FLOAT, FLOAT, Sph<ndim> *);
 public:
   using Ghosts<ndim>::ghost_range;
-  using Ghosts<ndim>::CreateGhostParticle;
 
   virtual void SearchGhostParticles(DomainBox<ndim>, Sph<ndim> *);
   virtual void CopySphDataToGhosts(Sph<ndim> *);
@@ -87,7 +86,6 @@ class NullGhosts : public Ghosts<ndim>
 {
 public:
   using Ghosts<ndim>::ghost_range;
-  using Ghosts<ndim>::CreateGhostParticle;
 
   virtual void SearchGhostParticles(DomainBox<ndim>, Sph<ndim> *);
   virtual void CopySphDataToGhosts(Sph<ndim> *);
@@ -102,7 +100,6 @@ private:
   MpiControl<ndim>* mpicontrol;
 public:
   using Ghosts<ndim>::ghost_range;
-  using Ghosts<ndim>::CreateGhostParticle;
 
   MPIGhosts(MpiControl<ndim>* mpicontrol_aux): mpicontrol(mpicontrol_aux) {};
 
