@@ -49,6 +49,7 @@ struct SphParticle
   bool active;                      ///< Flag if active (i.e. recompute step)
   bool potmin;                      ///< Is particle at a potential minima?
   int iorig;                        ///< Original particle i.d.
+  int itype;                        ///< SPH particle type
   int level;                        ///< Current timestep level of particle
   int levelneib;                    ///< Min. timestep level of neighbours
   int sinkid;                       ///< i.d. of sink particle
@@ -102,6 +103,7 @@ struct SphParticle
     active = false;
     potmin = false;
     iorig = -1;
+    itype = -1;
     level = 0;
     levelneib = 0;
     sinkid = -1;
@@ -174,7 +176,6 @@ template <int ndim>
 struct SphIntParticle
 {
   struct SphParticle<ndim> *part;   ///< Pointer to main SPH particle data
-  int itype;                        ///< SPH particle type
   int nstep;                        ///< Integer step-size of particle
   int nlast;                        ///< Integer time at beginning of step
   FLOAT r0[ndim];                   ///< Position at beginning of step
@@ -189,7 +190,6 @@ struct SphIntParticle
   SphIntParticle()
   {
     part = NULL;
-    itype = -1;
     nstep = 0;
     nlast = 0;
     for (int k=0; k<ndim; k++) r0[k] = (FLOAT) 0.0;
