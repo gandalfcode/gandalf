@@ -32,6 +32,9 @@
 #include "Parameters.h"
 #include "Debug.h"
 #include "HeaderInfo.h"
+#ifdef MPI_PARALLEL
+#include <mpi.h>
+#endif
 using namespace std;
 
 
@@ -224,6 +227,161 @@ bool Simulation<ndim>::ReadColumnSnapshotFile
 //  Simulation::WriteColumnSnapshotFile
 /// Write SPH and N-body particle data to column data snapshot file.
 //=============================================================================
+#ifdef MPI_PARALLEL
+template <int ndim>
+bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
+{
+  int i;
+  ostringstream outfile;
+
+  debug2("[Simulation::WriteColumnSnapshotFileMPI]");
+
+  cout << "Writing current data to snapshot file : " << filename << endl;
+
+  // Open file
+  MPI_File file;
+  char* filename_str = new char[strlen(filename.c_str())+1];
+  strcpy(filename_str,filename.c_str());
+  MPI_File_open(MPI_COMM_WORLD, filename_str, MPI_MODE_CREATE|MPI_MODE_WRONLY,MPI_INFO_NULL, &file);
+  delete[] filename_str;
+  //Collect total number of particles
+  int Ntotsph;
+  MPI_Allreduce(&sph->Nsph,&Ntotsph,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+  int Ntotstar;
+  MPI_Allreduce(&nbody->Nstar,&Ntotstar,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+  //Root node writes header
+  if (rank==0) {
+    outfile << Ntotsph << endl;
+    outfile << Ntotstar << endl;
+    outfile << ndim << endl;
+    outfile << t*simunits.t.outscale << endl;
+  }
+
+  // Write data for SPH particles
+  //---------------------------------------------------------------------------
+  for (i=0; i<sph->Nsph; i++) {
+    SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+    if (ndim == 1) outfile << part->r[0]*simunits.r.outscale << "   "
+               << part->v[0]*simunits.v.outscale << "   "
+               << part->m*simunits.m.outscale << "   "
+               << part->h*simunits.r.outscale << "   "
+               << part->rho*simunits.rho.outscale << "   "
+               << part->u*simunits.u.outscale
+               << endl;
+    else if (ndim == 2) outfile << part->r[0]*simunits.r.outscale << "   "
+                << part->r[1]*simunits.r.outscale << "   "
+                << part->v[0]*simunits.v.outscale << "   "
+                << part->v[1]*simunits.v.outscale << "   "
+                << part->m*simunits.m.outscale << "   "
+                << part->h*simunits.r.outscale << "   "
+                << part->rho*simunits.rho.outscale << "   "
+                << part->u*simunits.u.outscale
+                << endl;
+    else if (ndim == 3) outfile << part->r[0]*simunits.r.outscale << "   "
+                << part->r[1]*simunits.r.outscale << "   "
+                << part->r[2]*simunits.r.outscale << "   "
+                << part->v[0]*simunits.v.outscale << "   "
+                << part->v[1]*simunits.v.outscale << "   "
+                << part->v[2]*simunits.v.outscale << "   "
+                << part->m*simunits.m.outscale << "   "
+                << part->h*simunits.r.outscale << "   "
+                << part->rho*simunits.rho.outscale << "   "
+                << part->u*simunits.u.outscale
+                << endl;
+  }
+
+  //Now all nodes write to the file their portion
+  //To do that, we need to know the offset of each node, summin up the length of each bit
+  {
+    std::string content = outfile.str();
+    int offset;
+    int length_char = content.length();
+    MPI_Exscan(&length_char,&offset,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+    if (rank==0) {
+      offset = 0;
+    }
+    MPI_Offset offset_mpi = offset;
+    MPI_File_seek(file,offset_mpi,MPI_SEEK_SET);
+    //Now we can do the actual writing. Extract information from the string and pass it to MPI
+    char* data = new char[strlen(content.c_str())+1];
+    strcpy(data, content.c_str());
+    MPI_Status status;
+    MPI_File_write(file, data, length_char, MPI_CHAR, &status);
+    delete[] data;
+  }
+
+  //Now clear the stream object
+  outfile.clear();
+  outfile.str("");
+
+  //We need to know where the last process got to seek to that point
+  MPI_Offset end_sph_mpi; int end_sph;
+  if (rank==Nmpi-1) {
+    MPI_File_get_position(file,&end_sph_mpi);
+    end_sph = end_sph_mpi;
+  }
+  MPI_Bcast(&end_sph,1,MPI_INT,Nmpi-1,MPI_COMM_WORLD);
+
+  // Write data for Nbody particles
+  //---------------------------------------------------------------------------
+  for (i=0; i<nbody->Nstar; i++) {
+    if (ndim == 1) outfile << nbody->stardata[i].r[0]*simunits.r.outscale << "   "
+               << nbody->stardata[i].v[0]*simunits.v.outscale << "   "
+               << nbody->stardata[i].m*simunits.m.outscale << "   "
+               << nbody->stardata[i].h*simunits.r.outscale << "   "
+               << 0.0 << "   "
+               << 0.0
+               << endl;
+    else if (ndim == 2) outfile << nbody->stardata[i].r[0]*simunits.r.outscale << "   "
+                << nbody->stardata[i].r[1]*simunits.r.outscale << "   "
+                << nbody->stardata[i].v[0]*simunits.v.outscale << "   "
+                << nbody->stardata[i].v[1]*simunits.v.outscale << "   "
+                << nbody->stardata[i].m*simunits.m.outscale << "   "
+                << nbody->stardata[i].h*simunits.r.outscale << "   "
+                << 0.0 << "   "
+                << 0.0
+                << endl;
+    else if (ndim == 3) outfile << nbody->stardata[i].r[0]*simunits.r.outscale << "   "
+                << nbody->stardata[i].r[1]*simunits.r.outscale << "   "
+                << nbody->stardata[i].r[2]*simunits.r.outscale << "   "
+                << nbody->stardata[i].v[0]*simunits.v.outscale << "   "
+                << nbody->stardata[i].v[1]*simunits.v.outscale << "   "
+                << nbody->stardata[i].v[2]*simunits.v.outscale << "   "
+                << nbody->stardata[i].m*simunits.m.outscale << "   "
+                << nbody->stardata[i].h*simunits.r.outscale << "   "
+                << 0.0 << "   "
+                << 0.0
+                << endl;
+  }
+
+
+  //Now all nodes write to the file their portion
+  //To do that, we need to know the offset of each node, summing up the length of each bit
+  {
+    std::string content = outfile.str();
+    int offset;
+    int length_char = content.length();
+    MPI_Exscan(&length_char,&offset,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+    if (rank==0) {
+      offset = 0;
+    }
+    MPI_Offset offset_mpi = offset;
+    //Offset the position by the end of the sph information
+    offset_mpi += end_sph_mpi;
+    MPI_File_seek(file,offset_mpi,MPI_SEEK_SET);
+    //Now we can do the actual writing. Extract information from the string and pass it to MPI
+    char* data = new char[strlen(content.c_str())+1];
+    strcpy(data, content.c_str());
+    MPI_Status status;
+//    MPI_File_write(file, data, length_char, MPI_CHAR, &status);
+    delete[] data;
+  }
+
+  MPI_File_close(&file);
+
+  return true;
+}
+#else
 template <int ndim>
 bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 {
@@ -281,7 +439,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 			   << nbody->stardata[i].v[0]*simunits.v.outscale << "   "
 			   << nbody->stardata[i].m*simunits.m.outscale << "   "
 			   << nbody->stardata[i].h*simunits.r.outscale << "   "
-			   << 0.0 << "   " 
+			   << 0.0 << "   "
 			   << 0.0
 			   << endl;
     else if (ndim == 2) outfile << nbody->stardata[i].r[0]*simunits.r.outscale << "   "
@@ -310,7 +468,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 
   return true;
 }
-
+#endif
 
 
 //=============================================================================
