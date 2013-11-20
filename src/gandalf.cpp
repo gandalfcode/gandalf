@@ -82,5 +82,9 @@ int main(int argc, char** argv)
   // Run entire simulation until specified end-time in parameters file.
   sim->Run();
 
+#ifdef MPI_PARALLEL
+  MPI_Finalize();
+#endif
+
   return 0;
 }
