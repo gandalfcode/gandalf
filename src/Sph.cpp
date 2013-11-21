@@ -88,7 +88,7 @@ void Sph<ndim>::AllocateMemory(int N)
     // Set conservative estimate for maximum number of particles, assuming 
     // extra space required for periodic ghost particles
     if (Nsphmax < N) 
-      Nsphmax = pow(pow(N,invndim) + 6.0*kernp->kernrange,ndim);
+      Nsphmax = pow(pow(N,invndim) + 8.0*kernp->kernrange,ndim);
 
     iorder = new int[Nsphmax];
     rsph = new FLOAT[ndim*Nsphmax];
@@ -277,10 +277,11 @@ void Sph<ndim>::SphBoundingBox
 template <int ndim>
 void Sph<ndim>::InitialSmoothingLengthGuess(void)
 {
-  FLOAT h_guess;                    // Global guess of smoothing length
-  FLOAT volume;                     // Volume of global bounding box
-  FLOAT rmin[ndim];                 // Min. extent of bounding box
-  FLOAT rmax[ndim];                 // Max. extent of bounding box
+  int i;                           // Particle counter
+  FLOAT h_guess;                   // Global guess of smoothing length
+  FLOAT volume;                    // Volume of global bounding box
+  FLOAT rmin[ndim];                // Min. extent of bounding box
+  FLOAT rmax[ndim];                // Max. extent of bounding box
 
   debug2("[Sph::InitialSmoothingLengthGuess]");
 
@@ -317,6 +318,8 @@ void Sph<ndim>::InitialSmoothingLengthGuess(void)
     sphdata[i].hrangesqd = 
       kernfacsqd*kernp->kernrangesqd*sphdata[i].h*sphdata[i].h;
   }
+
+  cout << "hguess : " << h_guess << "   " << endl;
 
   return;
 }

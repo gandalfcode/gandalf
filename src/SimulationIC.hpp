@@ -495,6 +495,7 @@ void Simulation<ndim>::ShockTube(void)
       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
       sph->sphdata[i].v[0] = vfluid1[0];
       sph->sphdata[i].m = rhofluid1*volume/(FLOAT) Nbox1;
+      sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rhofluid1,invndim);
       if (sph->gas_eos == "isothermal")
     	sph->sphdata[i].u = temp0/gammaone/mu_bar;
       else
@@ -513,6 +514,7 @@ void Simulation<ndim>::ShockTube(void)
       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
       sph->sphdata[i].v[0] = vfluid2[0];
       sph->sphdata[i].m = rhofluid2*volume/(FLOAT) Nbox2;
+      sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rhofluid2,invndim);
       if (sph->gas_eos == "isothermal")
         sph->sphdata[i].u = temp0/gammaone/mu_bar;
       else
@@ -520,6 +522,7 @@ void Simulation<ndim>::ShockTube(void)
     }
   }
 
+  initial_h_provided = true;
   bool smooth_ic = true;
 
   // Smooth the initial conditions
@@ -539,7 +542,7 @@ void Simulation<ndim>::ShockTube(void)
     // Search ghost particles
     LocalGhosts->SearchGhostParticles(simbox,sph);
     
-    // Update neighbour tre
+    // Update neighbour tree
     sphneib->BuildTree(sph,*simparams);
     
     // Calculate all SPH properties

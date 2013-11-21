@@ -88,10 +88,8 @@ class MpiControl
   void DeallocateMemory(void);
 
   void CollateDiagnosticsData(Diagnostics<ndim> &);
-  void InitialiseMpiProcess(void);
   void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>);
   void LoadBalancing(Sph<ndim> *, Nbody<ndim> *);
-  void TransferParticlesToNode(void);
   void UpdateAllBoundingBoxes(int, SphParticle<ndim> *, SphKernel<ndim> *);
   int SendReceiveGhosts(SphParticle<ndim>** array, Sph<ndim>* sph);
   int UpdateGhostParticles(SphParticle<ndim>** array);
@@ -100,6 +98,7 @@ class MpiControl
   // MPI control variables
   //---------------------------------------------------------------------------
   bool allocated_mpi;               ///< Flag if memory has been allocated.
+  int balance_level;                ///< MPI tree level to do load balancing
   int rank;                         ///< MPI rank of process
   int Nmpi;                         ///< No. of MPI processes
   int Nloadbalance;                 ///< No. of steps between load-balancing

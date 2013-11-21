@@ -128,6 +128,7 @@ SimulationBase::SimulationBase
   rank = 0;
   t = 0.0;
   setup = false;
+  initial_h_provided = true;
   ParametersProcessed = false;
 #if defined _OPENMP
   if (omp_get_dynamic()) {
@@ -377,11 +378,11 @@ string SimulationBase::Output(void)
 
   debug2("[SimulationBase::Output]");
 
-  if (rank==0)
+  if (rank == 0)
     if (Nsteps%noutputstep == 0)
       cout << "t : " << t*simunits.t.outscale << " " << simunits.t.outunit
-       << "    dt : " << timestep*simunits.t.outscale << " "
-       << simunits.t.outunit << "    Nsteps : " << Nsteps << endl;
+           << "    dt : " << timestep*simunits.t.outscale << " "
+           << simunits.t.outunit << "    Nsteps : " << Nsteps << endl;
 
   // Output a data snapshot if reached required time
   if (t >= tsnapnext) {
@@ -450,6 +451,8 @@ void SimulationBase::SetupSimulation(void)
   // Call a messy function that does all the rest of the initialisation
   PostInitialConditionsSetup();
 
+  Output();
+
   return;
 }
 
@@ -474,7 +477,6 @@ void Simulation<ndim>::ProcessParameters(void)
 
   // Now simulation object is created, set-up various MPI variables
 #ifdef MPI_PARALLEL
-  mpicontrol.InitialiseMpiProcess();
   rank = mpicontrol.rank;
   Nmpi = mpicontrol.Nmpi;
 #endif
@@ -1633,6 +1635,8 @@ void Simulation<ndim>::SetComFrame(void)
 template <int ndim>
 void Simulation<ndim>::UpdateDiagnostics ()
 {
-  diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
-  cout << "Eerror : " << diag.Eerror << endl;
+  if (rank == 0) {
+    diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
+    cout << "Eerror : " << diag.Eerror << endl;
+  }
 }

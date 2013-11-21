@@ -122,6 +122,7 @@ class SimulationBase
   // Variables
   //---------------------------------------------------------------------------
   bool setup;                       ///< Flag if simulation is setup
+  bool initial_h_provided;          ///< Have initial h values been calculated?
   bool ParametersProcessed;         ///< Flag if params are already processed
   int integration_step;             ///< Steps per complete integration step
   int level_diff_max;               ///< Max. allowed neib timestep level diff

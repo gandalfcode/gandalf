@@ -304,11 +304,15 @@ void PeriodicGhosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph)
   return;
 }
 
+
+
 template <int ndim>
 void NullGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
 {
   return;
 }
+
+
 
 template <int ndim>
 void NullGhosts<ndim>::SearchGhostParticles
@@ -326,10 +330,13 @@ void NullGhosts<ndim>::SearchGhostParticles
 }
 
 
+
 template <int ndim>
 void NullGhosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph) {
   return;
 }
+
+
 
 #if defined MPI_PARALLEL
 template <int ndim>
@@ -350,6 +357,8 @@ void MPIGhosts<ndim>::SearchGhostParticles
 (DomainBox<ndim> simbox,            ///< Simulation box structure
  Sph<ndim> *sph)                    ///< Sph object pointer
 {
+  int i;
+  int j;
   SphParticle<ndim>* ghost_array;
   int Nmpighosts = mpicontrol->SendReceiveGhosts(&ghost_array, sph);
 
@@ -361,15 +370,19 @@ void MPIGhosts<ndim>::SearchGhostParticles
   SphParticle<ndim>* main_array = sph->sphdata;
   int start_index = sph->Nsph + sph->NPeriodicGhost;
 
-  for (int i=0; i<Nmpighosts; i++) {
-    int j = start_index + i;
-    main_array[j] =  ghost_array[i];
-    main_array[j].active = false;
+  for (j=0; j<Nmpighosts; j++) {
+    i = start_index + j;
+    main_array[i] =  ghost_array[j];
+    main_array[i].active = false;
   }
 
   sph->Nghost += Nmpighosts;
   sph->Ntot += Nmpighosts;
 
+  if (sph->Nghost > sph->Nghostmax || sph->Ntot > sph->Nsphmax) {
+	cout << "Error: not enough memory for MPI ghosts!!! " << Nmpighosts << " " << sph->Ntot << " " << sph->Nsphmax<<endl;
+	ExceptionHandler::getIstance().raise("");
+  }
 
 }
 
@@ -382,10 +395,10 @@ void MPIGhosts<ndim>::CopySphDataToGhosts(Sph<ndim> *sph) {
   SphParticle<ndim>* main_array = sph->sphdata;
   int start_index = sph->Nsph + sph->NPeriodicGhost;
 
-  for (int i=0; i<Nmpighosts; i++) {
-    int j = start_index + i;
-    main_array[j] =  ghost_array[i];
-    main_array[j].active = false;
+  for (int j=0; j<Nmpighosts; j++) {
+    int i = start_index + j;
+    main_array[i] =  ghost_array[j];
+    main_array[i].active = false;
   }
 
 }

@@ -236,7 +236,8 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 
   debug2("[Simulation::WriteColumnSnapshotFileMPI]");
 
-  cout << "Writing current data to snapshot file : " << filename << endl;
+  if (rank == 0)
+    cout << "Writing current data to snapshot file : " << filename << endl;
 
   // Open file
   MPI_File file;

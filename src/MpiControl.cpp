@@ -127,7 +127,6 @@ MpiControl<ndim>::~MpiControl()
 template <int ndim>
 void MpiControl<ndim>::AllocateMemory(void)
 {
-
   mpinode = new MpiNode<ndim>[Nmpi];
 
   return;
@@ -142,26 +141,7 @@ void MpiControl<ndim>::AllocateMemory(void)
 template <int ndim>
 void MpiControl<ndim>::DeallocateMemory(void)
 {
-
   delete[] mpinode;
-
-  return;
-}
-
-
-
-//=============================================================================
-//  MpiControl::InitialiseMpiProcess
-/// Call all initial MPI routines, to find rank number, no. of processes etc..
-//=============================================================================
-template <int ndim>
-void MpiControl<ndim>::InitialiseMpiProcess(void)
-{
-  debug2("[MpiControl::InitialiseMpiProcess]");
-
-
-  //MPI_Barrier(MPI_COMM_WORLD);
-  //MPI_Abort(MPI_COMM_WORLD,0);
 
   return;
 }
@@ -187,6 +167,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
  DomainBox<ndim> simbox)           ///< Simulation domain box
 {
   int i;                           // Particle counter
+  int inode;                       // Node counter
   int k;                           // Dimension counter
   int okflag;                      // ..
   FLOAT boxbuffer[2*ndim*Nmpi];    // Bounding box buffer
@@ -253,16 +234,18 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
     mpitree->LoadParticlesToTree(sph->rsph);
 
     // Create bounding boxes containing particles in each sub-tree
-    for (i=0; i<Nmpi; i++) {
-      for (k=0; k<ndim; k++) mpinode[i].domain.boxmin[k] = mpitree->subtrees[i]->box.boxmin[k];
-      for (k=0; k<ndim; k++) mpinode[i].domain.boxmax[k] = mpitree->subtrees[i]->box.boxmax[k];
+    for (inode=0; inode<Nmpi; inode++) {
+      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] =
+        mpitree->subtrees[inode]->box.boxmin[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] =
+        mpitree->subtrees[inode]->box.boxmax[k];
     }
 
 
     // Pack all bounding box data into single array
-    for (i=0; i<Nmpi; i++) {
-      for (k=0; k<ndim; k++) boxbuffer[2*ndim*i + k] = mpinode[i].domain.boxmin[k];
-      for (k=0; k<ndim; k++) boxbuffer[2*ndim*i + ndim + k] = mpinode[i].domain.boxmax[k];
+    for (inode=0; inode<Nmpi; inode++) {
+      for (k=0; k<ndim; k++) boxbuffer[2*ndim*inode + k] = mpinode[inode].domain.boxmin[k];
+      for (k=0; k<ndim; k++) boxbuffer[2*ndim*inode + ndim + k] = mpinode[inode].domain.boxmax[k];
     }
 
     // Now broadcast all bounding boxes to other processes
@@ -270,9 +253,11 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
     MPI_Barrier(MPI_COMM_WORLD);
 
     // Send particles to all other domains
-    for (i=1; i<Nmpi; i++) {
-      SendParticles(i, mpitree->subtrees[i]->Nsph, mpitree->subtrees[i]->ids, sph->sphdata);
-      cout << "Sent " << mpitree->subtrees[i]->Nsph << " particles to node " << i << endl;
+    for (inode=1; inode<Nmpi; inode++) {
+      SendParticles(inode, mpitree->subtrees[inode]->Nsph,
+                    mpitree->subtrees[inode]->ids, sph->sphdata);
+      cout << "Sent " << mpitree->subtrees[inode]->Nsph
+           << " particles to node " << inode << endl;
     }
 
     cout << "Sent all particles to other processes" << endl;
@@ -300,14 +285,19 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
     MPI_Barrier(MPI_COMM_WORLD);
 
     // Unpack all bounding box data
-    for (i=0; i<Nmpi; i++) {
-      for (k=0; k<ndim; k++) mpinode[i].domain.boxmin[k] = boxbuffer[2*ndim*i + k];
-      for (k=0; k<ndim; k++) mpinode[i].domain.boxmax[k] = boxbuffer[2*ndim*i + ndim + k];
+    for (inode=0; inode<Nmpi; inode++) {
+      for (k=0; k<ndim; k++)
+        mpinode[inode].domain.boxmin[k] = boxbuffer[2*ndim*inode + k];
+      for (k=0; k<ndim; k++)
+        mpinode[inode].domain.boxmax[k] = boxbuffer[2*ndim*inode + ndim + k];
       if (rank == 1) {
       cout << "Node " << i << endl;
-      cout << "xbox : " << mpinode[i].domain.boxmin[0] << "    " << mpinode[i].domain.boxmax[0] << endl;
-      cout << "ybox : " << mpinode[i].domain.boxmin[1] << "    " << mpinode[i].domain.boxmax[1] << endl;
-      cout << "zbox : " << mpinode[i].domain.boxmin[2] << "    " << mpinode[i].domain.boxmax[2] << endl;
+      cout << "xbox : " << mpinode[inode].domain.boxmin[0]
+           << "    " << mpinode[inode].domain.boxmax[0] << endl;
+      cout << "ybox : " << mpinode[inode].domain.boxmin[1] << "    "
+           << mpinode[inode].domain.boxmax[1] << endl;
+      cout << "zbox : " << mpinode[inode].domain.boxmin[2] << "    "
+           << mpinode[inode].domain.boxmax[2] << endl;
       }
     }
     // Now, receive particles form main process and copy to local main array
@@ -412,9 +402,11 @@ void MpiControl<ndim>::LoadBalancing
 
 
     // Transmit new bounding box sizes to all other nodes
-    for (i=0; i<Nmpi; i++) {
-      for (k=0; k<ndim; k++) boxbuffer[2*ndim*i + k] = mpinode[i].domain.boxmin[k];
-      for (k=0; k<ndim; k++) boxbuffer[2*ndim*i + ndim + k] = mpinode[i].domain.boxmax[k];
+    for (inode=0; inode<Nmpi; inode++) {
+      for (k=0; k<ndim; k++)
+        boxbuffer[2*ndim*inode + k] = mpinode[inode].domain.boxmin[k];
+      for (k=0; k<ndim; k++)
+        boxbuffer[2*ndim*inode + ndim + k] = mpinode[inode].domain.boxmax[k];
     }
 
     // Now broadcast all bounding boxes to other processes
@@ -434,15 +426,9 @@ void MpiControl<ndim>::LoadBalancing
     MPI_Bcast(boxbuffer,2*ndim*Nmpi,MPI_DOUBLE,0,MPI_COMM_WORLD);
 
     // Unpack all bounding box data
-    for (i=0; i<Nmpi; i++) {
-      for (k=0; k<ndim; k++) mpinode[i].domain.boxmin[k] = boxbuffer[2*ndim*i + k];
-      for (k=0; k<ndim; k++) mpinode[i].domain.boxmax[k] = boxbuffer[2*ndim*i + ndim + k];
-      if (rank == 1) {
-        cout << "Node " << i << endl;
-        cout << "xbox : " << mpinode[i].domain.boxmin[0] << "    " << mpinode[i].domain.boxmax[0] << endl;
-        cout << "ybox : " << mpinode[i].domain.boxmin[1] << "    " << mpinode[i].domain.boxmax[1] << endl;
-        cout << "zbox : " << mpinode[i].domain.boxmin[2] << "    " << mpinode[i].domain.boxmax[2] << endl;
-      }
+    for (inode=0; inode<Nmpi; inode++) {
+      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] = boxbuffer[2*ndim*inode + k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] = boxbuffer[2*ndim*inode + ndim + k];
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -471,24 +457,6 @@ void MpiControl<ndim>::LoadBalancing
 
 
 
-
-
-
-
-
-//=============================================================================
-//  MpiControl::TransferParticlesToNode
-/// Once we know the new domain boundaries for all MPI nodes, transfer any 
-/// particles that now lie in other domain boxes to those respective MPI 
-/// nodes.  Also, receives particles from other domains.
-//=============================================================================
-template <int ndim>
-void MpiControl<ndim>::TransferParticlesToNode(void)
-{
-  return;
-}
-
-
 //==================================================================================
 //  MpiControl::SendReceiveGhosts
 /// Compute particles to send to other nodes and receive needed particles from other nodes.
@@ -497,32 +465,39 @@ void MpiControl<ndim>::TransferParticlesToNode(void)
 /// when is finished with it, as the memory is internally managed by this class
 //==================================================================================
 template <int ndim>
-int MpiControl<ndim>::SendReceiveGhosts(SphParticle<ndim>** array, Sph<ndim>* sph) {
+int MpiControl<ndim>::SendReceiveGhosts
+(SphParticle<ndim>** array,        ///< Main SPH particle array
+ Sph<ndim>* sph)                   ///< Main SPH object pointer
+{
+  int i;                           // Particle counter
+  int index;                       // ..
+  int inode;                       // Node counter
+  int running_counter;             // ..
+
 
   std::vector<int > overlapping_nodes;
   //Reserve space for all nodes
   overlapping_nodes.reserve(Nmpi);
 
   //Loop over domains and find the ones that could overlap us
-  for (int i=0; i<Nmpi; i++) {
-    if (i==rank)
-      continue;
-    if (BoxesOverlap(mpinode[i].hbox,mpinode[rank].hbox)) {
-      overlapping_nodes.push_back(i);
+  for (inode=0; inode<Nmpi; inode++) {
+    if (inode == rank) continue;
+    if (BoxesOverlap(mpinode[inode].hbox,mpinode[rank].hbox)) {
+      overlapping_nodes.push_back(inode);
     }
   }
 
   //Clear the buffer holding the indexes of the particles we need to export
-  for (int i=0; i< particles_to_export_per_node.size(); i++) {
-    particles_to_export_per_node[i].clear();
+  for (inode=0; inode<particles_to_export_per_node.size(); inode++) {
+    particles_to_export_per_node[inode].clear();
   }
 
   //Loop over particles and prepare the ones to export
-  for (int ipart=0; ipart<sph->Ntot; ipart++) {
+  for (i=0; i<sph->Ntot; i++) {
+    SphParticle<ndim>& part = sph->sphdata[i];
 
-    SphParticle<ndim>& part = sph->sphdata[ipart];
     //Loop over potential domains and see if we need to export this particle to them
-    for (int inode=0; inode<overlapping_nodes.size(); inode++) {
+    for (inode=0; inode<overlapping_nodes.size(); inode++) {
       int node_number = overlapping_nodes[inode];
       if (ParticleBoxOverlap(part,mpinode[node_number].hbox)) {
         particles_to_export_per_node[node_number].push_back(&part);
@@ -532,21 +507,23 @@ int MpiControl<ndim>::SendReceiveGhosts(SphParticle<ndim>** array, Sph<ndim>* sp
 
   //Prepare arrays with number of particles to export per node and displacements
   std::fill(num_particles_export_per_node.begin(),num_particles_export_per_node.end(),0);
-  int running_counter = 0;
-  for (int i=0; i<Nmpi; i++) {
-    int num_particles = particles_to_export_per_node[i].size();
-    num_particles_export_per_node[i] = num_particles;
-    displacements_send[i]=running_counter;
+
+  running_counter = 0;
+  for (int inode=0; inode<Nmpi; inode++) {
+    int num_particles = particles_to_export_per_node[inode].size();
+    num_particles_export_per_node[inode] = num_particles;
+    displacements_send[inode]=running_counter;
     running_counter += num_particles;
   }
+
   //Compute total number of particles to export
   int tot_particles_to_export = std::accumulate(num_particles_export_per_node.begin(),num_particles_export_per_node.end(),0);
 
   //Comunicate with all the processors the number of particles that everyone is exporting
   std::vector<int> ones (Nmpi,1);
   std::vector<int> displs(Nmpi);
-  for (int i=0; i<displs.size(); i++) {
-    displs[i]=i;
+  for (inode=0; inode<displs.size(); inode++) {
+    displs[inode] = inode;
   }
   MPI_Alltoallv(&num_particles_export_per_node[0], &ones[0], &displs[0], MPI_INT, &num_particles_to_be_received[0], &ones[0], &displs[0], MPI_INT, MPI_COMM_WORLD);
 
@@ -559,11 +536,12 @@ int MpiControl<ndim>::SendReceiveGhosts(SphParticle<ndim>** array, Sph<ndim>* sp
 
   //Create vector containing all particles to export
   particles_to_export.resize(tot_particles_to_export);
-  int index=0;
-  for (int inode =0; inode < Nmpi; inode++) {
+
+  index = 0;
+  for (inode=0; inode < Nmpi; inode++) {
     std::vector<SphParticle<ndim>* >& particles_on_this_node = particles_to_export_per_node[inode];
     for (int iparticle=0; iparticle<particles_on_this_node.size(); iparticle++) {
-      particles_to_export [index] =  *particles_on_this_node[iparticle];
+      particles_to_export[index] =  *particles_on_this_node[iparticle];
       index++;
     }
   }
@@ -572,21 +550,23 @@ int MpiControl<ndim>::SendReceiveGhosts(SphParticle<ndim>** array, Sph<ndim>* sp
 
   //Compute receive displacements
   running_counter = 0;
-  for (int i=0; i<receive_displs.size(); i++) {
-    receive_displs[i] = running_counter;
-    running_counter += num_particles_to_be_received[i];
+  for (inode=0; inode<receive_displs.size(); inode++) {
+    receive_displs[inode] = running_counter;
+    running_counter += num_particles_to_be_received[inode];
   }
 
   //Send and receive particles
-  MPI_Alltoallv(&particles_to_export[0], &num_particles_export_per_node[0], &displacements_send[0], particle_type, &particles_receive[0], &num_particles_to_be_received[0], &receive_displs[0], particle_type, MPI_COMM_WORLD);
+  MPI_Alltoallv(&particles_to_export[0], &num_particles_export_per_node[0],
+                &displacements_send[0], particle_type, &particles_receive[0],
+                &num_particles_to_be_received[0], &receive_displs[0],
+                particle_type, MPI_COMM_WORLD);
 
   *array = &particles_receive[0];
 
   return tot_particles_to_receive;
 
-
-
 }
+
 
 
 //==================================================================================
@@ -601,7 +581,7 @@ int MpiControl<ndim>::UpdateGhostParticles(SphParticle<ndim>** array) {
 
   //Update the local buffer of particles to send
   int index = 0;
-  for (int inode =0; inode< Nmpi; inode++) {
+  for (int inode=0; inode<Nmpi; inode++) {
     std::vector<SphParticle<ndim>* >& particles_on_this_node = particles_to_export_per_node[inode];
     for (int iparticle=0; iparticle<particles_on_this_node.size(); iparticle++) {
       particles_to_export[index] = *particles_on_this_node[iparticle];
@@ -610,7 +590,10 @@ int MpiControl<ndim>::UpdateGhostParticles(SphParticle<ndim>** array) {
   }
 
   //Send and receive particles
-  MPI_Alltoallv(&particles_to_export[0], &num_particles_export_per_node[0], &displacements_send[0], particle_type, &particles_receive[0], &num_particles_to_be_received[0], &receive_displs[0], particle_type, MPI_COMM_WORLD);
+  MPI_Alltoallv(&particles_to_export[0], &num_particles_export_per_node[0],
+                &displacements_send[0], particle_type, &particles_receive[0],
+                &num_particles_to_be_received[0], &receive_displs[0],
+                particle_type, MPI_COMM_WORLD);
 
   *array = &particles_receive[0];
 

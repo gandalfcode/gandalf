@@ -53,9 +53,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Perform initial MPI decomposition
   //---------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
-  mpicontrol.CreateInitialDomainDecomposition(sph,nbody,simparams,simbox);
-  MPI_Barrier(MPI_COMM_WORLD);
-//  MPI_Abort(MPI_COMM_WORLD,0);
+    mpicontrol.CreateInitialDomainDecomposition(sph,nbody,simparams,simbox);
+    MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
 
@@ -88,11 +87,15 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<sph->Nsph; i++) sph->mmean += sph->sphdata[i].m;
     sph->mmean /= (FLOAT) sph->Nsph;
 
-    sph->InitialSmoothingLengthGuess();
-    sphneib->BuildTree(sph,*simparams);
+    // If the smoothing lengths have not been provided beforehand, then
+    // calculate the initial values here
+    if (!this->initial_h_provided) {
+      sph->InitialSmoothingLengthGuess();
+      sphneib->BuildTree(sph,*simparams);
 
-    sphneib->neibcheck = false;
-    sphneib->UpdateAllSphProperties(sph,nbody);
+      sphneib->neibcheck = false;
+      sphneib->UpdateAllSphProperties(sph,nbody);
+    }
 
 #ifdef MPI_PARALLEL
     mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph->sphdata, sph->kernp);
@@ -110,7 +113,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     level_step = 1;
 
     // Zero accelerations
-    for (i=0; i<sph->Ntot; i++) sph->sphdata[i].active = true;
+    for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
 
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph,nbody);
@@ -127,8 +130,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Update neighbour tre
     sphneib->BuildTree(sph,*simparams);
-    sphneib->neibcheck = true;
-    sphneib->UpdateAllSphProperties(sph,nbody);
+    //sphneib->neibcheck = true;
+    //sphneib->UpdateAllSphProperties(sph,nbody);
 
   }
 
@@ -172,11 +175,12 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       sph->sphdata[i].gpot = (FLOAT) 0.0;
       sph->sphdata[i].dudt = (FLOAT) 0.0;
       sph->sphdata[i].dalphadt = (FLOAT) 0.0;
-      sph->sphdata[i].active = true;
       sph->sphdata[i].level = 0;
       sph->sphintdata[i].nstep = 0;
       sph->sphintdata[i].nlast = 0;
+      sph->sphdata[i].active = false;
     }
+    for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
 
     LocalGhosts->CopySphDataToGhosts(sph);
 #ifdef MPI_PARALLEL
