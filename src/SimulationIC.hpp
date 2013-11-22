@@ -295,6 +295,7 @@ void Simulation<ndim>::BinaryAccretion(void)
         sph->sphdata[i].r[0] -= simbox.boxsize[0];
       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
       sph->sphdata[i].m = rhofluid1*volume1/(FLOAT) Nbox1;
+      sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rhofluid1,invndim);
       sph->sphdata[i].u = press1/rhofluid1/gammaone;
     }
     delete[] r1;
@@ -325,11 +326,14 @@ void Simulation<ndim>::BinaryAccretion(void)
       if (sph->sphdata[i].r[0] > simbox.boxmax[0])
         sph->sphdata[i].r[0] -= simbox.boxsize[0];
       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
+      sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rhofluid2,invndim);
       sph->sphdata[i].m = rhofluid2*volume2/(FLOAT) Nbox1;
       sph->sphdata[i].u = press1/rhofluid2/gammaone;
     }
     delete[] r2;
   }
+
+  initial_h_provided = true;
 
   rsonic = 0.5*m1/(press1/rhofluid1);
   //hsink = sph->kernp->invkernrange*rsonic;
@@ -393,27 +397,6 @@ void Simulation<ndim>::BinaryAccretion(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
-
-  // Set initial smoothing lengths and create initial ghost particles
-  //---------------------------------------------------------------------------
-  sph->Nghost = 0;
-  sph->Nghostmax = sph->Nsphmax - sph->Nsph;
-  sph->Ntot = sph->Nsph;
-  for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
-  
-  sph->InitialSmoothingLengthGuess();
-  sphneib->BuildTree(sph,*simparams);
-  
-  // Search ghost particles
-  LocalGhosts->SearchGhostParticles(simbox,sph);
-
-  sphneib->UpdateAllSphProperties(sph,nbody);
-
-  // Update neighbour tree
-  sphneib->BuildTree(sph,*simparams);
-
-  // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph,nbody);
 
   return;
 }
@@ -675,10 +658,13 @@ void Simulation<ndim>::UniformBox(void)
       sph->sphdata[i].a[k] = (FLOAT) 0.0;
     }
     sph->sphdata[i].m = volume/ (FLOAT) sph->Nsph;
+    sph->sphdata[i].h = sph->h_fac*pow(volume / (FLOAT) sph->Nsph,invndim);
     sph->sphdata[i].invomega = (FLOAT) 1.0;
     sph->sphdata[i].iorig = i;
     sph->sphdata[i].u = (FLOAT) 1.5;
   }
+
+  initial_h_provided = true;
 
   delete[] r;
 
@@ -746,11 +732,14 @@ void Simulation<ndim>::UniformSphere(void)
       sph->sphdata[i].a[k] = (FLOAT) 0.0;
     }
     sph->sphdata[i].m = rhofluid*volume / (FLOAT) Npart;
+    sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rhofluid,invndim);
     sph->sphdata[i].u = press/rhofluid/gammaone;
     sph->sphdata[i].invomega = (FLOAT) 1.0;
     sph->sphdata[i].zeta = (FLOAT) 0.0;
     sph->sphdata[i].iorig = i;
   }
+
+  initial_h_provided = true;
 
   delete[] r;
 
@@ -824,6 +813,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
           sph->sphdata[i].r[0] += simbox.boxsize[0];
         sph->sphdata[i].v[0] = 0.0;
         sph->sphdata[i].m = rhofluid1*volume/(FLOAT) Nbox1;
+	sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rhofluid1,invndim);
         if (sph->gas_eos == "isothermal")
           sph->sphdata[i].u = temp0/gammaone/mu_bar;
         else
@@ -842,6 +832,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
           sph->sphdata[i].r[0] += simbox.boxsize[0];
         sph->sphdata[i].v[0] = 0.0;
         sph->sphdata[i].m = rhofluid2*volume/(FLOAT) Nbox2;
+	sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rhofluid2,invndim);
         if (sph->gas_eos == "isothermal")
           sph->sphdata[i].u = temp0/gammaone/mu_bar;
         else
@@ -866,7 +857,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
   sph->Ntot = sph->Nsph;
   for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
 
-  sph->InitialSmoothingLengthGuess();
+  initial_h_provided = true;
   sphneib->BuildTree(sph,*simparams);
 
   // Search ghost particles
@@ -970,6 +961,7 @@ void Simulation<ndim>::KHI(void)
         sph->sphdata[i].r[1] += simbox.boxsize[1];
       sph->sphdata[i].v[0] = vfluid1[0];
       sph->sphdata[i].m = rhofluid1*volume/(FLOAT) Nbox1;
+      sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rhofluid1,invndim);
       sph->sphdata[i].u = press1/rhofluid1/gammaone;
     }
   }
@@ -988,6 +980,7 @@ void Simulation<ndim>::KHI(void)
         sph->sphdata[i].r[1] += simbox.boxsize[1];
       sph->sphdata[i].v[0] = vfluid2[0];
       sph->sphdata[i].m = rhofluid2*volume/(FLOAT) Nbox2;
+      sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rhofluid2,invndim);
       sph->sphdata[i].u = press2/rhofluid2/gammaone;
     }
   }
@@ -1006,9 +999,9 @@ void Simulation<ndim>::KHI(void)
   sph->Nghost = 0;
   sph->Nghostmax = sph->Nsphmax - sph->Nsph;
   sph->Ntot = sph->Nsph;
-  for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
+  for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
   
-  sph->InitialSmoothingLengthGuess();
+  initial_h_provided = true;
   sphneib->BuildTree(sph,*simparams);
   
   // Search ghost particles
@@ -1097,8 +1090,11 @@ void Simulation<ndim>::NohProblem(void)
     for (k=0; k<ndim; k++) 
       sph->sphdata[i].v[k] = -1.0*dr[k]/drmag;
     sph->sphdata[i].m = rhofluid*volume/(FLOAT) Npart;
+    sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rhofluid,invndim);
     sph->sphdata[i].u = press/rhofluid/gammaone;
   }
+
+  initial_h_provided = true;
 
   delete[] r;
 
@@ -1184,12 +1180,15 @@ void Simulation<ndim>::BossBodenheimer(void)
     for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r[ndim*i + k];
     for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = v[ndim*i + k];
     sph->sphdata[i].m = mp;
+    sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rho,invndim);
     sph->sphdata[i].u = temp0/gammaone/mu_bar;
     //if (sph->gas_eos == "isothermal" || sph->gas_eos == "barotropic")
     //  sph->sphdata[i].u = temp0/gammaone/mu_bar;
     //else
     //  sph->sphdata[i].u = press/rho/gammaone;
   }
+
+  initial_h_provided = true;
 
   delete[] v;
   delete[] r;
@@ -1424,6 +1423,7 @@ void Simulation<ndim>::SedovBlastWave(void)
     for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r[ndim*i + k];
     for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
     sph->sphdata[i].m = mbox/(FLOAT) Nbox;
+    sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rhofluid,invndim);
     sph->sphdata[i].u = small_number;
   }
 
@@ -1434,7 +1434,7 @@ void Simulation<ndim>::SedovBlastWave(void)
   sph->Ntot = sph->Nsph;
   for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
   
-  sph->InitialSmoothingLengthGuess();
+  initial_h_provided = true;
   sphneib->BuildTree(sph,*simparams);
   
   // Search ghost particles
@@ -1555,6 +1555,7 @@ void Simulation<ndim>::ShearFlow(void)
       for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = 0.0;
       sph->sphdata[i].v[0] = amp*sin(kwave*sph->sphdata[i].r[1]);
       sph->sphdata[i].m = rhofluid1*volume/(FLOAT) Nbox;
+      sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rhofluid1,invndim);
       sph->sphdata[i].u = press1/rhofluid1/gammaone;
     }
   }
@@ -1647,6 +1648,7 @@ void Simulation<ndim>::SoundWave(void)
     for (k=0; k<ndim; k++) 
       sph->sphdata[i].v[k] = csound*amp*sin(kwave*xnew);
     sph->sphdata[i].m = rhofluid1*lambda/(FLOAT) Npart;
+    sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rhofluid1,invndim);
 
     if (sph->gas_eos == "isothermal")
       sph->sphdata[i].u = temp0/gammaone/mu_bar;
@@ -1654,6 +1656,8 @@ void Simulation<ndim>::SoundWave(void)
       sph->sphdata[i].u = press1/rhofluid1/gammaone;
   }
   //---------------------------------------------------------------------------
+
+  initial_h_provided = true;
 
   return;
 }

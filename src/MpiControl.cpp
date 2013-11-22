@@ -325,7 +325,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
 //=============================================================================
 //  MpiControl::UpdateAllBoundingBoxes
-//  ..
+/// Update local copy of all bounding boxes from all other MPI domains.
 //=============================================================================
 template <int ndim>
 void MpiControl<ndim>::UpdateAllBoundingBoxes
@@ -338,7 +338,8 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
   mpinode[rank].UpdateBoundingBoxData(Npart,sphdata,kernptr);
 
   // Do an all_gather to receive the new array
-  MPI_Allgather(&mpinode[rank].hbox,1,box_type,&boxes_buffer[0],1,box_type,MPI_COMM_WORLD);
+  MPI_Allgather(&mpinode[rank].hbox,1,box_type,&boxes_buffer[0],
+                1,box_type,MPI_COMM_WORLD);
 
   // Save the information inside the nodes
   for (int i=0; i<Nmpi; i++) {
@@ -368,7 +369,7 @@ void MpiControl<ndim>::LoadBalancing
   int k;                           // Dimension counter
   int okflag;                      // Successful communication flag
   FLOAT boxbuffer[2*ndim*Nmpi];    // Bounding box buffer
-  MPI_Status status;               // ..
+  MPI_Status status;               // MPI status flag
 
 
   // Compute work that will be transmitted to all other domains if using
@@ -389,7 +390,8 @@ void MpiControl<ndim>::LoadBalancing
 
     // Receive all important load balancing information from other nodes
     for (inode=1; inode<Nmpi; inode++) {
-      okflag = MPI_Recv(&mpinode[inode].worktot,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD,&status);
+      okflag = MPI_Recv(&mpinode[inode].worktot,1,MPI_DOUBLE,
+                        0,0,MPI_COMM_WORLD,&status);
     }
 
 
@@ -427,8 +429,10 @@ void MpiControl<ndim>::LoadBalancing
 
     // Unpack all bounding box data
     for (inode=0; inode<Nmpi; inode++) {
-      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] = boxbuffer[2*ndim*inode + k];
-      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] = boxbuffer[2*ndim*inode + ndim + k];
+      for (k=0; k<ndim; k++) 
+        mpinode[inode].domain.boxmin[k] = boxbuffer[2*ndim*inode + k];
+      for (k=0; k<ndim; k++) 
+        mpinode[inode].domain.boxmax[k] = boxbuffer[2*ndim*inode + ndim + k];
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -457,13 +461,14 @@ void MpiControl<ndim>::LoadBalancing
 
 
 
-//==================================================================================
+//=============================================================================
 //  MpiControl::SendReceiveGhosts
-/// Compute particles to send to other nodes and receive needed particles from other nodes.
-/// Returns the number of ghosts received. The array with the received particles is
-/// stored inside the pointer returned. The caller must NOT delete this array
-/// when is finished with it, as the memory is internally managed by this class
-//==================================================================================
+/// Compute particles to send to other nodes and receive needed particles 
+/// from other nodes.  Returns the number of ghosts received. The array with 
+/// the received particles is stored inside the pointer returned. The caller 
+/// must NOT delete this array when is finished with it, as the memory is 
+/// internally managed by this class.
+//=============================================================================
 template <int ndim>
 int MpiControl<ndim>::SendReceiveGhosts
 (SphParticle<ndim>** array,        ///< Main SPH particle array
@@ -476,6 +481,7 @@ int MpiControl<ndim>::SendReceiveGhosts
 
 
   std::vector<int > overlapping_nodes;
+
   //Reserve space for all nodes
   overlapping_nodes.reserve(Nmpi);
 
@@ -569,22 +575,26 @@ int MpiControl<ndim>::SendReceiveGhosts
 
 
 
-//==================================================================================
+//=============================================================================
 //  MpiControl::UpdateGhostParticles
-/// Update the ghost particles that were previously found. Return the number of
-/// Mpi Ghosts; modified the passed pointer with the address of the array of ghosts
-/// (note: the caller must NOT call delete on this array, as the memory is
-/// internally managed by the MpiControl class)
-//==================================================================================
+/// Update the ghost particles that were previously found. Return the number 
+/// of Mpi Ghosts; modified the passed pointer with the address of the array 
+/// of ghosts (note: the caller must NOT call delete on this array, as the 
+/// memory is internally managed by the MpiControl class).
+//=============================================================================
 template <int ndim>
-int MpiControl<ndim>::UpdateGhostParticles(SphParticle<ndim>** array) {
+int MpiControl<ndim>::UpdateGhostParticles
+(SphParticle<ndim>** array)         ///< Main SPH particle array
+{
+  int index = 0;                    // ..
+  int inode;                        // MPI node counter
+  int ipart;                        // Particle counter
 
   //Update the local buffer of particles to send
-  int index = 0;
-  for (int inode=0; inode<Nmpi; inode++) {
+  for (inode=0; inode<Nmpi; inode++) {
     std::vector<SphParticle<ndim>* >& particles_on_this_node = particles_to_export_per_node[inode];
-    for (int iparticle=0; iparticle<particles_on_this_node.size(); iparticle++) {
-      particles_to_export[index] = *particles_on_this_node[iparticle];
+    for (ipart=0; ipart<particles_on_this_node.size(); ipart++) {
+      particles_to_export[index] = *particles_on_this_node[ipart];
       index++;
     }
   }
@@ -598,56 +608,71 @@ int MpiControl<ndim>::UpdateGhostParticles(SphParticle<ndim>** array) {
   *array = &particles_receive[0];
 
   return tot_particles_to_receive;
-
 }
 
 
 
-
-//==================================================================================
+//=============================================================================
 //  MpiControl::SendParticles
-/// Given an array of ids and a node, copy particles inside a buffer and send them to
-/// the given node
-//==================================================================================
+/// Given an array of ids and a node, copy particles inside a buffer and 
+/// send them to the given node.
+//=============================================================================
 template <int ndim>
-void MpiControl<ndim>::SendParticles(int Node, int Nparticles, int* list, SphParticle<ndim>* main_array) {
-
+void MpiControl<ndim>::SendParticles
+(int Node, 
+ int Nparticles, 
+ int* list, 
+ SphParticle<ndim>* main_array) 
+{
+  int i;                            // Particle counter
   const int tag = 1;
 
   //Ensure there is enough memory in the buffer
   sendbuffer.resize(Nparticles);
 
   //Copy particles from the main arrays to the buffer
-  for (int i=0; i<Nparticles; i++) {
+  for (i=0; i<Nparticles; i++) {
     sendbuffer[i] = main_array[list[i]];
   }
 
-  MPI_Send (&sendbuffer[0], Nparticles, particle_type, Node, tag, MPI_COMM_WORLD);
+  MPI_Send(&sendbuffer[0], Nparticles, particle_type, Node, 
+           tag, MPI_COMM_WORLD);
 
+  return;
 }
 
-//==================================================================================
+
+
+//=============================================================================
 //  MpiControl::ReceiveParticles
-/// Given a node, receive particles from it. Return the number of particles received
-/// and a pointer to the array containing the particles. The caller is reponsible
-/// to free the array after its usage
-//==================================================================================
+/// Given a node, receive particles from it. Return the number of particles 
+/// received and a pointer to the array containing the particles. The caller 
+/// is reponsible to free the array after its usage.
+//=============================================================================
 template <int ndim>
-void MpiControl<ndim>::ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array) {
+void MpiControl<ndim>::ReceiveParticles
+(int Node, 
+ int& Nparticles, 
+ SphParticle<ndim>** array) 
+{
+
   const int tag = 1;
   MPI_Status status;
+
   //"Probe" the message to know how big the message is going to be
   MPI_Probe(Node, tag, MPI_COMM_WORLD, &status);
 
   //Get the number of elements
-  MPI_Get_count( &status,  particle_type, &Nparticles );
+  MPI_Get_count(&status, particle_type, &Nparticles);
 
   //Allocate enough memory to hold the particles
   *array = new SphParticle<ndim> [Nparticles];
 
   //Now receive the message
-  MPI_Recv(*array, Nparticles, particle_type, Node, tag, MPI_COMM_WORLD, &status);
+  MPI_Recv(*array, Nparticles, particle_type, Node, 
+           tag, MPI_COMM_WORLD, &status);
 
+  return;
 }
 
 
@@ -659,7 +684,7 @@ void MpiControl<ndim>::ReceiveParticles (int Node, int& Nparticles, SphParticle<
 template <int ndim>
 void MpiControl<ndim>::CollateDiagnosticsData(Diagnostics<ndim> &diag)
 {
-  int i;
+  int inode;
   int j;
   int k;
   Diagnostics<ndim> diagaux;
@@ -668,12 +693,13 @@ void MpiControl<ndim>::CollateDiagnosticsData(Diagnostics<ndim> &diag)
   //---------------------------------------------------------------------------
   if (rank == 0) {
 
-	// First multiply root node values by mass
-	for (k=0; k<ndim; k++) diag.rcom[k] *= diag.mtot;
-	for (k=0; k<ndim; k++) diag.vcom[k] *= diag.mtot;
+    // First multiply root node values by mass
+    for (k=0; k<ndim; k++) diag.rcom[k] *= diag.mtot;
+    for (k=0; k<ndim; k++) diag.vcom[k] *= diag.mtot;
 
-    for (i=1; i<Nmpi; i++) {
-      MPI_Recv(&diagaux, 1, diagnostics_type, i, 0, MPI_COMM_WORLD, &status);
+    for (inode=1; inode<Nmpi; inode++) {
+      MPI_Recv(&diagaux, 1, diagnostics_type, 
+               inode, 0, MPI_COMM_WORLD, &status);
       diag.Nsph += diagaux.Nsph;
       diag.Nstar += diagaux.Nstar;
       diag.Etot += diagaux.Etot;
@@ -698,7 +724,7 @@ void MpiControl<ndim>::CollateDiagnosticsData(Diagnostics<ndim> &diag)
   //---------------------------------------------------------------------------
   else {
 
-    MPI_Send (&diag, 1, diagnostics_type, 0, 0, MPI_COMM_WORLD);
+    MPI_Send(&diag, 1, diagnostics_type, 0, 0, MPI_COMM_WORLD);
 
   }
   //---------------------------------------------------------------------------
