@@ -112,7 +112,7 @@ void MpiNode<ndim>::UpdateBoundingBoxData
   // Loop over all particles and compute new bounding boxes
   //---------------------------------------------------------------------------
   for (i=0; i<Npart; i++) {
-    hrange = 3.0*kernptr->kernrange*sphdata[i].h;
+    hrange = 2.0*kernptr->kernrange*sphdata[i].h;
     for (k=0; k<ndim; k++) {
       rbox.boxmin[k] = min(rbox.boxmin[k],sphdata[i].r[k]);
       rbox.boxmax[k] = max(rbox.boxmax[k],sphdata[i].r[k]);

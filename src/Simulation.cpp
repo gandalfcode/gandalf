@@ -668,6 +668,8 @@ void Simulation<ndim>::ProcessSphParameters(void)
   string KernelName = stringparams["kernel"];
 
 
+
+
   // Set the enum for artificial viscosity
   if (stringparams["avisc"] == "none")
     avisc = noneav;
@@ -830,7 +832,17 @@ void Simulation<ndim>::ProcessSphParameters(void)
   }
 
 
+  // Depending on the dimensionality, calculate expected neighbour number
+  //---------------------------------------------------------------------------
+  if (ndim == 1)
+	sph->Ngather = (int) (2.0*sph->kernp->kernrange*sph->h_fac);
+  else if (ndim == 2)
+	sph->Ngather = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac,2));
+  else if (ndim == 3)
+    sph->Ngather = (int) (4.0*pi*pow(sph->kernp->kernrange*sph->h_fac,3)/3.0);
   return;
+
+
 }
 
 

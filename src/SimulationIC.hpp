@@ -519,7 +519,7 @@ void Simulation<ndim>::ShockTube(void)
     sph->Ntot = sph->Nsph;
     for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
     
-    sph->InitialSmoothingLengthGuess();
+    //sph->InitialSmoothingLengthGuess();
     sphneib->BuildTree(sph,*simparams);
     
     // Search ghost particles
@@ -1002,14 +1002,11 @@ void Simulation<ndim>::KHI(void)
   for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
   
   initial_h_provided = true;
-  sphneib->BuildTree(sph,*simparams);
   
   // Search ghost particles
   LocalGhosts->SearchGhostParticles(simbox,sph);
 
-  sphneib->UpdateAllSphProperties(sph,nbody);
-
-  // Update neighbour tre
+  // Update neighbour tree
   sphneib->BuildTree(sph,*simparams);
 
   // Calculate all SPH properties
