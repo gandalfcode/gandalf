@@ -548,6 +548,9 @@ void Simulation<ndim>::ProcessParameters(void)
 	+ simparams->stringparams["neib_search"];
       ExceptionHandler::getIstance().raise(message);
     }
+#if defined MPI_PARALLEL
+    mpicontrol.SetNeibSearch(sphneib);
+#endif
  
   }
   //---------------------------------------------------------------------------
