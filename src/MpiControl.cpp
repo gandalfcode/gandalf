@@ -476,9 +476,8 @@ int MpiControl<ndim>::SendReceiveGhosts
 {
   int i;                           // Particle counter
   int index;                       // ..
-  int inode;                       // Node counter
   int running_counter;             // ..
-
+  int inode;
 
   std::vector<int > overlapping_nodes;
 
@@ -498,18 +497,10 @@ int MpiControl<ndim>::SendReceiveGhosts
     particles_to_export_per_node[inode].clear();
   }
 
-  //Loop over particles and prepare the ones to export
-  for (i=0; i<sph->Ntot; i++) {
-    SphParticle<ndim>& part = sph->sphdata[i];
-
-    //Loop over potential domains and see if we need to export this particle to them
-    for (inode=0; inode<overlapping_nodes.size(); inode++) {
-      int node_number = overlapping_nodes[inode];
-      if (ParticleBoxOverlap(part,mpinode[node_number].hbox)) {
-        particles_to_export_per_node[node_number].push_back(&part);
-      }
-    }
-  }
+  //Ask the neighbour search class to compute the list of particles to export
+  //For now, hard-coded the BruteForce class
+  BruteForceSearch<ndim> bruteforce;
+  bruteforce.FindParticlesToExport(sph,particles_to_export_per_node,overlapping_nodes,mpinode);
 
   //Prepare arrays with number of particles to export per node and displacements
   std::fill(num_particles_export_per_node.begin(),num_particles_export_per_node.end(),0);

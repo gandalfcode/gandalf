@@ -550,6 +550,9 @@ void Simulation<ndim>::ProcessParameters(void)
     }
     sphneib->ntreebuildstep = intparams["ntreebuildstep"];
     sphneib->ntreestockstep = intparams["ntreestockstep"];
+#if defined MPI_PARALLEL
+    mpicontrol.SetNeibSearch(sphneib);
+#endif
  
   }
   //---------------------------------------------------------------------------

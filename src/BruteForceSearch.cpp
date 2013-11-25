@@ -32,6 +32,9 @@
 #include "Debug.h"
 #include "InlineFuncs.h"
 #include "SphKernel.h"
+#if defined MPI_PARALLEL
+#include "MpiNode.h"
+#endif
 using namespace std;
 
 
@@ -616,6 +619,33 @@ void BruteForceSearch<ndim>::UpdateAllSphDudt
 }
 
 
+#if defined MPI_PARALLEL
+//=============================================================================
+//  BruteForceSearch::FindParticlesToExport
+/// Compute on behalf of the MpiControl class the particles we need to export to other nodes
+//=============================================================================
+template <int ndim>
+void BruteForceSearch<ndim>::FindParticlesToExport(
+    Sph<ndim>* sph,    ///< [in] Pointer to sph class
+    std::vector<std::vector<SphParticle<ndim>* > >& particles_to_export_per_node, ///< [inout] Vector that will be filled with values
+    const std::vector<int>& overlapping_nodes, ///< [in] Vector containing which nodes overlap our hbox
+    MpiNode<ndim>* mpinodes) ///< [in] Array of other mpi nodes
+{
+
+  //Loop over particles and prepare the ones to export
+  for (int i=0; i<sph->Ntot; i++) {
+    SphParticle<ndim>& part = sph->sphdata[i];
+
+    //Loop over potential domains and see if we need to export this particle to them
+    for (int inode=0; inode<overlapping_nodes.size(); inode++) {
+      int node_number = overlapping_nodes[inode];
+      if (ParticleBoxOverlap(part,mpinodes[node_number].hbox)) {
+        particles_to_export_per_node[node_number].push_back(&part);
+      }
+    }
+  }
+}
+#endif
 
 template class BruteForceSearch<1>;
 template class BruteForceSearch<2>;

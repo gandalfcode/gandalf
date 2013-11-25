@@ -74,6 +74,8 @@ class MpiControl
 
   std::vector<Box<ndim> > boxes_buffer;     ///< Buffer needed by the UpdateAllBoundingBoxes routine
 
+  SphNeighbourSearch<ndim>* neibsearch;    ///< Neighbour search class
+
  public:
 
   // Constructor and destructor
@@ -86,6 +88,7 @@ class MpiControl
   //---------------------------------------------------------------------------
   void AllocateMemory(void);
   void DeallocateMemory(void);
+  void SetNeibSearch(SphNeighbourSearch<ndim>* _neibsearch) {neibsearch=_neibsearch;}
 
   void CollateDiagnosticsData(Diagnostics<ndim> &);
   void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>);

@@ -114,6 +114,11 @@ class SphNeighbourSearch
 
 };
 
+#if defined MPI_PARALLEL
+//Forward declare MpiNode to break circular dependency
+template <int ndim>
+class MpiNode;
+#endif
 
 
 //=============================================================================
@@ -140,7 +145,10 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
   void UpdateActiveParticleCounters(Sph<ndim> *);
-
+#if defined MPI_PARALLEL
+  void FindParticlesToExport(Sph<ndim>* sph, std::vector<std::vector<SphParticle<ndim>* > >&,
+      const std::vector<int>&, MpiNode<ndim>*);
+#endif
 };
 
 
