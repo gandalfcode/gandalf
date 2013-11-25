@@ -49,6 +49,7 @@ template <int ndim>
 GridSearch<ndim>::GridSearch()
 {
   allocated_grid = false;
+  rebuild_tree = false;
   Ncell = 0;
   Ncellmax = 0;
   Noccupymax = 0;
@@ -76,21 +77,7 @@ GridSearch<ndim>::~GridSearch()
 /// updated.
 //=============================================================================
 template <int ndim>
-void GridSearch<ndim>::BuildTree(Sph<ndim> *sph, Parameters &simparams)
-{
-  CreateGrid(sph);
-  return;
-}
-
-
-
-//=============================================================================
-//  GridSearch::UpdateTree
-/// Creates a new grid structure each time the neighbour 'tree' needs to be 
-/// updated.
-//=============================================================================
-template <int ndim>
-void GridSearch<ndim>::UpdateTree(Sph<ndim> *sph, Parameters &simparams)
+void GridSearch<ndim>::BuildTree(int n, FLOAT timestep, Sph<ndim> *sph)
 {
   CreateGrid(sph);
   return;
@@ -295,7 +282,7 @@ void GridSearch<ndim>::UpdateAllSphProperties
 /// Compute all local 'gather' properties of currently active particles, and 
 /// then compute each particle's contribution to its (active) neighbour 
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
-/// construct local neighbour lists for all particles  inside the cell.
+/// construct local neighbour lists for all particles inside the cell.
 //=============================================================================
 template <int ndim>
 void GridSearch<ndim>::UpdateAllSphHydroForces

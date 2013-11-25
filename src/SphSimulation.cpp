@@ -76,9 +76,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Set initial artificial viscosity alpha values
     if (sph->time_dependent_avisc == 1)
-      for (i=0; i<sph->Nsph; i++) {
-        sph->sphdata[i].alpha = sph->alpha_visc_min;
-      }
+      for (i=0; i<sph->Nsph; i++) sph->sphdata[i].alpha = sph->alpha_visc_min;
     else
       for (i=0; i<sph->Nsph; i++) sph->sphdata[i].alpha = sph->alpha_visc;
 
@@ -91,7 +89,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // calculate the initial values here
     if (!this->initial_h_provided) {
       sph->InitialSmoothingLengthGuess();
-      sphneib->BuildTree(sph,*simparams);
+      sphneib->BuildTree(n,timestep,sph);
 
       sphneib->neibcheck = false;
       sphneib->UpdateAllSphProperties(sph,nbody);
@@ -108,7 +106,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
 
     // Update neighbour tree
-    sphneib->BuildTree(sph,*simparams);
+    sphneib->BuildTree(n,timestep,sph);
 
     level_step = 1;
 
@@ -129,7 +127,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
 
     // Update neighbour tre
-    sphneib->BuildTree(sph,*simparams);
+    sphneib->BuildTree(n,timestep,sph);
     //sphneib->neibcheck = true;
     //sphneib->UpdateAllSphProperties(sph,nbody);
 
@@ -186,7 +184,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #ifdef MPI_PARALLEL
     MpiGhosts->CopySphDataToGhosts(sph);
 #endif
-    sphneib->BuildTree(sph,*simparams);
+    sphneib->BuildTree(n,timestep,sph);
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)
@@ -302,7 +300,7 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
     // Rebuild or update local neighbour and gravity tree
-    sphneib->BuildTree(sph,*simparams);
+    sphneib->BuildTree(n,timestep,sph);
 
 
     //-------------------------------------------------------------------------
@@ -410,13 +408,13 @@ void SphSimulation<ndim>::MainLoop(void)
         }
       }
       if (sink_particles == 1) {
-	for (i=0; i<sinks.Nsink; i++) {
+        for (i=0; i<sinks.Nsink; i++) {
           if (sinks.sink[i].star->active) {
-	    for (k=0; k<ndim; k++) sinks.sink[i].fhydro[k] = 0.0;
-	  }
-	}
+            for (k=0; k<ndim; k++) sinks.sink[i].fhydro[k] = 0.0;
+          }
+        }
       }
-	  
+
 
       // Calculate forces, force derivatives etc.., for active stars/systems
       nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);

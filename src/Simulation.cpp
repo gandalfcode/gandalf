@@ -548,6 +548,8 @@ void Simulation<ndim>::ProcessParameters(void)
 	+ simparams->stringparams["neib_search"];
       ExceptionHandler::getIstance().raise(message);
     }
+    sphneib->ntreebuildstep = intparams["ntreebuildstep"];
+    sphneib->ntreestockstep = intparams["ntreestockstep"];
  
   }
   //---------------------------------------------------------------------------
@@ -666,8 +668,6 @@ void Simulation<ndim>::ProcessSphParameters(void)
   map<string, float> &floatparams = simparams->floatparams;
   map<string, string> &stringparams = simparams->stringparams;
   string KernelName = stringparams["kernel"];
-
-
 
 
   // Set the enum for artificial viscosity

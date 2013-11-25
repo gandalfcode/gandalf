@@ -520,18 +520,18 @@ void Simulation<ndim>::ShockTube(void)
     for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
     
     //sph->InitialSmoothingLengthGuess();
-    sphneib->BuildTree(sph,*simparams);
+    sphneib->BuildTree(n,timestep,sph);
     
     // Search ghost particles
     LocalGhosts->SearchGhostParticles(simbox,sph);
     
     // Update neighbour tree
-    sphneib->BuildTree(sph,*simparams);
+    sphneib->BuildTree(n,timestep,sph);
     
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph,nbody);
     
-    sphneib->BuildTree(sph,*simparams);
+    sphneib->BuildTree(n,timestep,sph);
     sphneib->UpdateAllSphProperties(sph,nbody);
     
     LocalGhosts->CopySphDataToGhosts(sph);
@@ -858,19 +858,19 @@ void Simulation<ndim>::ContactDiscontinuity(void)
   for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
 
   initial_h_provided = true;
-  sphneib->BuildTree(sph,*simparams);
+  sphneib->BuildTree(n,timestep,sph);
 
   // Search ghost particles
   LocalGhosts->SearchGhostParticles(simbox,sph);
 
 
   // Update neighbour tre
-  sphneib->BuildTree(sph,*simparams);
+  sphneib->BuildTree(n,timestep,sph);
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(sph,nbody);
 
-  sphneib->BuildTree(sph,*simparams);
+  sphneib->BuildTree(n,timestep,sph);
   sphneib->UpdateAllSphProperties(sph,nbody);
 
   LocalGhosts->CopySphDataToGhosts(sph);
@@ -1007,7 +1007,7 @@ void Simulation<ndim>::KHI(void)
   LocalGhosts->SearchGhostParticles(simbox,sph);
 
   // Update neighbour tree
-  sphneib->BuildTree(sph,*simparams);
+  sphneib->BuildTree(n,timestep,sph);
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(sph,nbody);
@@ -1432,7 +1432,7 @@ void Simulation<ndim>::SedovBlastWave(void)
   for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
   
   initial_h_provided = true;
-  sphneib->BuildTree(sph,*simparams);
+  sphneib->BuildTree(n,timestep,sph);
   
   // Search ghost particles
   LocalGhosts->SearchGhostParticles(simbox,sph);
@@ -1440,7 +1440,7 @@ void Simulation<ndim>::SedovBlastWave(void)
   sphneib->UpdateAllSphProperties(sph,nbody);
 
   // Update neighbour tre
-  sphneib->BuildTree(sph,*simparams);
+  sphneib->BuildTree(n,timestep,sph);
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(sph,nbody);

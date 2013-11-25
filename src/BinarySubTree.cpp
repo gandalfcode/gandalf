@@ -133,7 +133,9 @@ void BinarySubTree<ndim>::DeallocateSubTreeMemory(void)
 //=============================================================================
 template <int ndim>
 void BinarySubTree<ndim>::BuildSubTree
-(Sph<ndim> *sph)                    ///< Pointer to main SPH object
+(int n,                            ///< ..
+ FLOAT timestep,                   ///< ..
+ Sph<ndim> *sph)                   ///< Pointer to main SPH object
 {
   debug2("[BinarySubTree::BuildSubTree]");
 
@@ -477,8 +479,11 @@ void BinarySubTree<ndim>::StockCellProperties
     tree[c].m = 0.0;
     tree[c].hmax = 0.0;
     tree[c].rmax = 0.0;
+    tree[c].dhmaxdt = 0.0;
+    tree[c].drmaxdt = 0.0;
     tree[c].cdistsqd = big_number;
     for (k=0; k<ndim; k++) tree[c].r[k] = 0.0;
+    for (k=0; k<ndim; k++) tree[c].v[k] = 0.0;
     for (k=0; k<5; k++) tree[c].q[k] = 0.0;
   }
 
@@ -507,6 +512,7 @@ void BinarySubTree<ndim>::StockCellProperties
         tree[c].hmax = max(tree[c].hmax,sphdata[i].h);
         tree[c].m += sphdata[i].m;
         for (k=0; k<ndim; k++) tree[c].r[k] += sphdata[i].m*sphdata[i].r[k];
+        for (k=0; k<ndim; k++) tree[c].v[k] += sphdata[i].m*sphdata[i].v[k];
         for (k=0; k<ndim; k++) {
           if (sphdata[i].r[k] < crmin[c*ndim + k])
             crmin[c*ndim + k] = sphdata[i].r[k];
@@ -519,6 +525,7 @@ void BinarySubTree<ndim>::StockCellProperties
       // Normalise all cell values
       if (tree[c].N > 0) {
         for (k=0; k<ndim; k++) tree[c].r[k] /= tree[c].m;
+        for (k=0; k<ndim; k++) tree[c].v[k] /= tree[c].m;
         for (k=0; k<ndim; k++) 
           dr[k] = 0.5*(crmax[c*ndim + k] - crmin[c*ndim + k]);
         tree[c].cdistsqd = factor*DotProduct(dr,dr,ndim);
@@ -565,6 +572,8 @@ void BinarySubTree<ndim>::StockCellProperties
         tree[c].m = tree[cc].m + tree[ccc].m;
         for (k=0; k<ndim; k++) tree[c].r[k] =
           (tree[cc].m*tree[cc].r[k] + tree[ccc].m*tree[ccc].r[k])/tree[c].m;
+        for (k=0; k<ndim; k++) tree[c].v[k] =
+          (tree[cc].m*tree[cc].v[k] + tree[ccc].m*tree[ccc].v[k])/tree[c].m;
         for (k=0; k<ndim; k++)
           crmin[ndim*c + k] = min(crmin[ndim*cc+k],crmin[ndim*ccc+k]);
         for (k=0; k<ndim; k++)
@@ -640,8 +649,39 @@ void BinarySubTree<ndim>::StockCellProperties
 
 
 //=============================================================================
+//  BinarySubTree::ExtrapolateCellProperties
+/// Extrapolate important physical properties of all cells in the tree.
+//=============================================================================
+template <int ndim>
+void BinarySubTree<ndim>::ExtrapolateCellProperties
+(FLOAT dt)                          ///< Smallest timestep size
+{
+  int c;                           // ..
+  int k;                           // ..
+
+  debug2("[BinarySubTree::ExtrapolateCellProperties]");
+
+
+  // Loop backwards over all tree cells to ensure child cells are always
+  // computed first before being summed in parent cells.
+  //===========================================================================
+  for (c=Ncell-1; c>=0; c--) {
+
+    for (k=0; k<ndim; k++) tree[c].r[k] += tree[c].v[k]*dt;
+    tree[c].rmax += tree[c].drmaxdt*dt;
+    tree[c].hmax += tree[c].dhmaxdt*dt;
+
+  }
+  //===========================================================================
+
+  return;
+}
+
+
+
+//=============================================================================
 //  BinarySubTree::UpdateHmaxValues
-/// Calculate the physical properties (e.g. total mass, centre-of-mass, 
+/// Calculate the physical properties (e.g. total mass, centre-of-mass,
 /// opening-distance, etc..) of all cells in the tree.
 //=============================================================================
 template <int ndim>

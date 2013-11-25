@@ -87,7 +87,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     sph->mmean /= (FLOAT) sph->Nsph;
     
     sph->InitialSmoothingLengthGuess();
-    sphneib->BuildTree(sph,*simparams);
+    sphneib->BuildTree(n,timestep,sph);
 
     sphneib->neibcheck = false;
     sphneib->UpdateAllSphProperties(sph,nbody);
@@ -104,7 +104,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<sph->Ntot; i++) sph->sphdata[i].active = true;
 
     // Calculate all SPH properties
-    sphneib->BuildTree(sph,*simparams);
+    sphneib->BuildTree(n,timestep,sph);
     sphneib->UpdateAllSphProperties(sph,nbody);
 
     // Search ghost particles
@@ -114,7 +114,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
 
     // Update neighbour tre
-    sphneib->BuildTree(sph,*simparams);
+    sphneib->BuildTree(n,timestep,sph);
     sphneib->neibcheck = true;
     sphneib->UpdateAllSphProperties(sph,nbody);
     sphneib->UpdateAllSphDerivatives(sph);
@@ -169,7 +169,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 #ifdef MPI_PARALLEL
     MpiGhosts->CopySphDataToGhosts(sph);
 #endif
-    sphneib->BuildTree(sph,*simparams);
+    sphneib->BuildTree(n,timestep,sph);
 
     // Compute timesteps for all particles
     if (Nlevels == 1) 
@@ -272,7 +272,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
 #endif
 
     // Update neighbour tree
-    sphneib->UpdateTree(sph,*simparams);
+    sphneib->BuildTree(n,timestep,sph);
 
     // Update cells containing active particles
     sphneib->UpdateActiveParticleCounters(sph);

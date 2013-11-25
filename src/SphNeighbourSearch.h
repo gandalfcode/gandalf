@@ -70,9 +70,12 @@ struct BinaryTreeCell {
   int N;                            ///< No. of particles in cell
   FLOAT cdistsqd;                   ///< Opening distances squared
   FLOAT r[ndim];                    ///< Position of centre of mass
+  FLOAT v[ndim];                    ///< Velocity of centre of mass
   FLOAT m;                          ///< Total mass of cell
   FLOAT rmax;                       ///< Max. dist. of ptcl from COM
   FLOAT hmax;                       ///< Maximum smoothing length inside cell
+  FLOAT drmaxdt;                    ///< Rate of change of bounding sphere
+  FLOAT dhmaxdt;                    ///< Rate of change of maximum h
   FLOAT q[5];                       ///< Quadrupole moment tensor
   FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
   FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
@@ -94,17 +97,19 @@ class SphNeighbourSearch
 {
  public:
 
-  virtual void BuildTree(Sph<ndim> *, Parameters &) = 0;
+  virtual void BuildTree(int, FLOAT, Sph<ndim> *) = 0;
   virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphForces(Sph<ndim> *) = 0;
   virtual void UpdateAllSphHydroForces(Sph<ndim> *) = 0;
   virtual void UpdateAllSphGravForces(Sph<ndim> *) = 0;
   virtual void UpdateAllSphDudt(Sph<ndim> *) = 0;
   virtual void UpdateAllSphDerivatives(Sph<ndim> *) = 0;
-  virtual void UpdateTree(Sph<ndim> *, Parameters &) = 0;
   virtual void UpdateActiveParticleCounters(Sph<ndim> *) = 0;
 
   bool neibcheck;                   ///< Flag to verify neighbour lists
+  bool rebuild_tree;                ///< Flag to rebuild neighbour tree
+  int ntreebuildstep;               ///< Integer time between rebuilding tree
+  int ntreestockstep;               ///< Integer time between restocking tree
   DomainBox<ndim> *box;             ///< Pointer to simulation bounding box
 
 };
@@ -120,20 +125,20 @@ template <int ndim>
 class BruteForceSearch: public SphNeighbourSearch<ndim>
 {
   using SphNeighbourSearch<ndim>::neibcheck;
+  using SphNeighbourSearch<ndim>::rebuild_tree;
 
  public:
 
   BruteForceSearch();
   ~BruteForceSearch();
 
-  void BuildTree(Sph<ndim> *, Parameters &);
+  void BuildTree(int, FLOAT, Sph<ndim> *);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *);
   void UpdateAllSphGravForces(Sph<ndim> *);
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
-  void UpdateTree(Sph<ndim> *, Parameters &);
   void UpdateActiveParticleCounters(Sph<ndim> *);
 
 };
@@ -150,20 +155,20 @@ template <int ndim>
 class GridSearch: public SphNeighbourSearch<ndim>
 {
   using SphNeighbourSearch<ndim>::neibcheck;
+  using SphNeighbourSearch<ndim>::rebuild_tree;
 
  public:
 
   GridSearch();
   ~GridSearch();
 
-  void BuildTree(Sph<ndim> *, Parameters &);
+  void BuildTree(int, FLOAT, Sph<ndim> *);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *);
   void UpdateAllSphGravForces(Sph<ndim> *);
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
-  void UpdateTree(Sph<ndim> *, Parameters &);
   void UpdateActiveParticleCounters(Sph<ndim> *);
 
   // Additional functions for grid neighbour search
@@ -225,12 +230,13 @@ class BinarySubTree
   int ComputeActiveCellList(int ,BinaryTreeCell<ndim> **);
   void ComputeSubTreeSize(void);
   void CreateSubTreeStructure(void);
+  void ExtrapolateCellProperties(FLOAT);
   void OrderParticlesByCartCoord(SphParticle<ndim> *);
   void LoadParticlesToSubTree(void);
   void StockCellProperties(SphParticle<ndim> *);
   FLOAT UpdateHmaxValues(SphParticle<ndim> *);
   void UpdateActiveParticleCounters(Sph<ndim> *);
-  void BuildSubTree(Sph<ndim> *);
+  void BuildSubTree(int, FLOAT, Sph<ndim> *);
   int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int, 
                                  int *, FLOAT, SphParticle<ndim> *);
   int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int, 
@@ -298,7 +304,10 @@ class BinaryTree: public SphNeighbourSearch<ndim>
  public:
 
   using SphNeighbourSearch<ndim>::neibcheck;
+  using SphNeighbourSearch<ndim>::rebuild_tree;
   using SphNeighbourSearch<ndim>::box;
+  using SphNeighbourSearch<ndim>::ntreebuildstep;
+  using SphNeighbourSearch<ndim>::ntreestockstep;
 
   typedef typename vector <BinarySubTree<ndim> *>::iterator binlistiterator;
 
@@ -306,14 +315,13 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   ~BinaryTree();
 
   //---------------------------------------------------------------------------
-  void BuildTree(Sph<ndim> *, Parameters &);
+  void BuildTree(int, FLOAT, Sph<ndim> *);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *);
   void UpdateAllSphGravForces(Sph<ndim> *);
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
-  void UpdateTree(Sph<ndim> *, Parameters &);
   void UpdateActiveParticleCounters(Sph<ndim> *);
 
   // Additional functions for binary tree neighbour search

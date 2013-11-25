@@ -51,6 +51,9 @@ BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                              FLOAT kernrangeaux, string gravity_mac_aux,
                              string multipole_aux, int Nthreads, int Nmpi)
 {
+  allocated_tree = false;
+  created_sub_trees = false;
+  rebuild_tree = false;
   Nlocalsubtrees = Nthreads;
   Nmpisubtrees = max(Nmpi - 1,0);
   Nsubtreemax = Nlocalsubtrees + Nmpisubtrees;
@@ -63,8 +66,6 @@ BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
   thetamaxsqd = thetamaxsqdaux;
   gravity_mac = gravity_mac_aux;
   multipole = multipole_aux;
-  allocated_tree = false;
-  created_sub_trees = false;
 #if defined _OPENMP
   // Check that no. of threads is valid
   int ltot = 0;
@@ -79,7 +80,7 @@ BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
 #endif
   assert(Nlocalsubtrees > 0);
   assert(Nsubtreemax > 0);
-  }
+}
 
 
 
@@ -180,8 +181,9 @@ void BinaryTree<ndim>::DeallocateTreeMemory(void)
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::BuildTree
-(Sph<ndim> *sph,                    ///< Pointer to main SPH object
- Parameters &simparams)             ///< Simulation parameters
+(int n,
+ FLOAT timestep,
+ Sph<ndim> *sph)                    ///< Pointer to main SPH object
 {
   int i;                            ///< Sub-tree counter
   int Ncheck = 0;                   ///< ..
@@ -189,79 +191,85 @@ void BinaryTree<ndim>::BuildTree
 
   debug2("[BinaryTree::BuildTree]");
 
-  // Set number of tree members to total number of SPH particles (inc. ghosts)
-  Nsph = sph->Nsph;
-  Ntot = sph->Ntot;
-  Ntotmax = max(Ntot,Ntotmax);
-  gtot = 0;
+  cout << "BUILDTREE : " << ntreebuildstep << "    " << ntreestockstep << endl;
 
-  // Compute the size of all tree-related arrays now we know number of points
-  ComputeTreeSize();
-
-  // Allocate (or reallocate if needed) all tree memory
-  AllocateTreeMemory();
-
-  // Create tree data structure including linked lists and cell pointers
-  CreateTreeStructure();
-
-  // Find ordered list of particle positions ready for adding particles to tree
-  OrderParticlesByCartCoord(sph->sphdata);
-
-  // Now add particles to tree depending on Cartesian coordinates
-  LoadParticlesToTree(sph->rsph);
-
-  // Build and stock all local sub-trees
+  // For tree rebuild steps
   //---------------------------------------------------------------------------
+  if (n%ntreebuildstep == 0 || rebuild_tree) {
+
+    // Set number of tree members to total number of SPH particles (inc. ghosts)
+    Nsph = sph->Nsph;
+    Ntot = sph->Ntot;
+    Ntotmax = max(Ntot,Ntotmax);
+    gtot = 0;
+
+    // Compute the size of all tree-related arrays now we know number of points
+    ComputeTreeSize();
+
+    // Allocate (or reallocate if needed) all tree memory
+    AllocateTreeMemory();
+
+    // Create tree data structure including linked lists and cell pointers
+    CreateTreeStructure();
+
+    // Find ordered list of particle positions ready for adding particles to tree
+    OrderParticlesByCartCoord(sph->sphdata);
+
+    // Now add particles to tree depending on Cartesian coordinates
+    LoadParticlesToTree(sph->rsph);
+
+    // Build and stock all local sub-trees
+    //-------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(i) shared(sph) \
   reduction(+:localgtot,Ncheck)
-  for (i=0; i<Nsubtree; i++) {
+    for (i=0; i<Nsubtree; i++) {
 
-    BinarySubTree<ndim>* subtree = subtrees[i];
+      BinarySubTree<ndim>* subtree = subtrees[i];
 
-    // Build individual sub-trees
-    subtree->BuildSubTree(sph);
+      // Build individual sub-trees
+      subtree->BuildSubTree(n,timestep,sph);
 
-    // Calculate all cell quantities (e.g. COM, opening distance)
-    subtree->StockCellProperties(sph->sphdata);
+      // Calculate all cell quantities (e.g. COM, opening distance)
+      subtree->StockCellProperties(sph->sphdata);
 
-    // Calculate total number of leaf cells in trees
-    localgtot += subtree->gtot;
-    Ncheck += subtree->Ntot;
+      // Calculate total number of leaf cells in trees
+      localgtot += subtree->gtot;
+      Ncheck += subtree->Ntot;
+
+    }
+    //-------------------------------------------------------------------------
 
   }
+
+  // Else stock the tree
   //---------------------------------------------------------------------------
+  else if (n%ntreestockstep == 0) {
 
-  gtot = localgtot;
-
-  assert(Ncheck == sph->Ntot);
-
-  return;
-}
-
-
-
-//=============================================================================
-//  BinaryTree::UpdateTree
-/// Call all routines to build/re-build the binary tree.
-//=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::UpdateTree
-(Sph<ndim> *sph,                    ///< Pointer to main SPH object
- Parameters &simparams)             ///< Simulation parameters
-{
-  int i;                            // Sub-tree counter
-
-  debug2("[BinaryTree::UpdateTree]");
-
-  //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(i) shared(sph)
-  for (i=0; i<Nsubtree; i++) {
+    for (i=0; i<Nsubtree; i++) {
+      BinarySubTree<ndim>* subtree = subtrees[i];
+      subtree->StockCellProperties(sph->sphdata);
+    }
 
-    // Calculate all cell quantities (e.g. COM, opening distance)
-    subtrees[i]->StockCellProperties(sph->sphdata);
+  }
+
+  // Otherwise simply extrapolate tree cell properties
+  //---------------------------------------------------------------------------
+  else {
+
+#pragma omp parallel for default(none) private(i) shared(sph)
+    for (i=0; i<Nsubtree; i++) {
+      BinarySubTree<ndim>* subtree = subtrees[i];
+      subtree->ExtrapolateCellProperties(timestep);
+    }
 
   }
   //---------------------------------------------------------------------------
+
+
+  rebuild_tree = false;
+  gtot = localgtot;
+  assert(Ncheck == sph->Ntot);
 
   return;
 }

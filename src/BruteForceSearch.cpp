@@ -43,6 +43,7 @@ using namespace std;
 template <int ndim>
 BruteForceSearch<ndim>::BruteForceSearch()
 {
+  rebuild_tree = false;
 }
 
 
@@ -64,20 +65,7 @@ BruteForceSearch<ndim>::~BruteForceSearch()
 /// the function is empty.
 //=============================================================================
 template <int ndim>
-void BruteForceSearch<ndim>::BuildTree(Sph<ndim> *sph, Parameters &simparams)
-{
-  return;
-}
-
-
-
-//=============================================================================
-//  BruteForceSearch::UpdateTree
-/// For Brute Force neighbour searching, there is no tree to construct so 
-/// the function is empty.
-//=============================================================================
-template <int ndim>
-void BruteForceSearch<ndim>::UpdateTree(Sph<ndim> *sph, Parameters &simparams)
+void BruteForceSearch<ndim>::BuildTree(int n, FLOAT timestep, Sph<ndim> *sph)
 {
   return;
 }
