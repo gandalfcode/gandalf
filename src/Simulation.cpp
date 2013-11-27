@@ -548,8 +548,6 @@ void Simulation<ndim>::ProcessParameters(void)
 	+ simparams->stringparams["neib_search"];
       ExceptionHandler::getIstance().raise(message);
     }
-    sphneib->ntreebuildstep = intparams["ntreebuildstep"];
-    sphneib->ntreestockstep = intparams["ntreestockstep"];
 #if defined MPI_PARALLEL
     mpicontrol.SetNeibSearch(sphneib);
 #endif
@@ -639,6 +637,8 @@ void Simulation<ndim>::ProcessParameters(void)
   Nlevels               = intparams["Nlevels"];
   ndiagstep             = intparams["ndiagstep"];
   noutputstep           = intparams["noutputstep"];
+  ntreebuildstep        = intparams["ntreebuildstep"];
+  ntreestockstep        = intparams["ntreestockstep"];
   Nstepsmax             = intparams["Nstepsmax"];
   out_file_form         = stringparams["out_file_form"];
   run_id                = stringparams["run_id"];

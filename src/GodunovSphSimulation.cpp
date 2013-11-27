@@ -87,15 +87,15 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     sph->mmean /= (FLOAT) sph->Nsph;
     
     sph->InitialSmoothingLengthGuess();
-    sphneib->BuildTree(n,timestep,sph);
+    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
     sphneib->neibcheck = false;
     sphneib->UpdateAllSphProperties(sph,nbody);
 
     // Search ghost particles
-    LocalGhosts->SearchGhostParticles(simbox,sph);
+    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
 #ifdef MPI_PARALLEL
-    MpiGhosts->SearchGhostParticles(simbox,sph);
+    MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
 #endif
 
     level_step = 1;
@@ -104,17 +104,17 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<sph->Ntot; i++) sph->sphdata[i].active = true;
 
     // Calculate all SPH properties
-    sphneib->BuildTree(n,timestep,sph);
+    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
     sphneib->UpdateAllSphProperties(sph,nbody);
 
     // Search ghost particles
-    LocalGhosts->SearchGhostParticles(simbox,sph);
+    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
 #ifdef MPI_PARALLEL
-    MpiGhosts->SearchGhostParticles(simbox,sph);
+    MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
 #endif
 
     // Update neighbour tre
-    sphneib->BuildTree(n,timestep,sph);
+    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
     sphneib->neibcheck = true;
     sphneib->UpdateAllSphProperties(sph,nbody);
     sphneib->UpdateAllSphDerivatives(sph);
@@ -165,11 +165,11 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
       sph->sphintdata[i].nlast = 0;
     }
 
-    LocalGhosts->CopySphDataToGhosts(sph);
+    LocalGhosts->CopySphDataToGhosts(simbox,sph);
 #ifdef MPI_PARALLEL
-    MpiGhosts->CopySphDataToGhosts(sph);
+    MpiGhosts->CopySphDataToGhosts(simbox,sph);
 #endif
-    sphneib->BuildTree(n,timestep,sph);
+    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
     // Compute timesteps for all particles
     if (Nlevels == 1) 
@@ -200,9 +200,9 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
         sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
 
-    LocalGhosts->CopySphDataToGhosts(sph);
+    LocalGhosts->CopySphDataToGhosts(simbox,sph);
 #ifdef MPI_PARALLEL
-    MpiGhosts->CopySphDataToGhosts(sph);
+    MpiGhosts->CopySphDataToGhosts(simbox,sph);
 #endif
 
   }
@@ -266,13 +266,13 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     // Reorder particles
 
     // Search ghost particles
-    LocalGhosts->SearchGhostParticles(simbox,sph);
+    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
 #ifdef MPI_PARALLEL
-    MpiGhosts->SearchGhostParticles(simbox,sph);
+    MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
 #endif
 
     // Update neighbour tree
-    sphneib->BuildTree(n,timestep,sph);
+    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
     // Update cells containing active particles
     sphneib->UpdateActiveParticleCounters(sph);
@@ -289,9 +289,9 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     sphneib->UpdateAllSphDerivatives(sph);
 
     // Copy properties from original particles to ghost particles
-    LocalGhosts->CopySphDataToGhosts(sph);
+    LocalGhosts->CopySphDataToGhosts(simbox,sph);
 #ifdef MPI_PARALLEL
-    MpiGhosts->CopySphDataToGhosts(sph);
+    MpiGhosts->CopySphDataToGhosts(simbox,sph);
 #endif
 
     // Zero accelerations (perhaps)
@@ -323,10 +323,10 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     // Add accelerations
     if (sph->self_gravity == 1) {
       for (i=0; i<sph->Nsph; i++) {
-	if (sph->sphdata[i].active) {
-	  for (k=0; k<ndim; k++)
-	    sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
-	}
+        if (sph->sphdata[i].active) {
+          for (k=0; k<ndim; k++)
+            sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
+        }
       }
     }
 

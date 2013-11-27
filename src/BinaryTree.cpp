@@ -53,7 +53,6 @@ BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
 {
   allocated_tree = false;
   created_sub_trees = false;
-  rebuild_tree = false;
   Nlocalsubtrees = Nthreads;
   Nmpisubtrees = max(Nmpi - 1,0);
   Nsubtreemax = Nlocalsubtrees + Nmpisubtrees;
@@ -181,9 +180,8 @@ void BinaryTree<ndim>::DeallocateTreeMemory(void)
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::BuildTree
-(int n,
- FLOAT timestep,
- Sph<ndim> *sph)                    ///< Pointer to main SPH object
+(bool rebuild_tree, int n, int ntreebuildstep, int ntreestockstep,
+ FLOAT timestep, Sph<ndim> *sph)
 {
   int i;                            ///< Sub-tree counter
   int Ncheck = 0;                   ///< ..
@@ -191,7 +189,6 @@ void BinaryTree<ndim>::BuildTree
 
   debug2("[BinaryTree::BuildTree]");
 
-  cout << "BUILDTREE : " << ntreebuildstep << "    " << ntreestockstep << endl;
 
   // For tree rebuild steps
   //---------------------------------------------------------------------------
@@ -227,7 +224,7 @@ void BinaryTree<ndim>::BuildTree
       BinarySubTree<ndim>* subtree = subtrees[i];
 
       // Build individual sub-trees
-      subtree->BuildSubTree(n,timestep,sph);
+      subtree->BuildSubTree(sph);
 
       // Calculate all cell quantities (e.g. COM, opening distance)
       subtree->StockCellProperties(sph->sphdata);
@@ -238,6 +235,9 @@ void BinaryTree<ndim>::BuildTree
 
     }
     //-------------------------------------------------------------------------
+
+    gtot = localgtot;
+    assert(Ncheck == sph->Ntot);
 
   }
 
@@ -266,10 +266,6 @@ void BinaryTree<ndim>::BuildTree
   }
   //---------------------------------------------------------------------------
 
-
-  rebuild_tree = false;
-  gtot = localgtot;
-  assert(Ncheck == sph->Ntot);
 
   return;
 }

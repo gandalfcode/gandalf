@@ -58,26 +58,26 @@ class Ghosts
 
   // Main ghost particle functions
   //---------------------------------------------------------------------------
-  virtual void SearchGhostParticles(DomainBox<ndim>, Sph<ndim> *)=0;
-  virtual void CopySphDataToGhosts(Sph<ndim> *)=0;
+  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *)=0;
+  virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *)=0;
   virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *)=0;
 
 //  DomainBox<ndim> simbox;               ///< Simulation boundary data
 //  Sph<ndim> *sph;                       ///< SPH algorithm pointer
 
-  static const FLOAT ghost_range = 1.1;
+  static const FLOAT ghost_range = 1.5;
 
 };
 
 template <int ndim>
 class PeriodicGhosts : public Ghosts<ndim>
 {
-  void CreateGhostParticle(int, int, FLOAT, FLOAT, Sph<ndim> *);
+  void CreateGhostParticle(int, int, FLOAT, FLOAT, Sph<ndim> *,int);
 public:
   using Ghosts<ndim>::ghost_range;
 
-  virtual void SearchGhostParticles(DomainBox<ndim>, Sph<ndim> *);
-  virtual void CopySphDataToGhosts(Sph<ndim> *);
+  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
+  virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
   virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
 };
 
@@ -87,8 +87,8 @@ class NullGhosts : public Ghosts<ndim>
 public:
   using Ghosts<ndim>::ghost_range;
 
-  virtual void SearchGhostParticles(DomainBox<ndim>, Sph<ndim> *);
-  virtual void CopySphDataToGhosts(Sph<ndim> *);
+  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
+  virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
   virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
 };
 
@@ -103,8 +103,8 @@ public:
 
   MPIGhosts(MpiControl<ndim>* mpicontrol_aux): mpicontrol(mpicontrol_aux) {};
 
-  virtual void SearchGhostParticles(DomainBox<ndim>, Sph<ndim> *);
-  virtual void CopySphDataToGhosts(Sph<ndim> *);
+  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
+  virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
   virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
 };
 #endif

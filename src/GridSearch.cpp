@@ -49,7 +49,6 @@ template <int ndim>
 GridSearch<ndim>::GridSearch()
 {
   allocated_grid = false;
-  rebuild_tree = false;
   Ncell = 0;
   Ncellmax = 0;
   Noccupymax = 0;
@@ -77,7 +76,9 @@ GridSearch<ndim>::~GridSearch()
 /// updated.
 //=============================================================================
 template <int ndim>
-void GridSearch<ndim>::BuildTree(int n, FLOAT timestep, Sph<ndim> *sph)
+void GridSearch<ndim>::BuildTree
+(bool rebuild_tree, int n, int ntreebuildstep, int ntreestockstep,
+ FLOAT timestep, Sph<ndim> *sph)
 {
   CreateGrid(sph);
   return;

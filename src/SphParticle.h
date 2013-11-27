@@ -34,6 +34,12 @@
 #endif
 
 
+enum ptype{gas,
+           x_lhs_periodic, x_lhs_mirror, x_rhs_periodic, x_rhs_mirror,
+           y_lhs_periodic, y_lhs_mirror, y_rhs_periodic, y_rhs_mirror,
+	       z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror};
+
+
 //=============================================================================
 //  Structure SphParticle
 /// \brief  Main base SPH particle data structure.
@@ -103,7 +109,7 @@ struct SphParticle
     active = false;
     potmin = false;
     iorig = -1;
-    itype = -1;
+    itype = gas;
     level = 0;
     levelneib = 0;
     sinkid = -1;

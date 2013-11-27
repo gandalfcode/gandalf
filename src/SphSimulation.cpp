@@ -89,7 +89,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // calculate the initial values here
     if (!this->initial_h_provided) {
       sph->InitialSmoothingLengthGuess();
-      sphneib->BuildTree(n,timestep,sph);
+      sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,timestep,sph);
 
       sphneib->neibcheck = false;
       sphneib->UpdateAllSphProperties(sph,nbody);
@@ -100,13 +100,14 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
 
     // Search ghost particles
-    LocalGhosts->SearchGhostParticles(simbox,sph);
+    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
 #ifdef MPI_PARALLEL
-    MpiGhosts->SearchGhostParticles(simbox,sph);
+    MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
 #endif
 
     // Update neighbour tree
-    sphneib->BuildTree(n,timestep,sph);
+    rebuild_tree = true;
+    sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,timestep,sph);
 
     level_step = 1;
 
@@ -121,13 +122,14 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
 
     // Search ghost particles
-    LocalGhosts->SearchGhostParticles(simbox,sph);
+    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
 #ifdef MPI_PARALLEL
-    MpiGhosts->SearchGhostParticles(simbox,sph);
+    MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
 #endif
 
     // Update neighbour tre
-    sphneib->BuildTree(n,timestep,sph);
+    rebuild_tree = true;
+    sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,timestep,sph);
     //sphneib->neibcheck = true;
     //sphneib->UpdateAllSphProperties(sph,nbody);
 
@@ -180,11 +182,11 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     }
     for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
 
-    LocalGhosts->CopySphDataToGhosts(sph);
+    LocalGhosts->CopySphDataToGhosts(simbox,sph);
 #ifdef MPI_PARALLEL
-    MpiGhosts->CopySphDataToGhosts(sph);
+    MpiGhosts->CopySphDataToGhosts(simbox,sph);
 #endif
-    sphneib->BuildTree(n,timestep,sph);
+    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)
@@ -207,9 +209,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
         sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
 
-    LocalGhosts->CopySphDataToGhosts(sph);
+    LocalGhosts->CopySphDataToGhosts(simbox,sph);
 #ifdef MPI_PARALLEL
-    MpiGhosts->CopySphDataToGhosts(sph);
+    MpiGhosts->CopySphDataToGhosts(simbox,sph);
 #endif
 
   }
@@ -241,6 +243,7 @@ void SphSimulation<ndim>::MainLoop(void)
   int i;                            // Particle loop counter
   int it;                           // Time-symmetric iteration counter
   int k;                            // Dimension counter
+  FLOAT tghost;                     // Approx. ghost particle lifetime
 
   debug2("[SphSimulation::MainLoop]");
 
@@ -270,7 +273,8 @@ void SphSimulation<ndim>::MainLoop(void)
   // Check all boundary conditions
   // (DAVID : Move this function to sphint and create an analagous one for N-body)
   // (Also, only check this on tree-build steps)
-  LocalGhosts->CheckBoundaries(simbox,sph);
+  if (Nsteps%ntreebuildstep == 0 || rebuild_tree)
+    LocalGhosts->CheckBoundaries(simbox,sph);
 
 
   //---------------------------------------------------------------------------
@@ -290,18 +294,26 @@ void SphSimulation<ndim>::MainLoop(void)
   if (sph->Nsph > 0) {
     
     // Search for new ghost particles and create on local processor
-    LocalGhosts->SearchGhostParticles(simbox,sph);
+	if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+      tghost = timestep*(FLOAT)(ntreebuildstep - 1);
+      LocalGhosts->SearchGhostParticles(tghost,simbox,sph);
 #ifdef MPI_PARALLEL
-    MpiGhosts->SearchGhostParticles(simbox,sph);
+      MpiGhosts->SearchGhostParticles(tghost,simbox,sph);
 #endif
-
-
-    // Reorder particles to tree-walk order (not implemented yet)
-
+	}
+	// Otherwise copy properties from original particles to ghost particles
+	else {
+	  LocalGhosts->CopySphDataToGhosts(simbox,sph);
+	#ifdef MPI_PARALLEL
+	  MpiGhosts->CopySphDataToGhosts(simbox,sph);
+	#endif
+	}
 
     // Rebuild or update local neighbour and gravity tree
-    sphneib->BuildTree(n,timestep,sph);
+    sphneib->BuildTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,timestep,sph);
+    rebuild_tree = false;
 
+    // Reorder particles to tree-walk order (not implemented yet)
 
     //-------------------------------------------------------------------------
     // MPI : Walk local tree to determine minimum tree to be sent to all other
@@ -329,9 +341,9 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
       // Copy properties from original particles to ghost particles
-      LocalGhosts->CopySphDataToGhosts(sph);
+      LocalGhosts->CopySphDataToGhosts(simbox,sph);
 #ifdef MPI_PARALLEL
-      MpiGhosts->CopySphDataToGhosts(sph);
+      MpiGhosts->CopySphDataToGhosts(simbox,sph);
 #endif
       
       // Zero accelerations

@@ -44,8 +44,8 @@ using namespace std;
 //=============================================================================
 template <int ndim>
 BinarySubTree<ndim>::BinarySubTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
-			     FLOAT kernrangeaux, string gravity_mac_aux,
-                             string multipole_aux)
+                                   FLOAT kernrangeaux, string gravity_mac_aux,
+                                   string multipole_aux)
 {
   allocated_tree = false;
   Ncell = 0;
@@ -133,9 +133,7 @@ void BinarySubTree<ndim>::DeallocateSubTreeMemory(void)
 //=============================================================================
 template <int ndim>
 void BinarySubTree<ndim>::BuildSubTree
-(int n,                            ///< ..
- FLOAT timestep,                   ///< ..
- Sph<ndim> *sph)                   ///< Pointer to main SPH object
+(Sph<ndim> *sph)                   ///< Pointer to main SPH object
 {
   debug2("[BinarySubTree::BuildSubTree]");
 
@@ -636,6 +634,8 @@ void BinarySubTree<ndim>::StockCellProperties
   cout << "Mass of root cell1 : " << tree[0].m << endl;
   cout << "Bounding box : " << crmin[0] << "   " << crmax[0] 
        << "   " << crmin[1] << "   " << crmax[1] << endl;
+  cout << "No. inside root : " << tree[0].N << endl;
+  cout << "rmax : " << tree[0].rmax << "   " << tree[0].hmax << endl;
 #endif
 
 

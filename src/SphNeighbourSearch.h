@@ -97,7 +97,7 @@ class SphNeighbourSearch
 {
  public:
 
-  virtual void BuildTree(int, FLOAT, Sph<ndim> *) = 0;
+  virtual void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *) = 0;
   virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphForces(Sph<ndim> *) = 0;
   virtual void UpdateAllSphHydroForces(Sph<ndim> *) = 0;
@@ -107,9 +107,6 @@ class SphNeighbourSearch
   virtual void UpdateActiveParticleCounters(Sph<ndim> *) = 0;
 
   bool neibcheck;                   ///< Flag to verify neighbour lists
-  bool rebuild_tree;                ///< Flag to rebuild neighbour tree
-  int ntreebuildstep;               ///< Integer time between rebuilding tree
-  int ntreestockstep;               ///< Integer time between restocking tree
   DomainBox<ndim> *box;             ///< Pointer to simulation bounding box
 
 };
@@ -130,14 +127,13 @@ template <int ndim>
 class BruteForceSearch: public SphNeighbourSearch<ndim>
 {
   using SphNeighbourSearch<ndim>::neibcheck;
-  using SphNeighbourSearch<ndim>::rebuild_tree;
 
  public:
 
   BruteForceSearch();
   ~BruteForceSearch();
 
-  void BuildTree(int, FLOAT, Sph<ndim> *);
+  void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *);
@@ -163,14 +159,13 @@ template <int ndim>
 class GridSearch: public SphNeighbourSearch<ndim>
 {
   using SphNeighbourSearch<ndim>::neibcheck;
-  using SphNeighbourSearch<ndim>::rebuild_tree;
 
  public:
 
   GridSearch();
   ~GridSearch();
 
-  void BuildTree(int, FLOAT, Sph<ndim> *);
+  void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *);
@@ -244,7 +239,7 @@ class BinarySubTree
   void StockCellProperties(SphParticle<ndim> *);
   FLOAT UpdateHmaxValues(SphParticle<ndim> *);
   void UpdateActiveParticleCounters(Sph<ndim> *);
-  void BuildSubTree(int, FLOAT, Sph<ndim> *);
+  void BuildSubTree(Sph<ndim> *);
   int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int, 
                                  int *, FLOAT, SphParticle<ndim> *);
   int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int, 
@@ -312,10 +307,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
  public:
 
   using SphNeighbourSearch<ndim>::neibcheck;
-  using SphNeighbourSearch<ndim>::rebuild_tree;
   using SphNeighbourSearch<ndim>::box;
-  using SphNeighbourSearch<ndim>::ntreebuildstep;
-  using SphNeighbourSearch<ndim>::ntreestockstep;
 
   typedef typename vector <BinarySubTree<ndim> *>::iterator binlistiterator;
 
@@ -323,7 +315,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   ~BinaryTree();
 
   //---------------------------------------------------------------------------
-  void BuildTree(int, FLOAT, Sph<ndim> *);
+  void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *);

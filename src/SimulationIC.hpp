@@ -520,21 +520,21 @@ void Simulation<ndim>::ShockTube(void)
     for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
     
     //sph->InitialSmoothingLengthGuess();
-    sphneib->BuildTree(n,timestep,sph);
+    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
     
     // Search ghost particles
-    LocalGhosts->SearchGhostParticles(simbox,sph);
+    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
     
     // Update neighbour tree
-    sphneib->BuildTree(n,timestep,sph);
+    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
     
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph,nbody);
     
-    sphneib->BuildTree(n,timestep,sph);
+    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
     sphneib->UpdateAllSphProperties(sph,nbody);
     
-    LocalGhosts->CopySphDataToGhosts(sph);
+    LocalGhosts->CopySphDataToGhosts(simbox,sph);
     
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph,nbody);
@@ -858,22 +858,22 @@ void Simulation<ndim>::ContactDiscontinuity(void)
   for (int i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
 
   initial_h_provided = true;
-  sphneib->BuildTree(n,timestep,sph);
+  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
   // Search ghost particles
-  LocalGhosts->SearchGhostParticles(simbox,sph);
+  LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
 
 
   // Update neighbour tre
-  sphneib->BuildTree(n,timestep,sph);
+  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(sph,nbody);
 
-  sphneib->BuildTree(n,timestep,sph);
+  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
   sphneib->UpdateAllSphProperties(sph,nbody);
 
-  LocalGhosts->CopySphDataToGhosts(sph);
+  LocalGhosts->CopySphDataToGhosts(simbox,sph);
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(sph,nbody);
@@ -1004,10 +1004,10 @@ void Simulation<ndim>::KHI(void)
   initial_h_provided = true;
   
   // Search ghost particles
-  LocalGhosts->SearchGhostParticles(simbox,sph);
+  LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
 
   // Update neighbour tree
-  sphneib->BuildTree(n,timestep,sph);
+  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(sph,nbody);
@@ -1432,15 +1432,15 @@ void Simulation<ndim>::SedovBlastWave(void)
   for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
   
   initial_h_provided = true;
-  sphneib->BuildTree(n,timestep,sph);
+  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
   
   // Search ghost particles
-  LocalGhosts->SearchGhostParticles(simbox,sph);
+  LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
 
   sphneib->UpdateAllSphProperties(sph,nbody);
 
   // Update neighbour tre
-  sphneib->BuildTree(n,timestep,sph);
+  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(sph,nbody);
