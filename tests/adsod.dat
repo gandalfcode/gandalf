@@ -7,7 +7,7 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = ADSOD1
+Simulation run id string                    : run_id = ADSOD-MPI2
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = shocktube
 1D shocktube test                           : ndim = 1
@@ -27,14 +27,17 @@ Dimensionless units                         : dimensionless = 1
 #------------------------------
 LHS position of boundary in x-dimension     : boxmin[0] = -2.0
 RHS position of boundary in x-dimension     : boxmax[0] = 2.0
+LHS boundary type in x-dimension            : x_boundary_lhs = periodic
+RHS boundary type in x-dimension            : x_boundary_rhs = periodic
+
 
 
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.2
-Regular snapshot output frequency           : dt_snap = 0.6
-Time for first snapshot                     : tsnapfirst = 0.6
+Simulation end time                         : tend = 0.4
+Regular snapshot output frequency           : dt_snap = 0.1
+Time for first snapshot                     : tsnapfirst = 0.0
 Screen output frequency (in no. of steps)   : noutputstep = 128
 
 
@@ -82,7 +85,8 @@ No. of block timestep levels                : Nlevels = 1
 #---------------------
 Tabulate SPH kernel                         : tabulated_kernel = 0
 SPH neighbour search algorithm              : neib_search = bruteforce
-
+Build tree every step                       : ntreebuildstep = 1
+Stock tree every step                       : ntreestockstep = 1
 
 #--------------
 # Misc. options

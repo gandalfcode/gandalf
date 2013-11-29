@@ -285,7 +285,11 @@ void SphSimulation<ndim>::MainLoop(void)
   //       particles, h-extent, ghosts, etc..) to all other MPI nodes
   //---------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
-  mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph->sphdata, sph->kernp);
+  if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph->sphdata, sph->kernp);
+    mpicontrol.LoadBalancing(sph,nbody);
+    exit(0);
+  }
 #endif
 
 

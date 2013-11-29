@@ -342,6 +342,8 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
 {
   int inode;                        // MPI node counter
 
+  if (rank == 0) debug2("[MpiControl::UpdateAllBoundingBoxes]");
+
   // Update local bounding boxes
   mpinode[rank].UpdateBoundingBoxData(Npart,sphdata,kernptr);
 
@@ -383,7 +385,11 @@ void MpiControl<ndim>::LoadBalancing
   FLOAT boxbuffer[2*ndim*Nmpi];     // Bounding box buffer
   FLOAT workbuffer[1+ndim];         // Node work information buffer
   MPI_Status status;                // MPI status flag
-  BinaryTree<ndim> *tree = mpitree->tree; // Pointer to tree (for brevity)
+  //BinaryTree<ndim> *tree = mpitree->tree; // Pointer to tree (for brevity)
+
+
+  // If running on only one MPI node, return immediately
+  if (Nmpi == 1) return;
 
 
   // Compute work that will be transmitted to all other domains if using
@@ -408,12 +414,15 @@ void MpiControl<ndim>::LoadBalancing
   //---------------------------------------------------------------------------
   if (rank == 0) {
 
+    debug2("[MpiControl::LoadBalancing]");
+
     // Receive all important load balancing information from other nodes
     for (inode=1; inode<Nmpi; inode++) {
       okflag = MPI_Recv(&mpinode[inode].worktot,1,MPI_DOUBLE,
                         0,0,MPI_COMM_WORLD,&status);
       mpinode[inode].worktot = workbuffer[0];
       for (k=0; k<ndim; k++) mpinode[inode].rwork[k] = workbuffer[k+1];
+      cout << "Work from rank " << inode << " : " << workbuffer[0] << endl;
     }
 
 
@@ -423,18 +432,18 @@ void MpiControl<ndim>::LoadBalancing
     for (c=mpitree->Ncell-1; c>=0; c--) {
       
       // For leaf cells, simply set total work and 'centre of work' position
-      if (tree[c].c2 == 0) {
-	inode = tree[c].c2g;
-	tree[c].worktot = mpinode[inode].worktot;
-	for (k=0; k<ndim; k++) tree[c].rwork[k] = mpinode[inode].rwork[k];
+      if (mpitree->tree[c].c2 == 0) {
+        inode = mpitree->tree[c].c2g;
+        mpitree->tree[c].worktot = mpinode[inode].worktot;
+        for (k=0; k<ndim; k++) mpitree->tree[c].rwork[k] = mpinode[inode].rwork[k];
       }
       // For non-leaf cells, sum up contributions from both child cells
       else {
-	c2 = tree[c].c2;
-	tree[c].worktot = tree[c+1].worktot + tree[c2].worktot;
-	for (k=0; k<ndim; k++) tree[c].rwork[k] = 
-	  (tree[c].worktot*tree[c].rwork[k] + 
-	   tree[c2].worktot*tree[c2].rwork[k]) / tree[c].worktot;
+        c2 = mpitree->tree[c].c2;
+        mpitree->tree[c].worktot = mpitree->tree[c+1].worktot + mpitree->tree[c2].worktot;
+        for (k=0; k<ndim; k++) mpitree->tree[c].rwork[k] =
+          (mpitree->tree[c].worktot*mpitree->tree[c].rwork[k] +
+           mpitree->tree[c2].worktot*mpitree->tree[c2].rwork[k]) / mpitree->tree[c].worktot;
       }
 
     }
@@ -445,45 +454,47 @@ void MpiControl<ndim>::LoadBalancing
     // Stars at lowest level and then works back up wrapping around to the 
     // bottom again once reaching the root node.
     balance_level--;
-    if (balance_level < 0) balance_level = mpitree.ltot - 2;
+    if (balance_level < 0) balance_level = mpitree->ltot - 2;
     k = mpitree->klevel[balance_level];
+
+    cout << "Balancing on level : " << balance_level << "     " << mpitree->ltot << endl;
 
 
     // Now walk downwards through MPI tree, adjusting bounding box sizes on 
     // load balancing level and propagating new box sizes to lower levels.
     //-------------------------------------------------------------------------
     for (c=0; c<mpitree->Ncell; c++) {
-      c2 = tree[c].c2;
+      c2 = mpitree->tree[c].c2;
 
       // If on load-balancing level, then estimate new division of domains 
       // based on work in each domain and position of 'centre of work'.
       // If work is already balanced, then domain boundaries remain unchanged.
-      if (tree[c].clevel == balance_level && c2 != 0) {
-        if (tree[c+1].worktot > tree[c2].worktot) 
-	  rnew = tree[c+1].rwork[k] + 
-	    2.0*(tree[c+1].bbmax[k] - tree[c+1].rwork[k])*
-	    (tree[c].worktot - tree[c+1].worktot)/tree[c].worktot;
-	else
-	  rnew = tree[c2].rwork[k] + 
-	    2.0*(tree[c+1].bbmin[k] - tree[c2].rwork[k])* 
-	    (tree[c].worktot - tree[c2].worktot)/tree[c].worktot;
-	tree[c+1].bbmax[k] = rnew;
-	tree[c2].bbmin[k] = rnew;
+      if (mpitree->tree[c].clevel == balance_level && c2 != 0) {
+        if (mpitree->tree[c+1].worktot > mpitree->tree[c2].worktot)
+          rnew = mpitree->tree[c+1].rwork[k] +
+            2.0*(mpitree->tree[c+1].bbmax[k] - mpitree->tree[c+1].rwork[k])*
+            (mpitree->tree[c].worktot - mpitree->tree[c+1].worktot)/mpitree->tree[c].worktot;
+      else
+	    rnew = mpitree->tree[c2].rwork[k] +
+	      2.0*(mpitree->tree[c+1].bbmin[k] - mpitree->tree[c2].rwork[k])*
+	      (mpitree->tree[c].worktot - mpitree->tree[c2].worktot)/mpitree->tree[c].worktot;
+        mpitree->tree[c+1].bbmax[k] = rnew;
+        mpitree->tree[c2].bbmin[k] = rnew;
       }
 
       // For leaf cells, set new MPI node box sizes 
       else if (c2 == 0) {
-	inode = tree[c].c2g;
-	for (kk=0; kk<ndim; kk++) 
-	  mpinode[inode].domain.boxmin[kk] = tree[c]->boxmin[kk];
-	for (kk=0; kk<ndim; kk++) 
-	  mpinode[inode].domain.boxmax[kk] = tree[c]->boxmax[kk];
+        inode = mpitree->tree[c].c2g;
+        for (kk=0; kk<ndim; kk++)
+          mpinode[inode].domain.boxmin[kk] = mpitree->tree[c].bbmin[kk];
+        for (kk=0; kk<ndim; kk++)
+          mpinode[inode].domain.boxmax[kk] = mpitree->tree[c].bbmax[kk];
       }
 
       // For other cells, propagate new bounding box information downwards
       else {
-	tree[c+1].bbmin[k] = tree[c].bbmin[k];
-	tree[c2].bbmax[k] = tree[c].bbmax[k];
+        mpitree->tree[c+1].bbmin[k] = mpitree->tree[c].bbmin[k];
+        mpitree->tree[c2].bbmax[k] = mpitree->tree[c].bbmax[k];
       }
 
     }
