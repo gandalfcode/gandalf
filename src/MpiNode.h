@@ -68,6 +68,7 @@ class MpiNode
 
   FLOAT hmax;                       ///< Maximum smoothing length on node
   FLOAT worktot;                    ///< Total 'work' on each node
+  FLOAT rwork[ndim];                ///< Weighted 'centre of work' position
 
   Box<ndim> domain;           ///< ..
   Box<ndim> rbox;             ///< ..

@@ -113,6 +113,7 @@ void BinaryTree<ndim>::AllocateTreeMemory(void)
     Nsubtreemax = max(Nsubtreemax,Nsubtree);
     Nsubtreemaxold = Nsubtreemax;
 
+    klevel = new int[ltot+1];
     pc = new int[Ntotmax];
     pw = new FLOAT[Ntotmax];
     tree = new struct BinaryTreeCell<ndim>[Ncellmax];
@@ -123,19 +124,18 @@ void BinaryTree<ndim>::AllocateTreeMemory(void)
     if (!created_sub_trees) {
       for (int i=0; i<Nsubtree; i++) {
         subtrees.push_back(new BinarySubTree<ndim>(Nleafmax, thetamaxsqd,
-						   kernrange, gravity_mac, multipole));
+						   kernrange, gravity_mac, 
+                                                   multipole));
       }
       created_sub_trees = true;
     }
 
 
-    // ..
+    // Set initial values and allocate maximum memory for all sub-trees
     for (int i=0; i<Nsubtree; i++) {
       subtrees[i]->Nsph = 0;
       subtrees[i]->Ntot = 0;
       subtrees[i]->Ntotmax = max(subtrees[i]->Ntotmax,Ntotmax/Nsubtree + 1);
-
-      // ..
       subtrees[i]->ComputeSubTreeSize();
       subtrees[i]->AllocateSubTreeMemory();
     }
@@ -499,6 +499,8 @@ void BinaryTree<ndim>::LoadParticlesToTree
   // Loop through each level of the tree
   //---------------------------------------------------------------------------
   while (l < ltot) {
+
+    klevel[l] = k;
 
     // Loop over all particles (in order of current split)
     //-------------------------------------------------------------------------

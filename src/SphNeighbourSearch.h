@@ -68,6 +68,8 @@ struct BinaryTreeCell {
   int ilast;                        ///< i.d. of last particle in cell
   int Nactive;                      ///< No. of active particles in cell
   int N;                            ///< No. of particles in cell
+  FLOAT worktot;                    ///< Total amount of work
+  FLOAT rwork[ndim];                ///< Weighted position of centre of work
   FLOAT cdistsqd;                   ///< Opening distances squared
   FLOAT r[ndim];                    ///< Position of centre of mass
   FLOAT v[ndim];                    ///< Velocity of centre of mass
@@ -380,6 +382,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   FLOAT theta;                      ///< ..
   FLOAT thetamaxsqd;                ///< ..
   int *pc;                          ///< ..
+  int *klevel;                      ///< ..
   FLOAT *pw;                        ///< Particle weights
   FLOAT *rk[ndim];                  ///< Particle Cartesian coordinates
   BinaryTreeCell<ndim> *tree;       ///< Main tree array

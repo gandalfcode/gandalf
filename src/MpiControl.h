@@ -108,7 +108,6 @@ class MpiControl
 
   char hostname[MPI_MAX_PROCESSOR_NAME];
   DomainBox<ndim> mpibox;           ///< ..
-
   BinaryTree<ndim> *mpitree;        ///< Main MPI load balancing tree
   MpiNode<ndim> *mpinode;           ///< Data for all MPI nodes
 

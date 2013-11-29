@@ -44,25 +44,24 @@ using namespace std;
 
 //=============================================================================
 //  MpiControl::MpiControl()
-/// MPI node class constructor.
+/// MPI control class constructor.  Initialises all MPI control variables, 
+/// plus calls MPI routines to find out rank and number of processors.
 //=============================================================================
 template <int ndim>
 MpiControl<ndim>::MpiControl()
 {
-  int len;
+  int len;                          // Length of host processor name string
+  Box<ndim> dummy;                  // Dummy box variable
 
   allocated_mpi = false;
+  balance_level = 0;
 
+  // Find local processor rank, total no. of processors and host processor name
   MPI_Comm_size(MPI_COMM_WORLD,&Nmpi);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Get_processor_name(hostname, &len);
+  MPI_Get_processor_name(hostname,&len);
 
-  if (this->rank == 0)
-    printf("MPI working.  Nmpi : %d   rank : %d   hostname : %s\n",Nmpi,rank,hostname);
-  else
-    printf("%d is running too!!\n",this->rank);
-
-  //Create and commit the particle datatype
+  // Create and commit the particle datatype
   particle_type = SphParticle<ndim>::CreateMpiDataType();
   MPI_Type_commit(&particle_type);
 
@@ -70,14 +69,14 @@ MpiControl<ndim>::MpiControl()
   diagnostics_type = Diagnostics<ndim>::CreateMpiDataType();
   MPI_Type_commit(&diagnostics_type);
 
-  //Create and commit the box datatype
-  Box<ndim> dummy;
+  // Create and commit the box datatype
   box_type = CreateBoxType(dummy);
   MPI_Type_commit(&box_type);
-  //Allocate buffer to send and receive boxes
+
+  // Allocate buffer to send and receive boxes
   boxes_buffer.resize(Nmpi);
 
-  //Allocate the buffers needed to send and receive particles
+  // Allocate the buffers needed to send and receive particles
   particles_to_export_per_node.resize(Nmpi);
   num_particles_export_per_node.resize(Nmpi);
   particles_to_export.resize(Nmpi);
@@ -86,6 +85,12 @@ MpiControl<ndim>::MpiControl()
   receive_displs.resize(Nmpi);
 
 #ifdef VERIFY_ALL
+  if (this->rank == 0)
+    printf("MPI working.  Nmpi : %d   rank : %d   hostname : %s\n",
+           Nmpi,rank,hostname);
+  else
+    printf("%d is running too!!\n",this->rank);
+
   if (Nmpi > 1) {
     if (rank ==0) {
       SphParticle<ndim> particle;
@@ -244,8 +249,10 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
     // Pack all bounding box data into single array
     for (inode=0; inode<Nmpi; inode++) {
-      for (k=0; k<ndim; k++) boxbuffer[2*ndim*inode + k] = mpinode[inode].domain.boxmin[k];
-      for (k=0; k<ndim; k++) boxbuffer[2*ndim*inode + ndim + k] = mpinode[inode].domain.boxmax[k];
+      for (k=0; k<ndim; k++) 
+	boxbuffer[2*ndim*inode + k] = mpinode[inode].domain.boxmin[k];
+      for (k=0; k<ndim; k++) 
+	boxbuffer[2*ndim*inode + ndim + k] = mpinode[inode].domain.boxmax[k];
     }
 
     // Now broadcast all bounding boxes to other processes
@@ -329,10 +336,11 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 //=============================================================================
 template <int ndim>
 void MpiControl<ndim>::UpdateAllBoundingBoxes
-(int Npart,                        ///< No. of SPH particles
- SphParticle<ndim> *sphdata,       ///< Pointer to SPH data
- SphKernel<ndim> *kernptr)         ///< Pointer to kernel object
+(int Npart,                         ///< No. of SPH particles
+ SphParticle<ndim> *sphdata,        ///< Pointer to SPH data
+ SphKernel<ndim> *kernptr)          ///< Pointer to kernel object
 {
+  int inode;                        // MPI node counter
 
   // Update local bounding boxes
   mpinode[rank].UpdateBoundingBoxData(Npart,sphdata,kernptr);
@@ -342,8 +350,8 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
                 1,box_type,MPI_COMM_WORLD);
 
   // Save the information inside the nodes
-  for (int i=0; i<Nmpi; i++) {
-    mpinode[i].hbox = boxes_buffer[i];
+  for (inode=0; inode<Nmpi; inode++) {
+    mpinode[inode].hbox = boxes_buffer[inode];
   }
 
   return;
@@ -361,46 +369,125 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
 //=============================================================================
 template <int ndim>
 void MpiControl<ndim>::LoadBalancing
-(Sph<ndim> *sph,                   ///< Pointer to main SPH object
- Nbody<ndim> *nbody)               ///< Pointer to main N-body object
+(Sph<ndim> *sph,                    ///< Pointer to main SPH object
+ Nbody<ndim> *nbody)                ///< Pointer to main N-body object
 {
-  int i;                           // Particle counter
-  int inode;                       // MPI node counter
-  int k;                           // Dimension counter
-  int okflag;                      // Successful communication flag
-  FLOAT boxbuffer[2*ndim*Nmpi];    // Bounding box buffer
-  MPI_Status status;               // MPI status flag
+  int c;                            // MPI tree cell counter
+  int c2;                           // ..
+  int i;                            // Particle counter
+  int inode;                        // MPI node counter
+  int k;                            // Dimension counter
+  int kk;                           // ..
+  int okflag;                       // Successful communication flag
+  FLOAT rnew;                       // New boundary position for load balancing
+  FLOAT boxbuffer[2*ndim*Nmpi];     // Bounding box buffer
+  FLOAT workbuffer[1+ndim];         // Node work information buffer
+  MPI_Status status;                // MPI status flag
+  BinaryTree<ndim> *tree = mpitree->tree; // Pointer to tree (for brevity)
 
 
   // Compute work that will be transmitted to all other domains if using
   // current domain boxes and particle positions
   // (DAVID : Maybe in the future once basic implementation works)
 
-  // Compute total work contained in domain at present
+  // Compute total work contained in domain at present and the weighted 
+  // centre of work position.
   mpinode[rank].worktot = 0.0;
-  for (i=0; i<sph->Nsph; i++) mpinode[rank].worktot += 1.0/sph->sphdata[i].dt;
+  for (k=0; k<ndim; k++) mpinode[rank].rwork[k] = 0.0;
+  for (i=0; i<sph->Nsph; i++) {
+    mpinode[rank].worktot += 1.0/sph->sphdata[i].dt;
+    for (k=0; k<ndim; k++) 
+      mpinode[rank].rwork[k] += sph->sphdata[i].r[k]/sph->sphdata[i].dt;
+  }
+  for (k=0; k<ndim; k++) mpinode[rank].rwork[k] /= mpinode[rank].worktot;
 
 
-  // For root process, receive all current node CPU nodes, adjust domain
-  // boundaries to balance out work more evenly and then broadcast new domain
-  // boxes to all other nodes.
+  // For root process, receive work information from all other CPU nodes, 
+  // adjust domain boundaries to balance out work more evenly and then 
+  // broadcast new domain boxes to all other nodes.
   //---------------------------------------------------------------------------
   if (rank == 0) {
-
 
     // Receive all important load balancing information from other nodes
     for (inode=1; inode<Nmpi; inode++) {
       okflag = MPI_Recv(&mpinode[inode].worktot,1,MPI_DOUBLE,
                         0,0,MPI_COMM_WORLD,&status);
+      mpinode[inode].worktot = workbuffer[0];
+      for (k=0; k<ndim; k++) mpinode[inode].rwork[k] = workbuffer[k+1];
     }
 
 
-    // Work out tree level at which we are altering the load balancing
+    // Walk upwards through MPI tree to propagate work information from 
+    // leaf cells to parent cells.
+    //-------------------------------------------------------------------------
+    for (c=mpitree->Ncell-1; c>=0; c--) {
+      
+      // For leaf cells, simply set total work and 'centre of work' position
+      if (tree[c].c2 == 0) {
+	inode = tree[c].c2g;
+	tree[c].worktot = mpinode[inode].worktot;
+	for (k=0; k<ndim; k++) tree[c].rwork[k] = mpinode[inode].rwork[k];
+      }
+      // For non-leaf cells, sum up contributions from both child cells
+      else {
+	c2 = tree[c].c2;
+	tree[c].worktot = tree[c+1].worktot + tree[c2].worktot;
+	for (k=0; k<ndim; k++) tree[c].rwork[k] = 
+	  (tree[c].worktot*tree[c].rwork[k] + 
+	   tree[c2].worktot*tree[c2].rwork[k]) / tree[c].worktot;
+      }
+
+    }
+    //-------------------------------------------------------------------------
 
 
+    // Work out tree level at which we are altering the load balancing.  
+    // Stars at lowest level and then works back up wrapping around to the 
+    // bottom again once reaching the root node.
+    balance_level--;
+    if (balance_level < 0) balance_level = mpitree.ltot - 2;
+    k = mpitree->klevel[balance_level];
 
-    // Adjust bounding box sizes on load balancing level
 
+    // Now walk downwards through MPI tree, adjusting bounding box sizes on 
+    // load balancing level and propagating new box sizes to lower levels.
+    //-------------------------------------------------------------------------
+    for (c=0; c<mpitree->Ncell; c++) {
+      c2 = tree[c].c2;
+
+      // If on load-balancing level, then estimate new division of domains 
+      // based on work in each domain and position of 'centre of work'.
+      // If work is already balanced, then domain boundaries remain unchanged.
+      if (tree[c].clevel == balance_level && c2 != 0) {
+        if (tree[c+1].worktot > tree[c2].worktot) 
+	  rnew = tree[c+1].rwork[k] + 
+	    2.0*(tree[c+1].bbmax[k] - tree[c+1].rwork[k])*
+	    (tree[c].worktot - tree[c+1].worktot)/tree[c].worktot;
+	else
+	  rnew = tree[c2].rwork[k] + 
+	    2.0*(tree[c+1].bbmin[k] - tree[c2].rwork[k])* 
+	    (tree[c].worktot - tree[c2].worktot)/tree[c].worktot;
+	tree[c+1].bbmax[k] = rnew;
+	tree[c2].bbmin[k] = rnew;
+      }
+
+      // For leaf cells, set new MPI node box sizes 
+      else if (c2 == 0) {
+	inode = tree[c].c2g;
+	for (kk=0; kk<ndim; kk++) 
+	  mpinode[inode].domain.boxmin[kk] = tree[c]->boxmin[kk];
+	for (kk=0; kk<ndim; kk++) 
+	  mpinode[inode].domain.boxmax[kk] = tree[c]->boxmax[kk];
+      }
+
+      // For other cells, propagate new bounding box information downwards
+      else {
+	tree[c+1].bbmin[k] = tree[c].bbmin[k];
+	tree[c2].bbmax[k] = tree[c].bbmax[k];
+      }
+
+    }
+    //-------------------------------------------------------------------------
 
 
     // Transmit new bounding box sizes to all other nodes
@@ -421,6 +508,8 @@ void MpiControl<ndim>::LoadBalancing
 
 
     // Transmit load balancing information to main root node
+    workbuffer[0] = mpinode[inode].worktot;
+    for (k=0; k<ndim; k++) workbuffer[k+1] = mpinode[inode].rwork[k];
     okflag = MPI_Send(&mpinode[rank].worktot,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
 
 
