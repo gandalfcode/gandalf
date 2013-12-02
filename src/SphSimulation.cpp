@@ -288,7 +288,7 @@ void SphSimulation<ndim>::MainLoop(void)
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
     mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph->sphdata, sph->kernp);
     mpicontrol.LoadBalancing(sph,nbody);
-    exit(0);
+    //exit(0);
   }
 #endif
 

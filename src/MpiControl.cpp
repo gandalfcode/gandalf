@@ -387,7 +387,7 @@ void MpiControl<ndim>::LoadBalancing
   MPI_Status status;                // MPI status flag
   //BinaryTree<ndim> *tree = mpitree->tree; // Pointer to tree (for brevity)
 
-
+//return;
   // If running on only one MPI node, return immediately
   if (Nmpi == 1) return;
 
@@ -401,11 +401,14 @@ void MpiControl<ndim>::LoadBalancing
   mpinode[rank].worktot = 0.0;
   for (k=0; k<ndim; k++) mpinode[rank].rwork[k] = 0.0;
   for (i=0; i<sph->Nsph; i++) {
-    mpinode[rank].worktot += 1.0/sph->sphdata[i].dt;
+    mpinode[rank].worktot += 1.0/(FLOAT) sph->sphintdata[i].nstep;
     for (k=0; k<ndim; k++) 
-      mpinode[rank].rwork[k] += sph->sphdata[i].r[k]/sph->sphdata[i].dt;
+      mpinode[rank].rwork[k] += sph->sphdata[i].r[k]/(FLOAT) sph->sphintdata[i].nstep;
   }
   for (k=0; k<ndim; k++) mpinode[rank].rwork[k] /= mpinode[rank].worktot;
+
+  cout << "worktot[" << rank << "] : " << mpinode[rank].worktot << "     Nsph : " << sph->Nsph << endl;
+  cout << "rwork : " << mpinode[rank].rwork[0] << endl;
 
 
   // For root process, receive work information from all other CPU nodes, 
@@ -416,15 +419,19 @@ void MpiControl<ndim>::LoadBalancing
 
     debug2("[MpiControl::LoadBalancing]");
 
+	MPI_Barrier(MPI_COMM_WORLD);
+
     // Receive all important load balancing information from other nodes
     for (inode=1; inode<Nmpi; inode++) {
-      okflag = MPI_Recv(&mpinode[inode].worktot,1,MPI_DOUBLE,
-                        0,0,MPI_COMM_WORLD,&status);
+      cout << "Root waiting for " << inode << endl;
+      okflag = MPI_Recv(&workbuffer,ndim+1,MPI_DOUBLE,
+                        inode,0,MPI_COMM_WORLD,&status);
       mpinode[inode].worktot = workbuffer[0];
       for (k=0; k<ndim; k++) mpinode[inode].rwork[k] = workbuffer[k+1];
       cout << "Work from rank " << inode << " : " << workbuffer[0] << endl;
     }
 
+    cout << "Done receiving boxes " << endl;
 
     // Walk upwards through MPI tree to propagate work information from 
     // leaf cells to parent cells.
@@ -446,6 +453,8 @@ void MpiControl<ndim>::LoadBalancing
            mpitree->tree[c2].worktot*mpitree->tree[c2].rwork[k]) / mpitree->tree[c].worktot;
       }
 
+      cout << "Tree work : " << c << "    " << mpitree->tree[c].worktot << endl;
+
     }
     //-------------------------------------------------------------------------
 
@@ -454,10 +463,10 @@ void MpiControl<ndim>::LoadBalancing
     // Stars at lowest level and then works back up wrapping around to the 
     // bottom again once reaching the root node.
     balance_level--;
-    if (balance_level < 0) balance_level = mpitree->ltot - 2;
+    if (balance_level < 0) balance_level = mpitree->ltot - 1;
     k = mpitree->klevel[balance_level];
 
-    cout << "Balancing on level : " << balance_level << "     " << mpitree->ltot << endl;
+    cout << "Balancing on level : " << balance_level << "     " << mpitree->ltot << "    " << k << endl;
 
 
     // Now walk downwards through MPI tree, adjusting bounding box sizes on 
@@ -466,6 +475,8 @@ void MpiControl<ndim>::LoadBalancing
     for (c=0; c<mpitree->Ncell; c++) {
       c2 = mpitree->tree[c].c2;
 
+      cout << "Checking cell " << c << "   " << c2 << "     " << mpitree->tree[c].clevel << endl;
+
       // If on load-balancing level, then estimate new division of domains 
       // based on work in each domain and position of 'centre of work'.
       // If work is already balanced, then domain boundaries remain unchanged.
@@ -473,13 +484,17 @@ void MpiControl<ndim>::LoadBalancing
         if (mpitree->tree[c+1].worktot > mpitree->tree[c2].worktot)
           rnew = mpitree->tree[c+1].rwork[k] +
             2.0*(mpitree->tree[c+1].bbmax[k] - mpitree->tree[c+1].rwork[k])*
-            (mpitree->tree[c].worktot - mpitree->tree[c+1].worktot)/mpitree->tree[c].worktot;
-      else
-	    rnew = mpitree->tree[c2].rwork[k] +
-	      2.0*(mpitree->tree[c+1].bbmin[k] - mpitree->tree[c2].rwork[k])*
-	      (mpitree->tree[c].worktot - mpitree->tree[c2].worktot)/mpitree->tree[c].worktot;
+            mpitree->tree[c+1].worktot/mpitree->tree[c].worktot;
+        else
+	      rnew = mpitree->tree[c2].rwork[k] +
+	        2.0*(mpitree->tree[c2].bbmin[k] - mpitree->tree[c2].rwork[k])*
+	        mpitree->tree[c2].worktot/mpitree->tree[c].worktot;
         mpitree->tree[c+1].bbmax[k] = rnew;
         mpitree->tree[c2].bbmin[k] = rnew;
+        cout << "work : " << mpitree->tree[c+1].worktot << "    " << mpitree->tree[c2].worktot << endl;
+        cout << "Child 1 : " << mpitree->tree[c+1].bbmin[k] << "     " << mpitree->tree[c+1].bbmax[k] << endl;
+        cout << "Child 2 : " << mpitree->tree[c2].bbmin[k] << "     " << mpitree->tree[c2].bbmax[k] << endl;
+        cout << "rnew : " << rnew << endl;
       }
 
       // For leaf cells, set new MPI node box sizes 
@@ -507,6 +522,9 @@ void MpiControl<ndim>::LoadBalancing
         boxbuffer[2*ndim*inode + k] = mpinode[inode].domain.boxmin[k];
       for (k=0; k<ndim; k++)
         boxbuffer[2*ndim*inode + ndim + k] = mpinode[inode].domain.boxmax[k];
+
+      cout << "New box for node " << inode << "    : " << mpinode[inode].domain.boxmin[0] << "     " << mpinode[inode].domain.boxmax[0] << endl;
+
     }
 
     // Now broadcast all bounding boxes to other processes
@@ -518,11 +536,15 @@ void MpiControl<ndim>::LoadBalancing
   else {
 
 
-    // Transmit load balancing information to main root node
-    workbuffer[0] = mpinode[inode].worktot;
-    for (k=0; k<ndim; k++) workbuffer[k+1] = mpinode[inode].rwork[k];
-    okflag = MPI_Send(&mpinode[rank].worktot,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
+	cout << "Node : " << rank << " sending information" << endl;
 
+    // Transmit load balancing information to main root node
+    workbuffer[0] = mpinode[rank].worktot;
+    for (k=0; k<ndim; k++) workbuffer[k+1] = mpinode[rank].rwork[k];
+    okflag = MPI_Send(&workbuffer,ndim+1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
+	MPI_Barrier(MPI_COMM_WORLD);
+
+	cout << "Node " << rank << " waiting to receive all boxes" << endl;
 
     // Receive bounding box data for domain and unpack data
     MPI_Bcast(boxbuffer,2*ndim*Nmpi,MPI_DOUBLE,0,MPI_COMM_WORLD);
@@ -578,8 +600,9 @@ int MpiControl<ndim>::SendReceiveGhosts
   int index;                       // ..
   int running_counter;             // ..
   int inode;
-
   std::vector<int > overlapping_nodes;
+
+  if (rank == 0) debug2("[MpiControl::SendReceiveGhosts]");
 
   //Reserve space for all nodes
   overlapping_nodes.reserve(Nmpi);

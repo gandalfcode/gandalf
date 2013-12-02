@@ -17,8 +17,8 @@ Pressure of LHS fluid                       : press1 = 1.0
 Pressure of RHS fluid                       : press2 = 0.2
 Density of LHS fluid                        : rhofluid1 = 1.0
 Density of RHS fluid                        : rhofluid2 = 0.5
-No. of particles in LHS fluid               : Nlattice1[0] = 400
-No. of particles in RHS fluid               : Nlattice2[0] = 200
+No. of particles in LHS fluid               : Nlattice1[0] = 100
+No. of particles in RHS fluid               : Nlattice2[0] = 50
 Dimensionless units                         : dimensionless = 1
 
 
@@ -31,14 +31,13 @@ LHS boundary type in x-dimension            : x_boundary_lhs = periodic
 RHS boundary type in x-dimension            : x_boundary_rhs = periodic
 
 
-
 #--------------------------
 # Simulation time variables
 #--------------------------
 Simulation end time                         : tend = 0.4
 Regular snapshot output frequency           : dt_snap = 0.1
 Time for first snapshot                     : tsnapfirst = 0.0
-Screen output frequency (in no. of steps)   : noutputstep = 128
+Screen output frequency (in no. of steps)   : noutputstep = 1
 
 
 #------------------------

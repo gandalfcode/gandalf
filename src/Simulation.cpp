@@ -127,6 +127,7 @@ SimulationBase::SimulationBase
   Nsteps = 0;
   rank = 0;
   t = 0.0;
+  timestep = 0.0;
   setup = false;
   initial_h_provided = true;
   ParametersProcessed = false;
