@@ -135,6 +135,10 @@ template <int ndim>
 void MpiControl<ndim>::AllocateMemory(void)
 {
   mpinode = new MpiNode<ndim>[Nmpi];
+  for (int inode=0; inode<Nmpi; inode++) {
+    mpinode[inode].worksent = new FLOAT[Nmpi];
+    mpinode[inode].workreceived = new FLOAT[Nmpi];
+  }
 
   return;
 }
@@ -148,10 +152,15 @@ void MpiControl<ndim>::AllocateMemory(void)
 template <int ndim>
 void MpiControl<ndim>::DeallocateMemory(void)
 {
+  for (int inode=0; inode<Nmpi; inode++) {
+    delete[] mpinode[inode].worksent;
+    delete[] mpinode[inode].workreceived;
+  }
   delete[] mpinode;
 
   return;
 }
+
 
 
 //=============================================================================
@@ -474,6 +483,17 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
     mpinode[inode].hbox = boxes_buffer[inode];
   }
 
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  // Do an all_gather to receive the new array
+  MPI_Allgather(&mpinode[rank].rbox,1,box_type,&boxes_buffer[0],
+                1,box_type,MPI_COMM_WORLD);
+
+  // Save the information inside the nodes
+  for (inode=0; inode<Nmpi; inode++) {
+    mpinode[inode].rbox = boxes_buffer[inode];
+  }
+
   return;
 }
 
@@ -501,7 +521,7 @@ void MpiControl<ndim>::LoadBalancing
   int okflag;                       // Successful communication flag
   FLOAT rnew;                       // New boundary position for load balancing
   FLOAT boxbuffer[2*ndim*Nmpi];     // Bounding box buffer
-  FLOAT workbuffer[1+ndim];         // Node work information buffer
+  FLOAT workbuffer[1+ndim+Nmpi];    // Node work information buffer
   MPI_Status status;                // MPI status flag
 
   // If running on only one MPI node, return immediately
@@ -515,6 +535,9 @@ void MpiControl<ndim>::LoadBalancing
   // Compute total work contained in domain at present and the weighted 
   // centre of work position.
   mpinode[rank].worktot = 0.0;
+  for (inode=0; inode<Nmpi; inode++) mpinode[rank].worksent[inode] = 0.0;
+  for (inode=0; inode<Nmpi; inode++) mpinode[rank].workreceived[inode] = 0.0;
+
   for (k=0; k<ndim; k++) mpinode[rank].rwork[k] = 0.0;
   for (i=0; i<sph->Nsph; i++) {
     mpinode[rank].worktot += 1.0/(FLOAT) sph->sphintdata[i].nstep;
@@ -522,6 +545,33 @@ void MpiControl<ndim>::LoadBalancing
       mpinode[rank].rwork[k] += sph->sphdata[i].r[k]/(FLOAT) sph->sphintdata[i].nstep;
   }
   for (k=0; k<ndim; k++) mpinode[rank].rwork[k] /= mpinode[rank].worktot;
+
+  for (inode=0; inode<Nmpi; inode++) cout << "CHECKING DOMAIN : " << rank << "   " << inode << "   " << mpinode[inode].domain.boxmin[0] << "    " << mpinode[inode].domain.boxmax[0] << endl;
+
+  // Now find total work transfered to all other nodes if node
+  // boundaries remained unchanged.
+  for (i=0; i<sph->Nsph; i++) {
+    SphParticle<ndim>& part = sph->sphdata[i];
+
+    // Loop over potential domains and see if we need to transfer this particle to them
+    for (inode=0; inode<Nmpi; inode++) {
+      if (rank == 1) cout << "R : " << ParticleInBox(part,mpinode[inode].domain) << "    " << inode << "     " << rank << "    " << part.r[0] << "    " << mpinode[inode].domain.boxmin[0] << "    " << mpinode[inode].domain.boxmax[0] << endl;
+      if (ParticleInBox(part,mpinode[inode].domain)) {
+        if (inode == rank) break;
+        mpinode[rank].worksent[inode] += 1.0/(FLOAT) sph->sphintdata[i].nstep;
+        if (rank == 1) cout << "OVERLAP?? : " << rank << "    " << mpinode[rank].worksent[inode] << endl;
+        // The particle can belong only to one domain, so we can break from this loop
+        break;
+      }
+    }
+  }
+  for (inode=0; inode<Nmpi; inode++) mpinode[inode].workreceived[rank] = mpinode[rank].worksent[k];
+
+
+  cout << "Work sent1 by " << rank << " : ";
+  for (k=0; k<Nmpi; k++) cout <<  mpinode[rank].worksent[k] << "    ";
+  cout << endl;
+
 
   cout << "worktot[" << rank << "] : " << mpinode[rank].worktot << "     Nsph : " << sph->Nsph << endl;
   cout << "rwork : " << mpinode[rank].rwork[0] << endl;
@@ -539,14 +589,22 @@ void MpiControl<ndim>::LoadBalancing
     // Receive all important load balancing information from other nodes
     for (inode=1; inode<Nmpi; inode++) {
       cout << "Root waiting for " << inode << endl;
-      okflag = MPI_Recv(&workbuffer,ndim+1,MPI_DOUBLE,
+      okflag = MPI_Recv(&workbuffer,Nmpi+ndim+1,MPI_DOUBLE,
                         inode,0,MPI_COMM_WORLD,&status);
       mpinode[inode].worktot = workbuffer[0];
       for (k=0; k<ndim; k++) mpinode[inode].rwork[k] = workbuffer[k+1];
+      for (k=0; k<Nmpi; k++) mpinode[inode].worksent[k] = workbuffer[ndim+k+1];
+      for (k=0; k<Nmpi; k++) mpinode[k].workreceived[inode] = workbuffer[ndim+k+1];
       cout << "Work from rank " << inode << " : " << workbuffer[0] << endl;
     }
 
 	MPI_Barrier(MPI_COMM_WORLD);
+
+	for (inode=0; inode<Nmpi; inode++) {
+      cout << "Work sent by " << inode << " : ";
+      for (k=0; k<Nmpi; k++) cout <<  mpinode[inode].worksent[k] << "    ";
+      cout << endl;
+	}
 
     cout << "Done receiving boxes " << endl;
 
@@ -598,15 +656,26 @@ void MpiControl<ndim>::LoadBalancing
       // based on work in each domain and position of 'centre of work'.
       // If work is already balanced, then domain boundaries remain unchanged.
       if (mpitree->tree[c].clevel == balance_level && c2 != 0) {
-        if (mpitree->tree[c+1].worktot > mpitree->tree[c2].worktot)
-          rnew = mpitree->tree[c+1].rwork[k] +
-            2.0*(mpitree->tree[c+1].bbmax[k] - mpitree->tree[c+1].rwork[k])*
-            mpitree->tree[c+1].worktot/mpitree->tree[c].worktot;
-        else
-	      rnew = mpitree->tree[c2].rwork[k] +
-	        2.0*(mpitree->tree[c2].bbmin[k] - mpitree->tree[c2].rwork[k])*
-	        mpitree->tree[c2].worktot/mpitree->tree[c].worktot;
-        mpitree->tree[c+1].bbmax[k] = rnew;
+        //if (mpitree->tree[c+1].worktot > mpitree->tree[c2].worktot)
+        //  rnew = mpitree->tree[c+1].rwork[k] +
+        //    2.0*(mpitree->tree[c+1].bbmax[k] - mpitree->tree[c+1].rwork[k])*
+        //    mpitree->tree[c+1].worktot/mpitree->tree[c].worktot;
+        //else
+	    //  rnew = mpitree->tree[c2].rwork[k] +
+	    //    2.0*(mpitree->tree[c2].bbmin[k] - mpitree->tree[c2].rwork[k])*
+	    //    mpitree->tree[c2].worktot/mpitree->tree[c].worktot;
+
+    	FLOAT dwdx1 = mpitree->tree[c+1].worktot/
+    			(mpitree->tree[c+1].bbmax[k] - mpitree->tree[c+1].rwork[k]);
+    	FLOAT dwdx2 = mpitree->tree[c2].worktot/
+    			(mpitree->tree[c2].bbmax[k] - mpitree->tree[c2].rwork[k]);
+    	int i1 = mpitree->tree[c+1].c2g;
+    	int i2 = mpitree->tree[c2].c2g;
+    	FLOAT dxnew = mpinode[i1].worksent[i2] - mpinode[i2].worksent[i1]/
+    			(dwdx1 + dwdx2);
+    	rnew = mpitree->tree[c+1].bbmax[k] + dxnew;
+
+    	mpitree->tree[c+1].bbmax[k] = rnew;
         mpitree->tree[c2].bbmin[k] = rnew;
         cout << "work : " << mpitree->tree[c+1].worktot << "    " << mpitree->tree[c2].worktot << endl;
         cout << "Child 1 : " << mpitree->tree[c+1].bbmin[k] << "     " << mpitree->tree[c+1].bbmax[k] << endl;
@@ -658,6 +727,7 @@ void MpiControl<ndim>::LoadBalancing
     // Transmit load balancing information to main root node
     workbuffer[0] = mpinode[rank].worktot;
     for (k=0; k<ndim; k++) workbuffer[k+1] = mpinode[rank].rwork[k];
+    for (k=0; k<Nmpi; k++) workbuffer[ndim+k+1] = mpinode[rank].worksent[k];
     okflag = MPI_Send(&workbuffer,ndim+1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
 	MPI_Barrier(MPI_COMM_WORLD);
 
@@ -740,8 +810,9 @@ void MpiControl<ndim>::LoadBalancing
         MPI_Get_count(&status, particle_type, &N_to_receive);
         recvbuffer.resize(N_to_receive);
         if (sph->Nsph+N_to_receive > sph->Nsphmax) {
-          cout << rank << " " << sph->Nsph << " " << N_to_receive << " " << sph->Nsphmax <<endl;
-          MPI_Abort(MPI_COMM_WORLD,2);
+          cout << "Memory problem : " << rank << " " << sph->Nsph << " " << N_to_receive << " " << sph->Nsphmax <<endl;
+          string message = "Not enough memory for transfering particles";
+          ExceptionHandler::getIstance().raise(message);
         }
         MPI_Recv(&recvbuffer[0], N_to_receive, particle_type, inode, tag_bal, MPI_COMM_WORLD, &status);
         send_turn = true;
