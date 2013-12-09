@@ -42,6 +42,10 @@
 using namespace std;
 
 
+static const int tag_srpart = 1;
+static const int tag_league = 2;
+static const int tag_bal = 3;
+
 
 //=============================================================================
 //  Class MpiControl

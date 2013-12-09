@@ -380,7 +380,6 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
     // Now broadcast all bounding boxes to other processes
     MPI_Bcast(boxbuffer,2*ndim*Nmpi,MPI_DOUBLE,0,MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
 
     // Send particles to all other domains
     for (inode=1; inode<Nmpi; inode++) {
@@ -412,7 +411,6 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
     // Receive bounding box data for domain and unpack data
     MPI_Bcast(boxbuffer,2*ndim*Nmpi,MPI_DOUBLE,0,MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
 
     // Unpack all bounding box data
     for (inode=0; inode<Nmpi; inode++) {
@@ -444,9 +442,6 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
   }
   //---------------------------------------------------------------------------
-
-  MPI_Barrier(MPI_COMM_WORLD);
-
 
   return;
 }
@@ -508,9 +503,7 @@ void MpiControl<ndim>::LoadBalancing
   FLOAT boxbuffer[2*ndim*Nmpi];     // Bounding box buffer
   FLOAT workbuffer[1+ndim];         // Node work information buffer
   MPI_Status status;                // MPI status flag
-  //BinaryTree<ndim> *tree = mpitree->tree; // Pointer to tree (for brevity)
 
-//return;
   // If running on only one MPI node, return immediately
   if (Nmpi == 1) return;
 
@@ -542,7 +535,6 @@ void MpiControl<ndim>::LoadBalancing
 
     debug2("[MpiControl::LoadBalancing]");
 
-	MPI_Barrier(MPI_COMM_WORLD);
 
     // Receive all important load balancing information from other nodes
     for (inode=1; inode<Nmpi; inode++) {
@@ -553,6 +545,8 @@ void MpiControl<ndim>::LoadBalancing
       for (k=0; k<ndim; k++) mpinode[inode].rwork[k] = workbuffer[k+1];
       cout << "Work from rank " << inode << " : " << workbuffer[0] << endl;
     }
+
+	MPI_Barrier(MPI_COMM_WORLD);
 
     cout << "Done receiving boxes " << endl;
 
@@ -690,18 +684,89 @@ void MpiControl<ndim>::LoadBalancing
   // Prepare lists of particles that now occupy other processor domains that 
   // need to be transfered
 
+  // First construct the list of nodes that we might be sending particles to
+  std::vector<int> potential_nodes;
+  potential_nodes.reserve(Nmpi);
+  for (int inode=0; inode<Nmpi; inode++) {
+    if (inode == rank) continue;
+    if (BoxesOverlap(mpinode[inode].domain,mpinode[rank].rbox)) {
+      potential_nodes.push_back(inode);
+    }
+  }
 
 
-  // Send particles to all other nodes
+
+  // Now find the particles that need to be transferred - delegate to NeighbourSearch
+  std::vector<std::vector<int> > particles_to_transfer (Nmpi);
+  std::vector<int> all_particles_to_export;
+  BruteForceSearch<ndim> bruteforce;
+  bruteforce.FindParticlesToTransfer(sph, particles_to_transfer, all_particles_to_export, potential_nodes, mpinode);
+
+  // Send and receive particles from/to all other nodes
+  std::vector<SphParticle<ndim> > sendbuffer, recvbuffer;
+  for (int iturn = 0; iturn<my_matches.size(); iturn++) {
+    int inode = my_matches[iturn];
+
+    int N_to_transfer = particles_to_transfer[inode].size();
+    sendbuffer.clear(); sendbuffer.resize(N_to_transfer);
+    recvbuffer.clear();
+
+    // Copy particles into send buffer
+    for (int ipart; ipart < N_to_transfer; ipart++) {
+      sendbuffer[ipart] = sph->sphdata[particles_to_transfer[inode][ipart]];
+    }
+
+    // Do the actual send and receive
+
+    //Decide if we have to send or receive first
+    bool send_turn;
+    if (rank < inode) {
+      send_turn=true;
+    }
+    else {
+      send_turn=false;
+    }
+
+    //Do the actual communication, sending and receiving in the right order
+    for (int i=0; i < 2; i++) {
+      if (send_turn) {
+        MPI_Send(&sendbuffer[0], N_to_transfer, particle_type, inode, tag_bal, MPI_COMM_WORLD);
+        send_turn = false;
+      }
+      else {
+        int N_to_receive;
+        MPI_Status status;
+        MPI_Probe(inode, tag_bal, MPI_COMM_WORLD, &status);
+        MPI_Get_count(&status, particle_type, &N_to_receive);
+        recvbuffer.resize(N_to_receive);
+        if (sph->Nsph+N_to_receive > sph->Nsphmax) {
+          cout << rank << " " << sph->Nsph << " " << N_to_receive << " " << sph->Nsphmax <<endl;
+          MPI_Abort(MPI_COMM_WORLD,2);
+        }
+        MPI_Recv(&recvbuffer[0], N_to_receive, particle_type, inode, tag_bal, MPI_COMM_WORLD, &status);
+        send_turn = true;
+      }
+    }
+
+    // Copy particles from receive buffer to main arrays
+    int running_counter = sph->Nsph;
+    // TODO: check we have enough memory
+    for (int i=0; i< recvbuffer.size(); i++) {
+      sph->sphdata[running_counter++] = recvbuffer[i];
+    }
+    sph->Nsph = running_counter;
+
+  }
 
 
-
-  // Receive particles from all other nodes
+  // Remove transferred particles
+  sph->DeleteParticles(all_particles_to_export.size(), &all_particles_to_export[0]);
 
 
 
 
   return;
+
 }
 
 
@@ -746,7 +811,7 @@ int MpiControl<ndim>::SendReceiveGhosts
   //Ask the neighbour search class to compute the list of particles to export
   //For now, hard-coded the BruteForce class
   BruteForceSearch<ndim> bruteforce;
-  bruteforce.FindParticlesToExport(sph,particles_to_export_per_node,overlapping_nodes,mpinode);
+  bruteforce.FindGhostParticlesToExport(sph,particles_to_export_per_node,overlapping_nodes,mpinode);
 
   //Prepare arrays with number of particles to export per node and displacements
   std::fill(num_particles_export_per_node.begin(),num_particles_export_per_node.end(),0);
@@ -862,7 +927,6 @@ void MpiControl<ndim>::SendParticles
  SphParticle<ndim>* main_array) 
 {
   int i;                            // Particle counter
-  const int tag = 1;
 
   //Ensure there is enough memory in the buffer
   sendbuffer.resize(Nparticles);
@@ -873,7 +937,7 @@ void MpiControl<ndim>::SendParticles
   }
 
   MPI_Send(&sendbuffer[0], Nparticles, particle_type, Node, 
-           tag, MPI_COMM_WORLD);
+          tag_srpart, MPI_COMM_WORLD);
 
   return;
 }
@@ -907,7 +971,7 @@ void MpiControl<ndim>::ReceiveParticles
 
   //Now receive the message
   MPI_Recv(*array, Nparticles, particle_type, Node, 
-           tag, MPI_COMM_WORLD, &status);
+           tag_srpart, MPI_COMM_WORLD, &status);
 
   return;
 }
