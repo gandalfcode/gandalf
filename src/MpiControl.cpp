@@ -84,6 +84,8 @@ MpiControl<ndim>::MpiControl()
   num_particles_to_be_received.resize(Nmpi);
   receive_displs.resize(Nmpi);
 
+  CreateLeagueCalendar();
+
 #ifdef VERIFY_ALL
   if (this->rank == 0)
     printf("MPI working.  Nmpi : %d   rank : %d   hostname : %s\n",
@@ -147,6 +149,127 @@ template <int ndim>
 void MpiControl<ndim>::DeallocateMemory(void)
 {
   delete[] mpinode;
+
+  return;
+}
+
+
+//=============================================================================
+//  MpiControl::CreateLeagueCalendar
+/// Create the calendar for the League. In this analogy with soccer,
+/// each communication between two nodes is like a football match.
+/// Since everybody neads to speak with everybody, this is effectively
+/// like a league. We use the scheduling/Berger algorithm
+/// (http://en.wikipedia.org/wiki/Round-robin_tournament#Scheduling_algorithm,
+/// http://it.wikipedia.org/wiki/Algoritmo_di_Berger) to organize the event.
+//=============================================================================
+template <int ndim>
+void MpiControl<ndim>::CreateLeagueCalendar(void)
+{
+
+  //First check that number of processes is even
+  if (! Nmpi%2) {
+    std::string error = "The number of MPI processes must be even!";
+    ExceptionHandler::getIstance().raise(error);
+  }
+
+  int Nturns = Nmpi-1;
+
+  //Allocate memory for the calendar
+  my_matches.resize(Nturns);
+
+
+  if (rank==0) {
+
+    //Create a vector containing the full calendar
+    //First index is process
+    std::vector<std::vector<int> > calendar(Nmpi);
+    //And second is turn
+    for (int iteam=0; iteam< calendar.size(); iteam++) {
+      std::vector<int>& calendar_team = calendar[iteam];
+      calendar_team.resize(Nturns);
+    }
+
+    // Create pairs table
+    std::vector<std::vector<int> > pairs (Nturns);
+    for (int iturn=0; iturn< pairs.size(); iturn++) {
+      std::vector<int>& pairs_turn = pairs[iturn];
+      pairs_turn.resize(Nmpi);
+      // Fill in the pairs table
+      pairs_turn[0]=Nturns;
+      for (int i=1; i<pairs_turn.size(); i++) {
+        pairs_turn[i] = (i+iturn) % (Nmpi-1);
+      }
+      // Can now fill in the calendar
+      for (int istep =0; istep<Nmpi/2; istep++) {
+        int first_team = pairs_turn[istep];
+        int size = pairs_turn.size()-1;
+        int second_team = pairs_turn[size-istep];
+        calendar[first_team][iturn]=second_team;
+        calendar[second_team][iturn]=first_team;
+      }
+    }
+
+
+#if defined VERIFY_ALL
+    //Validate the calendar
+    std::vector<bool> other_teams(Nmpi-1);
+
+    for (int iteam=0; iteam<calendar.size();iteam++) {
+
+      std::fill(other_teams.begin(), other_teams.end(), false);
+
+      for (int iturn=0; iturn<calendar[iteam].size(); iturn++) {
+        int opponent = calendar[iteam][iturn];
+
+        //1st check: verify the matches are correctly reported in both locations
+        if (calendar[opponent][iturn] != iteam) {
+          string msg = "Error 1 in validating the calendar!";
+          ExceptionHandler::getIstance().raise(msg);
+        }
+
+        //2nd check: verify each team is played against only once
+        int index_other_teams = opponent>=iteam ? opponent-1 : opponent;
+
+        if (other_teams[index_other_teams]) {
+          string msg = "Error 2 in validating the calendar!";
+          ExceptionHandler::getIstance().raise(msg);
+        }
+        other_teams[index_other_teams] = true;
+      }
+
+      for (int jteam; jteam<other_teams.size(); jteam++) {
+        if (!other_teams[jteam]) {
+          string msg = "Error 3 in validating the calendar!";
+          ExceptionHandler::getIstance().raise(msg);
+        }
+      }
+    }
+
+    cout << "Calendar validated!" << endl;
+
+#endif
+
+
+    //Copy our calendar to the vector
+    for (int iturn=0; iturn<Nturns; iturn++) {
+      my_matches[iturn] = calendar[0][iturn];
+    }
+
+
+    //Now transmit the calendar to the other nodes
+    for (int inode=1; inode < Nmpi; inode++) {
+      MPI_Send(&calendar[inode][0], Nturns, MPI_INT, inode, tag_league, MPI_COMM_WORLD);
+    }
+
+  }
+
+  else {
+    MPI_Status status;
+    MPI_Recv(&my_matches[0], Nturns, MPI_INT, 0, tag_league, MPI_COMM_WORLD, &status);
+
+  }
+
 
   return;
 }

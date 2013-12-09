@@ -76,6 +76,10 @@ class MpiControl
 
   SphNeighbourSearch<ndim>* neibsearch;    ///< Neighbour search class
 
+  void CreateLeagueCalendar();
+  std::vector<int> my_matches; ///< List of the matches of this node. For each turn, gives the node we will play with
+
+
  public:
 
   // Constructor and destructor
