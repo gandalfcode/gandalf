@@ -529,12 +529,12 @@ void BinaryTree<ndim>::LoadParticlesToTree
             tree[cc+1].bbmax[kk] = tree[cc].bbmax[kk];
             tree[c2].bbmin[kk] = tree[cc].bbmin[kk];
             tree[c2].bbmax[kk] = tree[cc].bbmax[kk];
-	  }
+          }
           tree[cc+1].bbmax[k] = 
             0.5*(r[ndim*tree[c2].ifirst + k] + r[ndim*j + k]);
           tree[tree[cc].c2].bbmin[k] = 
             0.5*(r[ndim*tree[c2].ifirst + k] + r[ndim*j + k]);
-          cout << "SPLITTING TREE : " << tree[cc+1].bbmax[k] << endl;
+          //cout << "SPLITTING TREE : " << tree[cc+1].bbmax[k] << endl;
         }
         tree[pc[j]].ilast = j;
       }

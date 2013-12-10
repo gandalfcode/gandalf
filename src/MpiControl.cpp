@@ -788,6 +788,7 @@ void MpiControl<ndim>::LoadBalancing
     int inode = my_matches[iturn];
 
     int N_to_transfer = particles_to_transfer[inode].size();
+    cout << "Transfer!!  Rank : " << rank << "    N_to_transfer : " << N_to_transfer << "    dest : " << inode << endl;
     sendbuffer.clear(); sendbuffer.resize(N_to_transfer);
     sendbufferint.clear(); sendbuffer.resize(N_to_transfer);
     recvbuffer.clear();
@@ -814,9 +815,11 @@ void MpiControl<ndim>::LoadBalancing
     //Do the actual communication, sending and receiving in the right order
     for (int i=0; i < 2; i++) {
       if (send_turn) {
+        cout << "Sending " << N_to_transfer << " from " << rank << " to " << inode << endl;
         MPI_Send(&sendbuffer[0], N_to_transfer, particle_type, inode, tag_bal, MPI_COMM_WORLD);
         MPI_Send(&sendbufferint[0], N_to_transfer, partint_type, inode, tag_bal, MPI_COMM_WORLD);
         send_turn = false;
+        cout << "Sent " << N_to_transfer << " from " << rank << " to " << inode << endl;
       }
       else {
         int N_to_receive;
@@ -824,6 +827,7 @@ void MpiControl<ndim>::LoadBalancing
         MPI_Probe(inode, tag_bal, MPI_COMM_WORLD, &status);
         MPI_Get_count(&status, particle_type, &N_to_receive);
         recvbuffer.resize(N_to_receive); recvbufferint.resize(N_to_receive);
+        cout << "Rank " << rank << " receiving " << N_to_receive << " from " << inode << endl;
         if (sph->Nsph+N_to_receive > sph->Nsphmax) {
           cout << "Memory problem : " << rank << " " << sph->Nsph << " " << N_to_receive << " " << sph->Nsphmax <<endl;
           string message = "Not enough memory for transfering particles";
@@ -832,6 +836,7 @@ void MpiControl<ndim>::LoadBalancing
         MPI_Recv(&recvbuffer[0], N_to_receive, particle_type, inode, tag_bal, MPI_COMM_WORLD, &status);
         MPI_Recv(&recvbufferint[0], N_to_receive, partint_type, inode, tag_bal, MPI_COMM_WORLD, &status);
         send_turn = true;
+        cout << "Rank " << rank << " received " << N_to_receive << " from " << inode << endl;
       }
     }
 
