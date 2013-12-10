@@ -790,12 +790,12 @@ void MpiControl<ndim>::LoadBalancing
     int N_to_transfer = particles_to_transfer[inode].size();
     cout << "Transfer!!  Rank : " << rank << "    N_to_transfer : " << N_to_transfer << "    dest : " << inode << endl;
     sendbuffer.clear(); sendbuffer.resize(N_to_transfer);
-    sendbufferint.clear(); sendbuffer.resize(N_to_transfer);
+    sendbufferint.clear(); sendbufferint.resize(N_to_transfer);
     recvbuffer.clear();
     recvbufferint.clear();
 
     // Copy particles into send buffer
-    for (int ipart; ipart < N_to_transfer; ipart++) {
+    for (int ipart=0; ipart < N_to_transfer; ipart++) {
       int index = particles_to_transfer[inode][ipart];
       sendbuffer[ipart] = sph->sphdata[index];
       sendbufferint[ipart] = sph->sphintdata[index];
@@ -846,6 +846,7 @@ void MpiControl<ndim>::LoadBalancing
     for (int i=0; i< recvbuffer.size(); i++) {
       sph->sphdata[running_counter] = recvbuffer[i];
       sph->sphintdata[running_counter] = recvbufferint[i];
+      sph->sphintdata[running_counter].part = &sph->sphdata[running_counter];
       running_counter++;
     }
     sph->Nsph = running_counter;
