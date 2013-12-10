@@ -63,6 +63,7 @@ class MpiControl
   std::vector<SphParticle<ndim> > sendbuffer; ///< Used by the SendParticles routine
 
   MPI_Datatype particle_type;        ///< Datatype for the particles
+  MPI_Datatype partint_type;         ///< Datatype for the SphIntParticle structure
   MPI_Datatype box_type;             ///< Datatype for the box
   MPI_Datatype diagnostics_type;     ///< Datatype for diagnostic info
 

@@ -65,6 +65,10 @@ MpiControl<ndim>::MpiControl()
   particle_type = SphParticle<ndim>::CreateMpiDataType();
   MPI_Type_commit(&particle_type);
 
+  // Create and commit the particle int datatype
+  partint_type = SphIntParticle<ndim>::CreateMpiDataType();
+  MPI_Type_commit(&partint_type);
+
   // Create diagnostics data structure in database
   diagnostics_type = Diagnostics<ndim>::CreateMpiDataType();
   MPI_Type_commit(&diagnostics_type);
@@ -121,6 +125,7 @@ template <int ndim>
 MpiControl<ndim>::~MpiControl()
 {
   MPI_Type_free(&particle_type);
+  MPI_Type_free(&partint_type);
   MPI_Type_free(&box_type);
   MPI_Type_free(&diagnostics_type);
 }
@@ -778,16 +783,21 @@ void MpiControl<ndim>::LoadBalancing
 
   // Send and receive particles from/to all other nodes
   std::vector<SphParticle<ndim> > sendbuffer, recvbuffer;
+  std::vector<SphIntParticle<ndim> > sendbufferint, recvbufferint;
   for (int iturn = 0; iturn<my_matches.size(); iturn++) {
     int inode = my_matches[iturn];
 
     int N_to_transfer = particles_to_transfer[inode].size();
     sendbuffer.clear(); sendbuffer.resize(N_to_transfer);
+    sendbufferint.clear(); sendbuffer.resize(N_to_transfer);
     recvbuffer.clear();
+    recvbufferint.clear();
 
     // Copy particles into send buffer
     for (int ipart; ipart < N_to_transfer; ipart++) {
-      sendbuffer[ipart] = sph->sphdata[particles_to_transfer[inode][ipart]];
+      int index = particles_to_transfer[inode][ipart];
+      sendbuffer[ipart] = sph->sphdata[index];
+      sendbufferint[ipart] = sph->sphintdata[index];
     }
 
     // Do the actual send and receive
@@ -805,6 +815,7 @@ void MpiControl<ndim>::LoadBalancing
     for (int i=0; i < 2; i++) {
       if (send_turn) {
         MPI_Send(&sendbuffer[0], N_to_transfer, particle_type, inode, tag_bal, MPI_COMM_WORLD);
+        MPI_Send(&sendbufferint[0], N_to_transfer, partint_type, inode, tag_bal, MPI_COMM_WORLD);
         send_turn = false;
       }
       else {
@@ -812,13 +823,14 @@ void MpiControl<ndim>::LoadBalancing
         MPI_Status status;
         MPI_Probe(inode, tag_bal, MPI_COMM_WORLD, &status);
         MPI_Get_count(&status, particle_type, &N_to_receive);
-        recvbuffer.resize(N_to_receive);
+        recvbuffer.resize(N_to_receive); recvbufferint.resize(N_to_receive);
         if (sph->Nsph+N_to_receive > sph->Nsphmax) {
           cout << "Memory problem : " << rank << " " << sph->Nsph << " " << N_to_receive << " " << sph->Nsphmax <<endl;
           string message = "Not enough memory for transfering particles";
           ExceptionHandler::getIstance().raise(message);
         }
         MPI_Recv(&recvbuffer[0], N_to_receive, particle_type, inode, tag_bal, MPI_COMM_WORLD, &status);
+        MPI_Recv(&recvbufferint[0], N_to_receive, partint_type, inode, tag_bal, MPI_COMM_WORLD, &status);
         send_turn = true;
       }
     }
@@ -827,7 +839,9 @@ void MpiControl<ndim>::LoadBalancing
     int running_counter = sph->Nsph;
     // TODO: check we have enough memory
     for (int i=0; i< recvbuffer.size(); i++) {
-      sph->sphdata[running_counter++] = recvbuffer[i];
+      sph->sphdata[running_counter] = recvbuffer[i];
+      sph->sphintdata[running_counter] = recvbufferint[i];
+      running_counter++;
     }
     sph->Nsph = running_counter;
 
