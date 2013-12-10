@@ -376,6 +376,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
         mpitree->subtrees[inode]->box.boxmin[k];
       for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] =
         mpitree->subtrees[inode]->box.boxmax[k];
+      cout << "MPIDOMAIN : " << mpinode[inode].domain.boxmin[0] << "     " << mpinode[inode].domain.boxmax[0] << endl;
     }
 
 
@@ -447,7 +448,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
     for (i=0; i<sph->Nsph; i++) sph->sphdata[i] = partbuffer[i];
     delete[] partbuffer;
-    cout << "Dellocated partbuffer" << endl;
+    cout << "Deallocated partbuffer" << endl;
 
   }
   //---------------------------------------------------------------------------
@@ -555,7 +556,7 @@ void MpiControl<ndim>::LoadBalancing
 
     // Loop over potential domains and see if we need to transfer this particle to them
     for (inode=0; inode<Nmpi; inode++) {
-      if (rank == 1) cout << "R : " << ParticleInBox(part,mpinode[inode].domain) << "    " << inode << "     " << rank << "    " << part.r[0] << "    " << mpinode[inode].domain.boxmin[0] << "    " << mpinode[inode].domain.boxmax[0] << endl;
+      //if (rank == 1) cout << "R : " << ParticleInBox(part,mpinode[inode].domain) << "    " << inode << "     " << rank << "    " << part.r[0] << "    " << mpinode[inode].domain.boxmin[0] << "    " << mpinode[inode].domain.boxmax[0] << endl;
       if (ParticleInBox(part,mpinode[inode].domain)) {
         if (inode == rank) break;
         mpinode[rank].worksent[inode] += 1.0/(FLOAT) sph->sphintdata[i].nstep;
@@ -664,23 +665,26 @@ void MpiControl<ndim>::LoadBalancing
 	    //  rnew = mpitree->tree[c2].rwork[k] +
 	    //    2.0*(mpitree->tree[c2].bbmin[k] - mpitree->tree[c2].rwork[k])*
 	    //    mpitree->tree[c2].worktot/mpitree->tree[c].worktot;
-
-    	FLOAT dwdx1 = mpitree->tree[c+1].worktot/
-    			(mpitree->tree[c+1].bbmax[k] - mpitree->tree[c+1].rwork[k]);
-    	FLOAT dwdx2 = mpitree->tree[c2].worktot/
-    			(mpitree->tree[c2].bbmax[k] - mpitree->tree[c2].rwork[k]);
     	int i1 = mpitree->tree[c+1].c2g;
     	int i2 = mpitree->tree[c2].c2g;
-    	FLOAT dxnew = mpinode[i1].worksent[i2] - mpinode[i2].worksent[i1]/
+    	FLOAT dwdx1 = 0.5*mpitree->tree[c+1].worktot/
+    			(mpitree->tree[c+1].bbmax[k] - mpitree->tree[c+1].rwork[k]);
+    	FLOAT dwdx2 = 0.5*mpitree->tree[c2].worktot/
+    			(mpitree->tree[c2].rwork[k] - mpitree->tree[c2].bbmin[k]);
+    	FLOAT dxnew = (mpinode[i1].worksent[i2] + mpinode[i2].worksent[i1])/
     			(dwdx1 + dwdx2);
     	rnew = mpitree->tree[c+1].bbmax[k] + dxnew;
+    	cout << "dwdx : " << dwdx1 << "    " << dwdx2 << "      dxnew : " << dxnew << endl;
+    	cout << "worksent : " << mpinode[i1].worksent[i2] << "    " << mpinode[i2].worksent[i1] << endl;
+    	cout << "rold : " << mpitree->tree[c+1].bbmax[k] << "     rnew : " << rnew << endl;
 
     	mpitree->tree[c+1].bbmax[k] = rnew;
         mpitree->tree[c2].bbmin[k] = rnew;
         cout << "work : " << mpitree->tree[c+1].worktot << "    " << mpitree->tree[c2].worktot << endl;
-        cout << "Child 1 : " << mpitree->tree[c+1].bbmin[k] << "     " << mpitree->tree[c+1].bbmax[k] << endl;
-        cout << "Child 2 : " << mpitree->tree[c2].bbmin[k] << "     " << mpitree->tree[c2].bbmax[k] << endl;
-        cout << "rnew : " << rnew << endl;
+        cout << "Child 1 domain : " << mpitree->tree[c+1].bbmin[k] << "     " << mpitree->tree[c+1].bbmax[k] << endl;
+        cout << "Child 1 rbox   : " << mpinode[i1].rbox.boxmin[k] << "     " << mpinode[i1].rbox.boxmax[k] << endl;
+        cout << "Child 2 domain : " << mpitree->tree[c2].bbmin[k] << "     " << mpitree->tree[c2].bbmax[k] << endl;
+        cout << "Child 2 rbox   : " << mpinode[i2].rbox.boxmin[k] << "     " << mpinode[i2].rbox.boxmax[k] << endl;
       }
 
       // For leaf cells, set new MPI node box sizes 
