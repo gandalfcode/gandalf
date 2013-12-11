@@ -32,7 +32,7 @@
 #include "MpiNode.h"
 #include "Sph.h"
 #include "Nbody.h"
-#include "SphNeighbourSearch.h"
+#include "MpiTree.h"
 #include "SphParticle.h"
 #include "DomainBox.h"
 #include "Diagnostics.h"
@@ -95,7 +95,7 @@ class MpiControl
 
   // Other functions
   //---------------------------------------------------------------------------
-  void AllocateMemory(void);
+  void AllocateMemory(int);
   void DeallocateMemory(void);
   void SetNeibSearch(SphNeighbourSearch<ndim>* _neibsearch) {neibsearch=_neibsearch;}
 
@@ -117,7 +117,7 @@ class MpiControl
 
   char hostname[MPI_MAX_PROCESSOR_NAME];
   DomainBox<ndim> mpibox;           ///< ..
-  BinaryTree<ndim> *mpitree;        ///< Main MPI load balancing tree
+  MpiTree<ndim> *mpitree;           ///< Main MPI load balancing tree
   MpiNode<ndim> *mpinode;           ///< Data for all MPI nodes
 
 };

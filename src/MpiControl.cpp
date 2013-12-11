@@ -38,6 +38,7 @@
 #include "Exception.h"
 #include "InlineFuncs.h"
 #include "MpiControl.h"
+#include "MpiTree.h"
 using namespace std;
 
 
@@ -137,10 +138,12 @@ MpiControl<ndim>::~MpiControl()
 /// Allocate all memory for MPI control class.
 //=============================================================================
 template <int ndim>
-void MpiControl<ndim>::AllocateMemory(void)
+void MpiControl<ndim>::AllocateMemory(int _Ntot)
 {
   mpinode = new MpiNode<ndim>[Nmpi];
   for (int inode=0; inode<Nmpi; inode++) {
+	mpinode[inode].Ntotmax = (2*_Ntot)/Nmpi;
+	mpinode[inode].ids = new int[mpinode[inode].Ntotmax];
     mpinode[inode].worksent = new FLOAT[Nmpi];
     mpinode[inode].workreceived = new FLOAT[Nmpi];
   }
@@ -324,10 +327,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
     debug2("[MpiControl::CreateInitialDomainDecomposition]");
 
     // Create MPI binary tree for organising domain decomposition
-    mpitree = new BinaryTree<ndim>(16,0.1,0.0,"geometric","monopole",1,Nmpi);
-
-    // Create all other MPI node objects
-    AllocateMemory();
+    mpitree = new MpiTree<ndim>(Nmpi);
 
     // Create binary tree from all SPH particles
     // Set number of tree members to total number of SPH particles (inc. ghosts)
@@ -335,6 +335,10 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
     mpitree->Ntot = sph->Nsph;
     mpitree->Ntotmax = max(mpitree->Ntot,mpitree->Ntotmax);
     mpitree->gtot = 0;
+
+    // Create all other MPI node objects
+    AllocateMemory(mpitree->Ntotmax);
+
 
     for (i=0; i<sph->Nsph; i++)
       for (k=0; k<ndim; k++) sph->rsph[ndim*i + k] = sph->sphdata[i].r[k];
@@ -367,7 +371,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
     mpitree->AllocateTreeMemory();
 
     // Create tree data structure including linked lists and cell pointers
-    mpitree->CreateTreeStructure();
+    mpitree->CreateTreeStructure(mpinode);
 
     // Find ordered list of ptcl positions ready for adding particles to tree
     mpitree->OrderParticlesByCartCoord(sph->sphdata);
@@ -377,10 +381,10 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
     // Create bounding boxes containing particles in each sub-tree
     for (inode=0; inode<Nmpi; inode++) {
-      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] =
-        mpitree->subtrees[inode]->box.boxmin[k];
-      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] =
-        mpitree->subtrees[inode]->box.boxmax[k];
+      //for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] =
+      //  mpitree->subtrees[inode]->box.boxmin[k];
+      //for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] =
+      //  mpitree->subtrees[inode]->box.boxmax[k];
       cout << "MPIDOMAIN : " << mpinode[inode].domain.boxmin[0] << "     " << mpinode[inode].domain.boxmax[0] << endl;
     }
 
@@ -398,18 +402,18 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
     // Send particles to all other domains
     for (inode=1; inode<Nmpi; inode++) {
-      SendParticles(inode, mpitree->subtrees[inode]->Nsph,
-                    mpitree->subtrees[inode]->ids, sph->sphdata);
-      cout << "Sent " << mpitree->subtrees[inode]->Nsph
+      SendParticles(inode, mpinode[inode].Ntot,
+                    mpinode[inode].ids, sph->sphdata);
+      cout << "Sent " << mpinode[inode].Nsph
            << " particles to node " << inode << endl;
     }
 
     cout << "Sent all particles to other processes" << endl;
 
     // Delete all other particles from local domain
-    sph->Nsph = mpitree->subtrees[0]->Nsph;
+    sph->Nsph = mpinode[0].Nsph;
     partbuffer = new SphParticle<ndim>[sph->Nsph];
-    for (i=0; i<sph->Nsph; i++) partbuffer[i] = sph->sphdata[mpitree->subtrees[0]->ids[i]];
+    for (i=0; i<sph->Nsph; i++) partbuffer[i] = sph->sphdata[mpinode[0].ids[i]];
     for (i=0; i<sph->Nsph; i++) sph->sphdata[i] = partbuffer[i];
     delete[] partbuffer;
     cout << "Deleted all other particles from root node" << endl;
@@ -422,7 +426,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
   else {
 
     // Create MPI node objects
-    AllocateMemory();
+    AllocateMemory(sph->Nsph);
 
     // Receive bounding box data for domain and unpack data
     MPI_Bcast(boxbuffer,2*ndim*Nmpi,MPI_DOUBLE,0,MPI_COMM_WORLD);

@@ -63,6 +63,8 @@ class MpiNode
   int ifirst;                       ///< i.d. of first ghost from node
   int ilast;                        ///< i.d. of last ghost from node
   int Nsph;                         ///< No. of SPH particles on node
+  int Ntot;
+  int Ntotmax;
   int Nghost;                       ///< No. of ghost particles originally
                                     ///< from node exported to current node
 
@@ -76,6 +78,7 @@ class MpiNode
   Box<ndim> rbox;                   ///< ..
   Box<ndim> hbox;                   ///< ..
 
+  int *ids;                         ///< List of particles in tree
   BinarySubTree<ndim> *nodetree;    ///< Pointer to current node sub-tree
 
 };

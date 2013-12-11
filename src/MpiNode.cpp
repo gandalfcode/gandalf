@@ -47,6 +47,8 @@ MpiNode<ndim>::MpiNode()
   ifirst = -1;
   ilast = -1;
   Nsph = 0;
+  Ntot = 0;
+  Ntotmax = 0;
   Nghost = 0;
   hmax = 0.0;
   worktot = 0.0;
