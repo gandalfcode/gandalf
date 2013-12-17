@@ -23,7 +23,7 @@ import __main__
 import atexit
 import time
 import types
-from multiprocessing import Manager, Queue
+from multiprocessing import Manager, Queue, Event
 from plotting import PlottingProcess
 from gandalf.analysis.SimBuffer import SimBuffer, BufferException
 
@@ -48,6 +48,7 @@ globallimits   : Dict that for each quantity gives the limits
     commands = manager.list()
     completedqueue = Queue()
     globallimits = manager.dict()
+    free = Event()
 
 import commandsource as Commands
 from data_fetcher import CreateUserQuantity, CreateTimeData
@@ -722,7 +723,7 @@ def cleanup():
 #------------------------------------------------------------------------------
 def init():
     global plottingprocess
-    plottingprocess = PlottingProcess(Singletons.queue, Singletons.commands, Singletons.completedqueue, Singletons.globallimits)
+    plottingprocess = PlottingProcess(Singletons.queue, Singletons.commands, Singletons.completedqueue, Singletons.globallimits, Singletons.free)
     plottingprocess.start()
     CreateUserQuantity('r','sqrt(x^2+y^2+z^2)',scaling_factor='r', label='r')
     CreateUserQuantity('R','sqrt(x^2+y^2)',scaling_factor='r', label='R')

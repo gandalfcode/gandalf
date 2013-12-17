@@ -38,7 +38,7 @@ class PlottingProcess (Process):
     '''
 
     #--------------------------------------------------------------------------
-    def __init__(self, queue, commands, completedqueue, globallimits):
+    def __init__(self, queue, commands, completedqueue, globallimits, free):
         Process.__init__(self)
         self.queue = queue #queue for receiving commands and data
         self.commands = commands #list of commands to execute
@@ -48,10 +48,12 @@ class PlottingProcess (Process):
         self.globallimits = globallimits #dictionary that associate to each quantity the global limits
         self.axesimages = {} #dictionary that for each axis associate the corresponding image
         self.lastid = 0 #id of the last command received
+        self.free = free #event variable that says if we are free
 
 
     #--------------------------------------------------------------------------
-    def run(self):      
+    def run(self):
+        self.free.clear()
         import matplotlib.pyplot as plt
         import warnings
         warnings.filterwarnings("ignore", "matplotlib is currently using a non-GUI backend, so cannot show the figure")
@@ -60,6 +62,8 @@ class PlottingProcess (Process):
         
         # Main loop
         while 1:
+            
+            self.free.clear()
             
             if self.ppid != os.getppid():
                 break
@@ -78,7 +82,10 @@ class PlottingProcess (Process):
                 pass
             
             if len(jobs) == 0:
+                self.free.set()
                 continue
+            else:
+                self.free.clear()
                         
             self.remove_closed_figures()
             
