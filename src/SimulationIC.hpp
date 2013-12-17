@@ -1386,7 +1386,7 @@ void Simulation<ndim>::TurbulentCore(void)
 
 
 #else
-  string message = "FFTW turbulence flag not set"
+  string message = "FFTW turbulence flag not set";
   ExceptionHandler::getIstance().raise(message);
 #endif
 
