@@ -34,6 +34,9 @@
 #include "InlineFuncs.h"
 #include "Debug.h"
 #include "Ghosts.h"
+#if defined(FFTW_TURBULENCE)
+#include "fftw3.h"
+#endif
 using namespace std;
 
 
@@ -79,6 +82,8 @@ void Simulation<ndim>::GenerateIC(void)
     SoundWave();
   else if (simparams->stringparams["ic"] == "sphere")
     UniformSphere();
+  else if (simparams->stringparams["ic"] == "turbcore")
+    TurbulentCore();
   else if (simparams->stringparams["ic"] == "triple")
     TripleStar();
   else if (simparams->stringparams["ic"] == "python")
@@ -1186,6 +1191,222 @@ void Simulation<ndim>::BossBodenheimer(void)
   }
 
   initial_h_provided = true;
+
+  delete[] v;
+  delete[] r;
+
+  return;
+}
+
+
+
+//=============================================================================
+//  Simulation::TurbulentCore
+/// Set-up Boss-Bodenheimer (1979) initial conditions for collapse of a 
+/// rotating uniform sphere with an imposed m=2 azimuthal density perturbation.
+//=============================================================================
+template <int ndim>
+void Simulation<ndim>::TurbulentCore(void)
+{
+  int i;                            // Particle counter
+  int j;                            // ..
+  int k;                            // Dimension counter
+  int kk;                           // ..
+  int p;                            // ..
+  int Nsphere;                      // Actual number of particles in sphere
+  FLOAT dx[3];                      // ..
+  FLOAT dxgrid;                     // ..
+  FLOAT gpecloud;                   // ..
+  FLOAT keturb;                     // ..
+  FLOAT mp;                         // Mass of one particle
+  FLOAT rcentre[ndim];              // Position of sphere centre
+  FLOAT rmax[ndim];                 // ..
+  FLOAT rmin[ndim];                 // ..
+  FLOAT rho;                        // Fluid density
+  FLOAT vint[8];                    // ..
+  FLOAT xmin;                       // ..
+  FLOAT *r;                         // Positions of all particles
+  FLOAT *v;                         // Velocities of all particles
+  DOUBLE *vfield;                   // ..
+
+  // Create local copies of initial conditions parameters
+  int field_type = simparams->intparams["field_type"];
+  int gridsize = simparams->intparams["gridsize"];
+  int Npart = simparams->intparams["Nsph"];
+  FLOAT alpha_turb = simparams->floatparams["alpha_turb"];
+  FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
+  FLOAT mcloud = simparams->floatparams["mcloud"];
+  FLOAT mu_bar = simparams->floatparams["mu_bar"];
+  FLOAT power_turb = simparams->floatparams["power_turb"];
+  FLOAT radius = simparams->floatparams["radius"];
+  FLOAT temp0 = simparams->floatparams["temp0"];
+  string particle_dist = simparams->stringparams["particle_distribution"];
+
+  debug2("[Simulation::TurbulentCore]");
+
+  // Convert any parameters to code units
+  mcloud /= simunits.m.outscale;
+  radius /= simunits.r.outscale;
+  temp0 /= simunits.temp.outscale;
+
+  // Calculate gravitational potential energy of uniform cloud
+  gpecloud = 0.6*mcloud*mcloud/radius;
+
+  r = new FLOAT[ndim*Npart];
+  v = new FLOAT[ndim*Npart];
+
+  // Add a sphere of random particles with origin 'rcentre' and radius 'radius'
+  for (k=0; k<ndim; k++) rcentre[k] = (FLOAT) 0.0;
+  
+  // Create the sphere depending on the choice of initial particle distribution
+  if (particle_dist == "random")
+    AddRandomSphere(Npart,r,rcentre,radius);
+  else if (particle_dist == "cubic_lattice" || 
+	   particle_dist == "hexagonal_lattice") {
+    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    if (Nsphere != Npart) 
+      cout << "Warning! Unable to converge to required " 
+	   << "no. of ptcls due to lattice symmetry" << endl;
+    Npart = Nsphere;
+  }
+  else {
+    string message = "Invalid particle distribution option";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Allocate local and main particle memory
+  sph->Nsph = Npart;
+  AllocateParticleMemory();
+  mp = mcloud / (FLOAT) Npart;
+  rho = 3.0*mcloud / (4.0*pi*pow(radius,3));
+
+
+  // Record particle properties in main memory
+  for (i=0; i<Npart; i++) {
+    for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r[ndim*i + k];
+    for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = v[ndim*i + k];
+    sph->sphdata[i].m = mp;
+    sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rho,invndim);
+    sph->sphdata[i].u = temp0/gammaone/mu_bar;
+    //if (sph->gas_eos == "isothermal" || sph->gas_eos == "barotropic")
+    //  sph->sphdata[i].u = temp0/gammaone/mu_bar;
+    //else
+    //  sph->sphdata[i].u = press/rho/gammaone;
+  }
+
+  initial_h_provided = true;
+
+
+  // Generate turbulent velocity field for given power spectrum slope
+#if defined(FFTW_TURBULENCE)
+  vfield = new DOUBLE[ndim*gridsize*gridsize*gridsize];
+  sph->SphBoundingBox(rmax,rmin,sph->Nsph);
+  xmin = 9.9e20;
+  dxgrid = 0.0;
+  for (k=0; k<ndim; k++) {
+    dxgrid = max(dxgrid,(rmax[k] - rmin[k]/(FLOAT) (gridsize - 1)));
+    xmin = min(xmin,rmin[k]);
+  }
+
+  cout << "xmin : " << xmin << "     " << dxgrid << "    gridsize : " << gridsize << endl;
+
+  GenerateTurbulentVelocityField(field_type,gridsize,power_turb,vfield);
+
+  // Now interpolate velocity field onto particle positions
+  for (p=0; p<sph->Nsph; p++) {
+    for (kk=0; kk<ndim; kk++) dx[kk] = (sph->sphdata[p].r[kk] - xmin)/dxgrid;
+    //cout << "dx1  : " << dx[0] << "     " << dx[1] << "    " << dx[2] << endl;
+    i = (int) dx[0];
+    j = (int) dx[1];
+    k = (int) dx[2];
+
+    if (i > gridsize || j > gridsize || k > gridsize) {
+      cout << "Grid too big!! : " << i << "    " << j << "    " << k 
+	   << "   " << gridsize << endl;
+      exit(0);
+    }
+
+    for (kk=0; kk<ndim; kk++) dx[kk] -= (int) dx[kk];
+
+    // Interpolate to get more accurate velocities
+    if (ndim == 3) {
+      vint[0] = (1.0 - dx[0])*(1.0 - dx[1])*(1.0 - dx[2]);
+      vint[1] = (1.0 - dx[0])*(1.0 - dx[1])*(dx[2]);
+      vint[2] = (1.0 - dx[0])*dx[1]*(1.0 - dx[2]);
+      vint[3] = (1.0 - dx[0])*dx[1]*dx[2];
+      vint[4] = dx[0]*(1.0 - dx[1])*(1.0 - dx[2]);
+      vint[5] = dx[0]*(1.0 - dx[1])*dx[2];
+      vint[6] = dx[0]*dx[1]*(1.0 - dx[2]);
+      vint[7] = dx[0]*dx[1]*dx[2];
+
+      v[ndim*p] = 
+	vint[0]*vfield[3*i + 3*gridsize*j + 3*gridsize*gridsize*k] + 
+	vint[1]*vfield[3*i + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
+	vint[2]*vfield[3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
+	vint[3]*vfield[3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)] + 
+	vint[4]*vfield[3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*k] + 
+	vint[5]*vfield[3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
+	vint[6]*vfield[3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
+	vint[7]*vfield[3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)];
+
+      v[ndim*p+1] = 
+	vint[0]*vfield[1 + 3*i + 3*gridsize*j + 3*gridsize*gridsize*k] + 
+	vint[1]*vfield[1 + 3*i + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
+	vint[2]*vfield[1 + 3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
+	vint[3]*vfield[1 + 3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)] + 
+	vint[4]*vfield[1 + 3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*k] + 
+	vint[5]*vfield[1 + 3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
+	vint[6]*vfield[1 + 3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
+	vint[7]*vfield[1 + 3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)];
+
+      v[ndim*p+2] = 
+	vint[0]*vfield[2 + 3*i + 3*gridsize*j + 3*gridsize*gridsize*k] + 
+	vint[1]*vfield[2 + 3*i + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
+	vint[2]*vfield[2 + 3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
+	vint[3]*vfield[2 + 3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)] + 
+	vint[4]*vfield[2 + 3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*k] + 
+	vint[5]*vfield[2 + 3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
+	vint[6]*vfield[2 + 3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
+	vint[7]*vfield[2 + 3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)];
+
+      for (kk=0; kk<ndim; kk++) sph->sphdata[p].v[kk] = v[ndim*p + kk];
+      //cout << "ijk : " << i << "   " << j << "    " << k << endl;
+      //cout << "dx2  : " << dx[0] << "     " << dx[1] << "    " << dx[2] << endl;
+      //cout << "Part position : " << p << "    " << sph->sphdata[p].r[0] << "    " 
+      //	   << sph->sphdata[p].r[1] << "   " << sph->sphdata[p].r[2] << endl;
+      ///cout << "Part velocity : " << p << "    " << sph->sphdata[p].v[0] << "    " 
+	///  << sph->sphdata[p].v[1] << "   " << sph->sphdata[p].v[2] << endl;
+
+    }
+  }
+
+  cout << "xmin : " << xmin << "     " << dxgrid << "    gridsize : " << gridsize << endl;
+  cout << "rmin : " << rmin[0] << "    " << rmin[1] << "    " << rmin[2] << endl;
+  cout << "rmax : " << rmax[0] << "    " << rmax[1] << "    " << rmax[2] << endl;
+
+
+#else
+  string message = "FFTW turbulence flag not set"
+  ExceptionHandler::getIstance().raise(message);
+#endif
+
+
+  // Calculate total kinetic energy of turbulent velocity field
+  keturb = 0.0;
+  for (i=0; i<sph->Nsph; i++) {
+    keturb += 
+      sph->sphdata[i].m*DotProduct(sph->sphdata[i].v,sph->sphdata[i].v,ndim);
+  }
+  keturb *= 0.5;
+
+  FLOAT vfactor = sqrt(alpha_turb*gpecloud/keturb);
+  cout << "Scaling factor : " << vfactor << endl;
+
+  // Now rescale velocities to give required turbulent energy in cloud
+  for (i=0; i<sph->Nsph; i++) {
+    for (k=0; k<ndim; k++) sph->sphdata[i].v[k] *= vfactor;
+  }
+
 
   delete[] v;
   delete[] r;
@@ -2368,3 +2589,236 @@ void Simulation<ndim>::AddRotationalVelocityField
 
   return;
 }
+
+
+
+#if defined(FFTW_TURBULENCE)
+//=============================================================================
+//  Simulation::GenerateTurbulentVelocityField
+/// ..
+//=============================================================================
+template <int ndim>
+void Simulation<ndim>::GenerateTurbulentVelocityField
+(int field_type,                    ///< Type of turbulent velocity field
+ int gridsize,                      ///< Size of velocity grid
+ DOUBLE power_turb,                 ///< Power spectrum index
+ DOUBLE *vfield)                    ///< ..
+{
+  int kmax;                         // k goes from kmin to kmax in 3D
+  int kmin;                         // ..
+  int shift;                        // power grid shift
+  int i,j,k;                        // ..
+  int ii,jj,kk;
+  int k1,k2,k3;                     // ..
+  int d;                            // Dimension counter
+  fftw_plan plan;                   // ??
+  DOUBLE F[3];                      // Fourier vector component
+  DOUBLE unitk[3];                  // ..
+  DOUBLE *power, *phase;            // Fourier components
+  DOUBLE *dummy1, *dummy2;          // ..
+  DOUBLE Rnd[3],w;                  // Random numbers, variable in Gaussian calculation
+  DOUBLE k_rot[3];                  // bulk rotation modes
+  DOUBLE k_com[3];                  // bulk compression modes
+  bool divfree,curlfree;            // Selecting div-free or curl-free turbulence
+  fftw_complex *complexfield;       // ..
+
+  debug2("[Simulation::GenerateTurbulentVelocityField]");
+
+  divfree = false;
+  curlfree = false;
+  if (field_type == 1) curlfree = true;
+  if (field_type == 2) divfree = true;
+
+
+  kmin = -(gridsize/2 - 1);
+  kmax = gridsize/2;
+  int krange = kmax - kmin + 1;
+  //cout << "kmin : " << kmin << "    kmax : " << kmax << "    krange : " << krange << endl;
+
+  dummy1 = new DOUBLE[3*krange*krange*krange];
+  dummy2 = new DOUBLE[3*krange*krange*krange];
+  power = new DOUBLE[3*krange*krange*krange];
+  phase = new DOUBLE[3*krange*krange*krange];
+  complexfield = new fftw_complex[gridsize*gridsize*gridsize];
+
+  for (i=0; i<3*krange*krange*krange; i++) power[i] = 0.0;
+  for (i=0; i<3*krange*krange*krange; i++) phase[i] = 0.0;
+  for (i=0; i<3*gridsize*gridsize*gridsize; i++) vfield[i] = 0.0;
+
+
+  // Define wave vectors in Fourier space
+  // Each wave vector has coordinates in Fourier space, random phases in
+  // three dimensions, and power in three dimensions, giving a power
+  // and a phase vector field in Fourier space
+  // With a 'natural' field type there is no coordination between x,y,z components
+  // With a div-free or curl-free field, there is a relation between
+  // coordinates in Fourier space and power vector. For a div-free field,
+  // power vectors are perpendicular to the Fourier coordinate vector, and
+  // for a curl-free field power vectors are (anti-)parallel to the Fourier
+  // coordinate vector
+  // (i,j,k) is the Fourier coordinate vector
+  // power(1:3,i,j,k) is the power vector at Fourier coordinates i,j,k
+  // phase(1:3,i,j,k) is the phase vector at Fourier coordinates i,j,k
+  for (i=kmin; i<=kmax; i++) {
+    for (j=kmin; j<=kmax; j++) {
+      for (k=kmin; k<=kmax; k++) {
+	ii = i - kmin;
+	jj = j - kmin;
+	kk = k - kmin;
+	  
+	// cycle antiparallel k-vectors
+	if (k < 0) continue;            
+	if (k == 0) {
+	  if (j < 0) continue;
+	  if (j == 0 && i < 0) continue;
+	}
+
+	// Central power = 0
+	if (i == 0 && j == 0 && k == 0) continue;
+        if (i*i + j*j + k*k > kmax*kmax) continue;
+
+	//cout << "ii/jj/kk : " << ii << "    " << jj << "   " << kk << endl;
+	//cout << "i/j/k    : " << i << "    " << j << "   " << k << endl;
+	//cout << "rsqd : " << i*i + j*j + k*k << "    " << kmax*kmax << endl;
+	//cout << "num : " << d + 3*ii + 3*krange*jj + 3*krange*krange*kk << "     " << 3*krange*krange*krange << endl;
+
+
+	// Power value, to be multipled by random power chosen from a Gaussian
+	// This is what gives the slope of the eventual power spectrum
+	for (d=0; d<3; d++)
+	  F[d] = sqrt(pow(sqrt((DOUBLE)(i*i + j*j + k*k)),power_turb));
+
+	for (d=0; d<3; d++) {
+	  Rnd[0] = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+
+	  // Random phase between 0 and 2*pi
+          phase[d + 3*ii + 3*krange*jj + 3*krange*krange*kk] =
+	    (2.0*Rnd[0] - 1.0)*pi;	  
+
+	  // Create Gaussian distributed random numbers
+	  Rnd[1] = gauss_rand(0.0,1.0);
+	  Rnd[2] = gauss_rand(0.0,1.0);
+	  //cout << "Rnd : " << Rnd[0] << "    " << Rnd[1] << "   " << Rnd[2] << endl;
+	  F[d] = Rnd[1]*F[d];
+	}
+
+	//cout << "F : " << F[0] << "   " << F[1] << "    " << F[2] << endl;
+
+	// Helmholtz decomposition!
+        unitk[0] = (DOUBLE) i;
+	unitk[1] = (DOUBLE) j;
+	unitk[2] = (DOUBLE) k;
+        DOUBLE ksqd = DotProduct(unitk,unitk,3);
+	for (d=0; d<3; d++) unitk[d] /= sqrt(ksqd);
+	
+	// For curl free turbulence, vector F should be 
+	// parallel/anti-parallel to vector k
+	if (curlfree) {
+	  for (d=0; d<3; d++)
+	    power[d + 3*ii + 3*krange*jj + 3*krange*krange*kk] 
+	      = unitk[d]*DotProduct(F,unitk,3);
+	}
+	// For divergence free turbulence, vector F should be perpendicular to vector k
+	else if (divfree) {
+	  for (d=0; d<3; d++)
+	    power[d + 3*ii + 3*krange*jj + 3*krange*krange*kk] 
+	      = F[d] - unitk[d]*DotProduct(F,unitk,3);
+	}
+	else {
+	  for (d=0; d<3; d++)
+	    power[d + 3*ii + 3*krange*jj + 3*krange*krange*kk] 
+	      = F[d];
+	}
+      }
+    }
+  }
+
+
+
+  shift = -kmin;
+  plan = fftw_plan_dft_3d(gridsize, gridsize, gridsize, complexfield,
+			  complexfield, FFTW_BACKWARD, FFTW_ESTIMATE);
+
+  for (i=kmin; i<=kmax; i++) {
+    for (j=kmin; j<=kmax; j++) {
+      for (k=kmin; k<=kmax; k++) {
+	ii = i + kmin;
+	jj = j + kmin;
+	kk = k + kmin;
+	dummy1[d + 3*ii + 3*krange*jj + 3*krange*krange*kk] =
+	  phase[d + 3*ii + 3*krange*jj + 3*krange*krange*kk];
+	dummy2[d + 3*ii + 3*krange*jj + 3*krange*krange*kk] =
+	  power[d + 3*ii + 3*krange*jj + 3*krange*krange*kk];
+      }
+    }
+  }
+
+
+  // reorder array: positive wavenumbers are placed in ascending order along
+  // first half of dimension, i.e. 0 to k_max, negative wavenumbers are placed
+  //along second half of dimension, i.e. -k_min to 1.
+  for (d=0; d<3; d++) {
+
+    for (i=0; i<=krange; i++) {
+      for (j=0; j<=krange; j++) {
+	for (k=0; k<=krange; k++) {
+	  phase[d + 3*ii + 3*krange*jj + 3*krange*krange*kk] = 
+	    dummy1[d + 3*(ii + shift)%krange + 
+		   3*krange*(jj + shift)%krange + 
+		   3*krange*krange*(kk + shift)%krange];
+	  power[d + 3*ii + 3*krange*jj + 3*krange*krange*kk] = 
+	    dummy2[d + 3*(ii + shift)%krange + 
+		   3*krange*(jj + shift)%krange + 
+		   3*krange*krange*(kk + shift)%krange];
+
+	  complexfield[0][i +krange*j +krange*krange*k]
+	    = power[d + 3*i + 3*krange*j + 3*krange*krange*k]*
+	    cos(phase[d + 3*i + 3*krange*j + 3*krange*krange*k]);
+	  complexfield[1][i + krange*j + krange*krange*k]
+	    = power[d + 3*i + 3*krange*j + 3*krange*krange*k]*
+	    sin(phase[d + 3*i + 3*krange*j + 3*krange*krange*k]);
+	}
+      }
+    }
+    
+    fftw_execute_dft(plan, complexfield, complexfield);
+    
+
+    for (i=0; i<=krange; i++) {
+      for (j=0; j<=krange; j++) {
+	for (k=0; k<=krange; k++) {
+	  vfield[d + 3*i + 3*krange*j + 3*krange*krange*k] = 
+	    complexfield[0][i + krange*j + krange*krange*k];
+	}
+      }
+    }
+
+  }
+
+
+  //for (i=0; i<=krange; i++) {
+  //  for (j=0; j<=krange; j++) {
+  //    for (k=0; k<=krange; k++) {
+  //	cout << "v[" << i << "," << j << "," << k << "] : " 
+  //     << vfield[3*i + 3*krange*j + 3*krange*krange*k] << "    " 
+  //       << vfield[1 + 3*i + 3*krange*j + 3*krange*krange*k] << "    " 
+  //     << vfield[2 + 3*i + 3*krange*j + 3*krange*krange*k] << "    " 
+  //     << endl;
+  //  }
+  //}
+  //}
+  
+
+  fftw_destroy_plan(plan);
+
+
+  delete[] complexfield;
+  delete[] power;
+  delete[] phase;
+  delete[] dummy2;
+  delete[] dummy1;
+
+  return;
+}
+#endif
+

@@ -22,12 +22,12 @@
 import __main__
 import atexit
 import time
+import types
 from multiprocessing import Manager, Queue
 from plotting import PlottingProcess
 from gandalf.analysis.SimBuffer import SimBuffer, BufferException
-import types
 
-manager= Manager()
+manager = Manager()
 
 #TODO: in all the Python code, raise proper exceptions rather than a generic Exception
 #TODO: the tests should not fail
@@ -53,6 +53,9 @@ import commandsource as Commands
 from data_fetcher import CreateUserQuantity, CreateTimeData
 import signal
 from time import sleep
+from statistics import structure_function
+
+
 
 #figure out if we are in interactive mode
 try:
@@ -93,7 +96,7 @@ Optional qrguments:
    
 #------------------------------------------------------------------------------
 def plot(x, y, type="default", snap="current", sim="current",
-         overplot=False, autoscale=True, xunit="default", yunit="default",
+         overplot=False, autoscale=False, xunit="default", yunit="default",
          xaxis="linear", yaxis="linear", **kwargs):
     '''Plot particle data as a scatter plot.  Creates a new plotting window if
 one does not already exist.
@@ -156,7 +159,7 @@ id is an integer specifying the desired particle.
     
 
 #------------------------------------------------------------------------------
-def plot_vs_time(y, sim="current", overplot=False, autoscale=True,
+def plot_vs_time(y, sim="current", overplot=False, autoscale=False,
                  xunit="default", yunit="default", xaxis="linear",
                  yaxis="linear", **kwargs):
     '''Plot given data as a function of time.  Creates a new plotting window if
@@ -190,9 +193,9 @@ Optional arguments:
 
 #------------------------------------------------------------------------------
 def render(x, y, render, snap="current", sim="current", overplot=False,
-           autoscale=True, autoscalerender=True, coordlimits=None, zslice=None,
-           xunit="default", yunit="default", renderunit="default",
-           res=64, interpolation='nearest'):
+           autoscale=False, autoscalerender=False, coordlimits=None,
+           zslice=None, xunit="default", yunit="default",
+           renderunit="default", res=64, interpolation='nearest'):
     '''Create a rendered plot from selected particle data.
 
 Required arguments:
@@ -205,12 +208,12 @@ Optional arguments:
     sim        : Number of the simulation to plot. Defaults to \'current\'.
     overplot   : If True, overplots on the previous existing plot rather
                  than deleting it. Defaults to False.
-    autoscale  : If True (default), the coordinate limits of the plot are
-                 set automatically.  Can also be set to 'x' or 'y' to specify
+    autoscale  : If True, the coordinate limits of the plot are set 
+                 automatically.  Can also be set to 'x' or 'y' to specify
                  that only one of the axis has to use autoscaling.
-                 If False, autoscaling is not used. On an axis that does not
-                 have autoscaling turned on, global limits are used if
-                 defined for the plotted quantity.
+                 If False (default), autoscaling is not used. On an axis that
+                 does not have autoscaling turned on, global limits are used
+                 if defined for the plotted quantity.
     autoscalerender : Same as the autoscale, but for the rendered quantity.
     coordlimits : Specify the coordinate limits for the plot. In order of
                   precedence, the limits are set in this way:
@@ -561,7 +564,7 @@ Useful in scripts where no interaction is required
 
 #------------------------------------------------------------------------------
 def plotanalytical(x=None, y=None, ic="default", snap="current", sim="current",
-                   overplot=True, autoscale=True, xunit="default",
+                   overplot=True, autoscale=False, xunit="default",
                    yunit="default"):
     '''Plots the analytical solution.  Reads the problem type from the \'ic\'
 parameter and plots the appropriate solution if implemented.  If no solution
@@ -685,9 +688,9 @@ def to_list(str_variable,type):
 
 #------------------------------------------------------------------------------
 def to_bool(value):
-    '''Parses the input string and convert it to a boolean. If the input is not a string, passes
-    it to the built-in bool function (which means, that the result is False only if it is None or
-    False).'''
+    '''Parses the input string and convert it to a boolean. If the input is
+    not a string, passes it to the built-in bool function (which means, that
+    the result is False only if it is None or False).'''
     valid = {'true': True, 't': True, '1': True,
              'false': False, 'f': False, '0': False,
              }

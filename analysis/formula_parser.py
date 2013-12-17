@@ -1,6 +1,6 @@
 #==============================================================================
 #  formula_parser.py
-#  ..
+#  Contains functions and variables for parsing string-formulas.
 #
 #  This file is part of GANDALF :
 #  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
@@ -21,26 +21,32 @@
 #==============================================================================
 import numpy as np
 import re
-from pyparsing import Word, alphas, ParseException, Literal, CaselessLiteral \
-, Combine, Optional, nums, Or, Forward, ZeroOrMore, StringEnd, alphanums, delimitedList, Group, \
-Suppress
+from pyparsing import Word, alphas, ParseException, Literal, \
+     CaselessLiteral, Combine, Optional, nums, Or, Forward, ZeroOrMore, \
+     StringEnd, alphanums, delimitedList, Group, Suppress
 from data_fetcher import UserQuantity, _KnownQuantities
 
-# Debugging flag can be set to either "debug_flag=True" or "debug_flag=False"
-debug_flag=False
+# Debugging flag can be set to either "True" or "False"
+debug_flag = False
 
 exprStack = []
 varStack  = []
 
+
+#------------------------------------------------------------------------------
 def pushFirst( str, loc, toks ):
     exprStack.append( toks[0] )
 
+
+#------------------------------------------------------------------------------
 def assignVar( str, loc, toks ):
     varStack.append( toks[0] )
     
-    
+
+#------------------------------------------------------------------------------
 def arg_number(str, loc, toks):
-    #work out the correct number of arguments
+    
+    # Work out the correct number of arguments
     if toks[0] in functions1arg:
         narg = 1
     elif toks[0] in functions2arg:
@@ -48,33 +54,34 @@ def arg_number(str, loc, toks):
     else:
         raise ParseException("We do not recognize your function: " + toks[0])
     
-    #check that the number is correct
+    # Check that the number is correct
     if narg != len(toks)-1:
-        raise ParseException("Error: function "+toks[0] + "takes "+narg+"arguments, you gave "+ len(toks)-1)
+        raise ParseException("Error: function " + toks[0] + "takes " \
+                             + narg + "arguments, you gave "+ len(toks)-1)
 
-# define grammar
-point = Literal('.')
-e = CaselessLiteral('E')
+
+# Define grammar
+#------------------------------------------------------------------------------
+point       = Literal('.')
+e           = CaselessLiteral('E')
 plusorminus = Literal('+') | Literal('-')
-number = Word(nums) 
-integer = Combine( Optional(plusorminus) + number )
+number      = Word(nums) 
+integer     = Combine( Optional(plusorminus) + number )
 floatnumber = Combine( integer +
                        Optional( point + Optional(number) ) +
                        Optional( e + integer )
                      )
-
-ident = Word(alphas,alphanums + '_') 
-
-plus  = Literal( "+" )
-minus = Literal( "-" )
-mult  = Literal( "*" )
-div   = Literal( "/" )
-lpar  = Literal( "(" ).suppress()
-rpar  = Literal( ")" ).suppress()
-addop  = plus | minus
-multop = mult | div
-expop = Literal( "^" )
-assign = Literal( "=" )
+ident       = Word(alphas,alphanums + '_') 
+plus        = Literal( "+" )
+minus       = Literal( "-" )
+mult        = Literal( "*" )
+div         = Literal( "/" )
+lpar        = Literal( "(" ).suppress()
+rpar        = Literal( ")" ).suppress()
+addop       = plus | minus
+multop      = mult | div
+expop       = Literal( "^" )
+assign      = Literal( "=" )
 
 expr = Forward()
 atom = ( ( e | floatnumber | integer | ident ).setParseAction(pushFirst) |
@@ -98,14 +105,16 @@ bnf = Optional((ident + assign).setParseAction(assignVar)) + expr
 
 pattern =  bnf + StringEnd()
 
-# map operator symbols to corresponding arithmetic operations
+# Map operator symbols to corresponding arithmetic operations
 opn = { "+" : ( lambda a,b: a + b ),
         "-" : ( lambda a,b: a - b ),
         "*" : ( lambda a,b: a * b ),
         "/" : ( lambda a,b: a / b ),
         "^" : ( lambda a,b: a ** b ) }
 
+
 # Recursive function that evaluates the stack
+#------------------------------------------------------------------------------
 def evaluateStack( s, type, snap ):
   op = s.pop()
   if debug_flag:

@@ -20,6 +20,7 @@ Density of RHS fluid                        : rhofluid2 = 0.5
 No. of particles in LHS fluid               : Nlattice1[0] = 100
 No. of particles in RHS fluid               : Nlattice2[0] = 50
 Dimensionless units                         : dimensionless = 1
+asdas : Nstepsmax = 1
 
 
 #------------------------------

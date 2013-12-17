@@ -16,6 +16,8 @@ toexcludefunctions = ['Manager', 'Queue', 'handle', 'init',
 '''This module contains the implementation of the interpreter of our special
 mini-language'''
 
+
+#------------------------------------------------------------------------------
 def excludefunctions(function):
     if function[0] in toexcludefunctions:
         return False
@@ -24,23 +26,23 @@ def excludefunctions(function):
 
 #------------------------------------------------------------------------------
 class WrappedFunction:
-    '''This class creates a wrapper around each one of the functions
-in facade. The wrapper code is responsible for taking the arguments passed
-on the command line, and converting them to proper arguments for a python
-function call.'''
+    '''This class creates a wrapper around each one of the functions in facade.
+The wrapper code is responsible for taking the arguments passed on the command
+line, and converting them to proper arguments for a python function call.
+'''
     def __init__(self, function):
         self.function = function
         self.__doc__ = function.__doc__
     
     def __call__ (self, line):
         args = line.split()
-        dict={}
+        dict = {}
         required_arguments = []
         for arg in args:
             potkeywords = arg.split('=')
             if len(potkeywords) == 2:
                 kw, value = potkeywords
-                dict[kw]=value
+                dict[kw] = value
             elif len(potkeywords) >2:
                 raise Exception
             else:

@@ -1,6 +1,6 @@
 #==============================================================================
 #  commandsource.py
-#  ..
+#  Contains classes that define the behaviour of main interpreter commands.
 #
 #  This file is part of GANDALF :
 #  Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids
@@ -45,7 +45,8 @@ class Command:
     id = 0
     
     def __init__(self):
-        #sets the unique identifier of the command
+        
+        # Sets the unique identifier of the command
         Command.id += 1
         self.id = Command.id
 
@@ -54,6 +55,7 @@ class Command:
 class SwitchNonGui(Command):
     '''Command for switching to a non gui backend.
     The implementation uses a pyplot function.'''
+    
     def __init__(self):
         Command.__init__(self)
         
@@ -65,6 +67,7 @@ class SwitchNonGui(Command):
 class SaveFigCommand(Command):
     '''Command for saving the current figure. The implementation
     uses a pyplot function'''
+    
     def __init__(self, name):
         Command.__init__(self)
         self.name = name
@@ -77,6 +80,7 @@ class SaveFigCommand(Command):
 class WindowCommand(Command):
     '''Thin wrapper around the figure function
     in pyplot. Also forces the figure to be drawn.'''
+    
     def __init__(self, no = None):
         Command.__init__(self)
         self.no = no
@@ -106,17 +110,21 @@ class SubfigureCommand(Command):
 
 #------------------------------------------------------------------------------
 class PlotCommand(Command):
-    '''Base class for all the plots.
-    A plot must implement execute, which describes how to plot itself the first time,
-    update, which describes how to redraw a plot, and prepare data, which describes
-    how to extract the data from a simulation object.
-    Most of the work for the bookkeeping of figures etc. is done inside the processCommand
-    function, which calls execute or update depending on the plot already existing or not.
-    The class also contains various helper functions that are needed to do the plots.
+    '''Base class for all the plotting routines.  A plot must implement
+    execute, which describes how to plot itself the first time, update, which
+    describes how to redraw a plot, and prepare data, which describes how to
+    extract the data from a simulation object.  Most of the work for the
+    bookkeeping of figures etc. is done inside the processCommand function,
+    which calls execute or update depending on the plot already existing
+    or not.  The class also contains various helper functions that are needed
+    to do the plots.
     '''
-      
+
+
+    #--------------------------------------------------------------------------
     def __init__(self, xquantity, yquantity, snap, simno, overplot, autoscale, 
-                 xunit="default", yunit="default", xaxis="linear", yaxis="linear"):
+                 xunit="default", yunit="default", xaxis="linear",
+                 yaxis="linear"):
         Command.__init__(self)
         self.xquantity = xquantity
         self.yquantity = yquantity
@@ -134,51 +142,67 @@ class PlotCommand(Command):
         self.yunitname = ""
         self.ic = ""
         self._type = "sph"
-        
+
+
+    #--------------------------------------------------------------------------
     def processCommand(self, plotting, data):
-        #work out if this is the first time or if the plot already exists          
+        
+        # Work out if this is the first time or if the plot already exists
         update = plotting.command_in_list(self.id)
+
+        # Plot already exist - retrieve the relevant objects
         if update:
-            #the plot already exist - retrieve the relevant objects...
             fig, ax, product = plotting.commandsfigures[self.id]
-            #update the plot, the labels, the limits and redraw
-            #remember: update is actually defined in the child class
+            
+            # Update the plot, the labels, the limits and redraw
+            # Remember: update is actually defined in the child class
             self.update(plotting, fig, ax, product, data)
             self.labels(ax)
             self.autolimits(ax)
             self.axes(ax)
             fig.canvas.draw()
+
+        # First time - get current figure and axis
         elif self.id > plotting.lastid:
-            #firs time - get current figure and axis
+
             fig = plotting.plt.gcf()
             ax = fig.gca()
+
+            # If we are not overplotting, clear what is there
             if not self.overplot:
-                #if we are not overplotting, clear what is there
+                
                 ax.clear()
                 self.labels(ax)
                 
-                #hack for deleting the old colorbar
-                #first we retrieve the colorbar axes
+                # Hack for deleting the old colorbar
+                # First we retrieve the colorbar axes
                 try:
                     products = plotting.axesimages[ax]
                 except KeyError:
                     products = None
+                    
                 if isinstance(products, tuple):
-                    #cbar is the colorbar object
+                    
+                    # cbar is the colorbar object
                     cbar = products[1]
-                    #here we get the old geometry
+                    
+                    # Get old geometry
                     gs = ax.get_subplotspec()
                     row, cols, num1, num2 = gs.get_geometry()
+
+                    # Delete the colorbar
                     try:
-                        #here we delete the colorbar
                         fig.delaxes(cbar.ax)
                     except KeyError:
                         pass
-                    #here we change the geometry, reducing the number of columns by one
+                    
+                    # Change geometry, reducing the number of columns by one
                     ax.change_geometry(row,cols-1,num1+1)
-            #call the function in the child class to do the plot
+                    
+            # Call the function in the child class to do the plot
             product = self.execute(plotting, fig, ax, data)
-            #set the autoscales on the axis
+            
+            # Set the autoscales on the axis
             if bool(self.autoscale) and self.autoscale !='False':
                 if self.autoscale=='x':
                     ax.set_autoscalex_on(True)
@@ -193,24 +217,27 @@ class PlotCommand(Command):
                 self.setlimits(plotting, ax, 'x')
                 self.setlimits(plotting, ax, 'y')
             self.autolimits(ax)
-            #the figure might have been shown already, but we need to redo it,
-            #because (apparently) matplotlib does not provide any way of knowing
-            #if that's the case
+            
+            # Figure might have been shown already, but we need to redo it,
+            # because (apparently) matplotlib does not provide any way of
+            # knowing if that's the case
             fig.show()
             
-            #associate the command with the figure, axis and product objects
+            # Associate the command with the figure, axis and product objects
             plotting.commands.append(self)
             plotting.commandsfigures[self.id]= fig, ax, product
             plotting.lastid = self.id
             
-            #finally we need to draw, because the previous call to show does not update
-            #the figure
+            # Finally we need to draw, because the previous call to show does
+            # not update the figure
             fig.canvas.draw()
             
-            #register quantities and units
+            # Register quantities and units
             plotting.quantitiesfigures[(fig, ax, 'x')] = self.xquantity, self.xunitname
             plotting.quantitiesfigures[(fig, ax, 'y')] = self.yquantity, self.yunitname
-            
+
+
+    #--------------------------------------------------------------------------
     def labels(self, ax):
         '''Write the labels on the x and y axes.
         Uses the quantitylabels dictionary for that.'''
@@ -220,14 +247,18 @@ class PlotCommand(Command):
         if self.ylabel != "":
             self.yquantity_label += ' [$'+self.ylabel+'$]'
         ax.set_ylabel(self.yquantity_label)
-        
+
+
+    #--------------------------------------------------------------------------
     def autolimits(self, ax):
         '''Recomputes limits from the data and use them to update
         the limits, if some axis has autoscaling set. Note that if the
         axes have autoscaling off, nothing happens.'''
         ax.relim()
         ax.autoscale_view()
-        
+
+
+    #--------------------------------------------------------------------------
     def axes(self, ax):
         '''Sets the axis type (either linear or log)'''
         if self.xaxis == "log":
@@ -238,7 +269,9 @@ class PlotCommand(Command):
             ax.set_yscale("log")
         else:
             ax.set_yscale("linear")        
-        
+
+
+    #--------------------------------------------------------------------------
     def get_sim_and_snap(self):
         '''Retrieves from the buffer the desired sim and snap'''
         sim = self.get_sim()
@@ -246,22 +279,29 @@ class PlotCommand(Command):
         if (self.snap=="current" and sim.snapshots==[]):
             self.snap = "live"        
         return sim, snap
-    
+
+
+    #--------------------------------------------------------------------------
     def get_sim(self):
         '''Retrieves from the buffer the desidered sim'''
         sim = SimBuffer.get_sim_no(self.sim)
         
         if not sim.setup:
-            raise Exception("""Error: this simulation has not been set up! If you have set all the relevant parameters/
-            initial conditions, please run the setupsim command to set it up.""")
+            raise Exception("""Error: this simulation has not been set up! /
+            If you have set all the relevant parameters initial conditions, /
+            please run the setupsim command to set it up.""")
             
         return sim
-        
+
+
+    #--------------------------------------------------------------------------
     def set_labels(self, axis, unitinfo, label):
         setattr(self, axis+'unitname', unitinfo.name)
         setattr(self, axis+'label', unitinfo.label)
         setattr(self, axis+'quantity_label', label)
-    
+
+
+    #--------------------------------------------------------------------------
     def get_array(self, axis, snap):
         '''Helper function to get the array of the quantity on the x, y or
         rendered axis.
@@ -274,14 +314,14 @@ class PlotCommand(Command):
                 
         Output:
             data
-                The array with the data, in code units
+                Array containing data, in code units
             scaling_factor
-                The scaling factor for unit conversion (multiply data by this
-                to get the requested unit)
+                Scaling factor for unit conversion (multiply data by this
+                number to get the requested unit)
             unitinfo
                 UnitInfo object with the label and the name of the unit
             label
-                The label of the quantity (what will go on the axis before the unit)
+                Label of plotted quantity (string before the unit)
         '''
         
         quantity = getattr(self, axis+'quantity')
@@ -290,7 +330,9 @@ class PlotCommand(Command):
         unitinfo, data, scaling_factor, label = UserQuantity(quantity).fetch(self._type, snap, unit)
         
         return unitinfo, data, scaling_factor, label
-     
+
+
+    #--------------------------------------------------------------------------
     def setlimits(self, plotting, ax, axis):
         '''Helper function to set the limits of a plot.
         Takes care of handling autoscaling on/off for different axes.
@@ -309,39 +351,47 @@ class PlotCommand(Command):
 
 #------------------------------------------------------------------------------
 class PlotVsTime (PlotCommand):
-    
+    '''Inherited class for plotting scalar quantities as a function of time
+    (i.e. from different snapshots in a simulation'''
+
+    #--------------------------------------------------------------------------
     def __init__(self, yquantity, sim, overplot, autoscale, 
                  xunit, yunit, xaxis, yaxis, **kwargs):
         PlotCommand.__init__(self, 't', yquantity, None, sim, overplot, 
                               autoscale, xunit, yunit, xaxis, yaxis)
         self._type = type
         self._kwargs = kwargs
-        
+
+
+    #--------------------------------------------------------------------------
     def execute(self, plotting, fig, ax, data):
-        #Merge our dictionary with the user-provided one
-        #Note that if there are duplicates, the user-provided one will overwrite ours
+        
+        # Merge our dictionary with the user-provided one.  Note that if
+        # there are duplicates, the user-provided one will overwrite ours.
         kwargs = dict(self._kwargs.items())
         line, = ax.plot(data.x_data, data.y_data, '.', **kwargs)
         return line
-    
+
+
+    #--------------------------------------------------------------------------
     def prepareData(self, globallimits):
         sim = self.get_sim()
         
         y_data = TimeData(self.yquantity).fetch(sim)
         time = map(lambda snap: snap.t, sim.snapshots)
-        time=np.asarray(time)
+        time = np.asarray(time)
         
         time_unit_obj = sim.simunits.t
-        xunitinfo=UnitInfo()
-        if self.xunit=="default":
-            self.xunit=time_unit_obj.outunit
-        xscaling_factor=time_unit_obj.OutputScale(self.xunit)
-        xunitinfo.name=self.xunit
-        xunitinfo.label=time_unit_obj.LatexLabel(self.xunit)
-        xlabel='t'
+        xunitinfo = UnitInfo()
+        if self.xunit == "default":
+            self.xunit = time_unit_obj.outunit
+        xscaling_factor = time_unit_obj.OutputScale(self.xunit)
+        xunitinfo.name = self.xunit
+        xunitinfo.label = time_unit_obj.LatexLabel(self.xunit)
+        xlabel = 't'
         
-        yunitinfo=UnitInfo()
-        ylabel=''
+        yunitinfo = UnitInfo()
+        ylabel = ''
         
         self.set_labels('x', xunitinfo, xlabel)
         self.set_labels('y', yunitinfo, ylabel)
@@ -352,15 +402,17 @@ class PlotVsTime (PlotCommand):
 
 #------------------------------------------------------------------------------
 class ParticlePlotCommand (PlotCommand):
-    '''Inherited class that does particle plotting.
-    Uses the plot method of axis for plotting, saves the line generated
-    and calls set_data on it for a fast redrawing.
+    '''Inherited class that controls particle plotting.  Uses the plot method 
+    of axis for plotting, saves the line generated and calls set_data on it 
+    for a fast redrawing.
     '''
     
     sphstyle = {}
     starstyle = {'color': 'red'}
     typestyle = {'sph': sphstyle, 'star': starstyle}
-    
+
+
+    #--------------------------------------------------------------------------
     def __init__(self, xquantity, yquantity, type, snap, simno, overplot=False, 
                  autoscale=True, xunit="default", yunit="default", 
                  xaxis="linear", yaxis="linear", **kwargs):
@@ -368,18 +420,25 @@ class ParticlePlotCommand (PlotCommand):
                             autoscale, xunit, yunit, xaxis, yaxis)
         self._type = type
         self._kwargs = kwargs
-                
+
+
+    #--------------------------------------------------------------------------
     def update(self, plotting, fig, ax, line, data):
         line.set_data(data.x_data,data.y_data)
-        
+
+
+    #--------------------------------------------------------------------------
     def execute(self, plotting, fig, ax, data) :
         style = self.typestyle[self._realtype]
-        #Merge our dictionary with the user-provided one
-        #Note that if there are duplicates, the user-provided one will overwrite ours
+
+        # Merge our dictionary with the user-provided one.  Note that if
+        # there are duplicates, the user-provided one will overwrite ours
         kwargs = dict(style.items() + self._kwargs.items())
         line, = ax.plot(data.x_data, data.y_data, '.', **kwargs)
         return line
-    
+
+
+    #--------------------------------------------------------------------------
     def prepareData (self, globallimits):
         sim, snap = self.get_sim_and_snap()
         self._realtype = snap.GetRealType(self._type)
@@ -395,52 +454,61 @@ class ParticlePlotCommand (PlotCommand):
 
 #------------------------------------------------------------------------------
 class AnalyticalPlotCommand (PlotCommand):
-    '''Inherited class that does the plotting of analytical solutions.
+    '''Inherited class that controls plotting of analytical solutions.
     Like particle plotting, uses the plot method on the axis objects and
     the set_data method on the returned line object.'''
-    
+
+
+    #--------------------------------------------------------------------------
     def __init__(self, xquantity, yquantity, ic, snap, simno, overplot=True, 
                  xaxis="linear", yaxis="linear", autoscale=True, 
                  xunit="default", yunit="default"):
         PlotCommand.__init__(self, xquantity, yquantity, snap, simno, overplot, 
                              autoscale, xunit, yunit, xaxis, yaxis)
         self.ic = ic
-        
+
+
+    #--------------------------------------------------------------------------
     def update(self, plotting, fig, ax, line, data):
         line.set_data(data.x_data, data.y_data)
-        
+
+
+    #--------------------------------------------------------------------------
     def execute(self, plotting, fig, ax, data):
         line, = ax.plot(data.x_data, data.y_data)
         return line
-    
+
+
+    #--------------------------------------------------------------------------
     def prepareData(self, globallimits):
         sim, snap = self.get_sim_and_snap()
         time = snap.t
+        
         if self.ic == "default":
             ictype = sim.simparams.stringparams["ic"]
         else:
             ictype = self.ic
+
+        # Try to find an analytical solution class with the same name as
+        # the initial conditions type
         try:
-            #try to find an analytical solution class
-            #with the same name as the initial conditions
-            #type
             analyticalclass = getattr(analytical,ictype)
         except AttributeError:
-            raise CommandException, "We do not know an analytical solution for the requested initial condition"
+            raise CommandException, "We do not know an analytical solution \
+            for the requested initial condition"
         
-        #instantiate the class responsible for computing the analytical solution
-        #at the moment we immediately discard the computer object, but note
-        #that in principle we could keep it and pass around
+        # Instantiate the class responsible for computing the analytical
+        # solution at the moment we immediately discard the computer object,
+        # but note that in principle we could keep it and pass around.
         computer = analyticalclass(sim, time)
         x_data, y_data = computer.compute(self.xquantity, self.yquantity)
         
         xunitinfo, dummy, xscaling_factor, xlabel = self.get_array('x', snap)
         yunitinfo, dummy, yscaling_factor, ylabel = self.get_array('y', snap)
         
-        #set labels
+        # Set labels
         self.set_labels('x', xunitinfo, xlabel)
         self.set_labels('y', yunitinfo, ylabel)
-        
         
         data = Data(x_data*xscaling_factor,y_data*yscaling_factor)
         return data
@@ -448,11 +516,15 @@ class AnalyticalPlotCommand (PlotCommand):
 
 #------------------------------------------------------------------------------
 class RenderPlotCommand (PlotCommand):
-    '''Child class that does the rendered plots.
-    Uses imshow to do the plotting; to update, calls the set_array method on the returned image.'''
-    #TODO: add colormap selection
-    def __init__(self, xquantity, yquantity, renderquantity, snap, simno, overplot, autoscale,
-                 autoscalerender, coordlimits, zslice=None, xunit="default", yunit="default", 
+    '''Child class that controls rendered plots.  Uses imshow to do the
+    plotting; to update, calls the set_array method on the returned image.
+    '''
+    
+    # TODO: add colormap selection
+    #--------------------------------------------------------------------------
+    def __init__(self, xquantity, yquantity, renderquantity, snap, simno,
+                 overplot, autoscale, autoscalerender, coordlimits,
+                 zslice=None, xunit="default", yunit="default", 
                  renderunit="default", res=64, interpolation='nearest'):
         PlotCommand.__init__(self, xquantity, yquantity, snap, simno, 
                              overplot, autoscale, xunit, yunit)
@@ -466,14 +538,17 @@ class RenderPlotCommand (PlotCommand):
         self.renderunitname = ""
         self.res = res
         self.interpolation = interpolation
-        
+
+
+    #--------------------------------------------------------------------------
     def update(self, plotting, fig, ax, products, data):
         im, colorbar = products
         im.set_array(data.render_data)
+        
+        # Set limits
         if self.autoscalerender:
             im.autoscale()
         else:
-            #set limits
             try:
                 min, max, auto = plotting.globallimits[self.renderquantity]
                 if auto:
@@ -488,11 +563,13 @@ class RenderPlotCommand (PlotCommand):
                     im.set_clim(min,max)
                 except AttributeError:
                     im.autoscale()
-    
+
+
+    #--------------------------------------------------------------------------
     def execute(self, plotting, fig, ax, data):
         im = ax.imshow(data.render_data, extent=(self.xmin, self.xmax, self.ymin, self.ymax), interpolation=self.interpolation)
         
-        #set limits
+        # Set limits
         if not self.autoscalerender:
             try:
                 min, max, auto = plotting.globallimits[self.renderquantity]
@@ -510,18 +587,20 @@ class RenderPlotCommand (PlotCommand):
         plotting.axesimages[ax]=products
         plotting.quantitiesfigures[(fig, ax, 'render')] = self.renderquantity, self.renderunitname
         return products
-    
+
+
+    #--------------------------------------------------------------------------
     def prepareData(self, globallimits):
         sim, snap = self.get_sim_and_snap()
         
         xunitinfo, x_data, xscaling_factor, xlabel = self.get_array('x',snap)
-        yunitinfo, y_data, yscaling_factor, ylabel = self.get_array('y', snap)
+        yunitinfo, y_data, yscaling_factor, ylabel = self.get_array('y',snap)
         
         self.set_labels('x', xunitinfo, xlabel)
         self.set_labels('y', yunitinfo, ylabel)
         
-        #create the grid
-        #set resolution
+
+        # Set resolution for rendering grid
         try:
             xres = self.res[0]
             yres = self.res[1]
@@ -529,7 +608,7 @@ class RenderPlotCommand (PlotCommand):
             xres = self.res
             yres = self.res
 
-        #set limits
+        # Set limits for rendering region
         if self.coordlimits is None:
             try:
                 self.xmin, self.xmax, auto = globallimits[self.xquantity]
@@ -548,17 +627,19 @@ class RenderPlotCommand (PlotCommand):
                 self.ymin = float(y_data.min())
                 self.ymax = float(y_data.max())
         else:
-            self.xmin=self.coordlimits[0]
-            self.xmax=self.coordlimits[1]
-            self.ymin=self.coordlimits[2]
-            self.ymax=self.coordlimits[3]
+            self.xmin = self.coordlimits[0]
+            self.xmax = self.coordlimits[1]
+            self.ymin = self.coordlimits[2]
+            self.ymax = self.coordlimits[3]
         
-        #create the rendering object
+        # Create the rendering object
         rendering = RenderBase.RenderFactory(sim.ndims, sim)
-        #allocate the rendered array
+        
+        # Allocate the rendered array
         rendered = np.zeros(xres*yres, dtype=np.float32)
         
-        #call column integrated or slice rendering, depending on dimensionality and parameters
+        # Call column integrated or slice rendering routine, depending on
+        # dimensionality and parameters.
         if sim.ndims < 3 or self.zslice is None:
             returncode, renderscaling_factor = rendering.CreateColumnRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.renderquantity,
                                                  self.renderunit, self.xmin, self.xmax,
@@ -573,7 +654,7 @@ class RenderPlotCommand (PlotCommand):
                                                  self.renderunit, self.xmin, self.xmax,
                                                  self.ymin, self.ymax, self.zslice, rendered, snap)
         rendered = rendered.reshape(xres,yres)
-#        data = Data(x*xscaling_factor, y*yscaling_factor, rendered*renderscaling_factor)
+        #data = Data(x*xscaling_factor, y*yscaling_factor, rendered*renderscaling_factor)
         data = Data(None, None, rendered*renderscaling_factor)
         
         return data
@@ -581,8 +662,11 @@ class RenderPlotCommand (PlotCommand):
 
 #------------------------------------------------------------------------------
 class LimitCommand(Command):
-    '''This command sets the limits of a plot. It is closely connected to the limit function
+    '''Sets the limits of a plot. It is closely connected to the limit function
     in the facade module. Refer to that to know what it does.'''
+
+
+    #--------------------------------------------------------------------------
     def __init__(self, quantity, min, max, auto, window, subfigure):
         Command.__init__(self)
         self.quantity = quantity
@@ -592,32 +676,38 @@ class LimitCommand(Command):
         self.window = window
         self.subfigure = subfigure
 
+
+    #--------------------------------------------------------------------------
     def prepareData(self, globallimits):
-        #we don't need to do anything
         pass
 
+
+    #--------------------------------------------------------------------------
     def processCommand(self, plotting, data):
-        #first retrieve the correct figs and ax objects
+        
+        # First retrieve the correct figs and ax objects
         try:
             figs, axs, line = plotting.commandsfigures[self.id]
+
+        # This gets executed the first time the command is run
         except KeyError:
-            #this gets executed the first time the command is run
-            
-            #get relevant figures
+        
+            # Get relevant figures
             if self.window == 'current':
                 fig = plotting.plt.gcf()
-                figs=[fig]
+                figs = [fig]
+
+            # Get all the figures from matplotlib
             elif self.window == 'all' or self.window == 'global':
-                #get all the figures from matplotlib
                 managers = plotting.plt._pylab_helpers.Gcf.get_all_fig_managers()
-                figs=map(lambda manager: manager.canvas.figure, managers)
+                figs = map(lambda manager: manager.canvas.figure, managers)
             else:
                 fig = plotting.plt.figure(self.window)
-                figs=[fig]
+                figs = [fig]
             line = None
             
-            #get all the relevant axes
-            axs=[]
+            # Get all the relevant axes
+            axs = []
             for fig in figs:
                 if self.subfigure == 'current':
                     ax = fig.gca()
@@ -633,54 +723,62 @@ class LimitCommand(Command):
             plotting.commands.append(self)
             plotting.commandsfigures[self.id]= figs, axs, line
             plotting.lastid = self.id
-            if self.window=='global':
+            if self.window == 'global':
                 plotting.globallimits[self.quantity] = self.min, self.max, self.auto
                 plotting.completedqueue.put('limit completed')
                 
-        #loops over all the axes and looks if the desired quantity has been plotted there                
+        # Loop over all axes and check if desired quantity has been plotted
         for ax in axs:
-            #this big loop takes care of the x and y axis
+            
+            # This big loop takes care of the x and y axis
             for axis in ['x', 'y']:
                 try:
                     quantity, unitname = plotting.quantitiesfigures[(ax.figure, ax, axis)]
                 except KeyError:
                     continue
+                
+                # Quantity has been found - call the relevant matplotlib
+                # function that actually sets the limits
                 if quantity == self.quantity:
-                    #the quantity has been found - call the relevant matplotlib function that actually sets the limits
-                    #we use reflection to get the correct name, depending if we are dealing with x or y axis
+                    # Use reflection to get the correct name, depending if we
+                    # are dealing with x or y axis
                     if self.auto:
-                        methodname='set_autoscale'+axis+'_on'
-                        method=getattr(ax,methodname)
+                        methodname = 'set_autoscale'+axis+'_on'
+                        method = getattr(ax,methodname)
                         method(self.auto)
                         ax.relim()
                         ax.autoscale_view()
                     else:
-                        methodname='set_'+axis+'lim'
+                        methodname = 'set_'+axis+'lim'
                         method = getattr(ax,methodname)
                         method(self.min,self.max)
                         
-            #here we take care of the quantity when is rendered
+            # Take care of the quantity when is rendered
             try:
                 quantity, unitname = plotting.quantitiesfigures[(ax.figure, ax, 'render')]
             except KeyError:
                 continue
+            
             if quantity == self.quantity:
+
                 #looks for the image
-                im, colorbar=plotting.axesimages[ax]
+                im, colorbar = plotting.axesimages[ax]
+
                 if self.auto:
                    im.autoscale()
                 else:
-                    im.set_clim(self.min,self.max) 
-                    #retrieve the command
+                    im.set_clim(self.min,self.max)
+                    
+                    # Retrieve the command
                     commandid = [key for key,value in plotting.commandsfigures.items() if value==(ax.figure, ax, (im, colorbar)) ][0]
                     for index,command in enumerate(plotting.commands):
                         if command.id == commandid:
-                            command.autoscalerender=False
-                            command.zmin=self.min
-                            command.zmax=self.max
+                            command.autoscalerender = False
+                            command.zmin = self.min
+                            command.zmax = self.max
                             plotting.commands[index]=command
         
-        #redraw the affected figures
+        # Redraw the affected figures
         for fig in figs:
             fig.canvas.draw()
 
@@ -689,18 +787,27 @@ class LimitCommand(Command):
 class RescaleCommand(Command):
     '''Rescaling command. Refer to the rescale function in facade.
     Need to be modified to work in the same way as limit.'''
+
+
+    #--------------------------------------------------------------------------
     def __init__(self, quantity, unitname, window):
         Command.__init__(self)
         self.quantity = quantity
         self.unitname = unitname
         self.window = window
-        
+
+
+    #--------------------------------------------------------------------------
     def prepareData(self, globallimits):
         pass
-    
+
+
+    #--------------------------------------------------------------------------
     def processCommand(self, plotting, data):
-        #only do something THE FIRST TIME
+        
+        # Only execute THE FIRST TIME
         if not plotting.command_in_list(self.id):
+            
             #TODO: remove duplicated code with LimitCommand class
             try:
                 fig, ax, line = plotting.commandsfigures[self.id]

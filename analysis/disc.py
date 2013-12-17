@@ -1,6 +1,7 @@
 #==============================================================================
 #  disc.py
-#  ..
+#  Contains class definitions for identifying gravitationally bound clumps
+#  of gas to stars, as a simple method for identifying discs in simulations.
 #
 #  This file is part of GANDALF :
 #  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -27,42 +28,60 @@ import extract_disc_cython
 
 #------------------------------------------------------------------------------
 class Blob:
+    '''Main class for defining a clump of gas in a simultion'''
+
+
+    #--------------------------------------------------------------------------
     def __init__(self, ids, snap, type):
-        self.ids=ids
-        self.snap=snap
-        self.type=type
-    
+        self.ids = ids
+        self.snap = snap
+        self.type = type
+
+
+    #--------------------------------------------------------------------------
     def n_particles(self):
         return self.ids.sum()
-    
+
+
+    #--------------------------------------------------------------------------
     def mass(self, unit='default'):
-        mass_info=UserQuantity('m').fetch(self.type, self.snap, unit=unit)
-        mass_type=mass_info[1]
-        scaling_factor=mass_info[2]
+        '''Returns total mass of gas inside blob'''
+        
+        mass_info = UserQuantity('m').fetch(self.type, self.snap, unit=unit)
+        mass_type = mass_info[1]
+        scaling_factor = mass_info[2]
         return mass_type[self.ids].sum()*scaling_factor
-    
+
+
+    #--------------------------------------------------------------------------
     def SPH_positions_sim_frame(self,unit='default'):
-        ndim=self.snap.ndim
+        '''Returns array of positions of particles comprising gas blob'''
+        
+        ndim = self.snap.ndim
         positions = np.zeros((self.n_particles(),ndim))
-        first_coordinate_info=UserQuantity('x').fetch(self.type,self.snap,unit=unit)
-        scaling_factor=first_coordinate_info[2]
-        positions[:,0]=first_coordinate_info[1][self.ids]
+        first_coordinate_info = UserQuantity('x').fetch(self.type,self.snap,unit=unit)
+        scaling_factor = first_coordinate_info[2]
+        positions[:,0] = first_coordinate_info[1][self.ids]
         if ndim>1:
-            positions[:,1]=UserQuantity('y').fetch(self.type,self.snap,unit=unit)[1][self.ids]
+            positions[:,1] = UserQuantity('y').fetch(self.type,self.snap,unit=unit)[1][self.ids]
         if ndim>2:
-            positions[:,2]=UserQuantity('z').fetch(self.type,self.snap,unit=unit)[1][self.ids]
+            positions[:,2] = UserQuantity('z').fetch(self.type,self.snap,unit=unit)[1][self.ids]
         return positions*scaling_factor
-    
+
+
+    #--------------------------------------------------------------------------
     def SPH_velocities_sim_frame(self,unit='default'):
-        ndim=self.snap.ndim
+        '''Returns array of velocities of particles comprising gas blob'''
+        
+        ndim = self.snap.ndim
         velocities = np.zeros((self.n_particles(),ndim))
-        first_coordinate_info=UserQuantity('vx').fetch(self.type,self.snap,unit=unit)
-        scaling_factor=first_coordinate_info[2]
-        velocities[:,0]=first_coordinate_info[1][self.ids]
+        first_coordinate_info = UserQuantity('vx').fetch(self.type,self.snap,unit=unit)
+        scaling_factor = first_coordinate_info[2]
+        velocities[:,0] = first_coordinate_info[1][self.ids]
         if ndim>1:
-            velocities[:,1]=UserQuantity('vy').fetch(self.type,self.snap,unit=unit)[1][self.ids]
+            velocities[:,1] = UserQuantity('vy').fetch(self.type,self.snap,unit=unit)[1][self.ids]
         if ndim>2:
-            velocities[:,2]=UserQuantity('vz').fetch(self.type,self.snap,unit=unit)[1][self.ids]
+            velocities[:,2] = UserQuantity('vz').fetch(self.type,self.snap,unit=unit)[1][self.ids]
         return velocities*scaling_factor
 
 
@@ -98,11 +117,13 @@ class Disc(Blob):
     
 
 #------------------------------------------------------------------------------
-def extract_discs (snapno, sim, type='default', eccenlimit=0.9, distancelimit=1., limiteigenvalues=0.2):
-    '''This function takes a snapshot and a simulation number ("current" is also fine) and looks for which particles are bound
-    to the stars. It returns a tuple, consisting of an Ambient_gas object
-    (representing the gas that is not bound to any star) and of a list
-    of Disc objects, one for each star.
+def extract_discs (snapno, sim, type='default', eccenlimit=0.9,
+                   distancelimit=1., limiteigenvalues=0.2):
+    '''This function takes a snapshot and a simulation number ("current" is
+    also fine) and looks for which particles are bound to the stars. It
+    returns a tuple, consisting of an Ambient_gas object (representing the
+    gas that is not bound to any star) and of a list of Disc objects, one for
+    each star.
     '''
     
     snap = SimBuffer.get_snapshot_extended(sim,snapno)
@@ -113,12 +134,12 @@ def extract_discs (snapno, sim, type='default', eccenlimit=0.9, distancelimit=1.
                   limiteigenvalues = limiteigenvalues,
                   )
 
-    #query the number of dimensions
-    ndim=snap.ndim
+    # Query the number of dimensions
+    ndim = snap.ndim
     
-    #fetch the data - we use code units
+    # Fetch the data - we use code units
     
-    #first extract coordinates, velocities and masses for the given type
+    # First extract coordinates, velocities and masses for the given type
     x_type = UserQuantity('x').fetch(type, snap)[1]
     vx_type = UserQuantity('vx').fetch(type, snap)[1]
     x_star = UserQuantity('x').fetch('star',snap)[1]
@@ -146,7 +167,7 @@ def extract_discs (snapno, sim, type='default', eccenlimit=0.9, distancelimit=1.
     elif ndim==3:
         owner = extract_disc_cython.flag_owner3d(x_type,y_type,z_type,vx_type,vy_type,vz_type,m_type,x_star,y_star,z_star,vx_star,vy_star,vz_star,m_star,parameters)
     
-    #now loops over the stars and create the discs
+    # Loops over all stars and creates the disc objects
     disclist=[]
     for istar in range(n_star):
         ids = ( owner==istar )
@@ -154,10 +175,10 @@ def extract_discs (snapno, sim, type='default', eccenlimit=0.9, distancelimit=1.
         disclist.append(disc)
         print 'mass disc number', istar, ':',disc.mass()
         
-    #create the ambient gas object
+    # Create the ambient gas object
     ids = (owner==-1)
     ambient = Ambient_gas(ids, snap, type)
     print 'ambient gas mass:', ambient.mass()
     
-    #return a tuple with the ambient gas and a list of discs
+    # Return a tuple with the ambient gas and a list of discs
     return (ambient, disclist)

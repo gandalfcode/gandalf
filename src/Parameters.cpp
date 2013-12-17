@@ -338,6 +338,8 @@ void Parameters::SetDefaultValues(void)
   stringparams["particle_distribution"] = "random";
   intparams["smooth_ic"] = 0;
   intparams["com_frame"] = 0;
+  intparams["field_type"] = 1;
+  intparams["gridsize"] = 64;
   intparams["Nsph"] = 0;
   intparams["Nsphmax"] = -1;
   intparams["Nstar"] = 0;
@@ -381,6 +383,8 @@ void Parameters::SetDefaultValues(void)
   floatparams["thetarot"] = 0.0;
   floatparams["psirot"] = 0.0;
   floatparams["vmachbin"] = 1.0;
+  floatparams["alpha_turb"] = 0.1;
+  floatparams["power_turb"] = -4.0;
 
   // Python parameters
   //---------------------------------------------------------------------------

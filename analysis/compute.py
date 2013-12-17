@@ -78,6 +78,7 @@ return a scalar quantity only for the given particle.
 
 #------------------------------------------------------------------------------
 def COM(snap, quantity='x', type="default"):
+    ''' Computes the centre-of-mass value of a given vector componenet'''
     x = UserQuantity(quantity).fetch(type, snap)[1]
     m = UserQuantity('m').fetch(type, snap)[1]
     

@@ -209,6 +209,10 @@ class Simulation : public SimulationBase
   void AddHexagonalLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
   int AddLatticeSphere(int, FLOAT *, FLOAT *, FLOAT, string);
   int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
+#if defined(FFTW_TURBULENCE)
+  void GenerateTurbulentVelocityField(int, int, DOUBLE, DOUBLE *);
+#endif
+
 
   // Subroutine prototypes
   //---------------------------------------------------------------------------
@@ -247,6 +251,7 @@ class Simulation : public SimulationBase
   void ShearFlow(void);
   void SoundWave(void);
   void TripleStar(void);
+  void TurbulentCore(void);
   void UniformBox(void);
   void UniformSphere(void);
 
