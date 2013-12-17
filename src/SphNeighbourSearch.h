@@ -68,8 +68,6 @@ struct BinaryTreeCell {
   int ilast;                        ///< i.d. of last particle in cell
   int Nactive;                      ///< No. of active particles in cell
   int N;                            ///< No. of particles in cell
-  FLOAT worktot;                    ///< Total amount of work
-  FLOAT rwork[ndim];                ///< Weighted position of centre of work
   FLOAT cdistsqd;                   ///< Opening distances squared
   FLOAT r[ndim];                    ///< Position of centre of mass
   FLOAT v[ndim];                    ///< Velocity of centre of mass
@@ -81,6 +79,8 @@ struct BinaryTreeCell {
   FLOAT q[5];                       ///< Quadrupole moment tensor
   FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
   FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
+  FLOAT worktot;                    ///< Total amount of work
+  FLOAT rwork[ndim];                ///< Weighted position of centre of work
 };
 
 

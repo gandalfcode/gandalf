@@ -38,6 +38,7 @@
 #include "Exception.h"
 #include "InlineFuncs.h"
 #include "MpiControl.h"
+#include "MpiTree.h"
 using namespace std;
 
 
@@ -64,6 +65,10 @@ MpiControl<ndim>::MpiControl()
   // Create and commit the particle datatype
   particle_type = SphParticle<ndim>::CreateMpiDataType();
   MPI_Type_commit(&particle_type);
+
+  // Create and commit the particle int datatype
+  partint_type = SphIntParticle<ndim>::CreateMpiDataType();
+  MPI_Type_commit(&partint_type);
 
   // Create diagnostics data structure in database
   diagnostics_type = Diagnostics<ndim>::CreateMpiDataType();
@@ -121,6 +126,7 @@ template <int ndim>
 MpiControl<ndim>::~MpiControl()
 {
   MPI_Type_free(&particle_type);
+  MPI_Type_free(&partint_type);
   MPI_Type_free(&box_type);
   MPI_Type_free(&diagnostics_type);
 }
@@ -132,10 +138,12 @@ MpiControl<ndim>::~MpiControl()
 /// Allocate all memory for MPI control class.
 //=============================================================================
 template <int ndim>
-void MpiControl<ndim>::AllocateMemory(void)
+void MpiControl<ndim>::AllocateMemory(int _Ntot)
 {
   mpinode = new MpiNode<ndim>[Nmpi];
   for (int inode=0; inode<Nmpi; inode++) {
+	mpinode[inode].Ntotmax = (2*_Ntot)/Nmpi;
+	mpinode[inode].ids = new int[mpinode[inode].Ntotmax];
     mpinode[inode].worksent = new FLOAT[Nmpi];
     mpinode[inode].workreceived = new FLOAT[Nmpi];
   }
@@ -319,10 +327,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
     debug2("[MpiControl::CreateInitialDomainDecomposition]");
 
     // Create MPI binary tree for organising domain decomposition
-    mpitree = new BinaryTree<ndim>(16,0.1,0.0,"geometric","monopole",1,Nmpi);
-
-    // Create all other MPI node objects
-    AllocateMemory();
+    mpitree = new MpiTree<ndim>(Nmpi);
 
     // Create binary tree from all SPH particles
     // Set number of tree members to total number of SPH particles (inc. ghosts)
@@ -330,6 +335,10 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
     mpitree->Ntot = sph->Nsph;
     mpitree->Ntotmax = max(mpitree->Ntot,mpitree->Ntotmax);
     mpitree->gtot = 0;
+
+    // Create all other MPI node objects
+    AllocateMemory(mpitree->Ntotmax);
+
 
     for (i=0; i<sph->Nsph; i++)
       for (k=0; k<ndim; k++) sph->rsph[ndim*i + k] = sph->sphdata[i].r[k];
@@ -362,7 +371,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
     mpitree->AllocateTreeMemory();
 
     // Create tree data structure including linked lists and cell pointers
-    mpitree->CreateTreeStructure();
+    mpitree->CreateTreeStructure(mpinode);
 
     // Find ordered list of ptcl positions ready for adding particles to tree
     mpitree->OrderParticlesByCartCoord(sph->sphdata);
@@ -372,10 +381,11 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
     // Create bounding boxes containing particles in each sub-tree
     for (inode=0; inode<Nmpi; inode++) {
-      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] =
-        mpitree->subtrees[inode]->box.boxmin[k];
-      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] =
-        mpitree->subtrees[inode]->box.boxmax[k];
+      //for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] =
+      //  mpitree->subtrees[inode]->box.boxmin[k];
+      //for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] =
+      //  mpitree->subtrees[inode]->box.boxmax[k];
+      cout << "MPIDOMAIN : " << mpinode[inode].domain.boxmin[0] << "     " << mpinode[inode].domain.boxmax[0] << endl;
     }
 
 
@@ -392,18 +402,18 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
     // Send particles to all other domains
     for (inode=1; inode<Nmpi; inode++) {
-      SendParticles(inode, mpitree->subtrees[inode]->Nsph,
-                    mpitree->subtrees[inode]->ids, sph->sphdata);
-      cout << "Sent " << mpitree->subtrees[inode]->Nsph
+      SendParticles(inode, mpinode[inode].Ntot,
+                    mpinode[inode].ids, sph->sphdata);
+      cout << "Sent " << mpinode[inode].Nsph
            << " particles to node " << inode << endl;
     }
 
     cout << "Sent all particles to other processes" << endl;
 
     // Delete all other particles from local domain
-    sph->Nsph = mpitree->subtrees[0]->Nsph;
+    sph->Nsph = mpinode[0].Nsph;
     partbuffer = new SphParticle<ndim>[sph->Nsph];
-    for (i=0; i<sph->Nsph; i++) partbuffer[i] = sph->sphdata[mpitree->subtrees[0]->ids[i]];
+    for (i=0; i<sph->Nsph; i++) partbuffer[i] = sph->sphdata[mpinode[0].ids[i]];
     for (i=0; i<sph->Nsph; i++) sph->sphdata[i] = partbuffer[i];
     delete[] partbuffer;
     cout << "Deleted all other particles from root node" << endl;
@@ -416,7 +426,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
   else {
 
     // Create MPI node objects
-    AllocateMemory();
+    AllocateMemory(sph->Nsph);
 
     // Receive bounding box data for domain and unpack data
     MPI_Bcast(boxbuffer,2*ndim*Nmpi,MPI_DOUBLE,0,MPI_COMM_WORLD);
@@ -447,7 +457,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
     for (i=0; i<sph->Nsph; i++) sph->sphdata[i] = partbuffer[i];
     delete[] partbuffer;
-    cout << "Dellocated partbuffer" << endl;
+    cout << "Deallocated partbuffer" << endl;
 
   }
   //---------------------------------------------------------------------------
@@ -555,7 +565,7 @@ void MpiControl<ndim>::LoadBalancing
 
     // Loop over potential domains and see if we need to transfer this particle to them
     for (inode=0; inode<Nmpi; inode++) {
-      if (rank == 1) cout << "R : " << ParticleInBox(part,mpinode[inode].domain) << "    " << inode << "     " << rank << "    " << part.r[0] << "    " << mpinode[inode].domain.boxmin[0] << "    " << mpinode[inode].domain.boxmax[0] << endl;
+      //if (rank == 1) cout << "R : " << ParticleInBox(part,mpinode[inode].domain) << "    " << inode << "     " << rank << "    " << part.r[0] << "    " << mpinode[inode].domain.boxmin[0] << "    " << mpinode[inode].domain.boxmax[0] << endl;
       if (ParticleInBox(part,mpinode[inode].domain)) {
         if (inode == rank) break;
         mpinode[rank].worksent[inode] += 1.0/(FLOAT) sph->sphintdata[i].nstep;
@@ -664,23 +674,26 @@ void MpiControl<ndim>::LoadBalancing
 	    //  rnew = mpitree->tree[c2].rwork[k] +
 	    //    2.0*(mpitree->tree[c2].bbmin[k] - mpitree->tree[c2].rwork[k])*
 	    //    mpitree->tree[c2].worktot/mpitree->tree[c].worktot;
-
-    	FLOAT dwdx1 = mpitree->tree[c+1].worktot/
-    			(mpitree->tree[c+1].bbmax[k] - mpitree->tree[c+1].rwork[k]);
-    	FLOAT dwdx2 = mpitree->tree[c2].worktot/
-    			(mpitree->tree[c2].bbmax[k] - mpitree->tree[c2].rwork[k]);
     	int i1 = mpitree->tree[c+1].c2g;
     	int i2 = mpitree->tree[c2].c2g;
-    	FLOAT dxnew = mpinode[i1].worksent[i2] - mpinode[i2].worksent[i1]/
+    	FLOAT dwdx1 = 0.5*mpitree->tree[c+1].worktot/
+    			(mpitree->tree[c+1].bbmax[k] - mpitree->tree[c+1].rwork[k]);
+    	FLOAT dwdx2 = 0.5*mpitree->tree[c2].worktot/
+    			(mpitree->tree[c2].rwork[k] - mpitree->tree[c2].bbmin[k]);
+    	FLOAT dxnew = (mpinode[i1].worksent[i2] + mpinode[i2].worksent[i1])/
     			(dwdx1 + dwdx2);
     	rnew = mpitree->tree[c+1].bbmax[k] + dxnew;
+    	cout << "dwdx : " << dwdx1 << "    " << dwdx2 << "      dxnew : " << dxnew << endl;
+    	cout << "worksent : " << mpinode[i1].worksent[i2] << "    " << mpinode[i2].worksent[i1] << endl;
+    	cout << "rold : " << mpitree->tree[c+1].bbmax[k] << "     rnew : " << rnew << endl;
 
     	mpitree->tree[c+1].bbmax[k] = rnew;
         mpitree->tree[c2].bbmin[k] = rnew;
         cout << "work : " << mpitree->tree[c+1].worktot << "    " << mpitree->tree[c2].worktot << endl;
-        cout << "Child 1 : " << mpitree->tree[c+1].bbmin[k] << "     " << mpitree->tree[c+1].bbmax[k] << endl;
-        cout << "Child 2 : " << mpitree->tree[c2].bbmin[k] << "     " << mpitree->tree[c2].bbmax[k] << endl;
-        cout << "rnew : " << rnew << endl;
+        cout << "Child 1 domain : " << mpitree->tree[c+1].bbmin[k] << "     " << mpitree->tree[c+1].bbmax[k] << endl;
+        cout << "Child 1 rbox   : " << mpinode[i1].rbox.boxmin[k] << "     " << mpinode[i1].rbox.boxmax[k] << endl;
+        cout << "Child 2 domain : " << mpitree->tree[c2].bbmin[k] << "     " << mpitree->tree[c2].bbmax[k] << endl;
+        cout << "Child 2 rbox   : " << mpinode[i2].rbox.boxmin[k] << "     " << mpinode[i2].rbox.boxmax[k] << endl;
       }
 
       // For leaf cells, set new MPI node box sizes 
@@ -774,16 +787,22 @@ void MpiControl<ndim>::LoadBalancing
 
   // Send and receive particles from/to all other nodes
   std::vector<SphParticle<ndim> > sendbuffer, recvbuffer;
+  std::vector<SphIntParticle<ndim> > sendbufferint, recvbufferint;
   for (int iturn = 0; iturn<my_matches.size(); iturn++) {
     int inode = my_matches[iturn];
 
     int N_to_transfer = particles_to_transfer[inode].size();
+    cout << "Transfer!!  Rank : " << rank << "    N_to_transfer : " << N_to_transfer << "    dest : " << inode << endl;
     sendbuffer.clear(); sendbuffer.resize(N_to_transfer);
+    sendbufferint.clear(); sendbufferint.resize(N_to_transfer);
     recvbuffer.clear();
+    recvbufferint.clear();
 
     // Copy particles into send buffer
-    for (int ipart; ipart < N_to_transfer; ipart++) {
-      sendbuffer[ipart] = sph->sphdata[particles_to_transfer[inode][ipart]];
+    for (int ipart=0; ipart < N_to_transfer; ipart++) {
+      int index = particles_to_transfer[inode][ipart];
+      sendbuffer[ipart] = sph->sphdata[index];
+      sendbufferint[ipart] = sph->sphintdata[index];
     }
 
     // Do the actual send and receive
@@ -800,22 +819,28 @@ void MpiControl<ndim>::LoadBalancing
     //Do the actual communication, sending and receiving in the right order
     for (int i=0; i < 2; i++) {
       if (send_turn) {
+        cout << "Sending " << N_to_transfer << " from " << rank << " to " << inode << endl;
         MPI_Send(&sendbuffer[0], N_to_transfer, particle_type, inode, tag_bal, MPI_COMM_WORLD);
+        MPI_Send(&sendbufferint[0], N_to_transfer, partint_type, inode, tag_bal, MPI_COMM_WORLD);
         send_turn = false;
+        cout << "Sent " << N_to_transfer << " from " << rank << " to " << inode << endl;
       }
       else {
         int N_to_receive;
         MPI_Status status;
         MPI_Probe(inode, tag_bal, MPI_COMM_WORLD, &status);
         MPI_Get_count(&status, particle_type, &N_to_receive);
-        recvbuffer.resize(N_to_receive);
+        recvbuffer.resize(N_to_receive); recvbufferint.resize(N_to_receive);
+        cout << "Rank " << rank << " receiving " << N_to_receive << " from " << inode << endl;
         if (sph->Nsph+N_to_receive > sph->Nsphmax) {
           cout << "Memory problem : " << rank << " " << sph->Nsph << " " << N_to_receive << " " << sph->Nsphmax <<endl;
           string message = "Not enough memory for transfering particles";
           ExceptionHandler::getIstance().raise(message);
         }
         MPI_Recv(&recvbuffer[0], N_to_receive, particle_type, inode, tag_bal, MPI_COMM_WORLD, &status);
+        MPI_Recv(&recvbufferint[0], N_to_receive, partint_type, inode, tag_bal, MPI_COMM_WORLD, &status);
         send_turn = true;
+        cout << "Rank " << rank << " received " << N_to_receive << " from " << inode << endl;
       }
     }
 
@@ -823,7 +848,10 @@ void MpiControl<ndim>::LoadBalancing
     int running_counter = sph->Nsph;
     // TODO: check we have enough memory
     for (int i=0; i< recvbuffer.size(); i++) {
-      sph->sphdata[running_counter++] = recvbuffer[i];
+      sph->sphdata[running_counter] = recvbuffer[i];
+      sph->sphintdata[running_counter] = recvbufferint[i];
+      sph->sphintdata[running_counter].part = &sph->sphdata[running_counter];
+      running_counter++;
     }
     sph->Nsph = running_counter;
 

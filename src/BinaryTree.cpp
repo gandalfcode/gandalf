@@ -457,6 +457,7 @@ void BinaryTree<ndim>::LoadParticlesToTree
 {
   int c;                           // Cell counter
   int cc;                          // Secondary cell counter
+  int c2;                          // ..
   int g;                           // ..
   int k;                           // Dimensionality counter
   int kk;                          // ..
@@ -518,20 +519,22 @@ void BinaryTree<ndim>::LoadParticlesToTree
         tree[pc[j]].ilast = j;
       }
       else {
-        pc[j] = tree[cc].c2;
-        ccap[tree[cc].c2] += pw[j];
-        if (tree[tree[cc].c2].ifirst == -1) {
-          tree[tree[cc].c2].ifirst = j;
+        c2 = tree[cc].c2;
+        pc[j] = c2;
+        ccap[c2] += pw[j];
+        if (tree[c2].ifirst == -1) {
+          tree[c2].ifirst = j;
           for (kk=0; kk<ndim; kk++) {
             tree[cc+1].bbmin[kk] = tree[cc].bbmin[kk];
             tree[cc+1].bbmax[kk] = tree[cc].bbmax[kk];
-            tree[tree[cc].c2].bbmin[kk] = tree[cc].bbmin[kk];
-            tree[tree[cc].c2].bbmax[kk] = tree[cc].bbmax[kk];
-	  }
+            tree[c2].bbmin[kk] = tree[cc].bbmin[kk];
+            tree[c2].bbmax[kk] = tree[cc].bbmax[kk];
+          }
           tree[cc+1].bbmax[k] = 
-            0.5*(r[ndim*tree[cc+1].ifirst + k] + r[ndim*j + k]);
+            0.5*(r[ndim*tree[c2].ifirst + k] + r[ndim*j + k]);
           tree[tree[cc].c2].bbmin[k] = 
-            0.5*(r[ndim*tree[cc+1].ifirst + k] + r[ndim*j + k]);
+            0.5*(r[ndim*tree[c2].ifirst + k] + r[ndim*j + k]);
+          //cout << "SPLITTING TREE : " << tree[cc+1].bbmax[k] << endl;
         }
         tree[pc[j]].ilast = j;
       }

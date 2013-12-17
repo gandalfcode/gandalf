@@ -32,7 +32,7 @@
 #include "MpiNode.h"
 #include "Sph.h"
 #include "Nbody.h"
-#include "SphNeighbourSearch.h"
+#include "MpiTree.h"
 #include "SphParticle.h"
 #include "DomainBox.h"
 #include "Diagnostics.h"
@@ -63,6 +63,7 @@ class MpiControl
   std::vector<SphParticle<ndim> > sendbuffer; ///< Used by the SendParticles routine
 
   MPI_Datatype particle_type;        ///< Datatype for the particles
+  MPI_Datatype partint_type;         ///< Datatype for the SphIntParticle structure
   MPI_Datatype box_type;             ///< Datatype for the box
   MPI_Datatype diagnostics_type;     ///< Datatype for diagnostic info
 
@@ -94,7 +95,7 @@ class MpiControl
 
   // Other functions
   //---------------------------------------------------------------------------
-  void AllocateMemory(void);
+  void AllocateMemory(int);
   void DeallocateMemory(void);
   void SetNeibSearch(SphNeighbourSearch<ndim>* _neibsearch) {neibsearch=_neibsearch;}
 
@@ -116,7 +117,7 @@ class MpiControl
 
   char hostname[MPI_MAX_PROCESSOR_NAME];
   DomainBox<ndim> mpibox;           ///< ..
-  BinaryTree<ndim> *mpitree;        ///< Main MPI load balancing tree
+  MpiTree<ndim> *mpitree;           ///< Main MPI load balancing tree
   MpiNode<ndim> *mpinode;           ///< Data for all MPI nodes
 
 };
