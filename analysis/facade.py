@@ -110,10 +110,10 @@ Optional arguments:
     sim        : Number of the simulation to plot. Defaults to 'current'.    
     overplot   : If True, overplots on the previous existing plot rather
                  than deleting it. Defaults to False.
-    autoscale  : If True (default), the limits of the plot are set
+    autoscale  : If True, the limits of the plot are set
                  automatically.  Can also be set to 'x' or 'y' to specify
                  that only one of the axis has to use autoscaling.
-                 If False, autoscaling is not used. On an axis that does
+                 If False (default), autoscaling is not used. On an axis that does
                  not have autoscaling turned on, global limits are used
                  if defined for the plotted quantity.
     xunit      : Specify the unit to use for the plotting for the quantity
@@ -172,10 +172,10 @@ Optional arguments:
     sim        : Number of the simulation to plot. Defaults to 'current'.    
     overplot   : If True, overplots on the previous existing plot rather
                  than deleting it. Defaults to False.
-    autoscale  : If True (default), the limits of the plot are set
+    autoscale  : If True, the limits of the plot are set
                  automatically.  Can also be set to 'x' or 'y' to specify
                  that only one of the axis has to use autoscaling.
-                 If False, autoscaling is not used. On an axis that does
+                 If False (default), autoscaling is not used. On an axis that does
                  not have autoscaling turned on, global limits are used
                  if defined for the plotted quantity.
     xunit      : Specify the unit to use for the plotting for the quantity
@@ -577,10 +577,10 @@ Optional arguments:
     sim        : Number of the simulation to plot. Defaults to 'current'.    
     overplot   : If True, overplots on the previous existing plot rather
                  than deleting it. Defaults to False.
-    autoscale  : If True (default), the limits of the plot are set
+    autoscale  : If True, the limits of the plot are set
                  automatically.  Can also be set to 'x' or 'y' to specify
                  that only one of the axis has to use autoscaling.
-                 If False, autoscaling is not used. On an axis that does
+                 If False (default), autoscaling is not used. On an axis that does
                  not have autoscaling turned on, global limits are used
                  if defined for the plotted quantity.
     xunit      : Specify the unit to use for the plotting for the quantity
