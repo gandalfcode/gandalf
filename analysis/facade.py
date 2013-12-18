@@ -107,6 +107,7 @@ Required arguments:
     y          : Quantity on the y-axis. Must be a string.
         
 Optional arguments:
+    type       : The type of the particles to plot (e.g. 'star' or 'sph').
     snap       : Number of the snapshot to plot. Defaults to 'current'.       
     sim        : Number of the simulation to plot. Defaults to 'current'.    
     overplot   : If True, overplots on the previous existing plot rather
@@ -144,30 +145,21 @@ Optional arguments:
 
 
 #------------------------------------------------------------------------------
-def plot_vs_time_quantity_particle(quantity, type='default', id=0):
-    '''Plot as a function of time a given quantity for a given particle.
-Type specifies the type of particle to retrieve the information from.
-id is an integer specifying the desired particle.
-'''
-    if id == 'None':
-        id = None
-    else:
-        id=int(id)
-    from compute import particle_data
-    name='part_'+quantity+'_'+str(id)
-    CreateTimeData(name,particle_data,quantity=quantity,type=type,id=id)
-    plot_vs_time(name)
-    
-
-#------------------------------------------------------------------------------
-def plot_vs_time(y, sim="current", overplot=False, autoscale=False,
+def time_plot (x, y, sim="current", overplot=False, autoscale=False,
                  xunit="default", yunit="default", xaxis="linear",
-                 yaxis="linear", **kwargs):
-    '''Plot given data as a function of time.  Creates a new plotting window if
-one does not already exist.
+                 yaxis="linear", idx=None, idy=None, id=None, 
+                 typex="default", typey="default", type="default", **kwargs):
+    '''Plot two quantities as evolved in time one versus the another.  Creates a new plotting window
+     if one does not already exist.
 
 Required arguments:
-    y          : Quantity on y-axis.  Must be a string.
+    x          : Quantity on x-axis. Must be a string. The quantity is looked up in the
+                 quantities defined as a function of time. If it is not found there, then
+                 we try to interpret it as a quantity defined for a particle. In this case,
+                 the user needs to pass either idx either id to specify which particle
+                 he whishes to look-up.
+    y          : Quantity on y-axis.  Must be a string. The interpretation is like for
+                 the previous argument.
     
 Optional arguments:     
     sim        : Number of the simulation to plot. Defaults to 'current'.    
@@ -183,11 +175,22 @@ Optional arguments:
                  on the x-axis.
     yunit      : Specify the unit to use for the plotting for the quantity
                  on the y-axis.
+    idx        : id of the particle to plot on the x-axis. Ignored if the quantity given
+                 (e.g., com_x) does not depend on the id.
+    idy        : same as previous, on the y-axis.
+    id         : same as the two previous ones. To be used when the id is the same on both
+                 axis. If set, overwrites the passed idx and idy.
+    typex      : type of particles on the x-axis. Ignored if the quantity given does not
+                 depend on it
+    typey      : as the previous one, on the y-axis.
+    type       : as the previous ones, for both axis at the same time. If set, overwrites
+                 typex and typey.
 '''
     simno = get_sim_no(sim)
     overplot = to_bool(overplot)
-    command = Commands.PlotVsTime(y,simno,overplot,autoscale,
-                                  xunit,yunit,xaxis,yaxis,**kwargs)
+    command = Commands.TimePlot(x, y,simno,overplot,autoscale,
+                                  xunit,yunit,xaxis,yaxis,idx, idy, id, 
+                                  typex, typey, type, **kwargs)
     data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
     
@@ -738,6 +741,9 @@ def init():
     CreateUserQuantity('press','(gamma_eos - 1)*rho*u',scaling_factor='press',label='P')
     CreateUserQuantity('sound','sqrt(gamma_eos*(gamma_eos - 1)*u)',scaling_factor='v', label='$c_s$')
     CreateUserQuantity('temp','(gamma_eos - 1)*u',scaling_factor='temp',label='T')
+    
+    from data_fetcher import get_time_snapshot
+    CreateTimeData('t',get_time_snapshot)
     
     from compute import COM
     CreateTimeData('com_x',COM)

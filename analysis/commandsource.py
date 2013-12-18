@@ -350,17 +350,33 @@ class PlotCommand(Command):
 
 
 #------------------------------------------------------------------------------
-class PlotVsTime (PlotCommand):
-    '''Inherited class for plotting scalar quantities as a function of time
-    (i.e. from different snapshots in a simulation'''
+class TimePlot (PlotCommand):
+    '''Inherited class for plotting two scalar quantities as evolved in time
+    (i.e. from different snapshots in a simulation) one versus the another.'''
+    
+    style = {}
 
     #--------------------------------------------------------------------------
-    def __init__(self, yquantity, sim, overplot, autoscale, 
-                 xunit, yunit, xaxis, yaxis, **kwargs):
-        PlotCommand.__init__(self, 't', yquantity, None, sim, overplot, 
+    def __init__(self, xquantity, yquantity, sim, overplot, autoscale, 
+                 xunit, yunit, xaxis, yaxis, idx, idy, id, 
+                 typex, typey, type, **kwargs):
+        PlotCommand.__init__(self, xquantity, yquantity, None, sim, overplot, 
                               autoscale, xunit, yunit, xaxis, yaxis)
+        
         self._type = type
         self._kwargs = kwargs
+        
+        if id is not None:
+            idx=id
+            idy=id
+        self.idx = idx
+        self.idy = idy
+
+        if type is not "default":
+            typex=type
+            typey=type
+        self.typex = type
+        self.typey = type
 
 
     #--------------------------------------------------------------------------
@@ -368,7 +384,7 @@ class PlotVsTime (PlotCommand):
         
         # Merge our dictionary with the user-provided one.  Note that if
         # there are duplicates, the user-provided one will overwrite ours.
-        kwargs = dict(self._kwargs.items())
+        kwargs = dict(self.style.items() + self._kwargs.items())
         line, = ax.plot(data.x_data, data.y_data, '.', **kwargs)
         return line
 
@@ -377,26 +393,14 @@ class PlotVsTime (PlotCommand):
     def prepareData(self, globallimits):
         sim = self.get_sim()
         
-        y_data = TimeData(self.yquantity).fetch(sim)
-        time = map(lambda snap: snap.t, sim.snapshots)
-        time = np.asarray(time)
-        
-        time_unit_obj = sim.simunits.t
-        xunitinfo = UnitInfo()
-        if self.xunit == "default":
-            self.xunit = time_unit_obj.outunit
-        xscaling_factor = time_unit_obj.OutputScale(self.xunit)
-        xunitinfo.name = self.xunit
-        xunitinfo.label = time_unit_obj.LatexLabel(self.xunit)
-        xlabel = 't'
-        
-        yunitinfo = UnitInfo()
-        ylabel = ''
+        #note that at the moment ignores xunit and yunit
+        xunitinfo, x_data, xscaling_factor, xlabel = TimeData(self.xquantity,id=self.idx).fetch(sim, type=self.typex, unit=self.xunit)            
+        yunitinfo, y_data, yscaling_factor, ylabel = TimeData(self.yquantity,id=self.idy).fetch(sim, type=self.typey, unit=self.yunit)
         
         self.set_labels('x', xunitinfo, xlabel)
         self.set_labels('y', yunitinfo, ylabel)
         
-        data = Data(xscaling_factor*time, y_data)
+        data = Data(x_data*xscaling_factor, y_data*yscaling_factor)
         return data
         
 

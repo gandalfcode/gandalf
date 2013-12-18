@@ -24,31 +24,42 @@ import commandsource as Commands
 import numpy as np
 from scipy import interpolate
 from data_fetcher import UserQuantity
+from swig_generated.SphSim import UnitInfo
+
 
 '''This module collects helper functions to compute useful quantities'''
 
 
 #------------------------------------------------------------------------------
-def particle_data(snap, quantity, type="default", id=None):
+def particle_data(snap, quantity, type="default", unit="default", id=None):
     '''Return for a given snapshot, a given quantity of a given type. If id is
 not specified, return an array with the quantity for each particle. Otherwise,
 return a scalar quantity only for the given particle.
 '''
-    values = UserQuantity(quantity).fetch(type, snap)[1]
+    unitinfo, values, scaling_factor, label = UserQuantity(quantity).fetch(type, snap, unit=unit)
     if values.size == 0:
-        return 0.0
+        return np.nan
     if id == None:
-        return values
+        values_to_return = values
     else:
-        return values[id]
+        values_to_return = values[id]
+    return unitinfo, values_to_return, scaling_factor, label
 
 
 #------------------------------------------------------------------------------
-def time_derivative(snap, quantity, type="default", id=None):
-    '''Return for a given snapshot, a given quantity of a given type. If id is
-not specified, return an array with the quantity for each particle. Otherwise,
-return a scalar quantity only for the given particle.
-'''
+def time_derivative(snap, quantity, type="default", unit="default", id=None):
+    '''Return for a given snapshot, the time derivative of a given quantity 
+    of a given type. If possible, use central difference. Otherwise, use
+    forward/backward difference. If id is not specified, return an array with 
+    the quantity for each particle. Otherwise, return a scalar quantity only 
+    for the given particle.
+    '''
+    from data_fetcher import get_time_snapshot
+    
+    if unit != "default":
+        raise NotImplementedError("""time_derivative implemented only with default units
+        at the moment!""")
+    
     # Find previous and next snapshots.  If first or last snapshot, then
     # return the current snapshot to compute a value
     try:
@@ -60,29 +71,36 @@ return a scalar quantity only for the given particle.
     except BufferException:
         snap2 = snap
 
-    # Return array of values of quantity.  If either are empty, return zero
-    values1 = UserQuantity(quantity).fetch(type, snap1)[1]
+    # Return array of values of quantity.  If either are empty, return nan
+    quantityunitinfo, values1, quantityscaling_factor, label = UserQuantity(quantity).fetch(type, snap1)
     values2 = UserQuantity(quantity).fetch(type, snap2)[1]
     if values1.size == 0 or values2.size == 0:
-        return 0.0
+        return np.nan
+
+    timeunitinfo, time, timescaling_factor, tlabel = get_time_snapshot(snap)
+    scaling_factor = quantityscaling_factor/timescaling_factor
+    unitinfo = UnitInfo()
+    unitinfo.name= quantityunitinfo.name + "_" + timeunitinfo.name
+    unitinfo.label= quantityunitinfo.label + "\\ " + timeunitinfo.label + "^{-1}"
 
     # Calculate the time derivative with central difference and return value
     tdiff = snap2.t - snap1.t
     if id == None:
         timederiv = (values2 - values1)/tdiff
-        return timederiv
     else:
         timederiv = (values2[id] - values1[id])/tdiff
-        return timederiv
+    return unitinfo, timederiv, scaling_factor, label+"_t"
 
 
 #------------------------------------------------------------------------------
-def COM(snap, quantity='x', type="default"):
-    ''' Computes the centre-of-mass value of a given vector componenet'''
-    x = UserQuantity(quantity).fetch(type, snap)[1]
+def COM(snap, quantity='x', type="default", unit="default"):
+    ''' Computes the centre-of-mass value of a given vector component'''
+    xunitinfo, x, xscaling_factor, xlabel = UserQuantity(quantity).fetch(type, snap, unit)
     m = UserQuantity('m').fetch(type, snap)[1]
     
-    return (x*m).sum()/m.sum()
+    com = (x*m).sum()/m.sum()
+    
+    return xunitinfo, com, xscaling_factor, xlabel+'_COM'
 
 
 #------------------------------------------------------------------------------
@@ -121,11 +139,10 @@ def L1errornorm(ic, x=None, y=None, xmin=None, xmax=None,
 
 
 #------------------------------------------------------------------------------
-def lagrangian_radii(snap, mfrac=0.5, type="default"):
+def lagrangian_radii(snap, mfrac=0.5, type="default", unit="default"):
     '''Computes the Lagrangian radii from all particles in simulation'''
-    
-    r = UserQuantity('r').fetch(type, snap)[1]
-    m = UserQuantity('m').fetch(type, snap)[1]
+    runitinfo, r, rscaling_factor, rlabel = UserQuantity('r').fetch(type, snap, unit)
+    m = UserQuantity('m').fetch(type, snap, unit)[1]
 
     # Find particle ids in order of increasing radial distance
     porder = np.argsort(r)
@@ -134,4 +151,7 @@ def lagrangian_radii(snap, mfrac=0.5, type="default"):
     mtotal = mcumulative[-1]
     mlag = mfrac*mtotal
     index = np.searchsorted(mcumulative,mlag)
-    return 0.5*(r[porder[index-1]] + r[porder[index]])
+    lag_radius = 0.5*(r[porder[index-1]] + r[porder[index]])
+    return runitinfo, lag_radius, rscaling_factor, 'lag_radius_' + str(mfrac)
+
+    
