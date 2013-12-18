@@ -55,6 +55,10 @@ from data_fetcher import CreateUserQuantity, CreateTimeData
 import signal
 from time import sleep
 from statistics import structure_function
+import subprocess
+import tempfile
+import glob
+import os
 
 
 
@@ -319,6 +323,41 @@ Optional arguments:
     except KeyError:
         kwargs['autoscale']=False
     render(x, y, renderq, overplot=True, **kwargs)
+
+
+
+#------------------------------------------------------------------------------
+def make_movie(filename, snapshots='all', window_no=0, fps=24):
+    '''Generates movie for plots generated in given window'''
+
+    # Remove all temporary files in the directory (in case they still exist)
+    tmpfilelist = glob.glob('tmp.?????.png')
+    for file in tmpfilelist:
+        os.remove(file)
+
+    sim = SimBuffer.get_current_sim()
+    nframes = len(sim.snapshots)
+
+    # Loop through all snapshots and create temporary images
+    if snapshots == 'all':
+        for isnap in range(len(sim.snapshots)):
+            snap(isnap)
+            tmpfile = 'tmp.' + str(isnap).zfill(5) + '.png'
+            savefig(tmpfile)
+
+    # Wait until all plotting processes have finished before making mp4 file
+    Singletons.free.wait()
+
+    # Now join all temporary files together with ffmpeg
+    subprocess.call(["ffmpeg","-y","-r",str(fps),"-i", "tmp.%05d.png", \
+                     "-vcodec","mpeg4", "-qscale","5", "-r", str(fps), \
+                     filename])
+
+    # Now remove all temporary files just created to make movie
+    tmpfilelist = glob.glob('tmp.?????.png')
+    for file in tmpfilelist:
+        os.remove(file)
+
 
 
 #------------------------------------------------------------------------------
