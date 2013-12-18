@@ -657,7 +657,7 @@ class RenderPlotCommand (PlotCommand):
             returncode, renderscaling_factor = rendering.CreateSliceRenderingGrid(xres, yres, self.xquantity, self.yquantity, self.zquantity, self.renderquantity,
                                                  self.renderunit, self.xmin, self.xmax,
                                                  self.ymin, self.ymax, self.zslice, rendered, snap)
-        rendered = rendered.reshape(xres,yres)
+        rendered = rendered.reshape(yres,xres)
         #data = Data(x*xscaling_factor, y*yscaling_factor, rendered*renderscaling_factor)
         data = Data(None, None, rendered*renderscaling_factor)
         
