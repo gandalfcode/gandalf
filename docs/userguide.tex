@@ -293,6 +293,7 @@ shearflow         & = Shear flow test \\
 shocktube         & = Shocktube test \\
 soundwave         & = 1D soundwave perturbation \\
 sphere            & = Uniform density sphere \\
+turbcore          & = Turbulent spherical, self-gravitating core \\
 python            & = Generate initial conditions from python
 \end{tabular}
 
@@ -310,13 +311,13 @@ python            & = Generate initial conditions from python
 
 \item \var{dt\_snap} : Snapshot time interval (given in {\var tunit}s)
 
-\item \var{tfirstsnap} : Time of first snapshot (given in {\var tunit}s)
+\item \var{tsnapfirst} : Time of first snapshot (given in {\var tunit}s)
 
 \item \var{Nstepsmax} : Maximum no. of steps in simulation before termination
 
 \item \var{noutputstep} : Frequency of screen output (in units of integer steps)
 
-%\item \var{ndiagstep} : No. of complete block steps between diagnostic output
+\item \var{ndiagstep} : No. of complete block steps between diagnostic output
 
 \end{itemize}
 
@@ -416,37 +417,57 @@ gcm2\_s       & = Gram centimetres squared per second
 rad\_s & = Radians per second
 \end{tabular}
 
-%\item \var{dmdtoutunit} : Mass (accretion) rate unit \\
-%\begin{itemize}{ll}
-%m\_sun\_myr  & = Solar masses per megayear \\
-%m\_sun\_yr   & = Solar masses per year \\
-%kg\_s        & = kilogrammes per second \\
-%g\_s         & = grammes per second
-%\end{tabular}
+\item \var{dmdtoutunit} : Mass (accretion) rate unit \\
+\begin{tabular}{ll}
+m\_sun\_myr  & = Solar masses per megayear \\
+m\_sun\_yr   & = Solar masses per year \\
+kg\_s        & = kilogrammes per second \\
+g\_s         & = grammes per second
+\end{tabular}
 
-%\item \var{Loutunit} : Luminosity unit
+\item \var{Loutunit} : Luminosity unit \\
+\begin{tabular}{ll}
+L\_sun       & = Solar luminosity \\
+W            & = watts \\
+erg\_s       & = ergs per second
+\end{tabular}
 
-%\item \var{kappaoutunit} : Volume opacity unit
+\item \var{kappaoutunit} : Volume opacity unit \\
+\begin{tabular}{ll}
+m2\_kg       & = metre squared per kilogram \\
+cm2\_g       & = centimetre squared per gram
+\end{tabular}
 
-%\item \var{Bunit} : Magnetic field unit
+\item \var{Boutunit} : Magnetic field unit \\
+\begin{tabular}{ll}
+tesla     & = tesla \\
+gauss     & = gauss
+\end{tabular}
 
-%\item \var{Qunit} : Charge unit
+\item \var{Qoutunit} : Charge unit \\
+\begin{tabular}{ll}
+C    & = coulomb \\
+e    & = electron charge
+\end{tabular}
 
-\item \var{uunit} : Specific energy unit \\
+\item \var{Jcuroutunit} : Current density unit \\
+\begin{tabular}{ll}
+C\_s\_m2    & = coloumb per second per metre squared
+\end{tabular}
+
+\item \var{uoutunit} : Specific energy unit \\
 \begin{tabular}{ll}
 J\_kg  & = Joules per kilogram \\
 erg\_g & = ergs per gram
 \end{tabular}
 
-%\item \var{Jcurunit} : Current density unit
-
-\item \var{dudtunit} : Heating rate unit \\
+\item \var{dudtoutunit} : Heating rate unit \\
 \begin{tabular}{ll}
 J\_kg\_s  & = Joules per kilogram per second \\
 erg\_g\_s & = ergs per gram per second
 \end{tabular}
 
-\item \var{tempunit} : Temperature unit \\
+\item \var{tempoutunit} : Temperature unit \\
 \begin{tabular}{ll}
 K & = Kelvin
 \end{tabular}
@@ -499,7 +520,7 @@ quintic   & = Quintic spline kernel \\
 gaussuan  & = Gaussian kernel (truncated at 3h)
 \end{tabular}
 
-\item \var{tabulatedkernel} : Tabulate kernel function  ($1$ or $0$)
+\item \var{tabulated\_kernel} : Tabulate kernel function  ($1$ or $0$)
 
 \item \var{h\_fac}     : Particles-per-smoothing length factor (eta in papers)
 
@@ -549,6 +570,8 @@ PEC         & = Explicit integration using predict-correct-evaluate scheme
 %\item \var{u\_eq} : Equilibrium internal energy (for simple cooling law)
 
 
+\item \var{time\_dependent\_avisc} : Morris \& Monaghan time-dependent viscosity ($1$ or $0$)
+
 \item \var{avisc} : Artificial viscosity options \\
 \begin{tabular}{ll}
 none  & = No artificial viscosity \\
@@ -564,30 +587,29 @@ wadsley2008 & = Wadsley et al. (2008) conductivity
 
 \item \var{alpha\_visc} : (Maximum) value of alpha viscosity parameter
 
+\item \var{alpha\_visc\_min} : Minimum value of alpha for time-dependent viscosity
+
 \item \var{beta\_visc} : Value of beta viscosity as a multiple of alpha
 
 
-\item \var{riemann\_solver} : Riemann solver to be used in Godunov SPH \\
-\begin{tabular}{ll}
-exact  & = Exact Riemann solver (Toro 19??) \\
-hllc   & = HLLC approximate Riemann Solver (????)
-\end{tabular}
+%\item \var{riemann\_solver} : Riemann solver to be used in Godunov SPH \\
+%\begin{tabular}{ll}
+%exact  & = Exact Riemann solver (Toro 19??) \\
+%hllc   & = HLLC approximate Riemann Solver (????)
+%\end{tabular}
 
-\item \var{riemann\_order} : Order of Riemann solver \\
-\begin{tabular}{ll}
-1  & = 1st-order Riemann solver (i.e. Godunov's original method) \\
-2  & = 2nd-order Riemann solver (i.e. 2nd-order MUSCL-type reconstruction)
-\end{tabular}
+%\item \var{riemann\_order} : Order of Riemann solver \\
+%\begin{tabular}{ll}
+%1  & = 1st-order Riemann solver (i.e. Godunov's original method) \\
+%2  & = 2nd-order Riemann solver (i.e. 2nd-order MUSCL-type reconstruction)
+%\end{tabular}
 
-\item \var{slope\_limiter} : Slope limiter for second-order Riemann solver \\
-\begin{tabular}{ll}
-????     & = ???? \\
-\end{tabular}
+%\item \var{slope\_limiter} : Slope limiter for second-order Riemann solver \\
 
+%\begin{tabular}{ll}
+%????     & = ???? \\
+%\end{tabular}
 
-%\item \var{td\_avisc} : Use time-dependent viscosity? (\var{.true.} or \var{.false.})
-
-%\item \var{alpha\_min\_visc} : Minimum value of alpha for time-dependent viscosity
 
 \end{itemize}
 
@@ -600,16 +622,10 @@ hllc   & = HLLC approximate Riemann Solver (????)
 
 \item \var{self\_gravity} : Compute gravitational forces?   ($1$ or $0$)
 
-%\item \var{grav\_kernel} : 
-
-%\item \var{meanh\_gravity} : Use mean-smoothing length for gravitational forces? (\var{.true.} or \var{.false.})
-
-%\item \var{thetamaxsqd} : Gravity tree opening angle (squared)
-
-%\item \var{external\_force}   : Add an external gravitational field
-
-%\item \var{ggrav}             : External gravitational acceleration
-
+\item \var{grav\_kernel} : Form of gravitational softening \\
+\begin{tabular}{ll}
+mean\_h   & = Mean smoothing length softening
+\end{tabular}
 
 \end{itemize}
 
@@ -640,7 +656,11 @@ quadrupole & = Include quadrupole moment terms for cell gravity
 
 \item \var{Nleafmax} : Maximum no. of particles allowed in tree leaf cell
 
-\item \var{thetamaxsqd} : Maximum tree opening angle (squared)
+\item \var{ntreebuildstep} : Integer steps inbetween tree re-builds
+
+\item \var{ntreestock} : Integer steps inbetween tree re-stocks
+
+\item \var{thetamaxsqd} : Maximum tree gravitational walk opening angle (squared)
 
 \end{itemize}
 
@@ -653,7 +673,7 @@ quadrupole & = Include quadrupole moment terms for cell gravity
 
 \begin{itemize}
 
-\item \var{sub\_systems} : Identify and integrate sub-systems separately?
+\item \var{sub\_systems} : Identify and integrate sub-systems separately? ($1$ or $0$)
 
 \item \var{sub\_system\_integration} : Main N-body integration algorithm \\
 \begin{tabular}{ll}
@@ -784,6 +804,25 @@ wall     & = wall at boundary (i.e. reflection of particles)
 \item \var{gasfrac}      : Fraction of mass in gas particles
 \item \var{starfrac}     : Fraction of mass in star particles
 
+\item \var{m1}           : Mass of star 1
+\item \var{m2}           : Mass of star 2
+\item \var{m3}           : Mass of star 3
+\item \var{m4}           : Mass of star 4
+
+\item \var{abin}         : Semi-major axis of binary orbit 1
+\item \var{abin2}        : Semi-major axis of binary orbit 2
+\item \var{ebin}         : Orbital eccentricity of binary orbit 1
+\item \var{ebin2}        : Orbital eccentricity of binary orbit 2
+
+\item \var{phirot}       : Phi Euler rotation angle
+\item \var{thetarot}     : Theta Euler rotation angle
+\item \var{psirot}       : Psi Euler rotation angle
+\item \var{vmachbin}     : Speed of binary COM through ambient gas
+
+\item \var{alpha\_turb}  : Turbulent energy (as multiple of gravitational energy)
+\item \var{power\_turb}  : Power spectrum slope of initial turbulent velocity field
+
+
 \end{itemize}
 
 
@@ -817,7 +856,8 @@ At present, the following initial conditions are included in the code : \newline
 - rti       &: Rayleigh-Taylor instability \\
 - sedov     &: Sedov blastwave test \\
 - shocktube &: Simple two-fluid shocktube test \\
-- sphere    &: Create uniform density sphere
+- sphere    &: Create uniform density sphere \\
+- turbcore  &: Create uniform density core with turbulent velocity field
 \end{tabular}
 \newline
 
