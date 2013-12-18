@@ -297,6 +297,7 @@ void Parameters::SetDefaultValues(void)
   // N-body parameters
   //---------------------------------------------------------------------------
   intparams["sub_systems"] = 0;
+  stringparams["sub_system_integration"] = "hermite4";
   intparams["Npec"] = 1;
   intparams["nbody_softening"] = 0;
   intparams["perturbers"] = 0;
@@ -304,7 +305,6 @@ void Parameters::SetDefaultValues(void)
   floatparams["gpefrac"] = 5.0e-2;
   floatparams["gpesoft"] = 2.0e-2;
   floatparams["gpehard"] = 1.0e-3;
-  stringparams["sub_system_integration"] = "hermite4";
 
   // Sink particle parameters
   //---------------------------------------------------------------------------
