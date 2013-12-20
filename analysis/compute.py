@@ -38,11 +38,12 @@ return a scalar quantity only for the given particle.
 '''
     unitinfo, values, scaling_factor, label = UserQuantity(quantity).fetch(type, snap, unit=unit)
     if values.size == 0:
-        return np.nan
-    if id == None:
-        values_to_return = values
+        values_to_return = np.nan
     else:
-        values_to_return = values[id]
+        if id == None:
+            values_to_return = values
+        else:
+            values_to_return = values[id]
     return unitinfo, values_to_return, scaling_factor, label
 
 
@@ -74,8 +75,6 @@ def time_derivative(snap, quantity, type="default", unit="default", id=None):
     # Return array of values of quantity.  If either are empty, return nan
     quantityunitinfo, values1, quantityscaling_factor, label = UserQuantity(quantity).fetch(type, snap1)
     values2 = UserQuantity(quantity).fetch(type, snap2)[1]
-    if values1.size == 0 or values2.size == 0:
-        return np.nan
 
     timeunitinfo, time, timescaling_factor, tlabel = get_time_snapshot(snap)
     scaling_factor = quantityscaling_factor/timescaling_factor
@@ -85,10 +84,13 @@ def time_derivative(snap, quantity, type="default", unit="default", id=None):
 
     # Calculate the time derivative with central difference and return value
     tdiff = snap2.t - snap1.t
-    if id == None:
-        timederiv = (values2 - values1)/tdiff
+    if values1.size == 0 or values2.size == 0:
+        timederiv = np.nan
     else:
-        timederiv = (values2[id] - values1[id])/tdiff
+        if id == None:
+            timederiv = (values2 - values1)/tdiff
+        else:
+            timederiv = (values2[id] - values1[id])/tdiff
     return unitinfo, timederiv, scaling_factor, label+"_t"
 
 
