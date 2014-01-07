@@ -125,6 +125,7 @@ class SimulationBase
   bool initial_h_provided;          ///< Have initial h values been calculated?
   bool ParametersProcessed;         ///< Flag if params are already processed
   bool rebuild_tree;                ///< Flag to rebuild neighbour tree
+  bool rescale_particle_data;       ///< Flag to scale data to code units
   int integration_step;             ///< Steps per complete integration step
   int level_diff_max;               ///< Max. allowed neib timestep level diff
   int level_max;                    ///< Maximum timestep level
@@ -263,6 +264,8 @@ class Simulation : public SimulationBase
   virtual void ReadSerenFormHeaderFile(ifstream& infile, HeaderInfo& info);
   virtual bool ReadSerenFormSnapshotFile(string);
   virtual bool WriteSerenFormSnapshotFile(string);
+  virtual void ConvertToCodeUnits(void);
+
 
   // Variables
   //---------------------------------------------------------------------------

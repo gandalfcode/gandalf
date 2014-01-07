@@ -109,9 +109,6 @@ void Parameters::ReadParamsFile
   // verify certain key parameters are valid.
   CheckInvalidParameters();
 
-  // Record parameters to file 'run_id.param'
-  RecordParametersToFile();
-
   return;
 }
 
@@ -173,17 +170,17 @@ void Parameters::SetDefaultValues(void)
 
   // Simulation id, filename and output time parameters
   //---------------------------------------------------------------------------
-  stringparams["ic"] = "random_cube";
+  stringparams["ic"] = "cubic_lattice";
   stringparams["run_id"] = "";
   stringparams["in_file"] = "";
   stringparams["in_file_form"] = "column";
   stringparams["out_file_form"] = "column";
   floatparams["tend"] = 1.0;
-  floatparams["dt_snap"] = 0.1;
-  floatparams["tsnapfirst"] = 0.1;
+  floatparams["dt_snap"] = 0.2;
+  floatparams["tsnapfirst"] = 0.2;
   intparams["Nstepsmax"] = 9999999;
-  intparams["noutputstep"] = 32;
-  intparams["ndiagstep"] = 128;
+  intparams["noutputstep"] = 128;
+  intparams["ndiagstep"] = 1024;
 
   // Unit and scaling parameters
   //---------------------------------------------------------------------------
@@ -248,7 +245,7 @@ void Parameters::SetDefaultValues(void)
   //---------------------------------------------------------------------------
   stringparams["sph_integration"] = "lfkdk";
   stringparams["kernel"] = "m4";
-  intparams["tabulated_kernel"] = 0;
+  intparams["tabulated_kernel"] = 1;
   floatparams["h_fac"] = 1.2;
   floatparams["h_converge"] = 0.01;
 
@@ -286,11 +283,11 @@ void Parameters::SetDefaultValues(void)
 
   // Neighbour searching and tree-gravity parameters
   //---------------------------------------------------------------------------
-  stringparams["neib_search"] = "bruteforce";
+  stringparams["neib_search"] = "grid";
   stringparams["gravity_mac"] = "geometric";
   stringparams["multipole"] = "quadrupole";
   intparams["Nleafmax"] = 1;
-  intparams["ntreebuildstep"] = 8;
+  intparams["ntreebuildstep"] = 1;
   intparams["ntreestockstep"] = 1;
   floatparams["thetamaxsqd"] = 0.1;
 
@@ -335,7 +332,7 @@ void Parameters::SetDefaultValues(void)
 
   // Initial conditions parameters
   //---------------------------------------------------------------------------
-  stringparams["particle_distribution"] = "random";
+  stringparams["particle_distribution"] = "cubic_lattice";
   intparams["smooth_ic"] = 0;
   intparams["com_frame"] = 0;
   intparams["field_type"] = 1;

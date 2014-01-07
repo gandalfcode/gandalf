@@ -319,8 +319,6 @@ void Sph<ndim>::InitialSmoothingLengthGuess(void)
       kernfacsqd*kernp->kernrangesqd*sphdata[i].h*sphdata[i].h;
   }
 
-  cout << "hguess : " << h_guess << "   " << endl;
-
   return;
 }
 

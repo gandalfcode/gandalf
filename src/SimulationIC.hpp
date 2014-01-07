@@ -51,9 +51,11 @@ void Simulation<ndim>::GenerateIC(void)
   debug2("[Simulation::GenerateIC]");
 
   // Generate initial conditions
-  if (simparams->stringparams["ic"] == "file")
+  if (simparams->stringparams["ic"] == "file") {
     ReadSnapshotFile(simparams->stringparams["in_file"],
 		     simparams->stringparams["in_file_form"]);
+    rescale_particle_data = true;
+  }
   else if (simparams->stringparams["ic"] == "binaryacc")
     BinaryAccretion();
   else if (simparams->stringparams["ic"] == "binary")
@@ -93,6 +95,9 @@ void Simulation<ndim>::GenerateIC(void)
       + simparams->stringparams["ic"];
     ExceptionHandler::getIstance().raise(message);
   }
+
+  // Scale particle data to dimensionless code units if required
+  if (rescale_particle_data) ConvertToCodeUnits();  
 
   // Check that the initial conditions are valid
   CheckInitialConditions();

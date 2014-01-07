@@ -129,8 +129,9 @@ SimulationBase::SimulationBase
   t = 0.0;
   timestep = 0.0;
   setup = false;
-  initial_h_provided = true;
+  initial_h_provided = false;
   ParametersProcessed = false;
+  rescale_particle_data = false;
 #if defined _OPENMP
   if (omp_get_dynamic()) {
     cout << "Warning: the dynamic adjustment of the number threads was on. For better load-balancing, we will disable it" << endl;
@@ -358,9 +359,11 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
   //---------------------------------------------------------------------------
 
   // Calculate and process all diagnostic quantities
-  CalculateDiagnostics();
-  OutputDiagnostics();
-  UpdateDiagnostics();
+  if (t >= tend || Nsteps >= Ntarget) {
+    CalculateDiagnostics();
+    OutputDiagnostics();
+    UpdateDiagnostics();
+  }
 
   return snap_list;
 }
@@ -442,7 +445,7 @@ void SimulationBase::SetupSimulation(void)
   //---------------------------------------------------------------------------
   if (rank == 0) {
     GenerateIC();
-
+    
     // Change to COM frame if selected
     if (simparams->intparams["com_frame"] == 1) SetComFrame();
 
@@ -600,14 +603,12 @@ void Simulation<ndim>::ProcessParameters(void)
     simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
   }
   if (sim == "sph" || sim == "godunov_sph") sphneib->box = &simbox;
-  if (IsAnyBoundarySpecial(simbox)) {
+  if (IsAnyBoundarySpecial(simbox))
     LocalGhosts = new PeriodicGhosts<ndim>();
-  }
-  else {
+  else
     LocalGhosts = new NullGhosts<ndim>();
-  }
 #ifdef MPI_PARALLEL
-    MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
+  MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
 #endif
 
 

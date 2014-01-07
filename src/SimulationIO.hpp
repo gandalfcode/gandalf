@@ -51,6 +51,7 @@ bool SimulationBase::ReadSnapshotFile
 
   cout << "Reading snapshot : " << filename << "   format : " << fileform << endl;
 
+  // Read in snapshot file to main memory
   if (fileform == "column")
     return ReadColumnSnapshotFile(filename);
   else if (fileform == "sf" || fileform == "seren_form")
@@ -59,6 +60,10 @@ bool SimulationBase::ReadSnapshotFile
     cout << "Unrecognised file format" << endl;
     return false;
   }
+
+  // Set flag to ensure variables are converted to code units
+  rescale_particle_data = true;
+
 }
 
 
@@ -1069,4 +1074,45 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   outfile.close();
 
   return true;
+}
+
+
+
+//=============================================================================
+//  Simulation::ConvertToCodeUnits
+/// For any simulations loaded into memory via a snapshot file, all particle 
+/// variables are converted into dimensionless code units here.
+//=============================================================================
+template <int ndim>
+void Simulation<ndim>::ConvertToCodeUnits(void)
+{
+  int i;                            ///< Particle counter
+  int k;                            ///< Dimension counter
+
+  debug2("[Simulation::ConvertToCodeUnits]");
+
+  // Rescale all SPH particles
+  //---------------------------------------------------------------------------
+  for (i=0; i<sph->Nsph; i++) {
+    for (k=0; k<ndim; k++) sph->sphdata[i].r[k] /= simunits.r.inscale;
+    for (k=0; k<ndim; k++) sph->sphdata[i].v[k] /= simunits.v.inscale;
+    sph->sphdata[i].m /= simunits.m.inscale;
+    sph->sphdata[i].h /= simunits.r.inscale;
+    sph->sphdata[i].u /= simunits.u.inscale;
+    sph->sphdata[i].rho /= simunits.rho.inscale;
+    sph->sphdata[i].dudt /= simunits.dudt.inscale;
+  }
+
+
+  // Rescale all N-body particles
+  //---------------------------------------------------------------------------
+  for (i=0; i<nbody->Nstar; i++) {
+    for (k=0; k<ndim; k++) nbody->stardata[i].r[k] /= simunits.r.inscale;
+    for (k=0; k<ndim; k++) nbody->stardata[i].v[k] /= simunits.v.inscale;
+    nbody->stardata[i].m /= simunits.m.inscale;
+    nbody->stardata[i].h /= simunits.r.inscale;
+    nbody->stardata[i].radius /= simunits.r.inscale;
+  }
+
+  return;
 }

@@ -223,7 +223,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
 
   this->CalculateDiagnostics();
-  this->OutputDiagnostics();
   this->diag0 = this->diag;
   this->setup = true;
 
