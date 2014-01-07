@@ -149,21 +149,22 @@ Optional arguments:
 
 
 #------------------------------------------------------------------------------
-def time_plot (x, y, sim="current", overplot=False, autoscale=False,
-                 xunit="default", yunit="default", xaxis="linear",
-                 yaxis="linear", idx=None, idy=None, id=None, 
-                 typex="default", typey="default", type="default", **kwargs):
-    '''Plot two quantities as evolved in time one versus the another.  Creates a new plotting window
-     if one does not already exist.
+def time_plot(x, y, sim="current", overplot=False, autoscale=False,
+              xunit="default", yunit="default", xaxis="linear",
+              yaxis="linear", idx=None, idy=None, id=None, 
+              typex="default", typey="default", type="default", **kwargs):
+    '''Plot two quantities as evolved in time one versus the another.  Creates
+a new plotting window if one does not already exist.
 
 Required arguments:
-    x          : Quantity on x-axis. Must be a string. The quantity is looked up in the
-                 quantities defined as a function of time. If it is not found there, then
-                 we try to interpret it as a quantity defined for a particle. In this case,
-                 the user needs to pass either idx either id to specify which particle
-                 he whishes to look-up.
-    y          : Quantity on y-axis.  Must be a string. The interpretation is like for
-                 the previous argument.
+    x          : Quantity on x-axis. Must be a string. The quantity is looked
+                 up in the quantities defined as a function of time. If it is
+                 not found there, then we try to interpret it as a quantity
+                 defined for a particle. In this case, the user needs to pass
+                 either idx either id to specify which particle he wishes
+                 to look-up.
+    y          : Quantity on y-axis.  Must be a string. The interpretation is
+                 like for the previous argument.
     
 Optional arguments:     
     sim        : Number of the simulation to plot. Defaults to 'current'.    
@@ -172,23 +173,23 @@ Optional arguments:
     autoscale  : If True, the limits of the plot are set
                  automatically.  Can also be set to 'x' or 'y' to specify
                  that only one of the axis has to use autoscaling.
-                 If False (default), autoscaling is not used. On an axis that does
-                 not have autoscaling turned on, global limits are used
+                 If False (default), autoscaling is not used. On an axis that
+                 does not have autoscaling turned on, global limits are used
                  if defined for the plotted quantity.
     xunit      : Specify the unit to use for the plotting for the quantity
                  on the x-axis.
     yunit      : Specify the unit to use for the plotting for the quantity
                  on the y-axis.
-    idx        : id of the particle to plot on the x-axis. Ignored if the quantity given
-                 (e.g., com_x) does not depend on the id.
+    idx        : id of the particle to plot on the x-axis. Ignored if the
+                 quantity given (e.g., com_x) does not depend on the id.
     idy        : same as previous, on the y-axis.
-    id         : same as the two previous ones. To be used when the id is the same on both
-                 axis. If set, overwrites the passed idx and idy.
-    typex      : type of particles on the x-axis. Ignored if the quantity given does not
-                 depend on it
+    id         : same as the two previous ones. To be used when the id is the
+                 same on both axes. If set, overwrites the passed idx and idy.
+    typex      : type of particles on the x-axis. Ignored if the quantity
+                 given does not depend on it
     typey      : as the previous one, on the y-axis.
-    type       : as the previous ones, for both axis at the same time. If set, overwrites
-                 typex and typey.
+    type       : as the previous ones, for both axis at the same time. If set,
+                 overwrites typex and typey.
 '''
     simno = get_sim_no(sim)
     overplot = to_bool(overplot)
@@ -310,8 +311,8 @@ Optional arguments:
 
 #------------------------------------------------------------------------------
 def addrender(x, y, renderq, **kwargs):
-    '''Thin wrapper around render that sets overplot to True.  If autoscale is not
-explicitly set, it will be set to False to preserve the existing settings.
+    '''Thin wrapper around render that sets overplot to True.  If autoscale is
+not explicitly set, it will be set to False to preserve the existing settings.
 
 Required arguments:
     x          : Quantity on the x-axis. Must be a string.
@@ -508,6 +509,7 @@ no parameter change it\'s possible.
 '''  
     sim = SimBuffer.get_current_sim()
     sim.SetupSimulation()
+    sim.simparams.RecordParametersToFile()
 
 
 #------------------------------------------------------------------------------
@@ -779,7 +781,7 @@ def init():
     CreateUserQuantity('aphi','cos(phi)*vy-sin(phi)*vx',scaling_factor='a',label='$a_\\phi$')
     CreateUserQuantity('press','(gamma_eos - 1)*rho*u',scaling_factor='press',label='P')
     CreateUserQuantity('sound','sqrt(gamma_eos*(gamma_eos - 1)*u)',scaling_factor='v', label='$c_s$')
-    CreateUserQuantity('temp','(gamma_eos - 1)*u',scaling_factor='temp',label='T')
+    CreateUserQuantity('temp','(gamma_eos - 1)*u*mu_bar',scaling_factor='temp',label='T')
     
     from data_fetcher import get_time_snapshot
     CreateTimeData('t',get_time_snapshot)
