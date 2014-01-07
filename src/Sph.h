@@ -131,6 +131,7 @@ private:
   int Ngather;                        ///< Average no. of gather neighbours
   int Nsph;                           ///< No. of SPH particles in simulation
   int Nghost;                         ///< No. of ghost SPH particles
+  int NPeriodicGhost;                 ///< No. of periodic ghost particles
   int Ntot;                           ///< No. of real + ghost particles
   int Nsphmax;                        ///< Max. no. of SPH particles in array
   int Nghostmax;                      ///< Max. allowed no. of ghost particles

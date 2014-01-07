@@ -67,8 +67,10 @@ int main(int argc, char** argv)
   }
 
 
-  // Read parameters file immediately
+  // Read parameters file immediately and record to file
   params->ReadParamsFile(paramfile);
+  params->RecordParametersToFile();
+
 
   // Create simulation object with required dimensionality and parameters
   sim = SimulationBase::SimulationFactory(params->intparams["ndim"], params);

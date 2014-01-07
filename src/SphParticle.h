@@ -34,6 +34,12 @@
 #endif
 
 
+enum ptype{gas,
+           x_lhs_periodic, x_lhs_mirror, x_rhs_periodic, x_rhs_mirror,
+           y_lhs_periodic, y_lhs_mirror, y_rhs_periodic, y_rhs_mirror,
+	       z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror};
+
+
 //=============================================================================
 //  Structure SphParticle
 /// \brief  Main base SPH particle data structure.
@@ -103,7 +109,7 @@ struct SphParticle
     active = false;
     potmin = false;
     iorig = -1;
-    itype = -1;
+    itype = gas;
     level = 0;
     levelneib = 0;
     sinkid = -1;
@@ -198,6 +204,20 @@ struct SphIntParticle
     u0 = (FLOAT) 0.0;
     dudt0 = (FLOAT) 0.0;
   }
+
+#ifdef MPI_PARALLEL
+  static MPI_Datatype CreateMpiDataType() {
+      MPI_Datatype partint_type;
+      MPI_Datatype types[1] = {MPI_BYTE};
+      MPI_Aint offsets[1] = {0};
+      int blocklen[1] = {sizeof(SphIntParticle<ndim>)};
+
+      MPI_Type_create_struct(1,blocklen,offsets,types,&partint_type);
+
+      return partint_type;
+
+  }
+#endif
 
 
 };

@@ -1108,6 +1108,8 @@ void SimUnits::SetupUnits(Parameters *params)
   temp.outscale = temp.outscale / temp.outSI;
   temp.outcgs = temp.outSI;
 
+  OutputScalingFactors(params);
+
   return;
 }
 
@@ -1145,6 +1147,9 @@ void SimUnits::OutputScalingFactors(Parameters *params)
   cout << "Energy unit  = " 
        << E.outscale << " " << params->stringparams["Eoutunit"]
        << "     (SI = " << E.outscale*E.outSI << " J )" << endl;
+  cout << "Specific energy unit  = " 
+       << u.outscale << " " << params->stringparams["uoutunit"]
+       << "     (SI = " << u.outscale*u.outSI << " J_kg )" << endl;
   cout << "Ang vel unit  = " 
        << angvel.outscale << " " << params->stringparams["angveloutunit"]
        << "     (SI = " << angvel.outscale*angvel.outSI << " rad_s )" << endl;

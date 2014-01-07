@@ -70,12 +70,17 @@ struct BinaryTreeCell {
   int N;                            ///< No. of particles in cell
   FLOAT cdistsqd;                   ///< Opening distances squared
   FLOAT r[ndim];                    ///< Position of centre of mass
+  FLOAT v[ndim];                    ///< Velocity of centre of mass
   FLOAT m;                          ///< Total mass of cell
   FLOAT rmax;                       ///< Max. dist. of ptcl from COM
   FLOAT hmax;                       ///< Maximum smoothing length inside cell
+  FLOAT drmaxdt;                    ///< Rate of change of bounding sphere
+  FLOAT dhmaxdt;                    ///< Rate of change of maximum h
   FLOAT q[5];                       ///< Quadrupole moment tensor
   FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
   FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
+  FLOAT worktot;                    ///< Total amount of work
+  FLOAT rwork[ndim];                ///< Weighted position of centre of work
 };
 
 
@@ -94,14 +99,13 @@ class SphNeighbourSearch
 {
  public:
 
-  virtual void BuildTree(Sph<ndim> *, Parameters &) = 0;
+  virtual void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *) = 0;
   virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphForces(Sph<ndim> *) = 0;
   virtual void UpdateAllSphHydroForces(Sph<ndim> *) = 0;
   virtual void UpdateAllSphGravForces(Sph<ndim> *) = 0;
   virtual void UpdateAllSphDudt(Sph<ndim> *) = 0;
   virtual void UpdateAllSphDerivatives(Sph<ndim> *) = 0;
-  virtual void UpdateTree(Sph<ndim> *, Parameters &) = 0;
   virtual void UpdateActiveParticleCounters(Sph<ndim> *) = 0;
 
   bool neibcheck;                   ///< Flag to verify neighbour lists
@@ -109,6 +113,11 @@ class SphNeighbourSearch
 
 };
 
+#if defined MPI_PARALLEL
+//Forward declare MpiNode to break circular dependency
+template <int ndim>
+class MpiNode;
+#endif
 
 
 //=============================================================================
@@ -126,16 +135,20 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
   BruteForceSearch();
   ~BruteForceSearch();
 
-  void BuildTree(Sph<ndim> *, Parameters &);
+  void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *);
   void UpdateAllSphGravForces(Sph<ndim> *);
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
-  void UpdateTree(Sph<ndim> *, Parameters &);
   void UpdateActiveParticleCounters(Sph<ndim> *);
-
+#if defined MPI_PARALLEL
+  void FindGhostParticlesToExport(Sph<ndim>* sph, std::vector<std::vector<SphParticle<ndim>* > >&,
+      const std::vector<int>&, MpiNode<ndim>*);
+  void FindParticlesToTransfer(Sph<ndim>* sph, std::vector<std::vector<int> >& particles_to_export,
+      std::vector<int>& all_particles_to_export, const std::vector<int>& potential_nodes, MpiNode<ndim>* mpinodes);
+#endif
 };
 
 
@@ -156,14 +169,13 @@ class GridSearch: public SphNeighbourSearch<ndim>
   GridSearch();
   ~GridSearch();
 
-  void BuildTree(Sph<ndim> *, Parameters &);
+  void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *);
   void UpdateAllSphGravForces(Sph<ndim> *);
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
-  void UpdateTree(Sph<ndim> *, Parameters &);
   void UpdateActiveParticleCounters(Sph<ndim> *);
 
   // Additional functions for grid neighbour search
@@ -225,6 +237,7 @@ class BinarySubTree
   int ComputeActiveCellList(int ,BinaryTreeCell<ndim> **);
   void ComputeSubTreeSize(void);
   void CreateSubTreeStructure(void);
+  void ExtrapolateCellProperties(FLOAT);
   void OrderParticlesByCartCoord(SphParticle<ndim> *);
   void LoadParticlesToSubTree(void);
   void StockCellProperties(SphParticle<ndim> *);
@@ -306,14 +319,13 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   ~BinaryTree();
 
   //---------------------------------------------------------------------------
-  void BuildTree(Sph<ndim> *, Parameters &);
+  void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *);
   void UpdateAllSphGravForces(Sph<ndim> *);
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
-  void UpdateTree(Sph<ndim> *, Parameters &);
   void UpdateActiveParticleCounters(Sph<ndim> *);
 
   // Additional functions for binary tree neighbour search
@@ -372,6 +384,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   FLOAT theta;                      ///< ..
   FLOAT thetamaxsqd;                ///< ..
   int *pc;                          ///< ..
+  int *klevel;                      ///< ..
   FLOAT *pw;                        ///< Particle weights
   FLOAT *rk[ndim];                  ///< Particle Cartesian coordinates
   BinaryTreeCell<ndim> *tree;       ///< Main tree array

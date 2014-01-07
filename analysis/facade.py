@@ -22,12 +22,12 @@
 import __main__
 import atexit
 import time
-from multiprocessing import Manager, Queue
+import types
+from multiprocessing import Manager, Queue, Event
 from plotting import PlottingProcess
 from gandalf.analysis.SimBuffer import SimBuffer, BufferException
-import types
 
-manager= Manager()
+manager = Manager()
 
 #TODO: in all the Python code, raise proper exceptions rather than a generic Exception
 #TODO: the tests should not fail
@@ -48,11 +48,19 @@ globallimits   : Dict that for each quantity gives the limits
     commands = manager.list()
     completedqueue = Queue()
     globallimits = manager.dict()
+    free = Event()
 
 import commandsource as Commands
 from data_fetcher import CreateUserQuantity, CreateTimeData
 import signal
 from time import sleep
+from statistics import structure_function
+import subprocess
+import tempfile
+import glob
+import os
+
+
 
 #figure out if we are in interactive mode
 try:
@@ -93,7 +101,7 @@ Optional qrguments:
    
 #------------------------------------------------------------------------------
 def plot(x, y, type="default", snap="current", sim="current",
-         overplot=False, autoscale=True, xunit="default", yunit="default",
+         overplot=False, autoscale=False, xunit="default", yunit="default",
          xaxis="linear", yaxis="linear", **kwargs):
     '''Plot particle data as a scatter plot.  Creates a new plotting window if
 one does not already exist.
@@ -103,14 +111,15 @@ Required arguments:
     y          : Quantity on the y-axis. Must be a string.
         
 Optional arguments:
+    type       : The type of the particles to plot (e.g. 'star' or 'sph').
     snap       : Number of the snapshot to plot. Defaults to 'current'.       
     sim        : Number of the simulation to plot. Defaults to 'current'.    
     overplot   : If True, overplots on the previous existing plot rather
                  than deleting it. Defaults to False.
-    autoscale  : If True (default), the limits of the plot are set
+    autoscale  : If True, the limits of the plot are set
                  automatically.  Can also be set to 'x' or 'y' to specify
                  that only one of the axis has to use autoscaling.
-                 If False, autoscaling is not used. On an axis that does
+                 If False (default), autoscaling is not used. On an axis that does
                  not have autoscaling turned on, global limits are used
                  if defined for the plotted quantity.
     xunit      : Specify the unit to use for the plotting for the quantity
@@ -140,59 +149,62 @@ Optional arguments:
 
 
 #------------------------------------------------------------------------------
-def plot_vs_time_quantity_particle(quantity, type='default', id=0):
-    '''Plot as a function of time a given quantity for a given particle.
-Type specifies the type of particle to retrieve the information from.
-id is an integer specifying the desired particle.
-'''
-    if id == 'None':
-        id = None
-    else:
-        id=int(id)
-    from compute import particle_data
-    name='part_'+quantity+'_'+str(id)
-    CreateTimeData(name,particle_data,quantity=quantity,type=type,id=id)
-    plot_vs_time(name)
-    
-
-#------------------------------------------------------------------------------
-def plot_vs_time(y, sim="current", overplot=False, autoscale=True,
-                 xunit="default", yunit="default", xaxis="linear",
-                 yaxis="linear", **kwargs):
-    '''Plot given data as a function of time.  Creates a new plotting window if
-one does not already exist.
+def time_plot(x, y, sim="current", overplot=False, autoscale=False,
+              xunit="default", yunit="default", xaxis="linear",
+              yaxis="linear", idx=None, idy=None, id=None, 
+              typex="default", typey="default", type="default", **kwargs):
+    '''Plot two quantities as evolved in time one versus the another.  Creates
+a new plotting window if one does not already exist.
 
 Required arguments:
-    y          : Quantity on y-axis.  Must be a string.
+    x          : Quantity on x-axis. Must be a string. The quantity is looked
+                 up in the quantities defined as a function of time. If it is
+                 not found there, then we try to interpret it as a quantity
+                 defined for a particle. In this case, the user needs to pass
+                 either idx either id to specify which particle he wishes
+                 to look-up.
+    y          : Quantity on y-axis.  Must be a string. The interpretation is
+                 like for the previous argument.
     
 Optional arguments:     
     sim        : Number of the simulation to plot. Defaults to 'current'.    
     overplot   : If True, overplots on the previous existing plot rather
                  than deleting it. Defaults to False.
-    autoscale  : If True (default), the limits of the plot are set
+    autoscale  : If True, the limits of the plot are set
                  automatically.  Can also be set to 'x' or 'y' to specify
                  that only one of the axis has to use autoscaling.
-                 If False, autoscaling is not used. On an axis that does
-                 not have autoscaling turned on, global limits are used
+                 If False (default), autoscaling is not used. On an axis that
+                 does not have autoscaling turned on, global limits are used
                  if defined for the plotted quantity.
     xunit      : Specify the unit to use for the plotting for the quantity
                  on the x-axis.
     yunit      : Specify the unit to use for the plotting for the quantity
                  on the y-axis.
+    idx        : id of the particle to plot on the x-axis. Ignored if the
+                 quantity given (e.g., com_x) does not depend on the id.
+    idy        : same as previous, on the y-axis.
+    id         : same as the two previous ones. To be used when the id is the
+                 same on both axes. If set, overwrites the passed idx and idy.
+    typex      : type of particles on the x-axis. Ignored if the quantity
+                 given does not depend on it
+    typey      : as the previous one, on the y-axis.
+    type       : as the previous ones, for both axis at the same time. If set,
+                 overwrites typex and typey.
 '''
     simno = get_sim_no(sim)
     overplot = to_bool(overplot)
-    command = Commands.PlotVsTime(y,simno,overplot,autoscale,
-                                  xunit,yunit,xaxis,yaxis,**kwargs)
+    command = Commands.TimePlot(x, y,simno,overplot,autoscale,
+                                  xunit,yunit,xaxis,yaxis,idx, idy, id, 
+                                  typex, typey, type, **kwargs)
     data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
     
 
 #------------------------------------------------------------------------------
 def render(x, y, render, snap="current", sim="current", overplot=False,
-           autoscale=True, autoscalerender=True, coordlimits=None, zslice=None,
-           xunit="default", yunit="default", renderunit="default",
-           res=64, interpolation='nearest'):
+           autoscale=False, autoscalerender=False, coordlimits=None,
+           zslice=None, xunit="default", yunit="default",
+           renderunit="default", res=64, interpolation='nearest'):
     '''Create a rendered plot from selected particle data.
 
 Required arguments:
@@ -205,12 +217,12 @@ Optional arguments:
     sim        : Number of the simulation to plot. Defaults to \'current\'.
     overplot   : If True, overplots on the previous existing plot rather
                  than deleting it. Defaults to False.
-    autoscale  : If True (default), the coordinate limits of the plot are
-                 set automatically.  Can also be set to 'x' or 'y' to specify
+    autoscale  : If True, the coordinate limits of the plot are set 
+                 automatically.  Can also be set to 'x' or 'y' to specify
                  that only one of the axis has to use autoscaling.
-                 If False, autoscaling is not used. On an axis that does not
-                 have autoscaling turned on, global limits are used if
-                 defined for the plotted quantity.
+                 If False (default), autoscaling is not used. On an axis that
+                 does not have autoscaling turned on, global limits are used
+                 if defined for the plotted quantity.
     autoscalerender : Same as the autoscale, but for the rendered quantity.
     coordlimits : Specify the coordinate limits for the plot. In order of
                   precedence, the limits are set in this way:
@@ -299,8 +311,8 @@ Optional arguments:
 
 #------------------------------------------------------------------------------
 def addrender(x, y, renderq, **kwargs):
-    '''Thin wrapper around render that sets overplot to True.  If autoscale is not
-explicitly set, it will be set to False to preserve the existing settings.
+    '''Thin wrapper around render that sets overplot to True.  If autoscale is
+not explicitly set, it will be set to False to preserve the existing settings.
 
 Required arguments:
     x          : Quantity on the x-axis. Must be a string.
@@ -315,6 +327,41 @@ Optional arguments:
     except KeyError:
         kwargs['autoscale']=False
     render(x, y, renderq, overplot=True, **kwargs)
+
+
+
+#------------------------------------------------------------------------------
+def make_movie(filename, snapshots='all', window_no=0, fps=24):
+    '''Generates movie for plots generated in given window'''
+
+    # Remove all temporary files in the directory (in case they still exist)
+    tmpfilelist = glob.glob('tmp.?????.png')
+    for file in tmpfilelist:
+        os.remove(file)
+
+    sim = SimBuffer.get_current_sim()
+    nframes = len(sim.snapshots)
+
+    # Loop through all snapshots and create temporary images
+    if snapshots == 'all':
+        for isnap in range(len(sim.snapshots)):
+            snap(isnap)
+            tmpfile = 'tmp.' + str(isnap).zfill(5) + '.png'
+            savefig(tmpfile)
+
+    # Wait until all plotting processes have finished before making mp4 file
+    Singletons.free.wait()
+
+    # Now join all temporary files together with ffmpeg
+    subprocess.call(["ffmpeg","-y","-r",str(fps),"-i", "tmp.%05d.png", \
+                     "-vcodec","mpeg4", "-qscale","5", "-r", str(fps), \
+                     filename])
+
+    # Now remove all temporary files just created to make movie
+    tmpfilelist = glob.glob('tmp.?????.png')
+    for file in tmpfilelist:
+        os.remove(file)
+
 
 
 #------------------------------------------------------------------------------
@@ -462,6 +509,7 @@ no parameter change it\'s possible.
 '''  
     sim = SimBuffer.get_current_sim()
     sim.SetupSimulation()
+    sim.simparams.RecordParametersToFile()
 
 
 #------------------------------------------------------------------------------
@@ -561,7 +609,7 @@ Useful in scripts where no interaction is required
 
 #------------------------------------------------------------------------------
 def plotanalytical(x=None, y=None, ic="default", snap="current", sim="current",
-                   overplot=True, autoscale=True, xunit="default",
+                   overplot=True, autoscale=False, xunit="default",
                    yunit="default"):
     '''Plots the analytical solution.  Reads the problem type from the \'ic\'
 parameter and plots the appropriate solution if implemented.  If no solution
@@ -574,10 +622,10 @@ Optional arguments:
     sim        : Number of the simulation to plot. Defaults to 'current'.    
     overplot   : If True, overplots on the previous existing plot rather
                  than deleting it. Defaults to False.
-    autoscale  : If True (default), the limits of the plot are set
+    autoscale  : If True, the limits of the plot are set
                  automatically.  Can also be set to 'x' or 'y' to specify
                  that only one of the axis has to use autoscaling.
-                 If False, autoscaling is not used. On an axis that does
+                 If False (default), autoscaling is not used. On an axis that does
                  not have autoscaling turned on, global limits are used
                  if defined for the plotted quantity.
     xunit      : Specify the unit to use for the plotting for the quantity
@@ -685,9 +733,9 @@ def to_list(str_variable,type):
 
 #------------------------------------------------------------------------------
 def to_bool(value):
-    '''Parses the input string and convert it to a boolean. If the input is not a string, passes
-    it to the built-in bool function (which means, that the result is False only if it is None or
-    False).'''
+    '''Parses the input string and convert it to a boolean. If the input is
+    not a string, passes it to the built-in bool function (which means, that
+    the result is False only if it is None or False).'''
     valid = {'true': True, 't': True, '1': True,
              'false': False, 'f': False, '0': False,
              }
@@ -719,7 +767,7 @@ def cleanup():
 #------------------------------------------------------------------------------
 def init():
     global plottingprocess
-    plottingprocess = PlottingProcess(Singletons.queue, Singletons.commands, Singletons.completedqueue, Singletons.globallimits)
+    plottingprocess = PlottingProcess(Singletons.queue, Singletons.commands, Singletons.completedqueue, Singletons.globallimits, Singletons.free)
     plottingprocess.start()
     CreateUserQuantity('r','sqrt(x^2+y^2+z^2)',scaling_factor='r', label='$r$')
     CreateUserQuantity('R','sqrt(x^2+y^2)',scaling_factor='r', label='$R$')
@@ -735,7 +783,10 @@ def init():
     CreateUserQuantity('atheta','cos(theta)*cos(phi)*vx+cos(theta)*sin(phi)*vy-sin(theta)*vz',scaling_factor='a', label='$a_\\theta$')
     CreateUserQuantity('press','(gamma_eos - 1)*rho*u',scaling_factor='press',label='$P$')
     CreateUserQuantity('sound','sqrt(gamma_eos*(gamma_eos - 1)*u)',scaling_factor='v', label='$c_s$')
-    CreateUserQuantity('temp','(gamma_eos - 1)*u',scaling_factor='temp',label='$T$')
+    CreateUserQuantity('temp','(gamma_eos - 1)*u*mu_bar',scaling_factor='temp',label='T')
+    
+    from data_fetcher import get_time_snapshot
+    CreateTimeData('t',get_time_snapshot)
     
     from compute import COM
     CreateTimeData('com_x',COM)

@@ -47,20 +47,22 @@ after creation if needed).
 #------------------------------------------------------------------------------
 class freefall (AnalyticalSolution):
     '''Analytical solution for the freefall collapse test.'''
+    
     def __init__(self, sim, time):
         AnalyticalSolution.__init__(self)
         self.time = time
-        #extract the parameters
+
+        # Extract the parameters
         simfloatparams = sim.simparams.floatparams
         self.radius = simfloatparams["radius"]
         self.rho = simfloatparams["rhofluid1"]
         self.time = time
         self.ndim = sim.ndims
         self.iMAX = 1000
-        
+
+    # TODO : This is not the freefall solution.  Need to update!!
     def compute(self, x, y):
-        '''Computes the exact solution of the Noh problem for
-        1, 2 and 3 dimensions'''
+        '''Computes exact solution for freefall collapse problem'''
         r = np.arange(0.0,self.radius,1.0/self.iMAX)
         rho = self.rho*np.ones(self.iMAX)
         if self.time > 0:
@@ -83,10 +85,12 @@ class freefall (AnalyticalSolution):
 #------------------------------------------------------------------------------
 class noh (AnalyticalSolution):
     '''Analytical solution for the Noh problem test.'''
+    
     def __init__(self, sim, time):
         AnalyticalSolution.__init__(self)
         self.time = time
-        #extract the parameters
+        
+        # Extract the parameters
         simfloatparams = sim.simparams.floatparams
         self.radius = simfloatparams["radius"]
         self.rho = simfloatparams["rhofluid1"]
@@ -120,10 +124,12 @@ class noh (AnalyticalSolution):
 #------------------------------------------------------------------------------
 class shocktube (AnalyticalSolution):
     '''Analytical solution for the 1D shock tube test.'''
+    
     def __init__(self, sim, time):
         AnalyticalSolution.__init__(self)
         self.time = time
-        #extract the parameters
+        
+        # Extract the parameters
         simfloatparams = sim.simparams.floatparams
         self.RHOinL = simfloatparams["rhofluid1"]
         self.RHOinR = simfloatparams["rhofluid2"]
@@ -132,7 +138,7 @@ class shocktube (AnalyticalSolution):
         self.PinL = simfloatparams["press1"]
         self.PinR = simfloatparams["press2"]
         self.xL = simfloatparams["boxmin[0]"]
-        self.x0 = 0.
+        self.x0 = 0.0
         self.xR = simfloatparams["boxmax[0]"]
         self.time = time
         self.iMAX = 50000
@@ -145,22 +151,27 @@ class shocktube (AnalyticalSolution):
         '''Computes the exact solution of the Riemann problem.
         Gets passed two strings with the quantities that are needed
         (e.g., \'rho\' and \'pressure\').'''
-        #calls the fortran module that computes the state
+
+        # TODO : Needs to be updated; perhaps re-write in C++
+        # Calls the fortran module that computes the state
         shocktub.shocktub(self.RHOinL, self.RHOinR, self.UinL, self.UinR,
                  self.PinL, self.PinR, self.xL, self.x0, self.xR,
                  self.time, self.iMAX, self.gamma)
-        #reads the data from the text file produced
-        data=np.genfromtxt('sod.out',names=['x','rho','vx','press','u'])
+        
+        # Reads the data from the text file produced
+        data = np.genfromtxt('sod.out',names=['x','rho','vx','press','u'])
         return data[x], data[y]
     
 
 #------------------------------------------------------------------------------
 class soundwave (AnalyticalSolution):
     '''Analytical solution for the 1D sound wave perturbation test.'''
+    
     def __init__(self, sim, time):
         AnalyticalSolution.__init__(self)
         self.time = time
-        #extract the parameters
+        
+        # Extract the parameters
         simfloatparams = sim.simparams.floatparams
         self.rho = simfloatparams["rhofluid1"]
         self.press = simfloatparams["press1"]

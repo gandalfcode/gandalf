@@ -47,6 +47,8 @@ MpiNode<ndim>::MpiNode()
   ifirst = -1;
   ilast = -1;
   Nsph = 0;
+  Ntot = 0;
+  Ntotmax = 0;
   Nghost = 0;
   hmax = 0.0;
   worktot = 0.0;
@@ -112,7 +114,7 @@ void MpiNode<ndim>::UpdateBoundingBoxData
   // Loop over all particles and compute new bounding boxes
   //---------------------------------------------------------------------------
   for (i=0; i<Npart; i++) {
-    hrange = kernptr->kernrange*sphdata[i].h;
+    hrange = 2.0*kernptr->kernrange*sphdata[i].h;
     for (k=0; k<ndim; k++) {
       rbox.boxmin[k] = min(rbox.boxmin[k],sphdata[i].r[k]);
       rbox.boxmax[k] = max(rbox.boxmax[k],sphdata[i].r[k]);
@@ -120,6 +122,9 @@ void MpiNode<ndim>::UpdateBoundingBoxData
       hbox.boxmax[k] = max(hbox.boxmax[k],sphdata[i].r[k] + hrange);
     }
   }
+
+  cout << "RBOX : " << rbox.boxmin[0] << "    " << rbox.boxmax[0] << endl;
+  cout << "DOMAIN : " << domain.boxmin[0] << "    " << domain.boxmax[0] << endl;
 
   return;
 }

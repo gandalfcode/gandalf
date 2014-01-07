@@ -43,7 +43,7 @@ def UserQuantity(quantity):
     elif quantity in derived_fetchers:
         return derived_fetchers[quantity]
     else:
-        raise Exception("We don't know how to compute " + quantity)
+        raise Exception("UserQuantity: we don't know how to compute " + quantity)
     
 from formula_parser import evaluateStack, exprStack, varStack, pattern    
 
@@ -74,15 +74,27 @@ FunctionTimeDataFetcher object from it and register it.
     Return the FunctionTimeDataFetcher newly constructed.'''
     fetcher = FunctionTimeDataFetcher(function, *args, **kwargs)
     time_fetchers [name] = fetcher
-
+    return fetcher
 
 #------------------------------------------------------------------------------
-def TimeData(quantity):
+def TimeData(quantity, id=None):
     '''Given a quantity, return the FunctionTimeDataFetcher object that we can query'''
     try:
         fetcher = time_fetchers[quantity]
     except KeyError:
-        raise KeyError("We do not know how to compute " + quantity)
+        #check if the quantity exists in UserQuantities
+        try:
+            quantity_fetcher = UserQuantity(quantity)
+        except Exception:
+            raise KeyError("TimeData: we do not know how to compute " + quantity)
+        #if the quantity exists, we can now build a data fetcher on the fly
+        if id==None:
+            raise KeyError("TimeData: you didn't specify the id of the particle for plotting quantity " + quantity)
+        id=int(id)
+        from compute import particle_data
+        name='part_' + quantity + '_' + str(id)
+        fetcher = CreateTimeData(name,particle_data,quantity=quantity,id=id)
+        
     return fetcher
 
 
@@ -189,7 +201,7 @@ class FunctionTimeDataFetcher:
         self._args = args
         self._kwargs = kwargs
     
-    def fetch(self, sim="current"):
+    def fetch(self, sim="current", type="default", unit="default"):
         
         if sim=="current":
             sim=SimBuffer.get_current_sim()
@@ -197,6 +209,22 @@ class FunctionTimeDataFetcher:
             sim=SimBuffer.get_sim_no(sim)
         
         iterator = SimBuffer.get_sim_iterator(sim)
-        results = map(lambda snap: self._function(snap,*self._args,**self._kwargs),iterator)
-        return np.asarray(results)
-    
+        results = map(lambda snap: self._function(snap,*self._args,type=type,unit=unit,**self._kwargs),iterator)
+        results_zipped = zip(*results)
+        
+        values = np.asarray(results_zipped[1])
+        
+        return results_zipped[0][0], values, results_zipped[2][0], results_zipped[3][0]
+
+def get_time_snapshot(snap, type=None, unit="default"):
+    '''Return the time of a given snapshot (plus all the needed information about units and labels)'''
+    sim=snap.sim
+    time_unit_obj = sim.simunits.t
+    if unit=="default":
+        unit = time_unit_obj.outunit
+    unitinfo = UnitInfo()
+    unitinfo.name = unit
+    unitinfo.label = time_unit_obj.LatexLabel(unit)
+    scaling_factor = time_unit_obj.OutputScale(unit)
+    label = 't'
+    return unitinfo, snap.t, scaling_factor, label

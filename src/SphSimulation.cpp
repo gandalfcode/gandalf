@@ -53,9 +53,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Perform initial MPI decomposition
   //---------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
-  mpicontrol.CreateInitialDomainDecomposition(sph,nbody,simparams,simbox);
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Abort(MPI_COMM_WORLD,0);
+    mpicontrol.CreateInitialDomainDecomposition(sph,nbody,simparams,simbox);
+    MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
 
@@ -77,9 +76,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Set initial artificial viscosity alpha values
     if (sph->time_dependent_avisc == 1)
-      for (i=0; i<sph->Nsph; i++) {
-        sph->sphdata[i].alpha = sph->alpha_visc_min;
-      }
+      for (i=0; i<sph->Nsph; i++) sph->sphdata[i].alpha = sph->alpha_visc_min;
     else
       for (i=0; i<sph->Nsph; i++) sph->sphdata[i].alpha = sph->alpha_visc;
 
@@ -88,33 +85,53 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<sph->Nsph; i++) sph->mmean += sph->sphdata[i].m;
     sph->mmean /= (FLOAT) sph->Nsph;
 
-    sph->InitialSmoothingLengthGuess();
-    sphneib->BuildTree(sph,*simparams);
+    // If the smoothing lengths have not been provided beforehand, then
+    // calculate the initial values here
+    if (!this->initial_h_provided) {
+      sph->InitialSmoothingLengthGuess();
+      sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,timestep,sph);
 
-    sphneib->neibcheck = false;
-    sphneib->UpdateAllSphProperties(sph,nbody);
+      sphneib->neibcheck = false;
+      sphneib->UpdateAllSphProperties(sph,nbody);
+    }
+
+#ifdef MPI_PARALLEL
+    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph->sphdata, sph->kernp);
+#endif
 
     // Search ghost particles
-    ghosts->SearchGhostParticles(simbox,sph);
+    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+#ifdef MPI_PARALLEL
+    MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
+#endif
 
     // Update neighbour tree
-    sphneib->BuildTree(sph,*simparams);
+    rebuild_tree = true;
+    sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,timestep,sph);
 
     level_step = 1;
 
     // Zero accelerations
-    for (i=0; i<sph->Ntot; i++) sph->sphdata[i].active = true;
+    for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
 
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph,nbody);
 
+#ifdef MPI_PARALLEL
+    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph->sphdata, sph->kernp);
+#endif
+
     // Search ghost particles
-    ghosts->SearchGhostParticles(simbox,sph);
+    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+#ifdef MPI_PARALLEL
+    MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
+#endif
 
     // Update neighbour tre
-    sphneib->BuildTree(sph,*simparams);
-    sphneib->neibcheck = true;
-    sphneib->UpdateAllSphProperties(sph,nbody);
+    rebuild_tree = true;
+    sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,timestep,sph);
+    //sphneib->neibcheck = true;
+    //sphneib->UpdateAllSphProperties(sph,nbody);
 
   }
 
@@ -158,14 +175,18 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       sph->sphdata[i].gpot = (FLOAT) 0.0;
       sph->sphdata[i].dudt = (FLOAT) 0.0;
       sph->sphdata[i].dalphadt = (FLOAT) 0.0;
-      sph->sphdata[i].active = true;
       sph->sphdata[i].level = 0;
       sph->sphintdata[i].nstep = 0;
       sph->sphintdata[i].nlast = 0;
+      sph->sphdata[i].active = false;
     }
+    for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
 
-    ghosts->CopySphDataToGhosts(sph);
-    sphneib->BuildTree(sph,*simparams);
+    LocalGhosts->CopySphDataToGhosts(simbox,sph);
+#ifdef MPI_PARALLEL
+    MpiGhosts->CopySphDataToGhosts(simbox,sph);
+#endif
+    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)
@@ -188,7 +209,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
         sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     }
 
-    ghosts->CopySphDataToGhosts(sph);
+    LocalGhosts->CopySphDataToGhosts(simbox,sph);
+#ifdef MPI_PARALLEL
+    MpiGhosts->CopySphDataToGhosts(simbox,sph);
+#endif
 
   }
 
@@ -199,7 +223,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
 
   this->CalculateDiagnostics();
-  this->OutputDiagnostics();
   this->diag0 = this->diag;
   this->setup = true;
 
@@ -219,6 +242,7 @@ void SphSimulation<ndim>::MainLoop(void)
   int i;                            // Particle loop counter
   int it;                           // Time-symmetric iteration counter
   int k;                            // Dimension counter
+  FLOAT tghost;                     // Approx. ghost particle lifetime
 
   debug2("[SphSimulation::MainLoop]");
 
@@ -248,7 +272,8 @@ void SphSimulation<ndim>::MainLoop(void)
   // Check all boundary conditions
   // (DAVID : Move this function to sphint and create an analagous one for N-body)
   // (Also, only check this on tree-build steps)
-  ghosts->CheckBoundaries(simbox,sph);
+  if (Nsteps%ntreebuildstep == 0 || rebuild_tree)
+    LocalGhosts->CheckBoundaries(simbox,sph);
 
 
   //---------------------------------------------------------------------------
@@ -258,6 +283,13 @@ void SphSimulation<ndim>::MainLoop(void)
   //       Compute and transmit all bounding boxes (e.g. all particles, active
   //       particles, h-extent, ghosts, etc..) to all other MPI nodes
   //---------------------------------------------------------------------------
+#ifdef MPI_PARALLEL
+  if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph->sphdata, sph->kernp);
+    mpicontrol.LoadBalancing(sph,nbody);
+    //exit(0);
+  }
+#endif
 
 
   // Compute all SPH quantities
@@ -265,15 +297,26 @@ void SphSimulation<ndim>::MainLoop(void)
   if (sph->Nsph > 0) {
     
     // Search for new ghost particles and create on local processor
-    ghosts->SearchGhostParticles(simbox,sph);
-
-
-    // Reorder particles to tree-walk order (not implemented yet)
-
+	if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+      tghost = timestep*(FLOAT)(ntreebuildstep - 1);
+      LocalGhosts->SearchGhostParticles(tghost,simbox,sph);
+#ifdef MPI_PARALLEL
+      MpiGhosts->SearchGhostParticles(tghost,simbox,sph);
+#endif
+	}
+	// Otherwise copy properties from original particles to ghost particles
+	else {
+	  LocalGhosts->CopySphDataToGhosts(simbox,sph);
+	#ifdef MPI_PARALLEL
+	  MpiGhosts->CopySphDataToGhosts(simbox,sph);
+	#endif
+	}
 
     // Rebuild or update local neighbour and gravity tree
-    sphneib->BuildTree(sph,*simparams);
+    sphneib->BuildTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,timestep,sph);
+    rebuild_tree = false;
 
+    // Reorder particles to tree-walk order (not implemented yet)
 
     //-------------------------------------------------------------------------
     // MPI : Walk local tree to determine minimum tree to be sent to all other
@@ -301,7 +344,10 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
       // Copy properties from original particles to ghost particles
-      ghosts->CopySphDataToGhosts(sph);
+      LocalGhosts->CopySphDataToGhosts(simbox,sph);
+#ifdef MPI_PARALLEL
+      MpiGhosts->CopySphDataToGhosts(simbox,sph);
+#endif
       
       // Zero accelerations
 #pragma parallel for default(none) private(k) shared(sph)
@@ -377,13 +423,13 @@ void SphSimulation<ndim>::MainLoop(void)
         }
       }
       if (sink_particles == 1) {
-	for (i=0; i<sinks.Nsink; i++) {
+        for (i=0; i<sinks.Nsink; i++) {
           if (sinks.sink[i].star->active) {
-	    for (k=0; k<ndim; k++) sinks.sink[i].fhydro[k] = 0.0;
-	  }
-	}
+            for (k=0; k<ndim; k++) sinks.sink[i].fhydro[k] = 0.0;
+          }
+        }
       }
-	  
+
 
       // Calculate forces, force derivatives etc.., for active stars/systems
       nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);

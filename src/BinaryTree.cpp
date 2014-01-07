@@ -51,6 +51,8 @@ BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                              FLOAT kernrangeaux, string gravity_mac_aux,
                              string multipole_aux, int Nthreads, int Nmpi)
 {
+  allocated_tree = false;
+  created_sub_trees = false;
   Nlocalsubtrees = Nthreads;
   Nmpisubtrees = max(Nmpi - 1,0);
   Nsubtreemax = Nlocalsubtrees + Nmpisubtrees;
@@ -63,8 +65,6 @@ BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
   thetamaxsqd = thetamaxsqdaux;
   gravity_mac = gravity_mac_aux;
   multipole = multipole_aux;
-  allocated_tree = false;
-  created_sub_trees = false;
 #if defined _OPENMP
   // Check that no. of threads is valid
   int ltot = 0;
@@ -79,7 +79,7 @@ BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
 #endif
   assert(Nlocalsubtrees > 0);
   assert(Nsubtreemax > 0);
-  }
+}
 
 
 
@@ -113,6 +113,7 @@ void BinaryTree<ndim>::AllocateTreeMemory(void)
     Nsubtreemax = max(Nsubtreemax,Nsubtree);
     Nsubtreemaxold = Nsubtreemax;
 
+    klevel = new int[ltot+1];
     pc = new int[Ntotmax];
     pw = new FLOAT[Ntotmax];
     tree = new struct BinaryTreeCell<ndim>[Ncellmax];
@@ -123,19 +124,18 @@ void BinaryTree<ndim>::AllocateTreeMemory(void)
     if (!created_sub_trees) {
       for (int i=0; i<Nsubtree; i++) {
         subtrees.push_back(new BinarySubTree<ndim>(Nleafmax, thetamaxsqd,
-						   kernrange, gravity_mac, multipole));
+						   kernrange, gravity_mac, 
+                                                   multipole));
       }
       created_sub_trees = true;
     }
 
 
-    // ..
+    // Set initial values and allocate maximum memory for all sub-trees
     for (int i=0; i<Nsubtree; i++) {
       subtrees[i]->Nsph = 0;
       subtrees[i]->Ntot = 0;
       subtrees[i]->Ntotmax = max(subtrees[i]->Ntotmax,Ntotmax/Nsubtree + 1);
-
-      // ..
       subtrees[i]->ComputeSubTreeSize();
       subtrees[i]->AllocateSubTreeMemory();
     }
@@ -180,8 +180,8 @@ void BinaryTree<ndim>::DeallocateTreeMemory(void)
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::BuildTree
-(Sph<ndim> *sph,                    ///< Pointer to main SPH object
- Parameters &simparams)             ///< Simulation parameters
+(bool rebuild_tree, int n, int ntreebuildstep, int ntreestockstep,
+ FLOAT timestep, Sph<ndim> *sph)
 {
   int i;                            ///< Sub-tree counter
   int Ncheck = 0;                   ///< ..
@@ -189,79 +189,83 @@ void BinaryTree<ndim>::BuildTree
 
   debug2("[BinaryTree::BuildTree]");
 
-  // Set number of tree members to total number of SPH particles (inc. ghosts)
-  Nsph = sph->Nsph;
-  Ntot = sph->Ntot;
-  Ntotmax = max(Ntot,Ntotmax);
-  gtot = 0;
 
-  // Compute the size of all tree-related arrays now we know number of points
-  ComputeTreeSize();
-
-  // Allocate (or reallocate if needed) all tree memory
-  AllocateTreeMemory();
-
-  // Create tree data structure including linked lists and cell pointers
-  CreateTreeStructure();
-
-  // Find ordered list of particle positions ready for adding particles to tree
-  OrderParticlesByCartCoord(sph->sphdata);
-
-  // Now add particles to tree depending on Cartesian coordinates
-  LoadParticlesToTree(sph->rsph);
-
-  // Build and stock all local sub-trees
+  // For tree rebuild steps
   //---------------------------------------------------------------------------
+  if (n%ntreebuildstep == 0 || rebuild_tree) {
+
+    // Set number of tree members to total number of SPH particles (inc. ghosts)
+    Nsph = sph->Nsph;
+    Ntot = sph->Ntot;
+    Ntotmax = max(Ntot,Ntotmax);
+    gtot = 0;
+
+    // Compute the size of all tree-related arrays now we know number of points
+    ComputeTreeSize();
+
+    // Allocate (or reallocate if needed) all tree memory
+    AllocateTreeMemory();
+
+    // Create tree data structure including linked lists and cell pointers
+    CreateTreeStructure();
+
+    // Find ordered list of particle positions ready for adding particles to tree
+    OrderParticlesByCartCoord(sph->sphdata);
+
+    // Now add particles to tree depending on Cartesian coordinates
+    LoadParticlesToTree(sph->rsph);
+
+    // Build and stock all local sub-trees
+    //-------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(i) shared(sph) \
   reduction(+:localgtot,Ncheck)
-  for (i=0; i<Nsubtree; i++) {
+    for (i=0; i<Nsubtree; i++) {
 
-    BinarySubTree<ndim>* subtree = subtrees[i];
+      BinarySubTree<ndim>* subtree = subtrees[i];
 
-    // Build individual sub-trees
-    subtree->BuildSubTree(sph);
+      // Build individual sub-trees
+      subtree->BuildSubTree(sph);
 
-    // Calculate all cell quantities (e.g. COM, opening distance)
-    subtree->StockCellProperties(sph->sphdata);
+      // Calculate all cell quantities (e.g. COM, opening distance)
+      subtree->StockCellProperties(sph->sphdata);
 
-    // Calculate total number of leaf cells in trees
-    localgtot += subtree->gtot;
-    Ncheck += subtree->Ntot;
+      // Calculate total number of leaf cells in trees
+      localgtot += subtree->gtot;
+      Ncheck += subtree->Ntot;
+
+    }
+    //-------------------------------------------------------------------------
+
+    gtot = localgtot;
+    assert(Ncheck == sph->Ntot);
 
   }
+
+  // Else stock the tree
   //---------------------------------------------------------------------------
+  else if (n%ntreestockstep == 0) {
 
-  gtot = localgtot;
-
-  assert(Ncheck == sph->Ntot);
-
-  return;
-}
-
-
-
-//=============================================================================
-//  BinaryTree::UpdateTree
-/// Call all routines to build/re-build the binary tree.
-//=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::UpdateTree
-(Sph<ndim> *sph,                    ///< Pointer to main SPH object
- Parameters &simparams)             ///< Simulation parameters
-{
-  int i;                            // Sub-tree counter
-
-  debug2("[BinaryTree::UpdateTree]");
-
-  //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(i) shared(sph)
-  for (i=0; i<Nsubtree; i++) {
+    for (i=0; i<Nsubtree; i++) {
+      BinarySubTree<ndim>* subtree = subtrees[i];
+      subtree->StockCellProperties(sph->sphdata);
+    }
 
-    // Calculate all cell quantities (e.g. COM, opening distance)
-    subtrees[i]->StockCellProperties(sph->sphdata);
+  }
+
+  // Otherwise simply extrapolate tree cell properties
+  //---------------------------------------------------------------------------
+  else {
+
+#pragma omp parallel for default(none) private(i) shared(sph)
+    for (i=0; i<Nsubtree; i++) {
+      BinarySubTree<ndim>* subtree = subtrees[i];
+      subtree->ExtrapolateCellProperties(timestep);
+    }
 
   }
   //---------------------------------------------------------------------------
+
 
   return;
 }
@@ -453,6 +457,7 @@ void BinaryTree<ndim>::LoadParticlesToTree
 {
   int c;                           // Cell counter
   int cc;                          // Secondary cell counter
+  int c2;                          // ..
   int g;                           // ..
   int k;                           // Dimensionality counter
   int kk;                          // ..
@@ -496,6 +501,8 @@ void BinaryTree<ndim>::LoadParticlesToTree
   //---------------------------------------------------------------------------
   while (l < ltot) {
 
+    klevel[l] = k;
+
     // Loop over all particles (in order of current split)
     //-------------------------------------------------------------------------
     for (i=0; i<Ntot; i++) {
@@ -512,20 +519,22 @@ void BinaryTree<ndim>::LoadParticlesToTree
         tree[pc[j]].ilast = j;
       }
       else {
-        pc[j] = tree[cc].c2;
-        ccap[tree[cc].c2] += pw[j];
-        if (tree[tree[cc].c2].ifirst == -1) {
-          tree[tree[cc].c2].ifirst = j;
+        c2 = tree[cc].c2;
+        pc[j] = c2;
+        ccap[c2] += pw[j];
+        if (tree[c2].ifirst == -1) {
+          tree[c2].ifirst = j;
           for (kk=0; kk<ndim; kk++) {
             tree[cc+1].bbmin[kk] = tree[cc].bbmin[kk];
             tree[cc+1].bbmax[kk] = tree[cc].bbmax[kk];
-            tree[tree[cc].c2].bbmin[kk] = tree[cc].bbmin[kk];
-            tree[tree[cc].c2].bbmax[kk] = tree[cc].bbmax[kk];
-	  }
+            tree[c2].bbmin[kk] = tree[cc].bbmin[kk];
+            tree[c2].bbmax[kk] = tree[cc].bbmax[kk];
+          }
           tree[cc+1].bbmax[k] = 
-            0.5*(r[ndim*tree[cc+1].ifirst + k] + r[ndim*j + k]);
+            0.5*(r[ndim*tree[c2].ifirst + k] + r[ndim*j + k]);
           tree[tree[cc].c2].bbmin[k] = 
-            0.5*(r[ndim*tree[cc+1].ifirst + k] + r[ndim*j + k]);
+            0.5*(r[ndim*tree[c2].ifirst + k] + r[ndim*j + k]);
+          //cout << "SPLITTING TREE : " << tree[cc+1].bbmax[k] << endl;
         }
         tree[pc[j]].ilast = j;
       }

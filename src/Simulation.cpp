@@ -45,7 +45,6 @@
 using namespace std;
 
 
-
 //=============================================================================
 //  SimulationBase::SimulationFactory
 /// Creates a simulation object depending on the dimensionality.
@@ -128,8 +127,11 @@ SimulationBase::SimulationBase
   Nsteps = 0;
   rank = 0;
   t = 0.0;
+  timestep = 0.0;
   setup = false;
+  initial_h_provided = false;
   ParametersProcessed = false;
+  rescale_particle_data = false;
 #if defined _OPENMP
   if (omp_get_dynamic()) {
     cout << "Warning: the dynamic adjustment of the number threads was on. For better load-balancing, we will disable it" << endl;
@@ -357,9 +359,11 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
   //---------------------------------------------------------------------------
 
   // Calculate and process all diagnostic quantities
-  CalculateDiagnostics();
-  OutputDiagnostics();
-  UpdateDiagnostics();
+  if (t >= tend || Nsteps >= Ntarget) {
+    CalculateDiagnostics();
+    OutputDiagnostics();
+    UpdateDiagnostics();
+  }
 
   return snap_list;
 }
@@ -378,10 +382,11 @@ string SimulationBase::Output(void)
 
   debug2("[SimulationBase::Output]");
 
-  if (Nsteps%noutputstep == 0) 
-    cout << "t : " << t*simunits.t.outscale << " " << simunits.t.outunit 
-	 << "    dt : " << timestep*simunits.t.outscale << " " 
-	 << simunits.t.outunit << "    Nsteps : " << Nsteps << endl;
+  if (rank == 0)
+    if (Nsteps%noutputstep == 0)
+      cout << "t : " << t*simunits.t.outscale << " " << simunits.t.outunit
+           << "    dt : " << timestep*simunits.t.outscale << " "
+           << simunits.t.outunit << "    Nsteps : " << Nsteps << endl;
 
   // Output a data snapshot if reached required time
   if (t >= tsnapnext) {
@@ -440,7 +445,7 @@ void SimulationBase::SetupSimulation(void)
   //---------------------------------------------------------------------------
   if (rank == 0) {
     GenerateIC();
-
+    
     // Change to COM frame if selected
     if (simparams->intparams["com_frame"] == 1) SetComFrame();
 
@@ -449,6 +454,8 @@ void SimulationBase::SetupSimulation(void)
 
   // Call a messy function that does all the rest of the initialisation
   PostInitialConditionsSetup();
+
+  Output();
 
   return;
 }
@@ -474,7 +481,6 @@ void Simulation<ndim>::ProcessParameters(void)
 
   // Now simulation object is created, set-up various MPI variables
 #ifdef MPI_PARALLEL
-  mpicontrol.InitialiseMpiProcess();
   rank = mpicontrol.rank;
   Nmpi = mpicontrol.Nmpi;
 #endif
@@ -546,6 +552,9 @@ void Simulation<ndim>::ProcessParameters(void)
 	+ simparams->stringparams["neib_search"];
       ExceptionHandler::getIstance().raise(message);
     }
+#if defined MPI_PARALLEL
+    mpicontrol.SetNeibSearch(sphneib);
+#endif
  
   }
   //---------------------------------------------------------------------------
@@ -594,19 +603,14 @@ void Simulation<ndim>::ProcessParameters(void)
     simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
   }
   if (sim == "sph" || sim == "godunov_sph") sphneib->box = &simbox;
-  if (IsAnyBoundarySpecial(simbox)) {
-    ghosts = new PeriodicGhosts<ndim>();
+  if (IsAnyBoundarySpecial(simbox))
+    LocalGhosts = new PeriodicGhosts<ndim>();
+  else
+    LocalGhosts = new NullGhosts<ndim>();
 #ifdef MPI_PARALLEL
-    ExceptionHandler::getIstance().raise("Error: periodic/mirror boundaries and MPI at the moment can't work together");
+  MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
 #endif
-  }
-  else {
-#ifdef MPI_PARALLEL
-    ghosts = new MPIGhosts<ndim>(&mpicontrol);
-#else
-    ghosts = new NullGhosts<ndim>();
-#endif
-  }
+
 
 
   // Sink particles
@@ -635,6 +639,8 @@ void Simulation<ndim>::ProcessParameters(void)
   Nlevels               = intparams["Nlevels"];
   ndiagstep             = intparams["ndiagstep"];
   noutputstep           = intparams["noutputstep"];
+  ntreebuildstep        = intparams["ntreebuildstep"];
+  ntreestockstep        = intparams["ntreestockstep"];
   Nstepsmax             = intparams["Nstepsmax"];
   out_file_form         = stringparams["out_file_form"];
   run_id                = stringparams["run_id"];
@@ -831,7 +837,17 @@ void Simulation<ndim>::ProcessSphParameters(void)
   }
 
 
+  // Depending on the dimensionality, calculate expected neighbour number
+  //---------------------------------------------------------------------------
+  if (ndim == 1)
+	sph->Ngather = (int) (2.0*sph->kernp->kernrange*sph->h_fac);
+  else if (ndim == 2)
+	sph->Ngather = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac,2));
+  else if (ndim == 3)
+    sph->Ngather = (int) (4.0*pi*pow(sph->kernp->kernrange*sph->h_fac,3)/3.0);
   return;
+
+
 }
 
 
@@ -1636,6 +1652,8 @@ void Simulation<ndim>::SetComFrame(void)
 template <int ndim>
 void Simulation<ndim>::UpdateDiagnostics ()
 {
-  diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
-  cout << "Eerror : " << diag.Eerror << endl;
+  if (rank == 0) {
+    diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
+    cout << "Eerror : " << diag.Eerror << endl;
+  }
 }

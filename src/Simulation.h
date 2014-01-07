@@ -122,7 +122,10 @@ class SimulationBase
   // Variables
   //---------------------------------------------------------------------------
   bool setup;                       ///< Flag if simulation is setup
+  bool initial_h_provided;          ///< Have initial h values been calculated?
   bool ParametersProcessed;         ///< Flag if params are already processed
+  bool rebuild_tree;                ///< Flag to rebuild neighbour tree
+  bool rescale_particle_data;       ///< Flag to scale data to code units
   int integration_step;             ///< Steps per complete integration step
   int level_diff_max;               ///< Max. allowed neib timestep level diff
   int level_max;                    ///< Maximum timestep level
@@ -131,11 +134,12 @@ class SimulationBase
   int nbody_single_timestep;        ///< Flag if stars use same timestep
   int ndims;                        ///< Aux. dimensionality variable. 
                                     ///< Required for python routines.
-
   int ndiagstep;                    ///< Diagnostic output frequency (in units
                                     ///< of full block timestep steps)
   int noutputstep;                  ///< Output frequency
   int nresync;                      ///< Integer time for resynchronisation
+  int ntreebuildstep;               ///< Integer time between rebuilding tree
+  int ntreestockstep;               ///< Integer time between restocking tree
   int Nblocksteps;                  ///< No. of full block timestep steps
   int Nsteps;                       ///< Total no. of steps in simulation
   int Nstepsmax;                    ///< Max. allowed no. of steps
@@ -206,6 +210,10 @@ class Simulation : public SimulationBase
   void AddHexagonalLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
   int AddLatticeSphere(int, FLOAT *, FLOAT *, FLOAT, string);
   int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
+#if defined(FFTW_TURBULENCE)
+  void GenerateTurbulentVelocityField(int, int, DOUBLE, DOUBLE *);
+#endif
+
 
   // Subroutine prototypes
   //---------------------------------------------------------------------------
@@ -244,6 +252,7 @@ class Simulation : public SimulationBase
   void ShearFlow(void);
   void SoundWave(void);
   void TripleStar(void);
+  void TurbulentCore(void);
   void UniformBox(void);
   void UniformSphere(void);
 
@@ -255,6 +264,8 @@ class Simulation : public SimulationBase
   virtual void ReadSerenFormHeaderFile(ifstream& infile, HeaderInfo& info);
   virtual bool ReadSerenFormSnapshotFile(string);
   virtual bool WriteSerenFormSnapshotFile(string);
+  virtual void ConvertToCodeUnits(void);
+
 
   // Variables
   //---------------------------------------------------------------------------
@@ -265,7 +276,7 @@ class Simulation : public SimulationBase
   Diagnostics<ndim> diag0;              ///< Initial diagnostic state
   Diagnostics<ndim> diag;               ///< Current diagnostic state
   EnergyEquation<ndim> *uint;           ///< Energy equation pointer
-  Ghosts<ndim>* ghosts;                  ///< Ghost particle object
+  Ghosts<ndim>* LocalGhosts;            ///< Periodic ghost particle object
   Nbody<ndim> *nbody;                   ///< N-body algorithm pointer
   Nbody<ndim> *subsystem;               ///< N-body object for sub-systems
   NbodySystemTree<ndim> nbodytree;      ///< N-body tree to create sub-systems
@@ -275,6 +286,7 @@ class Simulation : public SimulationBase
   SphNeighbourSearch<ndim> *sphneib;    ///< SPH Neighbour scheme pointer
 #ifdef MPI_PARALLEL
   MpiControl<ndim> mpicontrol;          ///< MPI control object
+  Ghosts<ndim>* MpiGhosts;              ///< MPI ghost particle object
 #endif
 
 };
@@ -301,7 +313,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::sphint;
   using Simulation<ndim>::uint;
   using Simulation<ndim>::sphneib;
-  using Simulation<ndim>::ghosts;
+  using Simulation<ndim>::LocalGhosts;
   using Simulation<ndim>::simbox;
   using Simulation<ndim>::simunits;
   using Simulation<ndim>::Nstepsmax;
@@ -330,8 +342,12 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::sph_single_timestep;
   using Simulation<ndim>::sink_particles;
   using Simulation<ndim>::rank;
+  using Simulation<ndim>::rebuild_tree;
+  using Simulation<ndim>::ntreebuildstep;
+  using Simulation<ndim>::ntreestockstep;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
+  using Simulation<ndim>::MpiGhosts;
 #endif
 
 public:
@@ -341,7 +357,6 @@ public:
   virtual void MainLoop(void);
   virtual void ComputeGlobalTimestep(void);
   virtual void ComputeBlockTimesteps(void);
-  //virtual void ProcessParameters(void);
 
 };
 
@@ -368,7 +383,7 @@ class GodunovSphSimulation : public Simulation<ndim>
   using Simulation<ndim>::sphint;
   using Simulation<ndim>::uint;
   using Simulation<ndim>::sphneib;
-  using Simulation<ndim>::ghosts;
+  using Simulation<ndim>::LocalGhosts;
   using Simulation<ndim>::simbox;
   using Simulation<ndim>::simunits;
   using Simulation<ndim>::Nstepsmax;
@@ -396,6 +411,12 @@ class GodunovSphSimulation : public Simulation<ndim>
   using Simulation<ndim>::dt_max;
   using Simulation<ndim>::sph_single_timestep;
   using Simulation<ndim>::sink_particles;
+  using Simulation<ndim>::rebuild_tree;
+  using Simulation<ndim>::ntreebuildstep;
+  using Simulation<ndim>::ntreestockstep;
+#ifdef MPI_PARALLEL
+  using Simulation<ndim>::MpiGhosts;
+#endif
 
 public:
 
@@ -405,7 +426,7 @@ public:
   virtual void MainLoop(void);
   virtual void ComputeGlobalTimestep(void);
   virtual void ComputeBlockTimesteps(void);
-  //virtual void ProcessParameters(void);
+
 };
 
 
@@ -426,7 +447,7 @@ class NbodySimulation : public Simulation<ndim>
   using Simulation<ndim>::nbody;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
-  using Simulation<ndim>::ghosts;
+  using Simulation<ndim>::LocalGhosts;
   using Simulation<ndim>::simbox;
   using Simulation<ndim>::simunits;
   using Simulation<ndim>::Nstepsmax;
@@ -459,7 +480,7 @@ public:
   virtual void MainLoop(void);
   virtual void ComputeGlobalTimestep(void);
   virtual void ComputeBlockTimesteps(void);
-  //virtual void ProcessParameters(void);
+
 };
 
 #endif

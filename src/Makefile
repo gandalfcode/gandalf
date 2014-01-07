@@ -114,6 +114,15 @@ CFLAGS += -DGANDALF_DOUBLE_PRECISION
 endif
 
 
+# FFTW linkage
+#-----------------------------------------------------------------------------
+ifeq ($(FFTW),1)
+CFLAGS += -DFFTW_TURBULENCE
+#OPT += -I/Users/davidhubber/astro/code/gandalf/src -L/Users/davidhubber/astro/code/gandalf/src -lm -lfftw3f
+OPT += -I/usr/local/include -L/usr/local/lib -lfftw3
+endif
+
+
 # Debug output flags
 # ----------------------------------------------------------------------------
 ifeq ($(OUTPUT_LEVEL),1)

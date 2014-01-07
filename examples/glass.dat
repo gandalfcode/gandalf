@@ -1,0 +1,92 @@
+#--------------------------------------------------------------
+# Glass generation test
+# Relax a cube of randomly placed particles using an isothermal 
+# EOS with artificial viscosity into a glass-like structure.
+#--------------------------------------------------------------
+
+
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = GLASS1
+Select SPH simulation                       : sim = sph
+Select shocktube initial conditions         : ic = box
+Dimensionality of cube                      : ndim = 2
+No. of SPH particles                        : Nsph = 1024
+Local arrangement of particles              : particle_distribution = random
+Dimensionless units                         : dimensionless = 1
+
+
+#------------------------------
+# Simulation boundary variables
+#------------------------------
+LHS position of boundary in x-dimension     : boxmin[0] = 0.0
+RHS position of boundary in x-dimension     : boxmax[0] = 1.0
+LHS position of boundary in y-dimension     : boxmin[1] = 0.0
+RHS position of boundary in y-dimension     : boxmax[1] = 1.0
+LHS position of boundary in z-dimension     : boxmin[2] = 0.0
+RHS position of boundary in z-dimension     : boxmax[2] = 1.0
+LHS boundary type in x-dimension            : x_boundary_lhs = periodic
+RHS boundary type in x-dimension            : x_boundary_rhs = periodic
+LHS boundary type in y-dimension            : y_boundary_lhs = periodic
+RHS boundary type in y-dimension            : y_boundary_rhs = periodic
+LHS boundary type in z-dimension            : z_boundary_lhs = periodic
+RHS boundary type in z-dimension            : z_boundary_rhs = periodic
+
+
+#--------------------------
+# Simulation time variables
+#--------------------------
+Simulation end time                         : tend = 10.0
+Time for first snapshot                     : tsnapfirst = 2.0
+Regular snapshot output frequency           : dt_snap = 2.0
+Screen output frequency (in no. of steps)   : noutputstep = 256
+Diagnostic output frequency                 : ndiagstep = 2048
+
+
+#------------------------
+# Thermal physics options
+#------------------------
+Switch-on hydrodynamical forces             : hydro_forces = 1
+Main gas thermal physics treatment          : gas_eos = isothermal
+Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
+
+
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
+SPH algorithm choice                        : sph = gradh
+SPH smoothing kernel choice                 : kernel = m4
+SPH smoothing length iteration tolerance    : h_converge = 0.01
+
+
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
+Artificial viscosity choice                 : avisc = mon97
+Artificial conductivity choice              : acond = none
+Artificial viscosity alpha value            : alpha_visc = 1.0
+Artificial viscosity beta value             : beta_visc = 2.0
+
+
+#-------------------------
+# Time integration options
+#-------------------------
+SPH particle integration option             : sph_integration = lfkdk
+SPH Courant timestep condition multiplier   : courant_mult = 0.1
+SPH acceleration condition multiplier       : accel_mult = 0.2
+SPH energy equation timestep multiplier     : energy_mult = 0.5
+No. of block timestep levels                : Nlevels = 1
+
+
+#---------------------
+# Optimisation options
+#---------------------
+Tabulate SPH kernel                         : tabulated_kernel = 1
+SPH neighbour search algorithm              : neib_search = bruteforce
+
+
+#--------------
+# Misc. options
+#--------------
+Switch-off self-gravity of gas              : self_gravity = 0

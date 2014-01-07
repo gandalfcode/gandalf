@@ -20,9 +20,9 @@ CreateTimeData('lr2',lagrangian_radii,0.5)
 CreateTimeData('lr3',lagrangian_radii,0.9)
 
 # Plot Lagrangian radii as a function of time
-plot_vs_time("lr1",linestyle='-')
-plot_vs_time("lr2",overplot=True,linestyle='-')
-plot_vs_time("lr3",overplot=True,linestyle='-')
+time_plot("t","lr1",linestyle='-')
+time_plot("t","lr2",overplot=True,linestyle='-')
+time_plot("t","lr3",overplot=True,linestyle='-')
 
 # Prevent program from closing before showing plot window
 block()
