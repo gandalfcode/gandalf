@@ -45,7 +45,7 @@ OPT += -O3 -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),PROFILE)
 OPT += -O3 -fPIC -fno-exceptions -fno-rtti -pg
 else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -g -pg -Wall -fbounds-check -fPIC -O3  #-fprofile-arcs -ftest-coverage
+OPT += -g -Wall -fbounds-check -fPIC -O3  #-fprofile-arcs -ftest-coverage
 endif
 ifeq ($(OPENMP),1)
 OPT += -fopenmp 
@@ -62,7 +62,7 @@ OPT += -O3 -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),PROFILE)
 OPT += -O3 -fPIC -fno-exceptions -fno-rtti -pg
 else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -g -pg -Wall -fbounds-check -fPIC -O3  #-fprofile-arcs -ftest-coverage
+OPT += -g -Wall -fbounds-check -fPIC -O3  #-fprofile-arcs -ftest-coverage
 endif
 ifeq ($(OPENMP),1)
 OPT += -fopenmp 
@@ -75,7 +75,7 @@ OPT += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),STANDARD)
 OPT += -O3 -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -g -pg -Wall -fbounds-check -fPIC #-fprofile-arcs -ftest-coverage
+OPT += -g -Wall -fbounds-check -fPIC #-fprofile-arcs -ftest-coverage
 endif
 ifeq ($(OPENMP),1)
 OPT += -fopenmp -DOPENMP
@@ -111,6 +111,15 @@ ifeq ($(PRECISION),SINGLE)
 CFLAGS += -DGANDALF_SINGLE_PRECISION
 else ifeq ($(PRECISION),DOUBLE)
 CFLAGS += -DGANDALF_DOUBLE_PRECISION
+endif
+
+
+# FFTW linkage
+#-----------------------------------------------------------------------------
+ifeq ($(FFTW),1)
+CFLAGS += -DFFTW_TURBULENCE
+#OPT += -I/Users/davidhubber/astro/code/gandalf/src -L/Users/davidhubber/astro/code/gandalf/src -lm -lfftw3f
+OPT += -I/usr/local/include -L/usr/local/lib -lfftw3
 endif
 
 

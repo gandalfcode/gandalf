@@ -33,6 +33,10 @@
 #include "Parameters.h"
 #include "InlineFuncs.h"
 #include "Debug.h"
+#ifdef MPI_PARALLEL
+#include <stddef.h>
+#include "mpi.h"
+#endif
 using namespace std;
 
 
@@ -50,6 +54,9 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 
   debug2("[SphSimulation::CalculateDiagnostics]");
 
+  diag.Nsph = sph->Nsph;
+  diag.Nstar = nbody->Nstar;
+
   // Zero all diagnostic summation variables
   diag.mtot = 0.0;
   diag.Etot = 0.0;
@@ -60,6 +67,7 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   for (k=0; k<ndim; k++) diag.vcom[k] = 0.0;
   for (k=0; k<ndim; k++) diag.mom[k] = 0.0;
   for (k=0; k<ndim; k++) diag.force[k] = 0.0;
+  for (k=0; k<ndim; k++) diag.force_hydro[k] = 0.0;
   for (k=0; k<ndim; k++) diag.force_grav[k] = 0.0;
   for (k=0; k<3; k++) diag.angmom[k] = 0.0;
 
@@ -76,6 +84,7 @@ void Simulation<ndim>::CalculateDiagnostics(void)
       diag.vcom[k] += part->m*part->v[k];
       diag.mom[k] += part->m*part->v[k];
       diag.force[k] += part->m*part->a[k];
+      diag.force_hydro[k] += part->m*(part->a[k] - part->agrav[k]);
       diag.force_grav[k] += part->m*part->agrav[k];
     }
   }
@@ -85,22 +94,18 @@ void Simulation<ndim>::CalculateDiagnostics(void)
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>* part = sph->GetParticleIPointer(i);
       diag.angmom[2] += part->m*
-        (part->r[0]*part->v[1] -
-         part->r[1]*part->v[0]);
+        (part->r[0]*part->v[1] - part->r[1]*part->v[0]);
     }
   }
   else if (ndim == 3) {
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>* part = sph->GetParticleIPointer(i);
       diag.angmom[0] += part->m*
-        (part->r[1]*part->v[2] -
-         part->r[2]*part->v[1]);
+        (part->r[1]*part->v[2] - part->r[2]*part->v[1]);
       diag.angmom[1] += part->m*
-        (part->r[2]*part->v[0] -
-         part->r[0]*part->v[2]);
+        (part->r[2]*part->v[0] - part->r[0]*part->v[2]);
       diag.angmom[2] += part->m*
-        (part->r[0]*part->v[1] -
-         part->r[1]*part->v[0]);
+        (part->r[0]*part->v[1] - part->r[1]*part->v[0]);
     }
   }
 
@@ -140,9 +145,12 @@ void Simulation<ndim>::CalculateDiagnostics(void)
     }
   }
 
-  // Add internal angular momentum (due to sink accretion)
+  // Add internal angular momentum (due to sink accretion) and subtract 
+  // accreted hydro momentum to maintain conservation of individual impulses.
   for (i=0; i<sinks.Nsink; i++) {
     for (k=0; k<3; k++) diag.angmom[k] += sinks.sink[i].angmom[k];
+    for (k=0; k<3; k++) diag.force_grav[k] -= sinks.sink[i].fhydro[k];
+    for (k=0; k<3; k++) diag.force_hydro[k] += sinks.sink[i].fhydro[k];
   }
 
   // Normalise all quantities and sum all contributions to total energy
@@ -162,6 +170,12 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   }
 
 
+  // For MPI, collect all diagnostic information on root node
+#ifdef MPI_PARALLEL
+  mpicontrol.CollateDiagnosticsData(diag);
+#endif
+
+
   return;
 }
 
@@ -169,7 +183,7 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 
 //=============================================================================
 //  Simulation::OutputDiagnostics
-/// Output all diagnostic quantities that are calculated in 
+/// Output all diagnostic quantities that are computed in 
 /// CalculateDiagnostics to screen.
 //=============================================================================
 template <int ndim>
@@ -177,43 +191,57 @@ void Simulation<ndim>::OutputDiagnostics(void)
 {
   debug2("[SphSimulation::OutputDiagnostics]");
 
-  cout << "Nsph       : " << sph->Nsph << endl;
-  cout << "Nstar      : " << nbody->Nstar << endl;
-  cout << "mtot       : " << diag.mtot*simunits.m.outscale << endl;
-  cout << "Etot       : " << diag.Etot*simunits.E.outscale << endl;
-  cout << "ketot      : " << diag.ketot*simunits.E.outscale << endl;
+  if (rank != 0) return;
+
+  cout << "Nsph        : " << diag.Nsph << endl;
+  cout << "Nstar       : " << diag.Nstar << endl;
+  cout << "mtot        : " << diag.mtot*simunits.m.outscale << endl;
+  cout << "Etot        : " << diag.Etot*simunits.E.outscale << endl;
+  cout << "ketot       : " << diag.ketot*simunits.E.outscale << endl;
   if (sph->hydro_forces == 1) 
-    cout << "utot       : " << diag.utot*simunits.E.outscale << endl;
+    cout << "utot        : " << diag.utot*simunits.E.outscale << endl;
   if (sph->self_gravity == 1 || nbody->Nstar > 0)
-    cout << "gpetot     : " << diag.gpetot*simunits.E.outscale << endl;
+    cout << "gpetot      : " << diag.gpetot*simunits.E.outscale << endl;
   if (ndim == 1) {
-    cout << "mom        : " << diag.mom[0] << endl;
-    cout << "force      : " << diag.force[0] << endl;
+    cout << "rcom        : " << diag.rcom[0] << endl;
+    cout << "vcom        : " << diag.vcom[0] << endl;
+    cout << "mom         : " << diag.mom[0] << endl;
+    cout << "force       : " << diag.force[0] << endl;
     if (sph->self_gravity == 1 || nbody->Nstar > 0)
-      cout << "force_grav : " << diag.force_grav[0] << endl;
+      cout << "force_grav  : " << diag.force_grav[0] << endl;
+    if (sph->hydro_forces == 1)
+      cout << "force_hydro : " << diag.force_hydro[0] << endl;
   }
   else if (ndim == 2) {
-    cout << "ang mom    : " << diag.angmom[2] << endl;
-    cout << "mom        : " << diag.mom[0] << "   " << diag.mom[1] << endl;
-    cout << "force      : " << diag.force[0] << "   " << diag.force[1] << endl;
+    cout << "rcom        : " << diag.rcom[0] << "   " << diag.rcom[1] << endl;
+    cout << "vcom        : " << diag.vcom[0] << "   " << diag.vcom[1] << endl;
+    cout << "ang mom     : " << diag.angmom[2] << endl;
+    cout << "mom         : " << diag.mom[0] << "   " << diag.mom[1] << endl;
+    cout << "force       : " << diag.force[0] << "   " << diag.force[1] << endl;
     if (sph->self_gravity == 1 || nbody->Nstar > 0) 
-      cout << "force_grav : " << diag.force_grav[0] << "   " 
+      cout << "force_grav  : " << diag.force_grav[0] << "   " 
 	   << diag.force_grav[1] << endl;
+    if (sph->hydro_forces == 1)
+      cout << "force_hydro : " << diag.force_hydro[0] << "   "
+           << diag.force_hydro[1] << endl;
   }
   else if (ndim == 3) {
-    cout << "rcom       : " << diag.rcom[0] << "   "
+    cout << "rcom        : " << diag.rcom[0] << "   "
 	 << diag.rcom[1] << "   " << diag.rcom[2] << endl;
-    cout << "vcom       : " << diag.vcom[0] << "   "
+    cout << "vcom        : " << diag.vcom[0] << "   "
 	 << diag.vcom[1] << "   " << diag.vcom[2] << endl;
-    cout << "ang mom    : " << diag.angmom[0] << "   "
+    cout << "ang mom     : " << diag.angmom[0] << "   "
 	 << diag.angmom[1] << "   " << diag.angmom[2] << endl;
-    cout << "mom        : " << diag.mom[0] << "   " 
+    cout << "mom         : " << diag.mom[0] << "   " 
 	 << diag.mom[1] << "   " << diag.mom[2] << endl;
-    cout << "force      : " << diag.force[0] << "   " 
+    cout << "force       : " << diag.force[0] << "   " 
 	 << diag.force[1] << "   " << diag.force[2] << endl;
     if (sph->self_gravity == 1 || nbody->Nstar > 0) 
-      cout << "force_grav : " << diag.force_grav[0] << "   " 
+      cout << "force_grav  : " << diag.force_grav[0] << "   " 
 	   << diag.force_grav[1] << "   " << diag.force_grav[2] << endl;
+    if (sph->hydro_forces == 1)
+      cout << "force_hydro : " << diag.force_hydro[0] << "   "
+           << diag.force_hydro[1] << "   " << diag.force_hydro[2] << endl;
   }
 
   // Calculate binary statistics if required

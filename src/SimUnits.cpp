@@ -83,6 +83,7 @@ DOUBLE LengthUnit::SIUnit(string unit)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -123,6 +124,7 @@ DOUBLE MassUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -159,6 +161,7 @@ DOUBLE TimeUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -194,6 +197,7 @@ DOUBLE VelocityUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -228,6 +232,7 @@ DOUBLE AccelerationUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -261,6 +266,7 @@ DOUBLE DensityUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -293,6 +299,7 @@ DOUBLE ColumnDensityUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -324,6 +331,7 @@ DOUBLE PressureUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -354,6 +362,7 @@ DOUBLE ForceUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -386,6 +395,7 @@ DOUBLE EnergyUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -420,6 +430,7 @@ DOUBLE MomentumUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -454,6 +465,7 @@ DOUBLE AngularMomentumUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -485,6 +497,7 @@ DOUBLE AngularVelocityUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -516,6 +529,7 @@ DOUBLE MassRateUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -549,6 +563,7 @@ DOUBLE LuminosityUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -580,6 +595,7 @@ DOUBLE OpacityUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -610,6 +626,7 @@ DOUBLE MagneticFieldUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -640,6 +657,7 @@ DOUBLE ChargeUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -669,6 +687,7 @@ DOUBLE CurrentDensityUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -698,6 +717,7 @@ DOUBLE SpecificEnergyUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -728,6 +748,7 @@ DOUBLE SpecificEnergyRateUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -757,6 +778,7 @@ DOUBLE TemperatureUnit::SIUnit(string unit_string)
   else {
     string message = "Parameter error : Unrecognised unit = " + unit_string;
     ExceptionHandler::getIstance().raise(message);
+    return 0.0;
   }
 }
 
@@ -1031,6 +1053,25 @@ void SimUnits::SetupUnits(Parameters *params)
   kappa.outscale = kappa.outscale / kappa.outSI;
   kappa.outcgs = 10.0*kappa.outSI;
 
+
+  // Magnetic field units
+  //---------------------------------------------------------------------------
+  B.inunit = params->stringparams["kappainunit"];
+  B.outunit = params->stringparams["kappaoutunit"];
+
+
+  // Electrical charge units
+  //---------------------------------------------------------------------------
+  Q.inunit = params->stringparams["kappainunit"];
+  Q.outunit = params->stringparams["kappaoutunit"];
+
+
+  // Current density units
+  //---------------------------------------------------------------------------
+  Jcur.inunit = params->stringparams["kappainunit"];
+  Jcur.outunit = params->stringparams["kappaoutunit"];
+
+
   // Specific internal energy units
   //---------------------------------------------------------------------------
   u.inunit = params->stringparams["uinunit"];
@@ -1066,6 +1107,8 @@ void SimUnits::SetupUnits(Parameters *params)
   temp.outscale = (m_hydrogen*u.outscale*u.outSI)/k_boltzmann;
   temp.outscale = temp.outscale / temp.outSI;
   temp.outcgs = temp.outSI;
+
+  OutputScalingFactors(params);
 
   return;
 }
@@ -1104,6 +1147,9 @@ void SimUnits::OutputScalingFactors(Parameters *params)
   cout << "Energy unit  = " 
        << E.outscale << " " << params->stringparams["Eoutunit"]
        << "     (SI = " << E.outscale*E.outSI << " J )" << endl;
+  cout << "Specific energy unit  = " 
+       << u.outscale << " " << params->stringparams["uoutunit"]
+       << "     (SI = " << u.outscale*u.outSI << " J_kg )" << endl;
   cout << "Ang vel unit  = " 
        << angvel.outscale << " " << params->stringparams["angveloutunit"]
        << "     (SI = " << angvel.outscale*angvel.outSI << " rad_s )" << endl;

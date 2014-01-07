@@ -391,7 +391,6 @@ DOUBLE NbodyLeapfrogKDK<ndim, kernelclass>::Timestep
 
 
 
-
 //=============================================================================
 //  NbodyLeapfrogKDK::IntegrateInternalMotion
 /// This function integrates the internal motion of a system. First integrates

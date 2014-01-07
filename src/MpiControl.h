@@ -30,11 +30,21 @@
 #include <string>
 #include "Precision.h"
 #include "MpiNode.h"
+#include "Sph.h"
 #include "Nbody.h"
-#include "SphNeighbourSearch.h"
+#include "MpiTree.h"
 #include "SphParticle.h"
+#include "DomainBox.h"
+#include "Diagnostics.h"
+#if defined MPI_PARALLEL
+#include "mpi.h"
+#endif
 using namespace std;
 
+
+static const int tag_srpart = 1;
+static const int tag_league = 2;
+static const int tag_bal = 3;
 
 
 //=============================================================================
@@ -47,6 +57,33 @@ using namespace std;
 template <int ndim>
 class MpiControl
 {
+  //Convenience functions to send and receive particles
+  void SendParticles(int Node, int Nparticles, int* list, SphParticle<ndim>* );
+  void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array);
+  std::vector<SphParticle<ndim> > sendbuffer; ///< Used by the SendParticles routine
+
+  MPI_Datatype particle_type;        ///< Datatype for the particles
+  MPI_Datatype partint_type;         ///< Datatype for the SphIntParticle structure
+  MPI_Datatype box_type;             ///< Datatype for the box
+  MPI_Datatype diagnostics_type;     ///< Datatype for diagnostic info
+
+  //Buffers needed to send and receive particles
+  std::vector<std::vector<SphParticle<ndim>* > > particles_to_export_per_node;
+  std::vector<SphParticle<ndim> > particles_to_export;
+  std::vector<SphParticle<ndim> > particles_receive;
+  std::vector<int> num_particles_export_per_node;
+  std::vector<int> displacements_send;
+  std::vector<int> num_particles_to_be_received;
+  std::vector<int> receive_displs;
+  int tot_particles_to_receive;
+
+  std::vector<Box<ndim> > boxes_buffer;     ///< Buffer needed by the UpdateAllBoundingBoxes routine
+
+  SphNeighbourSearch<ndim>* neibsearch;    ///< Neighbour search class
+
+  void CreateLeagueCalendar();
+  std::vector<int> my_matches; ///< List of the matches of this node. For each turn, gives the node we will play with
+
  public:
 
   // Constructor and destructor
@@ -57,25 +94,29 @@ class MpiControl
 
   // Other functions
   //---------------------------------------------------------------------------
-  void AllocateMemory(void);
+  void AllocateMemory(int);
   void DeallocateMemory(void);
+  void SetNeibSearch(SphNeighbourSearch<ndim>* _neibsearch) {neibsearch=_neibsearch;}
 
-  void InitialiseMpiProcess(void);
-  void CreateLoadBalancingTree(void);
-  void LoadBalancing(void);
-  void TransferParticlesToNode(void);
+  void CollateDiagnosticsData(Diagnostics<ndim> &);
+  void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>);
+  void LoadBalancing(Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllBoundingBoxes(int, SphParticle<ndim> *, SphKernel<ndim> *);
+  int SendReceiveGhosts(SphParticle<ndim>** array, Sph<ndim>* sph);
+  int UpdateGhostParticles(SphParticle<ndim>** array);
 
 
   // MPI control variables
   //---------------------------------------------------------------------------
   bool allocated_mpi;               ///< Flag if memory has been allocated.
+  int balance_level;                ///< MPI tree level to do load balancing
   int rank;                         ///< MPI rank of process
   int Nmpi;                         ///< No. of MPI processes
   int Nloadbalance;                 ///< No. of steps between load-balancing
 
   char hostname[MPI_MAX_PROCESSOR_NAME];
-
-  //BinaryTree<ndim> mpitree;         ///< Main MPI load balancing tree
+  DomainBox<ndim> mpibox;           ///< ..
+  MpiTree<ndim> *mpitree;           ///< Main MPI load balancing tree
   MpiNode<ndim> *mpinode;           ///< Data for all MPI nodes
 
 };

@@ -21,12 +21,13 @@
 
 
 CPP                = g++
-PYTHON             = python
-F2PY               = f2py
-COMPILER_MODE      = DEBUG
+PYTHON             = python2.7
+F2PY               = f2py2.7
+FFTW               = 0
+COMPILER_MODE      = FAST
 PRECISION          = DOUBLE
 OPENMP             = 0
-OUTPUT_LEVEL       = 0
+OUTPUT_LEVEL       = 1
 DEBUG_LEVEL        = 0
 
 

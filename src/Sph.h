@@ -38,7 +38,9 @@
 #include "EOS.h"
 #include "RiemannSolver.h"
 using namespace std;
-
+#if defined _OPENMP
+#include "omp.h"
+#endif
 
 enum aviscenum{noneav, mon97, mon97td};
 enum acondenum{noneac, wadsley2008, price2008};
@@ -58,6 +60,13 @@ enum acondenum{noneac, wadsley2008, price2008};
 template <int ndim>
 class Sph
 {
+private:
+
+#if defined _OPENMP
+  void InitParticleLocks();
+  void DestroyParticleLocks();
+#endif
+
  public:
 
   const aviscenum avisc;
@@ -107,9 +116,13 @@ class Sph
   void InitialSmoothingLengthGuess(void);
 
 
-  // Functions needed memory
+  // Functions needed to hide some implementation details
   //---------------------------------------------------------------------------
   SphParticle<ndim>* GetParticleIPointer(int i) {return &sphdata[i];};
+#if defined _OPENMP
+  omp_lock_t& GetParticleILock(int i) {return locks[i];};
+  omp_lock_t* locks;
+#endif
 
 
   // SPH particle counters and main particle data array
@@ -118,6 +131,7 @@ class Sph
   int Ngather;                        ///< Average no. of gather neighbours
   int Nsph;                           ///< No. of SPH particles in simulation
   int Nghost;                         ///< No. of ghost SPH particles
+  int NPeriodicGhost;                 ///< No. of periodic ghost particles
   int Ntot;                           ///< No. of real + ghost particles
   int Nsphmax;                        ///< Max. no. of SPH particles in array
   int Nghostmax;                      ///< Max. allowed no. of ghost particles
@@ -131,7 +145,7 @@ class Sph
   const int self_gravity;             ///< Compute gravitational forces?
   static const FLOAT invndim=1./ndim; ///< Copy of 1/ndim
   int create_sinks;                   ///< Create new sink particles?
-  int time_dependent_avisc;           ///< ..
+  int time_dependent_avisc;           ///< Use time-dependent viscosity?
   FLOAT mmean;                        ///< Mean SPH particle mass
   FLOAT hmin_sink;                    ///< Minimum smoothing length of sinks
 
@@ -142,7 +156,7 @@ class Sph
   FLOAT kernfac;                      ///< Kernel range neighbour fraction
   FLOAT kernfacsqd;                   ///< Kernel range neib. fraction squared
 
-  int *iorder;                        ///< ..
+  int *iorder;                        ///< Array containing particle ordering
   FLOAT *rsph;                        ///< Position array (for efficiency)
 
   SphIntParticle<ndim>* sphintdata;   ///< Pointer to particle integration data

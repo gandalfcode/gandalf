@@ -38,11 +38,23 @@ int main(int argc, char** argv)
   Parameters* params = new Parameters();             // Parameters object
   string paramfile;                                  // Name of parameters file
   ExceptionHandler::makeExceptionHandler(cplusplus); // Exception handler
+  int rank=0;                                        // Local copy of MPI rank
 
 
   // Initialise all MPI processes (if activated in Makefile)
 #ifdef MPI_PARALLEL
   MPI_Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  //Tell exception handler to call MPI_Abort on error
+  ExceptionHandler::set_mpi(1);
+#ifdef _OPENMP
+  //Check that OpenMP and MPI can work together
+  int mpi_thread_support;
+  MPI_Query_thread(&mpi_thread_support);
+  if (mpi_thread_support == MPI_THREAD_SINGLE)
+    ExceptionHandler::getIstance().raise("This implementation of MPI is not interoperable with OpenMP, aborting!"
+        "Refer to your system administrator to know how to solve this problem");
+#endif
 #endif
 
   // Check that a valid number of arguments have been passed
@@ -55,20 +67,26 @@ int main(int argc, char** argv)
   }
 
 
-  // Read parameters file immediately
+  // Read parameters file immediately and record to file
   params->ReadParamsFile(paramfile);
+  params->RecordParametersToFile();
+
 
   // Create simulation object with required dimensionality and parameters
   sim = SimulationBase::SimulationFactory(params->intparams["ndim"], params);
 
   // Print out splash screen
-  sim->SplashScreen();
+  if (rank == 0) sim->SplashScreen();
 
   // Perform all set-up procedures
   sim->SetupSimulation();
 
   // Run entire simulation until specified end-time in parameters file.
   sim->Run();
+
+#ifdef MPI_PARALLEL
+  MPI_Finalize();
+#endif
 
   return 0;
 }

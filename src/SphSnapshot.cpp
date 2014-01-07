@@ -102,13 +102,13 @@ SphSnapshotBase(&(sim->simunits), filename),
 simulation(static_cast<Simulation<ndims>* > (sim))
 {
   this->ndim = ndims;
-  this->fileform = sim->GetParam("in_file_form");
+  this->fileform = sim->GetParam("out_file_form");
 
   // Computes how numbers we need to store for each sph/star particle
   nneededsph = 3*ndims + 5;
   nneededstar = 3*ndims + 2;
   nneededbinary = 5;
-
+ 
   if (filename != "") {
     HeaderInfo info;
     info = sim->ReadHeaderSnapshotFile(filename, this->fileform);
@@ -827,6 +827,12 @@ void SphSnapshot<ndims>::ReadSnapshot(string format)
 
   // Read simulation into main memory
   simulation->ReadSnapshotFile(filename, format);
+
+  // Recalculate input units if required
+  units->SetupUnits(simulation->simparams);
+
+  // Scale particle data to dimensionless code units
+  simulation->ConvertToCodeUnits();  
 
   // Now copy from main memory to current snapshot
   CopyDataFromSimulation();

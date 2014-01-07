@@ -11,6 +11,11 @@ Simulation run id string                    : run_id = BINARY1
 Select SPH simulation                       : sim = nbody
 Select shocktube initial conditions         : ic = binary
 Dimensionality of cube                      : ndim = 3
+Binary semi-major axis                      : abin = 1.0
+Binary orbital eccentricity                 : ebin = 0.0
+Binary primary mass                         : m1 = 0.9
+Secondary mass                              : m2 = 0.1
+Euler angle theta rotation                  : thetarot = 1.570796
 Use dimensionless units                     : dimensionless = 1
 
 
@@ -19,7 +24,9 @@ Use dimensionless units                     : dimensionless = 1
 #--------------------------
 Simulation end time                         : tend = 10.0
 Regular snapshot output frequency           : dt_snap = 1.0
-Screen output frequency (in no. of steps)   : noutputstep = 1
+First snapshot                              : tsnapfirst = 1.0
+Screen output frequency (in no. of steps)   : noutputstep = 32
+Diagnostic output frequency                 : ndiagstep = 256
 
 
 #-----------------------------

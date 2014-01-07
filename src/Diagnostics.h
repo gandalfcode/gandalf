@@ -25,6 +25,11 @@
 #define _DIAGNOSTICS__H
 
 #include "Precision.h"
+#ifdef MPI_PARALLEL
+#include <stddef.h>
+#include "mpi.h"
+#include "Exception.h"
+#endif
 
 
 //=============================================================================
@@ -34,7 +39,10 @@
 /// \date   03/04/2013
 //=============================================================================
 template <int ndim>
-struct Diagnostics {
+struct Diagnostics
+{
+  int Nsph;                         ///< Total no. of SPH particles
+  int Nstar;                        ///< Total no. of star particles
   DOUBLE Eerror;                    ///< Total energy error
   DOUBLE Etot;                      ///< Total energy
   DOUBLE utot;                      ///< Total thermal energy
@@ -44,9 +52,22 @@ struct Diagnostics {
   DOUBLE mom[ndim];                 ///< Total momentum vector
   DOUBLE angmom[3];                 ///< Total angular momentum vector
   DOUBLE force[ndim];               ///< Net force
+  DOUBLE force_hydro[ndim];         ///< Net hydrodynamical force
   DOUBLE force_grav[ndim];          ///< Net gravitational force
   DOUBLE rcom[ndim];                ///< Position of centre of mass
   DOUBLE vcom[ndim];                ///< Velocity of centre of mass
+
+#ifdef MPI_PARALLEL
+  static MPI_Datatype CreateMpiDataType() {
+	  MPI_Datatype diagnostic_type;
+      MPI_Datatype types[1] = {MPI_BYTE};
+      MPI_Aint offsets[1] = {0};
+      int blocklen[1] = {sizeof(Diagnostics<ndim>)};
+      MPI_Type_create_struct(1,blocklen,offsets,types,&diagnostic_type);
+      return diagnostic_type;
+  }
+#endif
+
 };
 
 #endif

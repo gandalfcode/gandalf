@@ -45,7 +45,6 @@
 using namespace std;
 
 
-
 //=============================================================================
 //  SimulationBase::SimulationFactory
 /// Creates a simulation object depending on the dimensionality.
@@ -86,25 +85,25 @@ SimulationBase* SimulationBase::SimulationFactory
   if (ndim == 1) {
     if (SimulationType == "sph")
       return new SphSimulation<1>(params);
-    else if (SimulationType=="godunov_sph")
+    else if (SimulationType == "godunov_sph")
       return new GodunovSphSimulation<1>(params);
-    else if (SimulationType=="nbody")
+    else if (SimulationType == "nbody")
       return new NbodySimulation<1>(params);
   }
   else if (ndim==2) {
     if (SimulationType == "sph")
       return new SphSimulation<2>(params);
-    else if (SimulationType=="godunov_sph")
+    else if (SimulationType == "godunov_sph")
       return new GodunovSphSimulation<2>(params);
-    else if (SimulationType=="nbody")
+    else if (SimulationType == "nbody")
       return new NbodySimulation<2>(params);
   }
   else if (ndim==3) {
     if (SimulationType == "sph")
       return new SphSimulation<3>(params);
-    else if (SimulationType=="godunov_sph")
+    else if (SimulationType == "godunov_sph")
       return new GodunovSphSimulation<3>(params);
-    else if (SimulationType=="nbody")
+    else if (SimulationType == "nbody")
       return new NbodySimulation<3>(params);
   }
   return NULL;
@@ -123,12 +122,27 @@ SimulationBase::SimulationBase
   paramfile = "";
   n = 0;
   nresync = 0;
+  Nblocksteps = 0;
   integration_step = 1;
   Nsteps = 0;
   rank = 0;
   t = 0.0;
+  timestep = 0.0;
   setup = false;
+  initial_h_provided = false;
   ParametersProcessed = false;
+  rescale_particle_data = false;
+#if defined _OPENMP
+  if (omp_get_dynamic()) {
+    cout << "Warning: the dynamic adjustment of the number threads was on. For better load-balancing, we will disable it" << endl;
+  }
+  omp_set_dynamic(0);
+  Nthreads = omp_get_max_threads();
+  assert(Nthreads > 0);
+#else
+  Nthreads = 1;
+#endif
+  Nmpi = 1;
 }
 
 
@@ -345,9 +359,11 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
   //---------------------------------------------------------------------------
 
   // Calculate and process all diagnostic quantities
-  CalculateDiagnostics();
-  OutputDiagnostics();
-  UpdateDiagnostics();
+  if (t >= tend || Nsteps >= Ntarget) {
+    CalculateDiagnostics();
+    OutputDiagnostics();
+    UpdateDiagnostics();
+  }
 
   return snap_list;
 }
@@ -366,10 +382,11 @@ string SimulationBase::Output(void)
 
   debug2("[SimulationBase::Output]");
 
-  if (Nsteps%noutputstep == 0) 
-    cout << "t : " << t*simunits.t.outscale << " " << simunits.t.outunit 
-	 << "    dt : " << timestep*simunits.t.outscale << " " 
-	 << simunits.t.outunit << "    Nsteps : " << Nsteps << endl;
+  if (rank == 0)
+    if (Nsteps%noutputstep == 0)
+      cout << "t : " << t*simunits.t.outscale << " " << simunits.t.outunit
+           << "    dt : " << timestep*simunits.t.outscale << " "
+           << simunits.t.outunit << "    Nsteps : " << Nsteps << endl;
 
   // Output a data snapshot if reached required time
   if (t >= tsnapnext) {
@@ -381,6 +398,12 @@ string SimulationBase::Output(void)
     filename = run_id + '.' + out_file_form + '.' + nostring;
     ss.str(std::string());
     WriteSnapshotFile(filename,out_file_form);
+  }
+
+  // Output diagnostics to screen if passed sufficient number of block steps
+  if (Nblocksteps%ndiagstep == 0 && n == nresync) {
+    CalculateDiagnostics();
+    OutputDiagnostics();
   }
 
   return filename;
@@ -422,7 +445,7 @@ void SimulationBase::SetupSimulation(void)
   //---------------------------------------------------------------------------
   if (rank == 0) {
     GenerateIC();
-
+    
     // Change to COM frame if selected
     if (simparams->intparams["com_frame"] == 1) SetComFrame();
 
@@ -431,6 +454,8 @@ void SimulationBase::SetupSimulation(void)
 
   // Call a messy function that does all the rest of the initialisation
   PostInitialConditionsSetup();
+
+  Output();
 
   return;
 }
@@ -456,8 +481,8 @@ void Simulation<ndim>::ProcessParameters(void)
 
   // Now simulation object is created, set-up various MPI variables
 #ifdef MPI_PARALLEL
-  mpicontrol.InitialiseMpiProcess();
   rank = mpicontrol.rank;
+  Nmpi = mpicontrol.Nmpi;
 #endif
 
 
@@ -520,13 +545,16 @@ void Simulation<ndim>::ProcessParameters(void)
 				     floatparams["thetamaxsqd"],
 				     sph->kernp->kernrange,
 				     stringparams["gravity_mac"],
-				     stringparams["multipole"]);
+				     stringparams["multipole"],Nthreads,Nmpi);
     }
     else {
       string message = "Unrecognised parameter : neib_search = " 
 	+ simparams->stringparams["neib_search"];
       ExceptionHandler::getIstance().raise(message);
     }
+#if defined MPI_PARALLEL
+    mpicontrol.SetNeibSearch(sphneib);
+#endif
  
   }
   //---------------------------------------------------------------------------
@@ -539,6 +567,7 @@ void Simulation<ndim>::ProcessParameters(void)
 
   // Set all other SPH parameter variables
   sph->Nsph           = intparams["Nsph"];
+  sph->Nsphmax        = intparams["Nsphmax"];
   sph->create_sinks   = intparams["create_sinks"];
   sph->time_dependent_avisc = intparams["time_dependent_avisc"];
   sph->alpha_visc_min = floatparams["alpha_visc_min"];
@@ -546,6 +575,7 @@ void Simulation<ndim>::ProcessParameters(void)
 
   // Set important variables for N-body objects
   nbody->Nstar          = intparams["Nstar"];
+  nbody->Nstarmax       = intparams["Nstarmax"];
   nbody_single_timestep = intparams["nbody_single_timestep"];
   nbodytree.gpehard     = floatparams["gpehard"];
   nbodytree.gpesoft     = floatparams["gpesoft"];
@@ -572,6 +602,15 @@ void Simulation<ndim>::ProcessParameters(void)
     simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
     simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
   }
+  if (sim == "sph" || sim == "godunov_sph") sphneib->box = &simbox;
+  if (IsAnyBoundarySpecial(simbox))
+    LocalGhosts = new PeriodicGhosts<ndim>();
+  else
+    LocalGhosts = new NullGhosts<ndim>();
+#ifdef MPI_PARALLEL
+  MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
+#endif
+
 
 
   // Sink particles
@@ -598,7 +637,10 @@ void Simulation<ndim>::ProcessParameters(void)
   dt_snap               = floatparams["dt_snap"]/simunits.t.outscale;
   level_diff_max        = intparams["level_diff_max"];
   Nlevels               = intparams["Nlevels"];
+  ndiagstep             = intparams["ndiagstep"];
   noutputstep           = intparams["noutputstep"];
+  ntreebuildstep        = intparams["ntreebuildstep"];
+  ntreestockstep        = intparams["ntreestockstep"];
   Nstepsmax             = intparams["Nstepsmax"];
   out_file_form         = stringparams["out_file_form"];
   run_id                = stringparams["run_id"];
@@ -795,7 +837,17 @@ void Simulation<ndim>::ProcessSphParameters(void)
   }
 
 
+  // Depending on the dimensionality, calculate expected neighbour number
+  //---------------------------------------------------------------------------
+  if (ndim == 1)
+	sph->Ngather = (int) (2.0*sph->kernp->kernrange*sph->h_fac);
+  else if (ndim == 2)
+	sph->Ngather = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac,2));
+  else if (ndim == 3)
+    sph->Ngather = (int) (4.0*pi*pow(sph->kernp->kernrange*sph->h_fac,3)/3.0);
   return;
+
+
 }
 
 
@@ -827,10 +879,10 @@ void Simulation<ndim>::ProcessGodunovSphParameters(void)
   else if (intparams["tabulated_kernel"] == 0) {
     if (KernelName == "gaussian") {
       sph = new GodunovSph<ndim, GaussianKernel> 
-	(intparams["hydro_forces"], intparams["self_gravity"],
-	 floatparams["alpha_visc"], floatparams["beta_visc"],
-	 floatparams["h_fac"], floatparams["h_converge"],
-	 avisc, acond, stringparams["gas_eos"], KernelName);
+        (intparams["hydro_forces"], intparams["self_gravity"],
+         floatparams["alpha_visc"], floatparams["beta_visc"],
+         floatparams["h_fac"], floatparams["h_converge"],
+         avisc, acond, stringparams["gas_eos"], KernelName);
     }
     else {
       string message = "Unrecognised parameter : kernel = " +
@@ -848,12 +900,10 @@ void Simulation<ndim>::ProcessGodunovSphParameters(void)
   // Riemann solver object
   //---------------------------------------------------------------------------
   string riemann = stringparams["riemann_solver"];
-  if (riemann == "exact") {
+  if (riemann == "exact")
     sph->riemann = new ExactRiemannSolver(floatparams["gamma_eos"]);
-  }
-  else if (riemann == "hllc") {
+  else if (riemann == "hllc")
     sph->riemann = new HllcRiemannSolver(floatparams["gamma_eos"]);
-  }
   else {
     string message = "Unrecognised parameter : riemann_solver = "
       + riemann;
@@ -1602,6 +1652,8 @@ void Simulation<ndim>::SetComFrame(void)
 template <int ndim>
 void Simulation<ndim>::UpdateDiagnostics ()
 {
-  diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
-  cout << "Eerror : " << diag.Eerror << endl;
+  if (rank == 0) {
+    diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);
+    cout << "Eerror : " << diag.Eerror << endl;
+  }
 }

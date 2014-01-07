@@ -63,6 +63,7 @@ Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux,
   allocated(false),
   Nsph(0),
   Nsphmax(0),
+  NPeriodicGhost(0),
   avisc(avisc_aux),
   acond(acond_aux)
 {
@@ -81,11 +82,14 @@ void Sph<ndim>::AllocateMemory(int N)
 {
   debug2("[Sph::AllocateMemory]");
 
-  if (N > Nsphmax) {
+  if (N > Nsphmax || !allocated) {
     if (allocated) DeallocateMemory();
-    //TODO: perhaps this 10 could be made a user-provided parameter
-    //(to handle the case where one doesn't want to waste memory)
-    Nsphmax = 10*N;
+
+    // Set conservative estimate for maximum number of particles, assuming 
+    // extra space required for periodic ghost particles
+    if (Nsphmax < N) 
+      Nsphmax = pow(pow(N,invndim) + 8.0*kernp->kernrange,ndim);
+
     iorder = new int[Nsphmax];
     rsph = new FLOAT[ndim*Nsphmax];
     sphdata = new struct SphParticle<ndim>[Nsphmax];
@@ -95,6 +99,9 @@ void Sph<ndim>::AllocateMemory(int N)
     }
     allocated = true;
   }
+#if defined _OPENMP
+  InitParticleLocks();
+#endif
 
   return;
 }
@@ -111,6 +118,9 @@ void Sph<ndim>::DeallocateMemory(void)
   debug2("[Sph::DeallocateMemory]");
 
   if (allocated) {
+#if defined _OPENMP
+    DestroyParticleLocks();
+#endif
     delete[] sphintdata;
     delete[] sphdata;
     delete[] rsph;
@@ -121,6 +131,34 @@ void Sph<ndim>::DeallocateMemory(void)
   return;
 }
 
+
+#if defined _OPENMP
+//=============================================================================
+//  Sph::InitParticleLocks
+/// Allocate storage for the locks and initialise them
+//=============================================================================
+template <int ndim>
+void Sph<ndim>::InitParticleLocks()
+{
+  locks = new omp_lock_t[Nsphmax];
+  for (int i=0; i<Nsphmax;i++) {
+    omp_init_lock(&locks[i]);
+  }
+}
+
+//=============================================================================
+//  Sph::DestroyParticleLocks
+/// Destroy the locks and deallocate storage for them
+//=============================================================================
+template <int ndim>
+void Sph<ndim>::DestroyParticleLocks()
+{
+  for (int i=0; i<Nsphmax; i++) {
+    omp_destroy_lock(&locks[i]);
+  }
+  delete[] locks;
+}
+#endif
 
 
 //=============================================================================
@@ -133,7 +171,7 @@ void Sph<ndim>::DeleteParticles
  int *deadlist)                     ///< List of 'dead' particle ids
 {
   int i;                            // Particle counter
-  int idead = 0;                    // Aux. dead particle counter
+  int idead = 0;                    // Aux. 'dead' particle counter
   int ilive = 0;                    // 'Live' particle counter
 
   debug2("[Sph::DeleteParticles]");
@@ -191,6 +229,7 @@ void Sph<ndim>::ReorderParticles(void)
   for (i=0; i<Nsph; i++) {
     sphdata[i] = sphdataaux[iorder[i]];
     sphintdata[i] = sphintdataaux[iorder[i]];
+    sphintdata[i].part = &(sphdata[i]);
   }
 
   delete[] sphdataaux;
@@ -238,10 +277,11 @@ void Sph<ndim>::SphBoundingBox
 template <int ndim>
 void Sph<ndim>::InitialSmoothingLengthGuess(void)
 {
-  FLOAT h_guess;                    // Global guess of smoothing length
-  FLOAT volume;                     // Volume of global bounding box
-  FLOAT rmin[ndim];                 // Min. extent of bounding box
-  FLOAT rmax[ndim];                 // Max. extent of bounding box
+  int i;                           // Particle counter
+  FLOAT h_guess;                   // Global guess of smoothing length
+  FLOAT volume;                    // Volume of global bounding box
+  FLOAT rmin[ndim];                // Min. extent of bounding box
+  FLOAT rmax[ndim];                // Max. extent of bounding box
 
   debug2("[Sph::InitialSmoothingLengthGuess]");
 

@@ -30,6 +30,8 @@
 #include <math.h>
 #include "Precision.h"
 #include "Constants.h"
+#include "SphParticle.h"
+#include "DomainBox.h"
 using namespace std;
 
 
@@ -45,7 +47,7 @@ static inline T DotProduct(T *v1, T *v2, int ndim)
     return v1[0]*v2[0];
   else if (ndim == 2)
     return v1[0]*v2[0] + v1[1]*v2[1];
-  else if (ndim == 3)
+  else
     return v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
 }
 
@@ -176,7 +178,7 @@ static inline void Heapsort
 
 //=============================================================================
 //  InsertionSortIds
-//  ..
+//  Sort list of integers (e.g. ids of particles) into ascending order.
 //=============================================================================
 static inline void InsertionSortIds
 (int Nsort,                         ///< No. of values to be sorted
@@ -195,4 +197,84 @@ static inline void InsertionSortIds
 
   return;
 }
+
+
+//=============================================================================
+//  EulerAngleRotation
+//  Rotate given vector around specified Euler angles
+//=============================================================================
+template <typename T>
+static inline void EulerAngleRotation
+(T phi,
+ T theta,
+ T psi,
+ T vec[3])
+{
+  int k;
+  T Arot[3][3];
+  T vecaux[3];
+
+  Arot[0][0] = cos(theta)*cos(psi);
+  Arot[1][0] = cos(phi)*sin(psi) + sin(phi)*sin(theta)*cos(psi);
+  Arot[2][0] = sin(phi)*sin(psi) - cos(phi)*sin(theta)*cos(psi);
+  Arot[0][1] = -cos(theta)*sin(psi);
+  Arot[1][1] = cos(phi)*cos(psi) - sin(phi)*sin(theta)*sin(psi);
+  Arot[2][1] = sin(phi)*cos(psi) + cos(phi)*sin(theta)*sin(psi);
+  Arot[0][2] = sin(theta);
+  Arot[1][2] = -sin(phi)*cos(theta);
+  Arot[2][2] = cos(phi)*cos(theta);
+
+  for (k=0; k<3; k++) vecaux[k] = vec[k];
+
+  for (k=0; k<3; k++)
+    vec[k] = Arot[0][k]*vecaux[0] + Arot[1][k]*vecaux[1] + Arot[2][k]*vecaux[2];
+
+  cout << "rot angles : " << phi << "    " << theta << "    " << psi << endl;
+  cout << "vec orig : " << vecaux[0] << "   " << vecaux[1] << "   " << vecaux[2] << endl;
+  cout << "vec rot  : " << vec[0] << "   " << vec[1] << "   " << vec[2] << endl;
+
+  return;
+}
+
+
+inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max) {
+  bool smaller = value < min;
+  if (smaller) return min;
+  bool bigger = value > max;
+  if (bigger) return max;
+  return value;
+}
+
+
+template <int ndim>
+inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box) {
+
+  // Find the closest point to the circle within the rectangle
+  FLOAT closest_coord[ndim];
+  for (int i=0; i<ndim; i++) {
+    closest_coord[i] = clamp(part.r[i],box.boxmin[i],box.boxmax[i]);
+  }
+
+  // Calculate the distance between the circle's center and this closest point
+  FLOAT distanceSquared = 0.;
+  for (int i=0; i<ndim; i++) {
+    FLOAT distance_coord = closest_coord[i] - part.r[i];
+    distanceSquared += distance_coord*distance_coord;
+  }
+
+  // If the distance is less than the circle's radius, an intersection occurs
+  return distanceSquared < part.hrangesqd;
+}
+
+
+template <int ndim>
+inline bool ParticleInBox (SphParticle<ndim>& part, Box<ndim>& box) {
+  for (int k=0; k<ndim; k++) {
+    if (part.r[k] < box.boxmin[k] || part.r[k] > box.boxmax[k]) return false;
+  }
+  return true;
+}
+
+
+
 #endif

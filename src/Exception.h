@@ -32,29 +32,31 @@ using namespace std;
 
 enum RunType {cplusplus, python};
 
-class SerenError {
+class GandalfError {
 public:
-    SerenError(std::string msgaux){msg = msgaux;}
-    ~SerenError() {}
+    GandalfError(std::string msgaux){msg = msgaux;}
+    ~GandalfError() {}
     std::string msg;
 };
 
-class StopError: public SerenError {
+class StopError: public GandalfError {
 public:
   StopError(std::string msgaux):
-    SerenError(msgaux)
+    GandalfError(msgaux)
     {};
 };
 
 class ExceptionHandler {
 private:
-  ExceptionHandler(RunType runtypeaux) : runtype(runtypeaux) {}
+  ExceptionHandler(RunType runtypeaux) : runtype(runtypeaux), mpi(0) {}
   static ExceptionHandler * istance;
   const RunType runtype;
+  int mpi;
 public:
   void raise(string msg);
   static void makeExceptionHandler (RunType runtypeaux);
   static ExceptionHandler & getIstance() {return *istance;}
+  static void set_mpi(int mpi_aux) {if (istance) istance->mpi=mpi_aux;}
 };
 
 #endif // _EXCEPTION_H_

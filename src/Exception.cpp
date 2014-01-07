@@ -23,6 +23,10 @@
 
 #include "Exception.h"
 
+#ifdef MPI_PARALLEL
+#include "mpi.h"
+#endif
+
 ExceptionHandler * ExceptionHandler::istance;
 
 
@@ -44,10 +48,15 @@ void ExceptionHandler::raise(string msg) {
   switch (runtype){
   case cplusplus:
     cout << msg << endl;
-    exit(-1);
+#ifdef MPI_PARALLEL
+    if (mpi)
+      MPI_Abort(MPI_COMM_WORLD,-1);
+    else
+#endif
+      exit(-1);
     break;
   case python:
-    throw (SerenError (msg));
+    throw (GandalfError (msg));
     break;
   }
 }

@@ -13,9 +13,9 @@ Select shocktube initial conditions         : ic = sedov
 Dimensionality of cube                      : ndim = 2
 Pressure of fluid 1                         : press1 = 1.0
 Density of fluid 1                          : rhofluid1 = 1.0
-No. of x-particles in fluid 1               : Nlattice1[0] = 128
-No. of y-particles in fluid 1               : Nlattice1[1] = 128
-No. of y-particles in fluid 1               : Nlattice1[2] = 128
+No. of x-particles in fluid 1               : Nlattice1[0] = 64
+No. of y-particles in fluid 1               : Nlattice1[1] = 64
+No. of y-particles in fluid 1               : Nlattice1[2] = 64
 Local arrangement of particles              : particle_distribution = cubic_lattice
 Use dimensionless units                     : dimensionless = 1
 
@@ -43,7 +43,7 @@ Simulation time variables
 Simulation end time                         : tend = 0.6
 Time for first snapshot                     : tsnapfirst = 1.0
 Regular snapshot output frequency           : dt_snap = 1.0
-Screen output frequency (in no. of steps)   : noutputstep = 32
+Screen output frequency (in no. of steps)   : noutputstep = 128
 
 
 -----------------------
@@ -76,10 +76,10 @@ Time integration options
 ------------------------
 SPH particle integration option             : sph_integration = lfkdk
 Integration of gas thermal energy           : energy_integration = PEC
-SPH Courant timestep condition multiplier   : courant_mult = 0.15
-SPH acceleration condition multiplier       : accel_mult = 0.3
-SPH energy equation timestep multiplier     : energy_mult = 0.5
-No. of block timestep levels                : Nlevels = 1
+SPH Courant timestep condition multiplier   : courant_mult = 0.1
+SPH acceleration condition multiplier       : accel_mult = 0.2
+SPH energy equation timestep multiplier     : energy_mult = 0.3
+No. of block timestep levels                : Nlevels = 10
 Maximum timestep level difference           : level_diff_max = 1
 
 

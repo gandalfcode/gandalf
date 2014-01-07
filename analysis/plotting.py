@@ -23,16 +23,22 @@ from multiprocessing import Process
 from Queue import Empty
 import os
 
+
+#------------------------------------------------------------------------------
 class PlottingProcess (Process):
-    '''This class contains the code for the plotting process.
-    The run method is the main method that gets executed. It contains an infinite loop, where the command queue is inspected;
-    if there are commands on it, they get executed. The method also does some bookkeeping,
-    removing closed figures. After that, it pauses for a while until the queue is inspected again. The only way to exit
-    from this loop is to get a 'STOP' string on the command queue.
-    The class contains also a couple of helper functions, and many structures to do the bookkeeping of figures, limits, quantities, ...
+    '''Contains the code for the plotting process.  The run method is the main
+    method that gets executed. It contains an infinite loop, where the command
+    queue is inspected;  if there are commands on it, they get executed.
+    The method also does some bookkeeping, removing closed figures.
+    After that, it pauses for a while until the queue is inspected again.
+    The only way to exit from this loop is to get a 'STOP' string on the
+    command queue.  The class contains also a couple of helper functions, and
+    many structures to do the bookkeeping of figures, limits, quantities, ...
     (see the comments in the constructor).
     '''
-    def __init__(self, queue, commands, completedqueue, globallimits):
+
+    #--------------------------------------------------------------------------
+    def __init__(self, queue, commands, completedqueue, globallimits, free):
         Process.__init__(self)
         self.queue = queue #queue for receiving commands and data
         self.commands = commands #list of commands to execute
@@ -42,8 +48,12 @@ class PlottingProcess (Process):
         self.globallimits = globallimits #dictionary that associate to each quantity the global limits
         self.axesimages = {} #dictionary that for each axis associate the corresponding image
         self.lastid = 0 #id of the last command received
-    
-    def run(self):      
+        self.free = free #event variable that says if we are free
+
+
+    #--------------------------------------------------------------------------
+    def run(self):
+        self.free.clear()
         import matplotlib.pyplot as plt
         import warnings
         warnings.filterwarnings("ignore", "matplotlib is currently using a non-GUI backend, so cannot show the figure")
@@ -53,12 +63,14 @@ class PlottingProcess (Process):
         # Main loop
         while 1:
             
+            self.free.clear()
+            
             if self.ppid != os.getppid():
                 break
             
             self.mypause(0.01)
             
-            #Reads data from the queue
+            # Reads data from the queue
             try:
                 jobs = []
                 while 1:
@@ -70,14 +82,19 @@ class PlottingProcess (Process):
                 pass
             
             if len(jobs) == 0:
+                self.free.set()
                 continue
+            else:
+                self.free.clear()
                         
             self.remove_closed_figures()
             
             for job in jobs:
                 command, data = job
                 command.processCommand(self, data)    
-                
+
+
+    #--------------------------------------------------------------------------
     def command_in_list (self, id):
         '''Returns true if the given id is in the list,
         false otherwise'''
@@ -86,7 +103,8 @@ class PlottingProcess (Process):
                 return True
         return False
     
-            
+
+    #--------------------------------------------------------------------------
     def mypause (self, interval):
         '''Pauses for a while, allowing the event loops of the figures to run,
         so that the user can interact with them (zoom, pan, ...).'''
@@ -102,9 +120,11 @@ class PlottingProcess (Process):
         # No on-screen figure is active, so sleep() is all we need.
         import time
         time.sleep(interval)
+
     
-    #TODO: for efficiency reason, refactor this routine to be a callback
-    #of when a window is closed
+    # TODO: for efficiency reason, refactor this routine to be a callback
+    # of when a window is closed
+    #--------------------------------------------------------------------------
     def remove_closed_figures(self):
         '''Remove closed figures from the dictionary'''
         for index, commanddummy in enumerate(self.commands):
@@ -113,7 +133,7 @@ class PlottingProcess (Process):
                 if not self.plt.fignum_exists(fig.number):
                     self.commandsfigures.pop(commanddummy.id)
                     self.commands.pop(index)
-            #TODO: for efficiency, should remove the figures that have been closed from
-            #the command list 
+            # TODO: for efficiency, should remove the figures that have been
+            # closed from the command list 
             except AttributeError:
                 pass       

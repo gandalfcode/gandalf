@@ -148,7 +148,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
       // If SPH particle neighbours a nearby sink, skip to next particle
       for (s=0; s<Nsink; s++) {
         for (k=0; k<ndim; k++) 
-	  dr[k] = sph->sphdata[i].r[k] - sink[s].star->r[k];
+          dr[k] = sph->sphdata[i].r[k] - sink[s].star->r[k];
         drsqd = DotProduct(dr,dr,ndim);
         if (drsqd < pow(sink_radius*sph->sphdata[i].h + sink[s].radius,2))
           sink_flag = false;
@@ -230,6 +230,8 @@ void Sinks<ndim>::CreateNewSinkParticle
   for (k=0; k<ndim; k++) sink[Nsink].star->r[k] = sph->sphdata[isink].r[k];
   for (k=0; k<ndim; k++) sink[Nsink].star->v[k] = sph->sphdata[isink].v[k];
   for (k=0; k<ndim; k++) sink[Nsink].star->a[k] = sph->sphdata[isink].a[k];
+  for (k=0; k<ndim; k++) sink[Nsink].fhydro[k] = sph->sphdata[isink].m*
+    (sph->sphdata[isink].a[k] - sph->sphdata[isink].agrav[k]);
   for (k=0; k<ndim; k++) sink[Nsink].star->adot[k] = 0.0;
   for (k=0; k<ndim; k++) sink[Nsink].star->a2dot[k] = 0.0;
   for (k=0; k<ndim; k++) sink[Nsink].star->a3dot[k] = 0.0;
@@ -281,8 +283,7 @@ void Sinks<ndim>::AccreteMassToSinks
 (Sph<ndim> *sph,                    ///< [inout] Object containing SPH ptcls
  Nbody<ndim> *nbody,                ///< [inout] Object containing star ptcls
  int n,                             ///< [in] Integer timestep
- DOUBLE timestep,                   ///< [in] Minimum timestep level
- int ssink)                         ///< [in] ??
+ DOUBLE timestep)                   ///< [in] Minimum timestep level
 {
   int i,j,k;                        // Particle and dimension counters
   int Ndead = 0;                    // No. of 'dead' (i.e. accreted) particles
@@ -312,7 +313,6 @@ void Sinks<ndim>::AccreteMassToSinks
   FLOAT *rsqdlist;                  // Array of particle-sink distances
   //SinkParticle<ndim> *s1;           // Local reference to sink
 
-  if (ssink > 0) return;
   debug2("[Sinks::AccreteMassToSinks]");
 
 
@@ -321,7 +321,6 @@ void Sinks<ndim>::AccreteMassToSinks
   for (s=0; s<Nsinkmax; s++) sink[s].Ngas = 0;
 
   // Determine which sink each SPH particle accretes to.  If none, flag -1
-  //---------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
     saux = -1;
     for (s=0; s<Nsink; s++) {
@@ -448,19 +447,19 @@ void Sinks<ndim>::AccreteMassToSinks
       // Finally calculate accretion timescale and mass accreted
       sink[s].taccrete = pow(sink[s].trad,1.0 - efrac)*
         pow(sink[s].tvisc,efrac);
-      if (sink[s].menc > sink[s].mmax)
+      if (sink[s].mmax > small_number && sink[s].menc > sink[s].mmax)
         sink[s].taccrete *= pow(sink[s].mmax/sink[s].menc,2);
       dt = (FLOAT) sink[s].star->nstep*timestep;
       macc = sink[s].menc*max(1.0 - exp(-dt/sink[s].taccrete),0.0);
-      //cout << "Accreting sink " << s << "     Nneib : " << Nneib << endl;
-      //cout << "smooth_accretion : " << smooth_accretion << "     wnorm : " << wnorm << endl;
-      //cout << "rotke : " << sink[s].rotketot << "   " << sink[s].gpetot << endl;
-      //cout << "Mass enclosed " << sink[s].menc << "    " << sink[s].mmax << endl;
-      //cout << "Timestep : " << timestep << "    " << dt 
-      //   << "    efrac : " << efrac <<endl;
-      //cout << "tvisc : " << sink[s].tvisc << "    trad : " << sink[s].trad 
-      //   << "   trot : " << sink[s].trot << endl;
-      //cout << "tacc : " << sink[s].taccrete << "    macc : " << macc << endl;
+      /*cout << "Accreting sink " << s << "     Nneib : " << Nneib << endl;
+      cout << "smooth_accretion : " << smooth_accretion << "     wnorm : " << wnorm << endl;
+      cout << "rotke : " << sink[s].rotketot << "   " << sink[s].gpetot << endl;
+      cout << "Mass enclosed " << sink[s].menc << "    " << sink[s].mmax << endl;
+      cout << "Timestep : " << timestep << "    " << dt 
+         << "    efrac : " << efrac <<endl;
+      cout << "tvisc : " << sink[s].tvisc << "    trad : " << sink[s].trad 
+         << "   trot : " << sink[s].trot << endl;
+	 cout << "tacc : " << sink[s].taccrete << "    macc : " << macc << endl;*/
     }
     else {
       macc = sink[s].menc;
@@ -499,6 +498,8 @@ void Sinks<ndim>::AccreteMassToSinks
       for (k=0; k<ndim; k++) sink[s].star->r[k] += mtemp*sph->sphdata[i].r[k];
       for (k=0; k<ndim; k++) sink[s].star->v[k] += mtemp*sph->sphdata[i].v[k];
       for (k=0; k<ndim; k++) sink[s].star->a[k] += mtemp*sph->sphdata[i].a[k];
+      for (k=0; k<ndim; k++) sink[s].fhydro[k] += 
+	mtemp*(sph->sphdata[i].a[k] - sph->sphdata[i].agrav[k]);
       sink[s].utot += mtemp*sph->sphdata[i].u;
 
       // If we've reached/exceeded the mass limit, do not include more ptcls

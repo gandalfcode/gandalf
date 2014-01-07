@@ -7,17 +7,17 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = BINARYACC1
+Simulation run id string                    : run_id = STARACC-V0
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = binaryacc
 Use seren format for output                 : out_file_form = column
-1D shocktube test                           : ndim = 2
-Pressure of LHS fluid                       : press1 = 1.0
-Density of LHS fluid                        : rhofluid1 = 0.1
-Density of RHS fluid                        : rhofluid2 = 0.01
-No. of particles in LHS fluid               : Nlattice1[0] = 256
-No. of particles in LHS fluid               : Nlattice1[1] = 128
-No. of particles in LHS fluid               : Nlattice1[2] = 0
+1D shocktube test                           : ndim = 3
+Pressure of LHS fluid                       : press1 = 0.001
+Density of LHS fluid                        : rhofluid1 = 0.001
+Density of RHS fluid                        : rhofluid2 = 0.001
+No. of particles in LHS fluid               : Nlattice1[0] = 64
+No. of particles in LHS fluid               : Nlattice1[1] = 64
+No. of particles in LHS fluid               : Nlattice1[2] = 64
 No. of particles in RHS fluid               : Nlattice2[0] = 0
 No. of particles in RHS fluid               : Nlattice2[1] = 0
 No. of particles in RHS fluid               : Nlattice2[2] = 0
@@ -28,12 +28,12 @@ Local arrangement of particles              : particle_distribution = cubic_latt
 #---------------------------
 # Star and binary parameters
 #---------------------------
-No. of stars/sinks in simulation            : Nstar = 2
+No. of stars/sinks in simulation            : Nstar = 1
 Mass of star 1                              : m1 = 0.5
 Mass of star 2                              : m2 = 0.5
-Semi-major axis of binary                   : abin = 0.2
+Semi-major axis of binary                   : abin = 0.6
 Eccentricity of binary                      : ebin = 0.0
-Velocity of binary COM through gas          : vmachbin = 0.2
+Velocity of binary COM through gas          : vmachbin = 0.0
 
 
 #---------------------------
@@ -53,12 +53,12 @@ Angular velocity unit                       : angveloutunit = rad_s
 #------------------------------
 # Simulation boundary variables
 #------------------------------
-LHS position of boundary in x-dimension     : boxmin[0] = -1.0
-LHS position of boundary in x-dimension     : boxmax[0] = 1.0
-RHS position of boundary in x-dimension     : boxmin[1] = -0.5
-LHS position of boundary in x-dimension     : boxmax[1] = 0.5
-RHS position of boundary in x-dimension     : boxmin[2] = -0.5
-RHS position of boundary in x-dimension     : boxmax[2] = 0.5
+LHS position of boundary in x-dimension     : boxmin[0] = -4.0
+LHS position of boundary in x-dimension     : boxmax[0] = 4.0
+RHS position of boundary in x-dimension     : boxmin[1] = -4.0
+LHS position of boundary in x-dimension     : boxmax[1] = 4.0
+RHS position of boundary in x-dimension     : boxmin[2] = -4.0
+RHS position of boundary in x-dimension     : boxmax[2] = 4.0
 LHS boundary type in x-dimension            : x_boundary_lhs = periodic
 RHS boundary type in x-dimension            : x_boundary_rhs = periodic
 LHS boundary type in y-dimension            : y_boundary_lhs = periodic
@@ -71,9 +71,10 @@ RHS boundary type in z-dimension            : z_boundary_rhs = periodic
 # Simulation time variables
 #--------------------------
 Simulation end time                         : tend = 5.0
-Regular snapshot output frequency           : dt_snap = 0.005
-Time for first snapshot                     : tsnapfirst = 0.005
+Regular snapshot output frequency           : dt_snap = 0.1
+Time for first snapshot                     : tsnapfirst = 0.1
 Screen output frequency (in no. of steps)   : noutputstep = 8
+Output frequency of diagnostics             : ndiagstep = 32
 
 
 #------------------------
@@ -89,7 +90,7 @@ Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 #----------------------------------------
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = m4
-SPH smoothing length iteration tolerance    : h_converge = 0.002
+SPH smoothing length iteration tolerance    : h_converge = 0.01
 
 
 #---------------------------------
@@ -124,15 +125,14 @@ SPH Courant timestep condition multiplier   : courant_mult = 0.15
 SPH acceleration condition multiplier       : accel_mult = 0.3
 SPH energy equation timestep multiplier     : energy_mult = 0.5
 N-body timestep multiplier                  : nbody_mult = 0.15
-No. of block timestep levels                : Nlevels = 1
+No. of block timestep levels                : Nlevels = 4
 
 
 #---------------------
 # Optimisation options
 #---------------------
-Tabulate SPH kernel                         : tabulated_kernel = 0
+Tabulate SPH kernel                         : tabulated_kernel = 1
 SPH neighbour search algorithm              : neib_search = grid
-Max. no. of particles in leaf cell
 
 
 #--------------

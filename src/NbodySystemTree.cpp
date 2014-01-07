@@ -584,7 +584,7 @@ template <int ndim>
 void NbodySystemTree<ndim>::RestockTreeNodes
 (Nbody<ndim> *nbody)                ///< [in] Nbody object containing stars
 {
-  bool validtrue = true;            // Flag if tree is still valid or not
+  //bool validtrue = true;            // Flag if tree is still valid or not
   int c;                            // Node counter
   int c1;                           // Child cell 1 id
   int c2;                           // Child cell 2 id
@@ -964,6 +964,11 @@ void NbodySystemTree<ndim>::OutputBinaryProperties
     cout << "Semi-major axis      : " << orbit[i].sma << endl;
     cout << "Orbital period       : " << orbit[i].period << endl;
     cout << "Orbital eccentricity : " << orbit[i].ecc << endl;
+    if (ndim == 2)
+      cout << "Orbital ang. mom     : " << orbit[i].angmom[2] << endl;
+    else
+      cout << "Orbital ang. mom     : " << orbit[i].angmom[0] << "    "
+           << orbit[i].angmom[1] << "    " << orbit[i].angmom[2] << endl;
     cout << "Total mass           : " 
          << orbit[i].m << "    " << orbit[i].q << endl;
   }

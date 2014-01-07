@@ -36,6 +36,9 @@
 #include "SphKernel.h"
 #include "Sph.h"
 #include "Nbody.h"
+#if defined MPI_PARALLEL
+#include "MpiControl.h"
+#endif
 using namespace std;
 
 
@@ -53,20 +56,57 @@ class Ghosts
 {
  public:
 
-  Ghosts();
-  ~Ghosts();
-
   // Main ghost particle functions
   //---------------------------------------------------------------------------
-  void SearchGhostParticles(DomainBox<ndim>, Sph<ndim> *);
-  void CreateGhostParticle(int, int, FLOAT, FLOAT, Sph<ndim> *);
-  void CopySphDataToGhosts(Sph<ndim> *);
-  void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
+  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *)=0;
+  virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *)=0;
+  virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *)=0;
 
-  DomainBox<ndim> simbox;               ///< Simulation boundary data
-  Sph<ndim> *sph;                       ///< SPH algorithm pointer
+//  DomainBox<ndim> simbox;               ///< Simulation boundary data
+//  Sph<ndim> *sph;                       ///< SPH algorithm pointer
 
-  static const FLOAT ghost_range = 1.1;
+  static const FLOAT ghost_range = 1.5;
 
 };
+
+template <int ndim>
+class PeriodicGhosts : public Ghosts<ndim>
+{
+  void CreateGhostParticle(int, int, FLOAT, FLOAT, Sph<ndim> *,int);
+public:
+  using Ghosts<ndim>::ghost_range;
+
+  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
+  virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
+  virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
+};
+
+template <int ndim>
+class NullGhosts : public Ghosts<ndim>
+{
+public:
+  using Ghosts<ndim>::ghost_range;
+
+  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
+  virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
+  virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
+};
+
+#if defined MPI_PARALLEL
+template <int ndim>
+class MPIGhosts : public Ghosts<ndim>
+{
+private:
+  MpiControl<ndim>* mpicontrol;
+public:
+  using Ghosts<ndim>::ghost_range;
+
+  MPIGhosts(MpiControl<ndim>* mpicontrol_aux): mpicontrol(mpicontrol_aux) {};
+
+  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
+  virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
+  virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
+};
+#endif
+
 #endif

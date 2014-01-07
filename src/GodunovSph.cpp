@@ -94,10 +94,8 @@ int GodunovSph<ndim, kernelclass >::ComputeH
  Nbody<ndim> *nbody)                    // Pointer to N-body object
 {
   int j;                            // Neighbour id
-  int k;                            // Dimension counter
   int iteration = 0;                // h-rho iteration counter
   int iteration_max = 30;           // Max. no of iterations
-  FLOAT dr[ndim];                   // Relative position vector
   FLOAT h_lower_bound = 0.0;        // Lower bound on h
   FLOAT h_upper_bound = hmax;       // Upper bound on h
   FLOAT invhsqd;                    // (1 / h)^2
@@ -403,17 +401,17 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
  FLOAT &vl,
  FLOAT &vr)
 {
-  int k;
-  FLOAT f;
-  FLOAT R;
-  FLOAT deltal;
-  FLOAT deltar;
-  FLOAT limiter;
-  FLOAT vec1[ndim];
-  FLOAT vec2[ndim];
-  FLOAT limiterl,limiterr,vlmin,vlmax,vrmin,vrmax;
-  FLOAT R1,R2,R3;
-  FLOAT deltamean;
+  //int k;
+  //FLOAT f;
+  //FLOAT R;
+  //FLOAT deltal;
+  //FLOAT deltar;
+  //FLOAT limiter;
+  //FLOAT vec1[ndim];
+  //FLOAT vec2[ndim];
+  //FLOAT limiterl,limiterr,vlmin,vlmax,vrmin,vrmax;
+  //FLOAT R1,R2,R3;
+  //FLOAT deltamean;
 
   // 1st-order approximation for initialising Riemann problem
   pl = partl.press;
@@ -834,7 +832,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphDerivatives
   int j;                            // Neighbour list id
   int jj;                           // Aux. neighbour counter
   int k;                            // Dimension counter
-  int kk;                           // ..
+  //int kk;                           // ..
   FLOAT draux[ndim];                // Relative position vector
   FLOAT dv[ndim];                   // Relative velocity vector
   FLOAT wkern;                      // Value of w1 kernel function
@@ -913,10 +911,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
   FLOAT dvdr;                       // Dot product of dv and dr
   FLOAT wkerni;                     // Value of w1 kernel function
   FLOAT wkernj;                     // Value of w1 kernel function
-  FLOAT vsignal;                    // Signal velocity
-  FLOAT paux;                       // Aux. pressure force variable
   FLOAT uaux;                       // Aux. internal energy variable
-  FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
 
   FLOAT Aij;
   FLOAT Bij;
@@ -934,9 +929,8 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
   FLOAT vstar;
   FLOAT vhalfi;
   FLOAT vhalfj;
-  FLOAT dt;
-  FLOAT vtemp[ndim];
-  FLOAT gradi, gradj;
+  //FLOAT vtemp[ndim];
+  //FLOAT gradi, gradj;
 
   FLOAT hconv = powf(invsqrttwo,ndim+1);
   string interpolation = "linear"; //"linear";
