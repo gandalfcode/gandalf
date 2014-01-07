@@ -9,6 +9,7 @@
 
 \newcommand{\VERNO}{0.1.0 }
 \newcommand{\var}[1]{\texttt{#1}}
+\newcommand{\singlecommand}[1]{\\ \newline \indent \var{#1} \\ \newline \noindent}
 
 
 \textheight 9.2in 
@@ -41,7 +42,7 @@ GANDALF is a new SPH and N-body code written in C++ and Python.  Although partly
 \item GANDALF uses additional parameters to switch on various physics options, as well as requiring them to be activated in the Makefile.  In comparison, SEREN controlled physics options exclusively in the Makefile.  Therefore, GANDALF need not be re-compiled everytime a different setting is required.
 \end{itemize}
 
-Since GANDALF is currently in the beta-testing phase, it would be very helpful for the authors if new users could provide feedback of any problems with the code, or with any suggestions for improvements of existing features.  Ideally, users would submit bug reports to the GANDALF github page (https://github.com/gandalfcode/gandalf/issues) since other users can see that a bug has been identified before sending identical bug reports.
+GANDALF has been developed as a fully open-source project hosted on the site github at the address \var{https://github.com/gandalfcode/gandalf}.  Since GANDALF is currently in the beta-testing phase, it would be very helpful for the authors if new users could provide feedback of any problems with the code, or with any suggestions for improvements of existing features.  Ideally, users would submit bug reports to the GANDALF github page (\var{https://github.com/gandalfcode/gandalf/issues}) since other users can see that a bug has been identified before sending duplicate bug reports.
 
 \newpage
 
@@ -141,7 +142,7 @@ GANDALF can be run in three principle modes.
 \newline
 \var{./gandalf PARAMSFILE} \\
 \newline
-where PARAMSFILE is the name of the parameters file for that simulation.  If that parameters file does not exist in the current directory, or contains invalid parameter options, then the program will quit citing an error message.
+where PARAMSFILE is the name of the parameters file for that simulation.  If that parameters file does not exist in the current directory, or contains invalid parameter options, then the program will quit citing an error message.  If the parameters file exists, then the code will parse the file, set-up the simulation and then run to completion.
 
 
 
@@ -156,7 +157,7 @@ or, depending on the default version of python on your system (e.g. installing m
 \newline
 \var{python2.7 PYTHONSCRIPT.py} \\
 \newline
-The code will remain inside the python environment until the script is fully executed.
+The code will remain inside the python environment until the script is fully executed.  Python typically checks that the entire file has valid syntax before running each command.
 
 
 
@@ -324,10 +325,10 @@ python            & = Generate initial conditions from python
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Unit parameters}
+\subsection{Unit parameters} \label{SS:UNITPARAMS}
 
 \begin{itemize}
-\item \var{dimensionless} : Are all particle quantities dimensionless? ($0$ or $1$)
+\item \var{dimensionless} : Are all quantities dimensionless? ($0$ or $1$)
 
 \item \var{routunit} : Position unit \vspace{0.1cm} \\
 \begin{tabular}{ll}
@@ -372,7 +373,7 @@ kg\_m3      & = kilogrammes per metre cubed \\
 g\_cm3      & = grammes per centimetre cubed
 \end{tabular}
 
-\item \var{sigmaunit} : Column/surface density unit \\
+\item \var{sigmaoutunit} : Column/surface density unit \\
 \begin{tabular}{ll}
 kg\_m2      & = kilogrammes per meter squared
 \end{tabular}
@@ -849,25 +850,33 @@ One important difference between SEREN and GANDALF is that initial conditions ca
 At present, the following initial conditions are included in the code : \newline
 
 \noindent SPH simulations : \\
+\newline
 \begin{tabular}{ll}
-- box       &: Create uniform box \\
-- khi       &: Kelvin-helmholtz instability \\
-- plummer   &: Plummer sphere (stars + gas, or just gas) \\
-- rti       &: Rayleigh-Taylor instability \\
-- sedov     &: Sedov blastwave test \\
-- shocktube &: Simple two-fluid shocktube test \\
-- sphere    &: Create uniform density sphere \\
-- turbcore  &: Create uniform density core with turbulent velocity field
+- box            &: Create uniform box \\
+- cdiscontinuity &: Contact-discontinuity test \\
+- khi            &: Kelvin-helmholtz instability \\
+- noh            &: Noh shock test \\
+- plummer        &: Plummer sphere (stars + gas, or just gas) \\
+- rti            &: Rayleigh-Taylor instability \\
+- sedov          &: Sedov blastwave test \\
+- shearflow      &: Shearing flow test \\
+- shocktube      &: Simple two-fluid shocktube test \\
+- soundwave      &: Simple 1D sound-wave perturbation test \\
+- sphere         &: Create uniform density sphere \\
+- turbcore       &: Create uniform density core with turbulent velocity field
 \end{tabular}
+\newline
 \newline
 
 \noindent N-body simultions : \\
+\newline
 \begin{tabular}{ll}
-- binary    &: Simple circular binary test \\
+- binary    &: Simple circular binary system test \\
 - burrau    &: Burrau Pythagorean test \\
 - figure8   &: Simple 3-body figure-8 test \\
 - plummer   &: Plummer sphere (stars + gas, or just stars) \\
-- quadruple &: Simple hierarchical quadruple test
+- quadruple &: Simple hierarchical quadruple system test \\
+- triple    &: Simple hierarchical triple system test
 \end{tabular}
 
 \newpage
@@ -988,7 +997,7 @@ To be done
 \subsection{GANDALF Python library tutorial}
 The GANDALF Python library contains a variety of commands that are used to create and run new simulations, load in old simulations from the disk, analyse and plot results and more.  A full list of all of these commands is given in Appendix A (to be written).  The same information can be found in the source code file \var{gandalf/analysis/facade.py}.  Also, when running the interpreter, information on interactive commands can be obtained by typing \var{help} for a full list of available commands, or \var{help command} for information on that particular command.
 
-We provide here a short tutorial demonstrating from the most basic usage to the more advanced functionality of the Python library. \\
+We provide here a short tutorial demonstrating from the most basic to the more advanced functionality of the Python library.  These examples are also contained in the \var{gandalf/examples} sub-directory and should run as typed, although it is also useful for the user to write the examples themselves if unfamiliar with python syntax. \\
 \newline
 
 
@@ -998,14 +1007,14 @@ This first example demonstrates how to set-up and run a new simulation from a gi
 
 \begin{tabular}{p{14.0cm}}
 \var{from gandalf.analysis.facade import *} \\
-\var{sim = newsim(`params.dat')}            \\
+\var{sim = newsim(`adsod.dat')}            \\
 \var{setupsim()} \\
 \var{run()} \\
 \end{tabular} \\
 \newline
 
-The first line, '\var{from gandalf.analysis.facade import *}, loads in all definitions and functions from the GANDALF python frontend, \var{facade.py}.  Note that this assumes that the \var{PYTHONPATH} environment variable has been correctly set-up.  Otherwise, the full absolute path of the \var{facade.py} file must be given.  The second line, '\var{sim = newsim(`params.dat')}, reads in the parameters file \var{'params.dat'} and creates a new simulation from those parameters and returns a Python object, \var{sim}, which can be used to refer to that simulation in Python (N.B. the user can use any name for this object, as long as it does not clash with another GANDALF or Python object).  In this case, it is assumed the parameters file is selecting an initial conditions generator in the main code to generate the particles in the simulation.  In order to fully set-up the simulation so it is ready to be run, the command \var{setupsim()} must be run.  Finally, to run the simulation to completion, we must execute the command \var{run()}. \\
-\newline
+\noindent The first command \singlecommand{from gandalf.analysis.facade import *} loads in all definitions and functions from the GANDALF python frontend, \var{facade.py}.  Note that this assumes that the \var{PYTHONPATH} environment variable has been correctly set-up.  Otherwise, the full absolute path of the \var{facade.py} file must be given.  The second command \singlecommand{sim = newsim(`adsod.dat')} reads in the parameters file \var{'adsod.dat'} and creates a new simulation from those parameters and returns a Python object, \var{sim}, which can be used to refer to that simulation in Python (N.B. the user can use any name for this object, as long as it does not clash with another GANDALF or Python object).  In this case, it is assumed the parameters file is selecting an initial conditions generator in the main code to generate the particles in the simulation.  In order to fully set-up the simulation so it is ready to be run, the command \singlecommand{setupsim()} must be run.  Finally, to run the simulation to completion, we must execute the command \singlecommand{run()}  The code will run until the specified endtime and then exit the python environment.
+\newpage
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1014,18 +1023,14 @@ This example demonstrates how to modify parameters in Python that have been load
 
 \begin{tabular}{p{14.0cm}}
 \var{from gandalf.analysis.facade import *} \\
-\var{sim = newsim(`params.dat')} \\
-\var{sim.SetParam(`tend',2.0)} \\
+\var{sim = newsim(`adsod.dat')} \\
+\var{sim.SetParam(`tend',1.5)} \\
 \var{setupsim()} \\
 \var{run()} \\
 \end{tabular} \\
 \newline
 
-The first two lines of this example are the as the first example, where we import the GANDALF Python frontend and then create a new simulation from the parameters file \var{`params.dat'}.  Once loaded in, we can now modify parameters with the command \\
-\newline
-\noindent \var{sim.SetParam(parameter\_name,new\_value)} \\
-\newline
-\noindent In this case, we set the parameter \var{tend} (the total simulation run-time) to the value \var{2.0} with \var{sim.SetParam(`tend',2.0)}.  Once all parameters have been modified, then we can set-up the simulation fully with \var{setupsim()} and run it with \var{run()}.  Note that if we attempt to modify any parameters AFTER calling \var{setupsim()}, then the code will terminate with an exception.
+\noindent The first two lines of this example are the as the first example, where we import the GANDALF Python frontend and then create a new simulation from the parameters file \var{`adsod.dat'}.  Once loaded in, we can now modify parameters with the command \singlecommand{sim.SetParam(parameter\_name,new\_value)}  In this case, we set the parameter \var{tend} (the total simulation run-time) to the value \var{2.0} with \var{sim.SetParam(`tend',2.0)}.  Once all parameters have been modified, then we can set-up the simulation fully with \var{setupsim()} and run it with \var{run()}.  Note that if we attempt to modify any parameters AFTER calling \var{setupsim()}, then the code will terminate with an exception.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1038,15 +1043,21 @@ In this example, we will create and run a simulation without needing to load-in 
 \var{sim.SetParam(`sim',`sph')} \\
 \var{sim.SetParam(`sph',`gradh')} \\
 \var{sim.SetParam(`ic',`sedov')} \\
+\var{sim.SetParam(`run\_id',`SEDOV1')} \\
 \var{sim.SetParam(`Nlattice[0]',64)} \\
 \var{sim.SetParam(`Nlattice[1]',64)} \\
+\var{sim.SetParam(`boxmin[0]',-1.0)} \\
+\var{sim.SetParam(`boxmin[1]',-1.0)} \\
+\var{sim.SetParam(`dimensionless',1)} \\
 \var{sim.SetParam(`tend',0.5)} \\
+\var{sim.SetParam(`dt\_snap',0.1)} \\
 \var{setupsim()} \\
 \var{run()} \\
 \end{tabular} \\
 \newline
 
-In this example, we call the \var{newsim} function passing the dimensionality of the simulation instead of a parameter file.  Therefore the line \var{sim = newsim(ndim=2)} sets up a 2-dimensional simulation, but is otherwise unspecified because no other parameters have been set.  Next, we can set all the parameters that would have otherwise been set in the parameters file.  In this example, we set up an SPH simulation (\var{sim.SetParam(`sim',`sph')}) using the grad-h SPH method (\var{sim.SetParam(`sph',`gradh')}) with initial conditions to perform the Sedov blast-wave test (\var{sim.SetParam(`ic',`sedov')}); (See Section \ref{S:PARAMETERS} for a full description of all parameters).  Once all parameters have been set, we can fully set-up and run the simulation with \var{setupsim()} and \var{run()}.
+\noindent In this example, we call the \var{newsim} function passing the dimensionality of the simulation instead of a parameter file.  Therefore the line \var{sim = newsim(ndim=2)} sets up a 2-dimensional simulation, but is otherwise unspecified because no other parameters have been set.  Next, we can set all the parameters that would have otherwise been set in the parameters file.  In this example, we set up an SPH simulation (\var{sim.SetParam(`sim',`sph')}) using the grad-h SPH method (\var{sim.SetParam(`sph',`gradh')}) with initial conditions to perform the Sedov blast-wave test (\var{sim.SetParam(`ic',`sedov')}); (See Section \ref{S:PARAMETERS} for a full description of all parameters).  Once all parameters have been set, we can fully set-up and run the simulation with \var{setupsim()} and \var{run()}.
+\newpage
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1055,7 +1066,7 @@ In this example, we show how to plot particle data interactively during a live s
 
 \begin{tabular}{p{14.0cm}}
 \var{from gandalf.analysis.facade import *} \\
-\var{sim = newsim(`params.dat')} \\
+\var{sim = newsim(`glass.dat')} \\
 \var{sim.SetParam(`dt\_python',2.0)} \\
 \var{setupsim()} \\
 \var{plot(`x',`y')} \\
@@ -1065,15 +1076,7 @@ In this example, we show how to plot particle data interactively during a live s
 \end{tabular} \\
 \newline
 
-In this simulation, we will run a live simulation while also plotting particle data in a matplotlib window as the simulation is still running.  We first create the simulation as in previous examples with \var{newsim}.  We then set the value of the \var{dt\_python} which is the time between python/matplotlib window updates.  After the \var{setupsim()} command, we can then plot the initial conditions from the simulation using the command \\
-\newline
-\var{plot(x,y)} \\
-\newline
-\noindent where \var{x} and \var{y} are the x- and y-axis plotting variables (N.B. these can be any variables, not necessarily x and y. e.g. \var{plot(`y',`z')}).  If we now run the simulation with \var{run()}, the simulation will compute as normal while updating the plot window every \var{dt\_python} seconds (in this casem every 2 seconds).  After the simulation has finished, we can save the final plot to file with the command \\ 
-\newline
-\noindent \var{savefig(filename)} \\
-\newline
-\noindent where \var{filename} is the intended filename {\it including} the file extension (N.B. matplotlib automatically determines the correct file format from the extension).
+\noindent In this simulation, we will run a live simulation while also plotting particle data in a matplotlib window as the simulation is still running.  We first create the simulation as in previous examples with \var{newsim}.  We then set the value of the \var{dt\_python} which is the time between python/matplotlib window updates.  After the \var{setupsim()} command, we can then plot the initial conditions from the simulation using the command \singlecommand{plot(x,y)} where \var{x} and \var{y} are the x- and y-axis plotting variables (N.B. these can be any variables, not necessarily x and y. e.g. \var{plot(`y',`z')}).  If we now run the simulation with \var{run()}, the simulation will compute as normal while updating the plot window every \var{dt\_python} seconds (in this casem every 2 seconds).  After the simulation has finished, we can save the final plot to file with the command \singlecommand{savefig(filename)} where \var{filename} is the intended filename {\it including} the file extension.  matplotlib automatically determines the correct file format from the extension  (e.g. typing \var{savefig(`fig1.png')} will automatically save the window to a png file without need for additional arguments).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1082,26 +1085,19 @@ In this example, we load in a previously run simulation from the disk and genera
 
 \begin{tabular}{p{14.0cm}}
 \var{from gandalf.analysis.facade import *} \\
-\var{loadsim('TEST1')} \\
-\var{plot(`x',`y',snap=0)} \\
+\var{loadsim('ADSOD1')} \\
+\var{plot(`x',`rho',snap=0)} \\
 \var{savefig(`snap1.eps')} \\
-\var{plot(`x',`y',snap=1)} \\
+\var{plot(`x',`rho',snap=1)} \\
 \var{savefig(`snap2.eps')} \\
-\var{plot(`x',`y',snap=0)} \\
-\var{addplot(`x',`y',snap=1)} \\
+\var{plot(`x',`rho',snap=0)} \\
+\var{addplot(`x',`rho',snap=1)} \\
 \var{savefig(`snap12.eps')} \\
+\var{block()} \\
 \end{tabular} \\
 \newline 
 
-Instead of a creating a new simulation with the \var{newsim} function, we will load in a previous run simulation with the command \\ 
-\newline
-\noindent \var{loadsim(runid)} \\
-\newline
-\noindent where \var{runid} is the simulation run identification string.  Note, this assumes that all files from that simulation are present in the folder, including the \var{runid.param} file which contains all the parameters used to run the simulation.  In this case, we load a simulation with the runid \var{TEST1} with the command \var{loadsim(`TEST1')}.  We can then plot particular snapshots of the simulation using the \var{plot} command with the optional \var{snap} argument.  Therefore to plot the first snapshot, type \var{plot(`x',`y',snap=0)}, to plot the second snapshot, type \var{plot(`x','y',snap=1)}, etc..  Note that Python uses C-style indexing, i.e. starting from zero, unlike other conventions like in FORTRAN where indexing starts from one.  If we wish to overplot one snapshot over another, we first plot the first snapshot and then use the command \\
-\newline
-\noindent \var{addplot(`x',`y',snap=1)} \\
-\newline
-\noindent to add the second snapshot plot over the first one.  This behaviour can also be replicated by adding the \var{overplot} optional boolean argument to \var{plot}, i.e. \var{plot(`x',`y',snap=1,overplot=True)}.
+\noindent Instead of a creating a new simulation with the \var{newsim} function, we will load in a previous run simulation with the command \singlecommand{loadsim(runid)} where \var{runid} is the simulation run identification string.  Note, this assumes that all files from that simulation are present in the folder, including the \var{runid.param} file which contains all the parameters used to run the simulation.  In this case, we load a simulation with the runid \var{ADSOD1} with the command \var{loadsim(`ADSOD1')}.  We can then plot particular snapshots of the simulation using the \var{plot} command with the optional \var{snap} argument.  Therefore to plot the first snapshot, type \var{plot(`x',`y',snap=0)}, to plot the second snapshot, type \var{plot(`x','y',snap=1)}, etc..  Note that Python uses C-style indexing, i.e. starting from zero, unlike other conventions like in FORTRAN where indexing starts from one.  If we wish to overplot one snapshot over another, we first plot the first snapshot and then use the command \singlecommand{addplot(`x',`y',snap=1)} to add the second snapshot plot over the first one.  This behaviour can also be replicated by adding the \var{overplot} optional boolean argument to \var{plot}, i.e. \var{plot(`x',`y',snap=1,overplot=True)}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1110,90 +1106,102 @@ In this example, we show how to read in multiple simulations to make comparison 
 
 \begin{tabular}{p{14.0cm}}
 \var{from gandalf.analysis.facade import *} \\
-\var{sim0 = loadsim(`TEST1')} \\
-\var{sim1 = loadsim(`TEST2')} \\
-\var{plot(`x',`rho',sim=0,snap=0)} \\
-\var{addplot(`x',`rho',sim=1,snap=0)} \\
-\var{break()} \\
+\var{sim0 = loadsim(`ADSOD1')} \\
+\var{sim1 = newsim(`adsod.dat')} \\
+\var{sim1.SetParam(`run\_id',`ADSOD2')} \\
+\var{sim1.SetParam(`avisc',`none')} \\
+\var{setupsim()} \\
+\var{run()} \\
+\var{plot(`x',`rho',sim=0,snap=2)} \\
+\var{addplot(`x',`rho',sim=1,snap=2)} \\
+\var{savefig(`sod12.eps')} \\
+\var{block()} \\
 \end{tabular} \\
 \newline
 
-Multiple simulations can be loaded into GANDALF using the \var{loadsim} command.  However, they must be returned to objects with different names; in this case, we name them \var{sim0} and \var{sim1} (to follow the C-style numbering convention).  A snapshot from a particular simulation can be plotted by adding the optional argument \var{sim} to the plot command, i.e. \var{plot(`x',`rho',sim=0,snap=0)} to plot the first snapshot in the first simulation.  The second simulation is then over-plotted with the command \var{addplot(`x',`rho',sim=1,snap=0)}.
+\noindent Multiple simulations can be loaded into GANDALF using the \var{loadsim} command.  However, they must be returned to objects with different names; in this case, we name them \var{sim0} and \var{sim1} (to follow the C-style numbering convention).  A snapshot from a particular simulation can be plotted by adding the optional argument \var{sim} to the plot command, i.e. \var{plot(`x',`rho',sim=0,snap=0)} to plot the first snapshot in the first simulation.  The second simulation is then over-plotted with the command \var{addplot(`x',`rho',sim=1,snap=0)}.  In this example, we load in an old simulation (as run in example 1) and then run a new simulation (the same initial conditions but without any artificial viscosity) and then plot the results on the same window and to an eps file.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example  7 - Overplotting the analytical solution with the simulation results}
-To be done
+In this example, we demonstrate how to overplot analytical solutions over particle plots. \\
+
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{sim = newsim(`adsod.dat')} \\
+\var{sim.SetParam(`dt\_python',2.0)} \\
+\var{setupsim()} \\
+\var{plot(`x',`rho')} \\
+\var{plotanalytical(`x',`rho')} \\
+\var{limit(`x',-1.1,1.1)} \\
+\var{run()} \\
+\var{block()} \\
+\end{tabular} \\
+\newline
+
+\noindent For some sets of initial conditions (e.g. shocktubes), the analytical solution is provided in one of the python modules (\var{gandalf.analysis.analytical.py}).  The python module will read in the values specified in the simulation parameters file and return the correct solution for that given snapshot time.  To overplot a specified quantity (e.g. \var{x} vs density), then use the command \singlecommand{plotanalytical(`x',`rho')}  Another useful command to set the limits of any plot quantity is \singlecommand{limit(quantity,min,max)} where \var{quantity} is a string of the quantity and \var{min} and \var{max} define the range of the plot.  In this example, \var{limit(`x',-1.1,1.1)}
+%\newpage
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example 8 - Creating initial conditions directly in the python script}
-In this example, we demonstrate how to generate some simple initial conditions inside a python script.  For simplicity, we start with a simple 1D shocktube example.
+In this example, we demonstrate how to generate some simple initial conditions inside a python script.  For simplicity, we start with a simple 1D shocktube example. \\
 
 \begin{tabular}{p{14.0cm}}
 \var{from gandalf.analysis.facade import *} \\
 \var{import numpy as np} \\
 \var{import time} \\
+\var{Nsph = 200} \\
+\var{vfluid = 4.0} \\
+\var{xmin = -1.5} \\
+\var{xmax = 1.5} \\
+\var{deltax = (xmax - xmin) / Nsph} \\
+\var{x = np.linspace(xmin + 0.5*deltax,xmax - 0.5*deltax,num=Nsph)} \\
+\var{m = np.ones(Nsph)*(xmax - xmin)/Nsph} \\
+\var{vx = np.ones(Nsph)*vfluid}  \\
+\var{vx[x > 0] = -vfluid} \\
 \var{sim = newsim(ndim=1)} \\
 \var{sim.SetParam(`sim',`sph')} \\
-\var{sim.SetParam(`sph',`gradh')} \\
-\var{sim.SetParam(`sph\_integration',`lfkdk')} \\
-\var{sim.SetParam(`gas\_eos',`energy\_eqn')}  \\
-\var{sim.SetParam(`energy\_integration',`PEC')}  \\
-\var{sim.SetParam(`gamma\_eos',1.6666666666)}  \\
-\var{sim.SetParam(`tend',0.075)}  \\
-\var{sim.SetParam(`dt\_snap',1.0)} \\
-\var{sim.SetParam(`x\_boundary\_lhs',`open')} \\ 
-\var{sim.SetParam(`x\_boundary\_rhs',`open')} \\
 \var{sim.SetParam(`ic',`python')} \\
+\var{sim.SetParam(`gas\_eos',`isothermal')}  \\
 \var{sim.SetParam(`Nsph',200)}  \\
-\var{Nsph = 200} \\
-\var{x = np.linspace(-0.995,0.995,num=Nsph)} \\
-\var{m = np.ones(Nsph)*2.0/Nsph} \\
-\var{u = np.ones(Nsph)*1.5} \\
-\var{vx = np.zeros(Nsph)}  \\
-\var{for i in range(Nsph):} \\
-\hspace{0.5cm}\var{if x[i] < 0.0:} \\
-\hspace{1cm}\var{vx[i] = 4.0} \\
-\hspace{0.5cm}\var{else:} \\
-\hspace{1cm}\var{vx[i] = -4.0} \\
+\var{sim.SetParam(`tend',0.2)}  \\
+\var{sim.SetParam(`dt\_snap',0.05)} \\
+\var{sim.SetParam(`dimensionless',1)} \\
+\var{sim.SetParam(`vfluid1[0]',vfluid)} \\
+\var{sim.SetParam(`vfluid2[0]',-vfluid)} \\
+\var{sim.SetParam(`boxmin[0]',xmin)} \\
+\var{sim.SetParam(`boxmax[0]',xmax)} \\
+\var{sim.SetParam(`run\_id',`SHOCKTUBE1')} \\
 \var{sim.PreSetupForPython()} \\
 \var{sim.ImportArray(x,'x')} \\
 \var{sim.ImportArray(vx,'vx')} \\
 \var{sim.ImportArray(m,'m')}   \\
-\var{sim.ImportArray(u,'u')}   \\
 \var{sim.SetupSimulation()}  \\
 \var{plot("x","rho")} \\
-\var{run()}  \\
+\var{plotanalytical(`x',`rho',ic=`shocktube')} \\
+\var{limit(`x',-0.17,0.17,window=`all')} \\
+\var{limit(`rho',0.0,21.0,window=`all')} \\
+\var{run()} \\
+\var{savefig(`shocktube.png')} \\
 \var{block()} \\
 \end{tabular} \\
 \newline
 
-As well as importing the GANDALF Python library, we must also import the NUMPY library, which is a popular mathematical library in Python for handling arrays, with the command \\
+\noindent As well as importing the GANDALF Python library, we must also import the NUMPY library, which is a popular mathematical library in Python for handling arrays, with the command \singlecommand{import numpy as np}
+We first create the initial conditions in Python before exporting the data to the C++ part of the code.  This can be done by creating NUMPY arrays for each variable, e.g. \var{x}, \var{m}, etc..  Note that even for vector quantities (e.g. position, velocity), we must allocate separate 1D NUMPY arrays for each component, for example the commands \\
 \newline
-\noindent \var{import numpy as np} \\
-\newline
-\noindent
-We then create an undefined 1D simulation object with \var{sim = newsim(ndim=1)} and set various parameters determing the simulation type, integration scheme, equation of state, etc..  We must then inform the code that we intend to generate initial conditions in the python script (and not say from an external file or one of the internal C++ routines) by the command \var{sim.SetParam(`ic',`python')}.  We must also inform the code of the number of SPH particles to be used with the command \var{sim.SetParam(`Nsph',200)}, in order to allocate enough memory for the simulation.  
-
-At this point, we can now create the initial conditions in Python.  This can be done by creating NUMPY arrays for each variable, e.g. \var{x}, \var{m}, etc..  Note that even for vector quantities (e.g. position, velocity), we must allocate separate 1D NUMPY arrays for each component, for example the commands \\
-\newline
-\noindent \var{a1 = np.zeros(N)}, \\
-\noindent \var{a2 = np.ones(N)}, \\
-\noindent \var{a3 = np.linspace(0.0,1.0,num=N)} \\
+\indent \var{a1 = np.zeros(N)}, \\
+\indent \var{a2 = np.ones(N)}, \\
+\indent \var{a3 = np.linspace(0.0,1.0,num=N)} \\
 \newline
 return NUMPY arrays of size \var{N} with all zeros, all ones, and uniform values between 0 and 1 repsectively  (See NUMPY website and documentation for more information on NUMPY functions).  For this simple shocktube test, we set all velocities left of the shock interface to $4.0$ and right of the shock interface to $-4.0$ with the commands \var{vx = np.ones(Nsph)*4.0; vx[x > 0.0] = -4.0}.
 
-The last step before importing the arrays to C++, we must initialise various things in the code, including importantly allocating memory for the particles, by calling the function \\
-\newline
-\noindent \var{sim.PreSetupforPython()}\,. \\
-\newline
-\noindent
-Next, we can import the array into the C++ arrays by the command \\
-\newline
-\noindent \var{sim.ImportArray(numpyarray,varname)} \\
-\newline
-where \var{numpyarray} is the local NUMPY array and \var{varname} is a string containing the C++ variable name.  For example, to import the x-positions, we call the command \var{sim.ImportArray(x,`x')}.  Once all arrays have been called, we can finally call the setup function \var{sim.SetupSimulation()} and plot and run the simulation.
+We then create an undefined 1D simulation object with \var{sim = newsim(ndim=1)} and set various parameters determing the simulation type, integration scheme, equation of state, etc..  We must then inform the code that we intend to generate initial conditions in the python script (and not say from an external file or one of the internal C++ routines) by the command \var{sim.SetParam(`ic',`python')}.  We must also inform the code of the number of SPH particles to be used with the command \var{sim.SetParam(`Nsph',Nsph)}, in order to allocate enough memory for the simulation (N.B. \var{Nsph} is simply a local Python variable in this example.  This can be any other variable, or even simply an integer number).
+
+The last step before importing the arrays to C++, we must initialise various things in the code, including importantly allocating memory for the particles, by calling the function \singlecommand{sim.PreSetupforPython()}
+Next, we can import the array into the C++ arrays by the command \singlecommand{sim.ImportArray(numpyarray,varname)} 
+where \var{numpyarray} is the local NUMPY array and \var{varname} is a string containing the C++ variable name.  For example, to import the x-positions, we call the command \var{sim.ImportArray(x,`x')}.  Once all arrays have been called, we can finally call the setup function \var{sim.SetupSimulation()} and plot and run the simulation to completion.
 
 
 
@@ -1204,31 +1212,92 @@ To be done
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example  10 - Generating rendered images from SPH simulations}
-To be done
+In this example, we show how to generate rendered images of some quantity.  Note that rendered plots can only be created for simulations using 2 or 3 dimensions. \\
 
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{sim = newsim(`khi.dat')} \\
+\var{setupsim()} \\
+\var{render(`x',`y','rho',res=128)} \\
+\var{run()} \\
+\var{block()} \\
+\end{tabular} \\
+\newline
+
+\noindent A rendered plot of the density on the x-y plane can be created using the command \singlecommand{render(`x',`y',`rho')}  The first argument specifies the x-coordinate, the second argument the y-coordinate and the third argument the rendered quantity.  An important optional argument is \var{res} which specifies the resolution (in pixels) of the rendered image in each dimension.  If the image is not square, then the user may pass the resolution in each dimension in parenthesis, e.g. \var{render(`x',`y','rho',res=(128,64))}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example  11 - Plotting in alternative coordinate systems}
-To be done
+In this example, we show how to plot in alternative coordinate systems (i.e. other than Cartesian coordinates). \\
+
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{sim = loadsim(`SEDOV1')} \\
+\var{plot(`r',`rho')} \\
+\var{block()} \\
+\end{tabular} \\
+\newline
+
+\noindent Once the simulation has been loaded or set-up as usual, then it is possible to plot in 3 pre-defined coordinate systems, Cartesian, spherical polar and cylindrical polar coordinates, or even a mixture.  Cartesian coordinates are represented by the strings, \var{x}, \var{y}, \var{z}; sphericial polar coordinates by the strings \var{r}, \var{theta}, \var{phi}; cylindrical coordinates by the strings \var{R}, \var{phi}, \var{z}.  For example, to plot the density as a function of radius (for spherically symmetric simulations), then we can use the command \singlecommand{plot(`r',`rho')}
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example  12 - Changing the plotting units}
-To be done
+In this example, we show how to plot using different units to those used in the simulation or provided in the snapshot files. \\
 
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{sim = newsim(`bossbodenheimer.dat')} \\
+\var{sim.SetParam(`tend',0.02)} \\
+\var{setupsim()} \\
+\var{plot(`x',`y')} \\
+\var{run()} \\
+\var{block()} \\
+\var{plot(`x',`y',xunit='au',yunit='au')} \\
+\end{tabular} \\
+\newline
+
+\noindent In order to plot quantities using a different unit to the default, the optional arguments \var{xunit} and \var{yunit} must be appended to the argument list for the relevant plotting command.  These arguments contain strings of the required unit (See section \ref{SS:UNITPARAMS} for the list of available units).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example  13 - Creating and plotting user-defined quantities}
-To be done
+In this example, we show how to create new formulaic quantities to be plotted as regular quantities by the python library. \\
+
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{sim = loadsim(`TEST1')} \\
+\var{CreateUserQuantity(`ke',`0.5*m*vx*vx',scaling\_factor=`u',label=`frac\{1\}\{2\}mv\^2')} \\
+\var{plot(`x',`ke',snap=2)} \\
+\var{limit(`ke',0.0,2.7)} \\
+\var{addplot(`x',`u',snap=2)} \\
+\var{block()} \\
+\end{tabular} \\
+\newline
+
+\noindent We can create new quantities from existing particle properties using the command \singlecommand{CreateUserQuantity(quantity\_name,quantity\_formula)} where \var{quantity\_name} is the new string name of the derived quantity and \var{quantity\_formula} is string containing an algebraic formula that defines the new quantity.  In our example, we create a new quantity to compute the kinetic energy of a particle with the algebraic formula \var{0.5*m*vx*vx}.  For 2D and 3D simulations, this would become \var{0.5*m*(vx*vx + vy*vy)} and \var{0.5*m*(vx*vx + vy*vy + vz*vz)} respectively.  Note that the algebraic formula can also use parameters by using the same string as defined in the parameters file.  
+
+The new quantity can then be plotted as any other regular quantity, e.g. \var{plot(`x',`ke')}.  Two important optional arguments are \var{scaling\_factor}, which defines the string of the unit (e.g. in this case \var{E} since \var{ke} is an energy), and \var{label}, which is a latex string used on the plots (e.g. \var{frac\{1\}\{2\}mv\^2}).
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example  14 - Plotting time series of particle properties}
-To be done
+In this example, we show how to plot a time series of particle quantities from each snapshot recorded in the simulation buffer.  This can be used to plot useful quantities versus time (e.g. mass of a sink versus time), or x-y tracks of a particle as it moves in space. \\
+
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{sim = loadsim(`TEST1')} \\
+\var{time\_plot(`t',`rho',id=0,linestyle=`-')} \\
+\var{block()} \\
+\var{time\_plot(`x',`y',id=0,linestyle=`-')} \\
+\var{block()} \\
+\end{tabular} \\
+\newline
+
+\noindent In order to plot a time series of some particle property, we use the command \singlecommand{time\_plot(`t',`rho',id=0)} where \var{id} is the unique/original id of the particle to be plotted.  If no id is given, then an error is returned and nothing will be plotted on screen.
 
 
 
@@ -1246,9 +1315,18 @@ To be done
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example  17 - Creating an animation from simulation snapshot files}
-To be done
+In this example, we show how to generate a movie from a series of snapshot files loaded into memory. \\
 
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{sim = loadsim(`TEST1')} \\
+\var{plot(`x',`y')} \\
+\var{make\_movie(`MOVIE1.mp4')} \\
+\var{break()} \\
+\end{tabular} \\
+\newline
 
+\noindent Before generating a movie, we must first specify the plot commands that are to be used to generate the movie.  For example, in order to show how the particles move on the x-y plane in the movie, we must first plot this with the regaular plot command, \var{plot(`x',`y')}.  Once the commands to generate the plot window have been completed, we then generate the movie with the command \singlecommand{make\_movie(`MOVIE1.mp4')} where the only required argument is the filename of the movie.  The python library will then step through each snapshot in turn, generate the image as a temporary png file, and then attach all images together using ffmpeg.  All temporary png files should then be deleted from memory.
 
 \newpage
 
