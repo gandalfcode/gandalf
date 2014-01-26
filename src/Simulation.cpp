@@ -404,6 +404,7 @@ string SimulationBase::Output(void)
   if (Nblocksteps%ndiagstep == 0 && n == nresync) {
     CalculateDiagnostics();
     OutputDiagnostics();
+    UpdateDiagnostics();
   }
 
   return filename;
@@ -547,6 +548,13 @@ void Simulation<ndim>::ProcessParameters(void)
 				     stringparams["gravity_mac"],
 				     stringparams["multipole"],Nthreads,Nmpi);
     }
+    else if (stringparams["neib_search"] == "tree2") {
+      sphneib = new BinaryTree2<ndim>(intparams["Nleafmax"],
+				     floatparams["thetamaxsqd"],
+				     sph->kernp->kernrange,
+				     stringparams["gravity_mac"],
+				     stringparams["multipole"],Nthreads,Nmpi);
+    }
     else {
       string message = "Unrecognised parameter : neib_search = " 
 	+ simparams->stringparams["neib_search"];
@@ -679,7 +687,7 @@ void Simulation<ndim>::ProcessSphParameters(void)
   if (stringparams["avisc"] == "none")
     avisc = noneav;
   else if (stringparams["avisc"] == "mon97" &&
-           intparams["time_dependent_avsic"] == 1)
+           intparams["time_dependent_avisc"] == 1)
     avisc = mon97td;
   else if (stringparams["avisc"] == "mon97")
     avisc = mon97;
@@ -1650,7 +1658,7 @@ void Simulation<ndim>::SetComFrame(void)
 /// Update energy error value after computing diagnostic quantities.
 //=============================================================================
 template <int ndim>
-void Simulation<ndim>::UpdateDiagnostics ()
+void Simulation<ndim>::UpdateDiagnostics(void)
 {
   if (rank == 0) {
     diag.Eerror = fabs(diag0.Etot - diag.Etot)/fabs(diag0.Etot);

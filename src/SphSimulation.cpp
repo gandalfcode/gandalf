@@ -270,8 +270,8 @@ void SphSimulation<ndim>::MainLoop(void)
   nbody->AdvanceParticles(n,nbody->Nnbody,nbody->nbodydata,timestep);
 
   // Check all boundary conditions
-  // (DAVID : Move this function to sphint and create an analagous one for N-body)
-  // (Also, only check this on tree-build steps)
+  // (DAVID : Move this function to sphint and create an analagous one 
+  //  for N-body.  Also, only check this on tree-build steps)
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree)
     LocalGhosts->CheckBoundaries(simbox,sph);
 
@@ -297,7 +297,7 @@ void SphSimulation<ndim>::MainLoop(void)
   if (sph->Nsph > 0) {
     
     // Search for new ghost particles and create on local processor
-	if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+    if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
       tghost = timestep*(FLOAT)(ntreebuildstep - 1);
       LocalGhosts->SearchGhostParticles(tghost,simbox,sph);
 #ifdef MPI_PARALLEL
@@ -380,6 +380,19 @@ void SphSimulation<ndim>::MainLoop(void)
       // have been computed for active particles
       for (i=0; i<sph->Nsph; i++) {
         if (sph->sphdata[i].active) {
+
+          for (k=0; k<ndim; k++) {
+	    if (sph->sphdata[i].a[k] != sph->sphdata[i].a[k]) {
+	      cout << "Problem with particle accels : " << i << "    " 
+		   << sph->sphdata[i].a[k] << "    " << sph->sphdata[i].h 
+		   << "    " 
+		   << sph->sphdata[i].rho << "    " << sph->sphdata[i].r[k]
+		   << endl;
+	      exit(0);
+	    }
+	  }
+
+
           for (k=0; k<ndim; k++)
             sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
           sph->sphdata[i].dalphadt = 0.1*sph->sphdata[i].sound*

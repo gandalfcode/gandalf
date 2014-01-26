@@ -166,7 +166,7 @@ void Simulation<ndim>::CheckInitialConditions(void)
 
 //=============================================================================
 //  Simulation::BinaryAccretion
-/// Set-up Sedov blast wave test
+/// ..
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::BinaryAccretion(void)
@@ -902,19 +902,19 @@ void Simulation<ndim>::ContactDiscontinuity(void)
 template <int ndim>
 void Simulation<ndim>::KHI(void)
 {
-  int i;
-  int j;
-  int k;
-  int Nbox1;
-  int Nbox2;
-  FLOAT volume;
-  FLOAT *r;
-  DomainBox<ndim> box1;
-  DomainBox<ndim> box2;
-  int Nlattice1[ndim];
-  int Nlattice2[ndim];
-  FLOAT vfluid1[ndim];
-  FLOAT vfluid2[ndim];
+  int i;                            // Particle counter
+  int j;                            // Aux. particle counter
+  int k;                            // Dimension counter
+  int Nbox1;                        // No. of particles in fluid box 1
+  int Nbox2;                        // No. of particles in fluid box 2
+  int Nlattice1[ndim];              // Lattice particles in fluid box 1
+  int Nlattice2[ndim];              // Lattice particles in fluid box 2
+  FLOAT volume;                     // Volume of fluid box
+  FLOAT vfluid1[ndim];              // Velocity vector of fluid 1
+  FLOAT vfluid2[ndim];              // Velocity vector of fluid 2
+  FLOAT *r;                         // Array of particle positions
+  DomainBox<ndim> box1;             // Bounding box of fluid 1
+  DomainBox<ndim> box2;             // Bounding box of fluid 2
 
   // Record local copies of all important parameters
   FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
@@ -1017,6 +1017,7 @@ void Simulation<ndim>::KHI(void)
   LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
 
   // Update neighbour tree
+  rebuild_tree = true;
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
   // Calculate all SPH properties
@@ -1656,16 +1657,18 @@ void Simulation<ndim>::SedovBlastWave(void)
   sph->Nghostmax = sph->Nsphmax - sph->Nsph;
   sph->Ntot = sph->Nsph;
   for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
-  
-  initial_h_provided = true;
-  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
-  
+
   // Search ghost particles
   LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
-
+  
+  initial_h_provided = true;
+  rebuild_tree = true;
+  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
+  
   sphneib->UpdateAllSphProperties(sph,nbody);
 
   // Update neighbour tre
+  rebuild_tree = true;
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
   // Calculate all SPH properties

@@ -145,6 +145,8 @@ CFLAGS += -DNDEBUG
 endif
 
 
+#CFLAGS += -DVERIFY_BINARY_TREE
+
 
 # Object files to be compiled
 # ----------------------------------------------------------------------------
@@ -157,7 +159,7 @@ OBJ += Sph.o GradhSph.o SM2012Sph.o GodunovSph.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o SphLeapfrogDKD.o 
 OBJ += SphGodunovIntegration.o EnergyGodunovIntegration.o RiemannSolver.o
 #OBJ += SphNeighbourSearch.o 
-OBJ += BruteForceSearch.o GridSearch.o BinarySubTree.o BinaryTree.o
+OBJ += BruteForceSearch.o GridSearch.o BinarySubTree.o BinaryTree.o BinaryTree2.o
 OBJ += AdiabaticEOS.o IsothermalEOS.o BarotropicEOS.o
 OBJ += EnergyPEC.o EnergyLeapfrogDKD.o
 #OBJ += SimGhostParticles.o

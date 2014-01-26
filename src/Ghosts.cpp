@@ -58,7 +58,8 @@ void PeriodicGhosts<ndim>::CheckBoundaries
   // Loop over all particles and check if any lie outside the periodic box.
   // If so, then re-position with periodic wrapping.
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(i,part) shared(simbox,sph)
+#pragma omp parallel for default(none) private(i,part,partint) \
+  shared(simbox,sph)
   for (i=0; i<sph->Nsph; i++) {
     part = &sph->sphdata[i];
     partint = &sph->sphintdata[i];
