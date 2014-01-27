@@ -378,21 +378,9 @@ void SphSimulation<ndim>::MainLoop(void)
       
       // Compute additional terms now accelerations and other derivatives 
       // have been computed for active particles
+#pragma omp parallel for default(none) private(i,k)
       for (i=0; i<sph->Nsph; i++) {
         if (sph->sphdata[i].active) {
-
-          for (k=0; k<ndim; k++) {
-	    if (sph->sphdata[i].a[k] != sph->sphdata[i].a[k]) {
-	      cout << "Problem with particle accels : " << i << "    " 
-		   << sph->sphdata[i].a[k] << "    " << sph->sphdata[i].h 
-		   << "    " 
-		   << sph->sphdata[i].rho << "    " << sph->sphdata[i].r[k]
-		   << endl;
-	      exit(0);
-	    }
-	  }
-
-
           for (k=0; k<ndim; k++)
             sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
           sph->sphdata[i].dalphadt = 0.1*sph->sphdata[i].sound*

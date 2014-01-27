@@ -69,11 +69,13 @@ OPT += -fopenmp
 endif
 endif
 
-ifeq ($(CPP),/sw/bin/g++-4)
+ifeq ($(CPP),g++-4)
 ifeq ($(COMPILER_MODE),FAST)
 OPT += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),STANDARD)
 OPT += -O3 -fPIC -fno-exceptions -fno-rtti
+else ifeq ($(COMPILER_MODE),PROFILE)
+OPT += -O3 -fPIC -fno-exceptions -fno-rtti -pg
 else ifeq ($(COMPILER_MODE),DEBUG)
 OPT += -g -Wall -fbounds-check -fPIC #-fprofile-arcs -ftest-coverage
 endif
@@ -82,16 +84,6 @@ OPT += -fopenmp -DOPENMP
 endif
 endif
 
-ifeq ($(CPP),g++-4)
-ifeq ($(COMPILER_MODE),FAST)
-OPT += -O3 -ffast-math -fPIC #-fno-exceptions -fno-rtti
-else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -g -pg -Wall -fbounds-check
-endif
-ifeq ($(OPENMP),1)
-OPT += -fopenmp -DOPENMP
-endif
-endif
 
 ifeq ($(CPP),clang)
 ifeq ($(COMPILER_MODE),FAST)

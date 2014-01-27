@@ -302,6 +302,8 @@ void SimulationBase::Run
   CalculateDiagnostics();
   OutputDiagnostics();
   UpdateDiagnostics();
+  cout << "Final t : " << t*simunits.t.outscale << " " << simunits.t.outunit
+       << "    Total no. of steps : " << Nsteps << endl;
 
   return;
 }
