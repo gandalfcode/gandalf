@@ -87,11 +87,11 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // If the smoothing lengths have not been provided beforehand, then
     // calculate the initial values here
+    sphneib->neibcheck = false;
     if (!this->initial_h_provided) {
       sph->InitialSmoothingLengthGuess();
       sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,timestep,sph);
 
-      sphneib->neibcheck = false;
       sphneib->UpdateAllSphProperties(sph,nbody);
     }
 
@@ -130,7 +130,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Update neighbour tre
     rebuild_tree = true;
     sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,timestep,sph);
-    //sphneib->neibcheck = true;
+    sphneib->neibcheck = true;
     //sphneib->UpdateAllSphProperties(sph,nbody);
 
   }

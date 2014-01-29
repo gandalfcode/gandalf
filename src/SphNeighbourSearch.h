@@ -443,7 +443,7 @@ class BinaryTree2: public SphNeighbourSearch<ndim>
   using SphNeighbourSearch<ndim>::neibcheck;
   using SphNeighbourSearch<ndim>::box;
 
-  BinaryTree2(int, FLOAT, FLOAT, string, string, int, int);
+  BinaryTree2(int, FLOAT, FLOAT, string, string);
   ~BinaryTree2();
 
   //---------------------------------------------------------------------------
@@ -494,7 +494,6 @@ class BinaryTree2: public SphNeighbourSearch<ndim>
   string gravity_mac;               ///< Multipole-acceptance criteria for tree
   string multipole;                 ///< Multipole-order for cell gravity
   bool allocated_tree;              ///< Are grid arrays allocated?
-  bool created_sub_trees;           ///< Have sub-tree objects been created?
   int gtot;                         ///< Total number of grid/leaf cells
   int ltot;                         ///< Total number of levels in tree
   int Ncell;                        ///< Current no. of grid cells
@@ -514,6 +513,19 @@ class BinaryTree2: public SphNeighbourSearch<ndim>
   FLOAT theta;                      ///< ..
   FLOAT thetamaxsqd;                ///< ..
   BinaryTree2Cell<ndim> *tree;      ///< Main tree array
+
+
+    bool allocated_buffer;
+    int Nthreads;
+    int *Nneibmaxbuf;
+    int *Ndirectmaxbuf;
+    int *Ngravcellmaxbuf;
+    FLOAT **agravbuf;                  // Local copy of gravitational accel.
+    FLOAT **gpotbuf;                   // Local copy of gravitational pot.
+    SphParticle<ndim> **neibpartbuf;   // Local copy of neighbouring ptcls
+    SphParticle<ndim> **activepartbuf; // Local copy of SPH particle
+    
+
 
 };
 

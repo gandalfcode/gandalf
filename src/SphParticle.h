@@ -218,9 +218,8 @@ struct SphIntParticle
 
   }
 #endif
-
-
 };
+
 
 
 #endif

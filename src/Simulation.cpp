@@ -555,7 +555,7 @@ void Simulation<ndim>::ProcessParameters(void)
 				     floatparams["thetamaxsqd"],
 				     sph->kernp->kernrange,
 				     stringparams["gravity_mac"],
-				     stringparams["multipole"],Nthreads,Nmpi);
+				     stringparams["multipole"]);
     }
     else {
       string message = "Unrecognised parameter : neib_search = " 
@@ -608,6 +608,12 @@ void Simulation<ndim>::ProcessParameters(void)
   simbox.boxmax[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
   simbox.boxmax[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
   simbox.boxmax[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
+  if (simbox.x_boundary_lhs == "open") simbox.boxmin[0] = -big_number;
+  if (simbox.x_boundary_rhs == "open") simbox.boxmax[0] = big_number;
+  if (simbox.y_boundary_lhs == "open") simbox.boxmin[1] = -big_number;
+  if (simbox.y_boundary_rhs == "open") simbox.boxmax[1] = big_number;
+  if (simbox.z_boundary_lhs == "open") simbox.boxmin[2] = -big_number;
+  if (simbox.z_boundary_rhs == "open") simbox.boxmax[2] = big_number;
   for (int k=0; k<3; k++) {
     simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
     simbox.boxhalf[k] = 0.5*simbox.boxsize[k];

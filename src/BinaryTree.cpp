@@ -467,7 +467,7 @@ void BinaryTree<ndim>::LoadParticlesToTree
   FLOAT *ccap;                     // Maximum capacity of cell
   FLOAT *ccon;                     // Current contents of cell
 
-  debug2("[BinaryTree::LoadParticleToTree]");
+  debug2("[BinaryTree::LoadParticlesToTree]");
 
   // Allocate memory for local arrays
   ccap = new FLOAT[Ncellmax];
@@ -959,6 +959,8 @@ void BinaryTree<ndim>::UpdateAllSphProperties
   BinaryTreeCell<ndim> **celllist; // List of binary cell pointers
   SphParticle<ndim> *data = sph->sphdata;  // Pointer to SPH particle data
 
+  int Nneibcount = 0;
+
   debug2("[BinaryTree::UpdateAllSphProperties]");
 
   // Find list of all cells that contain active particles
@@ -1047,6 +1049,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
         // Loop over all active particles in the cell
         //---------------------------------------------------------------------
         for (j=0; j<Nactive; j++) {
+	  //Nneibcount += Nneib;
           i = activelist[j];
           assert(i >= 0 && i < sph->Nsph);
           for (k=0; k<ndim; k++) rp[k] = data[i].r[k];
@@ -1115,6 +1118,8 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 
   delete[] treelist;
   delete[] celllist;
+
+  cout << "Average Ngather : " << Nneibcount/sph->Nsph << endl;
 
   // Update all tree smoothing length values
   UpdateHmaxValues(sph->sphdata);
@@ -1398,6 +1403,10 @@ void BinaryTree<ndim>::UpdateAllSphForces
   SphParticle<ndim> *activepart;    // Local copy of SPH particle
   SphParticle<ndim> *data = sph->sphdata;   // Pointer to SPH particle data
 
+  int Nneibcount = 0;
+  int Ndirectcount = 0;
+  int Ncellcount = 0;
+
   debug2("[BinaryTree::UpdateAllSphForces]");
 
 
@@ -1497,6 +1506,10 @@ void BinaryTree<ndim>::UpdateAllSphForces
       //-----------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
+
+	//Nneibcount += Nneib;
+	//Ndirectcount += Ndirect;
+	//Ncellcount += Ngravcell;
 
         // Determine SPH neighbour interaction list 
         // (to ensure we don't compute pair-wise forces twice)
@@ -1600,6 +1613,10 @@ void BinaryTree<ndim>::UpdateAllSphForces
   delete[] treelist;
   delete[] celllist;
 
+
+  cout << "Average Nneib     : " << Nneibcount/sph->Nsph << endl;
+  cout << "Average Ndirect   : " << Ndirectcount/sph->Nsph << endl;
+  cout << "Average Ngravcell : " << Ncellcount/sph->Nsph << endl;
 
   // Compute other important SPH quantities after hydro forces are computed
   if (sph->hydro_forces == 1) {
