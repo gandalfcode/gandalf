@@ -520,8 +520,13 @@ class BinaryTree2: public SphNeighbourSearch<ndim>
     int *Nneibmaxbuf;
     int *Ndirectmaxbuf;
     int *Ngravcellmaxbuf;
-    FLOAT **agravbuf;                  // Local copy of gravitational accel.
-    FLOAT **gpotbuf;                   // Local copy of gravitational pot.
+
+    int **levelneibbuf;
+    FLOAT **gpotbuf;
+    FLOAT **divvbuf;
+    FLOAT **dudtbuf;
+    FLOAT **abuf;
+    FLOAT **agravbuf;
     SphParticle<ndim> **neibpartbuf;   // Local copy of neighbouring ptcls
     SphParticle<ndim> **activepartbuf; // Local copy of SPH particle
     

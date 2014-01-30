@@ -921,6 +921,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   // Set important header information
   idata[0] = sph->Nsph;
   idata[1] = nbody->Nstar;
+  idata[4] = sph->Nsph;
   idata[19] = nunit;
   idata[20] = ndata;
   ilpdata[0] = 0;

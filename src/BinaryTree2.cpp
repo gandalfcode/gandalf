@@ -68,7 +68,6 @@ BinaryTree2<ndim>::BinaryTree2(int Nleafmaxaux, FLOAT thetamaxsqdaux,
 #else
   Nthreads = 1;
 #endif
-  cout << "WTF?? : " << Nthreads << endl;
 }
 
 
@@ -169,8 +168,12 @@ void BinaryTree2<ndim>::BuildTree
       Nneibmaxbuf = new int[Nthreads];
       Ndirectmaxbuf = new int[Nthreads];
       Ngravcellmaxbuf = new int[Nthreads];
-      agravbuf = new FLOAT*[Nthreads];
+      levelneibbuf = new int*[Nthreads];
       gpotbuf = new FLOAT*[Nthreads];
+      divvbuf = new FLOAT*[Nthreads];
+      dudtbuf = new FLOAT*[Nthreads];
+      abuf = new FLOAT*[Nthreads];
+      agravbuf = new FLOAT*[Nthreads];
       activepartbuf = new SphParticle<ndim>*[Nthreads];
       neibpartbuf = new SphParticle<ndim>*[Nthreads];
 
@@ -179,8 +182,12 @@ void BinaryTree2<ndim>::BuildTree
 	Ndirectmaxbuf[ithread] = 2*sph->Ngather;
 	Ngravcellmaxbuf[ithread] = 2*sph->Ngather;
 
-	agravbuf[ithread] = new FLOAT[ndim*sph->Nsph];
-	gpotbuf[ithread] = new FLOAT[sph->Nsph];
+	levelneibbuf[ithread] = new int[sph->Ntot];
+	gpotbuf[ithread] = new FLOAT[sph->Ntot];
+	divvbuf[ithread] = new FLOAT[sph->Ntot];
+	dudtbuf[ithread] = new FLOAT[sph->Ntot];
+	abuf[ithread] = new FLOAT[ndim*sph->Ntot];
+	agravbuf[ithread] = new FLOAT[ndim*sph->Ntot];
 	activepartbuf[ithread] = new SphParticle<ndim>[Nleafmax];
 	neibpartbuf[ithread] = new SphParticle<ndim>[Nneibmaxbuf[ithread]];
       }
@@ -1877,8 +1884,12 @@ void BinaryTree2<ndim>::UpdateAllSphForces
 
   SphParticle<ndim> *activepart;
   SphParticle<ndim> *neibpart;
-  FLOAT *agrav;
+  int *levelneib;
   FLOAT *gpot;
+  FLOAT *div_v;
+  FLOAT *dudt;
+  FLOAT *a;
+  FLOAT *agrav;
 
   int Nneibcount = 0;
   int Ndirectcount = 0;
@@ -1899,7 +1910,7 @@ void BinaryTree2<ndim>::UpdateAllSphForces
   // Set-up all OMP threads
   //===========================================================================
 #pragma omp parallel default(none) private(activelist,agrav,cc,cell)\
-  private(gpot,i,interactlist,ithread,j,jj,activepart)			\
+  private(gpot,i,interactlist,ithread,j,jj,activepart,a,div_v,dudt,levelneib)\
   private(k,okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,directlist)\
   private(gravcelllist,Ngravcell,Ndirect,Nneibmax,Ndirectmax,Ngravcellmax)\
   shared(celllist,cactive,sph,cout)
@@ -1913,8 +1924,12 @@ void BinaryTree2<ndim>::UpdateAllSphForces
     Ndirectmax = Ndirectmaxbuf[ithread];
     Ngravcellmax = Ngravcellmaxbuf[ithread];
 
-    agrav = agravbuf[ithread];
+    levelneib = levelneibbuf[ithread];
     gpot = gpotbuf[ithread];
+    div_v = divvbuf[ithread];
+    dudt = dudtbuf[ithread];
+    a = abuf[ithread];
+    agrav = agravbuf[ithread];
     activepart = activepartbuf[ithread];
     neibpart = neibpartbuf[ithread];
 
@@ -1926,8 +1941,11 @@ void BinaryTree2<ndim>::UpdateAllSphForces
 
 
     // Zero temporary grav. accel array
-    for (i=0; i<ndim*sph->Nsph; i++) agrav[i] = 0.0;
     for (i=0; i<sph->Nsph; i++) gpot[i] = 0.0;
+    for (i=0; i<sph->Nsph; i++) div_v[i] = 0.0;
+    for (i=0; i<sph->Nsph; i++) dudt[i] = 0.0;
+    for (i=0; i<ndim*sph->Nsph; i++) a[i] = 0.0;
+    for (i=0; i<ndim*sph->Nsph; i++) agrav[i] = 0.0;
 
 
     // Loop over all active cells
@@ -2029,43 +2047,25 @@ void BinaryTree2<ndim>::UpdateAllSphForces
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
     	i = activelist[j];
-#if defined _OPENMP
-        omp_lock_t& lock = sph->GetParticleILock(i);
-        omp_set_lock(&lock);
-#endif
-        for (k=0; k<ndim; k++) {
-          sph->sphdata[i].a[k] += activepart[j].a[k];
-          sph->sphdata[i].agrav[k] += activepart[j].agrav[k];
-        }
-        sph->sphdata[i].gpot += activepart[j].gpot;
-        sph->sphdata[i].dudt += activepart[j].dudt;
-        sph->sphdata[i].div_v += activepart[j].div_v;
-        sph->sphdata[i].levelneib = max(sph->sphdata[i].levelneib,activepart[j].levelneib);
-#if defined _OPENMP
-        omp_unset_lock(&lock);
-#endif
+        for (k=0; k<ndim; k++) a[ndim*i + k] += activepart[j].a[k];
+        for (k=0; k<ndim; k++) agrav[ndim*i + k] += activepart[j].agrav[k];
+        gpot[i] += activepart[j].gpot;
+        dudt[i] += activepart[j].dudt;
+        div_v[i] += activepart[j].div_v;
+        levelneib[i] = max(levelneib[i],activepart[j].levelneib);
       }
 
       // Now add all active neighbour contributions to the main arrays
       for (jj=0; jj<Nneib; jj++) {
         j = neiblist[jj];
-#if defined _OPENMP
-        omp_lock_t& lock = sph->GetParticleILock(j);
-        omp_set_lock(&lock);
-#endif
         if (neibpart[jj].active) {
-          for (k=0; k<ndim; k++) {
-            sph->sphdata[j].a[k] += neibpart[jj].a[k];
-            sph->sphdata[j].agrav[k] += neibpart[jj].agrav[k];
-          }
-          sph->sphdata[j].gpot += neibpart[jj].gpot;
-          sph->sphdata[j].dudt += neibpart[jj].dudt;
-          sph->sphdata[j].div_v += neibpart[jj].div_v;
+          for (k=0; k<ndim; k++) a[ndim*j + k] += neibpart[jj].a[k];
+          for (k=0; k<ndim; k++) agrav[ndim*j + k] += neibpart[jj].agrav[k];
+          gpot[j] += neibpart[jj].gpot;
+          dudt[j] += neibpart[jj].dudt;
+          div_v[j] += neibpart[jj].div_v;
         }
-        sph->sphdata[j].levelneib = max(sph->sphdata[j].levelneib,neibpart[jj].levelneib);
-#if defined _OPENMP
-        omp_unset_lock(&lock);
-#endif
+        levelneib[j] = max(levelneib[j],neibpart[jj].levelneib);
       }
 
     }
@@ -2073,14 +2073,18 @@ void BinaryTree2<ndim>::UpdateAllSphForces
 
 
     // Finally, add all contributions from distant pair-wise forces to arrays
-    for (i=0; i<sph->Nsph; i++) {
-      if (sph->sphdata[i].active) {
-        for (k=0; k<ndim; k++) {
-#pragma omp atomic
-          sph->sphdata[i].agrav[k] += agrav[ndim*i + k];
-        }
-#pragma omp atomic
-        sph->sphdata[i].gpot += gpot[i];
+#pragma omp critical
+    {
+      for (i=0; i<sph->Nsph; i++) {
+	if (sph->sphdata[i].active) {
+	  sph->sphdata[i].levelneib = 
+	    max(sph->sphdata[i].levelneib,levelneib[i]);
+	  sph->sphdata[i].gpot += gpot[i];
+	  sph->sphdata[i].div_v += div_v[i];
+	  sph->sphdata[i].dudt += dudt[i];
+	  for (k=0; k<ndim; k++) sph->sphdata[i].a[k] += a[ndim*i + k];
+	  for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] += agrav[ndim*i + k];
+	}
       }
     }
 
