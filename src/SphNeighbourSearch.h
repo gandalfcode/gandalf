@@ -60,37 +60,6 @@ struct GridCell {
 //=============================================================================
 template <int ndim>
 struct BinaryTreeCell {
-  int c2;                           ///< i.d. of 2nd child cell
-  int cnext;                        ///< i.d. of next cell if not opened
-  int c2g;                          ///< i.d. of tree-cell c/grid-cell g
-  int clevel;                       ///< Level occupied by tree-cell
-  int ifirst;                       ///< i.d. of 1st particle allocated to cell
-  int ilast;                        ///< i.d. of last particle in cell
-  int Nactive;                      ///< No. of active particles in cell
-  int N;                            ///< No. of particles in cell
-  FLOAT cdistsqd;                   ///< Opening distances squared
-  FLOAT r[ndim];                    ///< Position of centre of mass
-  FLOAT v[ndim];                    ///< Velocity of centre of mass
-  FLOAT m;                          ///< Total mass of cell
-  FLOAT rmax;                       ///< Max. dist. of ptcl from COM
-  FLOAT hmax;                       ///< Maximum smoothing length inside cell
-  FLOAT drmaxdt;                    ///< Rate of change of bounding sphere
-  FLOAT dhmaxdt;                    ///< Rate of change of maximum h
-  FLOAT q[5];                       ///< Quadrupole moment tensor
-  FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
-  FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
-  FLOAT worktot;                    ///< Total amount of work
-  FLOAT rwork[ndim];                ///< Weighted position of centre of work
-};
-
-
-
-//=============================================================================
-//  Structure BinaryTree2Cell
-/// Neighbour grid cell data structure
-//=============================================================================
-template <int ndim>
-struct BinaryTree2Cell {
   int c1;                           ///< First child cell
   int c2;                           ///< Second child cell
   int c2g;                          ///< i.d. of tree-cell c/grid-cell g
@@ -106,6 +75,7 @@ struct BinaryTree2Cell {
   FLOAT cdistsqd;                   ///< ..
   FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
   FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
+  FLOAT rcell[ndim];                ///< ..
   FLOAT r[ndim];                    ///< Position of cell
   FLOAT v[ndim];                    ///< Position of cell
   FLOAT m;                          ///< Mass contained in cell
@@ -249,94 +219,12 @@ class GridSearch: public SphNeighbourSearch<ndim>
 
 
 //=============================================================================
-//  Class BinarySubTree
-/// \brief   Class containing binary sub-tree
-/// \details ..
-/// \author  D. A. Hubber, A. P. Whitworth
-/// \date    27/05/2013
-//=============================================================================
-template <int ndim>
-class BinarySubTree
-{
- public:
-
-  BinarySubTree(int, FLOAT, FLOAT, string, string);
-  ~BinarySubTree();
-
-  // Additional functions for binary tree neighbour search
-  //---------------------------------------------------------------------------
-  void AllocateSubTreeMemory(void);
-  void DeallocateSubTreeMemory(void);
-  int ComputeActiveCellList(int ,BinaryTreeCell<ndim> **);
-  void ComputeSubTreeSize(void);
-  void CreateSubTreeStructure(void);
-  void ExtrapolateCellProperties(FLOAT);
-  void OrderParticlesByCartCoord(SphParticle<ndim> *);
-  void LoadParticlesToSubTree(void);
-  void StockCellProperties(SphParticle<ndim> *);
-  FLOAT UpdateHmaxValues(SphParticle<ndim> *);
-  void UpdateActiveParticleCounters(Sph<ndim> *);
-  void BuildSubTree(Sph<ndim> *);
-  int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int, 
-                                 int *, FLOAT, SphParticle<ndim> *);
-  int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int, 
-                           int *, SphParticle<ndim> *);
-  int ComputeGravityInteractionList(BinaryTreeCell<ndim> *, int, int, int, 
-                                    int &, int &, int &, int *, int *, 
-                                    BinaryTreeCell<ndim> **, 
-                                    SphParticle<ndim> *);
-  int GlobalId(int local_id) {
-    if (local_id < 0) cout << "local_id : " << local_id << endl;
-    assert(local_id>=0);
-    return ids[local_id];
-  };
-
-#if defined(VERIFY_ALL)
-  void ValidateTree(Sph<ndim> *);
-#endif
-
-  // Additional variables for grid
-  //---------------------------------------------------------------------------
-  string gravity_mac;               ///< Multipole-acceptance criteria for tree
-  string multipole;                 ///< Multipole-order for cell gravity
-  bool allocated_tree;              ///< Are grid arrays allocated?
-  int gtot;                         ///< Total number of grid/leaf cells
-  int ifirst;                       ///< ..
-  int ltot;                         ///< Total number of levels in tree
-  int Ncell;                        ///< Current no. of grid cells
-  int Ncellmax;                     ///< Max. allowed no. of grid cells
-  int Ngridcells;                   ///< ""
-  int Nlevel;                       ///< ""
-  int Nleafmax;                     ///< Max. number of particles per leaf cell
-  int Nlistmax;                     ///< Max. length of neighbour list
-  int Nsph;                         ///< Total no. of points/ptcls in grid
-  int Ntot;                         ///< No. of current points in list
-  int Ntotmax;                      ///< Max. no. of points in list
-  int Ntotmaxold;                   ///< Old value of Ntotmax
-  int *pc;                          ///< i.d. of leaf cell occupied by ptcl
-  int *g2c;                         ///< i.d. of leaf(grid) cells
-  int *gactivelist;                 ///< List of active cells
-  int *ids;                         ///< Particle ids
-  int *inext;                       ///< Linked list for grid search
-  int *porder[ndim];                ///< Ordered ids of Cartesian coordinates
-  FLOAT kernrange;                  ///< Extent of employed kernel
-  FLOAT theta;                      ///< ..
-  FLOAT thetamaxsqd;                ///< ..
-  FLOAT *rk[ndim];                  ///< Particle Cartesian coordinates
-  BinaryTreeCell<ndim> *tree;       ///< Main tree array
-  DomainBox<ndim> box;             ///< Pointer to simulation bounding box
-
-};
-
-
-
-//=============================================================================
 //  Class BinaryTree
 /// \brief   Class containing binary tree
 /// \details Binary tree data structure used for efficient neighbour searching 
 ///          and computation of gravitational forces
-/// \author  D. A. Hubber, A. P. Whitworth
-/// \date    27/05/2013
+/// \author  D. A. Hubber, O. Lomax, A. P. Whitworth
+/// \date    08/01/2014
 //=============================================================================
 template <int ndim>
 class BinaryTree: public SphNeighbourSearch<ndim>
@@ -346,9 +234,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   using SphNeighbourSearch<ndim>::neibcheck;
   using SphNeighbourSearch<ndim>::box;
 
-  typedef typename vector <BinarySubTree<ndim> *>::iterator binlistiterator;
-
-  BinaryTree(int, FLOAT, FLOAT, string, string, int, int);
+  BinaryTree(int, FLOAT, FLOAT, string, string);
   ~BinaryTree();
 
   //---------------------------------------------------------------------------
@@ -365,14 +251,19 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   //---------------------------------------------------------------------------
   void AllocateTreeMemory(void);
   void DeallocateTreeMemory(void);
+  bool BoxOverlap(FLOAT *, FLOAT *, FLOAT *, FLOAT *);
   void ComputeTreeSize(void);
   void CreateTreeStructure(void);
-  void LoadParticlesToTree(FLOAT *r);
-  void OrderParticlesByCartCoord(SphParticle<ndim> *);
+  void DivideTreeCell(int, int, Sph<ndim> *, BinaryTreeCell<ndim> &);
+  //void ExtrapolateCellProperties(BinaryTreeCell<ndim> &, FLOAT);
+  void ExtrapolateCellProperties(FLOAT);
+  void LoadParticlesToTree(Sph<ndim> *);
+  FLOAT QuickSelect(int, int, int, int, Sph<ndim> *);
+  void StockTree(BinaryTreeCell<ndim> &, SphParticle<ndim> *);
+  void StockCellProperties(BinaryTreeCell<ndim> &, SphParticle<ndim> *);
   void UpdateHmaxValues(SphParticle<ndim> *);
-  int ComputeActiveCellList(BinaryTreeCell<ndim> **, BinarySubTree<ndim> **);
-  int ComputeActiveParticleList(BinaryTreeCell<ndim> *, BinarySubTree<ndim> *,
-                                Sph<ndim> *, int *);
+  int ComputeActiveCellList(BinaryTreeCell<ndim> **);
+  int ComputeActiveParticleList(BinaryTreeCell<ndim> *, Sph<ndim> *, int *);
   int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int *, 
                                  FLOAT, SphParticle<ndim> *);
   int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int *, 
@@ -384,105 +275,6 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void ComputeCellMonopoleForces(int, int, BinaryTreeCell<ndim> **, 
                                  SphParticle<ndim> &);
   void ComputeCellQuadrupoleForces(int, int, BinaryTreeCell<ndim> **, 
-                                   SphParticle<ndim> &);
-#if defined(VERIFY_ALL)
-  void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
-#endif
-
-  // Additional variables for grid
-  //---------------------------------------------------------------------------
-  string gravity_mac;               ///< Multipole-acceptance criteria for tree
-  string multipole;                 ///< Multipole-order for cell gravity
-  bool allocated_tree;              ///< Are grid arrays allocated?
-  bool created_sub_trees;           ///< Have sub-tree objects been created?
-  int gtot;                         ///< Total number of grid/leaf cells
-  int ltot;                         ///< Total number of levels in tree
-  int Ncell;                        ///< Current no. of grid cells
-  int Ncellmax;                     ///< Max. allowed no. of grid cells
-  int Nsubtree;                     ///< No. of sub-trees
-  int Nsubtreemax;                  ///< ..
-  int Nsubtreemaxold;               ///< No. of sub-trees
-  int Nlevel;                       ///< ""
-  int Nleafmax;                     ///< Max. number of particles per leaf cell
-  int Nlistmax;                     ///< Max. length of neighbour list
-  int Nlocalsubtrees;               ///< No. of local sub-trees in main tree
-  int Nmpisubtrees;                 ///< No. of MPI ghost trees
-  int Nsph;                         ///< Total no. of points/ptcls in grid
-  int Ntot;                         ///< No. of current points in list
-  int Ntotmax;                      ///< Max. no. of points in list
-  int Ntotmaxold;                   ///< Old value of Ntotmax
-  int *porder[ndim];                ///< Ordered ids of Cartesian coordinates
-  FLOAT hmax;                       ///< Store hmax in the tree
-  FLOAT kernrange;                  ///< Extent of employed kernel
-  FLOAT theta;                      ///< ..
-  FLOAT thetamaxsqd;                ///< ..
-  int *pc;                          ///< ..
-  int *klevel;                      ///< ..
-  FLOAT *pw;                        ///< Particle weights
-  FLOAT *rk[ndim];                  ///< Particle Cartesian coordinates
-  BinaryTreeCell<ndim> *tree;       ///< Main tree array
-  BinarySubTree<ndim> *stree;       ///< Array of sub-tree objects
-  vector <BinarySubTree<ndim> *> subtrees;   ///< List containing pointers to sub-trees
-};
-
-
-
-//=============================================================================
-//  Class BinaryTree2
-/// \brief   Class containing binary tree
-/// \details Binary tree data structure used for efficient neighbour searching 
-///          and computation of gravitational forces
-/// \author  D. A. Hubber, O. Lomax, A. P. Whitworth
-/// \date    08/01/2014
-//=============================================================================
-template <int ndim>
-class BinaryTree2: public SphNeighbourSearch<ndim>
-{
- public:
-
-  using SphNeighbourSearch<ndim>::neibcheck;
-  using SphNeighbourSearch<ndim>::box;
-
-  BinaryTree2(int, FLOAT, FLOAT, string, string);
-  ~BinaryTree2();
-
-  //---------------------------------------------------------------------------
-  void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *);
-  void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphForces(Sph<ndim> *);
-  void UpdateAllSphHydroForces(Sph<ndim> *);
-  void UpdateAllSphGravForces(Sph<ndim> *);
-  void UpdateAllSphDudt(Sph<ndim> *);
-  void UpdateAllSphDerivatives(Sph<ndim> *);
-  void UpdateActiveParticleCounters(Sph<ndim> *);
-
-  // Additional functions for binary tree neighbour search
-  //---------------------------------------------------------------------------
-  void AllocateTreeMemory(void);
-  void DeallocateTreeMemory(void);
-  void ComputeTreeSize(void);
-  void CreateTreeStructure(void);
-  void DivideTreeCell(int, int, Sph<ndim> *, BinaryTree2Cell<ndim> &);
-  //void ExtrapolateCellProperties(BinaryTree2Cell<ndim> &, FLOAT);
-  void ExtrapolateCellProperties(FLOAT);
-  void LoadParticlesToTree(Sph<ndim> *);
-  FLOAT QuickSelect(int, int, int, int, Sph<ndim> *);
-  void StockTree(BinaryTree2Cell<ndim> &, SphParticle<ndim> *);
-  void StockCellProperties(BinaryTree2Cell<ndim> &, SphParticle<ndim> *);
-  void UpdateHmaxValues(SphParticle<ndim> *);
-  int ComputeActiveCellList(BinaryTree2Cell<ndim> **);
-  int ComputeActiveParticleList(BinaryTree2Cell<ndim> *, Sph<ndim> *, int *);
-  int ComputeGatherNeighbourList(BinaryTree2Cell<ndim> *, int, int *, 
-                                 FLOAT, SphParticle<ndim> *);
-  int ComputeNeighbourList(BinaryTree2Cell<ndim> *, int, int *, 
-                           SphParticle<ndim> *);
-  int ComputeGravityInteractionList(BinaryTree2Cell<ndim> *, int, int, int, 
-                                    int &, int &, int &, int *, int *,
-                                    BinaryTree2Cell<ndim> **, 
-                                    SphParticle<ndim> *);
-  void ComputeCellMonopoleForces(int, int, BinaryTree2Cell<ndim> **, 
-                                 SphParticle<ndim> &);
-  void ComputeCellQuadrupoleForces(int, int, BinaryTree2Cell<ndim> **, 
                                    SphParticle<ndim> &);
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
@@ -512,7 +304,7 @@ class BinaryTree2: public SphNeighbourSearch<ndim>
   FLOAT kernrange;                  ///< Extent of employed kernel
   FLOAT theta;                      ///< ..
   FLOAT thetamaxsqd;                ///< ..
-  BinaryTree2Cell<ndim> *tree;      ///< Main tree array
+  BinaryTreeCell<ndim> *tree;      ///< Main tree array
 
 
     bool allocated_buffer;

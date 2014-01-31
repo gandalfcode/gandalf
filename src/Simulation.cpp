@@ -548,13 +548,6 @@ void Simulation<ndim>::ProcessParameters(void)
 				     floatparams["thetamaxsqd"],
 				     sph->kernp->kernrange,
 				     stringparams["gravity_mac"],
-				     stringparams["multipole"],Nthreads,Nmpi);
-    }
-    else if (stringparams["neib_search"] == "tree2") {
-      sphneib = new BinaryTree2<ndim>(intparams["Nleafmax"],
-				     floatparams["thetamaxsqd"],
-				     sph->kernp->kernrange,
-				     stringparams["gravity_mac"],
 				     stringparams["multipole"]);
     }
     else {
