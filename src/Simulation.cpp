@@ -488,7 +488,6 @@ void Simulation<ndim>::ProcessParameters(void)
   Nmpi = mpicontrol.Nmpi;
 #endif
 
-
   // Sanity check for valid dimensionality
   if (ndim < 1 || ndim > 3) {
     string message = "Invalid dimensionality chosen : ndim = " + ndim;
@@ -591,23 +590,30 @@ void Simulation<ndim>::ProcessParameters(void)
   //---------------------------------------------------------------------------
   simbox.x_boundary_lhs = stringparams["x_boundary_lhs"];
   simbox.x_boundary_rhs = stringparams["x_boundary_rhs"];
-  simbox.y_boundary_lhs = stringparams["y_boundary_lhs"];
-  simbox.y_boundary_rhs = stringparams["y_boundary_rhs"];
-  simbox.z_boundary_lhs = stringparams["z_boundary_lhs"];
-  simbox.z_boundary_rhs = stringparams["z_boundary_rhs"];
   simbox.boxmin[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
-  simbox.boxmin[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
-  simbox.boxmin[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
   simbox.boxmax[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
-  simbox.boxmax[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
-  simbox.boxmax[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
   if (simbox.x_boundary_lhs == "open") simbox.boxmin[0] = -big_number;
   if (simbox.x_boundary_rhs == "open") simbox.boxmax[0] = big_number;
-  if (simbox.y_boundary_lhs == "open") simbox.boxmin[1] = -big_number;
-  if (simbox.y_boundary_rhs == "open") simbox.boxmax[1] = big_number;
-  if (simbox.z_boundary_lhs == "open") simbox.boxmin[2] = -big_number;
-  if (simbox.z_boundary_rhs == "open") simbox.boxmax[2] = big_number;
-  for (int k=0; k<3; k++) {
+
+  if (ndim > 1) {
+    simbox.y_boundary_lhs = stringparams["y_boundary_lhs"];
+    simbox.y_boundary_rhs = stringparams["y_boundary_rhs"];
+    simbox.boxmin[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
+    simbox.boxmax[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
+    if (simbox.y_boundary_lhs == "open") simbox.boxmin[1] = -big_number;
+    if (simbox.y_boundary_rhs == "open") simbox.boxmax[1] = big_number;
+  }
+
+  if (ndim == 3) {
+    simbox.z_boundary_lhs = stringparams["z_boundary_lhs"];
+    simbox.z_boundary_rhs = stringparams["z_boundary_rhs"];
+    simbox.boxmin[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
+    simbox.boxmax[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
+    if (simbox.z_boundary_lhs == "open") simbox.boxmin[2] = -big_number;
+    if (simbox.z_boundary_rhs == "open") simbox.boxmax[2] = big_number;
+  }
+
+  for (int k=0; k<ndim; k++) {
     simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
     simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
   }
@@ -619,7 +625,6 @@ void Simulation<ndim>::ProcessParameters(void)
 #ifdef MPI_PARALLEL
   MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
 #endif
-
 
 
   // Sink particles

@@ -311,10 +311,18 @@ void PeriodicGhosts<ndim>::CopySphDataToGhosts
     //for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = vp[k];
 
     // Modify ghost position based on ghost type
-    if (itype == x_lhs_periodic) sph->sphdata[i].r[0] += simbox.boxsize[0];
-    else if (itype == x_rhs_periodic) sph->sphdata[i].r[0] -= simbox.boxsize[0];
-    else if (itype == y_lhs_periodic) sph->sphdata[i].r[1] += simbox.boxsize[1];
-    else if (itype == y_rhs_periodic) sph->sphdata[i].r[1] -= simbox.boxsize[1];
+    if (itype == x_lhs_periodic)
+      sph->sphdata[i].r[0] += simbox.boxsize[0];
+    else if (itype == x_rhs_periodic)
+      sph->sphdata[i].r[0] -= simbox.boxsize[0];
+    else if (itype == y_lhs_periodic)
+      sph->sphdata[i].r[1] += simbox.boxsize[1];
+    else if (itype == y_rhs_periodic)
+      sph->sphdata[i].r[1] -= simbox.boxsize[1];
+    else if (itype == z_lhs_periodic)
+      sph->sphdata[i].r[2] += simbox.boxsize[1];
+    else if (itype == z_rhs_periodic)
+      sph->sphdata[i].r[2] -= simbox.boxsize[1];
     
   }
   //---------------------------------------------------------------------------

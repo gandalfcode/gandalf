@@ -71,7 +71,6 @@ struct BinaryTreeCell {
   int ilast;                        ///< i.d. of last particle in cell
   int N;                            ///< ..
   int Nactive;                      ///< ..
-  //int Npart;                        ///< No. of particles contained in tree
   FLOAT cdistsqd;                   ///< ..
   FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
   FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
@@ -249,7 +248,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
 
   // Additional functions for binary tree neighbour search
   //---------------------------------------------------------------------------
-  void AllocateTreeMemory(void);
+  void AllocateTreeMemory(Sph<ndim> *);
   void DeallocateTreeMemory(void);
   bool BoxOverlap(FLOAT *, FLOAT *, FLOAT *, FLOAT *);
   void ComputeTreeSize(void);

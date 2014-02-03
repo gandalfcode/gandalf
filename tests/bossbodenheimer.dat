@@ -7,13 +7,13 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = BB1
+Simulation run id string                    : run_id = BB2
 Run SPH simulation                          : sim = sph
 Select shocktube initial conditions         : ic = bb
 Input file format                           : in_file_form = sf
 Output file format                          : out_file_form = sf
 Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Nsph = 1600
+No. of SPH particles                        : Nsph = 3200
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
 Cloud mass                                  : mcloud = 1.0
 Radius of cloud                             : radius = 0.01037
@@ -34,23 +34,6 @@ Density units                               : rhooutunit = g_cm3
 Temperature units                           : tempoutunit = K
 Specific internal energy units              : uoutunit = J_kg
 Angular velocity unit                       : angveloutunit = rad_s
-
-
-#------------------------------
-# Simulation boundary variables
-#------------------------------
-LHS position of boundary in x-dimension     : boxmin[0] = 0.0
-RHS position of boundary in x-dimension     : boxmax[0] = 1.0
-LHS position of boundary in y-dimension     : boxmin[1] = 0.0
-RHS position of boundary in y-dimension     : boxmax[1] = 1.0
-LHS position of boundary in z-dimension     : boxmin[2] = 0.0
-RHS position of boundary in z-dimension     : boxmax[2] = 1.0
-LHS boundary type in x-dimension            : x_boundary_lhs = open
-RHS boundary type in x-dimension            : x_boundary_rhs = open
-LHS boundary type in y-dimension            : y_boundary_lhs = open
-RHS boundary type in y-dimension            : y_boundary_rhs = open
-LHS boundary type in z-dimension            : z_boundary_lhs = open
-RHS boundary type in z-dimension            : z_boundary_rhs = open
 
 
 #--------------------------
@@ -104,6 +87,8 @@ Artificial viscosity beta value             : beta_visc = 2.0
 Use leapfrog N-body integration scheme      : nbody = lfkdk
 Activate sink particles in code             : sink_particles = 1
 Allow creation of new sink particles        : create_sinks = 1
+
+
 Use smooth accretion in sinks               : smooth_accretion = 0
 Mass cut-off for smooth accretion           : smooth_accrete_frac = 0.05
 Timestep cup-off for smooth accretion       : smooth_accrete_dt = 0.05
@@ -120,7 +105,7 @@ SPH Courant timestep condition multiplier   : courant_mult = 0.15
 SPH acceleration condition multiplier       : accel_mult = 0.3
 SPH energy equation timestep multiplier     : energy_mult = 0.5
 N-body timestep multiplier                  : nbody_mult = 0.2
-No. of block timestep levels                : Nlevels = 5
+No. of block timestep levels                : Nlevels = 1
 Max. timestep level difference              : level_diff_max = 2
 
 
@@ -128,7 +113,8 @@ Max. timestep level difference              : level_diff_max = 2
 # Tree options
 #-------------
 SPH neighbour search algorithm              : neib_search = tree
-No. of particles in leaf cell               : Nleafmax = 8
+Tree re-build frequency                     : nbuildstep = 1
+No. of particles in leaf cell               : Nleafmax = 6
 Tree opening angle (squared)                : thetamaxsqd = 0.15
 Multipole option                            : multipole = monopole
 

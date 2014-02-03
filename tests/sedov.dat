@@ -7,7 +7,7 @@ Sedov Blast Wave test
 ----------------------------
 Initial conditions variables
 ----------------------------
-Simulation run id string                    : run_id = SEDOV1
+Simulation run id string                    : run_id = SEDOV4
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = sedov
 Dimensionality of cube                      : ndim = 2
@@ -41,8 +41,8 @@ RHS boundary type in z-dimension            : z_boundary_rhs = periodic
 Simulation time variables
 -------------------------
 Simulation end time                         : tend = 0.6
-Time for first snapshot                     : tsnapfirst = 1.0
-Regular snapshot output frequency           : dt_snap = 1.0
+Time for first snapshot                     : tsnapfirst = 0.0
+Regular snapshot output frequency           : dt_snap = 0.1
 Screen output frequency (in no. of steps)   : noutputstep = 128
 
 
@@ -59,7 +59,7 @@ Smoothed Particle Hydrodynamics options
 ---------------------------------------
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = m4
-SPH smoothing length iteration tolerance    : h_converge = 0.02
+SPH smoothing length iteration tolerance    : h_converge = 0.0001
 
 
 --------------------------------
@@ -79,7 +79,7 @@ Integration of gas thermal energy           : energy_integration = PEC
 SPH Courant timestep condition multiplier   : courant_mult = 0.1
 SPH acceleration condition multiplier       : accel_mult = 0.2
 SPH energy equation timestep multiplier     : energy_mult = 0.3
-No. of block timestep levels                : Nlevels = 10
+No. of block timestep levels                : Nlevels = 5
 Maximum timestep level difference           : level_diff_max = 1
 
 
@@ -87,7 +87,8 @@ Maximum timestep level difference           : level_diff_max = 1
 Optimisation options
 --------------------
 Tabulate SPH kernel                         : tabulated_kernel = 1
-SPH neighbour search algorithm              : neib_search = grid
+SPH neighbour search algorithm              : neib_search = tree
+No. of particles per leaf cell              : Nleafmax = 6
 
 
 -------------

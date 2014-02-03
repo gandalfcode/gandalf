@@ -20,10 +20,10 @@ Density of fluid 1                          : rhofluid1 = 1.0
 Density of fluid 2                          : rhofluid2 = 2.0
 Velocity perturbation amplitude             : amp = 0.1
 Velocity perturbation wavelength            : lambda = 0.5
-No. of x-particles in fluid 1               : Nlattice1[0] = 176
-No. of y-particles in fluid 1               : Nlattice1[1] = 88
-No. of x-particles in fluid 2               : Nlattice2[0] = 256
-No. of y-particles in fluid 2               : Nlattice2[1] = 128
+No. of x-particles in fluid 1               : Nlattice1[0] = 88
+No. of y-particles in fluid 1               : Nlattice1[1] = 44
+No. of x-particles in fluid 2               : Nlattice2[0] = 128
+No. of y-particles in fluid 2               : Nlattice2[1] = 64
 Dimensionless units                         : dimensionless = 1
 
 
@@ -43,7 +43,7 @@ RHS boundary type in y-dimension            : y_boundary_rhs = periodic
 #--------------------------
 # Simulation time variables
 #-------------------------
-Simulation end time                         : tend = 0.1
+Simulation end time                         : tend = 1.59
 Regular snapshot output frequency           : dt_snap = 2.0
 Time of first snapshot                      : tsnapfirst = 2.0
 Screen output frequency (in no. of steps)   : noutputstep = 32
@@ -92,7 +92,7 @@ No. of block timestep levels                : Nlevels = 1
 #-------------
 # Tree options
 #-------------
-SPH neighbour search algorithm              : neib_search = tree2
+SPH neighbour search algorithm              : neib_search = tree
 No. of particles in leaf cell               : Nleafmax = 12
 Tree opening angle (squared)                : thetamaxsqd = 0.2
 
