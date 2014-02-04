@@ -225,8 +225,6 @@ void PeriodicGhosts<ndim>::SearchGhostParticles
 
   sph->NPeriodicGhost = sph->Nghost;
 
-  //cout << "NGHOST : " << sph->Nghost << "     " << sph->Nghostmax << endl;
-
   return;
 }
 

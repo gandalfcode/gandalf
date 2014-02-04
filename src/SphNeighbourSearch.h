@@ -260,7 +260,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   FLOAT QuickSelect(int, int, int, int, Sph<ndim> *);
   void StockTree(BinaryTreeCell<ndim> &, SphParticle<ndim> *);
   void StockCellProperties(BinaryTreeCell<ndim> &, SphParticle<ndim> *);
-  void UpdateHmaxValues(SphParticle<ndim> *);
+  void UpdateHmaxValues(BinaryTreeCell<ndim> &, SphParticle<ndim> *);
   int ComputeActiveCellList(BinaryTreeCell<ndim> **);
   int ComputeActiveParticleList(BinaryTreeCell<ndim> *, Sph<ndim> *, int *);
   int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int *, 

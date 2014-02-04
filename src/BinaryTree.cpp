@@ -686,9 +686,10 @@ void BinaryTree<ndim>::StockCellProperties
     if (cell.N > 0) {
       for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
       for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
+      for (k=0; k<ndim; k++) 
+	cell.rcell[k] = 0.5*(cell.bbmin[k] + cell.bbmax[k]);
       for (k=0; k<ndim; k++) dr[k] = 0.5*(cell.bbmax[k] - cell.bbmin[k]);
       cell.cdistsqd = max(factor*DotProduct(dr,dr,ndim),cell.hmax*cell.hmax);
-      for (k=0; k<ndim; k++) cell.rcell[k] = cell.bbmin[k] + dr[k];
       //for (k=0; k<ndim; k++) 
       //dr[k] = max(cell.bbmax[k] - cell.r[k],cell.r[k] - cell.bbmin[k]);
       cell.rmax = sqrt(DotProduct(dr,dr,ndim));
@@ -756,8 +757,9 @@ void BinaryTree<ndim>::StockCellProperties
       for (k=0; k<ndim; k++) cell.v[k] =
 	(child1.m*child1.v[k] + child2.m*child2.v[k])/cell.m;
       for (k=0; k<ndim; k++) 
+	cell.rcell[k] = 0.5*(cell.bbmin[k] + cell.bbmax[k]);
+      for (k=0; k<ndim; k++) 
 	dr[k] = 0.5*(cell.bbmax[k] - cell.bbmin[k]);
-      for (k=0; k<ndim; k++) cell.rcell[k] = cell.bbmin[k] + dr[k];
       cell.cdistsqd = max(factor*DotProduct(dr,dr,ndim),cell.hmax*cell.hmax);
       //for (k=0; k<ndim; k++) dr[k] = max(cell.bbmax[k] - cell.r[k],
       //				 cell.r[k] - cell.bbmin[k]);
@@ -861,71 +863,69 @@ void BinaryTree<ndim>::ExtrapolateCellProperties
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::UpdateHmaxValues
-(SphParticle<ndim> *sphdata)        ///< SPH particle data array
+(BinaryTreeCell<ndim> &cell,        ///< Binary tree cell
+ SphParticle<ndim> *sphdata)        ///< SPH particle data array
 {
   int c,cc,ccc;                     // Cell counters
   int i;                            // Particle counter
-  int j;
-  int k;
+  int j;                            // ..
+  int k;                            // ..
 
-  debug2("[BinaryTree::UpdateHmaxValues]");
+  // If cell is not leaf, stock child cells
+  if (cell.level != ltot) {
+#if defined _OPENMP
+    if (pow(2,cell.level) <= Nthreads) {
+#pragma omp parallel for default(none) private(i) shared(cell,sphdata) num_threads(2)
+      for (i=0; i<2; i++) {
+	if (i == 0) UpdateHmaxValues(tree[cell.c1],sphdata);
+	else if (i == 1) UpdateHmaxValues(tree[cell.c2],sphdata);
+      }
+    }
+    else {
+      for (i=0; i<2; i++) {
+	if (i == 0) UpdateHmaxValues(tree[cell.c1],sphdata);
+	else if (i == 1) UpdateHmaxValues(tree[cell.c2],sphdata);
+      }
+    }
+#else
+    for (i=0; i<2; i++) {
+      if (i == 0) UpdateHmaxValues(tree[cell.c1],sphdata);
+      else if (i == 1) UpdateHmaxValues(tree[cell.c2],sphdata);
+    }  
+#endif
+  }
+
 
   // Zero all summation variables for all cells
-  for (c=0; c<Ncellmax; c++) tree[c].hmax = 0.0;
-  //for (c=0; c<Ncellmax; c++) {
-  //  for (k=0; k<ndim; k++) tree[c].hboxmin[k] = big_number;
-  // for (k=0; k<ndim; k++) tree[c].hboxmax[k] = -big_number;
-  //}
+  cell.hmax = 0.0;
 
-  // Loop backwards over all tree cells to ensure child cells are always 
-  // computed first before being summed in parent cells.
-  //===========================================================================
-  for (c=Ncell-1; c>=0; c--) {
-
-    // If this is a leaf cell, sum over all particles
-    // ------------------------------------------------------------------------
-    if (tree[c].level == ltot) {
-      i = tree[c].ifirst;
-
-      // Loop over all particles in cell summing their contributions
-      while (i != -1) {
-        tree[c].hmax = max(tree[c].hmax,sphdata[i].h);
-	//for (k=0; k<ndim; k++) {
-	//  if (sphdata[i].r[k] - kernrange*sphdata[i].h < tree[c].hboxmin[k]) 
-	//    tree[c].hboxmin[k] = sphdata[i].r[k] - kernrange*sphdata[i].h;
-	//  if (sphdata[i].r[k] + kernrange*sphdata[i].h > tree[c].hboxmax[k])
-	//    tree[c].hboxmax[k] = sphdata[i].r[k] + kernrange*sphdata[i].h;
-	//}
-	if (i == tree[c].ilast) break;
-        i = inext[i];
-      };
-
-    }
-    // For non-leaf cells, sum together two children cells
-    //-------------------------------------------------------------------------
-    else {
-      cc = tree[c].c1;
-      ccc = tree[c].c2;
-      if (tree[cc].N > 0) {
-	tree[c].hmax = max(tree[c].hmax,tree[cc].hmax);
-	//for (k=0; k<ndim; k++)
-	//  tree[c].hboxmin[k] = min(tree[c].hboxmin[k],tree[cc].hboxmin[k]);
-	//for (k=0; k<ndim; k++)
-	//  tree[c].hboxmax[k] = max(tree[c].hboxmax[k],tree[cc].hboxmax[k]);
-      }
-      if (tree[ccc].N > 0) {
-	tree[c].hmax = max(tree[c].hmax,tree[ccc].hmax);
-	//for (k=0; k<ndim; k++)
-	//  tree[c].hboxmin[k] = min(tree[c].hboxmin[k],tree[ccc].hboxmin[k]);
-	//for (k=0; k<ndim; k++)
-	//  tree[c].hboxmax[k] = max(tree[c].hboxmax[k],tree[ccc].hboxmax[k]);
-      }
-
-    }
-    //-------------------------------------------------------------------------
+  // If this is a leaf cell, sum over all particles
+  //---------------------------------------------------------------------------
+  if (cell.level == ltot) {
+    i = cell.ifirst;
+    
+    // Loop over all particles in cell summing their contributions
+    while (i != -1) {
+      cell.hmax = max(cell.hmax,sphdata[i].h);
+      if (i == cell.ilast) break;
+      i = inext[i];
+    };
 
   }
-  //===========================================================================
+  // For non-leaf cells, sum together two children cells
+  //---------------------------------------------------------------------------
+  else {
+    cc = cell.c1;
+    ccc = cell.c2;
+    if (tree[cc].N > 0) {
+      cell.hmax = max(cell.hmax,tree[cc].hmax);
+    }
+    if (tree[ccc].N > 0) {
+      cell.hmax = max(cell.hmax,tree[ccc].hmax);
+    }
+    
+  }
+  //---------------------------------------------------------------------------
 
   return;
 }
@@ -1209,7 +1209,7 @@ int BinaryTree<ndim>::ComputeNeighbourList
   //===========================================================================
   while (cc < Ncell) {
 
-    for (k=0; k<ndim; k++) dr[k] = tree[cc].r[k] - rc[k];
+    for (k=0; k<ndim; k++) dr[k] = tree[cc].rcell[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
 
     // Check if circular range overlaps cell bounding sphere
@@ -1279,7 +1279,7 @@ int BinaryTree<ndim>::ComputeNeighbourList
 //=============================================================================
 template <int ndim>
 int BinaryTree<ndim>::ComputeGravityInteractionList
-(BinaryTreeCell<ndim> *cell,       ///< [in] Pointer to cell
+(BinaryTreeCell<ndim> *cell,        ///< [in] Pointer to cell
  int Nneibmax,                      ///< [in] Max. no. of SPH neighbours
  int Ndirectmax,                    ///< [in] Max. no. of direct-sum neighbours
  int Ngravcellmax,                  ///< [in] Max. no. of cell interactions
@@ -1804,7 +1804,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 
 
   // Update all tree smoothing length values
-  UpdateHmaxValues(sph->sphdata);
+  UpdateHmaxValues(tree[0],sph->sphdata);
 
 
 #if defined(VERIFY_ALL)
@@ -1859,7 +1859,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
   debug2("[BinaryTree::UpdateAllSphHydroForces]");
 
   // Update tree smoothing length values here
-  UpdateHmaxValues(sph->sphdata);
+  UpdateHmaxValues(tree[0],sph->sphdata);
 
 
   // Find list of all cells that contain active particles
@@ -2085,7 +2085,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
   }
 
   // Update tree smoothing length values here
-  //UpdateHmaxValues(sph->sphdata);
+  //UpdateHmaxValues(tree[0],sph->sphdata);
 
 
 #if defined(VERIFY_ALL)
@@ -2155,7 +2155,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
 
   // Update tree smoothing length values here
-  UpdateHmaxValues(sph->sphdata);
+  UpdateHmaxValues(tree[0],sph->sphdata);
 
 
   // Find list of all cells that contain active particles
@@ -2512,13 +2512,13 @@ void BinaryTree<ndim>::ValidateTree
 	Ncount++;
 	if (sph->sphdata[i].active) activecount++;
 	if (sph->sphdata[i].active) Nactivecount++;
-        if (sph->sphdata[i].h > cell.hmax) hmax_flag = true;
+        if (sph->sphdata[i].h > cell.hmax) {
+	  cout << "hmax flag error : " << c << "    " 
+	       << sph->sphdata[i].h << "   " << cell.hmax << endl;
+	  exit(0);
+	}
         if (i == cell.ilast) break;
 	i = inext[i];
-      }
-      if (hmax_flag) {
-	cout << "hmax flag error : " << c << endl;
-	exit(0);
       }
       if (leafcount > Nleafmax) {
 	cout << "Leaf particle count error : " 
@@ -2611,7 +2611,7 @@ void BinaryTree<ndim>::CheckValidNeighbourList
   int *leaflist;                    // ..
   FLOAT drsqd;                      // Distance squared
   FLOAT dr[ndim];                   // Relative position vector
-  return;
+
   // Allocate array to store local copy of potential neighbour ids
   trueneiblist = new int[sph->Ntot];
   leaflist = new int[sph->Ntot];
