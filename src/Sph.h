@@ -92,8 +92,7 @@ private:
 					 SphParticle<ndim> *) = 0;
   virtual void ComputeSphGravForces(int, int, int *, SphParticle<ndim> &,
 				    SphParticle<ndim> *) = 0;
-  virtual void ComputeDirectGravForces(int, int, int *, FLOAT *, FLOAT *, 
-				       SphParticle<ndim> &, 
+  virtual void ComputeDirectGravForces(int, int, int *, SphParticle<ndim> &, 
                                        SphParticle<ndim> *) = 0;
   virtual void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
 				  FLOAT *, SphParticle<ndim> &, 
@@ -221,7 +220,7 @@ class GradhSph: public Sph<ndim>
 			  FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
 			     SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeDirectGravForces(int, int, int *, FLOAT *, FLOAT *,
+  void ComputeDirectGravForces(int, int, int *, 
 			       SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputePostHydroQuantities(SphParticle<ndim> &);
   void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &);
@@ -280,7 +279,7 @@ class SM2012Sph: public Sph<ndim>
 			  FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
 			     SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeDirectGravForces(int, int, int *, FLOAT *, FLOAT *, 
+  void ComputeDirectGravForces(int, int, int *,
                                SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputePostHydroQuantities(SphParticle<ndim> &);
   void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &);
@@ -339,7 +338,7 @@ class GodunovSph: public Sph<ndim>
   			  FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
 			     SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeDirectGravForces(int, int, int *, FLOAT *, FLOAT *, 
+  void ComputeDirectGravForces(int, int, int *, 
                                SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputePostHydroQuantities(SphParticle<ndim> &);
   void InitialiseRiemannProblem(SphParticle<ndim>, SphParticle<ndim>, FLOAT *,

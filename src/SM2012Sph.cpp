@@ -449,8 +449,6 @@ void SM2012Sph<ndim, kernelclass >::ComputeDirectGravForces
 (int i,                                 // id of particle
  int Ndirect,                           // No. of nearby 'gather' neighbours
  int *directlist,                       // id of gather neighbour in neibpart
- FLOAT *agrav,
- FLOAT *gpot,
  SphParticle<ndim> &parti,                    // Particle i data
  SphParticle<ndim> *sph)                      // Neighbour particle data
 {

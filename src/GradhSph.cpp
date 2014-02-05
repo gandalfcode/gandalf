@@ -287,7 +287,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
 
     // Add contribution to velocity divergence
     parti.div_v -= neibpart[j].m*dvdr*wkerni;
-    neibpart[j].div_v -= parti.m*dvdr*wkernj;
 
     // Main SPH pressure force term
     paux = parti.pfactor*wkerni + neibpart[j].pfactor*wkernj;
@@ -307,7 +306,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
         paux -= (FLOAT) alpha_visc*vsignal*dvdr*winvrho;
         uaux = (FLOAT) 0.5*alpha_visc*vsignal*dvdr*dvdr*winvrho;
         parti.dudt -= neibpart[j].m*uaux;
-        neibpart[j].dudt -= parti.m*uaux;
       }
       else if (avisc == mon97td) {
         alpha_mean = 0.5*(parti.alpha + neibpart[j].alpha);
@@ -315,7 +313,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
         paux -= (FLOAT) alpha_mean*vsignal*dvdr*winvrho;
         uaux = (FLOAT) 0.5*alpha_mean*vsignal*dvdr*dvdr*winvrho;
         parti.dudt -= neibpart[j].m*uaux;
-        neibpart[j].dudt -= parti.m*uaux;
       }
 
       // Artificial conductivity term
@@ -323,16 +320,12 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
         uaux = (FLOAT) 0.5*dvdr*(neibpart[j].u - parti.u)*
 	      (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
         parti.dudt += neibpart[j].m*uaux;
-        neibpart[j].dudt -= parti.m*uaux;
       }
       else if (acond == price2008) {
-    	vsignal = sqrt(fabs(eos->Pressure(parti) -
-      		      eos->Pressure(neibpart[j]))*0.5*
-      		 (parti.invrho + neibpart[j].invrho));
+    	vsignal = sqrt(fabs(eos->Pressure(parti) - eos->Pressure(neibpart[j]))
+		       *0.5*(parti.invrho + neibpart[j].invrho));
         parti.dudt += 0.5*neibpart[j].m*vsignal*
-          (parti.u - neibpart[j].u)*winvrho;
-        neibpart[j].dudt -= 0.5*parti.m*vsignal*
-          (parti.u - neibpart[j].u)*winvrho;
+	  (parti.u - neibpart[j].u)*winvrho;
       }
 	
     }
@@ -341,14 +334,13 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
     // Add total hydro contribution to acceleration for particle i
     for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
     parti.levelneib = max(parti.levelneib,neibpart[j].level);
-      
-    // If neighbour is also active, add contribution to force here
-    for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
-    neibpart[j].levelneib = max(neibpart[j].levelneib,parti.level);
-
+  
   }
   //---------------------------------------------------------------------------
 
+  // Set velocity divergence and compressional heating rate terms
+  parti.div_v *= parti.invrho;
+  parti.dudt -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
 
   return;
 }
@@ -406,7 +398,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     wkerni = parti.hfactor*kern.w1(drmag*parti.invh);
     wkernj = neibpart[j].hfactor*kern.w1(drmag*neibpart[j].invh);
 
-    
     // Main SPH pressure force term
     paux = parti.pfactor*wkerni + neibpart[j].pfactor*wkernj;
 
@@ -423,7 +414,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
         paux -= (FLOAT) alpha_visc*vsignal*dvdr*winvrho;
         uaux = (FLOAT) 0.5*alpha_visc*vsignal*dvdr*dvdr*winvrho;
         parti.dudt -= neibpart[j].m*uaux;
-        neibpart[j].dudt -= parti.m*uaux;
       }
       
       // Artificial conductivity term
@@ -431,14 +421,11 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
         uaux = (FLOAT) 0.5*dvdr*(neibpart[j].u - parti.u)*
           (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
         parti.dudt += neibpart[j].m*uaux;
-        neibpart[j].dudt -= parti.m*uaux;
       }
       else if (acond == price2008) {
         vsignal = sqrt(fabs(eos->Pressure(parti) -eos->Pressure(neibpart[j]))*
 		       0.5*(parti.invrho + neibpart[j].invrho));
         parti.dudt += 0.5*neibpart[j].m*vsignal*
-          (parti.u - neibpart[j].u)*winvrho;
-        neibpart[j].dudt -= 0.5*parti.m*vsignal*
           (parti.u - neibpart[j].u)*winvrho;
       }
       
@@ -448,9 +435,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     // Add total hydro contribution to acceleration for particle i
     for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*dr[k]*paux;
     
-    // If neighbour is also active, add contribution to force here
-    for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*dr[k]*paux;
-
 
     // Main SPH gravity terms
     //-------------------------------------------------------------------------
@@ -469,15 +453,14 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     parti.div_v -= neibpart[j].m*dvdr*wkerni;
     parti.levelneib = max(parti.levelneib,neibpart[j].level);
 
-    // If neighbour is also active, add contribution to force here
-    for (k=0; k<ndim; k++) neibpart[j].agrav[k] -= parti.m*dr[k]*paux;
-    neibpart[j].gpot += parti.m*gaux;
-    neibpart[j].div_v -= parti.m*dvdr*wkernj;
-    neibpart[j].levelneib = max(neibpart[j].levelneib,parti.level);
-
-
   }
-  //===========================================================================
+  //---------------------------------------------------------------------------
+
+
+  // Set velocity divergence and compressional heating rate terms
+  parti.div_v *= parti.invrho;
+  parti.dudt -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
+
 
   return;
 }
@@ -540,10 +523,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
     for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;
     parti.gpot += neibpart[j].m*gaux;
 
-    // If neighbour is also active, add contribution to force here
-    for (k=0; k<ndim; k++) neibpart[j].agrav[k] -= parti.m*dr[k]*paux;
-    neibpart[j].gpot += parti.m*gaux;
-
   }
   //===========================================================================
 
@@ -589,9 +568,6 @@ template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::ComputePostHydroQuantities
 (SphParticle<ndim> &parti)
 {
-  parti.div_v *= parti.invrho;
-  parti.dudt -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
-
   return;
 }
 
@@ -607,8 +583,6 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
 (int i,                             ///< id of particle
  int Ndirect,                       ///< No. of nearby 'gather' neighbours
  int *directlist,                   ///< id of gather neighbour in neibpart
- FLOAT *agrav,                      ///< Gravitational acceleration
- FLOAT *gpot,                       ///< Gravitational potential
  SphParticle<ndim> &parti,          ///< Particle i data
  SphParticle<ndim> *sph)            ///< Neighbour particle data
 {
@@ -626,11 +600,8 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
   // Loop over all neighbouring particles in list
   //---------------------------------------------------------------------------
   for (jj=0; jj<Ndirect; jj++) {
-    j = directlist[jj];
 
-    // Skip active particles with smaller neighbour ids to prevent counting 
-    // pairwise forces twice
-    if (j <= i && sph[j].active) continue;
+    j = directlist[jj];
 
     for (k=0; k<ndim; k++) dr[k] = sph[j].r[k] - parti.r[k];
     drsqd = DotProduct(dr,dr,ndim) + small_number;
@@ -640,10 +611,6 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
     // Add contribution to current particle
     for (k=0; k<ndim; k++) parti.agrav[k] += sph[j].m*dr[k]*invdr3;
     parti.gpot += sph[j].m*invdrmag;
-
-    // Add contribution to neighbouring particle
-    for (k=0; k<ndim; k++) agrav[ndim*j + k] -= parti.m*dr[k]*invdr3;
-    gpot[j] += parti.m*invdrmag;
 
   }
   //---------------------------------------------------------------------------

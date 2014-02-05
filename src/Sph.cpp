@@ -88,6 +88,7 @@ void Sph<ndim>::AllocateMemory(int N)
     // Set conservative estimate for maximum number of particles, assuming 
     // extra space required for periodic ghost particles
     if (Nsphmax < N) 
+      //Nsphmax = N;
       Nsphmax = pow(pow(N,invndim) + 8.0*kernp->kernrange,ndim);
 
     iorder = new int[Nsphmax];

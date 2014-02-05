@@ -74,6 +74,8 @@ struct BinaryTreeCell {
   FLOAT cdistsqd;                   ///< ..
   FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
   FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
+  FLOAT hboxmin[ndim];              ///< Minimum extent of bounding box
+  FLOAT hboxmax[ndim];              ///< Maximum extent of bounding box
   FLOAT rcell[ndim];                ///< ..
   FLOAT r[ndim];                    ///< Position of cell
   FLOAT v[ndim];                    ///< Position of cell
@@ -285,7 +287,9 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   string gravity_mac;               ///< Multipole-acceptance criteria for tree
   string multipole;                 ///< Multipole-order for cell gravity
   bool allocated_tree;              ///< Are grid arrays allocated?
+  int gmax;                         ///< Max. no. of grid/leaf cells
   int gtot;                         ///< Total number of grid/leaf cells
+  int lmax;                         ///< Max. no. of levels
   int ltot;                         ///< Total number of levels in tree
   int Ncell;                        ///< Current no. of grid cells
   int Ncellmax;                     ///< Max. allowed no. of grid cells
@@ -303,24 +307,17 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   FLOAT kernrange;                  ///< Extent of employed kernel
   FLOAT theta;                      ///< ..
   FLOAT thetamaxsqd;                ///< ..
-  BinaryTreeCell<ndim> *tree;      ///< Main tree array
+  BinaryTreeCell<ndim> *tree;       ///< Main tree array
 
 
-    bool allocated_buffer;
-    int Nthreads;
-    int *Nneibmaxbuf;
-    int *Ndirectmaxbuf;
-    int *Ngravcellmaxbuf;
-
-    int **levelneibbuf;
-    FLOAT **gpotbuf;
-    FLOAT **divvbuf;
-    FLOAT **dudtbuf;
-    FLOAT **abuf;
-    FLOAT **agravbuf;
-    SphParticle<ndim> **neibpartbuf;   // Local copy of neighbouring ptcls
-    SphParticle<ndim> **activepartbuf; // Local copy of SPH particle
-    
+  bool allocated_buffer;
+  int Nthreads;
+  int *Nneibmaxbuf;
+  int *Ndirectmaxbuf;
+  int *Ngravcellmaxbuf;
+  int **levelneibbuf;
+  SphParticle<ndim> **neibpartbuf;   // Local copy of neighbouring ptcls
+  SphParticle<ndim> **activepartbuf; // Local copy of SPH particle  
 
 
 };
