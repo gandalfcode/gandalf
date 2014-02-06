@@ -277,6 +277,8 @@ class BinaryTree: public SphNeighbourSearch<ndim>
                                  SphParticle<ndim> &);
   void ComputeCellQuadrupoleForces(int, int, BinaryTreeCell<ndim> **, 
                                    SphParticle<ndim> &);
+  void ComputeFastMonopoleForces(int, int, BinaryTreeCell<ndim> **, 
+				 BinaryTreeCell<ndim> *, SphParticle<ndim> *);
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
   void ValidateTree(Sph<ndim> *);

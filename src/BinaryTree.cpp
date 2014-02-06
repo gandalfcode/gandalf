@@ -1464,25 +1464,23 @@ void BinaryTree<ndim>::ComputeCellQuadrupoleForces
   FLOAT invdrsqd;                   // 1 / drsqd
   FLOAT invdrmag;                   // 1 / distance
   FLOAT invdr5;                     // 1 / distance^5
+  FLOAT qfactor;                    // Constant factor for optimisation
   FLOAT qscalar;                    // Quadrupole moment scalar quantity
   BinaryTreeCell<ndim> *cell;       // Pointer to gravity tree cell
+
 
   // Loop over all neighbouring particles in list
   //---------------------------------------------------------------------------
   for (cc=0; cc<Ngravcell; cc++) {
     cell = gravcelllist[cc];
 
-    //cout << "Cell : " << cc << endl;
-    //cout << "id : " << cell->id << endl;
-
     for (k=0; k<ndim; k++) dr[k] = cell->r[k] - parti.r[k];
-    drsqd = DotProduct(dr,dr,ndim);
-    invdrsqd = 1.0/(drsqd + small_number);
+    drsqd = DotProduct(dr,dr,ndim) + small_number;
+    invdrsqd = 1.0/drsqd;
     invdrmag = sqrt(invdrsqd);
     invdr5 = invdrsqd*invdrsqd*invdrmag;
 
-    // First add monopole terms
-    parti.gpot += cell->m*invdrmag;
+    // First add monopole term for acceleration
     for (k=0; k<ndim; k++) 
       parti.agrav[k] += cell->m*dr[k]*invdrsqd*invdrmag;
 
@@ -1492,29 +1490,99 @@ void BinaryTree<ndim>::ComputeCellQuadrupoleForces
         (cell->q[0] + cell->q[2])*dr[2]*dr[2] +
          2.0*(cell->q[1]*dr[0]*dr[1] + cell->q[3]*dr[0]*dr[2] +
          cell->q[4]*dr[1]*dr[2]);
+      qfactor = 2.5*qscalar*invdr5*invdrsqd;
       parti.agrav[0] += 
         (cell->q[0]*dr[0] + cell->q[1]*dr[1] + cell->q[3]*dr[2])*invdr5
-         - 2.5*qscalar*dr[0]*invdr5*invdrsqd;
+	- qfactor*dr[0];
+	//- 2.5*qscalar*dr[0]*invdr7;
       parti.agrav[1] += 
         (cell->q[1]*dr[0] + cell->q[2]*dr[1] + cell->q[4]*dr[2])*invdr5
-         - 2.5*qscalar*dr[1]*invdr5*invdrsqd;
+	- qfactor*dr[1];
+	//- 2.5*qscalar*dr[1]*invdr7;
       parti.agrav[2] += 
         (cell->q[3]*dr[0] + cell->q[4]*dr[1] -
-         (cell->q[0] + cell->q[2])*dr[2])*invdr5
-          - 2.5*qscalar*dr[1]*invdr5*invdrsqd;
+         (cell->q[0] + cell->q[2])*dr[2])*invdr5 - qfactor*dr[2];
+	//- 2.5*qscalar*dr[1]*invdr7;
     }
     else if (ndim == 2) {
       qscalar = cell->q[0]*dr[0]*dr[0] + cell->q[2]*dr[1]*dr[1] +
         2.0*cell->q[1]*dr[0]*dr[1];
-      parti.agrav[0] += (cell->q[0]*dr[0] + cell->q[1]*dr[1])*invdr5 -
-        2.5*qscalar*dr[0]*invdr5*invdrsqd;
+      qfactor = 2.5*qscalar*invdr5*invdrsqd;
+      parti.agrav[0] += (cell->q[0]*dr[0] + cell->q[1]*dr[1])*invdr5 - 
+	qfactor*dr[0];
+      //2.5*qscalar*dr[0]*invdr5*invdrsqd;
       parti.agrav[1] += (cell->q[1]*dr[0] + cell->q[2]*dr[1])*invdr5 -
-        2.5*qscalar*dr[1]*invdr5*invdrsqd;
+	qfactor*dr[1];
+      //2.5*qscalar*dr[1]*invdr5*invdrsqd;
     }
-    parti.gpot += 0.5*qscalar*invdr5;
+
+    // Compute potential contribution
+    parti.gpot += cell->m*invdrmag + 0.5*qscalar*invdr5;
 
   }
   //---------------------------------------------------------------------------
+
+
+  return;
+}
+
+
+
+//=============================================================================
+//  BinaryTree::ComputeCellMonopoleForces
+/// Compute the force on particle 'parti' due to all cells obtained in the 
+/// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
+//=============================================================================
+template <int ndim>
+void BinaryTree<ndim>::ComputeFastMonopoleForces
+(int Nactive,                         ///< [in] No. of active particles
+ int Ngravcell,                       ///< [in] No. of tree cells in list
+ BinaryTreeCell<ndim> **gravcelllist, ///< [in] List of tree cell ids
+ BinaryTreeCell<ndim> *cell,          ///< [in] Current cell pointer
+ SphParticle<ndim> *activepart)       ///< [inout] Active SPH particle array
+{
+  int cc;                           // Aux. cell counter
+  int j;                            // ..
+  int k;                            // Dimension counter
+  FLOAT dr[ndim];                   // Relative position vector
+  FLOAT drsqd;                      // Distance squared
+  FLOAT invdrmag;                   // 1 / distance
+  FLOAT invdrsqd;                   // 1 / drsqd
+  FLOAT invdr3;                     // 1 / dist^3
+  FLOAT mc;                         // Mass of cell
+  FLOAT q[6];                       // ..
+  FLOAT rc[ndim];                   // ..
+  FLOAT rp[ndim];                   // Position of particle
+
+  for (k=0; k<ndim; k++) rc[k] = cell->r[k];
+  for (k=0; k<6; k++) q[k] = 0;
+
+  if (ndim == 3) {
+
+    for (cc=0; cc<Ngravcell; cc++) {
+      mc = gravcelllist[cc]->m;
+      for (k=0; k<ndim; k++) dr[k] = gravcelllist[cc]->r[k] - rc[k];
+      drsqd = DotProduct(dr,dr,ndim);
+      invdrsqd = 1.0/drsqd;
+      invdrmag = sqrt(invdrsqd);
+      invdr3 = invdrsqd*invdrmag;
+      q[0] += mc*(3.0*dr[0]*dr[0]*invdr3*invdrmag - invdrsqd*invdrmag);
+      q[1] += mc*(3.0*dr[0]*dr[1]*invdr3*invdrmag);
+      q[2] += mc*(3.0*dr[1]*dr[1]*invdr3*invdrmag - invdrsqd*invdrmag);
+      q[3] += mc*(3.0*dr[2]*dr[0]*invdr3*invdrmag);
+      q[4] += mc*(3.0*dr[2]*dr[1]*invdr3*invdrmag);
+      q[5] += mc*(3.0*dr[2]*dr[2]*invdr3*invdrmag - invdrsqd*invdrmag);
+    }
+
+
+    for (j=0; j<Nactive; j++) {
+      for (k=0; k<ndim; k++) dr[k] = activepart[j].r[k] - rc[k];
+      activepart[j].agrav[0] += q[0]*dr[0] + q[1]*dr[1] + q[3]*dr[2];
+      activepart[j].agrav[1] += q[1]*dr[0] + q[2]*dr[1] + q[4]*dr[2];
+      activepart[j].agrav[2] += q[3]*dr[0] + q[4]*dr[1] + q[5]*dr[2];
+    }
+
+  }
 
   return;
 }
@@ -2193,6 +2261,10 @@ void BinaryTree<ndim>::UpdateAllSphForces
       }
       //-----------------------------------------------------------------------
 
+      if (multipole == "fast_monopole")
+	ComputeFastMonopoleForces(Nactive,Ngravcell,gravcelllist,
+				  cell,activepart);
+
 
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
@@ -2231,9 +2303,15 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
   delete[] celllist;
 
-  cout << "Average Nneib     : " << Nneibcount/Nactivecount << endl;
-  cout << "Average Ndirect   : " << Ndirectcount/Nactivecount << endl;
-  cout << "Average Ngravcell : " << Ncellcount/Nactivecount << endl;
+  //cout << "No. of active ptcls : " << Nactivecount << endl;
+  //if (Nactivecount == 0) {
+  //  for (i=0; i<sph->Nsph; i++)
+  //  cout << "i : " << i << "    " 
+  //   << sph->sphintdata[i].nlast << "    " << sph->sphintdata[i].nstep << "    " << sph->sphdata[i].level << "     " << sph->sphdata[i].active << endl;
+  //}
+  //cout << "Average Nneib       : " << Nneibcount/Nactivecount << endl;
+  //cout << "Average Ndirect     : " << Ndirectcount/Nactivecount << endl;
+  //cout << "Average Ngravcell   : " << Ncellcount/Nactivecount << endl;
 
   return;
 }

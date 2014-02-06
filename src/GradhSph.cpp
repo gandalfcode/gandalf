@@ -372,16 +372,22 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
   FLOAT dv[ndim];                   // Relative velocity vector
   FLOAT dvdr;                       // Dot product of dv and dr
   FLOAT invdrmag;                   // ..
+  FLOAT invhsqdi;                   // 1/h^2 for particle i
   FLOAT wkerni;                     // Value of w1 kernel function
   FLOAT wkernj;                     // Value of w1 kernel function
   FLOAT vsignal;                    // Signal velocity
   FLOAT gaux;                       // ..
   FLOAT paux;                       // Aux. pressure force variable
   //FLOAT rp[ndim];
+  //FLOAT si;
+  //FLOAT sj;
   FLOAT uaux;                       // Aux. internal energy variable
   //FLOAT vp[ndim];
   FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
 
+
+  invhsqdi = parti.invh*parti.invh;
+  
 
   // Loop over all potential neighbours in the list
   //---------------------------------------------------------------------------
@@ -395,6 +401,10 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     for (k=0; k<ndim; k++) dr[k] *= invdrmag;
     dvdr = DotProduct(dv,dr,ndim);
 
+    //si = drmag*parti.invh;
+    //sj = drmag*neibpart[j].invh;
+    //wkerni = parti.hfactor*kern.w1(si);
+    //wkernj = neibpart[j].hfactor*kern.w1(sj);
     wkerni = parti.hfactor*kern.w1(drmag*parti.invh);
     wkernj = neibpart[j].hfactor*kern.w1(drmag*neibpart[j].invh);
 
@@ -438,12 +448,19 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 
     // Main SPH gravity terms
     //-------------------------------------------------------------------------
-    paux = 0.5*(parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) +
+    /*paux = 0.5*(parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) +
                 (parti.zeta + parti.chi)*parti.hfactor*
                 kern.w1(drmag*parti.invh) + neibpart[j].invh*neibpart[j].invh*
                 kern.wgrav(drmag*neibpart[j].invh) +
                 (neibpart[j].zeta + neibpart[j].chi)*neibpart[j].hfactor*
                 kern.w1(drmag*neibpart[j].invh));
+    gaux = 0.5*(parti.invh*kern.wpot(drmag*parti.invh) + 
+    neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));*/
+    paux = 0.5*(invhsqdi*kern.wgrav(drmag*parti.invh) +
+                (parti.zeta + parti.chi)*wkerni + 
+		neibpart[j].invh*neibpart[j].invh*
+                kern.wgrav(drmag*neibpart[j].invh) +
+                (neibpart[j].zeta + neibpart[j].chi)*wkernj);
     gaux = 0.5*(parti.invh*kern.wpot(drmag*parti.invh) + 
 		neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));
 

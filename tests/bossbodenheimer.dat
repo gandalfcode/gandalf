@@ -7,13 +7,13 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = BB2
+Simulation run id string                    : run_id = BB4
 Run SPH simulation                          : sim = sph
 Select shocktube initial conditions         : ic = bb
 Input file format                           : in_file_form = sf
 Output file format                          : out_file_form = sf
 Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Nsph = 3200
+No. of SPH particles                        : Nsph = 12800
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
 Cloud mass                                  : mcloud = 1.0
 Radius of cloud                             : radius = 0.01037
@@ -25,7 +25,7 @@ Move to COM frame                           : com_frame = 1
 #---------------------------
 # Simulation units variables
 #---------------------------
-Use physical units                          : dimensionless = false
+Use physical units                          : dimensionless = 0
 Length units                                : routunit = pc
 Mass units                                  : moutunit = m_sun
 Time units                                  : toutunit = myr
@@ -105,7 +105,7 @@ SPH Courant timestep condition multiplier   : courant_mult = 0.15
 SPH acceleration condition multiplier       : accel_mult = 0.3
 SPH energy equation timestep multiplier     : energy_mult = 0.5
 N-body timestep multiplier                  : nbody_mult = 0.2
-No. of block timestep levels                : Nlevels = 1
+No. of block timestep levels                : Nlevels = 5
 Max. timestep level difference              : level_diff_max = 2
 
 
@@ -115,11 +115,11 @@ Max. timestep level difference              : level_diff_max = 2
 SPH neighbour search algorithm              : neib_search = tree
 Tree re-build frequency                     : nbuildstep = 1
 No. of particles in leaf cell               : Nleafmax = 6
-Tree opening angle (squared)                : thetamaxsqd = 0.15
-Multipole option                            : multipole = monopole
+Tree opening angle (squared)                : thetamaxsqd = 0.2
+Multipole option                            : multipole = quadrupole
 
 
 #---------------------
 # Optimisation options
 #---------------------
-Tabulate SPH kernel                         : tabulated_kernel = 0
+Tabulate SPH kernel                         : tabulated_kernel = 1

@@ -199,8 +199,11 @@ void SphLeapfrogKDK<ndim>::EndTimestep
 
 //=============================================================================
 //  SphLeapfrogKDK::CheckTimesteps
-/// Record all important SPH particle quantities at the end of the step for  
-/// the start of the new timestep.
+/// Check through all SPH particles to see if the maximum neighbour timestep 
+/// exceeds the maximum allowed difference (level_diff_max).  If so, then 
+/// check if we can prematurely finish the current timestep and move the 
+/// to a lower timestep level.  Returns the number of particles whose timesteps
+/// have been reduced.
 //=============================================================================
 template <int ndim>
 int SphLeapfrogKDK<ndim>::CheckTimesteps
@@ -233,7 +236,7 @@ int SphLeapfrogKDK<ndim>::CheckTimesteps
       nnewstep = sphintdata[i].nstep/pow(2,level_new - part->level);
 
       // If new level is correctly synchronised, then change all quantities
-      if (n%nnewstep == 0) {
+      if (dn%nnewstep == 0) {
         part->level = level_new;
         if (dn > 0) sphintdata[i].nstep = dn;
         part->active = true;
