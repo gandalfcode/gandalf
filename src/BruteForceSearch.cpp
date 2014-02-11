@@ -177,7 +177,8 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
 //=============================================================================
 template <int ndim>
 void BruteForceSearch<ndim>::UpdateAllSphHydroForces
-(Sph<ndim> *sph)                      ///< [inout] Pointer to SPH object
+(Sph<ndim> *sph,                      ///< [inout] Pointer to SPH object
+ Nbody<ndim> *nbody)                  ///< [in] Point to N-body object
 {
   int i,j,k;                          // Particle and dimension counters
   int Nneib;                          // No. of neighbours
@@ -239,6 +240,10 @@ void BruteForceSearch<ndim>::UpdateAllSphHydroForces
     // Compute all SPH hydro forces
     sph->ComputeSphHydroForces(i,Nneib,neiblist,drmag,invdrmag,dr,
 			       sph->sphdata[i],sph->sphdata);
+
+    // Compute all star forces
+    sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sph->sphdata[i]);
+
     sph->sphdata[i].active = false;
 
   }
@@ -263,7 +268,8 @@ void BruteForceSearch<ndim>::UpdateAllSphHydroForces
 //=============================================================================
 template <int ndim>
 void BruteForceSearch<ndim>::UpdateAllSphForces
-(Sph<ndim> *sph)                      ///< Pointer to SPH object
+(Sph<ndim> *sph,                      ///< [inout] Pointer to SPH object
+ Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
   int i,j,k;                          // Particle and dimension counters
   int Nneib;                          // No. of neighbours
@@ -304,6 +310,9 @@ void BruteForceSearch<ndim>::UpdateAllSphForces
     sph->ComputeSphHydroGravForces(i,Nneib,neiblist,
                                    sph->sphdata[i],sph->sphdata);
 
+    // Compute all star forces
+    sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sph->sphdata[i]);
+
     for (k=0; k<ndim; k++) sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     sph->sphdata[i].active = false;
 
@@ -325,7 +334,8 @@ void BruteForceSearch<ndim>::UpdateAllSphForces
 //=============================================================================
 template <int ndim>
 void BruteForceSearch<ndim>::UpdateAllSphGravForces
-(Sph<ndim> *sph)                      ///< [inout] Pointer to SPH object
+(Sph<ndim> *sph,                      ///< [inout] Pointer to SPH object
+ Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
   int i,j,k;                          // Particle and dimension counters
   int Nneib;                          // No. of neighbours
@@ -364,6 +374,9 @@ void BruteForceSearch<ndim>::UpdateAllSphGravForces
     // Compute forces between SPH neighbours (hydro and gravity)
     sph->ComputeSphGravForces(i,Nneib,neiblist,sph->sphdata[i],sph->sphdata);
 
+    // Compute all star forces
+    sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sph->sphdata[i]);
+
     for (k=0; k<ndim; k++) sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
     sph->sphdata[i].active = false;
 
@@ -384,7 +397,7 @@ void BruteForceSearch<ndim>::UpdateAllSphGravForces
 //=============================================================================
 template <int ndim>
 void BruteForceSearch<ndim>::UpdateAllSphDerivatives
-(Sph<ndim> *sph)                      ///< Pointer to SPH object
+(Sph<ndim> *sph)                      ///< [inout] Pointer to SPH object
 {
   int i,j,k;                          // Particle and dimension counters
   int Nneib;                          // No. of neighbours
@@ -461,7 +474,7 @@ void BruteForceSearch<ndim>::UpdateAllSphDerivatives
 //=============================================================================
 template <int ndim>
 void BruteForceSearch<ndim>::UpdateAllSphDudt
-(Sph<ndim> *sph)                      ///< Pointer to SPH object
+(Sph<ndim> *sph)                      ///< [inout] Pointer to SPH object
 {
   int i,j,k;                          // Particle and dimension counters
   int Nneib;                          // No. of neighbours
@@ -550,8 +563,8 @@ void BruteForceSearch<ndim>::UpdateAllSphDudt
 //=============================================================================
 template <int ndim>
 void BruteForceSearch<ndim>::UpdateAllStarGasForces
-(Sph<ndim> *sph,                      ///< Pointer to SPH object
- Nbody<ndim> *nbody)                  ///< Pointer to N-body object
+(Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
+ Nbody<ndim> *nbody)                  ///< [inout] Pointer to N-body object
 {
   int i;                              // Particle and dimension counters
   int *dummy;                         // Dummy var to satisfy function argument

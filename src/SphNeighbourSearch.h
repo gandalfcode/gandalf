@@ -105,9 +105,9 @@ class SphNeighbourSearch
 
   virtual void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *) = 0;
   virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *) = 0;
-  virtual void UpdateAllSphForces(Sph<ndim> *) = 0;
-  virtual void UpdateAllSphHydroForces(Sph<ndim> *) = 0;
-  virtual void UpdateAllSphGravForces(Sph<ndim> *) = 0;
+  virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateAllSphGravForces(Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphDudt(Sph<ndim> *) = 0;
   virtual void UpdateAllSphDerivatives(Sph<ndim> *) = 0;
   virtual void UpdateActiveParticleCounters(Sph<ndim> *) = 0;
@@ -142,9 +142,9 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
 
   void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphForces(Sph<ndim> *);
-  void UpdateAllSphHydroForces(Sph<ndim> *);
-  void UpdateAllSphGravForces(Sph<ndim> *);
+  void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphGravForces(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
   void UpdateActiveParticleCounters(Sph<ndim> *);
@@ -177,9 +177,9 @@ class GridSearch: public SphNeighbourSearch<ndim>
 
   void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphForces(Sph<ndim> *);
-  void UpdateAllSphHydroForces(Sph<ndim> *);
-  void UpdateAllSphGravForces(Sph<ndim> *);
+  void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphGravForces(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
   void UpdateActiveParticleCounters(Sph<ndim> *);
@@ -244,9 +244,9 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   //---------------------------------------------------------------------------
   void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphForces(Sph<ndim> *);
-  void UpdateAllSphHydroForces(Sph<ndim> *);
-  void UpdateAllSphGravForces(Sph<ndim> *);
+  void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphGravForces(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
   void UpdateActiveParticleCounters(Sph<ndim> *);

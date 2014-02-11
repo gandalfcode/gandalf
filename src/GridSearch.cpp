@@ -287,7 +287,8 @@ void GridSearch<ndim>::UpdateAllSphProperties
 //=============================================================================
 template <int ndim>
 void GridSearch<ndim>::UpdateAllSphHydroForces
-(Sph<ndim> *sph)                    ///< Pointer to SPH object
+(Sph<ndim> *sph,                    ///< Pointer to SPH object
+ Nbody<ndim> *nbody)                ///< [in] Pointer to main N-body object
 {
   int c;                            // Cell id
   int cactive;                      // No. of active cells
@@ -328,7 +329,7 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
 #pragma omp parallel default(none) private(activelist,activepart,c,cc,dr)\
   private(draux,drmag,drsqd,hrangesqdi,i,interactlist,invdrmag,j,jj,k)\
   private(okflag,Nactive,neiblist,neibpart,Ninteract,Nneib,Nneibmax,rp)\
-  shared(cactive,celllist,data,sph)
+  shared(cactive,celllist,data,nbody,sph)
   {
     Nneibmax = Nlistmax;
     activelist = new int[Noccupymax];
@@ -414,6 +415,10 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
         sph->ComputeSphHydroForces(i,Ninteract,interactlist,
 				   drmag,invdrmag,dr,activepart[j],neibpart);
 
+	// Compute all star forces
+	sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
+				   activepart[j]);
+
       }
       //-----------------------------------------------------------------------
 
@@ -458,7 +463,8 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
 //=============================================================================
 template <int ndim>
 void GridSearch<ndim>::UpdateAllSphForces
-(Sph<ndim> *sph)                    ///< Pointer to SPH object
+(Sph<ndim> *sph,                    ///< Pointer to SPH object
+ Nbody<ndim> *nbody)                ///< [in] Pointer to main N-body object
 {
   return;
 }
@@ -471,7 +477,8 @@ void GridSearch<ndim>::UpdateAllSphForces
 //=============================================================================
 template <int ndim>
 void GridSearch<ndim>::UpdateAllSphGravForces
-(Sph<ndim> *sph)                    ///< Pointer to SPH object
+(Sph<ndim> *sph,                    ///< Pointer to SPH object
+ Nbody<ndim> *nbody)                ///< [in] Pointer to main N-body object
 {
   return;
 }

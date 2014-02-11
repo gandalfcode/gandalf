@@ -661,7 +661,6 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
       kern.wgrav(drmag*invhmean)*invdrmag;
       
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.a[k] += dr[k]*paux;
     for (k=0; k<ndim; k++) parti.agrav[k] += dr[k]*paux;
     parti.gpot += nbodydata[j]->m*invhmean*kern.wpot(drmag*invhmean);
 

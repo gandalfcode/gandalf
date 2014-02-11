@@ -7,7 +7,7 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = BB3
+Simulation run id string                    : run_id = BB1
 Run SPH simulation                          : sim = sph
 Select shocktube initial conditions         : ic = bb
 Input file format                           : in_file_form = sf
@@ -39,11 +39,11 @@ Angular velocity unit                       : angveloutunit = rad_s
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.04
-Regular snapshot output frequency           : dt_snap = 0.0002
+Simulation end time                         : tend = 0.05
+Regular snapshot output frequency           : dt_snap = 0.0005
 Time of first snapshot                      : tsnapfirst = 0.01
 Screen output frequency (in no. of steps)   : noutputstep = 16
-Diagnostic output frequency                 : ndiagstep = 16
+Diagnostic output frequency                 : ndiagstep = 32
 
 
 #------------------------
@@ -94,7 +94,7 @@ Mass cut-off for smooth accretion           : smooth_accrete_frac = 0.05
 Timestep cup-off for smooth accretion       : smooth_accrete_dt = 0.05
 Select adaptive sink radii                  : sink_radius_mode = hmult
 Set sink radius equal to kernel extent      : sink_radius = 2.0
-Sink formation density                      : rho_sink = 5.0e-13
+Sink formation density                      : rho_sink = 2.0e-12
 
 
 #-------------------------
@@ -105,7 +105,7 @@ SPH Courant timestep condition multiplier   : courant_mult = 0.15
 SPH acceleration condition multiplier       : accel_mult = 0.3
 SPH energy equation timestep multiplier     : energy_mult = 0.5
 N-body timestep multiplier                  : nbody_mult = 0.2
-No. of block timestep levels                : Nlevels = 1
+No. of block timestep levels                : Nlevels = 5
 Max. timestep level difference              : level_diff_max = 2
 
 
@@ -116,7 +116,7 @@ SPH neighbour search algorithm              : neib_search = tree
 Tree re-build frequency                     : nbuildstep = 1
 No. of particles in leaf cell               : Nleafmax = 6
 Tree opening angle (squared)                : thetamaxsqd = 0.15
-Multipole option                            : multipole = monopole
+Multipole option                            : multipole = fast_monopole
 
 
 #---------------------

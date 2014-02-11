@@ -1965,7 +1965,8 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::UpdateAllSphHydroForces
-(Sph<ndim> *sph)                   ///< Pointer to SPH object
+(Sph<ndim> *sph,                   ///< Pointer to SPH object
+ Nbody<ndim> *nbody)               ///< Pointer to N-body object
 {
   int cactive;                     // No. of active cells
   int cc;                          // Aux. cell counter
@@ -2013,7 +2014,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 #pragma omp parallel default(none) private(activelist,activepart,cc,cell,dr)\
   private(draux,drmag,drsqd,hrangesqdi,i,interactlist,ithread,invdrmag,j,jj,k)\
   private(levelneib,Nactive,neiblist,neibpart,Ninteract,Nneib,Nneibmax,rp) \
-  shared(cactive,celllist,data,sph) reduction(+:Nneibcount)
+  shared(cactive,celllist,data,nbody,sph) reduction(+:Nneibcount)
   {
 #if defined _OPENMP
     ithread = omp_get_thread_num();
@@ -2129,7 +2130,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
         }
         //---------------------------------------------------------------------
 
-        // Compute all gather neighbour contributions to hydro forces
+        // Compute all neighbour contributions to hydro forces
         sph->ComputeSphHydroForces(i,Ninteract,interactlist,
 				   drmag,invdrmag,dr,activepart[j],neibpart);
 
@@ -2137,6 +2138,12 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 
       }
       //-----------------------------------------------------------------------
+
+
+      // Compute all star forces for active particles
+      for (j=0; j<Nactive; j++)
+        sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
+                                   activepart[j]);
 
 
       // Add all active particles contributions to main array
@@ -2189,7 +2196,8 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::UpdateAllSphForces
-(Sph<ndim> *sph)                    ///< Pointer to SPH object
+(Sph<ndim> *sph,                    ///< Pointer to SPH object
+ Nbody<ndim> *nbody)                ///< Pointer to N-body object
 {
   int cactive;                      // No. of active cells
   int cc;                           // Aux. cell counter
@@ -2242,7 +2250,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
   // Set-up all OMP threads
   //===========================================================================
-#pragma omp parallel default(none) shared(celllist,cactive,sph,cout)\
+#pragma omp parallel default(none) shared(celllist,cactive,nbody,sph,cout) \
   private(activelist,activepart,cc,cell,directlist,draux,drsqd,gravcelllist)\
   private(hrangesqdi,Ndirectaux,rp,i,interactlist,ithread,j,jj,k,levelneib)\
   private(neiblist,neibpart,Nactive,Ndirect,Ndirectmax,Ngravcell)\
@@ -2396,6 +2404,10 @@ void BinaryTree<ndim>::UpdateAllSphForces
 	ComputeFastMonopoleForces(Nactive,Ngravcell,gravcelllist,
 				  cell,activepart);
 
+      // Compute all star forces for active particles
+      for (j=0; j<Nactive; j++)
+        sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
+                                   activepart[j]);
 
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
@@ -2454,7 +2466,8 @@ void BinaryTree<ndim>::UpdateAllSphForces
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::UpdateAllSphGravForces
-(Sph<ndim> *sph)                    ///< Pointer to SPH object
+(Sph<ndim> *sph,                    ///< Pointer to SPH object
+ Nbody<ndim> *nbody)                ///< Pointer to N-body object
 {
   int cactive;                      // No. of active cells
   int cc;                           // Aux. cell counter
@@ -2508,7 +2521,7 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
 
   // Set-up all OMP threads
   //===========================================================================
-#pragma omp parallel default(none) shared(celllist,cactive,sph,cout)\
+#pragma omp parallel default(none) shared(celllist,cactive,nbody,sph,cout) \
   private(activelist,activepart,cc,cell,directlist,draux,drsqd,gravcelllist)\
   private(hrangesqdi,Ndirectaux,rp,i,interactlist,ithread,j,jj,k,levelneib)\
   private(neiblist,neibpart,Nactive,Ndirect,Ndirectmax,Ngravcell)\
@@ -2657,6 +2670,10 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
 	ComputeFastMonopoleForces(Nactive,Ngravcell,gravcelllist,
 				  cell,activepart);
 
+      // Compute all star forces
+      for (j=0; j<Nactive; j++)
+        sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
+                                   activepart[j]);
 
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {

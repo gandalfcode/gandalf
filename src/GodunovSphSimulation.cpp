@@ -179,11 +179,11 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)
-      sphneib->UpdateAllSphForces(sph);
+      sphneib->UpdateAllSphForces(sph,nbody);
     else if (sph->hydro_forces == 1)
-      sphneib->UpdateAllSphHydroForces(sph);
+      sphneib->UpdateAllSphHydroForces(sph,nbody);
     else if (sph->self_gravity == 1)
-      sphneib->UpdateAllSphGravForces(sph);
+      sphneib->UpdateAllSphGravForces(sph,nbody);
 
     // Compute contribution to grav. accel from stars
     for (i=0; i<sph->Nsph; i++)
@@ -308,11 +308,11 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)
-      sphneib->UpdateAllSphForces(sph);
+      sphneib->UpdateAllSphForces(sph,nbody);
     else if (sph->hydro_forces == 1)
-      sphneib->UpdateAllSphHydroForces(sph);
+      sphneib->UpdateAllSphHydroForces(sph,nbody);
     else if (sph->self_gravity == 1)
-      sphneib->UpdateAllSphGravForces(sph);
+      sphneib->UpdateAllSphGravForces(sph,nbody);
     
     // Compute contribution to grav. accel from stars
     for (i=0; i<sph->Nsph; i++)
