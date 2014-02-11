@@ -32,6 +32,7 @@
 #include "Parameters.h"
 #include "Debug.h"
 #include "HeaderInfo.h"
+#include "formatted_output.h"
 #ifdef MPI_PARALLEL
 #include <mpi.h>
 #endif
@@ -772,7 +773,10 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
       for (ii=0; ii<6; ii++) infile >> idata[ii];
       if (nbody->Nstar > 0) {
         for (i=0; i<nbody->Nstar; i++) {
-          for (ii=0; ii<2; ii++) infile >> idata[ii];
+          for (ii=0; ii<2; ii++) {
+            char boolean;
+            infile >> boolean;
+          }
           for (ii=0; ii<2; ii++) infile >> idata[ii];
           for (ii=0; ii<sink_data_length; ii++) infile >> sdata[ii];
           for (k=0; k<ndim; k++) nbody->stardata[i].r[k] = sdata[k+1];
@@ -835,6 +839,8 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   cout << "Writing snapshot file : " << filename << endl;
 
   outfile.open(filename.c_str());
+  outfile.setf (std::ios::scientific,std::ios::floatfield);
+  formatted_output outfile_format(outfile, 18, 2, 10);
 
   for (i=0; i<50; i++) idata[i] = 0;
   for (i=0; i<50; i++) ilpdata[i] = 0;
@@ -921,6 +927,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   // Set important header information
   idata[0] = sph->Nsph;
   idata[1] = nbody->Nstar;
+  idata[4] = sph->Nsph;
   idata[19] = nunit;
   idata[20] = ndata;
   ilpdata[0] = 0;
@@ -932,23 +939,24 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
   // Write header information to file
   //---------------------------------------------------------------------------
-  outfile << "SERENASCIIDUMPV2" << endl;;
-  outfile << 4 << endl;
-  outfile << ndim << endl;
-  outfile << ndim << endl;
-  outfile << ndim << endl;
-  for (i=0; i<50; i++) outfile << idata[i] << endl;
-  for (i=0; i<50; i++) outfile << ilpdata[i] << endl;
-  for (i=0; i<50; i++) outfile << rdata[i] << endl;
-  for (i=0; i<50; i++) outfile << ddata[i] << endl;
+  outfile_format << "SERENASCIIDUMPV2" << endl;;
+  outfile_format << 4 << endl;
+  outfile_format << ndim << endl;
+  outfile_format << ndim << endl;
+  outfile_format << ndim << endl;
+  outfile_format.set_width_integer(10);
+  for (i=0; i<50; i++) outfile_format << idata[i] << endl;
+  for (i=0; i<50; i++) outfile_format << ilpdata[i] << endl;
+  for (i=0; i<50; i++) outfile_format << rdata[i] << endl;
+  for (i=0; i<50; i++) outfile_format << ddata[i] << endl;
   if (nunit > 0)
-    for (i=0; i<nunit; i++) outfile << unit_data[i] << endl;
+    for (i=0; i<nunit; i++) outfile_format << unit_data[i] << endl;
   if (ndata > 0)
-    for (i=0; i<ndata; i++) outfile << data_id[i] << endl;
+    for (i=0; i<ndata; i++) outfile_format << data_id[i] << endl;
   if (ndata > 0)
     for (i=0; i<ndata; i++)
-      outfile << typedata[i][0] << "    " << typedata[i][1] << "    "
-              << typedata[i][2] << "    " << typedata[i][3] << "    "
+      outfile_format << typedata[i][0] <<  typedata[i][1]
+              << typedata[i][2] << typedata[i][3]
               << typedata[i][4] << endl;
 
   // Write arrays for SPH particles
@@ -959,7 +967,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
     //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-      outfile << part->iorig << endl;
+      outfile_format << part->iorig << endl;
     }
 
     // Positions
@@ -967,21 +975,21 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
     if (ndim == 1)
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-        outfile << part->r[0]*simunits.r.outscale << endl;
+        outfile_format << part->r[0]*simunits.r.outscale << endl;
       }
 
     else if (ndim == 2)
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-        outfile << part->r[0]*simunits.r.outscale << "    "
+        outfile_format << part->r[0]*simunits.r.outscale
                 << part->r[1]*simunits.r.outscale << endl;
       }
 
     else if (ndim == 3)
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-        outfile << part->r[0]*simunits.r.outscale << "    "
-                << part->r[1]*simunits.r.outscale << "    "
+        outfile_format << part->r[0]*simunits.r.outscale
+                << part->r[1]*simunits.r.outscale
                 << part->r[2]*simunits.r.outscale << endl;
 
       }
@@ -990,7 +998,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
     //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-      outfile << part->m*simunits.m.outscale << endl;
+      outfile_format << part->m*simunits.m.outscale << endl;
     }
 
 
@@ -998,7 +1006,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
     //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-      outfile << part->h*simunits.r.outscale << endl;
+      outfile_format << part->h*simunits.r.outscale << endl;
     }
 
 
@@ -1007,21 +1015,21 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
     if (ndim == 1)
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-        outfile << part->v[0]*simunits.v.outscale << endl;
+        outfile_format << part->v[0]*simunits.v.outscale << endl;
       }
 
     else if (ndim == 2)
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-        outfile << part->v[0]*simunits.v.outscale << "    "
+        outfile_format << part->v[0]*simunits.v.outscale
                 << part->v[1]*simunits.v.outscale << endl;
       }
 
     else if (ndim == 3)
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-        outfile << part->v[0]*simunits.v.outscale << "    "
-                << part->v[1]*simunits.v.outscale << "    "
+        outfile_format << part->v[0]*simunits.v.outscale
+                << part->v[1]*simunits.v.outscale
                 << part->v[2]*simunits.v.outscale << endl;
       }
 
@@ -1030,7 +1038,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
     //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-      outfile << part->rho*simunits.rho.outscale << endl;;
+      outfile_format << part->rho*simunits.rho.outscale << endl;;
     }
 
 
@@ -1038,7 +1046,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
     //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-      outfile << part->u*simunits.u.outscale << endl;
+      outfile_format << part->u*simunits.u.outscale << endl;
     }
 
 
@@ -1051,12 +1059,13 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
     int ii;
     FLOAT sdata[sink_data_length];
     for (k=0; k<sink_data_length; k++) sdata[k] = 0.0;
-    outfile << 2 << "    " << 2 << "    " << 0 << "    "
-	    << sink_data_length << "    " << 0 << "    "
+    outfile_format << 2  << 2  << 0
+	    << sink_data_length  << 0
 	    << 0 << endl;
+    outfile_format.set_width_integer(8);
     for (i=0; i<nbody->Nstar; i++) {
-      outfile << true << "   " << true << endl;
-      outfile << i+1 << "    " << 0 << endl;
+      outfile_format << true  << true << endl;
+      outfile_format << i+1  << 0 << endl;
       for (k=0; k<ndim; k++) 
         sdata[k+1] = nbody->stardata[i].r[k]*simunits.r.outscale;
       for (k=0; k<ndim; k++)
@@ -1064,7 +1073,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
       sdata[1+2*ndim] = nbody->stardata[i].m*simunits.m.outscale;
       sdata[2+2*ndim] = nbody->stardata[i].h*simunits.r.outscale;
       sdata[3+2*ndim] = nbody->stardata[i].radius*simunits.r.outscale;
-      for (ii=0; ii<sink_data_length; ii++) outfile << sdata[ii] << "    ";
+      for (ii=0; ii<sink_data_length; ii++) outfile_format << sdata[ii] ;
       outfile << endl;
     }
   }
