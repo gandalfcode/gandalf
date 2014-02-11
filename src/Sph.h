@@ -100,7 +100,6 @@ private:
   virtual void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *,
 				     FLOAT *, SphParticle<ndim> &, 
                                      SphParticle<ndim> *) = 0;
-  virtual void ComputePostHydroQuantities(SphParticle<ndim> &) = 0;
   virtual void ComputeStarGravForces(int, NbodyParticle<ndim> **, 
 				     SphParticle<ndim> &) = 0;
 
@@ -222,7 +221,6 @@ class GradhSph: public Sph<ndim>
 			     SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeDirectGravForces(int, int, int *, 
 			       SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputePostHydroQuantities(SphParticle<ndim> &);
   void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &);
 
   kernelclass<ndim> kern;                  ///< SPH kernel
@@ -281,7 +279,6 @@ class SM2012Sph: public Sph<ndim>
 			     SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeDirectGravForces(int, int, int *,
                                SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputePostHydroQuantities(SphParticle<ndim> &);
   void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &);
 
 
@@ -340,7 +337,6 @@ class GodunovSph: public Sph<ndim>
 			     SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeDirectGravForces(int, int, int *, 
                                SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputePostHydroQuantities(SphParticle<ndim> &);
   void InitialiseRiemannProblem(SphParticle<ndim>, SphParticle<ndim>, FLOAT *,
                                 FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT &, 
                                 FLOAT &, FLOAT &, FLOAT &, FLOAT &, FLOAT &);

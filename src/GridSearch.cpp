@@ -366,10 +366,6 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
       for (j=0; j<Nneib; j++) {
         assert(neiblist[j] >= 0 && neiblist[j] < sph->Ntot);
         neibpart[j] = data[neiblist[j]];
-        neibpart[j].div_v = (FLOAT) 0.0;
-        neibpart[j].dudt = (FLOAT) 0.0;
-        neibpart[j].levelneib = 0;
-        for (k=0; k<ndim; k++) neibpart[j].a[k] = (FLOAT) 0.0;
       }
 
       // Loop over all active particles in the cell
@@ -379,8 +375,6 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
 
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
         hrangesqdi = activepart[j].hrangesqd;
-        //hrangesqdi = sph->kernfacsqd*sph->kernp->kernrangesqd*
-	//activepart[j].h*activepart[j].h;
         Ninteract = 0;
 
         // Validate that gather neighbour list is correct
@@ -396,16 +390,15 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
         for (jj=0; jj<Nneib; jj++) {
 
           // Skip neighbour if it's not the correct part of an active pair
-          if (neiblist[jj] <= i && neibpart[jj].active) continue;
+          //if (neiblist[jj] <= i && neibpart[jj].active) continue;
+	  if (neiblist[jj] == i) continue;
 
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
           drsqd = DotProduct(draux,draux,ndim);
 
           // Compute list of particle-neighbour interactions and also
           // compute
-          if ((drsqd <= hrangesqdi || drsqd <= neibpart[jj].hrangesqd)) { //&&
-              //((neiblist[jj] < i && !neibpart[jj].active) ||
-               //neiblist[jj] > i)) {
+          if ((drsqd <= hrangesqdi || drsqd <= neibpart[jj].hrangesqd)) {
             drmag[Ninteract] = sqrt(drsqd) + small_number;
             invdrmag[Ninteract] = (FLOAT) 1.0/drmag[Ninteract];
             for (k=0; k<ndim; k++)
@@ -428,46 +421,11 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
       // Add all particle i contributions to main array
       for (jj=0; jj<Nactive; jj++) {
         j = activelist[jj];
-#if defined _OPENMP
-        omp_lock_t& lock = sph->GetParticleILock(j);
-        omp_set_lock(&lock);
-#endif
-	for (k=0; k<ndim; k++) {
-//#pragma omp atomic
-	  data[j].a[k] += activepart[jj].a[k];
-	}
-//#pragma omp atomic
-	data[j].dudt += activepart[jj].dudt;
-//#pragma omp atomic
-	data[j].div_v += activepart[jj].div_v;
-	data[j].levelneib = max(data[j].levelneib,activepart[jj].levelneib);
-#if defined _OPENMP
-        omp_unset_lock(&lock);
-#endif
-      }
-
-      
-      // Now add all active neighbour contributions to the main arrays
-      for (jj=0; jj<Nneib; jj++) {
-	j = neiblist[jj];
-#if defined _OPENMP
-        omp_lock_t& lock = sph->GetParticleILock(j);
-        omp_set_lock(&lock);
-#endif
-	if (neibpart[jj].active) {
-	  for (k=0; k<ndim; k++) {
-//#pragma omp atomic
-	    data[j].a[k] += neibpart[jj].a[k];
-	  }
-//#pragma omp atomic
-	  data[j].dudt += neibpart[jj].dudt;
-//#pragma omp atomic
-	  data[j].div_v += neibpart[jj].div_v;
-	}
-	data[j].levelneib = max(data[j].levelneib,neibpart[jj].levelneib);
-#if defined _OPENMP
-        omp_unset_lock(&lock);
-#endif
+	for (k=0; k<ndim; k++) data[j].a[k] = activepart[jj].a[k];
+	data[j].dudt = activepart[jj].dudt;
+	data[j].div_v = activepart[jj].div_v;
+	data[j].levelneib = activepart[jj].levelneib;
+	data[j].active = false;
       }
       
     }
@@ -488,14 +446,6 @@ void GridSearch<ndim>::UpdateAllSphHydroForces
 
   delete[] celllist;
 
-
-  // Compute other important SPH quantities after hydro forces are computed
-  if (sph->hydro_forces == 1) {
-    for (i=0; i<sph->Nsph; i++) {
-      if (sph->sphdata[i].active)
-    	  sph->ComputePostHydroQuantities(sph->sphdata[i]);
-    }
-  }
 
   return;
 }
@@ -824,6 +774,20 @@ void GridSearch<ndim>::UpdateAllSphDudt(Sph<ndim> *sph)
 
   delete[] celllist;
 
+  return;
+}
+
+
+
+//=============================================================================
+//  GridSearch::UpdateAllStarGasForces
+/// ..
+//=============================================================================
+template <int ndim>
+void GridSearch<ndim>::UpdateAllStarGasForces
+(Sph<ndim> *sph,                      ///< Pointer to SPH object
+ Nbody<ndim> *nbody)
+{
   return;
 }
 

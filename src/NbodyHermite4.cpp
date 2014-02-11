@@ -211,12 +211,14 @@ void NbodyHermite4<ndim, kernelclass>::CalculatePerturberForces
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
-(int N,                             ///< Number of stars
- int Ngas,                          ///< Number of gas particles
- SphParticle<ndim> *sphdata,        ///< Array of SPH particles
- NbodyParticle<ndim> **star)        ///< Array of stars/systems
+(NbodyParticle<ndim> *star,         ///< [inout] Pointer to star
+ int Nsph,                          ///< [in] Number of gas particles
+ int Ndirect,                       ///< [in] ..
+ int *sphlist,                      ///< [in] ..
+ int *directlist,                   ///< [in] ..
+ SphParticle<ndim> *sphdata)        ///< [in] Array of SPH particles
 {
-  int i,j,k;                        // Star and dimension counters
+  int j,jj,k;                        // Star and dimension counters
   DOUBLE dr[ndim];                  // Relative position vector
   DOUBLE drmag;                     // Distance
   DOUBLE drsqd;                     // Distance squared
@@ -229,46 +231,57 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
 
   debug2("[NbodyHermite4::CalculateDirectSPHForces]");
 
-  // Loop over all (active) stars
+
+  // Sum grav. contributions from all neighbouring SPH particles
   //---------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
-    if (star[i]->active == 0) continue;
+  for (jj=0; jj<Nsph; jj++) {
 
-    // Sum grav. contributions for all other stars (excluding star itself)
-    //-------------------------------------------------------------------------
-    for (j=0; j<Ngas; j++) {
-      for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star[i]->r[k];
-      for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - star[i]->v[k];
-      drsqd = DotProduct(dr,dr,ndim);
-      drmag = sqrt(drsqd);
-      invdrmag = 1.0/drmag;
-      invhmean = 2.0/(star[i]->h + sphdata[j].h);
-      drdt = DotProduct(dv,dr,ndim)*invdrmag;
-
-      paux = sphdata[j].m*invhmean*invhmean*
-        kern.wgrav(drmag*invhmean)*invdrmag;
-      wkern = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
-
-      // Add contribution to main star array
-      //if (drmag*invhmean < 2.0) {
-	for (k=0; k<ndim; k++) star[i]->a[k] += paux*dr[k];
-	for (k=0; k<ndim; k++) star[i]->adot[k] += paux*dv[k] - 
-	  3.0*paux*drdt*invdrmag*dr[k] + 
-	  2.0*twopi*sphdata[j].m*drdt*wkern*invdrmag*dr[k];
-	star[i]->gpot += sphdata[j].m*invhmean*kern.wpot(drmag*invhmean);
-	//}
-	//else {
-	//for (k=0; k<ndim; k++) star[i]->a[k] += sphdata[j].m*dr[k]*pow(invdrmag,3);
-	//for (k=0; k<ndim; k++) star[i]->adot[k] +=
-	//sphdata[j].m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
-	//star[i]->gpot += sphdata[j].m*invhmean*kern.wpot(drmag*invhmean);
-	//}
-
-    }
-    //-------------------------------------------------------------------------
+    j = sphlist[jj];
+    for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star->r[k];
+    for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - star->v[k];
+    drsqd = DotProduct(dr,dr,ndim);
+    drmag = sqrt(drsqd);
+    invdrmag = 1.0/drmag;
+    invhmean = 2.0/(star->h + sphdata[j].h);
+    drdt = DotProduct(dv,dr,ndim)*invdrmag;
+    
+    paux = sphdata[j].m*invhmean*invhmean*
+      kern.wgrav(drmag*invhmean)*invdrmag;
+    wkern = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
+    
+    // Add contribution to main star array
+    for (k=0; k<ndim; k++) star->a[k] += paux*dr[k];
+    for (k=0; k<ndim; k++) star->adot[k] += paux*dv[k] - 
+      3.0*paux*drdt*invdrmag*dr[k] + 
+      2.0*twopi*sphdata[j].m*drdt*wkern*invdrmag*dr[k];
+    star->gpot += sphdata[j].m*invhmean*kern.wpot(drmag*invhmean);
 
   }
   //---------------------------------------------------------------------------
+
+
+  // Now include contributions from distant, non-SPH neighbours
+  // (i.e. direct summation with Newton's law of gravity)
+  //---------------------------------------------------------------------------
+  for (jj=0; jj<Ndirect; jj++) {
+
+    j = directlist[jj];
+    for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star->r[k];
+    for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - star->v[k];
+    drsqd = DotProduct(dr,dr,ndim);
+    drmag = sqrt(drsqd);
+    invdrmag = 1.0/drmag;
+    drdt = DotProduct(dv,dr,ndim)*invdrmag;
+
+    // Add contribution to main star array
+    for (k=0; k<ndim; k++) star->a[k] += sphdata[j].m*dr[k]*pow(invdrmag,3);
+    for (k=0; k<ndim; k++) star->adot[k] +=
+      sphdata[j].m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+    star->gpot += sphdata[j].m*invdrmag;
+    
+  }
+  //---------------------------------------------------------------------------
+
 
   return;
 }

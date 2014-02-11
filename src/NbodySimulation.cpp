@@ -169,7 +169,7 @@ void NbodySimulation<ndim>::MainLoop(void)
 
   // Compute N-body forces
   //---------------------------------------------------------------------------
-  if (nbody->Nstar > 0) {
+  if (nbody->Nnbody > 0) {
 
     // Iterate end-of-step
     //-------------------------------------------------------------------------

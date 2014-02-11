@@ -1042,23 +1042,6 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
 
 
 //=============================================================================
-// GodunovSph::ComputePostHydroQuantities
-// ..
-//=============================================================================
-template <int ndim, template<int> class kernelclass>
-void GodunovSph<ndim, kernelclass >::ComputePostHydroQuantities
-(SphParticle<ndim> &parti)
-{
-  //parti.div_v *= parti.invrho;
-  //parti.dudt = (FLOAT) 0.0;
-  //parti.dudt -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
-
-  return;
-}
-
-
-
-//=============================================================================
 // GodunovSph::ComputeDirectGravForces
 // Compute the contribution to the total gravitational force of particle 'i' 
 // due to 'Nneib' neighbouring particles in the list 'neiblist'.

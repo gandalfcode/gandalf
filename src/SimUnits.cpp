@@ -1108,7 +1108,7 @@ void SimUnits::SetupUnits(Parameters *params)
   temp.outscale = temp.outscale / temp.outSI;
   temp.outcgs = temp.outSI;
 
-  OutputScalingFactors(params);
+  //OutputScalingFactors(params);
 
   return;
 }

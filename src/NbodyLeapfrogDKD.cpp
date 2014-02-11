@@ -133,52 +133,70 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculatePerturberForces
 
 //=============================================================================
 //  NbodyLeapfrogDKD::CalculateDirectSPHForces
-/// Calculate all SPH forces by direct summation.
+/// Calculate all ..
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSPHForces
-(int N,                             ///< Number of stars
- int Ngas,                          ///< Number of gas particles
- SphParticle<ndim> *sphdata,        ///< Array of SPH particles
- NbodyParticle<ndim> **star)        ///< Array of stars/systems
+(NbodyParticle<ndim> *star,         ///< [inout] Pointer to star
+ int Nsph,                          ///< [in] Number of gas particles
+ int Ndirect,                       ///< [in] ..
+ int *sphlist,                      ///< [in] ..
+ int *directlist,                   ///< [in] ..
+ SphParticle<ndim> *sphdata)        ///< [in] Array of SPH particles
 {
-  int i,j,k;                        // Star and dimension counters
+  int j,jj,k;                       // Star and dimension counters
   DOUBLE dr[ndim];                  // Relative position vector
   DOUBLE drmag;                     // Distance
   DOUBLE drsqd;                     // Distance squared
   DOUBLE invhmean;                  // 1 / hmean
   DOUBLE invdrmag;                  // 1 / drmag
   DOUBLE paux;                      // Aux. force variable
+  DOUBLE wkern;                     // SPH kernel value
 
-  debug2("[NbodyLeapfrogDKD::CalculateDirectSPHForces]");
+  debug2("[NbodyLeapfrogKDK::CalculateDirectSPHForces]");
 
-  // Loop over all (active) stars
+
+  // Sum grav. contributions from all neighbouring SPH particles
   //---------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
-    if (star[i]->active == 0) continue;
+  for (jj=0; jj<Nsph; jj++) {
 
-    // Sum grav. contributions for all other stars (excluding star itself)
-    //-------------------------------------------------------------------------
-    for (j=0; j<Ngas; j++) {
-
-      for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star[i]->r[k];
-      drsqd = DotProduct(dr,dr,ndim);
-      drmag = sqrt(drsqd);
-      invdrmag = 1.0/drmag;
-      invhmean = 2.0/(star[i]->h + sphdata[j].h);
-
-      paux = sphdata[j].m*invhmean*invhmean*
-        kern.wgrav(drmag*invhmean)*invdrmag;
-
-      // Add contribution to main star array
-      for (k=0; k<ndim; k++) star[i]->a[k] += dr[k]*paux;
-      star[i]->gpot += sphdata[j].m*invhmean*kern.wpot(drmag*invhmean);
-
-    }
-    //-------------------------------------------------------------------------
+    j = sphlist[jj];
+    for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star->r[k];
+    drsqd = DotProduct(dr,dr,ndim);
+    drmag = sqrt(drsqd);
+    invdrmag = 1.0/drmag;
+    invhmean = 2.0/(star->h + sphdata[j].h);
+    
+    paux = sphdata[j].m*invhmean*invhmean*
+      kern.wgrav(drmag*invhmean)*invdrmag;
+    wkern = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
+    
+    // Add contribution to main star array
+    for (k=0; k<ndim; k++) star->a[k] += paux*dr[k];
+    star->gpot += sphdata[j].m*invhmean*kern.wpot(drmag*invhmean);
 
   }
   //---------------------------------------------------------------------------
+
+
+  // Now include contributions from distant, non-SPH neighbours
+  // (i.e. direct summation with Newton's law of gravity)
+  //---------------------------------------------------------------------------
+  for (jj=0; jj<Ndirect; jj++) {
+
+    j = directlist[jj];
+    for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star->r[k];
+    drsqd = DotProduct(dr,dr,ndim);
+    drmag = sqrt(drsqd);
+    invdrmag = 1.0/drmag;
+
+    // Add contribution to main star array
+    for (k=0; k<ndim; k++) star->a[k] += sphdata[j].m*dr[k]*pow(invdrmag,3);
+    star->gpot += sphdata[j].m*invdrmag;
+    
+  }
+  //---------------------------------------------------------------------------
+
 
   return;
 }
@@ -320,7 +338,7 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::PerturberCorrectionTerms
      }
 
    }
-   //---------------------------------------------------------------------------
+   //--------------------------------------------------------------------------
 
   return;
 }

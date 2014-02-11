@@ -11,8 +11,8 @@ Simulation run id string                    : run_id = FREEFALL1
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = sphere
 Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Nsph = 10000
-Local arrangement of particles              : particle_distribution = hexagonal_lattice
+No. of SPH particles                        : Nsph = 128000
+Local arrangement of particles              : particle_distribution = cubic_lattice
 Use dimensionless units                     : dimensionless = 1
 
 
@@ -31,16 +31,16 @@ RHS boundary type in z-dimension            : z_boundary_rhs = open
 # Simulation time variables
 #--------------------------
 Simulation end time                         : tend = 0.5
-Time for first snapshot                     : tsnapfirst = 1.0
-Regular snapshot output frequency           : dt_snap = 0.1
-Screen output frequency (in no. of steps)   : noutputstep = 16
-Diagnostic output frequency                 : ndiagstep = 64
+Time for first snapshot                     : tsnapfirst = 0.0
+Regular snapshot output frequency           : dt_snap = 0.05
+Screen output frequency (in no. of steps)   : noutputstep = 8
+Diagnostic output frequency                 : ndiagstep = 32
 
 
 #------------------------
 # Thermal physics options
 #------------------------
-Switch-on hydrodynamical forces             : hydro_forces = 1
+Switch-on hydrodynamical forces             : hydro_forces = 0
 Main gas thermal physics treatment          : gas_eos = energy_eqn
 Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 
@@ -55,9 +55,9 @@ Switch-off self-gravity of gas              : self_gravity = 1
 # Smoothed Particle Hydrodynamics options
 #----------------------------------------
 SPH algorithm choice                        : sph = gradh
-SPH smoothing kernel choice                 : kernel = m4
-SPH smoothing length iteration tolerance    : h_converge = 0.02
-Tabulate SPH kernel                         : tabulated_kernel = 0
+SPH smoothing kernel choice                 : kernel = quintic
+SPH smoothing length iteration tolerance    : h_converge = 0.01
+Tabulate SPH kernel                         : tabulated_kernel = 1
 
 
 #---------------------------------
@@ -83,9 +83,9 @@ No. of block timestep levels                : Nlevels = 1
 # Tree options
 #-------------
 SPH neighbour search algorithm              : neib_search = tree
-No. of particles in leaf cell               : Nleafmax = 1
-Tree opening angle (squared)                : thetamaxsqd = 0.1
-Multipole option                            : multipole = quadrupole
+No. of particles in leaf cell               : Nleafmax = 6
+Tree opening angle (squared)                : thetamaxsqd = 0.15
+Multipole option                            : multipole = fast_monopole
 
 
 

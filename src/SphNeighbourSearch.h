@@ -111,6 +111,7 @@ class SphNeighbourSearch
   virtual void UpdateAllSphDudt(Sph<ndim> *) = 0;
   virtual void UpdateAllSphDerivatives(Sph<ndim> *) = 0;
   virtual void UpdateActiveParticleCounters(Sph<ndim> *) = 0;
+  virtual void UpdateAllStarGasForces(Sph<ndim> *, Nbody<ndim> *) = 0;
 
   bool neibcheck;                   ///< Flag to verify neighbour lists
   DomainBox<ndim> *box;             ///< Pointer to simulation bounding box
@@ -147,6 +148,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
   void UpdateActiveParticleCounters(Sph<ndim> *);
+  void UpdateAllStarGasForces(Sph<ndim> *, Nbody<ndim> *);
 #if defined MPI_PARALLEL
   void FindGhostParticlesToExport(Sph<ndim>* sph, std::vector<std::vector<SphParticle<ndim>* > >&,
       const std::vector<int>&, MpiNode<ndim>*);
@@ -181,6 +183,7 @@ class GridSearch: public SphNeighbourSearch<ndim>
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
   void UpdateActiveParticleCounters(Sph<ndim> *);
+  void UpdateAllStarGasForces(Sph<ndim> *, Nbody<ndim> *);
 
   // Additional functions for grid neighbour search
   //---------------------------------------------------------------------------
@@ -247,6 +250,8 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void UpdateAllSphDudt(Sph<ndim> *);
   void UpdateAllSphDerivatives(Sph<ndim> *);
   void UpdateActiveParticleCounters(Sph<ndim> *);
+  void UpdateAllStarGasForces(Sph<ndim> *, Nbody<ndim> *);
+
 
   // Additional functions for binary tree neighbour search
   //---------------------------------------------------------------------------
@@ -273,10 +278,14 @@ class BinaryTree: public SphNeighbourSearch<ndim>
                                     int &, int &, int &, int *, int *,
                                     BinaryTreeCell<ndim> **, 
                                     SphParticle<ndim> *);
-  void ComputeCellMonopoleForces(int, int, BinaryTreeCell<ndim> **, 
-                                 SphParticle<ndim> &);
-  void ComputeCellQuadrupoleForces(int, int, BinaryTreeCell<ndim> **, 
-                                   SphParticle<ndim> &);
+  int ComputeStarGravityInteractionList(NbodyParticle<ndim> *, int, int, int, 
+					int &, int &, int &, int *, int *,
+					BinaryTreeCell<ndim> **, 
+					SphParticle<ndim> *);
+  void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, 
+				 BinaryTreeCell<ndim> **);
+  void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, 
+				   BinaryTreeCell<ndim> **);
   void ComputeFastMonopoleForces(int, int, BinaryTreeCell<ndim> **, 
 				 BinaryTreeCell<ndim> *, SphParticle<ndim> *);
 #if defined(VERIFY_ALL)

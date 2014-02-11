@@ -341,6 +341,9 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   // Set velocity divergence and compressional heating rate terms
   parti.div_v *= parti.invrho;
   parti.dudt -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
+  parti.dalphadt = 0.1*parti.sound*(alpha_visc_min - parti.alpha)*
+    parti.invh + max(parti.div_v,0.0)*(alpha_visc - parti.alpha);
+
 
   return;
 }
@@ -477,6 +480,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
   // Set velocity divergence and compressional heating rate terms
   parti.div_v *= parti.invrho;
   parti.dudt -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
+  parti.dalphadt = 0.1*parti.sound*(alpha_visc_min - parti.alpha)*
+    parti.invh + max(parti.div_v,0.0)*(alpha_visc - parti.alpha);
 
 
   return;
@@ -577,20 +582,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphDerivatives
 
 
 //=============================================================================
-//  GradhSph::ComputePostHydroQuantities
-/// Normalise velocity divergence computation and compute the compressional 
-/// heating rate due to PdV work.
-//=============================================================================
-template <int ndim, template<int> class kernelclass>
-void GradhSph<ndim, kernelclass>::ComputePostHydroQuantities
-(SphParticle<ndim> &parti)
-{
-  return;
-}
-
-
-
-//=============================================================================
 //  GradhSph::ComputeDirectGravForces
 /// Compute the contribution to the total gravitational force of particle 'i' 
 /// due to 'Nneib' neighbouring particles in the list 'neiblist'.
@@ -668,11 +659,25 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
 
     paux = nbodydata[j]->m*invhmean*invhmean*
       kern.wgrav(drmag*invhmean)*invdrmag;
-
+      
     // Add total hydro contribution to acceleration for particle i
+    for (k=0; k<ndim; k++) parti.a[k] += dr[k]*paux;
     for (k=0; k<ndim; k++) parti.agrav[k] += dr[k]*paux;
     parti.gpot += nbodydata[j]->m*invhmean*kern.wpot(drmag*invhmean);
-    
+
+    //if (drmag*invhmean > kern.kernrange) {
+    //  for (k=0; k<ndim; k++) 
+    //    parti.agrav[k] += nbodydata[j]->m*dr[k]*pow(invdrmag,3);
+    //  parti.gpot += nbodydata[j]->m*invdrmag;
+    //}
+    //else {
+    //  paux = nbodydata[j]->m*invhmean*invhmean*
+    //    kern.wgrav(drmag*invhmean)*invdrmag;
+    //  for (k=0; k<ndim; k++) parti.agrav[k] += dr[k]*paux;
+    //  parti.gpot += nbodydata[j]->m*invhmean*kern.wpot(drmag*invhmean);
+    //}
+
+
   }
   //---------------------------------------------------------------------------
 

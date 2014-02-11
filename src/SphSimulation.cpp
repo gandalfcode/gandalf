@@ -153,15 +153,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       nbody->stardata[i].nlast = 0;
       nbody->nbodydata[i] = &(nbody->stardata[i]);
     }
-
     nbody->Nnbody = nbody->Nstar;
-    nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
-    if (sph->self_gravity == 1)
-      nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nsph,
-				      sph->sphdata,nbody->nbodydata);
-    nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
 
   }
+
 
 
   // Compute all initial SPH force terms
@@ -170,11 +165,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Zero accelerations (here for now)
     for (i=0; i<sph->Ntot; i++) {
-      for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
-      for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
-      sph->sphdata[i].gpot = (FLOAT) 0.0;
-      sph->sphdata[i].dudt = (FLOAT) 0.0;
-      sph->sphdata[i].dalphadt = (FLOAT) 0.0;
       sph->sphdata[i].level = 0;
       sph->sphintdata[i].nstep = 0;
       sph->sphintdata[i].nlast = 0;
@@ -203,11 +193,11 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
                                    sph->sphdata[i]);
 
     // Add accelerations
-    for (i=0; i<sph->Nsph; i++) {
-      sph->sphdata[i].active = false;
-      for (k=0; k<ndim; k++)
-        sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
-    }
+    //for (i=0; i<sph->Nsph; i++) {
+    //  sph->sphdata[i].active = false;
+    //  for (k=0; k<ndim; k++)
+    //    sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
+    //}
 
     LocalGhosts->CopySphDataToGhosts(simbox,sph);
 #ifdef MPI_PARALLEL
@@ -215,6 +205,19 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
 
   }
+
+
+  // Compute initial N-body forces
+  //---------------------------------------------------------------------------
+  if (nbody->Nstar > 0) {
+
+    nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
+    if (sph->self_gravity == 1 && sph->Nsph > 0)
+      sphneib->UpdateAllStarGasForces(sph,nbody);
+    nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
+
+  }
+
 
   // Set particle values for initial step (e.g. r0, v0, a0)
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
@@ -259,7 +262,7 @@ void SphSimulation<ndim>::MainLoop(void)
   t = t + timestep;
   if (n == nresync) Nblocksteps = Nblocksteps + 1;
 
-  // Advance SPH particles positions and velocities
+  // Advance SPH and N-body particles' positions and velocities
   sphint->AdvanceParticles(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EnergyIntegration(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
@@ -347,17 +350,16 @@ void SphSimulation<ndim>::MainLoop(void)
 #endif
       
       // Zero accelerations
-#pragma parallel for default(none) private(k) shared(sph)
-      for (i=0; i<sph->Ntot; i++) {
-        if (sph->sphdata[i].active) {
-          for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
-          for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
-          sph->sphdata[i].gpot = (FLOAT) 0.0;
-          sph->sphdata[i].gpe = (FLOAT) 0.0;
-          sph->sphdata[i].dudt = (FLOAT) 0.0;
-          sph->sphdata[i].levelneib = 0;
-        }
-      }
+      //for (i=0; i<sph->Ntot; i++) {
+      //  if (sph->sphdata[i].active) {
+      //    for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
+      //    for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
+      //    sph->sphdata[i].gpot = (FLOAT) 0.0;
+      //    sph->sphdata[i].gpe = (FLOAT) 0.0;
+      //    sph->sphdata[i].dudt = (FLOAT) 0.0;
+      //    sph->sphdata[i].levelneib = 0;
+      //  }
+      //}
       
       // Compute SPH gravity and hydro forces, depending on which are activated
       if (sph->hydro_forces == 1 && sph->self_gravity == 1)
@@ -375,17 +377,12 @@ void SphSimulation<ndim>::MainLoop(void)
       
       // Compute additional terms now accelerations and other derivatives 
       // have been computed for active particles
-#pragma omp parallel for default(none) private(i,k)
-      for (i=0; i<sph->Nsph; i++) {
-        if (sph->sphdata[i].active) {
-          for (k=0; k<ndim; k++)
-            sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
-          sph->sphdata[i].dalphadt = 0.1*sph->sphdata[i].sound*
-            (sph->alpha_visc_min - sph->sphdata[i].alpha)*
-            sph->sphdata[i].invh + max(sph->sphdata[i].div_v,0.0)*
-            (sph->alpha_visc - sph->sphdata[i].alpha);
-        }
-      }
+      //for (i=0; i<sph->Nsph; i++) {
+      //  if (sph->sphdata[i].active) {
+      //    for (k=0; k<ndim; k++)
+      //      sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
+      //  }
+      //}
 
       // Check if all neighbouring timesteps are acceptable
       if (Nlevels > 1)
@@ -433,9 +430,8 @@ void SphSimulation<ndim>::MainLoop(void)
       // Calculate forces, force derivatives etc.., for active stars/systems
       nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
 
-      if (sph->self_gravity == 1)
-        nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nsph,
-                                        sph->sphdata,nbody->nbodydata);
+      if (sph->self_gravity == 1 && sph->Nsph > 0)
+	sphneib->UpdateAllStarGasForces(sph,nbody);
 
       // Calculate correction step for all stars at end of step
       nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
@@ -524,13 +520,14 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
       }
 
       // Now compute minimum timestep due to stars/systems
-#pragma omp for
+#pragma omp parallel for
       for (i=0; i<nbody->Nnbody; i++)
 	dt_min = min(dt_min,nbody->Timestep(nbody->nbodydata[i]));
 
 
 #pragma omp critical
       if (dt < dt_min) dt_min = dt;
+#pragma omp barrier
 
     }
     //-------------------------------------------------------------------------
@@ -545,7 +542,7 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 
     // Set all particles to same timestep
     timestep = dt_min;
-#pragma omp parallel for
+#pragma omp parallel for default(none)
     for (i=0; i<sph->Nsph; i++) {
       sph->sphdata[i].level = 0;
       sph->sphdata[i].levelneib = 0;
@@ -554,7 +551,7 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
       sph->sphintdata[i].nlast = n;
 
     }
-#pragma omp for
+#pragma omp parallel for default(none)
     for (i=0; i<nbody->Nnbody; i++) {
       nbody->nbodydata[i]->level = 0;
       nbody->nbodydata[i]->nstep = 
@@ -591,8 +588,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   int level_max_nbody = 0;              // level_max for star particles only
   int level_nbody;                      // ..
   int level_sph;                        // ..
-  int nstep;                            // ??
   int nfactor;                          // ??
+  int nstep;                            // ??
   DOUBLE dt;                            // Aux. timestep variable
   DOUBLE dt_min = big_number_dp;        // ..
   DOUBLE dt_min_aux;                    // ..
@@ -827,10 +824,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       {
         dt_min = min(dt_min,dt_min_aux);
         dt_min_nbody = min(dt_min_nbody,dt_nbody);
-        dt_min_sph = min(dt_min_sph,dt_sph);
         level_max = max(level_max,level_max_aux);
         level_max_nbody = max(level_max_nbody,level_nbody);
-	level_max_sph = max(level_max_sph,level_sph);
       }
 #pragma omp barrier
 
@@ -869,12 +864,6 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       
       // Adjust integer time if levels added or removed
       if (level_max > level_max_old) {
-	//cout << "Adding new level : " << level_max << "   " << level_max_old << "    " << timestep << "    " << dt_sph << endl;
-	//cout << "Minimum timestep : " << imin << "   " << sph->sphdata[imin].dt 
-	//<< "    " << sph->sphdata[imin].h << "    " 
-	//<< sph->sphdata[imin].sound << "    " << sph->sphdata[imin].h/sph->sphdata[imin].sound << "    " << sph->sphdata[imin].level << "   " << sph->sphdata[imin].levelneib << endl;
-	//cin >> i;
-
 	nfactor = pow(2,level_max - level_max_old);
 	n *= nfactor;
 	for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].nstep *= nfactor;

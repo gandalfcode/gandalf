@@ -142,8 +142,8 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     nbody->Nnbody = nbody->Nstar;
     nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
-    nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nsph,
-                                    sph->sphdata,nbody->nbodydata);
+    //nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nsph,
+    //                              sph->sphdata,nbody->nbodydata);
     nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
 
   }
@@ -364,8 +364,8 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
 
       // Calculate forces, force derivatives etc.., for active stars/systems
       nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
-      nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nsph,
-                                      sph->sphdata,nbody->nbodydata);
+      //nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nsph,
+      //                              sph->sphdata,nbody->nbodydata);
 
       // Calculate correction step for all stars at end of step
       nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);

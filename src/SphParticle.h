@@ -34,10 +34,10 @@
 #endif
 
 
-enum ptype{gas,
+enum ptype{gas, icm, boundary, cdm, 
            x_lhs_periodic, x_lhs_mirror, x_rhs_periodic, x_rhs_mirror,
            y_lhs_periodic, y_lhs_mirror, y_rhs_periodic, y_rhs_mirror,
-	       z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror};
+           z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror};
 
 
 //=============================================================================
@@ -171,7 +171,6 @@ struct SphParticle
 
 
 
-
 //=============================================================================
 //  Structure SphIntParticle
 /// \brief  SPH particle integration data structure.
@@ -220,6 +219,22 @@ struct SphIntParticle
 #endif
 };
 
+
+
+//=============================================================================
+//  Structure SphType
+/// \brief  ..
+/// \author D. A. Hubber, G. Rosotti
+/// \date   10/02/2014
+//=============================================================================
+struct SphType
+{
+  bool motion;
+  bool hydro_forces;
+  bool self_gravity;
+  bool hydromask[4];
+  bool gravitymask[4];
+};
 
 
 

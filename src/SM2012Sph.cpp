@@ -408,20 +408,6 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphDerivatives
 
 
 //=============================================================================
-//  SM2012Sph::ComputePostHydroQuantities
-/// ..
-//=============================================================================
-template <int ndim, template<int> class kernelclass>
-void SM2012Sph<ndim, kernelclass >::ComputePostHydroQuantities
-(SphParticle<ndim> &parti)
-{
-  parti.div_v *= parti.invrho;
-  return;
-}
-
-
-
-//=============================================================================
 //  SM2012Sph::ComputeSphHydroGravForces
 /// Empty function (for now).
 //=============================================================================
