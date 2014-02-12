@@ -187,6 +187,8 @@ void BinaryTree<ndim>::BuildTree
  Sph<ndim> *sph)                    ///< Pointer to SPH object
 {
   debug2("[BinaryTree::BuildTree]");
+  timing->StartTimingSection("BUILD_TREE",2);
+
 
   // For tree rebuild steps
   //---------------------------------------------------------------------------
@@ -239,6 +241,7 @@ void BinaryTree<ndim>::BuildTree
   }
   //---------------------------------------------------------------------------
 
+  timing->EndTimingSection("BUILD_TREE");
 
   return;
 }
@@ -928,6 +931,7 @@ void BinaryTree<ndim>::UpdateActiveParticleCounters
   int Nptcl=0;
 
   debug2("[BinaryTree::UpdateActiveParticleCounters]");
+  timing->StartTimingSection("TREE_UPDATE_COUNTERS",2);
 
 
   // Loop through all grid cells in turn
@@ -948,6 +952,8 @@ void BinaryTree<ndim>::UpdateActiveParticleCounters
 
   }
   //---------------------------------------------------------------------------
+
+  timing->EndTimingSection("TREE_UPDATE_COUNTERS");
 
   return;
 }
@@ -1783,6 +1789,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
   int ithread;
 
   debug2("[BinaryTree::UpdateAllSphProperties]");
+  timing->StartTimingSection("SPH_PROPERTIES",2);
 
   // Find list of all cells that contain active particles
   celllist = new BinaryTreeCell<ndim>*[gtot];
@@ -1950,6 +1957,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 
   delete[] celllist;
 
+  timing->EndTimingSection("SPH_PROPERTIES");
 
   return;
 }
@@ -1999,6 +2007,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
   SphParticle<ndim> *neibpart;
 
   debug2("[BinaryTree::UpdateAllSphHydroForces]");
+  timing->StartTimingSection("SPH_HYDRO_FORCES",2);
 
   // Update tree smoothing length values here
   UpdateHmaxValues(tree[0],sph->sphdata);
@@ -2182,6 +2191,8 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 
   delete[] celllist;
 
+  timing->EndTimingSection("SPH_HYDRO_FORCES");
+
   return;
 }
 
@@ -2238,7 +2249,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
 
   debug2("[BinaryTree::UpdateAllSphForces]");
-
+  timing->StartTimingSection("SPH_ALL_FORCES",2);
 
   // Update tree smoothing length values here
   UpdateHmaxValues(tree[0],sph->sphdata);
@@ -2452,6 +2463,8 @@ void BinaryTree<ndim>::UpdateAllSphForces
   //cout << "Average Ndirect     : " << Ndirectcount/Nactivecount << endl;
   //cout << "Average Ngravcell   : " << Ncellcount/Nactivecount << endl;
 
+  timing->EndTimingSection("SPH_ALL_FORCES");
+
   return;
 }
 
@@ -2506,9 +2519,8 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
   int Ndirectcount = 0;
   int Nneibcount = 0;
 
-
   debug2("[BinaryTree::UpdateAllSphGravForces]");
-
+  timing->StartTimingSection("SPH_GRAV_FORCES",2);
 
   // Update tree smoothing length values here
   UpdateHmaxValues(tree[0],sph->sphdata);
@@ -2715,6 +2727,7 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
   //cout << "Average Nneib       : " << Nneibcount/Nactivecount << endl;
   //cout << "Average Ndirect     : " << Ndirectcount/Nactivecount << endl;
   //cout << "Average Ngravcell   : " << Ncellcount/Nactivecount << endl;
+  timing->EndTimingSection("SPH_GRAV_FORCES");
 
   return;
 }
@@ -2759,7 +2772,7 @@ void BinaryTree<ndim>::UpdateAllStarGasForces
   int Nneibcount = 0;
 
   debug2("[BinaryTree::UpdateAllStarGasForces]");
-
+  timing->StartTimingSection("STAR_GAS_GRAV_FORCES",2);
 
   // Make list of all active stars
   Nactive = 0;
@@ -2852,6 +2865,7 @@ void BinaryTree<ndim>::UpdateAllStarGasForces
   //cout << "Average Nneib       : " << Nneibcount/Nactivecount << endl;
   //cout << "Average Ndirect     : " << Ndirectcount/Nactivecount << endl;
   //cout << "Average Ngravcell   : " << Ncellcount/Nactivecount << endl;
+  timing->EndTimingSection("STAR_GAS_GRAV_FORCES");
 
   return;
 }

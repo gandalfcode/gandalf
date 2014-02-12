@@ -34,6 +34,7 @@
 #include <map>
 #include <string>
 #include <list>
+#include "CodeTiming.h"
 #include "Diagnostics.h"
 #include "DomainBox.h"
 #include "Precision.h"
@@ -164,6 +165,7 @@ class SimulationBase
 
   Parameters* simparams;            ///< Simulation parameters object (pointer)
   SimUnits simunits;                ///< Simulation units object
+  CodeTiming *timing;               ///< Simulation timing object (pointer)
 
 };
 
@@ -305,6 +307,7 @@ template <int ndim>
 class SphSimulation : public Simulation<ndim> 
 {
   using SimulationBase::simparams;
+  using SimulationBase::timing;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
   using Simulation<ndim>::sinks;
@@ -375,6 +378,7 @@ template <int ndim>
 class GodunovSphSimulation : public Simulation<ndim> 
 {
   using SimulationBase::simparams;
+  using SimulationBase::timing;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
   using Simulation<ndim>::sinks;
@@ -443,6 +447,7 @@ template <int ndim>
 class NbodySimulation : public Simulation<ndim> 
 {
   using SimulationBase::simparams;
+  using SimulationBase::timing;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
   using Simulation<ndim>::subsystem;

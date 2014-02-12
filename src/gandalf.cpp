@@ -22,6 +22,7 @@
 #include "Exception.h"
 #include "Parameters.h"
 #include "Simulation.h"
+#include "CodeTiming.h"
 #ifdef MPI_PARALLEL
 #include "mpi.h"
 #endif
@@ -34,6 +35,7 @@ using namespace std;
 //=============================================================================
 int main(int argc, char** argv)
 {
+  CodeTiming* timing = new CodeTiming();             // Timing object
   SimulationBase* sim;                               // Main simulation object
   Parameters* params = new Parameters();             // Parameters object
   string paramfile;                                  // Name of parameters file
@@ -73,7 +75,8 @@ int main(int argc, char** argv)
 
 
   // Create simulation object with required dimensionality and parameters
-  sim = SimulationBase::SimulationFactory(params->intparams["ndim"], params);
+  sim = SimulationBase::SimulationFactory(params->intparams["ndim"],params);
+  sim->timing = timing;
 
   // Print out splash screen
   if (rank == 0) sim->SplashScreen();
@@ -87,6 +90,9 @@ int main(int argc, char** argv)
 #ifdef MPI_PARALLEL
   MPI_Finalize();
 #endif
+
+  // Compile timing statistics from complete simulation
+  timing->ComputeTimingStatistics();
 
   return 0;
 }

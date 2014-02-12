@@ -53,6 +53,7 @@ class EnergyEquation
   virtual DOUBLE Timestep(SphParticle<ndim> &) = 0;
 
   const DOUBLE energy_mult;
+  CodeTiming *timing;               ///< Pointer to code timing object
 
 };
 
@@ -67,6 +68,8 @@ template <int ndim>
 class EnergyPEC: public EnergyEquation<ndim>
 {
  public:
+
+  using EnergyEquation<ndim>::timing;
 
   EnergyPEC(DOUBLE);
   ~EnergyPEC();

@@ -27,6 +27,7 @@
 
 #include <string>
 #include "Precision.h"
+#include "CodeTiming.h"
 #include "Constants.h"
 #include "Parameters.h"
 #include "SphKernel.h"
@@ -110,6 +111,8 @@ class Nbody
   struct StarParticle<ndim> *stardata;  ///< Main star particle data array
   struct SystemParticle<ndim> *system;  ///< Main system particle array
 
+  CodeTiming *timing;                   ///< Pointer to code timing object
+
 };
 
 
@@ -129,6 +132,7 @@ public:
   using Nbody<ndim>::Nsystem;
   using Nbody<ndim>::stardata;
   using Nbody<ndim>::system;
+  using Nbody<ndim>::timing;
 
   NbodyLeapfrogKDK(int, int, DOUBLE, string);
   ~NbodyLeapfrogKDK();
@@ -171,6 +175,7 @@ public:
   using Nbody<ndim>::Nsystem;
   using Nbody<ndim>::stardata;
   using Nbody<ndim>::system;
+  using Nbody<ndim>::timing;
 
   NbodyLeapfrogDKD(int, int, DOUBLE, string);
   ~NbodyLeapfrogDKD();
@@ -215,6 +220,7 @@ public:
   using Nbody<ndim>::stardata;
   using Nbody<ndim>::system;
   using Nbody<ndim>::perturbers;
+  using Nbody<ndim>::timing;
 
   NbodyHermite4(int, int, DOUBLE, string, int Npec=1);
   ~NbodyHermite4();
@@ -265,6 +271,7 @@ public:
   using Nbody<ndim>::EndTimestep;
   using Nbody<ndim>::CalculateDirectGravForces;
   using Nbody<ndim>::perturbers;
+  using Nbody<ndim>::timing;
 
   NbodyHermite4TS(int, int, DOUBLE, string, int);
   ~NbodyHermite4TS();

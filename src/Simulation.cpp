@@ -283,6 +283,7 @@ void SimulationBase::Run
                                     // main code integration.
 
   debug1("[SphSimulation::Run]");
+  timing->StartTimingSection("RUN",1);
 
   // Set integer timestep exit condition if provided as parameter.
   if (Nadvance < 0) Ntarget = Nstepsmax;
@@ -304,6 +305,8 @@ void SimulationBase::Run
   UpdateDiagnostics();
   cout << "Final t : " << t*simunits.t.outscale << " " << simunits.t.outunit
        << "    Total no. of steps : " << Nsteps << endl;
+
+  timing->EndTimingSection("RUN");
 
   return;
 }
@@ -383,6 +386,7 @@ string SimulationBase::Output(void)
   stringstream ss;                  // Stream object for preparing filename
 
   debug2("[SimulationBase::Output]");
+  timing->StartTimingSection("OUTPUT",2);
 
   if (rank == 0)
     if (Nsteps%noutputstep == 0)
@@ -409,6 +413,8 @@ string SimulationBase::Output(void)
     UpdateDiagnostics();
   }
 
+  timing->EndTimingSection("OUTPUT");
+
   return filename;
 }
 
@@ -421,6 +427,7 @@ string SimulationBase::Output(void)
 void SimulationBase::SetupSimulation(void)
 {
   debug1("[SimulationBase::Setup]");
+  timing->StartTimingSection("SETUP",1);
 
   if (setup) {
     string msg = "This simulation has been already set up";
@@ -459,6 +466,8 @@ void SimulationBase::SetupSimulation(void)
   PostInitialConditionsSetup();
 
   Output();
+
+  timing->EndTimingSection("SETUP");
 
   return;
 }
@@ -571,7 +580,6 @@ void Simulation<ndim>::ProcessParameters(void)
   sph->Nsph           = intparams["Nsph"];
   sph->Nsphmax        = intparams["Nsphmax"];
   sph->create_sinks   = intparams["create_sinks"];
-  sph->time_dependent_avisc = intparams["time_dependent_avisc"];
   sph->alpha_visc_min = floatparams["alpha_visc_min"];
 
 
@@ -663,6 +671,14 @@ void Simulation<ndim>::ProcessParameters(void)
   tsnapnext             = floatparams["tsnapfirst"]/simunits.t.outscale;
 
 
+  // Set pointers to timing object
+  nbody->timing = timing;
+  sinks.timing = timing;
+  sphint->timing = timing;
+  sphneib->timing = timing;
+  uint->timing = timing;
+
+
   // Flag that we've processed all parameters already
   ParametersProcessed = true;
 
@@ -681,6 +697,7 @@ void Simulation<ndim>::ProcessSphParameters(void)
 {
   aviscenum avisc;                  // Artificial viscosity enum
   acondenum acond;                  // Artificial conductivity enum
+  tdaviscenum tdavisc;              // Time-dependent viscosity enum
 
   // Local references to parameter variables for brevity
   map<string, int> &intparams = simparams->intparams;
@@ -691,10 +708,13 @@ void Simulation<ndim>::ProcessSphParameters(void)
 
   // Set the enum for artificial viscosity
   if (stringparams["avisc"] == "none")
-    avisc = noneav;
+    avisc = noav;
   else if (stringparams["avisc"] == "mon97" &&
-           intparams["time_dependent_avisc"] == 1)
-    avisc = mon97td;
+           stringparams["time_dependent_avisc"] == "mm97")
+    avisc = mon97mm97;
+  else if (stringparams["avisc"] == "mon97" &&
+           stringparams["time_dependent_avisc"] == "cd2010")
+    avisc = mon97cd2010;
   else if (stringparams["avisc"] == "mon97")
     avisc = mon97;
   else {
@@ -703,9 +723,22 @@ void Simulation<ndim>::ProcessSphParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
+  // Set the enum for artificial viscosity
+  if (stringparams["time_dependent_avisc"] == "none")
+    tdavisc = notdav;
+  else if (stringparams["time_dependent_avisc"] == "mm97")
+    tdavisc = mm97;
+  else if (stringparams["time_dependent_avisc"] == "cd2010")
+    tdavisc = cd2010;
+  else {
+    string message = "Unrecognised parameter : time_dependent_avisc = " +
+      simparams->stringparams["time_dependent_avisc"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
   // Set the enum for artificial conductivity
   if (stringparams["acond"] == "none")
-    acond = noneac;
+    acond = noac;
   else if (stringparams["acond"] == "wadsley2008")
     acond = wadsley2008;
   else if (stringparams["acond"] == "price2008")
@@ -725,7 +758,7 @@ void Simulation<ndim>::ProcessSphParameters(void)
 	(intparams["hydro_forces"], intparams["self_gravity"],
 	 floatparams["alpha_visc"], floatparams["beta_visc"],
 	 floatparams["h_fac"], floatparams["h_converge"], 
-	 avisc, acond, stringparams["gas_eos"], KernelName);
+	 avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
     }
     else if (intparams["tabulated_kernel"] == 0) {
       // Depending on the kernel, instantiate a different GradSph object
@@ -734,21 +767,21 @@ void Simulation<ndim>::ProcessSphParameters(void)
 	  (intparams["hydro_forces"], intparams["self_gravity"],
 	   floatparams["alpha_visc"], floatparams["beta_visc"],
 	   floatparams["h_fac"], floatparams["h_converge"],
-	   avisc, acond, stringparams["gas_eos"], KernelName);
+	   avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
       }
       else if (KernelName == "quintic") {
 	sph = new GradhSph<ndim, QuinticKernel> 
 	  (intparams["hydro_forces"], intparams["self_gravity"],
 	   floatparams["alpha_visc"], floatparams["beta_visc"],
 	   floatparams["h_fac"], floatparams["h_converge"],
-	   avisc, acond, stringparams["gas_eos"], KernelName);
+	   avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
       }
       else if (KernelName == "gaussian") {
 	sph = new GradhSph<ndim, GaussianKernel> 
 	  (intparams["hydro_forces"], intparams["self_gravity"],
 	   floatparams["alpha_visc"], floatparams["beta_visc"],
 	   floatparams["h_fac"], floatparams["h_converge"],
-	   avisc, acond, stringparams["gas_eos"], KernelName);
+	   avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
       }
       else {
 	string message = "Unrecognised parameter : kernel = " +
@@ -771,30 +804,30 @@ void Simulation<ndim>::ProcessSphParameters(void)
         (intparams["hydro_forces"], intparams["self_gravity"],
 	 floatparams["alpha_visc"], floatparams["beta_visc"],
 	 floatparams["h_fac"], floatparams["h_converge"],
-	 avisc, acond, stringparams["gas_eos"], KernelName);
+	 avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
     }
     else if (intparams["tabulated_kernel"] == 0){
-      // Depending on the kernel, instantiate a different GradSph object
+      // Depending on the kernel, instantiate a different SM2012 object
       if (KernelName == "m4") {
 	sph = new SM2012Sph<ndim, M4Kernel> 
 	  (intparams["hydro_forces"], intparams["self_gravity"],
 	   floatparams["alpha_visc"], floatparams["beta_visc"],
 	   floatparams["h_fac"], floatparams["h_converge"],
-	   avisc, acond, stringparams["gas_eos"], KernelName);
+	   avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
       }
       else if (KernelName == "quintic") {
 	sph = new SM2012Sph<ndim, QuinticKernel> 
 	  (intparams["hydro_forces"], intparams["self_gravity"],
 	   floatparams["alpha_visc"], floatparams["beta_visc"],
 	   floatparams["h_fac"], floatparams["h_converge"],
-	   avisc, acond, stringparams["gas_eos"], KernelName);
+	   avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
       }
       else if (KernelName == "gaussian") {
 	sph = new SM2012Sph<ndim, GaussianKernel> 
 	  (intparams["hydro_forces"], intparams["self_gravity"],
 	   floatparams["alpha_visc"], floatparams["beta_visc"],
 	   floatparams["h_fac"], floatparams["h_converge"],
-	   avisc, acond, stringparams["gas_eos"], KernelName);
+	   avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
       }
       else {
 	string message = "Unrecognised parameter : kernel = " +
@@ -854,14 +887,13 @@ void Simulation<ndim>::ProcessSphParameters(void)
   // Depending on the dimensionality, calculate expected neighbour number
   //---------------------------------------------------------------------------
   if (ndim == 1)
-	sph->Ngather = (int) (2.0*sph->kernp->kernrange*sph->h_fac);
+    sph->Ngather = (int) (2.0*sph->kernp->kernrange*sph->h_fac);
   else if (ndim == 2)
-	sph->Ngather = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac,2));
+    sph->Ngather = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac,2));
   else if (ndim == 3)
     sph->Ngather = (int) (4.0*pi*pow(sph->kernp->kernrange*sph->h_fac,3)/3.0);
+
   return;
-
-
 }
 
 
@@ -875,6 +907,7 @@ void Simulation<ndim>::ProcessGodunovSphParameters(void)
 {
   aviscenum avisc;                  // Artificial viscosity enum
   acondenum acond;                  // Artificial conductivity enum
+  tdaviscenum tdavisc;              // Time-dependent viscosity enum
 
   map<string, int> &intparams = simparams->intparams;
   map<string, float> &floatparams = simparams->floatparams;
@@ -888,7 +921,7 @@ void Simulation<ndim>::ProcessGodunovSphParameters(void)
       (intparams["hydro_forces"], intparams["self_gravity"],
        floatparams["alpha_visc"], floatparams["beta_visc"],
        floatparams["h_fac"], floatparams["h_converge"], 
-       avisc, acond, stringparams["gas_eos"], KernelName);
+       avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
   }
   else if (intparams["tabulated_kernel"] == 0) {
     if (KernelName == "gaussian") {
@@ -896,7 +929,7 @@ void Simulation<ndim>::ProcessGodunovSphParameters(void)
         (intparams["hydro_forces"], intparams["self_gravity"],
          floatparams["alpha_visc"], floatparams["beta_visc"],
          floatparams["h_fac"], floatparams["h_converge"],
-         avisc, acond, stringparams["gas_eos"], KernelName);
+         avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
     }
     else {
       string message = "Unrecognised parameter : kernel = " +

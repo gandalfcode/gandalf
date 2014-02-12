@@ -121,7 +121,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
   FLOAT rho_max = 0.0;              // Maximum density of sink candidates
 
   debug2("[Sinks::SearchForNewSinkParticles]");
-
+  timing->StartTimingSection("SEARCH_NEW_SINKS",2);
 
   // Continuous loop to search for new sinks.  If a new sink is found, then 
   // repeat entire process to search for other sinks on current timestep. 
@@ -176,6 +176,8 @@ void Sinks<ndim>::SearchForNewSinkParticles
 
   } while (isink != -1);
   //===========================================================================
+
+  timing->EndTimingSection("SEARCH_NEW_SINKS");
 
   return;
 }
@@ -314,7 +316,7 @@ void Sinks<ndim>::AccreteMassToSinks
   //SinkParticle<ndim> *s1;           // Local reference to sink
 
   debug2("[Sinks::AccreteMassToSinks]");
-
+  timing->StartTimingSection("ACCRETE_MASS",2);
 
   // Allocate local memory and initialise values
   for (i=0; i<sph->Ntot; i++) sph->sphdata[i].sinkid = -1;
@@ -569,6 +571,8 @@ void Sinks<ndim>::AccreteMassToSinks
   delete[] ilist2;
   delete[] ilist;
   delete[] deadlist;
+
+  timing->EndTimingSection("ACCRETE_MASS");
 
   return;
 }

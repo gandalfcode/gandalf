@@ -31,6 +31,7 @@
 #include <vector>
 #include "Precision.h"
 #include "Constants.h"
+#include "CodeTiming.h"
 #include "SphKernel.h"
 #include "SphParticle.h"
 #include "Sph.h"
@@ -115,6 +116,7 @@ class SphNeighbourSearch
 
   bool neibcheck;                   ///< Flag to verify neighbour lists
   DomainBox<ndim> *box;             ///< Pointer to simulation bounding box
+  CodeTiming *timing;               ///< Pointer to code timing object
 
 };
 
@@ -134,7 +136,8 @@ template <int ndim>
 class BruteForceSearch: public SphNeighbourSearch<ndim>
 {
   using SphNeighbourSearch<ndim>::neibcheck;
-
+  using SphNeighbourSearch<ndim>::timing;
+  
  public:
 
   BruteForceSearch();
@@ -169,6 +172,7 @@ template <int ndim>
 class GridSearch: public SphNeighbourSearch<ndim>
 {
   using SphNeighbourSearch<ndim>::neibcheck;
+  using SphNeighbourSearch<ndim>::timing;
 
  public:
 
@@ -237,6 +241,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
 
   using SphNeighbourSearch<ndim>::neibcheck;
   using SphNeighbourSearch<ndim>::box;
+  using SphNeighbourSearch<ndim>::timing;
 
   BinaryTree(int, FLOAT, FLOAT, string, string);
   ~BinaryTree();

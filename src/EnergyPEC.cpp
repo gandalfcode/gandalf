@@ -1,7 +1,7 @@
 //=============================================================================
 //  EnergyPEC.cpp
 //  Contains functions for energy equation integration using a 
-//  Predict-Evalulate-Correct (PEC) scheme.
+//  Predict-Evaluate-Correct (PEC) scheme.
 //  N.B. this PEC scheme is the same as integrating the particle velocities 
 //  in the Leapfrog KDK scheme.
 //
@@ -111,6 +111,7 @@ void EnergyPEC<ndim>::EnergyIntegration
   FLOAT dt;                         // Timestep since start of step
 
   debug2("[EnergyPEC::EnergyIntegration]");
+  timing->StartTimingSection("ENERGY_INTEGRATION",2);
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,dt,i,nstep) \
@@ -122,6 +123,8 @@ void EnergyPEC<ndim>::EnergyIntegration
     sphintdata[i].part->u = sphintdata[i].u0 + sphintdata[i].dudt0*dt;
   }
   //---------------------------------------------------------------------------
+
+  timing->EndTimingSection("ENERGY_INTEGRATION");
 
   return;
 }
@@ -146,6 +149,7 @@ void EnergyPEC<ndim>::EnergyCorrectionTerms
   int nstep;                        // Particle (integer) step size
 
   debug2("[EnergyPEC::EnergyCorrectionTerms]");
+  timing->StartTimingSection("ENERGY_CORRECTION_TERMS",2);
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,nstep) \
@@ -157,6 +161,8 @@ void EnergyPEC<ndim>::EnergyCorrectionTerms
       0.5*(sphintdata[i].part->dudt - sphintdata[i].dudt0)*timestep*(FLOAT) nstep;
   }
   //---------------------------------------------------------------------------
+
+  timing->EndTimingSection("ENERGY_CORRECTION_TERMS");
 
   return;
 }
@@ -179,6 +185,7 @@ void EnergyPEC<ndim>::EndTimestep
   int nstep;                        // Particle (integer) step size
 
   debug2("[EnergyPEC::EndTimestep]");
+  timing->StartTimingSection("ENERGY_END_TIMESTEP",2);
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,nstep) \
@@ -192,6 +199,8 @@ void EnergyPEC<ndim>::EndTimestep
     }
   }
   //---------------------------------------------------------------------------
+
+  timing->EndTimingSection("ENERGY_END_TIMESTEP");
 
   return;
 }

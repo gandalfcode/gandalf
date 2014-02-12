@@ -83,6 +83,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectGravForces
   DOUBLE invdrmag;                  // 1 / drmag
 
   debug2("[NbodyLeapfrogKDK::CalculateDirectGravForces]");
+  timing->StartTimingSection("NBODY_DIRECT_GRAV",2);
 
   // Loop over all (active) stars
   //---------------------------------------------------------------------------
@@ -107,6 +108,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectGravForces
 
   }
   //---------------------------------------------------------------------------
+
+  timing->EndTimingSection("NBODY_DIRECT_GRAV");
 
   return;
 }
@@ -247,6 +250,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles
   DOUBLE dt;                        // Timestep since start of step
 
   debug2("[NbodyLeapfrogKDK::AdvanceParticles]");
+  timing->StartTimingSection("NBODY_ADVANCE",2);
 
   // Advance positions and velocities of all star particles
   //---------------------------------------------------------------------------
@@ -268,6 +272,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::AdvanceParticles
     else star[i]->active = false;
   }
   //---------------------------------------------------------------------------
+
+  timing->EndTimingSection("NBODY_ADVANCE");
 
   return;
 }
@@ -295,6 +301,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectionTerms
   int nstep;                        // Particle (integer) step size
 
   debug2("[NbodyLeapfrogKDK::CorrectionTerms]");
+  timing->StartTimingSection("NBODY_CORRECTION_TERMS",2);
 
   // Loop over all star particles and calculate correction terms only for 
   // those at end of step.
@@ -307,6 +314,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CorrectionTerms
 	0.5*(star[i]->a[k] - star[i]->a0[k])*timestep*(DOUBLE) nstep;
   }
   //---------------------------------------------------------------------------
+
+  timing->EndTimingSection("NBODY_CORRECTION_TERMS");
 
   return;
 }
@@ -371,6 +380,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
   int nstep;                        // Particle (integer) step size
 
   debug2("[NbodyLeapfrogKDK::EndTimestep]");
+  timing->StartTimingSection("NBODY_END_TIMESTEP",2);
 
   // Loop over all star particles and set values for those at end of step
   //---------------------------------------------------------------------------
@@ -387,6 +397,8 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::EndTimestep
     }
   }
   //---------------------------------------------------------------------------
+
+  timing->EndTimingSection("NBODY_END_TIMESTEP");
 
   return;
 }

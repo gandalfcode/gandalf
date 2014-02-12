@@ -26,6 +26,7 @@
 
 
 #include "Precision.h"
+#include "CodeTiming.h"
 #include "Constants.h"
 #include "Sph.h"
 #include "EOS.h"
@@ -52,15 +53,17 @@ class SphIntegration
   SphIntegration(DOUBLE, DOUBLE);
   ~SphIntegration();
 
-  virtual void AdvanceParticles(int, int, SphIntParticle<ndim> *, FLOAT) = 0;
-  virtual void CorrectionTerms(int, int, SphIntParticle<ndim> *, FLOAT) = 0;
-  virtual void EndTimestep(int, int, SphIntParticle<ndim> *) = 0;
-  virtual int CheckTimesteps(int, int, int, SphIntParticle<ndim> *) = 0;
-  virtual DOUBLE Timestep(SphParticle<ndim> &, int);
+  virtual void AdvanceParticles(int, FLOAT, Sph<ndim> *) = 0;
+  virtual void CorrectionTerms(int, FLOAT, Sph<ndim> *) = 0;
+  virtual void EndTimestep(int, Sph<ndim> *) = 0;
+  virtual int CheckTimesteps(int, int, Sph<ndim> *) = 0;
+  virtual DOUBLE Timestep(SphParticle<ndim> &, Sph<ndim> *);
   
   const DOUBLE courant_mult;
   const DOUBLE accel_mult;
   static const int vdim=ndim;
+
+  CodeTiming *timing;               ///< Pointer to code timing object
 
 };
 
@@ -80,13 +83,15 @@ class SphLeapfrogKDK: public SphIntegration<ndim>
 {
  public:
 
+  using SphIntegration<ndim>::timing;
+
   SphLeapfrogKDK(DOUBLE, DOUBLE);
   ~SphLeapfrogKDK();
 
-  void AdvanceParticles(int, int, SphIntParticle<ndim> *, FLOAT);
-  void CorrectionTerms(int, int, SphIntParticle<ndim> *, FLOAT);
-  void EndTimestep(int, int, SphIntParticle<ndim> *);
-  int CheckTimesteps(int, int, int, SphIntParticle<ndim> *);
+  void AdvanceParticles(int, FLOAT, Sph<ndim> *);
+  void CorrectionTerms(int, FLOAT, Sph<ndim> *);
+  void EndTimestep(int, Sph<ndim> *);
+  int CheckTimesteps(int, int, Sph<ndim> *);
 
 };
 
@@ -106,13 +111,15 @@ class SphLeapfrogDKD: public SphIntegration<ndim>
 {
  public:
 
+  using SphIntegration<ndim>::timing;
+
   SphLeapfrogDKD(DOUBLE, DOUBLE);
   ~SphLeapfrogDKD();
 
-  void AdvanceParticles(int, int, SphIntParticle<ndim> *, FLOAT);
-  void CorrectionTerms(int, int, SphIntParticle<ndim> *, FLOAT);
-  void EndTimestep(int, int, SphIntParticle<ndim> *);
-  int CheckTimesteps(int, int, int, SphIntParticle<ndim> *);
+  void AdvanceParticles(int, FLOAT, Sph<ndim> *);
+  void CorrectionTerms(int, FLOAT, Sph<ndim> *);
+  void EndTimestep(int, Sph<ndim> *);
+  int CheckTimesteps(int, int, Sph<ndim> *);
 
 };
 
@@ -132,14 +139,16 @@ class SphGodunovIntegration: public SphIntegration<ndim>
 {
  public:
 
+  using SphIntegration<ndim>::timing;
+
   SphGodunovIntegration(DOUBLE, DOUBLE);
   ~SphGodunovIntegration();
 
-  void AdvanceParticles(int, int, SphIntParticle<ndim> *, FLOAT);
-  void CorrectionTerms(int, int, SphIntParticle<ndim> *, FLOAT);
-  void EndTimestep(int, int, SphIntParticle<ndim> *);
-  int CheckTimesteps(int, int, int, SphIntParticle<ndim> *);
-  DOUBLE Timestep(SphParticle<ndim> &, int);
+  void AdvanceParticles(int, FLOAT, Sph<ndim> *);
+  void CorrectionTerms(int, FLOAT, Sph<ndim> *);
+  void EndTimestep(int, Sph<ndim> *);
+  int CheckTimesteps(int, int, Sph<ndim> *);
+  DOUBLE Timestep(SphParticle<ndim> &, Sph<ndim> *);
 
   static const int vdim = ndim;
 

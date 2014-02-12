@@ -65,22 +65,28 @@ SphIntegration<ndim>::~SphIntegration()
 
 
 //=============================================================================
-// SphIntegration::Timestep
+//  SphIntegration::Timestep
 /// Default timestep size for SPH particles.  Takes the minimum of : 
 /// (i)  const*h/(sound_speed + h*|div_v|)    (Courant condition)
 /// (ii) const*sqrt(h/|a|)                    (Acceleration condition)
 //=============================================================================
 template <int ndim>
 DOUBLE SphIntegration<ndim>::Timestep
-(SphParticle<ndim> &part,               ///< Reference to SPH particle
- int hydro_forces)                      ///< Hydro forces flag
+(SphParticle<ndim> &part,           ///< Reference to SPH particle
+ Sph<ndim> *sph)                    ///< Pointer to main SPH object
 {
   DOUBLE timestep;                      // Minimum value of particle timesteps
   DOUBLE amag;                          // Magnitude of particle acceleration
 
   // Courant condition.  If hydro forces are not used, compute the 
   // timescale using only div_v, i.e. the compression timescale.
-  if (hydro_forces == 1)
+  if (sph->hydro_forces == 1 && sph->avisc == mon97)
+    //imestep = courant_mult*part.h/
+      //(part.sound + part.h*fabs(part.div_v) +
+       //0.6*(part.sound + 2.0*part.h*fabs(part.div_v))) ;
+    timestep = courant_mult*part.h/
+      (part.sound + part.h*fabs(part.div_v) + small_number_dp);
+  else if (sph->hydro_forces == 1)
     //imestep = courant_mult*part.h/
       //(part.sound + part.h*fabs(part.div_v) +
        //0.6*(part.sound + 2.0*part.h*fabs(part.div_v))) ;

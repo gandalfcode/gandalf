@@ -27,6 +27,7 @@
 
 #include <string>
 #include "Precision.h"
+#include "CodeTiming.h"
 #include "Constants.h"
 #include "Parameters.h"
 #include "SphKernel.h"
@@ -110,7 +111,7 @@ class Sinks
 
   Sinks();
   ~Sinks();
-
+  
   // Function prototypes
   //---------------------------------------------------------------------------
   void AllocateMemory(int);
@@ -119,7 +120,7 @@ class Sinks
   void CreateNewSinkParticle(int, Sph<ndim> *, Nbody<ndim> *);
   void AccreteMassToSinks(Sph<ndim> *, Nbody<ndim> *, int, DOUBLE);
   //void UpdateSystemProperties(void);
-
+  
   // Local class variables
   //---------------------------------------------------------------------------
   bool allocated_memory;            ///< Has sink memory been allocated?
@@ -137,5 +138,7 @@ class Sinks
 
   SinkParticle<ndim> *sink;         ///< Main sink particle array
 
+  CodeTiming *timing;               ///< Pointer to code timing objectx
+      
 };
 #endif

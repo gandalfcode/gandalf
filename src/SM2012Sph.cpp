@@ -48,11 +48,11 @@ template <int ndim, template<int> class kernelclass>
 SM2012Sph<ndim, kernelclass >::SM2012Sph(int hydro_forces_aux,
 	    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
 	    FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
-	    acondenum acond_aux, string gas_eos_aux, string KernelName):
-  Sph<ndim>(hydro_forces_aux,
-		    self_gravity_aux, alpha_visc_aux, beta_visc_aux,
-		    h_fac_aux, h_converge_aux, avisc_aux,
-		    acond_aux, gas_eos_aux, KernelName),
+	    acondenum acond_aux, tdaviscenum tdavisc_aux, string gas_eos_aux, 
+            string KernelName):
+  Sph<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux, beta_visc_aux,
+	    h_fac_aux, h_converge_aux, avisc_aux, acond_aux, tdavisc_aux, 
+            gas_eos_aux, KernelName),
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp = &kern;
@@ -306,7 +306,7 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
         parti.dudt -= neibpart[j].m*uaux;
         neibpart[j].dudt -= parti.m*uaux;
       }
-      else if (avisc == mon97td) {
+      else if (avisc == mon97mm97) {
         alpha_mean = 0.5*(parti.alpha + neibpart[j].alpha);
         vsignal = parti.sound + neibpart[j].sound - beta_visc*alpha_mean*dvdr;
         paux -= (FLOAT) alpha_mean*vsignal*dvdr*winvrho;

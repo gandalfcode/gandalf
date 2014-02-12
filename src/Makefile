@@ -162,6 +162,7 @@ OBJ += NbodySystemTree.o
 OBJ += Sinks.o
 OBJ += Ghosts.o
 OBJ += SphSnapshot.o
+OBJ += CodeTiming.o
 
 ifeq ($(MPI),1)
 OBJ += MpiNode.o MpiControl.o

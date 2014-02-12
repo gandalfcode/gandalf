@@ -42,9 +42,10 @@ using namespace std;
 #include "omp.h"
 #endif
 
-enum aviscenum{noneav, mon97, mon97td};
-enum acondenum{noneac, wadsley2008, price2008};
 
+enum aviscenum{noav, mon97, mon97mm97, mon97cd2010};
+enum acondenum{noac, wadsley2008, price2008};
+enum tdaviscenum{notdav, mm97, cd2010};
 
 
 //=============================================================================
@@ -60,24 +61,18 @@ enum acondenum{noneac, wadsley2008, price2008};
 template <int ndim>
 class Sph
 {
-private:
-
-#if defined _OPENMP
-  void InitParticleLocks();
-  void DestroyParticleLocks();
-#endif
-
  public:
 
-  const aviscenum avisc;
-  const acondenum acond;
+  const acondenum acond;              ///< Artificial conductivity enum
+  const aviscenum avisc;              ///< Artificial viscosity enum
+  const tdaviscenum tdavisc;          ///< Time-dependent art. viscosity enum
 
   // Constructor
   //---------------------------------------------------------------------------
   Sph(int hydro_forces_aux, int self_gravity_aux, FLOAT alpha_visc_aux, 
       FLOAT beta_visc_aux, FLOAT h_fac_aux, FLOAT h_converge_aux, 
-      aviscenum avisc_aux, acondenum acond_aux, string gas_eos_aux, 
-      string KernelName);
+      aviscenum avisc_aux, acondenum acond_aux, tdaviscenum tdavisc_aux, 
+      string gas_eos_aux, string KernelName);
 
 
   // SPH functions for computing SPH sums with neighbouring particles 
@@ -117,15 +112,21 @@ private:
   // Functions needed to hide some implementation details
   //---------------------------------------------------------------------------
   SphParticle<ndim>* GetParticleIPointer(int i) {return &sphdata[i];};
-#if defined _OPENMP
-  omp_lock_t& GetParticleILock(int i) {return locks[i];};
-  omp_lock_t* locks;
-#endif
 
 
   // SPH particle counters and main particle data array
   //---------------------------------------------------------------------------
+  const int hydro_forces;             ///< Compute hydro forces?
+  const int self_gravity;             ///< Compute gravitational forces?
+  const FLOAT alpha_visc;             ///< alpha artificial viscosity parameter
+  const FLOAT beta_visc;              ///< beta artificial viscosity parameter
+  const FLOAT h_fac;                  ///< Smoothing length-density factor
+  const FLOAT h_converge;             ///< h-rho iteration tolerance
+  const string gas_eos;               ///< Gas EOS option
+  static const FLOAT invndim=1./ndim; ///< Copy of 1/ndim
+
   bool allocated;                     ///< Is SPH memory allocated?
+  int create_sinks;                   ///< Create new sink particles?
   int Ngather;                        ///< Average no. of gather neighbours
   int Nsph;                           ///< No. of SPH particles in simulation
   int Nghost;                         ///< No. of ghost SPH particles
@@ -133,26 +134,14 @@ private:
   int Ntot;                           ///< No. of real + ghost particles
   int Nsphmax;                        ///< Max. no. of SPH particles in array
   int Nghostmax;                      ///< Max. allowed no. of ghost particles
-
-  const FLOAT alpha_visc;             ///< alpha artificial viscosity parameter
-  const FLOAT beta_visc;              ///< beta artificial viscosity parameter
-  const FLOAT h_fac;                  ///< Smoothing length-density factor
-  const FLOAT h_converge;             ///< h-rho iteration tolerance
-  const string gas_eos;               ///< Gas EOS option
-  const int hydro_forces;             ///< Compute hydro forces?
-  const int self_gravity;             ///< Compute gravitational forces?
-  static const FLOAT invndim=1./ndim; ///< Copy of 1/ndim
-  int create_sinks;                   ///< Create new sink particles?
-  int time_dependent_avisc;           ///< Use time-dependent viscosity?
-  FLOAT mmean;                        ///< Mean SPH particle mass
-  FLOAT hmin_sink;                    ///< Minimum smoothing length of sinks
-
-  string riemann_solver;              ///< Selected Riemann solver
-  string slope_limiter;               ///< Selected slope limiter
   int riemann_order;                  ///< Order of Riemann solver
   FLOAT alpha_visc_min;               ///< Min. time-dependent viscosity alpha
+  FLOAT mmean;                        ///< Mean SPH particle mass
+  FLOAT hmin_sink;                    ///< Minimum smoothing length of sinks
   FLOAT kernfac;                      ///< Kernel range neighbour fraction
   FLOAT kernfacsqd;                   ///< Kernel range neib. fraction squared
+  string riemann_solver;              ///< Selected Riemann solver
+  string slope_limiter;               ///< Selected slope limiter
 
   int *iorder;                        ///< Array containing particle ordering
   FLOAT *rsph;                        ///< Position array (for efficiency)
@@ -199,12 +188,11 @@ class GradhSph: public Sph<ndim>
   using Sph<ndim>::acond;
   using Sph<ndim>::create_sinks;
   using Sph<ndim>::hmin_sink;
-  using Sph<ndim>::time_dependent_avisc;
 
  public:
 
   GradhSph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
-           aviscenum, acondenum, string, string);
+           aviscenum, acondenum, tdaviscenum, string, string);
   ~GradhSph();
 
   int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
@@ -257,12 +245,11 @@ class SM2012Sph: public Sph<ndim>
   using Sph<ndim>::acond;
   using Sph<ndim>::create_sinks;
   using Sph<ndim>::hmin_sink;
-  using Sph<ndim>::time_dependent_avisc;
 
  public:
 
   SM2012Sph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
-            aviscenum, acondenum, string, string);
+            aviscenum, acondenum, tdaviscenum, string, string);
   ~SM2012Sph();
 
   int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
@@ -320,7 +307,7 @@ class GodunovSph: public Sph<ndim>
  public:
 
   GodunovSph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
-             aviscenum, acondenum, string, string);
+             aviscenum, acondenum, tdaviscenum, string, string);
   ~GodunovSph();
 
   int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,

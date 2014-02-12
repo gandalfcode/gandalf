@@ -210,7 +210,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Set particle values for initial step (e.g. r0, v0, a0)
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EndTimestep(n,sph->Nsph,sph->sphintdata);
-  sphint->EndTimestep(n,sph->Nsph,sph->sphintdata);
+  sphint->EndTimestep(n,sph);
   nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
 
   // Compute timesteps for all particles
@@ -252,7 +252,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
   t = t + timestep;
 
   // Advance SPH particles positions and velocities
-  sphint->AdvanceParticles(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
+  sphint->AdvanceParticles(n,(FLOAT) timestep,sph);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EnergyIntegration(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
   nbody->AdvanceParticles(n,nbody->Nstar,nbody->nbodydata,timestep);
@@ -336,7 +336,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     // Set all end-of-step variables
     if (simparams->stringparams["gas_eos"] == "energy_eqn")
       uint->EndTimestep(n,sph->Nsph,sph->sphintdata);
-    sphint->EndTimestep(n,sph->Nsph,sph->sphintdata);
+    sphint->EndTimestep(n,sph);
 
   }
   //---------------------------------------------------------------------------
@@ -413,11 +413,9 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
       dt = big_number_dp;
 #pragma omp for
       for (i=0; i<sph->Nsph; i++) {
-        sph->sphdata[i].dt = sphint->Timestep(sph->sphdata[i],
-                                              sph->hydro_forces);
+        sph->sphdata[i].dt = sphint->Timestep(sph->sphdata[i],sph);
         dt = min(dt,sph->sphdata[i].dt);
       }
-      //cout << "tmin : " << dt << endl;
       
       // If integrating energy equation, include energy timestep
       if (simparams->stringparams["gas_eos"] == "energy_eqn") {
@@ -425,7 +423,6 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
         for (i=0; i<sph->Nsph; i++) {
           sph->sphdata[i].dt = min(sph->sphdata[i].dt,
                                    uint->Timestep(sph->sphdata[i]));
-	  //cout << "tmin2 : " << i << "   " << dt << "     " << sph->sphdata[i].dt << "     " << sph->sphdata[i].div_v << "    " << sph->sphdata[i].dudt << "     " << sph->sphdata[i].a[0] << endl;
           dt = min(dt,sph->sphdata[i].dt);
         }
 
@@ -512,7 +509,7 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
     // Find minimum timestep from all SPH particles
     for (i=0; i<sph->Nsph; i++) {
       dt = min(sph->sphdata[i].dt,
-	       sphint->Timestep(sph->sphdata[i],sph->hydro_forces));
+	       sphint->Timestep(sph->sphdata[i],sph));
       if (dt < timestep) timestep = dt;
       if (dt < dt_min_sph) dt_min_sph = dt;
       sph->sphdata[i].dt = dt;
@@ -590,7 +587,7 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
 	last_level = sph->sphdata[i].level;
 	
 	// Compute new timestep value and level number
-	dt = sphint->Timestep(sph->sphdata[i],sph->hydro_forces);
+	dt = sphint->Timestep(sph->sphdata[i],sph);
 	if (sph->gas_eos == "energy_eqn") 
 	  dt = min(dt,uint->Timestep(sph->sphdata[i]));
 	sph->sphdata[i].dt = dt;

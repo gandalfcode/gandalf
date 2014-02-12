@@ -48,9 +48,9 @@ const FLOAT Sph<ndim>::invndim;
 //=============================================================================
 template <int ndim>
 Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux, 
-  FLOAT alpha_visc_aux, FLOAT beta_visc_aux, FLOAT h_fac_aux, 
-  FLOAT h_converge_aux, aviscenum avisc_aux, acondenum acond_aux, 
-  string gas_eos_aux, string KernelName):
+               FLOAT alpha_visc_aux, FLOAT beta_visc_aux, FLOAT h_fac_aux, 
+               FLOAT h_converge_aux, aviscenum avisc_aux, acondenum acond_aux, 
+	       tdaviscenum tdavisc_aux, string gas_eos_aux, string KernelName):
   hydro_forces(hydro_forces_aux),
   self_gravity(self_gravity_aux),
   alpha_visc(alpha_visc_aux),
@@ -65,7 +65,8 @@ Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux,
   Nsphmax(0),
   NPeriodicGhost(0),
   avisc(avisc_aux),
-  acond(acond_aux)
+  acond(acond_aux),
+  tdavisc(tdavisc_aux)
 {
 }
 
@@ -96,13 +97,10 @@ void Sph<ndim>::AllocateMemory(int N)
     sphdata = new struct SphParticle<ndim>[Nsphmax];
     sphintdata = new SphIntParticle<ndim>[Nsphmax];
     for (int i=0; i<Nsphmax; i++) {
-     sphintdata[i].part=&sphdata[i];
+      sphintdata[i].part=&sphdata[i];
     }
     allocated = true;
   }
-#if defined _OPENMP
-  InitParticleLocks();
-#endif
 
   return;
 }
@@ -119,9 +117,6 @@ void Sph<ndim>::DeallocateMemory(void)
   debug2("[Sph::DeallocateMemory]");
 
   if (allocated) {
-#if defined _OPENMP
-    DestroyParticleLocks();
-#endif
     delete[] sphintdata;
     delete[] sphdata;
     delete[] rsph;
@@ -132,34 +127,6 @@ void Sph<ndim>::DeallocateMemory(void)
   return;
 }
 
-
-#if defined _OPENMP
-//=============================================================================
-//  Sph::InitParticleLocks
-/// Allocate storage for the locks and initialise them
-//=============================================================================
-template <int ndim>
-void Sph<ndim>::InitParticleLocks()
-{
-  locks = new omp_lock_t[Nsphmax];
-  for (int i=0; i<Nsphmax;i++) {
-    omp_init_lock(&locks[i]);
-  }
-}
-
-//=============================================================================
-//  Sph::DestroyParticleLocks
-/// Destroy the locks and deallocate storage for them
-//=============================================================================
-template <int ndim>
-void Sph<ndim>::DestroyParticleLocks()
-{
-  for (int i=0; i<Nsphmax; i++) {
-    omp_destroy_lock(&locks[i]);
-  }
-  delete[] locks;
-}
-#endif
 
 
 //=============================================================================

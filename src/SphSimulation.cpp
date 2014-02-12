@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <cstring>
 #include "Precision.h"
+#include "CodeTiming.h"
 #include "Exception.h"
 #include "Debug.h"
 #include "InlineFuncs.h"
@@ -75,10 +76,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].part = &(sph->sphdata[i]);
 
     // Set initial artificial viscosity alpha values
-    if (sph->time_dependent_avisc == 1)
-      for (i=0; i<sph->Nsph; i++) sph->sphdata[i].alpha = sph->alpha_visc_min;
-    else
+    if (simparams->stringparams["time_dependent_avisc"] == "none") 
       for (i=0; i<sph->Nsph; i++) sph->sphdata[i].alpha = sph->alpha_visc;
+    else
+      for (i=0; i<sph->Nsph; i++) sph->sphdata[i].alpha = sph->alpha_visc_min;
 
     // Compute mean mass
     sph->mmean = 0.0;
@@ -222,7 +223,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Set particle values for initial step (e.g. r0, v0, a0)
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EndTimestep(n,sph->Nsph,sph->sphintdata);
-  sphint->EndTimestep(n,sph->Nsph,sph->sphintdata);
+  sphint->EndTimestep(n,sph);
   nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
 
   this->CalculateDiagnostics();
@@ -263,7 +264,7 @@ void SphSimulation<ndim>::MainLoop(void)
   if (n == nresync) Nblocksteps = Nblocksteps + 1;
 
   // Advance SPH and N-body particles' positions and velocities
-  sphint->AdvanceParticles(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
+  sphint->AdvanceParticles(n,(FLOAT) timestep,sph);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EnergyIntegration(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
   nbody->AdvanceParticles(n,nbody->Nnbody,nbody->nbodydata,timestep);
@@ -386,8 +387,7 @@ void SphSimulation<ndim>::MainLoop(void)
 
       // Check if all neighbouring timesteps are acceptable
       if (Nlevels > 1)
-        activecount = sphint->CheckTimesteps(level_diff_max,n,
-                                             sph->Nsph,sph->sphintdata);
+        activecount = sphint->CheckTimesteps(level_diff_max,n,sph);
       else activecount = 0;
       //activecount = 0;
 
@@ -445,7 +445,7 @@ void SphSimulation<ndim>::MainLoop(void)
 
   // Compute correction steps for all SPH particles
   if (sph->Nsph > 0) {
-    sphint->CorrectionTerms(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
+    sphint->CorrectionTerms(n,(FLOAT) timestep,sph);
     if (simparams->stringparams["gas_eos"] == "energy_eqn")
       uint->EnergyCorrectionTerms(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
   }
@@ -462,7 +462,7 @@ void SphSimulation<ndim>::MainLoop(void)
   if (sph->Nsph > 0) {
     if (simparams->stringparams["gas_eos"] == "energy_eqn")
       uint->EndTimestep(n,sph->Nsph,sph->sphintdata);
-    sphint->EndTimestep(n,sph->Nsph,sph->sphintdata);
+    sphint->EndTimestep(n,sph);
   }
 
   // End-step terms for all star particles
@@ -487,6 +487,7 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
   DOUBLE dt_min = big_number_dp;    // Local copy of minimum timestep
 
   debug2("[SphSimulation::ComputeGlobalTimestep]");
+  timing->StartTimingSection("GLOBAL_TIMESTEPS",2);
 
   //---------------------------------------------------------------------------
   if (n == nresync) {
@@ -503,8 +504,7 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
       dt = big_number_dp;
 #pragma omp for
       for (i=0; i<sph->Nsph; i++) {
-        sph->sphdata[i].dt = sphint->Timestep(sph->sphdata[i],
-                                              sph->hydro_forces);
+        sph->sphdata[i].dt = sphint->Timestep(sph->sphdata[i],sph);
         dt = min(dt,sph->sphdata[i].dt);
       }
       
@@ -527,7 +527,7 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 
 #pragma omp critical
       if (dt < dt_min) dt_min = dt;
-#pragma omp barrier
+
 
     }
     //-------------------------------------------------------------------------
@@ -564,6 +564,8 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
   }
   //---------------------------------------------------------------------------
 
+  timing->EndTimingSection("GLOBAL_TIMESTEPS");
+
   return;
 }
 
@@ -599,6 +601,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   DOUBLE dt_sph;                        // Aux. dt_min_sph_aux
 
   debug2("[SphSimulation::ComputeBlockTimesteps]");
+  timing->StartTimingSection("BLOCK_TIMESTEPS",2);
 
 
   // Synchronise all timesteps and reconstruct block timestep structure.
@@ -627,7 +630,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 #pragma omp for
       for (i=0; i<sph->Nsph; i++) {
 	dt = min(sph->sphdata[i].dt,
-		 sphint->Timestep(sph->sphdata[i],sph->hydro_forces));
+		 sphint->Timestep(sph->sphdata[i],sph));
 	if (dt < dt_sph) imin = i;
 	dt_min_aux = min(dt_min_aux,dt);
 	dt_sph = min(dt_sph,dt);
@@ -649,7 +652,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 	dt_min_sph = min(dt_min_sph,dt_sph);
 	dt_min_nbody = min(dt_min_nbody,dt_nbody);
       }
-#pragma barrier
+#pragma omp barrier
     }
 
 
@@ -741,7 +744,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 	  last_level = sph->sphdata[i].level;
 	  
 	  // Compute new timestep value and level number
-	  dt = sphint->Timestep(sph->sphdata[i],sph->hydro_forces);
+	  dt = sphint->Timestep(sph->sphdata[i],sph);
 	  if (sph->gas_eos == "energy_eqn")
 	    dt = min(dt,uint->Timestep(sph->sphdata[i]));
 	  sph->sphdata[i].dt = dt;
@@ -903,6 +906,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 #if defined(VERIFY_ALL)
   //VerifyBlockTimesteps();
 #endif
+
+  timing->EndTimingSection("BLOCK_TIMESTEPS");
 
   return;
 

@@ -49,10 +49,11 @@ template <int ndim, template<int> class kernelclass>
 GradhSph<ndim, kernelclass>::GradhSph(int hydro_forces_aux,
 	    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
 	    FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
-	    acondenum acond_aux, string gas_eos_aux, string KernelName):
+	    acondenum acond_aux, tdaviscenum tdavisc_aux, string gas_eos_aux, 
+            string KernelName):
   Sph<ndim>(hydro_forces_aux,self_gravity_aux, alpha_visc_aux, beta_visc_aux,
-	    h_fac_aux, h_converge_aux, avisc_aux,acond_aux, gas_eos_aux, 
-            KernelName),
+	    h_fac_aux, h_converge_aux, avisc_aux, acond_aux, tdavisc_aux, 
+            gas_eos_aux, KernelName),
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp = &kern;
@@ -116,11 +117,11 @@ int GradhSph<ndim, kernelclass>::ComputeH
     // Initialise all variables for this value of h
     iteration++;
     parti.invh = (FLOAT) 1.0/parti.h;
+    parti.hfactor = pow(parti.invh,ndim);
     parti.rho = (FLOAT) 0.0;
     parti.invomega = (FLOAT) 0.0;
     parti.zeta = (FLOAT) 0.0;
     parti.chi = (FLOAT) 0.0;
-    parti.hfactor = pow(parti.invh,ndim);
     invhsqd = parti.invh*parti.invh;
 
     // Loop over all nearest neighbours in list to calculate 
@@ -142,8 +143,8 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
     // If h changes below some fixed tolerance, exit iteration loop
     if (parti.rho > (FLOAT) 0.0 && parti.h > h_lower_bound &&
-    		fabs(parti.h - h_fac*pow(parti.m*parti.invrho,
-    				Sph<ndim>::invndim)) < h_converge) break;
+        fabs(parti.h - h_fac*pow(parti.m*parti.invrho,
+				 Sph<ndim>::invndim)) < h_converge) break;
 
     // Use fixed-point iteration, i.e. h_new = h_fac*(m/rho_old)^(1/ndim), 
     // for now.  If this does not converge in a reasonable number of 
@@ -307,7 +308,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
         uaux = (FLOAT) 0.5*alpha_visc*vsignal*dvdr*dvdr*winvrho;
         parti.dudt -= neibpart[j].m*uaux;
       }
-      else if (avisc == mon97td) {
+      else if (avisc == mon97mm97) {
         alpha_mean = 0.5*(parti.alpha + neibpart[j].alpha);
         vsignal = parti.sound + neibpart[j].sound - beta_visc*alpha_mean*dvdr;
         paux -= (FLOAT) alpha_mean*vsignal*dvdr*winvrho;
