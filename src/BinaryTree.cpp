@@ -55,6 +55,7 @@ BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
   allocated_buffer = false;
   allocated_tree = false;
   neibcheck = true;
+  ltot = 0;
   Ntot = 0;
   Ntotmax = 0;
   Ntotmaxold = 0;
@@ -105,7 +106,6 @@ void BinaryTree<ndim>::AllocateTreeMemory(Sph<ndim> *sph)
     ids = new int[Ntotmax];
     inext = new int[Ntotmax];
     tree = new struct BinaryTreeCell<ndim>[Ncellmax];
-
 
     if (!allocated_buffer) {
       Nneibmaxbuf = new int[Nthreads];
@@ -195,6 +195,8 @@ void BinaryTree<ndim>::BuildTree
   if (n%ntreebuildstep == 0 || rebuild_tree) {
 
     // Set no. of tree members to total number of SPH particles (inc. ghosts)
+    ltot_old = ltot;
+    Ntotold = Ntot;
     Nsph = sph->Nsph;
     Ntot = sph->Ntot;
     Ntotmaxold = Ntotmax;
@@ -208,8 +210,14 @@ void BinaryTree<ndim>::BuildTree
     // Allocate (or reallocate if needed) all tree memory
     AllocateTreeMemory(sph);
 
-    // Create tree data structure including linked lists and cell pointers
-    CreateTreeStructure();
+    // If the number of levels in the tree has changed (due to destruction or  
+    // creation of new particles) then re-create tree data structure 
+    // including linked lists and cell pointers
+    if (ltot != ltot_old) CreateTreeStructure();
+
+    // If number of particles remains unchanged, use old id list.
+    if (Ntot != Ntotold) 
+      for (int i=0; i<Ntot; i++) ids[i] = i;
 
     // Now add particles to tree depending on Cartesian coordinates
     LoadParticlesToTree(sph);
@@ -374,16 +382,13 @@ void BinaryTree<ndim>::LoadParticlesToTree
 
   debug2("[BinaryTree::LoadParticlesToTree]");
 
-  // Set root cell counters and properties
   tree[0].N = Ntot;
   tree[0].ifirst = 0;
   tree[0].ilast = Ntot - 1;
   for (k=0; k<ndim; k++) tree[0].bbmin[k] = -big_number;
   for (k=0; k<ndim; k++) tree[0].bbmax[k] = big_number;
-
-  for (i=0; i<Ntot; i++) ids[i] = i;
   for (i=0; i<Ntot; i++) inext[i] = -1;
-  
+
   // Recursively build tree from root node down
   DivideTreeCell(0,Ntot-1,sph,tree[0]);
 
@@ -927,8 +932,6 @@ void BinaryTree<ndim>::UpdateActiveParticleCounters
   int c;                            // Cell counter
   int i;                            // SPH particle index
   int ilast;                        // Last particle in linked list
-  int cactive=0;                    // 
-  int Nptcl=0;
 
   debug2("[BinaryTree::UpdateActiveParticleCounters]");
   timing->StartTimingSection("TREE_UPDATE_COUNTERS",2);
@@ -936,6 +939,7 @@ void BinaryTree<ndim>::UpdateActiveParticleCounters
 
   // Loop through all grid cells in turn
   //---------------------------------------------------------------------------
+#pragma omp parallel for default(none) private(c,i,ilast) shared(sph)
   for (c=0; c<Ncell; c++) {
     tree[c].Nactive = 0;
 
@@ -1823,7 +1827,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 
     // Loop over all active cells
     //=========================================================================
-#pragma omp for schedule(dynamic)
+#pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       cell = celllist[cc];
       celldone = 1;
@@ -2047,7 +2051,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 
     // Loop over all active cells
     //=========================================================================
-#pragma omp for schedule(dynamic)
+#pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       cell = celllist[cc];
 
@@ -2295,7 +2299,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
     // Loop over all active cells
     //=========================================================================
-#pragma omp for schedule(dynamic)
+#pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       cell = celllist[cc];
 

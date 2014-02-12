@@ -316,6 +316,7 @@ void SphSimulation<ndim>::MainLoop(void)
     sphneib->BuildTree(rebuild_tree,Nsteps,ntreebuildstep,
 		       ntreestockstep,timestep,sph);
     rebuild_tree = false;
+    activecount = 0;
 
     // Reorder particles to tree-walk order (not implemented yet)
 
@@ -332,7 +333,7 @@ void SphSimulation<ndim>::MainLoop(void)
     do {
 
       // Update cells containing active particles
-      sphneib->UpdateActiveParticleCounters(sph);
+      if (activecount > 0) sphneib->UpdateActiveParticleCounters(sph);
 
       // Calculate all SPH properties
       sphneib->UpdateAllSphProperties(sph,nbody);
@@ -528,38 +529,38 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 #pragma omp critical
       if (dt < dt_min) dt_min = dt;
 
+      // For MPI, determine the global minimum timestep over all processors
+#pragma omp master 
+      {
+#ifdef MPI_PARALLEL
+	dt = dt_min;
+	MPI_Allreduce(&dt,&dt_min,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
+#endif
+	timestep = dt_min;
+      }
+#pragma omp barrier
+      
+      // Set all particles to same timestep
+#pragma omp for
+      for (i=0; i<sph->Nsph; i++) {
+	sph->sphdata[i].level = 0;
+	sph->sphdata[i].levelneib = 0;
+	sph->sphdata[i].dt = timestep;
+	sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+	sph->sphintdata[i].nlast = n;
+      }
+      
+#pragma omp for
+      for (i=0; i<nbody->Nnbody; i++) {
+	nbody->nbodydata[i]->level = 0;
+	nbody->nbodydata[i]->nstep = 
+	  pow(2,level_step - nbody->nbodydata[i]->level);
+	nbody->nbodydata[i]->nlast = n;
+	nbody->nbodydata[i]->dt = timestep;
+      }
 
     }
     //-------------------------------------------------------------------------
-
-
-    // For MPI, determine the global minimum timestep over all processors
-#ifdef MPI_PARALLEL
-    dt = dt_min;
-    MPI_Allreduce(&dt,&dt_min,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
-#endif
-
-
-    // Set all particles to same timestep
-    timestep = dt_min;
-#pragma omp parallel for default(none)
-    for (i=0; i<sph->Nsph; i++) {
-      sph->sphdata[i].level = 0;
-      sph->sphdata[i].levelneib = 0;
-      sph->sphdata[i].dt = timestep;
-      sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
-      sph->sphintdata[i].nlast = n;
-
-    }
-#pragma omp parallel for default(none)
-    for (i=0; i<nbody->Nnbody; i++) {
-      nbody->nbodydata[i]->level = 0;
-      nbody->nbodydata[i]->nstep = 
-        pow(2,level_step - nbody->nbodydata[i]->level);
-      nbody->nbodydata[i]->nlast = n;
-      nbody->nbodydata[i]->dt = timestep;
-    }
-
 
   }
   //---------------------------------------------------------------------------

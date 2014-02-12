@@ -307,6 +307,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   int gtot;                         ///< Total number of grid/leaf cells
   int lmax;                         ///< Max. no. of levels
   int ltot;                         ///< Total number of levels in tree
+  int ltot_old;                     ///< Prev. value of ltot
   int Ncell;                        ///< Current no. of grid cells
   int Ncellmax;                     ///< Max. allowed no. of grid cells
   int Nlevel;                       ///< ""
@@ -314,6 +315,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   int Nlistmax;                     ///< Max. length of neighbour list
   int Nsph;                         ///< Total no. of points/ptcls in grid
   int Ntot;                         ///< No. of current points in list
+  int Ntotold;                      ///< Prev. no. of particles
   int Ntotmax;                      ///< Max. no. of points in list
   int Ntotmaxold;                   ///< Old value of Ntotmax
   int *g2c;                         ///< i.d. of leaf(grid) cells
