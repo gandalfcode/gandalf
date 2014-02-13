@@ -49,8 +49,8 @@ using namespace std;
 //=============================================================================
 template <int ndim>
 BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux, 
-                               FLOAT kernrangeaux, string gravity_mac_aux,
-                               string multipole_aux)
+                             FLOAT kernrangeaux, string gravity_mac_aux,
+                             string multipole_aux)
 {
   allocated_buffer = false;
   allocated_tree = false;
@@ -223,7 +223,7 @@ void BinaryTree<ndim>::BuildTree
     LoadParticlesToTree(sph);
 
     // Calculate all cell quantities (e.g. COM, opening distance)
-    StockTree(tree[0],sph->sphdata);
+    //StockTree(tree[0],sph->sphdata);
 
 #if defined(VERIFY_ALL)
     ValidateTree(sph);
@@ -424,6 +424,7 @@ void BinaryTree<ndim>::DivideTreeCell
       cell.ifirst = ids[cell.ifirst];
       cell.ilast = ids[cell.ilast];
     }
+    StockCellProperties(cell,sph->sphdata);
     return;
   }
 
@@ -467,10 +468,14 @@ void BinaryTree<ndim>::DivideTreeCell
   // Now divide the new child cells as a recursive function
 #if defined _OPENMP
   if (pow(2,cell.level) <= Nthreads) {
-#pragma omp parallel for default(none) private(i) shared(cell,ifirst,ilast,sph) num_threads(2)
-    for (i=0; i<2; i++) {
-      if (i == 0) DivideTreeCell(ifirst,ifirst+cell.N/2-1,sph,tree[cell.c1]);
-      else if (i == 1) DivideTreeCell(ifirst+cell.N/2,ilast,sph,tree[cell.c2]);
+#pragma omp parallel default(none) private(i) shared(cell,ifirst,ilast,sph) num_threads(2)
+    {
+#pragma omp for 
+      for (i=0; i<2; i++) {
+	if (i == 0) DivideTreeCell(ifirst,ifirst+cell.N/2-1,sph,tree[cell.c1]);
+	else if (i == 1) DivideTreeCell(ifirst+cell.N/2,ilast,sph,tree[cell.c2]);
+      }
+#pragma omp barrier
     }
   }
   else {
@@ -485,6 +490,9 @@ void BinaryTree<ndim>::DivideTreeCell
     else if (i == 1) DivideTreeCell(ifirst+cell.N/2,ilast,sph,tree[cell.c2]);
   }
 #endif
+
+  // Stock all cell properties once constructed
+  StockCellProperties(cell,sph->sphdata);
 
   return;
 }

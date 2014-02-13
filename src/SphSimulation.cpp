@@ -503,8 +503,13 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 #pragma omp parallel default(none) private(i,dt) shared(dt_min)
     {
       dt = big_number_dp;
+
 #pragma omp for
       for (i=0; i<sph->Nsph; i++) {
+        sph->sphdata[i].level = 0;
+        sph->sphdata[i].levelneib = 0;
+        sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+        sph->sphintdata[i].nlast = n;
         sph->sphdata[i].dt = sphint->Timestep(sph->sphdata[i],sph);
         dt = min(dt,sph->sphdata[i].dt);
       }
@@ -521,46 +526,30 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
       }
 
       // Now compute minimum timestep due to stars/systems
-#pragma omp parallel for
-      for (i=0; i<nbody->Nnbody; i++)
-	dt_min = min(dt_min,nbody->Timestep(nbody->nbodydata[i]));
-
-
-#pragma omp critical
-      if (dt < dt_min) dt_min = dt;
-
-      // For MPI, determine the global minimum timestep over all processors
-#pragma omp master 
-      {
-#ifdef MPI_PARALLEL
-	dt = dt_min;
-	MPI_Allreduce(&dt,&dt_min,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
-#endif
-	timestep = dt_min;
-      }
-#pragma omp barrier
-      
-      // Set all particles to same timestep
-#pragma omp for
-      for (i=0; i<sph->Nsph; i++) {
-	sph->sphdata[i].level = 0;
-	sph->sphdata[i].levelneib = 0;
-	sph->sphdata[i].dt = timestep;
-	sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
-	sph->sphintdata[i].nlast = n;
-      }
-      
 #pragma omp for
       for (i=0; i<nbody->Nnbody; i++) {
 	nbody->nbodydata[i]->level = 0;
 	nbody->nbodydata[i]->nstep = 
 	  pow(2,level_step - nbody->nbodydata[i]->level);
 	nbody->nbodydata[i]->nlast = n;
-	nbody->nbodydata[i]->dt = timestep;
+	dt_min = min(dt_min,nbody->Timestep(nbody->nbodydata[i]));
       }
+
+#pragma omp critical
+      if (dt < dt_min) dt_min = dt;
 
     }
     //-------------------------------------------------------------------------
+
+#ifdef MPI_PARALLEL
+    dt = dt_min;
+    MPI_Allreduce(&dt,&dt_min,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
+#endif
+    timestep = dt_min;
+
+    // Set minimum timestep for all SPH and N-body particles
+    for (i=0; i<sph->Nsph; i++) sph->sphdata[i].dt = timestep;
+    for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->dt = timestep;
 
   }
   //---------------------------------------------------------------------------
