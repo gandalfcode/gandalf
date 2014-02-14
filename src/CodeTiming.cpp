@@ -30,7 +30,6 @@
 #include "Exception.h"
 #include "CodeTiming.h"
 #include "Debug.h"
-#include <time.h>
 using namespace std;
 
 

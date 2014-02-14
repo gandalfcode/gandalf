@@ -138,6 +138,7 @@ void SphGodunovIntegration<ndim>::CorrectionTerms
 template <int ndim>
 void SphGodunovIntegration<ndim>::EndTimestep
 (int n,                             ///< [in] Integer time in block time struct
+ FLOAT timestep,                    ///< [in] Base timestep value
  Sph<ndim> *sph)                    ///< [inout] Pointer to SPH object
 {
   int dn;                           // Integer time since beginning of step

@@ -193,12 +193,13 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     //  sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
     //                             sph->sphdata[i]);
 
-    // Add accelerations
-    //for (i=0; i<sph->Nsph; i++) {
-    //  sph->sphdata[i].active = false;
-    //  for (k=0; k<ndim; k++)
-    //    sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
-    //}
+    // Set initial accelerations
+    for (i=0; i<sph->Nsph; i++) {
+      for (k=0; k<ndim; k++) sph->sphintdata[i].r0[k] = sph->sphdata[i].r[k];
+      for (k=0; k<ndim; k++) sph->sphintdata[i].v0[k] = sph->sphdata[i].v[k];
+      for (k=0; k<ndim; k++) sph->sphintdata[i].a0[k] = sph->sphdata[i].a[k];
+      sph->sphdata[i].active = false;
+    }
 
     LocalGhosts->CopySphDataToGhosts(simbox,sph);
 #ifdef MPI_PARALLEL
@@ -222,8 +223,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Set particle values for initial step (e.g. r0, v0, a0)
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,sph->Nsph,sph->sphintdata);
-  sphint->EndTimestep(n,sph);
+    uint->EndTimestep(n,sph->Nsph,0.0,sph->sphintdata);
+  sphint->EndTimestep(n,0.0,sph);
   nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
 
   this->CalculateDiagnostics();
@@ -444,14 +445,6 @@ void SphSimulation<ndim>::MainLoop(void)
   //---------------------------------------------------------------------------
 
 
-  // Compute correction steps for all SPH particles
-  if (sph->Nsph > 0) {
-    sphint->CorrectionTerms(n,(FLOAT) timestep,sph);
-    if (simparams->stringparams["gas_eos"] == "energy_eqn")
-      uint->EnergyCorrectionTerms(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
-  }
-
-
   // Search for new sink particles (if activated)
   if (sink_particles == 1) {
     if (sinks.create_sinks == 1) sinks.SearchForNewSinkParticles(n,sph,nbody);
@@ -459,11 +452,20 @@ void SphSimulation<ndim>::MainLoop(void)
   }
 
 
+  // (N.B. Correction terms merged with EndTimestep for now)
+  // Compute correction steps for all SPH particles
+  //if (sph->Nsph > 0) {
+  //  sphint->CorrectionTerms(n,(FLOAT) timestep,sph);
+  //  if (simparams->stringparams["gas_eos"] == "energy_eqn")
+  //    uint->EnergyCorrectionTerms(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
+  //}
+
+
   // End-step terms for all SPH particles
   if (sph->Nsph > 0) {
     if (simparams->stringparams["gas_eos"] == "energy_eqn")
-      uint->EndTimestep(n,sph->Nsph,sph->sphintdata);
-    sphint->EndTimestep(n,sph);
+      uint->EndTimestep(n,sph->Nsph,timestep,sph->sphintdata);
+    sphint->EndTimestep(n,timestep,sph);
   }
 
   // End-step terms for all star particles

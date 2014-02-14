@@ -171,6 +171,7 @@ void SphLeapfrogKDK<ndim>::CorrectionTerms
 template <int ndim>
 void SphLeapfrogKDK<ndim>::EndTimestep
 (int n,                             ///< [in] Integer time in block time struct
+ FLOAT timestep,                    ///< [in] Base timestep value
  Sph<ndim> *sph)                    ///< [inout] Pointer to SPH object
 {
   int dn;                           // Integer time since beginning of step
@@ -190,6 +191,8 @@ void SphLeapfrogKDK<ndim>::EndTimestep
     part = sph->sphintdata[i].part;
 
     if (dn == nstep) {
+      for (k=0; k<ndim; k++) part->v[k] += timestep*(FLOAT) nstep*
+        (FLOAT) 0.5*(part->a[k] - sph->sphintdata[i].a0[k]);
       for (k=0; k<ndim; k++) sph->sphintdata[i].r0[k] = part->r[k];
       for (k=0; k<ndim; k++) sph->sphintdata[i].v0[k] = part->v[k];
       for (k=0; k<ndim; k++) sph->sphintdata[i].a0[k] = part->a[k];

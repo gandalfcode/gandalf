@@ -123,6 +123,7 @@ template <int ndim>
 void EnergyLeapfrogDKD<ndim>::EndTimestep
 (int n,                             ///< [in] Integer time in block time struct
  int Nsph,                          ///< [in] No. of SPH particles
+ FLOAT timestep,                    ///< [in] Base timestep value
  SphIntParticle<ndim> *sphintdata)  ///< [inout] SPH particle data array
 {
   int dn;                           // Integer time since beginning of step

@@ -1115,5 +1115,7 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
     nbody->stardata[i].radius /= simunits.r.inscale;
   }
 
+  t /= simunits.t.inscale;
+
   return;
 }

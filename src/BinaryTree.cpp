@@ -189,6 +189,11 @@ void BinaryTree<ndim>::BuildTree
   debug2("[BinaryTree::BuildTree]");
   timing->StartTimingSection("BUILD_TREE",2);
 
+  // Active nested parallelism for tree building routines
+#ifdef _OPENMP
+  omp_set_nested(1);
+#endif
+
 
   // For tree rebuild steps
   //---------------------------------------------------------------------------
@@ -248,6 +253,10 @@ void BinaryTree<ndim>::BuildTree
 
   }
   //---------------------------------------------------------------------------
+
+#ifdef _OPENMP
+  omp_set_nested(0);
+#endif
 
   timing->EndTimingSection("BUILD_TREE");
 
@@ -729,9 +738,9 @@ void BinaryTree<ndim>::StockCellProperties
       for (k=0; k<ndim; k++)
 	cell.bbmax[k] = max(child1.bbmax[k],cell.bbmax[k]);
       for (k=0; k<ndim; k++)
-      cell.hboxmin[k] = min(child1.hboxmin[k],cell.hboxmin[k]);
+	cell.hboxmin[k] = min(child1.hboxmin[k],cell.hboxmin[k]);
       for (k=0; k<ndim; k++)
-      cell.hboxmax[k] = max(child1.hboxmax[k],cell.hboxmax[k]);
+	cell.hboxmax[k] = max(child1.hboxmax[k],cell.hboxmax[k]);
       cell.hmax = max(cell.hmax,child1.hmax);
     }
     if (child2.N > 0) {
@@ -894,6 +903,9 @@ void BinaryTree<ndim>::UpdateHmaxValues
 
   // Zero all summation variables for all cells
   cell.hmax = 0.0;
+  for (k=0; k<ndim; k++) cell.hboxmin[k] = big_number;
+  for (k=0; k<ndim; k++) cell.hboxmax[k] = -big_number;
+
 
   // If this is a leaf cell, sum over all particles
   //---------------------------------------------------------------------------
@@ -903,6 +915,12 @@ void BinaryTree<ndim>::UpdateHmaxValues
     // Loop over all particles in cell summing their contributions
     while (i != -1) {
       cell.hmax = max(cell.hmax,sphdata[i].h);
+      for (k=0; k<ndim; k++) {
+	if (sphdata[i].r[k] - kernrange*sphdata[i].h < cell.hboxmin[k]) 
+	  cell.hboxmin[k] = sphdata[i].r[k] - kernrange*sphdata[i].h;
+	if (sphdata[i].r[k] + kernrange*sphdata[i].h > cell.hboxmax[k])
+	  cell.hboxmax[k] = sphdata[i].r[k] + kernrange*sphdata[i].h;
+      }
       if (i == cell.ilast) break;
       i = inext[i];
     };
@@ -915,9 +933,17 @@ void BinaryTree<ndim>::UpdateHmaxValues
     ccc = cell.c2;
     if (tree[cc].N > 0) {
       cell.hmax = max(cell.hmax,tree[cc].hmax);
+      for (k=0; k<ndim; k++)
+	cell.hboxmin[k] = min(tree[cc].hboxmin[k],cell.hboxmin[k]);
+      for (k=0; k<ndim; k++)
+	cell.hboxmax[k] = max(tree[cc].hboxmax[k],cell.hboxmax[k]);
     }
     if (tree[ccc].N > 0) {
       cell.hmax = max(cell.hmax,tree[ccc].hmax);
+      for (k=0; k<ndim; k++)
+	cell.hboxmin[k] = min(tree[ccc].hboxmin[k],cell.hboxmin[k]);
+      for (k=0; k<ndim; k++)
+	cell.hboxmax[k] = max(tree[ccc].hboxmax[k],cell.hboxmax[k]);
     }
     
   }

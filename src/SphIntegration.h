@@ -55,7 +55,7 @@ class SphIntegration
 
   virtual void AdvanceParticles(int, FLOAT, Sph<ndim> *) = 0;
   virtual void CorrectionTerms(int, FLOAT, Sph<ndim> *) = 0;
-  virtual void EndTimestep(int, Sph<ndim> *) = 0;
+  virtual void EndTimestep(int, FLOAT, Sph<ndim> *) = 0;
   virtual int CheckTimesteps(int, int, Sph<ndim> *) = 0;
   virtual DOUBLE Timestep(SphParticle<ndim> &, Sph<ndim> *);
   
@@ -90,7 +90,7 @@ class SphLeapfrogKDK: public SphIntegration<ndim>
 
   void AdvanceParticles(int, FLOAT, Sph<ndim> *);
   void CorrectionTerms(int, FLOAT, Sph<ndim> *);
-  void EndTimestep(int, Sph<ndim> *);
+  void EndTimestep(int, FLOAT, Sph<ndim> *);
   int CheckTimesteps(int, int, Sph<ndim> *);
 
 };
@@ -118,7 +118,7 @@ class SphLeapfrogDKD: public SphIntegration<ndim>
 
   void AdvanceParticles(int, FLOAT, Sph<ndim> *);
   void CorrectionTerms(int, FLOAT, Sph<ndim> *);
-  void EndTimestep(int, Sph<ndim> *);
+  void EndTimestep(int, FLOAT, Sph<ndim> *);
   int CheckTimesteps(int, int, Sph<ndim> *);
 
 };
@@ -146,7 +146,7 @@ class SphGodunovIntegration: public SphIntegration<ndim>
 
   void AdvanceParticles(int, FLOAT, Sph<ndim> *);
   void CorrectionTerms(int, FLOAT, Sph<ndim> *);
-  void EndTimestep(int, Sph<ndim> *);
+  void EndTimestep(int, FLOAT, Sph<ndim> *);
   int CheckTimesteps(int, int, Sph<ndim> *);
   DOUBLE Timestep(SphParticle<ndim> &, Sph<ndim> *);
 

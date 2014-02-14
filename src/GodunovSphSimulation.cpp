@@ -209,8 +209,8 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Set particle values for initial step (e.g. r0, v0, a0)
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,sph->Nsph,sph->sphintdata);
-  sphint->EndTimestep(n,sph);
+    uint->EndTimestep(n,sph->Nsph,timestep,sph->sphintdata);
+  sphint->EndTimestep(n,timestep,sph);
   nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
 
   // Compute timesteps for all particles
@@ -335,8 +335,8 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
 
     // Set all end-of-step variables
     if (simparams->stringparams["gas_eos"] == "energy_eqn")
-      uint->EndTimestep(n,sph->Nsph,sph->sphintdata);
-    sphint->EndTimestep(n,sph);
+      uint->EndTimestep(n,sph->Nsph,timestep,sph->sphintdata);
+    sphint->EndTimestep(n,timestep,sph);
 
   }
   //---------------------------------------------------------------------------

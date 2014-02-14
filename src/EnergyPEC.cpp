@@ -178,6 +178,7 @@ template <int ndim>
 void EnergyPEC<ndim>::EndTimestep
 (int n,                             ///< [in] Integer time in block time struct
  int Nsph,                          ///< [in] No. of SPH particles
+ FLOAT timestep,                    ///< [in] Base timestep value
  SphIntParticle<ndim> *sphintdata)  ///< [inout] SPH particle data array
 {
   int dn;                           // Integer time since beginning of step
@@ -194,6 +195,8 @@ void EnergyPEC<ndim>::EndTimestep
     dn = n - sphintdata[i].nlast;
     nstep = sphintdata[i].nstep;
     if (dn == nstep) {
+      sphintdata[i].part->u += timestep*(FLOAT) nstep*
+	0.5*(sphintdata[i].part->dudt - sphintdata[i].dudt0);
       sphintdata[i].u0 = sphintdata[i].part->u;
       sphintdata[i].dudt0 = sphintdata[i].part->dudt;
     }
