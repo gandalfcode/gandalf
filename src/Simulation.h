@@ -79,6 +79,9 @@ class SimulationBase
   virtual void ReadSerenFormHeaderFile(ifstream& infile, HeaderInfo& info)=0;
   virtual bool ReadSerenFormSnapshotFile(string)=0;
   virtual bool WriteSerenFormSnapshotFile(string)=0;
+  virtual void ReadSerenUnformHeaderFile(ifstream& infile, HeaderInfo& info)=0;
+  virtual bool ReadSerenUnformSnapshotFile(string)=0;
+  virtual bool WriteSerenUnformSnapshotFile(string)=0;
 
   std::list<string> keys;
 
@@ -264,6 +267,9 @@ class Simulation : public SimulationBase
   virtual void ReadSerenFormHeaderFile(ifstream& infile, HeaderInfo& info);
   virtual bool ReadSerenFormSnapshotFile(string);
   virtual bool WriteSerenFormSnapshotFile(string);
+  virtual void ReadSerenUnformHeaderFile(ifstream& infile, HeaderInfo& info);
+  virtual bool ReadSerenUnformSnapshotFile(string);
+  virtual bool WriteSerenUnformSnapshotFile(string);
   virtual void ConvertToCodeUnits(void);
 
 
