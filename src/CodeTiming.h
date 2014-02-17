@@ -58,6 +58,7 @@ class CodeTiming
   void EndTimingSection(string);
   void ComputeTimingStatistics(void);
   void OutputTimingStatistics(void);
+  double getRealTime(void);
   
   
   // CodeTiming class variables
@@ -67,7 +68,10 @@ class CodeTiming
   int Nlevelmax;
   clock_t tstart;
   clock_t tend;
+  double tstart_wall;
+  double tend_wall;
   DOUBLE ttot;
+  DOUBLE ttot_wall;
   map<string,int> blockno;
 
 
@@ -77,6 +81,10 @@ class CodeTiming
     int Ncalled;
     clock_t tstart;
     clock_t tend;
+    double tstart_wall;
+    double tend_wall;
+    double ttot_wall;
+    double tfraction_wall;
     DOUBLE ttot;
     DOUBLE tfraction;
     string block_name;
@@ -87,7 +95,9 @@ class CodeTiming
       timing_level = 0;
       Ncalled = 0;
       ttot = 0.0;
+      ttot_wall = 0.0;
       tfraction = 0.0;
+      tfraction_wall = 0.0;
       block_name = "";
     }
     

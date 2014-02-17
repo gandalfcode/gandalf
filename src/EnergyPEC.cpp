@@ -190,7 +190,7 @@ void EnergyPEC<ndim>::EndTimestep
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,nstep) \
-      shared(n,Nsph,sphintdata)
+  shared(n,Nsph,sphintdata,timestep)
   for (i=0; i<Nsph; i++) {
     dn = n - sphintdata[i].nlast;
     nstep = sphintdata[i].nstep;

@@ -184,7 +184,7 @@ void SphLeapfrogKDK<ndim>::EndTimestep
   timing->StartTimingSection("SPH_END_TIMESTEP",2);
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep,part) shared(n,sph)
+#pragma omp parallel for default(none) private(dn,i,k,nstep,part) shared(n,sph,timestep)
   for (i=0; i<sph->Nsph; i++) {
     dn = n - sph->sphintdata[i].nlast;
     nstep = sph->sphintdata[i].nstep;

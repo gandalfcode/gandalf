@@ -301,8 +301,6 @@ void BinaryTree<ndim>::ComputeTreeSize(void)
   cout << "No. of cells in tree  : " << Ncell << "   " << Ncellmax << endl; 
 #endif
 
-  //int i;
-  //cin >> i;
   return;
 }
 
@@ -476,7 +474,7 @@ void BinaryTree<ndim>::DivideTreeCell
 
   // Now divide the new child cells as a recursive function
 #if defined _OPENMP
-  if (pow(2,cell.level) <= Nthreads) {
+  if (pow(2,cell.level) < Nthreads) {
 #pragma omp parallel default(none) private(i) shared(cell,ifirst,ilast,sph) num_threads(2)
     {
 #pragma omp for 
@@ -595,7 +593,7 @@ void BinaryTree<ndim>::StockTree
   // If cell is not leaf, stock child cells
   if (cell.level != ltot) {
 #if defined _OPENMP
-    if (pow(2,cell.level) <= Nthreads) {
+    if (pow(2,cell.level) < Nthreads) {
 #pragma omp parallel for default(none) private(i) shared(cell,sphdata) num_threads(2)
       for (i=0; i<2; i++) {
 	if (i == 0) StockTree(tree[cell.c1],sphdata);
@@ -879,7 +877,7 @@ void BinaryTree<ndim>::UpdateHmaxValues
   // If cell is not leaf, stock child cells
   if (cell.level != ltot) {
 #if defined _OPENMP
-    if (pow(2,cell.level) <= Nthreads) {
+    if (pow(2,cell.level) < Nthreads) {
 #pragma omp parallel for default(none) private(i) shared(cell,sphdata) num_threads(2)
       for (i=0; i<2; i++) {
 	if (i == 0) UpdateHmaxValues(tree[cell.c1],sphdata);
