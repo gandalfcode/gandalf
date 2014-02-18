@@ -44,8 +44,12 @@ using namespace std;
 //=============================================================================
 template <int ndim>
 SphLeapfrogDKD<ndim>::SphLeapfrogDKD(DOUBLE accel_mult_aux, 
-                                     DOUBLE courant_mult_aux) :
-  SphIntegration<ndim>(accel_mult_aux, courant_mult_aux)
+                                     DOUBLE courant_mult_aux,
+                                     DOUBLE energy_mult_aux,
+				     eosenum gas_eos_aux,
+				     tdaviscenum tdavisc_aux) :
+  SphIntegration<ndim>(accel_mult_aux, courant_mult_aux, energy_mult_aux,
+		       gas_eos_aux, tdavisc_aux)
 {
 }
 

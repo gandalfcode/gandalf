@@ -222,8 +222,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Set particle values for initial step (e.g. r0, v0, a0)
-  if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,sph->Nsph,0.0,sph->sphintdata);
+  //if (simparams->stringparams["gas_eos"] == "energy_eqn")
+  //uint->EndTimestep(n,sph->Nsph,0.0,sph->sphintdata);
   sphint->EndTimestep(n,0.0,sph);
   nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
 
@@ -266,8 +266,8 @@ void SphSimulation<ndim>::MainLoop(void)
 
   // Advance SPH and N-body particles' positions and velocities
   sphint->AdvanceParticles(n,(FLOAT) timestep,sph);
-  if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EnergyIntegration(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
+  //if (simparams->stringparams["gas_eos"] == "energy_eqn")
+  //  uint->EnergyIntegration(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
   nbody->AdvanceParticles(n,nbody->Nnbody,nbody->nbodydata,timestep);
 
   // Check all boundary conditions
@@ -463,8 +463,8 @@ void SphSimulation<ndim>::MainLoop(void)
 
   // End-step terms for all SPH particles
   if (sph->Nsph > 0) {
-    if (simparams->stringparams["gas_eos"] == "energy_eqn")
-      uint->EndTimestep(n,sph->Nsph,timestep,sph->sphintdata);
+    //if (simparams->stringparams["gas_eos"] == "energy_eqn")
+    //  uint->EndTimestep(n,sph->Nsph,timestep,sph->sphintdata);
     sphint->EndTimestep(n,timestep,sph);
   }
 
@@ -517,15 +517,15 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
       }
       
       // If integrating energy equation, include energy timestep
-      if (simparams->stringparams["gas_eos"] == "energy_eqn") {
-#pragma omp for
-        for (i=0; i<sph->Nsph; i++) {
-          sph->sphdata[i].dt = min(sph->sphdata[i].dt,
-                                   uint->Timestep(sph->sphdata[i]));
-          dt = min(dt,sph->sphdata[i].dt);
-        }
+      //if (simparams->stringparams["gas_eos"] == "energy_eqn") {
+      //#pragma omp for
+        //for (i=0; i<sph->Nsph; i++) {
+      //sph->sphdata[i].dt = min(sph->sphdata[i].dt,
+      //                           uint->Timestep(sph->sphdata[i]));
+      //  dt = min(dt,sph->sphdata[i].dt);
+      //}
 
-      }
+      //}
 
       // Now compute minimum timestep due to stars/systems
 #pragma omp for

@@ -37,7 +37,9 @@
 enum ptype{gas, icm, boundary, cdm, 
            x_lhs_periodic, x_lhs_mirror, x_rhs_periodic, x_rhs_mirror,
            y_lhs_periodic, y_lhs_mirror, y_rhs_periodic, y_rhs_mirror,
-           z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror};
+           z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror,
+	   Nsphtypes};
+enum eosenum{isothermal, barotropic, energy_eqn, nspheos};
 
 
 //=============================================================================
@@ -154,15 +156,14 @@ struct SphParticle
 
 #ifdef MPI_PARALLEL
   static MPI_Datatype CreateMpiDataType() {
-      MPI_Datatype particle_type;
-      MPI_Datatype types[1] = {MPI_BYTE};
-      MPI_Aint offsets[1] = {0};
-      int blocklen[1] = {sizeof(SphParticle<ndim>)};
-
-      MPI_Type_create_struct(1,blocklen,offsets,types,&particle_type);
-
-      return particle_type;
-
+    MPI_Datatype particle_type;
+    MPI_Datatype types[1] = {MPI_BYTE};
+    MPI_Aint offsets[1] = {0};
+    int blocklen[1] = {sizeof(SphParticle<ndim>)};
+    
+    MPI_Type_create_struct(1,blocklen,offsets,types,&particle_type);
+    
+    return particle_type;
   }
 #endif
 
@@ -206,19 +207,17 @@ struct SphIntParticle
 
 #ifdef MPI_PARALLEL
   static MPI_Datatype CreateMpiDataType() {
-      MPI_Datatype partint_type;
-      MPI_Datatype types[1] = {MPI_BYTE};
-      MPI_Aint offsets[1] = {0};
-      int blocklen[1] = {sizeof(SphIntParticle<ndim>)};
-
-      MPI_Type_create_struct(1,blocklen,offsets,types,&partint_type);
-
-      return partint_type;
-
+    MPI_Datatype partint_type;
+    MPI_Datatype types[1] = {MPI_BYTE};
+    MPI_Aint offsets[1] = {0};
+    int blocklen[1] = {sizeof(SphIntParticle<ndim>)};
+    
+    MPI_Type_create_struct(1,blocklen,offsets,types,&partint_type);
+    
+    return partint_type;
   }
 #endif
 };
-
 
 
 //=============================================================================
@@ -229,13 +228,8 @@ struct SphIntParticle
 //=============================================================================
 struct SphType
 {
-  bool motion;
-  bool hydro_forces;
-  bool self_gravity;
-  bool hydromask[4];
-  bool gravitymask[4];
+  eosenum eos;
 };
-
 
 
 #endif

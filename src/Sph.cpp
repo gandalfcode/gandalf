@@ -68,6 +68,7 @@ Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux,
   acond(acond_aux),
   tdavisc(tdavisc_aux)
 {
+  // Set all SPH particle types here
 }
 
 

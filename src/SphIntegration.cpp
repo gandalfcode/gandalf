@@ -45,9 +45,15 @@ using namespace std;
 template <int ndim>
 SphIntegration<ndim>::SphIntegration
 (DOUBLE accel_mult_aux,             ///< Copy of accel timestep multiplier
- DOUBLE courant_mult_aux):          ///< Copy of Courant timestep multipiler
+ DOUBLE courant_mult_aux,           ///< Copy of Courant timestep multipiler
+ DOUBLE energy_mult_aux,            ///< Copy of Energy timestep multipiler
+ eosenum gas_eos_aux,
+ tdaviscenum tdavisc_aux) :
   accel_mult(accel_mult_aux),
-  courant_mult(courant_mult_aux)
+  courant_mult(courant_mult_aux),
+  energy_mult(energy_mult_aux),
+  gas_eos(gas_eos_aux),
+  tdavisc(tdavisc_aux)
 {
 }
 
@@ -98,6 +104,11 @@ DOUBLE SphIntegration<ndim>::Timestep
   // Acceleration condition
   amag = sqrt(DotProduct(part.a,part.a,ndim));
   timestep = min(timestep, accel_mult*sqrt(part.h/(amag + small_number_dp)));
+
+  // Explicit energy integration timestep condition
+  if (gas_eos == energy_eqn)
+    timestep = min(timestep,this->energy_mult*
+		   (DOUBLE) (part.u/(fabs(part.dudt) + small_number)));
 
   return timestep;
 }

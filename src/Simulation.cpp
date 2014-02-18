@@ -697,6 +697,7 @@ void Simulation<ndim>::ProcessSphParameters(void)
 {
   aviscenum avisc;                  // Artificial viscosity enum
   acondenum acond;                  // Artificial conductivity enum
+  eosenum gas_eos;                  // Gas EOS enum
   tdaviscenum tdavisc;              // Time-dependent viscosity enum
 
   // Local references to parameter variables for brevity
@@ -746,6 +747,19 @@ void Simulation<ndim>::ProcessSphParameters(void)
   else {
     string message = "Unrecognised parameter : acond = " +
         simparams->stringparams["acond"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Set gas EOS values
+  if (stringparams["gas_eos"] == "isothermal")
+    gas_eos = isothermal;
+  else if (stringparams["gas_eos"] == "barotropic")
+    gas_eos = barotropic;
+  else if (stringparams["gas_eos"] == "energy_eqn")
+    gas_eos = energy_eqn;
+  else {
+    string message = "Unrecognised parameter : gas_eos = " +
+        simparams->stringparams["gas_eos"];
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -855,11 +869,15 @@ void Simulation<ndim>::ProcessSphParameters(void)
   //---------------------------------------------------------------------------
   if (stringparams["sph_integration"] == "lfkdk") {
     sphint = new SphLeapfrogKDK<ndim>(floatparams["accel_mult"],
-			              floatparams["courant_mult"]);
+			              floatparams["courant_mult"],
+			              floatparams["energy_mult"],
+				      gas_eos, tdavisc);
   }
   else if (stringparams["sph_integration"] == "lfdkd") {
     sphint = new SphLeapfrogDKD<ndim>(floatparams["accel_mult"],
-			              floatparams["courant_mult"]);
+			              floatparams["courant_mult"],
+			              floatparams["energy_mult"],
+				      gas_eos, tdavisc);
     integration_step = max(integration_step,2);
   }
   else {
@@ -907,6 +925,7 @@ void Simulation<ndim>::ProcessGodunovSphParameters(void)
 {
   aviscenum avisc;                  // Artificial viscosity enum
   acondenum acond;                  // Artificial conductivity enum
+  eosenum gas_eos;                  // Gas EOS enum
   tdaviscenum tdavisc;              // Time-dependent viscosity enum
 
   map<string, int> &intparams = simparams->intparams;
@@ -961,7 +980,9 @@ void Simulation<ndim>::ProcessGodunovSphParameters(void)
   // Create SPH particle integration object
   //---------------------------------------------------------------------------
   sphint = new SphGodunovIntegration<ndim>(floatparams["accel_mult"],
-					   floatparams["courant_mult"]);
+					   floatparams["courant_mult"],
+			              floatparams["energy_mult"],
+					   gas_eos, tdavisc);
 
 
   // Energy integration object

@@ -145,6 +145,7 @@ class Sph
 
   int *iorder;                        ///< Array containing particle ordering
   FLOAT *rsph;                        ///< Position array (for efficiency)
+  SphType sphtype[Nsphtypes];         ///< Array of SPH types
 
   SphIntParticle<ndim>* sphintdata;   ///< Pointer to particle integration data
   SphParticle<ndim> *sphdata;         ///< Pointer to particle data

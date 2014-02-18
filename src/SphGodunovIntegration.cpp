@@ -43,10 +43,13 @@ using namespace std;
 /// SphGodunovIntegration class constructor
 //=============================================================================
 template <int ndim>
-SphGodunovIntegration<ndim>::SphGodunovIntegration(
-			       DOUBLE accel_mult_aux, 
-			       DOUBLE courant_mult_aux) :
-  SphIntegration<ndim>(accel_mult_aux, courant_mult_aux)
+SphGodunovIntegration<ndim>::SphGodunovIntegration(DOUBLE accel_mult_aux, 
+						   DOUBLE courant_mult_aux,
+						   DOUBLE energy_mult_aux,
+						   eosenum gas_eos_aux,
+						   tdaviscenum tdavisc_aux) :
+  SphIntegration<ndim>(accel_mult_aux, courant_mult_aux, energy_mult_aux, 
+		       gas_eos_aux, tdavisc_aux)
 {
 }
 
