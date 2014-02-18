@@ -516,17 +516,6 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
         dt = min(dt,sph->sphdata[i].dt);
       }
       
-      // If integrating energy equation, include energy timestep
-      //if (simparams->stringparams["gas_eos"] == "energy_eqn") {
-      //#pragma omp for
-        //for (i=0; i<sph->Nsph; i++) {
-      //sph->sphdata[i].dt = min(sph->sphdata[i].dt,
-      //                           uint->Timestep(sph->sphdata[i]));
-      //  dt = min(dt,sph->sphdata[i].dt);
-      //}
-
-      //}
-
       // Now compute minimum timestep due to stars/systems
 #pragma omp for
       for (i=0; i<nbody->Nnbody; i++) {
@@ -601,14 +590,6 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   if (n == nresync) {
     n = 0;
     timestep = big_number_dp;
-    for (i=0; i<sph->Nsph; i++) sph->sphdata[i].dt = big_number_dp;
-    for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->dt = big_number_dp;
-
-    // If integrating energy equation, calculate the explicit energy timestep
-    if (sph->gas_eos == "energy_eqn") {
-      for (i=0; i<sph->Nsph; i++)
-	sph->sphdata[i].dt = uint->Timestep(sph->sphdata[i]);
-    }
 
 #pragma omp parallel default(none) shared(dt_min_sph,dt_min_nbody) \
   private(dt,dt_min_aux,dt_nbody,dt_sph,i,imin)
@@ -621,8 +602,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       // Find minimum timestep from all SPH particles
 #pragma omp for
       for (i=0; i<sph->Nsph; i++) {
-	dt = min(sph->sphdata[i].dt,
-		 sphint->Timestep(sph->sphdata[i],sph));
+	dt = sphint->Timestep(sph->sphdata[i],sph);
 	if (dt < dt_sph) imin = i;
 	dt_min_aux = min(dt_min_aux,dt);
 	dt_sph = min(dt_sph,dt);
@@ -655,6 +635,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     dt = dt_min_sph;
     MPI_Allreduce(&dt,&dt_min_sph,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
 #endif
+
     // Calculate new block timestep levels
     level_max = Nlevels - 1;
     level_step = level_max + integration_step - 1;
@@ -737,8 +718,6 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 	  
 	  // Compute new timestep value and level number
 	  dt = sphint->Timestep(sph->sphdata[i],sph);
-	  if (sph->gas_eos == "energy_eqn")
-	    dt = min(dt,uint->Timestep(sph->sphdata[i]));
 	  sph->sphdata[i].dt = dt;
 	  level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
 	  level = max(level,sph->sphdata[i].levelneib - level_diff_max);
