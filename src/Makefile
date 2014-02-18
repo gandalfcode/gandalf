@@ -137,6 +137,12 @@ CFLAGS += -DNDEBUG
 endif
 
 
+# Reorder particles flag
+ifeq ($(REORDER_PARTICLES),1)
+CFLAGS += -DREORDER_PARTICLES
+endif
+
+
 #CFLAGS += -DVERIFY_BINARY_TREE
 
 

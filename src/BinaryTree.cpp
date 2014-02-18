@@ -399,6 +399,11 @@ void BinaryTree<ndim>::LoadParticlesToTree
   // Recursively build tree from root node down
   DivideTreeCell(0,Ntot-1,sph,tree[0]);
 
+#ifdef REORDER_PARTICLES
+  for (i=0; i<sph->Nsph; i++)
+    sph->sphintdata[i].part = &(sph->sphdata[i]);
+#endif
+
   return;
 }
 
@@ -506,6 +511,104 @@ void BinaryTree<ndim>::DivideTreeCell
 
 
 
+#ifdef REORDER_PARTICLES
+//=============================================================================
+//  BinaryTree::QuickSelect
+/// Find median and sort particles in arrays to ensure they are the correct 
+/// side of the division.  Uses the QuickSelect algorithm.
+//=============================================================================
+template <int ndim>
+FLOAT BinaryTree<ndim>::QuickSelect
+(int left,                          ///< Left-most id of particle in array
+ int right,                         ///< Right-most id of particle in array
+ int jpivot,                        ///< Pivot/median point
+ int k,                             ///< Dimension of sort
+ Sph<ndim> *sph)                    ///< Pointer to main SPH object
+{
+  int i;                            // ..
+  int j;                            // ..
+  int jguess;                       // ..
+  int jtemp;                        // ..
+  FLOAT rpivot;                     // ..
+  SphParticle<ndim> temppart;       // ..
+  SphIntParticle<ndim> tempintpart; // ..
+
+
+  // Place all particles left or right of chosen pivot point.
+  // Iterate until correct median pivot has been identified.
+  //---------------------------------------------------------------------------
+  do {
+
+    // Make a guess of pivot value
+    jguess = (left + right)/2;
+    rpivot = sph->sphdata[jguess].r[k];
+
+    // ..
+    temppart = sph->sphdata[jguess];
+    sph->sphdata[jguess] = sph->sphdata[right];
+    sph->sphdata[right] = temppart;
+    tempintpart = sph->sphintdata[jguess];
+    sph->sphintdata[jguess] = sph->sphintdata[right];
+    sph->sphintdata[right] = tempintpart;
+
+    //jtemp = ids[jguess];
+    //ids[jguess] = ids[right];
+    //ids[right] = jtemp;
+
+    // ..
+    jguess = left;
+
+    //-------------------------------------------------------------------------
+    for (j=left; j<right; j++) {
+
+      if (sph->sphdata[j].r[k] <= rpivot) {
+	temppart = sph->sphdata[j];
+	sph->sphdata[j] = sph->sphdata[jguess];
+	sph->sphdata[jguess] = temppart;
+	tempintpart = sph->sphintdata[j];
+	sph->sphintdata[j] = sph->sphintdata[jguess];
+	sph->sphintdata[jguess] = tempintpart;
+	jguess++;
+
+	//jtemp = ids[j];
+	//ids[j] = ids[jguess];
+	//ids[jguess] = jtemp;
+        //jguess++;
+      }
+
+    }
+    //-------------------------------------------------------------------------
+
+
+    // Move ?? particle from end of array to index i
+    temppart = sph->sphdata[right];
+    sph->sphdata[right] = sph->sphdata[jguess];
+    sph->sphdata[jguess] = temppart;
+    tempintpart = sph->sphintdata[right];
+    sph->sphintdata[right] = sph->sphintdata[jguess];
+    sph->sphintdata[jguess] = tempintpart;
+
+    //jtemp = ids[right];
+    //ids[right] = ids[jguess];
+    //ids[jguess] = jtemp;
+
+    // jguess is lower than jpivot.  
+    // Only need to search between jguess+1 and right
+    if (jguess < jpivot) left = jguess + 1;
+
+    // jguess is higher than jpivot.  
+    // Only need to search between left and jguess-1
+    else if (jguess > jpivot) right = jguess - 1;
+
+  } while (jguess != jpivot);
+  //---------------------------------------------------------------------------
+
+
+  return rpivot;
+}
+
+
+#else
 //=============================================================================
 //  BinaryTree::QuickSelect
 /// Find median and sort particles in arrays to ensure they are the correct 
@@ -576,6 +679,7 @@ FLOAT BinaryTree<ndim>::QuickSelect
 
   return rpivot;
 }
+#endif
 
 
 
@@ -1819,6 +1923,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
   FLOAT *r;                        // Positions of neibs
   BinaryTreeCell<ndim> *cell;      // Pointer to binary tree cell
   BinaryTreeCell<ndim> **celllist; // List of binary cell pointers
+  SphParticle<ndim> *activepart;   // ..
   SphParticle<ndim> *data = sph->sphdata;  // Pointer to SPH particle data
 
   int Nneibcount = 0;
@@ -1834,7 +1939,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 
   // Set-up all OMP threads
   //===========================================================================
-#pragma omp parallel default(none) private(activelist,cc,cell,celldone,draux)\
+#pragma omp parallel default(none) private(activelist,activepart,cc,cell,celldone,draux) \
   private(drsqd,drsqdaux,gpot,gpot2,hmax,hrangesqd,i,ithread,j,jj,k,okflag,m)\
   private(mu,m2,mu2,Nactive,neiblist,Ngather,Nneib,Nneibmax,r,rp)\
   shared(sph,celllist,cactive,cout,data,nbody) reduction(+:Nneibcount)
@@ -1847,6 +1952,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
     Nneibmax = Nneibmaxbuf[ithread];
 
     activelist = new int[Nleafmax];
+    activepart = activepartbuf[ithread];
     neiblist = new int[Nneibmax];
     gpot = new FLOAT[Nneibmax];
     gpot2 = new FLOAT[Nneibmax];
@@ -1875,6 +1981,9 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 
         // Find list of active particles in current cell
         Nactive = ComputeActiveParticleList(cell,sph,activelist);
+
+	for (j=0; j<Nactive; j++)
+	  activepart[j] = sph->sphdata[activelist[j]];
 
         // Compute neighbour list for cell depending on physics options
         Nneib = ComputeGatherNeighbourList(cell,Nneibmax,neiblist,
@@ -1927,7 +2036,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 	  Nneibcount += Nneib;
           i = activelist[j];
           assert(i >= 0 && i < sph->Nsph);
-          for (k=0; k<ndim; k++) rp[k] = data[i].r[k];
+          for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k]; //data[i].r[k];
 
           // Set gather range as current h multiplied by some tolerance factor
           hrangesqd = sph->kernp->kernrangesqd*hmax*hmax;
@@ -1958,7 +2067,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 
           // Compute smoothing length and other gather properties for ptcl i
           okflag = sph->ComputeH(i,Ngather,hmax,m2,mu2,
-                                 drsqd,gpot,data[i],nbody);
+                                 drsqd,gpot,activepart[j],nbody);
 
           // If h-computation is invalid, then break from loop and recompute
           // larger neighbour lists
@@ -1972,6 +2081,9 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 
       } while (celldone == 0);
       //-----------------------------------------------------------------------
+
+      for (j=0; j<Nactive; j++) 
+	sph->sphdata[activelist[j]] = activepart[j];
 
     }
     //=========================================================================
@@ -2474,11 +2586,11 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
 
     // Finally, add all contributions from distant pair-wise forces to arrays
-#pragma omp critical
-    for (i=0; i<sph->Nsph; i++) {
-      sph->sphdata[i].levelneib = 
-	max(sph->sphdata[i].levelneib,levelneib[i]);
-    }
+    //#pragma omp critical
+    //for (i=0; i<sph->Nsph; i++) {
+    //  sph->sphdata[i].levelneib = 
+    //	max(sph->sphdata[i].levelneib,levelneib[i]);
+    //}
 
 
     // Free-up local memory for OpenMP thread

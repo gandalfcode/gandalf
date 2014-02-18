@@ -735,6 +735,8 @@ void Simulation<ndim>::UniformSphere(void)
   else if (ndim == 3) volume = 4.0*onethird*pi*pow(radius,3);
 
   // Record particle positions and initialise all other variables
+#pragma omp parallel for default(none)\
+  shared(gammaone,Npart,press,r,rhofluid,volume) private(i,k)
   for (i=0; i<sph->Nsph; i++) {
     for (k=0; k<ndim; k++) {
       sph->sphdata[i].r[k] = r[ndim*i + k];
@@ -1184,6 +1186,8 @@ void Simulation<ndim>::BossBodenheimer(void)
   AddRotationalVelocityField(Npart,angvel,rcentre,r,v);
 
   // Record particle properties in main memory
+#pragma omp parallel for default(none)\
+  shared(gammaone,Npart,mp,mu_bar,r,rho,temp0,v) private(i,k)
   for (i=0; i<Npart; i++) {
     for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = r[ndim*i + k];
     for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = v[ndim*i + k];
@@ -2311,6 +2315,8 @@ void Simulation<ndim>::AddCubicLattice
   }
   //---------------------------------------------------------------------------
   else if (ndim == 3) {
+#pragma omp parallel for default(none)\
+  shared(box,Nlattice,r,spacing) private(i,ii,jj,kk)
     for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
 	for (ii=0; ii<Nlattice[0]; ii++) {
@@ -2383,6 +2389,8 @@ void Simulation<ndim>::AddHexagonalLattice
 
   //---------------------------------------------------------------------------
   else if (ndim == 3) {
+#pragma omp parallel for default(none)\
+  shared(box,Nlattice,r,rad) private(i,ii,jj,kk)
     for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
 	for (ii=0; ii<Nlattice[0]; ii++) {
@@ -2508,6 +2516,9 @@ void Simulation<ndim>::AddAzimuthalDensityPerturbation
 
   // Loop over all required particles
   //---------------------------------------------------------------------------
+#pragma omp parallel for default(none)\
+  shared(amp,mpert,Npart,r,rcentre,spacing,tabtot)\
+  private(i,j,k,phi,phiprime,phi1,phi2,rpos,Rmag,Rsqd)
   for (i=0; i<Npart; i++) {
     for (k=0; k<ndim; k++) rpos[k] = r[ndim*i + k] - rcentre[k];
 
@@ -2576,6 +2587,8 @@ void Simulation<ndim>::AddRotationalVelocityField
 
   // Loop over all required particles
   //---------------------------------------------------------------------------
+#pragma omp parallel for default(none)\
+  shared(angvelaux,Npart,r,rcentre,v) private(dr,i,k,Rmag,Rsqd)
   for (i=0; i<Npart; i++) {
     for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k] - rcentre[k];
     for (k=0; k<ndim; k++) v[ndim*i + k] = 0.0;

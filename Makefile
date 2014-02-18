@@ -29,6 +29,7 @@ PRECISION          = DOUBLE
 OPENMP             = 1
 OUTPUT_LEVEL       = 1
 DEBUG_LEVEL        = 0
+REORDER_PARTICLES  = 1
 
 
 # Select location of python and numpy libraries.  If blank, make will try to 
