@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 #endif
 
   // Compile timing statistics from complete simulation
-  timing->ComputeTimingStatistics();
+  timing->ComputeTimingStatistics(sim->run_id);
 
   return 0;
 }

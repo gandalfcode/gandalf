@@ -36,11 +36,10 @@ template class SphSimulation<3>;
 
 
 
-//TODO: make this mess more modular (note: initial h computation
-//should be done inside the neighbour search)
 //=============================================================================
 //  SphSimulation::PostInitialConditionsSetup
-/// ..
+/// Call routines for calculating all initial SPH and N-body quantities 
+/// once initial conditions have been set-up.
 //=============================================================================
 template <int ndim>
 void SphSimulation<ndim>::PostInitialConditionsSetup(void)
@@ -81,7 +80,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     else
       for (i=0; i<sph->Nsph; i++) sph->sphdata[i].alpha = sph->alpha_visc_min;
 
-    // Compute mean mass
+    // Compute mean mass (used for smmoth sink accretion)
     sph->mmean = 0.0;
     for (i=0; i<sph->Nsph; i++) sph->mmean += sph->sphdata[i].m;
     sph->mmean /= (FLOAT) sph->Nsph;
@@ -91,8 +90,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->neibcheck = false;
     if (!this->initial_h_provided) {
       sph->InitialSmoothingLengthGuess();
-      sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,timestep,sph);
-
+      sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,
+			 ntreestockstep,timestep,sph);
       sphneib->UpdateAllSphProperties(sph,nbody);
     }
 
@@ -109,7 +108,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Update neighbour tree
     rebuild_tree = true;
     sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,timestep,sph);
-
     level_step = 1;
 
     // Zero accelerations
@@ -187,12 +185,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     else if (sph->self_gravity == 1)
       sphneib->UpdateAllSphGravForces(sph,nbody);
 
-    // Compute contribution to grav. accel from stars
-    //for (i=0; i<sph->Nsph; i++)
-    //if (sph->sphdata[i].active)
-    //  sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
-    //                             sph->sphdata[i]);
-
     // Set initial accelerations
     for (i=0; i<sph->Nsph; i++) {
       for (k=0; k<ndim; k++) sph->sphintdata[i].r0[k] = sph->sphdata[i].r[k];
@@ -221,9 +213,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   }
 
 
-  // Set particle values for initial step (e.g. r0, v0, a0)
-  //if (simparams->stringparams["gas_eos"] == "energy_eqn")
-  //uint->EndTimestep(n,sph->Nsph,0.0,sph->sphintdata);
+  // Set particle values for initial step (e.g. r0, v0, a0, u0)
   sphint->EndTimestep(n,0.0,sph);
   nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
 
@@ -266,8 +256,6 @@ void SphSimulation<ndim>::MainLoop(void)
 
   // Advance SPH and N-body particles' positions and velocities
   sphint->AdvanceParticles(n,(FLOAT) timestep,sph);
-  //if (simparams->stringparams["gas_eos"] == "energy_eqn")
-  //  uint->EnergyIntegration(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
   nbody->AdvanceParticles(n,nbody->Nnbody,nbody->nbodydata,timestep);
 
   // Check all boundary conditions
@@ -352,18 +340,6 @@ void SphSimulation<ndim>::MainLoop(void)
       MpiGhosts->CopySphDataToGhosts(simbox,sph);
 #endif
       
-      // Zero accelerations
-      //for (i=0; i<sph->Ntot; i++) {
-      //  if (sph->sphdata[i].active) {
-      //    for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
-      //    for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
-      //    sph->sphdata[i].gpot = (FLOAT) 0.0;
-      //    sph->sphdata[i].gpe = (FLOAT) 0.0;
-      //    sph->sphdata[i].dudt = (FLOAT) 0.0;
-      //    sph->sphdata[i].levelneib = 0;
-      //  }
-      //}
-      
       // Compute SPH gravity and hydro forces, depending on which are activated
       if (sph->hydro_forces == 1 && sph->self_gravity == 1)
         sphneib->UpdateAllSphForces(sph,nbody);
@@ -372,20 +348,6 @@ void SphSimulation<ndim>::MainLoop(void)
       else if (sph->self_gravity == 1)
         sphneib->UpdateAllSphGravForces(sph,nbody);
       
-      // Compute contribution to grav. accel from stars
-      //for (i=0; i<sph->Nsph; i++)
-      // if (sph->sphdata[i].active)
-      //  sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
-      //                             sph->sphdata[i]);
-      
-      // Compute additional terms now accelerations and other derivatives 
-      // have been computed for active particles
-      //for (i=0; i<sph->Nsph; i++) {
-      //  if (sph->sphdata[i].active) {
-      //    for (k=0; k<ndim; k++)
-      //      sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
-      //  }
-      //}
 
       // Check if all neighbouring timesteps are acceptable
       if (Nlevels > 1)
@@ -452,21 +414,9 @@ void SphSimulation<ndim>::MainLoop(void)
   }
 
 
-  // (N.B. Correction terms merged with EndTimestep for now)
-  // Compute correction steps for all SPH particles
-  //if (sph->Nsph > 0) {
-  //  sphint->CorrectionTerms(n,(FLOAT) timestep,sph);
-  //  if (simparams->stringparams["gas_eos"] == "energy_eqn")
-  //    uint->EnergyCorrectionTerms(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
-  //}
-
-
   // End-step terms for all SPH particles
-  if (sph->Nsph > 0) {
-    //if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    //  uint->EndTimestep(n,sph->Nsph,timestep,sph->sphintdata);
+  if (sph->Nsph > 0)
     sphint->EndTimestep(n,timestep,sph);
-  }
 
   // End-step terms for all star particles
   if (nbody->Nstar > 0)
@@ -560,26 +510,26 @@ template <int ndim>
 void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 {
   int i;                                // Particle counter
-  int imin;                             // ..
-  int istep;                            // ??
+  int imin;                             // i.d. of ptcl with minimum timestep
+  int istep;                            // Aux. variable for changing steps
   int level;                            // Particle timestep level
   int last_level;                       // Previous timestep level
-  int level_max_aux;                    // ..
+  int level_max_aux;                    // Aux. maximum level variable
   int level_max_old;                    // Old level_max
   int level_max_sph = 0;                // level_max for SPH particles only
   int level_min_sph = 9999999;          // level_min for SPH particles
   int level_max_nbody = 0;              // level_max for star particles only
-  int level_nbody;                      // ..
-  int level_sph;                        // ..
-  int nfactor;                          // ??
-  int nstep;                            // ??
+  int level_nbody;                      // local thread var. for N-body level
+  int level_sph;                        // local thread var. for SPH level
+  int nfactor;                          // Increase/decrease factor of n
+  int nstep;                            // Particle integer step-size
   DOUBLE dt;                            // Aux. timestep variable
-  DOUBLE dt_min = big_number_dp;        // ..
-  DOUBLE dt_min_aux;                    // ..
+  DOUBLE dt_min = big_number_dp;        // Minimum timestep
+  DOUBLE dt_min_aux;                    // Aux. minimum timestep variable
   DOUBLE dt_min_nbody = big_number_dp;  // Maximum N-body particle timestep
   DOUBLE dt_min_sph = big_number_dp;    // Minimum SPH particle timestep
-  DOUBLE dt_nbody;                      // ..
-  DOUBLE dt_sph;                        // Aux. dt_min_sph_aux
+  DOUBLE dt_nbody;                      // Aux. minimum N-body timestep
+  DOUBLE dt_sph;                        // Aux. minimum SPH timestep
 
   debug2("[SphSimulation::ComputeBlockTimesteps]");
   timing->StartTimingSection("BLOCK_TIMESTEPS",2);
@@ -670,7 +620,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       }
     }
     
-    // Populate timestep levels with N-body particles
+    // Populate timestep levels with N-body particles.
+    // Ensures that N-body particles occupy levels lower than all SPH particles
     for (i=0; i<nbody->Nnbody; i++) {
       dt = nbody->nbodydata[i]->dt;
       level = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);

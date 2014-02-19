@@ -411,6 +411,7 @@ string SimulationBase::Output(void)
     CalculateDiagnostics();
     OutputDiagnostics();
     UpdateDiagnostics();
+    timing->ComputeTimingStatistics(run_id);
   }
 
   timing->EndTimingSection("OUTPUT");

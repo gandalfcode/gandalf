@@ -148,7 +148,6 @@ void SphLeapfrogKDK<ndim>::CorrectionTerms
   SphParticle<ndim> *part;          // SPH particle pointer
 
   debug2("[SphLeapfrogKDK::CorrectionTerms]");
-
   timing->StartTimingSection("LFKDK_CORRECTION_TERMS",2);
 
   //---------------------------------------------------------------------------

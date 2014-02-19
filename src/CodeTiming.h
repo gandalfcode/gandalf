@@ -30,6 +30,7 @@
 #include <time.h>
 #include <iostream>
 #include <iomanip>
+#include <sys/time.h>
 #include "Precision.h"
 using namespace std;
 
@@ -56,9 +57,8 @@ class CodeTiming
   //---------------------------------------------------------------------------
   void StartTimingSection(string,int);
   void EndTimingSection(string);
-  void ComputeTimingStatistics(void);
-  void OutputTimingStatistics(void);
-  double getRealTime(void);
+  void ComputeTimingStatistics(string);
+  double WallClockTime(void);
   
   
   // CodeTiming class variables
