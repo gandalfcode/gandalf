@@ -52,6 +52,17 @@ OPT += -fopenmp
 endif
 endif
 
+ifeq ($(CPP),icpc)
+ifeq ($(COMPILER_MODE),FAST)
+OPT += -O3 -fast -fPIC -fno-exceptions
+else ifeq ($(COMPILER_MODE),DEBUG)
+OPT += -g -fbounds-check -fPIC -O3  #-fprofile-arcs -ftest-coverage
+endif
+ifeq ($(OPENMP),1)
+OPT += -openmp
+endif
+endif
+
 ifeq ($(CPP),mpic++)
 MPI = 1
 CFLAGS += -DMPI_PARALLEL
