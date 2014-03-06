@@ -127,9 +127,11 @@ class SimulationBase
   //---------------------------------------------------------------------------
   bool setup;                       ///< Flag if simulation is setup
   bool initial_h_provided;          ///< Have initial h values been calculated?
+  bool kill_simulation;             ///< Kill simulation flag
   bool ParametersProcessed;         ///< Flag if params are already processed
   bool rebuild_tree;                ///< Flag to rebuild neighbour tree
   bool rescale_particle_data;       ///< Flag to scale data to code units
+  bool restart;                     ///< Flag to restart from last snapshot
   int integration_step;             ///< Steps per complete integration step
   int level_diff_max;               ///< Max. allowed neib timestep level diff
   int level_max;                    ///< Maximum timestep level
@@ -156,12 +158,16 @@ class SimulationBase
   int sph_single_timestep;          ///< Flag if SPH ptcls use same step
   DOUBLE dt_max;                    ///< Value of maximum timestep level
   DOUBLE dt_snap;                   ///< Snapshot time interval
+  DOUBLE dt_snap_wall;              ///< Wallclock time between snapshots
   DOUBLE dt_python;                 ///< Python window update time interval
   DOUBLE t;                         ///< Current simulation time
+  DOUBLE tmax_wallclock;            ///< Max. wall-clock time for sim (in s)
   DOUBLE tend;                      ///< End time of simulation
   DOUBLE timestep;                  ///< Current timestep
   DOUBLE tsnapfirst;                ///< Time of first snapshot
+  DOUBLE tsnaplast;                 ///< (Expected) time of last snaphsot
   DOUBLE tsnapnext;                 ///< Time of next snapshot
+  DOUBLE tsnap_wallclock;           ///< Wallclock time of last snapshot
   string out_file_form;             ///< Output snapshot file format
   string paramfile;                 ///< Name of parameters file
   string run_id;                    ///< Simulation id string
@@ -312,6 +318,7 @@ class Simulation : public SimulationBase
 template <int ndim>
 class SphSimulation : public Simulation<ndim> 
 {
+  using SimulationBase::restart;
   using SimulationBase::simparams;
   using SimulationBase::timing;
   using Simulation<ndim>::sph;
@@ -383,6 +390,7 @@ public:
 template <int ndim>
 class GodunovSphSimulation : public Simulation<ndim> 
 {
+  using SimulationBase::restart;
   using SimulationBase::simparams;
   using SimulationBase::timing;
   using Simulation<ndim>::sph;
@@ -452,6 +460,7 @@ public:
 template <int ndim>
 class NbodySimulation : public Simulation<ndim> 
 {
+  using SimulationBase::restart;
   using SimulationBase::simparams;
   using SimulationBase::timing;
   using Simulation<ndim>::sph;

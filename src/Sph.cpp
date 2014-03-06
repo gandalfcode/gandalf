@@ -90,8 +90,8 @@ void Sph<ndim>::AllocateMemory(int N)
     // Set conservative estimate for maximum number of particles, assuming 
     // extra space required for periodic ghost particles
     if (Nsphmax < N) 
-      //Nsphmax = N;
       Nsphmax = pow(pow(N,invndim) + 8.0*kernp->kernrange,ndim);
+    //Nsphmax = N;
 
     iorder = new int[Nsphmax];
     rsph = new FLOAT[ndim*Nsphmax];
@@ -131,46 +131,33 @@ void Sph<ndim>::DeallocateMemory(void)
 
 
 //=============================================================================
-//  Sph::DeleteParticles
-/// Delete selected SPH particles from the main arrays.
+//  Sph::DeleteDeadParticles
+/// Delete 'dead' (e.g. accreted) SPH particles from the main arrays.
 //=============================================================================
 template <int ndim>
-void Sph<ndim>::DeleteParticles
-(int Ndead,                         ///< No. of 'dead' particles
- int *deadlist)                     ///< List of 'dead' particle ids
+void Sph<ndim>::DeleteDeadParticles(void)
 {
   int i;                            // Particle counter
-  int idead = 0;                    // Aux. 'dead' particle counter
-  int ilive = 0;                    // 'Live' particle counter
+  int Ndead = 0;                    // No. of 'dead' particles
+  int Nlive = 0;                    // No. of 'live' particles
 
-  debug2("[Sph::DeleteParticles]");
+  debug2("[Sph::DeleteDeadParticles]");
 
-  // Make sure list of dead particles is in ascending order
-  InsertionSortIds(Ndead,deadlist);
-
-  for (i=0; i<Ndead-1; i++) {
-    if (deadlist[i+1] < deadlist[i]) {
-      cout << "PROBLEM WITH DEADLIST : " << i << "    " 
-	   << deadlist[i] << "    " << deadlist[i+1] << endl;
-      exit(0);
-    }
-  }
-
-  // Determine new order of particles in arrays
+  // Determine new order of particles in arrays.  
+  // First all live particles and then all dead particles
   for (i=0; i<Nsph; i++) {
-    if (idead < Ndead) {
-      if (i == deadlist[idead]) iorder[Nsph - Ndead + idead++] = i;
-      else iorder[ilive++] = i;
-    }
-    else iorder[ilive++] = i;
+    if (sphdata[i].itype == dead) iorder[Nsph - 1 - Ndead++] = i;
+    else iorder[Nlive++] = i;
   }
 
   // Reorder all arrays following with new order, with dead particles at end
-  ReorderParticles();
+  if (Ndead == 0) return;
+  else ReorderParticles();
 
   // Reduce particle counters once dead particles have been removed
-  Nsph = Nsph - Ndead;
-  Ntot = Nsph;
+  assert(Nlive + Ndead == Ntot);
+  Nsph -= Ndead;
+  Ntot -= Ndead;
 
   return;
 }
@@ -184,9 +171,9 @@ void Sph<ndim>::DeleteParticles
 template <int ndim>
 void Sph<ndim>::ReorderParticles(void)
 {
-  int i;                            // ..
-  SphParticle<ndim> *sphdataaux;    // ..
-  SphIntParticle<ndim>* sphintdataaux;
+  int i;                                // Particle counter
+  SphParticle<ndim> *sphdataaux;        // Aux. SPH particle array
+  SphIntParticle<ndim>* sphintdataaux;  // Aux. SPH Integration particle array
 
   sphdataaux = new SphParticle<ndim>[Nsph];
   sphintdataaux = new SphIntParticle<ndim>[Nsph];
@@ -209,7 +196,6 @@ void Sph<ndim>::ReorderParticles(void)
 
 
 
-
 //=============================================================================
 //  Sph::SphBoundingBox
 /// Calculate the bounding box containing all SPH particles.
@@ -220,16 +206,17 @@ void Sph<ndim>::SphBoundingBox
  FLOAT rmin[ndim],                  ///< [out] Minimum extent of bounding box
  int Nmax)                          ///< [in] Maximum particle i.d. in loop
 {
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+
   debug2("[Sph::SphBoundingBox]");
 
-  for (int k=0; k<ndim; k++) rmin[k] = big_number;
-  for (int k=0; k<ndim; k++) rmax[k] = -big_number;
+  for (k=0; k<ndim; k++) rmin[k] = big_number;
+  for (k=0; k<ndim; k++) rmax[k] = -big_number;
 
-  for (int i=0; i<Nmax; i++) {
-    for (int k=0; k<ndim; k++) 
-      if (sphdata[i].r[k] < rmin[k]) rmin[k] = sphdata[i].r[k];
-    for (int k=0; k<ndim; k++) 
-      if (sphdata[i].r[k] > rmax[k]) rmax[k] = sphdata[i].r[k];
+  for (i=0; i<Nmax; i++) {
+    for (k=0; k<ndim; k++) rmin[k] = min(rmin[k],sphdata[i].r[k]);
+    for (k=0; k<ndim; k++) rmax[k] = max(rmax[k],sphdata[i].r[k]);
   }
 
   return;
@@ -281,7 +268,7 @@ void Sph<ndim>::InitialSmoothingLengthGuess(void)
   //---------------------------------------------------------------------------
 
   // Set all smoothing lengths equal to average value
-  for (int i=0; i<Nsph; i++) {
+  for (i=0; i<Nsph; i++) {
     sphdata[i].h = h_guess;
     sphdata[i].invh = 1.0/h_guess;
     sphdata[i].hrangesqd = 

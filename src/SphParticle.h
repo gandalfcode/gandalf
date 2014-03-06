@@ -34,7 +34,7 @@
 #endif
 
 
-enum ptype{gas, icm, boundary, cdm, 
+enum ptype{gas, icm, boundary, cdm, dead, 
            x_lhs_periodic, x_lhs_mirror, x_rhs_periodic, x_rhs_mirror,
            y_lhs_periodic, y_lhs_mirror, y_rhs_periodic, y_rhs_mirror,
            z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror,

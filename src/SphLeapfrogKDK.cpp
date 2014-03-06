@@ -119,6 +119,9 @@ void SphLeapfrogKDK<ndim>::AdvanceParticles
     // Set particle as active at end of step
     if (dn == nstep) part->active = true;
     else part->active = false;
+
+    // Flag all dead particles as inactive here
+    if (part->itype == dead) part->active = false;
   }
   //---------------------------------------------------------------------------
 

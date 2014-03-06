@@ -122,7 +122,8 @@ endif
 ifeq ($(FFTW),1)
 CFLAGS += -DFFTW_TURBULENCE
 #OPT += -I/Users/davidhubber/astro/code/gandalf/src -L/Users/davidhubber/astro/code/gandalf/src -lm -lfftw3f
-OPT += -I/usr/local/include -L/usr/local/lib -lfftw3
+#OPT += -I/usr/local/include -L/usr/local/lib -lfftw3
+OPT += -I/sw/include -L/sw/lib -lfftw3
 endif
 
 
@@ -168,7 +169,7 @@ OBJ += Sph.o GradhSph.o SM2012Sph.o GodunovSph.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o SphLeapfrogDKD.o 
 OBJ += SphGodunovIntegration.o EnergyGodunovIntegration.o RiemannSolver.o
 #OBJ += SphNeighbourSearch.o 
-OBJ += BruteForceSearch.o GridSearch.o BinaryTree.o
+OBJ += SphNeighbourSearch.o BruteForceSearch.o GridSearch.o BinaryTree.o
 OBJ += AdiabaticEOS.o IsothermalEOS.o BarotropicEOS.o
 OBJ += EnergyPEC.o EnergyLeapfrogDKD.o
 #OBJ += SimGhostParticles.o

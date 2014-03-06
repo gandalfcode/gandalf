@@ -63,14 +63,16 @@ BruteForceSearch<ndim>::~BruteForceSearch()
 
 //=============================================================================
 //  BruteForceSearch::BuildTree
-/// For Brute Force neighbour searching, there is no tree to construct so 
-/// the function is empty.
+/// For Brute Force neighbour searching, there is no tree to construct but 
+/// we chose to delete any dead SPH particles here to be consistent with 
+/// the tree neighbour search.
 //=============================================================================
 template <int ndim>
 void BruteForceSearch<ndim>::BuildTree
 (bool rebuild_tree, int n, int ntreebuildstep, int ntreestockstep,
  FLOAT timestep, Sph<ndim> *sph)
 {
+  sph->DeleteDeadParticles();
   return;
 }
 
@@ -133,7 +135,7 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
     for (i=0; i<sph->Nsph; i++) {
 
       // Skip over inactive particles
-      if (!sph->sphdata[i].active) continue;
+      if (!sph->sphdata[i].active || sph->sphdata[i].itype == dead) continue;
 
       for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
 
@@ -206,7 +208,7 @@ void BruteForceSearch<ndim>::UpdateAllSphHydroForces
   for (i=0; i<sph->Nsph; i++) {
 
     // Skip over inactive particles
-    if (!sph->sphdata[i].active) continue;
+    if (!sph->sphdata[i].active || sph->sphdata[i].itype == dead) continue;
 
     // Zero all arrays to be updated
     for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
@@ -286,7 +288,7 @@ void BruteForceSearch<ndim>::UpdateAllSphForces
   for (i=0; i<sph->Nsph; i++) {
 
     // Skip over inactive particles
-    if (!sph->sphdata[i].active) continue;
+    if (!sph->sphdata[i].active || sph->sphdata[i].itype == dead) continue;
 
     // Zero all arrays to be updated
     for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
@@ -351,7 +353,7 @@ void BruteForceSearch<ndim>::UpdateAllSphGravForces
   for (i=0; i<sph->Nsph; i++) {
 
     // Skip over inactive particles
-    if (!sph->sphdata[i].active) continue;
+    if (!sph->sphdata[i].active || sph->sphdata[i].itype == dead) continue;
 
     // Zero all arrays to be updated
     for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;

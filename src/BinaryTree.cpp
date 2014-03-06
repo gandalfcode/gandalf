@@ -1,7 +1,7 @@
 //=============================================================================
 //  BinaryTree.cpp
 //  Contains all functions for building, stocking and walking for the 
-//  binary tree for SPH particles.  
+//  binary K-D tree for SPH particles.  
 //  Based on Fortran code courtesy of O. Lomax.
 //
 //  This file is part of GANDALF :
@@ -50,7 +50,8 @@ using namespace std;
 template <int ndim>
 BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux, 
                              FLOAT kernrangeaux, string gravity_mac_aux,
-                             string multipole_aux)
+                             string multipole_aux):
+  SphNeighbourSearch<ndim>()
 {
   allocated_buffer = false;
   allocated_tree = false;
@@ -112,14 +113,16 @@ void BinaryTree<ndim>::AllocateTreeMemory(Sph<ndim> *sph)
       Ndirectmaxbuf = new int[Nthreads];
       Ngravcellmaxbuf = new int[Nthreads];
       levelneibbuf = new int*[Nthreads];
+      activelistbuf = new int*[Nthreads];
       activepartbuf = new SphParticle<ndim>*[Nthreads];
       neibpartbuf = new SphParticle<ndim>*[Nthreads];
 
       for (ithread=0; ithread<Nthreads; ithread++) {
-	Nneibmaxbuf[ithread] = max(1,2*sph->Ngather);
+	Nneibmaxbuf[ithread] = max(1,4*sph->Ngather);
 	Ndirectmaxbuf[ithread] = max(1,4*sph->Ngather);
-	Ngravcellmaxbuf[ithread] = max(1,2*sph->Ngather);
+	Ngravcellmaxbuf[ithread] = max(1,4*sph->Ngather);
 	levelneibbuf[ithread] = new int[Ntotmax];
+        activelistbuf[ithread] = new int[Nleafmax];
 	activepartbuf[ithread] = new SphParticle<ndim>[Nleafmax];
 	neibpartbuf[ithread] = new SphParticle<ndim>[Nneibmaxbuf[ithread]];
       }
@@ -154,6 +157,7 @@ void BinaryTree<ndim>::DeallocateTreeMemory(void)
     }
     delete[] neibpartbuf;
     delete[] activepartbuf;
+    delete[] activelistbuf;
     delete[] levelneibbuf;
     delete[] Ngravcellmaxbuf;
     delete[] Ndirectmaxbuf;
@@ -186,10 +190,13 @@ void BinaryTree<ndim>::BuildTree
  FLOAT timestep,                    ///< Smallest physical timestep
  Sph<ndim> *sph)                    ///< Pointer to SPH object
 {
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+
   debug2("[BinaryTree::BuildTree]");
   timing->StartTimingSection("BUILD_TREE",2);
 
-  // Active nested parallelism for tree building routines
+  // Activate nested parallelism for tree building routines
 #ifdef _OPENMP
   omp_set_nested(1);
 #endif
@@ -198,6 +205,9 @@ void BinaryTree<ndim>::BuildTree
   // For tree rebuild steps
   //---------------------------------------------------------------------------
   if (n%ntreebuildstep == 0 || rebuild_tree) {
+
+    // Delete any dead particles from main SPH arrays before we re-build tree
+    sph->DeleteDeadParticles();
 
     // Set no. of tree members to total number of SPH particles (inc. ghosts)
     ltot_old = ltot;
@@ -219,16 +229,27 @@ void BinaryTree<ndim>::BuildTree
     // creation of new particles) then re-create tree data structure 
     // including linked lists and cell pointers
     if (ltot != ltot_old) CreateTreeStructure();
-
-    // If number of particles remains unchanged, use old id list.
-    if (Ntot != Ntotold) 
-      for (int i=0; i<Ntot; i++) ids[i] = i;
-
-    // Now add particles to tree depending on Cartesian coordinates
-    LoadParticlesToTree(sph);
-
-    // Calculate all cell quantities (e.g. COM, opening distance)
-    //StockTree(tree[0],sph->sphdata);
+    
+    // Set properties for root cell before constructing tree
+    tree[0].N = Ntot;
+    tree[0].ifirst = 0;
+    tree[0].ilast = Ntot - 1;
+    for (k=0; k<ndim; k++) tree[0].bbmin[k] = -big_number;
+    for (k=0; k<ndim; k++) tree[0].bbmax[k] = big_number;
+    for (i=0; i<Ntot; i++) inext[i] = -1;
+    
+    // If number of particles remains unchanged, use old id list 
+    // (nearly sorted list should be faster for quick select).
+    if (Ntot != Ntotold)
+      for (i=0; i<Ntot; i++) ids[i] = i;    
+    
+    // Recursively build tree from root node down
+    DivideTreeCell(0,Ntot-1,sph,tree[0]);
+      
+#ifdef REORDER_PARTICLES
+    for (i=0; i<sph->Nsph; i++)
+      sph->sphintdata[i].part = &(sph->sphdata[i]);
+#endif
 
 #if defined(VERIFY_ALL)
     ValidateTree(sph);
@@ -294,7 +315,6 @@ void BinaryTree<ndim>::ComputeTreeSize(void)
 
   // Optional output (for debugging)
 #if defined(VERIFY_ALL)
-  cout << "Calculating tree size variables" << endl;
   cout << "No. of ptcls in tree  : " << Ntot << "   " << Ntotmax << endl;
   cout << "No. of grid-cells     : " << gtot << "   " << gmax << endl;
   cout << "No. of levels on tree : " << ltot << "   " << lmax << endl;
@@ -377,39 +397,6 @@ void BinaryTree<ndim>::CreateTreeStructure(void)
 
 
 //=============================================================================
-//  BinaryTree::LoadParticlesToTree
-/// Create tree structure by adding particles to leaf cells.
-//=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::LoadParticlesToTree
-(Sph<ndim> *sph)                   ///< Pointer to main SPH object
-{
-  int i;                           // SPH particle counter
-  int k;                           // Dimensionality counter
-
-  debug2("[BinaryTree::LoadParticlesToTree]");
-
-  tree[0].N = Ntot;
-  tree[0].ifirst = 0;
-  tree[0].ilast = Ntot - 1;
-  for (k=0; k<ndim; k++) tree[0].bbmin[k] = -big_number;
-  for (k=0; k<ndim; k++) tree[0].bbmax[k] = big_number;
-  for (i=0; i<Ntot; i++) inext[i] = -1;
-
-  // Recursively build tree from root node down
-  DivideTreeCell(0,Ntot-1,sph,tree[0]);
-
-#ifdef REORDER_PARTICLES
-  for (i=0; i<sph->Nsph; i++)
-    sph->sphintdata[i].part = &(sph->sphdata[i]);
-#endif
-
-  return;
-}
-
-
-
-//=============================================================================
 //  BinaryTree::DivideTreeCell
 /// Recursive routine to divide a tree cell into two children cells.
 //=============================================================================
@@ -435,6 +422,10 @@ void BinaryTree<ndim>::DivideTreeCell
       inext[ids[cell.ilast]] = -1;
       cell.ifirst = ids[cell.ifirst];
       cell.ilast = ids[cell.ilast];
+    }
+    else {
+      cell.ifirst = -1;
+      cell.ilast = -1;
     }
     StockCellProperties(cell,sph->sphdata);
     return;
@@ -476,6 +467,13 @@ void BinaryTree<ndim>::DivideTreeCell
     tree[cell.c2].ilast = ilast;
   }
 
+  //if (cell.N != tree[cell.c1].N + tree[cell.c2].N) {
+  //cout << "WTF2?? : " << cell.N << "   " << tree[cell.c1].N << "    " 
+  // << tree[cell.c2].N << "    " << cell.level << "    " 
+  // << tree[cell.c1].ifirst << "   " << tree[cell.c2].ifirst << endl;
+  //}
+  assert(cell.N == tree[cell.c1].N + tree[cell.c2].N);
+
 
   // Now divide the new child cells as a recursive function
 #if defined _OPENMP
@@ -502,6 +500,13 @@ void BinaryTree<ndim>::DivideTreeCell
     else if (i == 1) DivideTreeCell(ifirst+cell.N/2,ilast,sph,tree[cell.c2]);
   }
 #endif
+
+  //if (cell.N != tree[cell.c1].N + tree[cell.c2].N) {
+  //cout << "WTF?? : " << cell.N << "   " << tree[cell.c1].N << "    " 
+  // << tree[cell.c2].N << "    " << cell.level << "    " 
+  // << tree[cell.c1].ifirst << "   " << tree[cell.c2].ifirst << endl;
+  //}
+  assert(cell.N == tree[cell.c1].N + tree[cell.c2].N);
 
   // Stock all cell properties once constructed
   StockCellProperties(cell,sph->sphdata);
@@ -592,6 +597,7 @@ FLOAT BinaryTree<ndim>::QuickSelect
     //ids[right] = ids[jguess];
     //ids[jguess] = jtemp;
 
+
     // jguess is lower than jpivot.  
     // Only need to search between jguess+1 and right
     if (jguess < jpivot) left = jguess + 1;
@@ -599,6 +605,7 @@ FLOAT BinaryTree<ndim>::QuickSelect
     // jguess is higher than jpivot.  
     // Only need to search between left and jguess-1
     else if (jguess > jpivot) right = jguess - 1;
+
 
   } while (jguess != jpivot);
   //---------------------------------------------------------------------------
@@ -648,7 +655,7 @@ FLOAT BinaryTree<ndim>::QuickSelect
 
     //-------------------------------------------------------------------------
     for (j=left; j<right; j++) {
-
+      assert(j < sph->Nsph);
       if (sph->sphdata[ids[j]].r[k] <= rpivot) {
 	jtemp = ids[j];
 	ids[j] = ids[jguess];
@@ -664,6 +671,13 @@ FLOAT BinaryTree<ndim>::QuickSelect
     jtemp = ids[right];
     ids[right] = ids[jguess];
     ids[jguess] = jtemp;
+
+    assert(left < sph->Nsph);
+    assert(right < sph->Nsph);
+    assert(jguess < sph->Nsph);
+    assert(jpivot < sph->Nsph);
+
+
 
     // jguess is lower than jpivot.  
     // Only need to search between jguess+1 and right
@@ -733,18 +747,19 @@ void BinaryTree<ndim>::StockTree
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::StockCellProperties
-(BinaryTreeCell<ndim> &cell,       ///< ..
+(BinaryTreeCell<ndim> &cell,        ///< Reference to current tree cell
  SphParticle<ndim> *sphdata)        ///< SPH particle data array
 {
-  int c,cc,ccc;                     // Cell counters
+  int cc,ccc;                       // Cell counters
   int i;                            // Particle counter
+  int iaux;                         // Aux. particle i.d. variable
   int j;                            // ..
   int k;                            // Dimension counter
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drsqd;                      // Distance squared
   FLOAT mi;                         // Mass of particle i
-  FLOAT p = 0.0;
-  FLOAT lambda = 0.0;
+  //FLOAT p = 0.0;                    // ..
+  //FLOAT lambda = 0.0;               // ..
   BinaryTreeCell<ndim> &child1 = tree[cell.c1];
   BinaryTreeCell<ndim> &child2 = tree[cell.c2];
 
@@ -767,26 +782,51 @@ void BinaryTree<ndim>::StockCellProperties
   for (k=0; k<5; k++) cell.q[k] = 0.0;
   for (k=0; k<ndim; k++) cell.rcell[k] = 0.0;
 
+
   // If this is a leaf cell, sum over all particles
   //---------------------------------------------------------------------------
   if (cell.level == ltot) {
+
+    // First, check if any particles have been accreted and remove them 
+    // from the linked list.  If cell no longer contains any live particles, 
+    // then set N = 0 to ensure cell is not included in future tree-walks.
     i = cell.ifirst;
-    
-    // Loop over all particles in cell summing their contributions
+    cell.ifirst = -1;
+    iaux = -1;
     while (i != -1) {
-      cell.N++;
-      if (sphdata[i].active) cell.Nactive++;
-      cell.hmax = max(cell.hmax,sphdata[i].h);
-      cell.m += sphdata[i].m;
-      for (k=0; k<ndim; k++) cell.r[k] += sphdata[i].m*sphdata[i].r[k];
-      for (k=0; k<ndim; k++) cell.v[k] += sphdata[i].m*sphdata[i].v[k];
-      for (k=0; k<ndim; k++) {
-	if (sphdata[i].r[k] < cell.bbmin[k]) cell.bbmin[k] = sphdata[i].r[k];
-	if (sphdata[i].r[k] > cell.bbmax[k]) cell.bbmax[k] = sphdata[i].r[k];
-	if (sphdata[i].r[k] - kernrange*sphdata[i].h < cell.hboxmin[k]) 
-	  cell.hboxmin[k] = sphdata[i].r[k] - kernrange*sphdata[i].h;
-	if (sphdata[i].r[k] + kernrange*sphdata[i].h > cell.hboxmax[k])
-	  cell.hboxmax[k] = sphdata[i].r[k] + kernrange*sphdata[i].h;
+      if (sphdata[i].itype != dead) {
+    	if (iaux == -1) cell.ifirst = i;
+	else inext[iaux] = i;
+	iaux = i;
+      }
+      //else {
+      //cout << "Found and removing dead particle?? : " << i << "    " << 
+      //  cell.ifirst << "   " << cell.ilast << "   " << cell.id << endl;
+      //}
+      if (i == cell.ilast) break;
+      i = inext[i];
+    };
+    cell.ilast = iaux;
+    
+
+    // Loop over all particles in cell summing their contributions
+    i = cell.ifirst;
+    while (i != -1) {
+      if (sphdata[i].itype != dead) {
+	cell.N++;
+	if (sphdata[i].active) cell.Nactive++;
+	cell.hmax = max(cell.hmax,sphdata[i].h);
+	cell.m += sphdata[i].m;
+	for (k=0; k<ndim; k++) cell.r[k] += sphdata[i].m*sphdata[i].r[k];
+	for (k=0; k<ndim; k++) cell.v[k] += sphdata[i].m*sphdata[i].v[k];
+	for (k=0; k<ndim; k++) {
+	  if (sphdata[i].r[k] < cell.bbmin[k]) cell.bbmin[k] = sphdata[i].r[k];
+	  if (sphdata[i].r[k] > cell.bbmax[k]) cell.bbmax[k] = sphdata[i].r[k];
+	  if (sphdata[i].r[k] - kernrange*sphdata[i].h < cell.hboxmin[k]) 
+	    cell.hboxmin[k] = sphdata[i].r[k] - kernrange*sphdata[i].h;
+	  if (sphdata[i].r[k] + kernrange*sphdata[i].h > cell.hboxmax[k])
+	    cell.hboxmax[k] = sphdata[i].r[k] + kernrange*sphdata[i].h;
+	}
       }
       if (i == cell.ilast) break;
       i = inext[i];
@@ -799,8 +839,8 @@ void BinaryTree<ndim>::StockCellProperties
       for (k=0; k<ndim; k++) 
 	cell.rcell[k] = 0.5*(cell.bbmin[k] + cell.bbmax[k]);
       for (k=0; k<ndim; k++) dr[k] = 0.5*(cell.bbmax[k] - cell.bbmin[k]);
-      cell.cdistsqd = max(DotProduct(dr,dr,ndim)/thetamaxsqd,
-			  cell.hmax*cell.hmax);
+      cell.cdistsqd = max(DotProduct(dr,dr,ndim),
+			  cell.hmax*cell.hmax)/thetamaxsqd;
       cell.rmax = sqrt(DotProduct(dr,dr,ndim));
     }
     
@@ -809,25 +849,31 @@ void BinaryTree<ndim>::StockCellProperties
       i = cell.ifirst;
       
       while (i != -1) {
-	mi = sphdata[i].m;
-	for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - cell.r[k];
-	drsqd = DotProduct(dr,dr,ndim);
-	if (ndim == 3) {
-	  cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-	  cell.q[1] += mi*3.0*dr[0]*dr[1];
-	  cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
-	  cell.q[3] += mi*3.0*dr[2]*dr[0];
-	  cell.q[4] += mi*3.0*dr[2]*dr[1];
-	}
-	else if (ndim == 2) {
-	  cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-	  cell.q[1] += mi*3.0*dr[0]*dr[1];
-	  cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+	if (sphdata[i].itype != dead) {
+	  mi = sphdata[i].m;
+	  for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - cell.r[k];
+	  drsqd = DotProduct(dr,dr,ndim);
+	  if (ndim == 3) {
+	    cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
+	    cell.q[1] += mi*3.0*dr[0]*dr[1];
+	    cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+	    cell.q[3] += mi*3.0*dr[2]*dr[0];
+	    cell.q[4] += mi*3.0*dr[2]*dr[1];
+	  }
+	  else if (ndim == 2) {
+	    cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
+	    cell.q[1] += mi*3.0*dr[0]*dr[1];
+	    cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+	  }
 	}
 	if (i == cell.ilast) break;
 	i = inext[i];
       }
     }
+
+
+    //if (cell.ifirst == -1) 
+    //cout << "DEAD CELL?? : " << cell.m << "   " << cell.r[0] << "   " << cell.r[1] << "   " << cell.rmax << "    " << cell.hmax << "    " << cell.cdistsqd << endl;
 
   }
   // For non-leaf cells, sum together two children cells
@@ -868,8 +914,8 @@ void BinaryTree<ndim>::StockCellProperties
 	cell.rcell[k] = 0.5*(cell.bbmin[k] + cell.bbmax[k]);
       for (k=0; k<ndim; k++) 
 	dr[k] = 0.5*(cell.bbmax[k] - cell.bbmin[k]);
-      cell.cdistsqd = max(DotProduct(dr,dr,ndim)/thetamaxsqd,
-			  cell.hmax*cell.hmax);
+      cell.cdistsqd = max(DotProduct(dr,dr,ndim),
+			  cell.hmax*cell.hmax)/thetamaxsqd;
       cell.rmax = sqrt(DotProduct(dr,dr,ndim));
     }
     
@@ -1117,7 +1163,8 @@ int BinaryTree<ndim>::ComputeActiveParticleList
 
   // Walk through linked list to obtain list and number of active ptcls.
   while (i != -1) {
-    if (i < sph->Nsph && sph->sphdata[i].active) activelist[Nactive++] = i;
+    if (i < sph->Nsph && sph->sphdata[i].active && 
+	sph->sphdata[i].itype != dead) activelist[Nactive++] = i;
     if (i == ilast) break;
     i = inext[i];
   };
@@ -1218,6 +1265,9 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
       if (tree[cc].level != ltot)
         cc++;
 
+      else if (tree[cc].N == 0)
+	cc = tree[cc].cnext;
+
       // If leaf-cell, add particles to list
       else if (tree[cc].level == ltot && Nneib + Nleafmax < Nneibmax) {
         i = tree[cc].ifirst;
@@ -1248,6 +1298,7 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
   //hrangemax = hrangemax*hrangemax;
   for (j=0; j<Nneib; j++) {
     i = neiblist[j];
+    if (sphdata[i].itype == dead) continue;
     for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
     if (drsqd < hrangemaxsqd) neiblist[Ntemp++] = i;
@@ -1317,6 +1368,9 @@ int BinaryTree<ndim>::ComputeNeighbourList
       if (tree[cc].level != ltot)
         cc++;
 
+      else if (tree[cc].N == 0)
+	cc = tree[cc].cnext;
+
       // If leaf-cell, add particles to list
       else if (tree[cc].level == ltot && Nneib + Nleafmax < Nneibmax) {
         i = tree[cc].ifirst;
@@ -1346,6 +1400,7 @@ int BinaryTree<ndim>::ComputeNeighbourList
   hrangemax = hrangemax*hrangemax;
   for (j=0; j<Nneib; j++) {
     i = neiblist[j];
+    if (sphdata[i].itype == dead) continue;
     for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
     if (drsqd < hrangemax || drsqd <
@@ -1388,7 +1443,6 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
   int j;                            // Aux. particle counter
   int k;                            // Neighbour counter
   int Nneibtemp = 0;                // Aux. counter
-  FLOAT cdistsqd;                   // ..
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drsqd;                      // Distance squared
   FLOAT rc[ndim];                   // Position of cell
@@ -1398,7 +1452,6 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
   // Make local copies of important cell properties
   for (k=0; k<ndim; k++) rc[k] = cell->rcell[k];
   hrangemax = cell->rmax + kernrange*cell->hmax;
-  cdistsqd = cell->cdistsqd;
   rmax = cell->rmax;
 
   // Start with root cell and walk through entire tree
@@ -1431,6 +1484,9 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
       if (tree[cc].level != ltot)
         cc++;
 
+      else if (tree[cc].N == 0)
+	cc = tree[cc].cnext;
+
       // If leaf-cell, add particles to list
       else if (tree[cc].level == ltot && Nneib + Nleafmax <= Nneibmax) {
         i = tree[cc].ifirst;
@@ -1452,16 +1508,16 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
     //-------------------------------------------------------------------------
     //else if (drsqd >= tree[c].cdistsqd + tree[cc].cdistsqd) {
     //else if (drsqd > cdistsqd && drsqd > tree[cc].cdistsqd) {
-    else if (drsqd > tree[cc].cdistsqd) {
+    else if (drsqd > tree[cc].cdistsqd && tree[cc].N > 0) {
 
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
       if (tree[cc].level == ltot && tree[cc].N == 1 && Ndirect < Ndirectmax)
         directlist[Ndirect++] = tree[cc].ifirst;
-      else if (Ngravcell < Ngravcellmax)
+      else if (Ngravcell < Ngravcellmax) 
         gravcelllist[Ngravcell++] = &(tree[cc]);
       else
-        return -1;
+        return -2;
       cc = tree[cc].cnext;
 
     }
@@ -1471,7 +1527,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
     //-------------------------------------------------------------------------
     //else if (drsqd < tree[c].cdistsqd + tree[cc].cdistsqd) {
     //else if (drsqd <= cdistsqd || drsqd <= tree[cc].cdistsqd) {
-    else if (drsqd <= tree[cc].cdistsqd) {
+    else if (drsqd <= tree[cc].cdistsqd && tree[cc].N > 0) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (tree[cc].level != ltot)
@@ -1490,7 +1546,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
       else if (tree[cc].level == ltot && Ndirect + Nleafmax > Ndirectmax)
-       	return -1;
+       	return -3;
 
     }
 
@@ -1508,6 +1564,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
   hrangemax = hrangemax*hrangemax;
   for (j=Nneibtemp; j<Nneib; j++) {
     i = neiblist[j];
+    if (sphdata[i].itype == dead) continue;
     for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
     if (drsqd < hrangemax || drsqd < 
@@ -1516,7 +1573,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
     else if (Ndirect < Ndirectmax)
       directlist[Ndirect++] = i;
     else
-     return -1;
+     return -3;
   }
   Nneib = Nneibtemp;
 
@@ -1551,7 +1608,6 @@ int BinaryTree<ndim>::ComputeStarGravityInteractionList
 {
   int cc;                           // Cell counter
   int i;                            // Particle id
-  int j;                            // Aux. particle counter
   int k;                            // Neighbour counter
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drsqd;                      // Distance squared
@@ -1605,13 +1661,13 @@ int BinaryTree<ndim>::ComputeStarGravityInteractionList
 
     // Check if cell is far enough away to use the COM approximation
     //-------------------------------------------------------------------------
-    else if (drsqd > tree[cc].cdistsqd) {
+    else if (drsqd > tree[cc].cdistsqd && tree[cc].N > 0) {
 
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
       if (tree[cc].level == ltot && tree[cc].N == 1 && Ndirect < Ndirectmax)
         directlist[Ndirect++] = tree[cc].ifirst;
-      else if (Ngravcell < Ngravcellmax)
+      else if (Ngravcell < Ngravcellmax && tree[cc].N > 0)
         gravcelllist[Ngravcell++] = &(tree[cc]);
       else
         return -1;
@@ -1622,7 +1678,7 @@ int BinaryTree<ndim>::ComputeStarGravityInteractionList
     // If cell is too close, open cell to interogate children cells.
     // If cell is too close and a leaf cell, then add particles to direct list.
     //-------------------------------------------------------------------------
-    else if (drsqd <= tree[cc].cdistsqd) {
+    else if (drsqd <= tree[cc].cdistsqd && tree[cc].N > 0) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (tree[cc].level != ltot)
@@ -1765,6 +1821,7 @@ void BinaryTree<ndim>::ComputeCellQuadrupoleForces
         (cell->q[3]*dr[0] + cell->q[4]*dr[1] -
          (cell->q[0] + cell->q[2])*dr[2])*invdr5 - qfactor*dr[2];
 	//- 2.5*qscalar*dr[1]*invdr7;
+      gpot += cell->m*invdrmag + 0.5*qscalar*invdr5;
     }
     else if (ndim == 2) {
       qscalar = cell->q[0]*dr[0]*dr[0] + cell->q[2]*dr[1]*dr[1] +
@@ -1776,10 +1833,8 @@ void BinaryTree<ndim>::ComputeCellQuadrupoleForces
       agrav[1] += (cell->q[1]*dr[0] + cell->q[2]*dr[1])*invdr5 -
 	qfactor*dr[1];
       //2.5*qscalar*dr[1]*invdr5*invdrsqd;
+      gpot += cell->m*invdrmag + 0.5*qscalar*invdr5;
     }
-
-    // Compute potential contribution
-    gpot += cell->m*invdrmag + 0.5*qscalar*invdr5;
 
   }
   //---------------------------------------------------------------------------
@@ -1813,21 +1868,25 @@ void BinaryTree<ndim>::ComputeFastMonopoleForces
   FLOAT invdrsqd;                   // 1 / drsqd
   FLOAT invdr3;                     // 1 / dist^3
   FLOAT mc;                         // Mass of cell
-  FLOAT q[6];                       // ..
+  FLOAT q[6];                       // Local copy of quadrupole moment
   FLOAT dphi[3];                    // ..
   FLOAT cellpot;                    // ..
   FLOAT rc[ndim];                   // ..
-  FLOAT rp[ndim];                   // Position of particle
 
   for (k=0; k<ndim; k++) rc[k] = cell->r[k];
-  for (k=0; k<6; k++) q[k] = 0;
   for (k=0; k<ndim; k++) ac[k] = 0.0;
   for (k=0; k<ndim; k++) dphi[k] = 0.0;
+  for (k=0; k<6; k++) q[k] = 0;
   cellpot = 0.0;
+
 
   if (ndim == 3) {
 
     for (cc=0; cc<Ngravcell; cc++) {
+      if (cell->id == gravcelllist[cc]->id) {
+	cout << "WTFF???? : " << cc << "    " << cell->id << endl; exit(0);
+      }
+      assert(cell->id != gravecelllist[cc]->id);
       mc = gravcelllist[cc]->m;
       for (k=0; k<ndim; k++) dr[k] = gravcelllist[cc]->r[k] - rc[k];
       drsqd = DotProduct(dr,dr,ndim);
@@ -1844,7 +1903,6 @@ void BinaryTree<ndim>::ComputeFastMonopoleForces
       q[4] += mc*(3.0*dr[2]*dr[1]*invdr3*invdrsqd);
       q[5] += mc*(3.0*dr[2]*dr[2]*invdr3*invdrsqd - invdrsqd*invdrmag);
     }
-
 
     for (j=0; j<Nactive; j++) {
       for (k=0; k<ndim; k++) dr[k] = activepart[j].r[k] - rc[k];
@@ -1939,10 +1997,10 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 
   // Set-up all OMP threads
   //===========================================================================
-#pragma omp parallel default(none) private(activelist,activepart,cc,cell,celldone,draux) \
-  private(drsqd,drsqdaux,gpot,gpot2,hmax,hrangesqd,i,ithread,j,jj,k,okflag,m)\
-  private(mu,m2,mu2,Nactive,neiblist,Ngather,Nneib,Nneibmax,r,rp)\
-  shared(sph,celllist,cactive,cout,data,nbody) reduction(+:Nneibcount)
+#pragma omp parallel default(none) private(activelist,activepart,cc,cell)\
+  private(celldone,draux,drsqd,drsqdaux,gpot,gpot2,hmax,hrangesqd,i,ithread,j)\
+  private(jj,k,okflag,m,mu,m2,mu2,Nactive,neiblist,Ngather,Nneib,Nneibmax,r,rp)	\
+  shared(cactive,celllist,cout,data,nbody,sph) reduction(+:Nneibcount)
   {
 #if defined _OPENMP
     ithread = omp_get_thread_num();
@@ -1951,8 +2009,13 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 #endif
     Nneibmax = Nneibmaxbuf[ithread];
 
+    //int activelist[Nleafmax];
+    //SphParticle<ndim> activepart[Nleafmax];
     activelist = new int[Nleafmax];
-    activepart = activepartbuf[ithread];
+    activepart = new SphParticle<ndim>[Nleafmax];
+    //activelist = activelistbuf[ithread];
+    //activepart = activepartbuf[ithread];
+
     neiblist = new int[Nneibmax];
     gpot = new FLOAT[Nneibmax];
     gpot2 = new FLOAT[Nneibmax];
@@ -2022,7 +2085,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
         // Make local copies of important neib information (mass and position)
         for (jj=0; jj<Nneib; jj++) {
           j = neiblist[jj];
-          assert(j >= 0 && j < sph->Ntot);
+          //assert(j >= 0 && j < sph->Ntot);
           gpot[jj] = data[j].gpot;
           m[jj] = data[j].m;
           mu[jj] = data[j].m*data[j].u;
@@ -2035,7 +2098,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
         for (j=0; j<Nactive; j++) {
 	  Nneibcount += Nneib;
           i = activelist[j];
-          assert(i >= 0 && i < sph->Nsph);
+          //assert(i >= 0 && i < sph->Nsph);
           for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k]; //data[i].r[k];
 
           // Set gather range as current h multiplied by some tolerance factor
@@ -2062,7 +2125,8 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 
           // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-          if (neibcheck) CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
+          if (neibcheck) 
+	    this->CheckValidNeighbourList(sph,i,Nneib,neiblist,"gather");
 #endif
 
           // Compute smoothing length and other gather properties for ptcl i
@@ -2098,6 +2162,7 @@ void BinaryTree<ndim>::UpdateAllSphProperties
     delete[] gpot2;
     delete[] gpot;
     delete[] neiblist;
+    delete[] activepart;
     delete[] activelist;
 
   }
@@ -2179,13 +2244,13 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
     ithread = 0;
 #endif
     Nneibmax = Nneibmaxbuf[ithread];
+    activelist = activelistbuf[ithread];    
     activepart = activepartbuf[ithread];
     neibpart = neibpartbuf[ithread];
-    //neibpart = new SphParticle<ndim>[Nneibmax];
     levelneib = levelneibbuf[ithread];
     for (i=0; i<sph->Nsph; i++) levelneib[i] = 0;
 
-    activelist = new int[Nleafmax];
+    //activelist = new int[Nleafmax];
     neiblist = new int[Nneibmax];
     interactlist = new int[Nneibmax];
     dr = new FLOAT[Nneibmax*ndim];
@@ -2204,7 +2269,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 
       // Make local copies of active particles
       for (j=0; j<Nactive; j++) {
-        assert(activelist[j] >= 0 && activelist[j] < sph->Nsph);
+        //assert(activelist[j] >= 0 && activelist[j] < sph->Nsph);
         activepart[j] = data[activelist[j]];
         activepart[j].div_v = (FLOAT) 0.0;
         activepart[j].dudt = (FLOAT) 0.0;
@@ -2240,7 +2305,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 
       // Make local copies of all potential neighbours
       for (j=0; j<Nneib; j++) {
-        assert(neiblist[j] >= 0 && neiblist[j] < sph->Ntot);
+        //assert(neiblist[j] >= 0 && neiblist[j] < sph->Ntot);
         neibpart[j] = data[neiblist[j]];
       }
 
@@ -2256,7 +2321,8 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 
         // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-        if (neibcheck) CheckValidNeighbourList(sph,i,Nneib,neiblist,"all");
+        if (neibcheck) 
+	  this->CheckValidNeighbourList(sph,i,Nneib,neiblist,"all");
 #endif
 
         // Compute distances and the inverse between the current particle
@@ -2298,9 +2364,11 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 
 
       // Compute all star forces for active particles
-      for (j=0; j<Nactive; j++)
-        sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
-                                   activepart[j]);
+      if (nbody->Nnbody > 0) {
+	for (j=0; j<Nactive; j++)
+	  sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
+				     activepart[j]);
+      }
 
 
       // Add all active particles contributions to main array
@@ -2332,7 +2400,7 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
     delete[] dr;
     delete[] interactlist;
     delete[] neiblist;
-    delete[] activelist;
+    //delete[] activelist;
 
   }
   //===========================================================================
@@ -2405,15 +2473,16 @@ void BinaryTree<ndim>::UpdateAllSphForces
   // Find list of all cells that contain active particles
   celllist = new BinaryTreeCell<ndim>*[gtot];
   cactive = ComputeActiveCellList(celllist);
+  cout << "cactive : " << cactive << endl;
 
 
   // Set-up all OMP threads
   //===========================================================================
 #pragma omp parallel default(none) shared(celllist,cactive,nbody,sph,cout) \
-  private(activelist,activepart,cc,cell,directlist,draux,drsqd,gravcelllist)\
-  private(hrangesqdi,Ndirectaux,rp,i,interactlist,ithread,j,jj,k,levelneib)\
-  private(neiblist,neibpart,Nactive,Ndirect,Ndirectmax,Ngravcell)\
-  private(Ngravcellmax,Ninteract,Nneib,Nneibmax,okflag)\
+  private(activepart,activelist,cc,cell,directlist,draux,drsqd,gravcelllist) \
+  private(hrangesqdi,Ndirectaux,rp,i,interactlist,ithread,j,jj,k,levelneib) \
+  private(neiblist,neibpart,Nactive,Ndirect,Ndirectmax,Ngravcell) \
+  private(Ngravcellmax,Ninteract,Nneib,Nneibmax,okflag)	\
   reduction(+:Nactivecount,Ncellcount,Ndirectcount,Nneibcount)
   {
 #if defined _OPENMP
@@ -2425,17 +2494,19 @@ void BinaryTree<ndim>::UpdateAllSphForces
     Ndirectmax = Ndirectmaxbuf[ithread];
     Ngravcellmax = Ngravcellmaxbuf[ithread];
 
-    levelneib = levelneibbuf[ithread];
-    activepart = activepartbuf[ithread];
-    neibpart = neibpartbuf[ithread];
-    //neibpart = new SphParticle<ndim>[Nneibmax];
-
+    //levelneib = levelneibbuf[ithread];
+    //activelist = activelistbuf[ithread];
+    //activepart = activepartbuf[ithread];
+    //neibpart = neibpartbuf[ithread];
+    levelneib = new int[sph->Nsphmax];
     activelist = new int[Nleafmax];
+    activepart = new SphParticle<ndim>[Nleafmax];
+    
+    neibpart = new SphParticle<ndim>[Nneibmax];
     neiblist = new int[Nneibmax];
     interactlist = new int[Nneibmax];
     directlist = new int[Ndirectmax];
     gravcelllist = new BinaryTreeCell<ndim>*[Ngravcellmax];
-
 
     // Zero timestep level array
     for (i=0; i<sph->Nsph; i++) levelneib[i] = 0.0;
@@ -2453,7 +2524,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
       // Make local copies of active particles
       for (j=0; j<Nactive; j++) {
-        assert(activelist[j] >= 0 && activelist[j] < sph->Nsph);
+        //assert(activelist[j] >= 0 && activelist[j] < sph->Nsph);
         activepart[j] = sph->sphdata[activelist[j]];
         activepart[j].div_v = (FLOAT) 0.0;
         activepart[j].dudt = (FLOAT) 0.0;
@@ -2472,35 +2543,36 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour lists.
-      while (okflag == -1) {
-        delete[] neibpartbuf[ithread];
-        delete[] gravcelllist;
-        delete[] directlist;
-        delete[] interactlist;
-        delete[] neiblist;
-        Nneibmax = 2*Nneibmax;
-        Ndirectmax = 2*Ndirectmax;
-        Ngravcellmax = 2*Ngravcellmax;
-	Nneibmaxbuf[ithread] = Nneibmax;
-	Ndirectmaxbuf[ithread] = Ndirectmax;
-	Ngravcellmaxbuf[ithread] = Ngravcellmax;
-        neiblist = new int[Nneibmax];
-        interactlist = new int[Nneibmax];
-        directlist = new int[Ndirectmax];
-        gravcelllist = new BinaryTreeCell<ndim>*[Ngravcellmax];
-	//neibpart = new SphParticle<ndim>[Nneibmax];
-        neibpartbuf[ithread] = new SphParticle<ndim>[Nneibmax]; 
-	neibpart = neibpartbuf[ithread];
-        okflag = ComputeGravityInteractionList(cell,Nneibmax,Ndirectmax,
-                                               Ngravcellmax,Nneib,Ndirect,
-                                               Ngravcell,neiblist,directlist,
-                                               gravcelllist,sph->sphdata);
+      while (okflag < 0) {
+	delete[] neibpart;  //delete[] neibpartbuf[ithread];
+	delete[] gravcelllist;
+	delete[] directlist;
+	delete[] interactlist;
+	delete[] neiblist;
+	Nneibmax = 2*Nneibmax;
+	Ndirectmax = 2*Ndirectmax;
+	Ngravcellmax = 2*Ngravcellmax;
+	//Nneibmaxbuf[ithread] = Nneibmax;
+	//Ndirectmaxbuf[ithread] = Ndirectmax;
+	//Ngravcellmaxbuf[ithread] = Ngravcellmax;
+	cout << "Resizing : " << okflag << "   " << cc << "   " << ithread << "   " << Nneibmax << "   " << Ndirectmax << "   " << Ngravcellmax << endl;
+	neiblist = new int[Nneibmax];
+	interactlist = new int[Nneibmax];
+	directlist = new int[Ndirectmax];
+	gravcelllist = new BinaryTreeCell<ndim>*[Ngravcellmax];
+	neibpart = new SphParticle<ndim>[Nneibmax];
+	//neibpartbuf[ithread] = new SphParticle<ndim>[Nneibmax]; 
+	//neibpart = neibpartbuf[ithread];
+	okflag = ComputeGravityInteractionList(cell,Nneibmax,Ndirectmax,
+					       Ngravcellmax,Nneib,Ndirect,
+					       Ngravcell,neiblist,directlist,
+					       gravcelllist,sph->sphdata);
       };
 
 
       // Make local copies of all potential neighbours
       for (j=0; j<Nneib; j++) {
-        assert(neiblist[j] >= 0 && neiblist[j] < sph->Ntot);
+        //assert(neiblist[j] >= 0 && neiblist[j] < sph->Ntot);
         neibpart[j] = sph->sphdata[neiblist[j]];
       }
 
@@ -2558,6 +2630,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
       }
       //-----------------------------------------------------------------------
 
+
       // Compute 'fast' multipole terms here
       if (multipole == "fast_monopole")
 	ComputeFastMonopoleForces(Nactive,Ngravcell,gravcelllist,
@@ -2565,8 +2638,8 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
       // Compute all star forces for active particles
       for (j=0; j<Nactive; j++)
-        sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
-                                   activepart[j]);
+	sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
+				   activepart[j]);
 
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
@@ -2594,12 +2667,14 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
 
     // Free-up local memory for OpenMP thread
-    //delete[] neibpart;
+    delete[] neibpart;
     delete[] gravcelllist;
     delete[] directlist;
     delete[] interactlist;
     delete[] neiblist;
+    delete[] activepart;
     delete[] activelist;
+    delete[] levelneib;
 
   }
   //===========================================================================
@@ -2698,10 +2773,10 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
     Ngravcellmax = Ngravcellmaxbuf[ithread];
 
     levelneib = levelneibbuf[ithread];
+    activelist = activelistbuf[ithread];
     activepart = activepartbuf[ithread];
     neibpart = neibpartbuf[ithread];
 
-    activelist = new int[Nleafmax];
     neiblist = new int[Nneibmax];
     interactlist = new int[Nneibmax];
     directlist = new int[Ndirectmax];
@@ -2724,7 +2799,7 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
 
       // Make local copies of active particles
       for (j=0; j<Nactive; j++) {
-        assert(activelist[j] >= 0 && activelist[j] < sph->Nsph);
+        //assert(activelist[j] >= 0 && activelist[j] < sph->Nsph);
         activepart[j] = sph->sphdata[activelist[j]];
         activepart[j].div_v = (FLOAT) 0.0;
         activepart[j].dudt = (FLOAT) 0.0;
@@ -2768,7 +2843,7 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
 
       // Make local copies of all potential neighbours
       for (j=0; j<Nneib; j++) {
-        assert(neiblist[j] >= 0 && neiblist[j] < sph->Ntot);
+        //assert(neiblist[j] >= 0 && neiblist[j] < sph->Ntot);
         neibpart[j] = sph->sphdata[neiblist[j]];
       }
 
@@ -2864,7 +2939,7 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
     delete[] directlist;
     delete[] interactlist;
     delete[] neiblist;
-    delete[] activelist;
+    //delete[] activelist;
 
   }
   //===========================================================================
@@ -3010,9 +3085,9 @@ void BinaryTree<ndim>::UpdateAllStarGasForces
 
 
   //cout << "No. of active ptcls : " << Nactivecount << endl;
-  //cout << "Average Nneib       : " << Nneibcount/Nactivecount << endl;
-  //cout << "Average Ndirect     : " << Ndirectcount/Nactivecount << endl;
-  //cout << "Average Ngravcell   : " << Ncellcount/Nactivecount << endl;
+  //cout << "Average Nneib2      : " << Nneibcount/Nactivecount << endl;
+  //cout << "Average Ndirect2    : " << Ndirectcount/Nactivecount << endl;
+  //cout << "Average Ngravcell2  : " << Ncellcount/Nactivecount << endl;
   timing->EndTimingSection("STAR_GAS_GRAV_FORCES");
 
   return;
@@ -3058,6 +3133,7 @@ void BinaryTree<ndim>::ValidateTree
 {
   bool overlap_flag = false;        // Flag if cell bounding boxes overlap
   bool hmax_flag = false;           // Flag if ptcls have larger h than hmax
+  bool kill_flag = false;
   int activecount;                  // Active particles in leaf cell
   int c;                            // Cell counter
   int cc;                           // Aux. cell counter
@@ -3068,6 +3144,7 @@ void BinaryTree<ndim>::ValidateTree
   int Nactivecount=0;               // Counter for total no. of active ptcls
   int Ncount=0;                     // Total particle counter
   int *ccount;                      // Array for counting cells
+  int *lcount;                      // Array for counting ptcls on each level
   int *pcount;                      // Array for counting particles in tree
   BinaryTreeCell<ndim> cell;        // Local copy of binary tree cell
 
@@ -3075,8 +3152,10 @@ void BinaryTree<ndim>::ValidateTree
 
   ccount = new int[Ncellmax];
   pcount = new int[Ntot];
+  lcount = new int[ltot+1];
   for (i=0; i<Ntot; i++) pcount[i] = 0;
   for (c=0; c<Ncellmax; c++) ccount[c] = 0;
+  for (l=0; l<ltot; l++) lcount[l] = 0;
   Ncount = 0;
   Nactivecount = 0;
 
@@ -3118,6 +3197,9 @@ void BinaryTree<ndim>::ValidateTree
     cell = tree[c];
     activecount = 0;
     leafcount = 0;
+
+    // Add particles from current level
+    lcount[cell.level] += cell.N;
 
     // Check that particles are not in linked lists more than once
     if (cell.level == ltot) {
@@ -3174,7 +3256,7 @@ void BinaryTree<ndim>::ValidateTree
     if (pcount[i] != 1) {
       cout << "Problem with child cell ptcl counter : " << i << "   " 
 	   << pcount[i] << endl;
-      exit(0);
+      kill_flag = true;
     }
   }
 
@@ -3182,136 +3264,28 @@ void BinaryTree<ndim>::ValidateTree
   if (Ncount != sph->Ntot) {
     cout << "Ncount problem with binary tree : " 
 	 << Ncount << "   " << sph->Ntot << endl;
-    exit(0);
+    kill_flag = true;
   }
 
   // Check active particles don't exceed total number of particles
   if (Nactivecount > sph->Nsph) {
     cout << "Nactivecount problem with binary tree : " 
 	 << Nactivecount << "   " << sph->Nsph << "   " << sph->Ntot << endl;
-    exit(0);
+    kill_flag = true;
   }
 
+  // Check number of particles on all levels is consistent
+  for (l=0; l<ltot; l++) {
+    if (lcount[l] != sph->Nsph) {
+      cout << "Problem with SPH particles on level : " << l << "    " << lcount[l] << "    " << sph->Nsph << endl;
+      kill_flag = true;
+    }
+  }
 
   delete[] pcount;
   delete[] ccount;
 
-  return;
-}
-
-
-
-//=============================================================================
-//  BinaryTree::CheckValidNeighbourList
-/// Checks that the neighbour list generated by the grid is valid in that it 
-/// (i) does include all true neighbours, and 
-/// (ii) all true neigbours are only included once and once only.
-//=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::CheckValidNeighbourList
-(Sph<ndim> *sph,                    ///< [in] SPH object pointer
- int i,                             ///< [in] Particle i.d.
- int Nneib,                         ///< [in] No. of potential neighbours
- int *neiblist,                     ///< [in] List of potential neighbour i.d.s
- string neibtype)                   ///< [in] Neighbour search type
-{
-  int c;                            // ..
-  int count;                        // Valid neighbour counter
-  int ii;                           // ..
-  int j;                            // Neighbour particle counter
-  int k;                            // Dimension counter
-  int Ntrueneib = 0;                // No. of 'true' neighbours
-  int Nleaflist = 0;                // ..
-  int *trueneiblist;                // List of true neighbour ids
-  int *leaflist;                    // ..
-  FLOAT drsqd;                      // Distance squared
-  FLOAT dr[ndim];                   // Relative position vector
-
-  // Allocate array to store local copy of potential neighbour ids
-  trueneiblist = new int[sph->Ntot];
-  leaflist = new int[sph->Ntot];
-
-  // First, create list of 'true' neighbours by looping over all particles
-  if (neibtype == "gather") {
-    for (j=0; j<sph->Ntot; j++) {
-      for (k=0; k<ndim; k++)
-	dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
-      drsqd = DotProduct(dr,dr,ndim);
-      if (drsqd <
-	  sph->kernp->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h)
-	trueneiblist[Ntrueneib++] = j;
-    }
-  }
-  else if (neibtype == "all") {
-    for (j=0; j<sph->Ntot; j++) {
-      for (k=0; k<ndim; k++) 
-        dr[k] = sph->sphdata[j].r[k] - sph->sphdata[i].r[k];
-      drsqd = DotProduct(dr,dr,ndim);
-      if (drsqd < sph->kernp->kernrangesqd*sph->sphdata[i].h*sph->sphdata[i].h ||
-    	  drsqd < sph->kernp->kernrangesqd*sph->sphdata[j].h*sph->sphdata[j].h)
-	trueneiblist[Ntrueneib++] = j;
-    }
-  }
-
-  // Now compare each given neighbour with true neighbour list for validation
-  for (j=0; j<Ntrueneib; j++) {
-    count = 0;
-    int jj = trueneiblist[j];
-    for (k=0; k<Nneib; k++) if (neiblist[k] == trueneiblist[j]) count++;
-
-    // If the true neighbour is not in the list, or included multiple times, 
-    // then output to screen and terminate program
-    if (count != 1) {
-
-      // Compute list from leaf cells
-      for (c=0; c<Ncell; c++) {
-	if (tree[c].level == ltot && tree[c].N > 0) {
-	  ii = tree[c].ifirst;
-	  while (ii != -1) {
-	    for (k=0; k<ndim; k++) 
-	      dr[k] = sph->sphdata[ii].r[k] - sph->sphdata[i].r[k];
-	    drsqd = DotProduct(dr,dr,ndim);
-	    if (neibtype == "all" && 
-		(drsqd < sph->kernp->kernrangesqd*sph->sphdata[i].h
-		 *sph->sphdata[i].h || drsqd < sph->kernp->kernrangesqd*
-		 sph->sphdata[ii].h*sph->sphdata[ii].h))
-	      leaflist[Nleaflist++] = ii;
-	    else if (neibtype == "gather" && 
-		     drsqd < sph->kernp->kernrangesqd*sph->sphdata[i].h
-		     *sph->sphdata[i].h) {
-	      leaflist[Nleaflist++] = ii;
-	      cout << "Found ptcl " << ii << "  on leaf : " << c << endl;
-	    }
-	    if (ii == tree[c].ilast) break;
-	    ii = inext[ii];
-	  };
-	}
-      }
-
-      cout << "Problem with neighbour lists : " << neibtype << "   " 
-	   << i << "   " << jj << "   " << count << "   "
-	   << sph->sphdata[i].r[0] << "   " << sph->sphdata[i].h << endl;
-      cout << "Nsph  : " << Nsph << "    Ntot : " << Ntot << "    Ntotmax : " << Ntotmax << endl;
-      cout << "True Nsph  : " << sph->Nsph << "    True Ntot : " << sph->Ntot << endl;
-      cout << "Nneib : " << Nneib << "   Ntrueneib : " << Ntrueneib << "    Nleaflist : " << Nleaflist << endl;
-   	  for (k=0; k<ndim; k++) dr[k] = sph->sphdata[jj].r[k] - sph->sphdata[i].r[k];
-      drsqd = DotProduct(dr,dr,ndim);
-      cout << "drmag : " << sqrt(drsqd) << "     "
-	   << sph->kernp->kernrange*sph->sphdata[i].h
-	   << "    " << sph->kernp->kernrange*sph->sphdata[jj].h 
-	   << "     " << sph->sphdata[jj].h << endl;
-      PrintArray("neiblist     : ",Nneib,neiblist);
-      PrintArray("trueneiblist : ",Ntrueneib,trueneiblist);
-      PrintArray("leaflist     : ",Nleaflist,leaflist);
-      string message = "Problem with neighbour lists in Binary tree";
-      ExceptionHandler::getIstance().raise(message);
-    }
-  }
-
-  delete[] trueneiblist;
-  delete[] leaflist;
-
-  //cout << "List okay!! : " << Nneib << "   " << Ntrueneib << endl;
+  if (kill_flag) exit(0);
 
   return;
 }

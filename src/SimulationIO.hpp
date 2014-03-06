@@ -96,6 +96,8 @@ bool SimulationBase::WriteSnapshotFile
     cout << "Unrecognised file format" << endl;
     return false;
   }
+
+
 }
 
 
@@ -567,6 +569,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   int ndata;                   // No. of data arrays written
   int nunit;                   // No. of unit strings
   int pr_check;                // Precision check
+  int sink_data_length;        // Length of float array for sink data
   int idata[50];               // Integer data array
   int ilpdata[50];             // Long data array
   int typedata[50][5];         // SPH Particle data array information
@@ -576,10 +579,8 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   string format_id;            // File format (for verification)
   string data_id[50];          // String ids of arrays written
   string unit_data[50];        // String ids of units written
-  ifstream infile;             // Stream of input file
-  int sink_data_length;        // Length of float array for sink data
   string dummystring;          // Dummy string variable
-  bool booldummy;              // Dummy boolean variable
+  ifstream infile;             // Stream of input file
 
   debug2("[Simulation::ReadSerenFormSnapshotFile]");
 
@@ -619,20 +620,26 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   // Read infile header integer data
   for (i=0; i<50; i++) infile >> idata[i];
   for (i=0; i<50; i++) infile >> ilpdata[i];
+  for (i=0; i<50; i++) infile >> rdata[i];
+  for (i=0; i<50; i++) infile >> ddata[i];
+
   sph->Nsph      = idata[0];
   nbody->Nstar   = idata[1];
   sinks.Nsink    = idata[1];
   dmdt_range_aux = idata[29];
   nunit          = idata[19];
   ndata          = idata[20];
-  //Nsnap          = ilpdata[0];
-  Nsteps         = ilpdata[1];
 
-  // Read infile head real data
-  for (i=0; i<50; i++) infile >> rdata[i];
-  for (i=0; i<50; i++) infile >> ddata[i];
+  // Variables that should be remembered for restarts
+  if (restart) {
+    Noutsnap   = ilpdata[0];
+    Nsteps     = ilpdata[1];
+    t          = ddata[0];
+    tsnaplast  = ddata[1];
+    sph->mmean = ddata[2];
+  }
+
   //sph->h_fac = rdata[0];
-  t = ddata[0];
   //sphptr->tlastsnap = ddata[1];
   //sph->mgas_orig = ddata[2];
 
@@ -799,6 +806,8 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
           nbody->stardata[i].m = sdata[1+2*ndim];
           nbody->stardata[i].h = sdata[2+2*ndim];
           nbody->stardata[i].radius = sdata[3+2*ndim];
+	  sinks.sink[i].radius = sdata[3+2*ndim];
+	  sinks.sink[i].star = &(nbody->stardata[i]);
         }
       }
     }
@@ -943,12 +952,13 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   idata[4] = sph->Nsph;
   idata[19] = nunit;
   idata[20] = ndata;
-  ilpdata[0] = 0;
+  ilpdata[0] = Noutsnap;
   ilpdata[1] = Nsteps;
   rdata[0] = sph->h_fac;
   rdata[1] = 0.0;
   ddata[0] = t*simunits.t.outscale;
-
+  ddata[1] = tsnaplast*simunits.t.outscale;
+  ddata[2] = sph->mmean*simunits.m.outscale;
 
   // Write header information to file
   //---------------------------------------------------------------------------
@@ -1098,6 +1108,8 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   return true;
 }
 
+
+
 //=============================================================================
 //  Simulation::ReadSerenUnformHeaderFile
 /// Function for reading the header file of a snapshot. Does not modify the
@@ -1162,6 +1174,11 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
   string data_id[50];          // String ids of arrays written
   string unit_data[50];        // String ids of units written
   int typedata[50][5];
+  int idata[50];
+  long ilpdata[50];
+  FLOAT rdata[50];
+  DOUBLE ddata[50];
+
 
   debug2("[Simulation::ReadSerenFormSnapshotFile]");
 
@@ -1210,7 +1227,6 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 
   // Read infile header integer data
   {
-    int idata[50];
     for (int i=0; i<50; i++) reader.read_value(idata[i]);
     sph->Nsph      = idata[0];
     nbody->Nstar   = idata[1];
@@ -1220,18 +1236,24 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     ndata          = idata[20];
   }
   {
-    long ilpdata[50];
     for (int i=0; i<50; i++) reader.read_value(ilpdata[i]);
     Nsteps         = ilpdata[1];
   }
 
   // Read infile header floating point data
   {
-    FLOAT rdata[50];
     for (int i=0; i<50; i++) reader.read_value(rdata[i]);
-    DOUBLE ddata[50];
     for (int i=0; i<50; i++) reader.read_value(ddata[i]);
     t = ddata[0];
+  }
+
+  // Variables that should be remembered for restarts
+  if (restart) {
+    Noutsnap   = ilpdata[0];
+    Nsteps     = ilpdata[1];
+    t          = ddata[0];
+    tsnaplast  = ddata[1];
+    sph->mmean = ddata[2];
   }
 
   // Read unit_data
@@ -1359,6 +1381,8 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
           nbody->stardata[i].m = sdata[1+2*ndim];
           nbody->stardata[i].h = sdata[2+2*ndim];
           nbody->stardata[i].radius = sdata[3+2*ndim];
+	  sinks.sink[i].radius = sdata[3+2*ndim];
+	  sinks.sink[i].star = &(nbody->stardata[i]);
         }
       }
     }
@@ -1387,16 +1411,21 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 template <int ndim>
 bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 {
-  int i;                       // Aux. counter
-  int idata[50];               // Integer data array
-  long ilpdata[50];             // Long integer data array
-  int typedata[50][5];         // SPH Particle data array information
-  FLOAT rdata[50];             // Real data array
-  DOUBLE ddata[50];            // Double float data array
-  string unit_data[50];        // String ids of units written
-  string data_id[50];          // String ids of arrays written
-  int ndata;                   // No. of data arrays written
-  int nunit;                   // No. of unit strings
+  int i;                            // Aux. counter
+  int idata[50];                    // Integer data array
+  int ii;                           // Aux. counter
+  int k;                            // Aux. loop counter
+  int typedata[50][5];              // SPH Particle data array information
+  int ndata;                        // No. of data arrays written
+  int nunit;                        // No. of unit strings
+  int sink_data_length = 12+2*ndim; // (+ 2*dmdt_range_aux);
+  long ilpdata[50];                 // Long integer data array
+  FLOAT rdata[50];                  // Real data array
+  FLOAT sdata[sink_data_length];    // Sink data packet
+  DOUBLE ddata[50];                 // Double float data array
+  string unit_data[50];             // String ids of units written
+  string data_id[50];               // String ids of arrays written
+
 
   debug2("[Simulation::WriteSerenUnformSnapshotFile]");
 
@@ -1491,11 +1520,13 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   idata[4] = sph->Nsph;
   idata[19] = nunit;
   idata[20] = ndata;
-  ilpdata[0] = 0;
+  ilpdata[0] = Noutsnap;
   ilpdata[1] = Nsteps;
   rdata[0] = sph->h_fac;
   rdata[1] = 0.0;
   ddata[0] = t*simunits.t.outscale;
+  ddata[1] = tsnaplast*simunits.t.outscale;
+  ddata[2] = sph->mmean*simunits.m.outscale;
 
 
   // Write header information to file
@@ -1597,13 +1628,9 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   // Sinks/stars
   //---------------------------------------------------------------------------
   if (nbody->Nstar > 0) {
-    cout << "Writing output for " << nbody->Nstar << "stars" << endl;
-    int sink_data_length = 12 + 2*ndim; //+ 2*dmdt_range_aux;
-    int ii, k;
-    FLOAT sdata[sink_data_length];
-    for (int k=0; k<sink_data_length; k++) sdata[k] = 0.0;
+    for (k=0; k<sink_data_length; k++) sdata[k] = 0.0;
     int values[6] = {2,2,0,sink_data_length,0,0};
-    for (int i=0; i<6;i++)
+    for (i=0; i<6;i++)
       writer.write_value(values[i]);
     for (i=0; i<nbody->Nstar; i++) {
       writer.write_value(true); writer.write_value(true);
@@ -1616,7 +1643,6 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
       sdata[2+2*ndim] = nbody->stardata[i].h*simunits.r.outscale;
       sdata[3+2*ndim] = nbody->stardata[i].radius*simunits.r.outscale;
       for (ii=0; ii<sink_data_length; ii++) {
-        cout << "ii " << ii<<endl;
         writer.write_value(sdata[ii]);
       }
     }
@@ -1662,8 +1688,19 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
     nbody->stardata[i].radius /= simunits.r.inscale;
   }
 
-  // Rescale time
+  // If sinks are being used, copy to sink arrays
+  //---------------------------------------------------------------------------
+  for (i=0; i<sinks.Nsink; i++) {
+    sinks.sink[i].radius /= simunits.r.inscale;
+  }
+
+  // Rescale other variables
   t /= simunits.t.inscale;
+  tsnaplast /= simunits.t.inscale;
+  sph->mmean /= simunits.m.inscale;
+  if (restart) {
+    tsnapnext = tsnaplast + dt_snap;
+  }
 
   return;
 }

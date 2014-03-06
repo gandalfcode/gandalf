@@ -19,6 +19,8 @@
 
 
 #include <iostream>
+#include <string>
+#include <sstream>
 #include "Exception.h"
 #include "Parameters.h"
 #include "Simulation.h"
@@ -38,9 +40,11 @@ int main(int argc, char** argv)
   CodeTiming* timing = new CodeTiming();             // Timing object
   SimulationBase* sim;                               // Main simulation object
   Parameters* params = new Parameters();             // Parameters object
-  string paramfile;                                  // Name of parameters file
   ExceptionHandler::makeExceptionHandler(cplusplus); // Exception handler
+  bool restart=false;                                // Flag restart simulation
   int rank=0;                                        // Local copy of MPI rank
+  string paramfile;                                  // Name of parameters file
+  stringstream ss;                                   // Stream char to string
 
 
   // Initialise all MPI processes (if activated in Makefile)
@@ -59,9 +63,17 @@ int main(int argc, char** argv)
 #endif
 #endif
 
-  // Check that a valid number of arguments have been passed
-  if (argc >= 2){
-    paramfile = argv[1];
+
+  // Parse and process all command-line arguments.
+  if (argc == 3) {
+    if (string(argv[1]) == "-r") {
+      restart = true;
+      ss << argv[2];
+      ss >> paramfile;
+    }
+  }
+  else if (argc == 2) {
+    paramfile = string(argv[1]);
   }
   else {
     cout << "No parameter file specified, aborting..." << endl;
@@ -77,6 +89,7 @@ int main(int argc, char** argv)
   // Create simulation object with required dimensionality and parameters
   sim = SimulationBase::SimulationFactory(params->intparams["ndim"],params);
   sim->timing = timing;
+  sim->restart = restart;
 
   // Print out splash screen
   if (rank == 0) sim->SplashScreen();

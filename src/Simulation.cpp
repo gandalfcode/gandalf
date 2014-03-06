@@ -120,18 +120,24 @@ SimulationBase::SimulationBase
 {
   simparams = new Parameters(*params);
   paramfile = "";
+  integration_step = 1;
   n = 0;
   nresync = 0;
   Nblocksteps = 0;
-  integration_step = 1;
+  Noutsnap = 0;
   Nsteps = 0;
   rank = 0;
+  dt_snap_wall = 0.0;
   t = 0.0;
   timestep = 0.0;
+  tsnaplast = 0.0;
+  tsnap_wallclock = 0.0;
   setup = false;
   initial_h_provided = false;
+  kill_simulation = false;
   ParametersProcessed = false;
   rescale_particle_data = false;
+  restart = false;
 #if defined _OPENMP
   if (omp_get_dynamic()) {
     cout << "Warning: the dynamic adjustment of the number threads was on. For better load-balancing, we will disable it" << endl;
@@ -296,6 +302,14 @@ void SimulationBase::Run
 
     MainLoop();
     Output();
+    cout << "CHECKING : " << timing->WallClockTime() - timing->tstart_wall << "  " << tmax_wallclock << endl;
+    // Special condition to check if maximum wall-clock time has been reached
+    if (kill_simulation || 
+	timing->WallClockTime() - timing->tstart_wall > 0.99*tmax_wallclock) {
+      cout << "Checking : " << kill_simulation << "   " << timing->WallClockTime() - timing->tstart_wall << "   " << tmax_wallclock << endl;
+      cout << "Reached maximum wall-clock time.  Killing simulation." << endl;
+      break;
+    }
 
   }
   //---------------------------------------------------------------------------
@@ -382,8 +396,11 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
 string SimulationBase::Output(void)
 {
   string filename;                  // Output snapshot filename
+  string filename2;
   string nostring;                  // String of number of snapshots
+  string fileend;                   // Name of restart file
   stringstream ss;                  // Stream object for preparing filename
+  ofstream outfile;                 // Stream of restart file
 
   debug2("[SimulationBase::Output]");
   timing->StartTimingSection("OUTPUT",2);
@@ -396,7 +413,10 @@ string SimulationBase::Output(void)
 
   // Output a data snapshot if reached required time
   if (t >= tsnapnext) {
+
+    // Prepare filename for new snapshot
     Noutsnap++;
+    tsnaplast = tsnapnext;
     tsnapnext += dt_snap;
     nostring = "";
     ss << setfill('0') << setw(5) << Noutsnap;
@@ -404,6 +424,29 @@ string SimulationBase::Output(void)
     filename = run_id + '.' + out_file_form + '.' + nostring;
     ss.str(std::string());
     WriteSnapshotFile(filename,out_file_form);
+
+    // Now write name and format of snapshot to file (for restarts)
+    fileend = "restart";
+    filename2 = run_id + "." + fileend;
+    outfile.open(filename2.c_str());
+    outfile << out_file_form << endl;
+    outfile << filename << endl;
+    outfile.close();
+
+    // Finally, calculate wall-clock time interval since last output snapshot
+    if (tsnap_wallclock > 0.0) 
+      dt_snap_wall = timing->WallClockTime() - tsnap_wallclock;
+    tsnap_wallclock = timing->WallClockTime();
+
+    // If simulation is too close to maximum wall-clock time, end 
+    // prematurely
+    if (tsnap_wallclock > 0.0 && 
+	2.0*dt_snap_wall > tmax_wallclock - timing->ttot_wall) {
+      cout << "WTF?? : " << tsnap_wallclock << "   " << tmax_wallclock 
+	   << "   " << dt_snap_wall << endl;
+      kill_simulation = true;
+    }
+
   }
 
   // Output diagnostics to screen if passed sufficient number of block steps
@@ -668,16 +711,17 @@ void Simulation<ndim>::ProcessParameters(void)
   out_file_form         = stringparams["out_file_form"];
   run_id                = stringparams["run_id"];
   sph_single_timestep   = intparams["sph_single_timestep"];
+  tmax_wallclock        = floatparams["tmax_wallclock"];
   tend                  = floatparams["tend"]/simunits.t.outscale;
   tsnapnext             = floatparams["tsnapfirst"]/simunits.t.outscale;
 
 
   // Set pointers to timing object
-  nbody->timing = timing;
-  sinks.timing = timing;
-  sphint->timing = timing;
+  nbody->timing   = timing;
+  sinks.timing    = timing;
+  sphint->timing  = timing;
   sphneib->timing = timing;
-  uint->timing = timing;
+  uint->timing   = timing;
 
 
   // Flag that we've processed all parameters already

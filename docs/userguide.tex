@@ -1207,7 +1207,46 @@ where \var{numpyarray} is the local NUMPY array and \var{varname} is a string co
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Example  9 - Creating initial conditions for N-body simulation in python script}
-To be done
+In this example, we demonstrate how to generate some simple initial conditions for pure N-body simulation inside a python script. \\
+
+\begin{tabular}{p{14.0cm}}
+\var{from gandalf.analysis.facade import *} \\
+\var{import numpy as np} \\
+\var{import time} \\
+\var{Nstar = 3} \\
+\var{x = np.zeros(Nstar)} \\
+\var{y = np.zeros(Nstar)} \\
+\var{vx = np.zeros(Nstar)} \\
+\var{vy = np.zeros(Nstar)} \\
+\var{m = np.zeros(Nstar)} \\
+\var{m[0] = 3.0} \\
+\var{sim = newsim(ndim=1)} \\
+\var{sim.SetParam(`sim',`sph')} \\
+\var{sim.SetParam(`ic',`python')} \\
+\var{sim.SetParam(`gas\_eos',`isothermal')}  \\
+\var{sim.SetParam(`Nsph',200)}  \\
+\var{sim.SetParam(`tend',0.2)}  \\
+\var{sim.SetParam(`dt\_snap',0.05)} \\
+\var{sim.SetParam(`dimensionless',1)} \\
+\var{sim.SetParam(`vfluid1[0]',vfluid)} \\
+\var{sim.SetParam(`vfluid2[0]',-vfluid)} \\
+\var{sim.SetParam(`boxmin[0]',xmin)} \\
+\var{sim.SetParam(`boxmax[0]',xmax)} \\
+\var{sim.SetParam(`run\_id',`SHOCKTUBE1')} \\
+\var{sim.PreSetupForPython()} \\
+\var{sim.ImportArray(x,'x')} \\
+\var{sim.ImportArray(vx,'vx')} \\
+\var{sim.ImportArray(m,'m')}   \\
+\var{sim.SetupSimulation()}  \\
+\var{plot("x","rho")} \\
+\var{plotanalytical(`x',`rho',ic=`shocktube')} \\
+\var{limit(`x',-0.17,0.17,window=`all')} \\
+\var{limit(`rho',0.0,21.0,window=`all')} \\
+\var{run()} \\
+\var{savefig(`shocktube.png')} \\
+\var{block()} \\
+\end{tabular} \\
+\newline
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

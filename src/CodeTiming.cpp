@@ -63,14 +63,18 @@ CodeTiming::~CodeTiming()
 
 //=============================================================================
 //  CodeTiming::StartTimingSection
-/// ..
+/// Start timing a block of code marked by the string 'newblock'.  If block 
+/// is already on record (e.g. from previous timestep), then timing is 
+/// appended to previously recorded times.
 //=============================================================================
-void CodeTiming::StartTimingSection(string newblock, int timing_level)
+void CodeTiming::StartTimingSection
+(string newblock,                   ///< String of new/existing timing block
+ int timing_level)                  ///< Timing level of block
 {
-  int iblock;
+  int iblock;                       // Integer id of existing timing block
 
-  // If block not in list, then create new entry to timing block
-  if ( blockno.find(newblock) == blockno.end() ) {
+  // If block string not in list, then create new entry to timing block
+  if (blockno.find(newblock) == blockno.end()) {
     iblock = Nblock;
     blockno[newblock] = iblock;
     block[iblock].timing_level = timing_level;
@@ -83,7 +87,7 @@ void CodeTiming::StartTimingSection(string newblock, int timing_level)
     iblock = blockno[newblock];
   }
 
-  // Now record time
+  // Now record timein arrays
   block[iblock].tstart = clock();
   block[iblock].tstart_wall = WallClockTime();
 
@@ -94,11 +98,13 @@ void CodeTiming::StartTimingSection(string newblock, int timing_level)
 
 //=============================================================================
 //  CodeTiming::EndTimingSection
-/// ..
+/// Terminate timing a block of code signified by the string 's1' and record 
+/// time in main timing arrays.
 //=============================================================================
-void CodeTiming::EndTimingSection(string s1)
+void CodeTiming::EndTimingSection
+(string s1)                         ///< String identifying block-end
 {
-  int iblock;
+  int iblock;                       // Integer i.d. of timing block in arrays
 
  // If block not in list, then create new entry to timing block
   if ( blockno.find(s1) == blockno.end() ) {
@@ -124,18 +130,19 @@ void CodeTiming::EndTimingSection(string s1)
 
 //=============================================================================
 //  CodeTiming::ComputeTimingStatistics
-/// ..
+/// Compute all timing statistics of the code and record statistics into an 
+/// external file 'run_id.timing'.
 //=============================================================================
 void CodeTiming::ComputeTimingStatistics
-(string run_id)
+(string run_id)                     ///< String i.d. of current simulation
 {
-  int iblock;
-  int level;
-  DOUBLE tcount = 0.0;
-  DOUBLE tcount_wall = 0.0;
-  ofstream outfile;
-  string filename;
-  string fileend = "timing";
+  int iblock;                       // ..
+  int level;                        // ..
+  DOUBLE tcount = 0.0;              // ..
+  DOUBLE tcount_wall = 0.0;         // ..
+  string filename;                  // ..
+  string fileend = "timing";        // ..
+  ofstream outfile;                 // ..
 
   filename = run_id + "." + fileend;
   outfile.open(filename.c_str());
@@ -160,6 +167,7 @@ void CodeTiming::ComputeTimingStatistics
     //outfile << "Level : " << level << endl;
     outfile << "Block                         Time        %time       Wall time   %time" << endl;
     outfile << "----------------------------------------------------------------------------" << endl;
+
     for (iblock=0; iblock<Nblock; iblock++) {
       if (block[iblock].timing_level != level) continue;
       tcount += block[iblock].ttot;
@@ -167,16 +175,17 @@ void CodeTiming::ComputeTimingStatistics
       block[iblock].tfraction = block[iblock].ttot / ttot;
       block[iblock].tfraction_wall = block[iblock].ttot_wall / ttot_wall;
       outfile << setw(30) << block[iblock].block_name
-	   << setw(12) << block[iblock].ttot
-	   << setw(12) << 100.0*block[iblock].tfraction
-	   << setw(12) << block[iblock].ttot_wall
-	   << setw(12) << 100.0*block[iblock].tfraction_wall << endl;
+	      << setw(12) << block[iblock].ttot
+	      << setw(12) << 100.0*block[iblock].tfraction
+	      << setw(12) << block[iblock].ttot_wall
+	      << setw(12) << 100.0*block[iblock].tfraction_wall << endl;
     }
+
     outfile << setw(30) << "REMAINDER"
-	 << setw(12) << ttot - tcount
-	 << setw(12) << 100.0*(ttot - tcount)/ttot
-	 << setw(12) << ttot_wall - tcount_wall
-	 << setw(12) << 100.0*(ttot_wall - tcount_wall)/ttot_wall << endl;
+	    << setw(12) << ttot - tcount
+	    << setw(12) << 100.0*(ttot - tcount)/ttot
+	    << setw(12) << ttot_wall - tcount_wall
+	    << setw(12) << 100.0*(ttot_wall - tcount_wall)/ttot_wall << endl;
     outfile << "----------------------------------------------------------------------------" << endl;
   }
 

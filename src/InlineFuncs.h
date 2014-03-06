@@ -199,6 +199,7 @@ static inline void InsertionSortIds
 }
 
 
+
 //=============================================================================
 //  EulerAngleRotation
 //  Rotate given vector around specified Euler angles
@@ -235,6 +236,27 @@ static inline void EulerAngleRotation
 
   return;
 }
+
+
+
+//=============================================================================
+//  GaussRand
+//  Calculates Gaussian random number using Box-Muller method.
+//=============================================================================
+static inline FLOAT GaussRand(FLOAT mean, FLOAT sigma)
+{
+  FLOAT U = 0.0;
+  FLOAT V = 0.0;
+
+  while (U == 0.0) {
+    U = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+    V = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+  };
+
+  return sqrt(-2.0*log(U))*cos(2*pi*V);
+}
+
+
 
 
 inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max) {

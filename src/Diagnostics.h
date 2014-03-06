@@ -43,6 +43,7 @@ struct Diagnostics
 {
   int Nsph;                         ///< Total no. of SPH particles
   int Nstar;                        ///< Total no. of star particles
+  int Ndead;                        ///< Total no. of dead SPH particles
   DOUBLE Eerror;                    ///< Total energy error
   DOUBLE Etot;                      ///< Total energy
   DOUBLE utot;                      ///< Total thermal energy

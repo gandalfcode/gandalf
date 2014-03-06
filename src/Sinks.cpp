@@ -136,6 +136,9 @@ void Sinks<ndim>::SearchForNewSinkParticles
     for (i=0; i<sph->Nsph; i++) {
       sink_flag = true;
 
+      // Make sure we don't include dead particles
+      if (sph->sphdata[i].itype == dead) continue;
+
       // Only consider SPH particles located at a local potential minimum
       if (!sph->sphdata[i].potmin) continue;
 
@@ -153,6 +156,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
         if (drsqd < pow(sink_radius*sph->sphdata[i].h + sink[s].radius,2))
           sink_flag = false;
       }
+      if (!sink_flag) continue;
 
       // If candidate particle has passed all the tests, then check if it is 
       // the most dense candidate.  If yes, record the particle id and density
@@ -261,8 +265,9 @@ void Sinks<ndim>::CreateNewSinkParticle
   cout << "-------------------------------------------------" << endl;
 
   // Remove SPH particle from main arrays
-  deadlist[0] = isink;
-  sph->DeleteParticles(1,deadlist);
+  sph->sphdata[isink].m = 0.0;
+  sph->sphdata[isink].active = false;
+  sph->sphdata[isink].itype = dead;
   
   // Increment star and sink counters
   nbody->Nstar++;
@@ -324,6 +329,7 @@ void Sinks<ndim>::AccreteMassToSinks
 
   // Determine which sink each SPH particle accretes to.  If none, flag -1
   for (i=0; i<sph->Nsph; i++) {
+    if (sph->sphdata[i].itype == dead) continue;
     saux = -1;
     for (s=0; s<Nsink; s++) {
       for (k=0; k<ndim; k++) dr[k] = sph->sphdata[i].r[k] - sink[s].star->r[k];
@@ -341,21 +347,24 @@ void Sinks<ndim>::AccreteMassToSinks
   // If there are no particles inside any sink, return to main loop.
   if (Nlist == 0) return;
 
-  // Otherwise, allocate additional memory and proceed to accrete mass
-  deadlist = new int[Nlisttot];
-  ilist = new int[Nlisttot];
-  ilist2 = new int[Nlisttot];
-  rsqdlist = new FLOAT[Nlisttot];
-
 
   // Calculate the accretion timescale and the total mass accreted from all 
   // particles for each sink.
   //===========================================================================
+#pragma omp parallel for schedule(dynamic,1) default(none)\
+  shared(cout,Nlist,Nlisttot,sph,timestep) private(asqd,dr,drmag,drsqd,dt)\
+  private(dv,dvtang,efrac,i,ilist,ilist2,j,k,macc,macc_temp,mold,mtemp)\
+  private(Nneib,rold,rsqdlist,s,vold,wnorm)
   for (s=0; s<Nsink; s++) {
 
     // Skip sink particle if it contains no gas, or unless it's at the 
     // beginning of its current step.
     if (sink[s].Ngas == 0 || !sink[s].star->active) continue;
+
+    // Allocate local array for sink
+    ilist = new int[Nlisttot];
+    ilist2 = new int[Nlisttot];
+    rsqdlist = new FLOAT[Nlisttot];
 
     // Initialise all variables for current sink
     sink[s].menc  = 0.0;
@@ -535,7 +544,9 @@ void Sinks<ndim>::AccreteMassToSinks
           sph->sphdata[i].m - mtemp < smooth_accrete_frac*sph->mmean ||
           dt < smooth_accrete_dt*sink[s].trot) {
         mtemp = sph->sphdata[i].m;
-        deadlist[Ndead++] = i;
+	sph->sphdata[i].m = 0.0;
+	sph->sphdata[i].itype = dead;
+	sph->sphdata[i].active = false;
       }
       else sph->sphdata[i].m -= mtemp;
       macc -= mtemp;
@@ -559,18 +570,14 @@ void Sinks<ndim>::AccreteMassToSinks
     sink[s].star->dt_internal = 
       0.4*sqrt(sink[s].radius/(sqrt(asqd) + small_number));
 
+    // Free local thread memory
+    delete[] rsqdlist;
+    delete[] ilist2;
+    delete[] ilist;
+
   }
   //===========================================================================
 
-
-  // If particles have been accreted, delete them from main arrays
-  if (Ndead > 0) sph->DeleteParticles(Ndead,deadlist);
-
-  // Free memory
-  delete[] rsqdlist;
-  delete[] ilist2;
-  delete[] ilist;
-  delete[] deadlist;
 
   timing->EndTimingSection("ACCRETE_MASS");
 

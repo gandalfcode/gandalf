@@ -176,6 +176,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["in_file_form"] = "column";
   stringparams["out_file_form"] = "column";
   floatparams["tend"] = 1.0;
+  floatparams["tmax_wallclock"] = 9.99e20;
   floatparams["dt_snap"] = 0.2;
   floatparams["tsnapfirst"] = 0.2;
   intparams["Nstepsmax"] = 9999999;
@@ -309,7 +310,7 @@ void Parameters::SetDefaultValues(void)
   intparams["create_sinks"] = 0;
   intparams["smooth_accretion"] = 0;
   floatparams["rho_sink"] = 1.e-12;
-  floatparams["alpha_ss"] = 0.01;
+  floatparams["alpha_ss"] = 0.01; 
   floatparams["sink_radius"] = 3.0;
   floatparams["smooth_accrete_frac"] = 0.01;
   floatparams["smooth_accrete_dt"] = 0.01;

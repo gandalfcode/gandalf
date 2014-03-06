@@ -48,14 +48,42 @@ using namespace std;
 template <int ndim>
 void Simulation<ndim>::GenerateIC(void)
 {
+  string in_file;                   // Restart snapshot filename
+  string in_file_form;              // Restart snapshot file format
+  string filename;                  // Simulation '.restart' filename
+  ifstream f;                       // Stream of input file
+
   debug2("[Simulation::GenerateIC]");
 
-  // Generate initial conditions
+
+  // First, check special case of restarting a simulation, in which case 
+  // determine the name of the last snapshot file to be re-read
+  //---------------------------------------------------------------------------
+  if (restart) {
+    filename = run_id + ".restart";
+    f.open(filename.c_str());
+
+    // If file opens successfully, read snapshot and return
+    if (!f.fail()) {
+      f >> in_file_form;
+      f >> in_file;
+      f.close();
+      ReadSnapshotFile(in_file,in_file_form);
+      ConvertToCodeUnits();
+      return;
+    }
+  }
+
+
+  // If not a restart, generate initial conditions either from external 
+  // file or created on the fly.
+  //---------------------------------------------------------------------------
   if (simparams->stringparams["ic"] == "file") {
     ReadSnapshotFile(simparams->stringparams["in_file"],
 		     simparams->stringparams["in_file_form"]);
     rescale_particle_data = true;
   }
+  //---------------------------------------------------------------------------
   else if (simparams->stringparams["ic"] == "binaryacc")
     BinaryAccretion();
   else if (simparams->stringparams["ic"] == "binary")
@@ -90,14 +118,16 @@ void Simulation<ndim>::GenerateIC(void)
     TripleStar();
   else if (simparams->stringparams["ic"] == "python")
     return;
+  //---------------------------------------------------------------------------
   else {
     string message = "Unrecognised parameter : ic = " 
       + simparams->stringparams["ic"];
     ExceptionHandler::getIstance().raise(message);
   }
+  //---------------------------------------------------------------------------
 
   // Scale particle data to dimensionless code units if required
-  if (rescale_particle_data) ConvertToCodeUnits();  
+  if (rescale_particle_data) ConvertToCodeUnits();
 
   // Check that the initial conditions are valid
   CheckInitialConditions();
@@ -2623,16 +2653,17 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
 (int field_type,                    ///< Type of turbulent velocity field
  int gridsize,                      ///< Size of velocity grid
  DOUBLE power_turb,                 ///< Power spectrum index
- DOUBLE *vfield)                    ///< ..
+ DOUBLE *vfield)                    ///< Array containing velocity field grid
 {
+  bool divfree;                     // Select div-free turbulence
+  bool curlfree;                    // Select curl-free turbulence
   int kmax;                         // k goes from kmin to kmax in 3D
   int kmin;                         // ..
   int shift;                        // power grid shift
   int i,j,k;                        // ..
-  int ii,jj,kk;
+  int ii,jj,kk;                     // ..
   int k1,k2,k3;                     // ..
   int d;                            // Dimension counter
-  fftw_plan plan;                   // ??
   DOUBLE F[3];                      // Fourier vector component
   DOUBLE unitk[3];                  // ..
   DOUBLE *power, *phase;            // Fourier components
@@ -2640,10 +2671,13 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
   DOUBLE Rnd[3],w;                  // Random numbers, variable in Gaussian calculation
   DOUBLE k_rot[3];                  // bulk rotation modes
   DOUBLE k_com[3];                  // bulk compression modes
-  bool divfree,curlfree;            // Selecting div-free or curl-free turbulence
+  fftw_plan plan;                   // ??
   fftw_complex *complexfield;       // ..
 
   debug2("[Simulation::GenerateTurbulentVelocityField]");
+
+  //for (i=0; i<3*gridsize*gridsize*gridsize; i++) vfield[i] = (FLOAT) rand();
+  //return;
 
   divfree = false;
   curlfree = false;
@@ -2660,7 +2694,9 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
   dummy2 = new DOUBLE[3*krange*krange*krange];
   power = new DOUBLE[3*krange*krange*krange];
   phase = new DOUBLE[3*krange*krange*krange];
-  complexfield = new fftw_complex[gridsize*gridsize*gridsize];
+  //complexfield = new fftw_complex[gridsize*gridsize*gridsize];
+  complexfield = new fftw_complex[krange*krange*krange];
+  krange--;
 
   for (i=0; i<3*krange*krange*krange; i++) power[i] = 0.0;
   for (i=0; i<3*krange*krange*krange; i++) phase[i] = 0.0;
@@ -2717,8 +2753,8 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
 	    (2.0*Rnd[0] - 1.0)*pi;	  
 
 	  // Create Gaussian distributed random numbers
-	  Rnd[1] = gauss_rand(0.0,1.0);
-	  Rnd[2] = gauss_rand(0.0,1.0);
+	  Rnd[1] = GaussRand(0.0,1.0);
+	  Rnd[2] = GaussRand(0.0,1.0);
 	  //cout << "Rnd : " << Rnd[0] << "    " << Rnd[1] << "   " << Rnd[2] << endl;
 	  F[d] = Rnd[1]*F[d];
 	}
@@ -2777,7 +2813,7 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
 
   // reorder array: positive wavenumbers are placed in ascending order along
   // first half of dimension, i.e. 0 to k_max, negative wavenumbers are placed
-  //along second half of dimension, i.e. -k_min to 1.
+  // along second half of dimension, i.e. -k_min to 1.
   for (d=0; d<3; d++) {
 
     for (i=0; i<=krange; i++) {

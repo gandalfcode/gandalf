@@ -103,7 +103,7 @@ class Sph
   //---------------------------------------------------------------------------
   void AllocateMemory(int);
   void DeallocateMemory(void);
-  void DeleteParticles(int, int *);
+  void DeleteDeadParticles(void);
   void ReorderParticles(void);
   void SphBoundingBox(FLOAT *, FLOAT *, int);
   void InitialSmoothingLengthGuess(void);

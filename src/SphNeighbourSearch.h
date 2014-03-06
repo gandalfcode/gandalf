@@ -104,6 +104,9 @@ class SphNeighbourSearch
 {
  public:
 
+  SphNeighbourSearch();
+  ~SphNeighbourSearch();
+
   virtual void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *) = 0;
   virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *) = 0;
@@ -113,10 +116,13 @@ class SphNeighbourSearch
   virtual void UpdateAllSphDerivatives(Sph<ndim> *) = 0;
   virtual void UpdateActiveParticleCounters(Sph<ndim> *) = 0;
   virtual void UpdateAllStarGasForces(Sph<ndim> *, Nbody<ndim> *) = 0;
+#if defined(VERIFY_ALL)
+  void CheckValidNeighbourList(Sph<ndim> *,int, int, int *, string);
+#endif
 
   bool neibcheck;                   ///< Flag to verify neighbour lists
-  DomainBox<ndim> *box;             ///< Pointer to simulation bounding box
   CodeTiming *timing;               ///< Pointer to code timing object
+  DomainBox<ndim> *box;             ///< Pointer to simulation bounding box
 
 };
 
@@ -201,7 +207,6 @@ class GridSearch: public SphNeighbourSearch<ndim>
   int ComputeNeighbourList(int, int *);
   int FindSplitAxis(int);
 #if defined(VERIFY_ALL)
-  void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
   void ValidateGrid(void);
 #endif
 
@@ -268,7 +273,6 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void DivideTreeCell(int, int, Sph<ndim> *, BinaryTreeCell<ndim> &);
   //void ExtrapolateCellProperties(BinaryTreeCell<ndim> &, FLOAT);
   void ExtrapolateCellProperties(FLOAT);
-  void LoadParticlesToTree(Sph<ndim> *);
   FLOAT QuickSelect(int, int, int, int, Sph<ndim> *);
   void StockTree(BinaryTreeCell<ndim> &, SphParticle<ndim> *);
   void StockCellProperties(BinaryTreeCell<ndim> &, SphParticle<ndim> *);
@@ -294,7 +298,6 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   void ComputeFastMonopoleForces(int, int, BinaryTreeCell<ndim> **, 
 				 BinaryTreeCell<ndim> *, SphParticle<ndim> *);
 #if defined(VERIFY_ALL)
-  void CheckValidNeighbourList(Sph<ndim> *,int,int,int *,string);
   void ValidateTree(Sph<ndim> *);
 #endif
 
@@ -333,6 +336,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   int *Nneibmaxbuf;
   int *Ndirectmaxbuf;
   int *Ngravcellmaxbuf;
+  int **activelistbuf;
   int **levelneibbuf;
   SphParticle<ndim> **neibpartbuf;   // Local copy of neighbouring ptcls
   SphParticle<ndim> **activepartbuf; // Local copy of SPH particle  

@@ -57,11 +57,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
-
   // Set time variables here (for now)
-  Noutsnap = 0;
   nresync = 0;
-  //tsnapnext = dt_snap;
+  n = 0;
 
   // Set initial smoothing lengths and create initial ghost particles
   //---------------------------------------------------------------------------
@@ -80,10 +78,12 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     else
       for (i=0; i<sph->Nsph; i++) sph->sphdata[i].alpha = sph->alpha_visc_min;
 
-    // Compute mean mass (used for smmoth sink accretion)
-    sph->mmean = 0.0;
-    for (i=0; i<sph->Nsph; i++) sph->mmean += sph->sphdata[i].m;
-    sph->mmean /= (FLOAT) sph->Nsph;
+    // Compute mean mass (used for smooth sink accretion)
+    if (!restart) {
+      sph->mmean = 0.0;
+      for (i=0; i<sph->Nsph; i++) sph->mmean += sph->sphdata[i].m;
+      sph->mmean /= (FLOAT) sph->Nsph;
+    }
 
     // If the smoothing lengths have not been provided beforehand, then
     // calculate the initial values here
@@ -397,8 +397,10 @@ void SphSimulation<ndim>::MainLoop(void)
       if (sph->self_gravity == 1 && sph->Nsph > 0)
 	sphneib->UpdateAllStarGasForces(sph,nbody);
 
-      // Calculate correction step for all stars at end of step
-      nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
+      // Calculate correction step for all stars at end of step, except the 
+      // final iteration (since correction is computed in EndStep also).
+      //if (it < nbody->Npec - 1)
+	nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
 
     }
     //-------------------------------------------------------------------------
@@ -407,16 +409,21 @@ void SphSimulation<ndim>::MainLoop(void)
   //---------------------------------------------------------------------------
 
 
+  // End-step terms for all SPH particles
+  if (sph->Nsph > 0)
+    sphint->EndTimestep(n,timestep,sph);
+
+
   // Search for new sink particles (if activated)
   if (sink_particles == 1) {
     if (sinks.create_sinks == 1) sinks.SearchForNewSinkParticles(n,sph,nbody);
     if (sinks.Nsink > 0) sinks.AccreteMassToSinks(sph,nbody,n,timestep);
+    if (t >= tsnapnext && sinks.Nsink > 0) {
+      sph->DeleteDeadParticles();
+      rebuild_tree = true;
+    }
   }
 
-
-  // End-step terms for all SPH particles
-  if (sph->Nsph > 0)
-    sphint->EndTimestep(n,timestep,sph);
 
   // End-step terms for all star particles
   if (nbody->Nstar > 0)
