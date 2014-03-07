@@ -302,11 +302,9 @@ void SimulationBase::Run
 
     MainLoop();
     Output();
-    cout << "CHECKING : " << timing->WallClockTime() - timing->tstart_wall << "  " << tmax_wallclock << endl;
     // Special condition to check if maximum wall-clock time has been reached
     if (kill_simulation || 
 	timing->WallClockTime() - timing->tstart_wall > 0.99*tmax_wallclock) {
-      cout << "Checking : " << kill_simulation << "   " << timing->WallClockTime() - timing->tstart_wall << "   " << tmax_wallclock << endl;
       cout << "Reached maximum wall-clock time.  Killing simulation." << endl;
       break;
     }
@@ -442,8 +440,6 @@ string SimulationBase::Output(void)
     // prematurely
     if (tsnap_wallclock > 0.0 && 
 	2.0*dt_snap_wall > tmax_wallclock - timing->ttot_wall) {
-      cout << "WTF?? : " << tsnap_wallclock << "   " << tmax_wallclock 
-	   << "   " << dt_snap_wall << endl;
       kill_simulation = true;
     }
 
@@ -802,6 +798,8 @@ void Simulation<ndim>::ProcessSphParameters(void)
     gas_eos = barotropic;
   else if (stringparams["gas_eos"] == "energy_eqn")
     gas_eos = energy_eqn;
+  else if (stringparams["gas_eos"] == "constant_temp")
+    gas_eos = constant_temp;
   else {
     string message = "Unrecognised parameter : gas_eos = " +
         simparams->stringparams["gas_eos"];

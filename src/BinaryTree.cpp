@@ -1512,7 +1512,8 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
 
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
-      if (tree[cc].level == ltot && tree[cc].N == 1 && Ndirect < Ndirectmax)
+      if (tree[cc].level == ltot && tree[cc].N == 1 && 
+	  Ndirect + Nneib < Ndirectmax)
         directlist[Ndirect++] = tree[cc].ifirst;
       else if (Ngravcell < Ngravcellmax) 
         gravcelllist[Ngravcell++] = &(tree[cc]);
@@ -1570,7 +1571,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
     if (drsqd < hrangemax || drsqd < 
         (rmax + kernrange*sphdata[i].h)*(rmax + kernrange*sphdata[i].h))
       neiblist[Nneibtemp++] = i;
-    else if (Ndirect < Ndirectmax)
+    else if (Ndirect + Nneibtemp < Ndirectmax)
       directlist[Ndirect++] = i;
     else
      return -3;
@@ -1665,7 +1666,8 @@ int BinaryTree<ndim>::ComputeStarGravityInteractionList
 
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
-      if (tree[cc].level == ltot && tree[cc].N == 1 && Ndirect < Ndirectmax)
+      if (tree[cc].level == ltot && tree[cc].N == 1 && 
+	  Ndirect + Nneib < Ndirectmax)
         directlist[Ndirect++] = tree[cc].ifirst;
       else if (Ngravcell < Ngravcellmax && tree[cc].N > 0)
         gravcelllist[Ngravcell++] = &(tree[cc]);
@@ -2473,7 +2475,6 @@ void BinaryTree<ndim>::UpdateAllSphForces
   // Find list of all cells that contain active particles
   celllist = new BinaryTreeCell<ndim>*[gtot];
   cactive = ComputeActiveCellList(celllist);
-  cout << "cactive : " << cactive << endl;
 
 
   // Set-up all OMP threads
@@ -2494,15 +2495,10 @@ void BinaryTree<ndim>::UpdateAllSphForces
     Ndirectmax = Ndirectmaxbuf[ithread];
     Ngravcellmax = Ngravcellmaxbuf[ithread];
 
-    //levelneib = levelneibbuf[ithread];
-    //activelist = activelistbuf[ithread];
-    //activepart = activepartbuf[ithread];
-    //neibpart = neibpartbuf[ithread];
-    levelneib = new int[sph->Nsphmax];
-    activelist = new int[Nleafmax];
-    activepart = new SphParticle<ndim>[Nleafmax];
-    
-    neibpart = new SphParticle<ndim>[Nneibmax];
+    levelneib = levelneibbuf[ithread];
+    activelist = activelistbuf[ithread];
+    activepart = activepartbuf[ithread];
+    neibpart = neibpartbuf[ithread];
     neiblist = new int[Nneibmax];
     interactlist = new int[Nneibmax];
     directlist = new int[Ndirectmax];
@@ -2552,17 +2548,16 @@ void BinaryTree<ndim>::UpdateAllSphForces
 	Nneibmax = 2*Nneibmax;
 	Ndirectmax = 2*Ndirectmax;
 	Ngravcellmax = 2*Ngravcellmax;
-	//Nneibmaxbuf[ithread] = Nneibmax;
-	//Ndirectmaxbuf[ithread] = Ndirectmax;
-	//Ngravcellmaxbuf[ithread] = Ngravcellmax;
-	cout << "Resizing : " << okflag << "   " << cc << "   " << ithread << "   " << Nneibmax << "   " << Ndirectmax << "   " << Ngravcellmax << endl;
+	Nneibmaxbuf[ithread] = Nneibmax;
+	Ndirectmaxbuf[ithread] = Ndirectmax;
+	Ngravcellmaxbuf[ithread] = Ngravcellmax;
 	neiblist = new int[Nneibmax];
 	interactlist = new int[Nneibmax];
 	directlist = new int[Ndirectmax];
 	gravcelllist = new BinaryTreeCell<ndim>*[Ngravcellmax];
 	neibpart = new SphParticle<ndim>[Nneibmax];
-	//neibpartbuf[ithread] = new SphParticle<ndim>[Nneibmax]; 
-	//neibpart = neibpartbuf[ithread];
+	neibpartbuf[ithread] = new SphParticle<ndim>[Nneibmax]; 
+	neibpart = neibpartbuf[ithread];
 	okflag = ComputeGravityInteractionList(cell,Nneibmax,Ndirectmax,
 					       Ngravcellmax,Nneib,Ndirect,
 					       Ngravcell,neiblist,directlist,
@@ -2667,14 +2662,14 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
 
     // Free-up local memory for OpenMP thread
-    delete[] neibpart;
+    //delete[] neibpart;
     delete[] gravcelllist;
     delete[] directlist;
     delete[] interactlist;
     delete[] neiblist;
-    delete[] activepart;
-    delete[] activelist;
-    delete[] levelneib;
+    //delete[] activepart;
+    //delete[] activelist;
+    //delete[] levelneib;
 
   }
   //===========================================================================

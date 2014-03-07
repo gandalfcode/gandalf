@@ -284,7 +284,7 @@ void Parameters::SetDefaultValues(void)
 
   // Neighbour searching and tree-gravity parameters
   //---------------------------------------------------------------------------
-  stringparams["neib_search"] = "grid";
+  stringparams["neib_search"] = "tree";
   stringparams["gravity_mac"] = "geometric";
   stringparams["multipole"] = "quadrupole";
   intparams["Nleafmax"] = 1;
@@ -383,6 +383,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["vmachbin"] = 1.0;
   floatparams["alpha_turb"] = 0.1;
   floatparams["power_turb"] = -4.0;
+  intparams["randseed"] = 0;
 
   // Python parameters
   //---------------------------------------------------------------------------

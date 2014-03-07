@@ -39,7 +39,7 @@ enum ptype{gas, icm, boundary, cdm, dead,
            y_lhs_periodic, y_lhs_mirror, y_rhs_periodic, y_rhs_mirror,
            z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror,
 	   Nsphtypes};
-enum eosenum{isothermal, barotropic, energy_eqn, nspheos};
+enum eosenum{isothermal, barotropic, energy_eqn, constant_temp, nspheos};
 
 
 //=============================================================================
