@@ -373,7 +373,7 @@ void Simulation<ndim>::BinaryAccretion(void)
 
   initial_h_provided = true;
 
-  rsonic = 0.5*m1/(press1/rhofluid1);
+  rsonic = 0.5*(m1 + m2)/(press1/rhofluid1);
   //hsink = sph->kernp->invkernrange*rsonic;
   //hsink = min(hsink,hfluid1);
   hsink = hfluid1/pow(4.4817,invndim);
@@ -390,6 +390,8 @@ void Simulation<ndim>::BinaryAccretion(void)
   cout << "vbin        : " << vmachbin*sqrt(press1/rhofluid1) << endl;
   cout << "Bondi accretion, dmdt : " << 4.0*pi*rhofluid1*
     (m1 + m2)*(m1 + m2)/pow(press1/rhofluid1,1.5) << endl;
+  cout << "No. of particles      : " << Nbox1 << "   " << Nbox2 << "   " 
+       << sph->Nsph << endl;
 
   // Set hmin_sink here, since no other sinks will be formed
   sph->hmin_sink = hsink;
@@ -403,7 +405,7 @@ void Simulation<ndim>::BinaryAccretion(void)
     if (vmachbin < small_number)
       nbody->stardata[0].r[0] = simbox.boxmin[0] + 0.5*simbox.boxsize[0];
     else
-      nbody->stardata[0].r[0] = simbox.boxmin[0] + 0.25*simbox.boxsize[0];
+      nbody->stardata[0].r[0] = simbox.boxmin[0] + 0.0625*simbox.boxsize[0];
     nbody->stardata[0].v[0] = vmachbin*sph->eos->SoundSpeed(sph->sphdata[0]);
     nbody->stardata[0].m = m1 + m2;
     nbody->stardata[0].h = hsink;
@@ -419,7 +421,7 @@ void Simulation<ndim>::BinaryAccretion(void)
     if (vmachbin < small_number)
       rbinary[0] = simbox.boxmin[0] + 0.5*simbox.boxsize[0];
     else
-      rbinary[0] = simbox.boxmin[0] + 0.25*simbox.boxsize[0];
+      rbinary[0] = simbox.boxmin[0] + 0.0625*simbox.boxsize[0];
     vbinary[0] = vmachbin*sph->eos->SoundSpeed(sph->sphdata[0]);
     AddBinaryStar(abin,ebin,m1,m2,hsink,hsink,phirot,thetarot,psirot,0.0,
                   rbinary,vbinary,nbody->stardata[0],nbody->stardata[1]);
