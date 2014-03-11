@@ -8,5 +8,5 @@ from gandalf.analysis.facade import *
 sim = loadsim("SEDOV1")
 
 # Plot the density as a function of radial position
-plot("R","rho")
+plot("R","rho",snap=5)
 block()

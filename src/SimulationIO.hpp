@@ -55,14 +55,15 @@ bool SimulationBase::ReadSnapshotFile
 {
   debug2("[Simulation::ReadSnapshotFile]");
 
-  cout << "Reading snapshot : " << filename << "   format : " << fileform << endl;
+  cout << "Reading snapshot : " << filename 
+       << "   format : " << fileform << endl;
 
   // Read in snapshot file to main memory
   if (fileform == "column")
     return ReadColumnSnapshotFile(filename);
   else if (fileform == "sf" || fileform == "seren_form")
     return ReadSerenFormSnapshotFile(filename);
-  else if (fileform == "su")
+  else if (fileform == "su" || fileform == "seren_unform")
     return ReadSerenUnformSnapshotFile(filename);
   else {
     cout << "Unrecognised file format" << endl;
@@ -90,14 +91,12 @@ bool SimulationBase::WriteSnapshotFile
     return WriteColumnSnapshotFile(filename);
   else if (fileform == "sf" || fileform == "seren_form")
     return WriteSerenFormSnapshotFile(filename);
-  else if (fileform == "su")
+  else if (fileform == "su" || fileform == "seren_unform")
     return WriteSerenUnformSnapshotFile(filename);
   else {
     cout << "Unrecognised file format" << endl;
     return false;
   }
-
-
 }
 
 
@@ -123,8 +122,8 @@ HeaderInfo SimulationBase::ReadHeaderSnapshotFile
     ReadColumnHeaderFile(infile, info);
   else if (fileform == "sf" || fileform == "seren_form")
     ReadSerenFormHeaderFile(infile, info);
-  else if (fileform == "su")
-    ReadSerenUnformHeaderFile(infile,info);
+  else if (fileform == "su" || fileform == "seren_unform")
+    ReadSerenUnformHeaderFile(infile, info);
   else
     ExceptionHandler::getIstance().raise("Unrecognised file format");
 
@@ -172,11 +171,11 @@ void Simulation<ndim>::ReadColumnHeaderFile
 //=============================================================================
 template <int ndim>
 bool Simulation<ndim>::ReadColumnSnapshotFile
-(string filename)                  ///< Filename of column data snapshot file
+(string filename)                   ///< Filename of column data snapshot file
 {
   int i;
-  ifstream infile;
   FLOAT raux;
+  ifstream infile;
   HeaderInfo info;
 
   debug2("[Simulation::ReadColumnSnapshotFile]");
@@ -1125,7 +1124,7 @@ void Simulation<ndim>::ReadSerenUnformHeaderFile
   BinaryReader reader(infile);
 
   //Skip the first bits (tag+the 4)
-  int id_length = binary_tag.size();
+  int id_length = 20; //binary_tag.size();
   infile.seekg(id_length);
   infile.seekg(4,ios_base::cur);
 
@@ -1180,7 +1179,7 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
   DOUBLE ddata[50];
 
 
-  debug2("[Simulation::ReadSerenFormSnapshotFile]");
+  debug2("[Simulation::ReadSerenUnformSnapshotFile]");
 
   ifstream infile(filename.c_str());
   BinaryReader reader(infile);
@@ -1201,10 +1200,10 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     ExceptionHandler::getIstance().raise(stream.str());
   }
 
-  //Precision
+  // Precision
   reader.read_value(dummy);
 
-  //Dimensions
+  // Dimensions
   int ndim_file;
   reader.read_value(ndim_file);
   if (ndim_file != ndim) {
@@ -1537,6 +1536,8 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
                       << binary_tag;
     outfile << stream.str();
   }
+
+
 #if defined GANDALF_DOUBLE_PRECISION
   writer.write_value(8);
 #else
@@ -1577,11 +1578,11 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 
     // Positions
     //-------------------------------------------------------------------------
-      for (i=0; i<sph->Nsph; i++) {
-        SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-        for (int k=0; k<ndim; k++)
-          writer.write_value(part->r[k]*simunits.r.outscale);
-      }
+    for (i=0; i<sph->Nsph; i++) {
+      SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+      for (int k=0; k<ndim; k++)
+	writer.write_value(part->r[k]*simunits.r.outscale);
+    }
 
     // Masses
     //-------------------------------------------------------------------------
@@ -1590,7 +1591,6 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
       writer.write_value(part->m*simunits.m.outscale);
     }
 
-
     // Smoothing lengths
     //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
@@ -1598,14 +1598,13 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
       writer.write_value(part->h*simunits.r.outscale);
     }
 
-
     // Velocities
     //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>* part = sph->GetParticleIPointer(i);
       for (int k=0; k<ndim; k++)
         writer.write_value(part->v[k]*simunits.v.outscale);
-      }
+    }
 
     // Densities
     //-------------------------------------------------------------------------
@@ -1614,7 +1613,6 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
       writer.write_value(part->rho*simunits.rho.outscale);
     }
 
-
     // Specific internal energies
     //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
@@ -1622,8 +1620,8 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
       writer.write_value(part->u*simunits.u.outscale);
     }
 
-
   }
+
 
   // Sinks/stars
   //---------------------------------------------------------------------------
@@ -1651,6 +1649,8 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 
   outfile.close();
 }
+
+
 
 //=============================================================================
 //  Simulation::ConvertToCodeUnits

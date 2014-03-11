@@ -466,12 +466,6 @@ void BinaryTree<ndim>::DivideTreeCell
     tree[cell.c2].ifirst = ifirst + cell.N/2;
     tree[cell.c2].ilast = ilast;
   }
-
-  //if (cell.N != tree[cell.c1].N + tree[cell.c2].N) {
-  //cout << "WTF2?? : " << cell.N << "   " << tree[cell.c1].N << "    " 
-  // << tree[cell.c2].N << "    " << cell.level << "    " 
-  // << tree[cell.c1].ifirst << "   " << tree[cell.c2].ifirst << endl;
-  //}
   assert(cell.N == tree[cell.c1].N + tree[cell.c2].N);
 
 
@@ -501,11 +495,6 @@ void BinaryTree<ndim>::DivideTreeCell
   }
 #endif
 
-  //if (cell.N != tree[cell.c1].N + tree[cell.c2].N) {
-  //cout << "WTF?? : " << cell.N << "   " << tree[cell.c1].N << "    " 
-  // << tree[cell.c2].N << "    " << cell.level << "    " 
-  // << tree[cell.c1].ifirst << "   " << tree[cell.c2].ifirst << endl;
-  //}
   assert(cell.N == tree[cell.c1].N + tree[cell.c2].N);
 
   // Stock all cell properties once constructed
@@ -1885,9 +1874,6 @@ void BinaryTree<ndim>::ComputeFastMonopoleForces
   if (ndim == 3) {
 
     for (cc=0; cc<Ngravcell; cc++) {
-      if (cell->id == gravcelllist[cc]->id) {
-	cout << "WTFF???? : " << cc << "    " << cell->id << endl; exit(0);
-      }
       assert(cell->id != gravecelllist[cc]->id);
       mc = gravcelllist[cc]->m;
       for (k=0; k<ndim; k++) dr[k] = gravcelllist[cc]->r[k] - rc[k];
@@ -3062,7 +3048,6 @@ void BinaryTree<ndim>::UpdateAllStarGasForces
       Nneibcount += Nneib;
       Ndirectcount += Ndirect;
       Ncellcount += Ngravcell;
-
 
     }
     //=========================================================================

@@ -22,7 +22,7 @@
 #==============================================================================
 import fnmatch
 import os
-from swig_generated.SphSim import SimulationBase, SphSnapshotBase, Parameters
+from swig_generated.SphSim import SimulationBase, SphSnapshotBase, Parameters, CodeTiming
 
 
 
@@ -137,23 +137,29 @@ this reason, all of its methods are static.
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def newsim (paramfile=None, ndim=None):
+    def newsim (paramfile=None, ndim=None, simtype=None):
         '''Creates a new simulation from specified parameter file, if given;
         otherwise, just used default values for the parameters, but needs ndim
         to be specified.  Returns the simulation created.
         '''
         
-        # Create the parameter object
+        # Create the parameter and timing object
         params = Parameters()
+        timing = CodeTiming()
         
         # If a paramfile name was given, read it
         if paramfile is not None:
             params.ReadParamsFile(paramfile)
         if ndim is None:
             if paramfile is None:
-                raise BufferException("You need to specify either the number of dimensions, either the parameter file")
+                raise BufferException("You need to specify either a parameter file, or ndim and simtype")
             ndim = params.intparams["ndim"]
-        sim = SimulationBase.SimulationFactory(ndim, params);
+        if simtype is None:
+            if paramfile is None:
+                raise BufferException("You need to specify either a parameter file, or ndim and simtype")
+            simtype = params.stringparams["sim"]
+        sim = SimulationBase.SimulationFactory(ndim, simtype, params);
+        sim.timing = timing
         SimBuffer._add_simulation(sim)
         sim.snapshots = []
         return sim
@@ -177,7 +183,7 @@ this reason, all of its methods are static.
 
     #--------------------------------------------------------------------------
     @staticmethod        
-    def loadsim (run_id, fileformat='column', buffer_flag='cache'):
+    def loadsim (run_id, fileformat=None, buffer_flag='cache'):
         '''Loads a simulation into the buffer.  Takes the run_id (can also be
         a relative path), the fileformat (read from the parameters file) and
         a string that flags how the buffer should behave with respect to
@@ -203,9 +209,13 @@ this reason, all of its methods are static.
         parameters = Parameters()
         parameters.ReadParamsFile(paramfile)
         ndim = parameters.intparams["ndim"]
+        fileformat = parameters.stringparams["out_file_form"]
+        simtype = parameters.stringparams["sim"]
+        timing = CodeTiming()
         
         # Construct the simulation object and initialize it
-        sim = SimulationBase.SimulationFactory(ndim, parameters);
+        sim = SimulationBase.SimulationFactory(ndim, simtype, parameters);
+        sim.timing = timing
         SimBuffer._add_simulation(sim)
         sim.ProcessParameters()
         
@@ -216,7 +226,6 @@ this reason, all of its methods are static.
         folderfiles.sort()
         
         # Search for all the files containing the given run_id string
-        fileformat = parameters.stringparams["out_file_form"]
         filetest = run_id_base + '.' + fileformat + '.?????'
         sim.snapshots = []
         for filename in folderfiles:

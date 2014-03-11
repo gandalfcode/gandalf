@@ -37,6 +37,7 @@
 #include "Parameters.h"
 #include "EOS.h"
 #include "RiemannSolver.h"
+#include "ExternalPotential.h"
 using namespace std;
 #if defined _OPENMP
 #include "omp.h"
@@ -153,6 +154,7 @@ class Sph
   TabulatedKernel<ndim> kerntab;      ///< Tabulated version of chosen kernel
   EOS<ndim> *eos;                     ///< Equation-of-state
   RiemannSolver *riemann;             ///< Riemann solver
+  ExternalPotential<ndim> *extpot;    ///< Pointer to external potential object
 
 };
 

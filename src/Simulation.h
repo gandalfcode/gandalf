@@ -37,6 +37,7 @@
 #include "CodeTiming.h"
 #include "Diagnostics.h"
 #include "DomainBox.h"
+#include "ExternalPotential.h"
 #include "Precision.h"
 #include "Parameters.h"
 #include "SimUnits.h"
@@ -88,7 +89,8 @@ class SimulationBase
 
  public:
 
-  static SimulationBase* SimulationFactory(int ndim, Parameters* params);
+  static SimulationBase* SimulationFactory(int ndim, string simtype, 
+					   Parameters* params);
 
   // Constructor and Destructor
   //---------------------------------------------------------------------------
@@ -286,21 +288,22 @@ class Simulation : public SimulationBase
   static const int vdim=ndim;
   static const FLOAT invndim=1.0/ndim;
 
-  DomainBox<ndim> simbox;               ///< Simulation boundary data
-  Diagnostics<ndim> diag0;              ///< Initial diagnostic state
-  Diagnostics<ndim> diag;               ///< Current diagnostic state
-  EnergyEquation<ndim> *uint;           ///< Energy equation pointer
-  Ghosts<ndim>* LocalGhosts;            ///< Periodic ghost particle object
-  Nbody<ndim> *nbody;                   ///< N-body algorithm pointer
-  Nbody<ndim> *subsystem;               ///< N-body object for sub-systems
-  NbodySystemTree<ndim> nbodytree;      ///< N-body tree to create sub-systems
-  Sinks<ndim> sinks;                    ///< Sink particle object
-  Sph<ndim> *sph;                       ///< SPH algorithm pointer
-  SphIntegration<ndim> *sphint;         ///< SPH Integration scheme pointer
-  SphNeighbourSearch<ndim> *sphneib;    ///< SPH Neighbour scheme pointer
+  DomainBox<ndim> simbox;             ///< Simulation boundary data
+  Diagnostics<ndim> diag0;            ///< Initial diagnostic state
+  Diagnostics<ndim> diag;             ///< Current diagnostic state
+  EnergyEquation<ndim> *uint;         ///< Energy equation pointer
+  ExternalPotential<ndim> *extpot;    ///< Pointer to external potential object
+  Ghosts<ndim>* LocalGhosts;          ///< Periodic ghost particle object
+  Nbody<ndim> *nbody;                 ///< N-body algorithm pointer
+  Nbody<ndim> *subsystem;             ///< N-body object for sub-systems
+  NbodySystemTree<ndim> nbodytree;    ///< N-body tree to create sub-systems
+  Sinks<ndim> sinks;                  ///< Sink particle object
+  Sph<ndim> *sph;                     ///< SPH algorithm pointer
+  SphIntegration<ndim> *sphint;       ///< SPH Integration scheme pointer
+  SphNeighbourSearch<ndim> *sphneib;  ///< SPH Neighbour scheme pointer
 #ifdef MPI_PARALLEL
-  MpiControl<ndim> mpicontrol;          ///< MPI control object
-  Ghosts<ndim>* MpiGhosts;              ///< MPI ghost particle object
+  MpiControl<ndim> mpicontrol;        ///< MPI control object
+  Ghosts<ndim>* MpiGhosts;            ///< MPI ghost particle object
 #endif
 
 };

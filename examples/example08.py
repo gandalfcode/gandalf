@@ -24,8 +24,7 @@ vx = np.ones(Nsph)*vfluid
 vx[x > 0.0] = -vfluid
 
 # Create new 1D simulation object and set parameters
-sim = newsim(ndim=1)
-sim.SetParam('sim','sph')
+sim = newsim(ndim=1,sim='sph')
 sim.SetParam('ic','python')
 sim.SetParam('gas_eos','isothermal')
 sim.SetParam('Nsph',Nsph)

@@ -29,6 +29,7 @@
 #include "Precision.h"
 #include "CodeTiming.h"
 #include "Constants.h"
+#include "ExternalPotential.h"
 #include "Parameters.h"
 #include "SphKernel.h"
 #include "NbodyParticle.h"
@@ -112,6 +113,7 @@ class Nbody
   struct SystemParticle<ndim> *system;  ///< Main system particle array
 
   CodeTiming *timing;                   ///< Pointer to code timing object
+  ExternalPotential<ndim> *extpot;    ///< Pointer to external potential object
 
 };
 
@@ -153,9 +155,9 @@ public:
   void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
-  static const int vdim=ndim;           ///< Local copy of vdim
-  static const FLOAT invndim=1./ndim;   ///< Copy of 1/ndim
-  kernelclass<ndim> kern;               ///< SPH kernel
+  static const int vdim=ndim;         ///< Local copy of vdim
+  static const FLOAT invndim=1./ndim; ///< Copy of 1/ndim
+  kernelclass<ndim> kern;             ///< SPH kernel
 
 };
 

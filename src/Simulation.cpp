@@ -51,10 +51,10 @@ using namespace std;
 //=============================================================================
 SimulationBase* SimulationBase::SimulationFactory
 (int ndim,                          ///< [in] No. of dimensions
+ string simtype,                    ///< [in] Simulation type
  Parameters* params)                ///< [in] Pointer to parameters object
 {
-  string SimulationType;            // Local copy of simulation type param.
-  string SphType;                   // Local copy of SPH algorithm param.
+  debug1("[SimulationBase::SimulationFactory]");
 
   // Check ndim is valid
   if (ndim < 1 || ndim > 3) {
@@ -64,46 +64,43 @@ SimulationBase* SimulationBase::SimulationFactory
     ExceptionHandler::getIstance().raise(msg.str());
   }
 
-  // Set ndim inside the parameters
-  params->intparams["ndim"] = ndim;
-
-  // Get the simulation type from the parameters
-  //TODO: should the simulation type be passed as a parameter?
-  SimulationType = params->stringparams["sim"];
-  SphType = params->stringparams["sph"];
-
   // Check simulation type is valid
-  if (SimulationType != "sph" && SimulationType != "godunov_sph" && 
-      SimulationType != "nbody" ) {
-    string msg = "Error: the simulation type " + SimulationType + 
+  if (simtype != "sph" && simtype != "godunov_sph" && simtype != "nbody" ) {
+    string msg = "Error: the simulation type " + simtype + 
       " was not recognized";
     ExceptionHandler::getIstance().raise(msg);
   }
 
+
+  // Set ndim and simtype inside the parameters
+  params->intparams["ndim"] = ndim;
+  params->stringparams["sim"] = simtype;
+
+
   // Create and return Simulation object depending on the chosen algorithm 
   // and the dimensionality.
   if (ndim == 1) {
-    if (SimulationType == "sph")
+    if (simtype == "sph")
       return new SphSimulation<1>(params);
-    else if (SimulationType == "godunov_sph")
+    else if (simtype == "godunov_sph")
       return new GodunovSphSimulation<1>(params);
-    else if (SimulationType == "nbody")
+    else if (simtype == "nbody")
       return new NbodySimulation<1>(params);
   }
   else if (ndim==2) {
-    if (SimulationType == "sph")
+    if (simtype == "sph")
       return new SphSimulation<2>(params);
-    else if (SimulationType == "godunov_sph")
+    else if (simtype == "godunov_sph")
       return new GodunovSphSimulation<2>(params);
-    else if (SimulationType == "nbody")
+    else if (simtype == "nbody")
       return new NbodySimulation<2>(params);
   }
   else if (ndim==3) {
-    if (SimulationType == "sph")
+    if (simtype == "sph")
       return new SphSimulation<3>(params);
-    else if (SimulationType == "godunov_sph")
+    else if (simtype == "godunov_sph")
       return new GodunovSphSimulation<3>(params);
-    else if (SimulationType == "nbody")
+    else if (simtype == "nbody")
       return new NbodySimulation<3>(params);
   }
   return NULL;
@@ -119,25 +116,26 @@ SimulationBase::SimulationBase
 (Parameters* params)                ///< [in] Pointer to parameters object
 {
   simparams = new Parameters(*params);
-  paramfile = "";
-  integration_step = 1;
-  n = 0;
-  nresync = 0;
-  Nblocksteps = 0;
-  Noutsnap = 0;
-  Nsteps = 0;
-  rank = 0;
-  dt_snap_wall = 0.0;
-  t = 0.0;
-  timestep = 0.0;
-  tsnaplast = 0.0;
-  tsnap_wallclock = 0.0;
-  setup = false;
-  initial_h_provided = false;
-  kill_simulation = false;
-  ParametersProcessed = false;
+  paramfile             = "";
+  integration_step      = 1;
+  n                     = 0;
+  nresync               = 0;
+  Nblocksteps           = 0;
+  Nmpi                  = 1;
+  Noutsnap              = 0;
+  Nsteps                = 0;
+  rank                  = 0;
+  dt_snap_wall          = 0.0;
+  t                     = 0.0;
+  timestep              = 0.0;
+  tsnaplast             = 0.0;
+  tsnap_wallclock       = 0.0;
+  initial_h_provided    = false;
+  kill_simulation       = false;
+  ParametersProcessed   = false;
   rescale_particle_data = false;
-  restart = false;
+  restart               = false;
+  setup                 = false;
 #if defined _OPENMP
   if (omp_get_dynamic()) {
     cout << "Warning: the dynamic adjustment of the number threads was on. For better load-balancing, we will disable it" << endl;
@@ -148,7 +146,6 @@ SimulationBase::SimulationBase
 #else
   Nthreads = 1;
 #endif
-  Nmpi = 1;
 }
 
 
@@ -204,8 +201,8 @@ void SimulationBase::SetParam(string key, string value)
       "Error: the non-return point for setting parameters has been reached!";
     ExceptionHandler::getIstance().raise(msg);
   }
-  if (key=="ndim") {
-    string msg = "Error: it's not possible to change the number of dimensions!";
+  if (key == "ndim") {
+    string msg = "Error: Not possible to change the number of dimensions!";
     ExceptionHandler::getIstance().raise(msg);
   }
 
@@ -302,6 +299,7 @@ void SimulationBase::Run
 
     MainLoop();
     Output();
+
     // Special condition to check if maximum wall-clock time has been reached
     if (kill_simulation || 
 	timing->WallClockTime() - timing->tstart_wall > 0.99*tmax_wallclock) {
@@ -374,6 +372,7 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
 
   }
   //---------------------------------------------------------------------------
+
 
   // Calculate and process all diagnostic quantities
   if (t >= tend || Nsteps >= Ntarget) {
@@ -616,6 +615,23 @@ void Simulation<ndim>::ProcessParameters(void)
   ProcessNbodyParameters();
 
 
+  // Set external potential field object and set pointers to object
+  if (stringparams["external_potential"] == "none") {
+    extpot = new NullPotential<ndim>();
+  }
+  else if (stringparams["external_potential"] == "plummer") {
+    extpot = new PlummerPotential<ndim>(floatparams["mplummer"],
+					floatparams["rplummer"]);
+  }
+  else {
+    string message = "Unrecognised parameter : external_potential = " 
+      + simparams->stringparams["external_potential"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+  sph->extpot = extpot;
+  nbody->extpot = extpot;
+
+
   // Set all other SPH parameter variables
   sph->Nsph           = intparams["Nsph"];
   sph->Nsphmax        = intparams["Nsphmax"];
@@ -714,11 +730,12 @@ void Simulation<ndim>::ProcessParameters(void)
 
   // Set pointers to timing object
   nbody->timing   = timing;
-  sinks.timing    = timing;
-  sphint->timing  = timing;
-  sphneib->timing = timing;
-  uint->timing   = timing;
-
+  if (sim == "sph" || sim == "godunov_sph") {
+    sinks.timing    = timing;
+    sphint->timing  = timing;
+    sphneib->timing = timing;
+    uint->timing   = timing;
+  }
 
   // Flag that we've processed all parameters already
   ParametersProcessed = true;

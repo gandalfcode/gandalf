@@ -29,19 +29,20 @@
 
 %{
 #define SWIG_FILE_WITH_INIT
+#include <signal.h>
+#include <string>
 #include "Exception.h"
 #include "Simulation.h"
 #include "Parameters.h"
 #include "SimUnits.h"
 #include "Sph.h"
 #include "SphSnapshot.h"
-#include <signal.h>
-#include <string>
 #include "Precision.h"
 #include "Render.h"
 #include "SphKernel.h"
 #include "UnitInfo.h"
 #include "HeaderInfo.h"
+#include "CodeTiming.h"
 
 void catch_alarm (int SIG) {
 signal(SIGINT, catch_alarm);
@@ -204,3 +205,4 @@ ExceptionHandler::makeExceptionHandler(python);
 %include "Render.h"
 %include "SphKernel.h"
 %include "UnitInfo.h"
+%include "CodeTiming.h"

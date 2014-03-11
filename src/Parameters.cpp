@@ -173,13 +173,13 @@ void Parameters::SetDefaultValues(void)
   stringparams["ic"] = "cubic_lattice";
   stringparams["run_id"] = "";
   stringparams["in_file"] = "";
-  stringparams["in_file_form"] = "column";
-  stringparams["out_file_form"] = "column";
+  stringparams["in_file_form"] = "sf";
+  stringparams["out_file_form"] = "sf";
   floatparams["tend"] = 1.0;
   floatparams["tmax_wallclock"] = 9.99e20;
   floatparams["dt_snap"] = 0.2;
   floatparams["tsnapfirst"] = 0.2;
-  intparams["Nstepsmax"] = 9999999;
+  intparams["Nstepsmax"] = 99999999;
   intparams["noutputstep"] = 128;
   intparams["ndiagstep"] = 1024;
 
@@ -281,13 +281,14 @@ void Parameters::SetDefaultValues(void)
   //---------------------------------------------------------------------------
   intparams["self_gravity"] = 0;
   stringparams["grav_kernel"] = "mean_h";
+  stringparams["external_potential"] = "none";
 
   // Neighbour searching and tree-gravity parameters
   //---------------------------------------------------------------------------
   stringparams["neib_search"] = "tree";
   stringparams["gravity_mac"] = "geometric";
   stringparams["multipole"] = "quadrupole";
-  intparams["Nleafmax"] = 1;
+  intparams["Nleafmax"] = 6;
   intparams["ntreebuildstep"] = 1;
   intparams["ntreestockstep"] = 1;
   floatparams["thetamaxsqd"] = 0.1;
@@ -395,9 +396,8 @@ void Parameters::SetDefaultValues(void)
 
 
 //=============================================================================
-//  Parameters::SetParameter
-/// Set parameter value in memory.  Checks in turn if parameter is a 
-/// string, float or integer before recording value.
+//  Parameters::GetParameter
+/// ...
 //=============================================================================
 string Parameters::GetParameter
 (string key)                        ///< [in] Parameter key to be searched

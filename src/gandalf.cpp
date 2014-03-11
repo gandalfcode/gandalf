@@ -87,7 +87,8 @@ int main(int argc, char** argv)
 
 
   // Create simulation object with required dimensionality and parameters
-  sim = SimulationBase::SimulationFactory(params->intparams["ndim"],params);
+  sim = SimulationBase::SimulationFactory(params->intparams["ndim"],
+					  params->stringparams["sim"],params);
   sim->timing = timing;
   sim->restart = restart;
 

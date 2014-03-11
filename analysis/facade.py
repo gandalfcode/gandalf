@@ -84,7 +84,7 @@ if we are in interactive mode, or re-raising it, if we are in script mode
 
 
 #------------------------------------------------------------------------------
-def loadsim(run_id, fileformat = 'column', buffer_flag = 'cache'):
+def loadsim(run_id, fileformat=None, buffer_flag='cache'):
     '''Given the run_id of a simulation, reads it from the disk.
 Returns the newly created simulation object.
     
@@ -494,12 +494,13 @@ Required arguments:
 
 
 #------------------------------------------------------------------------------
-def newsim(paramfile=None, ndim=None):
-    '''Create a new simulation object. Need to specify either the parameter file, 
-either the number of dimensions. Note that it is not possible to change the 
-number of dimensions afterwards.
+def newsim(paramfile=None, ndim=None, sim=None):
+    '''Create a new simulation object. Need to specify either the parameter
+file, or the number of dimensions and the simulation type. Note that it is not
+possible to change the number of dimensions afterwards or simulation type
+afterwards.
 '''
-    return SimBuffer.newsim(paramfile=paramfile, ndim=ndim)
+    return SimBuffer.newsim(paramfile=paramfile, ndim=ndim, simtype=sim)
 
 
 #------------------------------------------------------------------------------
