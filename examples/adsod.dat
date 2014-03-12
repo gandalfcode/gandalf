@@ -39,6 +39,7 @@ Regular snapshot output frequency           : dt_snap = 0.1
 Time for first snapshot                     : tsnapfirst = 0.1
 Screen output frequency (in no. of steps)   : noutputstep = 64
 Diagnostic output frequency                 : ndiagstep = 1024
+Output file format                          : out_file_form = sf
 
 
 #------------------------

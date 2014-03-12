@@ -284,6 +284,7 @@ void SimulationBase::Run
 {
   int Ntarget;                      // Target step no before finishing 
                                     // main code integration.
+  ofstream outfile;                 // Stream to create temp. file for
 
   debug1("[SphSimulation::Run]");
   timing->StartTimingSection("RUN",1);
@@ -304,6 +305,8 @@ void SimulationBase::Run
     if (kill_simulation || 
 	timing->WallClockTime() - timing->tstart_wall > 0.99*tmax_wallclock) {
       cout << "Reached maximum wall-clock time.  Killing simulation." << endl;
+      outfile.open("cont");
+      outfile.close();
       break;
     }
 

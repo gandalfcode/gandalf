@@ -8,7 +8,7 @@
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = KHI1
+Simulation run id string                    : run_id = KHI2
 Select SPH simulation                       : sim = sph
 Select Kelvin-Helmholtz initial conditions  : ic = khi
 Select 2D                                   : ndim = 2
@@ -44,9 +44,11 @@ RHS boundary type in y-dimension            : y_boundary_rhs = periodic
 # Simulation time variables
 #-------------------------
 Simulation end time                         : tend = 1.59
-Regular snapshot output frequency           : dt_snap = 2.0
+Regular snapshot output frequency           : dt_snap = 0.05
 Time of first snapshot                      : tsnapfirst = 2.0
 Screen output frequency (in no. of steps)   : noutputstep = 32
+Diagnostic output frequency                 : ndiagstep = 128
+Output snapshot format                      : out_file_form = su
 
 
 #------------------------
@@ -95,6 +97,8 @@ No. of block timestep levels                : Nlevels = 1
 SPH neighbour search algorithm              : neib_search = tree
 No. of particles in leaf cell               : Nleafmax = 12
 Tree opening angle (squared)                : thetamaxsqd = 0.2
+Tree re-build frequency                     : ntreebuildstep = 8
+Tree stock frequency                        : ntreestockstep = 1
 
 
 #---------------------

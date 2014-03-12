@@ -70,7 +70,6 @@ SPH smoothing length iteration tolerance    : h_converge = 0.01
 #---------------------------------
 Artificial viscosity choice                 : avisc = mon97
 Artificial conductivity choice              : acond = wadsley2008
-Use time-dependent viscosity?               : time_dependent_avisc = 0
 Artificial viscosity alpha value            : alpha_visc = 0.1
 Artificial viscosity beta value             : beta_visc = 0.2
 
