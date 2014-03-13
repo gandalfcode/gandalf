@@ -591,8 +591,6 @@ void Simulation<ndim>::ProcessParameters(void)
     //-------------------------------------------------------------------------
     if (stringparams["neib_search"] == "bruteforce")
       sphneib = new BruteForceSearch<ndim>;
-    else if (stringparams["neib_search"] == "grid")
-      sphneib = new GridSearch<ndim>;
     else if (stringparams["neib_search"] == "tree") {
       sphneib = new BinaryTree<ndim>(intparams["Nleafmax"],
 				     floatparams["thetamaxsqd"],
