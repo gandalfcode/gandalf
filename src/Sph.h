@@ -112,7 +112,7 @@ class Sph
 
   // Functions needed to hide some implementation details
   //---------------------------------------------------------------------------
-  SphParticle<ndim>* GetParticleIPointer(int i) {return &sphdata[i];};
+  SphParticle<ndim>& GetParticleIPointer(int i) {return sphdata[i];};
 
 
   // SPH particle counters and main particle data array
@@ -148,7 +148,6 @@ class Sph
   FLOAT *rsph;                        ///< Position array (for efficiency)
   SphType sphtype[Nsphtypes];         ///< Array of SPH types
 
-  SphIntParticle<ndim>* sphintdata;   ///< Pointer to particle integration data
   SphParticle<ndim> *sphdata;         ///< Pointer to particle data
   SphKernel<ndim> *kernp;             ///< Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;      ///< Tabulated version of chosen kernel

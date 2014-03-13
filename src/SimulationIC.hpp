@@ -147,35 +147,36 @@ void Simulation<ndim>::CheckInitialConditions(void)
   bool okflag;                      // Flag problem with current particle
   bool valid_ic = true;             // Valid initial conditions flag
   int i,k;                          // Particle and dimension counter
-  SphParticle<ndim> *part;          // Pointer to SPH particle data
 
 
   // Check that all particles reside inside any defined boundaries
   //---------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
-    part = sph->GetParticleIPointer(i);
+    SphParticle<ndim>& part = sph->sphdata[i];
+
+
     okflag = true;
 
-    if (part->r[0] < simbox.boxmin[0])
+    if (part.r[0] < simbox.boxmin[0])
       if (simbox.x_boundary_lhs == "periodic") okflag = false;
-    if (part->r[0] > simbox.boxmax[0])
+    if (part.r[0] > simbox.boxmax[0])
       if (simbox.x_boundary_rhs == "periodic") okflag = false;
 
-    if (ndim >= 2 && part->r[1] < simbox.boxmin[1])
+    if (ndim >= 2 && part.r[1] < simbox.boxmin[1])
       if (simbox.y_boundary_lhs == "periodic") okflag = false;
-    if (ndim >= 2 && part->r[1] > simbox.boxmax[1])
+    if (ndim >= 2 && part.r[1] > simbox.boxmax[1])
       if (simbox.y_boundary_rhs == "periodic") okflag = false;
 
-    if (ndim == 3 && part->r[2] < simbox.boxmin[2])
+    if (ndim == 3 && part.r[2] < simbox.boxmin[2])
       if (simbox.z_boundary_lhs == "periodic") okflag = false;
-    if (ndim == 3 && part->r[2] > simbox.boxmax[2])
+    if (ndim == 3 && part.r[2] > simbox.boxmax[2])
       if (simbox.z_boundary_rhs == "periodic") okflag = false;
 
     // If flag indicates a problem, print error and quit
     if (!okflag) {
       cout << "Particle " << i << " not inside periodic box" << endl;
       for (k=0; k<ndim; k++)
-	cout << "r[" << k << "] : " << part->r[k] << "    " 
+	cout << "r[" << k << "] : " << part.r[k] << "    "
 	     << simbox.boxmin[k] << "    " << simbox.boxmax[k] << endl;
     }
 

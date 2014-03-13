@@ -73,44 +73,44 @@ template <int ndim>
 void EnergyGodunovIntegration<ndim>::EnergyIntegration
 (int n,                             ///< [in] Integer time in block time struct
  int Nsph,                          ///< [in] No. of SPH particles
- SphIntParticle<ndim> *sphintdata,  ///< [inout] SPH particle data array
+ SphParticle<ndim> *sphdata,  ///< [inout] SPH particle data array
  FLOAT timestep)                    ///< [in] Base timestep value
 {
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int nstep;                        // Particle (integer) step size
   FLOAT dt;                         // Timestep since start of step
-  SphParticle<ndim> *part;          // Pointer to SPH particle data
 
   debug2("[EnergyGodunovIntegration::EnergyIntegration]");
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,dt,i,nstep,part) \
-  shared(n,Nsph,timestep,cout,sphintdata)
+  shared(n,Nsph,timestep,cout,sphdata)
   for (i=0; i<Nsph; i++) {
-    nstep = sphintdata[i].nstep;
-    dn = n - sphintdata[i].nlast;
+    SphParticle<ndim>& part = sphdata[i];
+
+    nstep = sphdata[i].nstep;
+    dn = n - sphdata[i].nlast;
     dt = timestep*(FLOAT) dn;
-    part = sphintdata[i].part;
-    part->u = sphintdata[i].u0 + part->dudt*dt;
+    part.u = sphdata[i].u0 + part.dudt*dt;
 
     //if (i == 0) {
-    //  cout << "Energy int : " << i << "   " << sphintdata[i].u0 << "    " << part->u << "    " << part->dudt << "    " << dt << endl;
+    //  cout << "Energy int : " << i << "   " << sphdata[i].u0 << "    " << part.u << "    " << part.dudt << "    " << dt << endl;
     //}
 
-    if (part->u != part->u) {
+    if (part.u != part.u) {
       cout << "Something wrong with energy integration (NaN) : " << endl;
-      cout << part->u << "   " << sphintdata[i].u0 << "  " << part->dudt
+      cout << part.u << "   " << sphdata[i].u0 << "  " << part.dudt
 	   << "   " << dt << "   " << nstep << "    " << timestep << endl;
       exit(0);
     }
-    if (part->u < small_number) {
+    if (part.u < small_number) {
       cout << "Something wrong with energy integration (0) : " << endl;
-      cout << part->u << "   " << sphintdata[i].u0 << "  " << part->dudt
+      cout << part.u << "   " << sphdata[i].u0 << "  " << part.dudt
 	   << "   " << dt << "   " << nstep << "    " 
-	   << sphintdata[i].u0/part->dudt << endl;
-      cout << " dt_courant : " << part->h/part->sound << "    " 
-	   << sphintdata[i].u0/(part->dudt + small_number) << "    "
+	   << sphdata[i].u0/part.dudt << endl;
+      cout << " dt_courant : " << part.h/part.sound << "    "
+	   << sphdata[i].u0/(part.dudt + small_number) << "    "
 	   << timestep << endl;
       string message = "Problem with energy integration (0)";
       ExceptionHandler::getIstance().raise(message);
@@ -129,7 +129,7 @@ void EnergyGodunovIntegration<ndim>::EnergyIntegration
 //=============================================================================
 template <int ndim>
 void EnergyGodunovIntegration<ndim>::EnergyCorrectionTerms
-(int n, int Nsph, SphIntParticle<ndim> *sphintdata, FLOAT timestep)
+(int n, int Nsph, SphParticle<ndim> *sphdata, FLOAT timestep)
 {
   return;
 }
@@ -146,26 +146,25 @@ void EnergyGodunovIntegration<ndim>::EndTimestep
 (int n,                             ///< [in] Integer time in block time struct
  int Nsph,                          ///< [in] No. of SPH particles
  FLOAT timestep,                    ///< [in] Base timestep value
- SphIntParticle<ndim> *sphintdata)  ///< [inout] SPH particle data array
+ SphParticle<ndim> *sphdata)  ///< [inout] SPH particle data array
 {
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int nstep;                        // Particle (integer) step size
-  SphParticle<ndim> *part;          // Pointer to SPH particle
 
   debug2("[EnergyGodunovIntegration::EndTimestep]");
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,nstep,part)	\
-  shared(n,Nsph,sphintdata)
+  shared(n,Nsph,sphdata)
   for (i=0; i<Nsph; i++) {
-    dn = n - sphintdata[i].nlast;
-    nstep = sphintdata[i].nstep;
-    part = sphintdata[i].part;
-    if (n == sphintdata[i].nlast) {
-      //if (n == 0 || n - sphintdata[i].nlast == sphintdata[i].nstep) {
-      sphintdata[i].u0 = part->u;
-      sphintdata[i].dudt0 = part->dudt;
+    SphParticle<ndim>& part = sphdata[i];
+    dn = n - sphdata[i].nlast;
+    nstep = sphdata[i].nstep;
+    if (n == sphdata[i].nlast) {
+      //if (n == 0 || n - sphdata[i].nlast == sphdata[i].nstep) {
+      sphdata[i].u0 = part.u;
+      sphdata[i].dudt0 = part.dudt;
     }
   }
   //---------------------------------------------------------------------------

@@ -146,7 +146,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
       if (sph->sphdata[i].rho < rho_sink) continue;
 
       // Make sure candidate particle is at the end of its current timestep
-      if (n%sph->sphintdata[i].nstep != 0) continue;
+      if (n%sph->sphdata[i].nstep != 0) continue;
 
       // If SPH particle neighbours a nearby sink, skip to next particle
       for (s=0; s<Nsink; s++) {
@@ -228,8 +228,8 @@ void Sinks<ndim>::CreateNewSinkParticle
   sink[Nsink].star->gpot = sph->sphdata[isink].gpot;
   sink[Nsink].star->gpe_internal = 0.0;
   sink[Nsink].star->dt = sph->sphdata[isink].dt;
-  sink[Nsink].star->nstep = sph->sphintdata[isink].nstep;
-  sink[Nsink].star->nlast = sph->sphintdata[isink].nlast;
+  sink[Nsink].star->nstep = sph->sphdata[isink].nstep;
+  sink[Nsink].star->nlast = sph->sphdata[isink].nlast;
   sink[Nsink].star->level = sph->sphdata[isink].level;
   sink[Nsink].star->active = sph->sphdata[isink].active;
   sink[Nsink].star->Ncomp = 1;
@@ -241,9 +241,9 @@ void Sinks<ndim>::CreateNewSinkParticle
   for (k=0; k<ndim; k++) sink[Nsink].star->adot[k] = 0.0;
   for (k=0; k<ndim; k++) sink[Nsink].star->a2dot[k] = 0.0;
   for (k=0; k<ndim; k++) sink[Nsink].star->a3dot[k] = 0.0;
-  for (k=0; k<ndim; k++) sink[Nsink].star->r0[k] = sph->sphintdata[isink].r0[k];
-  for (k=0; k<ndim; k++) sink[Nsink].star->v0[k] = sph->sphintdata[isink].v0[k];
-  for (k=0; k<ndim; k++) sink[Nsink].star->a0[k] = sph->sphintdata[isink].a0[k];
+  for (k=0; k<ndim; k++) sink[Nsink].star->r0[k] = sph->sphdata[isink].r0[k];
+  for (k=0; k<ndim; k++) sink[Nsink].star->v0[k] = sph->sphdata[isink].v0[k];
+  for (k=0; k<ndim; k++) sink[Nsink].star->a0[k] = sph->sphdata[isink].a0[k];
   for (k=0; k<ndim; k++) sink[Nsink].star->adot0[k] = 0.0;
   for (k=0; k<3; k++) sink[Nsink].angmom[k] = 0.0;
 

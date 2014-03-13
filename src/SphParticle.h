@@ -84,6 +84,15 @@ struct SphParticle
   FLOAT gpe;                        ///< Gravitational potential energy
   DOUBLE dt;                        ///< Particle timestep
 
+  // Time integration information
+  int nstep;                        ///< Integer step-size of particle
+  int nlast;                        ///< Integer time at beginning of step
+  FLOAT r0[ndim];                   ///< Position at beginning of step
+  FLOAT v0[ndim];                   ///< Velocity at beginning of step
+  FLOAT a0[ndim];                   ///< Acceleration at beginning of step
+  FLOAT u0;                         ///< u at beginning of step
+  FLOAT dudt0;                      ///< dudt at beginning of step
+
   // GradhSph specific variables
   //-------------------------------------------------------------------------
   FLOAT invomega;                   ///< grad-h omega/f correction term
@@ -134,6 +143,16 @@ struct SphParticle
     gpe = (FLOAT) 0.0;
     dt = (DOUBLE) 0.0;
 
+    // Time integration variables
+    //-------------------------------------------------------------------------
+    nstep = 0;
+    nlast = 0;
+    for (int k=0; k<ndim; k++) r0[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) v0[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) a0[k] = (FLOAT) 0.0;
+    u0 = (FLOAT) 0.0;
+    dudt0 = (FLOAT) 0.0;
+
     // GradhSph specific variables
     //-------------------------------------------------------------------------
     invomega = (FLOAT) 0.0;
@@ -168,55 +187,6 @@ struct SphParticle
 #endif
 
 
-};
-
-
-
-//=============================================================================
-//  Structure SphIntParticle
-/// \brief  SPH particle integration data structure.
-/// \author D. A. Hubber, G. Rosotti
-/// \date   01/10/2013
-//=============================================================================
-template <int ndim>
-struct SphIntParticle
-{
-  struct SphParticle<ndim> *part;   ///< Pointer to main SPH particle data
-  int nstep;                        ///< Integer step-size of particle
-  int nlast;                        ///< Integer time at beginning of step
-  FLOAT r0[ndim];                   ///< Position at beginning of step
-  FLOAT v0[ndim];                   ///< Velocity at beginning of step
-  FLOAT a0[ndim];                   ///< Acceleration at beginning of step
-  FLOAT u0;                         ///< u at beginning of step
-  FLOAT dudt0;                      ///< dudt at beginning of step
-
-
-  // SPH integration particle constructor to initialise all values
-  //---------------------------------------------------------------------------
-  SphIntParticle()
-  {
-    part = NULL;
-    nstep = 0;
-    nlast = 0;
-    for (int k=0; k<ndim; k++) r0[k] = (FLOAT) 0.0;
-    for (int k=0; k<ndim; k++) v0[k] = (FLOAT) 0.0;
-    for (int k=0; k<ndim; k++) a0[k] = (FLOAT) 0.0;
-    u0 = (FLOAT) 0.0;
-    dudt0 = (FLOAT) 0.0;
-  }
-
-#ifdef MPI_PARALLEL
-  static MPI_Datatype CreateMpiDataType() {
-    MPI_Datatype partint_type;
-    MPI_Datatype types[1] = {MPI_BYTE};
-    MPI_Aint offsets[1] = {0};
-    int blocklen[1] = {sizeof(SphIntParticle<ndim>)};
-    
-    MPI_Type_create_struct(1,blocklen,offsets,types,&partint_type);
-    
-    return partint_type;
-  }
-#endif
 };
 
 

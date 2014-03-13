@@ -50,51 +50,46 @@ void PeriodicGhosts<ndim>::CheckBoundaries
 (DomainBox<ndim> simbox,
  Sph<ndim> *sph)
 {
-  int i;                            // Particle counter
-  SphParticle<ndim> *part;          // Pointer to SPH particle data
-  SphIntParticle<ndim> *partint;    // Pointer to SPH integration data
-
-
   // Loop over all particles and check if any lie outside the periodic box.
   // If so, then re-position with periodic wrapping.
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(i,part,partint) \
+#pragma omp parallel for default(none) private(i,part) \
   shared(simbox,sph)
-  for (i=0; i<sph->Nsph; i++) {
-    part = &sph->sphdata[i];
-    partint = &sph->sphintdata[i];
+  for (int i=0; i<sph->Nsph; i++) {
+    SphParticle<ndim>& part = sph->sphdata[i];
 
-    if (part->r[0] < simbox.boxmin[0])
+
+    if (part.r[0] < simbox.boxmin[0])
       if (simbox.x_boundary_lhs == "periodic") {
-        part->r[0] += simbox.boxsize[0];
-        partint->r0[0] += simbox.boxsize[0];
+        part.r[0] += simbox.boxsize[0];
+        part.r0[0] += simbox.boxsize[0];
       }
-    if (part->r[0] > simbox.boxmax[0])
+    if (part.r[0] > simbox.boxmax[0])
       if (simbox.x_boundary_rhs == "periodic") {
-        part->r[0] -= simbox.boxsize[0];
-        partint->r0[0] -= simbox.boxsize[0];
+        part.r[0] -= simbox.boxsize[0];
+        part.r0[0] -= simbox.boxsize[0];
       }
 
-    if (ndim >= 2 && part->r[1] < simbox.boxmin[1])
+    if (ndim >= 2 && part.r[1] < simbox.boxmin[1])
       if (simbox.y_boundary_lhs == "periodic") {
-        part->r[1] += simbox.boxsize[1];
-        partint->r0[1] += simbox.boxsize[1];
+        part.r[1] += simbox.boxsize[1];
+        part.r0[1] += simbox.boxsize[1];
       }
-    if (ndim >= 2 && part->r[1] > simbox.boxmax[1])
+    if (ndim >= 2 && part.r[1] > simbox.boxmax[1])
       if (simbox.y_boundary_rhs == "periodic") {
-        part->r[1] -= simbox.boxsize[1];
-        partint->r0[1] -= simbox.boxsize[1];
+        part.r[1] -= simbox.boxsize[1];
+        part.r0[1] -= simbox.boxsize[1];
       }
 
-    if (ndim == 3 && part->r[2] < simbox.boxmin[2])
+    if (ndim == 3 && part.r[2] < simbox.boxmin[2])
       if (simbox.z_boundary_lhs == "periodic") {
-        part->r[2] += simbox.boxsize[2];
-        partint->r0[2] += simbox.boxsize[2];
+        part.r[2] += simbox.boxsize[2];
+        part.r0[2] += simbox.boxsize[2];
       }
-    if (ndim == 3 && part->r[2] > simbox.boxmax[2])
+    if (ndim == 3 && part.r[2] > simbox.boxmax[2])
       if (simbox.z_boundary_rhs == "periodic") {
-        part->r[2] -= simbox.boxsize[2];
-        partint->r0[2] -= simbox.boxsize[2];
+        part.r[2] -= simbox.boxsize[2];
+        part.r0[2] -= simbox.boxsize[2];
       }
 
   }

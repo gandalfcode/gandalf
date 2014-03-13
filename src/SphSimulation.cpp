@@ -70,7 +70,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sph->Nghostmax = sph->Nsphmax - sph->Nsph;
     sph->Ntot = sph->Nsph;
     for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
-    for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].part = &(sph->sphdata[i]);
 
     // Set initial artificial viscosity alpha values
     if (simparams->stringparams["time_dependent_avisc"] == "none") 
@@ -165,8 +164,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Zero accelerations (here for now)
     for (i=0; i<sph->Ntot; i++) {
       sph->sphdata[i].level = 0;
-      sph->sphintdata[i].nstep = 0;
-      sph->sphintdata[i].nlast = 0;
+      sph->sphdata[i].nstep = 0;
+      sph->sphdata[i].nlast = 0;
       sph->sphdata[i].active = false;
     }
     for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
@@ -187,9 +186,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Set initial accelerations
     for (i=0; i<sph->Nsph; i++) {
-      for (k=0; k<ndim; k++) sph->sphintdata[i].r0[k] = sph->sphdata[i].r[k];
-      for (k=0; k<ndim; k++) sph->sphintdata[i].v0[k] = sph->sphdata[i].v[k];
-      for (k=0; k<ndim; k++) sph->sphintdata[i].a0[k] = sph->sphdata[i].a[k];
+      for (k=0; k<ndim; k++) sph->sphdata[i].r0[k] = sph->sphdata[i].r[k];
+      for (k=0; k<ndim; k++) sph->sphdata[i].v0[k] = sph->sphdata[i].v[k];
+      for (k=0; k<ndim; k++) sph->sphdata[i].a0[k] = sph->sphdata[i].a[k];
       sph->sphdata[i].active = false;
     }
 
@@ -467,8 +466,8 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
       for (i=0; i<sph->Nsph; i++) {
         sph->sphdata[i].level = 0;
         sph->sphdata[i].levelneib = 0;
-        sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
-        sph->sphintdata[i].nlast = n;
+        sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+        sph->sphdata[i].nlast = n;
         sph->sphdata[i].dt = sphint->Timestep(sph->sphdata[i],sph);
         dt = min(dt,sph->sphdata[i].dt);
       }
@@ -610,8 +609,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       for (i=0; i<sph->Nsph; i++) {
 	sph->sphdata[i].level = level_max_sph;
 	sph->sphdata[i].levelneib = level_max_sph;
-	sph->sphintdata[i].nlast = n;
-	sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+	sph->sphdata[i].nlast = n;
+	sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
 	level_min_sph = min(level_min_sph,sph->sphdata[i].level);
       }
     else {
@@ -621,8 +620,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 	level = max(level,0);
 	sph->sphdata[i].level = level;
 	sph->sphdata[i].levelneib = level;
-	sph->sphintdata[i].nlast = n;
-	sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+	sph->sphdata[i].nlast = n;
+	sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
 	level_min_sph = min(level_min_sph,sph->sphdata[i].level);
       }
     }
@@ -670,8 +669,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       for (i=0; i<sph->Nsph; i++) {
 	
 	// Skip particles that are not at end of step
-	if (sph->sphintdata[i].nlast == n) {
-	  nstep = sph->sphintdata[i].nstep;
+	if (sph->sphdata[i].nlast == n) {
+	  nstep = sph->sphdata[i].nstep;
 	  last_level = sph->sphdata[i].level;
 	  
 	  // Compute new timestep value and level number
@@ -689,8 +688,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 	  else
 	    sph->sphdata[i].level = last_level;
 	  
-	  sph->sphintdata[i].nlast = n;
-	  sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+	  sph->sphdata[i].nlast = n;
+	  sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
 	}
 
 	// Find maximum level of all SPH particles
@@ -778,7 +777,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     // Set fixed SPH timestep level here in case maximum has changed
     if (sph_single_timestep == 1) {
       for (i=0; i<sph->Nsph; i++) {
-	if (sph->sphintdata[i].nlast == n)
+	if (sph->sphdata[i].nlast == n)
 	  sph->sphdata[i].level = level_max_sph;
       }
     }
@@ -798,24 +797,24 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       if (level_max > level_max_old) {
 	nfactor = pow(2,level_max - level_max_old);
 	n *= nfactor;
-	for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].nstep *= nfactor;
-	for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].nlast *= nfactor;
+	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nstep *= nfactor;
+	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nlast *= nfactor;
 	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep *= nfactor;
 	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast *= nfactor;
       }
       else if (level_max < level_max_old) {
 	nfactor = pow(2,level_max_old - level_max);
 	n /= nfactor;
-	for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].nlast /= nfactor;
-	for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].nstep /= nfactor;
+	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nlast /= nfactor;
+	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nstep /= nfactor;
 	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast /= nfactor;
 	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep /= nfactor;
       }
 
       // Update values of nstep for both SPH and star particles
       for (i=0; i<sph->Nsph; i++) {
-	if (sph->sphintdata[i].nlast == n)
-	  sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+	if (sph->sphdata[i].nlast == n)
+	  sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
       }
       for (i=0; i<nbody->Nnbody; i++) {
 	if (nbody->nbodydata[i]->nlast == n) nbody->nbodydata[i]->nstep = 
