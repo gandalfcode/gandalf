@@ -37,6 +37,224 @@ template class SphSimulation<3>;
 
 
 //=============================================================================
+//  SphSimulation::ProcessParameters
+/// Process all the options chosen in the parameters file, setting various 
+/// simulation variables and creating important simulation objects.
+//=============================================================================
+template <int ndim>
+void SphSimulation<ndim>::ProcessParameters(void)
+{
+  // Local references to parameter variables for brevity
+  map<string, int> &intparams = simparams->intparams;
+  map<string, float> &floatparams = simparams->floatparams;
+  map<string, string> &stringparams = simparams->stringparams;
+  string sim = stringparams["sim"];
+
+  debug2("[SphSimulation::ProcessParameters]");
+
+
+  // Now simulation object is created, set-up various MPI variables
+#ifdef MPI_PARALLEL
+  rank = mpicontrol.rank;
+  Nmpi = mpicontrol.Nmpi;
+#endif
+
+  // Sanity check for valid dimensionality
+  if (ndim < 1 || ndim > 3) {
+    string message = "Invalid dimensionality chosen : ndim = " + ndim;
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Set-up all output units for scaling parameters
+  simunits.SetupUnits(simparams);
+
+  // Set-up main SPH objects depending on which SPH algorithm we are using
+  ProcessSphParameters();
+
+
+  // Thermal physics object.  If energy equation is chosen, also initiate
+  // the energy integration object.
+  //---------------------------------------------------------------------------
+  string gas_eos = stringparams["gas_eos"];
+  if (gas_eos == "energy_eqn" || gas_eos == "constant_temp") {
+    sph->eos = new Adiabatic<ndim>(floatparams["temp0"],
+				   floatparams["mu_bar"],
+				   floatparams["gamma_eos"]);
+  }
+  else if (gas_eos == "isothermal")
+    sph->eos = new Isothermal<ndim>(floatparams["temp0"],
+				    floatparams["mu_bar"],
+				    floatparams["gamma_eos"],
+				    &simunits);
+  else if (gas_eos == "barotropic")
+    sph->eos = new Barotropic<ndim>(floatparams["temp0"],
+				    floatparams["mu_bar"],
+				    floatparams["gamma_eos"],
+				    floatparams["rho_bary"],
+				    &simunits);
+  else {
+    string message = "Unrecognised parameter : gas_eos = " + gas_eos;
+    ExceptionHandler::getIstance().raise(message);
+  }
+  
+  
+  // Create neighbour searching object based on chosen method in params file
+  //-------------------------------------------------------------------------
+  if (stringparams["neib_search"] == "bruteforce")
+    sphneib = new BruteForceSearch<ndim>;
+  else if (stringparams["neib_search"] == "tree") {
+    sphneib = new BinaryTree<ndim>(intparams["Nleafmax"],
+				   floatparams["thetamaxsqd"],
+				   sph->kernp->kernrange,
+				   stringparams["gravity_mac"],
+				   stringparams["multipole"]);
+  }
+  else {
+    string message = "Unrecognised parameter : neib_search = " 
+      + simparams->stringparams["neib_search"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+#if defined MPI_PARALLEL
+  mpicontrol.SetNeibSearch(sphneib);
+#endif
+  
+
+  // Process all N-body parameters and set-up main N-body objects
+  this->ProcessNbodyParameters();
+
+
+  // Set external potential field object and set pointers to object
+  if (stringparams["external_potential"] == "none") {
+    extpot = new NullPotential<ndim>();
+  }
+  else if (stringparams["external_potential"] == "plummer") {
+    extpot = new PlummerPotential<ndim>(floatparams["mplummer"],
+					floatparams["rplummer"]);
+  }
+  else {
+    string message = "Unrecognised parameter : external_potential = " 
+      + simparams->stringparams["external_potential"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+  sph->extpot = extpot;
+  nbody->extpot = extpot;
+
+
+  // Set all other SPH parameter variables
+  sph->Nsph           = intparams["Nsph"];
+  sph->Nsphmax        = intparams["Nsphmax"];
+  sph->create_sinks   = intparams["create_sinks"];
+  sph->alpha_visc_min = floatparams["alpha_visc_min"];
+
+
+  // Set important variables for N-body objects
+  nbody->Nstar          = intparams["Nstar"];
+  nbody->Nstarmax       = intparams["Nstarmax"];
+  nbody_single_timestep = intparams["nbody_single_timestep"];
+  nbodytree.gpehard     = floatparams["gpehard"];
+  nbodytree.gpesoft     = floatparams["gpesoft"];
+  nbody->perturbers     = intparams["perturbers"];
+  if (intparams["sub_systems"] == 1) 
+    subsystem->perturbers = intparams["perturbers"];
+
+
+  // Boundary condition variables
+  //---------------------------------------------------------------------------
+  simbox.x_boundary_lhs = stringparams["x_boundary_lhs"];
+  simbox.x_boundary_rhs = stringparams["x_boundary_rhs"];
+  simbox.boxmin[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
+  simbox.boxmax[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
+  if (simbox.x_boundary_lhs == "open") simbox.boxmin[0] = -big_number;
+  if (simbox.x_boundary_rhs == "open") simbox.boxmax[0] = big_number;
+
+  if (ndim > 1) {
+    simbox.y_boundary_lhs = stringparams["y_boundary_lhs"];
+    simbox.y_boundary_rhs = stringparams["y_boundary_rhs"];
+    simbox.boxmin[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
+    simbox.boxmax[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
+    if (simbox.y_boundary_lhs == "open") simbox.boxmin[1] = -big_number;
+    if (simbox.y_boundary_rhs == "open") simbox.boxmax[1] = big_number;
+  }
+
+  if (ndim == 3) {
+    simbox.z_boundary_lhs = stringparams["z_boundary_lhs"];
+    simbox.z_boundary_rhs = stringparams["z_boundary_rhs"];
+    simbox.boxmin[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
+    simbox.boxmax[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
+    if (simbox.z_boundary_lhs == "open") simbox.boxmin[2] = -big_number;
+    if (simbox.z_boundary_rhs == "open") simbox.boxmax[2] = big_number;
+  }
+
+  for (int k=0; k<ndim; k++) {
+    simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
+    simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
+  }
+  if (sim == "sph" || sim == "godunov_sph") sphneib->box = &simbox;
+  if (IsAnyBoundarySpecial(simbox))
+    LocalGhosts = new PeriodicGhosts<ndim>();
+  else
+    LocalGhosts = new NullGhosts<ndim>();
+#ifdef MPI_PARALLEL
+  MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
+#endif
+
+
+  // Sink particles
+  //---------------------------------------------------------------------------
+  sink_particles = intparams["sink_particles"];
+  sinks.sink_particles = intparams["sink_particles"];
+  sinks.create_sinks = intparams["create_sinks"];
+  sinks.smooth_accretion = intparams["smooth_accretion"];
+  sinks.rho_sink = floatparams["rho_sink"]
+    /simunits.rho.outscale/simunits.rho.outcgs;
+  sinks.alpha_ss = floatparams["alpha_ss"];
+  sinks.smooth_accrete_frac = floatparams["smooth_accrete_frac"];
+  sinks.smooth_accrete_dt = floatparams["smooth_accrete_dt"];
+  sinks.sink_radius_mode = stringparams["sink_radius_mode"];
+
+  if (sinks.sink_radius_mode == "fixed")
+    sinks.sink_radius = floatparams["sink_radius"]/simunits.r.outscale;
+  else
+    sinks.sink_radius = floatparams["sink_radius"];
+
+
+  // Set other important simulation variables
+  dt_python             = floatparams["dt_python"];
+  dt_snap               = floatparams["dt_snap"]/simunits.t.outscale;
+  level_diff_max        = intparams["level_diff_max"];
+  Nlevels               = intparams["Nlevels"];
+  ndiagstep             = intparams["ndiagstep"];
+  noutputstep           = intparams["noutputstep"];
+  ntreebuildstep        = intparams["ntreebuildstep"];
+  ntreestockstep        = intparams["ntreestockstep"];
+  Nstepsmax             = intparams["Nstepsmax"];
+  out_file_form         = stringparams["out_file_form"];
+  run_id                = stringparams["run_id"];
+  sph_single_timestep   = intparams["sph_single_timestep"];
+  tmax_wallclock        = floatparams["tmax_wallclock"];
+  tend                  = floatparams["tend"]/simunits.t.outscale;
+  tsnapnext             = floatparams["tsnapfirst"]/simunits.t.outscale;
+
+
+  // Set pointers to timing object
+  nbody->timing   = timing;
+  if (sim == "sph" || sim == "gradhsph" || sim == "sm2012sph" || 
+      sim == "godunov_sph") {
+    sinks.timing    = timing;
+    sphint->timing  = timing;
+    sphneib->timing = timing;
+    uint->timing   = timing;
+  }
+
+  // Flag that we've processed all parameters already
+  ParametersProcessed = true;
+
+  return;
+}
+
+
+
+//=============================================================================
 //  SphSimulation::PostInitialConditionsSetup
 /// Call routines for calculating all initial SPH and N-body quantities 
 /// once initial conditions have been set-up.
@@ -53,8 +271,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Perform initial MPI decomposition
   //---------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
-    mpicontrol.CreateInitialDomainDecomposition(sph,nbody,simparams,simbox);
-    MPI_Barrier(MPI_COMM_WORLD);
+  mpicontrol.CreateInitialDomainDecomposition(sph,nbody,simparams,simbox);
+  MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
   // Set time variables here (for now)
@@ -878,3 +1096,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
   return;
 }
+
+
+
+

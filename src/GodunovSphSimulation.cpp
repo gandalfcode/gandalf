@@ -51,6 +51,91 @@ template class GodunovSphSimulation<3>;
 
 
 
+//=============================================================================
+//  GodunovSphSimulation::ProcessSphParameters
+/// Process parameter particular to setting up a Godunov SPH simulation object.
+//=============================================================================
+template <int ndim>
+void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
+{
+  aviscenum avisc;                  // Artificial viscosity enum
+  acondenum acond;                  // Artificial conductivity enum
+  eosenum gas_eos;                  // Gas EOS enum
+  tdaviscenum tdavisc;              // Time-dependent viscosity enum
+
+  map<string, int> &intparams = simparams->intparams;
+  map<string, float> &floatparams = simparams->floatparams;
+  map<string, string> &stringparams = simparams->stringparams;
+  string KernelName = stringparams["kernel"];
+
+  // Create SPH object based on chosen method in params file
+  //---------------------------------------------------------------------------
+  if (intparams["tabulated_kernel"] == 1) {
+    sph = new GodunovSph<ndim, TabulatedKernel> 
+      (intparams["hydro_forces"], intparams["self_gravity"],
+       floatparams["alpha_visc"], floatparams["beta_visc"],
+       floatparams["h_fac"], floatparams["h_converge"], 
+       avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
+  }
+  else if (intparams["tabulated_kernel"] == 0) {
+    if (KernelName == "gaussian") {
+      sph = new GodunovSph<ndim, GaussianKernel> 
+        (intparams["hydro_forces"], intparams["self_gravity"],
+         floatparams["alpha_visc"], floatparams["beta_visc"],
+         floatparams["h_fac"], floatparams["h_converge"],
+         avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
+    }
+    else {
+      string message = "Unrecognised parameter : kernel = " +
+	simparams->stringparams["kernel"];
+      ExceptionHandler::getIstance().raise(message);
+    }
+  }
+  else {
+    string message = "Invalid option for the tabulated_kernel parameter: " +
+      stringparams["tabulated_kernel"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
+  // Riemann solver object
+  //---------------------------------------------------------------------------
+  string riemann = stringparams["riemann_solver"];
+  if (riemann == "exact")
+    sph->riemann = new ExactRiemannSolver(floatparams["gamma_eos"]);
+  else if (riemann == "hllc")
+    sph->riemann = new HllcRiemannSolver(floatparams["gamma_eos"]);
+  else {
+    string message = "Unrecognised parameter : riemann_solver = "
+      + riemann;
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+ 
+  // Create SPH particle integration object
+  //---------------------------------------------------------------------------
+  sphint = new SphGodunovIntegration<ndim>(floatparams["accel_mult"],
+					   floatparams["courant_mult"],
+			              floatparams["energy_mult"],
+					   gas_eos, tdavisc);
+
+
+  // Energy integration object
+  //---------------------------------------------------------------------------
+  uint = new EnergyGodunovIntegration<ndim>(floatparams["energy_mult"]);
+
+
+  // Set other important parameters
+  sph->riemann_solver = stringparams["riemann_solver"];
+  sph->slope_limiter  = stringparams["slope_limiter"];
+  sph->riemann_order  = intparams["riemann_order"];
+
+  
+  return;
+}
+
+
+
 //TODO: make this mess more modular (note: initial h computation
 //should be done inside the neighbour search)
 //=============================================================================
