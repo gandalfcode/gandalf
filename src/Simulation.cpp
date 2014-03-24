@@ -623,8 +623,8 @@ void Simulation<ndim>::ProcessParameters(void)
     extpot = new NullPotential<ndim>();
   }
   else if (stringparams["external_potential"] == "plummer") {
-    extpot = new PlummerPotential<ndim>(floatparams["mplummer"],
-					floatparams["rplummer"]);
+    extpot = new PlummerPotential<ndim>(floatparams["mplummer_extpot"],
+					floatparams["rplummer_extpot"]);
   }
   else {
     string message = "Unrecognised parameter : external_potential = " 
