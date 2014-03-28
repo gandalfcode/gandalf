@@ -157,7 +157,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   }
 
 
-
   // Compute all initial SPH force terms
   //---------------------------------------------------------------------------
   if (sph->Nsph > 0) {
@@ -304,7 +303,6 @@ void SphSimulation<ndim>::MainLoop(void)
     // Rebuild or update local neighbour and gravity tree
     sphneib->BuildTree(rebuild_tree,Nsteps,ntreebuildstep,
 		       ntreestockstep,timestep,sph);
-    rebuild_tree = false;
     activecount = 0;
 
     // Reorder particles to tree-walk order (not implemented yet)
@@ -400,7 +398,7 @@ void SphSimulation<ndim>::MainLoop(void)
       // Calculate correction step for all stars at end of step, except the 
       // final iteration (since correction is computed in EndStep also).
       //if (it < nbody->Npec - 1)
-	nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
+      nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
 
     }
     //-------------------------------------------------------------------------
@@ -416,7 +414,9 @@ void SphSimulation<ndim>::MainLoop(void)
 
   // Search for new sink particles (if activated)
   if (sink_particles == 1) {
-    if (sinks.create_sinks == 1) sinks.SearchForNewSinkParticles(n,sph,nbody);
+    if (sinks.create_sinks == 1 && 
+	(rebuild_tree || Nsteps%ntreebuildstep == 0)) 
+      sinks.SearchForNewSinkParticles(n,sph,nbody);
     if (sinks.Nsink > 0) sinks.AccreteMassToSinks(sph,nbody,n,timestep);
     if (t >= tsnapnext && sinks.Nsink > 0) {
       sph->DeleteDeadParticles();
@@ -428,6 +428,8 @@ void SphSimulation<ndim>::MainLoop(void)
   // End-step terms for all star particles
   if (nbody->Nstar > 0)
     nbody->EndTimestep(n,nbody->Nnbody,nbody->nbodydata);
+
+  rebuild_tree = false;
 
   return;
 }
@@ -653,8 +655,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     
 
 #pragma omp parallel default(none) shared(dt_min,dt_min_sph,dt_min_nbody) \
-  shared(level_max_nbody,level_max_sph,level_min_sph)\
-  private(dt,dt_min_aux,dt_nbody,dt_sph,i,imin,istep,last_level,level)\
+  shared(level_max_nbody,level_max_sph,level_min_sph)			\
+  private(dt,dt_min_aux,dt_nbody,dt_sph,i,imin,istep,last_level,level)	\
   private(level_max_aux,level_nbody,level_sph,nstep,nfactor)
     {
       dt_min_aux = big_number_dp;
@@ -732,7 +734,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 	  
 	  // Move up one level (if levels are correctly synchronised) or
 	  // down several levels if required
-	  if (level < last_level && last_level > 1 && n%(2*nstep) == 0)
+	  if (level < last_level && level > level_max_sph && 
+	      last_level > 1 && n%(2*nstep) == 0)
 	    nbody->nbodydata[i]->level = last_level - 1;
 	  else if (level > last_level)
 	    nbody->nbodydata[i]->level = level;

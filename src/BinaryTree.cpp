@@ -2365,8 +2365,8 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
         for (k=0; k<ndim; k++) data[i].a[k] = activepart[j].a[k];
         data[i].dudt = activepart[j].dudt;
         data[i].div_v = activepart[j].div_v;
-        data[i].levelneib = activepart[j].levelneib;
 	data[i].active = false;
+        levelneib[i] = max(levelneib[i],activepart[j].levelneib);
       }
 
     }
@@ -2631,8 +2631,8 @@ void BinaryTree<ndim>::UpdateAllSphForces
         sph->sphdata[i].gpot = activepart[j].gpot;
         sph->sphdata[i].dudt = activepart[j].dudt;
         sph->sphdata[i].div_v = activepart[j].div_v;
-        sph->sphdata[i].levelneib = activepart[j].levelneib;
 	sph->sphdata[i].active = false;
+        levelneib[i] = max(levelneib[i],activepart[j].levelneib);
       }
 
     }
@@ -2640,12 +2640,11 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
 
     // Finally, add all contributions from distant pair-wise forces to arrays
-    //#pragma omp critical
-    //for (i=0; i<sph->Nsph; i++) {
-    //  sph->sphdata[i].levelneib = 
-    //	max(sph->sphdata[i].levelneib,levelneib[i]);
-    //}
-
+#pragma omp critical
+    for (i=0; i<sph->Nsph; i++) {
+      sph->sphdata[i].levelneib = 
+    	max(sph->sphdata[i].levelneib,levelneib[i]);
+    }
 
     // Free-up local memory for OpenMP thread
     //delete[] neibpart;

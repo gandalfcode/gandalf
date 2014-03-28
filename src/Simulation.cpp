@@ -287,7 +287,6 @@ void SimulationBase::Run
   ofstream outfile;                 // Stream to create temp. file for
 
   debug1("[SphSimulation::Run]");
-  timing->StartTimingSection("RUN",1);
 
   // Set integer timestep exit condition if provided as parameter.
   if (Nadvance < 0) Ntarget = Nstepsmax;
@@ -297,6 +296,8 @@ void SimulationBase::Run
   // exeeded the maximum allowed number of steps.
   //---------------------------------------------------------------------------
   while (t < tend && Nsteps < Ntarget) {
+
+    timing->StartTimingSection("RUN",1);
 
     MainLoop();
     Output();
@@ -310,6 +311,8 @@ void SimulationBase::Run
       break;
     }
 
+    timing->EndTimingSection("RUN");
+
   }
   //---------------------------------------------------------------------------
 
@@ -318,8 +321,6 @@ void SimulationBase::Run
   UpdateDiagnostics();
   cout << "Final t : " << t*simunits.t.outscale << " " << simunits.t.outunit
        << "    Total no. of steps : " << Nsteps << endl;
-
-  timing->EndTimingSection("RUN");
 
   return;
 }
@@ -659,16 +660,16 @@ void Simulation<ndim>::ProcessParameters(void)
   simbox.x_boundary_rhs = stringparams["x_boundary_rhs"];
   simbox.boxmin[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
   simbox.boxmax[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
-  if (simbox.x_boundary_lhs == "open") simbox.boxmin[0] = -big_number;
-  if (simbox.x_boundary_rhs == "open") simbox.boxmax[0] = big_number;
+  //if (simbox.x_boundary_lhs == "open") simbox.boxmin[0] = -big_number;
+  //if (simbox.x_boundary_rhs == "open") simbox.boxmax[0] = big_number;
 
   if (ndim > 1) {
     simbox.y_boundary_lhs = stringparams["y_boundary_lhs"];
     simbox.y_boundary_rhs = stringparams["y_boundary_rhs"];
     simbox.boxmin[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
     simbox.boxmax[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
-    if (simbox.y_boundary_lhs == "open") simbox.boxmin[1] = -big_number;
-    if (simbox.y_boundary_rhs == "open") simbox.boxmax[1] = big_number;
+    //if (simbox.y_boundary_lhs == "open") simbox.boxmin[1] = -big_number;
+    //if (simbox.y_boundary_rhs == "open") simbox.boxmax[1] = big_number;
   }
 
   if (ndim == 3) {
@@ -676,8 +677,8 @@ void Simulation<ndim>::ProcessParameters(void)
     simbox.z_boundary_rhs = stringparams["z_boundary_rhs"];
     simbox.boxmin[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
     simbox.boxmax[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
-    if (simbox.z_boundary_lhs == "open") simbox.boxmin[2] = -big_number;
-    if (simbox.z_boundary_rhs == "open") simbox.boxmax[2] = big_number;
+    //if (simbox.z_boundary_lhs == "open") simbox.boxmin[2] = -big_number;
+    //if (simbox.z_boundary_rhs == "open") simbox.boxmax[2] = big_number;
   }
 
   for (int k=0; k<ndim; k++) {

@@ -123,6 +123,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
   debug2("[Sinks::SearchForNewSinkParticles]");
   timing->StartTimingSection("SEARCH_NEW_SINKS",2);
 
+
   // Continuous loop to search for new sinks.  If a new sink is found, then 
   // repeat entire process to search for other sinks on current timestep. 
   // If no sinks are found, then exit and return to main program.
@@ -146,7 +147,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
       if (sph->sphdata[i].rho < rho_sink) continue;
 
       // Make sure candidate particle is at the end of its current timestep
-      if (n%sph->sphintdata[i].nstep != 0) continue;
+      //if (n%sph->sphintdata[i].nstep != 0) continue;
 
       // If SPH particle neighbours a nearby sink, skip to next particle
       for (s=0; s<Nsink; s++) {
@@ -171,8 +172,6 @@ void Sinks<ndim>::SearchForNewSinkParticles
 
     // If all conditions have been met, then create a new sink particle
     if (isink != -1) {
-      cout << "Found sink particle : " << isink << "    "
-           << sph->sphdata[isink].rho << endl;
       sph->hmin_sink = min(sph->hmin_sink,sph->sphdata[isink].h);
       CreateNewSinkParticle(isink,sph,nbody);
     }
@@ -318,7 +317,6 @@ void Sinks<ndim>::AccreteMassToSinks
   FLOAT vold[ndim];                 // Old sink velocity
   FLOAT wnorm;                      // Kernel normalisation factor
   FLOAT *rsqdlist;                  // Array of particle-sink distances
-  //SinkParticle<ndim> *s1;           // Local reference to sink
 
   debug2("[Sinks::AccreteMassToSinks]");
   timing->StartTimingSection("ACCRETE_MASS",2);
