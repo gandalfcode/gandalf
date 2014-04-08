@@ -495,6 +495,10 @@ void BinaryTree<ndim>::DivideTreeCell
   }
 #endif
 
+  if (cell.N != tree[cell.c1].N + tree[cell.c2].N) {
+    cout << "Checking : " << cell.N << "   " << tree[cell.c1].N 
+	 << "    " << tree[cell.c2].N << endl;
+  }
   assert(cell.N == tree[cell.c1].N + tree[cell.c2].N);
 
   // Stock all cell properties once constructed
@@ -859,10 +863,6 @@ void BinaryTree<ndim>::StockCellProperties
 	i = inext[i];
       }
     }
-
-
-    //if (cell.ifirst == -1) 
-    //cout << "DEAD CELL?? : " << cell.m << "   " << cell.r[0] << "   " << cell.r[1] << "   " << cell.rmax << "    " << cell.hmax << "    " << cell.cdistsqd << endl;
 
   }
   // For non-leaf cells, sum together two children cells
@@ -1626,7 +1626,7 @@ int BinaryTree<ndim>::ComputeStarGravityInteractionList
     
     // Check if cells contain SPH neighbours
     //-------------------------------------------------------------------------
-    if (drsqd < 0.25*pow(hrangemax + tree[cc].rmax + kernrange*tree[cc].hmax,2)) {
+    if (drsqd < pow(0.5*hrangemax + tree[cc].rmax + 0.5*kernrange*tree[cc].hmax,2)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (tree[cc].level != ltot)
@@ -1636,7 +1636,7 @@ int BinaryTree<ndim>::ComputeStarGravityInteractionList
       else if (tree[cc].level == ltot && Nneib + Nleafmax <= Nneibmax) {
         i = tree[cc].ifirst;
     	while (i != -1) {
-          neiblist[Nneib++] = i;
+	  if (sphdata[i].itype != dead) neiblist[Nneib++] = i;
           if (i == tree[cc].ilast) break;
     	  i = inext[i];
         };
@@ -1656,8 +1656,10 @@ int BinaryTree<ndim>::ComputeStarGravityInteractionList
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
       if (tree[cc].level == ltot && tree[cc].N == 1 && 
-	  Ndirect + Nneib < Ndirectmax)
-        directlist[Ndirect++] = tree[cc].ifirst;
+	  Ndirect + Nneib < Ndirectmax) {
+	if (sphdata[tree[cc].ifirst].itype != dead)
+	  directlist[Ndirect++] = tree[cc].ifirst;
+      }
       else if (Ngravcell < Ngravcellmax && tree[cc].N > 0)
         gravcelllist[Ngravcell++] = &(tree[cc]);
       else
@@ -1679,8 +1681,7 @@ int BinaryTree<ndim>::ComputeStarGravityInteractionList
       else if (tree[cc].level == ltot && Ndirect + Nleafmax <= Ndirectmax) {
         i = tree[cc].ifirst;
         while (i != -1) {
-          //neiblist[Nneib++] = i;
-          directlist[Ndirect++] = i;
+	  if (sphdata[i].itype != dead) directlist[Ndirect++] = i;
           if (i == tree[cc].ilast) break;
        	  i = inext[i];
         };
@@ -1874,7 +1875,7 @@ void BinaryTree<ndim>::ComputeFastMonopoleForces
   if (ndim == 3) {
 
     for (cc=0; cc<Ngravcell; cc++) {
-      assert(cell->id != gravecelllist[cc]->id);
+      assert(cell->id != gravcelllist[cc]->id);
       mc = gravcelllist[cc]->m;
       for (k=0; k<ndim; k++) dr[k] = gravcelllist[cc]->r[k] - rc[k];
       drsqd = DotProduct(dr,dr,ndim);
@@ -3030,6 +3031,12 @@ void BinaryTree<ndim>::UpdateAllStarGasForces
 	                                           Ngravcell,neiblist,directlist,
 	                                           gravcelllist,sph->sphdata);
       };
+
+      if (Nneib > Nneibmax || Ndirect > Ndirectmax) {
+	cout << "Nneib problem : " << Nneib << "   " << Nneibmax << "     "
+	     << Ndirect << "    " << Ndirectmax << endl;
+	exit(0);
+      }
 
       // Compute contributions to star force from nearby SPH particles
       nbody->CalculateDirectSPHForces(star,Nneib,Ndirect,neiblist,
