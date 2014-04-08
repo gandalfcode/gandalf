@@ -121,14 +121,17 @@ SimulationBase::SimulationBase
   n                     = 0;
   nresync               = 0;
   Nblocksteps           = 0;
+  Nfullsteps            = 0;
   Nmpi                  = 1;
   Noutsnap              = 0;
+  Noutlitesnap          = 0;
   Nsteps                = 0;
   rank                  = 0;
   dt_snap_wall          = 0.0;
   t                     = 0.0;
   timestep              = 0.0;
   tsnaplast             = 0.0;
+  tlitesnaplast         = 0.0;
   tsnap_wallclock       = 0.0;
   initial_h_provided    = false;
   kill_simulation       = false;
@@ -138,7 +141,8 @@ SimulationBase::SimulationBase
   setup                 = false;
 #if defined _OPENMP
   if (omp_get_dynamic()) {
-    cout << "Warning: the dynamic adjustment of the number threads was on. For better load-balancing, we will disable it" << endl;
+    cout << "Warning: the dynamic adjustment of the number threads was on."
+      "For better load-balancing, we will disable it" << endl;
   }
   omp_set_dynamic(0);
   Nthreads = omp_get_max_threads();
@@ -412,7 +416,28 @@ string SimulationBase::Output(void)
            << "    dt : " << timestep*simunits.t.outscale << " "
            << simunits.t.outunit << "    Nsteps : " << Nsteps << endl;
 
+
+  // Output a lite-data snapshot for producing movies
+  //---------------------------------------------------------------------------
+  if (litesnap == 1 && t >= tlitesnapnext) {
+
+    // Prepare filename for new snapshot
+    Noutlitesnap++;
+    tlitesnaplast = tlitesnapnext;
+    tlitesnapnext += dt_litesnap;
+    nostring = "";
+    ss << setfill('0') << setw(5) << Noutlitesnap;
+    nostring = ss.str();
+    filename = run_id + ".slite." + nostring;
+    ss.str(std::string());
+    WriteSnapshotFile(filename,"slite");
+
+  }
+  //---------------------------------------------------------------------------
+
+
   // Output a data snapshot if reached required time
+  //---------------------------------------------------------------------------
   if (t >= tsnapnext) {
 
     // Prepare filename for new snapshot
@@ -447,6 +472,7 @@ string SimulationBase::Output(void)
     }
 
   }
+  //---------------------------------------------------------------------------
 
   // Output diagnostics to screen if passed sufficient number of block steps
   if (Nblocksteps%ndiagstep == 0 && n == nresync) {
@@ -717,7 +743,9 @@ void Simulation<ndim>::ProcessParameters(void)
   // Set other important simulation variables
   dt_python             = floatparams["dt_python"];
   dt_snap               = floatparams["dt_snap"]/simunits.t.outscale;
+  dt_litesnap           = floatparams["dt_litesnap"]/simunits.t.outscale;
   level_diff_max        = intparams["level_diff_max"];
+  litesnap              = intparams["litesnap"];
   Nlevels               = intparams["Nlevels"];
   ndiagstep             = intparams["ndiagstep"];
   noutputstep           = intparams["noutputstep"];
@@ -730,6 +758,7 @@ void Simulation<ndim>::ProcessParameters(void)
   tmax_wallclock        = floatparams["tmax_wallclock"];
   tend                  = floatparams["tend"]/simunits.t.outscale;
   tsnapnext             = floatparams["tsnapfirst"]/simunits.t.outscale;
+  tlitesnapnext         = floatparams["tlitesnapfirst"]/simunits.t.outscale;
 
 
   // Set pointers to timing object
