@@ -467,7 +467,7 @@ string SimulationBase::Output(void)
 
     // If simulation is too close to maximum wall-clock time, end 
     // prematurely
-    if (timing->ttotwall > 0.95*tmax_wallclock) {
+    if (timing->ttot_wall > 0.95*tmax_wallclock) {
       kill_simulation = true;
     }
     //if (tsnap_wallclock > 0.0 && 
