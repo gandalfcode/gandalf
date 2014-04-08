@@ -123,6 +123,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
   debug2("[Sinks::SearchForNewSinkParticles]");
   timing->StartTimingSection("SEARCH_NEW_SINKS",2);
 
+
   // Continuous loop to search for new sinks.  If a new sink is found, then 
   // repeat entire process to search for other sinks on current timestep. 
   // If no sinks are found, then exit and return to main program.
@@ -169,17 +170,16 @@ void Sinks<ndim>::SearchForNewSinkParticles
     //-------------------------------------------------------------------------
 
 
-    // If all conditions have been met, then create a new sink particle
+    // If all conditions have been met, then create a new sink particle.
+    // Also, set minimum sink smoothing lengtha
     if (isink != -1) {
-      cout << "Found sink particle : " << isink << "    "
-           << sph->sphdata[isink].rho << endl;
       sph->hmin_sink = min(sph->hmin_sink,sph->sphdata[isink].h);
       CreateNewSinkParticle(isink,sph,nbody);
     }
 
-
   } while (isink != -1);
   //===========================================================================
+
 
   timing->EndTimingSection("SEARCH_NEW_SINKS");
 
@@ -314,11 +314,11 @@ void Sinks<ndim>::AccreteMassToSinks
   FLOAT macc_temp;                  // Temp. accreted mass variable
   FLOAT mold;                       // Old mass
   FLOAT mtemp;                      // Aux. mass variable
+  FLOAT rsqdmin;                    // Distance (sqd) to closest sink
   FLOAT rold[ndim];                 // Old sink position
   FLOAT vold[ndim];                 // Old sink velocity
   FLOAT wnorm;                      // Kernel normalisation factor
   FLOAT *rsqdlist;                  // Array of particle-sink distances
-  //SinkParticle<ndim> *s1;           // Local reference to sink
 
   debug2("[Sinks::AccreteMassToSinks]");
   timing->StartTimingSection("ACCRETE_MASS",2);
@@ -328,14 +328,27 @@ void Sinks<ndim>::AccreteMassToSinks
   for (s=0; s<Nsinkmax; s++) sink[s].Ngas = 0;
 
   // Determine which sink each SPH particle accretes to.  If none, flag -1
+  //---------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
     if (sph->sphdata[i].itype == dead) continue;
     saux = -1;
+    rsqdmin = big_number;
+
+    // Loop over all sinks and mark id of closest sink
     for (s=0; s<Nsink; s++) {
       for (k=0; k<ndim; k++) dr[k] = sph->sphdata[i].r[k] - sink[s].star->r[k];
       drsqd = DotProduct(dr,dr,ndim);
-      if (drsqd <= sink[s].radius*sink[s].radius) saux = s;
+      if (drsqd <= sink[s].radius*sink[s].radius && drsqd < rsqdmin) {
+	saux = s;
+	rsqdmin = drsqd;
+      }
+
+      // If particle is close enough to sink, then record timestep level
+      if (drsqd <= 4.0*sph->kernp->kernrangesqd*pow(sph->sphdata[i].h,2))
+	sph->sphdata[i].levelneib = max(sph->sphdata[i].levelneib,
+					sink[s].star->level);
     }
+
     sph->sphdata[i].sinkid = saux;
     if (saux != -1) {
       sink[saux].Ngas++;
@@ -343,6 +356,8 @@ void Sinks<ndim>::AccreteMassToSinks
       Nlist = max(Nlist,sink[saux].Ngas);
     }
   }
+  //---------------------------------------------------------------------------
+
 
   // If there are no particles inside any sink, return to main loop.
   if (Nlist == 0) return;
@@ -352,14 +367,17 @@ void Sinks<ndim>::AccreteMassToSinks
   // particles for each sink.
   //===========================================================================
 #pragma omp parallel for schedule(dynamic,1) default(none)\
-  shared(cout,Nlist,Nlisttot,sph,timestep) private(asqd,dr,drmag,drsqd,dt)\
+  shared(cout,n,Nlist,Nlisttot,sph,timestep) private(asqd,dr,drmag,drsqd,dt) \
   private(dv,dvtang,efrac,i,ilist,ilist2,j,k,macc,macc_temp,mold,mtemp)\
   private(Nneib,rold,rsqdlist,s,vold,wnorm)
   for (s=0; s<Nsink; s++) {
 
     // Skip sink particle if it contains no gas, or unless it's at the 
     // beginning of its current step.
-    if (sink[s].Ngas == 0 || !sink[s].star->active) continue;
+    //if (sink[s].Ngas == 0 || !sink[s].star->active) continue;
+    //if (sink[s].Ngas == 0 || n%sink[s].star->nstep != 0) continue;
+    if (sink[s].Ngas == 0 || sink[s].star->nlast != n) continue;
+    //if (sink[s].Ngas == 0 || n%sink[s].star->nstep != sink[s].star->nstep/2) continue;
 
     // Allocate local array for sink
     ilist = new int[Nlisttot];
@@ -391,7 +409,7 @@ void Sinks<ndim>::AccreteMassToSinks
     // Double-check that numbers add up here
     if (Nneib != sink[s].Ngas) 
       cout << "Error with neibs : " << Nneib << "   " << sink[s].Ngas << endl;
-    if (Nneib > Nlist) cout << "ERROR!!!" << Nneib << "   " << Nlist << endl;
+    if (Nneib > Nlist) cout << "ERROR!!" << Nneib << "   " << Nlist << endl;
 
     // Sort particle ids by increasing distance from the sink
     Heapsort(Nneib,ilist2,rsqdlist);
@@ -437,6 +455,7 @@ void Sinks<ndim>::AccreteMassToSinks
 			   pow(sink[s].star->invh,ndim));  
     }
 
+
     // Normalise SPH sums correctly
     sink[s].ketot *= 0.5*sink[s].menc/wnorm;
     sink[s].rotketot *= 0.5*sink[s].menc/wnorm;
@@ -462,15 +481,6 @@ void Sinks<ndim>::AccreteMassToSinks
         sink[s].taccrete *= pow(sink[s].mmax/sink[s].menc,2);
       dt = (FLOAT) sink[s].star->nstep*timestep;
       macc = sink[s].menc*max(1.0 - exp(-dt/sink[s].taccrete),0.0);
-      /*cout << "Accreting sink " << s << "     Nneib : " << Nneib << endl;
-      cout << "smooth_accretion : " << smooth_accretion << "     wnorm : " << wnorm << endl;
-      cout << "rotke : " << sink[s].rotketot << "   " << sink[s].gpetot << endl;
-      cout << "Mass enclosed " << sink[s].menc << "    " << sink[s].mmax << endl;
-      cout << "Timestep : " << timestep << "    " << dt 
-         << "    efrac : " << efrac <<endl;
-      cout << "tvisc : " << sink[s].tvisc << "    trad : " << sink[s].trad 
-         << "   trot : " << sink[s].trot << endl;
-	 cout << "tacc : " << sink[s].taccrete << "    macc : " << macc << endl;*/
     }
     else {
       macc = sink[s].menc;
@@ -521,6 +531,12 @@ void Sinks<ndim>::AccreteMassToSinks
     for (k=0; k<ndim; k++) sink[s].star->r[k] /= sink[s].star->m;
     for (k=0; k<ndim; k++) sink[s].star->v[k] /= sink[s].star->m;
     for (k=0; k<ndim; k++) sink[s].star->a[k] /= sink[s].star->m;
+    
+    //if (n%sink[s].star->nstep == 0) {
+    for (k=0; k<ndim; k++) sink[s].star->r0[k] = sink[s].star->r[k];
+    for (k=0; k<ndim; k++) sink[s].star->v0[k] = sink[s].star->v[k];
+    for (k=0; k<ndim; k++) sink[s].star->a0[k] = sink[s].star->a[k];
+      //}
 
     // Calculate angular momentum of old COM around new COM
     for (k=0; k<ndim; k++) dr[k] = rold[k] - sink[s].star->r[k];

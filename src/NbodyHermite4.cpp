@@ -580,14 +580,17 @@ DOUBLE NbodyHermite4<ndim, kernelclass>::Timestep
   a2sqd = DotProduct(star->a2dot,star->a2dot,ndim);
   a3sqd = DotProduct(star->a3dot,star->a3dot,ndim);
 
+  // Normal case of all four accel quantities being defined
   if (a1sqd > small_number_dp && a2sqd > small_number_dp) {
     timestep = (sqrt(asqd*a2sqd) + a1sqd)/(sqrt(a1sqd*a3sqd) + a2sqd);
     timestep = nbody_mult*sqrt(timestep);
   }
+  // Special case when 1st derivative falls to zero
   else if (asqd > small_number_dp && a2sqd > small_number_dp) {
     timestep = asqd/(a2sqd + small_number_dp);
     timestep = nbody_mult*sqrt(timestep);
   }
+  // If all else fails, use simple criterion
   else if (asqd > small_number_dp)
     timestep = sqrt(star->h/(sqrt(asqd) + small_number_dp));
   else

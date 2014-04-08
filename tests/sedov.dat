@@ -1,13 +1,13 @@
--------------------------------------------------------------
-Sedov Blast Wave test
-..
--------------------------------------------------------------
+#--------------------------------------------------------------
+# Sedov Blast Wave test
+# Creates Sedov blast wave test
+#--------------------------------------------------------------
 
 
-----------------------------
-Initial conditions variables
-----------------------------
-Simulation run id string                    : run_id = SEDOV4
+#-----------------------------
+# Initial conditions variables
+#-----------------------------
+Simulation run id string                    : run_id = SEDOV1
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = sedov
 Dimensionality of cube                      : ndim = 2
@@ -20,9 +20,9 @@ Local arrangement of particles              : particle_distribution = cubic_latt
 Use dimensionless units                     : dimensionless = 1
 
 
------------------------------
-Simulation boundary variables
------------------------------
+#------------------------------
+# Simulation boundary variables
+#------------------------------
 LHS position of boundary in x-dimension     : boxmin[0] = -1.0
 RHS position of boundary in x-dimension     : boxmax[0] = 1.0
 LHS position of boundary in y-dimension     : boxmin[1] = -1.0
@@ -37,43 +37,43 @@ LHS boundary type in z-dimension            : z_boundary_lhs = periodic
 RHS boundary type in z-dimension            : z_boundary_rhs = periodic
 
 
--------------------------
-Simulation time variables
--------------------------
+#--------------------------
+# Simulation time variables
+#--------------------------
 Simulation end time                         : tend = 0.6
 Time for first snapshot                     : tsnapfirst = 0.0
 Regular snapshot output frequency           : dt_snap = 0.1
 Screen output frequency (in no. of steps)   : noutputstep = 128
 
 
------------------------
-Thermal physics options
------------------------
+#------------------------
+# Thermal physics options
+#------------------------
 Switch-on hydrodynamical forces             : hydro_forces = 1
 Main gas thermal physics treatment          : gas_eos = energy_eqn
 Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 
 
----------------------------------------
-Smoothed Particle Hydrodynamics options
----------------------------------------
+#----------------------------------------
+# Smoothed Particle Hydrodynamics options
+#----------------------------------------
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = m4
-SPH smoothing length iteration tolerance    : h_converge = 0.0001
+SPH smoothing length iteration tolerance    : h_converge = 0.001
 
 
---------------------------------
-SPH artificial viscosity options
---------------------------------
+#---------------------------------
+# SPH artificial viscosity options
+#---------------------------------
 Artificial viscosity choice                 : avisc = mon97
 Artificial conductivity choice              : acond = none
 Artificial viscosity alpha value            : alpha_visc = 1.0
 Artificial viscosity beta value             : beta_visc = 2.0
 
 
-------------------------
-Time integration options
-------------------------
+#-------------------------
+# Time integration options
+#-------------------------
 SPH particle integration option             : sph_integration = lfkdk
 Integration of gas thermal energy           : energy_integration = PEC
 SPH Courant timestep condition multiplier   : courant_mult = 0.1
@@ -83,15 +83,15 @@ No. of block timestep levels                : Nlevels = 10
 Maximum timestep level difference           : level_diff_max = 1
 
 
---------------------
-Optimisation options
---------------------
+#---------------------
+# Optimisation options
+#---------------------
 Tabulate SPH kernel                         : tabulated_kernel = 1
 SPH neighbour search algorithm              : neib_search = tree
 No. of particles per leaf cell              : Nleafmax = 6
 
 
--------------
-Misc. options
--------------
+#--------------
+# Misc. options
+#--------------
 Switch-off self-gravity of gas              : self_gravity = 0

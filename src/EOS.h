@@ -131,6 +131,39 @@ class Barotropic: public EOS<ndim>
 
 
 //=============================================================================
+//  Class Barotropic2
+/// \brief   2nd form of barotropic equation of state (piecewise polynomials)
+/// \details 2nd form of barotropic equation of state (piecewise polynomials)
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    08/04/2014
+//=============================================================================
+template <int ndim>
+class Barotropic2: public EOS<ndim>
+{
+  using EOS<ndim>::gamma;
+  using EOS<ndim>::gammam1;
+
+ public:
+
+  Barotropic2(FLOAT, FLOAT, FLOAT, FLOAT, SimUnits *);
+  ~Barotropic2();
+
+  FLOAT Pressure(SphParticle<ndim> &);
+  FLOAT EntropicFunction(SphParticle<ndim> &);
+  FLOAT SoundSpeed(SphParticle<ndim> &);
+  FLOAT Temperature(SphParticle<ndim> &);
+  FLOAT SpecificInternalEnergy(SphParticle<ndim> &);
+
+  FLOAT temp0;
+  FLOAT mu_bar;
+  FLOAT rho_bary;
+  FLOAT invrho_bary;
+
+};
+
+
+
+//=============================================================================
 //  Class Adiabatic
 /// \brief   Adiabatic equation of state
 /// \details Adiabatic equation of state.  Requires integrating the energy 

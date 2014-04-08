@@ -15,25 +15,25 @@ setupsim()
 subfigure(2,2,1)
 plot("x","rho")
 plotanalytical("x","rho")
-limit("x",-0.4,0.4,window="all")
+limit("x",-0.5,0.5,window="all")
 
 # Plot the x-velocity with the analytical solution
 subfigure(2,2,2)
 plot("x","vx")
 plotanalytical("x","vx")
-limit("x",-0.4,0.4,window="all")
+limit("x",-0.5,0.5,window="all")
 
 # Plot the specific internal energy with the solution
 subfigure(2,2,3)
 plot("x","u")
 plotanalytical("x","u")
-#limit("x",-0.4,0.4,window="all")
+limit("x",-0.5,0.5,window="all")
 
 # Plot the thermal pressure
 subfigure(2,2,4)
 plot("x","press")
 plotanalytical("x","press")
-limit("x",-0.4,0.4,window="all")
+limit("x",-0.5,0.5,window="all")
 
 # 'Sleep hack' (to allow matplotlib to update the figure) 
 # before running the simulation

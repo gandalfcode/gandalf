@@ -138,26 +138,43 @@ template <int ndim>
 void Sph<ndim>::DeleteDeadParticles(void)
 {
   int i;                            // Particle counter
+  int itype;
   int Ndead = 0;                    // No. of 'dead' particles
   int Nlive = 0;                    // No. of 'live' particles
+  int ilast = Nsph;                 // Aux. counter of last free slot
 
   debug2("[Sph::DeleteDeadParticles]");
+
 
   // Determine new order of particles in arrays.  
   // First all live particles and then all dead particles
   for (i=0; i<Nsph; i++) {
-    if (sphdata[i].itype == dead) iorder[Nsph - 1 - Ndead++] = i;
-    else iorder[Nlive++] = i;
+    itype = sphdata[i].itype;
+    while (itype == dead) {
+    //while (sphdata[i].itype == dead) {
+      Ndead++;
+      ilast--;
+      if (i < ilast) {
+	sphdata[i] = sphdata[ilast];
+	sphintdata[i] = sphintdata[ilast];
+	sphintdata[i].part = &(sphdata[i]);
+	sphdata[ilast].itype = dead;
+	sphdata[ilast].m = 0.0;
+      }
+      else break;
+      itype = sphdata[i].itype;
+    };
+    if (i >= ilast - 1) break;
   }
 
   // Reorder all arrays following with new order, with dead particles at end
   if (Ndead == 0) return;
-  else ReorderParticles();
 
   // Reduce particle counters once dead particles have been removed
-  assert(Nlive + Ndead == Ntot);
   Nsph -= Ndead;
   Ntot -= Ndead;
+  for (i=0; i<Nsph; i++) iorder[i] = i;
+
 
   return;
 }
