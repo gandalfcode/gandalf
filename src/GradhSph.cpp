@@ -25,12 +25,12 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <cassert>
 #include <iostream>
 #include <math.h>
 #include "Precision.h"
 #include "Sph.h"
 #include "SphParticle.h"
-
 #include "Parameters.h"
 #include "SphKernel.h"
 #include "EOS.h"
@@ -280,6 +280,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   //---------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
+    assert(neibpart[j].itype != dead);
+
     wkerni = parti.hfactor*kern.w1(drmag[jj]*parti.invh);
     wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*neibpart[j].invh);
 
@@ -398,6 +400,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
   //---------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
+    assert(neibpart[j].itype != dead);
 
     for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
     for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
@@ -524,6 +527,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
   //---------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
+    assert(neibpart[j].itype != dead);
 
     for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
     for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
@@ -610,8 +614,8 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
   // Loop over all neighbouring particles in list
   //---------------------------------------------------------------------------
   for (jj=0; jj<Ndirect; jj++) {
-
     j = directlist[jj];
+    assert(sph[j].itype != dead);
 
     for (k=0; k<ndim; k++) dr[k] = sph[j].r[k] - parti.r[k];
     drsqd = DotProduct(dr,dr,ndim) + small_number;
@@ -659,11 +663,19 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
     invdrmag = 1.0/drmag;
     invhmean = 2.0/(parti.h + nbodydata[j]->h);
 
+    //invhmean = 1.0/nbodydata[j]->h;
+    //invhmean = 1.0/parti.h;
+
     paux = nbodydata[j]->m*invhmean*invhmean*
       kern.wgrav(drmag*invhmean)*invdrmag;
+
+    //for (k=0; k<ndim; k++) 
+    //  parti.agrav[k] += nbodydata[j]->m*dr[k]*pow(invdrmag,3);
+    //parti.gpot += nbodydata[j]->m*invdrmag;
+    //continue;
       
     // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.agrav[k] += dr[k]*paux;
+    for (k=0; k<ndim; k++) parti.agrav[k] += paux*dr[k];
     parti.gpot += nbodydata[j]->m*invhmean*kern.wpot(drmag*invhmean);
 
     //if (drmag*invhmean > kern.kernrange) {
@@ -684,6 +696,7 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
 
   return;
 }
+
 
 
 template class GradhSph<1, M4Kernel>;

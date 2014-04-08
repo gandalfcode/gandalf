@@ -37,7 +37,6 @@ using namespace std;
 
 
 
-
 //=============================================================================
 //  SphLeapfrogDKD::SphLeapfrogDKD
 /// SphLeapfrogDKD class constructor
@@ -89,7 +88,7 @@ void SphLeapfrogDKD<ndim>::AdvanceParticles
   SphParticle<ndim> *part;          // SPH particle pointer
 
   debug2("[SphLeapfrogDKD::AdvanceParticles]");
-  timing->StartTimingSection("LFDKD_ADVANCE_PARTICLES",2);
+  timing->StartTimingSection("SPH_LFDKD_ADVANCE_PARTICLES",2);
 
   // Advance positions and velocities of all SPH particles
   //---------------------------------------------------------------------------
@@ -103,11 +102,20 @@ void SphLeapfrogDKD<ndim>::AdvanceParticles
     dt = timestep*(FLOAT) dn;
     part = sph->sphintdata[i].part;
 
-    // Advance particle positions and velocities
-    for (k=0; k<ndim; k++) part->r[k] =
-      sph->sphintdata[i].r0[k] + sph->sphintdata[i].v0[k]*dt;
-    for (k=0; k<ndim; k++) part->v[k] =
-      sph->sphintdata[i].v0[k] + part->a[k]*dt;
+    // Advance particle positions and velocities depending on if we're before 
+    // or after the half-step.
+    if (dn < nstep) {
+      for (k=0; k<ndim; k++) 
+	part->r[k] = sph->sphintdata[i].r0[k] + sph->sphintdata[i].v0[k]*dt;
+      for (k=0; k<ndim; k++) 
+	part->v[k] = sph->sphintdata[i].v0[k] + part->a[k]*dt;
+    }
+    else {
+      for (k=0; k<ndim; k++) 
+	part->v[k] = sph->sphintdata[i].v0[k] + part->a[k]*dt;
+      for (k=0; k<ndim; k++) part->r[k] = sph->sphintdata[i].r0[k] + 
+	0.5*(sph->sphintdata[i].v0[k] + part->v[k])*dt;
+    }
 
     // Integrate time-dependent viscosity
     if (tdavisc != notdav) part->alpha += part->dalphadt*timestep;
@@ -125,7 +133,7 @@ void SphLeapfrogDKD<ndim>::AdvanceParticles
   }
   //---------------------------------------------------------------------------
 
-  timing->EndTimingSection("LFDKD_ADVANCE_PARTICLES");
+  timing->EndTimingSection("SPH_LFDKD_ADVANCE_PARTICLES");
 
   return;
 }
@@ -165,7 +173,7 @@ void SphLeapfrogDKD<ndim>::EndTimestep
   SphParticle<ndim> *part;          // SPH particle pointer
 
   debug2("[SphLeapfrogDKD::EndTimestep]");
-  timing->StartTimingSection("LFDKD_END_TIMESTEP",2);
+  timing->StartTimingSection("SPH_LFDKD_END_TIMESTEP",2);
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,k,nstep,part) shared(n,sph)
@@ -187,7 +195,7 @@ void SphLeapfrogDKD<ndim>::EndTimestep
   }
   //---------------------------------------------------------------------------
 
-  timing->EndTimingSection("LFDKD_END_TIMESTEP");
+  timing->EndTimingSection("SPH_LFDKD_END_TIMESTEP");
 
   return;
 }
@@ -215,7 +223,7 @@ int SphLeapfrogDKD<ndim>::CheckTimesteps
   SphParticle<ndim> *part;          // SPH particle pointer
 
   debug2("[SphLeapfrogDKD::CheckTimesteps]");
-  timing->StartTimingSection("LFDKD_CHECK_TIMESTEPS",2);
+  timing->StartTimingSection("SPH_LFDKD_CHECK_TIMESTEPS",2);
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,level_new,nnewstep,part)\
@@ -243,7 +251,7 @@ int SphLeapfrogDKD<ndim>::CheckTimesteps
   }
   //---------------------------------------------------------------------------
 
-  timing->EndTimingSection("LFDKD_CHECK_TIMESTEPS");
+  timing->EndTimingSection("SPH_LFDKD_CHECK_TIMESTEPS");
 
   return activecount;
 }
