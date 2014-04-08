@@ -171,7 +171,6 @@ void Sph<ndim>::DeleteDeadParticles(void)
   if (Ndead == 0) return;
 
   // Reduce particle counters once dead particles have been removed
-  assert(Nlive + Ndead == Ntot);
   Nsph -= Ndead;
   Ntot -= Ndead;
   for (i=0; i<Nsph; i++) iorder[i] = i;
