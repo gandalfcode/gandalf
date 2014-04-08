@@ -45,6 +45,7 @@
 using namespace std;
 
 
+
 //=============================================================================
 //  SimulationBase::SimulationFactory
 /// Creates a simulation object depending on the dimensionality.
@@ -466,10 +467,14 @@ string SimulationBase::Output(void)
 
     // If simulation is too close to maximum wall-clock time, end 
     // prematurely
-    if (tsnap_wallclock > 0.0 && 
-	2.0*dt_snap_wall > tmax_wallclock - timing->ttot_wall) {
+    if (timing->ttotwall > 0.95*tmax_wallclock) {
       kill_simulation = true;
     }
+    //if (tsnap_wallclock > 0.0 && 
+    //	2.0*dt_snap_wall > tmax_wallclock - timing->ttot_wall) {
+    //kill_simulation = true;
+    //}
+
 
   }
   //---------------------------------------------------------------------------
@@ -608,6 +613,12 @@ void Simulation<ndim>::ProcessParameters(void)
 				      floatparams["gamma_eos"],
 				      floatparams["rho_bary"],
 				      &simunits);
+    else if (gas_eos == "barotropic2")
+      sph->eos = new Barotropic2<ndim>(floatparams["temp0"],
+				       floatparams["mu_bar"],
+				       floatparams["gamma_eos"],
+				       floatparams["rho_bary"],
+				       &simunits);
     else {
       string message = "Unrecognised parameter : gas_eos = " + gas_eos;
       ExceptionHandler::getIstance().raise(message);
@@ -846,6 +857,8 @@ void Simulation<ndim>::ProcessSphParameters(void)
     gas_eos = isothermal;
   else if (stringparams["gas_eos"] == "barotropic")
     gas_eos = barotropic;
+  else if (stringparams["gas_eos"] == "barotropic2")
+    gas_eos = barotropic2;
   else if (stringparams["gas_eos"] == "energy_eqn")
     gas_eos = energy_eqn;
   else if (stringparams["gas_eos"] == "constant_temp")
