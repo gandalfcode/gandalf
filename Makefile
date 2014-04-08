@@ -20,10 +20,10 @@
 #==============================================================================
 
 
-CPP                = g++
+CPP                = icpc
 PYTHON             = python
 F2PY               = f2py
-FFTW               = 0
+FFTW               = 1
 COMPILER_MODE      = FAST
 PRECISION          = DOUBLE
 OPENMP             = 0
