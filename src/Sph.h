@@ -102,17 +102,18 @@ class Sph
 
   // SPH array memory allocation functions
   //---------------------------------------------------------------------------
-  void AllocateMemory(int);
-  void DeallocateMemory(void);
+  virtual void AllocateMemory(int)=0;
+  virtual void DeallocateMemory(void)=0;
   void DeleteDeadParticles(void);
-  void ReorderParticles(void);
+  virtual void ReorderParticles(void)=0;
   void SphBoundingBox(FLOAT *, FLOAT *, int);
   void InitialSmoothingLengthGuess(void);
 
 
   // Functions needed to hide some implementation details
   //---------------------------------------------------------------------------
-  SphParticle<ndim>& GetParticleIPointer(int i) {return sphdata[i];};
+  virtual SphParticle<ndim>& GetParticleIPointer(int i) = 0;
+  virtual SphParticle<ndim>* GetParticlesArray () =0;
 
 
   // SPH particle counters and main particle data array
@@ -148,7 +149,6 @@ class Sph
   FLOAT *rsph;                        ///< Position array (for efficiency)
   SphType sphtype[Nsphtypes];         ///< Array of SPH types
 
-  SphParticle<ndim> *sphdata;         ///< Pointer to particle data
   SphKernel<ndim> *kernp;             ///< Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;      ///< Tabulated version of chosen kernel
   EOS<ndim> *eos;                     ///< Equation-of-state
@@ -175,7 +175,6 @@ class GradhSph: public Sph<ndim>
   using Sph<ndim>::allocated;
   using Sph<ndim>::Nsph;
   using Sph<ndim>::Ntot;
-  using Sph<ndim>::sphdata;
   using Sph<ndim>::eos;
   using Sph<ndim>::h_fac;
   using Sph<ndim>::kernfacsqd;
@@ -190,12 +189,23 @@ class GradhSph: public Sph<ndim>
   using Sph<ndim>::acond;
   using Sph<ndim>::create_sinks;
   using Sph<ndim>::hmin_sink;
+  using Sph<ndim>::Nsphmax;
+  using Sph<ndim>::kernp;
+  using Sph<ndim>::iorder;
+  using Sph<ndim>::rsph;
 
  public:
 
   GradhSph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
            aviscenum, acondenum, tdaviscenum, string, string);
   ~GradhSph();
+
+  virtual SphParticle<ndim>& GetParticleIPointer(int i) {return sphdata[i];};
+  virtual SphParticle<ndim>* GetParticlesArray () {return sphdata;};
+
+  virtual void AllocateMemory(int);
+  virtual void DeallocateMemory(void);
+  virtual void ReorderParticles(void);
 
   int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
@@ -214,6 +224,8 @@ class GradhSph: public Sph<ndim>
   void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &);
 
   kernelclass<ndim> kern;                  ///< SPH kernel
+  GradhSphParticle<ndim> *sphdata;         ///< Pointer to particle data
+
 
 };
 
@@ -247,12 +259,23 @@ class SM2012Sph: public Sph<ndim>
   using Sph<ndim>::acond;
   using Sph<ndim>::create_sinks;
   using Sph<ndim>::hmin_sink;
+  using Sph<ndim>::Nsphmax;
+  using Sph<ndim>::kernp;
+  using Sph<ndim>::iorder;
+  using Sph<ndim>::rsph;
 
  public:
+
+  virtual SphParticle<ndim>& GetParticleIPointer(int i) {return sphdata[i];};
+  virtual SphParticle<ndim>* GetParticlesArray () {return sphdata;};
 
   SM2012Sph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
             aviscenum, acondenum, tdaviscenum, string, string);
   ~SM2012Sph();
+
+  virtual void AllocateMemory(int);
+  virtual void DeallocateMemory(void);
+  virtual void ReorderParticles(void);
 
   int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
@@ -272,6 +295,7 @@ class SM2012Sph: public Sph<ndim>
 
 
   kernelclass<ndim> kern;                  ///< SPH kernel
+  SM2012SphParticle<ndim> *sphdata;         ///< Pointer to particle data
 
 };
 
@@ -305,12 +329,23 @@ class GodunovSph: public Sph<ndim>
   using Sph<ndim>::slope_limiter;
   using Sph<ndim>::create_sinks;
   using Sph<ndim>::hmin_sink;
+  using Sph<ndim>::Nsphmax;
+  using Sph<ndim>::kernp;
+  using Sph<ndim>::iorder;
+  using Sph<ndim>::rsph;
 
  public:
 
   GodunovSph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
              aviscenum, acondenum, tdaviscenum, string, string);
   ~GodunovSph();
+
+  virtual void AllocateMemory(int);
+  virtual void DeallocateMemory(void);
+  virtual void ReorderParticles(void);
+
+  virtual SphParticle<ndim>& GetParticleIPointer(int i) {return sphdata[i];};
+  virtual SphParticle<ndim>* GetParticlesArray () {return sphdata;};
 
   int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
@@ -326,12 +361,13 @@ class GodunovSph: public Sph<ndim>
 			     SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeDirectGravForces(int, int, int *, 
                                SphParticle<ndim> &, SphParticle<ndim> *);
-  void InitialiseRiemannProblem(SphParticle<ndim>, SphParticle<ndim>, FLOAT *,
+  void InitialiseRiemannProblem(GodunovSphParticle<ndim>&, GodunovSphParticle<ndim>&, FLOAT *,
                                 FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT &, 
                                 FLOAT &, FLOAT &, FLOAT &, FLOAT &, FLOAT &);
   void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &);
 
   kernelclass<ndim> kern;                 ///< SPH kernel
+  GodunovSphParticle<ndim> *sphdata;         ///< Pointer to particle data
 
 };
 #endif

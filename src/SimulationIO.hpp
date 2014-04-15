@@ -1668,13 +1668,14 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
   // Rescale all SPH particles
   //---------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
-    for (k=0; k<ndim; k++) sph->sphdata[i].r[k] /= simunits.r.inscale;
-    for (k=0; k<ndim; k++) sph->sphdata[i].v[k] /= simunits.v.inscale;
-    sph->sphdata[i].m /= simunits.m.inscale;
-    sph->sphdata[i].h /= simunits.r.inscale;
-    sph->sphdata[i].u /= simunits.u.inscale;
-    sph->sphdata[i].rho /= simunits.rho.inscale;
-    sph->sphdata[i].dudt /= simunits.dudt.inscale;
+    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (k=0; k<ndim; k++) part.r[k] /= simunits.r.inscale;
+    for (k=0; k<ndim; k++) part.v[k] /= simunits.v.inscale;
+    part.m /= simunits.m.inscale;
+    part.h /= simunits.r.inscale;
+    part.u /= simunits.u.inscale;
+    part.rho /= simunits.rho.inscale;
+    part.dudt /= simunits.dudt.inscale;
   }
 
 

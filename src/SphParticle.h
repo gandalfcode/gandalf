@@ -129,27 +129,6 @@ struct SphParticle : public Particle<ndim>
 
 
 
-
-
-
-  // GradhSph specific variables
-  //-------------------------------------------------------------------------
-  FLOAT invomega;                   ///< grad-h omega/f correction term
-  FLOAT zeta;                       ///< grad-h gravity correction term
-  FLOAT chi;                        ///< grad-h star-gravity correction term
-
-  // SM2012 specific variables
-  //-------------------------------------------------------------------------
-  FLOAT q;                          ///< Internal energy density
-  FLOAT invq;                       ///< 1 / q
-
-  // Godunov specific variables
-  //-------------------------------------------------------------------------
-  FLOAT gradrho[ndim];              ///< Density gradient
-  //FLOAT gradP[ndim];                ///< Pressure gradient
-  //FLOAT gradv[ndim][ndim];          ///< Velocity gradient matrix
-
-
   // SPH particle constructor to initialise all values
   //---------------------------------------------------------------------------
   SphParticle()
@@ -169,28 +148,6 @@ struct SphParticle : public Particle<ndim>
     alpha = 0.0;
     dalphadt = 0.0;
 
-    // Time integration variables
-    //-------------------------------------------------------------------------
-
-
-    // GradhSph specific variables
-    //-------------------------------------------------------------------------
-    invomega = (FLOAT) 0.0;
-    zeta = (FLOAT) 0.0;
-    chi = (FLOAT) 0.0;
-
-    // SM2012 specific variables
-    //-------------------------------------------------------------------------
-    q = (FLOAT) 0.0;
-    invq = (FLOAT) 0.0;
-
-    // Godunov specific variables
-    //-------------------------------------------------------------------------
-    for (int k=0; k<ndim; k++) gradrho[k] = (FLOAT) 0.0;
-    //for (int k=0; k<ndim; k++) gradP[k] = (FLOAT) 0.0;
-    //for (int k=0; k<ndim; k++)
-    //  for (int kk=0; kk<ndim; kk++) gradv[k][kk] = (FLOAT) 0.0;
-
   }
 
 #ifdef MPI_PARALLEL
@@ -209,6 +166,52 @@ struct SphParticle : public Particle<ndim>
 
 };
 
+
+template <int ndim>
+struct GradhSphParticle : public SphParticle<ndim>
+{
+  FLOAT invomega;                   ///< grad-h omega/f correction term
+  FLOAT zeta;                       ///< grad-h gravity correction term
+  FLOAT chi;                        ///< grad-h star-gravity correction term
+
+  GradhSphParticle () {
+    invomega = (FLOAT) 1.0;
+    zeta = (FLOAT) 0.0;
+    chi = (FLOAT) 0.0;
+  }
+
+};
+
+template <int ndim>
+struct SM2012SphParticle : public SphParticle<ndim>
+{
+  FLOAT q;                          ///< Internal energy density
+  FLOAT invq;                       ///< 1 / q
+
+  SM2012SphParticle () {
+  q = (FLOAT) 0.0;
+  invq = (FLOAT) 0.0;
+  }
+
+};
+
+template <int ndim>
+struct GodunovSphParticle : public SphParticle<ndim>
+{
+  FLOAT gradrho[ndim];              ///< Density gradient
+  FLOAT gradP[ndim];                ///< Pressure gradient
+  FLOAT gradv[ndim][ndim];          ///< Velocity gradient matrix
+
+  GodunovSphParticle() {
+    for (int k=0; k<ndim; k++) gradrho[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) gradP[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++)
+      for (int kk=0; kk<ndim; kk++)
+        gradv[k][kk] = (FLOAT) 0.0;
+  }
+
+
+};
 
 //=============================================================================
 //  Structure SphType

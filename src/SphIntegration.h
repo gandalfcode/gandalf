@@ -53,10 +53,10 @@ class SphIntegration
   SphIntegration(DOUBLE, DOUBLE, DOUBLE, eosenum, tdaviscenum);
   ~SphIntegration();
 
-  virtual void AdvanceParticles(int, FLOAT, Sph<ndim> *) = 0;
-  virtual void CorrectionTerms(int, FLOAT, Sph<ndim> *) = 0;
-  virtual void EndTimestep(int, FLOAT, Sph<ndim> *) = 0;
-  virtual int CheckTimesteps(int, int, Sph<ndim> *) = 0;
+  virtual void AdvanceParticles(int, FLOAT, int, SphParticle<ndim> *) = 0;
+  virtual void CorrectionTerms(int, FLOAT, int, SphParticle<ndim> *) = 0;
+  virtual void EndTimestep(int, FLOAT, int, SphParticle<ndim> *) = 0;
+  virtual int CheckTimesteps(int, int, int, SphParticle<ndim> *) = 0;
   virtual DOUBLE Timestep(SphParticle<ndim> &, Sph<ndim> *);
   
   const DOUBLE accel_mult;
@@ -81,7 +81,7 @@ class SphIntegration
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=============================================================================
-template <int ndim>
+template <int ndim, template <int> class ParticleType>
 class SphLeapfrogKDK: public SphIntegration<ndim>
 {
  public:
@@ -93,10 +93,10 @@ class SphLeapfrogKDK: public SphIntegration<ndim>
   SphLeapfrogKDK(DOUBLE, DOUBLE, DOUBLE, eosenum, tdaviscenum);
   ~SphLeapfrogKDK();
 
-  void AdvanceParticles(int, FLOAT, Sph<ndim> *);
-  void CorrectionTerms(int, FLOAT, Sph<ndim> *);
-  void EndTimestep(int, FLOAT, Sph<ndim> *);
-  int CheckTimesteps(int, int, Sph<ndim> *);
+  void AdvanceParticles(int, FLOAT, int, SphParticle<ndim> *);
+  void CorrectionTerms(int, FLOAT, int, SphParticle<ndim> *);
+  void EndTimestep(int, FLOAT, int, SphParticle<ndim> *);
+  int CheckTimesteps(int, int, int, SphParticle<ndim> *);
 
 };
 
@@ -111,7 +111,7 @@ class SphLeapfrogKDK: public SphIntegration<ndim>
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=============================================================================
-template <int ndim>
+template <int ndim, template <int> class ParticleType>
 class SphLeapfrogDKD: public SphIntegration<ndim>
 {
  public:
@@ -123,10 +123,10 @@ class SphLeapfrogDKD: public SphIntegration<ndim>
   SphLeapfrogDKD(DOUBLE, DOUBLE, DOUBLE, eosenum, tdaviscenum);
   ~SphLeapfrogDKD();
 
-  void AdvanceParticles(int, FLOAT, Sph<ndim> *);
-  void CorrectionTerms(int, FLOAT, Sph<ndim> *);
-  void EndTimestep(int, FLOAT, Sph<ndim> *);
-  int CheckTimesteps(int, int, Sph<ndim> *);
+  void AdvanceParticles(int, FLOAT, int, SphParticle<ndim> *);
+  void CorrectionTerms(int, FLOAT, int, SphParticle<ndim> *);
+  void EndTimestep(int, FLOAT, int, SphParticle<ndim> *);
+  int CheckTimesteps(int, int, int, SphParticle<ndim> *);
 
 };
 
@@ -141,7 +141,7 @@ class SphLeapfrogDKD: public SphIntegration<ndim>
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=============================================================================
-template <int ndim>
+template <int ndim, template <int> class ParticleType>
 class SphGodunovIntegration: public SphIntegration<ndim>
 {
  public:
@@ -153,10 +153,10 @@ class SphGodunovIntegration: public SphIntegration<ndim>
   SphGodunovIntegration(DOUBLE, DOUBLE, DOUBLE, eosenum, tdaviscenum);
   ~SphGodunovIntegration();
 
-  void AdvanceParticles(int, FLOAT, Sph<ndim> *);
-  void CorrectionTerms(int, FLOAT, Sph<ndim> *);
-  void EndTimestep(int, FLOAT, Sph<ndim> *);
-  int CheckTimesteps(int, int, Sph<ndim> *);
+  void AdvanceParticles(int, FLOAT, int, SphParticle<ndim> *);
+  void CorrectionTerms(int, FLOAT, int, SphParticle<ndim> *);
+  void EndTimestep(int, FLOAT, int, SphParticle<ndim> *);
+  int CheckTimesteps(int, int, int, SphParticle<ndim> *);
   DOUBLE Timestep(SphParticle<ndim> &, Sph<ndim> *);
 
   static const int vdim = ndim;
