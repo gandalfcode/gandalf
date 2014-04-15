@@ -30,11 +30,10 @@
 #include <math.h>
 #include "Precision.h"
 #include "Exception.h"
-#include "SphNeighbourSearch.h"
-#include "Sph.h"
 #include "Parameters.h"
 #include "InlineFuncs.h"
 #include "SphParticle.h"
+#include "SphNeighbourSearch.h"
 #include "Debug.h"
 #if defined _OPENMP
 #include <omp.h>
@@ -47,8 +46,8 @@ using namespace std;
 //  BinaryTree::BinaryTree
 /// BinaryTree constructor.  Initialises various variables.
 //=============================================================================
-template <int ndim>
-BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux, 
+template <int ndim, template<int> class ParticleType>
+BinaryTree<ndim,ParticleType>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux, 
                              FLOAT kernrangeaux, FLOAT macerroraux, 
                              string gravity_mac_aux, string multipole_aux):
   SphNeighbourSearch<ndim>()
@@ -80,8 +79,8 @@ BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
 //  BinaryTree::~BinaryTree
 /// BinaryTree destructor.  Deallocates tree memory upon object destruction.
 //=============================================================================
-template <int ndim>
-BinaryTree<ndim>::~BinaryTree()
+template <int ndim, template<int> class ParticleType>
+BinaryTree<ndim,ParticleType>::~BinaryTree()
 {
   if (allocated_tree) DeallocateTreeMemory();
 }
@@ -93,8 +92,8 @@ BinaryTree<ndim>::~BinaryTree()
 /// Allocate memory for binary tree as requested.  If more memory is required 
 /// than currently allocated, tree is deallocated and reallocated here.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::AllocateTreeMemory(Sph<ndim> *sph)
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::AllocateTreeMemory(Sph<ndim> *sph)
 {
   int ithread;                      // Thread id number
 
@@ -116,8 +115,8 @@ void BinaryTree<ndim>::AllocateTreeMemory(Sph<ndim> *sph)
       Ngravcellmaxbuf = new int[Nthreads];
       levelneibbuf = new int*[Nthreads];
       activelistbuf = new int*[Nthreads];
-      activepartbuf = new SphParticle<ndim>*[Nthreads];
-      neibpartbuf = new SphParticle<ndim>*[Nthreads];
+      activepartbuf = new ParticleType<ndim>*[Nthreads];
+      neibpartbuf = new ParticleType<ndim>*[Nthreads];
 
       for (ithread=0; ithread<Nthreads; ithread++) {
 	Nneibmaxbuf[ithread] = max(1,4*sph->Ngather);
@@ -125,8 +124,8 @@ void BinaryTree<ndim>::AllocateTreeMemory(Sph<ndim> *sph)
 	Ngravcellmaxbuf[ithread] = max(1,4*sph->Ngather);
 	levelneibbuf[ithread] = new int[Ntotmax];
         activelistbuf[ithread] = new int[Nleafmax];
-	activepartbuf[ithread] = new SphParticle<ndim>[Nleafmax];
-	neibpartbuf[ithread] = new SphParticle<ndim>[Nneibmaxbuf[ithread]];
+	activepartbuf[ithread] = new ParticleType<ndim>[Nleafmax];
+	neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmaxbuf[ithread]];
       }
       allocated_buffer = true;
     }
@@ -143,8 +142,8 @@ void BinaryTree<ndim>::AllocateTreeMemory(Sph<ndim> *sph)
 //  BinaryTree::DeallocateTreeMemory
 /// Deallocates all binary tree memory
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::DeallocateTreeMemory(void)
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::DeallocateTreeMemory(void)
 {
   int ithread;                      // Thread id number
 
@@ -183,8 +182,8 @@ void BinaryTree<ndim>::DeallocateTreeMemory(void)
 /// If OpenMP is activated, the local domain is partitioned into sub-trees 
 /// in order to improve the scalability of building and stocking the tree.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::BuildTree
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::BuildTree
 (bool rebuild_tree,                 ///< Flag to rebuild tree
  int n,                             ///< Integer time
  int ntreebuildstep,                ///< Tree build frequency
@@ -289,8 +288,8 @@ void BinaryTree<ndim>::BuildTree
 /// Compute the maximum size (i.e. no. of levels, cells and leaf cells) of 
 /// the binary tree.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::ComputeTreeSize(void)
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::ComputeTreeSize(void)
 {
   debug2("[BinaryTree::ComputeTreeSize]");
 
@@ -329,8 +328,8 @@ void BinaryTree<ndim>::ComputeTreeSize(void)
 /// Create the raw tree skeleton structure once the tree size is known.
 /// Sets all cell pointer variables and all cell levels.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::CreateTreeStructure(void)
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::CreateTreeStructure(void)
 {
   int c;                            // Dummy id of tree-level, then tree-cell
   int g;                            // Dummy id of grid-cell
@@ -398,8 +397,8 @@ void BinaryTree<ndim>::CreateTreeStructure(void)
 //  BinaryTree::DivideTreeCell
 /// Recursive routine to divide a tree cell into two children cells.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::DivideTreeCell
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::DivideTreeCell
 (int ifirst,                        ///< Aux. id of first particle in cell
  int ilast,                         ///< Aux. id of last particle in cell
  Sph<ndim> *sph,                    ///< Pointer to main SPH object
@@ -513,8 +512,8 @@ void BinaryTree<ndim>::DivideTreeCell
 /// Find median and sort particles in arrays to ensure they are the correct 
 /// side of the division.  Uses the QuickSelect algorithm.
 //=============================================================================
-template <int ndim>
-FLOAT BinaryTree<ndim>::QuickSelect
+template <int ndim, template<int> class ParticleType>
+FLOAT BinaryTree<ndim,ParticleType>::QuickSelect
 (int left,                          ///< Left-most id of particle in array
  int right,                         ///< Right-most id of particle in array
  int jpivot,                        ///< Pivot/median point
@@ -526,7 +525,7 @@ FLOAT BinaryTree<ndim>::QuickSelect
   int jguess;                       // ..
   int jtemp;                        // ..
   FLOAT rpivot;                     // ..
-  SphParticle<ndim> temppart;       // ..
+  ParticleType<ndim> temppart;       // ..
 
 
   // Place all particles left or right of chosen pivot point.
@@ -605,8 +604,8 @@ FLOAT BinaryTree<ndim>::QuickSelect
 /// Find median and sort particles in arrays to ensure they are the correct 
 /// side of the division.  Uses the QuickSelect algorithm.
 //=============================================================================
-template <int ndim>
-FLOAT BinaryTree<ndim>::QuickSelect
+template <int ndim, template<int> class ParticleType>
+FLOAT BinaryTree<ndim,ParticleType>::QuickSelect
 (int left,                          ///< Left-most id of particle in array
  int right,                         ///< Right-most id of particle in array
  int jpivot,                        ///< Pivot/median point
@@ -685,10 +684,10 @@ FLOAT BinaryTree<ndim>::QuickSelect
 //  BinaryTree::StockTree
 /// ..
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::StockTree
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::StockTree
 (BinaryTreeCell<ndim> &cell,       ///< Reference to cell to be stocked
- SphParticle<ndim> *sphdata)        ///< SPH particle data array
+ ParticleType<ndim> *sphdata)        ///< SPH particle data array
 {
   int i;                            // Aux. child cell counter
 
@@ -729,10 +728,10 @@ void BinaryTree<ndim>::StockTree
 /// Calculate the physical properties (e.g. total mass, centre-of-mass, 
 /// opening-distance, etc..) of all cells in the tree.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::StockCellProperties
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::StockCellProperties
 (BinaryTreeCell<ndim> &cell,        ///< Reference to current tree cell
- SphParticle<ndim> *sphdata)        ///< SPH particle data array
+ ParticleType<ndim> *sphdata)        ///< SPH particle data array
 {
   int cc,ccc;                       // Cell counters
   int i;                            // Particle counter
@@ -966,8 +965,8 @@ void BinaryTree<ndim>::StockCellProperties
 //  BinaryTree::ExtrapolateCellProperties
 /// Extrapolate important physical properties of all cells in the tree.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::ExtrapolateCellProperties
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::ExtrapolateCellProperties
 (FLOAT dt)                          ///< Smallest timestep size
 {
   int c;                            // Cell counter
@@ -998,10 +997,10 @@ void BinaryTree<ndim>::ExtrapolateCellProperties
 /// Calculate the physical properties (e.g. total mass, centre-of-mass,
 /// opening-distance, etc..) of all cells in the tree.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::UpdateHmaxValues
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::UpdateHmaxValues
 (BinaryTreeCell<ndim> &cell,        ///< Binary tree cell
- SphParticle<ndim> *sphdata)        ///< SPH particle data array
+ ParticleType<ndim> *sphdata)        ///< SPH particle data array
 {
   int c,cc,ccc;                     // Cell counters
   int i;                            // Particle counter
@@ -1091,8 +1090,8 @@ void BinaryTree<ndim>::UpdateHmaxValues
 /// Loop through all leaf cells in binary tree and update all active 
 /// particle counters.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::UpdateActiveParticleCounters
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::UpdateActiveParticleCounters
 (Sph<ndim> *sph)                    ///< Pointer to main SPH object
 {
   int c;                            // Cell counter
@@ -1135,8 +1134,8 @@ void BinaryTree<ndim>::UpdateActiveParticleCounters
 /// Returns the number (Nactive) and list of ids (activelist) of all active
 /// SPH particles in the given cell.
 //=============================================================================
-template <int ndim>
-int BinaryTree<ndim>::ComputeActiveParticleList
+template <int ndim, template<int> class ParticleType>
+int BinaryTree<ndim,ParticleType>::ComputeActiveParticleList
 (BinaryTreeCell<ndim> *cell,        ///< [in] Pointer to cell
  Sph<ndim> *sph,                    ///< [in] SPH object pointer
  int *activelist)                   ///< [out] List of active particles in cell
@@ -1162,8 +1161,8 @@ int BinaryTree<ndim>::ComputeActiveParticleList
 //  BinaryTree::BoxOverlap
 /// Check if two bounding boxes overlap.  If yes, then returns true.
 //=============================================================================
-template <int ndim>
-bool BinaryTree<ndim>::BoxOverlap
+template <int ndim, template<int> class ParticleType>
+bool BinaryTree<ndim,ParticleType>::BoxOverlap
 (FLOAT box1min[ndim],               ///< Minimum extent of box 1
  FLOAT box1max[ndim],               ///< Maximum extent of box 1
  FLOAT box2min[ndim],               ///< Minimum extent of box 2
@@ -1203,13 +1202,13 @@ bool BinaryTree<ndim>::BoxOverlap
 /// contained in adjacent cells (including diagonal cells).
 /// Wrapper around the true implementation inside BinaryTree
 //=============================================================================
-template <int ndim>
-int BinaryTree<ndim>::ComputeGatherNeighbourList
+template <int ndim, template<int> class ParticleType>
+int BinaryTree<ndim,ParticleType>::ComputeGatherNeighbourList
 (BinaryTreeCell<ndim> *cell,       ///< [in] Pointer to current cell
  int Nneibmax,                      ///< [in] Max. no. of neighbours
  int *neiblist,                     ///< [out] List of neighbour i.d.s
  FLOAT hmax,                        ///< [in] Maximum smoothing length
- SphParticle<ndim> *sphdata)        ///< [in] SPH particle data
+ ParticleType<ndim> *sphdata)        ///< [in] SPH particle data
 {
   int cc;                           // Cell counter
   int i;                            // Particle id
@@ -1303,12 +1302,12 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
 /// If allocated memory array containing neighbour ids (neiblist) overflows, 
 /// return with error code (-1) in order to reallocate more memory.
 //=============================================================================
-template <int ndim>
-int BinaryTree<ndim>::ComputeNeighbourList
+template <int ndim, template<int> class ParticleType>
+int BinaryTree<ndim,ParticleType>::ComputeNeighbourList
 (BinaryTreeCell<ndim> *cell,       ///< [in] Cell pointer
  int Nneibmax,                      ///< [in] Max. no. of neighbours
  int *neiblist,                     ///< [out] List of neighbour i.d.s
- SphParticle<ndim> *sphdata)        ///< [in] SPH particle data
+ ParticleType<ndim> *sphdata)        ///< [in] SPH particle data
 {
   int cc;                           // Cell counter
   int i;                            // Particle id
@@ -1401,8 +1400,8 @@ int BinaryTree<ndim>::ComputeNeighbourList
 /// If any of the interactions list arrays (neiblist,directlist,gravcelllist) 
 /// overflow, return with error code (-1) to reallocate more memory.
 //=============================================================================
-template <int ndim>
-int BinaryTree<ndim>::ComputeGravityInteractionList
+template <int ndim, template<int> class ParticleType>
+int BinaryTree<ndim,ParticleType>::ComputeGravityInteractionList
 (BinaryTreeCell<ndim> *cell,        ///< [in] Pointer to cell
  FLOAT macfactor,                   ///< [in] Gravity MAC particle factor
  int Nneibmax,                      ///< [in] Max. no. of SPH neighbours
@@ -1414,7 +1413,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
  int *neiblist,                     ///< [out] List of SPH neighbour ids
  int *directlist,                   ///< [out] List of direct-sum neighbour ids
  BinaryTreeCell<ndim> **gravcelllist, ///< [out] List of cell ids
- SphParticle<ndim> *sphdata)        ///< [in] SPH particle data
+ ParticleType<ndim> *sphdata)        ///< [in] SPH particle data
 {
   int cc;                           // Cell counter
   int i;                            // Particle id
@@ -1564,8 +1563,8 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
 /// If any of the interactions list arrays (neiblist,directlist,gravcelllist) 
 /// overflow, return with error code (-1) to reallocate more memory.
 //=============================================================================
-template <int ndim>
-int BinaryTree<ndim>::ComputeStarGravityInteractionList
+template <int ndim, template<int> class ParticleType>
+int BinaryTree<ndim,ParticleType>::ComputeStarGravityInteractionList
 (NbodyParticle<ndim> *star,         ///< [in] Nbody particle
  FLOAT macfactor,                   ///< [in] Gravity MAC factor
  int Nneibmax,                      ///< [in] Max. no. of SPH neighbours
@@ -1577,7 +1576,7 @@ int BinaryTree<ndim>::ComputeStarGravityInteractionList
  int *neiblist,                     ///< [out] List of SPH neighbour ids
  int *directlist,                   ///< [out] List of direct-sum neighbour ids
  BinaryTreeCell<ndim> **gravcelllist,  ///< [out] List of cell ids
- SphParticle<ndim> *sphdata)        ///< [in] SPH particle data
+ ParticleType<ndim> *sphdata)        ///< [in] SPH particle data
 {
   int cc;                           // Cell counter
   int i;                            // Particle id
@@ -1696,8 +1695,8 @@ int BinaryTree<ndim>::ComputeStarGravityInteractionList
 /// Compute the force on particle 'parti' due to all cells obtained in the 
 /// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::ComputeCellMonopoleForces
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::ComputeCellMonopoleForces
 (FLOAT &gpot,                         ///< [inout] Grav. potential
  FLOAT agrav[ndim],                   ///< [inout] Acceleration array
  FLOAT rp[ndim],                      ///< [in] Position of point
@@ -1742,8 +1741,8 @@ void BinaryTree<ndim>::ComputeCellMonopoleForces
 /// Compute the force on particle 'parti' due to all cells obtained in the 
 /// gravity tree walk including the quadrupole moment correction term.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::ComputeCellQuadrupoleForces
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::ComputeCellQuadrupoleForces
 (FLOAT &gpot,                         ///< [inout] Grav. potential
  FLOAT agrav[ndim],                   ///< [inout] Acceleration array
  FLOAT rp[ndim],                      ///< [in] Position of point
@@ -1825,13 +1824,13 @@ void BinaryTree<ndim>::ComputeCellQuadrupoleForces
 /// Compute the force on particle 'parti' due to all cells obtained in the 
 /// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::ComputeFastMonopoleForces
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::ComputeFastMonopoleForces
 (int Nactive,                         ///< [in] No. of active particles
  int Ngravcell,                       ///< [in] No. of tree cells in list
  BinaryTreeCell<ndim> **gravcelllist, ///< [in] List of tree cell ids
  BinaryTreeCell<ndim> *cell,          ///< [in] Current cell pointer
- SphParticle<ndim> *activepart)       ///< [inout] Active SPH particle array
+ ParticleType<ndim> *activepart)       ///< [inout] Active SPH particle array
 {
   int cc;                           // Aux. cell counter
   int j;                            // ..
@@ -1897,8 +1896,8 @@ void BinaryTree<ndim>::ComputeFastMonopoleForces
 /// Returns the number of cells containing active particles, 'Nactive', and
 /// the i.d. list of cells contains active particles, 'celllist'
 //=============================================================================
-template <int ndim>
-int BinaryTree<ndim>::ComputeActiveCellList
+template <int ndim, template<int> class ParticleType>
+int BinaryTree<ndim,ParticleType>::ComputeActiveCellList
 (BinaryTreeCell<ndim> **celllist) ///< Cells id array containing active ptcls
 {
   int c;                           // Cell counter
@@ -1919,8 +1918,8 @@ int BinaryTree<ndim>::ComputeActiveCellList
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::UpdateAllSphProperties
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::UpdateAllSphProperties
 (Sph<ndim> *sph,                   ///< [inout] Pointer to main SPH object
  Nbody<ndim> *nbody)               ///> [in] ..
 {
@@ -1953,8 +1952,8 @@ void BinaryTree<ndim>::UpdateAllSphProperties
   FLOAT *r;                        // Positions of neibs
   BinaryTreeCell<ndim> *cell;      // Pointer to binary tree cell
   BinaryTreeCell<ndim> **celllist; // List of binary cell pointers
-  SphParticle<ndim> *activepart;   // ..
-  SphParticle<ndim> *data = sph->sphdata;  // Pointer to SPH particle data
+  ParticleType<ndim> *activepart;   // ..
+  ParticleType<ndim> *data = sph->sphdata;  // Pointer to SPH particle data
 
   int Nneibcount = 0;
   int ithread;
@@ -1982,9 +1981,9 @@ void BinaryTree<ndim>::UpdateAllSphProperties
     Nneibmax = Nneibmaxbuf[ithread];
 
     //int activelist[Nleafmax];
-    //SphParticle<ndim> activepart[Nleafmax];
+    //ParticleType<ndim> activepart[Nleafmax];
     activelist = new int[Nleafmax];
-    activepart = new SphParticle<ndim>[Nleafmax];
+    activepart = new ParticleType<ndim>[Nleafmax];
     //activelist = activelistbuf[ithread];
     //activepart = activepartbuf[ithread];
 
@@ -2156,8 +2155,8 @@ void BinaryTree<ndim>::UpdateAllSphProperties
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::UpdateAllSphHydroForces
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::UpdateAllSphHydroForces
 (Sph<ndim> *sph,                   ///< Pointer to SPH object
  Nbody<ndim> *nbody)               ///< Pointer to N-body object
 {
@@ -2183,13 +2182,13 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
   FLOAT *invdrmag;                 // Array of 1/drmag between particles
   BinaryTreeCell<ndim> *cell;      // Pointer to binary tree cell
   BinaryTreeCell<ndim> **celllist; // List of binary tree pointers
-  SphParticle<ndim> *data = sph->sphdata;   // Pointer to SPH particle data
+  ParticleType<ndim> *data = sph->sphdata;   // Pointer to SPH particle data
 
   int ithread;
   int Nneibcount = 0;
   int *levelneib;
-  SphParticle<ndim> *activepart;
-  SphParticle<ndim> *neibpart;
+  ParticleType<ndim> *activepart;
+  ParticleType<ndim> *neibpart;
 
   debug2("[BinaryTree::UpdateAllSphHydroForces]");
   timing->StartTimingSection("SPH_HYDRO_FORCES",2);
@@ -2270,9 +2269,9 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
         dr = new FLOAT[Nneibmax*ndim];
         drmag = new FLOAT[Nneibmax];
         invdrmag = new FLOAT[Nneibmax];
-        neibpartbuf[ithread] = new SphParticle<ndim>[Nneibmax]; 
+        neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax]; 
 	neibpart = neibpartbuf[ithread];
-	//neibpart = new SphParticle<ndim>[Nneibmax];
+	//neibpart = new ParticleType<ndim>[Nneibmax];
         Nneib = ComputeNeighbourList(cell,Nneibmax,neiblist,sph->sphdata);
       };
 
@@ -2394,8 +2393,8 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::UpdateAllSphForces
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::UpdateAllSphForces
 (Sph<ndim> *sph,                    ///< Pointer to SPH object
  Nbody<ndim> *nbody)                ///< Pointer to N-body object
 {
@@ -2429,8 +2428,8 @@ void BinaryTree<ndim>::UpdateAllSphForces
   BinaryTreeCell<ndim> *cell;       // Pointer to binary tree cell
   BinaryTreeCell<ndim> **celllist;  // List of pointers to binary tree cells
   BinaryTreeCell<ndim> **gravcelllist; // List of pointers to grav. cells
-  SphParticle<ndim> *activepart;    // ..
-  SphParticle<ndim> *neibpart;      // ..
+  ParticleType<ndim> *activepart;    // ..
+  ParticleType<ndim> *neibpart;      // ..
 
   int Nactivecount = 0;
   int Ncellcount = 0;
@@ -2536,8 +2535,8 @@ void BinaryTree<ndim>::UpdateAllSphForces
 	interactlist = new int[Nneibmax];
 	directlist = new int[Ndirectmax];
 	gravcelllist = new BinaryTreeCell<ndim>*[Ngravcellmax];
-	neibpart = new SphParticle<ndim>[Nneibmax];
-	neibpartbuf[ithread] = new SphParticle<ndim>[Nneibmax]; 
+	neibpart = new ParticleType<ndim>[Nneibmax];
+	neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax]; 
 	neibpart = neibpartbuf[ithread];
 	okflag = ComputeGravityInteractionList(cell,macfactor,
 					       Nneibmax,Ndirectmax,
@@ -2676,8 +2675,8 @@ void BinaryTree<ndim>::UpdateAllSphForces
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::UpdateAllSphGravForces
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::UpdateAllSphGravForces
 (Sph<ndim> *sph,                    ///< Pointer to SPH object
  Nbody<ndim> *nbody)                ///< Pointer to N-body object
 {
@@ -2711,8 +2710,8 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
   BinaryTreeCell<ndim> *cell;       // Pointer to binary tree cell
   BinaryTreeCell<ndim> **celllist;  // List of pointers to binary tree cells
   BinaryTreeCell<ndim> **gravcelllist; // List of pointers to grav. cells
-  SphParticle<ndim> *activepart;    // ..
-  SphParticle<ndim> *neibpart;      // ..
+  ParticleType<ndim> *activepart;    // ..
+  ParticleType<ndim> *neibpart;      // ..
 
   int Nactivecount = 0;
   int Ncellcount = 0;
@@ -2819,7 +2818,7 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
         interactlist = new int[Nneibmax];
         directlist = new int[Ndirectmax];
         gravcelllist = new BinaryTreeCell<ndim>*[Ngravcellmax];
-        neibpartbuf[ithread] = new SphParticle<ndim>[Nneibmax]; 
+        neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax]; 
 	neibpart = neibpartbuf[ithread];
         okflag = ComputeGravityInteractionList(cell,macfactor,
 					       Nneibmax,Ndirectmax,
@@ -2950,8 +2949,8 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
 /// Calculate the gravitational acceleration on all star particles due to 
 /// all gas particles via the tree.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::UpdateAllStarGasForces
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::UpdateAllStarGasForces
 (Sph<ndim> *sph,                    ///< Pointer to SPH object
  Nbody<ndim> *nbody)
 {
@@ -3100,8 +3099,8 @@ void BinaryTree<ndim>::UpdateAllStarGasForces
 //  BinaryTree::UpdateAllSphDerivatives
 /// ..
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::UpdateAllSphDerivatives(Sph<ndim> *sph)
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::UpdateAllSphDerivatives(Sph<ndim> *sph)
 {
   return;
 }
@@ -3115,8 +3114,8 @@ void BinaryTree<ndim>::UpdateAllSphDerivatives(Sph<ndim> *sph)
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::UpdateAllSphDudt(Sph<ndim> *sph)
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::UpdateAllSphDudt(Sph<ndim> *sph)
 {
   return;
 }
@@ -3128,8 +3127,8 @@ void BinaryTree<ndim>::UpdateAllSphDudt(Sph<ndim> *sph)
 //  BinaryTree::ValidateTree
 /// Performs various sanity and validation checks on binary tree structure.
 //=============================================================================
-template <int ndim>
-void BinaryTree<ndim>::ValidateTree
+template <int ndim, template<int> class ParticleType>
+void BinaryTree<ndim,ParticleType>::ValidateTree
 (Sph<ndim> *sph)                    ///< Pointer to SPH class
 {
   bool overlap_flag = false;        // Flag if cell bounding boxes overlap
@@ -3294,6 +3293,6 @@ void BinaryTree<ndim>::ValidateTree
 
 
 
-template class BinaryTree<1>;
-template class BinaryTree<2>;
-template class BinaryTree<3>;
+template class BinaryTree<1,SphParticle>;
+template class BinaryTree<2,SphParticle>;
+template class BinaryTree<3,SphParticle>;

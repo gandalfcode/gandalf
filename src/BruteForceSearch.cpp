@@ -43,8 +43,8 @@ using namespace std;
 //  BruteForceSearch::BruteForceSearch
 /// BruteForceSearch class constructor
 //=============================================================================
-template <int ndim>
-BruteForceSearch<ndim>::BruteForceSearch()
+template <int ndim, template<int> class ParticleType>
+BruteForceSearch<ndim,ParticleType>::BruteForceSearch()
 {
 }
 
@@ -54,8 +54,8 @@ BruteForceSearch<ndim>::BruteForceSearch()
 //  BruteForceSearch::~BruteForceSearch
 /// BruteForceSearch class destructor
 //=============================================================================
-template <int ndim>
-BruteForceSearch<ndim>::~BruteForceSearch()
+template <int ndim, template<int> class ParticleType>
+BruteForceSearch<ndim,ParticleType>::~BruteForceSearch()
 {
 }
 
@@ -67,8 +67,8 @@ BruteForceSearch<ndim>::~BruteForceSearch()
 /// we chose to delete any dead SPH particles here to be consistent with 
 /// the tree neighbour search.
 //=============================================================================
-template <int ndim>
-void BruteForceSearch<ndim>::BuildTree
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::BuildTree
 (bool rebuild_tree, int n, int ntreebuildstep, int ntreestockstep,
  FLOAT timestep, Sph<ndim> *sph)
 {
@@ -82,8 +82,8 @@ void BruteForceSearch<ndim>::BuildTree
 //  BruteForceSearch::UpdateActiveParticleCounters
 /// For Brute Force neighbour searching, there are no counters.
 //=============================================================================
-template <int ndim>
-void BruteForceSearch<ndim>::UpdateActiveParticleCounters(Sph<ndim> *sph)
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::UpdateActiveParticleCounters(Sph<ndim> *sph)
 {
   return;
 }
@@ -96,8 +96,8 @@ void BruteForceSearch<ndim>::UpdateActiveParticleCounters(Sph<ndim> *sph)
 /// forces) for all active SPH particle using neighbour lists generated 
 /// using brute force (i.e. direct summation).
 //=============================================================================
-template <int ndim>
-void BruteForceSearch<ndim>::UpdateAllSphProperties
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
 (Sph<ndim> *sph,                    ///< [inout] Pointer to SPH object
  Nbody<ndim> *nbody)                ///< [in] Pointer to N-body object
 {
@@ -183,8 +183,8 @@ void BruteForceSearch<ndim>::UpdateAllSphProperties
 /// forces) for all active SPH particle using neighbour lists generated 
 /// using brute force (i.e. direct summation).
 //=============================================================================
-template <int ndim>
-void BruteForceSearch<ndim>::UpdateAllSphHydroForces
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
 (Sph<ndim> *sph,                      ///< [inout] Pointer to SPH object
  Nbody<ndim> *nbody)                  ///< [in] Point to N-body object
 {
@@ -275,8 +275,8 @@ void BruteForceSearch<ndim>::UpdateAllSphHydroForces
 //  BruteForceSearch::UpdateAllSphForces
 /// Empty function for now
 //=============================================================================
-template <int ndim>
-void BruteForceSearch<ndim>::UpdateAllSphForces
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
 (Sph<ndim> *sph,                      ///< [inout] Pointer to SPH object
  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
@@ -341,8 +341,8 @@ void BruteForceSearch<ndim>::UpdateAllSphForces
 /// forces) for all active SPH particle using neighbour lists generated 
 /// using brute force (i.e. direct summation).
 //=============================================================================
-template <int ndim>
-void BruteForceSearch<ndim>::UpdateAllSphGravForces
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
 (Sph<ndim> *sph,                      ///< [inout] Pointer to SPH object
  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
@@ -404,8 +404,8 @@ void BruteForceSearch<ndim>::UpdateAllSphGravForces
 /// Compute all SPH derivatives required for 2nd-order Riemann solver in 
 /// Godunov SPH method.
 //=============================================================================
-template <int ndim>
-void BruteForceSearch<ndim>::UpdateAllSphDerivatives
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::UpdateAllSphDerivatives
 (Sph<ndim> *sph)                      ///< [inout] Pointer to SPH object
 {
   int i,j,k;                          // Particle and dimension counters
@@ -481,8 +481,8 @@ void BruteForceSearch<ndim>::UpdateAllSphDerivatives
 //  BruteForceSearch::UpdateAllSphDudt
 /// Compute the compressional heating rate (dudt) for all active particles.
 //=============================================================================
-template <int ndim>
-void BruteForceSearch<ndim>::UpdateAllSphDudt
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::UpdateAllSphDudt
 (Sph<ndim> *sph)                      ///< [inout] Pointer to SPH object
 {
   int i,j,k;                          // Particle and dimension counters
@@ -570,8 +570,8 @@ void BruteForceSearch<ndim>::UpdateAllSphDudt
 //  BruteForceSearch::UpdateAllStarGasForces
 /// ..
 //=============================================================================
-template <int ndim>
-void BruteForceSearch<ndim>::UpdateAllStarGasForces
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
 (Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
  Nbody<ndim> *nbody)                  ///< [inout] Pointer to N-body object
 {
@@ -613,8 +613,8 @@ void BruteForceSearch<ndim>::UpdateAllStarGasForces
 //  BruteForceSearch::FindGhostParticlesToExport
 /// Compute on behalf of the MpiControl class the ghost particles we need to export to other nodes
 //=============================================================================
-template <int ndim>
-void BruteForceSearch<ndim>::FindGhostParticlesToExport(
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::FindGhostParticlesToExport(
     Sph<ndim>* sph,    ///< [in] Pointer to sph class
     std::vector<std::vector<SphParticle<ndim>* > >& particles_to_export_per_node, ///< [inout] Vector that will be filled with values
     const std::vector<int>& overlapping_nodes, ///< [in] Vector containing which nodes overlap our hbox
@@ -640,8 +640,8 @@ void BruteForceSearch<ndim>::FindGhostParticlesToExport(
 /// Compute on behalf of the MpiControl class the particles that are outside the
 /// domain after a load balancing and need to be transferred to other nodes
 //=============================================================================
-template <int ndim>
-void BruteForceSearch<ndim>::FindParticlesToTransfer(
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::FindParticlesToTransfer(
     Sph<ndim>* sph,    ///< [in] Pointer to sph class
     std::vector<std::vector<int> >& particles_to_export, ///< [inout] Vector that for each node gives the list of particles to export
     std::vector<int>& all_particles_to_export,  ///< [inout] Vector containing all the particles that will be exported by this processor
@@ -668,6 +668,6 @@ void BruteForceSearch<ndim>::FindParticlesToTransfer(
 
 #endif
 
-template class BruteForceSearch<1>;
-template class BruteForceSearch<2>;
-template class BruteForceSearch<3>;
+template class BruteForceSearch<1,SphParticle>;
+template class BruteForceSearch<2,SphParticle>;
+template class BruteForceSearch<3,SphParticle>;

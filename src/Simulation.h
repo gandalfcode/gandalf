@@ -307,8 +307,8 @@ class Simulation : public SimulationBase
   NbodySystemTree<ndim> nbodytree;    ///< N-body tree to create sub-systems
   Sinks<ndim> sinks;                  ///< Sink particle object
   Sph<ndim> *sph;                     ///< SPH algorithm pointer
-  SphIntegration<ndim> *sphint;       ///< SPH Integration scheme pointer
   SphNeighbourSearch<ndim> *sphneib;  ///< SPH Neighbour scheme pointer
+  SphIntegration<ndim> *sphint;       ///< SPH Integration scheme pointer=
 #ifdef MPI_PARALLEL
   MpiControl<ndim> mpicontrol;        ///< MPI control object
   Ghosts<ndim>* MpiGhosts;            ///< MPI ghost particle object
@@ -341,7 +341,6 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::nbodytree;
   using Simulation<ndim>::sphint;
   using Simulation<ndim>::uint;
-  using Simulation<ndim>::sphneib;
   using Simulation<ndim>::LocalGhosts;
   using Simulation<ndim>::simbox;
   using Simulation<ndim>::simunits;
@@ -377,6 +376,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
   using Simulation<ndim>::tmax_wallclock;
+  using Simulation<ndim>::sphneib;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
   using Simulation<ndim>::MpiGhosts;
@@ -420,7 +420,6 @@ class GradhSphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::nbodytree;
   using Simulation<ndim>::sphint;
   using Simulation<ndim>::uint;
-  using Simulation<ndim>::sphneib;
   using Simulation<ndim>::LocalGhosts;
   using Simulation<ndim>::simbox;
   using Simulation<ndim>::simunits;
@@ -454,6 +453,7 @@ class GradhSphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::ndiagstep;
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
+  using SphSimulation<ndim>::sphneib;
   using SphSimulation<ndim>::tmax_wallclock;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
@@ -493,7 +493,6 @@ class SM2012SphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::nbodytree;
   using Simulation<ndim>::sphint;
   using Simulation<ndim>::uint;
-  using Simulation<ndim>::sphneib;
   using Simulation<ndim>::LocalGhosts;
   using Simulation<ndim>::simbox;
   using Simulation<ndim>::simunits;
@@ -528,6 +527,7 @@ class SM2012SphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::ndiagstep;
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
+  using SphSimulation<ndim>::sphneib;
   using SphSimulation<ndim>::tmax_wallclock;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;

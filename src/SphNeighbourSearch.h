@@ -122,12 +122,13 @@ class MpiNode;
 #endif
 
 
+
 //=============================================================================
 //  Class BruteForceSearch
 /// Class for computing SPH neighbour lists using brute force only 
 /// (i.e. direct summation over all particles).
 //=============================================================================
-template <int ndim>
+template <int ndim, template<int> class ParticleType>
 class BruteForceSearch: public SphNeighbourSearch<ndim>
 {
   using SphNeighbourSearch<ndim>::neibcheck;
@@ -148,7 +149,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
   void UpdateActiveParticleCounters(Sph<ndim> *);
   void UpdateAllStarGasForces(Sph<ndim> *, Nbody<ndim> *);
 #if defined MPI_PARALLEL
-  void FindGhostParticlesToExport(Sph<ndim>* sph, std::vector<std::vector<SphParticle<ndim>* > >&,
+  void FindGhostParticlesToExport(Sph<ndim>* sph, std::vector<std::vector<ParticleType<ndim>* > >&,
       const std::vector<int>&, MpiNode<ndim>*);
   void FindParticlesToTransfer(Sph<ndim>* sph, std::vector<std::vector<int> >& particles_to_export,
       std::vector<int>& all_particles_to_export, const std::vector<int>& potential_nodes, MpiNode<ndim>* mpinodes);
@@ -165,7 +166,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
 /// \author  D. A. Hubber, O. Lomax, A. P. Whitworth
 /// \date    08/01/2014
 //=============================================================================
-template <int ndim>
+template <int ndim, template<int> class ParticleType>
 class BinaryTree: public SphNeighbourSearch<ndim>
 {
  public:
@@ -200,29 +201,29 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   //void ExtrapolateCellProperties(BinaryTreeCell<ndim> &, FLOAT);
   void ExtrapolateCellProperties(FLOAT);
   FLOAT QuickSelect(int, int, int, int, Sph<ndim> *);
-  void StockTree(BinaryTreeCell<ndim> &, SphParticle<ndim> *);
-  void StockCellProperties(BinaryTreeCell<ndim> &, SphParticle<ndim> *);
-  void UpdateHmaxValues(BinaryTreeCell<ndim> &, SphParticle<ndim> *);
+  void StockTree(BinaryTreeCell<ndim> &, ParticleType<ndim> *);
+  void StockCellProperties(BinaryTreeCell<ndim> &, ParticleType<ndim> *);
+  void UpdateHmaxValues(BinaryTreeCell<ndim> &, ParticleType<ndim> *);
   int ComputeActiveCellList(BinaryTreeCell<ndim> **);
   int ComputeActiveParticleList(BinaryTreeCell<ndim> *, Sph<ndim> *, int *);
   int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int *, 
-                                 FLOAT, SphParticle<ndim> *);
+                                 FLOAT, ParticleType<ndim> *);
   int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int *, 
-                           SphParticle<ndim> *);
+                           ParticleType<ndim> *);
   int ComputeGravityInteractionList(BinaryTreeCell<ndim> *, FLOAT, int, int,  
                                     int, int &, int &, int &, int *, int *,
                                     BinaryTreeCell<ndim> **, 
-				    SphParticle<ndim> *);
+				    ParticleType<ndim> *);
   int ComputeStarGravityInteractionList(NbodyParticle<ndim> *, FLOAT, int, int,
 					int, int &, int &, int &, int *, int *,
 					BinaryTreeCell<ndim> **, 
-					SphParticle<ndim> *);
+					ParticleType<ndim> *);
   void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, 
 				 BinaryTreeCell<ndim> **);
   void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, 
 				   BinaryTreeCell<ndim> **);
   void ComputeFastMonopoleForces(int, int, BinaryTreeCell<ndim> **, 
-				 BinaryTreeCell<ndim> *, SphParticle<ndim> *);
+				 BinaryTreeCell<ndim> *, ParticleType<ndim> *);
 #if defined(VERIFY_ALL)
   void ValidateTree(Sph<ndim> *);
 #endif
@@ -266,8 +267,8 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   int *Ngravcellmaxbuf;
   int **activelistbuf;
   int **levelneibbuf;
-  SphParticle<ndim> **neibpartbuf;   // Local copy of neighbouring ptcls
-  SphParticle<ndim> **activepartbuf; // Local copy of SPH particle  
+  ParticleType<ndim> **neibpartbuf;   // Local copy of neighbouring ptcls
+  ParticleType<ndim> **activepartbuf; // Local copy of SPH particle  
 
 
 };

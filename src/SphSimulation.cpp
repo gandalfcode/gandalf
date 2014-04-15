@@ -98,28 +98,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
   }
   
   
-  // Create neighbour searching object based on chosen method in params file
-  //-------------------------------------------------------------------------
-  if (stringparams["neib_search"] == "bruteforce")
-    sphneib = new BruteForceSearch<ndim>;
-  else if (stringparams["neib_search"] == "tree") {
-    sphneib = new BinaryTree<ndim>(intparams["Nleafmax"],
-				   floatparams["thetamaxsqd"],
-				   sph->kernp->kernrange,
-                                   floatparams["macerror"],
-				   stringparams["gravity_mac"],
-				   stringparams["multipole"]);
-  }
-  else {
-    string message = "Unrecognised parameter : neib_search = " 
-      + simparams->stringparams["neib_search"];
-    ExceptionHandler::getIstance().raise(message);
-  }
-#if defined MPI_PARALLEL
-  mpicontrol.SetNeibSearch(sphneib);
-#endif
-  
-
   // Process all N-body parameters and set-up main N-body objects
   this->ProcessNbodyParameters();
 
