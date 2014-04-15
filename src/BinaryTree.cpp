@@ -247,11 +247,7 @@ void BinaryTree<ndim>::BuildTree
     
     // Recursively build tree from root node down
     DivideTreeCell(0,Ntot-1,sph,tree[0]);
-      
-#ifdef REORDER_PARTICLES
-    for (i=0; i<sph->Nsph; i++)
-      sph->sphintdata[i].part = &(sph->sphdata[i]);
-#endif
+
 
 #if defined(VERIFY_ALL)
     ValidateTree(sph);
@@ -531,7 +527,6 @@ FLOAT BinaryTree<ndim>::QuickSelect
   int jtemp;                        // ..
   FLOAT rpivot;                     // ..
   SphParticle<ndim> temppart;       // ..
-  SphIntParticle<ndim> tempintpart; // ..
 
 
   // Place all particles left or right of chosen pivot point.
@@ -547,9 +542,7 @@ FLOAT BinaryTree<ndim>::QuickSelect
     temppart = sph->sphdata[jguess];
     sph->sphdata[jguess] = sph->sphdata[right];
     sph->sphdata[right] = temppart;
-    tempintpart = sph->sphintdata[jguess];
-    sph->sphintdata[jguess] = sph->sphintdata[right];
-    sph->sphintdata[right] = tempintpart;
+    sph->sphdata[jguess] = sph->sphdata[right];
 
     //jtemp = ids[jguess];
     //ids[jguess] = ids[right];
@@ -565,9 +558,7 @@ FLOAT BinaryTree<ndim>::QuickSelect
 	temppart = sph->sphdata[j];
 	sph->sphdata[j] = sph->sphdata[jguess];
 	sph->sphdata[jguess] = temppart;
-	tempintpart = sph->sphintdata[j];
-	sph->sphintdata[j] = sph->sphintdata[jguess];
-	sph->sphintdata[jguess] = tempintpart;
+	sph->sphdata[j] = sph->sphdata[jguess];
 	jguess++;
 
 	//jtemp = ids[j];
@@ -584,9 +575,7 @@ FLOAT BinaryTree<ndim>::QuickSelect
     temppart = sph->sphdata[right];
     sph->sphdata[right] = sph->sphdata[jguess];
     sph->sphdata[jguess] = temppart;
-    tempintpart = sph->sphintdata[right];
-    sph->sphintdata[right] = sph->sphintdata[jguess];
-    sph->sphintdata[jguess] = tempintpart;
+    sph->sphdata[right] = sph->sphdata[jguess];
 
     //jtemp = ids[right];
     //ids[right] = ids[jguess];

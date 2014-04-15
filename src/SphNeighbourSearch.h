@@ -42,18 +42,6 @@
 using namespace std;
 
 
-//=============================================================================
-//  Structure GridCell
-/// Neighbour grid cell data structure
-//=============================================================================
-struct GridCell {
-  int Nactive;                      ///< No. of active particles in grid cell
-  int Nptcls;                       ///< Total no. of particles in grid cell
-  int ifirst;                       ///< i.d. of first particle in cell
-  int ilast;                        ///< i.d. of last particle in cell
-};
-
-
 
 //=============================================================================
 //  Structure BinaryTreeCell
@@ -165,69 +153,6 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
   void FindParticlesToTransfer(Sph<ndim>* sph, std::vector<std::vector<int> >& particles_to_export,
       std::vector<int>& all_particles_to_export, const std::vector<int>& potential_nodes, MpiNode<ndim>* mpinodes);
 #endif
-};
-
-
-
-//=============================================================================
-//  Class GridSearch
-/// Class for computing SPH neighbour lists using a uniform grid.  The size 
-/// of the grid is the maximum kernel extent (e.g. 2*h_max for the M4 kernel)
-/// multiplied by some tolerance.
-//=============================================================================
-template <int ndim>
-class GridSearch: public SphNeighbourSearch<ndim>
-{
-  using SphNeighbourSearch<ndim>::neibcheck;
-  using SphNeighbourSearch<ndim>::timing;
-
- public:
-
-  GridSearch();
-  ~GridSearch();
-
-  void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *);
-  void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphGravForces(Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphDudt(Sph<ndim> *);
-  void UpdateAllSphDerivatives(Sph<ndim> *);
-  void UpdateActiveParticleCounters(Sph<ndim> *);
-  void UpdateAllStarGasForces(Sph<ndim> *, Nbody<ndim> *);
-
-  // Additional functions for grid neighbour search
-  //---------------------------------------------------------------------------
-  void AllocateGridMemory(int);
-  void DeallocateGridMemory(void);
-  void CreateGrid(Sph<ndim> *);
-  int ComputeParticleGridCell(FLOAT *);
-  void ComputeCellCoordinate(int, int *);
-  int ComputeActiveCellList(int *);
-  int ComputeActiveParticleList(int, int *, Sph<ndim> *);
-  int ComputeNeighbourList(int, int *);
-  int FindSplitAxis(int);
-#if defined(VERIFY_ALL)
-  void ValidateGrid(void);
-#endif
-
-  // Additional variables for grid
-  //---------------------------------------------------------------------------
-  bool allocated_grid;              ///< Are grid arrays allocated?
-  int Ncell;                        ///< Current no. of grid cells
-  int Ncellmax;                     ///< Max. allowed no. of grid cells
-  int Ngrid[ndim];                  ///< No. of cells in each dimension
-  int Noccupymax;                   ///< Max. occupancy of all cells
-  int Nlistmax;                     ///< Max. length of neighbour list
-  int Nsph;                         ///< Total no. of points/ptcls in grid
-  int Ntot;                         ///< No. of current points in list
-  int Ntotmax;                      ///< Max. no. of points in list
-  int *inext;                       ///< Linked list for grid search
-  FLOAT dx_grid;                    ///< Grid spacing
-  FLOAT rmin[ndim];                 ///< Minimum extent of bounding box
-  FLOAT rmax[ndim];                 ///< Maximum extent of bounding box
-  GridCell *grid;                   ///< Main grid array
-
 };
 
 

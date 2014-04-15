@@ -47,9 +47,9 @@ class EnergyEquation
   EnergyEquation(DOUBLE);
   ~EnergyEquation();
 
-  virtual void EnergyIntegration(int, int, SphIntParticle<ndim> *, FLOAT) = 0;
-  virtual void EnergyCorrectionTerms(int, int, SphIntParticle<ndim> *, FLOAT) = 0;
-  virtual void EndTimestep(int, int, FLOAT, SphIntParticle<ndim> *) = 0;
+  virtual void EnergyIntegration(int, int, SphParticle<ndim> *, FLOAT) = 0;
+  virtual void EnergyCorrectionTerms(int, int, SphParticle<ndim> *, FLOAT) = 0;
+  virtual void EndTimestep(int, int, FLOAT, SphParticle<ndim> *) = 0;
   virtual DOUBLE Timestep(SphParticle<ndim> &) = 0;
 
   const DOUBLE energy_mult;
@@ -74,9 +74,9 @@ class EnergyPEC: public EnergyEquation<ndim>
   EnergyPEC(DOUBLE);
   ~EnergyPEC();
 
-  void EnergyIntegration(int, int, SphIntParticle<ndim> *, FLOAT);
-  void EnergyCorrectionTerms(int, int, SphIntParticle<ndim> *, FLOAT);
-  void EndTimestep(int, int, FLOAT, SphIntParticle<ndim> *);
+  void EnergyIntegration(int, int, SphParticle<ndim> *, FLOAT);
+  void EnergyCorrectionTerms(int, int, SphParticle<ndim> *, FLOAT);
+  void EndTimestep(int, int, FLOAT, SphParticle<ndim> *);
   DOUBLE Timestep(SphParticle<ndim> &);
 
 };
@@ -96,9 +96,9 @@ class EnergyLeapfrogDKD: public EnergyEquation<ndim>
   EnergyLeapfrogDKD(DOUBLE);
   ~EnergyLeapfrogDKD();
 
-  void EnergyIntegration(int, int, SphIntParticle<ndim> *, FLOAT);
-  void EnergyCorrectionTerms(int, int, SphIntParticle<ndim> *, FLOAT);
-  void EndTimestep(int, int, FLOAT, SphIntParticle<ndim> *);
+  void EnergyIntegration(int, int, SphParticle<ndim> *, FLOAT);
+  void EnergyCorrectionTerms(int, int, SphParticle<ndim> *, FLOAT);
+  void EndTimestep(int, int, FLOAT, SphParticle<ndim> *);
   DOUBLE Timestep(SphParticle<ndim> &);
 
 };
@@ -117,9 +117,9 @@ class EnergyGodunovIntegration: public EnergyEquation<ndim>
   EnergyGodunovIntegration(DOUBLE);
   ~EnergyGodunovIntegration();
 
-  void EnergyIntegration(int, int, SphIntParticle<ndim> *, FLOAT);
-  void EnergyCorrectionTerms(int, int, SphIntParticle<ndim> *, FLOAT);
-  void EndTimestep(int, int, FLOAT, SphIntParticle<ndim> *);
+  void EnergyIntegration(int, int, SphParticle<ndim> *, FLOAT);
+  void EnergyCorrectionTerms(int, int, SphParticle<ndim> *, FLOAT);
+  void EndTimestep(int, int, FLOAT, SphParticle<ndim> *);
   DOUBLE Timestep(SphParticle<ndim> &);
 
 };

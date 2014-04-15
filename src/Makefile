@@ -163,9 +163,13 @@ endif
 SWIG_HEADERS = Simulation.i
 WRAP_OBJ = Simulation_wrap.o
 OBJ = Parameters.o SimUnits.o 
-OBJ += Simulation.o SphSimulation.o GodunovSphSimulation.o NbodySimulation.o
+OBJ += Simulation.o 
+OBJ += SphSimulation.o Sph.o
+OBJ += GradhSphSimulation.o GradhSph.o
+OBJ += GodunovSphSimulation.o GodunovSph.o
+OBJ += SM2012SphSimulation.o SM2012Sph.o
+OBJ += NbodySimulation.o
 OBJ += M4Kernel.o QuinticKernel.o GaussianKernel.o TabulatedKernel.o
-OBJ += Sph.o GradhSph.o SM2012Sph.o GodunovSph.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o SphLeapfrogDKD.o 
 OBJ += SphGodunovIntegration.o EnergyGodunovIntegration.o RiemannSolver.o
 #OBJ += SphNeighbourSearch.o 

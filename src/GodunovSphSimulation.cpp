@@ -51,6 +51,91 @@ template class GodunovSphSimulation<3>;
 
 
 
+//=============================================================================
+//  GodunovSphSimulation::ProcessSphParameters
+/// Process parameter particular to setting up a Godunov SPH simulation object.
+//=============================================================================
+template <int ndim>
+void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
+{
+  aviscenum avisc;                  // Artificial viscosity enum
+  acondenum acond;                  // Artificial conductivity enum
+  eosenum gas_eos;                  // Gas EOS enum
+  tdaviscenum tdavisc;              // Time-dependent viscosity enum
+
+  map<string, int> &intparams = simparams->intparams;
+  map<string, float> &floatparams = simparams->floatparams;
+  map<string, string> &stringparams = simparams->stringparams;
+  string KernelName = stringparams["kernel"];
+
+  // Create SPH object based on chosen method in params file
+  //---------------------------------------------------------------------------
+  if (intparams["tabulated_kernel"] == 1) {
+    sph = new GodunovSph<ndim, TabulatedKernel> 
+      (intparams["hydro_forces"], intparams["self_gravity"],
+       floatparams["alpha_visc"], floatparams["beta_visc"],
+       floatparams["h_fac"], floatparams["h_converge"], 
+       avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
+  }
+  else if (intparams["tabulated_kernel"] == 0) {
+    if (KernelName == "gaussian") {
+      sph = new GodunovSph<ndim, GaussianKernel> 
+        (intparams["hydro_forces"], intparams["self_gravity"],
+         floatparams["alpha_visc"], floatparams["beta_visc"],
+         floatparams["h_fac"], floatparams["h_converge"],
+         avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
+    }
+    else {
+      string message = "Unrecognised parameter : kernel = " +
+	simparams->stringparams["kernel"];
+      ExceptionHandler::getIstance().raise(message);
+    }
+  }
+  else {
+    string message = "Invalid option for the tabulated_kernel parameter: " +
+      stringparams["tabulated_kernel"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
+  // Riemann solver object
+  //---------------------------------------------------------------------------
+  string riemann = stringparams["riemann_solver"];
+  if (riemann == "exact")
+    sph->riemann = new ExactRiemannSolver(floatparams["gamma_eos"]);
+  else if (riemann == "hllc")
+    sph->riemann = new HllcRiemannSolver(floatparams["gamma_eos"]);
+  else {
+    string message = "Unrecognised parameter : riemann_solver = "
+      + riemann;
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+ 
+  // Create SPH particle integration object
+  //---------------------------------------------------------------------------
+  sphint = new SphGodunovIntegration<ndim>(floatparams["accel_mult"],
+					   floatparams["courant_mult"],
+			              floatparams["energy_mult"],
+					   gas_eos, tdavisc);
+
+
+  // Energy integration object
+  //---------------------------------------------------------------------------
+  uint = new EnergyGodunovIntegration<ndim>(floatparams["energy_mult"]);
+
+
+  // Set other important parameters
+  sph->riemann_solver = stringparams["riemann_solver"];
+  sph->slope_limiter  = stringparams["slope_limiter"];
+  sph->riemann_order  = intparams["riemann_order"];
+
+  
+  return;
+}
+
+
+
 //TODO: make this mess more modular (note: initial h computation
 //should be done inside the neighbour search)
 //=============================================================================
@@ -79,7 +164,6 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     sph->Nghostmax = sph->Nsphmax - sph->Nsph;
     sph->Ntot = sph->Nsph;
     for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
-    for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].part = &(sph->sphdata[i]);
 
     // Compute mean mass
     sph->mmean = 0.0;
@@ -161,8 +245,8 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
       sph->sphdata[i].dudt = (FLOAT) 0.0;
       sph->sphdata[i].active = true;
       sph->sphdata[i].level = 0;
-      sph->sphintdata[i].nstep = 0;
-      sph->sphintdata[i].nlast = 0;
+      sph->sphdata[i].nstep = 0;
+      sph->sphdata[i].nlast = 0;
     }
 
     LocalGhosts->CopySphDataToGhosts(simbox,sph);
@@ -209,7 +293,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Set particle values for initial step (e.g. r0, v0, a0)
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,sph->Nsph,timestep,sph->sphintdata);
+    uint->EndTimestep(n,sph->Nsph,timestep,sph->sphdata);
   sphint->EndTimestep(n,timestep,sph);
   nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
 
@@ -254,7 +338,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
   // Advance SPH particles positions and velocities
   sphint->AdvanceParticles(n,(FLOAT) timestep,sph);
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EnergyIntegration(n,sph->Nsph,sph->sphintdata,(FLOAT) timestep);
+    uint->EnergyIntegration(n,sph->Nsph,sph->sphdata,(FLOAT) timestep);
   nbody->AdvanceParticles(n,nbody->Nstar,nbody->nbodydata,timestep);
 
   // Check all boundary conditions
@@ -335,7 +419,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
 
     // Set all end-of-step variables
     if (simparams->stringparams["gas_eos"] == "energy_eqn")
-      uint->EndTimestep(n,sph->Nsph,timestep,sph->sphintdata);
+      uint->EndTimestep(n,sph->Nsph,timestep,sph->sphdata);
     sphint->EndTimestep(n,timestep,sph);
 
   }
@@ -447,8 +531,8 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
       sph->sphdata[i].level = 0;
       sph->sphdata[i].levelneib = 0;
       sph->sphdata[i].dt = timestep;
-      sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
-      sph->sphintdata[i].nlast = n;
+      sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+      sph->sphdata[i].nlast = n;
 
     }
     for (i=0; i<nbody->Nnbody; i++) {
@@ -548,8 +632,8 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
         level = max(level,0);
         sph->sphdata[i].level = level;
         sph->sphdata[i].levelneib = level;
-        sph->sphintdata[i].nlast = n;
-        sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+        sph->sphdata[i].nlast = n;
+        sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
       }
     }
 
@@ -582,8 +666,8 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
     for (i=0; i<sph->Nsph; i++) {
 
       // Skip particles that are not at end of step
-      if (sph->sphintdata[i].nlast == n) {
-	nstep = sph->sphintdata[i].nstep;
+      if (sph->sphdata[i].nlast == n) {
+	nstep = sph->sphdata[i].nstep;
 	last_level = sph->sphdata[i].level;
 	
 	// Compute new timestep value and level number
@@ -603,8 +687,8 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
 	else
 	  sph->sphdata[i].level = last_level;
 
-	sph->sphintdata[i].nlast = n;
-	sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+	sph->sphdata[i].nlast = n;
+	sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
       }
 
       // Find maximum level of all SPH particles
@@ -653,7 +737,7 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
     if (sph_single_timestep == 1) {
       for (i=0; i<sph->Nsph; i++) {
 	sph->sphdata[i].level = level_max_sph;
-	sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+	sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
       }
     }
 
@@ -662,8 +746,8 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
     level_step = level_max + integration_step - 1;
 
     for (i=0; i<sph->Nsph; i++) {
-      if (sph->sphintdata[i].nlast == n)
-	sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
+      if (sph->sphdata[i].nlast == n)
+	sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
     }
     for (i=0; i<nbody->Nnbody; i++) {
       if (nbody->nbodydata[i]->nlast == n) nbody->nbodydata[i]->nstep = 
@@ -685,16 +769,16 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
       if (level_max > level_max_old) {
 	nfactor = pow(2,level_max - level_max_old);
 	n *= nfactor;
-	for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].nlast *= nfactor;
-	for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].nstep *= nfactor;
+	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nlast *= nfactor;
+	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nstep *= nfactor;
 	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast *= nfactor;
 	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep *= nfactor;
       }
       else if (level_max < level_max_old) {
 	nfactor = pow(2,level_max_old - level_max);
 	n /= nfactor;
-	for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].nlast /= nfactor;
-	for (i=0; i<sph->Nsph; i++) sph->sphintdata[i].nstep /= nfactor;
+	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nlast /= nfactor;
+	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nstep /= nfactor;
 	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast /= nfactor;
 	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep /= nfactor;
       }

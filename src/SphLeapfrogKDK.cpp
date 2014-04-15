@@ -85,42 +85,41 @@ void SphLeapfrogKDK<ndim>::AdvanceParticles
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
   FLOAT dt;                         // Timestep since start of step
-  SphParticle<ndim> *part;          // SPH particle pointer
 
   debug2("[SphLeapfrogKDK::AdvanceParticles]");
   timing->StartTimingSection("SPH_LFKDK_ADVANCE_PARTICLES",2);
 
   // Advance positions and velocities of all SPH particles
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,dt,i,k,nstep,part)\
+#pragma omp parallel for default(none) private(dn,dt,i,k,nstep)\
   shared(n,sph,timestep)
   for (i=0; i<sph->Nsph; i++) {
+    SphParticle<ndim>& part = sph->sphdata[i];
 
     // Compute time since beginning of current step
-    nstep = sph->sphintdata[i].nstep;
-    dn = n - sph->sphintdata[i].nlast;
+    nstep = sph->sphdata[i].nstep;
+    dn = n - sph->sphdata[i].nlast;
     dt = timestep*(FLOAT) dn;
-    part = sph->sphintdata[i].part;
 
     // Advance particle positions and velocities
-    for (k=0; k<ndim; k++) part->r[k] = sph->sphintdata[i].r0[k] +
-      sph->sphintdata[i].v0[k]*dt + 0.5*sph->sphintdata[i].a0[k]*dt*dt;
-    for (k=0; k<ndim; k++) part->v[k] =
-      sph->sphintdata[i].v0[k] + sph->sphintdata[i].a0[k]*dt;
+    for (k=0; k<ndim; k++) part.r[k] = sph->sphdata[i].r0[k] +
+      sph->sphdata[i].v0[k]*dt + 0.5*sph->sphdata[i].a0[k]*dt*dt;
+    for (k=0; k<ndim; k++) part.v[k] =
+      sph->sphdata[i].v0[k] + sph->sphdata[i].a0[k]*dt;
 
     // Integrate time-dependent viscosity
-    if (tdavisc != notdav) part->alpha += part->dalphadt*timestep;
+    if (tdavisc != notdav) part.alpha += part.dalphadt*timestep;
 
     // Integrate explicit energy equation
     if (gas_eos == energy_eqn) 
-      part->u = sph->sphintdata[i].u0 + sph->sphintdata[i].dudt0*dt;
+      part.u = sph->sphdata[i].u0 + sph->sphdata[i].dudt0*dt;
 
     // Set particle as active at end of step
-    if (dn == nstep) part->active = true;
-    else part->active = false;
+    if (dn == nstep) part.active = true;
+    else part.active = false;
 
     // Flag all dead particles as inactive here
-    if (part->itype == dead) part->active = false;
+    if (part.itype == dead) part.active = false;
   }
   //---------------------------------------------------------------------------
 
@@ -147,23 +146,23 @@ void SphLeapfrogKDK<ndim>::CorrectionTerms
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
-  SphParticle<ndim> *part;          // SPH particle pointer
 
   debug2("[SphLeapfrogKDK::CorrectionTerms]");
   timing->StartTimingSection("SPH_LFKDK_CORRECTION_TERMS",2);
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep,part)\
+#pragma omp parallel for default(none) private(dn,i,k,nstep)\
   shared(n,sph,timestep)
   for (i=0; i<sph->Nsph; i++) {
-    dn = n - sph->sphintdata[i].nlast;
-    nstep = sph->sphintdata[i].nstep;
-    part = sph->sphintdata[i].part;
+    SphParticle<ndim>& part = sph->sphdata[i];
+
+    dn = n - sph->sphdata[i].nlast;
+    nstep = sph->sphdata[i].nstep;
     if (dn == nstep)
-      for (k=0; k<ndim; k++) part->v[k] += timestep*(FLOAT) nstep*
-        (FLOAT) 0.5*(part->a[k] - sph->sphintdata[i].a0[k]);
-    if (dn == nstep && gas_eos == energy_eqn) part->u +=
-      0.5*(part->dudt - sph->sphintdata[i].dudt0)*timestep*(FLOAT) nstep;
+      for (k=0; k<ndim; k++) part.v[k] += timestep*(FLOAT) nstep*
+        (FLOAT) 0.5*(part.a[k] - sph->sphdata[i].a0[k]);
+    if (dn == nstep && gas_eos == energy_eqn) part.u +=
+      0.5*(part.dudt - sph->sphdata[i].dudt0)*timestep*(FLOAT) nstep;
 
   }
   //---------------------------------------------------------------------------
@@ -190,32 +189,32 @@ void SphLeapfrogKDK<ndim>::EndTimestep
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
-  SphParticle<ndim> *part;          // SPH particle pointer
 
   debug2("[SphLeapfrogKDK::EndTimestep]");
   timing->StartTimingSection("SPH_LFKDK_END_TIMESTEP",2);
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep,part) shared(n,sph,timestep)
+#pragma omp parallel for default(none) private(dn,i,k,nstep) shared(n,sph,timestep)
   for (i=0; i<sph->Nsph; i++) {
-    dn = n - sph->sphintdata[i].nlast;
-    nstep = sph->sphintdata[i].nstep;
-    part = sph->sphintdata[i].part;
+    SphParticle<ndim>& part = sph->sphdata[i];
+
+    dn = n - sph->sphdata[i].nlast;
+    nstep = sph->sphdata[i].nstep;
 
     if (dn == nstep) {
-      for (k=0; k<ndim; k++) part->v[k] += timestep*(FLOAT) nstep*
-        (FLOAT) 0.5*(part->a[k] - sph->sphintdata[i].a0[k]);
-      for (k=0; k<ndim; k++) sph->sphintdata[i].r0[k] = part->r[k];
-      for (k=0; k<ndim; k++) sph->sphintdata[i].v0[k] = part->v[k];
-      for (k=0; k<ndim; k++) sph->sphintdata[i].a0[k] = part->a[k];
+      for (k=0; k<ndim; k++) part.v[k] += timestep*(FLOAT) nstep*
+        (FLOAT) 0.5*(part.a[k] - sph->sphdata[i].a0[k]);
+      for (k=0; k<ndim; k++) sph->sphdata[i].r0[k] = part.r[k];
+      for (k=0; k<ndim; k++) sph->sphdata[i].v0[k] = part.v[k];
+      for (k=0; k<ndim; k++) sph->sphdata[i].a0[k] = part.a[k];
       if (gas_eos == energy_eqn) {
-	part->u += 0.5*(part->dudt - sph->sphintdata[i].dudt0)*
+	part.u += 0.5*(part.dudt - sph->sphdata[i].dudt0)*
 	  timestep*(FLOAT) nstep;
-	sph->sphintdata[i].u0 = part->u;
-	sph->sphintdata[i].dudt0 = part->dudt;
+	sph->sphdata[i].u0 = part.u;
+	sph->sphdata[i].dudt0 = part.dudt;
       }
-      sph->sphintdata[i].nlast = n;
-      part->active = false;
+      sph->sphdata[i].nlast = n;
+      part.active = false;
     }
   }
   //---------------------------------------------------------------------------
@@ -246,30 +245,30 @@ int SphLeapfrogKDK<ndim>::CheckTimesteps
   int i;                            // Particle counter
   int level_new;                    // New level of particle
   int nnewstep;                     // New step size of particle
-  SphParticle<ndim> *part;          // SPH particle pointer
 
   debug2("[SphLeapfrogKDK::CheckTimesteps]");
   timing->StartTimingSection("SPH_LFKDK_CHECK_TIMESTEPS",2);
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,level_new,nnewstep,part)\
+#pragma omp parallel for default(none) private(dn,level_new,nnewstep)\
   shared(level_diff_max,n,sph) reduction(+:activecount)
   for (i=0; i<sph->Nsph; i++) {
-    dn = n - sph->sphintdata[i].nlast;
-    part = sph->sphintdata[i].part;
-    if (dn == sph->sphintdata[i].nstep) continue;
+    SphParticle<ndim>& part = sph->sphdata[i];
+
+    dn = n - sph->sphdata[i].nlast;
+    if (dn == sph->sphdata[i].nstep) continue;
 
     // Check if neighbour timesteps are too small.  If so, then reduce 
     // timestep if possible
-    if (part->levelneib - part->level > level_diff_max) {
-      level_new = part->levelneib - level_diff_max;
-      nnewstep = sph->sphintdata[i].nstep/pow(2,level_new - part->level);
+    if (part.levelneib - part.level > level_diff_max) {
+      level_new = part.levelneib - level_diff_max;
+      nnewstep = sph->sphdata[i].nstep/pow(2,level_new - part.level);
 
       // If new level is correctly synchronised, then change all quantities
       if (dn%nnewstep == 0) {
-        part->level = level_new;
-        if (dn > 0) sph->sphintdata[i].nstep = dn;
-        part->active = true;
+        part.level = level_new;
+        if (dn > 0) sph->sphdata[i].nstep = dn;
+        part.active = true;
         activecount++;
       }
     }

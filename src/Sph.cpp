@@ -96,10 +96,6 @@ void Sph<ndim>::AllocateMemory(int N)
     iorder = new int[Nsphmax];
     rsph = new FLOAT[ndim*Nsphmax];
     sphdata = new struct SphParticle<ndim>[Nsphmax];
-    sphintdata = new SphIntParticle<ndim>[Nsphmax];
-    for (int i=0; i<Nsphmax; i++) {
-      sphintdata[i].part=&sphdata[i];
-    }
     allocated = true;
   }
 
@@ -118,7 +114,7 @@ void Sph<ndim>::DeallocateMemory(void)
   debug2("[Sph::DeallocateMemory]");
 
   if (allocated) {
-    delete[] sphintdata;
+    delete[] sphdata;
     delete[] sphdata;
     delete[] rsph;
     delete[] iorder;
@@ -190,23 +186,17 @@ void Sph<ndim>::ReorderParticles(void)
 {
   int i;                                // Particle counter
   SphParticle<ndim> *sphdataaux;        // Aux. SPH particle array
-  SphIntParticle<ndim>* sphintdataaux;  // Aux. SPH Integration particle array
 
   sphdataaux = new SphParticle<ndim>[Nsph];
-  sphintdataaux = new SphIntParticle<ndim>[Nsph];
 
   for (i=0; i<Nsph; i++) {
     sphdataaux[i] = sphdata[i];
-    sphintdataaux[i] = sphintdata[i];
   }
   for (i=0; i<Nsph; i++) {
     sphdata[i] = sphdataaux[iorder[i]];
-    sphintdata[i] = sphintdataaux[iorder[i]];
-    sphintdata[i].part = &(sphdata[i]);
   }
 
   delete[] sphdataaux;
-  delete[] sphintdataaux;
 
   return;
 }
