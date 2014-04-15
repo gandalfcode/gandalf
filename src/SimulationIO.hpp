@@ -1821,37 +1821,37 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
     // Positions
     //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>* part = sph->GetParticleIPointer(i);
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
       for (int k=0; k<ndim; k++)
-	writer.write_value((float) (part->r[k]*simunits.r.outscale));
+	writer.write_value((float) (part.r[k]*simunits.r.outscale));
     }
 
     // Masses
     //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-      writer.write_value((float) (part->m*simunits.m.outscale));
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      writer.write_value((float) (part.m*simunits.m.outscale));
     }
 
     // Smoothing lengths
     //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-      writer.write_value((float) (part->h*simunits.r.outscale));
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      writer.write_value((float) (part.h*simunits.r.outscale));
     }
 
     // Densities
     //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-      writer.write_value((float) (part->rho*simunits.rho.outscale));
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      writer.write_value((float) (part.rho*simunits.rho.outscale));
     }
 
     // Specific internal energies
     //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-      writer.write_value((float) (part->u*simunits.u.outscale));
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      writer.write_value((float) (part.u*simunits.u.outscale));
     }
 
   }

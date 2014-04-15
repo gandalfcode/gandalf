@@ -106,6 +106,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
     sphneib = new BinaryTree<ndim>(intparams["Nleafmax"],
 				   floatparams["thetamaxsqd"],
 				   sph->kernp->kernrange,
+                                   floatparams["macerror"],
 				   stringparams["gravity_mac"],
 				   stringparams["multipole"]);
   }
@@ -1014,12 +1015,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     // Set fixed SPH timestep level here in case maximum has changed
     if (sph_single_timestep == 1) {
       for (i=0; i<sph->Nsph; i++) {
-<<<<<<< HEAD
 	if (sph->sphdata[i].itype == dead) continue;
-	if (sph->sphintdata[i].nlast == n)
-=======
 	if (sph->sphdata[i].nlast == n)
->>>>>>> c289746c39b0430faa9b384dac7fd344eeb925cf
 	  sph->sphdata[i].level = level_max_sph;
       }
     }
@@ -1039,46 +1036,31 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       if (level_max > level_max_old) {
 	nfactor = pow(2,level_max - level_max_old);
 	n *= nfactor;
-<<<<<<< HEAD
 	for (i=0; i<sph->Nsph; i++) {
 	  if (sph->sphdata[i].itype == dead) continue;
-	  sph->sphintdata[i].nstep *= nfactor;
-	  sph->sphintdata[i].nlast *= nfactor;
+	  sph->sphdata[i].nstep *= nfactor;
+	  sph->sphdata[i].nlast *= nfactor;
 	}
-=======
-	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nstep *= nfactor;
-	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nlast *= nfactor;
->>>>>>> c289746c39b0430faa9b384dac7fd344eeb925cf
 	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep *= nfactor;
 	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast *= nfactor;
       }
       else if (level_max < level_max_old) {
 	nfactor = pow(2,level_max_old - level_max);
 	n /= nfactor;
-<<<<<<< HEAD
 	for (i=0; i<sph->Nsph; i++) {
 	  if (sph->sphdata[i].itype == dead) continue;
-	  sph->sphintdata[i].nlast /= nfactor;
-	  sph->sphintdata[i].nstep /= nfactor;
+	  sph->sphdata[i].nlast /= nfactor;
+	  sph->sphdata[i].nstep /= nfactor;
 	}
-=======
-	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nlast /= nfactor;
-	for (i=0; i<sph->Nsph; i++) sph->sphdata[i].nstep /= nfactor;
->>>>>>> c289746c39b0430faa9b384dac7fd344eeb925cf
 	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast /= nfactor;
 	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep /= nfactor;
       }
 
       // Update values of nstep for both SPH and star particles
       for (i=0; i<sph->Nsph; i++) {
-<<<<<<< HEAD
 	if (sph->sphdata[i].itype == dead) continue;
-	if (sph->sphintdata[i].nlast == n)
-	  sph->sphintdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
-=======
 	if (sph->sphdata[i].nlast == n)
 	  sph->sphdata[i].nstep = pow(2,level_step - sph->sphdata[i].level);
->>>>>>> c289746c39b0430faa9b384dac7fd344eeb925cf
       }
       for (i=0; i<nbody->Nnbody; i++) {
 	if (nbody->nbodydata[i]->nlast == n) nbody->nbodydata[i]->nstep = 

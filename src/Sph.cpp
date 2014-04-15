@@ -147,13 +147,10 @@ void Sph<ndim>::DeleteDeadParticles(void)
   for (i=0; i<Nsph; i++) {
     itype = sphdata[i].itype;
     while (itype == dead) {
-    //while (sphdata[i].itype == dead) {
       Ndead++;
       ilast--;
       if (i < ilast) {
 	sphdata[i] = sphdata[ilast];
-	sphintdata[i] = sphintdata[ilast];
-	sphintdata[i].part = &(sphdata[i]);
 	sphdata[ilast].itype = dead;
 	sphdata[ilast].m = 0.0;
       }
