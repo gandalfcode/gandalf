@@ -113,6 +113,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Zero accelerations
     for (i=0; i<sph->Nsph; i++) sph->sphdata[i].active = true;
 
+    // For Eigenvalue MAC, need non-zero values
+    for (i=0; i<sph->Nsph; i++) sph->sphdata[i].gpot = big_number;
+
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph,nbody);
 
@@ -417,7 +420,6 @@ void SphSimulation<ndim>::MainLoop(void)
   // End-step terms for all SPH particles
   if (sph->Nsph > 0)
     sphint->EndTimestep(n,timestep,sph);
-
 
   // End-step terms for all star particles
   if (nbody->Nstar > 0)

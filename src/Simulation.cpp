@@ -635,6 +635,7 @@ void Simulation<ndim>::ProcessParameters(void)
       sphneib = new BinaryTree<ndim>(intparams["Nleafmax"],
 				     floatparams["thetamaxsqd"],
 				     sph->kernp->kernrange,
+                                     floatparams["macerror"],
 				     stringparams["gravity_mac"],
 				     stringparams["multipole"]);
     }

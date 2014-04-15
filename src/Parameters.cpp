@@ -297,6 +297,7 @@ void Parameters::SetDefaultValues(void)
   intparams["ntreebuildstep"] = 1;
   intparams["ntreestockstep"] = 1;
   floatparams["thetamaxsqd"] = 0.1;
+  floatparams["macerror"] = 0.0001;
 
   // N-body parameters
   //---------------------------------------------------------------------------

@@ -73,6 +73,7 @@ struct BinaryTreeCell {
   int N;                            ///< ..
   int Nactive;                      ///< ..
   FLOAT cdistsqd;                   ///< ..
+  FLOAT mac;                        ///< Multipole-opening criterion value
   FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
   FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
   FLOAT hboxmin[ndim];              ///< Minimum extent of bounding box
@@ -248,7 +249,7 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   using SphNeighbourSearch<ndim>::box;
   using SphNeighbourSearch<ndim>::timing;
 
-  BinaryTree(int, FLOAT, FLOAT, string, string);
+  BinaryTree(int, FLOAT, FLOAT, FLOAT, string, string);
   ~BinaryTree();
 
   //---------------------------------------------------------------------------
@@ -283,12 +284,12 @@ class BinaryTree: public SphNeighbourSearch<ndim>
                                  FLOAT, SphParticle<ndim> *);
   int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int *, 
                            SphParticle<ndim> *);
-  int ComputeGravityInteractionList(BinaryTreeCell<ndim> *, int, int, int, 
-                                    int &, int &, int &, int *, int *,
+  int ComputeGravityInteractionList(BinaryTreeCell<ndim> *, FLOAT, int, int,  
+                                    int, int &, int &, int &, int *, int *,
                                     BinaryTreeCell<ndim> **, 
-                                    SphParticle<ndim> *);
-  int ComputeStarGravityInteractionList(NbodyParticle<ndim> *, int, int, int, 
-					int &, int &, int &, int *, int *,
+				    SphParticle<ndim> *);
+  int ComputeStarGravityInteractionList(NbodyParticle<ndim> *, FLOAT, int, int,
+					int, int &, int &, int &, int *, int *,
 					BinaryTreeCell<ndim> **, 
 					SphParticle<ndim> *);
   void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, 
@@ -324,10 +325,12 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   int *g2c;                         ///< i.d. of leaf(grid) cells
   int *ids;                         ///< Particle ids
   int *inext;                       ///< Linked list for grid search
+  FLOAT macerror;                   ///< Error tolerance for gravity tree-MAC
   FLOAT hmax;                       ///< Store hmax in the tree
   FLOAT kernrange;                  ///< Extent of employed kernel
-  FLOAT theta;                      ///< ..
-  FLOAT thetamaxsqd;                ///< ..
+  FLOAT theta;                      ///< Geometric opening angle
+  FLOAT thetamaxsqd;                ///< Geometric opening angle squared
+  FLOAT invthetamaxsqd;             ///< 1 / thetamaxsqd
   BinaryTreeCell<ndim> *tree;       ///< Main tree array
 
 
