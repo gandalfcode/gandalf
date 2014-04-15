@@ -81,7 +81,7 @@ void EnergyLeapfrogDKD<ndim>::EnergyIntegration
   debug2("[EnergyLeapfrogDKD::EnergyIntegration]");
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,dt,i,nstep,part)	\
+#pragma omp parallel for default(none) private(dn,dt,i,nstep)	\
      shared(n,Nsph,timestep,sphdata)
   for (i=0; i<Nsph; i++) {
     SphParticle<ndim> part = sphdata[i];
@@ -133,7 +133,7 @@ void EnergyLeapfrogDKD<ndim>::EndTimestep
   debug2("[EnergyLeapfrogDKD::EndTimestep]");
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,nstep,part)	\
+#pragma omp parallel for default(none) private(dn,i,nstep)	\
   shared(n,Nsph,sphdata,timestep)
   for (i=0; i<Nsph; i++) {
     SphParticle<ndim>& part = sphdata[i];

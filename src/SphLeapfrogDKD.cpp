@@ -91,7 +91,7 @@ void SphLeapfrogDKD<ndim>::AdvanceParticles
 
   // Advance positions and velocities of all SPH particles
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,dt,i,k,nstep,part)\
+#pragma omp parallel for default(none) private(dn,dt,i,k,nstep)\
   shared(n,sph,timestep)
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->sphdata[i];
@@ -152,7 +152,7 @@ void SphLeapfrogDKD<ndim>::EndTimestep
   debug2("[SphLeapfrogDKD::EndTimestep]");
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep,part) shared(n,sph)
+#pragma omp parallel for default(none) private(dn,i,k,nstep) shared(n,sph)
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->sphdata[i];
 
@@ -197,7 +197,7 @@ int SphLeapfrogDKD<ndim>::CheckTimesteps
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) reduction(+:activecount)\
-  private(dn,i,k,level_new,nnewstep,nstep,part)\
+  private(dn,i,k,level_new,nnewstep,nstep)\
   shared(level_diff_max,n,sph)
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->sphdata[i];

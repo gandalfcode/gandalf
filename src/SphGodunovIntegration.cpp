@@ -90,7 +90,7 @@ void SphGodunovIntegration<ndim>::AdvanceParticles
   debug2("[SphGodunovIntegration::AdvanceParticles]");
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,dt,i,k,nstep,part)\
+#pragma omp parallel for default(none) private(dn,dt,i,k,nstep)\
   shared(n,sph,timestep)
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->sphdata[i];
@@ -151,7 +151,7 @@ void SphGodunovIntegration<ndim>::EndTimestep
   debug2("[SphGodunovIntegration::EndTimestep]");
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep,part) shared(n,sph)
+#pragma omp parallel for default(none) private(dn,i,k,nstep) shared(n,sph)
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->sphdata[i];
     dn = n - sph->sphdata[i].nlast;
@@ -196,7 +196,7 @@ int SphGodunovIntegration<ndim>::CheckTimesteps
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) shared(level_diff_max,n,sph)\
-  private(dn,i,k,level_new,nnewstep,nstep,part) reduction(+:activecount)
+  private(dn,i,k,level_new,nnewstep,nstep) reduction(+:activecount)
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->sphdata[i];
     dn = n - sph->sphdata[i].nlast;

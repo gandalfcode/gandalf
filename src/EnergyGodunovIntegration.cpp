@@ -84,7 +84,7 @@ void EnergyGodunovIntegration<ndim>::EnergyIntegration
   debug2("[EnergyGodunovIntegration::EnergyIntegration]");
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,dt,i,nstep,part) \
+#pragma omp parallel for default(none) private(dn,dt,i,nstep) \
   shared(n,Nsph,timestep,cout,sphdata)
   for (i=0; i<Nsph; i++) {
     SphParticle<ndim>& part = sphdata[i];
@@ -155,7 +155,7 @@ void EnergyGodunovIntegration<ndim>::EndTimestep
   debug2("[EnergyGodunovIntegration::EndTimestep]");
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,nstep,part)	\
+#pragma omp parallel for default(none) private(dn,i,nstep)	\
   shared(n,Nsph,sphdata)
   for (i=0; i<Nsph; i++) {
     SphParticle<ndim>& part = sphdata[i];

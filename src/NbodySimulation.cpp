@@ -530,8 +530,6 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
 	  dt = nbody->Timestep(nbody->nbodydata[i]);
 	  nbody->nbodydata[i]->dt = dt;
 	  level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
-	  level = max(level,level_max_sph);
-	  //level = max(level,level_min_sph);
 	  
 	  // Move up one level (if levels are correctly synchronised) or
 	  // down several levels if required

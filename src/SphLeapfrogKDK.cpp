@@ -92,7 +92,7 @@ void SphLeapfrogKDK<ndim>::AdvanceParticles
 
   // Advance positions and velocities of all SPH particles
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,dt,i,k,nstep,part)\
+#pragma omp parallel for default(none) private(dn,dt,i,k,nstep)\
   shared(n,sph,timestep)
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->sphdata[i];
@@ -152,7 +152,7 @@ void SphLeapfrogKDK<ndim>::CorrectionTerms
   timing->StartTimingSection("LFKDK_CORRECTION_TERMS",2);
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep,part)\
+#pragma omp parallel for default(none) private(dn,i,k,nstep)\
   shared(n,sph,timestep)
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->sphdata[i];
@@ -195,7 +195,7 @@ void SphLeapfrogKDK<ndim>::EndTimestep
   timing->StartTimingSection("LFKDK_END_TIMESTEP",2);
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep,part) shared(n,sph,timestep)
+#pragma omp parallel for default(none) private(dn,i,k,nstep) shared(n,sph,timestep)
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->sphdata[i];
 
@@ -251,7 +251,7 @@ int SphLeapfrogKDK<ndim>::CheckTimesteps
   timing->StartTimingSection("LFKDK_CHECK_TIMESTEPS",2);
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,level_new,nnewstep,part)\
+#pragma omp parallel for default(none) private(dn,level_new,nnewstep)\
   shared(level_diff_max,n,sph) reduction(+:activecount)
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->sphdata[i];
