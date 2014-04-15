@@ -233,6 +233,7 @@ class Simulation : public SimulationBase
   int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
 #if defined(FFTW_TURBULENCE)
   void GenerateTurbulentVelocityField(int, int, DOUBLE, DOUBLE *);
+  void InterpolateVelocityField(int, FLOAT, FLOAT, FLOAT *, FLOAT *);
 #endif
 
 

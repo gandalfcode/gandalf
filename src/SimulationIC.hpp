@@ -585,6 +585,8 @@ void Simulation<ndim>::ShockTube(void)
     vaux = new FLOAT[sph->Nsph*ndim];
     
     // Now compute smoothed quantities
+#pragma omp parallel for default(none) shared(uaux,vaux) \
+  private(dr,drmag,drsqd,i,j,k,wnorm)
     for (i=0; i<sph->Nsph; i++) {
       uaux[i] = 0.0;
       for (k=0; k<ndim; k++) vaux[ndim*i + k] = 0.0;
@@ -856,7 +858,8 @@ void Simulation<ndim>::ContactDiscontinuity(void)
           sph->sphdata[i].r[0] += simbox.boxsize[0];
         sph->sphdata[i].v[0] = 0.0;
         sph->sphdata[i].m = rhofluid1*volume/(FLOAT) Nbox1;
-	sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rhofluid1,invndim);
+	sph->sphdata[i].h = 
+	  sph->h_fac*pow(sph->sphdata[i].m/rhofluid1,invndim);
         if (sph->gas_eos == "isothermal")
           sph->sphdata[i].u = temp0/gammaone/mu_bar;
         else
@@ -875,7 +878,8 @@ void Simulation<ndim>::ContactDiscontinuity(void)
           sph->sphdata[i].r[0] += simbox.boxsize[0];
         sph->sphdata[i].v[0] = 0.0;
         sph->sphdata[i].m = rhofluid2*volume/(FLOAT) Nbox2;
-	sph->sphdata[i].h = sph->h_fac*pow(sph->sphdata[i].m/rhofluid2,invndim);
+	sph->sphdata[i].h = 
+	  sph->h_fac*pow(sph->sphdata[i].m/rhofluid2,invndim);
         if (sph->gas_eos == "isothermal")
           sph->sphdata[i].u = temp0/gammaone/mu_bar;
         else
@@ -1252,7 +1256,6 @@ void Simulation<ndim>::TurbulentCore(void)
   int i;                            // Particle counter
   int j;                            // ..
   int k;                            // Dimension counter
-  int kk;                           // ..
   int p;                            // ..
   int Nsphere;                      // Actual number of particles in sphere
   FLOAT dx[3];                      // ..
@@ -1353,79 +1356,12 @@ void Simulation<ndim>::TurbulentCore(void)
   // Generate gridded velocity field
   GenerateTurbulentVelocityField(field_type,gridsize,power_turb,vfield);
 
-  // Now interpolate velocity field onto particle positions
-  //---------------------------------------------------------------------------
-  for (p=0; p<sph->Nsph; p++) {
-    for (kk=0; kk<ndim; kk++) dx[kk] = (sph->sphdata[p].r[kk] - xmin)/dxgrid;
+  // Now interpolate generated field onto particle positions
+  InterpolateVelocityField(gridsize,xmin,dxgrid,vfield,v);
 
-    i = (int) dx[0];
-    j = (int) dx[1];
-    k = (int) dx[2];
-    
-    if (i > gridsize || j > gridsize || k > gridsize || 
-	i < 0 || j < 0 || k < 0)  {
-      cout << "Problem with velocity interpolation grid!! : " 
-	   << i << "    " << j << "    " << k << "   " << gridsize << endl;
-      exit(0);
-    }
-    
-    for (kk=0; kk<ndim; kk++) dx[kk] -= (int) dx[kk];
-    
-    // Interpolate to get more accurate velocities
-    if (ndim == 3) {
-      vint[0] = (1.0 - dx[0])*(1.0 - dx[1])*(1.0 - dx[2]);
-      vint[1] = (1.0 - dx[0])*(1.0 - dx[1])*dx[2];
-      vint[2] = (1.0 - dx[0])*dx[1]*(1.0 - dx[2]);
-      vint[3] = (1.0 - dx[0])*dx[1]*dx[2];
-      vint[4] = dx[0]*(1.0 - dx[1])*(1.0 - dx[2]);
-      vint[5] = dx[0]*(1.0 - dx[1])*dx[2];
-      vint[6] = dx[0]*dx[1]*(1.0 - dx[2]);
-      vint[7] = dx[0]*dx[1]*dx[2];
-
-
-      v[ndim*p] = 
-	vint[0]*vfield[3*i + 3*gridsize*j + 3*gridsize*gridsize*k] + 
-	vint[1]*vfield[3*i + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
-	vint[2]*vfield[3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
-	vint[3]*vfield[3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)] + 
-	vint[4]*vfield[3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*k] + 
-	vint[5]*vfield[3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
-	vint[6]*vfield[3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
-	vint[7]*vfield[3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)];
-
-      v[ndim*p+1] = 
-	vint[0]*vfield[1 + 3*i + 3*gridsize*j + 3*gridsize*gridsize*k] + 
-	vint[1]*vfield[1 + 3*i + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
-	vint[2]*vfield[1 + 3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
-	vint[3]*vfield[1 + 3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)] + 
-	vint[4]*vfield[1 + 3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*k] + 
-	vint[5]*vfield[1 + 3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
-	vint[6]*vfield[1 + 3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
-	vint[7]*vfield[1 + 3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)];
-
-      v[ndim*p+2] = 
-	vint[0]*vfield[2 + 3*i + 3*gridsize*j + 3*gridsize*gridsize*k] + 
-	vint[1]*vfield[2 + 3*i + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
-	vint[2]*vfield[2 + 3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
-	vint[3]*vfield[2 + 3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)] + 
-	vint[4]*vfield[2 + 3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*k] + 
-	vint[5]*vfield[2 + 3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
-	vint[6]*vfield[2 + 3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
-	vint[7]*vfield[2 + 3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)];
-
-      for (kk=0; kk<ndim; kk++) sph->sphdata[p].v[kk] = v[ndim*p + kk];
-
-	
-    }
-  }
-  //---------------------------------------------------------------------------
-
-
-  cout << "xmin : " << xmin << "     " << dxgrid << "    gridsize : " << gridsize << endl;
-  cout << "rmin : " << rmin[0] << "    " << rmin[1] << "    " << rmin[2] << endl;
-  cout << "rmax : " << rmax[0] << "    " << rmax[1] << "    " << rmax[2] << endl;
-
-
+  // Finally, copy velocities to main SPH particle array
+  for (i=0; i<sph->Nsph; i++)
+    for (k=0; k<ndim; k++) sph->sphdata[p].v[k] = v[ndim*p + k];
 
 #else
   string message = "FFTW turbulence flag not set";
@@ -2900,6 +2836,93 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
   //delete[] dummy2;
   //delete[] dummy1;
 
+  return;
+}
+
+
+
+//=============================================================================
+//  Simulation::InterpolateVelocityField
+/// ..
+/// Based on original code by A. McLeod.
+//=============================================================================
+template <int ndim>
+void Simulation<ndim>::InterpolateVelocityField
+(int gridsize,
+ FLOAT xmin,
+ FLOAT dxgrid,
+ FLOAT *vfield,
+ FLOAT *v)
+{
+  int i,j,k,kk,p;
+  FLOAT dx[ndim],vint[ndim];
+
+  // Now interpolate velocity field onto particle positions
+  //---------------------------------------------------------------------------
+#pragma omp parallel for default(none) private(dx,i,j,k,kk,p,vint) \
+  shared(cout,dxgrid,gridsize,v,vfield,xmin)
+  for (p=0; p<sph->Nsph; p++) {
+    for (kk=0; kk<ndim; kk++) dx[kk] = (sph->sphdata[p].r[kk] - xmin)/dxgrid;
+
+    i = (int) dx[0];
+    j = (int) dx[1];
+    k = (int) dx[2];
+    
+    if (i > gridsize || j > gridsize || k > gridsize || 
+	i < 0 || j < 0 || k < 0)  {
+      cout << "Problem with velocity interpolation grid!! : " 
+	   << i << "    " << j << "    " << k << "   " << gridsize << endl;
+      exit(0);
+    }
+    
+    for (kk=0; kk<ndim; kk++) dx[kk] -= (int) dx[kk];
+    
+    // Interpolate to get more accurate velocities
+    if (ndim == 3) {
+      vint[0] = (1.0 - dx[0])*(1.0 - dx[1])*(1.0 - dx[2]);
+      vint[1] = (1.0 - dx[0])*(1.0 - dx[1])*dx[2];
+      vint[2] = (1.0 - dx[0])*dx[1]*(1.0 - dx[2]);
+      vint[3] = (1.0 - dx[0])*dx[1]*dx[2];
+      vint[4] = dx[0]*(1.0 - dx[1])*(1.0 - dx[2]);
+      vint[5] = dx[0]*(1.0 - dx[1])*dx[2];
+      vint[6] = dx[0]*dx[1]*(1.0 - dx[2]);
+      vint[7] = dx[0]*dx[1]*dx[2];
+
+
+      v[ndim*p] = 
+	vint[0]*vfield[3*i + 3*gridsize*j + 3*gridsize*gridsize*k] + 
+	vint[1]*vfield[3*i + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
+	vint[2]*vfield[3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
+	vint[3]*vfield[3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)] + 
+	vint[4]*vfield[3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*k] + 
+	vint[5]*vfield[3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
+	vint[6]*vfield[3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
+	vint[7]*vfield[3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)];
+
+      v[ndim*p+1] = 
+	vint[0]*vfield[1 + 3*i + 3*gridsize*j + 3*gridsize*gridsize*k] + 
+	vint[1]*vfield[1 + 3*i + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
+	vint[2]*vfield[1 + 3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
+	vint[3]*vfield[1 + 3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)] + 
+	vint[4]*vfield[1 + 3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*k] + 
+	vint[5]*vfield[1 + 3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
+	vint[6]*vfield[1 + 3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
+	vint[7]*vfield[1 + 3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)];
+
+      v[ndim*p+2] = 
+	vint[0]*vfield[2 + 3*i + 3*gridsize*j + 3*gridsize*gridsize*k] + 
+	vint[1]*vfield[2 + 3*i + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
+	vint[2]*vfield[2 + 3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
+	vint[3]*vfield[2 + 3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)] + 
+	vint[4]*vfield[2 + 3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*k] + 
+	vint[5]*vfield[2 + 3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
+	vint[6]*vfield[2 + 3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
+	vint[7]*vfield[2 + 3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)];
+
+    }
+  }
+  //---------------------------------------------------------------------------
+  
   return;
 }
 #endif
