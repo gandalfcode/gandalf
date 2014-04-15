@@ -37,7 +37,6 @@ using namespace std;
 
 
 
-
 //=============================================================================
 //  SphLeapfrogDKD::SphLeapfrogDKD
 /// SphLeapfrogDKD class constructor
@@ -89,6 +88,7 @@ void SphLeapfrogDKD<ndim, ParticleType>::AdvanceParticles
   FLOAT dt;                         // Timestep since start of step
 
   debug2("[SphLeapfrogDKD::AdvanceParticles]");
+  timing->StartTimingSection("SPH_LFDKD_ADVANCE_PARTICLES",2);
 
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
@@ -104,17 +104,39 @@ void SphLeapfrogDKD<ndim, ParticleType>::AdvanceParticles
     dn = n - part.nlast;
     dt = timestep*(FLOAT) dn;
 
-    // Advance particle positions and velocities
-    for (k=0; k<ndim; k++) part.r[k] =
-      part.r0[k] + part.v0[k]*dt;
-    for (k=0; k<ndim; k++) part.v[k] =
-      part.v0[k] + part.a[k]*dt;
+    // Advance particle positions and velocities depending on if we're before 
+    // or after the half-step.
+    if (dn < nstep) {
+      for (k=0; k<ndim; k++) 
+	part.r[k] = part.r0[k] + part.v0[k]*dt;
+      for (k=0; k<ndim; k++) 
+	part.v[k] = part.v0[k] + part.a[k]*dt;
+    }
+    else {
+      for (k=0; k<ndim; k++) 
+	part.v[k] = part.v0[k] + part.a[k]*dt;
+      for (k=0; k<ndim; k++) part.r[k] = part.r0[k] +
+	0.5*(part.v0[k] + part.v[k])*dt;
+    }
+
+    // Integrate time-dependent viscosity
+    if (tdavisc != notdav) part.alpha += part.dalphadt*timestep;
+
+    // Integrate explicit energy equation
+    if (gas_eos == energy_eqn) 
+      part.u = part.u0 + part.dudt*dt;
 
     // Set particle as active at end of step
     if (dn == nstep/2) part.active = true;
     else part.active = false;
+
+    // Flag all dead particles as inactive here
+    if (part.itype == dead) part.active = false;
+
   }
   //---------------------------------------------------------------------------
+
+  timing->EndTimingSection("SPH_LFDKD_ADVANCE_PARTICLES");
 
   return;
 }
@@ -157,6 +179,7 @@ void SphLeapfrogDKD<ndim, ParticleType>::EndTimestep
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphLeapfrogDKD::EndTimestep]");
+  timing->StartTimingSection("SPH_LFDKD_END_TIMESTEP",2);
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,k,nstep) shared(n,sphdata,npart)
@@ -172,9 +195,14 @@ void SphLeapfrogDKD<ndim, ParticleType>::EndTimestep
       for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
       part.nlast = n;
       part.active = false;
+      if (gas_eos == energy_eqn) {
+	part.u0 = part.u;
+      }
     }
   }
   //---------------------------------------------------------------------------
+
+  timing->EndTimingSection("SPH_LFDKD_END_TIMESTEP");
 
   return;
 }
@@ -202,18 +230,18 @@ int SphLeapfrogDKD<ndim, ParticleType>::CheckTimesteps
   int nstep;                        // Particle (integer) step size
 
   debug2("[SphLeapfrogDKD::CheckTimesteps]");
+  timing->StartTimingSection("SPH_LFDKD_CHECK_TIMESTEPS",2);
 
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) reduction(+:activecount)\
-  private(dn,i,k,level_new,nnewstep,nstep)\
-  shared(level_diff_max,n,sphdata,npart)
+
+#pragma omp parallel for default(none) private(dn,level_new,nnewstep)\
+  shared(level_diff_max,n,sphdata, npart) reduction(+:activecount)
   for (i=0; i<npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
-
     dn = n - part.nlast;
-    nstep = part.nstep;
+    if (dn == part.nstep) continue;
 
     // Check if neighbour timesteps are too small.  If so, then reduce 
     // timestep if possible
@@ -221,17 +249,19 @@ int SphLeapfrogDKD<ndim, ParticleType>::CheckTimesteps
       level_new = part.levelneib - level_diff_max;
       nnewstep = part.nstep/pow(2,level_new - part.level);
 
-      // If new level is correctly synchronised, then change all quantities
-      if (n%nnewstep == 0) {
-        nstep = dn;
+      // If new level is correctly synchronised at the half-step of the 
+      // new-step (where acceleration is computed), then change all quantities
+      if (2*dn == nnewstep) {
         part.level = level_new;
-        if (dn > 0) part.nstep = dn; //nstep;
-        if (dn == nnewstep/2) part.active = true;
+        part.nstep = nnewstep;
+        part.active = true;
         activecount++;
       }
     }
   }
   //---------------------------------------------------------------------------
+
+  timing->EndTimingSection("SPH_LFDKD_CHECK_TIMESTEPS");
 
   return activecount;
 }

@@ -37,7 +37,6 @@ using namespace std;
 
 
 
-
 //=============================================================================
 //  SphLeapfrogKDK::SphLeapfrogKDK
 /// SphLeapfrogKDK class constructor
@@ -89,7 +88,7 @@ void SphLeapfrogKDK<ndim, ParticleType >::AdvanceParticles
   FLOAT dt;                         // Timestep since start of step
 
   debug2("[SphLeapfrogKDK::AdvanceParticles]");
-  timing->StartTimingSection("LFKDK_ADVANCE_PARTICLES",2);
+  timing->StartTimingSection("SPH_LFKDK_ADVANCE_PARTICLES",2);
 
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
@@ -127,7 +126,7 @@ void SphLeapfrogKDK<ndim, ParticleType >::AdvanceParticles
   }
   //---------------------------------------------------------------------------
 
-  timing->EndTimingSection("LFKDK_ADVANCE_PARTICLES");
+  timing->EndTimingSection("SPH_LFKDK_ADVANCE_PARTICLES");
 
   return;
 }
@@ -153,7 +152,7 @@ void SphLeapfrogKDK<ndim, ParticleType>::CorrectionTerms
   int nstep;                        // Particle (integer) step size
 
   debug2("[SphLeapfrogKDK::CorrectionTerms]");
-  timing->StartTimingSection("LFKDK_CORRECTION_TERMS",2);
+  timing->StartTimingSection("SPH_LFKDK_CORRECTION_TERMS",2);
 
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
@@ -174,7 +173,7 @@ void SphLeapfrogKDK<ndim, ParticleType>::CorrectionTerms
   }
   //---------------------------------------------------------------------------
 
-  timing->EndTimingSection("LFKDK_CORRECTION_TERMS");
+  timing->EndTimingSection("SPH_LFKDK_CORRECTION_TERMS");
 
   return;
 }
@@ -199,7 +198,7 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
   int nstep;                        // Particle (integer) step size
 
   debug2("[SphLeapfrogKDK::EndTimestep]");
-  timing->StartTimingSection("LFKDK_END_TIMESTEP",2);
+  timing->StartTimingSection("SPH_LFKDK_END_TIMESTEP",2);
 
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
@@ -229,7 +228,7 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
   }
   //---------------------------------------------------------------------------
 
-  timing->EndTimingSection("LFKDK_END_TIMESTEP");
+  timing->EndTimingSection("SPH_LFKDK_END_TIMESTEP");
 
   return;
 }
@@ -258,7 +257,7 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
   int nnewstep;                     // New step size of particle
 
   debug2("[SphLeapfrogKDK::CheckTimesteps]");
-  timing->StartTimingSection("LFKDK_CHECK_TIMESTEPS",2);
+  timing->StartTimingSection("SPH_LFKDK_CHECK_TIMESTEPS",2);
 
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
@@ -288,7 +287,7 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
   }
   //---------------------------------------------------------------------------
 
-  timing->EndTimingSection("LFKDK_CHECK_TIMESTEPS");
+  timing->EndTimingSection("SPH_LFKDK_CHECK_TIMESTEPS");
 
   return activecount;
 }

@@ -104,7 +104,7 @@ class Sph
   //---------------------------------------------------------------------------
   virtual void AllocateMemory(int)=0;
   virtual void DeallocateMemory(void)=0;
-  void DeleteDeadParticles(void);
+  virtual void DeleteDeadParticles(void)=0;
   virtual void ReorderParticles(void)=0;
   void SphBoundingBox(FLOAT *, FLOAT *, int);
   void InitialSmoothingLengthGuess(void);
@@ -205,6 +205,7 @@ class GradhSph: public Sph<ndim>
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
+  virtual void DeleteDeadParticles(void);
   virtual void ReorderParticles(void);
 
   int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
@@ -275,6 +276,7 @@ class SM2012Sph: public Sph<ndim>
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
+  virtual void DeleteDeadParticles(void);
   virtual void ReorderParticles(void);
 
   int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
@@ -342,6 +344,7 @@ class GodunovSph: public Sph<ndim>
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
+  virtual void DeleteDeadParticles(void);
   virtual void ReorderParticles(void);
 
   virtual SphParticle<ndim>& GetParticleIPointer(int i) {return sphdata[i];};

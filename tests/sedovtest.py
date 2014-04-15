@@ -12,6 +12,7 @@ setupsim()
 
 # Run simulation and plot results to screen
 plot("R","rho")
+limit("rho",0.0,4.5)
 run()
 block()
 

@@ -84,6 +84,7 @@ class SimulationBase
   virtual void ReadSerenUnformHeaderFile(ifstream& infile, HeaderInfo& info)=0;
   virtual bool ReadSerenUnformSnapshotFile(string)=0;
   virtual bool WriteSerenUnformSnapshotFile(string)=0;
+  virtual bool WriteSerenLiteSnapshotFile(string)=0;
 
   std::list<string> keys;
 
@@ -125,6 +126,7 @@ class SimulationBase
   bool WriteSnapshotFile(string,string);
   HeaderInfo ReadHeaderSnapshotFile(string filename, string format);
 
+
   // Variables
   //---------------------------------------------------------------------------
   bool setup;                       ///< Flag if simulation is setup
@@ -138,6 +140,7 @@ class SimulationBase
   int level_diff_max;               ///< Max. allowed neib timestep level diff
   int level_max;                    ///< Maximum timestep level
   int level_step;                   ///< Level of smallest timestep unit
+  int litesnap;                     ///< ..
   int n;                            ///< Integer time counter
   int nbody_single_timestep;        ///< Flag if stars use same timestep
   int ndims;                        ///< Aux. dimensionality variable. 
@@ -150,14 +153,17 @@ class SimulationBase
   int ntreestockstep;               ///< Integer time between restocking tree
   int Nblocksteps;                  ///< No. of full block timestep steps
   int Nsteps;                       ///< Total no. of steps in simulation
+  int Nfullsteps;                   ///< No. of full steps in simulation
   int Nstepsmax;                    ///< Max. allowed no. of steps
   int Nlevels;                      ///< No. of timestep levels
   int Nmpi;                         ///< No. of MPI processes
   int Noutsnap;                     ///< No. of output snapshots
+  int Noutlitesnap;                 ///< No. of lite output snapshots
   int Nthreads;                     ///< Max no. of (OpenMP) threads
   int rank;                         ///< Process i.d. (for MPI simulations)
   int sink_particles;               ///< Switch on sink particles
   int sph_single_timestep;          ///< Flag if SPH ptcls use same step
+  DOUBLE dt_litesnap;               ///< Lite-snapshot time interval
   DOUBLE dt_max;                    ///< Value of maximum timestep level
   DOUBLE dt_snap;                   ///< Snapshot time interval
   DOUBLE dt_snap_wall;              ///< Wallclock time between snapshots
@@ -168,6 +174,8 @@ class SimulationBase
   DOUBLE timestep;                  ///< Current timestep
   DOUBLE tsnapfirst;                ///< Time of first snapshot
   DOUBLE tsnaplast;                 ///< (Expected) time of last snaphsot
+  DOUBLE tlitesnaplast;             ///< Time of last lite-snapshot
+  DOUBLE tlitesnapnext;             ///< Time of next lite-snapshot
   DOUBLE tsnapnext;                 ///< Time of next snapshot
   DOUBLE tsnap_wallclock;           ///< Wallclock time of last snapshot
   string out_file_form;             ///< Output snapshot file format
@@ -225,6 +233,7 @@ class Simulation : public SimulationBase
   int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
 #if defined(FFTW_TURBULENCE)
   void GenerateTurbulentVelocityField(int, int, DOUBLE, DOUBLE *);
+  void InterpolateVelocityField(int, FLOAT, FLOAT, FLOAT *, FLOAT *);
 #endif
 
 
@@ -278,6 +287,7 @@ class Simulation : public SimulationBase
   virtual void ReadSerenUnformHeaderFile(ifstream& infile, HeaderInfo& info);
   virtual bool ReadSerenUnformSnapshotFile(string);
   virtual bool WriteSerenUnformSnapshotFile(string);
+  virtual bool WriteSerenLiteSnapshotFile(string);
   virtual void ConvertToCodeUnits(void);
 
 
@@ -344,6 +354,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::ParametersProcessed;
   using Simulation<ndim>::n;
   using Simulation<ndim>::Nblocksteps;
+  using Simulation<ndim>::Nfullsteps;
   using Simulation<ndim>::Nlevels;
   using Simulation<ndim>::Nsteps;
   using Simulation<ndim>::t;
@@ -495,6 +506,7 @@ class SM2012SphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::ParametersProcessed;
   using Simulation<ndim>::n;
   using Simulation<ndim>::Nblocksteps;
+  using Simulation<ndim>::Nfullsteps;
   using Simulation<ndim>::Nlevels;
   using Simulation<ndim>::Nsteps;
   using Simulation<ndim>::t;
@@ -632,6 +644,7 @@ class NbodySimulation : public Simulation<ndim>
   using Simulation<ndim>::ParametersProcessed;
   using Simulation<ndim>::n;
   using Simulation<ndim>::Nblocksteps;
+  using Simulation<ndim>::Nfullsteps;
   using Simulation<ndim>::Nlevels;
   using Simulation<ndim>::Nsteps;
   using Simulation<ndim>::ndiagstep;

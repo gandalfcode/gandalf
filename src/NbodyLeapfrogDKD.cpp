@@ -25,6 +25,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <cassert>
 #include <iostream>
 #include <math.h>
 #include "Precision.h"
@@ -79,10 +80,12 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectGravForces
 {
   int i,j,k;                        // Star and dimension counters
   DOUBLE dr[ndim];                  // Relative position vector
+  DOUBLE drdt;                      // Rate of change of distance
   DOUBLE drsqd;                     // Distance squared
+  DOUBLE dv[ndim];                  // Relative velocity vector
   DOUBLE invdrmag;                  // 1 / drmag
 
-  debug2("[NbodyLeapfrogDKD::CalculateDirectGravForces]");
+  debug2("[NbodyHermite4::CalculateDirectGravForces]");
 
   // Loop over all (active) stars
   //---------------------------------------------------------------------------
@@ -95,12 +98,15 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectGravForces
       if (i == j) continue;
 
       for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
       drsqd = DotProduct(dr,dr,ndim);
       invdrmag = 1.0/sqrt(drsqd);
+      drdt = DotProduct(dv,dr,ndim)*invdrmag;
 
-      // Add contribution to main star array
-      for (k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
       star[i]->gpot += star[j]->m*invdrmag;
+      for (k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
+      for (k=0; k<ndim; k++) star[i]->adot[k] +=
+        star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
 
     }
     //-------------------------------------------------------------------------
@@ -115,7 +121,7 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectGravForces
 
 //=============================================================================
 //  NbodyLeapfrogDKD::CalculatePerturberForces
-/// ..
+/// Empty function for now.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::CalculatePerturberForces
@@ -133,15 +139,16 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculatePerturberForces
 
 //=============================================================================
 //  NbodyLeapfrogDKD::CalculateDirectSPHForces
-/// Calculate all ..
+/// Calculate all forces due to SPH neighbours and distant SPH particles 
+/// due to direct-sum gravity.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSPHForces
 (NbodyParticle<ndim> *star,         ///< [inout] Pointer to star
- int Nsph,                          ///< [in] Number of gas particles
- int Ndirect,                       ///< [in] ..
- int *sphlist,                      ///< [in] ..
- int *directlist,                   ///< [in] ..
+ int Nsph,                          ///< [in] No. of SPH neighbour gas ptcls
+ int Ndirect,                       ///< [in] No. of distant SPH ptcls.
+ int *sphlist,                      ///< [in] List of neighbour ids
+ int *directlist,                   ///< [in] List of distant ptcl ids
  SphParticle<ndim> *sphdata)        ///< [in] Array of SPH particles
 {
   int j,jj,k;                       // Star and dimension counters
@@ -151,25 +158,29 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSPHForces
   DOUBLE invhmean;                  // 1 / hmean
   DOUBLE invdrmag;                  // 1 / drmag
   DOUBLE paux;                      // Aux. force variable
-  DOUBLE wkern;                     // SPH kernel value
 
-  debug2("[NbodyLeapfrogKDK::CalculateDirectSPHForces]");
+  debug2("[NbodyLeapfrogDKD::CalculateDirectSPHForces]");
 
 
   // Sum grav. contributions from all neighbouring SPH particles
   //---------------------------------------------------------------------------
   for (jj=0; jj<Nsph; jj++) {
-
     j = sphlist[jj];
+    assert(sphdata[j].itype != dead);
+
+   j = sphlist[jj];
     for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star->r[k];
     drsqd = DotProduct(dr,dr,ndim);
     drmag = sqrt(drsqd);
     invdrmag = 1.0/drmag;
     invhmean = 2.0/(star->h + sphdata[j].h);
-    
+   
+    //for (k=0; k<ndim; k++) star->a[k] += sphdata[j].m*dr[k]*pow(invdrmag,3);
+    //star->gpot += sphdata[j].m*invdrmag;
+    //continue;
+ 
     paux = sphdata[j].m*invhmean*invhmean*
       kern.wgrav(drmag*invhmean)*invdrmag;
-    wkern = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
     
     // Add contribution to main star array
     for (k=0; k<ndim; k++) star->a[k] += paux*dr[k];
@@ -183,15 +194,17 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSPHForces
   // (i.e. direct summation with Newton's law of gravity)
   //---------------------------------------------------------------------------
   for (jj=0; jj<Ndirect; jj++) {
-
     j = directlist[jj];
+    assert(sphdata[j].itype != dead);
+
     for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star->r[k];
     drsqd = DotProduct(dr,dr,ndim);
     drmag = sqrt(drsqd);
     invdrmag = 1.0/drmag;
+    paux = sphdata[j].m*pow(invdrmag,3);
 
     // Add contribution to main star array
-    for (k=0; k<ndim; k++) star->a[k] += sphdata[j].m*dr[k]*pow(invdrmag,3);
+    for (k=0; k<ndim; k++) star->a[k] += paux*dr[k];
     star->gpot += sphdata[j].m*invdrmag;
     
   }
@@ -251,8 +264,18 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::AdvanceParticles
     dt = timestep*(FLOAT) dn;
 
     // Advance positions and velocities to first order
-    for (k=0; k<ndim; k++) star[i]->r[k] = star[i]->r0[k] + star[i]->v0[k]*dt;
-    for (k=0; k<vdim; k++) star[i]->v[k] = star[i]->v0[k] + star[i]->a0[k]*dt;
+    if (dn < nstep) { 
+      for (k=0; k<ndim; k++) 
+	star[i]->r[k] = star[i]->r0[k] + star[i]->v0[k]*dt;
+      for (k=0; k<vdim; k++) 
+	star[i]->v[k] = star[i]->v0[k] + star[i]->a[k]*dt;
+    }
+    else {
+      for (k=0; k<vdim; k++) 
+	star[i]->v[k] = star[i]->v0[k] + star[i]->a[k]*dt;
+      for (k=0; k<ndim; k++) star[i]->r[k] = 
+	star[i]->r0[k] + 0.5*(star[i]->v0[k] + star[i]->v[k])*dt;
+    }
 
     // If at half-step, set system particle as active
     if (dn == nstep/2) star[i]->active = true;
@@ -267,11 +290,7 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::AdvanceParticles
 
 //=============================================================================
 //  NbodyLeapfrogDKD::CorrectionTerms
-/// Compute velocity integration to second order at the end of the step by 
-/// adding a second order correction term, 
-/// $v(t+dt) -> v(t+dt) + 0.5*(a(t+dt) - a(t))*dt$.
-/// The full integration therefore becomes
-/// $v(t+dt) = v(t) + 0.5*(a(t) + a(t+dt))*dt$.
+/// Empty function.  No correction terms for Leapfrog-DKD
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::CorrectionTerms
@@ -280,25 +299,6 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CorrectionTerms
  NbodyParticle<ndim> **star,        ///< Main star/system array
  DOUBLE timestep)                   ///< Smallest timestep value
 {
-  int dn;                           // Integer time since beginning of step
-  int i;                            // Particle counter
-  int k;                            // Dimension counter
-  int nstep;                        // Particle (integer) step size
-
-  debug2("[NbodyLeapfrogDKD::CorrectionTerms]");
-
-  // Loop over all star particles and calculate correction terms only for 
-  // those at end of step.
-  //---------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
-    dn = n - star[i]->nlast;
-    nstep = star[i]->nstep;
-    if (dn == nstep)
-      for (k=0; k<ndim; k++) star[i]->v[k] +=
-	0.5*(star[i]->a[k] - star[i]->a0[k])*timestep*(DOUBLE) nstep;
-  }
-  //---------------------------------------------------------------------------
-
   return;
 }
 
@@ -395,12 +395,18 @@ DOUBLE NbodyLeapfrogDKD<ndim, kernelclass>::Timestep
 (NbodyParticle<ndim> *star)         ///< Reference to SPH particle
 {
   DOUBLE timestep;                  // Minimum value of particle timesteps
-  DOUBLE amag;                      // Magnitude of particle acceleration
+  DOUBLE amag;                      // Magnitude of star acceleration
+  DOUBLE adotmag;                   // Magnitude of star jerk
 
   // Acceleration condition
   amag = sqrt(DotProduct(star->a,star->a,ndim));
   timestep = nbody_mult*sqrt(star->h/(amag + small_number_dp));
   timestep = min(timestep,star->dt_internal);
+
+  // Rate of change of acceleration condition
+  //adotmag = sqrt(DotProduct(star->adot,star->adot,ndim));
+  //if (amag > 0.0 && adotmag > 0.0)
+  //  timestep = min(timestep,nbody_mult*amag/(adotmag + small_number_dp));
 
   return timestep;
 }

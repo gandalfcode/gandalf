@@ -45,6 +45,7 @@ static const string ascii_tag("SERENASCIIDUMPV2");
 static const int string_length = 20;
 
 
+
 //=============================================================================
 //  SimulationBase::ReadSnapshotFile
 /// Read snapshot file with specified filename and format.
@@ -93,6 +94,8 @@ bool SimulationBase::WriteSnapshotFile
     return WriteSerenFormSnapshotFile(filename);
   else if (fileform == "su" || fileform == "seren_unform")
     return WriteSerenUnformSnapshotFile(filename);
+  else if (fileform == "slite" || fileform == "seren_lite")
+    return WriteSerenLiteSnapshotFile(filename);
   else {
     cout << "Unrecognised file format" << endl;
     return false;
@@ -631,11 +634,13 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 
   // Variables that should be remembered for restarts
   if (restart) {
-    Noutsnap   = ilpdata[0];
-    Nsteps     = ilpdata[1];
-    t          = ddata[0];
-    tsnaplast  = ddata[1];
-    sph->mmean = ddata[2];
+    Noutsnap      = ilpdata[0];
+    Nsteps        = ilpdata[1];
+    Noutlitesnap  = ilpdata[10];
+    t             = ddata[0];
+    tsnaplast     = ddata[1];
+    sph->mmean    = ddata[2];
+    tlitesnaplast = ddata[10];
   }
 
   //sph->h_fac = rdata[0];
@@ -953,11 +958,13 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   idata[20] = ndata;
   ilpdata[0] = Noutsnap;
   ilpdata[1] = Nsteps;
+  ilpdata[10] = Noutlitesnap;
   rdata[0] = sph->h_fac;
   rdata[1] = 0.0;
   ddata[0] = t*simunits.t.outscale;
   ddata[1] = tsnaplast*simunits.t.outscale;
   ddata[2] = sph->mmean*simunits.m.outscale;
+  ddata[10] = tlitesnaplast*simunits.t.outscale;
 
   // Write header information to file
   //---------------------------------------------------------------------------
@@ -1248,11 +1255,13 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 
   // Variables that should be remembered for restarts
   if (restart) {
-    Noutsnap   = ilpdata[0];
-    Nsteps     = ilpdata[1];
-    t          = ddata[0];
-    tsnaplast  = ddata[1];
-    sph->mmean = ddata[2];
+    Noutsnap      = ilpdata[0];
+    Nsteps        = ilpdata[1];
+    Noutlitesnap  = ilpdata[10];
+    t             = ddata[0];
+    tsnaplast     = ddata[1];
+    sph->mmean    = ddata[2];
+    tlitesnaplast = ddata[10];
   }
 
   // Read unit_data
@@ -1403,6 +1412,7 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 }
 
 
+
 //=============================================================================
 //  Simulation::WriteSerenUnformSnapshotFile
 /// Write SPH and N-body particle data to snapshot file in Seren binary format.
@@ -1521,11 +1531,13 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   idata[20] = ndata;
   ilpdata[0] = Noutsnap;
   ilpdata[1] = Nsteps;
+  ilpdata[10] = Noutlitesnap;
   rdata[0] = sph->h_fac;
   rdata[1] = 0.0;
   ddata[0] = t*simunits.t.outscale;
   ddata[1] = tsnaplast*simunits.t.outscale;
   ddata[2] = sph->mmean*simunits.m.outscale;
+  ddata[10] = tlitesnaplast*simunits.t.outscale;
 
 
   // Write header information to file
@@ -1653,6 +1665,228 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 
 
 //=============================================================================
+//  Simulation::WriteSerenLiteSnapshotFile
+/// Write SPH and N-body particle data to snapshot file in Seren 'lite' format 
+/// (i.e. stripped down, low-memory data for basic visualisation and movies).
+//=============================================================================
+template <int ndim>
+bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
+{
+  int i;                            // Aux. counter
+  int idata[50];                    // Integer data array
+  int ii;                           // Aux. counter
+  int k;                            // Aux. loop counter
+  int typedata[50][5];              // SPH Particle data array information
+  int ndata;                        // No. of data arrays written
+  int nunit;                        // No. of unit strings
+  int sink_data_length = 12+2*ndim; // (+ 2*dmdt_range_aux);
+  long ilpdata[50];                 // Long integer data array
+  float rdata[50];                  // Real data array
+  float sdata[sink_data_length];    // Sink data packet
+  double ddata[50];                 // Double float data array
+  string unit_data[50];             // String ids of units written
+  string data_id[50];               // String ids of arrays written
+
+
+  debug2("[Simulation::WriteSerenLiteSnapshotFile]");
+
+  cout << "Writing snapshot file : " << filename << endl;
+
+  ofstream outfile(filename.c_str(),ios::binary);
+  BinaryWriter writer(outfile);
+
+  // Zero arrays
+  for (i=0; i<50; i++) idata[i] = 0;
+  for (i=0; i<50; i++) ilpdata[i] = 0;
+  for (i=0; i<50; i++) rdata[i] = 0.0;
+  for (i=0; i<50; i++) ddata[i] = 0.0;
+  nunit = 0;
+  ndata = 0;
+
+  // Set units
+  if (!simunits.dimensionless) {
+    unit_data[0] = simunits.r.outunit;
+    unit_data[1] = simunits.m.outunit;
+    unit_data[2] = simunits.t.outunit;
+    unit_data[3] = simunits.v.outunit;
+    unit_data[4] = simunits.a.outunit;
+    unit_data[5] = simunits.rho.outunit;
+    unit_data[6] = simunits.sigma.outunit;
+    unit_data[7] = simunits.press.outunit;
+    unit_data[8] = simunits.f.outunit;
+    unit_data[9] = simunits.E.outunit;
+    unit_data[10] = simunits.mom.outunit;
+    unit_data[11] = simunits.angmom.outunit;
+    unit_data[12] = simunits.angvel.outunit;
+    unit_data[13] = simunits.dmdt.outunit;
+    unit_data[14] = simunits.L.outunit;
+    unit_data[15] = simunits.kappa.outunit;
+    unit_data[16] = simunits.B.outunit;
+    unit_data[17] = simunits.Q.outunit;
+    unit_data[18] = simunits.Jcur.outunit;
+    unit_data[19] = simunits.u.outunit;
+    unit_data[20] = simunits.temp.outunit;
+    nunit = 21;
+  }
+
+  // Set array ids and array information data if there are any SPH particles
+  //---------------------------------------------------------------------------
+  if (sph->Nsph > 0) {
+
+    data_id[ndata] = "r";
+    typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 1; ndata++;
+
+    data_id[ndata] = "m";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 2; ndata++;
+
+    data_id[ndata] = "h";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 1; ndata++;
+
+    data_id[ndata] = "rho";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 6; ndata++;
+
+    data_id[ndata] = "u";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 20; ndata++;
+  }
+
+  if (nbody->Nstar > 0) {
+    data_id[ndata] = "sink_v1";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = nbody->Nstar; typedata[ndata][3] = 7;
+    typedata[ndata][4] = 0; ndata++;
+  }
+
+  // Set important header information
+  idata[0] = sph->Nsph;
+  idata[1] = nbody->Nstar;
+  idata[4] = sph->Nsph;
+  idata[19] = nunit;
+  idata[20] = ndata;
+  ilpdata[0] = Noutsnap;
+  ilpdata[1] = Nsteps;
+  rdata[0] = sph->h_fac;
+  rdata[1] = 0.0;
+  ddata[0] = t*simunits.t.outscale;
+  ddata[1] = tsnaplast*simunits.t.outscale;
+  ddata[2] = sph->mmean*simunits.m.outscale;
+
+
+  // Write header information to file
+  //---------------------------------------------------------------------------
+  {
+    std::ostringstream stream;
+    stream << std::left << std::setw(string_length) << std::setfill(' ')
+                      << binary_tag;
+    outfile << stream.str();
+  }
+
+  // Hard-wired to single precision for low-memory usage
+  writer.write_value(4);
+  writer.write_value(ndim);
+  writer.write_value(ndim);
+  writer.write_value(ndim);
+  for (i=0; i<50; i++) writer.write_value(idata[i]);
+  for (i=0; i<50; i++) writer.write_value(ilpdata[i]);
+  for (i=0; i<50; i++) writer.write_value(rdata[i]);
+  for (i=0; i<50; i++) writer.write_value(ddata[i]);
+  for (i=0; i<nunit; i++) {
+    std::ostringstream stream;
+    stream << std::left << std::setw(string_length) << std::setfill(' ')
+                  << unit_data[i];
+    outfile << stream.str();
+  }
+  for (i=0; i<ndata; i++) {
+    std::ostringstream stream;
+    stream << std::left << std::setw(string_length) << std::setfill(' ')
+              << data_id[i];
+    outfile << stream.str();
+  }
+  for (i=0; i<ndata; i++)
+    for (int j=0; j< 5; j++) writer.write_value(typedata[i][j]);
+
+  // Write arrays for SPH particles
+  //---------------------------------------------------------------------------
+  if (sph->Nsph > 0) {
+
+    // Positions
+    //-------------------------------------------------------------------------
+    for (i=0; i<sph->Nsph; i++) {
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      for (int k=0; k<ndim; k++)
+	writer.write_value((float) (part.r[k]*simunits.r.outscale));
+    }
+
+    // Masses
+    //-------------------------------------------------------------------------
+    for (i=0; i<sph->Nsph; i++) {
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      writer.write_value((float) (part.m*simunits.m.outscale));
+    }
+
+    // Smoothing lengths
+    //-------------------------------------------------------------------------
+    for (i=0; i<sph->Nsph; i++) {
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      writer.write_value((float) (part.h*simunits.r.outscale));
+    }
+
+    // Densities
+    //-------------------------------------------------------------------------
+    for (i=0; i<sph->Nsph; i++) {
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      writer.write_value((float) (part.rho*simunits.rho.outscale));
+    }
+
+    // Specific internal energies
+    //-------------------------------------------------------------------------
+    for (i=0; i<sph->Nsph; i++) {
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      writer.write_value((float) (part.u*simunits.u.outscale));
+    }
+
+  }
+
+
+  // Sinks/stars
+  //---------------------------------------------------------------------------
+  if (nbody->Nstar > 0) {
+    for (k=0; k<sink_data_length; k++) sdata[k] = 0.0;
+    int values[6] = {2,2,0,sink_data_length,0,0};
+    for (i=0; i<6;i++)
+      writer.write_value(values[i]);
+    for (i=0; i<nbody->Nstar; i++) {
+      writer.write_value(true); writer.write_value(true);
+      writer.write_value(i+1); writer.write_value(0);
+      for (k=0; k<ndim; k++) sdata[k+1] = 
+	(float) (nbody->stardata[i].r[k]*simunits.r.outscale);
+      for (k=0; k<ndim; k++) sdata[k+1+ndim] = 
+	(float) (nbody->stardata[i].v[k]*simunits.v.outscale);
+      sdata[1+2*ndim] = (float) (nbody->stardata[i].m*simunits.m.outscale);
+      sdata[2+2*ndim] = (float) (nbody->stardata[i].h*simunits.r.outscale);
+      sdata[3+2*ndim] = (float)(nbody->stardata[i].radius*simunits.r.outscale);
+      for (ii=0; ii<sink_data_length; ii++) {
+        writer.write_value(sdata[ii]);
+      }
+    }
+  }
+  //---------------------------------------------------------------------------
+
+  outfile.close();
+}
+
+
+
+//=============================================================================
 //  Simulation::ConvertToCodeUnits
 /// For any simulations loaded into memory via a snapshot file, all particle 
 /// variables are converted into dimensionless code units here.
@@ -1698,9 +1932,11 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
   // Rescale other variables
   t /= simunits.t.inscale;
   tsnaplast /= simunits.t.inscale;
+  tlitesnaplast /= simunits.t.inscale;
   sph->mmean /= simunits.m.inscale;
   if (restart) {
     tsnapnext = tsnaplast + dt_snap;
+    tlitesnapnext = tlitesnaplast + dt_litesnap;
   }
 
   return;

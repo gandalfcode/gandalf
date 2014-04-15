@@ -114,7 +114,7 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
  
   // Create SPH particle integration object
   //---------------------------------------------------------------------------
-  sphint = new SphGodunovIntegration<ndim>(floatparams["accel_mult"],
+  sphint = new SphGodunovIntegration<ndim, GodunovSphParticle>(floatparams["accel_mult"],
 					   floatparams["courant_mult"],
 			              floatparams["energy_mult"],
 					   gas_eos, tdavisc);
@@ -306,7 +306,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Set particle values for initial step (e.g. r0, v0, a0)
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EndTimestep(n,sph->Nsph,timestep,sph->GetParticlesArray());
-  sphint->EndTimestep(n,timestep,sph);
+  sphint->EndTimestep(n,timestep,sph->Nsph,sph->GetParticlesArray());
   nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
 
   // Compute timesteps for all particles
@@ -348,7 +348,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
   t = t + timestep;
 
   // Advance SPH particles positions and velocities
-  sphint->AdvanceParticles(n,(FLOAT) timestep,sph);
+  sphint->AdvanceParticles(n,(FLOAT) timestep,sph->Nsph,sph->GetParticlesArray());
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EnergyIntegration(n,sph->Nsph,sph->GetParticlesArray(),(FLOAT) timestep);
   nbody->AdvanceParticles(n,nbody->Nstar,nbody->nbodydata,timestep);
@@ -436,7 +436,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     // Set all end-of-step variables
     if (simparams->stringparams["gas_eos"] == "energy_eqn")
       uint->EndTimestep(n,sph->Nsph,timestep,sph->GetParticlesArray());
-    sphint->EndTimestep(n,timestep,sph);
+    sphint->EndTimestep(n,timestep,sph->Nsph,sph->GetParticlesArray());
 
   }
   //---------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 # Adiabatic Sod shock tube test
 # Creates an adiabatic Sod shocktube test
 #----------------------------------------
-
+comment				   : out_file_form = sf
 
 #-----------------------------
 # Initial conditions variables
@@ -17,10 +17,9 @@ Pressure of LHS fluid                       : press1 = 1.0
 Pressure of RHS fluid                       : press2 = 0.2
 Density of LHS fluid                        : rhofluid1 = 1.0
 Density of RHS fluid                        : rhofluid2 = 0.5
-No. of particles in LHS fluid               : Nlattice1[0] = 100
-No. of particles in RHS fluid               : Nlattice2[0] = 50
+No. of particles in LHS fluid               : Nlattice1[0] = 512
+No. of particles in RHS fluid               : Nlattice2[0] = 256
 Dimensionless units                         : dimensionless = 1
-asdas : Nstepsmax = 1
 
 
 #------------------------------
@@ -35,7 +34,7 @@ RHS boundary type in x-dimension            : x_boundary_rhs = periodic
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 0.4
+Simulation end time                         : tend = 0.3
 Regular snapshot output frequency           : dt_snap = 0.1
 Time for first snapshot                     : tsnapfirst = 0.0
 Screen output frequency (in no. of steps)   : noutputstep = 1

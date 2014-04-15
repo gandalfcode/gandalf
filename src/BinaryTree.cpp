@@ -49,26 +49,28 @@ using namespace std;
 //=============================================================================
 template <int ndim>
 BinaryTree<ndim>::BinaryTree(int Nleafmaxaux, FLOAT thetamaxsqdaux, 
-                             FLOAT kernrangeaux, string gravity_mac_aux,
-                             string multipole_aux):
+                             FLOAT kernrangeaux, FLOAT macerroraux, 
+                             string gravity_mac_aux, string multipole_aux):
   SphNeighbourSearch<ndim>()
 {
   allocated_buffer = false;
-  allocated_tree = false;
-  neibcheck = true;
-  ltot = 0;
-  Ntot = 0;
-  Ntotmax = 0;
-  Ntotmaxold = 0;
-  Nleafmax = Nleafmaxaux;
-  kernrange = kernrangeaux;
-  thetamaxsqd = thetamaxsqdaux;
-  gravity_mac = gravity_mac_aux;
-  multipole = multipole_aux;
+  allocated_tree   = false;
+  neibcheck        = true;
+  ltot             = 0;
+  Ntot             = 0;
+  Ntotmax          = 0;
+  Ntotmaxold       = 0;
+  Nleafmax         = Nleafmaxaux;
+  kernrange        = kernrangeaux;
+  thetamaxsqd      = thetamaxsqdaux;
+  invthetamaxsqd   = 1.0/thetamaxsqdaux;
+  gravity_mac      = gravity_mac_aux;
+  macerror         = macerroraux;
+  multipole        = multipole_aux;
 #if defined _OPENMP
-  Nthreads = omp_get_max_threads();
+  Nthreads         = omp_get_max_threads();
 #else
-  Nthreads = 1;
+  Nthreads         = 1;
 #endif
 }
 
@@ -491,6 +493,10 @@ void BinaryTree<ndim>::DivideTreeCell
   }
 #endif
 
+  if (cell.N != tree[cell.c1].N + tree[cell.c2].N) {
+    cout << "Checking : " << cell.N << "   " << tree[cell.c1].N 
+	 << "    " << tree[cell.c2].N << endl;
+  }
   assert(cell.N == tree[cell.c1].N + tree[cell.c2].N);
 
   // Stock all cell properties once constructed
@@ -736,8 +742,8 @@ void BinaryTree<ndim>::StockCellProperties
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drsqd;                      // Distance squared
   FLOAT mi;                         // Mass of particle i
-  //FLOAT p = 0.0;                    // ..
-  //FLOAT lambda = 0.0;               // ..
+  FLOAT p = 0.0;                    // ..
+  FLOAT lambda = 0.0;               // ..
   BinaryTreeCell<ndim> &child1 = tree[cell.c1];
   BinaryTreeCell<ndim> &child2 = tree[cell.c2];
 
@@ -750,6 +756,7 @@ void BinaryTree<ndim>::StockCellProperties
   cell.rmax = 0.0;
   cell.dhmaxdt = 0.0;
   cell.drmaxdt = 0.0;
+  cell.mac = 0.0;
   cell.cdistsqd = big_number;
   for (k=0; k<ndim; k++) cell.r[k] = 0.0;
   for (k=0; k<ndim; k++) cell.v[k] = 0.0;
@@ -849,10 +856,6 @@ void BinaryTree<ndim>::StockCellProperties
       }
     }
 
-
-    //if (cell.ifirst == -1) 
-    //cout << "DEAD CELL?? : " << cell.m << "   " << cell.r[0] << "   " << cell.r[1] << "   " << cell.rmax << "    " << cell.hmax << "    " << cell.cdistsqd << endl;
-
   }
   // For non-leaf cells, sum together two children cells
   //---------------------------------------------------------------------------
@@ -933,22 +936,25 @@ void BinaryTree<ndim>::StockCellProperties
 	cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
       }
     }
-
-
-    // Calculate eigenvalue MAC criteria
-    //abserror = 0.00001;
-    //if (ndim == 3)
-    //  p = cell.q[0]*cell.q[2] - (cell.q[0] + cell.q[2])*(cell.q[0] + cell.q[2])
-    //	- cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];
-    //if (p >= 0.0) cell.mac = 0.0;
-    //else {
-    //  lambda = 2.0*sqrt(-p/3.0);
-    //  cell.mac = pow(0.5*lambda/abserror,0.66666666666666);
-    //}
-
     
   }
   //---------------------------------------------------------------------------
+
+
+  // Calculate eigenvalue MAC criteria
+  if (gravity_mac == "eigenmac") {
+    if (ndim == 3)
+      p = cell.q[0]*cell.q[2] 
+	- (cell.q[0] + cell.q[2])*(cell.q[0] + cell.q[2])
+	- cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];
+    if (p >= 0.0) cell.mac = 0.0;
+    else {
+      lambda = 2.0*sqrt(-p/3.0);
+      cell.mac = pow(0.5*lambda/macerror,0.66666666666666);
+    }
+  }
+  else
+    cell.mac = 0.0;
 
 
   return;
@@ -964,8 +970,8 @@ template <int ndim>
 void BinaryTree<ndim>::ExtrapolateCellProperties
 (FLOAT dt)                          ///< Smallest timestep size
 {
-  int c;                            // ..
-  int k;                            // ..
+  int c;                            // Cell counter
+  int k;                            // Dimension counter
 
   debug2("[BinaryTree::ExtrapolateCellProperties]");
 
@@ -1232,11 +1238,9 @@ int BinaryTree<ndim>::ComputeGatherNeighbourList
     for (k=0; k<ndim; k++) dr[k] = tree[cc].rcell[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
 
-    // Check if circular range overlaps cell bounding sphere
-    //-------------------------------------------------------------------------
-    //if (drsqd < pow(tree[cc].rmax + hrangemax,2)) {
 
     // Check if bounding boxes overlap with each other
+    //-------------------------------------------------------------------------
     if (BoxOverlap(gatherboxmin,gatherboxmax,tree[cc].bbmin,tree[cc].bbmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
@@ -1315,12 +1319,12 @@ int BinaryTree<ndim>::ComputeNeighbourList
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drsqd;                      // Distance squared
   FLOAT rc[ndim];                   // Position of cell
-  FLOAT hrangemax;                  // Maximum kernel extent
+  FLOAT hrangemaxsqd;               // Maximum kernel extent (squared)
   FLOAT rmax;                       // Max. extent of particles from cell COM
 
 
   for (k=0; k<ndim; k++) rc[k] = cell->r[k];
-  hrangemax = cell->rmax + kernrange*cell->hmax;
+  hrangemaxsqd = pow(cell->rmax + kernrange*cell->hmax,2);
   rmax = cell->rmax;
 
   // Start with root cell and walk through entire tree
@@ -1333,12 +1337,8 @@ int BinaryTree<ndim>::ComputeNeighbourList
     for (k=0; k<ndim; k++) dr[k] = tree[cc].rcell[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
 
-    // Check if circular range overlaps cell bounding sphere
-    //-------------------------------------------------------------------------
-    //if (drsqd < pow(tree[cc].rmax + hrangemax,2) ||
-    //  drsqd < pow(rmax + tree[cc].rmax + kernrange*tree[cc].hmax,2)) {
-
     // Check if bounding boxes overlap with each other
+    //-------------------------------------------------------------------------
     if (BoxOverlap(cell->bbmin,cell->bbmax,tree[cc].hboxmin,tree[cc].hboxmax)
 	|| BoxOverlap(cell->hboxmin,cell->hboxmax,tree[cc].bbmin,tree[cc].bbmax)){
 
@@ -1375,13 +1375,12 @@ int BinaryTree<ndim>::ComputeNeighbourList
 
 
   // Now, trim the list to remove particles that are definitely not neighbours
-  hrangemax = hrangemax*hrangemax;
   for (j=0; j<Nneib; j++) {
     i = neiblist[j];
     if (sphdata[i].itype == dead) continue;
     for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
-    if (drsqd < hrangemax || drsqd <
+    if (drsqd < hrangemaxsqd || drsqd <
         (rmax + kernrange*sphdata[i].h)*(rmax + kernrange*sphdata[i].h));
       neiblist[Ntemp++] = i;
   }
@@ -1405,6 +1404,7 @@ int BinaryTree<ndim>::ComputeNeighbourList
 template <int ndim>
 int BinaryTree<ndim>::ComputeGravityInteractionList
 (BinaryTreeCell<ndim> *cell,        ///< [in] Pointer to cell
+ FLOAT macfactor,                   ///< [in] Gravity MAC particle factor
  int Nneibmax,                      ///< [in] Max. no. of SPH neighbours
  int Ndirectmax,                    ///< [in] Max. no. of direct-sum neighbours
  int Ngravcellmax,                  ///< [in] Max. no. of cell interactions
@@ -1413,7 +1413,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
  int &Ngravcell,                    ///< [out] No. of cell interactions
  int *neiblist,                     ///< [out] List of SPH neighbour ids
  int *directlist,                   ///< [out] List of direct-sum neighbour ids
- BinaryTreeCell<ndim> **gravcelllist,  ///< [out] List of cell ids
+ BinaryTreeCell<ndim> **gravcelllist, ///< [out] List of cell ids
  SphParticle<ndim> *sphdata)        ///< [in] SPH particle data
 {
   int cc;                           // Cell counter
@@ -1448,13 +1448,8 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
     drsqd = DotProduct(dr,dr,ndim);
 
     
-    // Check if cells contain SPH neighbours
-    //-------------------------------------------------------------------------
-    //if (drsqd < (tree[cc].rmax + hrangemax)*(tree[cc].rmax + hrangemax) ||
-    //drsqd < pow(tree[cc].rmax + rmax + kernrange*tree[cc].hmax,2)) {
-
-      //cout << "Opening neighbour cell : " << cc << endl;
     // Check if bounding boxes overlap with each other
+    //-------------------------------------------------------------------------
     if (BoxOverlap(cell->bbmin,cell->bbmax,tree[cc].hboxmin,tree[cc].hboxmax) 
 	|| BoxOverlap(cell->hboxmin,cell->hboxmax,tree[cc].bbmin,tree[cc].bbmax)){
 
@@ -1484,9 +1479,8 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
 
     // Check if cell is far enough away to use the COM approximation
     //-------------------------------------------------------------------------
-    //else if (drsqd >= tree[c].cdistsqd + tree[cc].cdistsqd) {
-    //else if (drsqd > cdistsqd && drsqd > tree[cc].cdistsqd) {
-    else if (drsqd > tree[cc].cdistsqd && tree[cc].N > 0) {
+    else if (drsqd > tree[cc].cdistsqd && drsqd > tree[cc].mac*macfactor 
+	     && tree[cc].N > 0) {
 
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
@@ -1504,9 +1498,8 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
     // If cell is too close, open cell to interogate children cells.
     // If cell is too close and a leaf cell, then add particles to direct list.
     //-------------------------------------------------------------------------
-    //else if (drsqd < tree[c].cdistsqd + tree[cc].cdistsqd) {
-    //else if (drsqd <= cdistsqd || drsqd <= tree[cc].cdistsqd) {
-    else if (drsqd <= tree[cc].cdistsqd && tree[cc].N > 0) {
+    else if (!(drsqd > tree[cc].cdistsqd && drsqd > tree[cc].mac*macfactor )
+	     && tree[cc].N > 0) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (tree[cc].level != ltot)
@@ -1574,6 +1567,7 @@ int BinaryTree<ndim>::ComputeGravityInteractionList
 template <int ndim>
 int BinaryTree<ndim>::ComputeStarGravityInteractionList
 (NbodyParticle<ndim> *star,         ///< [in] Nbody particle
+ FLOAT macfactor,                   ///< [in] Gravity MAC factor
  int Nneibmax,                      ///< [in] Max. no. of SPH neighbours
  int Ndirectmax,                    ///< [in] Max. no. of direct-sum neighbours
  int Ngravcellmax,                  ///< [in] Max. no. of cell interactions
@@ -1615,7 +1609,7 @@ int BinaryTree<ndim>::ComputeStarGravityInteractionList
     
     // Check if cells contain SPH neighbours
     //-------------------------------------------------------------------------
-    if (drsqd < 0.25*pow(hrangemax + tree[cc].rmax + kernrange*tree[cc].hmax,2)) {
+    if (drsqd < pow(0.5*hrangemax + tree[cc].rmax + 0.5*kernrange*tree[cc].hmax,2)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (tree[cc].level != ltot)
@@ -1625,7 +1619,7 @@ int BinaryTree<ndim>::ComputeStarGravityInteractionList
       else if (tree[cc].level == ltot && Nneib + Nleafmax <= Nneibmax) {
         i = tree[cc].ifirst;
     	while (i != -1) {
-          neiblist[Nneib++] = i;
+	  if (sphdata[i].itype != dead) neiblist[Nneib++] = i;
           if (i == tree[cc].ilast) break;
     	  i = inext[i];
         };
@@ -1645,8 +1639,10 @@ int BinaryTree<ndim>::ComputeStarGravityInteractionList
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
       if (tree[cc].level == ltot && tree[cc].N == 1 && 
-	  Ndirect + Nneib < Ndirectmax)
-        directlist[Ndirect++] = tree[cc].ifirst;
+	  Ndirect + Nneib < Ndirectmax) {
+	if (sphdata[tree[cc].ifirst].itype != dead)
+	  directlist[Ndirect++] = tree[cc].ifirst;
+      }
       else if (Ngravcell < Ngravcellmax && tree[cc].N > 0)
         gravcelllist[Ngravcell++] = &(tree[cc]);
       else
@@ -1668,8 +1664,7 @@ int BinaryTree<ndim>::ComputeStarGravityInteractionList
       else if (tree[cc].level == ltot && Ndirect + Nleafmax <= Ndirectmax) {
         i = tree[cc].ifirst;
         while (i != -1) {
-          //neiblist[Nneib++] = i;
-          directlist[Ndirect++] = i;
+	  if (sphdata[i].itype != dead) directlist[Ndirect++] = i;
           if (i == tree[cc].ilast) break;
        	  i = inext[i];
         };
@@ -1863,7 +1858,7 @@ void BinaryTree<ndim>::ComputeFastMonopoleForces
   if (ndim == 3) {
 
     for (cc=0; cc<Ngravcell; cc++) {
-      assert(cell->id != gravecelllist[cc]->id);
+      assert(cell->id != gravcelllist[cc]->id);
       mc = gravcelllist[cc]->m;
       for (k=0; k<ndim; k++) dr[k] = gravcelllist[cc]->r[k] - rc[k];
       drsqd = DotProduct(dr,dr,ndim);
@@ -2275,7 +2270,8 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
         dr = new FLOAT[Nneibmax*ndim];
         drmag = new FLOAT[Nneibmax];
         invdrmag = new FLOAT[Nneibmax];
-        neibpartbuf[ithread] = new SphParticle<ndim>[Nneibmax]; neibpart = neibpartbuf[ithread];
+        neibpartbuf[ithread] = new SphParticle<ndim>[Nneibmax]; 
+	neibpart = neibpartbuf[ithread];
 	//neibpart = new SphParticle<ndim>[Nneibmax];
         Nneib = ComputeNeighbourList(cell,Nneibmax,neiblist,sph->sphdata);
       };
@@ -2354,8 +2350,8 @@ void BinaryTree<ndim>::UpdateAllSphHydroForces
         for (k=0; k<ndim; k++) data[i].a[k] = activepart[j].a[k];
         data[i].dudt = activepart[j].dudt;
         data[i].div_v = activepart[j].div_v;
-        data[i].levelneib = activepart[j].levelneib;
 	data[i].active = false;
+        levelneib[i] = max(levelneib[i],activepart[j].levelneib);
       }
 
     }
@@ -2406,7 +2402,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
   int cactive;                      // No. of active cells
   int cc;                           // Aux. cell counter
   int i;                            // Particle id
-  int ithread;
+  int ithread;                      // OpenMP thread id
   int j;                            // Aux. particle counter
   int jj;                           // Aux. particle counter
   int k;                            // Dimension counter
@@ -2425,6 +2421,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
   int *interactlist;                // List of interacting neighbour ids
   int *levelneib;                   // ..
   int *neiblist;                    // List of neighbour ids
+  FLOAT macfactor;                  // Gravity MAC factor
   FLOAT draux[ndim];                // Aux. relative position vector
   FLOAT drsqd;                      // Distance squared
   FLOAT hrangesqdi;                 // Kernel gather extent
@@ -2456,9 +2453,9 @@ void BinaryTree<ndim>::UpdateAllSphForces
   //===========================================================================
 #pragma omp parallel default(none) shared(celllist,cactive,nbody,sph,cout) \
   private(activepart,activelist,cc,cell,directlist,draux,drsqd,gravcelllist) \
-  private(hrangesqdi,Ndirectaux,rp,i,interactlist,ithread,j,jj,k,levelneib) \
-  private(neiblist,neibpart,Nactive,Ndirect,Ndirectmax,Ngravcell) \
-  private(Ngravcellmax,Ninteract,Nneib,Nneibmax,okflag)	\
+  private(hrangesqdi,i,interactlist,ithread,j,jj,k,levelneib,macfactor)	\
+  private(neiblist,neibpart,Nactive,Ndirect,Ndirectaux,Ndirectmax) \
+  private(Ngravcell,Ngravcellmax,Ninteract,Nneib,Nneibmax,okflag,rp) \
   reduction(+:Nactivecount,Ncellcount,Ndirectcount,Nneibcount)
   {
 #if defined _OPENMP
@@ -2488,15 +2485,23 @@ void BinaryTree<ndim>::UpdateAllSphForces
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       cell = celllist[cc];
+      macfactor = 0.0;
 
       // Find list of active particles in current cell
       Nactive = ComputeActiveParticleList(cell,sph,activelist);
       Nactivecount += Nactive;
 
       // Make local copies of active particles
+      for (j=0; j<Nactive; j++) activepart[j] = sph->sphdata[activelist[j]];
+
+      // Compute average/maximum term for computing gravity MAC
+      if (gravity_mac == "eigenmac") {
+	for (j=0; j<Nactive; j++) 
+	  macfactor = max(macfactor,pow(1.0/activepart[j].gpot,twothirds));
+      }
+
+      // Zero/initialise all summation variables for active particles
       for (j=0; j<Nactive; j++) {
-        //assert(activelist[j] >= 0 && activelist[j] < sph->Nsph);
-        activepart[j] = sph->sphdata[activelist[j]];
         activepart[j].div_v = (FLOAT) 0.0;
         activepart[j].dudt = (FLOAT) 0.0;
         activepart[j].levelneib = 0;
@@ -2507,7 +2512,8 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
 
       // Compute neighbour list for cell depending on physics options
-      okflag = ComputeGravityInteractionList(cell,Nneibmax,Ndirectmax,
+      okflag = ComputeGravityInteractionList(cell,macfactor,
+					     Nneibmax,Ndirectmax,
                                              Ngravcellmax,Nneib,Ndirect,
                                              Ngravcell,neiblist,directlist,
                                              gravcelllist,sph->sphdata);
@@ -2533,7 +2539,8 @@ void BinaryTree<ndim>::UpdateAllSphForces
 	neibpart = new SphParticle<ndim>[Nneibmax];
 	neibpartbuf[ithread] = new SphParticle<ndim>[Nneibmax]; 
 	neibpart = neibpartbuf[ithread];
-	okflag = ComputeGravityInteractionList(cell,Nneibmax,Ndirectmax,
+	okflag = ComputeGravityInteractionList(cell,macfactor,
+					       Nneibmax,Ndirectmax,
 					       Ngravcellmax,Nneib,Ndirect,
 					       Ngravcell,neiblist,directlist,
 					       gravcelllist,sph->sphdata);
@@ -2620,8 +2627,8 @@ void BinaryTree<ndim>::UpdateAllSphForces
         sph->sphdata[i].gpot = activepart[j].gpot;
         sph->sphdata[i].dudt = activepart[j].dudt;
         sph->sphdata[i].div_v = activepart[j].div_v;
-        sph->sphdata[i].levelneib = activepart[j].levelneib;
 	sph->sphdata[i].active = false;
+        levelneib[i] = max(levelneib[i],activepart[j].levelneib);
       }
 
     }
@@ -2629,12 +2636,11 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
 
     // Finally, add all contributions from distant pair-wise forces to arrays
-    //#pragma omp critical
-    //for (i=0; i<sph->Nsph; i++) {
-    //  sph->sphdata[i].levelneib = 
-    //	max(sph->sphdata[i].levelneib,levelneib[i]);
-    //}
-
+#pragma omp critical
+    for (i=0; i<sph->Nsph; i++) {
+      sph->sphdata[i].levelneib = 
+    	max(sph->sphdata[i].levelneib,levelneib[i]);
+    }
 
     // Free-up local memory for OpenMP thread
     //delete[] neibpart;
@@ -2700,6 +2706,7 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
   FLOAT draux[ndim];                // Aux. relative position vector
   FLOAT drsqd;                      // Distance squared
   FLOAT hrangesqdi;                 // Kernel gather extent
+  FLOAT macfactor;                  // Gravity MAC factor
   FLOAT rp[ndim];                   // .. 
   BinaryTreeCell<ndim> *cell;       // Pointer to binary tree cell
   BinaryTreeCell<ndim> **celllist;  // List of pointers to binary tree cells
@@ -2728,9 +2735,9 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
   //===========================================================================
 #pragma omp parallel default(none) shared(celllist,cactive,nbody,sph,cout) \
   private(activelist,activepart,cc,cell,directlist,draux,drsqd,gravcelllist)\
-  private(hrangesqdi,Ndirectaux,rp,i,interactlist,ithread,j,jj,k,levelneib)\
-  private(neiblist,neibpart,Nactive,Ndirect,Ndirectmax,Ngravcell)\
-  private(Ngravcellmax,Ninteract,Nneib,Nneibmax,okflag)\
+  private(hrangesqdi,i,interactlist,ithread,j,jj,k,levelneib,macfactor)	\
+  private(neiblist,neibpart,Nactive,Ndirect,Ndirectaux,Ndirectmax,Ngravcell) \
+  private(Ngravcellmax,Ninteract,Nneib,Nneibmax,okflag,rp)		\
   reduction(+:Nactivecount,Ncellcount,Ndirectcount,Nneibcount)
   {
 #if defined _OPENMP
@@ -2762,15 +2769,23 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
 #pragma omp for schedule(dynamic)
     for (cc=0; cc<cactive; cc++) {
       cell = celllist[cc];
+      macfactor = 0.0;
 
       // Find list of active particles in current cell
       Nactive = ComputeActiveParticleList(cell,sph,activelist);
       Nactivecount += Nactive;
 
       // Make local copies of active particles
+      for (j=0; j<Nactive; j++) activepart[j] = sph->sphdata[activelist[j]];
+
+      // Compute average/maximum term for computing gravity MAC
+      if (gravity_mac == "eigenmac") {
+	for (j=0; j<Nactive; j++) 
+	  macfactor = max(macfactor,pow(1.0/activepart[j].gpot,twothirds));
+      }
+
+      // Zero/initialise all summation variables for active particles
       for (j=0; j<Nactive; j++) {
-        //assert(activelist[j] >= 0 && activelist[j] < sph->Nsph);
-        activepart[j] = sph->sphdata[activelist[j]];
         activepart[j].div_v = (FLOAT) 0.0;
         activepart[j].dudt = (FLOAT) 0.0;
         activepart[j].gpot = activepart[j].m*activepart[j].invh*sph->kernp->wpot(0.0);
@@ -2779,10 +2794,12 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
       }
 
       // Compute neighbour list for cell depending on physics options
-      okflag = ComputeGravityInteractionList(cell,Nneibmax,Ndirectmax,
+      okflag = ComputeGravityInteractionList(cell,macfactor,
+					     Nneibmax,Ndirectmax,
                                              Ngravcellmax,Nneib,Ndirect,
                                              Ngravcell,neiblist,directlist,
                                              gravcelllist,sph->sphdata);
+
 
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour lists.
@@ -2804,7 +2821,8 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
         gravcelllist = new BinaryTreeCell<ndim>*[Ngravcellmax];
         neibpartbuf[ithread] = new SphParticle<ndim>[Nneibmax]; 
 	neibpart = neibpartbuf[ithread];
-        okflag = ComputeGravityInteractionList(cell,Nneibmax,Ndirectmax,
+        okflag = ComputeGravityInteractionList(cell,macfactor,
+					       Nneibmax,Ndirectmax,
                                                Ngravcellmax,Nneib,Ndirect,
                                                Ngravcell,neiblist,directlist,
                                                gravcelllist,sph->sphdata);
@@ -2929,7 +2947,8 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
 
 //=============================================================================
 //  BinaryTree::UpdateAllStarGasForces
-/// ..
+/// Calculate the gravitational acceleration on all star particles due to 
+/// all gas particles via the tree.
 //=============================================================================
 template <int ndim>
 void BinaryTree<ndim>::UpdateAllStarGasForces
@@ -2937,7 +2956,7 @@ void BinaryTree<ndim>::UpdateAllStarGasForces
  Nbody<ndim> *nbody)
 {
   int i;                            // Particle id
-  int ithread;                      // ..
+  int ithread;                      // OpenMP thread id
   int j;                            // Aux. particle counter
   int jj;                           // Aux. particle counter
   int k;                            // Dimension counter
@@ -2954,10 +2973,9 @@ void BinaryTree<ndim>::UpdateAllStarGasForces
   int *activelist;                  // List of active particle ids
   int *directlist;                  // List of direct sum particle ids
   int *neiblist;                    // List of neighbour ids
+  FLOAT macfactor;                  // Gravity MAC factor
   BinaryTreeCell<ndim> **gravcelllist; // List of pointers to grav. cells
-  NbodyParticle<ndim> *star;        // ..
-  SphParticle<ndim> *activepart;    // ..
-  SphParticle<ndim> *neibpart;      // ..
+  NbodyParticle<ndim> *star;        // Pointer to star particle
 
   int Nactivecount = 0;
   int Ncellcount = 0;
@@ -2977,9 +2995,9 @@ void BinaryTree<ndim>::UpdateAllStarGasForces
   // Set-up all OMP threads
   //===========================================================================
 #pragma omp parallel default(none) shared(activelist,Nactive,nbody,sph,cout)\
-  private(directlist,gravcelllist,Ndirectaux,i,ithread,j,jj,k)\
-  private(neiblist,neibpart,Ndirect,Ndirectmax,Ngravcell)\
-  private(Ngravcellmax,Ninteract,Nneib,Nneibmax,okflag,star)\
+  private(directlist,gravcelllist,i,ithread,j,jj,k,macfactor,neiblist) \
+  private(Ndirect,Ndirectaux,Ndirectmax,Ngravcell,Ngravcellmax) \
+  private(Ninteract,Nneib,Nneibmax,okflag,star)	\
   reduction(+:Nactivecount,Ncellcount,Ndirectcount,Nneibcount)
   {
 #if defined _OPENMP
@@ -3003,8 +3021,15 @@ void BinaryTree<ndim>::UpdateAllStarGasForces
       i = activelist[j];
       star = nbody->nbodydata[i];
 
+      // Compute average/maximum term for computing gravity MAC
+      if (gravity_mac == "eigenmac")
+	macfactor = pow(1.0/star->gpot,twothirds);
+      else
+	macfactor = 0.0;
+
       // Compute neighbour list for cell depending on physics options
-      okflag = ComputeStarGravityInteractionList(star,Nneibmax,Ndirectmax,
+      okflag = ComputeStarGravityInteractionList(star,macfactor,
+						 Nneibmax,Ndirectmax,
                                                  Ngravcellmax,Nneib,Ndirect,
                                                  Ngravcell,neiblist,directlist,
                                                  gravcelllist,sph->sphdata);
@@ -3015,11 +3040,18 @@ void BinaryTree<ndim>::UpdateAllStarGasForces
         delete[] gravcelllist;
         Ngravcellmax = 2*Ngravcellmax;
         gravcelllist = new BinaryTreeCell<ndim>*[Ngravcellmax];
-        okflag = ComputeStarGravityInteractionList(star,Nneibmax,Ndirectmax,
-	                                           Ngravcellmax,Nneib,Ndirect,
-	                                           Ngravcell,neiblist,directlist,
+        okflag = ComputeStarGravityInteractionList(star,macfactor,Nneibmax,
+						   Ndirectmax,Ngravcellmax,
+						   Nneib,Ndirect,Ngravcell,
+						   neiblist,directlist,
 	                                           gravcelllist,sph->sphdata);
       };
+
+      if (Nneib > Nneibmax || Ndirect > Ndirectmax) {
+	cout << "Nneib problem : " << Nneib << "   " << Nneibmax << "     "
+	     << Ndirect << "    " << Ndirectmax << endl;
+	exit(0);
+      }
 
       // Compute contributions to star force from nearby SPH particles
       nbody->CalculateDirectSPHForces(star,Nneib,Ndirect,neiblist,

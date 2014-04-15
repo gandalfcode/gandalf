@@ -426,7 +426,6 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
   int last_level;                       // Previous timestep level
   int level_max_aux;                    // Aux. maximum level variable
   int level_max_old;                    // Old level_max
-  int level_max_sph = 0;                // level_max for SPH particles only
   int level_max_nbody = 0;              // level_max for star particles only
   int level_nbody;                      // local thread var. for N-body level
   int nfactor;                          // Increase/decrease factor of n
@@ -436,7 +435,6 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
   DOUBLE dt_min_aux;                    // Aux. minimum timestep variable
   DOUBLE dt_min_nbody = big_number_dp;  // Maximum N-body particle timestep
   DOUBLE dt_nbody;                      // Aux. minimum N-body timestep
-  DOUBLE dt_sph;                        // Aux. minimum SPH timestep
 
   debug2("[SphSimulation::ComputeBlockTimesteps]");
   timing->StartTimingSection("BLOCK_TIMESTEPS",2);
@@ -488,7 +486,7 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
       dt = nbody->nbodydata[i]->dt;
       level = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
       level = max(level,0);
-      nbody->nbodydata[i]->level = max(level,level_max_sph);
+      nbody->nbodydata[i]->level = level;
       nbody->nbodydata[i]->nlast = n;
       nbody->nbodydata[i]->nstep = 
 	pow(2,level_step - nbody->nbodydata[i]->level);

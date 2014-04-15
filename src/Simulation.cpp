@@ -45,6 +45,7 @@
 using namespace std;
 
 
+
 //=============================================================================
 //  SimulationBase::SimulationFactory
 /// Creates a simulation object depending on the dimensionality.
@@ -128,14 +129,17 @@ SimulationBase::SimulationBase
   n                     = 0;
   nresync               = 0;
   Nblocksteps           = 0;
+  Nfullsteps            = 0;
   Nmpi                  = 1;
   Noutsnap              = 0;
+  Noutlitesnap          = 0;
   Nsteps                = 0;
   rank                  = 0;
   dt_snap_wall          = 0.0;
   t                     = 0.0;
   timestep              = 0.0;
   tsnaplast             = 0.0;
+  tlitesnaplast         = 0.0;
   tsnap_wallclock       = 0.0;
   initial_h_provided    = false;
   kill_simulation       = false;
@@ -295,7 +299,6 @@ void SimulationBase::Run
   ofstream outfile;                 // Stream to create temp. file for
 
   debug1("[SphSimulation::Run]");
-  timing->StartTimingSection("RUN",1);
 
   // Set integer timestep exit condition if provided as parameter.
   if (Nadvance < 0) Ntarget = Nstepsmax;
@@ -305,6 +308,8 @@ void SimulationBase::Run
   // exeeded the maximum allowed number of steps.
   //---------------------------------------------------------------------------
   while (t < tend && Nsteps < Ntarget) {
+
+    timing->StartTimingSection("RUN",1);
 
     MainLoop();
     Output();
@@ -318,6 +323,8 @@ void SimulationBase::Run
       break;
     }
 
+    timing->EndTimingSection("RUN");
+
   }
   //---------------------------------------------------------------------------
 
@@ -326,8 +333,6 @@ void SimulationBase::Run
   UpdateDiagnostics();
   cout << "Final t : " << t*simunits.t.outscale << " " << simunits.t.outunit
        << "    Total no. of steps : " << Nsteps << endl;
-
-  timing->EndTimingSection("RUN");
 
   return;
 }
@@ -419,7 +424,28 @@ string SimulationBase::Output(void)
            << "    dt : " << timestep*simunits.t.outscale << " "
            << simunits.t.outunit << "    Nsteps : " << Nsteps << endl;
 
+
+  // Output a lite-data snapshot for producing movies
+  //---------------------------------------------------------------------------
+  if (litesnap == 1 && t >= tlitesnapnext) {
+
+    // Prepare filename for new snapshot
+    Noutlitesnap++;
+    tlitesnaplast = tlitesnapnext;
+    tlitesnapnext += dt_litesnap;
+    nostring = "";
+    ss << setfill('0') << setw(5) << Noutlitesnap;
+    nostring = ss.str();
+    filename = run_id + ".slite." + nostring;
+    ss.str(std::string());
+    WriteSnapshotFile(filename,"slite");
+
+  }
+  //---------------------------------------------------------------------------
+
+
   // Output a data snapshot if reached required time
+  //---------------------------------------------------------------------------
   if (t >= tsnapnext) {
 
     // Prepare filename for new snapshot
@@ -448,12 +474,17 @@ string SimulationBase::Output(void)
 
     // If simulation is too close to maximum wall-clock time, end 
     // prematurely
-    if (tsnap_wallclock > 0.0 && 
-	2.0*dt_snap_wall > tmax_wallclock - timing->ttot_wall) {
+    if (timing->ttot_wall > 0.95*tmax_wallclock) {
       kill_simulation = true;
     }
+    //if (tsnap_wallclock > 0.0 && 
+    //	2.0*dt_snap_wall > tmax_wallclock - timing->ttot_wall) {
+    //kill_simulation = true;
+    //}
+
 
   }
+  //---------------------------------------------------------------------------
 
   // Output diagnostics to screen if passed sufficient number of block steps
   if (Nblocksteps%ndiagstep == 0 && n == nresync) {

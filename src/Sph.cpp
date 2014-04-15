@@ -72,42 +72,6 @@ Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux,
 }
 
 
-
-//=============================================================================
-//  Sph::DeleteDeadParticles
-/// Delete 'dead' (e.g. accreted) SPH particles from the main arrays.
-//=============================================================================
-template <int ndim>
-void Sph<ndim>::DeleteDeadParticles(void)
-{
-  int i;                            // Particle counter
-  int Ndead = 0;                    // No. of 'dead' particles
-  int Nlive = 0;                    // No. of 'live' particles
-
-  debug2("[Sph::DeleteDeadParticles]");
-
-  // Determine new order of particles in arrays.  
-  // First all live particles and then all dead particles
-  for (i=0; i<Nsph; i++) {
-    SphParticle<ndim>& part = GetParticleIPointer(i);
-    if (part.itype == dead) iorder[Nsph - 1 - Ndead++] = i;
-    else iorder[Nlive++] = i;
-  }
-
-  // Reorder all arrays following with new order, with dead particles at end
-  if (Ndead == 0) return;
-  else ReorderParticles();
-
-  // Reduce particle counters once dead particles have been removed
-  assert(Nlive + Ndead == Ntot);
-  Nsph -= Ndead;
-  Ntot -= Ndead;
-
-  return;
-}
-
-
-
 //=============================================================================
 //  Sph::SphBoundingBox
 /// Calculate the bounding box containing all SPH particles.

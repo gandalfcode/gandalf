@@ -122,6 +122,52 @@ void GodunovSph<ndim, kernelclass>::DeallocateMemory(void)
 }
 
 //=============================================================================
+//  GodunovSph::DeleteDeadParticles
+/// Delete 'dead' (e.g. accreted) SPH particles from the main arrays.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass>::DeleteDeadParticles(void)
+{
+  int i;                            // Particle counter
+  int itype;
+  int Ndead = 0;                    // No. of 'dead' particles
+  int Nlive = 0;                    // No. of 'live' particles
+  int ilast = Nsph;                 // Aux. counter of last free slot
+
+  debug2("[GodunovSph::DeleteDeadParticles]");
+
+
+  // Determine new order of particles in arrays.
+  // First all live particles and then all dead particles
+  for (i=0; i<Nsph; i++) {
+    itype = sphdata[i].itype;
+    while (itype == dead) {
+      Ndead++;
+      ilast--;
+      if (i < ilast) {
+    sphdata[i] = sphdata[ilast];
+    sphdata[ilast].itype = dead;
+    sphdata[ilast].m = 0.0;
+      }
+      else break;
+      itype = sphdata[i].itype;
+    };
+    if (i >= ilast - 1) break;
+  }
+
+  // Reorder all arrays following with new order, with dead particles at end
+  if (Ndead == 0) return;
+
+  // Reduce particle counters once dead particles have been removed
+  Nsph -= Ndead;
+  Ntot -= Ndead;
+  for (i=0; i<Nsph; i++) iorder[i] = i;
+
+
+  return;
+}
+
+//=============================================================================
 //  GodunovSph::ReorderParticles
 /// Delete selected SPH particles from the main arrays.
 //=============================================================================

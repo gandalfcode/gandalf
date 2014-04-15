@@ -182,6 +182,9 @@ void Parameters::SetDefaultValues(void)
   intparams["Nstepsmax"] = 99999999;
   intparams["noutputstep"] = 128;
   intparams["ndiagstep"] = 1024;
+  intparams["litesnap"] = 0;
+  floatparams["dt_litesnap"] = 0.2;
+  floatparams["tlitesnapfirst"] = 0.0;
 
   // Unit and scaling parameters
   //---------------------------------------------------------------------------
@@ -282,6 +285,8 @@ void Parameters::SetDefaultValues(void)
   intparams["self_gravity"] = 0;
   stringparams["grav_kernel"] = "mean_h";
   stringparams["external_potential"] = "none";
+  floatparams["rplummer_extpot"] = 1.0;
+  floatparams["mplummer_extpot"] = 1.0;
 
   // Neighbour searching and tree-gravity parameters
   //---------------------------------------------------------------------------
@@ -292,6 +297,7 @@ void Parameters::SetDefaultValues(void)
   intparams["ntreebuildstep"] = 1;
   intparams["ntreestockstep"] = 1;
   floatparams["thetamaxsqd"] = 0.1;
+  floatparams["macerror"] = 0.0001;
 
   // N-body parameters
   //---------------------------------------------------------------------------
