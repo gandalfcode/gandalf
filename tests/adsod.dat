@@ -2,7 +2,7 @@
 # Adiabatic Sod shock tube test
 # Creates an adiabatic Sod shocktube test
 #----------------------------------------
-
+comment				   : out_file_form = sf
 
 #-----------------------------
 # Initial conditions variables

@@ -1172,17 +1172,15 @@ void Simulation<ndim>::ImportArraySph
   // (Note that the syntax for scalar is different from the one for vectors)
   //---------------------------------------------------------------------------
   if (scalar) {
-    int i=0;
-    for (SphParticle<ndim>* particlep = sph->sphdata; 
-     particlep < sph->sphdata+size; particlep++, i++) {
-      particlep->*quantityp = input[i];
+    for (int i=0; i<size; i++) {
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      part.*quantityp = input[i];
     }
   }
   else {
-    int i=0;
-    for (SphParticle<ndim>* particlep = sph->sphdata; 
-     particlep < sph->sphdata+size; particlep++, i++) {
-      (particlep->*quantitypvec)[index] = input[i];
+    for (int i=0; i<size; i++) {
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      (part.*quantitypvec)[index] = input[i];
     }
   }
 
@@ -1256,8 +1254,9 @@ void Simulation<ndim>::SetComFrame(void)
   CalculateDiagnostics();
 
   for (i=0; i<sph->Nsph; i++) {
-    for (k=0; k<ndim; k++) sph->sphdata[i].r[k] -= diag.rcom[k];
-    for (k=0; k<ndim; k++) sph->sphdata[i].v[k] -= diag.vcom[k];
+    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (k=0; k<ndim; k++) part.r[k] -= diag.rcom[k];
+    for (k=0; k<ndim; k++) part.v[k] -= diag.vcom[k];
   }
 
   for (i=0; i<nbody->Nstar; i++) {

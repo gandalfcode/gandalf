@@ -26,6 +26,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <math.h>
+#include "Debug.h"
 #include "Precision.h"
 #include "Exception.h"
 #include "Sph.h"
@@ -72,6 +73,123 @@ GodunovSph<ndim, kernelclass >::~GodunovSph()
 }
 
 
+//=============================================================================
+//  GodunovSph::AllocateMemory
+/// Allocate main SPH particle array.  Currently sets the maximum memory to
+/// be 10 times the numbers of particles to allow space for ghost particles
+/// and new particle creation.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass>::AllocateMemory(int N)
+{
+  debug2("[GodunovSph::AllocateMemory]");
+
+  if (N > Nsphmax || !allocated) {
+    if (allocated) DeallocateMemory();
+
+    // Set conservative estimate for maximum number of particles, assuming
+    // extra space required for periodic ghost particles
+    if (Nsphmax < N)
+      Nsphmax = pow(pow(N,invndim) + 8.0*kernp->kernrange,ndim);
+    //Nsphmax = N;
+
+    iorder = new int[Nsphmax];
+    rsph = new FLOAT[ndim*Nsphmax];
+    sphdata = new struct GodunovSphParticle<ndim>[Nsphmax];
+    allocated = true;
+  }
+
+  return;
+}
+
+//=============================================================================
+//  GodunovSph::DeallocateMemory
+/// Deallocate main array containing SPH particle data.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass>::DeallocateMemory(void)
+{
+  debug2("[GodunovSph::DeallocateMemory]");
+
+  if (allocated) {
+    delete[] sphdata;
+    delete[] rsph;
+    delete[] iorder;
+  }
+  allocated = false;
+
+  return;
+}
+
+//=============================================================================
+//  GodunovSph::DeleteDeadParticles
+/// Delete 'dead' (e.g. accreted) SPH particles from the main arrays.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass>::DeleteDeadParticles(void)
+{
+  int i;                            // Particle counter
+  int itype;
+  int Ndead = 0;                    // No. of 'dead' particles
+  int Nlive = 0;                    // No. of 'live' particles
+  int ilast = Nsph;                 // Aux. counter of last free slot
+
+  debug2("[GodunovSph::DeleteDeadParticles]");
+
+
+  // Determine new order of particles in arrays.
+  // First all live particles and then all dead particles
+  for (i=0; i<Nsph; i++) {
+    itype = sphdata[i].itype;
+    while (itype == dead) {
+      Ndead++;
+      ilast--;
+      if (i < ilast) {
+    sphdata[i] = sphdata[ilast];
+    sphdata[ilast].itype = dead;
+    sphdata[ilast].m = 0.0;
+      }
+      else break;
+      itype = sphdata[i].itype;
+    };
+    if (i >= ilast - 1) break;
+  }
+
+  // Reorder all arrays following with new order, with dead particles at end
+  if (Ndead == 0) return;
+
+  // Reduce particle counters once dead particles have been removed
+  Nsph -= Ndead;
+  Ntot -= Ndead;
+  for (i=0; i<Nsph; i++) iorder[i] = i;
+
+
+  return;
+}
+
+//=============================================================================
+//  GodunovSph::ReorderParticles
+/// Delete selected SPH particles from the main arrays.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void GodunovSph<ndim, kernelclass>::ReorderParticles(void)
+{
+  int i;                                // Particle counter
+  GodunovSphParticle<ndim> *sphdataaux;        // Aux. SPH particle array
+
+  sphdataaux = new GodunovSphParticle<ndim>[Nsph];
+
+  for (i=0; i<Nsph; i++) {
+    sphdataaux[i] = sphdata[i];
+  }
+  for (i=0; i<Nsph; i++) {
+    sphdata[i] = sphdataaux[iorder[i]];
+  }
+
+  delete[] sphdataaux;
+
+  return;
+}
 
 //=============================================================================
 //  GodunovSph::ComputeH
@@ -91,7 +209,7 @@ int GodunovSph<ndim, kernelclass >::ComputeH
  FLOAT *mu,                             // Array of m*u (not needed here)
  FLOAT *drsqd,                          // Array of neib. distances (squared)
  FLOAT *gpot,                           // Grav. potential
- SphParticle<ndim> &parti,              // Particle i data
+ SphParticle<ndim> &part,              // Particle i data
  Nbody<ndim> *nbody)                    // Pointer to N-body object
 {
   int j;                            // Neighbour id
@@ -101,6 +219,8 @@ int GodunovSph<ndim, kernelclass >::ComputeH
   FLOAT h_upper_bound = hmax;       // Upper bound on h
   FLOAT invhsqd;                    // (1 / h)^2
   FLOAT ssqd;                       // Kernel parameter squared, (r/h)^2
+
+  GodunovSphParticle<ndim>& parti = static_cast<GodunovSphParticle<ndim>& > (part);
 
 
   // If there are sink particles present, check if the particle is inside one
@@ -223,8 +343,8 @@ void GodunovSph<ndim, kernelclass >::ComputeSphHydroForces
  FLOAT *drmag,                      ///< [in] Distances of gather neighbours
  FLOAT *invdrmag,                   ///< [in] Inverse distances of gather neibs
  FLOAT *dr,                         ///< [in] Position vector of gather neibs
- SphParticle<ndim> &parti,          ///< [inout] Particle i data
- SphParticle<ndim> *neibpart)       ///< [inout] Neighbour particle data
+ SphParticle<ndim> &part,          ///< [inout] Particle i data
+ SphParticle<ndim> *neibpart_gen)       ///< [inout] Neighbour particle data
 {
   int j;                            // Neighbour list id
   int jj;                           // Aux. neighbour counter
@@ -252,6 +372,9 @@ void GodunovSph<ndim, kernelclass >::ComputeSphHydroForces
   FLOAT vstar;                      // ..
   //FLOAT vtemp[ndim];                // ..
   FLOAT hconv = pow(invsqrttwo,ndim+1);
+
+  GodunovSphParticle<ndim>& parti = static_cast<GodunovSphParticle<ndim>& > (part);
+  GodunovSphParticle<ndim>* neibpart = static_cast<GodunovSphParticle<ndim>* > (neibpart_gen);
 
   string interpolation = "linear"; //"linear";
 
@@ -387,8 +510,8 @@ void GodunovSph<ndim, kernelclass >::ComputeSphGravForces
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
-(SphParticle<ndim> partl,
- SphParticle<ndim> partr,
+(GodunovSphParticle<ndim>& partl,
+ GodunovSphParticle<ndim>& partr,
  FLOAT draux[ndim],
  FLOAT drmag,
  FLOAT Sij,
@@ -402,6 +525,8 @@ void GodunovSph<ndim, kernelclass>::InitialiseRiemannProblem
  FLOAT &vl,
  FLOAT &vr)
 {
+
+
   //int k;
   //FLOAT f;
   //FLOAT R;
@@ -827,8 +952,8 @@ void GodunovSph<ndim, kernelclass >::ComputeSphDerivatives
  FLOAT *drmag,                      ///< Distances of gather neighbours
  FLOAT *invdrmag,                   ///< Inverse distances of gather neibs
  FLOAT *dr,                         ///< Position vector of gather neibs
- SphParticle<ndim> &parti,          ///< Particle i data
- SphParticle<ndim> *neibpart)       ///< Neighbour particle data
+ SphParticle<ndim> &part,          ///< Particle i data
+ SphParticle<ndim> *neibpart_gen)       ///< Neighbour particle data
 {
   int j;                            // Neighbour list id
   int jj;                           // Aux. neighbour counter
@@ -838,6 +963,9 @@ void GodunovSph<ndim, kernelclass >::ComputeSphDerivatives
   FLOAT dv[ndim];                   // Relative velocity vector
   FLOAT wkern;                      // Value of w1 kernel function
   FLOAT dvdr;                       // ..
+
+  GodunovSphParticle<ndim>& parti = static_cast<GodunovSphParticle<ndim>& > (part);
+  GodunovSphParticle<ndim>* neibpart = static_cast<GodunovSphParticle<ndim>* > (neibpart_gen);
 
   parti.div_v = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) {
@@ -900,8 +1028,8 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
  FLOAT *drmag,                      ///< Distances of gather neighbours
  FLOAT *invdrmag,                   ///< Inverse distances of gather neibs
  FLOAT *dr,                         ///< Position vector of gather neibs
- SphParticle<ndim> &parti,          ///< Particle i data
- SphParticle<ndim> *neibpart)       ///< Neighbour particle data
+ SphParticle<ndim> &part,          ///< Particle i data
+ SphParticle<ndim> *neibpart_gen)       ///< Neighbour particle data
 {
   int j;                            // Neighbour list id
   int jj;                           // Aux. neighbour counter
@@ -932,6 +1060,9 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
   FLOAT vhalfj;
   //FLOAT vtemp[ndim];
   //FLOAT gradi, gradj;
+
+  GodunovSphParticle<ndim>& parti = static_cast<GodunovSphParticle<ndim>& > (part);
+  GodunovSphParticle<ndim>* neibpart = static_cast<GodunovSphParticle<ndim>* > (neibpart_gen);
 
   FLOAT hconv = powf(invsqrttwo,ndim+1);
   string interpolation = "linear"; //"linear";

@@ -72,134 +72,6 @@ Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux,
 }
 
 
-
-//=============================================================================
-//  Sph::AllocateMemory
-/// Allocate main SPH particle array.  Currently sets the maximum memory to 
-/// be 10 times the numbers of particles to allow space for ghost particles 
-/// and new particle creation.
-//=============================================================================
-template <int ndim>
-void Sph<ndim>::AllocateMemory(int N)
-{
-  debug2("[Sph::AllocateMemory]");
-
-  if (N > Nsphmax || !allocated) {
-    if (allocated) DeallocateMemory();
-
-    // Set conservative estimate for maximum number of particles, assuming 
-    // extra space required for periodic ghost particles
-    if (Nsphmax < N) 
-      Nsphmax = pow(pow(N,invndim) + 8.0*kernp->kernrange,ndim);
-    //Nsphmax = N;
-
-    iorder = new int[Nsphmax];
-    rsph = new FLOAT[ndim*Nsphmax];
-    sphdata = new struct SphParticle<ndim>[Nsphmax];
-    allocated = true;
-  }
-
-  return;
-}
-
-
-
-//=============================================================================
-//  Sph::DeallocateMemory
-/// Deallocate main array containing SPH particle data.
-//=============================================================================
-template <int ndim>
-void Sph<ndim>::DeallocateMemory(void)
-{
-  debug2("[Sph::DeallocateMemory]");
-
-  if (allocated) {
-    delete[] sphdata;
-    delete[] sphdata;
-    delete[] rsph;
-    delete[] iorder;
-  }
-  allocated = false;
-
-  return;
-}
-
-
-
-//=============================================================================
-//  Sph::DeleteDeadParticles
-/// Delete 'dead' (e.g. accreted) SPH particles from the main arrays.
-//=============================================================================
-template <int ndim>
-void Sph<ndim>::DeleteDeadParticles(void)
-{
-  int i;                            // Particle counter
-  int itype;
-  int Ndead = 0;                    // No. of 'dead' particles
-  int Nlive = 0;                    // No. of 'live' particles
-  int ilast = Nsph;                 // Aux. counter of last free slot
-
-  debug2("[Sph::DeleteDeadParticles]");
-
-
-  // Determine new order of particles in arrays.  
-  // First all live particles and then all dead particles
-  for (i=0; i<Nsph; i++) {
-    itype = sphdata[i].itype;
-    while (itype == dead) {
-      Ndead++;
-      ilast--;
-      if (i < ilast) {
-	sphdata[i] = sphdata[ilast];
-	sphdata[ilast].itype = dead;
-	sphdata[ilast].m = 0.0;
-      }
-      else break;
-      itype = sphdata[i].itype;
-    };
-    if (i >= ilast - 1) break;
-  }
-
-  // Reorder all arrays following with new order, with dead particles at end
-  if (Ndead == 0) return;
-
-  // Reduce particle counters once dead particles have been removed
-  Nsph -= Ndead;
-  Ntot -= Ndead;
-  for (i=0; i<Nsph; i++) iorder[i] = i;
-
-
-  return;
-}
-
-
-
-//=============================================================================
-//  Sph::ReorderParticles
-/// Delete selected SPH particles from the main arrays.
-//=============================================================================
-template <int ndim>
-void Sph<ndim>::ReorderParticles(void)
-{
-  int i;                                // Particle counter
-  SphParticle<ndim> *sphdataaux;        // Aux. SPH particle array
-
-  sphdataaux = new SphParticle<ndim>[Nsph];
-
-  for (i=0; i<Nsph; i++) {
-    sphdataaux[i] = sphdata[i];
-  }
-  for (i=0; i<Nsph; i++) {
-    sphdata[i] = sphdataaux[iorder[i]];
-  }
-
-  delete[] sphdataaux;
-
-  return;
-}
-
-
-
 //=============================================================================
 //  Sph::SphBoundingBox
 /// Calculate the bounding box containing all SPH particles.
@@ -219,8 +91,9 @@ void Sph<ndim>::SphBoundingBox
   for (k=0; k<ndim; k++) rmax[k] = -big_number;
 
   for (i=0; i<Nmax; i++) {
-    for (k=0; k<ndim; k++) rmin[k] = min(rmin[k],sphdata[i].r[k]);
-    for (k=0; k<ndim; k++) rmax[k] = max(rmax[k],sphdata[i].r[k]);
+    SphParticle<ndim>& part = GetParticleIPointer(i);
+    for (k=0; k<ndim; k++) rmin[k] = min(rmin[k],part.r[k]);
+    for (k=0; k<ndim; k++) rmax[k] = max(rmax[k],part.r[k]);
   }
 
   return;
@@ -273,10 +146,11 @@ void Sph<ndim>::InitialSmoothingLengthGuess(void)
 
   // Set all smoothing lengths equal to average value
   for (i=0; i<Nsph; i++) {
-    sphdata[i].h = h_guess;
-    sphdata[i].invh = 1.0/h_guess;
-    sphdata[i].hrangesqd = 
-      kernfacsqd*kernp->kernrangesqd*sphdata[i].h*sphdata[i].h;
+    SphParticle<ndim>& part = GetParticleIPointer(i);
+    part.h = h_guess;
+    part.invh = 1.0/h_guess;
+    part.hrangesqd =
+      kernfacsqd*kernp->kernrangesqd*part.h*part.h;
   }
 
   return;

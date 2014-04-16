@@ -73,7 +73,7 @@ template <int ndim>
 void EnergyGodunovIntegration<ndim>::EnergyIntegration
 (int n,                             ///< [in] Integer time in block time struct
  int Nsph,                          ///< [in] No. of SPH particles
- SphParticle<ndim> *sphdata,  ///< [inout] SPH particle data array
+ SphParticle<ndim> *sphdata_gen,  ///< [inout] SPH particle data array
  FLOAT timestep)                    ///< [in] Base timestep value
 {
   int dn;                           // Integer time since beginning of step
@@ -82,6 +82,8 @@ void EnergyGodunovIntegration<ndim>::EnergyIntegration
   FLOAT dt;                         // Timestep since start of step
 
   debug2("[EnergyGodunovIntegration::EnergyIntegration]");
+
+  GodunovSphParticle<ndim>* sphdata = static_cast<GodunovSphParticle<ndim>* > (sphdata_gen);
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,dt,i,nstep) \
