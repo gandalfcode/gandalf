@@ -125,6 +125,28 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
   uint = new EnergyGodunovIntegration<ndim>(floatparams["energy_mult"]);
 
 
+  // Create neighbour searching object based on chosen method in params file
+  //-------------------------------------------------------------------------
+  if (stringparams["neib_search"] == "bruteforce")
+    sphneib = new BruteForceSearch<ndim,SphParticle>;
+  else if (stringparams["neib_search"] == "tree") {
+    sphneib = new SphTree<ndim,SphParticle>(intparams["Nleafmax"],
+			                    floatparams["thetamaxsqd"],
+			                    sph->kernp->kernrange,
+                                            floatparams["macerror"],
+                                            stringparams["gravity_mac"],
+                                            stringparams["multipole"]);
+  }
+  else {
+    string message = "Unrecognised parameter : neib_search = " 
+      + simparams->stringparams["neib_search"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+#if defined MPI_PARALLEL
+  mpicontrol.SetNeibSearch(sphneib);
+#endif
+
+
   // Set other important parameters
   sph->riemann_solver = stringparams["riemann_solver"];
   sph->slope_limiter  = stringparams["slope_limiter"];

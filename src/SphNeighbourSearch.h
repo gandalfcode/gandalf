@@ -39,43 +39,8 @@
 #include "Sinks.h"
 #include "DomainBox.h"
 #include "Parameters.h"
+#include "KDTree.h"
 using namespace std;
-
-
-
-//=============================================================================
-//  Structure BinaryTreeCell
-/// Neighbour grid cell data structure
-//=============================================================================
-template <int ndim>
-struct BinaryTreeCell {
-  int c1;                           ///< First child cell
-  int c2;                           ///< Second child cell
-  int c2g;                          ///< i.d. of tree-cell c/grid-cell g
-  int cnext;                        ///< i.d. of next cell if not opened
-  int id;                           ///< Cell id
-  int k_divide;                     ///< Dimension along which cell is split
-  int level;                        ///< Level of cell on tree
-  int ifirst;                       ///< i.d. of first particle in cell
-  int ilast;                        ///< i.d. of last particle in cell
-  int N;                            ///< ..
-  int Nactive;                      ///< ..
-  FLOAT cdistsqd;                   ///< ..
-  FLOAT mac;                        ///< Multipole-opening criterion value
-  FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
-  FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
-  FLOAT hboxmin[ndim];              ///< Minimum extent of bounding box
-  FLOAT hboxmax[ndim];              ///< Maximum extent of bounding box
-  FLOAT rcell[ndim];                ///< ..
-  FLOAT r[ndim];                    ///< Position of cell
-  FLOAT v[ndim];                    ///< Position of cell
-  FLOAT m;                          ///< Mass contained in cell
-  FLOAT rmax;                       ///< Radius of bounding sphere
-  FLOAT hmax;                       ///< Maximum smoothing length inside cell
-  FLOAT drmaxdt;                    ///< Rate of change of bounding sphere
-  FLOAT dhmaxdt;                    ///< Rate of change of maximum h
-  FLOAT q[5];                       ///< Quadrupole moment tensor
-};
 
 
 
@@ -96,7 +61,8 @@ class SphNeighbourSearch
   SphNeighbourSearch();
   ~SphNeighbourSearch();
 
-  virtual void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *) = 0;
+  virtual void BuildTree(bool, int, int, int, int, int, 
+                         SphParticle<ndim> *, FLOAT) = 0;
   virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *) = 0;
@@ -129,7 +95,7 @@ class MpiNode;
 /// (i.e. direct summation over all particles).
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-class BruteForceSearch: public SphNeighbourSearch<ndim>
+class BruteForceSearch: public SphNeighbourSearch<ndim,ParticleType>
 {
   using SphNeighbourSearch<ndim>::neibcheck;
   using SphNeighbourSearch<ndim>::timing;
@@ -139,7 +105,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
   BruteForceSearch();
   ~BruteForceSearch();
 
-  void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *);
+  void BuildTree(bool, int, int, int, int, int, ParticleType<ndim> *, FLOAT);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *);
@@ -159,7 +125,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
 
 
 //=============================================================================
-//  Class BinaryTree
+//  Class SphTree
 /// \brief   Class containing binary tree
 /// \details Binary tree data structure used for efficient neighbour searching 
 ///          and computation of gravitational forces
@@ -167,7 +133,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
 /// \date    08/01/2014
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-class BinaryTree: public SphNeighbourSearch<ndim>
+class SphTree: public SphNeighbourSearch<ndim>
 {
  public:
 
@@ -175,11 +141,11 @@ class BinaryTree: public SphNeighbourSearch<ndim>
   using SphNeighbourSearch<ndim>::box;
   using SphNeighbourSearch<ndim>::timing;
 
-  BinaryTree(int, FLOAT, FLOAT, FLOAT, string, string);
-  ~BinaryTree();
+  SphTree(int, FLOAT, FLOAT, FLOAT, string, string);
+  ~SphTree();
 
   //---------------------------------------------------------------------------
-  void BuildTree(bool, int, int, int, FLOAT, Sph<ndim> *);
+  void BuildTree(bool, int, int, int, int, int, ParticleType<ndim> *, FLOAT);
   void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *);
@@ -192,73 +158,29 @@ class BinaryTree: public SphNeighbourSearch<ndim>
 
   // Additional functions for binary tree neighbour search
   //---------------------------------------------------------------------------
-  void AllocateTreeMemory(Sph<ndim> *);
-  void DeallocateTreeMemory(void);
-  bool BoxOverlap(FLOAT *, FLOAT *, FLOAT *, FLOAT *);
-  void ComputeTreeSize(void);
-  void CreateTreeStructure(void);
-  void DivideTreeCell(int, int, Sph<ndim> *, BinaryTreeCell<ndim> &);
-  //void ExtrapolateCellProperties(BinaryTreeCell<ndim> &, FLOAT);
-  void ExtrapolateCellProperties(FLOAT);
-  FLOAT QuickSelect(int, int, int, int, Sph<ndim> *);
-  void StockTree(BinaryTreeCell<ndim> &, ParticleType<ndim> *);
-  void StockCellProperties(BinaryTreeCell<ndim> &, ParticleType<ndim> *);
-  void UpdateHmaxValues(BinaryTreeCell<ndim> &, ParticleType<ndim> *);
-  int ComputeActiveCellList(BinaryTreeCell<ndim> **);
-  int ComputeActiveParticleList(BinaryTreeCell<ndim> *, Sph<ndim> *, int *);
-  int ComputeGatherNeighbourList(BinaryTreeCell<ndim> *, int, int *, 
-                                 FLOAT, ParticleType<ndim> *);
-  int ComputeNeighbourList(BinaryTreeCell<ndim> *, int, int *, 
-                           ParticleType<ndim> *);
-  int ComputeGravityInteractionList(BinaryTreeCell<ndim> *, FLOAT, int, int,  
-                                    int, int &, int &, int &, int *, int *,
-                                    BinaryTreeCell<ndim> **, 
-				    ParticleType<ndim> *);
-  int ComputeStarGravityInteractionList(NbodyParticle<ndim> *, FLOAT, int, int,
-					int, int &, int &, int &, int *, int *,
-					BinaryTreeCell<ndim> **, 
-					ParticleType<ndim> *);
-  void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, 
-				 BinaryTreeCell<ndim> **);
-  void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, 
-				   BinaryTreeCell<ndim> **);
-  void ComputeFastMonopoleForces(int, int, BinaryTreeCell<ndim> **, 
-				 BinaryTreeCell<ndim> *, ParticleType<ndim> *);
-#if defined(VERIFY_ALL)
-  void ValidateTree(Sph<ndim> *);
-#endif
+  void AllocateMemory(Sph<ndim> *);
+  void DeallocateMemory(void);
+
 
   // Additional variables for grid
   //---------------------------------------------------------------------------
   string gravity_mac;               ///< Multipole-acceptance criteria for tree
   string multipole;                 ///< Multipole-order for cell gravity
-  bool allocated_tree;              ///< Are grid arrays allocated?
-  int gmax;                         ///< Max. no. of grid/leaf cells
-  int gtot;                         ///< Total number of grid/leaf cells
-  int lmax;                         ///< Max. no. of levels
-  int ltot;                         ///< Total number of levels in tree
-  int ltot_old;                     ///< Prev. value of ltot
   int Ncell;                        ///< Current no. of grid cells
   int Ncellmax;                     ///< Max. allowed no. of grid cells
-  int Nlevel;                       ///< ""
   int Nleafmax;                     ///< Max. number of particles per leaf cell
   int Nlistmax;                     ///< Max. length of neighbour list
-  int Nsph;                         ///< Total no. of points/ptcls in grid
   int Ntot;                         ///< No. of current points in list
   int Ntotold;                      ///< Prev. no. of particles
   int Ntotmax;                      ///< Max. no. of points in list
   int Ntotmaxold;                   ///< Old value of Ntotmax
-  int *g2c;                         ///< i.d. of leaf(grid) cells
-  int *ids;                         ///< Particle ids
-  int *inext;                       ///< Linked list for grid search
   FLOAT macerror;                   ///< Error tolerance for gravity tree-MAC
   FLOAT hmax;                       ///< Store hmax in the tree
   FLOAT kernrange;                  ///< Extent of employed kernel
   FLOAT theta;                      ///< Geometric opening angle
   FLOAT thetamaxsqd;                ///< Geometric opening angle squared
   FLOAT invthetamaxsqd;             ///< 1 / thetamaxsqd
-  BinaryTreeCell<ndim> *tree;       ///< Main tree array
-
+  KDTree<ndim,ParticleType> *tree;  ///< Pointer to tree
 
   bool allocated_buffer;
   int Nthreads;

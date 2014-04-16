@@ -285,9 +285,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // calculate the initial values here
     sphneib->neibcheck = false;
     if (!this->initial_h_provided) {
-      sph->InitialSmoothingLengthGuess();
-      sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,
-			 ntreestockstep,timestep,sph);
+      sph->InitialSmoothingLengthGuess()
+      sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
+                         sph->Ntot,sph->Ntotmax,sph->sphdata,timestep);
       sphneib->UpdateAllSphProperties(sph,nbody);
     }
 
@@ -303,7 +303,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Update neighbour tree
     rebuild_tree = true;
-    sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,timestep,sph);
+    sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
+                       sph->Ntot,sph->Ntotmax,sph->sphdata,timestep);
     level_step = 1;
 
     // Zero accelerations
@@ -327,7 +328,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Update neighbour tre
     rebuild_tree = true;
-    sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,timestep,sph);
+    sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
+                       sph->Ntot,sph->Ntotmax,sph->sphdata,timestep);
     sphneib->neibcheck = true;
     //sphneib->UpdateAllSphProperties(sph,nbody);
 
@@ -373,7 +375,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #ifdef MPI_PARALLEL
     MpiGhosts->CopySphDataToGhosts(simbox,sph);
 #endif
-    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
+    sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
+                       sph->Ntot,sph->Ntotmax,sph->sphdata,timestep);
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)
@@ -503,8 +506,8 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
     // Rebuild or update local neighbour and gravity tree
-    sphneib->BuildTree(rebuild_tree,Nsteps,ntreebuildstep,
-		       ntreestockstep,timestep,sph);
+    sphneib->BuildTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,
+                       sph->Ntot,sph->Ntotmax,sph->sphdata,timestep);
     activecount = 0;
 
 

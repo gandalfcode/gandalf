@@ -307,7 +307,6 @@ class Simulation : public SimulationBase
   NbodySystemTree<ndim> nbodytree;    ///< N-body tree to create sub-systems
   Sinks<ndim> sinks;                  ///< Sink particle object
   Sph<ndim> *sph;                     ///< SPH algorithm pointer
-  SphNeighbourSearch<ndim> *sphneib;  ///< SPH Neighbour scheme pointer
   SphIntegration<ndim> *sphint;       ///< SPH Integration scheme pointer=
 #ifdef MPI_PARALLEL
   MpiControl<ndim> mpicontrol;        ///< MPI control object
@@ -376,11 +375,13 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
   using Simulation<ndim>::tmax_wallclock;
-  using Simulation<ndim>::sphneib;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
   using Simulation<ndim>::MpiGhosts;
 #endif
+
+
+  SphNeighbourSearch<ndim> *sphneib;  ///< SPH Neighbour scheme pointer
 
 
   SphSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};

@@ -226,6 +226,28 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
   }
 
 
+  // Create neighbour searching object based on chosen method in params file
+  //-------------------------------------------------------------------------
+  if (stringparams["neib_search"] == "bruteforce")
+    sphneib = new BruteForceSearch<ndim,SphParticle>;
+  else if (stringparams["neib_search"] == "tree") {
+    sphneib = new SphTree<ndim,SphParticle>(intparams["Nleafmax"],
+			                    floatparams["thetamaxsqd"],
+			                    sph->kernp->kernrange,
+                                            floatparams["macerror"],
+                                            stringparams["gravity_mac"],
+                                            stringparams["multipole"]);
+  }
+  else {
+    string message = "Unrecognised parameter : neib_search = " 
+      + simparams->stringparams["neib_search"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+#if defined MPI_PARALLEL
+  mpicontrol.SetNeibSearch(sphneib);
+#endif
+
+
   // Depending on the dimensionality, calculate expected neighbour number
   //---------------------------------------------------------------------------
   if (ndim == 1)

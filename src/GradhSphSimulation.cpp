@@ -213,12 +213,12 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   if (stringparams["neib_search"] == "bruteforce")
     sphneib = new BruteForceSearch<ndim,SphParticle>;
   else if (stringparams["neib_search"] == "tree") {
-    sphneib = new BinaryTree<ndim,SphParticle>(intparams["Nleafmax"],
-			                       floatparams["thetamaxsqd"],
-			                       sph->kernp->kernrange,
-                                               floatparams["macerror"],
-                                               stringparams["gravity_mac"],
-                                               stringparams["multipole"]);
+    sphneib = new SphTree<ndim,SphParticle>(intparams["Nleafmax"],
+			                    floatparams["thetamaxsqd"],
+			                    sph->kernp->kernrange,
+                                            floatparams["macerror"],
+                                            stringparams["gravity_mac"],
+                                            stringparams["multipole"]);
   }
   else {
     string message = "Unrecognised parameter : neib_search = " 

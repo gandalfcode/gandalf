@@ -69,8 +69,14 @@ BruteForceSearch<ndim,ParticleType>::~BruteForceSearch()
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::BuildTree
-(bool rebuild_tree, int n, int ntreebuildstep, int ntreestockstep,
- FLOAT timestep, Sph<ndim> *sph)
+(bool rebuild_tree,                 ///< Flag to rebuild tree
+ int n,                             ///< Integer time
+ int ntreebuildstep,                ///< Tree build frequency
+ int ntreestockstep,                ///< Tree stocking frequency
+ int Npart,                         ///< No. of particles
+ int Npartmax,                      ///< Max. no. of particles
+ ParticleType<ndim> *partdata,      ///< Particle data array
+ FLOAT timestep)                    ///< Smallest physical timestep
 {
   sph->DeleteDeadParticles();
   return;
