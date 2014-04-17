@@ -75,10 +75,10 @@ void BruteForceSearch<ndim,ParticleType>::BuildTree
  int ntreestockstep,                ///< Tree stocking frequency
  int Npart,                         ///< No. of particles
  int Npartmax,                      ///< Max. no. of particles
- ParticleType<ndim> *partdata,      ///< Particle data array
+ SphParticle<ndim> *sph_gen, Sph<ndim> *sph,        ///< Particle data array
  FLOAT timestep)                    ///< Smallest physical timestep
 {
-  sph->DeleteDeadParticles();
+  //sph->DeleteDeadParticles();
   return;
 }
 
@@ -89,7 +89,8 @@ void BruteForceSearch<ndim,ParticleType>::BuildTree
 /// For Brute Force neighbour searching, there are no counters.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void BruteForceSearch<ndim,ParticleType>::UpdateActiveParticleCounters(Sph<ndim> *sph)
+void BruteForceSearch<ndim,ParticleType>::UpdateActiveParticleCounters
+(SphParticle<ndim> *sph_gen, Sph<ndim> *sph)
 {
   return;
 }
@@ -104,7 +105,10 @@ void BruteForceSearch<ndim,ParticleType>::UpdateActiveParticleCounters(Sph<ndim>
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
-(Sph<ndim> *sph,                    ///< [inout] Pointer to SPH object
+(int Nsph,                          ///< [in] No. of SPH particles
+ int Ntot,                          ///< [in] No. of SPH + ghost particles
+ SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
+ Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
  Nbody<ndim> *nbody)                ///< [in] Pointer to N-body object
 {
   int i,j,jj,k;                     // Particle and dimension counters
@@ -117,20 +121,21 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
   FLOAT *gpot;                      // Array of neib. grav. potentials
   FLOAT *m;                         // Array of neib. position vectors
   FLOAT *mu;                        // Array of neib. mass*u values
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[BruteForceSearch::UpdateAllSphProperties]");
 
   // Store masses in separate array
-  gpot = new FLOAT[sph->Ntot];
-  m = new FLOAT[sph->Ntot];
-  mu = new FLOAT[sph->Ntot];
-  neiblist = new int[sph->Ntot];
-  for (i=0; i<sph->Ntot; i++) {
-    if (sph->sphdata[i].itype == dead) continue;
+  gpot = new FLOAT[Ntot];
+  m = new FLOAT[Ntot];
+  mu = new FLOAT[Ntot];
+  neiblist = new int[Ntot];
+  for (i=0; i<Ntot; i++) {
+    if (sphdata[i].itype == dead) continue;
     neiblist[Nneib] = i;
-    gpot[Nneib] = sph->sphdata[i].gpot;
-    m[Nneib] = sph->sphdata[i].m;
-    mu[Nneib] = sph->sphdata[i].m*sph->sphdata[i].u;
+    gpot[Nneib] = sphdata[i].gpot;
+    m[Nneib] = sphdata[i].m;
+    mu[Nneib] = sphdata[i].m*sphdata[i].u;
     Nneib++;
   }
 
@@ -139,31 +144,31 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
 #pragma omp parallel default(none) private(dr,drsqd,i,j,jj,k,okflag,rp)	\
   shared(gpot,m,mu,nbody,neiblist,Nneib,sph)
   {
-    drsqd = new FLOAT[sph->Ntot];
+    drsqd = new FLOAT[Ntot];
 
     // Compute smoothing lengths of all SPH particles
     //-------------------------------------------------------------------------
 #pragma omp for
-    for (i=0; i<sph->Nsph; i++) {
+    for (i=0; i<Nsph; i++) {
 
       // Skip over inactive particles
-      if (!sph->sphdata[i].active || sph->sphdata[i].itype == dead) continue;
+      if (!sphdata[i].active || sphdata[i].itype == dead) continue;
 
-      for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
+      for (k=0; k<ndim; k++) rp[k] = sphdata[i].r[k];
 
       // Compute distances and the reciprical between the current particle 
       // and all neighbours here
       //-----------------------------------------------------------------------
       for (jj=0; jj<Nneib; jj++) { 
 	j = neiblist[jj];
-    	for (k=0; k<ndim; k++) dr[k] = sph->sphdata[j].r[k] - rp[k];
+    	for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - rp[k];
     	drsqd[jj] = DotProduct(dr,dr,ndim);
       }
       //-----------------------------------------------------------------------
 
       // Compute all SPH gather properties
       okflag = sph->ComputeH(i,Nneib,big_number,m,mu,drsqd,
-                             gpot,sph->sphdata[i],nbody);
+                             gpot,sphdata[i],nbody);
   
     }
     //-------------------------------------------------------------------------
@@ -191,56 +196,60 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
-(Sph<ndim> *sph,                      ///< [inout] Pointer to SPH object
- Nbody<ndim> *nbody)                  ///< [in] Point to N-body object
+(int Nsph,                          ///< [in] No. of SPH particles
+ int Ntot,                          ///< [in] No. of SPH + ghost particles
+ SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
+ Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
+ Nbody<ndim> *nbody)                ///< [in] Pointer to N-body object
 {
-  int i,j,k;                          // Particle and dimension counters
-  int Nneib;                          // No. of neighbours
-  int *neiblist;                      // List of neighbour ids
-  FLOAT draux[ndim];                  // Relative distance vector
-  FLOAT drsqd;                        // Distance squared
-  FLOAT hrangesqdi;                   // Gather kernel extent (squared)
-  FLOAT hrangesqdj;                   // Scatter kernel extent (squared)
-  FLOAT rp[ndim];                     // Position of current particle
-  FLOAT *dr;                          // Array of neib. position vectors
-  FLOAT *drmag;                       // Array of neib. distances
-  FLOAT *invdrmag;                    // Array of neib. inverse distances
+  int i,j,k;                        // Particle and dimension counters
+  int Nneib;                        // No. of neighbours
+  int *neiblist;                    // List of neighbour ids
+  FLOAT draux[ndim];                // Relative distance vector
+  FLOAT drsqd;                      // Distance squared
+  FLOAT hrangesqdi;                 // Gather kernel extent (squared)
+  FLOAT hrangesqdj;                 // Scatter kernel extent (squared)
+  FLOAT rp[ndim];                   // Position of current particle
+  FLOAT *dr;                        // Array of neib. position vectors
+  FLOAT *drmag;                     // Array of neib. distances
+  FLOAT *invdrmag;                  // Array of neib. inverse distances
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[BruteForceSearch::UpdateAllSphHydroForces]");
 
   // Allocate memory for storing neighbour ids and position data
-  neiblist = new int[sph->Ntot];
-  dr = new FLOAT[ndim*sph->Ntot];
-  drmag = new FLOAT[sph->Ntot];
-  invdrmag = new FLOAT[sph->Ntot];
+  neiblist = new int[Ntot];
+  dr = new FLOAT[ndim*Ntot];
+  drmag = new FLOAT[Ntot];
+  invdrmag = new FLOAT[Ntot];
 
 
   // Compute smoothing lengths of all SPH particles
   //---------------------------------------------------------------------------
-  for (i=0; i<sph->Nsph; i++) {
+  for (i=0; i<Nsph; i++) {
 
     // Skip over inactive particles
-    if (!sph->sphdata[i].active || sph->sphdata[i].itype == dead) continue;
+    if (!sphdata[i].active || sphdata[i].itype == dead) continue;
 
     // Zero all arrays to be updated
-    for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
-    for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
-    sph->sphdata[i].gpot = (FLOAT) 0.0;
-    sph->sphdata[i].gpe = (FLOAT) 0.0;
-    sph->sphdata[i].dudt = (FLOAT) 0.0;
-    sph->sphdata[i].levelneib = 0;
+    for (k=0; k<ndim; k++) sphdata[i].a[k] = (FLOAT) 0.0;
+    for (k=0; k<ndim; k++) sphdata[i].agrav[k] = (FLOAT) 0.0;
+    sphdata[i].gpot = (FLOAT) 0.0;
+    sphdata[i].gpe = (FLOAT) 0.0;
+    sphdata[i].dudt = (FLOAT) 0.0;
+    sphdata[i].levelneib = 0;
 
-    for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
-    hrangesqdi = pow(sph->kernfac*sph->kernp->kernrange*sph->sphdata[i].h,2);
+    for (k=0; k<ndim; k++) rp[k] = sphdata[i].r[k];
+    hrangesqdi = pow(kernfac*kernp->kernrange*sphdata[i].h,2);
     Nneib = 0;
 
     // Compute distances and the reciprical between the current particle 
     // and all neighbours here
     //-------------------------------------------------------------------------
-    for (j=0; j<sph->Ntot; j++) {
-      if (sph->sphdata[j].itype == dead) continue;
-      hrangesqdj = pow(sph->kernfac*sph->kernp->kernrange*sph->sphdata[j].h,2);
-      for (k=0; k<ndim; k++) draux[k] = sph->sphdata[j].r[k] - rp[k];
+    for (j=0; j<Ntot; j++) {
+      if (sphdata[j].itype == dead) continue;
+      hrangesqdj = pow(kernfac*kernp->kernrange*sphdata[j].h,2);
+      for (k=0; k<ndim; k++) draux[k] = sphdata[j].r[k] - rp[k];
       drsqd = DotProduct(draux,draux,ndim);
       if ((drsqd < hrangesqdi || drsqd < hrangesqdj) && i != j) {
     	neiblist[Nneib] = j;
@@ -254,12 +263,12 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
 
     // Compute all SPH hydro forces
     sph->ComputeSphHydroForces(i,Nneib,neiblist,drmag,invdrmag,dr,
-			       sph->sphdata[i],sph->sphdata);
+			       sphdata[i],sphdata);
 
     // Compute all star forces
-    sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sph->sphdata[i]);
+    sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sphdata[i]);
 
-    sph->sphdata[i].active = false;
+    sphdata[i].active = false;
 
   }
   //---------------------------------------------------------------------------
@@ -283,53 +292,56 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
-(Sph<ndim> *sph,                      ///< [inout] Pointer to SPH object
+(int Nsph,                            ///< [in] ..
+ int Ntot,                            ///< [in] ..
+ SphParticle<ndim> *sph_gen, Sph<ndim> *sph,          ///< [inout] Pointer to SPH object
  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
   int i,j,k;                          // Particle and dimension counters
   int Nneib;                          // No. of neighbours
   int *neiblist;                      // List of neighbour ids
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[BruteForceSearch::UpdateAllSphForces]");
 
   // Allocate memory for storing neighbour ids and position data
-  neiblist = new int[sph->Ntot];
+  neiblist = new int[Ntot];
 
 
   // Compute smoothing lengths of all SPH particles
   //---------------------------------------------------------------------------
-  for (i=0; i<sph->Nsph; i++) {
+  for (i=0; i<Nsph; i++) {
 
     // Skip over inactive particles
-    if (!sph->sphdata[i].active || sph->sphdata[i].itype == dead) continue;
+    if (!sphdata[i].active || sphdata[i].itype == dead) continue;
 
     // Zero all arrays to be updated
-    for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
-    for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
-    sph->sphdata[i].gpot = (FLOAT) 0.0;
-    sph->sphdata[i].gpe = (FLOAT) 0.0;
-    sph->sphdata[i].dudt = (FLOAT) 0.0;
-    sph->sphdata[i].levelneib = 0;
+    for (k=0; k<ndim; k++) sphdata[i].a[k] = (FLOAT) 0.0;
+    for (k=0; k<ndim; k++) sphdata[i].agrav[k] = (FLOAT) 0.0;
+    sphdata[i].gpot = (FLOAT) 0.0;
+    sphdata[i].gpe = (FLOAT) 0.0;
+    sphdata[i].dudt = (FLOAT) 0.0;
+    sphdata[i].levelneib = 0;
 
     // Add self-contribution to gravitational potential
-    sph->sphdata[i].gpot += sph->sphdata[i].m*
-      sph->sphdata[i].invh*sph->kernp->wpot(0.0);
+    sphdata[i].gpot += sphdata[i].m*
+      sphdata[i].invh*kernp->wpot(0.0);
 
     // Determine interaction list (to ensure we don't compute pair-wise
     // forces twice)
     Nneib = 0;
-    for (j=0; j<sph->Nsph; j++)
-      if (i != j && sph->sphdata[j].itype != dead) neiblist[Nneib++] = j;
+    for (j=0; j<Nsph; j++)
+      if (i != j && sphdata[j].itype != dead) neiblist[Nneib++] = j;
 
     // Compute forces between SPH neighbours (hydro and gravity)
     sph->ComputeSphHydroGravForces(i,Nneib,neiblist,
-                                   sph->sphdata[i],sph->sphdata);
+                                   sphdata[i],sphdata);
 
     // Compute all star forces
-    sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sph->sphdata[i]);
+    sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sphdata[i]);
 
-    for (k=0; k<ndim; k++) sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
-    sph->sphdata[i].active = false;
+    for (k=0; k<ndim; k++) sphdata[i].a[k] += sphdata[i].agrav[k];
+    sphdata[i].active = false;
 
   }
   //---------------------------------------------------------------------------
@@ -349,51 +361,54 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
-(Sph<ndim> *sph,                      ///< [inout] Pointer to SPH object
+(int Nsph,                            ///< [in] ..
+ int Ntot,                            ///< [in] ..
+ SphParticle<ndim> *sph_gen, Sph<ndim> *sph,          ///< [inout] Pointer to SPH object
  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
   int i,j,k;                          // Particle and dimension counters
   int Nneib;                          // No. of neighbours
   int *neiblist;                      // List of neighbour ids
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[BruteForceSearch::UpdateAllSphForces]");
 
   // Allocate memory for storing neighbour ids and position data
-  neiblist = new int[sph->Ntot];
+  neiblist = new int[Ntot];
 
   // Compute smoothing lengths of all SPH particles
   //---------------------------------------------------------------------------
-  for (i=0; i<sph->Nsph; i++) {
+  for (i=0; i<Nsph; i++) {
 
     // Skip over inactive particles
-    if (!sph->sphdata[i].active || sph->sphdata[i].itype == dead) continue;
+    if (!sphdata[i].active || sphdata[i].itype == dead) continue;
 
     // Zero all arrays to be updated
-    for (k=0; k<ndim; k++) sph->sphdata[i].a[k] = (FLOAT) 0.0;
-    for (k=0; k<ndim; k++) sph->sphdata[i].agrav[k] = (FLOAT) 0.0;
-    sph->sphdata[i].gpot = (FLOAT) 0.0;
-    sph->sphdata[i].gpe = (FLOAT) 0.0;
-    sph->sphdata[i].dudt = (FLOAT) 0.0;
-    sph->sphdata[i].levelneib = 0;
+    for (k=0; k<ndim; k++) sphdata[i].a[k] = (FLOAT) 0.0;
+    for (k=0; k<ndim; k++) sphdata[i].agrav[k] = (FLOAT) 0.0;
+    sphdata[i].gpot = (FLOAT) 0.0;
+    sphdata[i].gpe = (FLOAT) 0.0;
+    sphdata[i].dudt = (FLOAT) 0.0;
+    sphdata[i].levelneib = 0;
 
     // Add self-contribution to gravitational potential
-    sph->sphdata[i].gpot += sph->sphdata[i].m*
-      sph->sphdata[i].invh*sph->kernp->wpot(0.0);
+    sphdata[i].gpot += sphdata[i].m*
+      sphdata[i].invh*kernp->wpot(0.0);
 
     // Determine interaction list (to ensure we don't compute pair-wise
     // forces twice)
     Nneib = 0;
-    for (j=0; j<sph->Nsph; j++)
-      if (i != j && sph->sphdata[j].itype != dead) neiblist[Nneib++] = j;
+    for (j=0; j<Nsph; j++)
+      if (i != j && sphdata[j].itype != dead) neiblist[Nneib++] = j;
 
     // Compute forces between SPH neighbours (hydro and gravity)
-    sph->ComputeSphGravForces(i,Nneib,neiblist,sph->sphdata[i],sph->sphdata);
+    sph->ComputeSphGravForces(i,Nneib,neiblist,sphdata[i],sphdata);
 
     // Compute all star forces
-    sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sph->sphdata[i]);
+    sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sphdata[i]);
 
-    for (k=0; k<ndim; k++) sph->sphdata[i].a[k] += sph->sphdata[i].agrav[k];
-    sph->sphdata[i].active = false;
+    for (k=0; k<ndim; k++) sphdata[i].a[k] += sphdata[i].agrav[k];
+    sphdata[i].active = false;
 
   }
   //---------------------------------------------------------------------------
@@ -412,7 +427,9 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::UpdateAllSphDerivatives
-(Sph<ndim> *sph)                      ///< [inout] Pointer to SPH object
+(int Nsph,                            ///< [in] ..
+ int Ntot,                            ///< [in] ..
+ SphParticle<ndim> *sph_gen, Sph<ndim> *sph)          ///< [inout] Pointer to SPH object
 {
   int i,j,k;                          // Particle and dimension counters
   int Nneib;                          // No. of neighbours
@@ -425,35 +442,36 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphDerivatives
   FLOAT *drmag;                       // Array of neib. distances
   FLOAT *invdrmag;                    // Array of neib. inverse distances
   struct SphParticle<ndim> *neibpart; // Local copies of neib. particles
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[BruteForceSearch::UpdateAllSphForces]");
 
   // The potential number of neighbours is given by ALL the particles
-  Nneib = sph->Ntot;
+  Nneib = Ntot;
 
   // Allocate memory for storing neighbour ids and position data
-  neiblist = new int[sph->Ntot];
-  dr = new FLOAT[ndim*sph->Ntot];
-  drmag = new FLOAT[sph->Ntot];
-  invdrmag = new FLOAT[sph->Ntot];
-  neibpart = new SphParticle<ndim>[sph->Ntot];
+  neiblist = new int[Ntot];
+  dr = new FLOAT[ndim*Ntot];
+  drmag = new FLOAT[Ntot];
+  invdrmag = new FLOAT[Ntot];
+  neibpart = new SphParticle<ndim>[Ntot];
 
   // Record local copies of (all) neighbour properties
-  for (j=0; j<sph->Ntot; j++) neibpart[j] = sph->sphdata[j];
+  for (j=0; j<Ntot; j++) neibpart[j] = sphdata[j];
 
 
   // Compute smoothing lengths of all SPH particles
   //---------------------------------------------------------------------------
-  for (i=0; i<sph->Nsph; i++) {
-    for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
-    hrangesqd = pow(sph->kernp->kernrange*sph->sphdata[i].h,2);
+  for (i=0; i<Nsph; i++) {
+    for (k=0; k<ndim; k++) rp[k] = sphdata[i].r[k];
+    hrangesqd = pow(kernp->kernrange*sphdata[i].h,2);
     Nneib = 0;
 
     // Compute distances and the reciprical between the current particle 
     // and all neighbours here
     //-------------------------------------------------------------------------
-    for (j=0; j<sph->Ntot; j++) {
-      for (k=0; k<ndim; k++) draux[k] = sph->sphdata[j].r[k] - rp[k];
+    for (j=0; j<Ntot; j++) {
+      for (k=0; k<ndim; k++) draux[k] = sphdata[j].r[k] - rp[k];
       drsqd = DotProduct(draux,draux,ndim);
       if (drsqd < hrangesqd) {
     	neiblist[Nneib] = j;
@@ -467,7 +485,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphDerivatives
 
     // Compute all SPH hydro forces
     sph->ComputeSphDerivatives(i,Nneib,neiblist,drmag,invdrmag,dr,
-			       sph->sphdata[i],neibpart);
+			       sphdata[i],neibpart);
 
   }
   //---------------------------------------------------------------------------
@@ -489,7 +507,9 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphDerivatives
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::UpdateAllSphDudt
-(Sph<ndim> *sph)                      ///< [inout] Pointer to SPH object
+(int Nsph,                            ///< [in] ..
+ int Ntot,                            ///< [in] ..
+ SphParticle<ndim> *sph_gen, Sph<ndim> *sph)          ///< [inout] Pointer to SPH object
 {
   int i,j,k;                          // Particle and dimension counters
   int Nneib;                          // No. of neighbours
@@ -503,39 +523,40 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphDudt
   FLOAT *drmag;                       // Array of neib. distances
   FLOAT *invdrmag;                    // Array of neib. inverse distances
   struct SphParticle<ndim> *neibpart; // Local copies of neighbour particles
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[BruteForceSearch::UpdateAllSphDudt]");
 
   // The potential number of neighbours is given by ALL the particles
-  Nneib = sph->Ntot;
+  Nneib = Ntot;
 
   // Allocate memory for storing neighbour ids and position data
-  neiblist = new int[sph->Ntot];
-  dr = new FLOAT[ndim*sph->Ntot];
-  drmag = new FLOAT[sph->Ntot];
-  invdrmag = new FLOAT[sph->Ntot];
-  neibpart = new SphParticle<ndim>[sph->Ntot];
+  neiblist = new int[Ntot];
+  dr = new FLOAT[ndim*Ntot];
+  drmag = new FLOAT[Ntot];
+  invdrmag = new FLOAT[Ntot];
+  neibpart = new SphParticle<ndim>[Ntot];
 
-  for (j=0; j<sph->Ntot; j++) neibpart[j] = sph->sphdata[j];
-  for (j=0; j<sph->Ntot; j++) neibpart[j].dudt = (FLOAT) 0.0;
+  for (j=0; j<Ntot; j++) neibpart[j] = sphdata[j];
+  for (j=0; j<Ntot; j++) neibpart[j].dudt = (FLOAT) 0.0;
 
 
   // Compute smoothing lengths of all SPH particles
   //---------------------------------------------------------------------------
-  for (i=0; i<sph->Nsph; i++) {
-    for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
-    hrangesqdi = pow(sph->kernfac*sph->kernp->kernrange*sph->sphdata[i].h,2);
+  for (i=0; i<Nsph; i++) {
+    for (k=0; k<ndim; k++) rp[k] = sphdata[i].r[k];
+    hrangesqdi = pow(kernfac*kernp->kernrange*sphdata[i].h,2);
     Nneib = 0;
 
     // Compute distances and the reciprical between the current particle 
     // and all neighbours here
     //-------------------------------------------------------------------------
-    for (j=0; j<sph->Ntot; j++) {
-      hrangesqdj = pow(sph->kernfac*sph->kernp->kernrange*sph->sphdata[j].h,2);
-      for (k=0; k<ndim; k++) draux[k] = sph->sphdata[j].r[k] - rp[k];
+    for (j=0; j<Ntot; j++) {
+      hrangesqdj = pow(kernfac*kernp->kernrange*sphdata[j].h,2);
+      for (k=0; k<ndim; k++) draux[k] = sphdata[j].r[k] - rp[k];
       drsqd = DotProduct(draux,draux,ndim);
       if ((drsqd < hrangesqdi || drsqd < hrangesqdj) &&
-	  ((j < i && !sph->sphdata[j].active) || j > i)) {
+	  ((j < i && !sphdata[j].active) || j > i)) {
     	neiblist[Nneib] = j;
     	drmag[Nneib] = sqrt(drsqd);
     	invdrmag[Nneib] = (FLOAT) 1.0/(drmag[Nneib] + small_number);
@@ -547,16 +568,16 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphDudt
 
     // Compute all SPH hydro forces
     sph->ComputeSphNeibDudt(i,Nneib,neiblist,drmag,invdrmag,dr,
-			    sph->sphdata[i],neibpart);
+			    sphdata[i],neibpart);
 
   }
   //---------------------------------------------------------------------------
 
 
   // Now add all active neighbour contributions to the main arrays
-  for (j=0; j<sph->Ntot; j++) {
+  for (j=0; j<Ntot; j++) {
     if (neibpart[j].active) {
-      sph->sphdata[j].dudt += neibpart[j].dudt;
+      sphdata[j].dudt += neibpart[j].dudt;
     }
   }
 
@@ -578,20 +599,23 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphDudt
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
-(Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
+(int Nsph,                            ///< [in] ..
+ int Ntot,                            ///< [in] No. of SPH particles
+ SphParticle<ndim> *sph_gen, Sph<ndim> *sph,          ///< [inout] Pointer to SPH ptcl array
  Nbody<ndim> *nbody)                  ///< [inout] Pointer to N-body object
 {
   int i;                              // Particle and dimension counters
   int Nneib = 0;                      // No. of (non-dead) neighbours
   int *dummy;                         // Dummy var to satisfy function argument
-  int *neiblist;                      // Array of (all) particle ids3
+  int *neiblist;                      // Array of (all) particle ids
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[BruteForceSearch::UpdateAllSphForces]");
 
   // Allocate memory for storing neighbour ids and position data
-  neiblist = new int[sph->Nsph];
-  for (i=0; i<sph->Nsph; i++) 
-    if (sph->sphdata[i].itype != dead) neiblist[Nneib++] = i;
+  neiblist = new int[Nsph];
+  for (i=0; i<Nsph; i++) 
+    if (sphdata[i].itype != dead) neiblist[Nneib++] = i;
 
   // Compute smoothing lengths of all SPH particles
   //---------------------------------------------------------------------------
@@ -602,7 +626,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
 
     // Compute forces between SPH neighbours (hydro and gravity)
     nbody->CalculateDirectSPHForces(nbody->nbodydata[i],Nneib,
-                                    0,neiblist,dummy,sph->sphdata);
+                                    0,neiblist,dummy,sphdata);
 
   }
   //---------------------------------------------------------------------------
@@ -628,8 +652,8 @@ void BruteForceSearch<ndim,ParticleType>::FindGhostParticlesToExport(
 {
 
   //Loop over particles and prepare the ones to export
-  for (int i=0; i<sph->Ntot; i++) {
-    SphParticle<ndim>& part = sph->sphdata[i];
+  for (int i=0; i<Ntot; i++) {
+    SphParticle<ndim>& part = sphdata[i];
 
     //Loop over potential domains and see if we need to export this particle to them
     for (int inode=0; inode<overlapping_nodes.size(); inode++) {
@@ -656,8 +680,8 @@ void BruteForceSearch<ndim,ParticleType>::FindParticlesToTransfer(
 {
 
   //Loop over particles and prepare the ones to export
-  for (int i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->sphdata[i];
+  for (int i=0; i<Nsph; i++) {
+    SphParticle<ndim>& part = sphdata[i];
 
     //Loop over potential domains and see if we need to transfer this particle to them
     for (int inode=0; inode<potential_nodes.size(); inode++) {

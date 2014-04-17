@@ -116,7 +116,7 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
   //---------------------------------------------------------------------------
   sphint = new SphGodunovIntegration<ndim, GodunovSphParticle>(floatparams["accel_mult"],
 					   floatparams["courant_mult"],
-			              floatparams["energy_mult"],
+			               floatparams["energy_mult"],
 					   gas_eos, tdavisc);
 
 
@@ -169,6 +169,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
+  SphParticle<ndim> *partdata = sph->GetParticlesArray();
 
   debug2("[SphSimulation::PostInitialConditionsSetup]");
 
@@ -199,10 +200,10 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     sph->mmean /= (FLOAT) sph->Nsph;
     
     sph->InitialSmoothingLengthGuess();
-    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
+    //sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
     sphneib->neibcheck = false;
-    sphneib->UpdateAllSphProperties(sph,nbody);
+    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
     // Search ghost particles
     LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
@@ -219,8 +220,8 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     }
 
     // Calculate all SPH properties
-    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
-    sphneib->UpdateAllSphProperties(sph,nbody);
+    //sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
+    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
     // Search ghost particles
     LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
@@ -229,10 +230,10 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
 
     // Update neighbour tre
-    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
+    //sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
     sphneib->neibcheck = true;
-    sphneib->UpdateAllSphProperties(sph,nbody);
-    sphneib->UpdateAllSphDerivatives(sph);
+    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+    sphneib->UpdateAllSphDerivatives(sph->Nsph,sph->Ntot,partdata,sph);
 
   }
 
@@ -284,7 +285,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 #ifdef MPI_PARALLEL
     MpiGhosts->CopySphDataToGhosts(simbox,sph);
 #endif
-    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
+    //sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
     // Compute timesteps for all particles
     if (Nlevels == 1) 
@@ -294,21 +295,20 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)
-      sphneib->UpdateAllSphForces(sph,nbody);
+      sphneib->UpdateAllSphForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
     else if (sph->hydro_forces == 1)
-      sphneib->UpdateAllSphHydroForces(sph,nbody);
+      sphneib->UpdateAllSphHydroForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
     else if (sph->self_gravity == 1)
-      sphneib->UpdateAllSphGravForces(sph,nbody);
+      sphneib->UpdateAllSphGravForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
     // Compute contribution to grav. accel from stars
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
       if (part.active)
-        sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
-                                   part);
+        sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,part);
     }
 
-    sphneib->UpdateAllSphDudt(sph);
+    sphneib->UpdateAllSphDudt(sph->Nsph,sph->Ntot,partdata,sph);
 
     // Add accelerations
     for (i=0; i<sph->Nsph; i++) {
@@ -359,6 +359,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
   int i;                            // Particle loop counter
   int it;                           // Time-symmetric iteration counter
   int k;                            // Dimension counter
+  SphParticle<ndim> *partdata = sph->GetParticlesArray();
 
   debug2("[GodunovSphSimulation::MainLoop]");
 
@@ -390,13 +391,13 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
 #endif
 
     // Update neighbour tree
-    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
+    //sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
     // Update cells containing active particles
-    sphneib->UpdateActiveParticleCounters(sph);
+    sphneib->UpdateActiveParticleCounters(partdata,sph);
     
     // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph,nbody);
+    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
     
     // Compute timesteps for all particles
     if (Nlevels == 1)
@@ -404,7 +405,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     else
       this->ComputeBlockTimesteps();
 
-    sphneib->UpdateAllSphDerivatives(sph);
+    sphneib->UpdateAllSphDerivatives(sph->Nsph,sph->Ntot,partdata,sph);
 
     // Copy properties from original particles to ghost particles
     LocalGhosts->CopySphDataToGhosts(simbox,sph);
@@ -426,18 +427,17 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)
-      sphneib->UpdateAllSphForces(sph,nbody);
+      sphneib->UpdateAllSphForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
     else if (sph->hydro_forces == 1)
-      sphneib->UpdateAllSphHydroForces(sph,nbody);
+      sphneib->UpdateAllSphHydroForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
     else if (sph->self_gravity == 1)
-      sphneib->UpdateAllSphGravForces(sph,nbody);
+      sphneib->UpdateAllSphGravForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
     
     // Compute contribution to grav. accel from stars
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
       if (part.active) {
-        sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,
-				   part);
+        sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,part);
       }
     }
     
@@ -453,7 +453,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     }
 
     // Now update compressional heating rate
-    sphneib->UpdateAllSphDudt(sph);
+    sphneib->UpdateAllSphDudt(sph->Nsph,sph->Ntot,partdata,sph);
 
     // Set all end-of-step variables
     if (simparams->stringparams["gas_eos"] == "energy_eqn")

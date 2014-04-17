@@ -225,6 +225,9 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
       + simparams->stringparams["neib_search"];
     ExceptionHandler::getIstance().raise(message);
   }
+  sphneib->kernp = sph->kernp;
+  sphneib->kernfac = sph->kernfac;
+  sphneib->kernrange = sph->kernp->kernrange;
 #if defined MPI_PARALLEL
   mpicontrol.SetNeibSearch(sphneib);
 #endif

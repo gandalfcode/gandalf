@@ -243,8 +243,12 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
+  SphParticle<ndim> *partdata;      // Pointer to main SPH data array
 
   debug2("[SphSimulation::PostInitialConditionsSetup]");
+
+  // Set pointer to SPH particle data
+  partdata = sph->GetParticlesArray();
 
 
   // Perform initial MPI decomposition
@@ -285,14 +289,14 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // calculate the initial values here
     sphneib->neibcheck = false;
     if (!this->initial_h_provided) {
-      sph->InitialSmoothingLengthGuess()
+      sph->InitialSmoothingLengthGuess();
       sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
-                         sph->Ntot,sph->Ntotmax,sph->sphdata,timestep);
-      sphneib->UpdateAllSphProperties(sph,nbody);
+                         sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+      sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
     }
 
 #ifdef MPI_PARALLEL
-    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph->sphdata, sph->kernp);
+    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, partdata, sph->kernp);
 #endif
 
     // Search ghost particles
@@ -304,7 +308,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Update neighbour tree
     rebuild_tree = true;
     sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
-                       sph->Ntot,sph->Ntotmax,sph->sphdata,timestep);
+                       sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
     level_step = 1;
 
     // Zero accelerations
@@ -314,10 +318,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).gpot = big_number;
 
     // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph,nbody);
+    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
 #ifdef MPI_PARALLEL
-    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph->sphdata, sph->kernp);
+    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, partdata, sph->kernp);
 #endif
 
     // Search ghost particles
@@ -329,9 +333,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Update neighbour tre
     rebuild_tree = true;
     sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
-                       sph->Ntot,sph->Ntotmax,sph->sphdata,timestep);
+                       sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
     sphneib->neibcheck = true;
-    //sphneib->UpdateAllSphProperties(sph,nbody);
+    //sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
   }
 
@@ -377,15 +381,15 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     MpiGhosts->CopySphDataToGhosts(simbox,sph);
 #endif
     sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
-                       sph->Ntot,sph->Ntotmax,sph->sphdata,timestep);
+                       sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)
-      sphneib->UpdateAllSphForces(sph,nbody);
+      sphneib->UpdateAllSphForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
     else if (sph->hydro_forces == 1)
-      sphneib->UpdateAllSphHydroForces(sph,nbody);
+      sphneib->UpdateAllSphHydroForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
     else if (sph->self_gravity == 1)
-      sphneib->UpdateAllSphGravForces(sph,nbody);
+      sphneib->UpdateAllSphGravForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
     // Set initial accelerations
     for (i=0; i<sph->Nsph; i++) {
@@ -410,7 +414,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
     if (sph->self_gravity == 1 && sph->Nsph > 0)
-      sphneib->UpdateAllStarGasForces(sph,nbody);
+      sphneib->UpdateAllStarGasForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
     nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
 
   }
@@ -441,8 +445,13 @@ void SphSimulation<ndim>::MainLoop(void)
   int it;                           // Time-symmetric iteration counter
   int k;                            // Dimension counter
   FLOAT tghost;                     // Approx. ghost particle lifetime
+  SphParticle<ndim> *partdata;      // Pointer to main SPH data array
 
   debug2("[SphSimulation::MainLoop]");
+
+
+  // Set pointer for SPH data array
+  partdata = sph->GetParticlesArray();
 
 
   // Compute timesteps for all particles
@@ -479,7 +488,7 @@ void SphSimulation<ndim>::MainLoop(void)
   //---------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph->sphdata, sph->kernp);
+    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, partdata, sph->kernp);
     mpicontrol.LoadBalancing(sph,nbody);
     //exit(0);
   }
@@ -509,7 +518,7 @@ void SphSimulation<ndim>::MainLoop(void)
 
     // Rebuild or update local neighbour and gravity tree
     sphneib->BuildTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,
-                       sph->Ntot,sph->Ntotmax,sph->sphdata,timestep);
+                       sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
     activecount = 0;
 
 
@@ -528,10 +537,10 @@ void SphSimulation<ndim>::MainLoop(void)
     do {
 
       // Update cells containing active particles
-      if (activecount > 0) sphneib->UpdateActiveParticleCounters(sph);
+      if (activecount > 0) sphneib->UpdateActiveParticleCounters(partdata,sph);
 
       // Calculate all SPH properties
-      sphneib->UpdateAllSphProperties(sph,nbody);
+      sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
       
       //-----------------------------------------------------------------------
       // MPI : Transmit updated particle properties from parent node to
@@ -551,11 +560,11 @@ void SphSimulation<ndim>::MainLoop(void)
       
       // Compute SPH gravity and hydro forces, depending on which are activated
       if (sph->hydro_forces == 1 && sph->self_gravity == 1)
-        sphneib->UpdateAllSphForces(sph,nbody);
+        sphneib->UpdateAllSphForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
       else if (sph->hydro_forces == 1)
-        sphneib->UpdateAllSphHydroForces(sph,nbody);
+        sphneib->UpdateAllSphHydroForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
       else if (sph->self_gravity == 1)
-        sphneib->UpdateAllSphGravForces(sph,nbody);
+        sphneib->UpdateAllSphGravForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
       
 
       // Check if all neighbouring timesteps are acceptable
@@ -604,7 +613,7 @@ void SphSimulation<ndim>::MainLoop(void)
       nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
 
       if (sph->self_gravity == 1 && sph->Nsph > 0)
-	sphneib->UpdateAllStarGasForces(sph,nbody);
+	sphneib->UpdateAllStarGasForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
       // Calculate correction step for all stars at end of step, except the 
       // final iteration (since correction is computed in EndStep also).
@@ -1091,13 +1100,13 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 //  cout << "Checking timesteps : " << level_max << "   " << level_max_sph << "    " << level_max_nbody << "    " << level_step << "   " << level_max_old << endl;
 //  cout << "n : " << n << endl;
 //  cout << "dt_min_sph : " << dt_min_sph << "    dt_min_nbody : " << dt_min_nbody << "    timestep : " << timestep << endl;
-//  cout << "imin : " << imin << "    " << sph->sphdata[imin].dt << "     "
-//       << sph->sphdata[imin].h << "     "
-//       << sqrt(DotProduct(sph->sphdata[imin].a,sph->sphdata[imin].a,ndim))
+//  cout << "imin : " << imin << "    " << partdata[imin].dt << "     "
+//       << partdata[imin].h << "     "
+//       << sqrt(DotProduct(partdata[imin].a,partdata,sph[imin].a,ndim))
 //       << endl;
 //  for (int l=0; l<=level_max; l++) ninlevel[l] = 0;
-//  for (i=0; i<sph->Nsph; i++) if (sph->sphdata[i].active) Nactive++;
-//  for (i=0; i<sph->Nsph; i++) ninlevel[sph->sphdata[i].level]++;
+//  for (i=0; i<sph->Nsph; i++) if (partdata[i].active) Nactive++;
+//  for (i=0; i<sph->Nsph; i++) ninlevel[partdata[i].level]++;
 //  cout << "No. of active SPH particles : " << Nactive << endl;
 //  cout << "SPH level occupancy" << endl;
 //  for (int l=0; l<=level_max; l++)

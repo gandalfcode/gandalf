@@ -307,7 +307,8 @@ class Simulation : public SimulationBase
   NbodySystemTree<ndim> nbodytree;    ///< N-body tree to create sub-systems
   Sinks<ndim> sinks;                  ///< Sink particle object
   Sph<ndim> *sph;                     ///< SPH algorithm pointer
-  SphIntegration<ndim> *sphint;       ///< SPH Integration scheme pointer=
+  SphIntegration<ndim> *sphint;       ///< SPH Integration scheme pointer
+  SphNeighbourSearch<ndim> *sphneib;  ///< SPH Neighbour scheme pointer
 #ifdef MPI_PARALLEL
   MpiControl<ndim> mpicontrol;        ///< MPI control object
   Ghosts<ndim>* MpiGhosts;            ///< MPI ghost particle object
@@ -335,7 +336,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::extpot;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
-  using Simulation<ndim>::sinks;
+  //using Simulation<ndim>::sinks;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
   using Simulation<ndim>::sphint;
@@ -375,13 +376,12 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
   using Simulation<ndim>::tmax_wallclock;
+  using Simulation<ndim>::sphneib;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
   using Simulation<ndim>::MpiGhosts;
 #endif
 
-
-  SphNeighbourSearch<ndim> *sphneib;  ///< SPH Neighbour scheme pointer
 
 
   SphSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
@@ -416,7 +416,7 @@ class GradhSphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::extpot;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
-  using Simulation<ndim>::sinks;
+  using SphSimulation<ndim>::sinks;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
   using Simulation<ndim>::sphint;
@@ -489,7 +489,7 @@ class SM2012SphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::extpot;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
-  using Simulation<ndim>::sinks;
+  using SphSimulation<ndim>::sinks;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
   using Simulation<ndim>::sphint;

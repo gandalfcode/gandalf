@@ -35,8 +35,8 @@ using namespace std;
 // SphNeighbourSearch::SphNeighbourSearch
 // Empty default constructor
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-SphNeighbourSearch<ndim,ParticleType>::SphNeighbourSearch()
+template <int ndim>
+SphNeighbourSearch<ndim>::SphNeighbourSearch()
 {
 }
 
@@ -46,8 +46,8 @@ SphNeighbourSearch<ndim,ParticleType>::SphNeighbourSearch()
 // SphNeighbourSearch::~SphNeighbourSearch
 // Empty default destructor
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-SphNeighbourSearch<ndim,ParticleType>::~SphNeighbourSearch()
+template <int ndim>
+SphNeighbourSearch<ndim>::~SphNeighbourSearch()
 {
 }
 
@@ -60,8 +60,8 @@ SphNeighbourSearch<ndim,ParticleType>::~SphNeighbourSearch()
 /// (i) does include all true neighbours, and 
 /// (ii) all true neigbours are only included once and once only.
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-void SphNeighbourSearch<ndim,ParticleType>::CheckValidNeighbourList
+template <int ndim>
+void SphNeighbourSearch<ndim>::CheckValidNeighbourList
 (Sph<ndim> *sph,                    ///< [in] SPH object pointer
  int i,                             ///< [in] Particle i.d.
  int Nneib,                         ///< [in] No. of potential neighbours
@@ -129,6 +129,6 @@ void SphNeighbourSearch<ndim,ParticleType>::CheckValidNeighbourList
 
 
 
-template class SphNeighbourSearch<1,SphParticle>;
-template class SphNeighbourSearch<2,SphParticle>;
-template class SphNeighbourSearch<3,SphParticle>;
+template class SphNeighbourSearch<1>;
+template class SphNeighbourSearch<2>;
+template class SphNeighbourSearch<3>;

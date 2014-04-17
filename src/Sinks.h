@@ -104,7 +104,7 @@ class SinkParticle
 /// \author  D. A. Hubber
 /// \date    08/06/2013
 //=============================================================================
-template<int ndim>
+template<int ndim, template <int> class ParticleType>
 class Sinks
 {
  public:
@@ -116,9 +116,9 @@ class Sinks
   //---------------------------------------------------------------------------
   void AllocateMemory(int);
   void DeallocateMemory(void);
-  void SearchForNewSinkParticles(int, Sph<ndim> *, Nbody<ndim> *);
-  void CreateNewSinkParticle(int, Sph<ndim> *, Nbody<ndim> *);
-  void AccreteMassToSinks(Sph<ndim> *, Nbody<ndim> *, int, DOUBLE);
+  void SearchForNewSinkParticles(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  void CreateNewSinkParticle(int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  void AccreteMassToSinks(int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *, int, DOUBLE);
   //void UpdateSystemProperties(void);
   
   // Local class variables

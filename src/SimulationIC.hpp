@@ -473,6 +473,7 @@ void Simulation<ndim>::ShockTube(void)
   FLOAT *vaux;                      // Temp. array for x-velocities
   DomainBox<ndim> box1;             // LHS box
   DomainBox<ndim> box2;             // RHS box
+  SphParticle<ndim> *partdata;      // Pointer to main SPH data array
 
   // Set local copies of various input parameters for setting-up test
   FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
@@ -510,6 +511,9 @@ void Simulation<ndim>::ShockTube(void)
   sph->Nsph = Nbox1 + Nbox2;
   AllocateParticleMemory();
   r = new FLOAT[ndim*sph->Nsph];
+
+  // Set pointer to SPH particle data
+  partdata = sph->GetParticlesArray();
 
 
   // Add particles for LHS of the shocktube
@@ -566,24 +570,28 @@ void Simulation<ndim>::ShockTube(void)
     for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).active = true;
     
     //sph->InitialSmoothingLengthGuess();
-    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
+    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+                       sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
     
     // Search ghost particles
     LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
     
     // Update neighbour tree
-    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
+    //sph->InitialSmoothingLengthGuess();
+    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+                       sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
     
     // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph,nbody);
+    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
     
-    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
-    sphneib->UpdateAllSphProperties(sph,nbody);
+    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+                       sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
     
     LocalGhosts->CopySphDataToGhosts(simbox,sph);
     
     // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph,nbody);
+    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
     
 
     uaux = new FLOAT[sph->Nsph];
@@ -819,6 +827,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
   FLOAT *r;                         // Position vectors
   DomainBox<ndim> box1;             // LHS box
   DomainBox<ndim> box2;             // RHS box
+  SphParticle<ndim> *partdata;      // Pointer to main SPH data array
 
   // Create local copies of all parameters required to set-up problem
   FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
@@ -853,6 +862,9 @@ void Simulation<ndim>::ContactDiscontinuity(void)
     sph->Nsph = Nbox1 + Nbox2;
     AllocateParticleMemory();
     r = new FLOAT[ndim*sph->Nsph];
+
+    // Set pointer to SPH particle data
+    partdata = sph->GetParticlesArray();
 
 
     //-------------------------------------------------------------------------
@@ -912,25 +924,29 @@ void Simulation<ndim>::ContactDiscontinuity(void)
   for (int i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).active = true;
 
   initial_h_provided = true;
-  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
+  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+		     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
   // Search ghost particles
   LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
 
 
-  // Update neighbour tre
-  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
+  // Update neighbour tree
+  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+		     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph,nbody);
+  sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
-  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
-  sphneib->UpdateAllSphProperties(sph,nbody);
+  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+		     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+
+  sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
   LocalGhosts->CopySphDataToGhosts(simbox,sph);
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph,nbody);
+  sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
   delete[] r;
 
@@ -959,6 +975,7 @@ void Simulation<ndim>::KHI(void)
   FLOAT *r;                         // Array of particle positions
   DomainBox<ndim> box1;             // Bounding box of fluid 1
   DomainBox<ndim> box2;             // Bounding box of fluid 2
+  SphParticle<ndim> *partdata;      // Pointer to main SPH data array
 
   // Record local copies of all important parameters
   FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
@@ -1000,6 +1017,9 @@ void Simulation<ndim>::KHI(void)
   sph->Nsph = Nbox1 + Nbox2;
   AllocateParticleMemory();
   r = new FLOAT[ndim*sph->Nsph];
+
+  // Set pointer to SPH particle data
+  partdata = sph->GetParticlesArray();
 
 
   // Add particles for LHS of the shocktube
@@ -1065,10 +1085,11 @@ void Simulation<ndim>::KHI(void)
 
   // Update neighbour tree
   rebuild_tree = true;
-  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
+  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+		     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph,nbody);
+  sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
   
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -1582,6 +1603,7 @@ void Simulation<ndim>::SedovBlastWave(void)
   FLOAT utot;                       // Total internal energy
   FLOAT volume;                     // Volume of box
   FLOAT *r;                         // Positions of all particles
+  SphParticle<ndim> *partdata;      // Pointer to main SPH data array
 
   // Create local copies of initial conditions parameters
   int smooth_ic = simparams->intparams["smooth_ic"];
@@ -1624,6 +1646,9 @@ void Simulation<ndim>::SedovBlastWave(void)
   r = new FLOAT[ndim*sph->Nsph];
   hotlist = new int[sph->Nsph];
 
+  // Set pointer to SPH particle data
+  partdata = sph->GetParticlesArray();
+
   // Add a cube of random particles defined by the simulation bounding box and 
   // depending on the chosen particle distribution
   if (particle_dist == "random")
@@ -1659,16 +1684,18 @@ void Simulation<ndim>::SedovBlastWave(void)
   
   initial_h_provided = true;
   rebuild_tree = true;
-  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
+  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+                     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
   
-  sphneib->UpdateAllSphProperties(sph,nbody);
+  sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
   // Update neighbour tre
   rebuild_tree = true;
-  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
+  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+                     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph,nbody);
+  sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
   // Now calculate which particles are hot
   //---------------------------------------------------------------------------
