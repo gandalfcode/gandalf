@@ -1673,6 +1673,12 @@ void SphTree<ndim,ParticleType>::ValidateTree
 
 
 
-template class SphTree<1,SphParticle>;
-template class SphTree<2,SphParticle>;
-template class SphTree<3,SphParticle>;
+template class SphTree<1,GradhSphParticle>;
+template class SphTree<2,GradhSphParticle>;
+template class SphTree<3,GradhSphParticle>;
+template class SphTree<1,SM2012SphParticle>;
+template class SphTree<2,SM2012SphParticle>;
+template class SphTree<3,SM2012SphParticle>;
+template class SphTree<1,GodunovSphParticle>;
+template class SphTree<2,GodunovSphParticle>;
+template class SphTree<3,GodunovSphParticle>;

@@ -130,7 +130,7 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
   if (stringparams["neib_search"] == "bruteforce")
     sphneib = new BruteForceSearch<ndim,GodunovSphParticle>;
   else if (stringparams["neib_search"] == "tree") {
-    sphneib = new SphTree<ndim,SphParticle>(intparams["Nleafmax"],
+    sphneib = new SphTree<ndim,GodunovSphParticle>(intparams["Nleafmax"],
 			                    floatparams["thetamaxsqd"],
 			                    sph->kernp->kernrange,
                                             floatparams["macerror"],

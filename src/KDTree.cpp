@@ -2001,6 +2001,12 @@ void KDTree<ndim,ParticleType>::ValidateTree
 
 
 
-template class KDTree<1,SphParticle>;
-template class KDTree<2,SphParticle>;
-template class KDTree<3,SphParticle>;
+template class KDTree<1,GradhSphParticle>;
+template class KDTree<2,GradhSphParticle>;
+template class KDTree<3,GradhSphParticle>;
+template class KDTree<1,SM2012SphParticle>;
+template class KDTree<2,SM2012SphParticle>;
+template class KDTree<3,SM2012SphParticle>;
+template class KDTree<1,GodunovSphParticle>;
+template class KDTree<2,GodunovSphParticle>;
+template class KDTree<3,GodunovSphParticle>;

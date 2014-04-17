@@ -231,7 +231,7 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
   if (stringparams["neib_search"] == "bruteforce")
     sphneib = new BruteForceSearch<ndim,SM2012SphParticle>;
   else if (stringparams["neib_search"] == "tree") {
-    sphneib = new SphTree<ndim,SphParticle>(intparams["Nleafmax"],
+    sphneib = new SphTree<ndim,SM2012SphParticle>(intparams["Nleafmax"],
 			                    floatparams["thetamaxsqd"],
 			                    sph->kernp->kernrange,
                                             floatparams["macerror"],
