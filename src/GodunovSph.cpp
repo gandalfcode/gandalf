@@ -53,7 +53,7 @@ GodunovSph<ndim, kernelclass >::GodunovSph(int hydro_forces_aux,
             string KernelName):
   Sph<ndim>(hydro_forces_aux,self_gravity_aux, alpha_visc_aux, beta_visc_aux,
 	    h_fac_aux, h_converge_aux, avisc_aux, acond_aux, tdavisc_aux, 
-            gas_eos_aux, KernelName),
+            gas_eos_aux, KernelName, sizeof(GodunovSphParticle<ndim>)),
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp = &kern;
@@ -97,6 +97,7 @@ void GodunovSph<ndim, kernelclass>::AllocateMemory(int N)
     rsph = new FLOAT[ndim*Nsphmax];
     sphdata = new struct GodunovSphParticle<ndim>[Nsphmax];
     allocated = true;
+    sphdata_unsafe = sphdata;
   }
 
   return;

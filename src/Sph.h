@@ -62,6 +62,10 @@ enum tdaviscenum{notdav, mm97, cd2010};
 template <int ndim>
 class Sph
 {
+private:
+  const int size_sph_part;
+protected:
+  void* sphdata_unsafe;
  public:
 
   const acondenum acond;              ///< Artificial conductivity enum
@@ -73,7 +77,7 @@ class Sph
   Sph(int hydro_forces_aux, int self_gravity_aux, FLOAT alpha_visc_aux, 
       FLOAT beta_visc_aux, FLOAT h_fac_aux, FLOAT h_converge_aux, 
       aviscenum avisc_aux, acondenum acond_aux, tdaviscenum tdavisc_aux, 
-      string gas_eos_aux, string KernelName);
+      string gas_eos_aux, string KernelName, int size_sph_part);
 
 
   // SPH functions for computing SPH sums with neighbouring particles 
@@ -112,7 +116,7 @@ class Sph
 
   // Functions needed to hide some implementation details
   //---------------------------------------------------------------------------
-  virtual SphParticle<ndim>& GetParticleIPointer(int i) = 0;
+  SphParticle<ndim>& GetParticleIPointer(int i) {return *((SphParticle<ndim>*)((unsigned char*)sphdata_unsafe+i*size_sph_part));};
   virtual SphParticle<ndim>* GetParticlesArray () =0;
 
 
@@ -193,6 +197,7 @@ class GradhSph: public Sph<ndim>
   using Sph<ndim>::kernp;
   using Sph<ndim>::iorder;
   using Sph<ndim>::rsph;
+  using Sph<ndim>::sphdata_unsafe;
 
  public:
 
@@ -200,7 +205,6 @@ class GradhSph: public Sph<ndim>
            aviscenum, acondenum, tdaviscenum, string, string);
   ~GradhSph();
 
-  virtual SphParticle<ndim>& GetParticleIPointer(int i) {return sphdata[i];};
   virtual SphParticle<ndim>* GetParticlesArray () {return sphdata;};
 
   virtual void AllocateMemory(int);
@@ -264,10 +268,11 @@ class SM2012Sph: public Sph<ndim>
   using Sph<ndim>::kernp;
   using Sph<ndim>::iorder;
   using Sph<ndim>::rsph;
+  using Sph<ndim>::sphdata_unsafe;
+
 
  public:
 
-  virtual SphParticle<ndim>& GetParticleIPointer(int i) {return sphdata[i];};
   virtual SphParticle<ndim>* GetParticlesArray () {return sphdata;};
 
   SM2012Sph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
@@ -335,6 +340,8 @@ class GodunovSph: public Sph<ndim>
   using Sph<ndim>::kernp;
   using Sph<ndim>::iorder;
   using Sph<ndim>::rsph;
+  using Sph<ndim>::sphdata_unsafe;
+
 
  public:
 
@@ -347,7 +354,6 @@ class GodunovSph: public Sph<ndim>
   virtual void DeleteDeadParticles(void);
   virtual void ReorderParticles(void);
 
-  virtual SphParticle<ndim>& GetParticleIPointer(int i) {return sphdata[i];};
   virtual SphParticle<ndim>* GetParticlesArray () {return sphdata;};
 
   int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
