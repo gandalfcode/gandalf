@@ -78,7 +78,7 @@ void BruteForceSearch<ndim,ParticleType>::BuildTree
  SphParticle<ndim> *sph_gen, Sph<ndim> *sph,        ///< Particle data array
  FLOAT timestep)                    ///< Smallest physical timestep
 {
-  //sph->DeleteDeadParticles();
+  sph->DeleteDeadParticles();
   return;
 }
 

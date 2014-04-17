@@ -100,7 +100,7 @@ SphTree<ndim,ParticleType>::~SphTree()
 /// than currently allocated, tree is deallocated and reallocated here.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void SphTree<ndim,ParticleType>::AllocateMemory(int Naux, Sph<ndim> *sph)
+void SphTree<ndim,ParticleType>::AllocateMemory(Sph<ndim> *sph)
 {
   int ithread;                      // Thread id number
 
@@ -111,11 +111,9 @@ void SphTree<ndim,ParticleType>::AllocateMemory(int Naux, Sph<ndim> *sph)
       DeallocateMemory();
       tree->DeallocateTreeMemory();
     }
-    Ntotmax = max(Ntotmax,Ntot);
-    Ntotmaxold = Ntotmax;
 
     // Allocate main tree memory
-    tree->AllocateTreeMemory();
+    //tree->AllocateTreeMemory();
 
     if (!allocated_buffer) {
       Nneibmaxbuf = new int[Nthreads];
@@ -213,7 +211,21 @@ void SphTree<ndim,ParticleType>::BuildTree
   //---------------------------------------------------------------------------
   if (n%ntreebuildstep == 0 || rebuild_tree) {
 
-    AllocateMemory(Npart,sph);
+    // Delete any dead particles from main SPH arrays before we re-build tree
+    sph->DeleteDeadParticles();
+
+    Ntotold = Ntot;
+    //Nsph = sph->Nsph;
+    Ntot = sph->Ntot;
+    Ntotmaxold = Ntotmax;
+    Ntotmax = max(Ntotmax,Ntot);
+    Ntotmax = max(Ntotmax,sph->Nsphmax);
+    tree->Ntot = sph->Ntot;
+    tree->Ntotmaxold = tree->Ntotmax;
+    tree->Ntotmax = max(tree->Ntotmax,tree->Ntot);
+    tree->Ntotmax = max(tree->Ntotmax,sph->Nsphmax);
+    AllocateMemory(sph);
+
     tree->BuildTree(Npart,Npartmax,sphdata,timestep);
     
   }

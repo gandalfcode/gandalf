@@ -163,11 +163,11 @@ void KDTree<ndim,ParticleType>::BuildTree
   // Set no. of tree members to total number of SPH particles (inc. ghosts)
   gtot       = 0;
   ltot_old   = ltot;
-  Ntotold    = Ntot;
-  Ntot       = Npart;
-  Ntotmaxold = Ntotmax;
-  Ntotmax    = max(Ntot,Ntotmax);
-  Ntotmax    = max(Ntotmax,Npartmax);
+  //Ntotold    = Ntot;
+  //Ntot       = Npart;
+  //Ntotmaxold = Ntotmax;
+  //Ntotmax    = max(Ntot,Ntotmax);
+  ///Ntotmax    = max(Ntotmax,Npartmax);
   
   // Compute the size of all tree-related arrays now we know number of points
   ComputeTreeSize();

@@ -189,7 +189,7 @@ class SphTree: public SphNeighbourSearch<ndim>
 
   // Additional functions for binary tree neighbour search
   //---------------------------------------------------------------------------
-  void AllocateMemory(int, Sph<ndim> *);
+  void AllocateMemory(Sph<ndim> *);
   void DeallocateMemory(void);
 
 
