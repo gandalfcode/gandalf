@@ -169,13 +169,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
     simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
   }
   if (sim == "sph" || sim == "godunov_sph") sphneib->box = &simbox;
-  if (IsAnyBoundarySpecial(simbox))
-    LocalGhosts = new PeriodicGhosts<ndim>();
-  else
-    LocalGhosts = new NullGhosts<ndim>();
-#ifdef MPI_PARALLEL
-  MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
-#endif
+
 
 
   // Sink particles

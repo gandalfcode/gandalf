@@ -698,6 +698,12 @@ void BruteForceSearch<ndim,ParticleType>::FindParticlesToTransfer(
 
 #endif
 
-template class BruteForceSearch<1,SphParticle>;
-template class BruteForceSearch<2,SphParticle>;
-template class BruteForceSearch<3,SphParticle>;
+template class BruteForceSearch<1,GradhSphParticle>;
+template class BruteForceSearch<2,GradhSphParticle>;
+template class BruteForceSearch<3,GradhSphParticle>;
+template class BruteForceSearch<1,SM2012SphParticle>;
+template class BruteForceSearch<2,SM2012SphParticle>;
+template class BruteForceSearch<3,SM2012SphParticle>;
+template class BruteForceSearch<1,GodunovSphParticle>;
+template class BruteForceSearch<2,GodunovSphParticle>;
+template class BruteForceSearch<3,GodunovSphParticle>;

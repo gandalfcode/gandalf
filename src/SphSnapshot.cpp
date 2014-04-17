@@ -475,7 +475,6 @@ int SphSnapshotBase::CalculatePredictedMemoryUsage(void)
 template <int ndims>
 void SphSnapshot<ndims>::CopyDataFromSimulation()
 {
-  SphParticle<ndims>* sphaux;
   StarParticle<ndims>* staraux;
   BinaryOrbit *orbitaux;
 
@@ -485,8 +484,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
   _species.clear();
 
   // Read which species are there
-  if (simulation->sph != NULL && simulation->sph->sphdata != NULL) {
-    sphaux = simulation->sph->sphdata;
+  if (simulation->sph != NULL && simulation->sph->GetParticlesArray() != NULL) {
     Nsph = simulation->sph->Nsph;
     if (Nsph != 0) {
       _species.push_back("sph");
@@ -510,36 +508,38 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
   // Loop over all SPH particles and record particle data
   for (int i=0; i<Nsph; i++) {
 
+    SphParticle<ndims>& part = simulation->sph->GetParticleIPointer(i);
+
     if (ndim == 1) {
-      x[i] = (float) sphaux[i].r[0];
-      vx[i] = (float) sphaux[i].v[0];
-      ax[i] = (float) pow(2,simulation->level_step - sphaux[i].level)*
-	simulation->timestep; //(float) sphaux[i].a[0];
+      x[i] = (float) part.r[0];
+      vx[i] = (float) part.v[0];
+      ax[i] = (float) pow(2,simulation->level_step - part.level)*
+	simulation->timestep; //(float) part.a[0];
     }
     else if (ndim == 2) {
-      x[i] = (float) sphaux[i].r[0];
-      y[i] = (float) sphaux[i].r[1];
-      vx[i] = (float) sphaux[i].v[0];
-      vy[i] = (float) sphaux[i].v[1];
-      ax[i] = (float) sphaux[i].a[0];
-      ay[i] = (float) sphaux[i].a[1];
+      x[i] = (float) part.r[0];
+      y[i] = (float) part.r[1];
+      vx[i] = (float) part.v[0];
+      vy[i] = (float) part.v[1];
+      ax[i] = (float) part.a[0];
+      ay[i] = (float) part.a[1];
     }
     else if (ndim == 3) {
-      x[i] = (float) sphaux[i].r[0];
-      y[i] = (float) sphaux[i].r[1];
-      z[i] = (float) sphaux[i].r[2];
-      vx[i] = (float) sphaux[i].v[0];
-      vy[i] = (float) sphaux[i].v[1];
-      vz[i] = (float) sphaux[i].v[2];
-      ax[i] = (float) sphaux[i].a[0];
-      ay[i] = (float) sphaux[i].a[1];
-      az[i] = (float) sphaux[i].a[2];
+      x[i] = (float) part.r[0];
+      y[i] = (float) part.r[1];
+      z[i] = (float) part.r[2];
+      vx[i] = (float) part.v[0];
+      vy[i] = (float) part.v[1];
+      vz[i] = (float) part.v[2];
+      ax[i] = (float) part.a[0];
+      ay[i] = (float) part.a[1];
+      az[i] = (float) part.a[2];
     }
-    m[i] = (float) sphaux[i].m;
-    h[i] = (float) sphaux[i].h;
-    rho[i] = (float) sphaux[i].rho;
-    u[i] = (float) sphaux[i].u;
-    dudt[i] = sphaux[i].dudt;
+    m[i] = (float) part.m;
+    h[i] = (float) part.h;
+    rho[i] = (float) part.rho;
+    u[i] = (float) part.u;
+    dudt[i] = part.dudt;
 
   }
 

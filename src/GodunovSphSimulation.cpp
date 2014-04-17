@@ -128,7 +128,7 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
   // Create neighbour searching object based on chosen method in params file
   //-------------------------------------------------------------------------
   if (stringparams["neib_search"] == "bruteforce")
-    sphneib = new BruteForceSearch<ndim,SphParticle>;
+    sphneib = new BruteForceSearch<ndim,GodunovSphParticle>;
   else if (stringparams["neib_search"] == "tree") {
     sphneib = new SphTree<ndim,SphParticle>(intparams["Nleafmax"],
 			                    floatparams["thetamaxsqd"],
@@ -151,6 +151,15 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
   sph->riemann_solver = stringparams["riemann_solver"];
   sph->slope_limiter  = stringparams["slope_limiter"];
   sph->riemann_order  = intparams["riemann_order"];
+
+  // Create ghosts object
+  if (IsAnyBoundarySpecial(simbox))
+    LocalGhosts = new PeriodicGhostsSpecific<ndim,GodunovSphParticle >();
+  else
+    LocalGhosts = new NullGhosts<ndim>();
+#ifdef MPI_PARALLEL
+  MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
+#endif
 
   
   return;

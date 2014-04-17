@@ -1487,6 +1487,20 @@ void SphTree<ndim,ParticleType>::UpdateAllSphDudt
 }
 
 
+//=============================================================================
+//  SphTree::UpdateActiveParticleCounters
+/// Loop through all leaf cells in the tree and update all active
+/// particle counters.
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void SphTree<ndim,ParticleType>::UpdateActiveParticleCounters(SphParticle<ndim> * sphdata_gen,
+                                            Sph<ndim> * sph) {
+
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sphdata_gen);
+  tree->UpdateActiveParticleCounters(sphdata);
+}
+
+
 
 #if defined(VERIFY_ALL)
 //=============================================================================

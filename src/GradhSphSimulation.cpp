@@ -211,7 +211,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   // Create neighbour searching object based on chosen method in params file
   //-------------------------------------------------------------------------
   if (stringparams["neib_search"] == "bruteforce")
-    sphneib = new BruteForceSearch<ndim,SphParticle>;
+    sphneib = new BruteForceSearch<ndim,GradhSphParticle>;
   else if (stringparams["neib_search"] == "tree") {
     sphneib = new SphTree<ndim,SphParticle>(intparams["Nleafmax"],
 			                    floatparams["thetamaxsqd"],
@@ -241,6 +241,16 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     sph->Ngather = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac,2));
   else if (ndim == 3)
     sph->Ngather = (int) (4.0*pi*pow(sph->kernp->kernrange*sph->h_fac,3)/3.0);
+
+  // Create ghosts object
+  if (IsAnyBoundarySpecial(simbox))
+    LocalGhosts = new PeriodicGhostsSpecific<ndim,GradhSphParticle >();
+  else
+    LocalGhosts = new NullGhosts<ndim>();
+#ifdef MPI_PARALLEL
+  MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
+#endif
+
 
   return;
 }
