@@ -336,7 +336,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::extpot;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
-  //using Simulation<ndim>::sinks;
+  using Simulation<ndim>::sinks;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
   using Simulation<ndim>::sphint;
