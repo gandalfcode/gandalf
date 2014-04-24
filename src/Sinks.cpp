@@ -382,8 +382,9 @@ void Sinks<ndim>::AccreteMassToSinks
     // beginning of its current step.
     //if (sink[s].Ngas == 0 || !sink[s].star->active) continue;
     //if (sink[s].Ngas == 0 || n%sink[s].star->nstep != 0) continue;
-    if (sink[s].Ngas == 0 || sink[s].star->nlast != n) continue;
     //if (sink[s].Ngas == 0 || n%sink[s].star->nstep != sink[s].star->nstep/2) continue;
+    if (sink[s].Ngas == 0 || sink[s].star->nlast != n) continue;
+
 
     // Allocate local array for sink
     ilist = new int[Nlisttot];

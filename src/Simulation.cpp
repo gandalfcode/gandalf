@@ -868,20 +868,27 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
 template <int ndim>
 void Simulation<ndim>::AllocateParticleMemory(void)
 {
-  int N;
+  int N;                            ///< Max. no. of stars/sinks
 
   debug2("[Simulation::AllocateParticleMemory]");
 
-  // If sink particles are employed, allow enough memory for new sinks
-  if (sink_particles == 1) {
-    N = max(nbody->Nstar,1024);
-  }
-  else N = nbody->Nstar;
+  // Allocate N-body memory (if using N-body)
+  if (nbody) {
 
-  // Now call all memory allocation routines
-  sph->AllocateMemory(sph->Nsph);
-  nbody->AllocateMemory(N);
-  sinks.AllocateMemory(N);
+    // If sink particles are employed, allow enough memory for new sinks
+    if (sink_particles == 1) {
+      N = max(nbody->Nstar,1024);
+    }
+    else N = nbody->Nstar;
+    
+    // Now call all memory allocation routines
+    nbody->AllocateMemory(N);
+    sinks.AllocateMemory(N);
+  }
+
+  // Allocate SPH memory, if being used
+  if (sph) sph->AllocateMemory(sph->Nsph);
+
 
   return;
 }

@@ -233,7 +233,8 @@ class Simulation : public SimulationBase
   int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
 #if defined(FFTW_TURBULENCE)
   void GenerateTurbulentVelocityField(int, int, DOUBLE, DOUBLE *);
-  void InterpolateVelocityField(int, FLOAT, FLOAT, FLOAT *, FLOAT *);
+  void InterpolateVelocityField(int, int, FLOAT, FLOAT, 
+                                FLOAT *, FLOAT *,FLOAT *);
 #endif
 
 
@@ -649,6 +650,7 @@ class NbodySimulation : public Simulation<ndim>
   using Simulation<ndim>::Nlevels;
   using Simulation<ndim>::Nsteps;
   using Simulation<ndim>::ndiagstep;
+  using Simulation<ndim>::sph;
   using Simulation<ndim>::tmax_wallclock;
   using Simulation<ndim>::t;
   using Simulation<ndim>::timestep;

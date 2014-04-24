@@ -50,7 +50,8 @@ template <int ndim>
 Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux, 
                FLOAT alpha_visc_aux, FLOAT beta_visc_aux, FLOAT h_fac_aux, 
                FLOAT h_converge_aux, aviscenum avisc_aux, acondenum acond_aux, 
-	       tdaviscenum tdavisc_aux, string gas_eos_aux, string KernelName, int size_sph):
+	       tdaviscenum tdavisc_aux, string gas_eos_aux, string KernelName,
+               int size_sph):
   hydro_forces(hydro_forces_aux),
   self_gravity(self_gravity_aux),
   alpha_visc(alpha_visc_aux),
@@ -71,6 +72,7 @@ Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux,
 {
   // Set all SPH particle types here
 }
+
 
 
 //=============================================================================

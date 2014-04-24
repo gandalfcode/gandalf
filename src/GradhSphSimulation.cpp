@@ -242,7 +242,9 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   else if (ndim == 3)
     sph->Ngather = (int) (4.0*pi*pow(sph->kernp->kernrange*sph->h_fac,3)/3.0);
 
-  // Create ghosts object
+
+  // Create ghost particle object
+  //---------------------------------------------------------------------------
   if (IsAnyBoundarySpecial(simbox))
     LocalGhosts = new PeriodicGhostsSpecific<ndim,GradhSphParticle >();
   else

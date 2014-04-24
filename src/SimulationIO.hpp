@@ -562,7 +562,7 @@ template <int ndim>
 bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 {
   int dim_check;               // Dimension check
-  int dmdt_range_aux;          // Accretion history array size
+  //int dmdt_range_aux;          // Accretion history array size
   int i;                       // Aux. counter
   int ifirst;                  // i.d. of first particle
   int ilast;                   // i.d. of last particle
@@ -628,7 +628,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   sph->Nsph      = idata[0];
   nbody->Nstar   = idata[1];
   sinks.Nsink    = idata[1];
-  dmdt_range_aux = idata[29];
+  //dmdt_range_aux = idata[29];
   nunit          = idata[19];
   ndata          = idata[20];
 
@@ -1126,31 +1126,32 @@ template <int ndim>
 void Simulation<ndim>::ReadSerenUnformHeaderFile
 (ifstream& infile,                 ///< Input file stream
  HeaderInfo& info)                 ///< Header info data structure
- {
-  debug2("[Simulation::ReadSerenUnformHeaderFile]");
-  BinaryReader reader(infile);
+{
+  BinaryReader reader(infile);     // ..
 
-  //Skip the first bits (tag+the 4)
+  debug2("[Simulation::ReadSerenUnformHeaderFile]");
+
+  // Skip the first bits (tag + the 4)
   int id_length = 20; //binary_tag.size();
   infile.seekg(id_length);
   infile.seekg(4,ios_base::cur);
 
-  //Read number of dimensions
+  // Read number of dimensions
   reader.read_value(info.ndim);
 
-  //Skip the following two integers...
+  // Skip the following two integers...
   infile.seekg(8,ios_base::cur);
 
-  //Read number of SPH particles
+  // Read number of SPH particles
   reader.read_value(info.Nsph);
 
-  //Read number of star particles
+  // Read number of star particles
   reader.read_value(info.Nstar);
 
-  //Skip the remaining 48 idata, ilpdata and rdata
+  // Skip the remaining 48 idata, ilpdata and rdata
   infile.seekg(48*sizeof(int)+50*sizeof(long)+50*sizeof(FLOAT),ios_base::cur);
 
-  //Read time
+  // Read time and convert to code units
   reader.read_value(info.t);
   info.t /= simunits.t.inscale;
 
@@ -1163,7 +1164,7 @@ void Simulation<ndim>::ReadSerenUnformHeaderFile
   }
 
   return;
- }
+}
 
 
 //=============================================================================
@@ -1173,18 +1174,17 @@ void Simulation<ndim>::ReadSerenUnformHeaderFile
 template <int ndim>
 bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 {
-  int dummy;
-  int dmdt_range_aux;          // Accretion history array size
-  int ndata;                   // No. of data arrays written
-  int nunit;                   // No. of unit strings
-  string data_id[50];          // String ids of arrays written
-  string unit_data[50];        // String ids of units written
-  int typedata[50][5];
-  int idata[50];
-  long ilpdata[50];
-  FLOAT rdata[50];
-  DOUBLE ddata[50];
-
+  int dummy;                        // ..
+  int dmdt_range_aux;               // Accretion history array size
+  int ndata;                        // No. of data arrays written
+  int nunit;                        // No. of unit strings
+  int typedata[50][5];              // ..
+  int idata[50];                    // ..
+  long ilpdata[50];                 // ..
+  FLOAT rdata[50];                  // ..
+  DOUBLE ddata[50];                 // ..
+  string data_id[50];               // String ids of arrays written
+  string unit_data[50];             // String ids of units written
 
   debug2("[Simulation::ReadSerenUnformSnapshotFile]");
 
@@ -1266,10 +1266,10 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 
   // Read unit_data
   for (int i=0; i<nunit; i++) {
-      char buffer[string_length];
-      infile.read(buffer,string_length);
-      unit_data[i] = std::string(buffer,string_length);
-      unit_data[i] = simparams->TrimWhiteSpace(unit_data[i]);
+    char buffer[string_length];
+    infile.read(buffer,string_length);
+    unit_data[i] = std::string(buffer,string_length);
+    unit_data[i] = simparams->TrimWhiteSpace(unit_data[i]);
   }
 
   // Read data_id
@@ -1343,12 +1343,6 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 
     }
 
-    // Skip 1-D redundant information
-    //-------------------------------------------------------------------------
-    else if(data_id[j] == "temp") {
-      infile.seekg(sizeof(FLOAT)*sph->Nsph,ios_base::cur);
-    }
-
     // Densities
     //-------------------------------------------------------------------------
     else if (data_id[j] == "rho") {
@@ -1365,6 +1359,12 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
         reader.read_value(part.u);
       }
+    }
+
+    // Skip 1-D redundant information
+    //-------------------------------------------------------------------------
+    else if(data_id[j] == "temp") {
+      infile.seekg(sizeof(FLOAT)*sph->Nsph,ios_base::cur);
     }
 
     // Sinks/stars
@@ -1524,20 +1524,20 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   }
 
   // Set important header information
-  idata[0] = sph->Nsph;
-  idata[1] = nbody->Nstar;
-  idata[4] = sph->Nsph;
-  idata[19] = nunit;
-  idata[20] = ndata;
-  ilpdata[0] = Noutsnap;
-  ilpdata[1] = Nsteps;
+  idata[0]    = sph->Nsph;
+  idata[1]    = nbody->Nstar;
+  idata[4]    = sph->Nsph;
+  idata[19]   = nunit;
+  idata[20]   = ndata;
+  ilpdata[0]  = Noutsnap;
+  ilpdata[1]  = Nsteps;
   ilpdata[10] = Noutlitesnap;
-  rdata[0] = sph->h_fac;
-  rdata[1] = 0.0;
-  ddata[0] = t*simunits.t.outscale;
-  ddata[1] = tsnaplast*simunits.t.outscale;
-  ddata[2] = sph->mmean*simunits.m.outscale;
-  ddata[10] = tlitesnaplast*simunits.t.outscale;
+  rdata[0]    = sph->h_fac;
+  rdata[1]    = 0.0;
+  ddata[0]    = t*simunits.t.outscale;
+  ddata[1]    = tsnaplast*simunits.t.outscale;
+  ddata[2]    = sph->mmean*simunits.m.outscale;
+  ddata[10]   = tlitesnaplast*simunits.t.outscale;
 
 
   // Write header information to file
@@ -1660,6 +1660,8 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   //---------------------------------------------------------------------------
 
   outfile.close();
+
+  return true;
 }
 
 
@@ -1882,6 +1884,8 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
   //---------------------------------------------------------------------------
 
   outfile.close();
+
+  return true;
 }
 
 
@@ -1923,17 +1927,19 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
     nbody->stardata[i].radius /= simunits.r.inscale;
   }
 
-  // If sinks are being used, copy to sink arrays
+
+  // Rescale all sink information
   //---------------------------------------------------------------------------
   for (i=0; i<sinks.Nsink; i++) {
     sinks.sink[i].radius /= simunits.r.inscale;
   }
 
+
   // Rescale other variables
-  t /= simunits.t.inscale;
-  tsnaplast /= simunits.t.inscale;
+  t             /= simunits.t.inscale;
+  tsnaplast     /= simunits.t.inscale;
   tlitesnaplast /= simunits.t.inscale;
-  sph->mmean /= simunits.m.inscale;
+  sph->mmean    /= simunits.m.inscale;
   if (restart) {
     tsnapnext = tsnaplast + dt_snap;
     tlitesnapnext = tlitesnaplast + dt_litesnap;

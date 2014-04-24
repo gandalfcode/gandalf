@@ -130,7 +130,7 @@ void Simulation<ndim>::GenerateIC(void)
   if (rescale_particle_data) ConvertToCodeUnits();
 
   // Check that the initial conditions are valid
-  CheckInitialConditions();
+  if (sph) CheckInitialConditions();
 
   return;
 }
@@ -153,7 +153,6 @@ void Simulation<ndim>::CheckInitialConditions(void)
   //---------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-
 
     okflag = true;
 
@@ -1289,25 +1288,23 @@ template <int ndim>
 void Simulation<ndim>::TurbulentCore(void)
 {
   int i;                            // Particle counter
-  int j;                            // ..
   int k;                            // Dimension counter
-  int p;                            // ..
   int Nsphere;                      // Actual number of particles in sphere
-  FLOAT dx[3];                      // ..
-  FLOAT dxgrid;                     // ..
   FLOAT gpecloud;                   // ..
   FLOAT keturb;                     // ..
   FLOAT mp;                         // Mass of one particle
   FLOAT rcentre[ndim];              // Position of sphere centre
-  FLOAT rmax[ndim];                 // ..
-  FLOAT rmin[ndim];                 // ..
   FLOAT rho;                        // Fluid density
-  FLOAT vint[8];                    // ..
   FLOAT xmin;                       // ..
   FLOAT vfactor;                    // ..
   FLOAT *r;                         // Positions of all particles
   FLOAT *v;                         // Velocities of all particles
+#if defined(FFTW_TURBULENCE)
+  FLOAT dxgrid;                     // ..
+  FLOAT rmax[ndim];                 // ..
+  FLOAT rmin[ndim];                 // ..
   DOUBLE *vfield;                   // ..
+#endif
 
   // Create local copies of initial conditions parameters
   int field_type = simparams->intparams["field_type"];
@@ -1393,11 +1390,13 @@ void Simulation<ndim>::TurbulentCore(void)
   GenerateTurbulentVelocityField(field_type,gridsize,power_turb,vfield);
 
   // Now interpolate generated field onto particle positions
-  InterpolateVelocityField(gridsize,xmin,dxgrid,vfield,v);
+  InterpolateVelocityField(sph->Nsph,gridsize,xmin,dxgrid,r,vfield,v);
 
   // Finally, copy velocities to main SPH particle array
-  for (i=0; i<sph->Nsph; i++)
-    for (k=0; k<ndim; k++) sph->sphdata[p].v[k] = v[ndim*p + k];
+  for (i=0; i<sph->Nsph; i++) {
+    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (k=0; k<ndim; k++) part.v[k] = v[ndim*i + k];
+  }
 
 #else
   string message = "FFTW turbulence flag not set";
@@ -1473,7 +1472,8 @@ void Simulation<ndim>::PlummerSphere(void)
   raux = gasfrac + starfrac;
   gasfrac /= raux;
   starfrac /= raux;
-    
+  
+
   // Loop over all particles (gas and stars)
   //===========================================================================
   for (j=0; j<Nsph+Nstar; j++) {
@@ -1504,9 +1504,9 @@ void Simulation<ndim>::PlummerSphere(void)
     }
     else {
       i = j;
-      nbody->stardata[i].r[2] = z;
       nbody->stardata[i].r[0] = sqrt(rad*rad - z*z)*cos(twopi*x3);
       nbody->stardata[i].r[1] = sqrt(rad*rad - z*z)*sin(twopi*x3);
+      nbody->stardata[i].r[2] = z;
       nbody->stardata[i].m = starfrac / (FLOAT) Nstar;
     }
        
@@ -1542,13 +1542,14 @@ void Simulation<ndim>::PlummerSphere(void)
     }
     else {
       i = j;
-      nbody->stardata[i].v[2] = w;
       nbody->stardata[i].v[0] = sqrt(vm*vm - w*w)*cos(twopi*x7);
       nbody->stardata[i].v[1] = sqrt(vm*vm - w*w)*sin(twopi*x7);
+      nbody->stardata[i].v[2] = w;
     }
       
   }
   //===========================================================================
+
 
   // Instanly move to COM
   //ConvertToComFrame();
@@ -1829,7 +1830,7 @@ void Simulation<ndim>::SoundWave(void)
   int i,k;                          // Particle and dimension counters
   int Nlattice1[ndim];              // Lattice size
   FLOAT csound;                     // (Isothermal) sound speed
-  FLOAT diff;                       // ??
+  FLOAT diff;                       // Frac difference (for position iteration)
   FLOAT lambda;                     // Wavelength of perturbation
   FLOAT kwave;                      // Wave number of perturbing sound wave
   FLOAT omegawave;                  // Angular frequency of sound wave
@@ -1945,8 +1946,8 @@ void Simulation<ndim>::BinaryStar(void)
   }
 
   // Allocate local and main particle memory
-  sph->Nsph = 0;
-  sph->Ntot = 0;
+  //sph->Nsph = 0;
+  //sph->Ntot = 0;
   nbody->Nstar = 2;
   AllocateParticleMemory();
 
@@ -1994,8 +1995,8 @@ void Simulation<ndim>::TripleStar(void)
   }
 
   // Allocate local and main particle memory
-  sph->Nsph = 0;
-  sph->Ntot = 0;
+  //sph->Nsph = 0;
+  //sph->Ntot = 0;
   nbody->Nstar = 3;
   AllocateParticleMemory();
 
@@ -2048,8 +2049,8 @@ void Simulation<ndim>::QuadrupleStar(void)
   }
 
   // Allocate local and main particle memory
-  sph->Nsph = 0;
-  sph->Ntot = 0;
+  //sph->Nsph = 0;
+  //sph->Ntot = 0;
   nbody->Nstar = 4;
   AllocateParticleMemory();
 
@@ -2654,16 +2655,13 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
   int kmax;                         // Max. extent of k (in 3D)
   int kmin;                         // Min. extent of k (in 3D)
   int krange;                       // Range of k values (kmax - kmin + 1)
-  int shift;                        // Power grid shift
   int i,j,k;                        // Grid counters
   int ii,jj,kk;                     // Aux. grid counters
-  int k1,k2,k3;                     // ??
   int d;                            // Dimension counter
   DOUBLE F[ndim];                   // Fourier vector component
   DOUBLE unitk[3];                  // Unit k-vector
   DOUBLE **power,**phase;
-  DOUBLE Rnd[3],w;                  // Random numbers, variable in Gaussian calculation
-  DOUBLE Rnd2[3];
+  DOUBLE Rnd[3];                    // Random numbers, variable in Gaussian calculation
   DOUBLE k_rot[ndim];               // bulk rotation modes
   DOUBLE k_com[ndim];               // bulk compression modes
   fftw_plan plan;                   // ??
@@ -2817,9 +2815,6 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
 			  outcomplexfield, FFTW_BACKWARD, FFTW_ESTIMATE);
 
 
-  //shift = -kmin + krange;
-  shift = 0.0;
-
   // reorder array: positive wavenumbers are placed in ascending order along
   // first half of dimension, i.e. 0 to k_max, negative wavenumbers are placed
   // along second half of dimension, i.e. -k_min to 1.
@@ -2895,35 +2890,40 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
 
 //=============================================================================
 //  Simulation::InterpolateVelocityField
-/// ..
-/// Based on original code by A. McLeod.
+/// Calculate Interpolated velocity from uniform grid onto particle positions.
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::InterpolateVelocityField
-(int gridsize,
- FLOAT xmin,
- FLOAT dxgrid,
- FLOAT *vfield,
- FLOAT *v)
+(int Npart,                         ///< [in] No of particles
+ int Ngrid,                         ///< [in] Size (per dim) of velocity grid
+ FLOAT xmin,                        ///< [in] Minimum position
+ FLOAT dxgrid,                      ///< [in] Grid size
+ FLOAT *r,                          ///< [in] Positions of particles
+ FLOAT *vfield,                     ///< [in] Tabulated velocity field
+ FLOAT *v)                          ///< [out] Interpolated particle velocity
 {
-  int i,j,k,kk,p;
-  FLOAT dx[ndim],vint[ndim];
+  int i,j,k;                        // Grid coordinates
+  int kk;                           // Dimension counter
+  int p;                            // Particle counter
+  FLOAT dx[ndim];                   // Position relative to grid point
+  FLOAT vint[ndim];                 // Interpolated velocity
+
 
   // Now interpolate velocity field onto particle positions
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dx,i,j,k,kk,p,vint) \
-  shared(cout,dxgrid,gridsize,v,vfield,xmin)
-  for (p=0; p<sph->Nsph; p++) {
-    for (kk=0; kk<ndim; kk++) dx[kk] = (sph->sphdata[p].r[kk] - xmin)/dxgrid;
+  shared(cout,dxgrid,Ngrid,v,vfield,xmin)
+  for (p=0; p<Npart; p++) {
+    for (kk=0; kk<ndim; kk++) dx[kk] = (r[ndim*p + kk] - xmin)/dxgrid;
 
     i = (int) dx[0];
     j = (int) dx[1];
     k = (int) dx[2];
     
-    if (i > gridsize || j > gridsize || k > gridsize || 
+    if (i > Ngrid || j > Ngrid || k > Ngrid || 
 	i < 0 || j < 0 || k < 0)  {
       cout << "Problem with velocity interpolation grid!! : " 
-	   << i << "    " << j << "    " << k << "   " << gridsize << endl;
+	   << i << "    " << j << "    " << k << "   " << Ngrid << endl;
       exit(0);
     }
     
@@ -2940,36 +2940,35 @@ void Simulation<ndim>::InterpolateVelocityField
       vint[6] = dx[0]*dx[1]*(1.0 - dx[2]);
       vint[7] = dx[0]*dx[1]*dx[2];
 
-
       v[ndim*p] = 
-	vint[0]*vfield[3*i + 3*gridsize*j + 3*gridsize*gridsize*k] + 
-	vint[1]*vfield[3*i + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
-	vint[2]*vfield[3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
-	vint[3]*vfield[3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)] + 
-	vint[4]*vfield[3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*k] + 
-	vint[5]*vfield[3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
-	vint[6]*vfield[3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
-	vint[7]*vfield[3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)];
+	vint[0]*vfield[3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*k] + 
+	vint[1]*vfield[3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] + 
+	vint[2]*vfield[3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] + 
+	vint[3]*vfield[3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*(k+1)] + 
+	vint[4]*vfield[3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*k] + 
+	vint[5]*vfield[3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] + 
+	vint[6]*vfield[3*(i+1) + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] + 
+	vint[7]*vfield[3*(i+1) + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*(k+1)];
 
       v[ndim*p+1] = 
-	vint[0]*vfield[1 + 3*i + 3*gridsize*j + 3*gridsize*gridsize*k] + 
-	vint[1]*vfield[1 + 3*i + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
-	vint[2]*vfield[1 + 3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
-	vint[3]*vfield[1 + 3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)] + 
-	vint[4]*vfield[1 + 3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*k] + 
-	vint[5]*vfield[1 + 3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
-	vint[6]*vfield[1 + 3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
-	vint[7]*vfield[1 + 3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)];
+	vint[0]*vfield[1 + 3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*k] + 
+	vint[1]*vfield[1 + 3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] + 
+	vint[2]*vfield[1 + 3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] + 
+	vint[3]*vfield[1 + 3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*(k+1)] + 
+	vint[4]*vfield[1 + 3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*k] + 
+	vint[5]*vfield[1 + 3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] + 
+	vint[6]*vfield[1 + 3*(i+1) + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] + 
+	vint[7]*vfield[1 + 3*(i+1) + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*(k+1)];
 
       v[ndim*p+2] = 
-	vint[0]*vfield[2 + 3*i + 3*gridsize*j + 3*gridsize*gridsize*k] + 
-	vint[1]*vfield[2 + 3*i + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
-	vint[2]*vfield[2 + 3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
-	vint[3]*vfield[2 + 3*i + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)] + 
-	vint[4]*vfield[2 + 3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*k] + 
-	vint[5]*vfield[2 + 3*(i+1) + 3*gridsize*j + 3*gridsize*gridsize*(k+1)] + 
-	vint[6]*vfield[2 + 3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*k] + 
-	vint[7]*vfield[2 + 3*(i+1) + 3*gridsize*(j+1) + 3*gridsize*gridsize*(k+1)];
+	vint[0]*vfield[2 + 3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*k] + 
+	vint[1]*vfield[2 + 3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] + 
+	vint[2]*vfield[2 + 3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] + 
+	vint[3]*vfield[2 + 3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*(k+1)] + 
+	vint[4]*vfield[2 + 3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*k] + 
+	vint[5]*vfield[2 + 3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] + 
+	vint[6]*vfield[2 + 3*(i+1) + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] + 
+	vint[7]*vfield[2 + 3*(i+1) + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*(k+1)];
 
     }
   }

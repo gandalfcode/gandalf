@@ -103,9 +103,12 @@ class MpiNode;
 
 //=============================================================================
 //  Class BruteForceSearch
-/// Class for computing SPH neighbour lists using brute force only 
-/// (i.e. direct summation over all particles).
-//=============================================================================
+/// \brief   ..
+/// \details Class for computing SPH neighbour lists using brute force only 
+///          (i.e. direct summation over all particles).
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+§//=============================================================================
 template <int ndim, template<int> class ParticleType>
 class BruteForceSearch: public SphNeighbourSearch<ndim>
 {
@@ -150,7 +153,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
 /// \brief   Class containing binary tree
 /// \details Binary tree data structure used for efficient neighbour searching 
 ///          and computation of gravitational forces
-/// \author  D. A. Hubber, O. Lomax, A. P. Whitworth
+/// \author  D. A. Hubber
 /// \date    08/01/2014
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -168,6 +171,7 @@ class SphTree: public SphNeighbourSearch<ndim>
 
   SphTree(int, FLOAT, FLOAT, FLOAT, string, string);
   ~SphTree();
+
 
   //---------------------------------------------------------------------------
   void BuildTree(bool, int, int, int, int, int, 
@@ -212,13 +216,13 @@ class SphTree: public SphNeighbourSearch<ndim>
   FLOAT invthetamaxsqd;             ///< 1 / thetamaxsqd
   KDTree<ndim,ParticleType> *tree;  ///< Pointer to tree
 
-  bool allocated_buffer;
-  int Nthreads;
-  int *Nneibmaxbuf;
-  int *Ndirectmaxbuf;
-  int *Ngravcellmaxbuf;
-  int **activelistbuf;
-  int **levelneibbuf;
+  bool allocated_buffer;            ///< ..
+  int Nthreads;                     ///< ..
+  int *Nneibmaxbuf;                 ///< ..
+  int *Ndirectmaxbuf;               ///< ..
+  int *Ngravcellmaxbuf;             ///< ..
+  int **activelistbuf;              ///< ..
+  int **levelneibbuf;               ///< ..
   ParticleType<ndim> **neibpartbuf;   // Local copy of neighbouring ptcls
   ParticleType<ndim> **activepartbuf; // Local copy of SPH particle  
 

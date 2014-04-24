@@ -52,7 +52,7 @@ GradhSph<ndim, kernelclass>::GradhSph(int hydro_forces_aux,
 	    FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
 	    acondenum acond_aux, tdaviscenum tdavisc_aux, string gas_eos_aux, 
             string KernelName):
-  Sph<ndim>(hydro_forces_aux,self_gravity_aux, alpha_visc_aux, beta_visc_aux,
+  Sph<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux, beta_visc_aux,
 	    h_fac_aux, h_converge_aux, avisc_aux, acond_aux, tdavisc_aux, 
             gas_eos_aux, KernelName, sizeof(GradhSphParticle<ndim>)),
   kern(kernelclass<ndim>(KernelName))

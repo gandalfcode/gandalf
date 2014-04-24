@@ -231,7 +231,6 @@ class GradhSph: public Sph<ndim>
   kernelclass<ndim> kern;                  ///< SPH kernel
   GradhSphParticle<ndim> *sphdata;         ///< Pointer to particle data
 
-
 };
 
 
@@ -240,8 +239,8 @@ class GradhSph: public Sph<ndim>
 //  Class SM2012Sph
 /// \brief   Class definition for Saitoh & Makino (2012) SPH simulations
 /// \details Class definition for Saitoh & Makino (2012) SPH simulations 
-///          (as derived from the parent Sph class).  Full code for each of 
-///          these class functions written in 'SM2012Sph.cpp'.
+///          (as derived from the parent Sph class).  Full code for each  
+///          of these class functions is written in 'SM2012Sph.cpp'.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=============================================================================
@@ -270,14 +269,13 @@ class SM2012Sph: public Sph<ndim>
   using Sph<ndim>::rsph;
   using Sph<ndim>::sphdata_unsafe;
 
-
  public:
-
-  virtual SphParticle<ndim>* GetParticlesArray () {return sphdata;};
 
   SM2012Sph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
             aviscenum, acondenum, tdaviscenum, string, string);
   ~SM2012Sph();
+
+  virtual SphParticle<ndim>* GetParticlesArray () {return sphdata;};
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
@@ -342,19 +340,18 @@ class GodunovSph: public Sph<ndim>
   using Sph<ndim>::rsph;
   using Sph<ndim>::sphdata_unsafe;
 
-
  public:
 
   GodunovSph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
              aviscenum, acondenum, tdaviscenum, string, string);
   ~GodunovSph();
 
+  virtual SphParticle<ndim>* GetParticlesArray () {return sphdata;};
+
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
   virtual void DeleteDeadParticles(void);
   virtual void ReorderParticles(void);
-
-  virtual SphParticle<ndim>* GetParticlesArray () {return sphdata;};
 
   int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
@@ -370,13 +367,86 @@ class GodunovSph: public Sph<ndim>
 			     SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeDirectGravForces(int, int, int *, 
                                SphParticle<ndim> &, SphParticle<ndim> *);
-  void InitialiseRiemannProblem(GodunovSphParticle<ndim>&, GodunovSphParticle<ndim>&, FLOAT *,
+  void InitialiseRiemannProblem(GodunovSphParticle<ndim>&, 
+                                GodunovSphParticle<ndim>&, FLOAT *,
                                 FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT &, 
                                 FLOAT &, FLOAT &, FLOAT &, FLOAT &, FLOAT &);
   void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &);
 
-  kernelclass<ndim> kern;                 ///< SPH kernel
-  GodunovSphParticle<ndim> *sphdata;         ///< Pointer to particle data
+  kernelclass<ndim> kern;               ///< SPH kernel
+  GodunovSphParticle<ndim> *sphdata;    ///< Pointer to particle data
+
+};
+
+
+
+//=============================================================================
+//  Class NullSph
+/// Class definition for empty SPH class (needed in NbodySimulation).
+//=============================================================================
+template <int ndim>
+class NullSph: public Sph<ndim>
+{
+  using Sph<ndim>::allocated;
+  using Sph<ndim>::Nsph;
+  using Sph<ndim>::Ntot;
+  using Sph<ndim>::eos;
+  using Sph<ndim>::h_fac;
+  using Sph<ndim>::kernfacsqd;
+  using Sph<ndim>::invndim;
+  using Sph<ndim>::h_converge;
+  using Sph<ndim>::hydro_forces;
+  using Sph<ndim>::avisc;
+  using Sph<ndim>::beta_visc;
+  using Sph<ndim>::alpha_visc;
+  using Sph<ndim>::acond;
+  using Sph<ndim>::create_sinks;
+  using Sph<ndim>::hmin_sink;
+  using Sph<ndim>::Nsphmax;
+  using Sph<ndim>::kernp;
+  using Sph<ndim>::iorder;
+  using Sph<ndim>::rsph;
+  using Sph<ndim>::sphdata_unsafe;
+
+ public:
+
+  NullSph(int hydro_forces_aux, int self_gravity_aux, FLOAT alpha_visc_aux, 
+	  FLOAT beta_visc_aux, FLOAT h_fac_aux, FLOAT h_converge_aux, 
+	  aviscenum avisc_aux, acondenum acond_aux, tdaviscenum tdavisc_aux, 
+	  string gas_eos_aux, string KernelName, int size_sph_part):
+    Sph<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux, 
+	      beta_visc_aux, h_fac_aux, h_converge_aux, avisc_aux, acond_aux, 
+	      tdavisc_aux, gas_eos_aux, KernelName, size_sph_part) {};
+
+  virtual SphParticle<ndim>* GetParticlesArray () {return sphdata;};
+
+  virtual void AllocateMemory(int) {};
+  virtual void DeallocateMemory(void) {};
+  virtual void DeleteDeadParticles(void) {};
+  virtual void ReorderParticles(void) {};
+
+  int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
+               SphParticle<ndim> &, Nbody<ndim> *) {};
+  void ComputeSphHydroForces(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
+			     SphParticle<ndim> &, SphParticle<ndim> *) {};
+  void ComputeSphHydroGravForces(int, int, int *, SphParticle<ndim> &, 
+				 SphParticle<ndim> *) {};
+  void ComputeSphGravForces(int, int, int *,
+			    SphParticle<ndim> &, SphParticle<ndim> *) {};
+  void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
+  			  FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *) {};
+  void ComputeSphDerivatives(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
+			     SphParticle<ndim> &, SphParticle<ndim> *) {};
+  void ComputeDirectGravForces(int, int, int *, 
+                               SphParticle<ndim> &, SphParticle<ndim> *) {};
+  void InitialiseRiemannProblem(GodunovSphParticle<ndim>&, 
+                                GodunovSphParticle<ndim>&, FLOAT *,
+                                FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT &, 
+                                FLOAT &, FLOAT &, FLOAT &, FLOAT &, FLOAT &) {};
+  void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &) {};
+
+  //kernelclass<ndim> kern;               ///< SPH kernel
+  SphParticle<ndim> *sphdata;           ///< Pointer to particle data
 
 };
 #endif

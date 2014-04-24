@@ -1,8 +1,8 @@
 //=============================================================================
 //  KDTree.cpp
 //  Contains all functions for building, stocking and walking for the 
-//  binary K-D tree for SPH particles.
-//  Based on Fortran code courtesy of O. Lomax.
+//  binary KD-tree for SPH particles.
+//  Based on code courtesy of O. Lomax and A. Whitworth
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -86,7 +86,7 @@ KDTree<ndim,ParticleType>::~KDTree()
 
 //=============================================================================
 //  KDTree::AllocateTreeMemory
-/// Allocate memory for binary tree as requested.  If more memory is required 
+/// Allocate memory for KD-tree as requested.  If more memory is required 
 /// than currently allocated, tree is deallocated and reallocated here.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -116,7 +116,7 @@ void KDTree<ndim,ParticleType>::AllocateTreeMemory(void)
 
 //=============================================================================
 //  KDTree::DeallocateTreeMemory
-/// Deallocates all binary tree memory
+/// Deallocates all KD-tree memory
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void KDTree<ndim,ParticleType>::DeallocateTreeMemory(void)
@@ -138,7 +138,7 @@ void KDTree<ndim,ParticleType>::DeallocateTreeMemory(void)
 
 //=============================================================================
 //  KDTree::BuildTree
-/// Call all routines to build/re-build the binary tree on the local node.
+/// Call all routines to build/re-build the KD-tree on the local node.
 /// If OpenMP is activated, the local domain is partitioned into sub-trees 
 /// in order to improve the scalability of building and stocking the tree.
 //=============================================================================
@@ -208,7 +208,7 @@ void KDTree<ndim,ParticleType>::BuildTree
 //=============================================================================
 //  KDTree::ComputeTreeSize
 /// Compute the maximum size (i.e. no. of levels, cells and leaf cells) of 
-/// the binary tree.
+/// the KD-tree.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void KDTree<ndim,ParticleType>::ComputeTreeSize(void)
@@ -917,7 +917,7 @@ void KDTree<ndim,ParticleType>::ExtrapolateCellProperties
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void KDTree<ndim,ParticleType>::UpdateHmaxValues
-(KDTreeCell<ndim> &cell,        ///< Binary tree cell
+(KDTreeCell<ndim> &cell,        ///< KD-tree cell
  ParticleType<ndim> *partdata)        ///< SPH particle data array
 {
   int c,cc,ccc;                     // Cell counters
@@ -1006,7 +1006,7 @@ void KDTree<ndim,ParticleType>::UpdateHmaxValues
 
 //=============================================================================
 //  KDTree::UpdateActiveParticleCounters
-/// Loop through all leaf cells in binary tree and update all active 
+/// Loop through all leaf cells in KD-tree and update all active 
 /// particle counters.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -1833,7 +1833,7 @@ int KDTree<ndim,ParticleType>::ComputeActiveCellList
 #if defined(VERIFY_ALL)
 //=============================================================================
 //  KDTree::ValidateTree
-/// Performs various sanity and validation checks on binary tree structure.
+/// Performs various sanity and validation checks on KD-tree structure.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void KDTree<ndim,ParticleType>::ValidateTree
@@ -1854,7 +1854,7 @@ void KDTree<ndim,ParticleType>::ValidateTree
   int *ccount;                      // Array for counting cells
   int *lcount;                      // Array for counting ptcls on each level
   int *pcount;                      // Array for counting particles in tree
-  KDTreeCell<ndim> cell;            // Local copy of binary tree cell
+  KDTreeCell<ndim> cell;            // Local copy of KD-tree cell
 
   debug2("[KDTree::ValidateTree]");
 
@@ -1970,14 +1970,14 @@ void KDTree<ndim,ParticleType>::ValidateTree
 
   // Check all particles accounted for
   if (Ncount != sph->Ntot) {
-    cout << "Ncount problem with binary tree : " 
+    cout << "Ncount problem with KD-tree : " 
 	 << Ncount << "   " << sph->Ntot << endl;
     kill_flag = true;
   }
 
   // Check active particles don't exceed total number of particles
   if (Nactivecount > sph->Nsph) {
-    cout << "Nactivecount problem with binary tree : " 
+    cout << "Nactivecount problem with KD-tree : " 
 	 << Nactivecount << "   " << sph->Nsph << "   " << sph->Ntot << endl;
     kill_flag = true;
   }

@@ -1,8 +1,7 @@
 //=============================================================================
 //  SphTree.cpp
 //  Contains all functions for building, stocking and walking for the 
-//  binary K-D tree for SPH particles.  
-//  Based on Fortran code courtesy of O. Lomax.
+//  binary KD tree for SPH particles.  
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -112,9 +111,6 @@ void SphTree<ndim,ParticleType>::AllocateMemory(Sph<ndim> *sph)
       tree->DeallocateTreeMemory();
     }
 
-    // Allocate main tree memory
-    //tree->AllocateTreeMemory();
-
     if (!allocated_buffer) {
       Nneibmaxbuf = new int[Nthreads];
       Ndirectmaxbuf = new int[Nthreads];
@@ -180,7 +176,8 @@ void SphTree<ndim,ParticleType>::DeallocateMemory(void)
 
 //=============================================================================
 //  SphTree::BuildTree
-/// ...
+/// Main routine to control how the tree is built, re-stocked and interpolated 
+/// during each timestep.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void SphTree<ndim,ParticleType>::BuildTree
@@ -191,15 +188,15 @@ void SphTree<ndim,ParticleType>::BuildTree
  int Npart,                         ///< No. of particles
  int Npartmax,                      ///< Max. no. of particles
  SphParticle<ndim> *sph_gen,        ///< Particle data array
- Sph<ndim> *sph,                    ///< ..
+ Sph<ndim> *sph,                    ///< Pointer to SPH object
  FLOAT timestep)                    ///< Smallest physical timestep
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
-  debug2("[KDTree::BuildTree]");
-  //timing->StartTimingSection("BUILD_TREE",2);
+  debug2("[SphTree::BuildTree]");
+  timing->StartTimingSection("BUILD_TREE",2);
 
   // Activate nested parallelism for tree building routines
 #ifdef _OPENMP
@@ -252,7 +249,7 @@ void SphTree<ndim,ParticleType>::BuildTree
   omp_set_nested(0);
 #endif
 
-  //timing->EndTimingSection("BUILD_TREE");
+  timing->EndTimingSection("BUILD_TREE");
 
 
   return;
