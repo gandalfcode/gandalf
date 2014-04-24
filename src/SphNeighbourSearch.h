@@ -63,6 +63,8 @@ class SphNeighbourSearch
 
   virtual void BuildTree(bool, int, int, int, int, int, 
                          SphParticle<ndim> *, Sph<ndim> *, FLOAT) = 0;
+  virtual int GetGatherNeighbourList(FLOAT *, FLOAT, SphParticle<ndim> *, 
+                                     int, int, int *) = 0;
   virtual void UpdateAllSphProperties(int, int, SphParticle<ndim> *, 
                                      Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphForces(int, int, SphParticle<ndim> *, 
@@ -108,7 +110,7 @@ class MpiNode;
 ///          (i.e. direct summation over all particles).
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-§//=============================================================================
+//=============================================================================
 template <int ndim, template<int> class ParticleType>
 class BruteForceSearch: public SphNeighbourSearch<ndim>
 {
@@ -125,6 +127,8 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
 
   void BuildTree(bool, int, int, int, int, int, 
                  SphParticle<ndim> *, Sph<ndim> *, FLOAT);
+  int GetGatherNeighbourList(FLOAT *, FLOAT, SphParticle<ndim> *, 
+                             int, int, int *);
   void UpdateAllSphProperties(int, int, SphParticle<ndim> *, 
                               Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(int, int, SphParticle<ndim> *, 
@@ -176,6 +180,8 @@ class SphTree: public SphNeighbourSearch<ndim>
   //---------------------------------------------------------------------------
   void BuildTree(bool, int, int, int, int, int, 
                  SphParticle<ndim> *, Sph<ndim> *, FLOAT);
+  int GetGatherNeighbourList(FLOAT *, FLOAT, SphParticle<ndim> *, 
+                             int, int, int *);
   void UpdateAllSphProperties(int, int, SphParticle<ndim> *, 
                  Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphForces(int, int, SphParticle<ndim> *, 

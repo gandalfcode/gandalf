@@ -258,6 +258,50 @@ void SphTree<ndim,ParticleType>::BuildTree
 
 
 //=============================================================================
+//  SphTree::GetGatherNeighbourList
+/// ..
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+int SphTree<ndim,ParticleType>::GetGatherNeighbourList
+(FLOAT rp[ndim],                    ///< ..
+ FLOAT rsearch,                     ///< ..
+ SphParticle<ndim> *sph_gen,        ///< ..
+ int Nsph,                          ///< ..
+ int Nneibmax,                      ///< ..
+ int *neiblist)                     ///< ..
+{
+  int i,k;                          // ..
+  int Nneib = 0;                    // No. of (non-dead) neighbours
+  FLOAT dr[ndim];                   // Relative distance vector
+  FLOAT drsqd;                      // Distance squared
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+
+  debug2("[BruteForceSearch::GetGatherNeighbourList]");
+
+  // Compute smoothing lengths of all SPH particles
+  //---------------------------------------------------------------------------
+  for (i=0; i<Nsph; i++) {
+
+    // Skip over inactive particles
+    if (!sphdata[i].active || sphdata[i].itype == dead) continue;
+
+    for (k=0; k<ndim; k++) dr[k] = sphdata[i].r[k] - rp[k];
+    drsqd = DotProduct(dr,dr,ndim);
+
+    if (drsqd <= rsearch*rsearch && Nneib < Nneibmax)
+      neiblist[Nneib++] = i;
+    else if (drsqd <= rsearch*rsearch && Nneib == Nneibmax)
+      return -1;
+
+  }
+  //---------------------------------------------------------------------------
+
+  return Nneib;
+}
+
+
+
+//=============================================================================
 //  SphTree::UpdateAllSphProperties
 /// Compute all local 'gather' properties of currently active particles, and 
 /// then compute each particle's contribution to its (active) neighbour 
