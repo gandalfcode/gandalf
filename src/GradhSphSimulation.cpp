@@ -64,6 +64,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   map<string, float> &floatparams = simparams->floatparams;
   map<string, string> &stringparams = simparams->stringparams;
   string KernelName = stringparams["kernel"];
+  string gas_radiation = stringparams["radiation"];
 
   debug2("[GradhSphSimulation::ProcessSphParameters]");
 
@@ -174,16 +175,14 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   // Create SPH particle integration object
   //---------------------------------------------------------------------------
   if (stringparams["sph_integration"] == "lfkdk") {
-    sphint = new SphLeapfrogKDK<ndim, GradhSphParticle>(floatparams["accel_mult"],
-			              floatparams["courant_mult"],
-			              floatparams["energy_mult"],
-				      gas_eos, tdavisc);
+    sphint = new SphLeapfrogKDK<ndim, GradhSphParticle>
+      (floatparams["accel_mult"],floatparams["courant_mult"],
+       floatparams["energy_mult"],gas_eos, tdavisc);
   }
   else if (stringparams["sph_integration"] == "lfdkd") {
-    sphint = new SphLeapfrogDKD<ndim, GradhSphParticle>(floatparams["accel_mult"],
-			              floatparams["courant_mult"],
-			              floatparams["energy_mult"],
-				      gas_eos, tdavisc);
+    sphint = new SphLeapfrogDKD<ndim, GradhSphParticle>
+      (floatparams["accel_mult"],floatparams["courant_mult"],
+       floatparams["energy_mult"],gas_eos, tdavisc);
     integration_step = max(integration_step,2);
   }
   else {
@@ -233,14 +232,19 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 #endif
 
 
-  // Depending on the dimensionality, calculate expected neighbour number
+  // Radiation transport object
   //---------------------------------------------------------------------------
-  if (ndim == 1)
-    sph->Ngather = (int) (2.0*sph->kernp->kernrange*sph->h_fac);
-  else if (ndim == 2)
-    sph->Ngather = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac,2));
-  else if (ndim == 3)
-    sph->Ngather = (int) (4.0*pi*pow(sph->kernp->kernrange*sph->h_fac,3)/3.0);
+  if (gas_radiation == "ionisation")
+    radiation = NULL;
+  else if (gas_radiation == "treemc")
+    radiation = new TreeMonteCarlo<ndim,GradhSphParticle>
+      (intparams["Nphoton"]);
+  else if (gas_radiation == "none")
+    radiation = new NullRadiation<ndim>();
+  else {
+    string message = "Unrecognised parameter : radiation = " + gas_radiation;
+    ExceptionHandler::getIstance().raise(message);
+  }
 
 
   // Create ghost particle object
@@ -252,6 +256,16 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 #ifdef MPI_PARALLEL
   MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
 #endif
+
+
+  // Depending on the dimensionality, calculate expected neighbour number
+  //---------------------------------------------------------------------------
+  if (ndim == 1)
+    sph->Ngather = (int) (2.0*sph->kernp->kernrange*sph->h_fac);
+  else if (ndim == 2)
+    sph->Ngather = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac,2));
+  else if (ndim == 3)
+    sph->Ngather = (int) (4.0*pi*pow(sph->kernp->kernrange*sph->h_fac,3)/3.0);
 
 
   return;

@@ -44,6 +44,10 @@ using namespace std;
 #endif
 
 
+template <int ndim>
+class EOS;
+
+
 enum aviscenum{noav, mon97, mon97mm97, mon97cd2010};
 enum acondenum{noac, wadsley2008, price2008};
 enum tdaviscenum{notdav, mm97, cd2010};

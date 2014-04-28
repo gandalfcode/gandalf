@@ -49,6 +49,8 @@ void SphSimulation<ndim>::ProcessParameters(void)
   map<string, float> &floatparams = simparams->floatparams;
   map<string, string> &stringparams = simparams->stringparams;
   string sim = stringparams["sim"];
+  string gas_eos = stringparams["gas_eos"];
+  string gas_radiation = stringparams["radiation"];
 
   debug2("[SphSimulation::ProcessParameters]");
 
@@ -108,12 +110,19 @@ void SphSimulation<ndim>::ProcessParameters(void)
   // Thermal physics object.  If energy equation is chosen, also initiate
   // the energy integration object.
   //---------------------------------------------------------------------------
-  string gas_eos = stringparams["gas_eos"];
-  if (gas_eos == "energy_eqn" || gas_eos == "constant_temp") {
+  if ((gas_eos == "energy_eqn" || gas_eos == "constant_temp" ||
+       gas_eos == "isothermal" || gas_eos == "barotropic" ||
+       gas_eos == "barotropic2") && gas_radiation == "ionisation")
+    sph->eos = new IonisingRadiation<ndim>(gas_eos,
+                                           floatparams["temp0"],
+				           floatparams["mu_bar"],
+				           floatparams["gamma_eos"],
+				           floatparams["rho_bary"],
+				           &simunits,sphneib);
+  else if (gas_eos == "energy_eqn" || gas_eos == "constant_temp")
     sph->eos = new Adiabatic<ndim>(floatparams["temp0"],
 				   floatparams["mu_bar"],
 				   floatparams["gamma_eos"]);
-  }
   else if (gas_eos == "isothermal")
     sph->eos = new Isothermal<ndim>(floatparams["temp0"],
 				    floatparams["mu_bar"],
@@ -543,16 +552,17 @@ void SphSimulation<ndim>::MainLoop(void)
       //-----------------------------------------------------------------------
 
 
+      // Update the radiation field
+      radiation->UpdateRadiationField(sph->Nsph, nbody->Nnbody, sinks.Nsink,
+                                      partdata, nbody->nbodydata, sinks.sink);
+
+
       // Copy properties from original particles to ghost particles
       LocalGhosts->CopySphDataToGhosts(simbox,sph);
 #ifdef MPI_PARALLEL
       MpiGhosts->CopySphDataToGhosts(simbox,sph);
 #endif
 
-      for (i=0; i<sph->Nsph; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-        part.dalphadt = part.h;
-      }
       
       // Compute SPH gravity and hydro forces, depending on which are activated
       if (sph->hydro_forces == 1 && sph->self_gravity == 1)

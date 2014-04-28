@@ -32,6 +32,7 @@
 #include "CodeTiming.h"
 #include "EnergyEquation.h"
 #include "DomainBox.h"
+#include "KDRadiationTree.h"
 #include "Nbody.h"
 #include "Precision.h"
 #include "Parameters.h"
@@ -39,7 +40,39 @@
 #include "Sinks.h"
 #include "SphKernel.h"
 #include "SphNeighbourSearch.h"
+#include "SphParticle.h"
 using namespace std;
+
+
+
+//=============================================================================
+//  Struct PhotonPacket
+/// Radiation photon packet data structure
+//=============================================================================
+template <int ndim>
+struct PhotonPacket {
+  int c;                            ///< Current cell of photon packet
+  int cnext;                        ///< Next cell for photon
+  FLOAT energy;                     ///< Total energy carried by packet
+  FLOAT r[ndim];                    ///< Position of ray
+  FLOAT eray[ndim];                 ///< Unit vector direction of ray
+};
+
+
+
+//=============================================================================
+//  Struct RadiationSource
+/// Radiation photon packet data structure
+//=============================================================================
+template <int ndim>
+struct RadiationSource {
+  string sourcetype;                ///< Type of radiation source
+  int c;                            ///< i.d. of cell containing source
+  FLOAT luminosity;                 ///< Source luminosity
+  FLOAT r[ndim];                    ///< Position of radiation source
+  FLOAT esource[ndim];              ///< Unit vector of radiation from source 
+                                    ///< (for uni-directional sources)
+};
 
 
 
@@ -56,31 +89,64 @@ class Radiation
 {
  public:
 
-  Radiation();
-  ~Radiation();
+  Radiation() {};
+  ~Radiation() {};
 
-  virtual void UpdateRadiationField(void) = 0;
+  virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *, 
+                                    NbodyParticle<ndim> **, 
+                                    SinkParticle<ndim> *) = 0;
 
 };
 
 
 
 //=============================================================================
-//  Class VoronoiMonteCarloRadiation
-/// \brief   Monte-Carlo radiation transport using Voronoi tessellation
+//  Class TreeMonteCarlo
+/// \brief   Class that propagates radiation through KD-tree
+/// \details Class that propagates radiation through KD-tree
+/// \author  D. A. Hubber, A. P. Whitworth
+/// \date    25/04/2014
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+class TreeMonteCarlo : public Radiation<ndim>
+{
+ public:
+
+  TreeMonteCarlo(int);
+  ~TreeMonteCarlo();
+
+  virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *, 
+                                    NbodyParticle<ndim> **, 
+                                    SinkParticle<ndim> *) ;
+  int FindRayExitFace(KDRadTreeCell<ndim> &, FLOAT *, FLOAT *, FLOAT &);
+  int FindAdjacentCell(int, FLOAT *);
+
+
+  int Nphoton;
+  KDRadiationTree<ndim,ParticleType> *radtree;
+
+};
+
+
+
+
+//=============================================================================
+//  Class NullRadiation
+/// \brief   Empty radiation class when no radiation object is selected
 /// \details ..
 /// \author  D. A. Hubber
 /// \date    21/04/2014
 //=============================================================================
 template <int ndim>
-class Radiation
+class NullRadiation : public Radiation<ndim>
 {
  public:
 
-  VoronoiMonteCarloRadiation();
-  ~VoronoiMonteCarloRadiation();
-  
-  virtual void UpdateRadiationField(void);
+  NullRadiation():Radiation<ndim>() {};
 
+
+  virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *, 
+                                    NbodyParticle<ndim> **, 
+                                    SinkParticle<ndim> *) {};
 };
 #endif

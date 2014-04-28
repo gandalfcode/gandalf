@@ -40,6 +40,7 @@
 #include "ExternalPotential.h"
 #include "Precision.h"
 #include "Parameters.h"
+#include "Radiation.h"
 #include "SimUnits.h"
 #include "SphKernel.h"
 #include "Sph.h"
@@ -306,6 +307,7 @@ class Simulation : public SimulationBase
   Nbody<ndim> *nbody;                 ///< N-body algorithm pointer
   Nbody<ndim> *subsystem;             ///< N-body object for sub-systems
   NbodySystemTree<ndim> nbodytree;    ///< N-body tree to create sub-systems
+  Radiation<ndim> *radiation;         ///< Radiation field object
   Sinks<ndim> sinks;                  ///< Sink particle object
   Sph<ndim> *sph;                     ///< SPH algorithm pointer
   SphIntegration<ndim> *sphint;       ///< SPH Integration scheme pointer
@@ -378,12 +380,11 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::ntreestockstep;
   using Simulation<ndim>::tmax_wallclock;
   using Simulation<ndim>::sphneib;
+  using Simulation<ndim>::radiation;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
   using Simulation<ndim>::MpiGhosts;
 #endif
-
-
 
   SphSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
   virtual void ProcessSphParameters(void)=0;
@@ -455,6 +456,7 @@ class GradhSphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::ndiagstep;
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
+  using SphSimulation<ndim>::radiation;
   using SphSimulation<ndim>::sphneib;
   using SphSimulation<ndim>::tmax_wallclock;
 #ifdef MPI_PARALLEL

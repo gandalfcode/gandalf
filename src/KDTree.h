@@ -34,10 +34,7 @@
 #include "CodeTiming.h"
 #include "SphKernel.h"
 #include "SphParticle.h"
-
-#include "Sph.h"
 #include "Nbody.h"
-#include "Sinks.h"
 #include "DomainBox.h"
 #include "Parameters.h"
 using namespace std;
@@ -61,6 +58,7 @@ struct KDTreeCell {
   int ilast;                        ///< i.d. of last particle in cell
   int N;                            ///< ..
   int Nactive;                      ///< ..
+  int cexit[2][ndim];               ///< Left and right exit cells (per dim)
   FLOAT cdistsqd;                   ///< ..
   FLOAT mac;                        ///< Multipole-opening criterion value
   FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
@@ -113,7 +111,8 @@ class KDTree
   void UpdateHmaxValues(KDTreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
   int ComputeActiveCellList(KDTreeCell<ndim> **);
-  int ComputeActiveParticleList(KDTreeCell<ndim> *, ParticleType<ndim> *, int *);
+  int ComputeActiveParticleList(KDTreeCell<ndim> *, 
+                                ParticleType<ndim> *, int *);
   int ComputeGatherNeighbourList(KDTreeCell<ndim> *, int, int *, 
                                  FLOAT, ParticleType<ndim> *);
   int ComputeNeighbourList(KDTreeCell<ndim> *, int, int *, 
@@ -136,7 +135,7 @@ class KDTree
   void ValidateTree(Sph<ndim> *);
 #endif
 
-  // Additional variables for grid
+  // Additional variables for KD-tree
   //---------------------------------------------------------------------------
   string gravity_mac;               ///< Multipole-acceptance criteria for tree
   string multipole;                 ///< Multipole-order for cell gravity

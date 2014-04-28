@@ -25,6 +25,7 @@
 #ifndef _SPH_NEIGHBOUR_SEARCH_H_
 #define _SPH_NEIGHBOUR_SEARCH_H_
 
+
 #include <assert.h>
 #include <iostream>
 #include <string>
@@ -32,16 +33,19 @@
 #include "Precision.h"
 #include "Constants.h"
 #include "CodeTiming.h"
+#include "Nbody.h"
 #include "SphKernel.h"
 #include "SphParticle.h"
 #include "Sph.h"
-#include "Nbody.h"
-#include "Sinks.h"
 #include "DomainBox.h"
 #include "Parameters.h"
 #include "KDTree.h"
 using namespace std;
 
+
+// Forward declaration of Sph to break circular dependency
+template <int ndim>
+class Sph;
 
 
 //=============================================================================

@@ -186,6 +186,8 @@ void KDTree<ndim,ParticleType>::BuildTree
   kdcell[0].ilast = Ntot - 1;
   for (k=0; k<ndim; k++) kdcell[0].bbmin[k] = -big_number;
   for (k=0; k<ndim; k++) kdcell[0].bbmax[k] = big_number;
+  for (k=0; k<ndim; k++) kdcell[0].cexit[0][k] = -1;
+  for (k=0; k<ndim; k++) kdcell[0].cexit[1][k] = -1;
   for (i=0; i<Ntot; i++) inext[i] = -1;
   
   // If number of particles remains unchanged, use old id list 
@@ -293,13 +295,13 @@ void KDTree<ndim,ParticleType>::CreateTreeStructure(void)
     if (kdcell[c].level == ltot) {                    // If on leaf level
       kdcell[c].cnext = c + 1;                        // id of next cell
       kdcell[c].c2g = g;                              // Record leaf id
-      g2c[g++] = c;                                 // Record inverse id
+      g2c[g++] = c;                                   // Record inverse id
     }
     else {
       kdcell[c+1].level = kdcell[c].level + 1;          // Level of 1st child
       kdcell[c].c1 = c + 1;
       kdcell[c].c2 = c + c2L[kdcell[c].level];          // id of 2nd child
-      kdcell[kdcell[c].c2].level = kdcell[c].level + 1;   // Level of 2nd child
+      kdcell[kdcell[c].c2].level = kdcell[c].level + 1; // Level of 2nd child
       kdcell[c].cnext = c + cNL[kdcell[c].level];       // Next cell id
     }
 
@@ -370,7 +372,10 @@ void KDTree<ndim,ParticleType>::DivideTreeCell
   // Set properties of first child cell
   for (k=0; k<ndim; k++) kdcell[cell.c1].bbmin[k] = cell.bbmin[k];
   for (k=0; k<ndim; k++) kdcell[cell.c1].bbmax[k] = cell.bbmax[k];
+  for (k=0; k<ndim; k++) kdcell[cell.c1].cexit[0][k] = cell.cexit[0][k];
+  for (k=0; k<ndim; k++) kdcell[cell.c1].cexit[1][k] = cell.cexit[1][k];
   kdcell[cell.c1].bbmax[k_divide] = rdivide;
+  kdcell[cell.c1].cexit[1][k_divide] = cell.c2;
   kdcell[cell.c1].N = cell.N/2;
   if (kdcell[cell.c1].N != 0) {
     kdcell[cell.c1].ifirst = ifirst;
@@ -380,7 +385,10 @@ void KDTree<ndim,ParticleType>::DivideTreeCell
   // Set properties of second child cell
   for (k=0; k<ndim; k++) kdcell[cell.c2].bbmin[k] = cell.bbmin[k];
   for (k=0; k<ndim; k++) kdcell[cell.c2].bbmax[k] = cell.bbmax[k];
+  for (k=0; k<ndim; k++) kdcell[cell.c2].cexit[0][k] = cell.cexit[0][k];
+  for (k=0; k<ndim; k++) kdcell[cell.c2].cexit[1][k] = cell.cexit[1][k];
   kdcell[cell.c2].bbmin[k_divide] = rdivide;
+  kdcell[cell.c2].cexit[0][k_divide] = cell.c1;
   kdcell[cell.c2].N = cell.N - kdcell[cell.c1].N;
   if (kdcell[cell.c2].N != 0) {
     kdcell[cell.c2].ifirst = ifirst + cell.N/2;

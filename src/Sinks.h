@@ -29,14 +29,14 @@
 #include "Precision.h"
 #include "CodeTiming.h"
 #include "Constants.h"
+#include "Nbody.h"
+#include "NbodyParticle.h"
 #include "Parameters.h"
 #include "SphKernel.h"
-#include "NbodyParticle.h"
-#include "StarParticle.h"
-#include "SystemParticle.h"
 #include "SphParticle.h"
 #include "Sph.h"
-#include "Nbody.h"
+#include "StarParticle.h"
+#include "SystemParticle.h"
 using namespace std;
 
 

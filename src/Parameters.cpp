@@ -324,6 +324,11 @@ void Parameters::SetDefaultValues(void)
   floatparams["smooth_accrete_dt"] = 0.01;
   stringparams["sink_radius_mode"] = "hmult";
 
+  // Radiation algortihm parameters
+  //---------------------------------------------------------------------------
+  stringparams["radiation"] = "none";
+  intparams["Nphoton"] = 10000;
+
   // Boundary conditions parameters
   //---------------------------------------------------------------------------
   stringparams["x_boundary_lhs"] = "open";
