@@ -2912,7 +2912,7 @@ void Simulation<ndim>::InterpolateVelocityField
   // Now interpolate velocity field onto particle positions
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dx,i,j,k,kk,p,vint) \
-  shared(cout,dxgrid,Ngrid,v,vfield,xmin)
+  shared(cout,dxgrid,Ngrid,Npart,r,v,vfield,xmin)
   for (p=0; p<Npart; p++) {
     for (kk=0; kk<ndim; kk++) dx[kk] = (r[ndim*p + kk] - xmin)/dxgrid;
 

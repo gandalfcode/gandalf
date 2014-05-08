@@ -189,7 +189,7 @@ bool Simulation<ndim>::ReadColumnSnapshotFile
   t = info.t;
 
   sph->Nsph = info.Nsph;
-  sph->AllocateMemory(sph->Nsph);
+  AllocateParticleMemory();
   i = 0;
 
   // Read in data depending on dimensionality

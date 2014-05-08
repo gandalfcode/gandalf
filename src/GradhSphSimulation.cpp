@@ -238,7 +238,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     radiation = NULL;
   else if (gas_radiation == "treemc")
     radiation = new TreeMonteCarlo<ndim,GradhSphParticle>
-      (intparams["Nphoton"]);
+      (intparams["Nphoton"],intparams["Nleafmax"]);
   else if (gas_radiation == "none")
     radiation = new NullRadiation<ndim>();
   else {

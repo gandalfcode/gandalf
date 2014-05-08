@@ -186,7 +186,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
   // Create parallel threads
   //===========================================================================
 #pragma omp parallel default(none) private(dr,drsqd,i,j,jj,k,okflag,rp)	\
-  shared(gpot,m,mu,nbody,neiblist,Nneib,sph)
+  shared(gpot,m,mu,nbody,neiblist,Nneib,Nsph,Ntot,sph,sphdata)
   {
     drsqd = new FLOAT[Ntot];
 
