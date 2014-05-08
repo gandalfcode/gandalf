@@ -29,6 +29,8 @@
 #include <map>
 #include <string>
 #include <list>
+#include <iostream>
+#include <ostream>
 #include "CodeTiming.h"
 #include "EnergyEquation.h"
 #include "DomainBox.h"
@@ -56,6 +58,7 @@ struct PhotonPacket {
   FLOAT energy;                     ///< Total energy carried by packet
   FLOAT r[ndim];                    ///< Position of ray
   FLOAT eray[ndim];                 ///< Unit vector direction of ray
+  FLOAT inveray[ndim];              ///< 1/eray
 };
 
 
@@ -96,6 +99,8 @@ class Radiation
                                     NbodyParticle<ndim> **, 
                                     SinkParticle<ndim> *) = 0;
 
+  CodeTiming *timing;               ///< Pointer to code timing object
+
 };
 
 
@@ -110,20 +115,28 @@ class Radiation
 template <int ndim, template<int> class ParticleType>
 class TreeMonteCarlo : public Radiation<ndim>
 {
+  using Radiation<ndim>::timing;
+
  public:
 
-  TreeMonteCarlo(int);
+
+  TreeMonteCarlo(int, int);
   ~TreeMonteCarlo();
+
 
   virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *, 
                                     NbodyParticle<ndim> **, 
                                     SinkParticle<ndim> *) ;
-  int FindRayExitFace(KDRadTreeCell<ndim> &, FLOAT *, FLOAT *, FLOAT &);
+  PhotonPacket<ndim> GenerateNewPhotonPacket(RadiationSource<ndim> &);
+  int FindRayExitFace(KDRadTreeCell<ndim> &, FLOAT *, 
+                      FLOAT *, FLOAT *, FLOAT &);
   int FindAdjacentCell(int, FLOAT *);
+  void ScatterPhotonPacket(PhotonPacket<ndim> &);
 
 
-  int Nphoton;
-  KDRadiationTree<ndim,ParticleType> *radtree;
+  int Nphoton;                                  // No. of photon packets
+  FLOAT packetenergy;                           // Energy in photon packet
+  KDRadiationTree<ndim,ParticleType> *radtree;  // Radiation tree
 
 };
 
@@ -140,6 +153,8 @@ class TreeMonteCarlo : public Radiation<ndim>
 template <int ndim>
 class NullRadiation : public Radiation<ndim>
 {
+  using Radiation<ndim>::timing;
+
  public:
 
   NullRadiation():Radiation<ndim>() {};

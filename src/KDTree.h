@@ -34,6 +34,7 @@
 #include "CodeTiming.h"
 #include "SphKernel.h"
 #include "SphParticle.h"
+#include "Sph.h"
 #include "Nbody.h"
 #include "DomainBox.h"
 #include "Parameters.h"
@@ -113,6 +114,8 @@ class KDTree
   int ComputeActiveCellList(KDTreeCell<ndim> **);
   int ComputeActiveParticleList(KDTreeCell<ndim> *, 
                                 ParticleType<ndim> *, int *);
+  int ComputeGatherNeighbourList(FLOAT *, FLOAT, int, int *, 
+                                 ParticleType<ndim> *);
   int ComputeGatherNeighbourList(KDTreeCell<ndim> *, int, int *, 
                                  FLOAT, ParticleType<ndim> *);
   int ComputeNeighbourList(KDTreeCell<ndim> *, int, int *, 
@@ -132,7 +135,7 @@ class KDTree
   void ComputeFastMonopoleForces(int, int, KDTreeCell<ndim> **, 
 				 KDTreeCell<ndim> *, ParticleType<ndim> *);
 #if defined(VERIFY_ALL)
-  void ValidateTree(Sph<ndim> *);
+  void ValidateTree(ParticleType<ndim> *);
 #endif
 
   // Additional variables for KD-tree

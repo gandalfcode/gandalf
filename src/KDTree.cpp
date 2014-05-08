@@ -33,6 +33,7 @@
 #include "Parameters.h"
 #include "InlineFuncs.h"
 #include "SphParticle.h"
+#include "Sph.h"
 #include "KDTree.h"
 #include "Debug.h"
 #if defined _OPENMP
@@ -563,7 +564,7 @@ FLOAT KDTree<ndim,ParticleType>::QuickSelect
 
     //-------------------------------------------------------------------------
     for (j=left; j<right; j++) {
-      assert(j < sph->Nsph);
+      assert(j < Ntot);
       if (partdata[ids[j]].r[k] <= rpivot) {
 	jtemp = ids[j];
 	ids[j] = ids[jguess];
@@ -580,10 +581,10 @@ FLOAT KDTree<ndim,ParticleType>::QuickSelect
     ids[right] = ids[jguess];
     ids[jguess] = jtemp;
 
-    assert(left < sph->Nsph);
-    assert(right < sph->Nsph);
-    assert(jguess < sph->Nsph);
-    assert(jpivot < sph->Nsph);
+    assert(left < Ntot);
+    assert(right < Ntot);
+    assert(jguess < Ntot);
+    assert(jpivot < Ntot);
 
 
     // jguess is lower than jpivot.  
@@ -1031,7 +1032,7 @@ void KDTree<ndim,ParticleType>::UpdateActiveParticleCounters
 
   // Loop through all grid cells in turn
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(c,i,ilast) shared(sph)
+#pragma omp parallel for default(none) private(c,i,ilast) shared(partdata)
   for (c=0; c<Ncell; c++) {
     kdcell[c].Nactive = 0;
 
@@ -1117,6 +1118,96 @@ bool KDTree<ndim,ParticleType>::BoxOverlap
     return true;
   }
 
+}
+
+
+
+//=============================================================================
+//  KDTree::ComputeGatherNeighbourList
+/// Computes and returns number of neighbour, 'Nneib', and the list
+/// of neighbour ids, 'neiblist', for all particles inside cell 'c'.
+/// Includes all particles in the selected cell, plus all particles
+/// contained in adjacent cells (including diagonal cells).
+/// Wrapper around the true implementation inside KDTree
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+int KDTree<ndim,ParticleType>::ComputeGatherNeighbourList
+(FLOAT rp[ndim],                    ///< [in] Search position
+ FLOAT rsearch,                     ///< [in] Maximum smoothing length
+ int Nneibmax,                      ///< [in] Max. no. of neighbours
+ int *neiblist,                     ///< [out] List of neighbour i.d.s
+ ParticleType<ndim> *partdata)      ///< [in] Particle data array
+{
+  int cc;                           // Cell counter
+  int i;                            // Particle id
+  int j;                            // Aux. particle counter
+  int k;                            // Neighbour counter
+  int Nneib = 0;                    // Neighbour counter
+  int Ntemp = 0;                    // Temporary neighbour counter
+  FLOAT dr[ndim];                   // Relative position vector
+  FLOAT drsqd;                      // Distance squared
+  FLOAT rsearchsqd;                 // Search radius squared
+
+  // Start with root cell and walk through entire tree
+  cc = 0;
+  rsearchsqd = rsearch*rsearch;
+
+  //===========================================================================
+  while (cc < Ncell) {
+
+    for (k=0; k<ndim; k++) dr[k] = kdcell[cc].rcell[k] - rp[k];
+    drsqd = DotProduct(dr,dr,ndim);
+
+
+    // Check if bounding boxes overlap with each other
+    //-------------------------------------------------------------------------
+    if (drsqd < rsearchsqd) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (kdcell[cc].level != ltot)
+        cc++;
+
+      else if (kdcell[cc].N == 0)
+	cc = kdcell[cc].cnext;
+
+      // If leaf-cell, add particles to list
+      else if (kdcell[cc].level == ltot && Nneib + Nleafmax < Nneibmax) {
+        i = kdcell[cc].ifirst;
+    	while (i != -1) {
+          neiblist[Nneib++] = i;
+          if (i == kdcell[cc].ilast) break;
+    	  i = inext[i];
+        };
+        cc = kdcell[cc].cnext;
+      }
+
+      // If leaf-cell, but we've run out of memory, return with error-code (-1)
+      else if (kdcell[cc].level == ltot && Nneib + Nleafmax >= Nneibmax)
+    	return -1;
+
+    }
+
+    // If not in range, then open next cell
+    //-------------------------------------------------------------------------
+    else
+      cc = kdcell[cc].cnext;
+
+  };
+  //===========================================================================
+
+
+  // Now, trim the list to remove particles that are definitely not neighbours
+  for (j=0; j<Nneib; j++) {
+    i = neiblist[j];
+    if (partdata[i].itype == dead) continue;
+    for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rp[k];
+    drsqd = DotProduct(dr,dr,ndim);
+    if (drsqd < rsearchsqd) neiblist[Ntemp++] = i;
+  }
+  Nneib = Ntemp;
+
+
+  return Nneib;
 }
 
 
@@ -1845,7 +1936,7 @@ int KDTree<ndim,ParticleType>::ComputeActiveCellList
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void KDTree<ndim,ParticleType>::ValidateTree
-(Sph<ndim> *sph)                    ///< Pointer to SPH class
+(ParticleType<ndim> *partdata)      ///< Pointer to SPH class
 {
   bool overlap_flag = false;        // Flag if cell bounding boxes overlap
   bool hmax_flag = false;           // Flag if ptcls have larger h than hmax
@@ -1893,13 +1984,13 @@ void KDTree<ndim,ParticleType>::ValidateTree
   }
 
   // Check inext linked list values and ids array are all valid
-  for (i=0; i<sph->Ntot; i++) {
-    if (!(ids[i] >= 0 && ids[i] < sph->Ntot)) {
+  for (i=0; i<Ntot; i++) {
+    if (!(ids[i] >= 0 && ids[i] < Ntot)) {
       cout << "Problem with ids array : " 
 	   << i << "   " << ids[i] << endl;
       exit(0);
     }
-    if (!(inext[i] >= -1 && inext[i] < sph->Ntot)) {
+    if (!(inext[i] >= -1 && inext[i] < Ntot)) {
       cout << "Problem with inext linked lists : " 
 	   << i << "   " << inext[i] << endl;
       exit(0);
@@ -1924,11 +2015,11 @@ void KDTree<ndim,ParticleType>::ValidateTree
 	pcount[i]++;
 	leafcount++;
 	Ncount++;
-	if (sph->partdata[i].active) activecount++;
-	if (sph->partdata[i].active) Nactivecount++;
-        if (sph->partdata[i].h > cell.hmax) {
+	if (partdata[i].active) activecount++;
+	if (partdata[i].active) Nactivecount++;
+        if (partdata[i].h > cell.hmax) {
 	  cout << "hmax flag error : " << c << "    " 
-	       << sph->partdata[i].h << "   " << cell.hmax << endl;
+	       << partdata[i].h << "   " << cell.hmax << endl;
 	  exit(0);
 	}
         if (i == cell.ilast) break;
@@ -1977,23 +2068,23 @@ void KDTree<ndim,ParticleType>::ValidateTree
   }
 
   // Check all particles accounted for
-  if (Ncount != sph->Ntot) {
+  if (Ncount != Ntot) {
     cout << "Ncount problem with KD-tree : " 
-	 << Ncount << "   " << sph->Ntot << endl;
+	 << Ncount << "   " << Ntot << endl;
     kill_flag = true;
   }
 
   // Check active particles don't exceed total number of particles
-  if (Nactivecount > sph->Nsph) {
+  if (Nactivecount > Ntot) {
     cout << "Nactivecount problem with KD-tree : " 
-	 << Nactivecount << "   " << sph->Nsph << "   " << sph->Ntot << endl;
+	 << Nactivecount << "   " << Ntot << endl;
     kill_flag = true;
   }
 
   // Check number of particles on all levels is consistent
   for (l=0; l<ltot; l++) {
-    if (lcount[l] != sph->Nsph) {
-      cout << "Problem with SPH particles on level : " << l << "    " << lcount[l] << "    " << sph->Nsph << endl;
+    if (lcount[l] != Ntot) {
+      cout << "Problem with SPH particles on level : " << l << "    " << lcount[l] << "    " << Ntot << endl;
       kill_flag = true;
     }
   }

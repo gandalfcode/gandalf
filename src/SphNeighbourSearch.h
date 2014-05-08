@@ -85,10 +85,6 @@ class SphNeighbourSearch
                                             Sph<ndim> *) = 0;
   virtual void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, 
                                       Sph<ndim> *, Nbody<ndim> *) = 0;
-#if defined(VERIFY_ALL)
-  void CheckValidNeighbourList(int, int, SphParticle<ndim> *, Sph<ndim> *, 
-                               int, int, int *, string);
-#endif
 
   bool neibcheck;                   ///< Flag to verify neighbour lists
   CodeTiming *timing;               ///< Pointer to code timing object
@@ -96,6 +92,7 @@ class SphNeighbourSearch
   SphKernel<ndim> *kernp;           ///< Pointer to SPH kernel object
   FLOAT kernfac;
   FLOAT kernrange;
+  FLOAT kernrangesqd;
 
 };
 
@@ -123,6 +120,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
   using SphNeighbourSearch<ndim>::kernp;
   using SphNeighbourSearch<ndim>::kernfac;
   using SphNeighbourSearch<ndim>::kernrange;
+  using SphNeighbourSearch<ndim>::kernrangesqd;
   
  public:
 
@@ -146,6 +144,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
   void UpdateActiveParticleCounters(SphParticle<ndim> *, Sph<ndim> *);
   void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, 
                               Sph<ndim> *, Nbody<ndim> *);
+
 #if defined MPI_PARALLEL
   void FindGhostParticlesToExport(Sph<ndim>* sph, std::vector<std::vector<SphParticle<ndim>* > >&,
       const std::vector<int>&, MpiNode<ndim>*);
@@ -175,6 +174,7 @@ class SphTree: public SphNeighbourSearch<ndim>
   using SphNeighbourSearch<ndim>::kernp;
   using SphNeighbourSearch<ndim>::kernfac;
   using SphNeighbourSearch<ndim>::kernrange;
+  using SphNeighbourSearch<ndim>::kernrangesqd;
 
 
   SphTree(int, FLOAT, FLOAT, FLOAT, string, string);
@@ -199,6 +199,10 @@ class SphTree: public SphNeighbourSearch<ndim>
   void UpdateActiveParticleCounters(SphParticle<ndim> *, Sph<ndim> *);
   void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, 
                               Sph<ndim> *, Nbody<ndim> *);
+#if defined(VERIFY_ALL)
+  void CheckValidNeighbourList(int, int, int, int *, 
+			       ParticleType<ndim> *, string);
+#endif
 
 
   // Additional functions for binary tree neighbour search

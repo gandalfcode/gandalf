@@ -227,7 +227,8 @@ void SphSimulation<ndim>::ProcessParameters(void)
     sinks.timing    = timing;
     sphint->timing  = timing;
     sphneib->timing = timing;
-    uint->timing   = timing;
+    uint->timing    = timing;
+    radiation->timing = timing;
   }
 
   // Flag that we've processed all parameters already
@@ -387,6 +388,11 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
     sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
                        sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+
+    // Update the radiation field
+    radiation->UpdateRadiationField(sph->Nsph, nbody->Nnbody, sinks.Nsink,
+				    partdata, nbody->nbodydata, sinks.sink);
+    
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)

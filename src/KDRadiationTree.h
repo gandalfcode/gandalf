@@ -47,6 +47,7 @@ using namespace std;
 template <int ndim>
 struct KDRadTreeCell {
   bool uniform;                     ///< Is cell sufficiently uniform?
+  int id;
   int c1;                           ///< First child cell
   int c2;                           ///< Second child cell
   int cnext;                        ///< i.d. of next cell if not opened
@@ -59,6 +60,7 @@ struct KDRadTreeCell {
   FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
   FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
   FLOAT r[ndim];                    ///< COM position of cell
+  FLOAT rcell[ndim];                ///< Geometric centre of cell
   FLOAT v[ndim];                    ///< Velocity of COM of cell
   FLOAT m;                          ///< Mass contained in cell
   FLOAT rho;                        ///< Average density in cell
@@ -66,6 +68,7 @@ struct KDRadTreeCell {
   FLOAT temp;                       ///< Average temperature in cell
   FLOAT uphoton;                    ///< Photon energy density
   FLOAT volume;                     ///< Cell volume
+  FLOAT opacity;                    ///< Opacity of cell
 };
 
 
@@ -82,7 +85,7 @@ class KDRadiationTree
 {
  public:
 
-  KDRadiationTree();
+  KDRadiationTree(int);
   ~KDRadiationTree();
 
 
@@ -93,11 +96,14 @@ class KDRadiationTree
   void ComputeTreeSize(void);
   void CreateTreeStructure(void);
   void DivideTreeCell(int, int, ParticleType<ndim> *, KDRadTreeCell<ndim> &);
+  int FindCell(int, FLOAT *);
+  void OptimiseTree(void);
   FLOAT QuickSelect(int, int, int, int, ParticleType<ndim> *);
   void StockTree(KDRadTreeCell<ndim> &, ParticleType<ndim> *);
   void StockCellProperties(KDRadTreeCell<ndim> &, ParticleType<ndim> *);
-  int FindCell(int, FLOAT *);
 
+
+  //---------------------------------------------------------------------------
   bool allocated_tree;
   int gmax;
   int gtot;
