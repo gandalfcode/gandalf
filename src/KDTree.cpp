@@ -1161,7 +1161,7 @@ int KDTree<ndim,ParticleType>::ComputeGatherNeighbourList
 
     // Check if bounding boxes overlap with each other
     //-------------------------------------------------------------------------
-    if (drsqd < rsearchsqd) {
+    if (drsqd < (rsearch + kdcell[cc].rmax)*(rsearch + kdcell[cc].rmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (kdcell[cc].level != ltot)

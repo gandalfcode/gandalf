@@ -146,7 +146,7 @@ class TreeMonteCarlo : public Radiation<ndim>
 //=============================================================================
 //  Class NullRadiation
 /// \brief   Empty radiation class when no radiation object is selected
-/// \details ..
+/// \details Empty radiation class when no radiation object is selected
 /// \author  D. A. Hubber
 /// \date    21/04/2014
 //=============================================================================
