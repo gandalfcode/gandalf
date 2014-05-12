@@ -128,14 +128,14 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
   // Create neighbour searching object based on chosen method in params file
   //-------------------------------------------------------------------------
   if (stringparams["neib_search"] == "bruteforce")
-    sphneib = new BruteForceSearch<ndim,GodunovSphParticle>;
+    sphneib = new GodunovSphBruteForce<ndim,GodunovSphParticle>
+     (sph->kernp->kernrange,&simbox,sph->kernp,this->timing);
   else if (stringparams["neib_search"] == "tree") {
-    sphneib = new SphTree<ndim,GodunovSphParticle>(intparams["Nleafmax"],
-			                    floatparams["thetamaxsqd"],
-			                    sph->kernp->kernrange,
-                                            floatparams["macerror"],
-                                            stringparams["gravity_mac"],
-                                            stringparams["multipole"]);
+    sphneib = new SphTree<ndim,GodunovSphParticle>
+     (intparams["Nleafmax"],floatparams["thetamaxsqd"],
+      sph->kernp->kernrange,floatparams["macerror"],
+      stringparams["gravity_mac"],stringparams["multipole"],
+      &simbox,sph->kernp,timing);
   }
   else {
     string message = "Unrecognised parameter : neib_search = " 

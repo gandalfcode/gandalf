@@ -100,7 +100,7 @@ class KDTree
   void BuildTree(int, int, ParticleType<ndim> *, FLOAT);
   void AllocateTreeMemory(void);
   void DeallocateTreeMemory(void);
-  bool BoxOverlap(FLOAT *, FLOAT *, FLOAT *, FLOAT *);
+  bool BoxOverlap(const FLOAT *, const FLOAT *, const FLOAT *, const FLOAT *);
   void ComputeTreeSize(void);
   void CreateTreeStructure(void);
   void DivideTreeCell(int, int, ParticleType<ndim> *, KDTreeCell<ndim> &);
@@ -116,10 +116,10 @@ class KDTree
                                 ParticleType<ndim> *, int *);
   int ComputeGatherNeighbourList(FLOAT *, FLOAT, int, int *, 
                                  ParticleType<ndim> *);
-  int ComputeGatherNeighbourList(KDTreeCell<ndim> *, int, int *, 
-                                 FLOAT, ParticleType<ndim> *);
-  int ComputeNeighbourList(KDTreeCell<ndim> *, int, int *, 
-                           ParticleType<ndim> *);
+  int ComputeGatherNeighbourList(const KDTreeCell<ndim> *, const int, int *, 
+                                 const FLOAT, const ParticleType<ndim> *);
+  int ComputeNeighbourList(const KDTreeCell<ndim> *, const int, int *, 
+                           const ParticleType<ndim> *);
   int ComputeGravityInteractionList(KDTreeCell<ndim> *, FLOAT, int, int,  
                                     int, int &, int &, int &, int *, int *,
                                     KDTreeCell<ndim> **, 

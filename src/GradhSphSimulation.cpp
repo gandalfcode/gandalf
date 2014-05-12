@@ -210,23 +210,23 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   // Create neighbour searching object based on chosen method in params file
   //-------------------------------------------------------------------------
   if (stringparams["neib_search"] == "bruteforce")
-    sphneib = new BruteForceSearch<ndim,GradhSphParticle>;
+    sphneib = new GradhSphBruteForce<ndim,GradhSphParticle>
+      (sph->kernp->kernrange,&simbox,sph->kernp,timing);
   else if (stringparams["neib_search"] == "tree") {
-    sphneib = new SphTree<ndim,GradhSphParticle>(intparams["Nleafmax"],
-			                    floatparams["thetamaxsqd"],
-			                    sph->kernp->kernrange,
-                                            floatparams["macerror"],
-                                            stringparams["gravity_mac"],
-                                            stringparams["multipole"]);
+    sphneib = new GradhSphTree<ndim,GradhSphParticle>
+     (intparams["Nleafmax"],floatparams["thetamaxsqd"],
+      sph->kernp->kernrange,floatparams["macerror"],
+      stringparams["gravity_mac"],stringparams["multipole"],
+      &simbox,sph->kernp,timing);
   }
   else {
     string message = "Unrecognised parameter : neib_search = " 
       + simparams->stringparams["neib_search"];
     ExceptionHandler::getIstance().raise(message);
   }
-  sphneib->kernp = sph->kernp;
+  //sphneib->kernp = sph->kernp;
   sphneib->kernfac = sph->kernfac;
-  sphneib->kernrange = sph->kernp->kernrange;
+  //sphneib->kernrange = sph->kernp->kernrange;
 #if defined MPI_PARALLEL
   mpicontrol.SetNeibSearch(sphneib);
 #endif

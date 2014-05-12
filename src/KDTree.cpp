@@ -931,8 +931,7 @@ void KDTree<ndim,ParticleType>::UpdateHmaxValues
 {
   int c,cc,ccc;                     // Cell counters
   int i;                            // Particle counter
-  int j;                            // ..
-  int k;                            // ..
+  int k;                            // Dimension counter
 
   // If cell is not leaf, stock child cells
   if (cell.level != ltot) {
@@ -1091,10 +1090,10 @@ int KDTree<ndim,ParticleType>::ComputeActiveParticleList
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 bool KDTree<ndim,ParticleType>::BoxOverlap
-(FLOAT box1min[ndim],               ///< Minimum extent of box 1
- FLOAT box1max[ndim],               ///< Maximum extent of box 1
- FLOAT box2min[ndim],               ///< Minimum extent of box 2
- FLOAT box2max[ndim])               ///< Maximum extent of box 2
+(const FLOAT box1min[ndim],               ///< Minimum extent of box 1
+ const FLOAT box1max[ndim],               ///< Maximum extent of box 1
+ const FLOAT box2min[ndim],               ///< Minimum extent of box 2
+ const FLOAT box2max[ndim])               ///< Maximum extent of box 2
 {
   if (ndim == 1) {
     if (box1min[0] > box2max[0]) return false;
@@ -1222,11 +1221,11 @@ int KDTree<ndim,ParticleType>::ComputeGatherNeighbourList
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 int KDTree<ndim,ParticleType>::ComputeGatherNeighbourList
-(KDTreeCell<ndim> *cell,            ///< [in] Pointer to current cell
- int Nneibmax,                      ///< [in] Max. no. of neighbours
- int *neiblist,                     ///< [out] List of neighbour i.d.s
- FLOAT hmax,                        ///< [in] Maximum smoothing length
- ParticleType<ndim> *partdata)      ///< [in] Particle data array
+(const KDTreeCell<ndim> *cell,        ///< [in] Pointer to current cell
+ const int Nneibmax,                  ///< [in] Max. no. of neighbours
+ int *neiblist,                       ///< [out] List of neighbour i.d.s
+ const FLOAT hmax,                    ///< [in] Maximum smoothing length
+ const ParticleType<ndim> *partdata)  ///< [in] Particle data array
 {
   int cc;                           // Cell counter
   int i;                            // Particle id
@@ -1322,10 +1321,10 @@ int KDTree<ndim,ParticleType>::ComputeGatherNeighbourList
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 int KDTree<ndim,ParticleType>::ComputeNeighbourList
-(KDTreeCell<ndim> *cell,            ///< [in] Cell pointer
- int Nneibmax,                      ///< [in] Max. no. of neighbours
- int *neiblist,                     ///< [out] List of neighbour i.d.s
- ParticleType<ndim> *partdata)      ///< [in] Particle data array
+(const KDTreeCell<ndim> *cell,        ///< [in] Cell pointer
+ const int Nneibmax,                  ///< [in] Max. no. of neighbours
+ int *neiblist,                       ///< [out] List of neighbour i.d.s
+ const ParticleType<ndim> *partdata)  ///< [in] Particle data array
 {
   int cc;                           // Cell counter
   int i;                            // Particle id

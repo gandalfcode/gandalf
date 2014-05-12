@@ -105,7 +105,6 @@ struct Particle
     dt = (DOUBLE) 0.0;
   }
 
-
 };
 
 
@@ -247,6 +246,4 @@ struct SphType
 {
   eosenum eos;
 };
-
-
 #endif

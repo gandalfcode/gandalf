@@ -66,15 +66,13 @@ enum tdaviscenum{notdav, mm97, cd2010};
 template <int ndim>
 class Sph
 {
-private:
+ private:
   const int size_sph_part;
-protected:
-  void* sphdata_unsafe;
- public:
 
-  const acondenum acond;              ///< Artificial conductivity enum
-  const aviscenum avisc;              ///< Artificial viscosity enum
-  const tdaviscenum tdavisc;          ///< Time-dependent art. viscosity enum
+ protected:
+  void* sphdata_unsafe;
+
+ public:
 
   // Constructor
   //---------------------------------------------------------------------------
@@ -124,8 +122,11 @@ protected:
   virtual SphParticle<ndim>* GetParticlesArray () =0;
 
 
-  // SPH particle counters and main particle data array
+  // Const variables (read in from parameters file)
   //---------------------------------------------------------------------------
+  const acondenum acond;              ///< Artificial conductivity enum
+  const aviscenum avisc;              ///< Artificial viscosity enum
+  const tdaviscenum tdavisc;          ///< Time-dependent art. viscosity enum
   const int hydro_forces;             ///< Compute hydro forces?
   const int self_gravity;             ///< Compute gravitational forces?
   const FLOAT alpha_visc;             ///< alpha artificial viscosity parameter
@@ -135,6 +136,9 @@ protected:
   const string gas_eos;               ///< Gas EOS option
   static const FLOAT invndim=1./ndim; ///< Copy of 1/ndim
 
+
+  // SPH particle counters and main particle data array
+  //---------------------------------------------------------------------------
   bool allocated;                     ///< Is SPH memory allocated?
   int create_sinks;                   ///< Create new sink particles?
   int Ngather;                        ///< Average no. of gather neighbours
@@ -146,10 +150,10 @@ protected:
   int Nghostmax;                      ///< Max. allowed no. of ghost particles
   int riemann_order;                  ///< Order of Riemann solver
   FLOAT alpha_visc_min;               ///< Min. time-dependent viscosity alpha
-  FLOAT mmean;                        ///< Mean SPH particle mass
-  FLOAT hmin_sink;                    ///< Minimum smoothing length of sinks
   FLOAT kernfac;                      ///< Kernel range neighbour fraction
   FLOAT kernfacsqd;                   ///< Kernel range neib. fraction squared
+  FLOAT mmean;                        ///< Mean SPH particle mass
+  FLOAT hmin_sink;                    ///< Minimum smoothing length of sinks
   string riemann_solver;              ///< Selected Riemann solver
   string slope_limiter;               ///< Selected slope limiter
 
@@ -185,6 +189,8 @@ class GradhSph: public Sph<ndim>
   using Sph<ndim>::Ntot;
   using Sph<ndim>::eos;
   using Sph<ndim>::h_fac;
+  using Sph<ndim>::kernp;
+  using Sph<ndim>::kernfac;
   using Sph<ndim>::kernfacsqd;
   using Sph<ndim>::invndim;
   using Sph<ndim>::h_converge;
@@ -198,7 +204,6 @@ class GradhSph: public Sph<ndim>
   using Sph<ndim>::create_sinks;
   using Sph<ndim>::hmin_sink;
   using Sph<ndim>::Nsphmax;
-  using Sph<ndim>::kernp;
   using Sph<ndim>::iorder;
   using Sph<ndim>::rsph;
   using Sph<ndim>::sphdata_unsafe;

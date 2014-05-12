@@ -36,7 +36,16 @@ using namespace std;
 // Empty default constructor
 //=============================================================================
 template <int ndim>
-SphNeighbourSearch<ndim>::SphNeighbourSearch()
+SphNeighbourSearch<ndim>::SphNeighbourSearch
+(FLOAT kernrangeaux,
+ DomainBox<ndim> *boxaux,
+ SphKernel<ndim> *kernaux,
+ CodeTiming *timingaux):
+  kernrange(kernrangeaux),
+  kernrangesqd(kernrangeaux*kernrangeaux),
+  box(boxaux),
+  kernp(kernaux),
+  timing(timingaux)
 {
 }
 
