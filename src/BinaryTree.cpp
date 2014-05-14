@@ -2531,7 +2531,7 @@ void BinaryTree<ndim>::UpdateAllSphForces
 
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour lists.
-      while (okflag < 0) {
+      while (okflag < 0 || Nneib + Ndirect > Ndirectmax) {
 	delete[] neibpart;  //delete[] neibpartbuf[ithread];
 	delete[] gravcelllist;
 	delete[] directlist;
@@ -2814,7 +2814,7 @@ void BinaryTree<ndim>::UpdateAllSphGravForces
 
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour lists.
-      while (okflag == -1) {
+      while (okflag < 0 || Nneib + Ndirect > Ndirectmax) {
         delete[] neibpartbuf[ithread];
         delete[] gravcelllist;
         delete[] directlist;
