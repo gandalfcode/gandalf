@@ -38,15 +38,15 @@ def structure_function(snap, type="default", nbin=8, npoints=1000,
     '''Calculate the structure function for a given snapshot'''
 
     # Return all relevant particle data (positions and velocity)
-    x = UserQuantity("x").fetch(type, snap)[1]
-    y = UserQuantity("y").fetch(type, snap)[1]
-    z = UserQuantity("x").fetch(type, snap)[1]
+    x  = UserQuantity("x").fetch(type, snap)[1]
+    y  = UserQuantity("y").fetch(type, snap)[1]
+    z  = UserQuantity("x").fetch(type, snap)[1]
     vx = UserQuantity("vx").fetch(type, snap)[1]
     vy = UserQuantity("vy").fetch(type, snap)[1]
     vz = UserQuantity("vz").fetch(type, snap)[1]
-    n = x.size
-    r = np.zeros(n)
-    v = np.zeros(n)
+    n  = x.size
+    r  = np.zeros(n)
+    v  = np.zeros(n)
     
 
     # Create logarithmic bins based on inputted range
@@ -54,9 +54,11 @@ def structure_function(snap, type="default", nbin=8, npoints=1000,
     print bins
     vmean = np.zeros(nbin+2)
     npart = np.zeros(nbin+2)
+    
 
     # Loop through a random selection of points
     for j in range(npoints):
+    #for i in range(n):
         i = random.randrange(0,n-1)
         x0 = x[i]; y0 = y[i]; z0 = z[i]
         vx0 = vx[i]; vy0 = vy[i]; vz0 = vz[i]
@@ -68,10 +70,10 @@ def structure_function(snap, type="default", nbin=8, npoints=1000,
         #v = np.log10(np.sqrt(v))
 
         # Now discretise values into bins and sum up values
-        pos = np.digitize(r,bins,right=True)
+        binpos = np.digitize(r,bins,right=True)
         for k in range(n):
-            vmean[pos[k]] += v[k]
-            npart[pos[k]] += 1
+            vmean[binpos[k]] += v[k]
+            npart[binpos[k]] += 1
 
         #print r
         #print v
@@ -80,7 +82,7 @@ def structure_function(snap, type="default", nbin=8, npoints=1000,
 
     # Normalise logarithmic bins
     for j in range(nbin):
-        vmean[j] = vmean[j]/(10**bins[j+1] - 10**bins[j])
+        #vmean[j] = vmean[j]/(10**bins[j+1] - 10**bins[j])
         if npart[j] > 0: vmean[j] = vmean[j]/npart[j]
 
     vmean = np.log10(vmean)
@@ -97,11 +99,25 @@ def structure_function(snap, type="default", nbin=8, npoints=1000,
 
 #------------------------------------------------------------------------------
 def density_pdf(snap, type="default", nbin=16, rhomin="auto", rhomax="auto"):
-    '''Calculate the structure function for a given snapshot'''
+    '''Calculate the probability density function of the density field'''
 
     rho = UserQuantity("rho").fetch(type, snap)[1]
 
     if rhomin == "auto": rhomin = np.amin(rho)
     if rhomax == "auto": rhomax = np.amax(rho)
 
-    bins = np.linspace(log10(rmin),log10(rmax),nbin+1)
+    bins = np.linspace(log10(rhomin),log10(rhomax),nbin+1)
+    rhopdf = np.zeros(nbin+2)
+
+    binpos = np.digitize(rho,bins,right=True)
+    for i in range(n):
+        rhopdf[binpos[i]] += 1
+
+    # Normalise logarithmic bins
+    for j in range(nbin):
+        rhopdf[j] = rhopdf[j]/(10**bins[j+1] - 10**bins[j])
+
+    print bins
+    print rhopdf
+
+    return bins[0:nbin],rhopdf[0:nbin]

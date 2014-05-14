@@ -54,7 +54,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   debug2("[SphSimulation::ProcessParameters]");
 
-
   // Now simulation object is created, set-up various MPI variables
 #ifdef MPI_PARALLEL
   rank = mpicontrol.rank;
@@ -76,16 +75,12 @@ void SphSimulation<ndim>::ProcessParameters(void)
   simbox.x_boundary_rhs = stringparams["x_boundary_rhs"];
   simbox.boxmin[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
   simbox.boxmax[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
-  //if (simbox.x_boundary_lhs == "open") simbox.boxmin[0] = -big_number;
-  //if (simbox.x_boundary_rhs == "open") simbox.boxmax[0] = big_number;
 
   if (ndim > 1) {
     simbox.y_boundary_lhs = stringparams["y_boundary_lhs"];
     simbox.y_boundary_rhs = stringparams["y_boundary_rhs"];
     simbox.boxmin[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
     simbox.boxmax[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
-    //if (simbox.y_boundary_lhs == "open") simbox.boxmin[1] = -big_number;
-    //if (simbox.y_boundary_rhs == "open") simbox.boxmax[1] = big_number;
   }
 
   if (ndim == 3) {
@@ -93,8 +88,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
     simbox.z_boundary_rhs = stringparams["z_boundary_rhs"];
     simbox.boxmin[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
     simbox.boxmax[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
-    //if (simbox.z_boundary_lhs == "open") simbox.boxmin[2] = -big_number;
-    //if (simbox.z_boundary_rhs == "open") simbox.boxmax[2] = big_number;
   }
 
   for (int k=0; k<ndim; k++) {
@@ -105,6 +98,9 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   // Set-up main SPH objects depending on which SPH algorithm we are using
   ProcessSphParameters();
+
+  // Process all N-body parameters and set-up main N-body objects
+  this->ProcessNbodyParameters();
 
 
   // Thermal physics object.  If energy equation is chosen, also initiate
@@ -140,10 +136,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
   }
   
   
-  // Process all N-body parameters and set-up main N-body objects
-  this->ProcessNbodyParameters();
-
-
   // Set external potential field object and set pointers to object
   if (stringparams["external_potential"] == "none") {
     extpot = new NullPotential<ndim>();
@@ -179,45 +171,49 @@ void SphSimulation<ndim>::ProcessParameters(void)
     subsystem->perturbers = intparams["perturbers"];
 
 
-  if (sim == "sph" || sim == "godunov_sph") sphneib->box = &simbox;
-
-
-
   // Sink particles
   //---------------------------------------------------------------------------
-  sink_particles = intparams["sink_particles"];
-  sinks.sink_particles = intparams["sink_particles"];
-  sinks.create_sinks = intparams["create_sinks"];
-  sinks.smooth_accretion = intparams["smooth_accretion"];
-  sinks.rho_sink = floatparams["rho_sink"]
-    /simunits.rho.outscale/simunits.rho.outcgs;
-  sinks.alpha_ss = floatparams["alpha_ss"];
+  sink_particles            = intparams["sink_particles"];
+  sinks.sink_particles      = intparams["sink_particles"];
+  sinks.create_sinks        = intparams["create_sinks"];
+  sinks.smooth_accretion    = intparams["smooth_accretion"];
+  sinks.alpha_ss            = floatparams["alpha_ss"];
   sinks.smooth_accrete_frac = floatparams["smooth_accrete_frac"];
-  sinks.smooth_accrete_dt = floatparams["smooth_accrete_dt"];
-  sinks.sink_radius_mode = stringparams["sink_radius_mode"];
+  sinks.smooth_accrete_dt   = floatparams["smooth_accrete_dt"];
+  sinks.sink_radius_mode    = stringparams["sink_radius_mode"];
+  sinks.rho_sink            = floatparams["rho_sink"];
+  sinks.rho_sink            /= simunits.rho.outscale/simunits.rho.outcgs;
 
   if (sinks.sink_radius_mode == "fixed")
     sinks.sink_radius = floatparams["sink_radius"]/simunits.r.outscale;
   else
     sinks.sink_radius = floatparams["sink_radius"];
 
+  // Sanity-check for various sink particle values
+  if (intparams["sink_particles"] == 1 && 
+      (stringparams["nbody"] != "lfkdk" && stringparams["nbody"] != "lfdkd")) {
+    string message = "Invalid parameter : nbody must use lfkdk or lfdkd when "
+      "using accreting sink particles";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
 
   // Set other important simulation variables
-  dt_python             = floatparams["dt_python"];
-  dt_snap               = floatparams["dt_snap"]/simunits.t.outscale;
-  level_diff_max        = intparams["level_diff_max"];
-  Nlevels               = intparams["Nlevels"];
-  ndiagstep             = intparams["ndiagstep"];
-  noutputstep           = intparams["noutputstep"];
-  ntreebuildstep        = intparams["ntreebuildstep"];
-  ntreestockstep        = intparams["ntreestockstep"];
-  Nstepsmax             = intparams["Nstepsmax"];
-  out_file_form         = stringparams["out_file_form"];
-  run_id                = stringparams["run_id"];
-  sph_single_timestep   = intparams["sph_single_timestep"];
-  tmax_wallclock        = floatparams["tmax_wallclock"];
-  tend                  = floatparams["tend"]/simunits.t.outscale;
-  tsnapnext             = floatparams["tsnapfirst"]/simunits.t.outscale;
+  dt_python           = floatparams["dt_python"];
+  dt_snap             = floatparams["dt_snap"]/simunits.t.outscale;
+  level_diff_max      = intparams["level_diff_max"];
+  Nlevels             = intparams["Nlevels"];
+  ndiagstep           = intparams["ndiagstep"];
+  noutputstep         = intparams["noutputstep"];
+  ntreebuildstep      = intparams["ntreebuildstep"];
+  ntreestockstep      = intparams["ntreestockstep"];
+  Nstepsmax           = intparams["Nstepsmax"];
+  out_file_form       = stringparams["out_file_form"];
+  run_id              = stringparams["run_id"];
+  sph_single_timestep = intparams["sph_single_timestep"];
+  tmax_wallclock      = floatparams["tmax_wallclock"];
+  tend                = floatparams["tend"]/simunits.t.outscale;
+  tsnapnext           = floatparams["tsnapfirst"]/simunits.t.outscale;
 
 
   // Set pointers to timing object
@@ -233,6 +229,9 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   // Flag that we've processed all parameters already
   ParametersProcessed = true;
+
+
+
 
   return;
 }
@@ -253,9 +252,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   debug2("[SphSimulation::PostInitialConditionsSetup]");
 
+
   // Set pointer to SPH particle data
   partdata = sph->GetParticlesArray();
-
 
   // Perform initial MPI decomposition
   //---------------------------------------------------------------------------

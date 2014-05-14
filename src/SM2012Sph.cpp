@@ -226,8 +226,6 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
 
   SM2012SphParticle<ndim>& parti = static_cast<SM2012SphParticle<ndim>& > (part);
 
-
-
   // Main smoothing length iteration loop
   //===========================================================================
   do {
@@ -299,16 +297,13 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
   parti.h = max(h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim),
                 h_lower_bound);
   parti.invh = (FLOAT) 1.0/parti.h;
-  parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
-  parti.invq = (FLOAT) 1.0/parti.q;
-
-  // Set important thermal variables here
-  parti.u = eos->SpecificInternalEnergy(parti);
-  parti.sound = eos->SoundSpeed(parti);
   parti.hfactor = pow(parti.invh,ndim+1);
-  parti.pfactor = eos->Pressure(parti)*parti.invrho*parti.invq;
+  parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
   parti.div_v = (FLOAT) 0.0;
   parti.dudt = (FLOAT) 0.0;
+
+  // Set important thermal variables here
+  ComputeThermalProperties(parti);
   
   // Calculate the minimum neighbour potential
   // (used later to identify new sinks)
@@ -340,6 +335,27 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;
   else return -1;
+}
+
+
+
+//=============================================================================
+//  SM2012Sph::ComputeThermalProperties
+/// Compute all thermal properties for grad-h SPH method for given particle.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void SM2012Sph<ndim, kernelclass>::ComputeThermalProperties
+(SphParticle<ndim> &part_gen)        ///< [inout] Particle i data
+{
+  SM2012SphParticle<ndim>& part = 
+    static_cast<SM2012SphParticle<ndim> &> (part_gen);
+
+  part.invq = (FLOAT) 1.0/part.q;
+  part.u = eos->SpecificInternalEnergy(part);
+  part.sound = eos->SoundSpeed(part);
+  part.pfactor = eos->Pressure(part)*part.invrho*part.invq;
+
+  return;
 }
 
 

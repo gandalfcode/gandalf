@@ -232,7 +232,7 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
     sphneib = new SM2012SphBruteForce<ndim,SM2012SphParticle>
      (sph->kernp->kernrange,&simbox,sph->kernp,this->timing);
   else if (stringparams["neib_search"] == "tree") {
-    sphneib = new SphTree<ndim,SM2012SphParticle>
+    sphneib = new SM2012SphTree<ndim,SM2012SphParticle>
      (intparams["Nleafmax"],floatparams["thetamaxsqd"],
       sph->kernp->kernrange,floatparams["macerror"],
       stringparams["gravity_mac"],stringparams["multipole"],

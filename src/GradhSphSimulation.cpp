@@ -68,6 +68,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
   debug2("[GradhSphSimulation::ProcessSphParameters]");
 
+
   // Set the enum for artificial viscosity
   if (stringparams["avisc"] == "none")
     avisc = noav;
@@ -127,7 +128,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   }
 
 
-  // Create 'grad-h' SPH object
+  // Create 'grad-h' SPH object depending on choice of kernel
   //===========================================================================
   if (intparams["tabulated_kernel"] == 1) {
     sph = new GradhSph<ndim, TabulatedKernel> 
@@ -266,6 +267,9 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     sph->Ngather = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac,2));
   else if (ndim == 3)
     sph->Ngather = (int) (4.0*pi*pow(sph->kernp->kernrange*sph->h_fac,3)/3.0);
+
+
+
 
 
   return;

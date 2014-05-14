@@ -441,4 +441,120 @@ class GradhSphTree: public SphTree<ndim,ParticleType>
                               Sph<ndim> *, Nbody<ndim> *);
 
 };
+
+
+
+//=============================================================================
+//  Class SM2012SphTree
+/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
+/// \details kd-tree data structure used for efficient neighbour searching 
+///          and computation of gravitational forces for grad-h SPH.
+/// \author  D. A. Hubber
+/// \date    08/01/2014
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+class SM2012SphTree: public SphTree<ndim,ParticleType>
+{
+ public:
+
+  using SphTree<ndim,ParticleType>::activelistbuf;
+  using SphTree<ndim,ParticleType>::activepartbuf;
+  using SphTree<ndim,ParticleType>::allocated_buffer;
+  using SphTree<ndim,ParticleType>::box;
+  using SphTree<ndim,ParticleType>::gravity_mac;
+  using SphTree<ndim,ParticleType>::kernp;
+  using SphTree<ndim,ParticleType>::kernrange;
+  using SphTree<ndim,ParticleType>::kernrangesqd;
+  using SphTree<ndim,ParticleType>::levelneibbuf;
+  using SphTree<ndim,ParticleType>::multipole;
+  using SphTree<ndim,ParticleType>::neibcheck;
+  using SphTree<ndim,ParticleType>::neibpartbuf;
+  using SphTree<ndim,ParticleType>::Ndirectmaxbuf;
+  using SphTree<ndim,ParticleType>::Ngravcellmaxbuf;
+  using SphTree<ndim,ParticleType>::Nleafmax;
+  using SphTree<ndim,ParticleType>::Nneibmaxbuf;
+  using SphTree<ndim,ParticleType>::Ntot;
+  using SphTree<ndim,ParticleType>::Ntotmax;
+  using SphTree<ndim,ParticleType>::Ntotmaxold;
+  using SphTree<ndim,ParticleType>::Ntotold;
+  using SphTree<ndim,ParticleType>::timing;
+  using SphTree<ndim,ParticleType>::tree;
+
+
+  //---------------------------------------------------------------------------
+  SM2012SphTree(int, FLOAT, FLOAT, FLOAT, string, string, 
+                DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+  ~SM2012SphTree();
+
+
+  //---------------------------------------------------------------------------
+  void UpdateAllSphProperties(int, int, SphParticle<ndim> *, 
+                 Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphForces(int, int, SphParticle<ndim> *, 
+                          Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, 
+                               Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, 
+                              Sph<ndim> *, Nbody<ndim> *);
+
+};
+
+
+
+//=============================================================================
+//  Class GodunovSphTree
+/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
+/// \details kd-tree data structure used for efficient neighbour searching 
+///          and computation of gravitational forces for grad-h SPH.
+/// \author  D. A. Hubber
+/// \date    08/01/2014
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+class GodunovSphTree: public SphTree<ndim,ParticleType>
+{
+ public:
+
+  using SphTree<ndim,ParticleType>::activelistbuf;
+  using SphTree<ndim,ParticleType>::activepartbuf;
+  using SphTree<ndim,ParticleType>::allocated_buffer;
+  using SphTree<ndim,ParticleType>::box;
+  using SphTree<ndim,ParticleType>::gravity_mac;
+  using SphTree<ndim,ParticleType>::kernp;
+  using SphTree<ndim,ParticleType>::kernrange;
+  using SphTree<ndim,ParticleType>::kernrangesqd;
+  using SphTree<ndim,ParticleType>::levelneibbuf;
+  using SphTree<ndim,ParticleType>::multipole;
+  using SphTree<ndim,ParticleType>::neibcheck;
+  using SphTree<ndim,ParticleType>::neibpartbuf;
+  using SphTree<ndim,ParticleType>::Ndirectmaxbuf;
+  using SphTree<ndim,ParticleType>::Ngravcellmaxbuf;
+  using SphTree<ndim,ParticleType>::Nleafmax;
+  using SphTree<ndim,ParticleType>::Nneibmaxbuf;
+  using SphTree<ndim,ParticleType>::Ntot;
+  using SphTree<ndim,ParticleType>::Ntotmax;
+  using SphTree<ndim,ParticleType>::Ntotmaxold;
+  using SphTree<ndim,ParticleType>::Ntotold;
+  using SphTree<ndim,ParticleType>::timing;
+  using SphTree<ndim,ParticleType>::tree;
+
+
+  //---------------------------------------------------------------------------
+  GodunovSphTree(int, FLOAT, FLOAT, FLOAT, string, string, 
+               DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+  ~GodunovSphTree();
+
+
+  //---------------------------------------------------------------------------
+  void UpdateAllSphProperties(int, int, SphParticle<ndim> *, 
+                 Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphForces(int, int, SphParticle<ndim> *, 
+                          Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, 
+                               Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, 
+                              Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *);
+  void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *);
+
+};
 #endif

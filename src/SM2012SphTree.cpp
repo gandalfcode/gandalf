@@ -1,5 +1,5 @@
 //=============================================================================
-//  GradhSphTree.cpp
+//  SM2012SphTree.cpp
 //  Contains all functions for building, stocking and walking for the 
 //  binary KD tree for SPH particles.  
 //
@@ -43,11 +43,11 @@ using namespace std;
 
 
 //=============================================================================
-//  GradhSphTree::GradhSphTree
-/// GradhSphTree constructor.  Initialises various variables.
+//  SM2012SphTree::SM2012SphTree
+/// SM2012SphTree constructor.  Initialises various variables.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-GradhSphTree<ndim,ParticleType>::GradhSphTree
+SM2012SphTree<ndim,ParticleType>::SM2012SphTree
 (int Nleafmaxaux,
  FLOAT thetamaxsqdaux,
  FLOAT kernrangeaux,
@@ -66,11 +66,11 @@ GradhSphTree<ndim,ParticleType>::GradhSphTree
 
 
 //=============================================================================
-//  GradhSphTree::~GradhSphTree
-/// GradhSphTree destructor.  Deallocates tree memory upon object destruction.
+//  SM2012SphTree::~SM2012SphTree
+/// SM2012SphTree destructor.  Deallocates tree memory upon object destruction.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-GradhSphTree<ndim,ParticleType>::~GradhSphTree()
+SM2012SphTree<ndim,ParticleType>::~SM2012SphTree()
 {
   if (tree->allocated_tree) {
     this->DeallocateMemory();
@@ -81,14 +81,14 @@ GradhSphTree<ndim,ParticleType>::~GradhSphTree()
 
 
 //=============================================================================
-//  GradhSphTree::UpdateAllSphProperties
+//  SM2012SphTree::UpdateAllSphProperties
 /// Compute all local 'gather' properties of currently active particles, and 
 /// then compute each particle's contribution to its (active) neighbour 
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
+void SM2012SphTree<ndim,ParticleType>::UpdateAllSphProperties
 (int Nsph,                          ///< [in] No. of SPH particles
  int Ntot,                          ///< [in] No. of SPH + ghost particles
  SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
@@ -128,7 +128,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
   ParticleType<ndim> *activepart;   // ..
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
-  debug2("[GradhSphTree::UpdateAllSphProperties]");
+  debug2("[SM2012SphTree::UpdateAllSphProperties]");
   timing->StartTimingSection("SPH_PROPERTIES",2);
 
   // Find list of all cells that contain active particles
@@ -195,6 +195,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
         // recompute the neighbour lists.
         while (Nneib == -1) {
           delete[] r;
+          delete[] mu2;
           delete[] m;
           delete[] drsqd;
           delete[] gpot2;
@@ -303,14 +304,14 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
 
 //=============================================================================
-//  GradhSphTree::UpdateAllSphHydroForces
+//  SM2012SphTree::UpdateAllSphHydroForces
 /// Compute all local 'gather' properties of currently active particles, and 
 /// then compute each particle's contribution to its (active) neighbour 
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
+void SM2012SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 (int Nsph,                          ///< [in] No. of SPH particles
  int Ntot,                          ///< [in] No. of SPH + ghost particles
  SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
@@ -345,7 +346,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   ParticleType<ndim> *neibpart;     // ..
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
-  debug2("[GradhSphTree::UpdateAllSphHydroForces]");
+  debug2("[SM2012SphTree::UpdateAllSphHydroForces]");
   timing->StartTimingSection("SPH_HYDRO_FORCES",2);
 
 
@@ -542,14 +543,14 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
 
 //=============================================================================
-//  GradhSphTree::UpdateAllSphForces
+//  SM2012SphTree::UpdateAllSphForces
 /// Compute all local 'gather' properties of currently active particles, and 
 /// then compute each particle's contribution to its (active) neighbour 
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
+void SM2012SphTree<ndim,ParticleType>::UpdateAllSphForces
 (int Nsph,                          ///< [in] No. of SPH particles
  int Ntot,                          ///< [in] No. of SPH + ghost particles
  SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
@@ -590,7 +591,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
   ParticleType<ndim> *neibpart;     // ..
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
-  debug2("[GradhSphTree::UpdateAllSphForces]");
+  debug2("[SM2012SphTree::UpdateAllSphForces]");
   timing->StartTimingSection("SPH_ALL_FORCES",2);
 
   // Update tree smoothing length values here
@@ -812,14 +813,14 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 
 
 //=============================================================================
-//  GradhSphTree::UpdateAllSphGravForces
+//  SM2012SphTree::UpdateAllSphGravForces
 /// Compute all local 'gather' properties of currently active particles, and 
 /// then compute each particle's contribution to its (active) neighbour 
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
+void SM2012SphTree<ndim,ParticleType>::UpdateAllSphGravForces
 (int Nsph,                          ///< [in] No. of SPH particles
  int Ntot,                          ///< [in] No. of SPH + ghost particles
  SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
@@ -860,7 +861,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
   ParticleType<ndim> *neibpart;     // ..
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
-  debug2("[GradhSphTree::UpdateAllSphGravForces]");
+  debug2("[SM2012SphTree::UpdateAllSphGravForces]");
   timing->StartTimingSection("SPH_GRAV_FORCES",2);
 
   // Update tree smoothing length values here
@@ -1083,6 +1084,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
 
 
 
-template class GradhSphTree<1,GradhSphParticle>;
-template class GradhSphTree<2,GradhSphParticle>;
-template class GradhSphTree<3,GradhSphParticle>;
+template class SM2012SphTree<1,SM2012SphParticle>;
+template class SM2012SphTree<2,SM2012SphParticle>;
+template class SM2012SphTree<3,SM2012SphParticle>;

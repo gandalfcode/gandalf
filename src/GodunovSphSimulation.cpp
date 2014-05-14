@@ -131,7 +131,7 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
     sphneib = new GodunovSphBruteForce<ndim,GodunovSphParticle>
      (sph->kernp->kernrange,&simbox,sph->kernp,this->timing);
   else if (stringparams["neib_search"] == "tree") {
-    sphneib = new SphTree<ndim,GodunovSphParticle>
+    sphneib = new GodunovSphTree<ndim,GodunovSphParticle>
      (intparams["Nleafmax"],floatparams["thetamaxsqd"],
       sph->kernp->kernrange,floatparams["macerror"],
       stringparams["gravity_mac"],stringparams["multipole"],

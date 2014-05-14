@@ -316,20 +316,17 @@ int GradhSph<ndim, kernelclass>::ComputeH
   parti.h = max(h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim),
                 h_lower_bound);
   parti.invh = (FLOAT) 1.0/parti.h;
+  parti.hfactor = pow(parti.invh,ndim+1);
   parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
   parti.invomega = (FLOAT) 1.0 + 
     Sph<ndim>::invndim*parti.h*parti.invomega*parti.invrho;
   parti.invomega = (FLOAT) 1.0/parti.invomega;
   parti.zeta = -Sph<ndim>::invndim*parti.h*parti.zeta*
     parti.invrho*parti.invomega;
+  parti.div_v = (FLOAT) 0.0;
 
   // Set important thermal variables here
-  parti.u = eos->SpecificInternalEnergy(parti);
-  parti.sound = eos->SoundSpeed(parti);
-  parti.hfactor = pow(parti.invh,ndim+1);
-  parti.pfactor = eos->Pressure(parti)*parti.invrho*
-    parti.invrho*parti.invomega;
-  parti.div_v = (FLOAT) 0.0;
+  ComputeThermalProperties(parti);
   
   // Calculate the minimum neighbour potential
   // (used later to identify new sinks)
@@ -364,6 +361,28 @@ int GradhSph<ndim, kernelclass>::ComputeH
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;
   else return -1;
+}
+
+
+
+//=============================================================================
+//  GradhSph::ComputeThermalProperties
+/// Compute all thermal properties for grad-h SPH method for given particle.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void GradhSph<ndim, kernelclass>::ComputeThermalProperties
+(SphParticle<ndim> &part_gen)        ///< [inout] Particle i data
+{
+  GradhSphParticle<ndim>& part = 
+    static_cast<GradhSphParticle<ndim> &> (part_gen);
+
+  part.u = eos->SpecificInternalEnergy(part);
+  part.sound = eos->SoundSpeed(part);
+  part.press = eos->Pressure(part);
+  part.pfactor = eos->Pressure(part)*part.invrho*
+    part.invrho*part.invomega;
+
+  return;
 }
 
 
