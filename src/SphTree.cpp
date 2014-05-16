@@ -1465,7 +1465,7 @@ void SphTree<ndim,ParticleType>::UpdateAllStarGasForces
 
       // Compute contributions to star force from nearby SPH particles
       nbody->CalculateDirectSPHForces(star,Nneib,Ndirect,neiblist,
-                                      directlist,sphdata);
+                                      directlist,sph);
 
       // Compute gravitational force due to distant cells
       if (multipole == "monopole" || multipole == "fast_monopole")

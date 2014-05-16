@@ -670,7 +670,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
 
     // Compute forces between SPH neighbours (hydro and gravity)
     nbody->CalculateDirectSPHForces(nbody->nbodydata[i],Nneib,
-                                    0,neiblist,dummy,sphdata);
+                                    0,neiblist,dummy,sph);
 
   }
   //---------------------------------------------------------------------------
