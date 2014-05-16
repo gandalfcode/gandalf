@@ -166,12 +166,11 @@ void Parameters::SetDefaultValues(void)
   //---------------------------------------------------------------------------
   intparams["ndim"] = 3;
   stringparams["sim"] = "sph";
-  stringparams["sph"] = "gradh";
   stringparams["nbody"] = "hermite4";
 
   // Simulation id, filename and output time parameters
   //---------------------------------------------------------------------------
-  stringparams["ic"] = "cubic_lattice";
+  stringparams["ic"] = "box";
   stringparams["run_id"] = "";
   stringparams["in_file"] = "";
   stringparams["in_file_form"] = "sf";
@@ -323,6 +322,11 @@ void Parameters::SetDefaultValues(void)
   floatparams["smooth_accrete_frac"] = 0.01;
   floatparams["smooth_accrete_dt"] = 0.01;
   stringparams["sink_radius_mode"] = "hmult";
+
+  // Radiation algortihm parameters
+  //---------------------------------------------------------------------------
+  stringparams["radiation"] = "none";
+  intparams["Nphoton"] = 10000;
 
   // Boundary conditions parameters
   //---------------------------------------------------------------------------

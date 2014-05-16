@@ -197,7 +197,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
 //=============================================================================
 template <int ndim>
 void Sinks<ndim>::CreateNewSinkParticle
-(SphParticle<ndim>& part_sink,                         ///< [inout] SPH particle to be turned in a sink particle
+(SphParticle<ndim>& part_sink,      ///< [inout] SPH particle to be turned in a sink particle
  int isink,                         ///< [in]    i.d. of the above SPH particle
  Sph<ndim> *sph,                    ///< [inout] Object containing SPH ptcls
  Nbody<ndim> *nbody)                ///< [inout] Object containing star ptcls

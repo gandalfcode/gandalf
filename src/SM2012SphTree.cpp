@@ -1,5 +1,5 @@
 //=============================================================================
-//  SphTree.cpp
+//  SM2012SphTree.cpp
 //  Contains all functions for building, stocking and walking for the 
 //  binary KD tree for SPH particles.  
 //
@@ -43,11 +43,11 @@ using namespace std;
 
 
 //=============================================================================
-//  SphTree::SphTree
-/// SphTree constructor.  Initialises various variables.
+//  SM2012SphTree::SM2012SphTree
+/// SM2012SphTree constructor.  Initialises various variables.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-SphTree<ndim,ParticleType>::SphTree
+SM2012SphTree<ndim,ParticleType>::SM2012SphTree
 (int Nleafmaxaux,
  FLOAT thetamaxsqdaux,
  FLOAT kernrangeaux,
@@ -57,42 +57,23 @@ SphTree<ndim,ParticleType>::SphTree
  DomainBox<ndim> *boxaux,
  SphKernel<ndim> *kernaux,
  CodeTiming *timingaux):
-  SphNeighbourSearch<ndim>(kernrangeaux,boxaux,kernaux,timingaux),
-  Nleafmax(Nleafmaxaux),
-  thetamaxsqd(thetamaxsqdaux),
-  invthetamaxsqd(1.0/thetamaxsqdaux),
-  gravity_mac(gravity_mac_aux),
-  macerror(macerroraux),
-  multipole(multipole_aux)
+  SphTree<ndim,ParticleType>(Nleafmaxaux,thetamaxsqdaux,kernrangeaux,
+                             macerroraux,gravity_mac_aux,multipole_aux,
+                             boxaux,kernaux,timingaux)
 {
-  allocated_buffer = false;
-  neibcheck        = true;
-  Ntot             = 0;
-  Ntotmax          = 0;
-  Ntotmaxold       = 0;
-#if defined _OPENMP
-  Nthreads         = omp_get_max_threads();
-#else
-  Nthreads         = 1;
-#endif
-
-  // Set-up main tree object
-  tree = new KDTree<ndim,ParticleType>(Nleafmaxaux, thetamaxsqdaux, 
-                                       kernrangeaux, macerroraux, 
-                                       gravity_mac_aux, multipole_aux);
 }
 
 
 
 //=============================================================================
-//  SphTree::~SphTree
-/// SphTree destructor.  Deallocates tree memory upon object destruction.
+//  SM2012SphTree::~SM2012SphTree
+/// SM2012SphTree destructor.  Deallocates tree memory upon object destruction.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-SphTree<ndim,ParticleType>::~SphTree()
+SM2012SphTree<ndim,ParticleType>::~SM2012SphTree()
 {
   if (tree->allocated_tree) {
-    DeallocateMemory();
+    this->DeallocateMemory();
     tree->DeallocateTreeMemory();
   }
 }
@@ -100,246 +81,54 @@ SphTree<ndim,ParticleType>::~SphTree()
 
 
 //=============================================================================
-//  SphTree::AllocateMemory
-/// Allocate memory for binary tree as requested.  If more memory is required 
-/// than currently allocated, tree is deallocated and reallocated here.
-//=============================================================================
-template <int ndim, template<int> class ParticleType>
-void SphTree<ndim,ParticleType>::AllocateMemory(Sph<ndim> *sph)
-{
-  int ithread;                      // Thread id number
-
-  debug2("[SphTree::AllocateMemory]");
-
-  if (!tree->allocated_tree || Ntotmax > Ntotmaxold) {
-    if (tree->allocated_tree) {
-      DeallocateMemory();
-      tree->DeallocateTreeMemory();
-    }
-
-    if (!allocated_buffer) {
-      Nneibmaxbuf = new int[Nthreads];
-      Ndirectmaxbuf = new int[Nthreads];
-      Ngravcellmaxbuf = new int[Nthreads];
-      levelneibbuf = new int*[Nthreads];
-      activelistbuf = new int*[Nthreads];
-      activepartbuf = new ParticleType<ndim>*[Nthreads];
-      neibpartbuf = new ParticleType<ndim>*[Nthreads];
-
-      for (ithread=0; ithread<Nthreads; ithread++) {
-	Nneibmaxbuf[ithread] = max(1,4*sph->Ngather);
-	Ndirectmaxbuf[ithread] = max(1,4*sph->Ngather);
-	Ngravcellmaxbuf[ithread] = max(1,4*sph->Ngather);
-	levelneibbuf[ithread] = new int[Ntotmax];
-        activelistbuf[ithread] = new int[Nleafmax];
-	activepartbuf[ithread] = new ParticleType<ndim>[Nleafmax];
-	neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmaxbuf[ithread]];
-      }
-      allocated_buffer = true;
-    }
-
-  }
-
-  return;
-}
-
-
-
-//=============================================================================
-//  SphTree::DeallocateTreeMemory
-/// Deallocates all binary tree memory
-//=============================================================================
-template <int ndim, template<int> class ParticleType>
-void SphTree<ndim,ParticleType>::DeallocateMemory(void)
-{
-  int ithread;                      // Thread id number
-
-  debug2("[SphTree::DeallocateTreeMemory]");
-
-  if (tree->allocated_tree) {
-
-    for (ithread=0; ithread<Nthreads; ithread++) {
-      delete[] neibpartbuf[ithread];
-      delete[] activepartbuf[ithread];
-      delete[] levelneibbuf[ithread];
-    }
-    delete[] neibpartbuf;
-    delete[] activepartbuf;
-    delete[] activelistbuf;
-    delete[] levelneibbuf;
-    delete[] Ngravcellmaxbuf;
-    delete[] Ndirectmaxbuf;
-    delete[] Nneibmaxbuf;
-
-    tree->DeallocateTreeMemory();
-
-  }
-
-  return;
-}
-
-
-
-//=============================================================================
-//  SphTree::BuildTree
-/// Main routine to control how the tree is built, re-stocked and interpolated 
-/// during each timestep.
-//=============================================================================
-template <int ndim, template<int> class ParticleType>
-void SphTree<ndim,ParticleType>::BuildTree
-(bool rebuild_tree,                 ///< Flag to rebuild tree
- int n,                             ///< Integer time
- int ntreebuildstep,                ///< Tree build frequency
- int ntreestockstep,                ///< Tree stocking frequency
- int Npart,                         ///< No. of particles
- int Npartmax,                      ///< Max. no. of particles
- SphParticle<ndim> *sph_gen,        ///< Particle data array
- Sph<ndim> *sph,                    ///< Pointer to SPH object
- FLOAT timestep)                    ///< Smallest physical timestep
-{
-  int i;                            // Particle counter
-  int k;                            // Dimension counter
-  ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
-
-  debug2("[SphTree::BuildTree]");
-  timing->StartTimingSection("BUILD_TREE",2);
-
-  // Activate nested parallelism for tree building routines
-#ifdef _OPENMP
-  omp_set_nested(1);
-#endif
-
-
-  // For tree rebuild steps
-  //---------------------------------------------------------------------------
-  if (n%ntreebuildstep == 0 || rebuild_tree) {
-
-    // Delete any dead particles from main SPH arrays before we re-build tree
-    sph->DeleteDeadParticles();
-
-    Ntotold = Ntot;
-    //Nsph = sph->Nsph;
-    Ntot = sph->Ntot;
-    Ntotmaxold = Ntotmax;
-    Ntotmax = max(Ntotmax,Ntot);
-    Ntotmax = max(Ntotmax,sph->Nsphmax);
-    tree->Ntot = sph->Ntot;
-    tree->Ntotmaxold = tree->Ntotmax;
-    tree->Ntotmax = max(tree->Ntotmax,tree->Ntot);
-    tree->Ntotmax = max(tree->Ntotmax,sph->Nsphmax);
-    AllocateMemory(sph);
-
-    tree->BuildTree(Npart,Npartmax,sphdata,timestep);
-    
-  }
-
-  // Else stock the tree
-  //---------------------------------------------------------------------------
-  else if (n%ntreestockstep == 0) {
-
-    tree->StockTree(tree->kdcell[0],sphdata);
-
-  }
-
-  // Otherwise simply extrapolate tree cell properties
-  //---------------------------------------------------------------------------
-  else {
-
-    //ExtrapolateCellProperties(kdcell[0],timestep);
-    tree->ExtrapolateCellProperties(timestep);
-
-  }
-  //---------------------------------------------------------------------------
-
-#ifdef _OPENMP
-  omp_set_nested(0);
-#endif
-
-  timing->EndTimingSection("BUILD_TREE");
-
-
-  return;
-}
-
-
-
-//=============================================================================
-//  SphTree::GetGatherNeighbourList
-/// ..
-//=============================================================================
-template <int ndim, template<int> class ParticleType>
-int SphTree<ndim,ParticleType>::GetGatherNeighbourList
-(FLOAT rp[ndim],                    ///< Position vector
- FLOAT rsearch,                     ///< Gather search radius
- SphParticle<ndim> *sph_gen,        ///< Pointer to SPH particle array
- int Nsph,                          ///< No. of SPH particles
- int Nneibmax,                      ///< Max. no. of neighbours
- int *neiblist)                     ///< List of neighbouring particles
-{
-  int Nneib = 0;                    // No. of (non-dead) neighbours
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
-
-  debug2("[SphTree::GetGatherNeighbourList]");
-
-  Nneib = tree->ComputeGatherNeighbourList(rp,rsearch,Nneibmax,
-                                           neiblist,sphdata);
-
-  return Nneib;
-}
-
-
-
-//=============================================================================
-//  SphTree::UpdateAllSphProperties
+//  SM2012SphTree::UpdateAllSphProperties
 /// Compute all local 'gather' properties of currently active particles, and 
 /// then compute each particle's contribution to its (active) neighbour 
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void SphTree<ndim,ParticleType>::UpdateAllSphProperties
+void SM2012SphTree<ndim,ParticleType>::UpdateAllSphProperties
 (int Nsph,                          ///< [in] No. of SPH particles
  int Ntot,                          ///< [in] No. of SPH + ghost particles
  SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
  Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
  Nbody<ndim> *nbody)                ///< [in] Pointer to N-body object
 {
-  int celldone;                    // ..
-  int okflag;                      // ..
-  int cc;                          // Aux. cell counter
-  int cactive;                     // No. of active
-  int i;                           // Particle id
-  int j;                           // Aux. particle counter
-  int jj;                          // Aux. particle counter
-  int k;                           // Dimension counter
-  int Nactive;                     // No. of active particles in cell
-  int Ngather;                     // No. of near gather neighbours
-  int Nneib;                       // No. of neighbours
-  int Nneibmax;                    // Max. no. of neighbours
-  int *activelist;                 // List of active particle ids
-  int *neiblist;                   // List of neighbour ids
-  FLOAT draux[ndim];               // Aux. relative position vector var
-  FLOAT drsqdaux;                  // Distance squared
-  FLOAT hrangesqd;                 // Kernel extent
-  FLOAT hmax;                      // Maximum smoothing length
-  FLOAT rp[ndim];                  // Local copy of particle position
-  FLOAT *drsqd;                    // Position vectors to gather neibs
-  FLOAT *gpot;                     // Potential for particles
-  FLOAT *gpot2;                    // ..
-  FLOAT *m;                        // Distances to gather neibs
-  FLOAT *m2;                       // ..
-  FLOAT *mu;                       // mass*u for gather neibs
-  FLOAT *mu2;                      // ..
-  FLOAT *r;                        // Positions of neibs
-  KDTreeCell<ndim> *cell;          // Pointer to binary tree cell
-  KDTreeCell<ndim> **celllist;     // List of binary cell pointers
-  ParticleType<ndim> *activepart;  // ..
+  int celldone;                     // ..
+  int okflag;                       // ..
+  int cc;                           // Aux. cell counter
+  int cactive;                      // No. of active
+  int i;                            // Particle id
+  int ithread;                      // OpenMP thread i.d.
+  int j;                            // Aux. particle counter
+  int jj;                           // Aux. particle counter
+  int k;                            // Dimension counter
+  int Nactive;                      // No. of active particles in cell
+  int Ngather;                      // No. of near gather neighbours
+  int Nneib;                        // No. of neighbours
+  int Nneibmax;                     // Max. no. of neighbours
+  int *activelist;                  // List of active particle ids
+  int *neiblist;                    // List of neighbour ids
+  FLOAT draux[ndim];                // Aux. relative position vector var
+  FLOAT drsqdaux;                   // Distance squared
+  FLOAT hrangesqd;                  // Kernel extent
+  FLOAT hmax;                       // Maximum smoothing length
+  FLOAT rp[ndim];                   // Local copy of particle position
+  FLOAT *drsqd;                     // Position vectors to gather neibs
+  FLOAT *gpot;                      // Potential for particles
+  FLOAT *gpot2;                     // ..
+  FLOAT *m;                         // Distances to gather neibs
+  FLOAT *m2;                        // ..
+  FLOAT *mu;                        // mass*u for gather neibs
+  FLOAT *mu2;                       // ..
+  FLOAT *r;                         // Positions of neibs
+  KDTreeCell<ndim> *cell;           // Pointer to binary tree cell
+  KDTreeCell<ndim> **celllist;      // List of binary cell pointers
+  ParticleType<ndim> *activepart;   // ..
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
-  int Nneibcount = 0;
-  int ithread;
-
-  debug2("[SphTree::UpdateAllSphProperties]");
+  debug2("[SM2012SphTree::UpdateAllSphProperties]");
   timing->StartTimingSection("SPH_PROPERTIES",2);
 
   // Find list of all cells that contain active particles
@@ -352,7 +141,7 @@ void SphTree<ndim,ParticleType>::UpdateAllSphProperties
 #pragma omp parallel default(none) private(activelist,activepart,cc,cell)\
   private(celldone,draux,drsqd,drsqdaux,gpot,gpot2,hmax,hrangesqd,i,ithread,j)\
   private(jj,k,okflag,m,mu,m2,mu2,Nactive,neiblist,Ngather,Nneib,Nneibmax,r,rp)	\
-  shared(cactive,celllist,cout,nbody,sph,sphdata) reduction(+:Nneibcount)
+  shared(cactive,celllist,cout,nbody,sph,sphdata)
   {
 #if defined _OPENMP
     ithread = omp_get_thread_num();
@@ -374,8 +163,6 @@ void SphTree<ndim,ParticleType>::UpdateAllSphProperties
     drsqd = new FLOAT[Nneibmax];
     m = new FLOAT[Nneibmax];
     m2 = new FLOAT[Nneibmax];
-    mu = new FLOAT[Nneibmax];
-    mu2 = new FLOAT[Nneibmax];
     r = new FLOAT[Nneibmax*ndim];
 
     // Loop over all active cells
@@ -409,25 +196,18 @@ void SphTree<ndim,ParticleType>::UpdateAllSphProperties
         while (Nneib == -1) {
           delete[] r;
           delete[] mu2;
-          delete[] mu;
-          delete[] m2;
           delete[] m;
           delete[] drsqd;
           delete[] gpot2;
           delete[] gpot;
           delete[] neiblist;
           Nneibmax = 2*Nneibmax; 
-          //Nneibmaxbuf[ithread] = Nneibmax;
-          //Ndirectmaxbuf[ithread] *= 2;
-          //Ngravcellmaxbuf[ithread] *= 2;
           neiblist = new int[Nneibmax];
           gpot = new FLOAT[Nneibmax];
           gpot2 = new FLOAT[Nneibmax];
           drsqd = new FLOAT[Nneibmax];
           m = new FLOAT[Nneibmax];
           m2 = new FLOAT[Nneibmax];
-          mu = new FLOAT[Nneibmax];
-          mu2 = new FLOAT[Nneibmax];
           r = new FLOAT[Nneibmax*ndim];
           Nneib = tree->ComputeGatherNeighbourList(cell,Nneibmax,neiblist,
                                                    hmax,sphdata);
@@ -437,10 +217,8 @@ void SphTree<ndim,ParticleType>::UpdateAllSphProperties
         // Make local copies of important neib information (mass and position)
         for (jj=0; jj<Nneib; jj++) {
           j = neiblist[jj];
-          //assert(j >= 0 && j < sph->Ntot);
           gpot[jj] = sphdata[j].gpot;
           m[jj] = sphdata[j].m;
-          mu[jj] = sphdata[j].m*sphdata[j].u;
           for (k=0; k<ndim; k++) r[ndim*jj + k] = (FLOAT) sphdata[j].r[k];
         }
 
@@ -448,13 +226,11 @@ void SphTree<ndim,ParticleType>::UpdateAllSphProperties
         // Loop over all active particles in the cell
         //---------------------------------------------------------------------
         for (j=0; j<Nactive; j++) {
-	  Nneibcount += Nneib;
           i = activelist[j];
-          //assert(i >= 0 && i < sph->Nsph);
-          for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k]; //data[i].r[k];
+          for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
 
           // Set gather range as current h multiplied by some tolerance factor
-          hrangesqd = kernp->kernrangesqd*hmax*hmax;
+          hrangesqd = kernrangesqd*hmax*hmax;
           Ngather = 0;
 
           // Compute distance (squared) to all
@@ -468,7 +244,6 @@ void SphTree<ndim,ParticleType>::UpdateAllSphProperties
               gpot[Ngather] = gpot[jj];
               drsqd[Ngather] = drsqdaux;
               m2[Ngather] = m[jj];
-              mu2[Ngather] = mu[jj];
               Ngather++;
             }
 
@@ -507,8 +282,6 @@ void SphTree<ndim,ParticleType>::UpdateAllSphProperties
 
     // Free-up all memory
     delete[] r;
-    delete[] mu2;
-    delete[] mu;
     delete[] m2;
     delete[] m;
     delete[] drsqd;
@@ -531,14 +304,14 @@ void SphTree<ndim,ParticleType>::UpdateAllSphProperties
 
 
 //=============================================================================
-//  SphTree::UpdateAllSphHydroForces
+//  SM2012SphTree::UpdateAllSphHydroForces
 /// Compute all local 'gather' properties of currently active particles, and 
 /// then compute each particle's contribution to its (active) neighbour 
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
+void SM2012SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 (int Nsph,                          ///< [in] No. of SPH particles
  int Ntot,                          ///< [in] No. of SPH + ghost particles
  SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
@@ -548,6 +321,7 @@ void SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   int cactive;                      // No. of active cells
   int cc;                           // Aux. cell counter
   int i;                            // Particle id
+  int ithread;                      // OpenMP thread i.d.
   int j;                            // Aux. particle counter
   int jj;                           // Aux. particle counter
   int k;                            // Dimension counter
@@ -557,6 +331,7 @@ void SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   int Nneibmax;                     // Max. no. of neighbours
   int *activelist;                  // List of active particle ids
   int *interactlist;                // List of interactng SPH neighbours
+  int *levelneib;                   // ..
   int *neiblist;                    // List of neighbour ids
   FLOAT draux[ndim];                // Aux. relative position vector
   FLOAT drsqd;                      // Distance squared
@@ -567,24 +342,23 @@ void SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   FLOAT *invdrmag;                  // Array of 1/drmag between particles
   KDTreeCell<ndim> *cell;           // Pointer to binary tree cell
   KDTreeCell<ndim> **celllist;      // List of binary tree pointers
+  ParticleType<ndim> *activepart;   // ..
+  ParticleType<ndim> *neibpart;     // ..
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
-  int ithread;
-  int Nneibcount = 0;
-  int *levelneib;
-  ParticleType<ndim> *activepart;
-  ParticleType<ndim> *neibpart;
-
-  debug2("[SphTree::UpdateAllSphHydroForces]");
+  debug2("[SM2012SphTree::UpdateAllSphHydroForces]");
   timing->StartTimingSection("SPH_HYDRO_FORCES",2);
-
-  // Update tree smoothing length values here
-  tree->UpdateHmaxValues(tree->kdcell[0],sphdata);
 
 
   // Find list of all cells that contain active particles
   celllist = new KDTreeCell<ndim>*[tree->gtot];
   cactive = tree->ComputeActiveCellList(celllist);
+
+  // If there are no active cells, return to main loop
+  if (cactive == 0) return;
+
+  // Update tree smoothing length values here
+  tree->UpdateHmaxValues(tree->kdcell[0],sphdata);
 
 
   // Set-up all OMP threads
@@ -592,7 +366,7 @@ void SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 #pragma omp parallel default(none) private(activelist,activepart,cc,cell,dr)\
   private(draux,drmag,drsqd,hrangesqdi,i,interactlist,ithread,invdrmag,j,jj,k)\
   private(levelneib,Nactive,neiblist,neibpart,Ninteract,Nneib,Nneibmax,rp) \
-  shared(cactive,celllist,sphdata,nbody,sph) reduction(+:Nneibcount)
+  shared(cactive,celllist,sphdata,nbody,sph)
   {
 #if defined _OPENMP
     ithread = omp_get_thread_num();
@@ -656,7 +430,6 @@ void SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
         invdrmag = new FLOAT[Nneibmax];
         neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax]; 
 	neibpart = neibpartbuf[ithread];
-	//neibpart = new ParticleType<ndim>[Nneibmax];
         Nneib = tree->ComputeNeighbourList(cell,Nneibmax,
                                            neiblist,sphdata);
       };
@@ -716,8 +489,6 @@ void SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
         sph->ComputeSphHydroForces(i,Ninteract,interactlist,
 				   drmag,invdrmag,dr,activepart[j],neibpart);
 
-	Nneibcount += Ninteract;
-
       }
       //-----------------------------------------------------------------------
 
@@ -746,10 +517,8 @@ void SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
     // Finally, add all contributions from distant pair-wise forces to arrays
 #pragma omp critical
-    for (i=0; i<sph->Nsph; i++) {
-      sphdata[i].levelneib = 
-	max(sphdata[i].levelneib,levelneib[i]);
-    }
+    for (i=0; i<sph->Nsph; i++)
+      sphdata[i].levelneib = max(sphdata[i].levelneib,levelneib[i]);
 
 
     // Free-up local memory for OpenMP thread
@@ -774,14 +543,14 @@ void SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
 
 //=============================================================================
-//  SphTree::UpdateAllSphForces
+//  SM2012SphTree::UpdateAllSphForces
 /// Compute all local 'gather' properties of currently active particles, and 
 /// then compute each particle's contribution to its (active) neighbour 
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void SphTree<ndim,ParticleType>::UpdateAllSphForces
+void SM2012SphTree<ndim,ParticleType>::UpdateAllSphForces
 (int Nsph,                          ///< [in] No. of SPH particles
  int Ntot,                          ///< [in] No. of SPH + ghost particles
  SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
@@ -815,20 +584,14 @@ void SphTree<ndim,ParticleType>::UpdateAllSphForces
   FLOAT drsqd;                      // Distance squared
   FLOAT hrangesqdi;                 // Kernel gather extent
   FLOAT rp[ndim];                   // .. 
-  KDTreeCell<ndim> *cell;       // Pointer to binary tree cell
-  KDTreeCell<ndim> **celllist;  // List of pointers to binary tree cells
-  KDTreeCell<ndim> **gravcelllist; // List of pointers to grav. cells
-  ParticleType<ndim> *activepart;    // ..
-  ParticleType<ndim> *neibpart;      // ..
+  KDTreeCell<ndim> *cell;           // Pointer to kd-tree cell
+  KDTreeCell<ndim> **celllist;      // List of pointers to kd-tree cells
+  KDTreeCell<ndim> **gravcelllist;  // List of pointers to grav. cells
+  ParticleType<ndim> *activepart;   // ..
+  ParticleType<ndim> *neibpart;     // ..
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
-  int Nactivecount = 0;
-  int Ncellcount = 0;
-  int Ndirectcount = 0;
-  int Nneibcount = 0;
-
-
-  debug2("[SphTree::UpdateAllSphForces]");
+  debug2("[SM2012SphTree::UpdateAllSphForces]");
   timing->StartTimingSection("SPH_ALL_FORCES",2);
 
   // Update tree smoothing length values here
@@ -845,8 +608,7 @@ void SphTree<ndim,ParticleType>::UpdateAllSphForces
   private(activepart,activelist,cc,cell,directlist,draux,drsqd,gravcelllist) \
   private(hrangesqdi,i,interactlist,ithread,j,jj,k,levelneib,macfactor)	\
   private(neiblist,neibpart,Nactive,Ndirect,Ndirectaux,Ndirectmax) \
-  private(Ngravcell,Ngravcellmax,Ninteract,Nneib,Nneibmax,okflag,rp) \
-  reduction(+:Nactivecount,Ncellcount,Ndirectcount,Nneibcount)
+  private(Ngravcell,Ngravcellmax,Ninteract,Nneib,Nneibmax,okflag,rp)
   {
 #if defined _OPENMP
     ithread = omp_get_thread_num();
@@ -879,7 +641,6 @@ void SphTree<ndim,ParticleType>::UpdateAllSphForces
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell,sphdata,activelist);
-      Nactivecount += Nactive;
 
       // Make local copies of active particles
       for (j=0; j<Nactive; j++) activepart[j] = sphdata[activelist[j]];
@@ -910,7 +671,7 @@ void SphTree<ndim,ParticleType>::UpdateAllSphForces
 
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour lists.
-      while (okflag < 0) {
+      while (okflag < 0 || Ndirect + Nneib > Ndirectmax) {
 	delete[] neibpart;  //delete[] neibpartbuf[ithread];
 	delete[] gravcelllist;
 	delete[] directlist;
@@ -938,10 +699,8 @@ void SphTree<ndim,ParticleType>::UpdateAllSphForces
 
 
       // Make local copies of all potential neighbours
-      for (j=0; j<Nneib; j++) {
-        //assert(neiblist[j] >= 0 && neiblist[j] < sph->Ntot);
-        neibpart[j] = sphdata[neiblist[j]];
-      }
+      for (j=0; j<Nneib; j++) neibpart[j] = sphdata[neiblist[j]];
+
 
       // Loop over all active particles in the cell
       //-----------------------------------------------------------------------
@@ -993,10 +752,6 @@ void SphTree<ndim,ParticleType>::UpdateAllSphForces
                                             activepart[j].agrav,
                                             activepart[j].r,
                                             Ngravcell,gravcelllist);
-
-	Nneibcount += Ninteract;
-	Ndirectcount += Ndirectaux;
-	Ncellcount += Ngravcell;
 
       }
       //-----------------------------------------------------------------------
@@ -1050,11 +805,6 @@ void SphTree<ndim,ParticleType>::UpdateAllSphForces
 
   delete[] celllist;
 
-  //cout << "No. of active ptcls : " << Nactivecount << endl;
-  //cout << "Average Nneib       : " << Nneibcount/Nactivecount << endl;
-  //cout << "Average Ndirect     : " << Ndirectcount/Nactivecount << endl;
-  //cout << "Average Ngravcell   : " << Ncellcount/Nactivecount << endl;
-
   timing->EndTimingSection("SPH_ALL_FORCES");
 
   return;
@@ -1063,14 +813,14 @@ void SphTree<ndim,ParticleType>::UpdateAllSphForces
 
 
 //=============================================================================
-//  SphTree::UpdateAllSphGravForces
+//  SM2012SphTree::UpdateAllSphGravForces
 /// Compute all local 'gather' properties of currently active particles, and 
 /// then compute each particle's contribution to its (active) neighbour 
 /// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void SphTree<ndim,ParticleType>::UpdateAllSphGravForces
+void SM2012SphTree<ndim,ParticleType>::UpdateAllSphGravForces
 (int Nsph,                          ///< [in] No. of SPH particles
  int Ntot,                          ///< [in] No. of SPH + ghost particles
  SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
@@ -1104,19 +854,14 @@ void SphTree<ndim,ParticleType>::UpdateAllSphGravForces
   FLOAT hrangesqdi;                 // Kernel gather extent
   FLOAT macfactor;                  // Gravity MAC factor
   FLOAT rp[ndim];                   // .. 
-  KDTreeCell<ndim> *cell;       // Pointer to binary tree cell
-  KDTreeCell<ndim> **celllist;  // List of pointers to binary tree cells
-  KDTreeCell<ndim> **gravcelllist; // List of pointers to grav. cells
-  ParticleType<ndim> *activepart;    // ..
-  ParticleType<ndim> *neibpart;      // ..
+  KDTreeCell<ndim> *cell;           // Pointer to binary tree cell
+  KDTreeCell<ndim> **celllist;      // List of pointers to binary tree cells
+  KDTreeCell<ndim> **gravcelllist;  // List of pointers to grav. cells
+  ParticleType<ndim> *activepart;   // ..
+  ParticleType<ndim> *neibpart;     // ..
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
-  int Nactivecount = 0;
-  int Ncellcount = 0;
-  int Ndirectcount = 0;
-  int Nneibcount = 0;
-
-  debug2("[SphTree::UpdateAllSphGravForces]");
+  debug2("[SM2012SphTree::UpdateAllSphGravForces]");
   timing->StartTimingSection("SPH_GRAV_FORCES",2);
 
   // Update tree smoothing length values here
@@ -1133,8 +878,7 @@ void SphTree<ndim,ParticleType>::UpdateAllSphGravForces
   private(activepart,activelist,cc,cell,directlist,draux,drsqd,gravcelllist) \
   private(hrangesqdi,i,interactlist,ithread,j,jj,k,levelneib,macfactor)	\
   private(neiblist,neibpart,Nactive,Ndirect,Ndirectaux,Ndirectmax) \
-  private(Ngravcell,Ngravcellmax,Ninteract,Nneib,Nneibmax,okflag,rp) \
-  reduction(+:Nactivecount,Ncellcount,Ndirectcount,Nneibcount)
+  private(Ngravcell,Ngravcellmax,Ninteract,Nneib,Nneibmax,okflag,rp)
   {
 #if defined _OPENMP
     ithread = omp_get_thread_num();
@@ -1167,7 +911,6 @@ void SphTree<ndim,ParticleType>::UpdateAllSphGravForces
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell,sphdata,activelist);
-      Nactivecount += Nactive;
 
       // Make local copies of active particles
       for (j=0; j<Nactive; j++) activepart[j] = sphdata[activelist[j]];
@@ -1198,7 +941,7 @@ void SphTree<ndim,ParticleType>::UpdateAllSphGravForces
 
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour lists.
-      while (okflag < 0) {
+      while (okflag < 0 || Ndirect + Nneib > Ndirectmax) {
 	delete[] neibpart;  //delete[] neibpartbuf[ithread];
 	delete[] gravcelllist;
 	delete[] directlist;
@@ -1282,10 +1025,6 @@ void SphTree<ndim,ParticleType>::UpdateAllSphGravForces
                                             activepart[j].r,
                                             Ngravcell,gravcelllist);
 
-	Nneibcount += Ninteract;
-	Ndirectcount += Ndirectaux;
-	Ncellcount += Ngravcell;
-
       }
       //-----------------------------------------------------------------------
 
@@ -1338,11 +1077,6 @@ void SphTree<ndim,ParticleType>::UpdateAllSphGravForces
 
   delete[] celllist;
 
-  //cout << "No. of active ptcls : " << Nactivecount << endl;
-  //cout << "Average Nneib       : " << Nneibcount/Nactivecount << endl;
-  //cout << "Average Ndirect     : " << Ndirectcount/Nactivecount << endl;
-  //cout << "Average Ngravcell   : " << Ncellcount/Nactivecount << endl
-
   timing->EndTimingSection("SPH_GRAV_FORCES");
 
   return;
@@ -1350,292 +1084,6 @@ void SphTree<ndim,ParticleType>::UpdateAllSphGravForces
 
 
 
-//=============================================================================
-//  SphTree::UpdateAllStarGasForces
-/// Calculate the gravitational acceleration on all star particles due to 
-/// all gas particles via the tree.
-//=============================================================================
-template <int ndim, template<int> class ParticleType>
-void SphTree<ndim,ParticleType>::UpdateAllStarGasForces
-(int Nsph,                          ///< [in] No. of SPH particles
- int Ntot,                          ///< [in] No. of SPH + ghost particles
- SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
- Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
- Nbody<ndim> *nbody)                ///< [in] Pointer to N-body object
-{
-  int i;                            // Particle id
-  int ithread;                      // OpenMP thread id
-  int j;                            // Aux. particle counter
-  int jj;                           // Aux. particle counter
-  int k;                            // Dimension counter
-  int okflag;                       // Flag if h-rho iteration is valid
-  int Nactive;                      // No. of active particles in cell
-  int Ndirect;                      // No. of direct-sum gravity particles
-  int Ndirectaux;                   // ..
-  int Ndirectmax;                   // Max. no. of direct sum particles
-  int Ngravcell;                    // No. of gravity cells
-  int Ngravcellmax;                 // Max. no. of gravity cells
-  int Ninteract;                    // No. of interactions with hydro neibs
-  int Nneib;                        // No. of neighbours
-  int Nneibmax;                     // Max. no. of neighbours
-  int *activelist;                  // List of active particle ids
-  int *directlist;                  // List of direct sum particle ids
-  int *neiblist;                    // List of neighbour ids
-  FLOAT macfactor;                  // Gravity MAC factor
-  KDTreeCell<ndim> **gravcelllist; // List of pointers to grav. cells
-  NbodyParticle<ndim> *star;        // Pointer to star particle
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
-
-  int Nactivecount = 0;
-  int Ncellcount = 0;
-  int Ndirectcount = 0;
-  int Nneibcount = 0;
-
-  debug2("[SphTree::UpdateAllStarGasForces]");
-  timing->StartTimingSection("STAR_GAS_GRAV_FORCES",2);
-
-  // Make list of all active stars
-  Nactive = 0;
-  activelist = new int[nbody->Nstar];
-  for (i=0; i<nbody->Nstar; i++) 
-    if (nbody->nbodydata[i]->active) activelist[Nactive++] = i;
-
-
-  // Set-up all OMP threads
-  //===========================================================================
-#pragma omp parallel default(none) shared(activelist,Nactive,Ntot,nbody,sph,sphdata,cout) \
-  private(directlist,gravcelllist,i,ithread,j,jj,k,macfactor,neiblist) \
-  private(Ndirect,Ndirectaux,Ndirectmax,Ngravcell,Ngravcellmax) \
-  private(Ninteract,Nneib,Nneibmax,okflag,star)	\
-  reduction(+:Nactivecount,Ncellcount,Ndirectcount,Nneibcount)
-  {
-#if defined _OPENMP
-    ithread = omp_get_thread_num();
-#else
-    ithread = 0;
-#endif
-    Nneibmax = Ntot; //Nneibmaxbuf[ithread];
-    Ndirectmax = Ntot; //Ndirectmaxbuf[ithread];
-    Ngravcellmax = Ngravcellmaxbuf[ithread];
-
-    neiblist = new int[Nneibmax];
-    directlist = new int[Ndirectmax];
-    gravcelllist = new KDTreeCell<ndim>*[Ngravcellmax];
-
-
-    // Loop over all active cells
-    //=========================================================================
-#pragma omp for schedule(dynamic)
-    for (j=0; j<Nactive; j++) {
-      i = activelist[j];
-      star = nbody->nbodydata[i];
-
-      // Compute average/maximum term for computing gravity MAC
-      if (gravity_mac == "eigenmac")
-	macfactor = pow(1.0/star->gpot,twothirds);
-      else
-	macfactor = 0.0;
-
-      // Compute neighbour list for cell depending on physics options
-      okflag = tree->ComputeStarGravityInteractionList(star,macfactor,
-						 Nneibmax,Ndirectmax,
-                                                 Ngravcellmax,Nneib,Ndirect,
-                                                 Ngravcell,neiblist,directlist,
-                                                 gravcelllist,sphdata);
-
-      // If there are too many neighbours, reallocate the arrays and
-      // recompute the neighbour lists.
-      while (okflag == -1) {
-        delete[] gravcelllist;
-        Ngravcellmax = 2*Ngravcellmax;
-        gravcelllist = new KDTreeCell<ndim>*[Ngravcellmax];
-        okflag = tree->ComputeStarGravityInteractionList(star,macfactor,Nneibmax,
-						   Ndirectmax,Ngravcellmax,
-						   Nneib,Ndirect,Ngravcell,
-						   neiblist,directlist,
-	                                           gravcelllist,sphdata);
-      };
-
-      if (Nneib > Nneibmax || Ndirect > Ndirectmax) {
-	cout << "Nneib problem : " << Nneib << "   " << Nneibmax << "     "
-	     << Ndirect << "    " << Ndirectmax << endl;
-	exit(0);
-      }
-
-      // Compute contributions to star force from nearby SPH particles
-      nbody->CalculateDirectSPHForces(star,Nneib,Ndirect,neiblist,
-                                      directlist,sph);
-
-      // Compute gravitational force due to distant cells
-      if (multipole == "monopole" || multipole == "fast_monopole")
-	tree->ComputeCellMonopoleForces(star->gpot,star->a,
-				        star->r,Ngravcell,gravcelllist);
-      else if (multipole == "quadrupole")
-	tree->ComputeCellQuadrupoleForces(star->gpot,star->a,
-				          star->r,Ngravcell,gravcelllist);
-
-      Nactivecount += 1;
-      Nneibcount += Nneib;
-      Ndirectcount += Ndirect;
-      Ncellcount += Ngravcell;
-
-    }
-    //=========================================================================
-
-
-    // Free-up local memory for OpenMP thread
-    delete[] gravcelllist;
-    delete[] directlist;
-    delete[] neiblist;
-
-  }
-  //===========================================================================
-
-  delete[] activelist;
-
-
-  //cout << "No. of active ptcls : " << Nactivecount << endl;
-  //cout << "Average Nneib2      : " << Nneibcount/Nactivecount << endl;
-  //cout << "Average Ndirect2    : " << Ndirectcount/Nactivecount << endl;
-  //cout << "Average Ngravcell2  : " << Ncellcount/Nactivecount << endl;
-  timing->EndTimingSection("STAR_GAS_GRAV_FORCES");
-
-  return;
-}
-
-
-
-//=============================================================================
-//  SphTree::UpdateAllSphDerivatives
-/// ..
-//=============================================================================
-template <int ndim, template<int> class ParticleType>
-void SphTree<ndim,ParticleType>::UpdateAllSphDerivatives
-(int Nsph,                          ///< [in] No. of SPH particles
- int Ntot,                          ///< [in] No. of SPH + ghost particles
- SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
- Sph<ndim> *sph)                    ///< [in] Pointer to SPH object
-{
-  return;
-}
-
-
-
-//=============================================================================
-//  SphTree::UpdateAllSphDudt
-/// Compute all local 'gather' properties of currently active particles, and 
-/// then compute each particle's contribution to its (active) neighbour 
-/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
-/// construct local neighbour lists for all particles  inside the cell.
-//=============================================================================
-template <int ndim, template<int> class ParticleType>
-void SphTree<ndim,ParticleType>::UpdateAllSphDudt
-(int Nsph,                          ///< [in] No. of SPH particles
- int Ntot,                          ///< [in] No. of SPH + ghost particles
- SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
- Sph<ndim> *sph)                    ///< [in] Pointer to SPH object
-{
-  return;
-}
-
-
-//=============================================================================
-//  SphTree::UpdateActiveParticleCounters
-/// Loop through all leaf cells in the tree and update all active
-/// particle counters.
-//=============================================================================
-template <int ndim, template<int> class ParticleType>
-void SphTree<ndim,ParticleType>::UpdateActiveParticleCounters(SphParticle<ndim> * sphdata_gen,
-                                            Sph<ndim> * sph) {
-
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sphdata_gen);
-  tree->UpdateActiveParticleCounters(sphdata);
-}
-
-
-
-#if defined(VERIFY_ALL)
-//=============================================================================
-//  SphNeighbourSearch::CheckValidNeighbourList
-/// Checks that the neighbour list generated by the grid is valid in that it 
-/// (i) does include all true neighbours, and 
-/// (ii) all true neigbours are only included once and once only.
-//=============================================================================
-template <int ndim, template<int> class ParticleType>
-void SphTree<ndim,ParticleType>::CheckValidNeighbourList
-(int i,                             ///< [in] Particle i.d.
- int Ntot,                          ///< [in] Total no. of particles
- int Nneib,                         ///< [in] No. of potential neighbours
- int *neiblist,                     ///< [in] List of potential neighbour i.d.s
- ParticleType<ndim> *partdata,      ///< [in] Array of particle data
- string neibtype)                   ///< [in] Neighbour search type
-{
-  int count;                        // Valid neighbour counter
-  int j;                            // Neighbour particle counter
-  int k;                            // Dimension counter
-  int Ntrueneib = 0;                // No. of 'true' neighbours
-  int *trueneiblist;                // List of true neighbour ids
-  FLOAT drsqd;                      // Distance squared
-  FLOAT dr[ndim];                   // Relative position vector
-
-  // Allocate array to store local copy of potential neighbour ids
-  trueneiblist = new int[Ntot];
-
-  // First, create list of 'true' neighbours by looping over all particles
-  if (neibtype == "gather") {
-    for (j=0; j<Ntot; j++) {
-      for (k=0; k<ndim; k++)
-	dr[k] = partdata[j].r[k] - partdata[i].r[k];
-      drsqd = DotProduct(dr,dr,ndim);
-      if (drsqd <= kernrangesqd*partdata[i].h*partdata[i].h)
-	trueneiblist[Ntrueneib++] = j;
-    }
-  }
-  else if (neibtype == "all") {
-    for (j=0; j<Ntot; j++) {
-      for (k=0; k<ndim; k++) 
-        dr[k] = partdata[j].r[k] - partdata[i].r[k];
-      drsqd = DotProduct(dr,dr,ndim);
-      if (drsqd < kernrangesqd*partdata[i].h*partdata[i].h ||
-    	  drsqd < kernrangesqd*partdata[j].h*partdata[j].h)
- 	     trueneiblist[Ntrueneib++] = j;
-     }
-   }
-
-  // Now compare each given neighbour with true neighbour list for validation
-  for (j=0; j<Ntrueneib; j++) {
-    count = 0;
-    for (k=0; k<Nneib; k++) 
-      if (neiblist[k] == trueneiblist[j]) count++;
-
-    // If the true neighbour is not in the list, or included multiple times, 
-    // then output to screen and terminate program
-    if (count != 1) {
-      cout << "Problem with neighbour lists : " << i << "  " << j << "   "
-	   << count << "   "
-	   << partdata[i].r[0] << "   " << partdata[i].h << endl;
-      cout << "Nneib : " << Nneib << "   Ntrueneib : " << Ntrueneib << endl;
-      PrintArray("neiblist     : ",Nneib,neiblist);
-      PrintArray("trueneiblist : ",Ntrueneib,trueneiblist);
-      string message = "Problem with neighbour lists in grid search";
-      ExceptionHandler::getIstance().raise(message);
-    }
-  }
-
-  delete[] trueneiblist;
-
-  return;
-}
-#endif
-
-
-
-template class SphTree<1,GradhSphParticle>;
-template class SphTree<2,GradhSphParticle>;
-template class SphTree<3,GradhSphParticle>;
-template class SphTree<1,SM2012SphParticle>;
-template class SphTree<2,SM2012SphParticle>;
-template class SphTree<3,SM2012SphParticle>;
-template class SphTree<1,GodunovSphParticle>;
-template class SphTree<2,GodunovSphParticle>;
-template class SphTree<3,GodunovSphParticle>;
+template class SM2012SphTree<1,SM2012SphParticle>;
+template class SM2012SphTree<2,SM2012SphParticle>;
+template class SM2012SphTree<3,SM2012SphParticle>;

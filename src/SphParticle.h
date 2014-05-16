@@ -1,6 +1,6 @@
 //=============================================================================
 //  SphParticle.h
-//  Main SPH particle data structures
+//  Main particle data structures
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -39,32 +39,38 @@ enum ptype{gas, icm, boundary, cdm, dead,
            y_lhs_periodic, y_lhs_mirror, y_rhs_periodic, y_rhs_mirror,
            z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror,
 	   Nsphtypes};
-enum eosenum{isothermal, barotropic, barotropic2, 
+enum eosenum{isothermal, barotropic, barotropic2,
 	     energy_eqn, constant_temp, nspheos};
 
 
+
+//=============================================================================
+//  Structure Particle
+/// \brief  Main base particle data structure.
+/// \author D. A. Hubber, G. Rosotti
+/// \date   01/10/2013
+//=============================================================================
 template <int ndim>
 struct Particle
 {
   bool active;                      ///< Flag if active (i.e. recompute step)
   int iorig;                        ///< Original particle i.d.
-
-  FLOAT m;                          ///< Particle mass
-  FLOAT h;                          ///< SPH smoothing length
+  int itype;                        ///< SPH particle type
+  int nstep;                        ///< Integer step-size of particle
+  int nlast;                        ///< Integer time at beginning of step
+  int level;                        ///< Current timestep level of particle
   FLOAT r[ndim];                    ///< Position
   FLOAT v[ndim];                    ///< Velocity
   FLOAT a[ndim];                    ///< Total acceleration
   FLOAT r0[ndim];                   ///< Position at beginning of step
   FLOAT v0[ndim];                   ///< Velocity at beginning of step
   FLOAT a0[ndim];                   ///< Acceleration at beginning of step
-  int nstep;                        ///< Integer step-size of particle
-  int nlast;                        ///< Integer time at beginning of step
-  int level;                        ///< Current timestep level of particle
-  FLOAT hrangesqd;                  ///< Kernel extent (squared)
-  FLOAT u;                          ///< Specific internal energy
-  FLOAT rho;                        ///< SPH density
-  int itype;                        ///< SPH particle type
   FLOAT agrav[ndim];                ///< Gravitational acceleration
+  FLOAT m;                          ///< Particle mass
+  FLOAT h;                          ///< SPH smoothing length
+  FLOAT hrangesqd;                  ///< Kernel extent (squared)
+  FLOAT rho;                        ///< Density
+  FLOAT u;                          ///< Specific internal energy
   FLOAT u0;                         ///< u at beginning of step
   FLOAT dudt0;                      ///< dudt at beginning of step
   FLOAT dudt;                       ///< Compressional heating rate
@@ -77,30 +83,30 @@ struct Particle
     iorig = -1;
     itype = gas;
     level = 0;
+    nstep = 0;
+    nlast = 0;
     for (int k=0; k<ndim; k++) r[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) v[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a[k] = (FLOAT) 0.0;
-    for (int k=0; k<ndim; k++) agrav[k] = (FLOAT) 0.0;
-    u = (FLOAT) 0.0;
-    dudt = (FLOAT) 0.0;
-    m = (FLOAT) 0.0;
-    h = (FLOAT) 0.0;
-    rho = (FLOAT) 0.0;
-    nstep = 0;
-    nlast = 0;
-    gpot = (FLOAT) 0.0;
-    gpe = (FLOAT) 0.0;
-    dt = (DOUBLE) 0.0;
     for (int k=0; k<ndim; k++) r0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) v0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a0[k] = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) agrav[k] = (FLOAT) 0.0;
+    m = (FLOAT) 0.0;
+    h = (FLOAT) 0.0;
+    hrangesqd = (FLOAT) 0.0;
+    rho = (FLOAT) 0.0;
+    u = (FLOAT) 0.0;
     u0 = (FLOAT) 0.0;
+    dudt = (FLOAT) 0.0;
     dudt0 = (FLOAT) 0.0;
-    hrangesqd=0.0;
+    gpot = (FLOAT) 0.0;
+    gpe = (FLOAT) 0.0;
+    dt = (DOUBLE) 0.0;
   }
 
-
 };
+
 
 
 //=============================================================================
@@ -112,9 +118,6 @@ struct Particle
 template <int ndim>
 struct SphParticle : public Particle<ndim>
 {
-
-  // Generic variables, i.e. shared by all SPH methods
-  //-------------------------------------------------------------------------
   bool potmin;                      ///< Is particle at a potential minima?
   int levelneib;                    ///< Min. timestep level of neighbours
   int sinkid;                       ///< i.d. of sink particle
@@ -123,19 +126,16 @@ struct SphParticle : public Particle<ndim>
   FLOAT invrho;                     ///< 1 / rho
   FLOAT press;                      ///< Thermal pressure
   FLOAT pfactor;                    ///< Pressure factor in SPH EOM
+  FLOAT sound;                      ///< Sound speed
   FLOAT div_v;                      ///< Velocity divergence
   FLOAT alpha;                      ///< Artificial viscosity alpha value
   FLOAT dalphadt;                   ///< Rate of change of alpha
-  FLOAT sound;                      ///< Sound speed
-
 
 
   // SPH particle constructor to initialise all values
   //---------------------------------------------------------------------------
   SphParticle()
   {
-    // Generic variables, i.e. shared by all SPH methods
-    //-------------------------------------------------------------------------
     potmin = false;
     levelneib = 0;
     sinkid = -1;
@@ -145,10 +145,9 @@ struct SphParticle : public Particle<ndim>
     press = (FLOAT) 0.0;
     pfactor = (FLOAT) 0.0;
     sound = (FLOAT) 0.0;
-    div_v = 0.0;
-    alpha = 0.0;
-    dalphadt = 0.0;
-
+    div_v = (FLOAT) 0.0;
+    alpha = (FLOAT) 0.0;
+    dalphadt = (FLOAT) 0.0;
   }
 
 #ifdef MPI_PARALLEL
@@ -164,10 +163,16 @@ struct SphParticle : public Particle<ndim>
   }
 #endif
 
-
 };
 
 
+
+//=============================================================================
+//  Structure GradhSphParticle
+/// \brief  `grad-h' SPH particle data structure.
+/// \author D. A. Hubber, G. Rosotti
+/// \date   01/10/2013
+//=============================================================================
 template <int ndim>
 struct GradhSphParticle : public SphParticle<ndim>
 {
@@ -183,6 +188,14 @@ struct GradhSphParticle : public SphParticle<ndim>
 
 };
 
+
+
+//=============================================================================
+//  Structure SM2012SphParticle
+/// \brief  Saitoh & Makino (2012) SPH particle data structure.
+/// \author D. A. Hubber, G. Rosotti
+/// \date   01/10/2013
+//=============================================================================
 template <int ndim>
 struct SM2012SphParticle : public SphParticle<ndim>
 {
@@ -190,12 +203,20 @@ struct SM2012SphParticle : public SphParticle<ndim>
   FLOAT invq;                       ///< 1 / q
 
   SM2012SphParticle () {
-  q = (FLOAT) 0.0;
-  invq = (FLOAT) 0.0;
+    q = (FLOAT) 0.0;
+    invq = (FLOAT) 0.0;
   }
 
 };
 
+
+
+//=============================================================================
+//  Structure GodunovSphParticle
+/// \brief  Godunov SPH particle data structure.
+/// \author D. A. Hubber, G. Rosotti
+/// \date   01/10/2013
+//=============================================================================
 template <int ndim>
 struct GodunovSphParticle : public SphParticle<ndim>
 {
@@ -211,8 +232,9 @@ struct GodunovSphParticle : public SphParticle<ndim>
         gradv[k][kk] = (FLOAT) 0.0;
   }
 
-
 };
+
+
 
 //=============================================================================
 //  Structure SphType
@@ -224,6 +246,4 @@ struct SphType
 {
   eosenum eos;
 };
-
-
 #endif

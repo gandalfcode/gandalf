@@ -84,12 +84,12 @@ void Simulation<ndim>::GenerateIC(void)
     rescale_particle_data = true;
   }
   //---------------------------------------------------------------------------
-  else if (simparams->stringparams["ic"] == "binaryacc")
-    BinaryAccretion();
-  else if (simparams->stringparams["ic"] == "binary")
-    BinaryStar();
   else if (simparams->stringparams["ic"] == "bb")
     BossBodenheimer();
+  else if (simparams->stringparams["ic"] == "binary")
+    BinaryStar();
+  else if (simparams->stringparams["ic"] == "binaryacc")
+    BinaryAccretion();
   else if (simparams->stringparams["ic"] == "box")
     UniformBox();
   else if (simparams->stringparams["ic"] == "cdiscontinuity")
@@ -112,10 +112,10 @@ void Simulation<ndim>::GenerateIC(void)
     SoundWave();
   else if (simparams->stringparams["ic"] == "sphere")
     UniformSphere();
-  else if (simparams->stringparams["ic"] == "turbcore")
-    TurbulentCore();
   else if (simparams->stringparams["ic"] == "triple")
     TripleStar();
+  else if (simparams->stringparams["ic"] == "turbcore")
+    TurbulentCore();
   else if (simparams->stringparams["ic"] == "python")
     return;
   //---------------------------------------------------------------------------
@@ -2912,7 +2912,7 @@ void Simulation<ndim>::InterpolateVelocityField
   // Now interpolate velocity field onto particle positions
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dx,i,j,k,kk,p,vint) \
-  shared(cout,dxgrid,Ngrid,v,vfield,xmin)
+  shared(cout,dxgrid,Ngrid,Npart,r,v,vfield,xmin)
   for (p=0; p<Npart; p++) {
     for (kk=0; kk<ndim; kk++) dx[kk] = (r[ndim*p + kk] - xmin)/dxgrid;
 

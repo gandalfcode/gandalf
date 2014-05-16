@@ -64,8 +64,10 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   map<string, float> &floatparams = simparams->floatparams;
   map<string, string> &stringparams = simparams->stringparams;
   string KernelName = stringparams["kernel"];
+  string gas_radiation = stringparams["radiation"];
 
   debug2("[GradhSphSimulation::ProcessSphParameters]");
+
 
   // Set the enum for artificial viscosity
   if (stringparams["avisc"] == "none")
@@ -126,7 +128,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   }
 
 
-  // Create 'grad-h' SPH object
+  // Create 'grad-h' SPH object depending on choice of kernel
   //===========================================================================
   if (intparams["tabulated_kernel"] == 1) {
     sph = new GradhSph<ndim, TabulatedKernel> 
@@ -174,16 +176,14 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   // Create SPH particle integration object
   //---------------------------------------------------------------------------
   if (stringparams["sph_integration"] == "lfkdk") {
-    sphint = new SphLeapfrogKDK<ndim, GradhSphParticle>(floatparams["accel_mult"],
-			              floatparams["courant_mult"],
-			              floatparams["energy_mult"],
-				      gas_eos, tdavisc);
+    sphint = new SphLeapfrogKDK<ndim, GradhSphParticle>
+      (floatparams["accel_mult"],floatparams["courant_mult"],
+       floatparams["energy_mult"],gas_eos, tdavisc);
   }
   else if (stringparams["sph_integration"] == "lfdkd") {
-    sphint = new SphLeapfrogDKD<ndim, GradhSphParticle>(floatparams["accel_mult"],
-			              floatparams["courant_mult"],
-			              floatparams["energy_mult"],
-				      gas_eos, tdavisc);
+    sphint = new SphLeapfrogDKD<ndim, GradhSphParticle>
+      (floatparams["accel_mult"],floatparams["courant_mult"],
+       floatparams["energy_mult"],gas_eos, tdavisc);
     integration_step = max(integration_step,2);
   }
   else {
@@ -211,25 +211,51 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   // Create neighbour searching object based on chosen method in params file
   //-------------------------------------------------------------------------
   if (stringparams["neib_search"] == "bruteforce")
-    sphneib = new BruteForceSearch<ndim,GradhSphParticle>;
+    sphneib = new GradhSphBruteForce<ndim,GradhSphParticle>
+      (sph->kernp->kernrange,&simbox,sph->kernp,timing);
   else if (stringparams["neib_search"] == "tree") {
-    sphneib = new SphTree<ndim,GradhSphParticle>(intparams["Nleafmax"],
-			                    floatparams["thetamaxsqd"],
-			                    sph->kernp->kernrange,
-                                            floatparams["macerror"],
-                                            stringparams["gravity_mac"],
-                                            stringparams["multipole"]);
+    sphneib = new GradhSphTree<ndim,GradhSphParticle>
+     (intparams["Nleafmax"],floatparams["thetamaxsqd"],
+      sph->kernp->kernrange,floatparams["macerror"],
+      stringparams["gravity_mac"],stringparams["multipole"],
+      &simbox,sph->kernp,timing);
   }
   else {
     string message = "Unrecognised parameter : neib_search = " 
       + simparams->stringparams["neib_search"];
     ExceptionHandler::getIstance().raise(message);
   }
-  sphneib->kernp = sph->kernp;
+  //sphneib->kernp = sph->kernp;
   sphneib->kernfac = sph->kernfac;
-  sphneib->kernrange = sph->kernp->kernrange;
+  //sphneib->kernrange = sph->kernp->kernrange;
 #if defined MPI_PARALLEL
   mpicontrol.SetNeibSearch(sphneib);
+#endif
+
+
+  // Radiation transport object
+  //---------------------------------------------------------------------------
+  if (gas_radiation == "ionisation")
+    radiation = NULL;
+  else if (gas_radiation == "treemc")
+    radiation = new TreeMonteCarlo<ndim,GradhSphParticle>
+      (intparams["Nphoton"],intparams["Nleafmax"]);
+  else if (gas_radiation == "none")
+    radiation = new NullRadiation<ndim>();
+  else {
+    string message = "Unrecognised parameter : radiation = " + gas_radiation;
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
+  // Create ghost particle object
+  //---------------------------------------------------------------------------
+  if (IsAnyBoundarySpecial(simbox))
+    LocalGhosts = new PeriodicGhostsSpecific<ndim,GradhSphParticle >();
+  else
+    LocalGhosts = new NullGhosts<ndim>();
+#ifdef MPI_PARALLEL
+  MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
 #endif
 
 
@@ -243,15 +269,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     sph->Ngather = (int) (4.0*pi*pow(sph->kernp->kernrange*sph->h_fac,3)/3.0);
 
 
-  // Create ghost particle object
-  //---------------------------------------------------------------------------
-  if (IsAnyBoundarySpecial(simbox))
-    LocalGhosts = new PeriodicGhostsSpecific<ndim,GradhSphParticle >();
-  else
-    LocalGhosts = new NullGhosts<ndim>();
-#ifdef MPI_PARALLEL
-  MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
-#endif
+
 
 
   return;

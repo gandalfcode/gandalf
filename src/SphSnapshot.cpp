@@ -64,27 +64,27 @@ SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory
 SphSnapshotBase::SphSnapshotBase(SimUnits* _units, string auxfilename):
     units(_units)
 {
-  allocated = false;
-  allocatedbinary = false;
-  allocatedstar = false;
-  allocatedsph = false;
-  computedbinary = false;
-  computedsph = false;
-  computednbody = false;
+  allocated        = false;
+  allocatedbinary  = false;
+  allocatedstar    = false;
+  allocatedsph     = false;
+  computedbinary   = false;
+  computedsph      = false;
+  computednbody    = false;
   nallocatedbinary = 0;
-  nallocatedsph = 0;
-  nallocatedstar = 0;
-  Nbinary = 0;
-  Norbit = 0;
-  Norbitmax = 0;
-  Nquadruple = 0;
-  Ntriple = 0;
-  Nsph = 0;
-  Nsphmax = 0;
-  Nstar = 0;
-  Nstarmax = 0;
-  t = 0.0;
-  LastUsed = time(NULL);
+  nallocatedsph    = 0;
+  nallocatedstar   = 0;
+  Nbinary          = 0;
+  Norbit           = 0;
+  Norbitmax        = 0;
+  Nquadruple       = 0;
+  Ntriple          = 0;
+  Nsph             = 0;
+  Nsphmax          = 0;
+  Nstar            = 0;
+  Nstarmax         = 0;
+  t                = 0.0;
+  LastUsed         = time(NULL);
   if (auxfilename != "") filename = auxfilename;
 }
 
@@ -484,30 +484,26 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
   _species.clear();
 
   // Read which species are there
-  if (simulation->sph != NULL && simulation->sph->GetParticlesArray() != NULL) {
+  if (simulation->sph != NULL && 
+      simulation->sph->GetParticlesArray() != NULL) {
     Nsph = simulation->sph->Nsph;
-    if (Nsph != 0) {
-      _species.push_back("sph");
-    }
+    if (Nsph != 0) _species.push_back("sph");
   }
   if (simulation->nbody != NULL && simulation->nbody->stardata != NULL) {
     staraux = simulation->nbody->stardata;
     orbitaux = simulation->nbodytree.orbit;
     Nstar = simulation->nbody->Nstar;
     Norbit = simulation->nbodytree.Norbit;
-    if (Nstar != 0) {
-      _species.push_back("star");
-    }
-    if (Norbit != 0) {
-      _species.push_back("binary");
-    }
+    if (Nstar != 0) _species.push_back("star");
+    if (Norbit != 0) _species.push_back("binary");
   }
 
   AllocateBufferMemory();
 
-  // Loop over all SPH particles and record particle data
-  for (int i=0; i<Nsph; i++) {
 
+  // Loop over all SPH particles and record particle data
+  //---------------------------------------------------------------------------
+  for (int i=0; i<Nsph; i++) {
     SphParticle<ndims>& part = simulation->sph->GetParticleIPointer(i);
 
     if (ndim == 1) {
@@ -628,7 +624,8 @@ int SphSnapshotBase::GetNparticlesType(string type)
   else if (type == "binary")
     return Norbit;
   else {
-    string message="Error: we do not know the type " + type + "that you are requesting!!!";
+    string message="Error: we do not know the type " + type + 
+      "that you are requesting!!!";
     ExceptionHandler::getIstance().raise(message);
   }
   return 0;
@@ -650,8 +647,8 @@ UnitInfo SphSnapshotBase::ExtractArray
  string RequestedUnit)              ///< Requested unit for outputted variable
 {
   string unitname;                  // Name of unit
-  UnitInfo unitinfo;                // ..
-  SimUnit* unit;                    // Unit pointer
+  UnitInfo unitinfo;                // All data for units and scaling
+  SimUnit* unit;                    // Unit object pointer
 
   // Zero initial array pointers and size
   *out_array = NULL;
@@ -661,7 +658,8 @@ UnitInfo SphSnapshotBase::ExtractArray
   // Check that the memory is allocated. If not, fails very rumorously
   if (!allocated){
     cout << "Error: requested a snapshot that is not allocated!!!!" << endl;
-    cout << "This means there's a bug in the memory management: please inform the authors" << endl;
+    cout << "This means there's a bug in the memory management: "
+      "please inform the authors" << endl;
     exit(-2);
   }
 

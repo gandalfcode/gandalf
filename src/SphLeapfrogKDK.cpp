@@ -43,10 +43,10 @@ using namespace std;
 //=============================================================================
 template <int ndim, template <int> class ParticleType>
 SphLeapfrogKDK<ndim, ParticleType>::SphLeapfrogKDK(DOUBLE accel_mult_aux,
-                                     DOUBLE courant_mult_aux,
-                                     DOUBLE energy_mult_aux,
-				     eosenum gas_eos_aux,
-				     tdaviscenum tdavisc_aux) :
+                                                   DOUBLE courant_mult_aux,
+                                                   DOUBLE energy_mult_aux,
+                                                   eosenum gas_eos_aux,
+                                                   tdaviscenum tdavisc_aux) :
   SphIntegration<ndim>(accel_mult_aux, courant_mult_aux, energy_mult_aux,
 		       gas_eos_aux, tdavisc_aux)
 {
@@ -86,11 +86,11 @@ void SphLeapfrogKDK<ndim, ParticleType >::AdvanceParticles
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
   FLOAT dt;                         // Timestep since start of step
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphLeapfrogKDK::AdvanceParticles]");
   timing->StartTimingSection("SPH_LFKDK_ADVANCE_PARTICLES",2);
 
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   // Advance positions and velocities of all SPH particles
   //---------------------------------------------------------------------------
@@ -150,11 +150,11 @@ void SphLeapfrogKDK<ndim, ParticleType>::CorrectionTerms
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphLeapfrogKDK::CorrectionTerms]");
   timing->StartTimingSection("SPH_LFKDK_CORRECTION_TERMS",2);
 
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,k,nstep)\
@@ -196,14 +196,15 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphLeapfrogKDK::EndTimestep]");
   timing->StartTimingSection("SPH_LFKDK_END_TIMESTEP",2);
 
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep) shared(n,sphdata,timestep, npart)
+#pragma omp parallel for default(none) private(dn,i,k,nstep) \
+  shared(n,sphdata,timestep, npart)
   for (i=0; i<npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
 
@@ -217,8 +218,7 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
       for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
       for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
       if (gas_eos == energy_eqn) {
-	part.u += 0.5*(part.dudt - part.dudt0)*
-	  timestep*(FLOAT) nstep;
+	part.u += 0.5*(part.dudt - part.dudt0)*timestep*(FLOAT) nstep;
 	part.u0 = part.u;
 	part.dudt0 = part.dudt;
       }
@@ -255,11 +255,11 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
   int i;                            // Particle counter
   int level_new;                    // New level of particle
   int nnewstep;                     // New step size of particle
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphLeapfrogKDK::CheckTimesteps]");
   timing->StartTimingSection("SPH_LFKDK_CHECK_TIMESTEPS",2);
 
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,level_new,nnewstep)\
@@ -295,9 +295,9 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
 
 
 // Template class instances for each dimensionality value (1, 2 and 3) and particle type
-template class SphLeapfrogKDK<1, GradhSphParticle >;
-template class SphLeapfrogKDK<2, GradhSphParticle >;
-template class SphLeapfrogKDK<3, GradhSphParticle >;
-template class SphLeapfrogKDK<1, SM2012SphParticle >;
-template class SphLeapfrogKDK<2, SM2012SphParticle >;
-template class SphLeapfrogKDK<3, SM2012SphParticle >;
+template class SphLeapfrogKDK<1, GradhSphParticle>;
+template class SphLeapfrogKDK<2, GradhSphParticle>;
+template class SphLeapfrogKDK<3, GradhSphParticle>;
+template class SphLeapfrogKDK<1, SM2012SphParticle>;
+template class SphLeapfrogKDK<2, SM2012SphParticle>;
+template class SphLeapfrogKDK<3, SM2012SphParticle>;

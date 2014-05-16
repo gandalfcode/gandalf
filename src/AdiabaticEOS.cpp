@@ -23,7 +23,7 @@
 
 #include <math.h>
 #include "EOS.h"
-#include "Sph.h"
+#include "SphParticle.h"
 
 
 

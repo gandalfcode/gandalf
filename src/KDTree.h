@@ -34,10 +34,8 @@
 #include "CodeTiming.h"
 #include "SphKernel.h"
 #include "SphParticle.h"
-
 #include "Sph.h"
 #include "Nbody.h"
-#include "Sinks.h"
 #include "DomainBox.h"
 #include "Parameters.h"
 using namespace std;
@@ -61,6 +59,7 @@ struct KDTreeCell {
   int ilast;                        ///< i.d. of last particle in cell
   int N;                            ///< ..
   int Nactive;                      ///< ..
+  int cexit[2][ndim];               ///< Left and right exit cells (per dim)
   FLOAT cdistsqd;                   ///< ..
   FLOAT mac;                        ///< Multipole-opening criterion value
   FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
@@ -101,7 +100,7 @@ class KDTree
   void BuildTree(int, int, ParticleType<ndim> *, FLOAT);
   void AllocateTreeMemory(void);
   void DeallocateTreeMemory(void);
-  bool BoxOverlap(FLOAT *, FLOAT *, FLOAT *, FLOAT *);
+  bool BoxOverlap(const FLOAT *, const FLOAT *, const FLOAT *, const FLOAT *);
   void ComputeTreeSize(void);
   void CreateTreeStructure(void);
   void DivideTreeCell(int, int, ParticleType<ndim> *, KDTreeCell<ndim> &);
@@ -113,11 +112,14 @@ class KDTree
   void UpdateHmaxValues(KDTreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
   int ComputeActiveCellList(KDTreeCell<ndim> **);
-  int ComputeActiveParticleList(KDTreeCell<ndim> *, ParticleType<ndim> *, int *);
-  int ComputeGatherNeighbourList(KDTreeCell<ndim> *, int, int *, 
-                                 FLOAT, ParticleType<ndim> *);
-  int ComputeNeighbourList(KDTreeCell<ndim> *, int, int *, 
-                           ParticleType<ndim> *);
+  int ComputeActiveParticleList(KDTreeCell<ndim> *, 
+                                ParticleType<ndim> *, int *);
+  int ComputeGatherNeighbourList(FLOAT *, FLOAT, int, int *, 
+                                 ParticleType<ndim> *);
+  int ComputeGatherNeighbourList(const KDTreeCell<ndim> *, const int, int *, 
+                                 const FLOAT, const ParticleType<ndim> *);
+  int ComputeNeighbourList(const KDTreeCell<ndim> *, const int, int *, 
+                           const ParticleType<ndim> *);
   int ComputeGravityInteractionList(KDTreeCell<ndim> *, FLOAT, int, int,  
                                     int, int &, int &, int &, int *, int *,
                                     KDTreeCell<ndim> **, 
@@ -133,10 +135,10 @@ class KDTree
   void ComputeFastMonopoleForces(int, int, KDTreeCell<ndim> **, 
 				 KDTreeCell<ndim> *, ParticleType<ndim> *);
 #if defined(VERIFY_ALL)
-  void ValidateTree(Sph<ndim> *);
+  void ValidateTree(ParticleType<ndim> *);
 #endif
 
-  // Additional variables for grid
+  // Additional variables for KD-tree
   //---------------------------------------------------------------------------
   string gravity_mac;               ///< Multipole-acceptance criteria for tree
   string multipole;                 ///< Multipole-order for cell gravity

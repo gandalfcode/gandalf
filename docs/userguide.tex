@@ -7,7 +7,7 @@
 \usepackage{array}
 \usepackage[colorlinks,final]{hyperref}
 
-\newcommand{\VERNO}{0.1.0 }
+\newcommand{\VERNO}{0.2.0 }
 \newcommand{\var}[1]{\texttt{#1}}
 \newcommand{\singlecommand}[1]{\\ \newline \indent \var{#1} \\ \newline \noindent}
 
@@ -67,7 +67,7 @@ If you are not interested in the Python library, you need only a C++ compiler. T
 \item cmd2
 %\item ffmpeg (for generating movies automatically)
 \end{itemize}
-We thank the authors for writing these softwares and release them under the MIT license.
+We thank the authors for writing this software and releasing them under the MIT license.
 
 
 \subsection{Linux}
@@ -128,7 +128,7 @@ Also, \var{make} requires the location of the python and numpy libraries.  In mo
 \section{Basic usage}
 GANDALF can be run in three principle modes.  
 \begin{itemize} 
-\item Command-line mode, where the code is run as a C++ executable via the command line with a parameters file that selects which code options are used4 (similar to SEREN), 
+\item Command-line mode, where the code is run as a C++ executable via the command line with a parameters file that selects which code options are used, 
 \item via a python script where the code is run in a python environment with various plotting options available as well as running the code, 
 \item in interactive mode where all the code and plotting options can be run directly by typing them into an interactive python shell.
 \end{itemize}
@@ -260,20 +260,17 @@ DOUBLE & : 64-bit precision floating point variables
 
 \item \var{sim} : Simulation type \vspace{0.1cm} \\
 \begin{tabular}{ll}
-godunov\_sph      & = Godunov SPH algorithm (Inutsuka 2002) \\
-nbody             & = N-body only algorithm \\
-sph               & = SPH (+ N-body) algorithn 
-\end{tabular}
-
-\item \var{sph} : SPH algorithm (when using \var{sim = sph}) \\
-\begin{tabular}{ll}
-gradh    & = Conservative 'grad-h' SPH \\
-sm2012   & = Saitoh \& Makino (2012) SPH
+sph               & = SPH (+ N-body) algorithm (default : `grad-h' SPH) \\
+gradhsph          & = `grad-h' SPH simulation (+ N-body) \\
+sm2012sph         & = Saitoh \& Makino (2012) SPH (+ N-body) \\
+godunov\_sph      & = Godunov SPH simulation (Inutsuka 2002) \\
+nbody             & = N-body only simulation
 \end{tabular}
 
 \item \var{nbody} : Main N-body integration algorithm \\
 \begin{tabular}{ll}
 lfkdk        & = 2nd-order Leapfrog kick-drift-kick \\
+lfdkd        & = 2nd-order Leapfrog drift-kick-drift \\
 hermite4     & = 4th-order Hermite scheme \\
 hermite4ts   & = Time-symmetric 4th-order Hermite scheme
 \end{tabular}
@@ -281,19 +278,21 @@ hermite4ts   & = Time-symmetric 4th-order Hermite scheme
 \item \var{ic} : Simulation initial conditions \vspace{0.1cm} \\
 \begin{tabular}{ll}
 file              & = Load initial conditions from external file \\
-binary            & = Simple binary star test \\
 bb                & = Boss-Bodenheimer (1979) test \\
+binary            & = Simple binary star test \\
+binaryacc         & = Binary accretion test \\
 box               & = Create a uniform box of gas \\
 cdiscontinuity    & = Contact discontinuity test \\
 khi               & = Kelvin-Helmholtz instability test \\
 noh               & = Noh problem initial conditions \\
 plummer           & = Plummer sphere test \\
-quadruple         & = Simple hierarchical quadruple test \\
+quadruple         & = Simple hierarchical quadruple star test \\
 sedov             & = Sedov blast-wave test \\
 shearflow         & = Shear flow test \\
 shocktube         & = Shocktube test \\
 soundwave         & = 1D soundwave perturbation \\
 sphere            & = Uniform density sphere \\
+triple            & = Simple hierachical triple star test \\
 turbcore          & = Turbulent spherical, self-gravitating core \\
 python            & = Generate initial conditions from python
 \end{tabular}
@@ -302,13 +301,23 @@ python            & = Generate initial conditions from python
 
 \item \var{in\_file} : Input filename (when \var{ic = file})
 
-\item \var{in\_file\_form} : Format of initial conditions file
-                      (ascii)
+\item \var{in\_file\_form} : Format of initial conditions file \\
+\begin{tabular}{ll}
+column           & = Simple column data format \\
+sf/seren\_form   & = SEREN ASCII format \\
+su/seren\_unform & = SEREN binary format
+\end{tabular}
 
-\item \var{out\_file\_form} : Format of outputted snapshot files
-                      (ascii)
+\item \var{out\_file\_form} : Format of outputted snapshot files \\
+\begin{tabular}{ll}
+column           & = Simple column data format \\
+sf/seren\_form   & = SEREN ASCII format \\
+su/seren\_unform & = SEREN binary format
+\end{tabular}
 
 \item \var{tend} : Termination time of the simulation (given in {\var tunit}s)
+
+\item \var{tmax\_wallclock} : Maximum allowed wallclock time for simulation before being terminated
 
 \item \var{dt\_snap} : Snapshot time interval (given in {\var tunit}s)
 
@@ -319,6 +328,12 @@ python            & = Generate initial conditions from python
 \item \var{noutputstep} : Frequency of screen output (in units of integer steps)
 
 \item \var{ndiagstep} : No. of complete block steps between diagnostic output
+
+\item \var{litesnap} : Output `lite' snapshots (for generating movies)? ($0$ or $1$)
+
+\item \var{dt\_litesnap} : Lite snapshot time interval (given in {\var tunit}s)
+
+\item \var{tsnapfirst} : Time of first lite snapshot (given in {\var tunit}s)
 
 \end{itemize}
 
@@ -511,19 +526,20 @@ K & = Kelvin
 
 \item \var{sph\_integration} : SPH particle integration scheme \\
 \begin{tabular}{ll}
-lfkdk   & = 2nd-order Leapfrog kick-drift-kick
+lfkdk   & = 2nd-order Leapfrog kick-drift-kick \\
+lfdkd   & = 2nd-order Leapfrog drift-kick-drift
 \end{tabular}
 
 \item \var{kernel} : SPH kernel function \\
 \begin{tabular}{ll}
 m4        & = M4 Cubic spline kernel \\
 quintic   & = Quintic spline kernel \\
-gaussuan  & = Gaussian kernel (truncated at 3h)
+gaussian  & = Gaussian kernel (truncated at 3h)
 \end{tabular}
 
 \item \var{tabulated\_kernel} : Tabulate kernel function  ($1$ or $0$)
 
-\item \var{h\_fac}     : Particles-per-smoothing length factor (eta in papers)
+\item \var{h\_fac} : Particles-per-smoothing length factor (eta in papers)
 
 \item \var{h\_converge} : Smoothing length iteration convergence tolerance
 
@@ -540,7 +556,8 @@ gaussuan  & = Gaussian kernel (truncated at 3h)
 \begin{tabular}{ll}
 energy\_eqn & = Solve energy equation \\
 isothermal  & = Isothermal EOS \\
-barotropic  & = Barotropic EOS (i.e. for mimicing isothermal + adiabatic phase during protostellar collapse)
+barotropic  & = Barotropic EOS (i.e. for mimicing isothermal + adiabatic phase during protostellar collapse) \\
+barotropic2  & = Similar to barotropic, but using discrete power laws rather than smmoth change
 \end{tabular}
 
 %\item \var{cooling\_law} : Cooling law for gas particles (only applicable if solving the energy equation) \\
@@ -549,10 +566,10 @@ barotropic  & = Barotropic EOS (i.e. for mimicing isothermal + adiabatic phase d
 %linear1 & = Simple linear cooling law
 %\end{tabular}
 
-\item \var{energy\_integration} : Energy integration scheme (only applicable if solving the energy equation) \\
-\begin{tabular}{ll}
-PEC         & = Explicit integration using predict-correct-evaluate scheme
-\end{tabular}
+%\item \var{energy\_integration} : Energy integration scheme (only applicable if solving the energy equation) \\
+%\begin{tabular}{ll}
+%PEC         & = Explicit integration using predict-correct-evaluate scheme
+%\end{tabular}
 
 \item \var{energy\_mult} : Explicit energy integration timestep multiplier
 
@@ -571,8 +588,6 @@ PEC         & = Explicit integration using predict-correct-evaluate scheme
 %\item \var{u\_eq} : Equilibrium internal energy (for simple cooling law)
 
 
-\item \var{time\_dependent\_avisc} : Morris \& Monaghan time-dependent viscosity ($1$ or $0$)
-
 \item \var{avisc} : Artificial viscosity options \\
 \begin{tabular}{ll}
 none  & = No artificial viscosity \\
@@ -585,6 +600,8 @@ none        & = No artificial conductivity \\
 price2008   & = Price (2008) conductivity \\
 wadsley2008 & = Wadsley et al. (2008) conductivity
 \end{tabular}
+
+\item \var{time\_dependent\_avisc} : Morris \& Monaghan time-dependent viscosity ($1$ or $0$)
 
 \item \var{alpha\_visc} : (Maximum) value of alpha viscosity parameter
 
@@ -628,6 +645,16 @@ wadsley2008 & = Wadsley et al. (2008) conductivity
 mean\_h   & = Mean smoothing length softening
 \end{tabular}
 
+\item \var{external\_potential} : External gravitational potential \\
+\begin{tabular}{ll}
+none    & = No external potential \\
+plummer & = Plummer background potential
+\end{tabular}
+
+\item \var{rplummer\_extpot} : Background Plummer potential radius
+
+\item \var{mplummer\_extpot} : Background Plummer potential mass
+
 \end{itemize}
 
 
@@ -640,19 +667,20 @@ mean\_h   & = Mean smoothing length softening
 \item \var{neib\_search} : Neighbour searching algorithm \vspace{0.1cm} \\
 \begin{tabular}{ll}
 bruteforce & = Brute-force (i.e. summation over all particles) \\
-grid       & = Grid with uniform spacing (N.B. doesn't currently work with self-gravity) \\
-binarytree & = Balanced binary tree
+tree       & = Balanced kd-binary tree
 \end{tabular}
 
 \item \var{gravity\_mac} : Gravity-tree cell-opening criteria (N.B. always defulats to geometric for now) \vspace{0.1cm} \\
 \begin{tabular} {ll}
-geometric & = Standard Barnes-Hut geomtric opening angle criterion
+geometric & = Standard Barnes-Hut geomtric opening angle criterion \\
+eigenmac  & = Compute eigenvalues of quadrupole moment tensor for MAC (Hubber et al. 2011)
 \end{tabular}
 
 \item \var{multipole} : Multipole expansion for tree-gravity \vspace{0.1cm} \\
 \begin{tabular} {ll}
-monopole & = Monopole-only terms for cell gravity \\
-quadrupole & = Include quadrupole moment terms for cell gravity
+monopole       & = Monopole-only terms for cell gravity \\
+quadrupole     & = Include quadrupole moment terms for cell gravity \\
+fast\_monopole & = Compute monpoles more efficiently using Taylor expansion about cell COM
 \end{tabular}
 
 \item \var{Nleafmax} : Maximum no. of particles allowed in tree leaf cell
@@ -662,6 +690,8 @@ quadrupole & = Include quadrupole moment terms for cell gravity
 \item \var{ntreestock} : Integer steps inbetween tree re-stocks
 
 \item \var{thetamaxsqd} : Maximum tree gravitational walk opening angle (squared)
+
+\item \var{macerror} : MAC error tolerance for individual cells
 
 \end{itemize}
 
@@ -687,7 +717,13 @@ hermite4ts   & = Time-symmetric 4th-order Hermite scheme
 
 \item \var{nbody\_softening} : Use SPH kernel-softening between star particles? ($1$ or $0$)
 
+%\item \var{perturbers} : Use perturbers when calculating sub-system quantities ($1$ or $0$)
+
 \item \var{gpefrac} : Maximum fraction of total gravitational potential energy from external sources to allow sub-system.
+
+%\item \var{gpesoft} : Maximum fraction of total gravitational potential energy from ...
+
+%\item \var{gpehard} : Maximum fraction of total gravitational potential energy from ...
 
 \end{itemize}
 
@@ -723,6 +759,24 @@ hmult   &= sink radius a multiple of SPH particle smoothing length
 
 
 \end{itemize}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Radiation parameters}
+
+\begin{itemize}
+
+\item \var{radiation} : Main radiation algorithm used \\
+\begin{tabular}{ll}
+none    &= No radiation field \\
+treemc  &= Monte-Carlo radiation transport using a kd-tree
+\end{tabular}
+
+\item \var{Nphoton} : No. of photon packets (for Monte-Carlo radiation transport)
+
+\end{itemize}
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -761,10 +815,17 @@ wall     & = wall at boundary (i.e. reflection of particles)
 
 \begin{itemize}
 
+\item \var{particle\_distribution} : Particle configuration when generating uniform density fluids on the fly \\
+\begin{tabular}{ll}
+random         &= Particle positions generated with random number generator \\
+cubic\_lattice &= Particle positions generated on a uniform cubic lattice \\
+hexagonal\_lattice &= Particle positions generated on a hexagonal closed-packed array
+\end{tabular}
+
+
 \item \var{smooth\_ic} : Smooth any particle quantities around discontinuities
-
 \item \var{com\_frame} : Translate ICs to COM frame before starting simulation
-
+%\item \var{field\_type} : ..
 \item \var{Nsph} : No. of SPH particles
 \item \var{Nstar} : No. of star particles
 
@@ -823,6 +884,8 @@ wall     & = wall at boundary (i.e. reflection of particles)
 \item \var{alpha\_turb}  : Turbulent energy (as multiple of gravitational energy)
 \item \var{power\_turb}  : Power spectrum slope of initial turbulent velocity field
 
+\item \var{randseed}     : Random number seed
+
 
 \end{itemize}
 
@@ -852,12 +915,13 @@ At present, the following initial conditions are included in the code : \newline
 \noindent SPH simulations : \\
 \newline
 \begin{tabular}{ll}
+- binaryacc      &: Binary accretion simulation \\
 - box            &: Create uniform box \\
 - cdiscontinuity &: Contact-discontinuity test \\
 - khi            &: Kelvin-helmholtz instability \\
 - noh            &: Noh shock test \\
 - plummer        &: Plummer sphere (stars + gas, or just gas) \\
-- rti            &: Rayleigh-Taylor instability \\
+%- rti            &: Rayleigh-Taylor instability \\
 - sedov          &: Sedov blastwave test \\
 - shearflow      &: Shearing flow test \\
 - shocktube      &: Simple two-fluid shocktube test \\
@@ -1039,8 +1103,7 @@ In this example, we will create and run a simulation without needing to load-in 
 
 \begin{tabular}{p{14.0cm}}
 \var{from gandalf.analysis.facade import *} \\
-\var{sim = newsim(ndim=2)} \\
-\var{sim.SetParam(`sim',`sph')} \\
+\var{sim = newsim(ndim=2,sim=`sph')} \\
 \var{sim.SetParam(`sph',`gradh')} \\
 \var{sim.SetParam(`ic',`sedov')} \\
 \var{sim.SetParam(`run\_id',`SEDOV1')} \\
@@ -1048,15 +1111,19 @@ In this example, we will create and run a simulation without needing to load-in 
 \var{sim.SetParam(`Nlattice[1]',64)} \\
 \var{sim.SetParam(`boxmin[0]',-1.0)} \\
 \var{sim.SetParam(`boxmin[1]',-1.0)} \\
+\var{sim.SetParam(`boxmax[0]',1.0)} \\
+\var{sim.SetParam(`boxmax[1]',1.0)} \\
 \var{sim.SetParam(`dimensionless',1)} \\
+\var{sim.SetParam(`Nlevels',10)} \\
 \var{sim.SetParam(`tend',0.5)} \\
+\var{sim.SetParam(`tsnapfirst',0.0)} \\
 \var{sim.SetParam(`dt\_snap',0.1)} \\
 \var{setupsim()} \\
 \var{run()} \\
 \end{tabular} \\
 \newline
 
-\noindent In this example, we call the \var{newsim} function passing the dimensionality of the simulation instead of a parameter file.  Therefore the line \var{sim = newsim(ndim=2)} sets up a 2-dimensional simulation, but is otherwise unspecified because no other parameters have been set.  Next, we can set all the parameters that would have otherwise been set in the parameters file.  In this example, we set up an SPH simulation (\var{sim.SetParam(`sim',`sph')}) using the grad-h SPH method (\var{sim.SetParam(`sph',`gradh')}) with initial conditions to perform the Sedov blast-wave test (\var{sim.SetParam(`ic',`sedov')}); (See Section \ref{S:PARAMETERS} for a full description of all parameters).  Once all parameters have been set, we can fully set-up and run the simulation with \var{setupsim()} and \var{run()}.
+\noindent In this example, we call the \var{newsim} function passing the dimensionality of the simulation instead of a parameter file.  Therefore the line \var{sim = newsim(ndim=2,sim=`sph')} sets up a 2-dimensional SPH simulation, but is otherwise unspecified because no other parameters have been set.  Next, we can set all the parameters that would have otherwise been set in the parameters file.  In this example, we set up an SPH simulation with initial conditions to perform the Sedov blast-wave test (\var{sim.SetParam(`ic',`sedov')}); (See Section \ref{S:PARAMETERS} for a full description of all parameters).  Once all parameters have been set, we can fully set-up and run the simulation with \var{setupsim()} and \var{run()}.
 \newpage
 
 
@@ -1160,8 +1227,7 @@ In this example, we demonstrate how to generate some simple initial conditions i
 \var{m = np.ones(Nsph)*(xmax - xmin)/Nsph} \\
 \var{vx = np.ones(Nsph)*vfluid}  \\
 \var{vx[x > 0] = -vfluid} \\
-\var{sim = newsim(ndim=1)} \\
-\var{sim.SetParam(`sim',`sph')} \\
+\var{sim = newsim(ndim=1,sim=`sph')} \\
 \var{sim.SetParam(`ic',`python')} \\
 \var{sim.SetParam(`gas\_eos',`isothermal')}  \\
 \var{sim.SetParam(`Nsph',200)}  \\
@@ -1174,11 +1240,11 @@ In this example, we demonstrate how to generate some simple initial conditions i
 \var{sim.SetParam(`boxmax[0]',xmax)} \\
 \var{sim.SetParam(`run\_id',`SHOCKTUBE1')} \\
 \var{sim.PreSetupForPython()} \\
-\var{sim.ImportArray(x,'x')} \\
-\var{sim.ImportArray(vx,'vx')} \\
-\var{sim.ImportArray(m,'m')}   \\
+\var{sim.ImportArray(x,`x')} \\
+\var{sim.ImportArray(vx,`vx')} \\
+\var{sim.ImportArray(m,`m')}   \\
 \var{sim.SetupSimulation()}  \\
-\var{plot("x","rho")} \\
+\var{plot(`x',`rho')} \\
 \var{plotanalytical(`x',`rho',ic=`shocktube')} \\
 \var{limit(`x',-0.17,0.17,window=`all')} \\
 \var{limit(`rho',0.0,21.0,window=`all')} \\
@@ -1219,31 +1285,34 @@ In this example, we demonstrate how to generate some simple initial conditions f
 \var{vx = np.zeros(Nstar)} \\
 \var{vy = np.zeros(Nstar)} \\
 \var{m = np.zeros(Nstar)} \\
-\var{m[0] = 3.0} \\
-\var{sim = newsim(ndim=1)} \\
-\var{sim.SetParam(`sim',`sph')} \\
+\var{h = 0.000001*np.ones(Nstar)} \\
+\var{m[0] = 3.0;}\,\,\, \var{x[0] = 1.0;}\,\,\,\var{y[0] = 3.0} \\
+\var{m[0] = 4.0;}\,\,\, \var{x[0] = -2.0;}\,\,\,\var{y[0] = -1.0} \\
+\var{m[0] = 5.0;}\,\,\, \var{x[0] = 1.0;}\,\,\,\var{y[0] = -1.0} \\
+\var{sim = newsim(ndim=2,sim=`nbody')} \\
 \var{sim.SetParam(`ic',`python')} \\
-\var{sim.SetParam(`gas\_eos',`isothermal')}  \\
-\var{sim.SetParam(`Nsph',200)}  \\
-\var{sim.SetParam(`tend',0.2)}  \\
-\var{sim.SetParam(`dt\_snap',0.05)} \\
+\var{sim.SetParam(`nbody',`hermite4ts')} \\
+\var{sim.SetParam(`sub\_systems',0)}  \\
+\var{sim.SetParam(`Npec',3)} \\
+\var{sim.SetParam(`Nlevels',1)} \\
+\var{sim.SetParam(`tend',80.0)} \\
+\var{sim.SetParam(`dt\_snap',1.0)} \\
+\var{sim.SetParam(`noutputstep',128)} \\
+\var{sim.SetParam(`ndiagstep',2048)} \\
 \var{sim.SetParam(`dimensionless',1)} \\
-\var{sim.SetParam(`vfluid1[0]',vfluid)} \\
-\var{sim.SetParam(`vfluid2[0]',-vfluid)} \\
-\var{sim.SetParam(`boxmin[0]',xmin)} \\
-\var{sim.SetParam(`boxmax[0]',xmax)} \\
-\var{sim.SetParam(`run\_id',`SHOCKTUBE1')} \\
+\var{sim.SetParam(`run\_id',`BURRAU1')} \\
 \var{sim.PreSetupForPython()} \\
-\var{sim.ImportArray(x,'x')} \\
-\var{sim.ImportArray(vx,'vx')} \\
-\var{sim.ImportArray(m,'m')}   \\
+\var{sim.ImportArray(x,`x',`star')} \\
+\var{sim.ImportArray(y,`y',`star')} \\
+\var{sim.ImportArray(vx,`vx',`star')} \\
+\var{sim.ImportArray(vx,`vy',`star')} \\
+\var{sim.ImportArray(m,`m',`star')}   \\
+\var{sim.ImportArray(h,`h',`star')}   \\
 \var{sim.SetupSimulation()}  \\
-\var{plot("x","rho")} \\
-\var{plotanalytical(`x',`rho',ic=`shocktube')} \\
-\var{limit(`x',-0.17,0.17,window=`all')} \\
-\var{limit(`rho',0.0,21.0,window=`all')} \\
+\var{plot(`x',`y',type=`star')} \\
+\var{limit(`x',-30.0,30.0,window=`all')} \\
+\var{limit(`y',-20.0,40.0,window=`all')} \\
 \var{run()} \\
-\var{savefig(`shocktube.png')} \\
 \var{block()} \\
 \end{tabular} \\
 \newline
@@ -1258,6 +1327,9 @@ In this example, we show how to generate rendered images of some quantity.  Note
 \var{sim = newsim(`khi.dat')} \\
 \var{setupsim()} \\
 \var{render(`x',`y','rho',res=128)} \\
+\var{limit(`x',-0.5,0.5)} \\
+\var{limit(`y',-0.5,0.5)} \\
+\var{limit(`rho',1.0,2.0)} \\
 \var{run()} \\
 \var{block()} \\
 \end{tabular} \\
@@ -1368,6 +1440,44 @@ In this example, we show how to generate a movie from a series of snapshot files
 
 \noindent Before generating a movie, we must first specify the plot commands that are to be used to generate the movie.  For example, in order to show how the particles move on the x-y plane in the movie, we must first plot this with the regaular plot command, \var{plot(`x',`y')}.  Once the commands to generate the plot window have been completed, we then generate the movie with the command \singlecommand{make\_movie(`MOVIE1.mp4')} where the only required argument is the filename of the movie.  The python library will then step through each snapshot in turn, generate the image as a temporary png file, and then attach all images together using ffmpeg.  All temporary png files should then be deleted from memory.
 
+
+\newpage
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Developer notes}
+GANDALF makes heavy use of the object-oriented features in C++ in order to write a flexible code that can used in many different ways while maintaining good performance.  For developers that wish to modify sections of GANDALF, or add new classes or functions, it is recommended to read this section in order to understand some of the ...
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Class hieararchy}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Templates}
+Templates are used in C++ to write generic code that can be used by different data types throughout the code without needing to write multiple versions of essentially the same code.  It can also be used as an optimisation technique for performance, which we explain later.
+
+The simplest case of using templates in GANDALF is for dimensionality.  For almost all of the code, we use the template parameter `\var{ndim}' to generate a version of the code for each dimensionality used, i.e. $1$, $2$ and $3$.  In principle, \var{ndim} could simply be a variable which is defined by the user depending on which dimensionality is used for that simulation.  However, the value of \var{ndim} would then need to be accessed in memory very frequently.  By defining \var{ndim} as a template parameter, \var{ndim} will be defined statically and therefore does not require the overhead of accessing the memory address each time.
+
+Throughout the code, the variables that are used as template parameters are : 
+\begin{itemize}
+\item \var{ndim}
+\item \var{SphKernel}
+\item \var{ParticleType}
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Particle data structures}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Particle array pointers}
+
+
+
 \newpage
 
 
@@ -1378,11 +1488,10 @@ In this example, we show how to generate a movie from a series of snapshot files
 List of known bugs as of version \VERNO.
 
 \begin{itemize}
-\item Neighbour timestep limiter (Saitoh \& Makino 20??) does not work correctly with OpenMP activated at present.
 \item For very short simulations, plots may not be updated correctly since the simulation process finishes before the plotting process has recieved its commands.
-%\item If running a simulation in interactive mode, the simulation variables can become corrupted if previous snapshots are viewed, i.e. once a previous snapshot is viewed, the simulation can no longer be continued.
-%\item If running a simulation in interactive mode and a different simulation is loaded into memory, then it is no longer possible to continue running that simulation.
+\item If running a simulation in interactive mode and a different simulation is loaded into memory, then it is no longer possible to continue running that simulation.
 \item Rendered images are technically not done correct if smoothing lengths are smaller than the grid size (which can often be the case, although the images are fine for viewing/movie purposes).
+\item Rendered images do not correctly calculate automatic limits; must be inserted manually using the limit command.
 \end{itemize}
 
 
@@ -1390,8 +1499,8 @@ List of known bugs as of version \VERNO.
 List of possible new features for future versions.
 
 \begin{itemize}
+\item Finish implementation of MPI
 \item Allow ability to add titles to graphs in matplotlib
-\item Ability to create animations/movies from simulation snapshots
 \item Include analytical solutions for Sedov blast-wave test and freefall collapse test
 \item Plot star/sink-based statistics, e.g. sink mass-functions, binary statistics
 \item Include analysis routines for python for N-body specific statistics, e.g. Q-parameter, $\lambda$-parameter, etc..
