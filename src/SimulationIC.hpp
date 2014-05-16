@@ -84,12 +84,12 @@ void Simulation<ndim>::GenerateIC(void)
     rescale_particle_data = true;
   }
   //---------------------------------------------------------------------------
-  else if (simparams->stringparams["ic"] == "binaryacc")
-    BinaryAccretion();
-  else if (simparams->stringparams["ic"] == "binary")
-    BinaryStar();
   else if (simparams->stringparams["ic"] == "bb")
     BossBodenheimer();
+  else if (simparams->stringparams["ic"] == "binary")
+    BinaryStar();
+  else if (simparams->stringparams["ic"] == "binaryacc")
+    BinaryAccretion();
   else if (simparams->stringparams["ic"] == "box")
     UniformBox();
   else if (simparams->stringparams["ic"] == "cdiscontinuity")
@@ -112,10 +112,10 @@ void Simulation<ndim>::GenerateIC(void)
     SoundWave();
   else if (simparams->stringparams["ic"] == "sphere")
     UniformSphere();
-  else if (simparams->stringparams["ic"] == "turbcore")
-    TurbulentCore();
   else if (simparams->stringparams["ic"] == "triple")
     TripleStar();
+  else if (simparams->stringparams["ic"] == "turbcore")
+    TurbulentCore();
   else if (simparams->stringparams["ic"] == "python")
     return;
   //---------------------------------------------------------------------------

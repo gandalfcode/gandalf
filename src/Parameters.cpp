@@ -166,12 +166,11 @@ void Parameters::SetDefaultValues(void)
   //---------------------------------------------------------------------------
   intparams["ndim"] = 3;
   stringparams["sim"] = "sph";
-  stringparams["sph"] = "gradh";
   stringparams["nbody"] = "hermite4";
 
   // Simulation id, filename and output time parameters
   //---------------------------------------------------------------------------
-  stringparams["ic"] = "cubic_lattice";
+  stringparams["ic"] = "box";
   stringparams["run_id"] = "";
   stringparams["in_file"] = "";
   stringparams["in_file_form"] = "sf";
