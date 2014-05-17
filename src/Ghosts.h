@@ -72,14 +72,22 @@ class Ghosts
 template <int ndim>
 class PeriodicGhosts : public Ghosts<ndim>
 {
-  void CreateGhostParticle(int, int, FLOAT, FLOAT, Sph<ndim> *,int);
 public:
   using Ghosts<ndim>::ghost_range;
 
-  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
-  virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
   virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
 };
+
+template <int ndim, template <int> class ParticleType>
+class PeriodicGhostsSpecific : public PeriodicGhosts<ndim>
+{
+  void CreateGhostParticle(int, int, FLOAT, FLOAT, Sph<ndim> *,int,ParticleType<ndim>*);
+public:
+  using Ghosts<ndim>::ghost_range;
+  virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
+  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
+};
+
 
 template <int ndim>
 class NullGhosts : public Ghosts<ndim>

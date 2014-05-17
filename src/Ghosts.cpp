@@ -50,51 +50,45 @@ void PeriodicGhosts<ndim>::CheckBoundaries
 (DomainBox<ndim> simbox,
  Sph<ndim> *sph)
 {
-  int i;                            // Particle counter
-  SphParticle<ndim> *part;          // Pointer to SPH particle data
-  SphIntParticle<ndim> *partint;    // Pointer to SPH integration data
-
-
   // Loop over all particles and check if any lie outside the periodic box.
   // If so, then re-position with periodic wrapping.
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(i,part,partint) \
-  shared(simbox,sph)
-  for (i=0; i<sph->Nsph; i++) {
-    part = &sph->sphdata[i];
-    partint = &sph->sphintdata[i];
+#pragma omp parallel for default(none) shared(simbox,sph)
+  for (int i=0; i<sph->Nsph; i++) {
+    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
 
-    if (part->r[0] < simbox.boxmin[0])
+
+    if (part.r[0] < simbox.boxmin[0])
       if (simbox.x_boundary_lhs == "periodic") {
-        part->r[0] += simbox.boxsize[0];
-        partint->r0[0] += simbox.boxsize[0];
+        part.r[0] += simbox.boxsize[0];
+        part.r0[0] += simbox.boxsize[0];
       }
-    if (part->r[0] > simbox.boxmax[0])
+    if (part.r[0] > simbox.boxmax[0])
       if (simbox.x_boundary_rhs == "periodic") {
-        part->r[0] -= simbox.boxsize[0];
-        partint->r0[0] -= simbox.boxsize[0];
+        part.r[0] -= simbox.boxsize[0];
+        part.r0[0] -= simbox.boxsize[0];
       }
 
-    if (ndim >= 2 && part->r[1] < simbox.boxmin[1])
+    if (ndim >= 2 && part.r[1] < simbox.boxmin[1])
       if (simbox.y_boundary_lhs == "periodic") {
-        part->r[1] += simbox.boxsize[1];
-        partint->r0[1] += simbox.boxsize[1];
+        part.r[1] += simbox.boxsize[1];
+        part.r0[1] += simbox.boxsize[1];
       }
-    if (ndim >= 2 && part->r[1] > simbox.boxmax[1])
+    if (ndim >= 2 && part.r[1] > simbox.boxmax[1])
       if (simbox.y_boundary_rhs == "periodic") {
-        part->r[1] -= simbox.boxsize[1];
-        partint->r0[1] -= simbox.boxsize[1];
+        part.r[1] -= simbox.boxsize[1];
+        part.r0[1] -= simbox.boxsize[1];
       }
 
-    if (ndim == 3 && part->r[2] < simbox.boxmin[2])
+    if (ndim == 3 && part.r[2] < simbox.boxmin[2])
       if (simbox.z_boundary_lhs == "periodic") {
-        part->r[2] += simbox.boxsize[2];
-        partint->r0[2] += simbox.boxsize[2];
+        part.r[2] += simbox.boxsize[2];
+        part.r0[2] += simbox.boxsize[2];
       }
-    if (ndim == 3 && part->r[2] > simbox.boxmax[2])
+    if (ndim == 3 && part.r[2] > simbox.boxmax[2])
       if (simbox.z_boundary_rhs == "periodic") {
-        part->r[2] -= simbox.boxsize[2];
-        partint->r0[2] -= simbox.boxsize[2];
+        part.r[2] -= simbox.boxsize[2];
+        part.r0[2] -= simbox.boxsize[2];
       }
 
   }
@@ -110,21 +104,23 @@ void PeriodicGhosts<ndim>::CheckBoundaries
 /// Search domain to create any required ghost particles near any boundaries.
 /// Currently only searches to create periodic or mirror ghost particles.
 //=============================================================================
-template <int ndim>
-void PeriodicGhosts<ndim>::SearchGhostParticles
+template <int ndim, template <int> class ParticleType>
+void PeriodicGhostsSpecific<ndim, ParticleType >::SearchGhostParticles
 (FLOAT tghost,                      ///< Ghost particle 'lifetime'
  DomainBox<ndim> simbox,            ///< Simulation box structure
  Sph<ndim> *sph)                    ///< Sph object pointer
 {
   int i;                                                // Particle counter
   FLOAT kernrange = sph->kernp->kernrange*sph->kernfac; // Kernel extent
-  SphParticle<ndim>* sphdata = sph->sphdata;            // SPH particle data
+
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
 
   // Set all relevant particle counters
   sph->Nghost    = 0;
   sph->NPeriodicGhost = 0;
   sph->Nghostmax = sph->Nsphmax - sph->Nsph;
   sph->Ntot      = sph->Nsph;
+
 
   // If all boundaries are open, immediately return to main loop
   if (simbox.x_boundary_lhs == "open" && simbox.x_boundary_rhs == "open" &&
@@ -139,23 +135,26 @@ void PeriodicGhosts<ndim>::SearchGhostParticles
   if ((simbox.x_boundary_lhs == "open" && 
        simbox.x_boundary_rhs == "open") == 0) {
     for (i=0; i<sph->Ntot; i++) {
-      if (sphdata[i].r[0] + min(0.0,sphdata[i].v[0]*tghost) <
-          simbox.boxmin[0] + ghost_range*kernrange*sphdata[i].h) {
+
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+
+      if (part.r[0] + min(0.0,part.v[0]*tghost) <
+          simbox.boxmin[0] + ghost_range*kernrange*part.h) {
         if (simbox.x_boundary_lhs == "periodic")
-          CreateGhostParticle(i,0,sphdata[i].r[0] + simbox.boxsize[0],
-                              sphdata[i].v[0],sph,x_lhs_periodic);
+          CreateGhostParticle(i,0,part.r[0] + simbox.boxsize[0],
+                              part.v[0],sph,x_lhs_periodic,sphdata);
         if (simbox.x_boundary_lhs == "mirror")
-          CreateGhostParticle(i,0,2.0*simbox.boxmin[0] - sphdata[i].r[0],
-                              -sphdata[i].v[0],sph,x_lhs_mirror);
+          CreateGhostParticle(i,0,2.0*simbox.boxmin[0] - part.r[0],
+                              -part.v[0],sph,x_lhs_mirror,sphdata);
       }
-      if (sphdata[i].r[0] + max(0.0,sphdata[i].v[0]*tghost) >
-          simbox.boxmax[0] - ghost_range*kernrange*sphdata[i].h) {
+      if (part.r[0] + max(0.0,part.v[0]*tghost) >
+          simbox.boxmax[0] - ghost_range*kernrange*part.h) {
         if (simbox.x_boundary_rhs == "periodic")
-          CreateGhostParticle(i,0,sphdata[i].r[0] - simbox.boxsize[0],
-                              sphdata[i].v[0],sph,x_rhs_periodic);
+          CreateGhostParticle(i,0,part.r[0] - simbox.boxsize[0],
+                              part.v[0],sph,x_rhs_periodic,sphdata);
         if (simbox.x_boundary_rhs == "mirror")
-          CreateGhostParticle(i,0,2.0*simbox.boxmax[0] - sphdata[i].r[0],
-                              -sphdata[i].v[0],sph,x_rhs_mirror);
+          CreateGhostParticle(i,0,2.0*simbox.boxmax[0] - part.r[0],
+                              -part.v[0],sph,x_rhs_mirror,sphdata);
       }
     }
     sph->Ntot = sph->Nsph + sph->Nghost;
@@ -167,23 +166,26 @@ void PeriodicGhosts<ndim>::SearchGhostParticles
   if (ndim >= 2 && (simbox.y_boundary_lhs == "open" && 
 		    simbox.y_boundary_rhs == "open") == 0) {
     for (i=0; i<sph->Ntot; i++) {
-      if (sphdata[i].r[1] + min(0.0,sphdata[i].v[1]*tghost) <
-          simbox.boxmin[1] + ghost_range*kernrange*sphdata[i].h) {
+
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+
+      if (part.r[1] + min(0.0,part.v[1]*tghost) <
+          simbox.boxmin[1] + ghost_range*kernrange*part.h) {
         if (simbox.y_boundary_lhs == "periodic")
-          CreateGhostParticle(i,1,sphdata[i].r[1] + simbox.boxsize[1],
-                              sphdata[i].v[1],sph,y_lhs_periodic);
+          CreateGhostParticle(i,1,part.r[1] + simbox.boxsize[1],
+                              part.v[1],sph,y_lhs_periodic,sphdata);
 	    if (simbox.y_boundary_lhs == "mirror")
-          CreateGhostParticle(i,1,2.0*simbox.boxmin[1] - sphdata[i].r[1],
-                              -sphdata[i].v[1],sph,y_lhs_mirror);
+          CreateGhostParticle(i,1,2.0*simbox.boxmin[1] - part.r[1],
+                              -part.v[1],sph,y_lhs_mirror,sphdata);
       }
-      if (sphdata[i].r[1] + max(0.0,sphdata[i].v[1]*tghost) >
-          simbox.boxmax[1] - ghost_range*kernrange*sphdata[i].h) {
+      if (part.r[1] + max(0.0,part.v[1]*tghost) >
+          simbox.boxmax[1] - ghost_range*kernrange*part.h) {
         if (simbox.y_boundary_rhs == "periodic")
-          CreateGhostParticle(i,1,sphdata[i].r[1] - simbox.boxsize[1],
-                              sphdata[i].v[1],sph,y_rhs_periodic);
+          CreateGhostParticle(i,1,part.r[1] - simbox.boxsize[1],
+                              part.v[1],sph,y_rhs_periodic,sphdata);
         if (simbox.y_boundary_rhs == "mirror")
-          CreateGhostParticle(i,1,2.0*simbox.boxmax[1] - sphdata[i].r[1],
-                              -sphdata[i].v[1],sph,y_rhs_mirror);
+          CreateGhostParticle(i,1,2.0*simbox.boxmax[1] - part.r[1],
+                              -part.v[1],sph,y_rhs_mirror,sphdata);
       }
     }
     sph->Ntot = sph->Nsph + sph->Nghost;
@@ -195,23 +197,26 @@ void PeriodicGhosts<ndim>::SearchGhostParticles
   if (ndim == 3 && (simbox.z_boundary_lhs == "open" && 
 		    simbox.z_boundary_rhs == "open") == 0) {
     for (i=0; i<sph->Ntot; i++) {
-      if (sphdata[i].r[2] + min(0.0,sphdata[i].v[2]*tghost) <
-          simbox.boxmin[2] + ghost_range*kernrange*sphdata[i].h) {
+
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+
+      if (part.r[2] + min(0.0,part.v[2]*tghost) <
+          simbox.boxmin[2] + ghost_range*kernrange*part.h) {
         if (simbox.z_boundary_lhs == "periodic")
-          CreateGhostParticle(i,2,sphdata[i].r[2] + simbox.boxsize[2],
-                              sphdata[i].v[2],sph,z_lhs_periodic);
+          CreateGhostParticle(i,2,part.r[2] + simbox.boxsize[2],
+                              part.v[2],sph,z_lhs_periodic,sphdata);
         if (simbox.z_boundary_lhs == "mirror")
-          CreateGhostParticle(i,2,2.0*simbox.boxmin[2] - sphdata[i].r[2],
-                              -sphdata[i].v[2],sph,z_lhs_mirror);
+          CreateGhostParticle(i,2,2.0*simbox.boxmin[2] - part.r[2],
+                              -part.v[2],sph,z_lhs_mirror,sphdata);
       }
-      if (sphdata[i].r[2] + max(0.0,sphdata[i].v[2]*tghost) >
-          simbox.boxmax[2] - ghost_range*kernrange*sphdata[i].h) {
+      if (part.r[2] + max(0.0,part.v[2]*tghost) >
+          simbox.boxmax[2] - ghost_range*kernrange*part.h) {
         if (simbox.z_boundary_rhs == "periodic")
-          CreateGhostParticle(i,2,sphdata[i].r[2] - simbox.boxsize[2],
-                              sphdata[i].v[2],sph,z_rhs_periodic);
+          CreateGhostParticle(i,2,part.r[2] - simbox.boxsize[2],
+                              part.v[2],sph,z_rhs_periodic,sphdata);
         if (simbox.z_boundary_rhs == "mirror")
-          CreateGhostParticle(i,2,2.0*simbox.boxmax[2] - sphdata[i].r[2],
-                              -sphdata[i].v[2],sph,z_rhs_mirror);
+          CreateGhostParticle(i,2,2.0*simbox.boxmax[2] - part.r[2],
+                              -part.v[2],sph,z_rhs_mirror,sphdata);
       }
     }
     sph->Ntot = sph->Nsph + sph->Nghost;
@@ -236,14 +241,15 @@ void PeriodicGhosts<ndim>::SearchGhostParticles
 /// (i) a real SPH particle (i < Nsph), or 
 /// (ii) an existing ghost particle (i >= Nsph).
 //=============================================================================
-template <int ndim>
-void PeriodicGhosts<ndim>::CreateGhostParticle
+template <int ndim, template <int> class ParticleType>
+void PeriodicGhostsSpecific<ndim, ParticleType >::CreateGhostParticle
 (int i,                             ///< [in] i.d. of original particle
  int k,                             ///< [in] Boundary dimension for new ghost
  FLOAT rk,                          ///< [in] k-position of original particle
  FLOAT vk,                          ///< [in] k-velocity of original particle
  Sph<ndim> *sph,                    ///< [inout] SPH particle object pointer
- int ghosttype)                     ///< ..
+ int ghosttype,                     ///< ..
+ ParticleType<ndim>* sphdata)       ///< [in] Array with the SPH particles
 {
   // Increase ghost counter and check there's enough space in memory
   if (sph->Nghost > sph->Nghostmax) {
@@ -251,19 +257,21 @@ void PeriodicGhosts<ndim>::CreateGhostParticle
     ExceptionHandler::getIstance().raise(message);
   }
 
+  int id_new_ghost = sph->Nsph + sph->Nghost;
+
   // If there's enough memory, create ghost particle in arrays
-  sph->sphdata[sph->Nsph + sph->Nghost] = sph->sphdata[i];
-  sph->sphdata[sph->Nsph + sph->Nghost].r[k] = rk;
-  sph->sphdata[sph->Nsph + sph->Nghost].v[k] = vk;
-  sph->sphdata[sph->Nsph + sph->Nghost].active = false;
-  sph->sphdata[sph->Nsph + sph->Nghost].itype = ghosttype;
+  sphdata[id_new_ghost] = sphdata[i];
+  sphdata[id_new_ghost].r[k] = rk;
+  sphdata[id_new_ghost].v[k] = vk;
+  sphdata[id_new_ghost].active = false;
+  sphdata[id_new_ghost].itype = ghosttype;
 
   // Record id of original particle for later copying
   //if (i >= sph->Nsph)
-  //  sph->sphdata[sph->Nsph + sph->Nghost].iorig = sph->sphdata[i].iorig;
+  //  sph->sphdata[sph->Nsph + sph->Nghost].iorig = sphdata[i].iorig;
   //else
   //  sph->sphdata[sph->Nsph + sph->Nghost].iorig = i;
-  sph->sphdata[sph->Nsph + sph->Nghost].iorig = i;
+  sphdata[id_new_ghost].iorig = i;
 
   sph->Nghost = sph->Nghost + 1;
 
@@ -276,8 +284,8 @@ void PeriodicGhosts<ndim>::CreateGhostParticle
 //  Ghosts::CopySphDataToGhosts
 /// Copy any newly calculated data from original SPH particles to ghosts.
 //=============================================================================
-template <int ndim>
-void PeriodicGhosts<ndim>::CopySphDataToGhosts
+template <int ndim, template <int> class ParticleType>
+void PeriodicGhostsSpecific<ndim, ParticleType >::CopySphDataToGhosts
 (DomainBox<ndim> simbox,
  Sph<ndim> *sph)
 {
@@ -285,42 +293,36 @@ void PeriodicGhosts<ndim>::CopySphDataToGhosts
   int iorig;                        // Original (real) particle id
   int itype;                        // Ghost particle type
   int j;                            // Ghost particle counter
-  int k;                            // Dimension counter
-  FLOAT rp[ndim];                   // Particle position
-  FLOAT vp[ndim];                   // Particle velocity
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
 
   debug2("[SphSimulation::CopySphDataToGhosts]");
 
+
   //---------------------------------------------------------------------------
-//#pragma omp parallel for default(none) private(i,iorig,itype,j,k) shared(simbox,sph)
+//#pragma omp parallel for default(none) private(i,iorig,itype,j) shared(simbox,sph,sphdata)
   for (j=0; j<sph->NPeriodicGhost; j++) {
     i = sph->Nsph + j;
-    iorig = sph->sphdata[i].iorig;
-    itype = sph->sphdata[i].itype;
+    iorig = sphdata[i].iorig;
+    itype = sphdata[i].itype;
 
-    //for (k=0; k<ndim; k++) rp[k] = sph->sphdata[i].r[k];
-    //for (k=0; k<ndim; k++) vp[k] = sph->sphdata[i].v[k];
-    
-    sph->sphdata[i] = sph->sphdata[iorig];
-    sph->sphdata[i].iorig = iorig;
-    sph->sphdata[i].itype = itype;
-    sph->sphdata[i].active = false;
-    //for (k=0; k<ndim; k++) sph->sphdata[i].r[k] = rp[k];
-    //for (k=0; k<ndim; k++) sph->sphdata[i].v[k] = vp[k];
+    sphdata[i] = sphdata[iorig];
+    sphdata[i].iorig = iorig;
+    sphdata[i].itype = itype;
+    sphdata[i].active = false;
 
     // Modify ghost position based on ghost type
     if (itype == x_lhs_periodic)
-      sph->sphdata[i].r[0] += simbox.boxsize[0];
+      sphdata[i].r[0] += simbox.boxsize[0];
     else if (itype == x_rhs_periodic)
-      sph->sphdata[i].r[0] -= simbox.boxsize[0];
-    else if (itype == y_lhs_periodic)
-      sph->sphdata[i].r[1] += simbox.boxsize[1];
-    else if (itype == y_rhs_periodic)
-      sph->sphdata[i].r[1] -= simbox.boxsize[1];
-    else if (itype == z_lhs_periodic)
-      sph->sphdata[i].r[2] += simbox.boxsize[1];
-    else if (itype == z_rhs_periodic)
-      sph->sphdata[i].r[2] -= simbox.boxsize[1];
+      sphdata[i].r[0] -= simbox.boxsize[0];
+    else if (itype == y_lhs_periodic && ndim > 1)
+      sphdata[i].r[1] += simbox.boxsize[1];
+    else if (itype == y_rhs_periodic && ndim > 1)
+      sphdata[i].r[1] -= simbox.boxsize[1];
+    else if (itype == z_lhs_periodic && ndim == 3)
+      sphdata[i].r[2] += simbox.boxsize[2];
+    else if (itype == z_rhs_periodic && ndim == 3)
+      sphdata[i].r[2] -= simbox.boxsize[2];
     
   }
   //---------------------------------------------------------------------------
@@ -330,6 +332,10 @@ void PeriodicGhosts<ndim>::CopySphDataToGhosts
 
 
 
+//=============================================================================
+//  NullGhosts::CheckBoundaries
+/// Empty function when no ghost particles are required.
+//=============================================================================
 template <int ndim>
 void NullGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
 {
@@ -338,6 +344,10 @@ void NullGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
 
 
 
+//=============================================================================
+//  NullGhosts::SearchGhostParticles
+/// Empty function when no ghost particles are required.
+//=============================================================================
 template <int ndim>
 void NullGhosts<ndim>::SearchGhostParticles
 (FLOAT tghost,                      ///< Ghost particle 'lifetime'
@@ -346,16 +356,20 @@ void NullGhosts<ndim>::SearchGhostParticles
 {
 
   // Set all relevant particle counters
-  sph->Nghost    = 0;
+  sph->Nghost         = 0;
   sph->NPeriodicGhost = 0;
-  sph->Nghostmax = sph->Nsphmax - sph->Nsph;
-  sph->Ntot      = sph->Nsph;
+  sph->Nghostmax      = sph->Nsphmax - sph->Nsph;
+  sph->Ntot           = sph->Nsph;
 
- return;
+  return;
 }
 
 
 
+//=============================================================================
+//  NullGhosts::CopySphDataToGhosts
+/// Empty function when no ghost particles are required.
+//=============================================================================
 template <int ndim>
 void NullGhosts<ndim>::CopySphDataToGhosts(DomainBox<ndim> simbox, Sph<ndim> *sph) {
   return;
@@ -364,6 +378,10 @@ void NullGhosts<ndim>::CopySphDataToGhosts(DomainBox<ndim> simbox, Sph<ndim> *sp
 
 
 #if defined MPI_PARALLEL
+//=============================================================================
+//  MpiGhosts::CheckBoundaries
+/// ..
+//=============================================================================
 template <int ndim>
 void MPIGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
 {
@@ -373,9 +391,10 @@ void MPIGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
 
 
 //=============================================================================
-//  MPIGhosts::SearchGhostParticles
+//  MpiGhosts::SearchGhostParticles
 /// Handle control to MpiControl to compute particles to send to other nodes
-/// and receive from them, then copy received ghost particles inside the main arrays
+/// and receive from them, then copy received ghost particles inside the main 
+/// arrays.
 //=============================================================================
 template <int ndim>
 void MPIGhosts<ndim>::SearchGhostParticles
@@ -389,7 +408,8 @@ void MPIGhosts<ndim>::SearchGhostParticles
   int Nmpighosts = mpicontrol->SendReceiveGhosts(&ghost_array, sph);
 
   if (sph->Ntot + Nmpighosts > sph->Nsphmax) {
-    cout << "Error: not enough memory for MPI ghosts!!! " << Nmpighosts << " " << sph->Ntot << " " << sph->Nsphmax<<endl;
+    cout << "Error: not enough memory for MPI ghosts!!! " << Nmpighosts 
+         << " " << sph->Ntot << " " << sph->Nsphmax<<endl;
     ExceptionHandler::getIstance().raise("");
   }
 
@@ -406,19 +426,26 @@ void MPIGhosts<ndim>::SearchGhostParticles
   sph->Ntot += Nmpighosts;
 
   if (sph->Nghost > sph->Nghostmax || sph->Ntot > sph->Nsphmax) {
-	cout << "Error: not enough memory for MPI ghosts!!! " << Nmpighosts << " " << sph->Ntot << " " << sph->Nsphmax<<endl;
+	cout << "Error: not enough memory for MPI ghosts!!! " << Nmpighosts 
+             << " " << sph->Ntot << " " << sph->Nsphmax<<endl;
 	ExceptionHandler::getIstance().raise("");
   }
 
 }
 
 
-template <int ndim>
-void MPIGhosts<ndim>::CopySphDataToGhosts(DomainBox<ndim> simbox, Sph<ndim> *sph) {
 
+//=============================================================================
+//  MpiGhosts::CopySphDataToGhosts
+/// ..
+//=============================================================================
+template <int ndim>
+void MPIGhosts<ndim>::CopySphDataToGhosts
+(DomainBox<ndim> simbox, Sph<ndim> *sph) 
+{
   SphParticle<ndim>* ghost_array;
-  int Nmpighosts = mpicontrol->UpdateGhostParticles(&ghost_array);
   SphParticle<ndim>* main_array = sph->sphdata;
+  int Nmpighosts = mpicontrol->UpdateGhostParticles(&ghost_array);
   int start_index = sph->Nsph + sph->NPeriodicGhost;
 
   for (int j=0; j<Nmpighosts; j++) {
@@ -437,9 +464,15 @@ void MPIGhosts<ndim>::CopySphDataToGhosts(DomainBox<ndim> simbox, Sph<ndim> *sph
 template class NullGhosts<1>;
 template class NullGhosts<2>;
 template class NullGhosts<3>;
-template class PeriodicGhosts<1>;
-template class PeriodicGhosts<2>;
-template class PeriodicGhosts<3>;
+template class PeriodicGhostsSpecific<1, GradhSphParticle>;
+template class PeriodicGhostsSpecific<2, GradhSphParticle>;
+template class PeriodicGhostsSpecific<3, GradhSphParticle>;
+template class PeriodicGhostsSpecific<1, GodunovSphParticle>;
+template class PeriodicGhostsSpecific<2, GodunovSphParticle>;
+template class PeriodicGhostsSpecific<3, GodunovSphParticle>;
+template class PeriodicGhostsSpecific<1, SM2012SphParticle>;
+template class PeriodicGhostsSpecific<2, SM2012SphParticle>;
+template class PeriodicGhostsSpecific<3, SM2012SphParticle>;
 #ifdef MPI_PARALLEL
 template class MPIGhosts<1>;
 template class MPIGhosts<2>;

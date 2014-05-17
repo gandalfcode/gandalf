@@ -29,9 +29,22 @@
 
 #include "Precision.h"
 #include "Constants.h"
+#include "Nbody.h"
 #include "Parameters.h"
 #include "SphParticle.h"
+#include "SphNeighbourSearch.h"
 #include "SimUnits.h"
+
+
+// Forward declaration of Sph to break circular dependency
+template <int ndim>
+class Sph;
+
+template <int ndim>
+class SphNeighbourSearch;
+
+template <int ndim>
+class EOS;
 
 
 
@@ -190,6 +203,39 @@ class Adiabatic: public EOS<ndim>
 
   FLOAT temp0;
   FLOAT mu_bar;
+
+};
+
+
+
+//=============================================================================
+//  Class IonisingRadiation
+/// \brief   Ionising radiation from stars/sinks including general EOS
+/// \details Ionising radiation from stars/sinks including general EOS
+/// \author  S. Balfour, D. A. Hubber
+/// \date    24/04/2014
+//=============================================================================
+template <int ndim>
+class IonisingRadiation: public EOS<ndim>
+{
+  using EOS<ndim>::gamma;
+  using EOS<ndim>::gammam1;
+
+ public:
+
+  IonisingRadiation(string, FLOAT, FLOAT, FLOAT, FLOAT, 
+                    SimUnits *, SphNeighbourSearch<ndim> *);
+  ~IonisingRadiation();
+
+  FLOAT Pressure(SphParticle<ndim> &);
+  FLOAT EntropicFunction(SphParticle<ndim> &);
+  FLOAT SoundSpeed(SphParticle<ndim> &);
+  FLOAT Temperature(SphParticle<ndim> &);
+  FLOAT SpecificInternalEnergy(SphParticle<ndim> &);
+
+  FLOAT temp0;
+  FLOAT mu_bar;
+  EOS<ndim> *eos;
 
 };
 #endif

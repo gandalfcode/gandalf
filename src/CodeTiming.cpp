@@ -1,6 +1,7 @@
 //=============================================================================
 //  CodeTiming.cpp
-//  ...
+//  Contains class functions for recording CPU and wall-clock times for 
+//  marked sections of the code.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -34,6 +35,7 @@
 #include "CodeTiming.h"
 #include "Debug.h"
 using namespace std;
+
 
 
 //=============================================================================
@@ -106,9 +108,10 @@ void CodeTiming::EndTimingSection
 {
   int iblock;                       // Integer i.d. of timing block in arrays
 
- // If block not in list, then create new entry to timing block
-  if ( blockno.find(s1) == blockno.end() ) {
+ // If block not in list, then print error message and return
+  if (blockno.find(s1) == blockno.end()) {
     cout << "Error : looking for incorrect timing block : " << s1 << endl;
+    return;
   }
   // Else, look-up existing timing block
   else {

@@ -258,7 +258,10 @@ static inline FLOAT GaussRand(FLOAT mean, FLOAT sigma)
 
 
 
-
+//=============================================================================
+//  clamp
+//  ...
+//=============================================================================
 inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max) {
   bool smaller = value < min;
   if (smaller) return min;
@@ -268,6 +271,11 @@ inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max) {
 }
 
 
+
+//=============================================================================
+//  ParticleBoxOverlap
+//  ...
+//=============================================================================
 template <int ndim>
 inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box) {
 
@@ -289,6 +297,11 @@ inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box) {
 }
 
 
+
+//=============================================================================
+//  ParticleInBox
+//  ..
+//=============================================================================
 template <int ndim>
 inline bool ParticleInBox (SphParticle<ndim>& part, Box<ndim>& box) {
   for (int k=0; k<ndim; k++) {

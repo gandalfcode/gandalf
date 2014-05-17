@@ -52,10 +52,13 @@ GradhSph<ndim, kernelclass>::GradhSph(int hydro_forces_aux,
 	    FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
 	    acondenum acond_aux, tdaviscenum tdavisc_aux, string gas_eos_aux, 
             string KernelName):
-  Sph<ndim>(hydro_forces_aux,self_gravity_aux, alpha_visc_aux, beta_visc_aux,
+  Sph<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux, beta_visc_aux,
 	    h_fac_aux, h_converge_aux, avisc_aux, acond_aux, tdavisc_aux, 
-            gas_eos_aux, KernelName),
+            gas_eos_aux, KernelName, sizeof(GradhSphParticle<ndim>)),
   kern(kernelclass<ndim>(KernelName))
+  //kernp(&kern),
+  //kernfac(1.0),
+  //kernfacsqd(1.0)
 {
   this->kernp = &kern;
   this->kernfac = (FLOAT) 1.0;
@@ -71,6 +74,128 @@ GradhSph<ndim, kernelclass>::GradhSph(int hydro_forces_aux,
 template <int ndim, template<int> class kernelclass>
 GradhSph<ndim, kernelclass>::~GradhSph()
 {
+}
+
+
+
+//=============================================================================
+//  GradhSph::AllocateMemory
+/// Allocate main SPH particle array.  Currently sets the maximum memory to
+/// be 10 times the numbers of particles to allow space for ghost particles
+/// and new particle creation.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
+{
+  debug2("[GradhSph::AllocateMemory]");
+
+  if (N > Nsphmax || !allocated) {
+    if (allocated) DeallocateMemory();
+
+    // Set conservative estimate for maximum number of particles, assuming
+    // extra space required for periodic ghost particles
+    if (Nsphmax < N)
+      Nsphmax = pow(pow(N,invndim) + 8.0*kernp->kernrange,ndim);
+    //Nsphmax = N;
+
+    iorder = new int[Nsphmax];
+    rsph = new FLOAT[ndim*Nsphmax];
+    sphdata = new struct GradhSphParticle<ndim>[Nsphmax];
+    allocated = true;
+    sphdata_unsafe = sphdata;
+  }
+
+  return;
+}
+
+
+//=============================================================================
+//  GradhSph::DeallocateMemory
+/// Deallocate main array containing SPH particle data.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void GradhSph<ndim, kernelclass>::DeallocateMemory(void)
+{
+  debug2("[GradhSph::DeallocateMemory]");
+
+  if (allocated) {
+    delete[] sphdata;
+    delete[] rsph;
+    delete[] iorder;
+  }
+  allocated = false;
+
+  return;
+}
+
+
+
+//=============================================================================
+//  GradhSph::DeleteDeadParticles
+/// Delete 'dead' (e.g. accreted) SPH particles from the main arrays.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void GradhSph<ndim, kernelclass>::DeleteDeadParticles(void)
+{
+  int i;                            // Particle counter
+  int itype;
+  int Ndead = 0;                    // No. of 'dead' particles
+  int Nlive = 0;                    // No. of 'live' particles
+  int ilast = Nsph;                 // Aux. counter of last free slot
+
+  debug2("[GradhSph::DeleteDeadParticles]");
+
+
+  // Determine new order of particles in arrays.
+  // First all live particles and then all dead particles
+  for (i=0; i<Nsph; i++) {
+    itype = sphdata[i].itype;
+    while (itype == dead) {
+      Ndead++;
+      ilast--;
+      if (i < ilast) {
+        sphdata[i] = sphdata[ilast];
+        sphdata[ilast].itype = dead;
+        sphdata[ilast].m = 0.0;
+      }
+      else break;
+      itype = sphdata[i].itype;
+    };
+    if (i >= ilast - 1) break;
+  }
+
+  // Reorder all arrays following with new order, with dead particles at end
+  if (Ndead == 0) return;
+
+  // Reduce particle counters once dead particles have been removed
+  Nsph -= Ndead;
+  Ntot -= Ndead;
+  for (i=0; i<Nsph; i++) iorder[i] = i;
+
+
+  return;
+}
+
+
+
+//=============================================================================
+//  GradhSph::ReorderParticles
+/// Delete selected SPH particles from the main arrays.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void GradhSph<ndim, kernelclass>::ReorderParticles(void)
+{
+  int i;                                // Particle counter
+  GradhSphParticle<ndim> *sphdataaux;   // Aux. SPH particle array
+
+  sphdataaux = new GradhSphParticle<ndim>[Nsph];
+
+  for (i=0; i<Nsph; i++) sphdataaux[i] = sphdata[i];
+  for (i=0; i<Nsph; i++) sphdata[i] = sphdataaux[iorder[i]];
+
+  delete[] sphdataaux;
+
+  return;
 }
 
 
@@ -93,7 +218,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
  FLOAT *mu,                         ///< [in] Array of m*u (not needed here)
  FLOAT *drsqd,                      ///< [in] Array of neib. distances squared
  FLOAT *gpot,                       ///< [in] Array of neib. grav. potentials
- SphParticle<ndim> &parti,          ///< [inout] Particle i data
+ SphParticle<ndim> &part,           ///< [inout] Particle i data
  Nbody<ndim> *nbody)                ///< [in] Main N-body object
 {
   int j;                            // Neighbour id
@@ -105,6 +230,8 @@ int GradhSph<ndim, kernelclass>::ComputeH
   FLOAT h_upper_bound = hmax;       // Upper bound on h
   FLOAT invhsqd;                    // (1 / h)^2
   FLOAT ssqd;                       // Kernel parameter squared, (r/h)^2
+
+  GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
 
 
   // If there are sink particles present, check if the particle is inside one
@@ -189,20 +316,17 @@ int GradhSph<ndim, kernelclass>::ComputeH
   parti.h = max(h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim),
                 h_lower_bound);
   parti.invh = (FLOAT) 1.0/parti.h;
+  parti.hfactor = pow(parti.invh,ndim+1);
   parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
   parti.invomega = (FLOAT) 1.0 + 
     Sph<ndim>::invndim*parti.h*parti.invomega*parti.invrho;
   parti.invomega = (FLOAT) 1.0/parti.invomega;
   parti.zeta = -Sph<ndim>::invndim*parti.h*parti.zeta*
     parti.invrho*parti.invomega;
+  parti.div_v = (FLOAT) 0.0;
 
   // Set important thermal variables here
-  parti.u = eos->SpecificInternalEnergy(parti);
-  parti.sound = eos->SoundSpeed(parti);
-  parti.hfactor = pow(parti.invh,ndim+1);
-  parti.pfactor = eos->Pressure(parti)*parti.invrho*
-    parti.invrho*parti.invomega;
-  parti.div_v = (FLOAT) 0.0;
+  ComputeThermalProperties(parti);
   
   // Calculate the minimum neighbour potential
   // (used later to identify new sinks)
@@ -242,6 +366,28 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
 
 //=============================================================================
+//  GradhSph::ComputeThermalProperties
+/// Compute all thermal properties for grad-h SPH method for given particle.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void GradhSph<ndim, kernelclass>::ComputeThermalProperties
+(SphParticle<ndim> &part_gen)        ///< [inout] Particle i data
+{
+  GradhSphParticle<ndim>& part = 
+    static_cast<GradhSphParticle<ndim> &> (part_gen);
+
+  part.u = eos->SpecificInternalEnergy(part);
+  part.sound = eos->SoundSpeed(part);
+  part.press = eos->Pressure(part);
+  part.pfactor = eos->Pressure(part)*part.invrho*
+    part.invrho*part.invomega;
+
+  return;
+}
+
+
+
+//=============================================================================
 //  GradhSph::ComputeSphHydroForces
 /// Compute SPH neighbour force pairs for 
 /// (i) All neighbour interactions of particle i with i.d. j > i,
@@ -258,8 +404,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
  FLOAT *drmag,                      ///< [in] Distances of gather neighbours
  FLOAT *invdrmag,                   ///< [in] Inverse distances of gather neibs
  FLOAT *dr,                         ///< [in] Position vector of gather neibs
- SphParticle<ndim> &parti,          ///< [inout] Particle i data
- SphParticle<ndim> *neibpart)       ///< [inout] Neighbour particle data
+ SphParticle<ndim> &part,           ///< [inout] Particle i data
+ SphParticle<ndim> *neibpart_gen)   ///< [inout] Neighbour particle data
 {
   int j;                            // Neighbour list id
   int jj;                           // Aux. neighbour counter
@@ -274,6 +420,9 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   FLOAT paux;                       // Aux. pressure force variable
   FLOAT uaux;                       // Aux. internal energy variable
   FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
+
+  GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
+  GradhSphParticle<ndim>* neibpart = static_cast<GradhSphParticle<ndim>* > (neibpart_gen);
 
 
   // Loop over all potential neighbours in the list
@@ -368,29 +517,28 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 (int i,                             ///< [in] id of particle
  int Nneib,                         ///< [in] No. of neins in neibpart array
  int *neiblist,                     ///< [in] id of gather neibs in neibpart
- SphParticle<ndim> &parti,          ///< [inout] Particle i data
- SphParticle<ndim> *neibpart)       ///< [inout] Neighbour particle data
+ SphParticle<ndim> &part,          ///< [inout] Particle i data
+ SphParticle<ndim> *neibpart_gen)       ///< [inout] Neighbour particle data
 {
   int j;                            // Neighbour list id
   int jj;                           // Aux. neighbour counter
   int k;                            // Dimension counter
   FLOAT dr[ndim];                   // Relative position vector
-  FLOAT drmag;                      // ..
+  FLOAT drmag;                      // Distance
   FLOAT dv[ndim];                   // Relative velocity vector
   FLOAT dvdr;                       // Dot product of dv and dr
-  FLOAT invdrmag;                   // ..
+  FLOAT invdrmag;                   // 1 / distance
   FLOAT invhsqdi;                   // 1/h^2 for particle i
   FLOAT wkerni;                     // Value of w1 kernel function
   FLOAT wkernj;                     // Value of w1 kernel function
   FLOAT vsignal;                    // Signal velocity
-  FLOAT gaux;                       // ..
+  FLOAT gaux;                       // Aux. grav. potential variable
   FLOAT paux;                       // Aux. pressure force variable
-  //FLOAT rp[ndim];
-  //FLOAT si;
-  //FLOAT sj;
   FLOAT uaux;                       // Aux. internal energy variable
-  //FLOAT vp[ndim];
   FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
+
+  GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
+  GradhSphParticle<ndim>* neibpart = static_cast<GradhSphParticle<ndim>* > (neibpart_gen);
 
 
   invhsqdi = parti.invh*parti.invh;
@@ -409,10 +557,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     for (k=0; k<ndim; k++) dr[k] *= invdrmag;
     dvdr = DotProduct(dv,dr,ndim);
 
-    //si = drmag*parti.invh;
-    //sj = drmag*neibpart[j].invh;
-    //wkerni = parti.hfactor*kern.w1(si);
-    //wkernj = neibpart[j].hfactor*kern.w1(sj);
     wkerni = parti.hfactor*kern.w1(drmag*parti.invh);
     wkernj = neibpart[j].hfactor*kern.w1(drmag*neibpart[j].invh);
 
@@ -456,14 +600,6 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 
     // Main SPH gravity terms
     //-------------------------------------------------------------------------
-    /*paux = 0.5*(parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) +
-                (parti.zeta + parti.chi)*parti.hfactor*
-                kern.w1(drmag*parti.invh) + neibpart[j].invh*neibpart[j].invh*
-                kern.wgrav(drmag*neibpart[j].invh) +
-                (neibpart[j].zeta + neibpart[j].chi)*neibpart[j].hfactor*
-                kern.w1(drmag*neibpart[j].invh));
-    gaux = 0.5*(parti.invh*kern.wpot(drmag*parti.invh) + 
-    neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));*/
     paux = 0.5*(invhsqdi*kern.wgrav(drmag*parti.invh) +
                 (parti.zeta + parti.chi)*wkerni + 
 		neibpart[j].invh*neibpart[j].invh*
@@ -508,19 +644,21 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
 (int i,                             ///< [in] id of particle
  int Nneib,                         ///< [in] No. of neins in neibpart array
  int *neiblist,                     ///< [in] id of gather neibs in neibpart
- SphParticle<ndim> &parti,          ///< [inout] Particle i data
- SphParticle<ndim> *neibpart)       ///< [inout] Neighbour particle data
+ SphParticle<ndim> &part,          ///< [inout] Particle i data
+ SphParticle<ndim> *neibpart_gen)       ///< [inout] Neighbour particle data
 {
   int j;                            // Neighbour list id
   int jj;                           // Aux. neighbour counter
   int k;                            // Dimension counter
   FLOAT dr[ndim];                   // Relative position vector
-  FLOAT drmag;                      // ..
+  FLOAT drmag;                      // Distance
   FLOAT dv[ndim];                   // Relative velocity vector
   FLOAT dvdr;                       // Dot product of dv and dr
-  FLOAT invdrmag;                   // ..
-  FLOAT gaux;                       // ..
+  FLOAT invdrmag;                   // 1 / distance
+  FLOAT gaux;                       // Aux. grav. potential variable
   FLOAT paux;                       // Aux. pressure force variable
+  GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
+  GradhSphParticle<ndim>* neibpart = static_cast<GradhSphParticle<ndim>* > (neibpart_gen);
 
 
   // Loop over all potential neighbours in the list
@@ -598,7 +736,7 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
  int Ndirect,                       ///< No. of nearby 'gather' neighbours
  int *directlist,                   ///< id of gather neighbour in neibpart
  SphParticle<ndim> &parti,          ///< Particle i data
- SphParticle<ndim> *sph)            ///< Neighbour particle data
+ SphParticle<ndim> *sph_gen)            ///< Neighbour particle data
 {
   int j;                            // Neighbour particle id
   int jj;                           // Aux. neighbour loop counter
@@ -608,6 +746,8 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
   FLOAT invdrmag;                   // 1 / distance
   FLOAT invdr3;                     // 1 / dist^3
   FLOAT rp[ndim];                   // Local copy of particle position
+
+  GradhSphParticle<ndim>* sph = static_cast<GradhSphParticle<ndim>* > (sph_gen);
 
   for (k=0; k<ndim; k++) rp[k] = parti.r[k];
 
@@ -650,7 +790,7 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
   FLOAT drmag;                      // Distance
   FLOAT drsqd;                      // Distance squared
   FLOAT invdrmag;                   // 1 / drmag
-  FLOAT invhmean;                    // 1 / hmeansqd
+  FLOAT invhmean;                   // 1 / hmean
   FLOAT paux;                       // Aux. force variable
 
   // Loop over all stars and add each contribution

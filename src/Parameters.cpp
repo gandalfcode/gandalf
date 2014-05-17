@@ -33,6 +33,7 @@
 using namespace std;
 
 
+
 //=============================================================================
 //  Parameters::Parameters
 /// Constructor for Parameters class
@@ -165,12 +166,11 @@ void Parameters::SetDefaultValues(void)
   //---------------------------------------------------------------------------
   intparams["ndim"] = 3;
   stringparams["sim"] = "sph";
-  stringparams["sph"] = "gradh";
   stringparams["nbody"] = "hermite4";
 
   // Simulation id, filename and output time parameters
   //---------------------------------------------------------------------------
-  stringparams["ic"] = "cubic_lattice";
+  stringparams["ic"] = "box";
   stringparams["run_id"] = "";
   stringparams["in_file"] = "";
   stringparams["in_file_form"] = "sf";
@@ -323,6 +323,11 @@ void Parameters::SetDefaultValues(void)
   floatparams["smooth_accrete_dt"] = 0.01;
   stringparams["sink_radius_mode"] = "hmult";
 
+  // Radiation algortihm parameters
+  //---------------------------------------------------------------------------
+  stringparams["radiation"] = "none";
+  intparams["Nphoton"] = 10000;
+
   // Boundary conditions parameters
   //---------------------------------------------------------------------------
   stringparams["x_boundary_lhs"] = "open";
@@ -331,12 +336,12 @@ void Parameters::SetDefaultValues(void)
   stringparams["y_boundary_rhs"] = "open";
   stringparams["z_boundary_lhs"] = "open";
   stringparams["z_boundary_rhs"] = "open";
-  floatparams["boxmin[0]"] = 0.0;
-  floatparams["boxmin[1]"] = 0.0;
-  floatparams["boxmin[2]"] = 0.0;
-  floatparams["boxmax[0]"] = 1.0;
-  floatparams["boxmax[1]"] = 1.0;
-  floatparams["boxmax[2]"] = 1.0;
+  floatparams["boxmin[0]"] = -9.9e30;
+  floatparams["boxmin[1]"] = 9.9e30;
+  floatparams["boxmin[2]"] = -9.9e30;
+  floatparams["boxmax[0]"] = 9.9e30;
+  floatparams["boxmax[1]"] = -9.9e30;
+  floatparams["boxmax[2]"] = 9.9e30;
 
   // Initial conditions parameters
   //---------------------------------------------------------------------------
