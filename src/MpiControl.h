@@ -111,6 +111,7 @@ class MpiControl
   char hostname[MPI_MAX_PROCESSOR_NAME];
   DomainBox<ndim> mpibox;           ///< ..
   MpiNode<ndim> *mpinode;           ///< Data for all MPI nodes
+  CodeTiming *timing;               ///< Simulation timing object (pointer)
 
 };
 
@@ -124,7 +125,9 @@ class MpiControlType : public MpiControl<ndim> {
   using MpiControl<ndim>::mpibox;
   using MpiControl<ndim>::rank;
   using MpiControl<ndim>::Nloadbalance;
+  using MpiControl<ndim>::timing;
 
+  using MpiControl<ndim>::my_matches;
   using MpiControl<ndim>::num_particles_export_per_node;
   using MpiControl<ndim>::displacements_send;
   using MpiControl<ndim>::num_particles_to_be_received;

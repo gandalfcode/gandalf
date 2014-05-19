@@ -34,6 +34,7 @@
 #include "DomainBox.h"
 #include "Precision.h"
 #include "Parameters.h"
+#include "MpiNode.h"
 using namespace std;
 
 
@@ -88,7 +89,7 @@ class MpiTree
   void AllocateMemory(void);
   void DeallocateMemory(void);
   void ComputeTreeSize(void);
-  void CreateTreeStructure(void);
+  void CreateTreeStructure(MpiNode<ndim> *);
   void DivideTreeCell(int, int, ParticleType<ndim> *, MpiTreeCell<ndim> &);
   int FindCell(int, FLOAT *);
   FLOAT QuickSelect(int, int, int, int, ParticleType<ndim> *);
@@ -111,6 +112,7 @@ class MpiTree
   MpiTreeCell<ndim> *tree;       ///< ..
 
     int *klevel;
+    DomainBox<ndim> *box;
 
 };
 #endif

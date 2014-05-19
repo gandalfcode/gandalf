@@ -155,7 +155,7 @@ void MpiTree<ndim,ParticleType>::ComputeTreeSize(void)
 /// Sets all cell pointer variables and all cell levels.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void MpiTree<ndim,ParticleType>::CreateTreeStructure(void)
+void MpiTree<ndim,ParticleType>::CreateTreeStructure(MpiNode<ndim> *mpinode)
 {
   int c;                            // Dummy id of tree-level, then tree-cell
   int g;                            // Dummy id of grid-cell

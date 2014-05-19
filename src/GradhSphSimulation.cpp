@@ -232,6 +232,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 #if defined MPI_PARALLEL
   mpicontrol = new MpiControlType<ndim, GradhSphParticle>;
   mpicontrol->SetNeibSearch(sphneib);
+  mpicontrol->timing = timing;
 #endif
 
 

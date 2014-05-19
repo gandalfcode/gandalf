@@ -373,14 +373,13 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     mpitree->ComputeTreeSize();
 
     // Allocate (or reallocate if needed) all tree memory
-    mpitree->AllocateTreeMemory();
+    mpitree->AllocateMemory();
 
     // Create tree data structure including linked lists and cell pointers
     mpitree->CreateTreeStructure(mpinode);
 
     // ..
-    mpitree->DivideTreeCell(0,mpitree->Ntot-1,sph->GetParticlesArray,
-                            mpitree->mpicell[0]);
+    mpitree->DivideTreeCell(0,mpitree->Ntot-1,sphdata,mpitree->tree[0]);
 
     // Create bounding boxes containing particles in each sub-tree
     for (inode=0; inode<Nmpi; inode++) {
@@ -788,7 +787,8 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   // Now find the particles that need to be transferred - delegate to NeighbourSearch
   std::vector<std::vector<int> > particles_to_transfer (Nmpi);
   std::vector<int> all_particles_to_export;
-  BruteForceSearch<ndim> bruteforce;
+  BruteForceSearch<ndim> bruteforce(sph->kernp->kernrange,mpibox,
+                                    sph->kernp,timing;
   bruteforce.FindParticlesToTransfer(sph, particles_to_transfer, all_particles_to_export, potential_nodes, mpinode);
 
   // Send and receive particles from/to all other nodes
