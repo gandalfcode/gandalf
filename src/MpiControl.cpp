@@ -62,10 +62,6 @@ MpiControl<ndim>::MpiControl()
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   MPI_Get_processor_name(hostname,&len);
 
-  // Create and commit the particle datatype
-  particle_type = SphParticle<ndim>::CreateMpiDataType();
-  MPI_Type_commit(&particle_type);
-
   // Create diagnostics data structure in database
   diagnostics_type = Diagnostics<ndim>::CreateMpiDataType();
   MPI_Type_commit(&diagnostics_type);
@@ -116,6 +112,11 @@ MpiControl() {
   //Allocate buffers
   particles_to_export_per_node.resize(Nmpi);
   particles_to_export.resize(Nmpi);
+
+  // Create and commit the particle datatype
+  particle_type = ParticleType<ndim>::CreateMpiDataType();
+  MPI_Type_commit(&particle_type);
+
 }
 
 

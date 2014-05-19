@@ -56,8 +56,8 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   // Now simulation object is created, set-up various MPI variables
 #ifdef MPI_PARALLEL
-  rank = mpicontrol.rank;
-  Nmpi = mpicontrol.Nmpi;
+  rank = mpicontrol->rank;
+  Nmpi = mpicontrol->Nmpi;
 #endif
 
   // Sanity check for valid dimensionality
@@ -259,7 +259,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Perform initial MPI decomposition
   //---------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
-  mpicontrol.CreateInitialDomainDecomposition(sph,nbody,simparams,simbox);
+  mpicontrol->CreateInitialDomainDecomposition(sph,nbody,simparams,simbox);
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
@@ -301,7 +301,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     }
 
 #ifdef MPI_PARALLEL
-    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph, sph->kernp);
+    mpicontrol->UpdateAllBoundingBoxes(sph->Nsph, sph, sph->kernp);
 #endif
 
     // Search ghost particles
@@ -326,7 +326,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
 #ifdef MPI_PARALLEL
-    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph, sph->kernp);
+    mpicontrol->UpdateAllBoundingBoxes(sph->Nsph, sph, sph->kernp);
 #endif
 
     // Search ghost particles
@@ -498,8 +498,8 @@ void SphSimulation<ndim>::MainLoop(void)
   //---------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph, sph->kernp);
-    mpicontrol.LoadBalancing(sph,nbody);
+    mpicontrol->UpdateAllBoundingBoxes(sph->Nsph, sph, sph->kernp);
+    mpicontrol->LoadBalancing(sph,nbody);
     //exit(0);
   }
 #endif

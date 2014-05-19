@@ -229,7 +229,10 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   sphneib->kernfac = sph->kernfac;
   //sphneib->kernrange = sph->kernp->kernrange;
 #if defined MPI_PARALLEL
-  mpicontrol.SetNeibSearch(sphneib);
+
+  mpicontrol = new MpiControlType<ndim, GradhSphParticle>;
+
+  mpicontrol->SetNeibSearch(sphneib);
 #endif
 
 
@@ -255,7 +258,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   else
     LocalGhosts = new NullGhosts<ndim>();
 #ifdef MPI_PARALLEL
-  MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
+  MpiGhosts = new MPIGhostsSpecific<ndim, GradhSphParticle>(&mpicontrol);
 #endif
 
 

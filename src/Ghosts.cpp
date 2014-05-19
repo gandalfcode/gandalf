@@ -396,15 +396,15 @@ void MPIGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
 /// and receive from them, then copy received ghost particles inside the main 
 /// arrays.
 //=============================================================================
-template <int ndim>
-void MPIGhosts<ndim>::SearchGhostParticles
+template <int ndim, template <int> class ParticleType>
+void MPIGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
 (FLOAT tghost,                      ///< Ghost particle 'lifetime'
  DomainBox<ndim> simbox,            ///< Simulation box structure
  Sph<ndim> *sph)                    ///< Sph object pointer
 {
   int i;
   int j;
-  SphParticle<ndim>* ghost_array;
+  ParticleType<ndim>* ghost_array;
   int Nmpighosts = mpicontrol->SendReceiveGhosts(&ghost_array, sph);
 
   if (sph->Ntot + Nmpighosts > sph->Nsphmax) {
@@ -413,7 +413,7 @@ void MPIGhosts<ndim>::SearchGhostParticles
     ExceptionHandler::getIstance().raise("");
   }
 
-  SphParticle<ndim>* main_array = sph->sphdata;
+  ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
   int start_index = sph->Nsph + sph->NPeriodicGhost;
 
   for (j=0; j<Nmpighosts; j++) {
@@ -439,12 +439,12 @@ void MPIGhosts<ndim>::SearchGhostParticles
 //  MpiGhosts::CopySphDataToGhosts
 /// ..
 //=============================================================================
-template <int ndim>
-void MPIGhosts<ndim>::CopySphDataToGhosts
+template <int ndim, template<int> class ParticleType >
+void MPIGhostsSpecific<ndim, ParticleType>::CopySphDataToGhosts
 (DomainBox<ndim> simbox, Sph<ndim> *sph) 
 {
-  SphParticle<ndim>* ghost_array;
-  SphParticle<ndim>* main_array = sph->sphdata;
+  ParticleType<ndim>* ghost_array;
+  ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
   int Nmpighosts = mpicontrol->UpdateGhostParticles(&ghost_array);
   int start_index = sph->Nsph + sph->NPeriodicGhost;
 
@@ -477,4 +477,13 @@ template class PeriodicGhostsSpecific<3, SM2012SphParticle>;
 template class MPIGhosts<1>;
 template class MPIGhosts<2>;
 template class MPIGhosts<3>;
+template class MPIGhostsSpecific<1, GradhSphParticle>;
+template class MPIGhostsSpecific<2, GradhSphParticle>;
+template class MPIGhostsSpecific<3, GradhSphParticle>;
+template class MPIGhostsSpecific<1, GodunovSphParticle>;
+template class MPIGhostsSpecific<2, GodunovSphParticle>;
+template class MPIGhostsSpecific<3, GodunovSphParticle>;
+template class MPIGhostsSpecific<1, SM2012SphParticle>;
+template class MPIGhostsSpecific<2, SM2012SphParticle>;
+template class MPIGhostsSpecific<3, SM2012SphParticle>;
 #endif

@@ -313,7 +313,7 @@ class Simulation : public SimulationBase
   SphIntegration<ndim> *sphint;       ///< SPH Integration scheme pointer
   SphNeighbourSearch<ndim> *sphneib;  ///< SPH Neighbour scheme pointer
 #ifdef MPI_PARALLEL
-  MpiControl<ndim> mpicontrol;        ///< MPI control object
+  MpiControl<ndim>* mpicontrol;        ///< MPI control object
   Ghosts<ndim>* MpiGhosts;            ///< MPI ghost particle object
 #endif
 

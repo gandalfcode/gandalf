@@ -111,10 +111,17 @@ public:
 
   MPIGhosts(MpiControl<ndim>* mpicontrol_aux): mpicontrol(mpicontrol_aux) {};
 
-  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
-  virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
   virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
 };
+
+
+template <int ndim, template <int> class ParticleType>
+class MPIGhostsSpecific : public MPIGhosts<ndim> {
+public:
+  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
+  virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
+};
+
 #endif
 
 #endif
