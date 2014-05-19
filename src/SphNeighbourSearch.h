@@ -159,7 +159,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
   void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *);
 
 #if defined MPI_PARALLEL
-  void FindGhostParticlesToExport(Sph<ndim>* sph, std::vector<std::vector<SphParticle<ndim>* > >&,
+  void FindGhostParticlesToExport(Sph<ndim>* sph, std::vector<std::vector<ParticleType<ndim>* > >&,
       const std::vector<int>&, MpiNode<ndim>*);
   void FindParticlesToTransfer(Sph<ndim>* sph, std::vector<std::vector<int> >& particles_to_export,
       std::vector<int>& all_particles_to_export, const std::vector<int>& potential_nodes, MpiNode<ndim>* mpinodes);

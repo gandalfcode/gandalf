@@ -787,8 +787,8 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   // Now find the particles that need to be transferred - delegate to NeighbourSearch
   std::vector<std::vector<int> > particles_to_transfer (Nmpi);
   std::vector<int> all_particles_to_export;
-  BruteForceSearch<ndim> bruteforce(sph->kernp->kernrange,mpibox,
-                                    sph->kernp,timing;
+  BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,&mpibox,
+                                 sph->kernp,timing);
   bruteforce.FindParticlesToTransfer(sph, particles_to_transfer, all_particles_to_export, potential_nodes, mpinode);
 
   // Send and receive particles from/to all other nodes
@@ -857,7 +857,12 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
 
 
   // Remove transferred particles
-  sph->DeleteParticles(all_particles_to_export.size(), &all_particles_to_export[0]);
+
+  for (int i=0; i<all_particles_to_export.size(); i++) {
+    sphdata[all_particles_to_export[i]].itype=dead;
+  }
+
+  sph->DeleteDeadParticles();
 
 
 
