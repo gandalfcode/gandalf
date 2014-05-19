@@ -188,6 +188,7 @@ void SphGodunovIntegration<ndim, ParticleType>::EndTimestep
 template <int ndim, template <int> class ParticleType>
 int SphGodunovIntegration<ndim, ParticleType>::CheckTimesteps
 (int level_diff_max,                ///< [in] Max. allowed SPH neib dt diff
+ int level_step,                    ///< [in] Level of base timestep
  int n,                             ///< [in] Integer time in block time struct
  int npart,                         ///< [in] Number of particles
  SphParticle<ndim>* sph_gen)        ///< [inout] Pointer to SPH particle array
@@ -206,7 +207,7 @@ int SphGodunovIntegration<ndim, ParticleType>::CheckTimesteps
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) shared(level_diff_max,n,sphdata,npart)\
-  private(dn,i,k,level_new,nnewstep,nstep) reduction(+:activecount)
+  private(dn,i,k,level_new,level_step,nnewstep,nstep) reduction(+:activecount)
   for (i=0; i<npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
     dn = n - part.nlast;

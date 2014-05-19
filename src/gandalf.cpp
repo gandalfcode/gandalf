@@ -37,14 +37,14 @@ using namespace std;
 //=============================================================================
 int main(int argc, char** argv)
 {
-  CodeTiming* timing = new CodeTiming();             // Timing object
-  SimulationBase* sim;                               // Main simulation object
-  Parameters* params = new Parameters();             // Parameters object
-  ExceptionHandler::makeExceptionHandler(cplusplus); // Exception handler
   bool restart=false;                                // Flag restart simulation
   int rank=0;                                        // Local copy of MPI rank
   string paramfile;                                  // Name of parameters file
   stringstream ss;                                   // Stream char to string
+  CodeTiming* timing = new CodeTiming();             // Timing object
+  SimulationBase* sim;                               // Main simulation object
+  Parameters* params = new Parameters();             // Parameters object
+  ExceptionHandler::makeExceptionHandler(cplusplus); // Exception handler
 
 
   // Initialise all MPI processes (if activated in Makefile)

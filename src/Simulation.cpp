@@ -126,6 +126,7 @@ SimulationBase::SimulationBase
   simparams = new Parameters(*params);
   paramfile             = "";
   integration_step      = 1;
+  litesnap              = 0;
   n                     = 0;
   nresync               = 0;
   Nblocksteps           = 0;
@@ -189,9 +190,13 @@ void SimulationBase::SplashScreen(void)
   cout << "*         *****    *    *   *     *   *****    *    *   *****  *             *" << endl;
   cout << "*                                                                            *" << endl;
   cout << "*   Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids    *" << endl;
-  cout << "*                        Version 0.1.0 - 21/10/2013                          *" << endl;
+  cout << "*                        Version 0.2.0 - 19/05/2014                          *" << endl;
   cout << "*                                                                            *" << endl;
-  cout << "*                    Authors : D. A. Hubber & G. Rosotti                     *" << endl;
+  cout << "*                 Original code : D. A. Hubber & G. Rosotti                  *" << endl;
+  cout << "*                                                                            *" << endl;
+  cout << "*              Contributions by : O. Lomax, A. P. Whitworth                  *" << endl;
+  cout << "*                                                                            *" << endl;
+  cout << "*                  https://github.com/gandalfcode/gandalf                    *" << endl;
   cout << "*                                                                            *" << endl;
   cout << "******************************************************************************" << endl;
 

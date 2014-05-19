@@ -117,6 +117,8 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     gas_eos = isothermal;
   else if (stringparams["gas_eos"] == "barotropic")
     gas_eos = barotropic;
+  else if (stringparams["gas_eos"] == "barotropic2")
+    gas_eos = barotropic2;
   else if (stringparams["gas_eos"] == "energy_eqn")
     gas_eos = energy_eqn;
   else if (stringparams["gas_eos"] == "constant_temp")
@@ -267,9 +269,6 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     sph->Ngather = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac,2));
   else if (ndim == 3)
     sph->Ngather = (int) (4.0*pi*pow(sph->kernp->kernrange*sph->h_fac,3)/3.0);
-
-
-
 
 
   return;

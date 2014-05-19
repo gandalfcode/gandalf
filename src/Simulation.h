@@ -344,6 +344,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::nbodytree;
   using Simulation<ndim>::sphint;
   using Simulation<ndim>::uint;
+  using Simulation<ndim>::litesnap;
   using Simulation<ndim>::LocalGhosts;
   using Simulation<ndim>::simbox;
   using Simulation<ndim>::simunits;
@@ -363,7 +364,9 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::timestep;
   using Simulation<ndim>::level_step;
   using Simulation<ndim>::Noutsnap;
+  using Simulation<ndim>::tlitesnapnext;
   using Simulation<ndim>::tsnapnext;
+  using Simulation<ndim>::dt_litesnap;
   using Simulation<ndim>::dt_snap;
   using Simulation<ndim>::dt_python;
   using Simulation<ndim>::level_diff_max;

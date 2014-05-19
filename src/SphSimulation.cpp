@@ -130,6 +130,12 @@ void SphSimulation<ndim>::ProcessParameters(void)
 				    floatparams["gamma_eos"],
 				    floatparams["rho_bary"],
 				    &simunits);
+  else if (gas_eos == "barotropic2")
+    sph->eos = new Barotropic2<ndim>(floatparams["temp0"],
+				     floatparams["mu_bar"],
+				     floatparams["gamma_eos"],
+				     floatparams["rho_bary"],
+				     &simunits);
   else {
     string message = "Unrecognised parameter : gas_eos = " + gas_eos;
     ExceptionHandler::getIstance().raise(message);
@@ -199,9 +205,11 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
 
   // Set other important simulation variables
+  dt_litesnap         = floatparams["dt_litesnap"]/simunits.t.outscale;
   dt_python           = floatparams["dt_python"];
   dt_snap             = floatparams["dt_snap"]/simunits.t.outscale;
   level_diff_max      = intparams["level_diff_max"];
+  litesnap            = intparams["litesnap"];
   Nlevels             = intparams["Nlevels"];
   ndiagstep           = intparams["ndiagstep"];
   noutputstep         = intparams["noutputstep"];
@@ -213,6 +221,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   sph_single_timestep = intparams["sph_single_timestep"];
   tmax_wallclock      = floatparams["tmax_wallclock"];
   tend                = floatparams["tend"]/simunits.t.outscale;
+  tlitesnapnext       = floatparams["tlitesnapfirst"]/simunits.t.outscale;
   tsnapnext           = floatparams["tsnapfirst"]/simunits.t.outscale;
 
 
@@ -580,7 +589,8 @@ void SphSimulation<ndim>::MainLoop(void)
 
       // Check if all neighbouring timesteps are acceptable
       if (Nlevels > 1)
-        activecount = sphint->CheckTimesteps(level_diff_max,n,sph->Nsph,sph->GetParticlesArray());
+        activecount = sphint->CheckTimesteps(level_diff_max,level_step,n,
+                                             sph->Nsph,sph->GetParticlesArray());
       else activecount = 0;      
       //activecount = 0;
 
@@ -760,10 +770,10 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   int level;                            // Particle timestep level
   int last_level;                       // Previous timestep level
   int level_max_aux;                    // Aux. maximum level variable
+  int level_max_nbody = 0;              // level_max for star particles only
   int level_max_old;                    // Old level_max
   int level_max_sph = 0;                // level_max for SPH particles only
   int level_min_sph = 9999999;          // level_min for SPH particles
-  int level_max_nbody = 0;              // level_max for star particles only
   int level_nbody;                      // local thread var. for N-body level
   int level_sph;                        // local thread var. for SPH level
   int nfactor;                          // Increase/decrease factor of n
@@ -1027,10 +1037,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     if (sph_single_timestep == 1) {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-
         if (part.itype == dead) continue;
-        if (part.nlast == n)
-          part.level = level_max_sph;
+        if (part.nlast == n) part.level = level_max_sph;
       }
     }
     
@@ -1050,7 +1058,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 	nfactor = pow(2,level_max - level_max_old);
 	n *= nfactor;
 	for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+          SphParticle<ndim>& part = sph->GetParticleIPointer(i);
 	  if (part.itype == dead) continue;
 	  part.nstep *= nfactor;
 	  part.nlast *= nfactor;
@@ -1062,7 +1070,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 	nfactor = pow(2,level_max_old - level_max);
 	n /= nfactor;
 	for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+          SphParticle<ndim>& part = sph->GetParticleIPointer(i);
 	  if (part.itype == dead) continue;
 	  part.nlast /= nfactor;
 	  part.nstep /= nfactor;
