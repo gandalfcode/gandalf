@@ -307,16 +307,16 @@ void MpiControl<ndim>::CreateLeagueCalendar(void)
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
-(Sph<ndim> *sph,                   ///< Pointer to main SPH object
- Nbody<ndim> *nbody,               ///< Pointer to main N-body object
- Parameters *simparams,            ///< Simulation parameters
- DomainBox<ndim> simbox)           ///< Simulation domain box
+(Sph<ndim> *sph,                    ///< Pointer to main SPH object
+ Nbody<ndim> *nbody,                ///< Pointer to main N-body object
+ Parameters *simparams,             ///< Simulation parameters
+ DomainBox<ndim> simbox)            ///< Simulation domain box
 {
-  int i;                           // Particle counter
-  int inode;                       // Node counter
-  int k;                           // Dimension counter
-  int okflag;                      // ..
-  FLOAT boxbuffer[2*ndim*Nmpi];    // Bounding box buffer
+  int i;                            // Particle counter
+  int inode;                        // Node counter
+  int k;                            // Dimension counter
+  int okflag;                       // ..
+  FLOAT boxbuffer[2*ndim*Nmpi];     // Bounding box buffer
   ParticleType<ndim> *partbuffer;   // ..
 
   //Get pointer to sph particles and cast it to the right type
@@ -331,7 +331,7 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     debug2("[MpiControl::CreateInitialDomainDecomposition]");
 
     // Create MPI binary tree for organising domain decomposition
-    mpitree = new MpiTree<ndim>(Nmpi);
+    mpitree = new MpiTree<ndim,ParticleType>(Nmpi);
 
     // Create binary tree from all SPH particles
     // Set number of tree members to total number of SPH particles (inc. ghosts)
@@ -377,11 +377,9 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     // Create tree data structure including linked lists and cell pointers
     mpitree->CreateTreeStructure(mpinode);
 
-    // Find ordered list of ptcl positions ready for adding particles to tree
-    mpitree->OrderParticlesByCartCoord(sphdata);
-
-    // Now add particles to tree depending on Cartesian coordinates
-    mpitree->LoadParticlesToTree(sph->rsph);
+    // ..
+    mpitree->DivideTreeCell(0,mpitree->Ntot-1,sph->GetParticlesArray,
+                            mpitree->mpicell[0]);
 
     // Create bounding boxes containing particles in each sub-tree
     for (inode=0; inode<Nmpi; inode++) {

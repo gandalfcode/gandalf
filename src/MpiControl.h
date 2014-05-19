@@ -112,7 +112,6 @@ class MpiControl
 
   char hostname[MPI_MAX_PROCESSOR_NAME];
   DomainBox<ndim> mpibox;           ///< ..
-  MpiTree<ndim> *mpitree;           ///< Main MPI load balancing tree
   MpiNode<ndim> *mpinode;           ///< Data for all MPI nodes
 
 };
@@ -129,6 +128,9 @@ class MpiControlType : public MpiControl<ndim> {
   std::vector<std::vector<ParticleType<ndim>* > > particles_to_export_per_node;
   std::vector<ParticleType<ndim> > particles_to_export;
   std::vector<ParticleType<ndim> > particles_receive;
+
+  MpiTree<ndim,ParticleType> *mpitree;           ///< Main MPI load balancing tree
+
 public:
 
   MpiControlType ();
