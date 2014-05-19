@@ -143,7 +143,10 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 #if defined MPI_PARALLEL
-  mpicontrol.SetNeibSearch(sphneib);
+
+  mpicontrol = new MpiControlType<ndim, GodunovSphParticle>;
+
+  mpicontrol->SetNeibSearch(sphneib);
 #endif
 
 
@@ -158,7 +161,7 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
   else
     LocalGhosts = new NullGhosts<ndim>();
 #ifdef MPI_PARALLEL
-  MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
+  MpiGhosts = new MPIGhostsSpecific<ndim, GodunovSphParticle>(&mpicontrol);
 #endif
 
   

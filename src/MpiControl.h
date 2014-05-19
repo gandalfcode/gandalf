@@ -62,7 +62,6 @@ class MpiControl
   virtual void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array)=0;
 
 
-  MPI_Datatype particle_type;        ///< Datatype for the particles
   MPI_Datatype box_type;             ///< Datatype for the box
   MPI_Datatype diagnostics_type;     ///< Datatype for diagnostic info
 
@@ -124,6 +123,9 @@ class MpiControlType : public MpiControl<ndim> {
   virtual void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array);
 
   std::vector<ParticleType<ndim> > sendbuffer; ///< Used by the SendParticles routine
+
+  MPI_Datatype particle_type;        ///< Datatype for the particles
+
 
   //Buffers needed to send and receive particles
   std::vector<std::vector<ParticleType<ndim>* > > particles_to_export_per_node;

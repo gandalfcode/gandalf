@@ -244,7 +244,10 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 #if defined MPI_PARALLEL
-  mpicontrol.SetNeibSearch(sphneib);
+
+  mpicontrol = new MpiControlType<ndim, SM2012SphParticle>;
+
+  mpicontrol->SetNeibSearch(sphneib);
 #endif
 
 
@@ -263,7 +266,7 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
   else
     LocalGhosts = new NullGhosts<ndim>();
 #ifdef MPI_PARALLEL
-  MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
+  MpiGhosts = new MPIGhostsSpecific<ndim, SM2012SphParticle>(&mpicontrol);
 #endif
 
 

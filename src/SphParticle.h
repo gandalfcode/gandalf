@@ -150,19 +150,6 @@ struct SphParticle : public Particle<ndim>
     dalphadt = (FLOAT) 0.0;
   }
 
-#ifdef MPI_PARALLEL
-  static MPI_Datatype CreateMpiDataType() {
-    MPI_Datatype particle_type;
-    MPI_Datatype types[1] = {MPI_BYTE};
-    MPI_Aint offsets[1] = {0};
-    int blocklen[1] = {sizeof(SphParticle<ndim>)};
-    
-    MPI_Type_create_struct(1,blocklen,offsets,types,&particle_type);
-    
-    return particle_type;
-  }
-#endif
-
 };
 
 
@@ -186,6 +173,19 @@ struct GradhSphParticle : public SphParticle<ndim>
     chi = (FLOAT) 0.0;
   }
 
+#ifdef MPI_PARALLEL
+  static MPI_Datatype CreateMpiDataType() {
+    MPI_Datatype particle_type;
+    MPI_Datatype types[1] = {MPI_BYTE};
+    MPI_Aint offsets[1] = {0};
+    int blocklen[1] = {sizeof(GradhSphParticle<ndim>)};
+
+    MPI_Type_create_struct(1,blocklen,offsets,types,&particle_type);
+
+    return particle_type;
+  }
+#endif
+
 };
 
 
@@ -206,6 +206,19 @@ struct SM2012SphParticle : public SphParticle<ndim>
     q = (FLOAT) 0.0;
     invq = (FLOAT) 0.0;
   }
+
+#ifdef MPI_PARALLEL
+  static MPI_Datatype CreateMpiDataType() {
+    MPI_Datatype particle_type;
+    MPI_Datatype types[1] = {MPI_BYTE};
+    MPI_Aint offsets[1] = {0};
+    int blocklen[1] = {sizeof(SM2012SphParticle<ndim>)};
+
+    MPI_Type_create_struct(1,blocklen,offsets,types,&particle_type);
+
+    return particle_type;
+  }
+#endif
 
 };
 
@@ -231,6 +244,19 @@ struct GodunovSphParticle : public SphParticle<ndim>
       for (int kk=0; kk<ndim; kk++)
         gradv[k][kk] = (FLOAT) 0.0;
   }
+
+#ifdef MPI_PARALLEL
+  static MPI_Datatype CreateMpiDataType() {
+    MPI_Datatype particle_type;
+    MPI_Datatype types[1] = {MPI_BYTE};
+    MPI_Aint offsets[1] = {0};
+    int blocklen[1] = {sizeof(GodunovSphParticle<ndim>)};
+
+    MPI_Type_create_struct(1,blocklen,offsets,types,&particle_type);
+
+    return particle_type;
+  }
+#endif
 
 };
 
