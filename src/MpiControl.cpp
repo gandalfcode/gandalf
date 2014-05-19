@@ -1054,14 +1054,14 @@ template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim, ParticleType>::ReceiveParticles
 (int Node, 
  int& Nparticles, 
- SphParticle<ndim>** array_gen)
+ SphParticle<ndim>** pointer_array_gen)
 {
 
   const int tag = 1;
   MPI_Status status;
 
   //Cast the main array to the right type
-  ParticleType<ndim>** array = static_cast<ParticleType<ndim>** > (array_gen);
+  ParticleType<ndim>* array = static_cast<ParticleType<ndim>* > (*pointer_array_gen);
 
   //"Probe" the message to know how big the message is going to be
   MPI_Probe(Node, tag, MPI_COMM_WORLD, &status);
@@ -1070,11 +1070,13 @@ void MpiControlType<ndim, ParticleType>::ReceiveParticles
   MPI_Get_count(&status, particle_type, &Nparticles);
 
   //Allocate enough memory to hold the particles
-  *array = new ParticleType<ndim> [Nparticles];
+  array = new ParticleType<ndim> [Nparticles];
 
   //Now receive the message
-  MPI_Recv(*array, Nparticles, particle_type, Node, 
+  MPI_Recv(array, Nparticles, particle_type, Node,
            tag_srpart, MPI_COMM_WORLD, &status);
+
+  *pointer_array_gen = array;
 
   return;
 }
