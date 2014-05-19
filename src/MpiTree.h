@@ -59,6 +59,10 @@ struct MpiTreeCell {
   FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
   FLOAT m;                          ///< Mass contained in cell
   FLOAT volume;                     ///< Cell volume
+  FLOAT rwork[ndim];
+  FLOAT worktot;
+  int c2g;
+  int clevel;
 };
 
 
@@ -85,7 +89,7 @@ class MpiTree
   void DeallocateMemory(void);
   void ComputeTreeSize(void);
   void CreateTreeStructure(void);
-  void DivideTreeCell(int, int, ParticleType<ndim> *, KDRadTreeCell<ndim> &);
+  void DivideTreeCell(int, int, ParticleType<ndim> *, MpiTreeCell<ndim> &);
   int FindCell(int, FLOAT *);
   FLOAT QuickSelect(int, int, int, int, ParticleType<ndim> *);
 
@@ -97,12 +101,16 @@ class MpiTree
   int ltot;
   int Ncell;
   int Ncellmax;
+  int Nmpi;
+  int Nsph;
   int Ntot;
   int Ntotmax;
   int Nthreads;                     ///< No. of OpenMP threads
   int *ids;                         ///< Particle ids
   int *inext;                       ///< Linked list for grid search
-  MpiTreeCell<ndim> *mpicell;       ///< ..
+  MpiTreeCell<ndim> *tree;       ///< ..
+
+    int *klevel;
 
 };
 #endif

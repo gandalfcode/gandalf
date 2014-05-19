@@ -104,12 +104,11 @@ public:
 template <int ndim>
 class MPIGhosts : public Ghosts<ndim>
 {
-private:
-  MpiControl<ndim>* mpicontrol;
 public:
   using Ghosts<ndim>::ghost_range;
 
-  MPIGhosts(MpiControl<ndim>* mpicontrol_aux): mpicontrol(mpicontrol_aux) {};
+  //MPIGhosts(MpiControl<ndim>* mpicontrol_aux): mpicontrol(mpicontrol_aux) {};
+  MPIGhosts(){};
 
   virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
 };
@@ -117,9 +116,15 @@ public:
 
 template <int ndim, template <int> class ParticleType>
 class MPIGhostsSpecific : public MPIGhosts<ndim> {
+
+  MpiControlType<ndim,ParticleType>* mpicontrol;
+  //using MPIGhosts<ndim>::mpicontrol;
 public:
   virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
   virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
+
+  MPIGhostsSpecific(MpiControl<ndim>* mpicontrol_aux): mpicontrol(static_cast<MpiControlType<ndim,ParticleType> *> (mpicontrol_aux)) {};
+
 };
 
 #endif

@@ -52,7 +52,6 @@ MpiTree<ndim,ParticleType>::MpiTree(int Nmpiaux)
   ltot       = 0;
   Ntot       = 0;
   Ntotmax    = 0;
-  Ntotmaxold = 0;
   Nmpi       = Nmpiaux;
 #if defined _OPENMP
   Nthreads   = omp_get_max_threads();
@@ -86,13 +85,13 @@ void MpiTree<ndim,ParticleType>::AllocateMemory(void)
 
   debug2("[MpiTree::AllocateMemory]");
 
-  if (!allocated_tree || Ntotmax > Ntotmaxold) {
+  if (!allocated_tree) {
     if (allocated_tree) DeallocateMemory();
     Ntotmax = max(Ntotmax,Ntot);
 
     ids = new int[Ntotmax];
     inext = new int[Ntotmax];
-    radcell = new struct MpiTreeCell<ndim>[Ncellmax];
+    tree = new struct MpiTreeCell<ndim>[Ncellmax];
 
     allocated_tree = true;
   }
@@ -112,7 +111,7 @@ void MpiTree<ndim,ParticleType>::DeallocateMemory(void)
   debug2("[MpiTree::DeallocateMemory]");
 
   if (allocated_tree) {
-    delete[] radcell;
+    delete[] tree;
     delete[] inext;
     delete[] ids;
     allocated_tree = false;
@@ -178,28 +177,28 @@ void MpiTree<ndim,ParticleType>::CreateTreeStructure(void)
 
   // Zero tree cell variables
   for (c=0; c<Ncell; c++) {
-    radcell[c].id = c;
-    radcell[c].c1 = -1;
-    radcell[c].c2 = -1;
-    radcell[c].ifirst = -1;
-    radcell[c].ilast = -1;
-    radcell[c].N = 0;
+    tree[c].id = c;
+    tree[c].c1 = -1;
+    tree[c].c2 = -1;
+    tree[c].ifirst = -1;
+    tree[c].ilast = -1;
+    tree[c].N = 0;
   }
   g = 0;
-  radcell[0].level = 0;
+  tree[0].level = 0;
 
   // Loop over all cells and set all other pointers
   //---------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
-    if (radcell[c].level == ltot) {                    // If on leaf level
-      radcell[c].cnext = c + 1;                        // id of next cell
+    if (tree[c].level == ltot) {                    // If on leaf level
+      tree[c].cnext = c + 1;                        // id of next cell
     }
     else {
-      radcell[c+1].level = radcell[c].level + 1;          // Level of 1st child
-      radcell[c].c1 = c + 1;
-      radcell[c].c2 = c + c2L[radcell[c].level];          // id of 2nd child
-      radcell[radcell[c].c2].level = radcell[c].level + 1; // Level of 2nd child
-      radcell[c].cnext = c + cNL[radcell[c].level];       // Next cell id
+      tree[c+1].level = tree[c].level + 1;          // Level of 1st child
+      tree[c].c1 = c + 1;
+      tree[c].c2 = c + c2L[tree[c].level];          // id of 2nd child
+      tree[tree[c].c2].level = tree[c].level + 1; // Level of 2nd child
+      tree[c].cnext = c + cNL[tree[c].level];       // Next cell id
     }
 
   }
@@ -267,38 +266,38 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
 			cell.ifirst+cell.N/2,k_divide,partdata);
 
   // Set properties of first child cell
-  for (k=0; k<ndim; k++) radcell[cell.c1].bbmin[k] = cell.bbmin[k];
-  for (k=0; k<ndim; k++) radcell[cell.c1].bbmax[k] = cell.bbmax[k];
-  //for (k=0; k<ndim; k++) radcell[cell.c1].cexit[0][k] = cell.cexit[0][k];
-  //for (k=0; k<ndim; k++) radcell[cell.c1].cexit[1][k] = cell.cexit[1][k];
-  radcell[cell.c1].N = cell.N/2;
-  if (radcell[cell.c1].N != 0) {
-    radcell[cell.c1].ifirst = ifirst;
-    radcell[cell.c1].ilast = ifirst + cell.N/2 - 1;
+  for (k=0; k<ndim; k++) tree[cell.c1].bbmin[k] = cell.bbmin[k];
+  for (k=0; k<ndim; k++) tree[cell.c1].bbmax[k] = cell.bbmax[k];
+  //for (k=0; k<ndim; k++) tree[cell.c1].cexit[0][k] = cell.cexit[0][k];
+  //for (k=0; k<ndim; k++) tree[cell.c1].cexit[1][k] = cell.cexit[1][k];
+  tree[cell.c1].N = cell.N/2;
+  if (tree[cell.c1].N != 0) {
+    tree[cell.c1].ifirst = ifirst;
+    tree[cell.c1].ilast = ifirst + cell.N/2 - 1;
   }
 
   // Set properties of second child cell
-  for (k=0; k<ndim; k++) radcell[cell.c2].bbmin[k] = cell.bbmin[k];
-  for (k=0; k<ndim; k++) radcell[cell.c2].bbmax[k] = cell.bbmax[k];
-  //for (k=0; k<ndim; k++) radcell[cell.c2].cexit[0][k] = cell.cexit[0][k];
-  //for (k=0; k<ndim; k++) radcell[cell.c2].cexit[1][k] = cell.cexit[1][k];
-  radcell[cell.c2].N = cell.N - radcell[cell.c1].N;
-  if (radcell[cell.c2].N != 0) {
-    radcell[cell.c2].ifirst = ifirst + cell.N/2;
-    radcell[cell.c2].ilast = ilast;
+  for (k=0; k<ndim; k++) tree[cell.c2].bbmin[k] = cell.bbmin[k];
+  for (k=0; k<ndim; k++) tree[cell.c2].bbmax[k] = cell.bbmax[k];
+  //for (k=0; k<ndim; k++) tree[cell.c2].cexit[0][k] = cell.cexit[0][k];
+  //for (k=0; k<ndim; k++) tree[cell.c2].cexit[1][k] = cell.cexit[1][k];
+  tree[cell.c2].N = cell.N - tree[cell.c1].N;
+  if (tree[cell.c2].N != 0) {
+    tree[cell.c2].ifirst = ifirst + cell.N/2;
+    tree[cell.c2].ilast = ilast;
   }
-  assert(cell.N == radcell[cell.c1].N + radcell[cell.c2].N);
+  assert(cell.N == tree[cell.c1].N + tree[cell.c2].N);
 
 
   // Set new cell boundaries depending on number of particles in cells
-  if (radcell[cell.c1].N > 0 && radcell[cell.c2].N > 0) {
-    radcell[cell.c1].bbmax[k_divide] = rdivide;
-    radcell[cell.c2].bbmin[k_divide] = rdivide;
-    //radcell[cell.c1].cexit[1][k_divide] = cell.c2;
-    //radcell[cell.c2].cexit[0][k_divide] = cell.c1;
+  if (tree[cell.c1].N > 0 && tree[cell.c2].N > 0) {
+    tree[cell.c1].bbmax[k_divide] = rdivide;
+    tree[cell.c2].bbmin[k_divide] = rdivide;
+    //tree[cell.c1].cexit[1][k_divide] = cell.c2;
+    //tree[cell.c2].cexit[0][k_divide] = cell.c1;
   }
-  else if (radcell[cell.c2].N > 0) {
-    radcell[cell.c1].bbmax[k_divide] = -big_number;
+  else if (tree[cell.c2].N > 0) {
+    tree[cell.c1].bbmax[k_divide] = -big_number;
   }
 
 
@@ -311,9 +310,9 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
 #pragma omp for 
       for (i=0; i<2; i++) {
 	if (i == 0) DivideTreeCell(ifirst,ifirst+cell.N/2-1,
-                                   partdata,radcell[cell.c1]);
+                                   partdata,tree[cell.c1]);
 	else if (i == 1) DivideTreeCell(ifirst+cell.N/2,ilast,
-                                        partdata,radcell[cell.c2]);
+                                        partdata,tree[cell.c2]);
       }
 #pragma omp barrier
     }
@@ -321,25 +320,25 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
   else {
     for (i=0; i<2; i++) {
       if (i == 0) DivideTreeCell(ifirst,ifirst+cell.N/2-1,
-                                 partdata,radcell[cell.c1]);
+                                 partdata,tree[cell.c1]);
       else if (i == 1) DivideTreeCell(ifirst+cell.N/2,ilast,
-                                      partdata,radcell[cell.c2]);
+                                      partdata,tree[cell.c2]);
     }
   }
 #else
   for (i=0; i<2; i++) {
     if (i == 0) DivideTreeCell(ifirst,ifirst+cell.N/2-1,
-                               partdata,radcell[cell.c1]);
+                               partdata,tree[cell.c1]);
     else if (i == 1) DivideTreeCell(ifirst+cell.N/2,ilast,
-                                    partdata,radcell[cell.c2]);
+                                    partdata,tree[cell.c2]);
   }
 #endif
 
-  if (cell.N != radcell[cell.c1].N + radcell[cell.c2].N) {
-    cout << "Checking : " << cell.N << "   " << radcell[cell.c1].N 
-	 << "    " << radcell[cell.c2].N << endl;
+  if (cell.N != tree[cell.c1].N + tree[cell.c2].N) {
+    cout << "Checking : " << cell.N << "   " << tree[cell.c1].N 
+	 << "    " << tree[cell.c2].N << endl;
   }
-  assert(cell.N == radcell[cell.c1].N + radcell[cell.c2].N);
+  assert(cell.N == tree[cell.c1].N + tree[cell.c2].N);
 
   // Stock all cell properties once constructed
   //StockCellProperties(cell,partdata);
@@ -439,28 +438,28 @@ int MpiTree<ndim,ParticleType>::FindCell
 
   // Walk back down through tree to bottom level
   //---------------------------------------------------------------------------
-  while (radcell[c].level < ltot) {
+  while (tree[c].level < ltot) {
 
 #ifdef OUTPUT_ALL
-    cout << "Searching for cell : " << radcell[c].level << "   " << ltot << endl;
+    cout << "Searching for cell : " << tree[c].level << "   " << ltot << endl;
 #endif
 
     c1 = c + 1;
-    k_divide = radcell[c].k_divide;
+    k_divide = tree[c].k_divide;
 
     // If point is left of divide, pick 1st child cell.  Else pick 2nd child.
-    if (rp[k_divide] < radcell[c1].bbmax[k_divide])
+    if (rp[k_divide] < tree[c1].bbmax[k_divide])
       c = c1;
     else
-      c = radcell[c].c2;
+      c = tree[c].c2;
 
   };
   //---------------------------------------------------------------------------
 
   return c;
-}
+} 
 
-
+ 
 
 
 template class MpiTree<1,GradhSphParticle>;

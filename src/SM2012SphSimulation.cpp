@@ -266,7 +266,7 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
   else
     LocalGhosts = new NullGhosts<ndim>();
 #ifdef MPI_PARALLEL
-  MpiGhosts = new MPIGhostsSpecific<ndim, SM2012SphParticle>(&mpicontrol);
+  MpiGhosts = new MPIGhostsSpecific<ndim, SM2012SphParticle>(mpicontrol);
 #endif
 
 

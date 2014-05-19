@@ -57,6 +57,7 @@ static const int tag_bal = 3;
 template <int ndim>
 class MpiControl
 {
+ protected:
   //Convenience functions to send and receive particles
   virtual void SendParticles(int Node, int Nparticles, int* list, SphParticle<ndim>* )=0;
   virtual void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array)=0;
@@ -97,8 +98,6 @@ class MpiControl
   virtual void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>)=0;
   virtual void LoadBalancing(Sph<ndim> *, Nbody<ndim> *)=0;
   void UpdateAllBoundingBoxes(int, Sph<ndim> *, SphKernel<ndim> *);
-  virtual int SendReceiveGhosts(SphParticle<ndim>** array, Sph<ndim>* sph)=0;
-  virtual int UpdateGhostParticles(SphParticle<ndim>** array)=0;
 
 
   // MPI control variables
@@ -118,6 +117,21 @@ class MpiControl
 
 template <int ndim, template<int> class ParticleType>
 class MpiControlType : public MpiControl<ndim> {
+
+  using MpiControl<ndim>::balance_level;
+  using MpiControl<ndim>::Nmpi;
+  using MpiControl<ndim>::mpinode;
+  using MpiControl<ndim>::mpibox;
+  using MpiControl<ndim>::rank;
+  using MpiControl<ndim>::Nloadbalance;
+
+  using MpiControl<ndim>::num_particles_export_per_node;
+  using MpiControl<ndim>::displacements_send;
+  using MpiControl<ndim>::num_particles_to_be_received;
+  using MpiControl<ndim>::receive_displs;
+  using MpiControl<ndim>::tot_particles_to_receive;
+
+
   virtual void SendParticles(int Node, int Nparticles, int* list, SphParticle<ndim>* );
   virtual void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array);
 
@@ -139,8 +153,8 @@ public:
 
   virtual void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>);
   virtual void LoadBalancing(Sph<ndim> *, Nbody<ndim> *);
-  virtual int SendReceiveGhosts(SphParticle<ndim>** array, Sph<ndim>* sph);
-  virtual int UpdateGhostParticles(SphParticle<ndim>** array);
+  int SendReceiveGhosts(ParticleType<ndim>** array, Sph<ndim>* sph);
+  int UpdateGhostParticles(ParticleType<ndim>** array);
 };
 
 

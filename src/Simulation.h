@@ -333,6 +333,7 @@ template <int ndim>
 class SphSimulation : public Simulation<ndim> 
 {
  public:
+  using SimulationBase::Nmpi;
   using SimulationBase::restart;
   using SimulationBase::simparams;
   using SimulationBase::timing;
@@ -601,7 +602,8 @@ class GodunovSphSimulation: public SphSimulation<ndim>
   using SphSimulation<ndim>::ntreebuildstep;
   using SphSimulation<ndim>::ntreestockstep;
 #ifdef MPI_PARALLEL
-using SphSimulation<ndim>::MpiGhosts;
+  using Simulation<ndim>::mpicontrol;
+  using SphSimulation<ndim>::MpiGhosts;
 #endif
 
 public:

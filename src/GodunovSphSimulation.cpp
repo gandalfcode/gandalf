@@ -161,7 +161,7 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
   else
     LocalGhosts = new NullGhosts<ndim>();
 #ifdef MPI_PARALLEL
-  MpiGhosts = new MPIGhostsSpecific<ndim, GodunovSphParticle>(&mpicontrol);
+  MpiGhosts = new MPIGhostsSpecific<ndim, GodunovSphParticle>(mpicontrol);
 #endif
 
   

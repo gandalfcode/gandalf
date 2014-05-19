@@ -701,10 +701,12 @@ void BruteForceSearch<ndim,ParticleType>::FindGhostParticlesToExport(
     const std::vector<int>& overlapping_nodes, ///< [in] Vector containing which nodes overlap our hbox
     MpiNode<ndim>* mpinodes) ///< [in] Array of other mpi nodes
 {
+  ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > 
+    (sph->GetParticlesArray());
 
   //Loop over particles and prepare the ones to export
-  for (int i=0; i<Ntot; i++) {
-    SphParticle<ndim>& part = sphdata[i];
+  for (int i=0; i<sph->Ntot; i++) {
+    ParticleType<ndim>& part = sphdata[i];
 
     //Loop over potential domains and see if we need to export this particle to them
     for (int inode=0; inode<overlapping_nodes.size(); inode++) {
@@ -730,9 +732,12 @@ void BruteForceSearch<ndim,ParticleType>::FindParticlesToTransfer(
     MpiNode<ndim>* mpinodes) ///< [in] Array of other mpi nodes
 {
 
+  ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > 
+    (sph->GetParticlesArray());
+
   //Loop over particles and prepare the ones to export
-  for (int i=0; i<Nsph; i++) {
-    SphParticle<ndim>& part = sphdata[i];
+  for (int i=0; i<sph->Nsph; i++) {
+    ParticleType<ndim>& part = sphdata[i];
 
     //Loop over potential domains and see if we need to transfer this particle to them
     for (int inode=0; inode<potential_nodes.size(); inode++) {

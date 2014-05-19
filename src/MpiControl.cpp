@@ -108,7 +108,7 @@ MpiControl<ndim>::MpiControl()
 
 template <int ndim, template<int> class ParticleType>
 MpiControlType<ndim, ParticleType>::MpiControlType() :
-MpiControl() {
+MpiControl<ndim>() {
   //Allocate buffers
   particles_to_export_per_node.resize(Nmpi);
   particles_to_export.resize(Nmpi);
@@ -128,7 +128,7 @@ MpiControl() {
 template <int ndim>
 MpiControl<ndim>::~MpiControl()
 {
-  MPI_Type_free(&particle_type);
+  //MPI_Type_free(&particle_type);
   MPI_Type_free(&box_type);
   MPI_Type_free(&diagnostics_type);
 }
@@ -878,7 +878,7 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
-(SphParticle<ndim>** array,        ///< Main SPH particle array
+(ParticleType<ndim>** array,        ///< Main SPH particle array
  Sph<ndim>* sph)                   ///< Main SPH object pointer
 {
   int i;                           // Particle counter
@@ -983,7 +983,7 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 int MpiControlType<ndim, ParticleType>::UpdateGhostParticles
-(SphParticle<ndim>** array)         ///< Main SPH particle array
+(ParticleType<ndim>** array)         ///< Main SPH particle array
 {
   int index = 0;                    // ..
   int inode;                        // MPI node counter
@@ -1061,7 +1061,7 @@ void MpiControlType<ndim, ParticleType>::ReceiveParticles
   MPI_Status status;
 
   //Cast the main array to the right type
-  ParticleType<ndim>* array = static_cast<ParticleType<ndim>* > (array_gen);
+  ParticleType<ndim>** array = static_cast<ParticleType<ndim>** > (array_gen);
 
   //"Probe" the message to know how big the message is going to be
   MPI_Probe(Node, tag, MPI_COMM_WORLD, &status);
