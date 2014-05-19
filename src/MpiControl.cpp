@@ -106,6 +106,12 @@ MpiControl<ndim>::MpiControl()
 
 }
 
+
+
+//=============================================================================
+//  MpiControl::~MpiControl()
+/// MPI node class destructor.
+//=============================================================================
 template <int ndim, template<int> class ParticleType>
 MpiControlType<ndim, ParticleType>::MpiControlType() :
 MpiControl<ndim>() {
@@ -144,8 +150,8 @@ void MpiControl<ndim>::AllocateMemory(int _Ntot)
 {
   mpinode = new MpiNode<ndim>[Nmpi];
   for (int inode=0; inode<Nmpi; inode++) {
-	mpinode[inode].Ntotmax = (2*_Ntot)/Nmpi;
-	mpinode[inode].ids = new int[mpinode[inode].Ntotmax];
+    mpinode[inode].Ntotmax = (2*_Ntot)/Nmpi;
+    mpinode[inode].ids = new int[mpinode[inode].Ntotmax];
     mpinode[inode].worksent = new FLOAT[Nmpi];
     mpinode[inode].workreceived = new FLOAT[Nmpi];
   }
@@ -320,13 +326,15 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
   FLOAT boxbuffer[2*ndim*Nmpi];     // Bounding box buffer
   ParticleType<ndim> *partbuffer;   // ..
 
-  //Get pointer to sph particles and cast it to the right type
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
+
+  // Get pointer to sph particles and cast it to the right type
+  ParticleType<ndim>* sphdata = 
+    static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
 
 
   // For main process, create load balancing tree, transmit information to all
   // other nodes including particle data
-  //---------------------------------------------------------------------------
+  //===========================================================================
   if (rank == 0) {
 
     debug2("[MpiControl::CreateInitialDomainDecomposition]");
@@ -343,7 +351,6 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
 
     // Create all other MPI node objects
     this->AllocateMemory(mpitree->Ntotmax);
-
 
     for (i=0; i<sph->Nsph; i++)
       for (k=0; k<ndim; k++) sph->rsph[ndim*i + k] = sphdata[i].r[k];
@@ -368,6 +375,9 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     }
     mpitree->box = &mpibox;
 
+    cout << "Simulation bounding box" << endl;
+    for (k=0; k<ndim; k++) cout << "r[" << k << "]  :  " << mpibox.boxmin[k] << "   " << mpibox.boxmax[k] << endl;
+
 
     // Compute the size of all tree-related arrays now we know number of points
     mpitree->ComputeTreeSize();
@@ -378,17 +388,44 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     // Create tree data structure including linked lists and cell pointers
     mpitree->CreateTreeStructure(mpinode);
 
-    // ..
+    // Set properties for root cell before constructing tree
+    mpitree->tree[0].N = sph->Nsph;
+    mpitree->tree[0].ifirst = 0;
+    mpitree->tree[0].ilast = sph->Nsph - 1;
+    for (k=0; k<ndim; k++) mpitree->tree[0].bbmin[k] = mpibox.boxmin[k];
+    for (k=0; k<ndim; k++) mpitree->tree[0].bbmax[k] = mpibox.boxmax[k];
+    for (i=0; i<sph->Ntot; i++) mpitree->inext[i] = -1;
+    for (i=0; i<sph->Nsph - 1; i++) mpitree->inext[i] = i + 1;
+    for (i=0; i<sph->Nsph; i++) mpitree->ids[i] = i;
+
+    // Recursively divide tree up until we've reached bottom level
     mpitree->DivideTreeCell(0,mpitree->Ntot-1,sphdata,mpitree->tree[0]);
 
-    // Create bounding boxes containing particles in each sub-tree
+    // Copy details from each tree leaf cell into
+    //-------------------------------------------------------------------------
     for (inode=0; inode<Nmpi; inode++) {
-      //for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] =
-      //  mpitree->subtrees[inode]->box.boxmin[k];
-      //for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] =
-      //  mpitree->subtrees[inode]->box.boxmax[k];
-      cout << "MPIDOMAIN : " << mpinode[inode].domain.boxmin[0] << "     " << mpinode[inode].domain.boxmax[0] << endl;
+      int icell = mpitree->g2c[inode];
+
+      // Create bounding boxes containing particles in each sub-tree
+      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] =
+        mpitree->tree[icell].bbmin[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] =
+        mpitree->tree[icell].bbmax[k];
+
+      // Copy particle ids to node lists
+      mpinode[inode].Nsph = 0;
+      i = mpitree->tree[icell].ifirst;
+
+      while (i != -1) {
+	if (i == mpitree->tree[icell].ilast) break;
+	mpinode[inode].ids[mpinode[inode].Nsph++] = i;
+	i = mpitree->inext[i];
+      };
+
+      cout << "MPIDOMAIN : " << mpinode[inode].domain.boxmin[0] 
+	   << "     " << mpinode[inode].domain.boxmax[0] << endl;
     }
+    //-------------------------------------------------------------------------
 
 
     // Pack all bounding box data into single array
@@ -404,8 +441,7 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
 
     // Send particles to all other domains
     for (inode=1; inode<Nmpi; inode++) {
-      SendParticles(inode, mpinode[inode].Ntot,
-                    mpinode[inode].ids, sphdata);
+      SendParticles(inode,mpinode[inode].Ntot,mpinode[inode].ids,sphdata);
       cout << "Sent " << mpinode[inode].Nsph
            << " particles to node " << inode << endl;
     }
@@ -424,7 +460,7 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
 
   // For other nodes, receive all bounding box and particle data once
   // transmitted by main process.
-  //---------------------------------------------------------------------------
+  //===========================================================================
   else {
 
     // Create MPI node objects
@@ -440,15 +476,18 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
       for (k=0; k<ndim; k++)
         mpinode[inode].domain.boxmax[k] = boxbuffer[2*ndim*inode + ndim + k];
       if (rank == 1) {
-      cout << "Node " << i << endl;
-      cout << "xbox : " << mpinode[inode].domain.boxmin[0]
-           << "    " << mpinode[inode].domain.boxmax[0] << endl;
-      cout << "ybox : " << mpinode[inode].domain.boxmin[1] << "    "
-           << mpinode[inode].domain.boxmax[1] << endl;
-      cout << "zbox : " << mpinode[inode].domain.boxmin[2] << "    "
-           << mpinode[inode].domain.boxmax[2] << endl;
+	cout << "Node " << inode << "    rank : " << rank << endl;
+	cout << "xbox : " << mpinode[inode].domain.boxmin[0]
+	     << "    " << mpinode[inode].domain.boxmax[0] << endl;
+	if (ndim > 1) 
+	  cout << "ybox : " << mpinode[inode].domain.boxmin[1] << "    "
+	       << mpinode[inode].domain.boxmax[1] << endl;
+	if (ndim == 3) 
+	  cout << "zbox : " << mpinode[inode].domain.boxmin[2] << "    "
+	       << mpinode[inode].domain.boxmax[2] << endl;
       }
     }
+
     // Now, receive particles form main process and copy to local main array
     ReceiveParticles(0, (sph->Nsph), &partbuffer);
 
@@ -462,7 +501,8 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     cout << "Deallocated partbuffer" << endl;
 
   }
-  //---------------------------------------------------------------------------
+  //===========================================================================
+
 
   return;
 }

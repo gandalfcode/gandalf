@@ -54,11 +54,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   debug2("[SphSimulation::ProcessParameters]");
 
-  // Now simulation object is created, set-up various MPI variables
-#ifdef MPI_PARALLEL
-  rank = mpicontrol->rank;
-  Nmpi = mpicontrol->Nmpi;
-#endif
 
   // Sanity check for valid dimensionality
   if (ndim < 1 || ndim > 3) {
@@ -226,6 +221,14 @@ void SphSimulation<ndim>::ProcessParameters(void)
     uint->timing    = timing;
     radiation->timing = timing;
   }
+
+
+  // Now simulation object is created, set-up various MPI variables
+#ifdef MPI_PARALLEL
+  rank = mpicontrol->rank;
+  Nmpi = mpicontrol->Nmpi;
+#endif
+
 
   // Flag that we've processed all parameters already
   ParametersProcessed = true;

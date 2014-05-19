@@ -89,6 +89,7 @@ void MpiTree<ndim,ParticleType>::AllocateMemory(void)
     if (allocated_tree) DeallocateMemory();
     Ntotmax = max(Ntotmax,Ntot);
 
+    g2c = new int[gmax];
     ids = new int[Ntotmax];
     inext = new int[Ntotmax];
     tree = new struct MpiTreeCell<ndim>[Ncellmax];
@@ -114,6 +115,7 @@ void MpiTree<ndim,ParticleType>::DeallocateMemory(void)
     delete[] tree;
     delete[] inext;
     delete[] ids;
+    delete[] g2c;
     allocated_tree = false;
   }
 
@@ -139,10 +141,12 @@ void MpiTree<ndim,ParticleType>::ComputeTreeSize(void)
     ltot++;
   };
   gtot = pow(2,ltot);
+  gmax = pow(2,ltot);
   Ncell = 2*gtot - 1;
+  Ncellmax = Ncell;
 
   cout << "No. of levels on MPI tree : " << ltot << "   " << ltot << endl;
-  cout << "No. of MPI cells in tree  : " << Nmpi << "   " << Ncellmax << endl; 
+  cout << "No. of MPI cells in tree  : " << Nmpi << "   " << gtot << endl; 
 
   return;
 }
@@ -178,6 +182,7 @@ void MpiTree<ndim,ParticleType>::CreateTreeStructure(MpiNode<ndim> *mpinode)
   // Zero tree cell variables
   for (c=0; c<Ncell; c++) {
     tree[c].id = c;
+    tree[c].c2g = 0;
     tree[c].c1 = -1;
     tree[c].c2 = -1;
     tree[c].ifirst = -1;
@@ -192,12 +197,14 @@ void MpiTree<ndim,ParticleType>::CreateTreeStructure(MpiNode<ndim> *mpinode)
   for (c=0; c<Ncell; c++) {
     if (tree[c].level == ltot) {                    // If on leaf level
       tree[c].cnext = c + 1;                        // id of next cell
+      tree[c].c2g = g;                              // Record leaf id
+      g2c[g++] = c;                                 // Record inverse id
     }
     else {
       tree[c+1].level = tree[c].level + 1;          // Level of 1st child
       tree[c].c1 = c + 1;
       tree[c].c2 = c + c2L[tree[c].level];          // id of 2nd child
-      tree[tree[c].c2].level = tree[c].level + 1; // Level of 2nd child
+      tree[tree[c].c2].level = tree[c].level + 1;   // Level of 2nd child
       tree[c].cnext = c + cNL[tree[c].level];       // Next cell id
     }
 
@@ -375,6 +382,8 @@ FLOAT MpiTree<ndim,ParticleType>::QuickSelect
 
     // Make a guess of pivot value
     jguess = (left + right)/2;
+    cout << "PIVOT : " << left << "   " << jpivot << "   " << right << "   " << k << endl;
+    cin >> i;
     rpivot = partdata[ids[jguess]].r[k];
 
     // ..

@@ -49,6 +49,8 @@ struct MpiTreeCell {
   int id;                           ///< ..
   int c1;                           ///< First child cell
   int c2;                           ///< Second child cell
+  int c2g;                          ///< i.d. of tree-cell c/grid-cell g
+  int clevel;
   int cnext;                        ///< i.d. of next cell if not opened
   int k_divide;                     ///< Dimension along which cell is split
   int level;                        ///< Level of cell on tree
@@ -62,8 +64,6 @@ struct MpiTreeCell {
   FLOAT volume;                     ///< Cell volume
   FLOAT rwork[ndim];
   FLOAT worktot;
-  int c2g;
-  int clevel;
 };
 
 
@@ -98,6 +98,7 @@ class MpiTree
   //---------------------------------------------------------------------------
   bool allocated_tree;
   int gtot;
+  int gmax;
   int lmax;
   int ltot;
   int Ncell;
@@ -107,6 +108,7 @@ class MpiTree
   int Ntot;
   int Ntotmax;
   int Nthreads;                     ///< No. of OpenMP threads
+    int *g2c;
   int *ids;                         ///< Particle ids
   int *inext;                       ///< Linked list for grid search
   MpiTreeCell<ndim> *tree;       ///< ..
