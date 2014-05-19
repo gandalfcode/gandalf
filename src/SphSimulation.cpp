@@ -301,7 +301,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     }
 
 #ifdef MPI_PARALLEL
-    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, partdata, sph->kernp);
+    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph, sph->kernp);
 #endif
 
     // Search ghost particles
@@ -326,7 +326,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
 #ifdef MPI_PARALLEL
-    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, partdata, sph->kernp);
+    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph, sph->kernp);
 #endif
 
     // Search ghost particles
@@ -498,7 +498,7 @@ void SphSimulation<ndim>::MainLoop(void)
   //---------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, partdata, sph->kernp);
+    mpicontrol.UpdateAllBoundingBoxes(sph->Nsph, sph, sph->kernp);
     mpicontrol.LoadBalancing(sph,nbody);
     //exit(0);
   }

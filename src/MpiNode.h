@@ -55,7 +55,7 @@ class MpiNode
   //---------------------------------------------------------------------------
   void PackNodeData(void);
   void UnpackNodeData(void);
-  void UpdateBoundingBoxData(int, SphParticle<ndim> *, SphKernel<ndim> *);
+  void UpdateBoundingBoxData(int, Sph<ndim> *, SphKernel<ndim> *);
 
 
   // MPI node variables

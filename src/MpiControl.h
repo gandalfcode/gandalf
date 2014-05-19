@@ -58,18 +58,15 @@ template <int ndim>
 class MpiControl
 {
   //Convenience functions to send and receive particles
-  void SendParticles(int Node, int Nparticles, int* list, SphParticle<ndim>* );
-  void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array);
-  std::vector<SphParticle<ndim> > sendbuffer; ///< Used by the SendParticles routine
+  virtual void SendParticles(int Node, int Nparticles, int* list, SphParticle<ndim>* )=0;
+  virtual void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array)=0;
+
 
   MPI_Datatype particle_type;        ///< Datatype for the particles
   MPI_Datatype box_type;             ///< Datatype for the box
   MPI_Datatype diagnostics_type;     ///< Datatype for diagnostic info
 
   //Buffers needed to send and receive particles
-  std::vector<std::vector<SphParticle<ndim>* > > particles_to_export_per_node;
-  std::vector<SphParticle<ndim> > particles_to_export;
-  std::vector<SphParticle<ndim> > particles_receive;
   std::vector<int> num_particles_export_per_node;
   std::vector<int> displacements_send;
   std::vector<int> num_particles_to_be_received;
@@ -98,11 +95,11 @@ class MpiControl
   void SetNeibSearch(SphNeighbourSearch<ndim>* _neibsearch) {neibsearch=_neibsearch;}
 
   void CollateDiagnosticsData(Diagnostics<ndim> &);
-  void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>);
-  void LoadBalancing(Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllBoundingBoxes(int, SphParticle<ndim> *, SphKernel<ndim> *);
-  int SendReceiveGhosts(SphParticle<ndim>** array, Sph<ndim>* sph);
-  int UpdateGhostParticles(SphParticle<ndim>** array);
+  virtual void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>)=0;
+  virtual void LoadBalancing(Sph<ndim> *, Nbody<ndim> *)=0;
+  void UpdateAllBoundingBoxes(int, Sph<ndim> *, SphKernel<ndim> *);
+  virtual int SendReceiveGhosts(SphParticle<ndim>** array, Sph<ndim>* sph)=0;
+  virtual int UpdateGhostParticles(SphParticle<ndim>** array)=0;
 
 
   // MPI control variables
@@ -119,4 +116,28 @@ class MpiControl
   MpiNode<ndim> *mpinode;           ///< Data for all MPI nodes
 
 };
+
+
+template <int ndim, template<int> class ParticleType>
+class MpiControlType : public MpiControl<ndim> {
+  virtual void SendParticles(int Node, int Nparticles, int* list, SphParticle<ndim>* );
+  virtual void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array);
+
+  std::vector<ParticleType<ndim> > sendbuffer; ///< Used by the SendParticles routine
+
+  //Buffers needed to send and receive particles
+  std::vector<std::vector<ParticleType<ndim>* > > particles_to_export_per_node;
+  std::vector<ParticleType<ndim> > particles_to_export;
+  std::vector<ParticleType<ndim> > particles_receive;
+public:
+
+  MpiControlType ();
+
+  virtual void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>);
+  virtual void LoadBalancing(Sph<ndim> *, Nbody<ndim> *);
+  virtual int SendReceiveGhosts(SphParticle<ndim>** array, Sph<ndim>* sph);
+  virtual int UpdateGhostParticles(SphParticle<ndim>** array);
+};
+
+
 #endif

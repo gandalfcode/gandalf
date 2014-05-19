@@ -78,9 +78,7 @@ MpiControl<ndim>::MpiControl()
   boxes_buffer.resize(Nmpi);
 
   // Allocate the buffers needed to send and receive particles
-  particles_to_export_per_node.resize(Nmpi);
   num_particles_export_per_node.resize(Nmpi);
-  particles_to_export.resize(Nmpi);
   displacements_send.resize(Nmpi);
   num_particles_to_be_received.resize(Nmpi);
   receive_displs.resize(Nmpi);
@@ -110,6 +108,14 @@ MpiControl<ndim>::MpiControl()
   }
 #endif
 
+}
+
+template <int ndim, template<int> class ParticleType>
+MpiControlType<ndim, ParticleType>::MpiControlType() :
+MpiControl() {
+  //Allocate buffers
+  particles_to_export_per_node.resize(Nmpi);
+  particles_to_export.resize(Nmpi);
 }
 
 
@@ -299,8 +305,8 @@ void MpiControl<ndim>::CreateLeagueCalendar(void)
 /// the domains to give each MPI node equal amounts of work.  This routine 
 /// should only be called for the root process.
 //=============================================================================
-template <int ndim>
-void MpiControl<ndim>::CreateInitialDomainDecomposition
+template <int ndim, template<int> class ParticleType>
+void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
 (Sph<ndim> *sph,                   ///< Pointer to main SPH object
  Nbody<ndim> *nbody,               ///< Pointer to main N-body object
  Parameters *simparams,            ///< Simulation parameters
@@ -311,7 +317,10 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
   int k;                           // Dimension counter
   int okflag;                      // ..
   FLOAT boxbuffer[2*ndim*Nmpi];    // Bounding box buffer
-  SphParticle<ndim> *partbuffer;   // ..
+  ParticleType<ndim> *partbuffer;   // ..
+
+  //Get pointer to sph particles and cast it to the right type
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
 
 
   // For main process, create load balancing tree, transmit information to all
@@ -336,7 +345,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
 
     for (i=0; i<sph->Nsph; i++)
-      for (k=0; k<ndim; k++) sph->rsph[ndim*i + k] = sph->sphdata[i].r[k];
+      for (k=0; k<ndim; k++) sph->rsph[ndim*i + k] = sphdata[i].r[k];
 
     // For periodic simulations, set bounding box of root node to be the 
     // periodic box size.  Otherwise, set to be the particle bounding box.
@@ -369,7 +378,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
     mpitree->CreateTreeStructure(mpinode);
 
     // Find ordered list of ptcl positions ready for adding particles to tree
-    mpitree->OrderParticlesByCartCoord(sph->sphdata);
+    mpitree->OrderParticlesByCartCoord(sphdata);
 
     // Now add particles to tree depending on Cartesian coordinates
     mpitree->LoadParticlesToTree(sph->rsph);
@@ -398,7 +407,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
     // Send particles to all other domains
     for (inode=1; inode<Nmpi; inode++) {
       SendParticles(inode, mpinode[inode].Ntot,
-                    mpinode[inode].ids, sph->sphdata);
+                    mpinode[inode].ids, sphdata);
       cout << "Sent " << mpinode[inode].Nsph
            << " particles to node " << inode << endl;
     }
@@ -407,9 +416,9 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
     // Delete all other particles from local domain
     sph->Nsph = mpinode[0].Nsph;
-    partbuffer = new SphParticle<ndim>[sph->Nsph];
-    for (i=0; i<sph->Nsph; i++) partbuffer[i] = sph->sphdata[mpinode[0].ids[i]];
-    for (i=0; i<sph->Nsph; i++) sph->sphdata[i] = partbuffer[i];
+    partbuffer = new ParticleType<ndim>[sph->Nsph];
+    for (i=0; i<sph->Nsph; i++) partbuffer[i] = sphdata[mpinode[0].ids[i]];
+    for (i=0; i<sph->Nsph; i++) sphdata[i] = partbuffer[i];
     delete[] partbuffer;
     cout << "Deleted all other particles from root node" << endl;
 
@@ -450,7 +459,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 
     cout << "Received particles on node " << rank << "   Nsph : " << sph->Nsph << endl;
 
-    for (i=0; i<sph->Nsph; i++) sph->sphdata[i] = partbuffer[i];
+    for (i=0; i<sph->Nsph; i++) sphdata[i] = partbuffer[i];
     delete[] partbuffer;
     cout << "Deallocated partbuffer" << endl;
 
@@ -469,7 +478,7 @@ void MpiControl<ndim>::CreateInitialDomainDecomposition
 template <int ndim>
 void MpiControl<ndim>::UpdateAllBoundingBoxes
 (int Npart,                         ///< No. of SPH particles
- SphParticle<ndim> *sphdata,        ///< Pointer to SPH data
+ Sph<ndim> *sph,        ///< Pointer to SPH data
  SphKernel<ndim> *kernptr)          ///< Pointer to kernel object
 {
   int inode;                        // MPI node counter
@@ -477,7 +486,7 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
   if (rank == 0) debug2("[MpiControl::UpdateAllBoundingBoxes]");
 
   // Update local bounding boxes
-  mpinode[rank].UpdateBoundingBoxData(Npart,sphdata,kernptr);
+  mpinode[rank].UpdateBoundingBoxData(Npart,sph,kernptr);
 
   // Do an all_gather to receive the new array
   MPI_Allgather(&mpinode[rank].hbox,1,box_type,&boxes_buffer[0],
@@ -512,8 +521,8 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
 /// Then broadcast the new domain boundaries to all other nodes to determine 
 /// which particles should be transfered to new nodes.
 //=============================================================================
-template <int ndim>
-void MpiControl<ndim>::LoadBalancing
+template <int ndim, template<int> class ParticleType>
+void MpiControlType<ndim, ParticleType >::LoadBalancing
 (Sph<ndim> *sph,                    ///< Pointer to main SPH object
  Nbody<ndim> *nbody)                ///< Pointer to main N-body object
 {
@@ -532,6 +541,9 @@ void MpiControl<ndim>::LoadBalancing
   // If running on only one MPI node, return immediately
   if (Nmpi == 1) return;
 
+  //Get pointer to sph particles and cast it to the right type
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
+
 
   // Compute work that will be transmitted to all other domains if using
   // current domain boxes and particle positions
@@ -545,9 +557,9 @@ void MpiControl<ndim>::LoadBalancing
 
   for (k=0; k<ndim; k++) mpinode[rank].rwork[k] = 0.0;
   for (i=0; i<sph->Nsph; i++) {
-    mpinode[rank].worktot += 1.0/(FLOAT) sph->sphdata[i].nstep;
+    mpinode[rank].worktot += 1.0/(FLOAT) sphdata[i].nstep;
     for (k=0; k<ndim; k++) 
-      mpinode[rank].rwork[k] += sph->sphdata[i].r[k]/(FLOAT) sph->sphdata[i].nstep;
+      mpinode[rank].rwork[k] += sphdata[i].r[k]/(FLOAT) sphdata[i].nstep;
   }
   for (k=0; k<ndim; k++) mpinode[rank].rwork[k] /= mpinode[rank].worktot;
 
@@ -556,14 +568,14 @@ void MpiControl<ndim>::LoadBalancing
   // Now find total work transfered to all other nodes if node
   // boundaries remained unchanged.
   for (i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->sphdata[i];
+    SphParticle<ndim>& part = sphdata[i];
 
     // Loop over potential domains and see if we need to transfer this particle to them
     for (inode=0; inode<Nmpi; inode++) {
       //if (rank == 1) cout << "R : " << ParticleInBox(part,mpinode[inode].domain) << "    " << inode << "     " << rank << "    " << part.r[0] << "    " << mpinode[inode].domain.boxmin[0] << "    " << mpinode[inode].domain.boxmax[0] << endl;
       if (ParticleInBox(part,mpinode[inode].domain)) {
         if (inode == rank) break;
-        mpinode[rank].worksent[inode] += 1.0/(FLOAT) sph->sphdata[i].nstep;
+        mpinode[rank].worksent[inode] += 1.0/(FLOAT) sphdata[i].nstep;
         if (rank == 1) cout << "OVERLAP?? : " << rank << "    " << mpinode[rank].worksent[inode] << endl;
         // The particle can belong only to one domain, so we can break from this loop
         break;
@@ -781,7 +793,7 @@ void MpiControl<ndim>::LoadBalancing
   bruteforce.FindParticlesToTransfer(sph, particles_to_transfer, all_particles_to_export, potential_nodes, mpinode);
 
   // Send and receive particles from/to all other nodes
-  std::vector<SphParticle<ndim> > sendbuffer, recvbuffer;
+  std::vector<ParticleType<ndim> > sendbuffer, recvbuffer;
   for (int iturn = 0; iturn<my_matches.size(); iturn++) {
     int inode = my_matches[iturn];
 
@@ -793,7 +805,7 @@ void MpiControl<ndim>::LoadBalancing
     // Copy particles into send buffer
     for (int ipart=0; ipart < N_to_transfer; ipart++) {
       int index = particles_to_transfer[inode][ipart];
-      sendbuffer[ipart] = sph->sphdata[index];
+      sendbuffer[ipart] = sphdata[index];
     }
 
     // Do the actual send and receive
@@ -837,7 +849,7 @@ void MpiControl<ndim>::LoadBalancing
     int running_counter = sph->Nsph;
     // TODO: check we have enough memory
     for (int i=0; i< recvbuffer.size(); i++) {
-      sph->sphdata[running_counter] = recvbuffer[i];
+      sphdata[running_counter] = recvbuffer[i];
       running_counter++;
     }
     sph->Nsph = running_counter;
@@ -865,8 +877,8 @@ void MpiControl<ndim>::LoadBalancing
 /// must NOT delete this array when is finished with it, as the memory is 
 /// internally managed by this class.
 //=============================================================================
-template <int ndim>
-int MpiControl<ndim>::SendReceiveGhosts
+template <int ndim, template<int> class ParticleType>
+int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
 (SphParticle<ndim>** array,        ///< Main SPH particle array
  Sph<ndim>* sph)                   ///< Main SPH object pointer
 {
@@ -933,7 +945,7 @@ int MpiControl<ndim>::SendReceiveGhosts
 
   index = 0;
   for (inode=0; inode < Nmpi; inode++) {
-    std::vector<SphParticle<ndim>* >& particles_on_this_node = particles_to_export_per_node[inode];
+    std::vector<ParticleType<ndim>* >& particles_on_this_node = particles_to_export_per_node[inode];
     for (int iparticle=0; iparticle<particles_on_this_node.size(); iparticle++) {
       particles_to_export[index] =  *particles_on_this_node[iparticle];
       index++;
@@ -970,8 +982,8 @@ int MpiControl<ndim>::SendReceiveGhosts
 /// of ghosts (note: the caller must NOT call delete on this array, as the 
 /// memory is internally managed by the MpiControl class).
 //=============================================================================
-template <int ndim>
-int MpiControl<ndim>::UpdateGhostParticles
+template <int ndim, template<int> class ParticleType>
+int MpiControlType<ndim, ParticleType>::UpdateGhostParticles
 (SphParticle<ndim>** array)         ///< Main SPH particle array
 {
   int index = 0;                    // ..
@@ -980,7 +992,7 @@ int MpiControl<ndim>::UpdateGhostParticles
 
   //Update the local buffer of particles to send
   for (inode=0; inode<Nmpi; inode++) {
-    std::vector<SphParticle<ndim>* >& particles_on_this_node = particles_to_export_per_node[inode];
+    std::vector<ParticleType<ndim>* >& particles_on_this_node = particles_to_export_per_node[inode];
     for (ipart=0; ipart<particles_on_this_node.size(); ipart++) {
       particles_to_export[index] = *particles_on_this_node[ipart];
       index++;
@@ -1005,14 +1017,17 @@ int MpiControl<ndim>::UpdateGhostParticles
 /// Given an array of ids and a node, copy particles inside a buffer and 
 /// send them to the given node.
 //=============================================================================
-template <int ndim>
-void MpiControl<ndim>::SendParticles
+template <int ndim, template<int> class ParticleType>
+void MpiControlType<ndim, ParticleType>::SendParticles
 (int Node, 
  int Nparticles, 
  int* list, 
- SphParticle<ndim>* main_array) 
+ SphParticle<ndim>* main_array_gen)
 {
   int i;                            // Particle counter
+
+  //Cast the main array to the right type
+  ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (main_array_gen);
 
   //Ensure there is enough memory in the buffer
   sendbuffer.resize(Nparticles);
@@ -1036,15 +1051,18 @@ void MpiControl<ndim>::SendParticles
 /// received and a pointer to the array containing the particles. The caller 
 /// is reponsible to free the array after its usage.
 //=============================================================================
-template <int ndim>
-void MpiControl<ndim>::ReceiveParticles
+template <int ndim, template<int> class ParticleType>
+void MpiControlType<ndim, ParticleType>::ReceiveParticles
 (int Node, 
  int& Nparticles, 
- SphParticle<ndim>** array) 
+ SphParticle<ndim>** array_gen)
 {
 
   const int tag = 1;
   MPI_Status status;
+
+  //Cast the main array to the right type
+  ParticleType<ndim>* array = static_cast<ParticleType<ndim>* > (array_gen);
 
   //"Probe" the message to know how big the message is going to be
   MPI_Probe(Node, tag, MPI_COMM_WORLD, &status);
@@ -1053,7 +1071,7 @@ void MpiControl<ndim>::ReceiveParticles
   MPI_Get_count(&status, particle_type, &Nparticles);
 
   //Allocate enough memory to hold the particles
-  *array = new SphParticle<ndim> [Nparticles];
+  *array = new ParticleType<ndim> [Nparticles];
 
   //Now receive the message
   MPI_Recv(*array, Nparticles, particle_type, Node, 
@@ -1125,3 +1143,13 @@ void MpiControl<ndim>::CollateDiagnosticsData(Diagnostics<ndim> &diag)
 template class MpiControl<1>;
 template class MpiControl<2>;
 template class MpiControl<3>;
+// Template class for each particle type
+template class MpiControlType<1, GradhSphParticle>;
+template class MpiControlType<2, GradhSphParticle>;
+template class MpiControlType<3, GradhSphParticle>;
+template class MpiControlType<1, SM2012SphParticle>;
+template class MpiControlType<2, SM2012SphParticle>;
+template class MpiControlType<3, SM2012SphParticle>;
+template class MpiControlType<1, GodunovSphParticle>;
+template class MpiControlType<2, GodunovSphParticle>;
+template class MpiControlType<3, GodunovSphParticle>;
