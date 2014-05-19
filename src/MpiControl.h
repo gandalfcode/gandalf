@@ -59,8 +59,8 @@ class MpiControl
 {
  protected:
   //Convenience functions to send and receive particles
-  virtual void SendParticles(int Node, int Nparticles, int* list, SphParticle<ndim>* )=0;
-  virtual void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array)=0;
+  //virtual void SendParticles(int Node, int Nparticles, int* list, SphParticle<ndim>* )=0;
+  //virtual void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array)=0;
 
 
   MPI_Datatype box_type;             ///< Datatype for the box
@@ -135,8 +135,8 @@ class MpiControlType : public MpiControl<ndim> {
   using MpiControl<ndim>::tot_particles_to_receive;
 
 
-  virtual void SendParticles(int Node, int Nparticles, int* list, SphParticle<ndim>* );
-  virtual void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array);
+  void SendParticles(int Node, int Nparticles, int* list, ParticleType<ndim>* );
+  void ReceiveParticles (int Node, int& Nparticles, ParticleType<ndim>** array);
 
   std::vector<ParticleType<ndim> > sendbuffer; ///< Used by the SendParticles routine
 

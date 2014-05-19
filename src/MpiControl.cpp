@@ -342,7 +342,7 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     mpitree->gtot = 0;
 
     // Create all other MPI node objects
-    AllocateMemory(mpitree->Ntotmax);
+    this->AllocateMemory(mpitree->Ntotmax);
 
 
     for (i=0; i<sph->Nsph; i++)
@@ -428,7 +428,7 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
   else {
 
     // Create MPI node objects
-    AllocateMemory(sph->Nsph);
+    this->AllocateMemory(sph->Nsph);
 
     // Receive bounding box data for domain and unpack data
     MPI_Bcast(boxbuffer,2*ndim*Nmpi,MPI_DOUBLE,0,MPI_COMM_WORLD);
@@ -907,7 +907,8 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
 
   //Ask the neighbour search class to compute the list of particles to export
   //For now, hard-coded the BruteForce class
-  BruteForceSearch<ndim> bruteforce;
+  BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,&mpibox,
+				                 sph->kernp,timing);
   bruteforce.FindGhostParticlesToExport(sph,particles_to_export_per_node,overlapping_nodes,mpinode);
 
   //Prepare arrays with number of particles to export per node and displacements
@@ -1021,12 +1022,12 @@ void MpiControlType<ndim, ParticleType>::SendParticles
 (int Node, 
  int Nparticles, 
  int* list, 
- SphParticle<ndim>* main_array_gen)
+ ParticleType<ndim>* main_array) //main_array_gen)
 {
   int i;                            // Particle counter
 
   //Cast the main array to the right type
-  ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (main_array_gen);
+  //ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (main_array_gen);
 
   //Ensure there is enough memory in the buffer
   sendbuffer.resize(Nparticles);
@@ -1054,14 +1055,14 @@ template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim, ParticleType>::ReceiveParticles
 (int Node, 
  int& Nparticles, 
- SphParticle<ndim>** pointer_array_gen)
+ ParticleType<ndim>** array) //pointer_array_gen)
 {
 
   const int tag = 1;
   MPI_Status status;
 
   //Cast the main array to the right type
-  ParticleType<ndim>* array = static_cast<ParticleType<ndim>* > (*pointer_array_gen);
+  //ParticleType<ndim>* array = static_cast<ParticleType<ndim>* > (*pointer_array_gen);
 
   //"Probe" the message to know how big the message is going to be
   MPI_Probe(Node, tag, MPI_COMM_WORLD, &status);
@@ -1070,13 +1071,13 @@ void MpiControlType<ndim, ParticleType>::ReceiveParticles
   MPI_Get_count(&status, particle_type, &Nparticles);
 
   //Allocate enough memory to hold the particles
-  array = new ParticleType<ndim> [Nparticles];
+  *array = new ParticleType<ndim> [Nparticles];
 
   //Now receive the message
-  MPI_Recv(array, Nparticles, particle_type, Node,
+  MPI_Recv(*array, Nparticles, particle_type, Node,
            tag_srpart, MPI_COMM_WORLD, &status);
 
-  *pointer_array_gen = array;
+  //*pointer_array_gen = array;
 
   return;
 }
