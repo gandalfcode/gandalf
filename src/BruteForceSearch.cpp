@@ -692,44 +692,53 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
 #if defined MPI_PARALLEL
 //=============================================================================
 //  BruteForceSearch::FindGhostParticlesToExport
-/// Compute on behalf of the MpiControl class the ghost particles we need to export to other nodes
+/// Compute on behalf of the MpiControl class the ghost particles we need 
+/// to export to other nodes.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void BruteForceSearch<ndim,ParticleType>::FindGhostParticlesToExport(
-    Sph<ndim>* sph,    ///< [in] Pointer to sph class
-    std::vector<std::vector<ParticleType<ndim>* > >& particles_to_export_per_node, ///< [inout] Vector that will be filled with values
-    const std::vector<int>& overlapping_nodes, ///< [in] Vector containing which nodes overlap our hbox
-    MpiNode<ndim>* mpinodes) ///< [in] Array of other mpi nodes
+void BruteForceSearch<ndim,ParticleType>::FindGhostParticlesToExport
+(Sph<ndim>* sph,                            ///< [in] Pointer to sph class
+ vector<vector<ParticleType<ndim>*>>& particles_to_export_per_node, ///< [inout] Vector that will be filled with values
+ const std::vector<int>& overlapping_nodes, ///< [in] Vector containing which 
+                                            ///<      nodes overlap our hbox
+ MpiNode<ndim>* mpinodes)                   ///< [in] Array of other mpi nodes
 {
-  ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > 
-    (sph->GetParticlesArray());
+  int i;                                    // ..
+  int inode;                                // ..
+  int node_number;                          // ..
+  ParticleType<ndim> *sphdata = 
+    static_cast<ParticleType<ndim>*> sph->GetParticlesArray();
 
-  //Loop over particles and prepare the ones to export
-  for (int i=0; i<sph->Ntot; i++) {
+  // Loop over particles and prepare the ones to export
+  for (i=0; i<sph->Ntot; i++) {
     ParticleType<ndim>& part = sphdata[i];
-
-    //Loop over potential domains and see if we need to export this particle to them
-    for (int inode=0; inode<overlapping_nodes.size(); inode++) {
-      int node_number = overlapping_nodes[inode];
+    
+    // Loop over potential domains and find particles to export to them
+    for (inode=0; inode<overlapping_nodes.size(); inode++) {
+      node_number = overlapping_nodes[inode];
       if (ParticleBoxOverlap(part,mpinodes[node_number].hbox)) {
         particles_to_export_per_node[node_number].push_back(&part);
       }
     }
   }
+  
+  return;
 }
+
+
 
 //=============================================================================
 //  BruteForceSearch::FindParticlesToTransfer
-/// Compute on behalf of the MpiControl class the particles that are outside the
-/// domain after a load balancing and need to be transferred to other nodes
+/// Compute on behalf of the MpiControl class the particles that are outside 
+/// the domain after a load balancing and need to be transferred to other nodes
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void BruteForceSearch<ndim,ParticleType>::FindParticlesToTransfer(
-    Sph<ndim>* sph,    ///< [in] Pointer to sph class
-    std::vector<std::vector<int> >& particles_to_export, ///< [inout] Vector that for each node gives the list of particles to export
-    std::vector<int>& all_particles_to_export,  ///< [inout] Vector containing all the particles that will be exported by this processor
-    const std::vector<int>& potential_nodes, ///< [in] Vector containing the potential nodes we might be sending particles to
-    MpiNode<ndim>* mpinodes) ///< [in] Array of other mpi nodes
+void BruteForceSearch<ndim,ParticleType>::FindParticlesToTransfer
+(Sph<ndim>* sph,    ///< [in] Pointer to sph class
+ std::vector<std::vector<int> >& particles_to_export, ///< [inout] Vector that for each node gives the list of particles to export
+ std::vector<int>& all_particles_to_export,  ///< [inout] Vector containing all the particles that will be exported by this processor
+ const std::vector<int>& potential_nodes, ///< [in] Vector containing the potential nodes we might be sending particles to
+ MpiNode<ndim>* mpinodes) ///< [in] Array of other mpi nodes
 {
 
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > 
@@ -751,8 +760,9 @@ void BruteForceSearch<ndim,ParticleType>::FindParticlesToTransfer(
     }
   }
 }
-
 #endif
+
+
 
 template class BruteForceSearch<1,GradhSphParticle>;
 template class BruteForceSearch<2,GradhSphParticle>;

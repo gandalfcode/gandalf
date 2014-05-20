@@ -337,12 +337,11 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     // Create MPI binary tree for organising domain decomposition
     mpitree = new MpiTree<ndim,ParticleType>(Nmpi);
 
-    // Create binary tree from all SPH particles
-    // Set number of tree members to total number of SPH particles (inc. ghosts)
+    // Set number of tree members to total no. of SPH particles (inc. ghosts)
     mpitree->Nsph = sph->Nsph;
     mpitree->Ntot = sph->Nsph;
     mpitree->Ntotmax = sph->Nsphmax;
-    mpitree->gtot = 0;
+
 
     // Create all other MPI node objects
     this->AllocateMemory(mpitree->Ntotmax);
@@ -351,8 +350,6 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     ParticleType<ndim>* sphdata = 
       static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
 
-    //for (i=0; i<sph->Nsph; i++)
-    //for (k=0; k<ndim; k++) sph->rsph[ndim*i + k] = sphdata[i].r[k];
 
     // For periodic simulations, set bounding box of root node to be the 
     // periodic box size.  Otherwise, set to be the particle bounding box.
@@ -372,7 +369,7 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
       if (simbox.z_boundary_rhs == "open") mpibox.boxmax[2] = big_number;
       else mpibox.boxmax[2] = simbox.boxmax[2];
     }
-    mpitree->box = &mpibox;
+    //mpitree->box = &mpibox;
 
     cout << "Simulation bounding box" << endl;
     for (k=0; k<ndim; k++) cout << "r[" << k << "]  :  " << mpibox.boxmin[k] << "   " << mpibox.boxmax[k] << endl;
@@ -399,6 +396,7 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
 
     // Recursively divide tree up until we've reached bottom level
     mpitree->DivideTreeCell(0,mpitree->Ntot-1,sphdata,mpitree->tree[0]);
+
 
     // Copy details from each tree leaf cell into
     //-------------------------------------------------------------------------
@@ -592,9 +590,10 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   if (Nmpi == 1) return;
 
   //Get pointer to sph particles and cast it to the right type
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
+  ParticleType<ndim>* sphdata = 
+    static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
 
-
+  /*
   // Compute work that will be transmitted to all other domains if using
   // current domain boxes and particle positions
   // (DAVID : Maybe in the future once basic implementation works)
@@ -820,7 +819,7 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
 
   }
   //---------------------------------------------------------------------------
-
+  */
 
 
   // Prepare lists of particles that now occupy other processor domains that 
@@ -838,11 +837,11 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
 
 
 
-  // Now find the particles that need to be transferred - delegate to NeighbourSearch
+  // Find the ptcls that need to be transferred - delegate to NeighbourSearch
   std::vector<std::vector<int> > particles_to_transfer (Nmpi);
   std::vector<int> all_particles_to_export;
-  BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,&mpibox,
-                                 sph->kernp,timing);
+  BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,
+                                                 &mpibox,sph->kernp,timing);
   bruteforce.FindParticlesToTransfer(sph, particles_to_transfer, all_particles_to_export, potential_nodes, mpinode);
 
   // Send and receive particles from/to all other nodes
@@ -940,16 +939,19 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
 {
   int i;                            // Particle counter
   int index;                        // ..
+  int iparticle;                    // ..
+  int Nexport;                      // ..
+  int Npart;                        // ..
   int running_counter;              // ..
-  int inode;
-  std::vector<int > overlapping_nodes;
+  int inode;                        // MPI node index
+  vector<int> overlapping_nodes;    // List of nodes that overlap this domain
 
   if (rank == 0) debug2("[MpiControl::SendReceiveGhosts]");
 
-  //Reserve space for all nodes
+  // Reserve space for all nodes
   overlapping_nodes.reserve(Nmpi);
 
-  //Loop over domains and find the ones that could overlap us
+  // Loop over domains and find the ones that could overlap us
   for (inode=0; inode<Nmpi; inode++) {
     if (inode == rank) continue;
     if (BoxesOverlap(mpinode[inode].hbox,mpinode[rank].hbox)) {
@@ -957,70 +959,76 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
     }
   }
 
-  //Clear the buffer holding the indexes of the particles we need to export
+  // Clear the buffer holding the indexes of the particles we need to export
   for (inode=0; inode<particles_to_export_per_node.size(); inode++) {
     particles_to_export_per_node[inode].clear();
   }
 
-  //Ask the neighbour search class to compute the list of particles to export
-  //For now, hard-coded the BruteForce class
-  BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,&mpibox,
-				                 sph->kernp,timing);
-  bruteforce.FindGhostParticlesToExport(sph,particles_to_export_per_node,overlapping_nodes,mpinode);
+  // Ask the neighbour search class to compute the list of particles to export
+  // For now, hard-coded the BruteForce class
+  BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,
+				                 &mpibox,sph->kernp,timing);
+  bruteforce.FindGhostParticlesToExport(sph,particles_to_export_per_node,
+                                        overlapping_nodes,mpinode);
 
-  //Prepare arrays with number of particles to export per node and displacements
-  std::fill(num_particles_export_per_node.begin(),num_particles_export_per_node.end(),0);
+  // Prepare arrays with no. of particles to export per node and displacements
+  fill(num_particles_export_per_node.begin(),
+       num_particles_export_per_node.end(),0);
 
   running_counter = 0;
-  for (int inode=0; inode<Nmpi; inode++) {
-    int num_particles = particles_to_export_per_node[inode].size();
-    num_particles_export_per_node[inode] = num_particles;
-    displacements_send[inode]=running_counter;
-    running_counter += num_particles;
+  for (inode=0; inode<Nmpi; inode++) {
+    Npart = particles_to_export_per_node[inode].size();
+    num_particles_export_per_node[inode] = Npart;
+    displacements_send[inode] = running_counter;
+    running_counter += Npart;
   }
 
-  //Compute total number of particles to export
-  int tot_particles_to_export = std::accumulate(num_particles_export_per_node.begin(),num_particles_export_per_node.end(),0);
+  // Compute total number of particles to export
+  Nexport = std::accumulate(num_particles_export_per_node.begin(),
+                            num_particles_export_per_node.end(),0);
 
-  //Comunicate with all the processors the number of particles that everyone is exporting
-  std::vector<int> ones (Nmpi,1);
-  std::vector<int> displs(Nmpi);
+  // Comunicate with all processors the no. of ptcls that everyone is exporting
+  vector<int> ones(Nmpi,1);
+  vector<int> displs(Nmpi);
   for (inode=0; inode<displs.size(); inode++) {
     displs[inode] = inode;
   }
-  MPI_Alltoallv(&num_particles_export_per_node[0], &ones[0], &displs[0], MPI_INT, &num_particles_to_be_received[0], &ones[0], &displs[0], MPI_INT, MPI_COMM_WORLD);
+  MPI_Alltoallv(&num_particles_export_per_node[0], &ones[0], &displs[0], 
+                MPI_INT, &num_particles_to_be_received[0], &ones[0], 
+                &displs[0], MPI_INT, MPI_COMM_WORLD);
 
-  //Compute the total number of particles that will be received
-  tot_particles_to_receive = std::accumulate(num_particles_to_be_received.begin(),num_particles_to_be_received.end(),0);
+  // Compute the total number of particles that will be received
+  tot_particles_to_receive = accumulate(num_particles_to_be_received.begin(),
+                                        num_particles_to_be_received.end(),0);
 
-  //Allocate receive buffer
+  // Allocate receive buffer
   particles_receive.clear();
   particles_receive.resize(tot_particles_to_receive);
 
-  cout << "TOT_PARTICLES_TO_EXPORT : " << tot_particles_to_export << endl;
+  cout << "TOT_PARTICLES_TO_EXPORT : " << Nexport << endl;
 
-  //Create vector containing all particles to export
-  particles_to_export.resize(tot_particles_to_export);
+  // Create vector containing all particles to export
+  particles_to_export.resize(Nexport);
 
   index = 0;
-  for (inode=0; inode < Nmpi; inode++) {
+  for (inode=0; inode<Nmpi; inode++) {
     std::vector<ParticleType<ndim>* >& particles_on_this_node = particles_to_export_per_node[inode];
-    for (int iparticle=0; iparticle<particles_on_this_node.size(); iparticle++) {
-      particles_to_export[index] =  *particles_on_this_node[iparticle];
+    for (iparticle=0; iparticle<particles_on_this_node.size(); iparticle++) {
+      particles_to_export[index] = *particles_on_this_node[iparticle];
       index++;
     }
   }
 
   assert(index==tot_particles_to_export);
 
-  //Compute receive displacements
+  // Compute receive displacements
   running_counter = 0;
   for (inode=0; inode<receive_displs.size(); inode++) {
     receive_displs[inode] = running_counter;
     running_counter += num_particles_to_be_received[inode];
   }
 
-  //Send and receive particles
+  // Send and receive particles
   MPI_Alltoallv(&particles_to_export[0], &num_particles_export_per_node[0],
                 &displacements_send[0], particle_type, &particles_receive[0],
                 &num_particles_to_be_received[0], &receive_displs[0],
@@ -1049,16 +1057,17 @@ int MpiControlType<ndim, ParticleType>::UpdateGhostParticles
   int inode;                        // MPI node counter
   int ipart;                        // Particle counter
 
-  //Update the local buffer of particles to send
+  // Update the local buffer of particles to send
   for (inode=0; inode<Nmpi; inode++) {
-    std::vector<ParticleType<ndim>* >& particles_on_this_node = particles_to_export_per_node[inode];
+    vector<ParticleType<ndim>* >& particles_on_this_node = 
+      particles_to_export_per_node[inode];
     for (ipart=0; ipart<particles_on_this_node.size(); ipart++) {
       particles_to_export[index] = *particles_on_this_node[ipart];
       index++;
     }
   }
 
-  //Send and receive particles
+  // Send and receive particles
   MPI_Alltoallv(&particles_to_export[0], &num_particles_export_per_node[0],
                 &displacements_send[0], particle_type, &particles_receive[0],
                 &num_particles_to_be_received[0], &receive_displs[0],
@@ -1078,15 +1087,12 @@ int MpiControlType<ndim, ParticleType>::UpdateGhostParticles
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim, ParticleType>::SendParticles
-(int Node, 
- int Nparticles, 
- int* list, 
- ParticleType<ndim>* main_array) //main_array_gen)
+(int Node,                          ///< ..
+ int Nparticles,                    ///< ..
+ int* list,                         ///< ..
+ ParticleType<ndim>* main_array)    ///< main_array_gen
 {
   int i;                            // Particle counter
-
-  //Cast the main array to the right type
-  //ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (main_array_gen);
 
   //Ensure there is enough memory in the buffer
   sendbuffer.resize(Nparticles);
@@ -1114,33 +1120,27 @@ void MpiControlType<ndim, ParticleType>::SendParticles
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim, ParticleType>::ReceiveParticles
-(int Node, 
- int& Nparticles, 
- ParticleType<ndim>** array) //pointer_array_gen)
+(int Node,                          ///< ..
+ int& Nparticles,                   ///< ..
+ ParticleType<ndim>** array)        ///< pointer_array_gen
 {
-
   const int tag = 1;
   MPI_Status status;
 
-  //Cast the main array to the right type
-  //ParticleType<ndim>* array = static_cast<ParticleType<ndim>* > (*pointer_array_gen);
-
-  //"Probe" the message to know how big the message is going to be
+  // "Probe" the message to know how big the message is going to be
   MPI_Probe(Node, tag, MPI_COMM_WORLD, &status);
 
-  //Get the number of elements
+  // Get the number of elements
   MPI_Get_count(&status, particle_type, &Nparticles);
 
   cout << "NPARTICLES : " << Nparticles << "   node : " << Node << endl;
 
-  //Allocate enough memory to hold the particles
+  // Allocate enough memory to hold the particles
   *array = new ParticleType<ndim> [Nparticles];
 
-  //Now receive the message
+  // Now receive the message
   MPI_Recv(*array, Nparticles, particle_type, Node,
            tag_srpart, MPI_COMM_WORLD, &status);
-
-  //*pointer_array_gen = array;
 
   return;
 }
@@ -1208,6 +1208,7 @@ void MpiControl<ndim>::CollateDiagnosticsData(Diagnostics<ndim> &diag)
 template class MpiControl<1>;
 template class MpiControl<2>;
 template class MpiControl<3>;
+
 // Template class for each particle type
 template class MpiControlType<1, GradhSphParticle>;
 template class MpiControlType<2, GradhSphParticle>;
