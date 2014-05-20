@@ -327,6 +327,9 @@ void Parameters::SetDefaultValues(void)
   //---------------------------------------------------------------------------
   stringparams["radiation"] = "none";
   intparams["Nphoton"] = 10000;
+  floatparams["mu_ion"] = 0.678;
+  floatparams["temp_ion"] = 1e4;
+  floatparams["Ndotmin"] = 1e47;
 
   // Boundary conditions parameters
   //---------------------------------------------------------------------------

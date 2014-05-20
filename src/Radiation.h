@@ -28,6 +28,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 #include <list>
 #include <iostream>
 #include <ostream>
@@ -43,6 +44,7 @@
 #include "SphKernel.h"
 #include "SphNeighbourSearch.h"
 #include "SphParticle.h"
+#include "NbodyParticle.h"
 using namespace std;
 
 
@@ -75,6 +77,30 @@ struct RadiationSource {
   FLOAT r[ndim];                    ///< Position of radiation source
   FLOAT esource[ndim];              ///< Unit vector of radiation from source 
                                     ///< (for uni-directional sources)
+};
+
+
+
+//=============================================================================
+//  Struct particle
+/// ..
+//=============================================================================
+struct particle
+{
+  int sink;             //Is particle sink
+  int fionised;
+  int neighstorcont; 		
+  double x;  		//Particle x,y,z co-ordinates, density,temp,smoothing length,internal energy
+  double y;
+  double z;
+  double rho;
+  double t;
+  double h;
+  double u;
+  vector<int> ionised,neighstor;    // Is particle ionised by source?
+  vector<int>neigh;                 // Part. neib array (Neibs closest to sources)
+  vector<double> prob;              // Prob. of transmition from each source
+  vector<double> photons;           // No. of photons lost up to this point
 };
 
 
@@ -137,6 +163,43 @@ class TreeMonteCarlo : public Radiation<ndim>
   int Nphoton;                                  // No. of photon packets
   FLOAT packetenergy;                           // Energy in photon packet
   KDRadiationTree<ndim,ParticleType> *radtree;  // Radiation tree
+
+};
+
+
+
+//=============================================================================
+//  Class MultipleSourceIonisiation
+/// \brief   Radiation Scheme to treat ionising radiation for multiple sources
+/// \details ..
+/// \author  S. K. Balfour
+/// \date    24/04/2014
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+class MultipleSourceIonisation : public Radiation<ndim>
+{
+ public:
+
+  MultipleSourceIonisation(SphNeighbourSearch<ndim> *,float,float,
+                           float,float,float,float,float,float);
+  ~MultipleSourceIonisation();
+  
+  virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *, 
+                                    NbodyParticle<ndim> **, 
+                                    SinkParticle<ndim> *);
+
+  void ionisation_intergration(int,int,NbodyParticle<ndim> **,
+                               SphParticle<ndim> *,double,double,
+                               SphNeighbourSearch<ndim> *,double,double,
+                               double,double,double,double);
+  void photoncount(vector<particle> &,vector<int> &,vector<double> &,
+                   int &,int &,int &,int &);
+  double lost(vector<particle> &,vector<int> &,vector<double> &,int &,
+              int &,int &,int &,int &);
+  void probs(int &,vector<particle> &,vector<int> &,int &,vector<double> &);
+
+  SphNeighbourSearch<ndim> *sphneib;
+  float mu_bar,temp0,mu_ion,temp_ion,Ndotmin,gamma_eos,scale,tempscale;
 
 };
 

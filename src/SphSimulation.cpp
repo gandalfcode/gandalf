@@ -400,6 +400,12 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Update the radiation field
     radiation->UpdateRadiationField(sph->Nsph, nbody->Nnbody, sinks.Nsink,
 				    partdata, nbody->nbodydata, sinks.sink);
+
+    // Update thermal properties (if radiation field has altered them)
+    for (i=0; i<sph->Nsph;i++) {
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      sph->ComputeThermalProperties(part);
+    }	
     
 
     // Calculate SPH gravity and hydro forces, depending on which are activated

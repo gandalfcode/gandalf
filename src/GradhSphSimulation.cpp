@@ -238,7 +238,11 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   // Radiation transport object
   //---------------------------------------------------------------------------
   if (gas_radiation == "ionisation")
-    radiation = NULL;
+    radiation = new MultipleSourceIonisation<ndim,GradhSphParticle>
+      (sphneib,floatparams["mu_bar"],floatparams["mu_ion"],
+       floatparams["temp0"],floatparams["temp_ion"],floatparams["Ndotmin"],
+       floatparams["gamma_eos"],pow(simunits.r.outscale*simunits.r.outcgs,3.)/
+       pow(simunits.m.outscale*simunits.m.outcgs,2.),simunits.temp.outscale);
   else if (gas_radiation == "treemc")
     radiation = new TreeMonteCarlo<ndim,GradhSphParticle>
       (intparams["Nphoton"],intparams["Nleafmax"]);
