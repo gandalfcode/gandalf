@@ -584,7 +584,8 @@ void SphSimulation<ndim>::MainLoop(void)
 
       // Check if all neighbouring timesteps are acceptable
       if (Nlevels > 1)
-        activecount = sphint->CheckTimesteps(level_diff_max,n,sph->Nsph,sph->GetParticlesArray());
+        activecount = sphint->CheckTimesteps(level_diff_max,n,sph->Nsph,
+                                             sph->GetParticlesArray());
       else activecount = 0;      
       //activecount = 0;
 
