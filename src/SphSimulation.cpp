@@ -299,8 +299,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     if (!this->initial_h_provided) {
       sph->InitialSmoothingLengthGuess();
       sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
-                         sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
-      sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+                         sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),sph,timestep);
+      sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,sph->GetParticlesArray(),sph,nbody);
     }
 
 #ifdef MPI_PARALLEL
@@ -316,7 +316,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Update neighbour tree
     rebuild_tree = true;
     sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
-                       sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                       sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),sph,timestep);
     level_step = 1;
 
     // Zero accelerations
@@ -326,7 +326,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).gpot = big_number;
 
     // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,sph->GetParticlesArray(),sph,nbody);
 
 #ifdef MPI_PARALLEL
     mpicontrol->UpdateAllBoundingBoxes(sph->Nsph, sph, sph->kernp);
@@ -341,7 +341,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Update neighbour tre
     rebuild_tree = true;
     sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
-                       sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                       sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),sph,timestep);
     sphneib->neibcheck = true;
     //sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
@@ -389,20 +389,21 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     MpiGhosts->CopySphDataToGhosts(simbox,sph);
 #endif
     sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
-                       sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                       sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
+		       sph,timestep);
 
     // Update the radiation field
     radiation->UpdateRadiationField(sph->Nsph, nbody->Nnbody, sinks.Nsink,
-				    partdata, nbody->nbodydata, sinks.sink);
+				    sph->GetParticlesArray(), nbody->nbodydata, sinks.sink);
     
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)
-      sphneib->UpdateAllSphForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+      sphneib->UpdateAllSphForces(sph->Nsph,sph->Ntot,sph->GetParticlesArray(),sph,nbody);
     else if (sph->hydro_forces == 1)
-      sphneib->UpdateAllSphHydroForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+      sphneib->UpdateAllSphHydroForces(sph->Nsph,sph->Ntot,sph->GetParticlesArray(),sph,nbody);
     else if (sph->self_gravity == 1)
-      sphneib->UpdateAllSphGravForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+      sphneib->UpdateAllSphGravForces(sph->Nsph,sph->Ntot,sph->GetParticlesArray(),sph,nbody);
 
     // Set initial accelerations
     for (i=0; i<sph->Nsph; i++) {
@@ -427,7 +428,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
     if (sph->self_gravity == 1 && sph->Nsph > 0)
-      sphneib->UpdateAllStarGasForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+      sphneib->UpdateAllStarGasForces(sph->Nsph,sph->Ntot,sph->GetParticlesArray(),sph,nbody);
     nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
 
   }
