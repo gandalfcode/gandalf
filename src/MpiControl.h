@@ -65,13 +65,18 @@ class MpiControl
 
   MPI_Datatype box_type;             ///< Datatype for the box
   MPI_Datatype diagnostics_type;     ///< Datatype for diagnostic info
+  MPI_Datatype ExportParticleType;   ///< Datatype for the information to export
+  MPI_Datatype ExportBackParticleType; ///< Datatype for the information to get back from exported particles
+
 
   //Buffers needed to send and receive particles
   std::vector<int> num_particles_export_per_node;
   std::vector<int> displacements_send;
   std::vector<int> num_particles_to_be_received;
   std::vector<int> receive_displs;
+  std::vector<int> N_exported_particles_from_proc;
   int tot_particles_to_receive;
+  int Nparticles_to_be_exported;
 
   std::vector<Box<ndim> > boxes_buffer;     ///< Buffer needed by the UpdateAllBoundingBoxes routine
 
@@ -98,6 +103,9 @@ class MpiControl
   virtual void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>)=0;
   virtual void LoadBalancing(Sph<ndim> *, Nbody<ndim> *)=0;
   void UpdateAllBoundingBoxes(int, Sph<ndim> *, SphKernel<ndim> *);
+
+  virtual void ExportParticlesBeforeForceLoop (Sph<ndim>* sph) =0;
+  virtual void GetExportedParticlesAccelerations (Sph<ndim>* sph) =0;
 
 
   // MPI control variables
@@ -133,6 +141,10 @@ class MpiControlType : public MpiControl<ndim> {
   using MpiControl<ndim>::num_particles_to_be_received;
   using MpiControl<ndim>::receive_displs;
   using MpiControl<ndim>::tot_particles_to_receive;
+  using MpiControl<ndim>::N_exported_particles_from_proc;
+  using MpiControl<ndim>::ExportParticleType;
+  using MpiControl<ndim>::ExportBackParticleType;
+  using MpiControl<ndim>::Nparticles_to_be_exported;
 
 
   void SendParticles(int Node, int Nparticles, int* list, ParticleType<ndim>* );
@@ -141,6 +153,8 @@ class MpiControlType : public MpiControl<ndim> {
   std::vector<ParticleType<ndim> > sendbuffer; ///< Used by the SendParticles routine
 
   MPI_Datatype particle_type;        ///< Datatype for the particles
+
+  int received_exported_particles;   ///<Number of received exported particles
 
 
   //Buffers needed to send and receive particles
@@ -158,6 +172,8 @@ public:
   virtual void LoadBalancing(Sph<ndim> *, Nbody<ndim> *);
   int SendReceiveGhosts(ParticleType<ndim>** array, Sph<ndim>* sph);
   int UpdateGhostParticles(ParticleType<ndim>** array);
+  virtual void ExportParticlesBeforeForceLoop (Sph<ndim>* sph);
+  virtual void GetExportedParticlesAccelerations (Sph<ndim>* sph);
 };
 
 

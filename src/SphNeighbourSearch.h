@@ -42,6 +42,10 @@
 #include "KDTree.h"
 using namespace std;
 
+#if defined MPI_PARALLEL
+#include "MpiExport.h"
+#endif
+
 
 // Forward declaration of Sph to break circular dependency
 template <int ndim>
@@ -124,6 +128,11 @@ class SphNeighbourSearch
 template <int ndim, template<int> class ParticleType>
 class BruteForceSearch: public SphNeighbourSearch<ndim>
 {
+#if defined MPI_PARALLEL
+protected:
+  vector<ExportParticleInfo<ndim> > particles_to_export;
+  vector<int> ids_active_particles;
+#endif
  public:
 
   using SphNeighbourSearch<ndim>::neibcheck;
@@ -163,6 +172,13 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
       const std::vector<int>&, MpiNode<ndim>*);
   void FindParticlesToTransfer(Sph<ndim>* sph, std::vector<std::vector<int> >& particles_to_export,
       std::vector<int>& all_particles_to_export, const std::vector<int>& potential_nodes, MpiNode<ndim>* mpinodes);
+  vector<ExportParticleInfo<ndim> >& GetExportInfo(int Nproc, Sph<ndim>* sph);
+  void UnpackExported (vector<ExportParticleInfo<ndim> >& arrays, vector<int>& N_received_particles_from_proc,
+      Sph<ndim>* sph, int rank);
+  void GetBackExportInfo(vector<ExportBackParticleInfo<ndim> >& arrays, vector<int>& N_exported_particles_from_proc,
+      Sph<ndim>* sph, int rank);
+  void UnpackReturnedExportInfo(vector<ExportBackParticleInfo<ndim> >& received_information, vector<int>& recv_displs,
+      Sph<ndim>* sph, int rank);
 #endif
 };
 

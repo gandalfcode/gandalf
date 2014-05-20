@@ -310,6 +310,29 @@ inline bool ParticleInBox (SphParticle<ndim>& part, Box<ndim>& box) {
   return true;
 }
 
+//=============================================================================
+//  compute_displs
+/// Given a vector of counts, compute the displacement of the elements and save it
+/// in displs
+//=============================================================================
+inline void compute_displs (std::vector<int>& displs, std::vector<int>& counts) {
+
+  const int size = displs.size();
+
+  if (size==0)
+    return;
+
+  displs[0]=0;
+
+  if (size==1)
+    return;
+
+  for (int i=1; i<size; i++) {
+    displs[i] = counts[i-1]+displs[i-1];
+  }
+
+}
+
 
 
 #endif

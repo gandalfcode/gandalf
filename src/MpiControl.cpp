@@ -70,6 +70,14 @@ MpiControl<ndim>::MpiControl()
   box_type = CreateBoxType(dummy);
   MPI_Type_commit(&box_type);
 
+  // Create and commit the exported particle datatype
+  ExportParticleType = ExportParticleInfo<ndim>::CreateMpiDataType();
+  MPI_Type_commit(&ExportParticleType);
+
+  // Create and commit the exported back particle datatype
+  ExportBackParticleType = ExportBackParticleInfo<ndim>::CreateMpiDataType();
+  MPI_Type_commit(&ExportBackParticleType);
+
   // Allocate buffer to send and receive boxes
   boxes_buffer.resize(Nmpi);
 
@@ -78,6 +86,7 @@ MpiControl<ndim>::MpiControl()
   displacements_send.resize(Nmpi);
   num_particles_to_be_received.resize(Nmpi);
   receive_displs.resize(Nmpi);
+  N_exported_particles_from_proc.resize(Nmpi);
 
   CreateLeagueCalendar();
 
@@ -117,7 +126,6 @@ MpiControlType<ndim, ParticleType>::MpiControlType() :
 MpiControl<ndim>() {
   //Allocate buffers
   particles_to_export_per_node.resize(Nmpi);
-  particles_to_export.resize(Nmpi);
 
   // Create and commit the particle datatype
   particle_type = ParticleType<ndim>::CreateMpiDataType();
@@ -908,6 +916,91 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
 
 
   return;
+
+}
+
+
+//=============================================================================
+//  MpiControlType::ExportParticlesBeforeForceLoop
+/// Export the particles that need force contribution from other processors
+/// (only gravity is implemented for now)
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop (Sph<ndim>* sph) {
+
+  //Istantiate a brute force instance (for now)
+  BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,&mpibox,
+                                 sph->kernp,timing);
+
+  //Get the vector to do the gather to all other processors
+  vector<ExportParticleInfo<ndim> >& gather_vector = bruteforce.GetExportInfo(0, sph);
+  Nparticles_to_be_exported = gather_vector.size();
+
+  //First need to know how many particles each processor is sending
+  MPI_Allgather(&Nparticles_to_be_exported, 1, MPI_INT, &N_exported_particles_from_proc[0],
+      1, MPI_INT, MPI_COMM_WORLD);
+
+  //Can now compute the displacements
+  vector<int> displs_proc(Nmpi);
+  int running_counter=0;
+  for (int inode=1; inode<Nmpi; inode++) {
+    running_counter += N_exported_particles_from_proc[inode-1];
+    displs_proc[inode]=running_counter;
+  }
+
+  //Compute total number of particles to be received
+  int tot_particles_to_receive = std::accumulate(N_exported_particles_from_proc.begin(),N_exported_particles_from_proc.end(),0);
+
+  //Compute total number of particles to be received, excluding the local ones
+  received_exported_particles = tot_particles_to_receive-Nparticles_to_be_exported;
+
+  //Allocate memory to receive all the particles
+  vector<ExportParticleInfo<ndim> > receive_buffer(tot_particles_to_receive);
+
+  //Gather the information from every other processor
+  MPI_Allgatherv(&gather_vector[0], Nparticles_to_be_exported, ExportParticleType, &receive_buffer[0],
+      &N_exported_particles_from_proc[0], &displs_proc[0], ExportParticleType, MPI_COMM_WORLD);
+
+  //Unpack the received arrays
+  bruteforce.UnpackExported(receive_buffer, N_exported_particles_from_proc, sph, rank);
+
+}
+
+
+//=============================================================================
+//  MpiControlType::GetExportedParticlesAccelerations
+/// Get back the information about the exported particles from the other processors
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations (Sph<ndim>* sph) {
+
+  //Istantiate a brute force instance (for now)
+  BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,&mpibox,
+                                 sph->kernp,timing);
+
+  //Allocate send buffer
+  vector<ExportBackParticleInfo<ndim> > send_buffer(received_exported_particles);
+  vector<int> send_displs(Nmpi);
+  compute_displs (send_displs, N_exported_particles_from_proc);
+
+  //Allocate receive buffer
+  vector<ExportBackParticleInfo<ndim> > receive_buffer(Nparticles_to_be_exported*Nmpi);
+
+  //Receive counts and displacements
+  vector<int> recv_counts(Nmpi);
+  std::fill(recv_counts.begin(), recv_counts.end(), Nparticles_to_be_exported);
+  vector<int> recv_displs(Nmpi);
+  compute_displs (recv_displs, recv_counts);
+
+  //Get the array with the acceleration for every other processor
+  bruteforce.GetBackExportInfo(send_buffer, N_exported_particles_from_proc, sph, rank);
+
+  //Do the actual communication
+  MPI_Alltoallv(&send_buffer[0], &N_exported_particles_from_proc[0],  &send_displs[0],
+      ExportBackParticleType, &receive_buffer[0], &recv_counts[0], &recv_displs[0], ExportBackParticleType, MPI_COMM_WORLD );
+
+  //Unpack the received information to update accelerations
+  bruteforce.UnpackReturnedExportInfo(receive_buffer, recv_displs, sph, rank);
 
 }
 

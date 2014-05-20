@@ -752,6 +752,171 @@ void BruteForceSearch<ndim,ParticleType>::FindParticlesToTransfer(
   }
 }
 
+
+//=============================================================================
+//  BruteForceSearch::GetExportInfo
+/// Get the array with the information that needs to be exported to the given
+/// processor (note: Nproc is ignored at the moment, as we always need to export
+/// all particles to the other processors)
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+vector<ExportParticleInfo<ndim> >& BruteForceSearch<ndim,ParticleType>::GetExportInfo (
+    int Nproc,        ///< [in] Number of processor we want to send the information to
+    Sph<ndim>*  sph ) ///< [in] Pointer to sph object
+    {
+
+  //Find number of active particles
+  ids_active_particles.clear();
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+  for (int i=0; i< sph->Nsph; i++) {
+    if (sphdata[i].active) {
+      ids_active_particles.push_back(i);
+    }
+  }
+
+  const int Nactive = ids_active_particles.size();
+
+  //Copy positions of active particles inside arrays
+  int j=0;
+  for (int i=0; i< sph->Nsph; i++) {
+    if (sphdata[i].active) {
+      for (int k=0; k<ndim; k++)
+        particles_to_export[j].r[k] = sphdata[i].r[k];
+      j++;
+    }
+  }
+
+  assert(j==Nactive);
+
+  return particles_to_export;
+
+}
+
+
+//=============================================================================
+//  BruteForceSearch::UnpackExported
+/// Unpack the information exported from the other processors, contaning the positions
+/// of the particles that were exported
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::UnpackExported (
+    vector<ExportParticleInfo<ndim> >& received_array,
+    vector<int>& N_received_particles_from_proc,
+    Sph<ndim>* sph,
+    int rank) {
+
+
+  int offset = N_received_particles_from_proc[0];
+
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+
+  for (int Nproc = 0; Nproc<N_received_particles_from_proc.size(); Nproc++) {
+
+    int N_received_particles = N_received_particles_from_proc[Nproc];
+
+    offset += N_received_particles;
+
+    //Avoid inserting my own particles
+    if (Nproc==rank)
+      continue;
+
+    //Ensure there is enough memory
+    if (sph->Nsph + N_received_particles > sph->Nsphmax) {
+      ExceptionHandler::getIstance().raise("Error while receiving imported particles: not enough memory!");
+    }
+
+    //Insert particles inside SPH main arrays
+    for (int i=0; i<N_received_particles; i++) {
+      for (int k=0; k<ndim; k++)
+        sphdata[i+sph->Nsph].r[k] = received_array[i+offset].r[k];
+    }
+
+    //Update the SPH counter (note: there is probably more to do here!!!!)
+    sph->Nsph += N_received_particles;
+
+  }
+
+}
+
+
+//=============================================================================
+//  BruteForceSearch::GetBackExportInfo
+/// Return the data to transmit back to the other processors (particle acceleration etc.)
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::GetBackExportInfo (
+    vector<ExportBackParticleInfo<ndim> >& send_buffer, ///< [inout] These arrays will be overwritten with the information to send
+    vector<int>& N_exported_particles_from_proc,
+    Sph<ndim>* sph,   ///< [in] Pointer to the SPH object
+    int rank
+    ) {
+
+  //loop BACKWARDS over the processors, removing particles as we go
+  int removed_particles=0;
+  for (int Nproc=N_exported_particles_from_proc.size()-1; Nproc>=0; Nproc-- ) {
+
+    //My local particles were not inserted
+    if (rank==Nproc)
+      continue;
+
+    const int N_received_particles = N_exported_particles_from_proc[Nproc];
+
+    //Copy the accelerations and gravitational potential of the particles
+    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+    int j=0;
+    for (int i=sph->Nsph - N_received_particles; i<sph->Nsph; i++) {
+      for (int k=0; k<ndim; k++)
+        send_buffer[removed_particles+j].a[k] = sphdata[i].a[k];
+      send_buffer[removed_particles+j].gpot = sphdata[i].gpot;
+      j++;
+    }
+
+    assert(j==N_received_particles);
+
+    removed_particles += j;
+
+    //Decrease the particle counter (note: there is probably more to do here!!!!)
+    sph->Nsph -= N_received_particles;
+
+  }
+
+}
+
+
+//=============================================================================
+//  BruteForceSearch::UnpackReturnedExportInfo
+/// Unpack the data that was returned by the other processors, summing the accelerations to the particles
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::UnpackReturnedExportInfo (
+    vector<ExportBackParticleInfo<ndim> >& received_information,
+    vector<int>& recv_displs,
+    Sph<ndim>* sph,
+    int rank
+    ) {
+
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+
+  //For each particle, sum up the accelerations returned by other processors
+  for (int i=0; i< ids_active_particles.size(); i++ ) {
+    const int j = ids_active_particles[i];
+
+    for(int Nproc=0; Nproc<recv_displs.size(); Nproc++ ) {
+
+      if (rank==Nproc)
+        continue;
+
+      for (int k=0; k<ndim; k++)
+        sphdata[j].a[k] += received_information[i+recv_displs[Nproc] ].a[k];
+      sphdata[j].gpot += received_information[i+recv_displs[Nproc] ].gpot;
+    }
+
+  }
+
+}
+
+
+
 #endif
 
 template class BruteForceSearch<1,GradhSphParticle>;
