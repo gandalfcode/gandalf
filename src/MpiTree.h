@@ -108,13 +108,13 @@ class MpiTree
   int Ntot;
   int Ntotmax;
   int Nthreads;                     ///< No. of OpenMP threads
-    int *g2c;
+  int *g2c;
   int *ids;                         ///< Particle ids
   int *inext;                       ///< Linked list for grid search
   MpiTreeCell<ndim> *tree;       ///< ..
 
-    int *klevel;
-    DomainBox<ndim> *box;
+  int *klevel;
+  DomainBox<ndim> *box;
 
 };
 #endif

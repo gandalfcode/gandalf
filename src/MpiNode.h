@@ -79,7 +79,6 @@ class MpiNode
   Box<ndim> hbox;                   ///< ..
 
   int *ids;                         ///< List of particles in tree
-    //BinarySubTree<ndim> *nodetree;    ///< Pointer to current node sub-tree
 
 };
 #endif

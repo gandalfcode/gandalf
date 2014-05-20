@@ -89,6 +89,7 @@ void MpiTree<ndim,ParticleType>::AllocateMemory(void)
     if (allocated_tree) DeallocateMemory();
     Ntotmax = max(Ntotmax,Ntot);
 
+    klevel = new int[lmax];
     g2c = new int[gmax];
     ids = new int[Ntotmax];
     inext = new int[Ntotmax];
@@ -140,6 +141,7 @@ void MpiTree<ndim,ParticleType>::ComputeTreeSize(void)
   while (pow(2,ltot) < Nmpi) {
     ltot++;
   };
+  lmax = ltot;
   gtot = pow(2,ltot);
   gmax = pow(2,ltot);
   Ncell = 2*gtot - 1;
@@ -382,8 +384,6 @@ FLOAT MpiTree<ndim,ParticleType>::QuickSelect
 
     // Make a guess of pivot value
     jguess = (left + right)/2;
-    cout << "PIVOT : " << left << "   " << jpivot << "   " << right << "   " << k << endl;
-    cin >> i;
     rpivot = partdata[ids[jguess]].r[k];
 
     // ..
