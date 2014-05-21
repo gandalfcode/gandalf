@@ -78,7 +78,7 @@ template <int ndim, template <int> class ParticleType>
 void SphLeapfrogKDK<ndim, ParticleType >::AdvanceParticles
 (int n,                             ///< [in] Integer time in block time struct
  FLOAT timestep,                    ///< [in] Base timestep value
- int npart,                         ///< [in] Number of particles
+ int Npart,                         ///< [in] Number of particles
  SphParticle<ndim>* sph_gen)        ///< [inout] Pointer to SPH particle array
 {
   int dn;                           // Integer time since beginning of step
@@ -95,9 +95,10 @@ void SphLeapfrogKDK<ndim, ParticleType >::AdvanceParticles
   // Advance positions and velocities of all SPH particles
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,dt,i,k,nstep)\
-  shared(n,sphdata,timestep,npart)
-  for (i=0; i<npart; i++) {
+  shared(n,Npart,sphdata,timestep)
+  for (i=0; i<Npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
+    if (part.itype == dead) continue;
 
     // Compute time since beginning of current step
     nstep = part.nstep;
@@ -143,7 +144,7 @@ template <int ndim, template <int> class ParticleType>
 void SphLeapfrogKDK<ndim, ParticleType>::CorrectionTerms
 (int n,                             ///< [in] Integer time in block time struct
  FLOAT timestep,                    ///< [in] Base timestep value
- int npart,                         ///< [in] Number of particles
+ int Npart,                         ///< [in] Number of particles
  SphParticle<ndim>* sph_gen)        ///< [inout] Pointer to SPH particle array
 {
   int dn;                           // Integer time since beginning of step
@@ -158,12 +159,15 @@ void SphLeapfrogKDK<ndim, ParticleType>::CorrectionTerms
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,k,nstep)\
-  shared(n,sphdata,timestep,npart)
-  for (i=0; i<npart; i++) {
+  shared(n,Npart,sphdata,timestep)
+  for (i=0; i<Npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
+    if (part.itype == dead) continue;
 
+    // Compute time since beginning of current step
     dn = n - part.nlast;
     nstep = part.nstep;
+
     if (dn == nstep)
       for (k=0; k<ndim; k++) part.v[k] += timestep*(FLOAT) nstep*
         (FLOAT) 0.5*(part.a[k] - part.a0[k]);
@@ -189,7 +193,7 @@ template <int ndim, template <int> class ParticleType>
 void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
 (int n,                             ///< [in] Integer time in block time struct
  FLOAT timestep,                    ///< [in] Base timestep value
- int npart,                         ///< [in] Number of particles
+ int Npart,                         ///< [in] Number of particles
  SphParticle<ndim>* sph_gen)        ///< [inout] Pointer to SPH particle array
 {
   int dn;                           // Integer time since beginning of step
@@ -204,9 +208,10 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,k,nstep) \
-  shared(n,sphdata,timestep, npart)
-  for (i=0; i<npart; i++) {
+  shared(n,Npart,sphdata,timestep)
+  for (i=0; i<Npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
+    if (part.itype == dead) continue;
 
     dn = n - part.nlast;
     nstep = part.nstep;
@@ -246,8 +251,9 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
 template <int ndim, template <int> class ParticleType>
 int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
 (int level_diff_max,                ///< [in] Max. allowed SPH neib dt diff
+ int level_step,                    ///< [in] Level of base timestep
  int n,                             ///< [in] Integer time in block time struct
- int npart,                         ///< [in] Number of particles
+ int Npart,                         ///< [in] Number of particles
  SphParticle<ndim>* sph_gen)        ///< [inout] Pointer to SPH particle array
 {
   int activecount = 0;              // No. of ptcls with new active timesteps
@@ -262,10 +268,11 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
 
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,level_new,nnewstep)\
-  shared(level_diff_max,n,sphdata,npart) reduction(+:activecount)
-  for (i=0; i<npart; i++) {
+#pragma omp parallel for default(none) private(dn,i,level_new,nnewstep)	\
+  shared(level_diff_max,level_step,n,Npart,sphdata) reduction(+:activecount)
+  for (i=0; i<Npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
+    if (part.itype == dead) continue;
 
     dn = n - part.nlast;
     if (dn == part.nstep) continue;
@@ -274,12 +281,12 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
     // timestep if possible
     if (part.levelneib - part.level > level_diff_max) {
       level_new = part.levelneib - level_diff_max;
-      nnewstep = part.nstep/pow(2,level_new - part.level);
+      nnewstep = pow(2,level_step - level_new);
 
       // If new level is correctly synchronised, then change all quantities
       if (dn%nnewstep == 0) {
-        part.level = level_new;
         if (dn > 0) part.nstep = dn;
+        part.level = level_new;
         part.active = true;
         activecount++;
       }

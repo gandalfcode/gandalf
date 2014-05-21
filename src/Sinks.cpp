@@ -255,6 +255,7 @@ void Sinks<ndim>::CreateNewSinkParticle
   sink[Nsink].mmax = 0.0;
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    if (part.itype == dead) continue;
     for (k=0; k<ndim; k++) 
       dr[k] = sink[Nsink].star->r[k] - part.r[k];
     drsqd = DotProduct(dr,dr,ndim);
@@ -335,8 +336,8 @@ void Sinks<ndim>::AccreteMassToSinks
   //---------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-
     if (part.itype == dead) continue;
+
     saux = -1;
     rsqdmin = big_number;
 
@@ -430,6 +431,7 @@ void Sinks<ndim>::AccreteMassToSinks
       i = ilist[ilist2[j]];
 
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      if (part.itype == dead) continue;
 
       for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
       drsqd = DotProduct(dr,dr,ndim);
@@ -515,6 +517,7 @@ void Sinks<ndim>::AccreteMassToSinks
       i = ilist[ilist2[j]];
 
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      if (part.itype == dead) continue;
 
       mtemp = min(part.m,macc_temp);
       dt = part.dt;
@@ -567,6 +570,7 @@ void Sinks<ndim>::AccreteMassToSinks
       i = ilist[ilist2[j]];
 
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      if (part.itype == dead) continue;
 
       mtemp = min(part.m,macc);
       dt = part.dt;
