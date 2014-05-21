@@ -388,6 +388,7 @@ class SphTree: public SphNeighbourSearch<ndim>
   FLOAT hmax;                       ///< Store hmax in the tree
   FLOAT theta;                      ///< Geometric opening angle
   KDTree<ndim,ParticleType> *tree;  ///< Pointer to tree
+  KDTree<ndim,ParticleType> *ghosttree;  ///< Pointer to tree containing ghosts
 
   bool allocated_buffer;            ///< ..
   int Nthreads;                     ///< ..

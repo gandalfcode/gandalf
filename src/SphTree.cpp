@@ -80,6 +80,11 @@ SphTree<ndim,ParticleType>::SphTree
   tree = new KDTree<ndim,ParticleType>(Nleafmaxaux, thetamaxsqdaux, 
                                        kernrangeaux, macerroraux, 
                                        gravity_mac_aux, multipole_aux);
+
+  // Set-up ghost-particle tree object
+  ghosttree = new KDTree<ndim,ParticleType>(Nleafmaxaux, thetamaxsqdaux, 
+                                            kernrangeaux, macerroraux, 
+                                            gravity_mac_aux, multipole_aux);
 }
 
 
@@ -218,18 +223,25 @@ void SphTree<ndim,ParticleType>::BuildTree
     sph->DeleteDeadParticles();
 
     Ntotold = Ntot;
-    //Nsph = sph->Nsph;
     Ntot = sph->Ntot;
     Ntotmaxold = Ntotmax;
     Ntotmax = max(Ntotmax,Ntot);
     Ntotmax = max(Ntotmax,sph->Nsphmax);
-    tree->Ntot = sph->Ntot;
+    
+    //tree
+    tree->Ntot = sph->Nsph;
     tree->Ntotmaxold = tree->Ntotmax;
     tree->Ntotmax = max(tree->Ntotmax,tree->Ntot);
     tree->Ntotmax = max(tree->Ntotmax,sph->Nsphmax);
-    AllocateMemory(sph);
+    ghosttree->Ntot = sph->Nsph;
+    ghosttree->Ntotmaxold = tree->Ntotmax;
+    ghosttree->Ntotmax = max(tree->Ntotmax,tree->Ntot);
+    ghosttree->Ntotmax = max(tree->Ntotmax,sph->Nsphmax);
 
     tree->BuildTree(Npart,Npartmax,sphdata,timestep);
+    ghosttree->BuildTree(Npart,Npartmax,sphdata,timestep);
+
+    AllocateMemory(sph);
     
   }
 

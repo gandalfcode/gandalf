@@ -145,6 +145,8 @@ class KDTree
   bool allocated_tree;              ///< Are grid arrays allocated?
   int gmax;                         ///< Max. no. of grid/leaf cells
   int gtot;                         ///< Total number of grid/leaf cells
+  int ifirst;                       ///< i.d. of first particle in tree
+  int ilast;                        ///< i.d. of last particle in tree
   int lmax;                         ///< Max. no. of levels
   int ltot;                         ///< Total number of levels in tree
   int ltot_old;                     ///< Prev. value of ltot

@@ -698,7 +698,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
 template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::FindGhostParticlesToExport
 (Sph<ndim>* sph,                            ///< [in] Pointer to sph class
- vector<vector<ParticleType<ndim>*>>& particles_to_export_per_node, ///< [inout] Vector that will be filled with values
+ vector<vector<ParticleType<ndim>*> >& particles_to_export_per_node, ///< [inout] Vector that will be filled with values
  const std::vector<int>& overlapping_nodes, ///< [in] Vector containing which 
                                             ///<      nodes overlap our hbox
  MpiNode<ndim>* mpinodes)                   ///< [in] Array of other mpi nodes
@@ -707,7 +707,7 @@ void BruteForceSearch<ndim,ParticleType>::FindGhostParticlesToExport
   int inode;                                // ..
   int node_number;                          // ..
   ParticleType<ndim> *sphdata = 
-    static_cast<ParticleType<ndim>*> sph->GetParticlesArray();
+    static_cast<ParticleType<ndim>*> (sph->GetParticlesArray());
 
   // Loop over particles and prepare the ones to export
   for (i=0; i<sph->Ntot; i++) {
