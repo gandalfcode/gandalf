@@ -85,6 +85,14 @@ SphTree<ndim,ParticleType>::SphTree
   ghosttree = new KDTree<ndim,ParticleType>(Nleafmaxaux, thetamaxsqdaux, 
                                             kernrangeaux, macerroraux, 
                                             gravity_mac_aux, multipole_aux);
+
+#ifdef MPI_PARALLEL
+  // Set-up ghost-particle tree object
+  mpighosttree = new KDTree<ndim,ParticleType>(Nleafmaxaux, thetamaxsqdaux, 
+                                               kernrangeaux, macerroraux, 
+                                               gravity_mac_aux, multipole_aux);
+#endif
+
 }
 
 
@@ -116,32 +124,26 @@ void SphTree<ndim,ParticleType>::AllocateMemory(Sph<ndim> *sph)
 
   debug2("[SphTree::AllocateMemory]");
 
-  if (!tree->allocated_tree || Ntotmax > Ntotmaxold) {
-    if (tree->allocated_tree) {
-      DeallocateMemory();
-      tree->DeallocateTreeMemory();
+  if (!allocated_buffer) {
+    
+    Nneibmaxbuf = new int[Nthreads];
+    Ndirectmaxbuf = new int[Nthreads];
+    Ngravcellmaxbuf = new int[Nthreads];
+    levelneibbuf = new int*[Nthreads];
+    activelistbuf = new int*[Nthreads];
+    activepartbuf = new ParticleType<ndim>*[Nthreads];
+    neibpartbuf = new ParticleType<ndim>*[Nthreads];
+    
+    for (ithread=0; ithread<Nthreads; ithread++) {
+      Nneibmaxbuf[ithread] = max(1,4*sph->Ngather);
+      Ndirectmaxbuf[ithread] = max(1,4*sph->Ngather);
+      Ngravcellmaxbuf[ithread] = max(1,4*sph->Ngather);
+      levelneibbuf[ithread] = new int[Ntotmax];
+      activelistbuf[ithread] = new int[Nleafmax];
+      activepartbuf[ithread] = new ParticleType<ndim>[Nleafmax];
+      neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmaxbuf[ithread]];
     }
-
-    if (!allocated_buffer) {
-      Nneibmaxbuf = new int[Nthreads];
-      Ndirectmaxbuf = new int[Nthreads];
-      Ngravcellmaxbuf = new int[Nthreads];
-      levelneibbuf = new int*[Nthreads];
-      activelistbuf = new int*[Nthreads];
-      activepartbuf = new ParticleType<ndim>*[Nthreads];
-      neibpartbuf = new ParticleType<ndim>*[Nthreads];
-
-      for (ithread=0; ithread<Nthreads; ithread++) {
-	Nneibmaxbuf[ithread] = max(1,4*sph->Ngather);
-	Ndirectmaxbuf[ithread] = max(1,4*sph->Ngather);
-	Ngravcellmaxbuf[ithread] = max(1,4*sph->Ngather);
-	levelneibbuf[ithread] = new int[Ntotmax];
-        activelistbuf[ithread] = new int[Nleafmax];
-	activepartbuf[ithread] = new ParticleType<ndim>[Nleafmax];
-	neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmaxbuf[ithread]];
-      }
-      allocated_buffer = true;
-    }
+    allocated_buffer = true;
 
   }
 
@@ -161,7 +163,7 @@ void SphTree<ndim,ParticleType>::DeallocateMemory(void)
 
   debug2("[SphTree::DeallocateTreeMemory]");
 
-  if (tree->allocated_tree) {
+  if (allocated_buffer) {
 
     for (ithread=0; ithread<Nthreads; ithread++) {
       delete[] neibpartbuf[ithread];
@@ -175,8 +177,6 @@ void SphTree<ndim,ParticleType>::DeallocateMemory(void)
     delete[] Ngravcellmaxbuf;
     delete[] Ndirectmaxbuf;
     delete[] Nneibmaxbuf;
-
-    tree->DeallocateTreeMemory();
 
   }
 
@@ -228,18 +228,13 @@ void SphTree<ndim,ParticleType>::BuildTree
     Ntotmax = max(Ntotmax,Ntot);
     Ntotmax = max(Ntotmax,sph->Nsphmax);
     
-    //tree
+    tree->ifirst = 0;
+    tree->ilast = sph->Nsph - 1;
     tree->Ntot = sph->Nsph;
     tree->Ntotmaxold = tree->Ntotmax;
     tree->Ntotmax = max(tree->Ntotmax,tree->Ntot);
     tree->Ntotmax = max(tree->Ntotmax,sph->Nsphmax);
-    ghosttree->Ntot = sph->Nsph;
-    ghosttree->Ntotmaxold = tree->Ntotmax;
-    ghosttree->Ntotmax = max(tree->Ntotmax,tree->Ntot);
-    ghosttree->Ntotmax = max(tree->Ntotmax,sph->Nsphmax);
-
     tree->BuildTree(Npart,Npartmax,sphdata,timestep);
-    ghosttree->BuildTree(Npart,Npartmax,sphdata,timestep);
 
     AllocateMemory(sph);
     
@@ -276,6 +271,160 @@ void SphTree<ndim,ParticleType>::BuildTree
 
 
 //=============================================================================
+//  SphTree::BuildGhostTree
+/// Main routine to control how the tree is built, re-stocked and interpolated 
+/// during each timestep.
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void SphTree<ndim,ParticleType>::BuildGhostTree
+(bool rebuild_tree,                 ///< Flag to rebuild tree
+ int n,                             ///< Integer time
+ int ntreebuildstep,                ///< Tree build frequency
+ int ntreestockstep,                ///< Tree stocking frequency
+ int Npart,                         ///< No. of particles
+ int Npartmax,                      ///< Max. no. of particles
+ SphParticle<ndim> *sph_gen,        ///< Particle data array
+ Sph<ndim> *sph,                    ///< Pointer to SPH object
+ FLOAT timestep)                    ///< Smallest physical timestep
+{
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+  ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+
+  // If no periodic ghosts exist, do not build tree
+  if (sph->NPeriodicGhost == 0) return;
+
+  debug2("[SphTree::BuildGhostTree]");
+  timing->StartTimingSection("BUILD_GHOST_TREE",2);
+
+  // Activate nested parallelism for tree building routines
+#ifdef _OPENMP
+  omp_set_nested(1);
+#endif
+
+
+  // For tree rebuild steps
+  //---------------------------------------------------------------------------
+  if (n%ntreebuildstep == 0 || rebuild_tree) {
+
+    ghosttree->ifirst = sph->Nsph;
+    ghosttree->ilast = sph->Nsph + sph->NPeriodicGhost - 1;
+    ghosttree->Ntot = sph->NPeriodicGhost;
+    ghosttree->Ntotmaxold = ghosttree->Ntotmax;
+    ghosttree->Ntotmax = max(ghosttree->Ntotmax,ghosttree->Ntot);
+    ghosttree->Ntotmax = max(ghosttree->Ntotmax,sph->Nsphmax);
+    ghosttree->BuildTree(ghosttree->Ntot,ghosttree->Ntotmax,sphdata,timestep);
+    
+  }
+
+  // Else stock the tree
+  //---------------------------------------------------------------------------
+  else if (n%ntreestockstep == 0) {
+
+    ghosttree->StockTree(ghosttree->kdcell[0],sphdata);
+
+  }
+
+  // Otherwise simply extrapolate tree cell properties
+  //---------------------------------------------------------------------------
+  else {
+
+    //ExtrapolateCellProperties(kdcell[0],timestep);
+    ghosttree->ExtrapolateCellProperties(timestep);
+
+  }
+  //---------------------------------------------------------------------------
+
+#ifdef _OPENMP
+  omp_set_nested(0);
+#endif
+
+  timing->EndTimingSection("BUILD_GHOST_TREE");
+
+
+  return;
+}
+
+
+
+#ifdef MPI_PARALLEL
+//=============================================================================
+//  SphTree::BuildGhostTree
+/// Main routine to control how the tree is built, re-stocked and interpolated 
+/// during each timestep.
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void SphTree<ndim,ParticleType>::BuildMpiGhostTree
+(bool rebuild_tree,                 ///< Flag to rebuild tree
+ int n,                             ///< Integer time
+ int ntreebuildstep,                ///< Tree build frequency
+ int ntreestockstep,                ///< Tree stocking frequency
+ int Npart,                         ///< No. of particles
+ int Npartmax,                      ///< Max. no. of particles
+ SphParticle<ndim> *sph_gen,        ///< Particle data array
+ Sph<ndim> *sph,                    ///< Pointer to SPH object
+ FLOAT timestep)                    ///< Smallest physical timestep
+{
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+  ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+
+  debug2("[SphTree::BuildGhostTree]");
+  timing->StartTimingSection("BUILD_MPIGHOST_TREE",2);
+
+  // Activate nested parallelism for tree building routines
+#ifdef _OPENMP
+  omp_set_nested(1);
+#endif
+
+
+  // For tree rebuild steps
+  //---------------------------------------------------------------------------
+  if (n%ntreebuildstep == 0 || rebuild_tree) {
+
+    mpighosttree->ifirst = sph->Nsph + sph->NPeriodicGhost;
+    mpighosttree->ilast = sph->Nsph + sph->Nghost - 1;
+    mpighosttree->Ntot = sph->NPeriodicGhost;
+    mpighosttree->Ntotmaxold = mpighosttree->Ntotmax;
+    mpighosttree->Ntotmax = max(mpighosttree->Ntotmax,mpighosttree->Ntot);
+    mpighosttree->Ntotmax = max(mpighosttree->Ntotmax,sph->Nsphmax);
+    mpighosttree->BuildTree(mpighosttree->Ntot,mpighosttree->Ntotmax,
+                            sphdata,timestep);
+    
+  }
+
+  // Else stock the tree
+  //---------------------------------------------------------------------------
+  else if (n%ntreestockstep == 0) {
+
+    mpighosttree->StockTree(mpighosttree->kdcell[0],sphdata);
+
+  }
+
+  // Otherwise simply extrapolate tree cell properties
+  //---------------------------------------------------------------------------
+  else {
+
+    //ExtrapolateCellProperties(kdcell[0],timestep);
+    mpighosttree->ExtrapolateCellProperties(timestep);
+
+  }
+  //---------------------------------------------------------------------------
+
+#ifdef _OPENMP
+  omp_set_nested(0);
+#endif
+
+  timing->EndTimingSection("BUILD_MPIGHOST_TREE");
+
+
+  return;
+}
+#endif
+
+
+
+//=============================================================================
 //  SphTree::GetGatherNeighbourList
 /// ..
 //=============================================================================
@@ -293,14 +442,14 @@ int SphTree<ndim,ParticleType>::GetGatherNeighbourList
 
   debug2("[SphTree::GetGatherNeighbourList]");
 
-  Nneib = tree->ComputeGatherNeighbourList(rp,rsearch,Nneibmax,
-                                           neiblist,sphdata);
+  Nneib = tree->ComputeGatherNeighbourList(sphdata,rp,rsearch,
+                                           Nneibmax,neiblist);
 
   return Nneib;
 }
 
 
-
+/*
 //=============================================================================
 //  SphTree::UpdateAllSphProperties
 /// Compute all local 'gather' properties of currently active particles, and 
@@ -1514,7 +1663,7 @@ void SphTree<ndim,ParticleType>::UpdateAllStarGasForces
 
   return;
 }
-
+*/
 
 
 //=============================================================================
@@ -1623,6 +1772,7 @@ void SphTree<ndim,ParticleType>::CheckValidNeighbourList
     // If the true neighbour is not in the list, or included multiple times, 
     // then output to screen and terminate program
     if (count != 1) {
+      InsertionSortIds(Nneib,neiblist);
       cout << "Problem with neighbour lists : " << i << "  " << j << "   "
 	   << count << "   "
 	   << partdata[i].r[0] << "   " << partdata[i].h << endl;

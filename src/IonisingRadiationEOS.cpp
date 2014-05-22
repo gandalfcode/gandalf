@@ -118,8 +118,9 @@ FLOAT IonisingRadiation<ndim>::SoundSpeed(SphParticle<ndim> &part)
 template <int ndim>
 FLOAT IonisingRadiation<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
 {
-  //return temp0*(1.0 + pow(part.rho*invrho_bary,gammam1))/gammam1/mu_bar;
-  return eos->SpecificInternalEnergy(part);
+  FLOAT non_ionised=eos->SpecificInternalEnergy(part);
+  if(part.u >non_ionised){return part.u;}
+  else{return non_ionised;}
 }
 
 

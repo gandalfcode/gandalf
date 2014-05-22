@@ -187,9 +187,17 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphProperties
 	for (j=0; j<Nactive; j++)
 	  activepart[j] = sphdata[activelist[j]];
 
-        // Compute neighbour list for cell depending on physics options
-        Nneib = tree->ComputeGatherNeighbourList(cell,Nneibmax,neiblist,
-                                                 hmax,sphdata);
+        // Compute neighbour list for cell from particles on all trees
+	Nneib = 0;
+        Nneib = tree->ComputeGatherNeighbourList(sphdata,cell,hmax,
+                                                 Nneibmax,Nneib,neiblist);
+        Nneib = ghosttree->ComputeGatherNeighbourList(sphdata,cell,hmax,
+                                                      Nneibmax,Nneib,neiblist);
+#ifdef MPI_PARALLEL
+        Nneib = mpighosttree->ComputeGatherNeighbourList(sphdata,cell,hmax,
+                                                         Nneibmax,Nneib,
+                                                         neiblist);
+#endif
 
         // If there are too many neighbours, reallocate the arrays and
         // recompute the neighbour lists.
@@ -209,8 +217,17 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphProperties
           m = new FLOAT[Nneibmax];
           m2 = new FLOAT[Nneibmax];
           r = new FLOAT[Nneibmax*ndim];
-          Nneib = tree->ComputeGatherNeighbourList(cell,Nneibmax,neiblist,
-                                                   hmax,sphdata);
+	  Nneib = 0;
+          Nneib = tree->ComputeGatherNeighbourList(sphdata,cell,hmax,
+                                                   Nneibmax,Nneib,neiblist);
+          Nneib = ghosttree->ComputeGatherNeighbourList(sphdata,cell,hmax,
+                                                        Nneibmax,Nneib,
+                                                        neiblist);
+#ifdef MPI_PARALLEL
+          Nneib = mpighosttree->ComputeGatherNeighbourList(sphdata,cell,hmax,
+                                                           Nneibmax,Nneib,
+                                                           neiblist);
+#endif
         };
 
 
@@ -407,8 +424,11 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
         for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
       }
 
-      // Compute neighbour list for cell depending on physics options
-      Nneib = tree->ComputeNeighbourList(cell,Nneibmax,neiblist,sphdata);
+      // Compute neighbour list for cell from real and periodic ghost particles
+      Nneib = 0;
+      Nneib = tree->ComputeNeighbourList(sphdata,cell,Nneibmax,Nneib,neiblist);
+      Nneib = ghosttree->ComputeNeighbourList(sphdata,cell,Nneibmax,
+                                              Nneib,neiblist);
 
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour list.
@@ -430,8 +450,11 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
         invdrmag = new FLOAT[Nneibmax];
         neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax]; 
 	neibpart = neibpartbuf[ithread];
-        Nneib = tree->ComputeNeighbourList(cell,Nneibmax,
-                                           neiblist,sphdata);
+        Nneib = 0;
+        Nneib = tree->ComputeNeighbourList(sphdata,cell,Nneibmax,
+                                           Nneib,neiblist);
+        Nneib = ghosttree->ComputeNeighbourList(sphdata,cell,Nneibmax,
+                                                Nneib,neiblist);
       };
 
       // Make local copies of all potential neighbours
@@ -663,11 +686,11 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphForces
 
 
       // Compute neighbour list for cell depending on physics options
-      okflag = tree->ComputeGravityInteractionList(cell,macfactor,
+      okflag = tree->ComputeGravityInteractionList(sphdata,cell,macfactor,
 					           Nneibmax,Ndirectmax,
                                                    Ngravcellmax,Nneib,Ndirect,
                                                    Ngravcell,neiblist,directlist,
-                                                   gravcelllist,sphdata);
+                                                   gravcelllist);
 
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour lists.
@@ -690,11 +713,11 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphForces
 	neibpart = new ParticleType<ndim>[Nneibmax];
 	neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax]; 
 	neibpart = neibpartbuf[ithread];
-	okflag = tree->ComputeGravityInteractionList(cell,macfactor,
+	okflag = tree->ComputeGravityInteractionList(sphdata,cell,macfactor,
 					             Nneibmax,Ndirectmax,
 					             Ngravcellmax,Nneib,Ndirect,
 					             Ngravcell,neiblist,directlist,
-					             gravcelllist,sphdata);
+					             gravcelllist);
       };
 
 
@@ -933,11 +956,11 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphGravForces
 
 
       // Compute neighbour list for cell depending on physics options
-      okflag = tree->ComputeGravityInteractionList(cell,macfactor,
+      okflag = tree->ComputeGravityInteractionList(sphdata,cell,macfactor,
 					           Nneibmax,Ndirectmax,
                                                    Ngravcellmax,Nneib,Ndirect,
                                                    Ngravcell,neiblist,directlist,
-                                                   gravcelllist,sphdata);
+                                                   gravcelllist);
 
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour lists.
@@ -960,11 +983,11 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphGravForces
 	neibpart = new ParticleType<ndim>[Nneibmax];
 	neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax]; 
 	neibpart = neibpartbuf[ithread];
-	okflag = tree->ComputeGravityInteractionList(cell,macfactor,
+	okflag = tree->ComputeGravityInteractionList(sphdata,cell,macfactor,
 					             Nneibmax,Ndirectmax,
 					             Ngravcellmax,Nneib,Ndirect,
 					             Ngravcell,neiblist,directlist,
-					             gravcelllist,sphdata);
+					             gravcelllist);
       };
 
 

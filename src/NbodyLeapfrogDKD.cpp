@@ -200,8 +200,7 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSPHForces
     j = directlist[jj];
 
     SphParticle<ndim>& part = sph->GetParticleIPointer(j);
-
-    assert(sphdata[j].itype != dead);
+    //assert(sphdata[j].itype != dead);
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
     drsqd = DotProduct(dr,dr,ndim);

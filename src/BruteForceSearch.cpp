@@ -80,7 +80,8 @@ void BruteForceSearch<ndim,ParticleType>::BuildTree
  int ntreestockstep,                ///< Tree stocking frequency
  int Npart,                         ///< No. of particles
  int Npartmax,                      ///< Max. no. of particles
- SphParticle<ndim> *sph_gen, Sph<ndim> *sph,        ///< Particle data array
+ SphParticle<ndim> *sph_gen,        ///< ..
+ Sph<ndim> *sph,                    ///< Particle data array
  FLOAT timestep)                    ///< Smallest physical timestep
 {
   sph->DeleteDeadParticles();
@@ -295,11 +296,12 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
     // Compute distances and the reciprical between the current particle 
     // and all neighbours here
     //-------------------------------------------------------------------------
-    for (j=0; j<Ntot; j++) {
+    for (j=0; j<sph->Nsph + sph->NPeriodicGhost; j++) {
       if (sphdata[j].itype == dead) continue;
       hrangesqdj = pow(kernfac*kernp->kernrange*sphdata[j].h,2);
       for (k=0; k<ndim; k++) draux[k] = sphdata[j].r[k] - rp[k];
       drsqd = DotProduct(draux,draux,ndim);
+
       if ((drsqd < hrangesqdi || drsqd < hrangesqdj) && i != j) {
     	neiblist[Nneib] = j;
     	drmag[Nneib] = sqrt(drsqd);
@@ -380,7 +382,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
     // Determine interaction list (to ensure we don't compute pair-wise
     // forces twice)
     Nneib = 0;
-    for (j=0; j<Nsph; j++)
+    for (j=0; j<sph->Nsph + sph->NPeriodicGhost; j++)
       if (i != j && sphdata[j].itype != dead) neiblist[Nneib++] = j;
 
     // Compute forces between SPH neighbours (hydro and gravity)

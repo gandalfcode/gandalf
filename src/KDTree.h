@@ -104,7 +104,6 @@ class KDTree
   void ComputeTreeSize(void);
   void CreateTreeStructure(void);
   void DivideTreeCell(int, int, ParticleType<ndim> *, KDTreeCell<ndim> &);
-  //void ExtrapolateCellProperties(KDTreeCell<ndim> &, FLOAT);
   void ExtrapolateCellProperties(FLOAT);
   FLOAT QuickSelect(int, int, int, int, ParticleType<ndim> *);
   void StockTree(KDTreeCell<ndim> &, ParticleType<ndim> *);
@@ -114,16 +113,18 @@ class KDTree
   int ComputeActiveCellList(KDTreeCell<ndim> **);
   int ComputeActiveParticleList(KDTreeCell<ndim> *, 
                                 ParticleType<ndim> *, int *);
-  int ComputeGatherNeighbourList(FLOAT *, FLOAT, int, int *, 
-                                 ParticleType<ndim> *);
-  int ComputeGatherNeighbourList(const KDTreeCell<ndim> *, const int, int *, 
-                                 const FLOAT, const ParticleType<ndim> *);
-  int ComputeNeighbourList(const KDTreeCell<ndim> *, const int, int *, 
-                           const ParticleType<ndim> *);
-  int ComputeGravityInteractionList(KDTreeCell<ndim> *, FLOAT, int, int,  
-                                    int, int &, int &, int &, int *, int *,
-                                    KDTreeCell<ndim> **, 
-				    ParticleType<ndim> *);
+  int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *, 
+                                 const FLOAT, const int, int *); 
+  int ComputeGatherNeighbourList(const ParticleType<ndim> *, 
+                                 const KDTreeCell<ndim> *, const FLOAT, 
+                                 const int, int &, int *);
+  int ComputeNeighbourList(const ParticleType<ndim> *, 
+                           const KDTreeCell<ndim> *, const int, int &,int *); 
+  int ComputeGravityInteractionList(const ParticleType<ndim> *, 
+                                    const KDTreeCell<ndim> *, const FLOAT, 
+                                    const int, const int, const int,   
+                                    int &, int &, int &, int *, int *,
+                                    KDTreeCell<ndim> **);
   int ComputeStarGravityInteractionList(NbodyParticle<ndim> *, FLOAT, int, int,
 					int, int &, int &, int &, int *, int *,
 					KDTreeCell<ndim> **, 
