@@ -268,11 +268,13 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Set pointer to SPH particle data
   partdata = sph->GetParticlesArray();
 
+  //Set iorig
+  for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).iorig = i;
+
   // Perform initial MPI decomposition
   //---------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
-  mpicontrol->CreateInitialDomainDecomposition(sph,nbody,simparams,simbox);
-  MPI_Barrier(MPI_COMM_WORLD);
+  mpicontrol->CreateInitialDomainDecomposition(sph,nbody,simparams,simbox,this->initial_h_provided);
 #endif
 
   // Set time variables here (for now)
