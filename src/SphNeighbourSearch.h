@@ -82,6 +82,8 @@ class SphNeighbourSearch
   //---------------------------------------------------------------------------
   virtual void BuildTree(bool, int, int, int, int, int, 
                          SphParticle<ndim> *, Sph<ndim> *, FLOAT) = 0;
+  virtual void BuildGhostTree(bool, int, int, int, int, int, 
+                              SphParticle<ndim> *, Sph<ndim> *, FLOAT) = 0;
   virtual int GetGatherNeighbourList(FLOAT *, FLOAT, SphParticle<ndim> *, 
                                      int, int, int *) = 0;
   virtual void UpdateAllSphProperties(int, int, SphParticle<ndim> *, 
@@ -151,6 +153,8 @@ protected:
   //---------------------------------------------------------------------------
   void BuildTree(bool, int, int, int, int, int, 
                  SphParticle<ndim> *, Sph<ndim> *, FLOAT);
+  void BuildGhostTree(bool, int, int, int, int, int, 
+                      SphParticle<ndim> *, Sph<ndim> *, FLOAT) {};
   int GetGatherNeighbourList(FLOAT *, FLOAT, SphParticle<ndim> *, 
                              int, int, int *);
   void UpdateAllSphProperties(int, int, SphParticle<ndim> *, 
@@ -168,6 +172,8 @@ protected:
   void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *);
 
 #if defined MPI_PARALLEL
+  void BuildMpiGhostTree(bool, int, int, int, int, int, 
+                         SphParticle<ndim> *, Sph<ndim> *, FLOAT) {};
   void FindGhostParticlesToExport(Sph<ndim>* sph, std::vector<std::vector<ParticleType<ndim>* > >&,
       const std::vector<int>&, MpiNode<ndim>*);
   void FindParticlesToTransfer(Sph<ndim>* sph, std::vector<std::vector<int> >& particles_to_export,
@@ -340,21 +346,28 @@ class SphTree: public SphNeighbourSearch<ndim>
   //---------------------------------------------------------------------------
   void BuildTree(bool, int, int, int, int, int, 
                  SphParticle<ndim> *, Sph<ndim> *, FLOAT);
+  void BuildGhostTree(bool, int, int, int, int, int, 
+                      SphParticle<ndim> *, Sph<ndim> *, FLOAT);
   int GetGatherNeighbourList(FLOAT *, FLOAT, SphParticle<ndim> *, 
                              int, int, int *);
   void UpdateAllSphProperties(int, int, SphParticle<ndim> *, 
-                 Sph<ndim> *, Nbody<ndim> *);
+			      Sph<ndim> *, Nbody<ndim> *) {};
   void UpdateAllSphForces(int, int, SphParticle<ndim> *, 
-                          Sph<ndim> *, Nbody<ndim> *);
+                          Sph<ndim> *, Nbody<ndim> *) {};
   void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, 
-                               Sph<ndim> *, Nbody<ndim> *);
+                               Sph<ndim> *, Nbody<ndim> *) {};
   void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, 
-                              Sph<ndim> *, Nbody<ndim> *);
+                              Sph<ndim> *, Nbody<ndim> *) {};
   void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *);
   void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *);
   void UpdateActiveParticleCounters(SphParticle<ndim> *, Sph<ndim> *);
-  void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, 
-                              Sph<ndim> *, Nbody<ndim> *);
+  virtual void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, 
+				      Sph<ndim> *, Nbody<ndim> *) {};
+
+#ifdef MPI_PARALLEL
+  void BuildMpiGhostTree(bool, int, int, int, int, int, 
+                         SphParticle<ndim> *, Sph<ndim> *, FLOAT);
+#endif
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(int, int, int, int *, 
 			       ParticleType<ndim> *, string);
@@ -389,6 +402,11 @@ class SphTree: public SphNeighbourSearch<ndim>
   FLOAT theta;                      ///< Geometric opening angle
   KDTree<ndim,ParticleType> *tree;  ///< Pointer to tree
   KDTree<ndim,ParticleType> *ghosttree;  ///< Pointer to tree containing ghosts
+                                         ///< on local domain
+#ifdef MPI_PARALLEL
+  KDTree<ndim,ParticleType> *mpighosttree;  ///< Pointer to tree containing 
+                                            ///< ghosts from other MPI procs.
+#endif
 
   bool allocated_buffer;            ///< ..
   int Nthreads;                     ///< ..
@@ -439,6 +457,10 @@ class GradhSphTree: public SphTree<ndim,ParticleType>
   using SphTree<ndim,ParticleType>::Ntotold;
   using SphTree<ndim,ParticleType>::timing;
   using SphTree<ndim,ParticleType>::tree;
+  using SphTree<ndim,ParticleType>::ghosttree;
+#ifdef MPI_PARALLEL
+  using SphTree<ndim,ParticleType>::mpighosttree;
+#endif
 
 
   //---------------------------------------------------------------------------
@@ -496,6 +518,10 @@ class SM2012SphTree: public SphTree<ndim,ParticleType>
   using SphTree<ndim,ParticleType>::Ntotold;
   using SphTree<ndim,ParticleType>::timing;
   using SphTree<ndim,ParticleType>::tree;
+  using SphTree<ndim,ParticleType>::ghosttree;
+#ifdef MPI_PARALLEL
+  using SphTree<ndim,ParticleType>::mpighosttree;
+#endif
 
 
   //---------------------------------------------------------------------------
@@ -553,6 +579,10 @@ class GodunovSphTree: public SphTree<ndim,ParticleType>
   using SphTree<ndim,ParticleType>::Ntotold;
   using SphTree<ndim,ParticleType>::timing;
   using SphTree<ndim,ParticleType>::tree;
+  using SphTree<ndim,ParticleType>::ghosttree;
+#ifdef MPI_PARALLEL
+  using SphTree<ndim,ParticleType>::mpighosttree;
+#endif
 
 
   //---------------------------------------------------------------------------
