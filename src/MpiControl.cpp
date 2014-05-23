@@ -325,7 +325,8 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
 (Sph<ndim> *sph,                    ///< Pointer to main SPH object
  Nbody<ndim> *nbody,                ///< Pointer to main N-body object
  Parameters *simparams,             ///< Simulation parameters
- DomainBox<ndim> simbox)            ///< Simulation domain box
+ DomainBox<ndim> simbox,            ///< Simulation domain box
+ bool& initial_h_provided)          ///< Receives from root whether or not initial h was provided
 {
   int i;                            // Particle counter
   int inode;                        // Node counter
@@ -333,6 +334,11 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
   int okflag;                       // ..
   FLOAT boxbuffer[2*ndim*Nmpi];     // Bounding box buffer
   ParticleType<ndim> *partbuffer;   // ..
+
+  //Broadcast whether or not the initial h was provided
+  int initial_h = initial_h_provided;
+  MPI_Bcast(&initial_h,1,MPI_INT,0,MPI_COMM_WORLD);
+  initial_h_provided=initial_h;
 
 
   // For main process, create load balancing tree, transmit information to all

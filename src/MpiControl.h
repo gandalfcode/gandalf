@@ -100,7 +100,7 @@ class MpiControl
   void SetNeibSearch(SphNeighbourSearch<ndim>* _neibsearch) {neibsearch=_neibsearch;}
 
   void CollateDiagnosticsData(Diagnostics<ndim> &);
-  virtual void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>)=0;
+  virtual void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>, bool&)=0;
   virtual void LoadBalancing(Sph<ndim> *, Nbody<ndim> *)=0;
   void UpdateAllBoundingBoxes(int, Sph<ndim> *, SphKernel<ndim> *);
 
@@ -168,7 +168,7 @@ public:
 
   MpiControlType ();
 
-  virtual void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>);
+  virtual void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>, bool&);
   virtual void LoadBalancing(Sph<ndim> *, Nbody<ndim> *);
   int SendReceiveGhosts(ParticleType<ndim>** array, Sph<ndim>* sph);
   int UpdateGhostParticles(ParticleType<ndim>** array);

@@ -852,8 +852,8 @@ void SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
         //---------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
-	  // Skip current active particle
-	  if (neiblist[jj] == i) continue;
+          // Skip current active particle
+          if (neiblist[jj] == i) continue;
 
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
           drsqd = DotProduct(draux,draux,ndim) + small_number;
@@ -866,9 +866,9 @@ void SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
               dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
             interactlist[Ninteract] = jj;
             Ninteract++;
-	    levelneib[neiblist[jj]] = 
-	      max(levelneib[neiblist[jj]],activepart[j].level);
-	  }
+            levelneib[neiblist[jj]] =
+                max(levelneib[neiblist[jj]],activepart[j].level);
+          }
 
         }
         //---------------------------------------------------------------------
