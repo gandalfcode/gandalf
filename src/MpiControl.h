@@ -104,6 +104,8 @@ class MpiControl
   virtual void LoadBalancing(Sph<ndim> *, Nbody<ndim> *)=0;
   void UpdateAllBoundingBoxes(int, Sph<ndim> *, SphKernel<ndim> *);
 
+  //void ExportMpiGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
+
   virtual void ExportParticlesBeforeForceLoop (Sph<ndim>* sph) =0;
   virtual void GetExportedParticlesAccelerations (Sph<ndim>* sph) =0;
 

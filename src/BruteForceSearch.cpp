@@ -697,7 +697,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
 /// Currently only searches to create periodic or mirror ghost particles.
 //=============================================================================
 template <int ndim, template <int> class ParticleType>
-void BruteForceSearch<ndim, ParticleType >::SearchBoundaryGhostParticles
+void BruteForceSearch<ndim,ParticleType>::SearchBoundaryGhostParticles
 (FLOAT tghost,                      ///< Ghost particle 'lifetime'
  DomainBox<ndim> simbox,            ///< Simulation box structure
  Sph<ndim> *sph)                    ///< Sph object pointer
@@ -775,6 +775,27 @@ void BruteForceSearch<ndim, ParticleType >::SearchBoundaryGhostParticles
 
 
 #if defined MPI_PARALLEL
+//=============================================================================
+//  BruteForceSearch::SearchMpiGhostParticles
+/// Compute on behalf of the MpiControl class the ghost particles we need 
+/// to export to other nodes.
+//=============================================================================
+/*template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::SearchMpiGhostParticles
+(const FLOAT tghost,                    ///< ..
+ const Sph<ndim> *sph,                  ///< ..
+ const vector<int> &overlapping_nodes,  ///< ..
+ const MpiNode<ndim> *mpinodes,         ///< ..
+ vector<vector<int> > &export_list)     ///< ..
+{
+
+
+
+
+  return;
+  }*/
+
+
 //=============================================================================
 //  BruteForceSearch::FindGhostParticlesToExport
 /// Compute on behalf of the MpiControl class the ghost particles we need 

@@ -1926,6 +1926,11 @@ int KDTree<ndim,ParticleType>::ComputeActiveCellList
   for (c=0; c<Ncell; c++)
     if (kdcell[c].Nactive > 0) celllist[Nactive++] = &kdcell[c];
 
+#ifdef MPI_PARALLEL
+  //  for (c=Ncell+1; c<Ncell+Nimportedcell; c++)
+  //if (kdcell[c].Nactive > 0) celllist[Nactive++] = &kdcell[c];
+#endif
+
   return Nactive;
 }
 

@@ -102,8 +102,18 @@ class SphNeighbourSearch
   virtual void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, 
                                       Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *) = 0;
-  virtual void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *) = 0;
-  virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *)=0;
+  virtual void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, 
+                                       Sph<ndim> *) = 0;
+  virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim>, 
+                                            Sph<ndim> *)=0;
+#ifdef MPI_PARALLEL
+  virtual void BuildMpiGhostTree(bool, int, int, int, int, int, 
+                                 SphParticle<ndim> *, Sph<ndim> *, FLOAT) = 0;
+  //virtual void SearchMpiGhostParticles(const FLOAT, const Sph<ndim> *,
+  //                                   const vector<int> &,
+  //                                   const MpiNode<ndim> *,
+  //                                   vector<vector<int> > &);
+#endif
 
 
   //---------------------------------------------------------------------------
@@ -176,7 +186,10 @@ protected:
   void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *);
   void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
 
-#if defined MPI_PARALLEL
+#ifdef MPI_PARALLEL
+  //void SearchMpiGhostParticles(const FLOAT, const Sph<ndim> *,
+  //                           const vector<int> &, const MpiNode<ndim> *,
+  //                           vector<vector<int> > &);
   void BuildMpiGhostTree(bool, int, int, int, int, int, 
                          SphParticle<ndim> *, Sph<ndim> *, FLOAT) {};
   void FindGhostParticlesToExport(Sph<ndim>* sph, std::vector<std::vector<ParticleType<ndim>* > >&,
@@ -373,6 +386,9 @@ class SphTree: public SphNeighbourSearch<ndim>
 #ifdef MPI_PARALLEL
   void BuildMpiGhostTree(bool, int, int, int, int, int, 
                          SphParticle<ndim> *, Sph<ndim> *, FLOAT);
+  //void SearchMpiGhostParticles(const FLOAT, const Sph<ndim> *,
+  //                           const vector<int> &, const MpiNode<ndim> *,
+  //                           vector<vector<int> > &);
 #endif
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(int, int, int, int *, 
