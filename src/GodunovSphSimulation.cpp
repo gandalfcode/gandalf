@@ -218,7 +218,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
     // Search ghost particles
-    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+    sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
 #ifdef MPI_PARALLEL
     MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
 #endif
@@ -236,7 +236,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
     // Search ghost particles
-    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+    sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
 #ifdef MPI_PARALLEL
     MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
 #endif
@@ -389,7 +389,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
   nbody->AdvanceParticles(n,nbody->Nstar,nbody->nbodydata,timestep);
 
   // Check all boundary conditions
-  LocalGhosts->CheckBoundaries(simbox,sph);
+  sphint->CheckBoundaries(simbox,sph);
 
   //---------------------------------------------------------------------------
   if (sph->Nsph > 0) {
@@ -397,7 +397,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     // Reorder particles
 
     // Search ghost particles
-    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+    sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
 #ifdef MPI_PARALLEL
     MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
 #endif

@@ -58,6 +58,9 @@ class MpiNode;
 #endif
 
 
+//static const FLOAT ghost_range = 1.6;
+
+
 
 //=============================================================================
 //  Class SphNeighbourSearch
@@ -100,6 +103,7 @@ class SphNeighbourSearch
                                       Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *) = 0;
   virtual void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *) = 0;
+  virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *)=0;
 
 
   //---------------------------------------------------------------------------
@@ -170,6 +174,7 @@ protected:
                               Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *);
   void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *);
+  void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
 
 #if defined MPI_PARALLEL
   void BuildMpiGhostTree(bool, int, int, int, int, int, 
@@ -363,6 +368,7 @@ class SphTree: public SphNeighbourSearch<ndim>
   void UpdateActiveParticleCounters(SphParticle<ndim> *, Sph<ndim> *);
   virtual void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, 
 				      Sph<ndim> *, Nbody<ndim> *) {};
+  void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
 
 #ifdef MPI_PARALLEL
   void BuildMpiGhostTree(bool, int, int, int, int, int, 

@@ -38,10 +38,10 @@
 #include "EOS.h"
 #include "RiemannSolver.h"
 #include "ExternalPotential.h"
-using namespace std;
 #if defined _OPENMP
 #include "omp.h"
 #endif
+using namespace std;
 
 
 template <int ndim>
@@ -51,6 +51,9 @@ class EOS;
 enum aviscenum{noav, mon97, mon97mm97, mon97cd2010};
 enum acondenum{noac, wadsley2008, price2008};
 enum tdaviscenum{notdav, mm97, cd2010};
+
+
+  static const FLOAT ghost_range = 1.6;
 
 
 //=============================================================================
@@ -115,6 +118,15 @@ class Sph
   virtual void ReorderParticles(void)=0;
   void SphBoundingBox(FLOAT *, FLOAT *, int);
   void InitialSmoothingLengthGuess(void);
+  void CheckXBoundaryGhostParticle(const int, const FLOAT, 
+                                   const DomainBox<ndim> &);
+  void CheckYBoundaryGhostParticle(const int, const FLOAT, 
+                                   const DomainBox<ndim> &);
+  void CheckZBoundaryGhostParticle(const int, const FLOAT, 
+                                   const DomainBox<ndim> &);
+  void CreateBoundaryGhostParticle(const int, const int, const int, 
+                                   const FLOAT, const FLOAT);
+  //void CopySphDataToBoundaryGhosts(DomainBox<ndim> *);
 
 
   // Functions needed to hide some implementation details
@@ -151,6 +163,7 @@ class Sph
   int Nghostmax;                      ///< Max. allowed no. of ghost particles
   int riemann_order;                  ///< Order of Riemann solver
   FLOAT alpha_visc_min;               ///< Min. time-dependent viscosity alpha
+  FLOAT kernrange;                    ///< Kernel range
   FLOAT kernfac;                      ///< Kernel range neighbour fraction
   FLOAT kernfacsqd;                   ///< Kernel range neib. fraction squared
   FLOAT mmean;                        ///< Mean SPH particle mass

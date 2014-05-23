@@ -573,7 +573,7 @@ void Simulation<ndim>::ShockTube(void)
                        sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
     
     // Search ghost particles
-    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+    sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
     
     // Update neighbour tree
     //sph->InitialSmoothingLengthGuess();
@@ -927,7 +927,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
 		     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
   // Search ghost particles
-  LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+  sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
 
 
   // Update neighbour tree
@@ -1085,7 +1085,7 @@ void Simulation<ndim>::KHI(void)
 		     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
   // Search ghost particles
-  LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+  sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
   sphneib->BuildGhostTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
 		          sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
@@ -1683,7 +1683,7 @@ void Simulation<ndim>::SedovBlastWave(void)
   for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).active = true;
 
   // Search ghost particles
-  LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+  sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
   
   initial_h_provided = true;
   rebuild_tree = true;

@@ -319,7 +319,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
 
     // Search ghost particles
-    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+    sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
     cout << "FOUND " << sph->NPeriodicGhost << " ghost particles" << endl;
     sphneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,
                             sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
@@ -353,7 +353,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
 
     // Search ghost particles
-    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+    sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
     sphneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,
                             sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
                             sph,timestep);
@@ -523,7 +523,7 @@ void SphSimulation<ndim>::MainLoop(void)
   // (DAVID : Move this function to sphint and create an analagous one 
   //  for N-body.  Also, only check this on tree-build steps)
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree)
-    LocalGhosts->CheckBoundaries(simbox,sph);
+    sphint->CheckBoundaries(simbox,sph);
 
 
   //---------------------------------------------------------------------------
@@ -553,7 +553,7 @@ void SphSimulation<ndim>::MainLoop(void)
     // Search for new ghost particles and create on local processor
     if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
       tghost = timestep*(FLOAT)(ntreebuildstep - 1);
-      LocalGhosts->SearchGhostParticles(tghost,simbox,sph);
+      sphneib->SearchBoundaryGhostParticles(tghost,simbox,sph);
       sphneib->BuildGhostTree(rebuild_tree,Nsteps,ntreebuildstep,
                               ntreestockstep,sph->Ntot,sph->Nsphmax,
                               partdata,sph,timestep);

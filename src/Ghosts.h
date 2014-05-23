@@ -58,17 +58,26 @@ class Ghosts
 
   // Main ghost particle functions
   //---------------------------------------------------------------------------
-  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *)=0;
+  //virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *)=0;
   virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *)=0;
   virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *)=0;
 
 //  DomainBox<ndim> simbox;               ///< Simulation boundary data
 //  Sph<ndim> *sph;                       ///< SPH algorithm pointer
 
-  static const FLOAT ghost_range = 1.8;
+  static const FLOAT ghost_range = 1.6;
 
 };
 
+
+
+//=============================================================================
+//  Class PeriodicGhosts
+/// \brief   ..
+/// \details ..
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    03/04/2013
+//=============================================================================
 template <int ndim>
 class PeriodicGhosts : public Ghosts<ndim>
 {
@@ -81,11 +90,10 @@ public:
 template <int ndim, template <int> class ParticleType>
 class PeriodicGhostsSpecific : public PeriodicGhosts<ndim>
 {
-  void CreateGhostParticle(int, int, FLOAT, FLOAT, Sph<ndim> *,int,ParticleType<ndim>*);
 public:
   using Ghosts<ndim>::ghost_range;
   virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
-  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
+  //virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
 };
 
 
@@ -95,7 +103,7 @@ class NullGhosts : public Ghosts<ndim>
 public:
   using Ghosts<ndim>::ghost_range;
 
-  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
+  //virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
   virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
   virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
 };
@@ -120,7 +128,7 @@ class MPIGhostsSpecific : public MPIGhosts<ndim> {
   MpiControlType<ndim,ParticleType>* mpicontrol;
   //using MPIGhosts<ndim>::mpicontrol;
 public:
-  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
+  //virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
   virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
 
   MPIGhostsSpecific(MpiControl<ndim>* mpicontrol_aux): mpicontrol(static_cast<MpiControlType<ndim,ParticleType> *> (mpicontrol_aux)) {};

@@ -1255,11 +1255,6 @@ int KDTree<ndim,ParticleType>::ComputeGatherNeighbourList
   //===========================================================================
   while (cc < Ncell) {
 
-    for (k=0; k<ndim; k++) dr[k] = kdcell[cc].rcell[k] - rc[k];
-    drsqd = DotProduct(dr,dr,ndim);
-
-    //cout << "Overlap? : " << gatherboxmin[0] << "   " << gatherboxmax[0] << "   " << kdcell[cc].bbmin[0] << "   " << kdcell[cc].bbmax[0] << "   " << BoxOverlap(gatherboxmin,gatherboxmax,kdcell[cc].bbmin,kdcell[cc].bbmax) << "   " << kdcell[cc].N << "   " << kdcell[cc].level << "  " << ltot << "   " << Nneibmax << "   " << Ntemp << "   " << Nneib << endl;
-
     // Check if bounding boxes overlap with each other
     //-------------------------------------------------------------------------
     if (BoxOverlap(gatherboxmin,gatherboxmax,

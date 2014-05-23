@@ -691,6 +691,89 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
 
 
 
+//=============================================================================
+//  BruteForceSearch::SearchBoundaryGhostParticles
+/// Search domain to create any required ghost particles near any boundaries.
+/// Currently only searches to create periodic or mirror ghost particles.
+//=============================================================================
+template <int ndim, template <int> class ParticleType>
+void BruteForceSearch<ndim, ParticleType >::SearchBoundaryGhostParticles
+(FLOAT tghost,                      ///< Ghost particle 'lifetime'
+ DomainBox<ndim> simbox,            ///< Simulation box structure
+ Sph<ndim> *sph)                    ///< Sph object pointer
+{
+  int i;                            // Particle counter
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
+
+  // Set all relevant particle counters
+  sph->Nghost         = 0;
+  sph->NPeriodicGhost = 0;
+  sph->Nghostmax      = sph->Nsphmax - sph->Nsph;
+  sph->Ntot           = sph->Nsph;
+
+
+  // If all boundaries are open, immediately return to main loop
+  if (simbox.x_boundary_lhs == "open" && simbox.x_boundary_rhs == "open" &&
+      simbox.y_boundary_lhs == "open" && simbox.y_boundary_rhs == "open" &&
+      simbox.z_boundary_lhs == "open" && simbox.z_boundary_rhs == "open")
+    return;
+
+
+  debug2("[BruteForceSearch::SearchBoundaryGhostParticles]");
+
+
+  // Create ghost particles in x-dimension
+  //---------------------------------------------------------------------------
+  if ((simbox.x_boundary_lhs == "open" && 
+       simbox.x_boundary_rhs == "open") == 0) {
+
+    for (i=0; i<sph->Ntot; i++) {
+      sph->CheckXBoundaryGhostParticle(i,tghost,simbox);
+    }
+
+    sph->Ntot = sph->Nsph + sph->Nghost;
+  }
+
+
+  // Create ghost particles in y-dimension
+  //---------------------------------------------------------------------------
+  if (ndim >= 2 && (simbox.y_boundary_lhs == "open" && 
+		    simbox.y_boundary_rhs == "open") == 0) {
+
+    for (i=0; i<sph->Ntot; i++) {
+      sph->CheckYBoundaryGhostParticle(i,tghost,simbox);
+    }
+
+    sph->Ntot = sph->Nsph + sph->Nghost;
+  }
+
+
+  // Create ghost particles in z-dimension
+  //---------------------------------------------------------------------------
+  if (ndim == 3 && (simbox.z_boundary_lhs == "open" && 
+		    simbox.z_boundary_rhs == "open") == 0) {
+
+    for (i=0; i<sph->Ntot; i++) {
+      sph->CheckZBoundaryGhostParticle(i,tghost,simbox);
+    }
+
+    sph->Ntot = sph->Nsph + sph->Nghost;
+  }
+
+
+  // Quit here if we've run out of memory for ghosts
+  if (sph->Ntot > sph->Nsphmax) {
+    string message="Not enough memory for ghost particles";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  sph->NPeriodicGhost = sph->Nghost;
+
+  return;
+}
+
+
+
 #if defined MPI_PARALLEL
 //=============================================================================
 //  BruteForceSearch::FindGhostParticlesToExport
