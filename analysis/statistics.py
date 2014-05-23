@@ -95,20 +95,25 @@ def structure_function(snap, type="default", nbin=8, npoints=1000,
 
 
 #------------------------------------------------------------------------------
-def density_pdf(snap, type="default", nbin=16, rhomin="auto", rhomax="auto"):
+def density_pdf(snap, type="default", nbin=32, rhomin="auto", rhomax="auto"):
     '''Calculate the probability density function of the density field'''
 
     rho = UserQuantity("rho").fetch(type, snap)[1]
 
     if rhomin == "auto": rhomin = np.amin(rho)
     if rhomax == "auto": rhomax = np.amax(rho)
+    n = rho.size
+    rho = np.log10(rho)
 
     bins = np.linspace(log10(rhomin),log10(rhomax),nbin+1)
-    rhopdf = np.zeros(nbin+2)
+    #rhopdf = np.zeros(nbin+2)
 
-    binpos = np.digitize(rho,bins,right=True)
-    for i in range(n):
-        rhopdf[binpos[i]] += 1
+    rhopdf = np.histogram(rho,bins=bins)[0]
+    #binpos = np.digitize(rho,bins,right=True)
+    #for i in range(n):
+    #    rhopdf[binpos[i]] += 1
+
+    rhopdf = np.float32(rhopdf)
 
     # Normalise logarithmic bins
     for j in range(nbin):
@@ -117,4 +122,4 @@ def density_pdf(snap, type="default", nbin=16, rhomin="auto", rhomax="auto"):
     print bins
     print rhopdf
 
-    return bins[0:nbin],rhopdf[0:nbin]
+    return bins[0:nbin],rhopdf

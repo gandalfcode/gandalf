@@ -780,20 +780,46 @@ void BruteForceSearch<ndim,ParticleType>::SearchBoundaryGhostParticles
 /// Compute on behalf of the MpiControl class the ghost particles we need 
 /// to export to other nodes.
 //=============================================================================
-/*template <int ndim, template<int> class ParticleType>
-void BruteForceSearch<ndim,ParticleType>::SearchMpiGhostParticles
-(const FLOAT tghost,                    ///< ..
- const Sph<ndim> *sph,                  ///< ..
- const vector<int> &overlapping_nodes,  ///< ..
- const MpiNode<ndim> *mpinodes,         ///< ..
- vector<vector<int> > &export_list)     ///< ..
+template <int ndim, template<int> class ParticleType>
+int BruteForceSearch<ndim,ParticleType>::SearchMpiGhostParticles
+(const FLOAT tghost,                ///< [in] Expected ghost life-time
+ const DomainBox<ndim> &mpibox,     ///< [in] Bounding box of MPI domain
+ Sph<ndim> *sph,              ///< [in] Pointer to SPH object
+ vector<int> &export_list)          ///< [out] List of particle ids
 {
+  int i;
+  int k;
+  int Nexport = 0;                  // No. of MPI ghosts to export
+  FLOAT scattermin[ndim];
+  FLOAT scattermax[ndim];
+  const FLOAT grange = ghost_range*kernrange;
+  ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > 
+    (sph->GetParticlesArray());
 
+  // Loop over particles and prepare the ones to export
+  //---------------------------------------------------------------------------
+  for (i=0; i<sph->Nsph; i++) {
+    ParticleType<ndim>& part = sphdata[i];
 
+    // Construct maximum cell bounding box depending on particle velocities
+    for (k=0; k<ndim; k++) {
+      scattermin[k] = part.r[k] + min(0.0,part.v[k]*tghost) - grange*part.h;
+      scattermax[k] = part.r[k] + max(0.0,part.v[k]*tghost) + grange*part.h;
+    }
 
+    // If maximum cell scatter box overlaps MPI domain, open cell
+    if (BoxOverlap(ndim,scattermin,scattermax,mpibox.boxmin,mpibox.boxmax)) {
+      export_list.push_back(i);
+      Nexport++;
+    }
 
-  return;
-  }*/
+  }
+  //---------------------------------------------------------------------------
+    
+
+    return Nexport;
+}
+
 
 
 //=============================================================================
