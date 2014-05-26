@@ -32,6 +32,7 @@
 #include "Sph.h"
 #include "Parameters.h"
 #include "InlineFuncs.h"
+#include "RandomNumber.h"
 #include "Debug.h"
 #include "Ghosts.h"
 #if defined(FFTW_TURBULENCE)
@@ -1480,9 +1481,9 @@ void Simulation<ndim>::PlummerSphere(void)
 
     do {
       flag = false;
-      x1 = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
-      x2 = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
-      x3 = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+      x1 = randnumb->floatrand();  //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+      x2 = randnumb->floatrand();  //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+      x3 = randnumb->floatrand();  //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
 
       if (x1 == 0.0 && x2 == 0.0 && x3 == 0.0) flag = true;
       rad = 1.0 / sqrt(pow(x1,-2.0/3.0) - 1.0);
@@ -1517,15 +1518,15 @@ void Simulation<ndim>::PlummerSphere(void)
     // Velocity of particle
     //-------------------------------------------------------------------------
     do {
-      x4 = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
-      x5 = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+      x4 = randnumb->floatrand(); //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+      x5 = randnumb->floatrand(); //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
       t1 = 0.1*x5;
       t2 = x4*x4*pow(1.0 - x4*x4,3.5);
     } while (t1 > t2);
 
     vm = ve*x4;
-    x6 = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
-    x7 = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+    x6 = randnumb->floatrand(); //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+    x7 = randnumb->floatrand(); //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
     w = (1.0 - 2.0*x6)*vm;
        
 
@@ -2104,7 +2105,7 @@ void Simulation<ndim>::AddBinaryStar
   }
 
   // randomly sample M to get theta
-  FLOAT M = 2.0*pi*(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+  FLOAT M = 2.0*pi*randnumb->floatrand();  //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
 
   // from this solve to get eccentric anomoly E - e sin(theta) = M
   // N-R method x_1 = x_0 - f(x_0)/f'(x_0)
@@ -2188,7 +2189,7 @@ void Simulation<ndim>::AddRandomBox
   for (int i=0; i<Npart; i++) {
     for (int k=0; k<ndim; k++) {
       r[ndim*i + k] = box.boxmin[k] + (box.boxmax[k] - box.boxmin[k])*
-	(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+	randnumb->floatrand();  //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
     }
   }
 
@@ -2221,7 +2222,7 @@ void Simulation<ndim>::AddRandomSphere
     // Continously loop until random particle lies inside sphere
     do {
       for (k=0; k<ndim; k++) 
-	rpos[k] = 1.0 - 2.0*(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+	rpos[k] = 1.0 - 2.0*randnumb->floatrand();  //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
       rad = DotProduct(rpos,rpos,ndim);
     } while (rad > radius);
 
@@ -2249,6 +2250,9 @@ int Simulation<ndim>::AddLatticeSphere
   int i,k;                          // Particle and dimension counters
   int Naux;                         // Aux. particle number
   int Nlattice[3];                  // Lattice size
+  FLOAT theta;
+  FLOAT phi;
+  FLOAT psi;
   FLOAT *raux;                      // Temp. array to hold particle positions
   DomainBox<ndim> box1;             // Bounding box
 
@@ -2275,6 +2279,13 @@ int Simulation<ndim>::AddLatticeSphere
   // Now cut-out sphere from lattice containing exact number of particles 
   // (unless lattice structure prevents this).
   Naux = CutSphere(Npart,Naux,radius,raux,box1,false);
+
+  // Rotate sphere through random Euler angles (to prevent alignment problems 
+  // during tree construction)
+  theta = acos(sqrtf(randnumb->floatrand()));
+  phi = twopi*randnumb->floatrand();
+  psi = twopi*randnumb->floatrand();
+  EulerAngleArrayRotation(Naux,phi,theta,psi,raux);
 
   // Copy particle positions to main position array to be returned
   for (i=0; i<Naux; i++)
@@ -2670,10 +2681,6 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
 
   debug2("[Simulation::GenerateTurbulentVelocityField]");
 
-
-  // Initalise random number seed
-  for (i=0; i<simparams->intparams["randseed"]; i++) j = rand()%RAND_MAX;
-
   divfree = false;
   curlfree = false;
   if (field_type == 1) curlfree = true;
@@ -2738,7 +2745,7 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
 	  F[d] = sqrt(pow(sqrt((DOUBLE)(i*i + j*j + k*k)),power_turb));
 
 	for (d=0; d<3; d++) {
-	  Rnd[0] = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+	  Rnd[0] = randnumb->floatrand();  //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
 
 	  // Random phase between 0 and 2*pi (actually -pi and +pi).
           phase[d][ii + krange*jj + krange*krange*kk] =

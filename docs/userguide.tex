@@ -884,10 +884,26 @@ hexagonal\_lattice &= Particle positions generated on a hexagonal closed-packed 
 \item \var{alpha\_turb}  : Turbulent energy (as multiple of gravitational energy)
 \item \var{power\_turb}  : Power spectrum slope of initial turbulent velocity field
 
-\item \var{randseed}     : Random number seed
-
 
 \end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Random numer generator parameters}
+
+\begin{itemize}
+
+\item \var{rand\_algorithm} : Random number generator algorithm \\
+\begin{tabular}{ll}
+none     & = No algorithm selected; use intrinsic generator \\
+         & \,\,\,(not recommended since this is system dependent and is not reproducable on different machines) \\
+xorshift & = Xorshift generator (see Numerical recipes, Ed 3, Chapter 7 for details)
+\end{tabular}
+
+\item \var{randseed}        : Random number seed
+
+\end{itemize}
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

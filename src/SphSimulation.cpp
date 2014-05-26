@@ -1,6 +1,23 @@
 //=============================================================================
 //  SphSimulation.cpp
 //  Contains all main functions controlling SPH simulation work-flow.
+//
+//  This file is part of GANDALF :
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
+//  https://github.com/gandalfcode/gandalf
+//  Contact : gandalfcode@gmail.com
+//
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
+//
+//  GANDALF is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 2 of the License, or
+//  (at your option) any later version.
+//
+//  GANDALF is distributed in the hope that it will be useful, but
+//  WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//  General Public License (http://www.gnu.org/licenses) for more details.
 //=============================================================================
 
 
@@ -65,6 +82,37 @@ void SphSimulation<ndim>::ProcessParameters(void)
     string message = "Invalid dimensionality chosen : ndim = " + ndim;
     ExceptionHandler::getIstance().raise(message);
   }
+
+  // Set-up random number generator object
+  //---------------------------------------------------------------------------
+  //stringparams["rand_algorithm"] = "xorshift";
+  if (stringparams["rand_algorithm"] == "xorshift")
+    randnumb = new XorshiftRand(intparams["randseed"]);
+  else if (stringparams["rand_algorithm"] == "none")
+    randnumb = new DefaultSystemRand(intparams["randseed"]);
+  else {
+    string message = "Unrecognised parameter : rand_algorithm= " + 
+      stringparams["rand_algorithm"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+
+  // Quick random number check 
+  /*FLOAT rav = 0;
+  int nrand = 4;
+  int bin[10];
+  for (int k=0; k<10; k++) bin[k] = 0;
+  for (int i=0; i<nrand; i++) {
+    FLOAT rrand = randnumb->floatrand();
+    int k = (int) (rrand*10.0);
+    bin[k]++;
+    cout << "rrand : " << i << "   " << rrand << endl;
+    rav += rrand;
+  }
+  cout << "rav : " << rav/(FLOAT) nrand << endl;
+  for (int k=0; k<10; k++) cout << "bin[" << k << "] : " << bin[k] << endl;
+  randnumb->PrintRandomNumberRange();
+  exit(0);*/
 
   // Set-up all output units for scaling parameters
   simunits.SetupUnits(simparams);
@@ -238,8 +286,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   // Flag that we've processed all parameters already
   ParametersProcessed = true;
-
-
 
 
   return;
@@ -702,6 +748,8 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
   debug2("[SphSimulation::ComputeGlobalTimestep]");
   timing->StartTimingSection("GLOBAL_TIMESTEPS",2);
 
+
+  // Only update timestep when all particles are synced at end of last step.
   //---------------------------------------------------------------------------
   if (n == nresync) {
 
@@ -773,8 +821,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   int i;                                // Particle counter
   int imin;                             // i.d. of ptcl with minimum timestep
   int istep;                            // Aux. variable for changing steps
-  int level;                            // Particle timestep level
   int last_level;                       // Previous timestep level
+  int level;                            // Particle timestep level
   int level_max_aux;                    // Aux. maximum level variable
   int level_max_nbody = 0;              // level_max for star particles only
   int level_max_old;                    // Old level_max
@@ -849,6 +897,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     MPI_Allreduce(&dt,&dt_min_sph,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
 #endif
 
+
     // Calculate new block timestep levels
     level_max = Nlevels - 1;
     level_step = level_max + integration_step - 1;
@@ -860,6 +909,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     level_max_nbody = 
       min((int) (invlogetwo*log(dt_max/dt_min_nbody)) + 1, level_max);
       
+
     // If enforcing a single SPH timestep, set it here.  Otherwise, populate 
     // the timestep levels with SPH particles.
     if (sph_single_timestep == 1)
@@ -887,6 +937,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       }
     }
     
+
     // Populate timestep levels with N-body particles.
     // Ensures that N-body particles occupy levels lower than all SPH particles
     for (i=0; i<nbody->Nnbody; i++) {
@@ -910,6 +961,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
     level_max_old = level_max;
     level_max = 0;
+    level_max_nbody = 0;
     level_max_sph = 0;
     
 
@@ -959,7 +1011,6 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
         // Find maximum level of all SPH particles
         level_sph = max(level_sph,part.level);
         if (part.dt < dt_sph) imin = i;
-        //level_min_sph = min(level_min_sph,part.level);
         level_max_aux = max(level_max_aux,part.level);
 
         dt_sph = min(dt_sph,part.dt);
@@ -975,6 +1026,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 	level_max_sph = max(level_max_sph,level_sph);
       }
 #pragma omp barrier
+
 
       // Now find all N-body particles at the beginning of a new timestep
       //-----------------------------------------------------------------------

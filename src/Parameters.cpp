@@ -398,6 +398,10 @@ void Parameters::SetDefaultValues(void)
   floatparams["vmachbin"] = 1.0;
   floatparams["alpha_turb"] = 0.1;
   floatparams["power_turb"] = -4.0;
+
+  // Random number generator parameters
+  //---------------------------------------------------------------------------
+  stringparams["rand_algorithm"] = "none";
   intparams["randseed"] = 0;
 
   // Python parameters

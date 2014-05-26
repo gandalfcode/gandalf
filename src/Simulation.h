@@ -38,6 +38,7 @@
 #include "Diagnostics.h"
 #include "DomainBox.h"
 #include "ExternalPotential.h"
+#include "RandomNumber.h"
 #include "Precision.h"
 #include "Parameters.h"
 #include "Radiation.h"
@@ -303,6 +304,7 @@ class Simulation : public SimulationBase
   Diagnostics<ndim> diag;             ///< Current diagnostic state
   EnergyEquation<ndim> *uint;         ///< Energy equation pointer
   ExternalPotential<ndim> *extpot;    ///< Pointer to external potential object
+  RandomNumber *randnumb;    ///< Random number object (pointer)
   Ghosts<ndim>* LocalGhosts;          ///< Periodic ghost particle object
   Nbody<ndim> *nbody;                 ///< N-body algorithm pointer
   Nbody<ndim> *subsystem;             ///< N-body object for sub-systems
@@ -376,6 +378,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::dt_max;
   using Simulation<ndim>::sph_single_timestep;
   using Simulation<ndim>::sink_particles;
+  using Simulation<ndim>::randnumb;
   using Simulation<ndim>::rank;
   using Simulation<ndim>::rebuild_tree;
   using Simulation<ndim>::ndiagstep;
