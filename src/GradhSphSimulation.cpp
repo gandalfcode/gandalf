@@ -70,31 +70,27 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
 
   // Set the enum for artificial viscosity
-  if (stringparams["avisc"] == "none")
+  if (stringparams["avisc"] == "none") {
     avisc = noav;
+    tdavisc = notdav;
+  }
   else if (stringparams["avisc"] == "mon97" &&
-           stringparams["time_dependent_avisc"] == "mm97")
+           stringparams["time_dependent_avisc"] == "mm97") {
     avisc = mon97mm97;
+    tdavisc = mm97;
+  }
   else if (stringparams["avisc"] == "mon97" &&
-           stringparams["time_dependent_avisc"] == "cd2010")
+           stringparams["time_dependent_avisc"] == "cd2010") {
     avisc = mon97cd2010;
-  else if (stringparams["avisc"] == "mon97")
+    tdavisc = cd2010;
+  }
+  else if (stringparams["avisc"] == "mon97") {
     avisc = mon97;
+    tdavisc = notdav;
+  }
   else {
     string message = "Unrecognised parameter : avisc = " +
-      simparams->stringparams["avisc"];
-    ExceptionHandler::getIstance().raise(message);
-  }
-
-  // Set the enum for artificial viscosity
-  if (stringparams["time_dependent_avisc"] == "none")
-    tdavisc = notdav;
-  else if (stringparams["time_dependent_avisc"] == "mm97")
-    tdavisc = mm97;
-  else if (stringparams["time_dependent_avisc"] == "cd2010")
-    tdavisc = cd2010;
-  else {
-    string message = "Unrecognised parameter : time_dependent_avisc = " +
+      simparams->stringparams["avisc"] + "   or time_dependent_avisc : " + 
       simparams->stringparams["time_dependent_avisc"];
     ExceptionHandler::getIstance().raise(message);
   }

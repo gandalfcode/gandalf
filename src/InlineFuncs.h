@@ -205,16 +205,12 @@ static inline void InsertionSortIds
 //  Rotate given vector around specified Euler angles
 //=============================================================================
 template <typename T>
-static inline void EulerAngleRotation
+static inline void EulerAngleMatrix
 (T phi,
  T theta,
  T psi,
- T vec[3])
+ T Arot[3][3])
 {
-  int k;
-  T Arot[3][3];
-  T vecaux[3];
-
   Arot[0][0] = cos(theta)*cos(psi);
   Arot[1][0] = cos(phi)*sin(psi) + sin(phi)*sin(theta)*cos(psi);
   Arot[2][0] = sin(phi)*sin(psi) - cos(phi)*sin(theta)*cos(psi);
@@ -225,6 +221,28 @@ static inline void EulerAngleRotation
   Arot[1][2] = -sin(phi)*cos(theta);
   Arot[2][2] = cos(phi)*cos(theta);
 
+  return;
+}
+
+
+
+//=============================================================================
+//  EulerAngleRotation
+//  Rotate given vector around specified Euler angles
+//=============================================================================
+template <typename T>
+static inline void EulerAngleRotation
+(T phi,
+ T theta,
+ T psi,
+ T vec[3])
+{
+  int k;
+  T Arot[3][3];
+  T vecaux[3];
+
+  EulerAngleMatrix(phi,theta,psi,Arot);
+
   for (k=0; k<3; k++) vecaux[k] = vec[k];
 
   for (k=0; k<3; k++)
@@ -233,6 +251,39 @@ static inline void EulerAngleRotation
   cout << "rot angles : " << phi << "    " << theta << "    " << psi << endl;
   cout << "vec orig : " << vecaux[0] << "   " << vecaux[1] << "   " << vecaux[2] << endl;
   cout << "vec rot  : " << vec[0] << "   " << vec[1] << "   " << vec[2] << endl;
+
+  return;
+}
+
+
+
+//=============================================================================
+//  EulerAngleRotation
+//  Rotate given vector around specified Euler angles
+//=============================================================================
+template <typename T>
+static inline void EulerAngleArrayRotation
+(int N,
+ T phi,
+ T theta,
+ T psi,
+ T *vec)
+{
+  int i;
+  int k;
+  T Arot[3][3];
+  T vecaux[3];
+
+  EulerAngleMatrix(phi,theta,psi,Arot);
+
+  for (i=0; i<N; i++) {
+    for (k=0; k<3; k++) vecaux[k] = vec[3*i + k];
+    
+    for (k=0; k<3; k++)
+      vec[3*i + k] = 
+	Arot[0][k]*vecaux[0] + Arot[1][k]*vecaux[1] + Arot[2][k]*vecaux[2];
+
+  }
 
   return;
 }

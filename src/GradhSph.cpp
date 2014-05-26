@@ -495,7 +495,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   parti.div_v *= parti.invrho;
   parti.dudt -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
   parti.dalphadt = 0.1*parti.sound*(alpha_visc_min - parti.alpha)*
-    parti.invh + max(parti.div_v,0.0)*(alpha_visc - parti.alpha);
+    parti.invh + max(-parti.div_v,0.0)*(alpha_visc - parti.alpha);
 
 
   return;
