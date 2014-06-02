@@ -145,7 +145,6 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
 {
 #if defined MPI_PARALLEL
 protected:
-  vector<ExportParticleInfo<ndim> > particles_to_export;
   vector<int> ids_active_particles;
 #endif
  public:
@@ -198,12 +197,12 @@ protected:
       const std::vector<int>&, MpiNode<ndim>*);
   void FindParticlesToTransfer(Sph<ndim>* sph, std::vector<std::vector<int> >& particles_to_export,
       std::vector<int>& all_particles_to_export, const std::vector<int>& potential_nodes, MpiNode<ndim>* mpinodes);
-  vector<ExportParticleInfo<ndim> >& GetExportInfo(int Nproc, Sph<ndim>* sph);
-  void UnpackExported (vector<ExportParticleInfo<ndim> >& arrays, vector<int>& N_received_particles_from_proc,
+  void GetExportInfo(int Nproc, Sph<ndim>* sph, vector<ParticleType<ndim> >&);
+  void UnpackExported (vector<ParticleType<ndim> >& arrays, vector<int>& N_received_particles_from_proc,
       Sph<ndim>* sph, int rank);
-  void GetBackExportInfo(vector<ExportBackParticleInfo<ndim> >& arrays, vector<int>& N_exported_particles_from_proc,
+  void GetBackExportInfo(vector<ParticleType<ndim> >& received_array, vector<int>& N_exported_particles_from_proc,
       Sph<ndim>* sph, int rank);
-  void UnpackReturnedExportInfo(vector<ExportBackParticleInfo<ndim> >& received_information, vector<int>& recv_displs,
+  void UnpackReturnedExportInfo(vector<ParticleType<ndim> >& received_information, vector<int>& recv_displs,
       Sph<ndim>* sph, int rank);
 #endif
 };
@@ -240,12 +239,6 @@ class GradhSphBruteForce: public BruteForceSearch<ndim,ParticleType>
   //---------------------------------------------------------------------------
   void UpdateAllSphProperties(int, int, SphParticle<ndim> *, 
                               Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphForces(int, int, SphParticle<ndim> *, 
-                          Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, 
-                               Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, 
-                              Sph<ndim> *, Nbody<ndim> *);
 
 };
 
@@ -281,12 +274,7 @@ class SM2012SphBruteForce: public BruteForceSearch<ndim,ParticleType>
   //---------------------------------------------------------------------------
   void UpdateAllSphProperties(int, int, SphParticle<ndim> *, 
                               Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphForces(int, int, SphParticle<ndim> *, 
-                          Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, 
-                               Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, 
-                              Sph<ndim> *, Nbody<ndim> *);
+
 
 };
 
@@ -321,12 +309,6 @@ class GodunovSphBruteForce: public BruteForceSearch<ndim,ParticleType>
 
   //---------------------------------------------------------------------------
   void UpdateAllSphProperties(int, int, SphParticle<ndim> *, 
-                              Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphForces(int, int, SphParticle<ndim> *, 
-                          Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, 
-                               Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, 
                               Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *);
   void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *);

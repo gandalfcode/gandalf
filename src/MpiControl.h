@@ -166,9 +166,12 @@ class MpiControlType : public MpiControl<ndim> {
 
   MpiTree<ndim,ParticleType> *mpitree;           ///< Main MPI load balancing tree
 
+  BruteForceSearch<ndim,ParticleType>* bruteforce;
+
 public:
 
   MpiControlType ();
+  ~MpiControlType () {delete bruteforce;};
 
   virtual void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>, bool&);
   virtual void LoadBalancing(Sph<ndim> *, Nbody<ndim> *);
