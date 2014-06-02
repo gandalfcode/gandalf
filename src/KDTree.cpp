@@ -185,23 +185,26 @@ void KDTree<ndim,ParticleType>::BuildTree
   kdcell[0].N = Ntot;
   kdcell[0].ifirst = ifirst;
   kdcell[0].ilast = ilast;
+  kdcell[0].cnext = Ncellmax;
   for (k=0; k<ndim; k++) kdcell[0].bbmin[k] = -big_number;
   for (k=0; k<ndim; k++) kdcell[0].bbmax[k] = big_number;
   for (k=0; k<ndim; k++) kdcell[0].cexit[0][k] = -1;
   for (k=0; k<ndim; k++) kdcell[0].cexit[1][k] = -1;
   for (i=ifirst; i<=ilast; i++) inext[i] = -1;
-  
+
   // If number of particles remains unchanged, use old id list 
   // (nearly sorted list should be faster for quick select).
-  if (Ntot != Ntotold)
-    for (i=ifirst; i<=ilast; i++) ids[i] = i;   
-  
-  // Recursively build tree from root node down
-  DivideTreeCell(ifirst,ilast,partdata,kdcell[0]);
+  if (Ntot > 0) {
+    if (Ntot != Ntotold)
+      for (i=ifirst; i<=ilast; i++) ids[i] = i;   
+    
+    // Recursively build tree from root node down
+    DivideTreeCell(ifirst,ilast,partdata,kdcell[0]);
   
 #if defined(VERIFY_ALL)
-  ValidateTree(partdata);
+    ValidateTree(partdata);
 #endif
+  }
   
   return;
 }
@@ -1249,11 +1252,24 @@ int KDTree<ndim,ParticleType>::ComputeGatherNeighbourList
   for (k=0; k<ndim; k++) gatherboxmax[k] = cell->bbmax[k] + kernrange*hmax;
 
 
+  //for (k=0; k<ndim; k++) cout << "gather : " << gatherboxmin[k] << "   " << gatherboxmax[k] << endl;
+  //cout << "Nneib : " << Nneib << "    " << Nneibmax << endl;
+  //cout << "Ncell : " << Ncell << "    " << ltot << endl;
+
+
+
+
   // Start with root cell and walk through entire tree
   cc = 0;
 
   //===========================================================================
   while (cc < Ncell) {
+
+    //cout << "cc : " << cc << "   " << Ncell << "   " 
+    // << BoxOverlap(gatherboxmin,gatherboxmax,
+    //	       kdcell[cc].bbmin,kdcell[cc].bbmax) << "   "
+    // << kdcell[cc].cnext << endl;
+    //cin >> i;
 
     // Check if bounding boxes overlap with each other
     //-------------------------------------------------------------------------
