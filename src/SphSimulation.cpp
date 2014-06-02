@@ -327,6 +327,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
                             sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
                             sph,timestep);
 #ifdef MPI_PARALLEL
+    mpicontrol->UpdateAllBoundingBoxes(sph->Nsph+sph->NPeriodicGhost, sph, sph->kernp);
     MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
     sphneib->BuildMpiGhostTree(true,0,ntreebuildstep,ntreestockstep,
                                sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
@@ -360,6 +361,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
                             sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
                             sph,timestep);
 #ifdef MPI_PARALLEL
+    mpicontrol->UpdateAllBoundingBoxes(sph->Nsph+sph->NPeriodicGhost, sph, sph->kernp);
     MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
     sphneib->BuildMpiGhostTree(true,0,ntreebuildstep,ntreestockstep,
                                sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
@@ -414,7 +416,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     LocalGhosts->CopySphDataToGhosts(simbox,sph);
 #ifdef MPI_PARALLEL
-    MpiGhosts->CopySphDataToGhosts(simbox,sph);
+//    MpiGhosts->CopySphDataToGhosts(simbox,sph);
+    mpicontrol->ExportParticlesBeforeForceLoop(sph);
 #endif
     sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
                        sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
@@ -440,6 +443,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     else if (sph->self_gravity == 1)
       sphneib->UpdateAllSphGravForces(sph->Nsph,sph->Ntot,sph->GetParticlesArray(),sph,nbody);
 
+#if defined MPI_PARALLEL
+      mpicontrol->GetExportedParticlesAccelerations(sph);
+#endif
+
     // Set initial accelerations
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -451,7 +458,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     LocalGhosts->CopySphDataToGhosts(simbox,sph);
 #ifdef MPI_PARALLEL
-    MpiGhosts->CopySphDataToGhosts(simbox,sph);
+//    MpiGhosts->CopySphDataToGhosts(simbox,sph);
 #endif
 
   }
@@ -560,6 +567,7 @@ void SphSimulation<ndim>::MainLoop(void)
                               ntreestockstep,sph->Ntot,sph->Nsphmax,
                               partdata,sph,timestep);
 #ifdef MPI_PARALLEL
+      mpicontrol->UpdateAllBoundingBoxes(sph->Nsph+sph->NPeriodicGhost, sph, sph->kernp);
       MpiGhosts->SearchGhostParticles(tghost,simbox,sph);
       sphneib->BuildMpiGhostTree(rebuild_tree,Nsteps,ntreebuildstep,
                                  ntreestockstep,sph->Ntot,sph->Nsphmax,
@@ -611,7 +619,8 @@ void SphSimulation<ndim>::MainLoop(void)
       // Copy properties from original particles to ghost particles
       LocalGhosts->CopySphDataToGhosts(simbox,sph);
 #ifdef MPI_PARALLEL
-      MpiGhosts->CopySphDataToGhosts(simbox,sph);
+//      MpiGhosts->CopySphDataToGhosts(simbox,sph);
+      mpicontrol->ExportParticlesBeforeForceLoop(sph);
 #endif
 
       
@@ -630,6 +639,10 @@ void SphSimulation<ndim>::MainLoop(void)
                                              sph->Nsph,sph->GetParticlesArray());
       else activecount = 0;      
       //activecount = 0;
+
+#if defined MPI_PARALLEL
+      mpicontrol->GetExportedParticlesAccelerations(sph);
+#endif
 
 
     } while (activecount > 0);
