@@ -293,7 +293,7 @@ void SphTree<ndim,ParticleType>::BuildGhostTree
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   // If no periodic ghosts exist, do not build tree
-  if (sph->NPeriodicGhost == 0) return;
+  //if (sph->NPeriodicGhost == 0) return;
 
   debug2("[SphTree::BuildGhostTree]");
   timing->StartTimingSection("BUILD_GHOST_TREE",2);
@@ -369,6 +369,9 @@ void SphTree<ndim,ParticleType>::BuildMpiGhostTree
   int i;                            // Particle counter
   int k;                            // Dimension counter
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+
+  // If no MPI ghosts exist, do not build tree
+  //if (sph->Nmpighost == 0) return;
 
   debug2("[SphTree::BuildGhostTree]");
   timing->StartTimingSection("BUILD_MPIGHOST_TREE",2);

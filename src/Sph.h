@@ -157,6 +157,7 @@ class Sph
   int Ngather;                        ///< Average no. of gather neighbours
   int Nsph;                           ///< No. of SPH particles in simulation
   int Nghost;                         ///< No. of ghost SPH particles
+  int Nmpighost;                      ///< No. of MPI ghost particles
   int NPeriodicGhost;                 ///< No. of periodic ghost particles
   int NImportedParticles;             ///< No. of imported particles (to compute forces on behalf of other processors)
   int Ntot;                           ///< No. of real + ghost particles

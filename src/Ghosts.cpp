@@ -220,6 +220,7 @@ void MPIGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
     main_array[i].active = false;
   }
 
+  sph->Nmpighost = Nmpighosts;
   sph->Nghost += Nmpighosts;
   sph->Ntot += Nmpighosts;
 
