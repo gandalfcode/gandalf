@@ -39,6 +39,7 @@
 #include "Nbody.h"
 #include "Precision.h"
 #include "Parameters.h"
+#include "RandomNumber.h"
 #include "SimUnits.h"
 #include "Sinks.h"
 #include "SphKernel.h"
@@ -132,43 +133,6 @@ class Radiation
 
 
 //=============================================================================
-//  Class TreeMonteCarlo
-/// \brief   Class that propagates radiation through KD-tree
-/// \details Class that propagates radiation through KD-tree
-/// \author  D. A. Hubber, A. P. Whitworth
-/// \date    25/04/2014
-//=============================================================================
-template <int ndim, template<int> class ParticleType>
-class TreeMonteCarlo : public Radiation<ndim>
-{
-  using Radiation<ndim>::timing;
-
- public:
-
-
-  TreeMonteCarlo(int, int);
-  ~TreeMonteCarlo();
-
-
-  virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *, 
-                                    NbodyParticle<ndim> **, 
-                                    SinkParticle<ndim> *) ;
-  PhotonPacket<ndim> GenerateNewPhotonPacket(RadiationSource<ndim> &);
-  int FindRayExitFace(KDRadTreeCell<ndim> &, FLOAT *, 
-                      FLOAT *, FLOAT *, FLOAT &);
-  int FindAdjacentCell(int, FLOAT *);
-  void ScatterPhotonPacket(PhotonPacket<ndim> &);
-
-
-  int Nphoton;                                  // No. of photon packets
-  FLOAT packetenergy;                           // Energy in photon packet
-  KDRadiationTree<ndim,ParticleType> *radtree;  // Radiation tree
-
-};
-
-
-
-//=============================================================================
 //  Class MultipleSourceIonisiation
 /// \brief   Radiation Scheme to treat ionising radiation for multiple sources
 /// \details ..
@@ -203,6 +167,51 @@ class MultipleSourceIonisation : public Radiation<ndim>
 
 };
 
+
+
+//=============================================================================
+//  Class TreeMonteCarlo
+/// \brief   Class that propagates radiation through KD-tree
+/// \details Class that propagates radiation through KD-tree
+/// \author  D. A. Hubber, A. P. Whitworth
+/// \date    25/04/2014
+//=============================================================================
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+class TreeMonteCarlo : public Radiation<ndim>
+{
+  using Radiation<ndim>::timing;
+
+ public:
+
+
+  // Constructor and destructor
+  //---------------------------------------------------------------------------
+  TreeMonteCarlo(int, int, RandomNumber *);
+  ~TreeMonteCarlo();
+
+
+  // Function prototypes
+  //---------------------------------------------------------------------------
+  virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *, 
+                                    NbodyParticle<ndim> **, 
+                                    SinkParticle<ndim> *) ;
+  void IterateRadiationField(int, int, int, int, SphParticle<ndim> *, 
+                             NbodyParticle<ndim> **, SinkParticle<ndim> *) ;
+  PhotonPacket<ndim> GenerateNewPhotonPacket(RadiationSource<ndim> &);
+  void ScatterPhotonPacket(PhotonPacket<ndim> &);
+
+
+  // Variables
+  //---------------------------------------------------------------------------
+  int Nphoton;                                  // No. of photon packets
+  FLOAT boundaryradius;                         // Radius from which isotropic 
+                                                // photons are emitted.
+  FLOAT packetenergy;                           // Energy in photon packet
+  RandomNumber *randnumb;                       // Random number object pointer
+
+  KDRadiationTree<ndim,ParticleType,CellType> *radtree;  // Radiation tree
+
+};
 
 
 

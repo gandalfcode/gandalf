@@ -45,8 +45,8 @@ using namespace std;
 //  KDRadiationTree::KDRadiationTree()
 /// Constructor for KD-tree radiation class
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-KDRadiationTree<ndim,ParticleType>::KDRadiationTree(int Nleafmaxaux)
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+KDRadiationTree<ndim,ParticleType,CellType>::KDRadiationTree(int Nleafmaxaux)
 {
   allocated_tree = false;
   ltot           = 0;
@@ -67,8 +67,8 @@ KDRadiationTree<ndim,ParticleType>::KDRadiationTree(int Nleafmaxaux)
 //  KDRadiationTree::~KDRadiationTree()
 /// Destructor for KD-tree radiation class
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-KDRadiationTree<ndim,ParticleType>::~KDRadiationTree()
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+KDRadiationTree<ndim,ParticleType,CellType>::~KDRadiationTree()
 {
 }
 
@@ -79,8 +79,8 @@ KDRadiationTree<ndim,ParticleType>::~KDRadiationTree()
 /// Allocate memory for KD-tree as requested.  If more memory is required 
 /// than currently allocated, tree is deallocated and reallocated here.
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-void KDRadiationTree<ndim,ParticleType>::AllocateMemory(void)
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+void KDRadiationTree<ndim,ParticleType,CellType>::AllocateMemory(void)
 {
   int ithread;                      // Thread id number
 
@@ -92,7 +92,7 @@ void KDRadiationTree<ndim,ParticleType>::AllocateMemory(void)
 
     ids = new int[Ntotmax];
     inext = new int[Ntotmax];
-    radcell = new struct KDRadTreeCell<ndim>[Ncellmax];
+    radcell = new struct CellType<ndim>[Ncellmax];
 
     allocated_tree = true;
   }
@@ -106,8 +106,8 @@ void KDRadiationTree<ndim,ParticleType>::AllocateMemory(void)
 //  KDRadiationTree::DeallocateMemory
 /// Deallocates all KD-tree memory
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-void KDRadiationTree<ndim,ParticleType>::DeallocateMemory(void)
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+void KDRadiationTree<ndim,ParticleType,CellType>::DeallocateMemory(void)
 {
   debug2("[KDRadiationTree::DeallocateMemory]");
 
@@ -129,8 +129,8 @@ void KDRadiationTree<ndim,ParticleType>::DeallocateMemory(void)
 /// If OpenMP is activated, the local domain is partitioned into sub-trees 
 /// in order to improve the scalability of building and stocking the tree.
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-void KDRadiationTree<ndim,ParticleType>::BuildTree
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+void KDRadiationTree<ndim,ParticleType,CellType>::BuildTree
 (int Npart,                         ///< No. of particles
  int Npartmax,                      ///< Max. no. of particles
  ParticleType<ndim> *partdata)      ///< Particle data array
@@ -212,8 +212,8 @@ void KDRadiationTree<ndim,ParticleType>::BuildTree
 /// Compute the maximum size (i.e. no. of levels, cells and leaf cells) of 
 /// the KD tree.
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-void KDRadiationTree<ndim,ParticleType>::ComputeTreeSize(void)
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+void KDRadiationTree<ndim,ParticleType,CellType>::ComputeTreeSize(void)
 {
   debug2("[KDRadiationTree::ComputeTreeSize]");
 
@@ -250,8 +250,8 @@ void KDRadiationTree<ndim,ParticleType>::ComputeTreeSize(void)
 /// Create the raw tree skeleton structure once the tree size is known.
 /// Sets all cell pointer variables and all cell levels.
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-void KDRadiationTree<ndim,ParticleType>::CreateTreeStructure(void)
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+void KDRadiationTree<ndim,ParticleType,CellType>::CreateTreeStructure(void)
 {
   int c;                            // Dummy id of tree-level, then tree-cell
   int g;                            // Dummy id of grid-cell
@@ -279,6 +279,7 @@ void KDRadiationTree<ndim,ParticleType>::CreateTreeStructure(void)
     radcell[c].ifirst = -1;
     radcell[c].ilast = -1;
     radcell[c].N = 0;
+    radcell[c].lsum = 0.0;
   }
   g = 0;
   radcell[0].level = 0;
@@ -314,12 +315,12 @@ void KDRadiationTree<ndim,ParticleType>::CreateTreeStructure(void)
 //  KDRadiationTree::DivideTreeCell
 /// Recursive routine to divide a tree cell into two children cells.
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-void KDRadiationTree<ndim,ParticleType>::DivideTreeCell
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+void KDRadiationTree<ndim,ParticleType,CellType>::DivideTreeCell
 (int ifirst,                        ///< [in] Aux. id of first particle in cell
  int ilast,                         ///< [in] Aux. id of last particle in cell
  ParticleType<ndim> *partdata,      ///< [in] Pointer to main SPH object
- KDRadTreeCell<ndim> &cell)         ///< [inout] Cell to be divided
+ CellType<ndim> &cell)         ///< [inout] Cell to be divided
 {
   int i;                            // Aux. child cell counter
   int j;                            // Aux. particle counter
@@ -333,7 +334,7 @@ void KDRadiationTree<ndim,ParticleType>::DivideTreeCell
   if (cell.level == ltot) {
     if (cell.N > 0) {
       for (j=cell.ifirst; j<cell.ilast; j++) inext[ids[j]] = ids[j+1];
-      inext[ids[cell.ilast]] = -1;
+      //inext[ids[cell.ilast]] = -1;
       cell.ifirst = ids[cell.ifirst];
       cell.ilast = ids[cell.ilast];
     }
@@ -384,12 +385,6 @@ void KDRadiationTree<ndim,ParticleType>::DivideTreeCell
   }
   assert(cell.N == radcell[cell.c1].N + radcell[cell.c2].N);
 
-  /*if (radcell[cell.c1].N < radcell[cell.c2].N) {
-    cout << "WTF?? : " << radcell[cell.c1].N << "   " << radcell[cell.c2].N << endl;
-    cout << "p1 : " << radcell[cell.c1].ilast - radcell[cell.c1].ifirst + 1 << endl;
-    cout << "p2 : " << radcell[cell.c2].ilast - radcell[cell.c2].ifirst + 1 << endl;
-    exit(0);
-    }*/
 
   // Set new cell boundaries depending on number of particles in cells
   if (radcell[cell.c1].N > 0 && radcell[cell.c2].N > 0) {
@@ -436,6 +431,12 @@ void KDRadiationTree<ndim,ParticleType>::DivideTreeCell
   }
 #endif
 
+  // Re-set the cell first and last particles now that child cells have been 
+  // re-ordered by the QuickSelect algorithm
+  cell.ifirst = radcell[cell.c1].ifirst;
+  cell.ilast = radcell[cell.c2].ilast;
+  inext[radcell[cell.c1].ilast] = radcell[cell.c2].ifirst;
+
   if (cell.N != radcell[cell.c1].N + radcell[cell.c2].N) {
     cout << "Checking : " << cell.N << "   " << radcell[cell.c1].N 
 	 << "    " << radcell[cell.c2].N << endl;
@@ -455,8 +456,8 @@ void KDRadiationTree<ndim,ParticleType>::DivideTreeCell
 /// Find median and sort particles in arrays to ensure they are the correct 
 /// side of the division.  Uses the QuickSelect algorithm.
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-FLOAT KDRadiationTree<ndim,ParticleType>::QuickSelect
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+FLOAT KDRadiationTree<ndim,ParticleType,CellType>::QuickSelect
 (int left,                          ///< Left-most id of particle in array
  int right,                         ///< Right-most id of particle in array
  int jpivot,                        ///< Pivot/median point
@@ -528,9 +529,9 @@ FLOAT KDRadiationTree<ndim,ParticleType>::QuickSelect
 //  KDRadiationTree::StockTree
 /// ..
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-void KDRadiationTree<ndim,ParticleType>::StockTree
-(KDRadTreeCell<ndim> &cell,         ///< Reference to cell to be stocked
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+void KDRadiationTree<ndim,ParticleType,CellType>::StockTree
+(CellType<ndim> &cell,         ///< Reference to cell to be stocked
  ParticleType<ndim> *partdata)      ///< SPH particle data array
 {
   int i;                            // Aux. child cell counter
@@ -566,9 +567,9 @@ void KDRadiationTree<ndim,ParticleType>::StockTree
 /// Calculate the physical properties (e.g. total mass, centre-of-mass, 
 /// opening-distance, etc..) of all cells in the tree.
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-void KDRadiationTree<ndim,ParticleType>::StockCellProperties
-(KDRadTreeCell<ndim> &cell,         ///< Reference to current tree cell
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+void KDRadiationTree<ndim,ParticleType,CellType>::StockCellProperties
+(CellType<ndim> &cell,         ///< Reference to current tree cell
  ParticleType<ndim> *partdata)      ///< Particle data array
 {
   int cc,ccc;                       // Cell counters
@@ -581,15 +582,17 @@ void KDRadiationTree<ndim,ParticleType>::StockCellProperties
   FLOAT mi;                         // Mass of particle i
   FLOAT p = 0.0;                    // ..
   FLOAT lambda = 0.0;               // ..
-  KDRadTreeCell<ndim> &child1 = radcell[cell.c1];
-  KDRadTreeCell<ndim> &child2 = radcell[cell.c2];
+  CellType<ndim> &child1 = radcell[cell.c1];
+  CellType<ndim> &child2 = radcell[cell.c2];
 
 
   // Zero all summation variables for all cells
   cell.uniform = false;
   cell.N = 0;
+  cell.Nphoton = 0;
   cell.m = 0.0;
   cell.rho = 0.0;
+  cell.lsum = 0.0;
   cell.temp = 0.0;
   cell.uphoton = 0.0;
   cell.opacity = 0.01;
@@ -663,16 +666,16 @@ void KDRadiationTree<ndim,ParticleType>::StockCellProperties
 /// Calculate the physical properties (e.g. total mass, centre-of-mass, 
 /// opening-distance, etc..) of all cells in the tree.
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-void KDRadiationTree<ndim,ParticleType>::OptimiseTree(void)
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+void KDRadiationTree<ndim,ParticleType,CellType>::OptimiseTree(void)
 {
-  int c;                            // ..
-  int c2;                           // ..
-  int cexit;                        // ..
-  int k;                            // ..
-  int k_divide;                     // ..
-  int level;                        // ..
-  KDRadTreeCell<ndim> *cell;        // ..
+  int c;                            // Cell counter
+  int c2;                           // 2nd child cell counter
+  int cexit;                        // Exit cell id
+  int k;                            // Dimension counter
+  int k_divide;                     // Tree division dimension
+  int level;                        // Cell level
+  CellType<ndim> *cell;        // Pointer to cell
 
 
   debug2("[KDRadiationTree::OptimiseTree]");
@@ -713,22 +716,6 @@ void KDRadiationTree<ndim,ParticleType>::OptimiseTree(void)
 	else 
 	  break;
       };
-
-      /*if (radcell[c].cexit[0][k] != cexit) {
-	cout << "Found optimal exit cell : " << c << "   " 
-	     << radcell[c].cexit[0][k] << "   " << cexit 
-	     << "  k : " << k << endl;
-	cout << "bbmin of cell  : " << cell->bbmin[0] << "   " 
-	     << cell->bbmin[1] << "   " << cell->bbmin[2] << endl;
-	cout << "bbmax of cell  : " << cell->bbmax[0] << "   " 
-	     << cell->bbmax[1] << "   " << cell->bbmax[2] << endl;
-	cout << "bbmin of cexit : " << radcell[cexit].bbmin[0] << "   " 
-	     << radcell[cexit].bbmin[1] << "   " 
-	     << radcell[cexit].bbmin[2] << endl;
-	cout << "bbmax of cexit : " << radcell[cexit].bbmax[0] << "   " 
-	     << radcell[cexit].bbmax[1] << "   " 
-	     << radcell[cexit].bbmax[2] << endl;
-	     }*/
 
       radcell[c].cexit[0][k] = cexit;
 
@@ -777,12 +764,12 @@ void KDRadiationTree<ndim,ParticleType>::OptimiseTree(void)
 
 //=============================================================================
 //  KDRadiationTree::FindCell
-/// Find i.d. of cell adjacent to current cell that the radiation packet is 
-/// travelling into.
+/// ...
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-int KDRadiationTree<ndim,ParticleType>::FindCell
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+int KDRadiationTree<ndim,ParticleType,CellType>::FindCell
 (int cparent,                       ///< [in] i.d. of larger parent cell
+ int level,                         ///< [in] Target tree level
  FLOAT rp[ndim])                    ///< [in] Position of point/ray
 {
   int c = cparent;                  // Cell i.d.
@@ -791,7 +778,7 @@ int KDRadiationTree<ndim,ParticleType>::FindCell
 
   // Walk back down through tree to bottom level
   //---------------------------------------------------------------------------
-  while (radcell[c].level < ltot) {
+  while (radcell[c].level < level) {
 
 #ifdef OUTPUT_ALL
     cout << "Searching for cell : " << radcell[c].level << "   " << ltot << endl;
@@ -814,13 +801,174 @@ int KDRadiationTree<ndim,ParticleType>::FindCell
 
 
 
+//=============================================================================
+//  KDRadiationTree::FindRayExitFace
+/// Find face in current cell that photon packet will intercept first.
+/// Also computes the path length through the cell.
+//=============================================================================
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+int KDRadiationTree<ndim,ParticleType,CellType>::FindRayExitFace
+(KDRadTreeCell<ndim> &cell,         ///< [in] Reference to cell
+ FLOAT rp[ndim],                    ///< [in] Position of point/ray
+ FLOAT eray[ndim],                  ///< [in] Unit vector direction of ray
+ FLOAT inveray[ndim],               ///< [in] 1/eray
+ FLOAT &dpath)                      ///< [out] Length of ray path across cell
+{
+  int cexit;                        // i.d. of cell that ray is travelling to
+  int k;                            // Dimension counter
+  FLOAT daux;                       // Aux. value of face-intersection distance
+  
+  // Initialise variables before finding face
+  dpath = big_number;
 
-template class KDRadiationTree<1,GradhSphParticle>;
-template class KDRadiationTree<2,GradhSphParticle>;
-template class KDRadiationTree<3,GradhSphParticle>;
-template class KDRadiationTree<1,SM2012SphParticle>;
-template class KDRadiationTree<2,SM2012SphParticle>;
-template class KDRadiationTree<3,SM2012SphParticle>;
-template class KDRadiationTree<1,GodunovSphParticle>;
-template class KDRadiationTree<2,GodunovSphParticle>;
-template class KDRadiationTree<3,GodunovSphParticle>;
+  // Check each cell boundary
+  //---------------------------------------------------------------------------
+  for (k=0; k<ndim; k++) {
+
+    // If radiation if travelling in +ve k-direction
+    if (eray[k] > 0.0) {
+      daux = (cell.bbmax[k] - rp[k])*inveray[k];
+      if (daux < dpath) {
+        dpath = daux;
+        cexit = cell.cexit[1][k];
+      }
+    }
+
+    // If radiation if travelling in -ve k-direction
+    else {
+      daux = (cell.bbmin[k] - rp[k])*inveray[k];
+      if (daux < dpath) {
+        dpath = daux;
+        cexit = cell.cexit[0][k];
+      }
+    }
+
+#ifdef OUTPUT_ALL
+    if (daux < 0.0) {
+      cout << "Problem with ray path length : " << daux << "   " << k 
+	   << "   " << eray[k] << "   " << cell.bbmin[k] << "   " 
+	   << cell.bbmax[k] << "   " <<  rp[k] << endl;
+      cout << "LH ray : " << (cell.bbmax[k] - rp[k])/eray[k] << endl;
+      cout << "RH ray : " << (cell.bbmin[k] - rp[k])/eray[k] << endl;
+      exit(0);
+    }
+#endif
+
+  }
+  //---------------------------------------------------------------------------
+
+  return cexit;
+}
+
+
+
+//=============================================================================
+//  TreeMonteCarlo::FindAdjacentCell
+/// Find i.d. of cell adjacent to current cell that the radiation packet is 
+/// travelling into.
+//=============================================================================
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+int KDRadiationTree<ndim,ParticleType,CellType>::FindAdjacentCell
+(int cparent,                       ///< [in] i.d. of larger parent cell
+ int level,                         ///< [in] level that ray should exit
+ FLOAT rp[ndim])                    ///< [in] Position of point/ray
+{
+  int c = cparent;                  // Cell i.d.
+  int c1;                           // i.d. of 1st cell child
+  int k_divide;                     // Dimension of cell division
+
+  // Walk back down through tree to bottom level
+  //---------------------------------------------------------------------------
+  //while (radtree->radcell[c].level < radtree->ltot) {
+  while (radcell[c].level < level) {
+    c1 = c + 1;
+    k_divide = radcell[c].k_divide;
+
+    // If point is left of divide, pick 1st child cell.  Else pick 2nd child.
+    if (rp[k_divide] < radcell[c1].bbmax[k_divide])
+      c = c1;
+    else
+      c = radcell[c].c2;
+
+  };
+  //---------------------------------------------------------------------------
+
+
+#ifdef OUTPUT_ALL
+  cout << "Looking for cell containing : " 
+       << rp[0] << "  " << rp[1] << "  " << rp[2] << endl;
+  cout << "Cell x-range : " << radtree->radcell[c].bbmin[0] 
+       << "   " << radtree->radcell[c].bbmax[0] << endl;
+  cout << "Cell y-range : " << radtree->radcell[c].bbmin[1] 
+       << "   " << radtree->radcell[c].bbmax[1] << endl;
+  cout << "Cell z-range : " << radtree->radcell[c].bbmin[2] 
+       << "   " << radtree->radcell[c].bbmax[2] << endl;
+  cout << "Cell level : " << radtree->radcell[c].level << endl;
+#endif
+
+  return c;
+}
+
+
+
+//=============================================================================
+//  KDRadiationTree::SumRadiationField
+/// ..
+//=============================================================================
+template <int ndim, template<int> class ParticleType, template<int> class CellType>
+void KDRadiationTree<ndim,ParticleType,CellType>::SumRadiationField
+(int level,                         ///< [in] level to sum radiation field
+ CellType<ndim> &cell)              ///< [inout] KD radiation tree cell pointer
+{
+  int c,cc,ccc;                     // Cell counters
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+
+  // If cell is not leaf, stock child cells
+  if (cell.level != level) {
+#if defined _OPENMP
+    if (pow(2,cell.level) < Nthreads) {
+#pragma omp parallel for default(none) private(i) \
+  shared(cell,level) num_threads(2)
+      for (i=0; i<2; i++) {
+	if (i == 0) SumRadiationField(level,radcell[cell.c1]);
+	else if (i == 1) SumRadiationField(level,radcell[cell.c2]);
+      }
+    }
+    else {
+      for (i=0; i<2; i++) {
+	if (i == 0) SumRadiationField(level,radcell[cell.c1]);
+	else if (i == 1) SumRadiationField(level,radcell[cell.c2]);
+      }
+    }
+#else
+    for (i=0; i<2; i++) {
+      if (i == 0) SumRadiationField(level,radcell[cell.c1]);
+      else if (i == 1) SumRadiationField(level,radcell[cell.c2]);
+    }  
+#endif
+  }
+
+
+  // Sum-up radiation values from children cells
+  if (cell.level != level) {
+    cell.lsum = radcell[cell.c1].lsum + radcell[cell.c2].lsum;
+    cell.Nphoton = radcell[cell.c1].Nphoton + radcell[cell.c2].Nphoton;
+  }
+
+
+  return;
+}
+
+
+
+
+template class KDRadiationTree<1,GradhSphParticle,KDRadTreeCell>;
+template class KDRadiationTree<2,GradhSphParticle,KDRadTreeCell>;
+template class KDRadiationTree<3,GradhSphParticle,KDRadTreeCell>;
+//template class KDRadiationTree<1,SM2012SphParticle>;
+//template class KDRadiationTree<2,SM2012SphParticle>;
+//template class KDRadiationTree<3,SM2012SphParticle>;
+//template class KDRadiationTree<1,GodunovSphParticle>;
+//template class KDRadiationTree<2,GodunovSphParticle>;
+//template class KDRadiationTree<3,GodunovSphParticle>;

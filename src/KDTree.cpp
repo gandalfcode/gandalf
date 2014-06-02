@@ -342,7 +342,7 @@ void KDTree<ndim,ParticleType>::DivideTreeCell
   if (cell.level == ltot) {
     if (cell.N > 0) {
       for (j=cell.ifirst; j<cell.ilast; j++) inext[ids[j]] = ids[j+1];
-      inext[ids[cell.ilast]] = -1;
+      //inext[ids[cell.ilast]] = -1;
       cell.ifirst = ids[cell.ifirst];
       cell.ilast = ids[cell.ilast];
     }
@@ -430,6 +430,13 @@ void KDTree<ndim,ParticleType>::DivideTreeCell
                                     partdata,kdcell[cell.c2]);
   }
 #endif
+
+  // Re-set the cell first and last particles now that child cells have been 
+  // re-ordered by the QuickSelect algorithm
+  cell.ifirst = kdcell[cell.c1].ifirst;
+  cell.ilast = kdcell[cell.c2].ilast;
+  inext[kdcell[cell.c1].ilast] = kdcell[cell.c2].ifirst;
+
 
   if (cell.N != kdcell[cell.c1].N + kdcell[cell.c2].N) {
     cout << "Checking : " << cell.N << "   " << kdcell[cell.c1].N 
@@ -1997,6 +2004,39 @@ void KDTree<ndim,ParticleType>::ValidateTree
   }
 
 
+  // Verify linked lists are valid for all levels of tree
+  //---------------------------------------------------------------------------
+  for (l=0; l<=ltot; l++) {
+    for (i=0; i<Ntot; i++) pcount[i] = 0;
+
+    for (c=0; c<Ncell; c++) {
+      cell = kdcell[c];
+
+      // Check that particles are not in linked lists more than once
+      if (cell.level == l) {
+	i = cell.ifirst;
+	while (i != -1) {
+	  pcount[i]++;
+	  if (i == cell.ilast) break;
+	  i = inext[i];
+	}
+
+      }
+    }
+
+    // Check particles are included in the tree once and once only
+    for (i=0; i<Ntot; i++) {
+      if (pcount[i] != 1) {
+	cout << "Problem with linked lists on level : " << l 
+	     << " for particle : " << i << "   " << pcount[i] << endl;
+	kill_flag = true;
+      }
+    }
+
+  }
+  for (i=0; i<Ntot; i++) pcount[i] = 0;
+
+
   // Loop over all cells in tree
   //---------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
@@ -2083,7 +2123,8 @@ void KDTree<ndim,ParticleType>::ValidateTree
   // Check number of particles on all levels is consistent
   for (l=0; l<ltot; l++) {
     if (lcount[l] != Ntot) {
-      cout << "Problem with SPH particles on level : " << l << "    " << lcount[l] << "    " << Ntot << endl;
+      cout << "Problem with SPH particles on level : " << l 
+	   << "    " << lcount[l] << "    " << Ntot << endl;
       kill_flag = true;
     }
   }

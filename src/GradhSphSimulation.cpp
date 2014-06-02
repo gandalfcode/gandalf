@@ -240,8 +240,8 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
        floatparams["gamma_eos"],pow(simunits.r.outscale*simunits.r.outcgs,3.)/
        pow(simunits.m.outscale*simunits.m.outcgs,2.),simunits.temp.outscale);
   else if (gas_radiation == "treemc")
-    radiation = new TreeMonteCarlo<ndim,GradhSphParticle>
-      (intparams["Nphoton"],intparams["Nleafmax"]);
+    radiation = new TreeMonteCarlo<ndim,GradhSphParticle,KDRadTreeCell>
+      (intparams["Nphoton"],intparams["Nleafmax"],randnumb);
   else if (gas_radiation == "none")
     radiation = new NullRadiation<ndim>();
   else {
