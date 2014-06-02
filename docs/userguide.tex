@@ -51,7 +51,7 @@ GANDALF has been developed as a fully open-source project hosted on the site git
 \section{Installation} \label{S:INSTALL}
 In order to use all features in GANDALF, the following programs and libraries must be installed : 
 \begin{itemize}
-\item C++ compiler; at present, only gcc/g++ has been tested with the code
+\item C++ compiler
 \item Python 2.7
 \item swig compatible with python 2.7
 \item matplotlib compatible with python 2.7
@@ -196,10 +196,11 @@ The GANDALF Makefile is used to select options which are used to compile the cod
 
 \begin{itemize}
 
-\item CPP : C++ compiler (only gcc/g++ set-up at present) \\
+\item CPP : C++ compiler \\
 \begin{tabular}{ll}
 g++ & : GCC C++ compiler \\
-clang & : CLANG compiler
+icpc & : Intel C++ compiler \\
+clang & : CLANG compiler (Mac OS X only)
 \end{tabular}
 
 \item PYTHON : name of python command-line executable (e.g. python, python2.7)
@@ -557,7 +558,7 @@ gaussian  & = Gaussian kernel (truncated at 3h)
 energy\_eqn & = Solve energy equation \\
 isothermal  & = Isothermal EOS \\
 barotropic  & = Barotropic EOS (i.e. for mimicing isothermal + adiabatic phase during protostellar collapse) \\
-barotropic2  & = Similar to barotropic, but using discrete power laws rather than smmoth change
+barotropic2  & = Similar to barotropic, but using discrete power laws rather than smooth change
 \end{tabular}
 
 %\item \var{cooling\_law} : Cooling law for gas particles (only applicable if solving the energy equation) \\
@@ -713,7 +714,7 @@ hermite4     & = 4th-order Hermite scheme \\
 hermite4ts   & = Time-symmetric 4th-order Hermite scheme
 \end{tabular}
 
-\item \var{Npec} : No. of P(EC)\^n iterations in time-symmetric scheme (if non time-symmetric scheme is used, automatically sets to $1$)
+\item \var{Npec} : No. of ${\rm P(EC)^n}$ iterations in time-symmetric scheme (if non time-symmetric scheme is used, automatically sets to $1$)
 
 \item \var{nbody\_softening} : Use SPH kernel-softening between star particles? ($1$ or $0$)
 
@@ -742,11 +743,11 @@ hermite4ts   & = Time-symmetric 4th-order Hermite scheme
 
 \item \var{smooth\_accretion} : Use smooth accretion?  ($0$ or $1$)
 
-\item \var{rho\_sink}         : Sink particle creation density
+\item \var{rho\_sink}         : Sink particle creation density (in cgs units)
 
 \item \var{sink\_radius}      : Sink particle radius (in units of smoothing length)
 
-\item \var{alpha\_ss}         : Sunyaev-Shakura alpha
+\item \var{alpha\_ss}         : Sunyaev-Shakura alpha for smooth disc accretion
 
 \item \var{smooth\_accrete\_frac} : Smooth accretion instantaneous accretion mass frac.
 
@@ -769,11 +770,15 @@ hmult   &= sink radius a multiple of SPH particle smoothing length
 
 \item \var{radiation} : Main radiation algorithm used \\
 \begin{tabular}{ll}
-none    &= No radiation field \\
-treemc  &= Monte-Carlo radiation transport using a kd-tree
+none       &= No radiation field \\
+ionisation &= Multiple source ionising radiation \\
+treemc     &= Monte-Carlo radiation transport using a kd-tree
 \end{tabular}
 
-\item \var{Nphoton} : No. of photon packets (for Monte-Carlo radiation transport)
+\item \var{Nphoton}   : No. of photon packets (for Monte-Carlo radiation transport)
+\item \var{mu\_ion}   : Mean-gas particle mass for ionised gas
+\item \var{temp\_ion} : Temperature of ionised gas
+\item \var{Ndotmin}   : No. of ionising photons per second
 
 \end{itemize}
 
@@ -924,9 +929,14 @@ xorshift & = Xorshift generator (see Numerical recipes, Ed 3, Chapter 7 for deta
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Generating initial conditions}
 
-One important difference between SEREN and GANDALF is that initial conditions can be generated on-the-fly in GANDALF, i.e. while running the code, unlike SEREN where initial conditions always had to be generated before the simulation.  While they are still situations where it is appropriate to prepare initial conditions prior to running the simulations, it is more convenient to generate the initial conditions at the same time as running the simulation. It's also possible to generate the initial conditions in python (see next section).
+There are three main ways of generating initial conditions in GANDALF.
 
-At present, the following initial conditions are included in the code : \newline
+%One important difference between SEREN and GANDALF is that initial conditions can be generated on-the-fly in GANDALF, i.e. while running the code, unlike SEREN where initial conditions always had to be generated before the simulation.  While they are still situations where it is appropriate to prepare initial conditions prior to running the simulations, it is more convenient to generate the initial conditions at the same time as running the simulation. It's also possible to generate the initial conditions in python (see next section).
+
+
+\subsection{`On-the-fly' initial conditions}
+
+It is possible to generate initial conditions `on-the-fly' using internal subroutines in GANDALF.  At present, the following initial conditions are included in the code : \newline
 
 \noindent SPH simulations : \\
 \newline
@@ -958,6 +968,14 @@ At present, the following initial conditions are included in the code : \newline
 - quadruple &: Simple hierarchical quadruple system test \\
 - triple    &: Simple hierarchical triple system test
 \end{tabular}
+
+
+\subsection{Load from external file}
+GANDALF can load two main file formats; simple ASCII column format and SEREN format.
+
+\subsection{Generate inside python script}
+GANDALF can generate initial conditions if using python scripts.  The initial conditions can be first set in numpy arrays and then imported into the C++ code in order to perform the simulation.  More information is given about this method, including detailed examples, in Section \ref{SS:PYTHONTUTORIAL}.
+
 
 \newpage
 
@@ -1074,7 +1092,7 @@ To be done
 
 \newpage 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{GANDALF Python library tutorial}
+\subsection{GANDALF Python library tutorial} \label{SS:PYTHONTUTORIAL}
 The GANDALF Python library contains a variety of commands that are used to create and run new simulations, load in old simulations from the disk, analyse and plot results and more.  A full list of all of these commands is given in Appendix A (to be written).  The same information can be found in the source code file \var{gandalf/analysis/facade.py}.  Also, when running the interpreter, information on interactive commands can be obtained by typing \var{help} for a full list of available commands, or \var{help command} for information on that particular command.
 
 We provide here a short tutorial demonstrating from the most basic to the more advanced functionality of the Python library.  These examples are also contained in the \var{gandalf/examples} sub-directory and should run as typed, although it is also useful for the user to write the examples themselves if unfamiliar with python syntax. \\
@@ -1467,6 +1485,29 @@ GANDALF makes heavy use of the object-oriented features in C++ in order to write
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Class hieararchy}
+GANDALF uses a hierarchy of classes using inheritance to structure the code in a logical and maintainable manner.  Although classes permeate the code at almost all levels, we briefly discuss the main classes here.
+
+\subsubsection{Simulation class}
+The \var{Simulation} class is the class that contains every other class, including SPH and N-body classes, in order to fully run the simulation.  The \var{Simulation} class is split into three levels : 
+\begin{itemize}
+\item \var{SimulationBase} - Non-templated base class for generating the simulation class.  Provides binding layer between C++ code and Python (since Python cannot link to templated classes).  Contains all subroutines that can be called by Python.
+\item \var{Simulation} - Main parent simulation class that contains all common functions for all possible simulations.  Inherits from \var{SimulationBase}.
+\item \var{AlgorithmSimulation} - Child class containing specific algorithmic implementation.  For example, `grad-h' SPH simulations are run by the \var{GradhSphSimulation} class; pure N-body simulations are run by the \var{NbodySimulation} class, etc..
+\end{itemize}
+
+\subsubsection{Sph class}
+
+\subsubsection{SphKernel class}
+
+\subsubsection{SphIntegration class}
+
+\subsubsection{SphNeighbourSearch class}
+
+\subsubsection{EOS class}
+
+\subsubsection{Nbody class}
+
+\subsubsection{Sinks class}
 
 
 
@@ -1478,19 +1519,28 @@ The simplest case of using templates in GANDALF is for dimensionality.  For almo
 
 Throughout the code, the variables that are used as template parameters are : 
 \begin{itemize}
-\item \var{ndim}
-\item \var{SphKernel}
-\item \var{ParticleType}
+\item \var{ndim} : Number of dimensions
+\item \var{SphKernel} : SPH kernel function used
+\item \var{ParticleType} : Particle data structure for employed hydrodynamics method
+\item \var{CellType} : Radiation transport tree cell-type, depending on employed RT method
 \end{itemize}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Particle data structures}
 
+To optimise the speed of the code, GANDALF uses data structures that contain only the quantities for that particular hydrodynamics algorithm.  For example, `grad-h' SPH in 1D requires a very different number of variables to Godunov SPH in 3D.  Therefore, a different version of each sub-routine that uses the SPH particle data directly is required using templates.
+
+The various particle data structures are defined in the header file \var{`SphParticle.h'}.  All particles are derived from a base data-type called \var{`Particle}
+
+%Need a figure showing the particle data structure inheritance hierarchy here in the future.
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Particle array pointers}
+
+If a class which does not know the exact particle data structure wishes to access an array, or a single array element.
 
 
 
@@ -1504,6 +1554,7 @@ Throughout the code, the variables that are used as template parameters are :
 List of known bugs as of version \VERNO.
 
 \begin{itemize}
+\item Godunov SPH and Saitoh \& Makino (2012) SPH have not been fully updated since recent code refactoring.
 \item For very short simulations, plots may not be updated correctly since the simulation process finishes before the plotting process has recieved its commands.
 \item If running a simulation in interactive mode and a different simulation is loaded into memory, then it is no longer possible to continue running that simulation.
 \item Rendered images are technically not done correct if smoothing lengths are smaller than the grid size (which can often be the case, although the images are fine for viewing/movie purposes).
@@ -1522,6 +1573,7 @@ List of possible new features for future versions.
 \item Include analysis routines for python for N-body specific statistics, e.g. Q-parameter, $\lambda$-parameter, etc..
 \item Strict energy-error checking for N-body simulations
 \item More sanity-checking, error-trapping and assert statements (to prevent crashing on erroneous input and to help debugging purposes).
+\item Update Godunov SPH to 2nd-order using slope limiters.
 \end{itemize}
 
 
