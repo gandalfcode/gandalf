@@ -27,6 +27,7 @@
 #include <iostream>
 #include <string>
 #include <math.h>
+#include <vector>
 #include "Precision.h"
 #include "Exception.h"
 #include "SphNeighbourSearch.h"
@@ -1754,18 +1755,12 @@ void SphTree<ndim, ParticleType >::SearchBoundaryGhostParticles
   if ((simbox.x_boundary_lhs == "open" && 
        simbox.x_boundary_rhs == "open") == 0) {
 
-
-
     // Start from root-cell
     c = 0;
 
     //-------------------------------------------------------------------------
     while (c < tree->Ncell) {
       cell = &(tree->kdcell[c]);
-
-      //cout << "cell : " << cell->bbmin[0] << "   " << cell->bbmax[0] 
-      //   << "   " << simbox.boxmin[0] << "   " << simbox.boxmax[0] 
-      //   << "   " << cell->hmax << endl;
 
       // If x-bounding box overlaps edge of x-domain, open cell
       //-----------------------------------------------------------------------
@@ -1928,6 +1923,83 @@ void SphTree<ndim, ParticleType >::SearchBoundaryGhostParticles
 
   return;
 }
+
+
+
+#if defined MPI_PARALLEL
+//=============================================================================
+//  SphTree::SearchMpiGhostParticles
+/// ...
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+int SphTree<ndim,ParticleType>::SearchMpiGhostParticles
+(const FLOAT tghost,                ///< [in] Expected ghost life-time
+ const DomainBox<ndim> &mpibox,     ///< [in] Bounding box of MPI domain
+ Sph<ndim> *sph,              ///< [in] Pointer to SPH object
+ vector<int> &export_list)          ///< [out] List of particle ids
+{
+  int c;                            // Cell counter
+  int i;
+  int k;
+  int Nexport = 0;                  // No. of MPI ghosts to export
+  FLOAT scattermin[ndim];
+  FLOAT scattermax[ndim];
+  const FLOAT grange = ghost_range*kernrange;
+  KDTreeCell<ndim> *cell;
+
+  // Start from root-cell
+  c = 0;
+  
+  //-------------------------------------------------------------------------
+  while (c < Ncell) {
+    cell = &(tree->kdcell[c]);
+
+    // Construct maximum cell bounding box depending on particle velocities
+    for (k=0; k<ndim; k++) {
+      scattermin[k] = 
+	cell->bbmin[k] + min(0.0,cell->v[k]*tghost) - grange*cell->hmax;
+      scattermax[k] = 
+	cell->bbmax[k] + max(0.0,cell->v[k]*tghost) + grange*cell->hmax;
+    }
+
+    
+    // If maximum cell scatter box overlaps MPI domain, open cell
+    //-----------------------------------------------------------------------
+    if (tree->BoxOverlap(scattermin,scattermax,mpibox.boxmin,mpibox.boxmax)) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (cell->level != tree->ltot)
+	c++;
+      
+      else if (cell->N == 0)
+	c = cell->cnext;
+      
+      // If leaf-cell, check through particles in turn to find ghosts and 
+      // add to list to be exported
+      else if (cell->level == tree->ltot) {
+	i = cell->ifirst;
+	while (i != -1) {
+	  export_list.push_back(i);
+	  Nexport++;
+	  if (i == cell->ilast) break;
+	  i = tree->inext[i];
+	};
+	c = cell->cnext;
+      }
+    }
+    
+    // If not in range, then open next cell
+    //-----------------------------------------------------------------------
+    else
+      c = cell->cnext;
+    
+  }
+  //-------------------------------------------------------------------------
+
+
+  return Nexport;
+}
+#endif
 
 
 

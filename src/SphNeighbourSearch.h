@@ -33,6 +33,7 @@
 #include "Precision.h"
 #include "Constants.h"
 #include "CodeTiming.h"
+#include "InlineFuncs.h"
 #include "Nbody.h"
 #include "SphKernel.h"
 #include "SphParticle.h"
@@ -109,10 +110,8 @@ class SphNeighbourSearch
 #ifdef MPI_PARALLEL
   virtual void BuildMpiGhostTree(bool, int, int, int, int, int, 
                                  SphParticle<ndim> *, Sph<ndim> *, FLOAT) = 0;
-  //virtual void SearchMpiGhostParticles(const FLOAT, const Sph<ndim> *,
-  //                                   const vector<int> &,
-  //                                   const MpiNode<ndim> *,
-  //                                   vector<vector<int> > &);
+  virtual int SearchMpiGhostParticles(const FLOAT, const DomainBox<ndim> &, 
+                                      Sph<ndim> *, vector<int> &) = 0;
 #endif
 
 
@@ -191,6 +190,9 @@ protected:
   //                           vector<vector<int> > &);
   void BuildMpiGhostTree(bool, int, int, int, int, int, 
                          SphParticle<ndim> *, Sph<ndim> *, FLOAT) {};
+  int SearchMpiGhostParticles(const FLOAT, const DomainBox<ndim> &,
+                              Sph<ndim> *, vector<int> &);
+
   void FindGhostParticlesToExport(Sph<ndim>* sph, std::vector<std::vector<ParticleType<ndim>* > >&,
       const std::vector<int>&, MpiNode<ndim>*);
   void FindParticlesToTransfer(Sph<ndim>* sph, std::vector<std::vector<int> >& particles_to_export,
@@ -368,9 +370,8 @@ class SphTree: public SphNeighbourSearch<ndim>
 #ifdef MPI_PARALLEL
   void BuildMpiGhostTree(bool, int, int, int, int, int, 
                          SphParticle<ndim> *, Sph<ndim> *, FLOAT);
-  //void SearchMpiGhostParticles(const FLOAT, const Sph<ndim> *,
-  //                           const vector<int> &, const MpiNode<ndim> *,
-  //                           vector<vector<int> > &);
+  int SearchMpiGhostParticles(const FLOAT, const DomainBox<ndim> &,
+                              Sph<ndim> *, vector<int> &);
 #endif
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(int, int, int, int *, 
