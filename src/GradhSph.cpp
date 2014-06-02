@@ -789,6 +789,8 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drmag;                      // Distance
   FLOAT drsqd;                      // Distance squared
+  FLOAT drdt;                       // Rate of change of relative distance
+  FLOAT dv[ndim];                   // Relative velocity vector
   FLOAT invdrmag;                   // 1 / drmag
   FLOAT invhmean;                   // 1 / hmean
   FLOAT paux;                       // Aux. force variable
@@ -798,13 +800,12 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
   for (j=0; j<N; j++) {
 
     for (k=0; k<ndim; k++) dr[k] = nbodydata[j]->r[k] - parti.r[k];
+    for (k=0; k<ndim; k++) dv[k] = nbodydata[j]->v[k] - parti.v[k];
     drsqd = DotProduct(dr,dr,ndim);
     drmag = sqrt(drsqd);
     invdrmag = 1.0/drmag;
     invhmean = 2.0/(parti.h + nbodydata[j]->h);
-
-    //invhmean = 1.0/nbodydata[j]->h;
-    //invhmean = 1.0/parti.h;
+    drdt = DotProduct(dv,dr,ndim)*invdrmag;
 
     paux = nbodydata[j]->m*invhmean*invhmean*
       kern.wgrav(drmag*invhmean)*invdrmag;
@@ -816,6 +817,9 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
       
     // Add total hydro contribution to acceleration for particle i
     for (k=0; k<ndim; k++) parti.agrav[k] += paux*dr[k];
+    for (k=0; k<ndim; k++) parti.adot[k] += paux*dv[k] - 
+      3.0*paux*drdt*invdrmag*dr[k] + 2.0*twopi*nbodydata[j]->m*drdt*
+      kern.w0(drmag*invhmean)*powf(invhmean,ndim)*invdrmag*dr[k];
     parti.gpot += nbodydata[j]->m*invhmean*kern.wpot(drmag*invhmean);
 
     //if (drmag*invhmean > kern.kernrange) {
@@ -829,7 +833,6 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
     //  for (k=0; k<ndim; k++) parti.agrav[k] += dr[k]*paux;
     //  parti.gpot += nbodydata[j]->m*invhmean*kern.wpot(drmag*invhmean);
     //}
-
 
   }
   //---------------------------------------------------------------------------

@@ -130,6 +130,7 @@ struct SphParticle : public Particle<ndim>
   FLOAT div_v;                      ///< Velocity divergence
   FLOAT alpha;                      ///< Artificial viscosity alpha value
   FLOAT dalphadt;                   ///< Rate of change of alpha
+  FLOAT adot[ndim];                 ///< 1st time derivative of acceleration
 
 
   // SPH particle constructor to initialise all values
@@ -148,6 +149,7 @@ struct SphParticle : public Particle<ndim>
     div_v = (FLOAT) 0.0;
     alpha = (FLOAT) 0.0;
     dalphadt = (FLOAT) 0.0;
+    for (int k=0; k<ndim; k++) adot[k] = (FLOAT) 0.0;
   }
 
 #ifdef MPI_PARALLEL

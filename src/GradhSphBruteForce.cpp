@@ -200,6 +200,7 @@ void GradhSphBruteForce<ndim,ParticleType>::UpdateAllSphHydroForces
     // Zero all arrays to be updated
     for (k=0; k<ndim; k++) sphdata[i].a[k] = (FLOAT) 0.0;
     for (k=0; k<ndim; k++) sphdata[i].agrav[k] = (FLOAT) 0.0;
+    for (k=0; k<ndim; k++) sphdata[i].adot[k] = (FLOAT) 0.0;
     sphdata[i].gpot = (FLOAT) 0.0;
     sphdata[i].gpe = (FLOAT) 0.0;
     sphdata[i].dudt = (FLOAT) 0.0;
@@ -285,6 +286,7 @@ void GradhSphBruteForce<ndim,ParticleType>::UpdateAllSphForces
     // Zero all arrays to be updated
     for (k=0; k<ndim; k++) sphdata[i].a[k] = (FLOAT) 0.0;
     for (k=0; k<ndim; k++) sphdata[i].agrav[k] = (FLOAT) 0.0;
+    for (k=0; k<ndim; k++) sphdata[i].adot[k] = (FLOAT) 0.0;
     sphdata[i].gpot = (FLOAT) 0.0;
     sphdata[i].gpe = (FLOAT) 0.0;
     sphdata[i].dudt = (FLOAT) 0.0;
@@ -353,6 +355,7 @@ void GradhSphBruteForce<ndim,ParticleType>::UpdateAllSphGravForces
     // Zero all arrays to be updated
     for (k=0; k<ndim; k++) sphdata[i].a[k] = (FLOAT) 0.0;
     for (k=0; k<ndim; k++) sphdata[i].agrav[k] = (FLOAT) 0.0;
+    for (k=0; k<ndim; k++) sphdata[i].adot[k] = (FLOAT) 0.0;
     sphdata[i].gpot = (FLOAT) 0.0;
     sphdata[i].gpe = (FLOAT) 0.0;
     sphdata[i].dudt = (FLOAT) 0.0;

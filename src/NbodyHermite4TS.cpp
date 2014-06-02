@@ -75,10 +75,10 @@ NbodyHermite4TS<ndim, kernelclass>::~NbodyHermite4TS()
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite4TS<ndim, kernelclass>::CorrectionTerms
-(int n,                             ///< Integer time
- int N,                             ///< No. of stars/systems
- NbodyParticle<ndim> **star,        ///< Main star/system array
- DOUBLE timestep)                   ///< Smallest timestep value
+(int n,                             ///< [in] Integer time
+ int N,                             ///< [in] No. of stars/systems
+ NbodyParticle<ndim> **star,        ///< [inout] Main star/system array
+ DOUBLE timestep)                   ///< [in] Smallest timestep value
 {
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
@@ -138,8 +138,8 @@ template <int ndim, template<int> class kernelclass>
 void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
 (SystemParticle<ndim>* systemi,     ///< [inout] System that we wish to 
                                     ///<         integrate the internal motion
- int n,                             ///< [in]    ...
- DOUBLE timestep,                   ///< [in]    ...
+ int n,                             ///< [in]    Integer time
+ DOUBLE timestep,                   ///< [in]    Smallest timestep
  DOUBLE tlocal_end)                 ///< [in]    Time to integrate the 
                                     ///<         internal motion for.
 {

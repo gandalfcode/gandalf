@@ -74,8 +74,8 @@ NbodyHermite4<ndim, kernelclass>::~NbodyHermite4()
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite4<ndim, kernelclass>::CalculateDirectGravForces
-(int N,                             ///< Number of stars
- NbodyParticle<ndim> **star)        ///< Array of stars/systems
+(int N,                             ///< [in] Number of stars
+ NbodyParticle<ndim> **star)        ///< [inout] Array of stars/systems
 {
   int i,j,k;                        // Star and dimension counters
   DOUBLE dr[ndim];                  // Relative position vector
@@ -238,7 +238,6 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
   for (jj=0; jj<Nsph; jj++) {
 
     j = sphlist[jj];
-
     SphParticle<ndim>& part = sph->GetParticleIPointer(j);
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];

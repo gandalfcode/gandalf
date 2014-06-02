@@ -660,6 +660,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
         activepart[j].gpot = activepart[j].m*activepart[j].invh*sph->kernp->wpot(0.0);
         for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) activepart[j].agrav[k] = (FLOAT) 0.0;
+	for (k=0; k<ndim; k++) activepart[j].adot[k] = (FLOAT) 0.0;
       }
 
 
@@ -930,6 +931,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
         activepart[j].gpot = activepart[j].m*activepart[j].invh*sph->kernp->wpot(0.0);
         for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) activepart[j].agrav[k] = (FLOAT) 0.0;
+	for (k=0; k<ndim; k++) activepart[j].adot[k] = (FLOAT) 0.0;
       }
 
 
