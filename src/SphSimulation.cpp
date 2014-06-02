@@ -37,6 +37,7 @@
 #include "Simulation.h"
 #include "Parameters.h"
 #include "Nbody.h"
+#include "RandomNumber.h"
 #include "Sph.h"
 #include "RiemannSolver.h"
 #include "Ghosts.h"
@@ -85,7 +86,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   // Set-up random number generator object
   //---------------------------------------------------------------------------
-  //stringparams["rand_algorithm"] = "xorshift";
   if (stringparams["rand_algorithm"] == "xorshift")
     randnumb = new XorshiftRand(intparams["randseed"]);
   else if (stringparams["rand_algorithm"] == "none")

@@ -27,6 +27,7 @@
 
 #include <cstdio>
 #include <iostream>
+#include <math.h>
 #include "Constants.h"
 #include "Precision.h"
 using namespace std;
@@ -51,6 +52,7 @@ class RandomNumber
   virtual long int longintrand(void);
   virtual FLOAT floatrand(void);
   virtual DOUBLE doublerand(void);
+  virtual FLOAT gaussrand(FLOAT, FLOAT);
   virtual void PrintRandomNumberRange(void);
 
 };
@@ -102,6 +104,16 @@ class XorshiftRand : public RandomNumber
   inline long int longintrand(void) {return (long int) xorshiftrand(); }
   inline FLOAT floatrand(void) {return invrandmax*(FLOAT) xorshiftrand(); }
   inline DOUBLE doublerand(void) {return invrandmax*(DOUBLE) xorshiftrand(); }
+
+  inline FLOAT gaussrand(FLOAT mean, FLOAT sigma) {
+    FLOAT U = 0.0;
+    FLOAT V = 0.0;    
+    while (U == 0.0) {
+      U = floatrand();
+      V = floatrand();
+    };
+    return sqrt(-2.0*log(U))*cos(2*pi*V);
+  }
   
   void PrintRandomNumberRange(void) {
     cout << "Integer range;         min : 1,    max : " << pow(2,64) << endl;
@@ -135,6 +147,16 @@ class DefaultSystemRand : public RandomNumber
     {return (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;}
   inline DOUBLE doublerand(void) 
     {return (DOUBLE)(rand()%RAND_MAX)/(DOUBLE)RAND_MAX;}
+
+  inline FLOAT gaussrand(FLOAT mean, FLOAT sigma) {
+    FLOAT U = 0.0;
+    FLOAT V = 0.0;    
+    while (U == 0.0) {
+      U = floatrand();
+      V = floatrand();
+    };
+    return sqrt(-2.0*log(U))*cos(2*pi*V);
+  }
 
   void PrintRandomNumberRange(void) {
     cout << "Integer range;         min : 1,    max : " << RAND_MAX << endl;

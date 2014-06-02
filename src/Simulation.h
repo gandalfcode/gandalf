@@ -38,10 +38,10 @@
 #include "Diagnostics.h"
 #include "DomainBox.h"
 #include "ExternalPotential.h"
-#include "RandomNumber.h"
 #include "Precision.h"
 #include "Parameters.h"
 #include "Radiation.h"
+#include "RandomNumber.h"
 #include "SimUnits.h"
 #include "SphKernel.h"
 #include "Sph.h"
@@ -304,12 +304,12 @@ class Simulation : public SimulationBase
   Diagnostics<ndim> diag;             ///< Current diagnostic state
   EnergyEquation<ndim> *uint;         ///< Energy equation pointer
   ExternalPotential<ndim> *extpot;    ///< Pointer to external potential object
-  RandomNumber *randnumb;    ///< Random number object (pointer)
   Ghosts<ndim>* LocalGhosts;          ///< Periodic ghost particle object
   Nbody<ndim> *nbody;                 ///< N-body algorithm pointer
   Nbody<ndim> *subsystem;             ///< N-body object for sub-systems
   NbodySystemTree<ndim> nbodytree;    ///< N-body tree to create sub-systems
   Radiation<ndim> *radiation;         ///< Radiation field object
+  RandomNumber *randnumb;             ///< Random number object (pointer)
   Sinks<ndim> sinks;                  ///< Sink particle object
   Sph<ndim> *sph;                     ///< SPH algorithm pointer
   SphIntegration<ndim> *sphint;       ///< SPH Integration scheme pointer
@@ -443,6 +443,7 @@ class GradhSphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::Nblocksteps;
   using Simulation<ndim>::Nlevels;
   using Simulation<ndim>::Nsteps;
+  using Simulation<ndim>::randnumb;
   using Simulation<ndim>::t;
   using Simulation<ndim>::timestep;
   using Simulation<ndim>::level_step;
