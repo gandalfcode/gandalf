@@ -1481,9 +1481,9 @@ void Simulation<ndim>::PlummerSphere(void)
 
     do {
       flag = false;
-      x1 = randnumb->floatrand();  //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
-      x2 = randnumb->floatrand();  //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
-      x3 = randnumb->floatrand();  //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+      x1 = randnumb->floatrand();
+      x2 = randnumb->floatrand();
+      x3 = randnumb->floatrand();
 
       if (x1 == 0.0 && x2 == 0.0 && x3 == 0.0) flag = true;
       rad = 1.0 / sqrt(pow(x1,-2.0/3.0) - 1.0);
@@ -1518,15 +1518,15 @@ void Simulation<ndim>::PlummerSphere(void)
     // Velocity of particle
     //-------------------------------------------------------------------------
     do {
-      x4 = randnumb->floatrand(); //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
-      x5 = randnumb->floatrand(); //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+      x4 = randnumb->floatrand();
+      x5 = randnumb->floatrand();
       t1 = 0.1*x5;
       t2 = x4*x4*pow(1.0 - x4*x4,3.5);
     } while (t1 > t2);
 
     vm = ve*x4;
-    x6 = randnumb->floatrand(); //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
-    x7 = randnumb->floatrand(); //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+    x6 = randnumb->floatrand();
+    x7 = randnumb->floatrand();
     w = (1.0 - 2.0*x6)*vm;
        
 
@@ -2105,7 +2105,7 @@ void Simulation<ndim>::AddBinaryStar
   }
 
   // randomly sample M to get theta
-  FLOAT M = 2.0*pi*randnumb->floatrand();  //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+  FLOAT M = 2.0*pi*randnumb->floatrand();
 
   // from this solve to get eccentric anomoly E - e sin(theta) = M
   // N-R method x_1 = x_0 - f(x_0)/f'(x_0)
@@ -2189,7 +2189,7 @@ void Simulation<ndim>::AddRandomBox
   for (int i=0; i<Npart; i++) {
     for (int k=0; k<ndim; k++) {
       r[ndim*i + k] = box.boxmin[k] + (box.boxmax[k] - box.boxmin[k])*
-	randnumb->floatrand();  //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+	randnumb->floatrand();
     }
   }
 
@@ -2222,7 +2222,7 @@ void Simulation<ndim>::AddRandomSphere
     // Continously loop until random particle lies inside sphere
     do {
       for (k=0; k<ndim; k++) 
-	rpos[k] = 1.0 - 2.0*randnumb->floatrand();  //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
+	rpos[k] = 1.0 - 2.0*randnumb->floatrand();
       rad = DotProduct(rpos,rpos,ndim);
     } while (rad > radius);
 
@@ -2536,13 +2536,13 @@ void Simulation<ndim>::AddAzimuthalDensityPerturbation
  FLOAT *r)                          ///< [inout] Positions of particles
 {
   int i,k;                          // Particle and dimension counters
-  int j;
-  int tabtot;                       // ..
-  FLOAT phi,phi1,phi2,phiprime;     // ..
-  FLOAT Rsqd;                       // ..
-  FLOAT Rmag;                       // ..
+  int j;                            // Aux. counter
+  int tabtot;                       // No of elements in tables
+  FLOAT phi,phi1,phi2,phiprime;     // Aux. azimuthal angle variables
+  FLOAT Rsqd;                       // Radial distance (from z-axis) squared
+  FLOAT Rmag;                       // Radial distance (from z-axis)
   FLOAT rpos[ndim];                 // Random position of new particle
-  FLOAT spacing;                    // ..
+  FLOAT spacing;                    // Table spacing
 
   debug2("[Simulation::AddAzimuthalDensityPerturbation]");
 
@@ -2668,10 +2668,11 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
   int krange;                       // Range of k values (kmax - kmin + 1)
   int i,j,k;                        // Grid counters
   int ii,jj,kk;                     // Aux. grid counters
+  int kmod;                         // ..
   int d;                            // Dimension counter
   DOUBLE F[ndim];                   // Fourier vector component
   DOUBLE unitk[3];                  // Unit k-vector
-  DOUBLE **power,**phase;
+  DOUBLE **power,**phase;           // ..
   DOUBLE Rnd[3];                    // Random numbers, variable in Gaussian calculation
   DOUBLE k_rot[ndim];               // bulk rotation modes
   DOUBLE k_com[ndim];               // bulk compression modes
@@ -2720,71 +2721,80 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
   // power(1:3,i,j,k) is the power vector at Fourier coordinates i,j,k
   // phase(1:3,i,j,k) is the phase vector at Fourier coordinates i,j,k
   //---------------------------------------------------------------------------
-  for (i=kmin; i<=kmax; i++) {
-    for (j=kmin; j<=kmax; j++) {
-      for (k=kmin; k<=kmax; k++) {
-	//continue;
-	ii = (i + krange)%krange;
-	jj = (j + krange)%krange;
-	kk = (k + krange)%krange;
+  for (kmod=0; kmod<=kmax; kmod++) {
 
-	// cycle antiparallel k-vectors
-	//if (k < 0) continue;            
-	//if (k == 0) {
-	//  if (j < 0) continue;
-	//  if (j == 0 && i < 0) continue;
-	//}
+    for (i=kmin; i<=kmax; i++) {
+      for (j=kmin; j<=kmax; j++) {
+	for (k=kmin; k<=kmax; k++) {
 
-	// Central power = 0
-	if (i == 0 && j == 0 && k == 0) continue;
-        if (i*i + j*j + k*k >= kmax*kmax) continue;
+	  // Skip any k-vectors that have already been calculated
+	  if (abs(i) != kmod && abs(j) != kmod && abs(k) != kmod) continue;
+	  if (abs(i) > kmod || abs(j) > kmod || abs(k) > kmod) continue;
 
-	// Power value, to be multipled by random power chosen from a Gaussian
-	// This is what gives the slope of the eventual power spectrum
-	for (d=0; d<3; d++)
-	  F[d] = sqrt(pow(sqrt((DOUBLE)(i*i + j*j + k*k)),power_turb));
-
-	for (d=0; d<3; d++) {
-	  Rnd[0] = randnumb->floatrand();  //(FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
-
-	  // Random phase between 0 and 2*pi (actually -pi and +pi).
-          phase[d][ii + krange*jj + krange*krange*kk] =
-	    (2.0*Rnd[0] - 1.0)*pi;	  
-
-	  // Create Gaussian distributed random numbers
-	  Rnd[1] = GaussRand(0.0,1.0);
-	  Rnd[2] = GaussRand(0.0,1.0);
-	  F[d] = Rnd[1]*F[d];
-	}
-
-	// Helmholtz decomposition!
-        unitk[0] = (DOUBLE) i;
-	unitk[1] = (DOUBLE) j;
-	unitk[2] = (DOUBLE) k;
-        DOUBLE ksqd = DotProduct(unitk,unitk,3);
-	for (d=0; d<3; d++) unitk[d] /= sqrt(ksqd);
-
-	// For curl free turbulence, vector F should be 
-	// parallel/anti-parallel to vector k
-	if (curlfree) {
+	  //continue;
+	  ii = (i + krange)%krange;
+	  jj = (j + krange)%krange;
+	  kk = (k + krange)%krange;
+	  
+	  // cycle antiparallel k-vectors
+	  //if (k < 0) continue;            
+	  //if (k == 0) {
+	  //  if (j < 0) continue;
+	  //  if (j == 0 && i < 0) continue;
+	  //}
+	  
+	  // Central power = 0
+	  if (i == 0 && j == 0 && k == 0) continue;
+	  if (i*i + j*j + k*k >= kmax*kmax) continue;
+	  
+	  // Power value, to be multipled by random power chosen from a Gaussian
+	  // This is what gives the slope of the eventual power spectrum
 	  for (d=0; d<3; d++)
-	    power[d][ii + krange*jj + krange*krange*kk] 
-	      = unitk[d]*DotProduct(F,unitk,3);
+	    F[d] = sqrt(pow(sqrt((DOUBLE)(i*i + j*j + k*k)),power_turb));
+	  
+	  for (d=0; d<3; d++) {
+	    Rnd[0] = randnumb->floatrand();
+	    
+	    // Random phase between 0 and 2*pi (actually -pi and +pi).
+	    phase[d][ii + krange*jj + krange*krange*kk] =
+	      (2.0*Rnd[0] - 1.0)*pi;	  
+	    
+	    // Create Gaussian distributed random numbers
+	    Rnd[1] = randnumb->gaussrand(0.0,1.0);
+	    Rnd[2] = randnumb->gaussrand(0.0,1.0);
+	    F[d] = Rnd[1]*F[d];
+	  }
+	  
+	  // Helmholtz decomposition!
+	  unitk[0] = (DOUBLE) i;
+	  unitk[1] = (DOUBLE) j;
+	  unitk[2] = (DOUBLE) k;
+	  DOUBLE ksqd = DotProduct(unitk,unitk,3);
+	  for (d=0; d<3; d++) unitk[d] /= sqrt(ksqd);
+	  
+	  // For curl free turbulence, vector F should be 
+	  // parallel/anti-parallel to vector k
+	  if (curlfree) {
+	    for (d=0; d<3; d++)
+	      power[d][ii + krange*jj + krange*krange*kk] 
+		= unitk[d]*DotProduct(F,unitk,3);
+	  }
+	  // For divergence free turbulence, vector F should be perpendicular 
+	  // to vector k
+	  else if (divfree) {
+	    for (d=0; d<3; d++)
+	      power[d][ii + krange*jj + krange*krange*kk] 
+		= F[d] - unitk[d]*DotProduct(F,unitk,3);
+	  }
+	  else {
+	    for (d=0; d<3; d++)
+	      power[d][ii + krange*jj + krange*krange*kk] = F[d];
+	  }
+	  
 	}
-	// For divergence free turbulence, vector F should be perpendicular 
-	// to vector k
-	else if (divfree) {
-	  for (d=0; d<3; d++)
-	    power[d][ii + krange*jj + krange*krange*kk] 
-	      = F[d] - unitk[d]*DotProduct(F,unitk,3);
-	}
-	else {
-	  for (d=0; d<3; d++)
-	    power[d][ii + krange*jj + krange*krange*kk] = F[d];
-	}
-
       }
     }
+
   }
   //---------------------------------------------------------------------------
 
@@ -2810,13 +2820,13 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
       }
     }
   }
-  for (i=1; i<kmax+1; i++)
-    cout << "POWER3 : " << i << "   " << power_spectrum[i][0] << "   " 
-	 << power_spectrum[i][1] << "   " << power_spectrum[i][2] << endl;
-  for (i=1; i<kmax+1; i++)
-    cout << "POWER3 : " << i << "   " << sqrt(power_spectrum[i][0]) << "   " 
-	 << sqrt(power_spectrum[i][1]) << "   " 
-	 << sqrt(power_spectrum[i][2]) << endl;
+  //for (i=1; i<kmax+1; i++)
+  //cout << "POWER3 : " << i << "   " << power_spectrum[i][0] << "   " 
+  // << power_spectrum[i][1] << "   " << power_spectrum[i][2] << endl;
+  //for (i=1; i<kmax+1; i++)
+  //cout << "POWER3 : " << i << "   " << sqrt(power_spectrum[i][0]) << "   " 
+  // << sqrt(power_spectrum[i][1]) << "   " 
+  // << sqrt(power_spectrum[i][2]) << endl;
 
   plan = fftw_plan_dft_3d(gridsize, gridsize, gridsize, incomplexfield,
 			  outcomplexfield, FFTW_BACKWARD, FFTW_ESTIMATE);
