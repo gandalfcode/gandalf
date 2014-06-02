@@ -267,7 +267,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   partdata = sph->GetParticlesArray();
 
   //Set iorig
-  for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).iorig = i;
+  if (rank==0)
+    for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).iorig = i;
 
   // Perform initial MPI decomposition
   //---------------------------------------------------------------------------
@@ -328,6 +329,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
                             sph,timestep);
 #ifdef MPI_PARALLEL
     mpicontrol->UpdateAllBoundingBoxes(sph->Nsph+sph->NPeriodicGhost, sph, sph->kernp);
+    for (int i=0; i<sph->Nsph+sph->NPeriodicGhost; i++) {
+      SphParticle<ndim>& parti = sph->GetParticleIPointer(i);
+      parti.hrangesqd = sph->kernfacsqd*sph->kernp->kernrangesqd*parti.h*parti.h;
+    }
     MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
     sphneib->BuildMpiGhostTree(true,0,ntreebuildstep,ntreestockstep,
                                sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
