@@ -116,7 +116,7 @@ DOUBLE SphIntegration<ndim>::Timestep
 
   // If stars are included, calculate the timestep due to the jerk
   adotmag = sqrt(DotProduct(part.adot,part.adot,ndim));
-  timestep = min(timestep, accel_mult*sqrt(amag/(adotmag + small_number_dp)));
+  timestep = min(timestep, accel_mult*amag/(adotmag + small_number_dp));
 
   return timestep;
 }
