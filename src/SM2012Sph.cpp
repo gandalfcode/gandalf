@@ -28,6 +28,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <math.h>
+#include "Debug.h"
 #include "Precision.h"
 #include "Exception.h"
 #include "Sph.h"
@@ -52,7 +53,7 @@ SM2012Sph<ndim, kernelclass >::SM2012Sph(int hydro_forces_aux,
             string KernelName):
   Sph<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux, beta_visc_aux,
 	    h_fac_aux, h_converge_aux, avisc_aux, acond_aux, tdavisc_aux, 
-            gas_eos_aux, KernelName),
+            gas_eos_aux, KernelName, sizeof(SM2012SphParticle<ndim>)),
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp = &kern;
@@ -72,6 +73,125 @@ SM2012Sph<ndim, kernelclass >::~SM2012Sph()
 }
 
 
+//=============================================================================
+//  SM2012Sph::AllocateMemory
+/// Allocate main SPH particle array.  Currently sets the maximum memory to
+/// be 10 times the numbers of particles to allow space for ghost particles
+/// and new particle creation.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void SM2012Sph<ndim, kernelclass>::AllocateMemory(int N)
+{
+  debug2("[SM2012Sph::AllocateMemory]");
+
+  if (N > Nsphmax || !allocated) {
+    if (allocated) DeallocateMemory();
+
+    // Set conservative estimate for maximum number of particles, assuming
+    // extra space required for periodic ghost particles
+    if (Nsphmax < N)
+      Nsphmax = pow(pow(N,invndim) + 8.0*kernp->kernrange,ndim);
+    //Nsphmax = N;
+
+    iorder = new int[Nsphmax];
+    rsph = new FLOAT[ndim*Nsphmax];
+    sphdata = new struct SM2012SphParticle<ndim>[Nsphmax];
+    allocated = true;
+    sphdata_unsafe = sphdata;
+  }
+
+  return;
+}
+
+//=============================================================================
+//  SM2012Sph::DeallocateMemory
+/// Deallocate main array containing SPH particle data.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void SM2012Sph<ndim, kernelclass>::DeallocateMemory(void)
+{
+  debug2("[SM2012Sph::DeallocateMemory]");
+
+  if (allocated) {
+    delete[] sphdata;
+    delete[] rsph;
+    delete[] iorder;
+  }
+  allocated = false;
+
+  return;
+}
+
+//=============================================================================
+//  SM2012Sph::DeleteDeadParticles
+/// Delete 'dead' (e.g. accreted) SPH particles from the main arrays.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void SM2012Sph<ndim, kernelclass>::DeleteDeadParticles(void)
+{
+  int i;                            // Particle counter
+  int itype;
+  int Ndead = 0;                    // No. of 'dead' particles
+  int Nlive = 0;                    // No. of 'live' particles
+  int ilast = Nsph;                 // Aux. counter of last free slot
+
+  debug2("[SM2012Sph::DeleteDeadParticles]");
+
+
+  // Determine new order of particles in arrays.
+  // First all live particles and then all dead particles
+  for (i=0; i<Nsph; i++) {
+    itype = sphdata[i].itype;
+    while (itype == dead) {
+      Ndead++;
+      ilast--;
+      if (i < ilast) {
+    sphdata[i] = sphdata[ilast];
+    sphdata[ilast].itype = dead;
+    sphdata[ilast].m = 0.0;
+      }
+      else break;
+      itype = sphdata[i].itype;
+    };
+    if (i >= ilast - 1) break;
+  }
+
+  // Reorder all arrays following with new order, with dead particles at end
+  if (Ndead == 0) return;
+
+  // Reduce particle counters once dead particles have been removed
+  Nsph -= Ndead;
+  Ntot -= Ndead;
+  for (i=0; i<Nsph; i++) iorder[i] = i;
+
+
+  return;
+}
+
+
+//=============================================================================
+//  SM2012Sph::ReorderParticles
+/// Delete selected SPH particles from the main arrays.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void SM2012Sph<ndim, kernelclass>::ReorderParticles(void)
+{
+  int i;                                // Particle counter
+  SM2012SphParticle<ndim> *sphdataaux;        // Aux. SPH particle array
+
+  sphdataaux = new SM2012SphParticle<ndim>[Nsph];
+
+  for (i=0; i<Nsph; i++) {
+    sphdataaux[i] = sphdata[i];
+  }
+  for (i=0; i<Nsph; i++) {
+    sphdata[i] = sphdataaux[iorder[i]];
+  }
+
+  delete[] sphdataaux;
+
+  return;
+}
 
 //=============================================================================
 //  SM2012Sph::ComputeH
@@ -91,7 +211,7 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
  FLOAT *mu,                         ///< [in] Array of m*u (not needed here)
  FLOAT *drsqd,                      ///< [in] Array of neib. distances squared
  FLOAT *gpot,                       ///< [in] Array of neib. grav. potentials
- SphParticle<ndim> &parti,          ///< [inout] Particle i data
+ SphParticle<ndim> &part,          ///< [inout] Particle i data
  Nbody<ndim> *nbody)                ///< [in] Main N-body object
 {
   int j;                            // Neighbour id
@@ -104,6 +224,7 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
   FLOAT invhsqd;                    // (1 / h)^2
   FLOAT ssqd;                       // Kernel parameter squared, (r/h)^2
 
+  SM2012SphParticle<ndim>& parti = static_cast<SM2012SphParticle<ndim>& > (part);
 
   // Main smoothing length iteration loop
   //===========================================================================
@@ -113,27 +234,22 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
     iteration++;
     parti.invh = (FLOAT) 1.0/parti.h;
     parti.rho = (FLOAT) 0.0;
-    parti.invomega = (FLOAT) 0.0;
     parti.q = (FLOAT) 0.0;
     parti.hfactor = pow(parti.invh,ndim);
     invhsqd = parti.invh*parti.invh;
 
     // Loop over all nearest neighbours in list to calculate 
-    // density, omega and zeta.
+    // density.
     //-------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       ssqd = drsqd[j]*invhsqd;
       parti.rho += m[j]*kern.w0_s2(ssqd);
-      parti.invomega += m[j]*parti.invh*kern.womega_s2(ssqd);
       parti.q += mu[j]*kern.w0_s2(ssqd);
-      parti.zeta += m[j]*kern.wzeta_s2(ssqd);
     }
     //-------------------------------------------------------------------------
 
     parti.rho *= parti.hfactor;
-    parti.invomega *= parti.hfactor;
     parti.q *= parti.hfactor;
-    parti.zeta *= invhsqd;
 
     if (parti.rho > (FLOAT) 0.0) parti.invrho = (FLOAT) 1.0/parti.rho;
 
@@ -181,21 +297,13 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
   parti.h = max(h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim),
                 h_lower_bound);
   parti.invh = (FLOAT) 1.0/parti.h;
-  parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
-  parti.invomega = (FLOAT) 1.0 + 
-    Sph<ndim>::invndim*parti.h*parti.invomega*parti.invrho;
-  parti.invomega = (FLOAT) 1.0/parti.invomega;
-  parti.zeta = -Sph<ndim>::invndim*parti.h*parti.zeta*
-    parti.invrho*parti.invomega;
-  parti.invq = (FLOAT) 1.0/parti.q;
-
-  // Set important thermal variables here
-  parti.u = eos->SpecificInternalEnergy(parti);
-  parti.sound = eos->SoundSpeed(parti);
   parti.hfactor = pow(parti.invh,ndim+1);
-  parti.pfactor = eos->Pressure(parti)*parti.invrho*parti.invq;
+  parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
   parti.div_v = (FLOAT) 0.0;
   parti.dudt = (FLOAT) 0.0;
+
+  // Set important thermal variables here
+  ComputeThermalProperties(parti);
   
   // Calculate the minimum neighbour potential
   // (used later to identify new sinks)
@@ -213,7 +321,6 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
       invhsqd = pow(2.0 / (parti.h + nbody->stardata[j].h),2);
       for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
       ssqd = DotProduct(dr,dr,ndim)*invhsqd;
-      parti.chi += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
     }
   }
   else {
@@ -221,15 +328,34 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
     for (j=0; j<nbody->Nstar; j++) {
       for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
       ssqd = DotProduct(dr,dr,ndim)*invhsqd;
-      parti.chi += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
     }
   }
-  parti.chi = -Sph<ndim>::invndim*parti.h*parti.chi*parti.invrho*parti.invomega;
 
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;
   else return -1;
+}
+
+
+
+//=============================================================================
+//  SM2012Sph::ComputeThermalProperties
+/// Compute all thermal properties for grad-h SPH method for given particle.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void SM2012Sph<ndim, kernelclass>::ComputeThermalProperties
+(SphParticle<ndim> &part_gen)        ///< [inout] Particle i data
+{
+  SM2012SphParticle<ndim>& part = 
+    static_cast<SM2012SphParticle<ndim> &> (part_gen);
+
+  part.invq = (FLOAT) 1.0/part.q;
+  part.u = eos->SpecificInternalEnergy(part);
+  part.sound = eos->SoundSpeed(part);
+  part.pfactor = eos->Pressure(part)*part.invrho*part.invq;
+
+  return;
 }
 
 
@@ -251,8 +377,8 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
  FLOAT *drmag,                      ///< [in] Distances of gather neighbours
  FLOAT *invdrmag,                   ///< [in] Inverse distances of gather neibs
  FLOAT *dr,                         ///< [in] Position vector of gather neibs
- SphParticle<ndim> &parti,          ///< [inout] Particle i data
- SphParticle<ndim> *neibpart)       ///< [inout] Neighbour particle data
+ SphParticle<ndim> &part,          ///< [inout] Particle i data
+ SphParticle<ndim> *neibpart_gen)       ///< [inout] Neighbour particle data
 {
   int j;                            // Neighbour list id
   int jj;                           // Aux. neighbour counter
@@ -267,6 +393,10 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
   FLOAT paux;                       // Aux. pressure force variable
   FLOAT uaux;                       // Aux. internal energy variable
   FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
+
+  SM2012SphParticle<ndim>& parti = static_cast<SM2012SphParticle<ndim>& > (part);
+  SM2012SphParticle<ndim>* neibpart = static_cast<SM2012SphParticle<ndim>* > (neibpart_gen);
+
 
 
   // Loop over all potential neighbours in the list

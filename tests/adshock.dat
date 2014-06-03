@@ -61,6 +61,8 @@ Artificial viscosity choice                 : avisc = mon97
 Artificial conductivity choice              : acond = none
 Artificial viscosity alpha value            : alpha_visc = 1.0
 Artificial viscosity beta value             : beta_visc = 2.0
+Use time-dependent viscosity                : time_dependent_avisc = mm97
+Minimum value of alpha                      : alpha_visc_min = 0.1
 Riemann solver                              : riemann_solver = exact
 Order of Riemann solver                     : riemann_order = 1
 Slope limiter                               : slope_limiter = mine
@@ -70,7 +72,6 @@ Slope limiter                               : slope_limiter = mine
 # Time integration options
 #-------------------------
 SPH particle integration option             : sph_integration = lfkdk
-Integration of gas thermal energy           : energy_integration = PEC
 SPH Courant timestep condition multiplier   : courant_mult = 0.1
 SPH acceleration condition multiplier       : accel_mult = 0.2
 SPH energy equation timestep multiplier     : energy_mult = 0.5
@@ -80,8 +81,9 @@ No. of block timestep levels                : Nlevels = 1
 #---------------------
 # Optimisation options
 #---------------------
-Tabulate SPH kernel                         : tabulated_kernel = 0
-SPH neighbour search algorithm              : neib_search = grid
+Tabulate SPH kernel                         : tabulated_kernel = 1
+SPH neighbour search algorithm              : neib_search = tree
+No. of particles per leaf                   : Nleafmax = 6
 
 
 #--------------

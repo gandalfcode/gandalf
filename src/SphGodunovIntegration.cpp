@@ -42,8 +42,8 @@ using namespace std;
 //  SphGodunovIntegration::SphGodunovIntegration
 /// SphGodunovIntegration class constructor
 //=============================================================================
-template <int ndim>
-SphGodunovIntegration<ndim>::SphGodunovIntegration(DOUBLE accel_mult_aux, 
+template <int ndim, template <int> class ParticleType>
+SphGodunovIntegration<ndim, ParticleType>::SphGodunovIntegration(DOUBLE accel_mult_aux,
 						   DOUBLE courant_mult_aux,
 						   DOUBLE energy_mult_aux,
 						   eosenum gas_eos_aux,
@@ -59,8 +59,8 @@ SphGodunovIntegration<ndim>::SphGodunovIntegration(DOUBLE accel_mult_aux,
 //  SphGodunovIntegration::~SphGodunovIntegration()
 /// SphGodunovIntegration class destructor
 //=============================================================================
-template <int ndim>
-SphGodunovIntegration<ndim>::~SphGodunovIntegration()
+template <int ndim, template <int> class ParticleType>
+SphGodunovIntegration<ndim, ParticleType>::~SphGodunovIntegration()
 {
 }
 
@@ -75,41 +75,43 @@ SphGodunovIntegration<ndim>::~SphGodunovIntegration()
 /// Also set particles at the end of step as 'active' in order to compute 
 /// the end-of-step force computation.
 //=============================================================================
-template <int ndim>
-void SphGodunovIntegration<ndim>::AdvanceParticles
+template <int ndim, template <int> class ParticleType>
+void SphGodunovIntegration<ndim, ParticleType>::AdvanceParticles
 (int n,                             ///< [in] Current integer time
  FLOAT timestep,                    ///< [in] Minimum timestep level
- Sph<ndim> *sph)                    ///< [inout] Pointer to SPH object
+ int npart,                         ///< [in] Number of particles
+ SphParticle<ndim>* sph_gen)        ///< [inout] Pointer to SPH particle array
 {
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
   FLOAT dt;                         // Timestep since start of step
-  SphParticle<ndim> *part;          // SPH particle pointer
 
   debug2("[SphGodunovIntegration::AdvanceParticles]");
 
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,dt,i,k,nstep,part)\
-  shared(n,sph,timestep)
-  for (i=0; i<sph->Nsph; i++) {
+#pragma omp parallel for default(none) private(dn,dt,i,k,nstep)\
+  shared(n,sphdata,timestep,npart)
+  for (i=0; i<npart; i++) {
+    SphParticle<ndim>& part = sphdata[i];
 
     // Compute time since beginning of current step
-    nstep = sph->sphintdata[i].nstep;
-    dn = n - sph->sphintdata[i].nlast;
+    nstep = part.nstep;
+    dn = n - part.nlast;
     dt = timestep*(FLOAT) dn;
-    part = sph->sphintdata[i].part;
 
     // Advance particle positions and velocities
-    for (k=0; k<ndim; k++) part->r[k] = sph->sphintdata[i].r0[k] +
-      (sph->sphintdata[i].v0[k] + 0.5*part->a[k]*part->dt)*dt;
-    for (k=0; k<vdim; k++) part->v[k] = sph->sphintdata[i].v0[k] +
-      sph->sphintdata[i].a0[k]*dt;
+    for (k=0; k<ndim; k++) part.r[k] = part.r0[k] +
+      (part.v0[k] + 0.5*part.a[k]*part.dt)*dt;
+    for (k=0; k<vdim; k++) part.v[k] = part.v0[k] +
+      part.a0[k]*dt;
 
     // Set particle as active at end of step
-    if (dn == nstep) part->active = true;
-    else part->active = false;
+    if (dn == nstep) part.active = true;
+    else part.active = false;
   }
   //---------------------------------------------------------------------------
 
@@ -122,11 +124,12 @@ void SphGodunovIntegration<ndim>::AdvanceParticles
 //  SphGodunovIntegration::CorrectionTerms
 /// Empty definition (No correction terms to apply).
 //=============================================================================
-template <int ndim>
-void SphGodunovIntegration<ndim>::CorrectionTerms
+template <int ndim, template <int> class ParticleType>
+void SphGodunovIntegration<ndim, ParticleType>::CorrectionTerms
 (int n,                             ///< [in] Integer time in block time struct
  FLOAT timestep,                    ///< [in] Base timestep value
- Sph<ndim> *sph)                    ///< [inout] Pointer to SPH object
+ int npart,                         ///< [in] Number of particles
+ SphParticle<ndim>* sph_gen)        ///< [inout] Pointer to SPH particle array
 {
   return;
 }
@@ -138,34 +141,36 @@ void SphGodunovIntegration<ndim>::CorrectionTerms
 /// Record all important SPH particle quantities at the end of the step for 
 /// the start of the new timestep.
 //=============================================================================
-template <int ndim>
-void SphGodunovIntegration<ndim>::EndTimestep
+template <int ndim, template <int> class ParticleType>
+void SphGodunovIntegration<ndim, ParticleType>::EndTimestep
 (int n,                             ///< [in] Integer time in block time struct
  FLOAT timestep,                    ///< [in] Base timestep value
- Sph<ndim> *sph)                    ///< [inout] Pointer to SPH object
+ int npart,                         ///< [in] Number of particles
+ SphParticle<ndim>* sph_gen)        ///< [inout] Pointer to SPH particle array
 {
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
-  SphParticle<ndim> *part;          // SPH particle pointer
 
   debug2("[SphGodunovIntegration::EndTimestep]");
 
-  //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep,part) shared(n,sph)
-  for (i=0; i<sph->Nsph; i++) {
-    dn = n - sph->sphintdata[i].nlast;
-    nstep = sph->sphintdata[i].nstep;
-    part = sph->sphintdata[i].part;
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
-    if (n == sph->sphintdata[i].nlast) {
-      for (k=0; k<ndim; k++) sph->sphintdata[i].r0[k] = part->r[k];
-      for (k=0; k<ndim; k++) sph->sphintdata[i].v0[k] = part->v[k];
-      for (k=0; k<ndim; k++) sph->sphintdata[i].a0[k] = part->a[k];
-      sph->sphintdata[i].nlast = n;
-      part->active = false;
-      //part->active = true;
+  //---------------------------------------------------------------------------
+#pragma omp parallel for default(none) private(dn,i,k,nstep) shared(n,sphdata,npart)
+  for (i=0; i<npart; i++) {
+    SphParticle<ndim>& part = sphdata[i];
+    dn = n - part.nlast;
+    nstep = part.nstep;
+
+    if (n == part.nlast) {
+      for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
+      for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
+      for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
+      part.nlast = n;
+      part.active = false;
+      //part.active = true;
     }
   }
   //---------------------------------------------------------------------------
@@ -180,11 +185,13 @@ void SphGodunovIntegration<ndim>::EndTimestep
 /// Record all important SPH particle quantities at the end of the step for  
 /// the start of the new timestep.
 //=============================================================================
-template <int ndim>
-int SphGodunovIntegration<ndim>::CheckTimesteps
+template <int ndim, template <int> class ParticleType>
+int SphGodunovIntegration<ndim, ParticleType>::CheckTimesteps
 (int level_diff_max,                ///< [in] Max. allowed SPH neib dt diff
+ int level_step,                    ///< [in] Level of base timestep
  int n,                             ///< [in] Integer time in block time struct
- Sph<ndim> *sph)                    ///< [inout] Pointer to SPH object
+ int npart,                         ///< [in] Number of particles
+ SphParticle<ndim>* sph_gen)        ///< [inout] Pointer to SPH particle array
 {
   int activecount = 0;              // ..
   int dn;                           // Integer time since beginning of step
@@ -193,30 +200,32 @@ int SphGodunovIntegration<ndim>::CheckTimesteps
   int level_new;                    // New level of particle
   int nnewstep;                     // New step size of particle
   int nstep;                        // Particle (integer) step size
-  SphParticle<ndim> *part;          // SPH particle pointer
 
   debug2("[SphLeapfrogKDK::CheckTimesteps]");
 
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) shared(level_diff_max,n,sph)\
-  private(dn,i,k,level_new,nnewstep,nstep,part) reduction(+:activecount)
-  for (i=0; i<sph->Nsph; i++) {
-    dn = n - sph->sphintdata[i].nlast;
-    nstep = sph->sphintdata[i].nstep;
+#pragma omp parallel for default(none) shared(level_diff_max,n,sphdata,npart)\
+  private(dn,i,k,level_new,level_step,nnewstep,nstep) reduction(+:activecount)
+  for (i=0; i<npart; i++) {
+    SphParticle<ndim>& part = sphdata[i];
+    dn = n - part.nlast;
+    nstep = part.nstep;
     if (dn == nstep) continue;
 
     // Check if neighbour timesteps are too small.  If so, then reduce 
     // timestep if possible
-    if (part->levelneib - part->level > level_diff_max) {
-      level_new = part->levelneib - level_diff_max;
-      nnewstep = sph->sphintdata[i].nstep/pow(2,level_new - part->level);
+    if (part.levelneib - part.level > level_diff_max) {
+      level_new = part.levelneib - level_diff_max;
+      nnewstep = part.nstep/pow(2,level_new - part.level);
 
       // If new level is correctly synchronised, then change all quantities
       if (n%nnewstep == 0) {
         nstep = dn;
-        part->level = level_new;
-        if (dn > 0) sph->sphintdata[i].nstep = dn; //nstep;
-        part->active = true;
+        part.level = level_new;
+        if (dn > 0) part.nstep = dn; //nstep;
+        part.active = true;
         activecount++;
       }
     }
@@ -234,8 +243,8 @@ int SphGodunovIntegration<ndim>::CheckTimesteps
 /// (i)  const*h/(sound_speed + h*|div_v|)    (Courant condition)
 /// (ii) const*sqrt(h/|a|)                    (Acceleration condition)
 //=============================================================================
-template <int ndim>
-DOUBLE SphGodunovIntegration<ndim>::Timestep
+template <int ndim, template <int> class ParticleType>
+DOUBLE SphGodunovIntegration<ndim, ParticleType>::Timestep
 (SphParticle<ndim> &part,           ///< Reference to SPH particle
  Sph<ndim> *sph)                    ///< Pointer to SPH object
 {
@@ -258,6 +267,6 @@ DOUBLE SphGodunovIntegration<ndim>::Timestep
 
 
 
-template class SphGodunovIntegration<1>;
-template class SphGodunovIntegration<2>;
-template class SphGodunovIntegration<3>;
+template class SphGodunovIntegration<1, GodunovSphParticle>;
+template class SphGodunovIntegration<2, GodunovSphParticle>;
+template class SphGodunovIntegration<3, GodunovSphParticle>;

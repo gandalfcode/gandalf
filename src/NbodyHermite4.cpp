@@ -36,6 +36,7 @@
 #include "Debug.h"
 #include "Exception.h"
 #include "InlineFuncs.h"
+#include "Sph.h"
 using namespace std;
 
 
@@ -73,8 +74,8 @@ NbodyHermite4<ndim, kernelclass>::~NbodyHermite4()
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite4<ndim, kernelclass>::CalculateDirectGravForces
-(int N,                             ///< Number of stars
- NbodyParticle<ndim> **star)        ///< Array of stars/systems
+(int N,                             ///< [in] Number of stars
+ NbodyParticle<ndim> **star)        ///< [inout] Array of stars/systems
 {
   int i,j,k;                        // Star and dimension counters
   DOUBLE dr[ndim];                  // Relative position vector
@@ -216,7 +217,7 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
  int Ndirect,                       ///< [in] ..
  int *sphlist,                      ///< [in] ..
  int *directlist,                   ///< [in] ..
- SphParticle<ndim> *sphdata)        ///< [in] Array of SPH particles
+ Sph<ndim> * sph)                   ///< [in] SPH object
 {
   int j,jj,k;                        // Star and dimension counters
   DOUBLE dr[ndim];                  // Relative position vector
@@ -237,15 +238,17 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
   for (jj=0; jj<Nsph; jj++) {
 
     j = sphlist[jj];
-    for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star->r[k];
-    for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - star->v[k];
+    SphParticle<ndim>& part = sph->GetParticleIPointer(j);
+
+    for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
+    for (k=0; k<ndim; k++) dv[k] = part.v[k] - star->v[k];
     drsqd = DotProduct(dr,dr,ndim);
     drmag = sqrt(drsqd);
     invdrmag = 1.0/drmag;
-    invhmean = 2.0/(star->h + sphdata[j].h);
+    invhmean = 2.0/(star->h + part.h);
     drdt = DotProduct(dv,dr,ndim)*invdrmag;
     
-    paux = sphdata[j].m*invhmean*invhmean*
+    paux = part.m*invhmean*invhmean*
       kern.wgrav(drmag*invhmean)*invdrmag;
     wkern = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
     
@@ -253,8 +256,8 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
     for (k=0; k<ndim; k++) star->a[k] += paux*dr[k];
     for (k=0; k<ndim; k++) star->adot[k] += paux*dv[k] - 
       3.0*paux*drdt*invdrmag*dr[k] + 
-      2.0*twopi*sphdata[j].m*drdt*wkern*invdrmag*dr[k];
-    star->gpot += sphdata[j].m*invhmean*kern.wpot(drmag*invhmean);
+      2.0*twopi*part.m*drdt*wkern*invdrmag*dr[k];
+    star->gpot += part.m*invhmean*kern.wpot(drmag*invhmean);
 
   }
   //---------------------------------------------------------------------------
@@ -266,18 +269,20 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
   for (jj=0; jj<Ndirect; jj++) {
 
     j = directlist[jj];
-    for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star->r[k];
-    for (k=0; k<ndim; k++) dv[k] = sphdata[j].v[k] - star->v[k];
+    SphParticle<ndim>& part = sph->GetParticleIPointer(j);
+
+    for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
+    for (k=0; k<ndim; k++) dv[k] = part.v[k] - star->v[k];
     drsqd = DotProduct(dr,dr,ndim);
     drmag = sqrt(drsqd);
     invdrmag = 1.0/drmag;
     drdt = DotProduct(dv,dr,ndim)*invdrmag;
 
     // Add contribution to main star array
-    for (k=0; k<ndim; k++) star->a[k] += sphdata[j].m*dr[k]*pow(invdrmag,3);
+    for (k=0; k<ndim; k++) star->a[k] += part.m*dr[k]*pow(invdrmag,3);
     for (k=0; k<ndim; k++) star->adot[k] +=
-      sphdata[j].m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
-    star->gpot += sphdata[j].m*invdrmag;
+      part.m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+    star->gpot += part.m*invdrmag;
     
   }
   //---------------------------------------------------------------------------

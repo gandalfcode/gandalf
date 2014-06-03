@@ -38,6 +38,7 @@
 #include "SphParticle.h"
 using namespace std;
 
+template <int ndim> class Sph;
 
 //=============================================================================
 //  Class Nbody
@@ -70,7 +71,7 @@ class Nbody
   virtual void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **) = 0;
   virtual void CalculateDirectGravForces(int, NbodyParticle<ndim> **) = 0;
   virtual void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int, 
-					int *, int *, SphParticle<ndim> *) = 0;
+					int *, int *, Sph<ndim> *) = 0;
   virtual void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
                                         NbodyParticle<ndim> *,
                                         DOUBLE *, DOUBLE *) = 0;
@@ -143,7 +144,7 @@ public:
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
   void CalculateDirectGravForces(int, NbodyParticle<ndim> **);
   void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int, 
-				int *, int *, SphParticle<ndim> *);
+				int *, int *, Sph<ndim> *);
   void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
 				NbodyParticle<ndim> *, DOUBLE *, DOUBLE *);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
@@ -186,7 +187,7 @@ public:
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
   void CalculateDirectGravForces(int, NbodyParticle<ndim> **);
   void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int, 
-				int *, int *, SphParticle<ndim> *);
+				int *, int *, Sph<ndim> *);
   void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
 				NbodyParticle<ndim> *, DOUBLE *, DOUBLE *);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
@@ -231,7 +232,7 @@ public:
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
   void CalculateDirectGravForces(int, NbodyParticle<ndim> **);
   void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int, 
-				int *, int *, SphParticle<ndim> *);
+				int *, int *, Sph<ndim> *);
   void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
 				NbodyParticle<ndim> *, DOUBLE *, DOUBLE *);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE);

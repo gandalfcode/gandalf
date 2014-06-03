@@ -1,27 +1,28 @@
 #-------------------------------------------------------------
-# Turbulent core test
-# ..
+# Turbulent core
 #-------------------------------------------------------------
 
 
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = TURBCORE2
+Simulation run id string                    : run_id = TURBCORE2-LFKDK
 Run SPH simulation                          : sim = sph
 Select shocktube initial conditions         : ic = turbcore
-Input file format                           : in_file_form = sf
-Output file format                          : out_file_form = sf
+Input file format                           : in_file_form = su
+Output file format                          : out_file_form = su
 Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Nsph = 12800
+No. of SPH particles                        : Nsph = 62500
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
-Cloud mass                                  : mcloud = 50.0
-Radius of cloud                             : radius = 0.375
+Cloud mass                                  : mcloud = 5.0
+Radius of cloud                             : radius = 0.025
 Turbulent velocity power spectrum           : power_turb = -4.0
 Ratio of turbulent energy to grav. energy   : alpha_turb = 1.0
-No. of cells in turbulent velocity grid     : gridsize = 64
+No. of cells in turbulent velocity grid     : gridsize = 256
 Type of turbulent velocity field            : field_type = 0
 Move to COM frame                           : com_frame = 1
+Random number seed (for turbulence)         : randseed = 100
+Random number generator algorithm           : rand_algorithm = xorshift
 
 
 #---------------------------
@@ -58,23 +59,26 @@ RHS boundary type in z-dimension            : z_boundary_rhs = open
 #--------------------------
 # Simulation time variables
 #--------------------------
-Simulation end time                         : tend = 1.0
-Regular snapshot output frequency           : dt_snap = 0.05
-Time of first snapshot                      : tsnapfirst = 0.05
+Simulation end time                         : tend = 1.5
+Regular snapshot output frequency           : dt_snap = 0.002
+Time of first snapshot                      : tsnapfirst = 0.0
+Use lite snapshots for movies               : litesnap = 1
+Regular snapshot output frequency           : dt_litesnap = 0.0002
+Time of first snapshot                      : tlitesnapfirst = 0.0
 Screen output frequency (in no. of steps)   : noutputstep = 32
-Diagnostic output frequency                 : ndiagstep = 128
+Diagnostic output frequency                 : ndiagstep = 32
 
 
 #------------------------
 # Thermal physics options
 #------------------------
 Switch-on hydrodynamical forces             : hydro_forces = 1
-Main gas thermal physics treatment          : gas_eos = barotropic
-Ratio of specific heats of gas              : gamma_eos = 1.6666666666666666666
+Main gas thermal physics treatment          : gas_eos = barotropic2
+Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 Polytropic index for adiabatic gas          : eta_eos = 1.4
 Isothermal temperature                      : temp0 = 10.0
 Mean gas particle mass                      : mu_bar = 2.35
-Barotropic optically thick density          : rho_bary = 1.0e-14
+Barotropic optically thick density          : rho_bary = 1.0e-13
 
 
 #----------------
@@ -88,7 +92,7 @@ Switch-on self-gravity of gas               : self_gravity = 1
 #----------------------------------------
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = m4
-SPH smoothing length iteration tolerance    : h_converge = 0.01
+SPH smoothing length iteration tolerance    : h_converge = 0.02
 
 
 #---------------------------------
@@ -111,7 +115,7 @@ Mass cut-off for smooth accretion           : smooth_accrete_frac = 0.05
 Timestep cup-off for smooth accretion       : smooth_accrete_dt = 0.05
 Select adaptive sink radii                  : sink_radius_mode = hmult
 Set sink radius equal to kernel extent      : sink_radius = 2.0
-Sink formation density                      : rho_sink = 1.0e-12
+Sink formation density                      : rho_sink = 1.0e-11
 
 
 #-------------------------
@@ -120,8 +124,8 @@ Sink formation density                      : rho_sink = 1.0e-12
 SPH particle integration option             : sph_integration = lfkdk
 SPH Courant timestep condition multiplier   : courant_mult = 0.15
 SPH acceleration condition multiplier       : accel_mult = 0.3
-SPH energy equation timestep multiplier     : energy_mult = 0.5
-N-body timestep multiplier                  : nbody_mult = 0.2
+SPH energy equation timestep multiplier     : energy_mult = 0.4
+N-body timestep multiplier                  : nbody_mult = 0.1
 No. of block timestep levels                : Nlevels = 5
 Max. timestep level difference              : level_diff_max = 2
 
@@ -130,12 +134,15 @@ Max. timestep level difference              : level_diff_max = 2
 # Tree options
 #-------------
 SPH neighbour search algorithm              : neib_search = tree
-No. of particles in leaf cell               : Nleafmax = 8
+Tree re-build frequency                     : ntreebuildstep = 16
+Tree stock frequency                        : ntreestockstep = 1
+No. of particles in leaf cell               : Nleafmax = 6
+Use geometric opening criterion             : gravity_mac = geometric
 Tree opening angle (squared)                : thetamaxsqd = 0.15
-Multipole option                            : multipole = monopole
+Multipole option                            : multipole = quadrupole
 
 
 #---------------------
 # Optimisation options
 #---------------------
-Tabulate SPH kernel                         : tabulated_kernel = 0
+Tabulate SPH kernel                         : tabulated_kernel = 1

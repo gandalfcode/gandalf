@@ -78,7 +78,7 @@ No. of block timestep levels                : Nlevels = 1
 # Optimisation options
 #---------------------
 Tabulate SPH kernel                         : tabulated_kernel = 0
-SPH neighbour search algorithm              : neib_search = grid
+SPH neighbour search algorithm              : neib_search = tree
 
 
 #--------------

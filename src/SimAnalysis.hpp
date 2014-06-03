@@ -74,45 +74,45 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 
   // Loop over all SPH particles and add contributions to all quantities
   for (i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-    if (part->itype == dead) {
+    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    if (part.itype == dead) {
       diag.Ndead++;
       continue;
     }
-    diag.mtot += part->m;
-    diag.ketot += part->m*
-      DotProduct(part->v,part->v,ndim);
-    diag.utot += part->m*part->u;
-    diag.gpetot -= part->m*part->gpot;
+    diag.mtot += part.m;
+    diag.ketot += part.m*
+      DotProduct(part.v,part.v,ndim);
+    diag.utot += part.m*part.u;
+    diag.gpetot -= part.m*part.gpot;
     for (k=0; k<ndim; k++) {
-      diag.rcom[k] += part->m*part->r[k];
-      diag.vcom[k] += part->m*part->v[k];
-      diag.mom[k] += part->m*part->v[k];
-      diag.force[k] += part->m*part->a[k];
-      diag.force_hydro[k] += part->m*(part->a[k] - part->agrav[k]);
-      diag.force_grav[k] += part->m*part->agrav[k];
+      diag.rcom[k] += part.m*part.r[k];
+      diag.vcom[k] += part.m*part.v[k];
+      diag.mom[k] += part.m*part.v[k];
+      diag.force[k] += part.m*part.a[k];
+      diag.force_hydro[k] += part.m*(part.a[k] - part.agrav[k]);
+      diag.force_grav[k] += part.m*part.agrav[k];
     }
   }
 
   // Add contributions to angular momentum depending on dimensionality
   if (ndim == 2) {
     for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-      if (part->itype == dead) continue;
-      diag.angmom[2] += part->m*
-        (part->r[0]*part->v[1] - part->r[1]*part->v[0]);
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      if (part.itype == dead) continue;
+      diag.angmom[2] += part.m*
+        (part.r[0]*part.v[1] - part.r[1]*part.v[0]);
     }
   }
   else if (ndim == 3) {
     for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>* part = sph->GetParticleIPointer(i);
-      if (part->itype == dead) continue;
-      diag.angmom[0] += part->m*
-        (part->r[1]*part->v[2] - part->r[2]*part->v[1]);
-      diag.angmom[1] += part->m*
-        (part->r[2]*part->v[0] - part->r[0]*part->v[2]);
-      diag.angmom[2] += part->m*
-        (part->r[0]*part->v[1] - part->r[1]*part->v[0]);
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      if (part.itype == dead) continue;
+      diag.angmom[0] += part.m*
+        (part.r[1]*part.v[2] - part.r[2]*part.v[1]);
+      diag.angmom[1] += part.m*
+        (part.r[2]*part.v[0] - part.r[0]*part.v[2]);
+      diag.angmom[2] += part.m*
+        (part.r[0]*part.v[1] - part.r[1]*part.v[0]);
     }
   }
 

@@ -48,28 +48,28 @@ using namespace std;
 //=============================================================================
 template <int ndim>
 struct NNTreeCell {
-  int ichild1;                     ///< i.d. of child 1
-  int ichild2;                     ///< i.d. of child 2
-  int inearest;                    ///< i.d. of nearest node (for building)
-  int iparent;                     ///< i.d. of parent node
-  int Ncomp;                       ///< No. of components in node
-  int Nstar;                       ///< No. of stars in node
-  int Nchildlist;                  ///< No. of systems in list
-  DOUBLE radius;                   ///< Radius of bounding sphere of node
-  DOUBLE rsqdnearest;              ///< Distance squared to nearest node
-  DOUBLE r[ndim];                  ///< Position of centre of mass
-  DOUBLE rpos[ndim];               ///< Centre of position of node
-  DOUBLE v[ndim];                  ///< Velocity of centre of mass
-  DOUBLE a[ndim];                  ///< Acceleration of centre of mass
-  DOUBLE adot[ndim];               ///< Jerk of node
-  DOUBLE a2dot[ndim];              ///< 2nd derivative of node
-  DOUBLE a3dot[ndim];              ///< 3rd derivative of node
-  DOUBLE m;                        ///< Mass contained in node
-  DOUBLE h;                        ///< Smoothing length of node
-  DOUBLE gpot;                     ///< Gravitational potential at node centre
-  DOUBLE gpe;                      ///< Total gpe of node components
-  DOUBLE gpe_internal;             ///< Total internal gpe of node components
-  DOUBLE tcross;                   ///< Crossing time of node components
+  int ichild1;                      ///< i.d. of child 1
+  int ichild2;                      ///< i.d. of child 2
+  int inearest;                     ///< i.d. of nearest node (for building)
+  int iparent;                      ///< i.d. of parent node
+  int Ncomp;                        ///< No. of components in node
+  int Nstar;                        ///< No. of stars in node
+  int Nchildlist;                   ///< No. of systems in list
+  DOUBLE radius;                    ///< Radius of bounding sphere of node
+  DOUBLE rsqdnearest;               ///< Distance squared to nearest node
+  DOUBLE r[ndim];                   ///< Position of centre of mass
+  DOUBLE rpos[ndim];                ///< Centre of position of node
+  DOUBLE v[ndim];                   ///< Velocity of centre of mass
+  DOUBLE a[ndim];                   ///< Acceleration of centre of mass
+  DOUBLE adot[ndim];                ///< Jerk of node
+  DOUBLE a2dot[ndim];               ///< 2nd derivative of node
+  DOUBLE a3dot[ndim];               ///< 3rd derivative of node
+  DOUBLE m;                         ///< Mass contained in node
+  DOUBLE h;                         ///< Smoothing length of node
+  DOUBLE gpot;                      ///< Gravitational potential at node centre
+  DOUBLE gpe;                       ///< Total gpe of node components
+  DOUBLE gpe_internal;              ///< Total internal gpe of node components
+  DOUBLE tcross;                    ///< Crossing time of node components
   NbodyParticle<ndim>* childlist[Ncompmax];  ///< List of child components
 };
 
@@ -110,18 +110,18 @@ class NbodySystemTree
 
   // Class variables and main arrays for nearest neighbour tree and binaries
   //---------------------------------------------------------------------------
-  bool allocated_tree;               ///< Is NN-tree memory allocated?
-  int Nbinary;                       ///< No. of binary stars
-  int Nnode;                         ///< No. of nodes of NN-tree
-  int Nnodemax;                      ///< Max. no. of nodes on NN-tree.
-  int Norbit;                        ///< No. of binary orbits
-  int Norbitmax;                     ///< Max. no. of binary orbits
-  int Nquadruple;                    ///< No. of quadruple systems
-  int Ntriple;                       ///< No. of triple systems
-  DOUBLE gpehard;                    ///< Grav. energy limit hard sub-systems
-  DOUBLE gpesoft;                    ///< Grav. energy limit soft sub-systems
-  struct NNTreeCell<ndim> *NNtree;   ///< Main NN-tree array
-  struct BinaryOrbit *orbit;         ///< Main binary star array
+  bool allocated_tree;              ///< Is NN-tree memory allocated?
+  int Nbinary;                      ///< No. of binary stars
+  int Nnode;                        ///< No. of nodes of NN-tree
+  int Nnodemax;                     ///< Max. no. of nodes on NN-tree.
+  int Norbit;                       ///< No. of binary orbits
+  int Norbitmax;                    ///< Max. no. of binary orbits
+  int Nquadruple;                   ///< No. of quadruple systems
+  int Ntriple;                      ///< No. of triple systems
+  DOUBLE gpehard;                   ///< Grav. energy limit hard sub-systems
+  DOUBLE gpesoft;                   ///< Grav. energy limit soft sub-systems
+  struct NNTreeCell<ndim> *NNtree;  ///< Main NN-tree array
+  struct BinaryOrbit *orbit;        ///< Main binary star array
 
 };
 #endif

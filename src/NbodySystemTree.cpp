@@ -258,22 +258,22 @@ void NbodySystemTree<ndim>::CreateNbodySystemTree
 //=============================================================================
 template <int ndim>
 void NbodySystemTree<ndim>::BuildSubSystems
-(Nbody<ndim> *nbody)               ///< [inout] Nbody object containing stars
+(Nbody<ndim> *nbody)                ///< [inout] Nbody object containing stars
 {
-  int c,c1,c2;                     // Cell counter
-  int i,j;                         // Star and system particle counters
-  int k;                           // Dimension counter
-  int Nsystem;                     // No. of systems
-  DOUBLE angmomsqd;                // Angular momentum squared
-  DOUBLE dr[ndim];                 // Relative position vector
-  DOUBLE drsqd;                    // Distance squared
-  DOUBLE dv[ndim];                 // Relative velocity vector
-  DOUBLE invdrmag;                 // 1 / drmag
-  DOUBLE ketot = 0.0;              // Kinetic energy
-  DOUBLE mu;                       // Reduced mass of binary system
-  DOUBLE vmean;                    // Average speed of stars in sub-cluster
-  NbodyParticle<ndim> *si;         // Pointer to star/system i
-  NbodyParticle<ndim> *sj;         // Pointer to star/system j
+  int c,c1,c2;                      // Cell counter
+  int i,j;                          // Star and system particle counters
+  int k;                            // Dimension counter
+  int Nsystem;                      // No. of systems
+  DOUBLE angmomsqd;                 // Angular momentum squared
+  DOUBLE dr[ndim];                  // Relative position vector
+  DOUBLE drsqd;                     // Distance squared
+  DOUBLE dv[ndim];                  // Relative velocity vector
+  DOUBLE invdrmag;                  // 1 / drmag
+  DOUBLE ketot = 0.0;               // Kinetic energy
+  DOUBLE mu;                        // Reduced mass of binary system
+  DOUBLE vmean;                     // Average speed of stars in sub-cluster
+  NbodyParticle<ndim> *si;          // Pointer to star/system i
+  NbodyParticle<ndim> *sj;          // Pointer to star/system j
 
   debug2("[NbodySystemTree::BuildSubSystems]");
 
@@ -947,7 +947,7 @@ void NbodySystemTree<ndim>::OutputBinaryProperties
 {
   int i;                            // Binary counter
 
-  debug2("[NbodySystemTree::FindPerturberLists]");
+  debug2("[NbodySystemTree::OutputBinaryProperties]");
 
   cout << "---------------------------------------" << endl;
   cout << "Binary statistics" << endl;

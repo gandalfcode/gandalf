@@ -37,6 +37,7 @@
 #include "Debug.h"
 #include "Exception.h"
 #include "InlineFuncs.h"
+#include "Sph.h"
 using namespace std;
 
 
@@ -149,7 +150,7 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSPHForces
  int Ndirect,                       ///< [in] No. of distant SPH ptcls.
  int *sphlist,                      ///< [in] List of neighbour ids
  int *directlist,                   ///< [in] List of distant ptcl ids
- SphParticle<ndim> *sphdata)        ///< [in] Array of SPH particles
+ Sph<ndim> * sph)        ///< [in] Array of SPH particles
 {
   int j,jj,k;                       // Star and dimension counters
   DOUBLE dr[ndim];                  // Relative position vector
@@ -166,25 +167,27 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSPHForces
   //---------------------------------------------------------------------------
   for (jj=0; jj<Nsph; jj++) {
     j = sphlist[jj];
-    assert(sphdata[j].itype != dead);
 
-   j = sphlist[jj];
-    for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star->r[k];
+    SphParticle<ndim>& part = sph->GetParticleIPointer(j);
+
+    assert(part.itype != dead);
+
+    for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
     drsqd = DotProduct(dr,dr,ndim);
     drmag = sqrt(drsqd);
     invdrmag = 1.0/drmag;
-    invhmean = 2.0/(star->h + sphdata[j].h);
+    invhmean = 2.0/(star->h + part.h);
    
-    //for (k=0; k<ndim; k++) star->a[k] += sphdata[j].m*dr[k]*pow(invdrmag,3);
-    //star->gpot += sphdata[j].m*invdrmag;
+    //for (k=0; k<ndim; k++) star->a[k] += part.m*dr[k]*pow(invdrmag,3);
+    //star->gpot += part.m*invdrmag;
     //continue;
  
-    paux = sphdata[j].m*invhmean*invhmean*
+    paux = part.m*invhmean*invhmean*
       kern.wgrav(drmag*invhmean)*invdrmag;
     
     // Add contribution to main star array
     for (k=0; k<ndim; k++) star->a[k] += paux*dr[k];
-    star->gpot += sphdata[j].m*invhmean*kern.wpot(drmag*invhmean);
+    star->gpot += part.m*invhmean*kern.wpot(drmag*invhmean);
 
   }
   //---------------------------------------------------------------------------
@@ -195,17 +198,20 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSPHForces
   //---------------------------------------------------------------------------
   for (jj=0; jj<Ndirect; jj++) {
     j = directlist[jj];
-    assert(sphdata[j].itype != dead);
 
-    for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - star->r[k];
+    SphParticle<ndim>& part = sph->GetParticleIPointer(j);
+
+    assert(part.itype != dead);
+
+    for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
     drsqd = DotProduct(dr,dr,ndim);
     drmag = sqrt(drsqd);
     invdrmag = 1.0/drmag;
-    paux = sphdata[j].m*pow(invdrmag,3);
+    paux = part.m*pow(invdrmag,3);
 
     // Add contribution to main star array
     for (k=0; k<ndim; k++) star->a[k] += paux*dr[k];
-    star->gpot += sphdata[j].m*invdrmag;
+    star->gpot += part.m*invdrmag;
     
   }
   //---------------------------------------------------------------------------

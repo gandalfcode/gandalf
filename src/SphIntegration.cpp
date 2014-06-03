@@ -78,11 +78,12 @@ SphIntegration<ndim>::~SphIntegration()
 //=============================================================================
 template <int ndim>
 DOUBLE SphIntegration<ndim>::Timestep
-(SphParticle<ndim> &part,           ///< Reference to SPH particle
- Sph<ndim> *sph)                    ///< Pointer to main SPH object
+(SphParticle<ndim> &part,           ///< [inout] Reference to SPH particle
+ Sph<ndim> *sph)                    ///< [in] Pointer to main SPH object
 {
-  DOUBLE timestep;                      // Minimum value of particle timesteps
-  DOUBLE amag;                          // Magnitude of particle acceleration
+  DOUBLE timestep;                  // Minimum value of particle timesteps
+  DOUBLE adotmag;                   // Magnitude of particle jerk
+  DOUBLE amag;                      // Magnitude of particle acceleration
 
   // Courant condition.  If hydro forces are not used, compute the 
   // timescale using only div_v, i.e. the compression timescale.
@@ -112,6 +113,10 @@ DOUBLE SphIntegration<ndim>::Timestep
   if (gas_eos == energy_eqn)
     timestep = min(timestep,this->energy_mult*
 		   (DOUBLE) (part.u/(fabs(part.dudt) + small_number)));
+
+  // If stars are included, calculate the timestep due to the jerk
+  adotmag = sqrt(DotProduct(part.adot,part.adot,ndim));
+  timestep = min(timestep, accel_mult*amag/(adotmag + small_number_dp));
 
   return timestep;
 }

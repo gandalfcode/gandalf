@@ -2,12 +2,12 @@
 # Adiabatic Sod shock tube test
 # Creates an adiabatic Sod shocktube test
 #----------------------------------------
-
+comment				   : out_file_form = sf
 
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = ADSOD-MPI2
+Simulation run id string                    : run_id = ADSOD1
 Select SPH simulation                       : sim = sph
 Select shocktube initial conditions         : ic = shocktube
 1D shocktube test                           : ndim = 1

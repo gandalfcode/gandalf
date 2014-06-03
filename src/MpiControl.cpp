@@ -66,10 +66,6 @@ MpiControl<ndim>::MpiControl()
   particle_type = SphParticle<ndim>::CreateMpiDataType();
   MPI_Type_commit(&particle_type);
 
-  // Create and commit the particle int datatype
-  partint_type = SphIntParticle<ndim>::CreateMpiDataType();
-  MPI_Type_commit(&partint_type);
-
   // Create diagnostics data structure in database
   diagnostics_type = Diagnostics<ndim>::CreateMpiDataType();
   MPI_Type_commit(&diagnostics_type);
@@ -126,7 +122,6 @@ template <int ndim>
 MpiControl<ndim>::~MpiControl()
 {
   MPI_Type_free(&particle_type);
-  MPI_Type_free(&partint_type);
   MPI_Type_free(&box_type);
   MPI_Type_free(&diagnostics_type);
 }
@@ -550,9 +545,9 @@ void MpiControl<ndim>::LoadBalancing
 
   for (k=0; k<ndim; k++) mpinode[rank].rwork[k] = 0.0;
   for (i=0; i<sph->Nsph; i++) {
-    mpinode[rank].worktot += 1.0/(FLOAT) sph->sphintdata[i].nstep;
+    mpinode[rank].worktot += 1.0/(FLOAT) sph->sphdata[i].nstep;
     for (k=0; k<ndim; k++) 
-      mpinode[rank].rwork[k] += sph->sphdata[i].r[k]/(FLOAT) sph->sphintdata[i].nstep;
+      mpinode[rank].rwork[k] += sph->sphdata[i].r[k]/(FLOAT) sph->sphdata[i].nstep;
   }
   for (k=0; k<ndim; k++) mpinode[rank].rwork[k] /= mpinode[rank].worktot;
 
@@ -568,7 +563,7 @@ void MpiControl<ndim>::LoadBalancing
       //if (rank == 1) cout << "R : " << ParticleInBox(part,mpinode[inode].domain) << "    " << inode << "     " << rank << "    " << part.r[0] << "    " << mpinode[inode].domain.boxmin[0] << "    " << mpinode[inode].domain.boxmax[0] << endl;
       if (ParticleInBox(part,mpinode[inode].domain)) {
         if (inode == rank) break;
-        mpinode[rank].worksent[inode] += 1.0/(FLOAT) sph->sphintdata[i].nstep;
+        mpinode[rank].worksent[inode] += 1.0/(FLOAT) sph->sphdata[i].nstep;
         if (rank == 1) cout << "OVERLAP?? : " << rank << "    " << mpinode[rank].worksent[inode] << endl;
         // The particle can belong only to one domain, so we can break from this loop
         break;
@@ -787,22 +782,18 @@ void MpiControl<ndim>::LoadBalancing
 
   // Send and receive particles from/to all other nodes
   std::vector<SphParticle<ndim> > sendbuffer, recvbuffer;
-  std::vector<SphIntParticle<ndim> > sendbufferint, recvbufferint;
   for (int iturn = 0; iturn<my_matches.size(); iturn++) {
     int inode = my_matches[iturn];
 
     int N_to_transfer = particles_to_transfer[inode].size();
     cout << "Transfer!!  Rank : " << rank << "    N_to_transfer : " << N_to_transfer << "    dest : " << inode << endl;
     sendbuffer.clear(); sendbuffer.resize(N_to_transfer);
-    sendbufferint.clear(); sendbufferint.resize(N_to_transfer);
     recvbuffer.clear();
-    recvbufferint.clear();
 
     // Copy particles into send buffer
     for (int ipart=0; ipart < N_to_transfer; ipart++) {
       int index = particles_to_transfer[inode][ipart];
       sendbuffer[ipart] = sph->sphdata[index];
-      sendbufferint[ipart] = sph->sphintdata[index];
     }
 
     // Do the actual send and receive
@@ -821,7 +812,6 @@ void MpiControl<ndim>::LoadBalancing
       if (send_turn) {
         cout << "Sending " << N_to_transfer << " from " << rank << " to " << inode << endl;
         MPI_Send(&sendbuffer[0], N_to_transfer, particle_type, inode, tag_bal, MPI_COMM_WORLD);
-        MPI_Send(&sendbufferint[0], N_to_transfer, partint_type, inode, tag_bal, MPI_COMM_WORLD);
         send_turn = false;
         cout << "Sent " << N_to_transfer << " from " << rank << " to " << inode << endl;
       }
@@ -830,7 +820,7 @@ void MpiControl<ndim>::LoadBalancing
         MPI_Status status;
         MPI_Probe(inode, tag_bal, MPI_COMM_WORLD, &status);
         MPI_Get_count(&status, particle_type, &N_to_receive);
-        recvbuffer.resize(N_to_receive); recvbufferint.resize(N_to_receive);
+        recvbuffer.resize(N_to_receive);
         cout << "Rank " << rank << " receiving " << N_to_receive << " from " << inode << endl;
         if (sph->Nsph+N_to_receive > sph->Nsphmax) {
           cout << "Memory problem : " << rank << " " << sph->Nsph << " " << N_to_receive << " " << sph->Nsphmax <<endl;
@@ -838,7 +828,6 @@ void MpiControl<ndim>::LoadBalancing
           ExceptionHandler::getIstance().raise(message);
         }
         MPI_Recv(&recvbuffer[0], N_to_receive, particle_type, inode, tag_bal, MPI_COMM_WORLD, &status);
-        MPI_Recv(&recvbufferint[0], N_to_receive, partint_type, inode, tag_bal, MPI_COMM_WORLD, &status);
         send_turn = true;
         cout << "Rank " << rank << " received " << N_to_receive << " from " << inode << endl;
       }
@@ -849,8 +838,6 @@ void MpiControl<ndim>::LoadBalancing
     // TODO: check we have enough memory
     for (int i=0; i< recvbuffer.size(); i++) {
       sph->sphdata[running_counter] = recvbuffer[i];
-      sph->sphintdata[running_counter] = recvbufferint[i];
-      sph->sphintdata[running_counter].part = &sph->sphdata[running_counter];
       running_counter++;
     }
     sph->Nsph = running_counter;

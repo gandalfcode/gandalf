@@ -205,6 +205,32 @@ static inline void InsertionSortIds
 //  Rotate given vector around specified Euler angles
 //=============================================================================
 template <typename T>
+static inline void EulerAngleMatrix
+(T phi,
+ T theta,
+ T psi,
+ T Arot[3][3])
+{
+  Arot[0][0] = cos(theta)*cos(psi);
+  Arot[1][0] = cos(phi)*sin(psi) + sin(phi)*sin(theta)*cos(psi);
+  Arot[2][0] = sin(phi)*sin(psi) - cos(phi)*sin(theta)*cos(psi);
+  Arot[0][1] = -cos(theta)*sin(psi);
+  Arot[1][1] = cos(phi)*cos(psi) - sin(phi)*sin(theta)*sin(psi);
+  Arot[2][1] = sin(phi)*cos(psi) + cos(phi)*sin(theta)*sin(psi);
+  Arot[0][2] = sin(theta);
+  Arot[1][2] = -sin(phi)*cos(theta);
+  Arot[2][2] = cos(phi)*cos(theta);
+
+  return;
+}
+
+
+
+//=============================================================================
+//  EulerAngleRotation
+//  Rotate given vector around specified Euler angles
+//=============================================================================
+template <typename T>
 static inline void EulerAngleRotation
 (T phi,
  T theta,
@@ -215,15 +241,7 @@ static inline void EulerAngleRotation
   T Arot[3][3];
   T vecaux[3];
 
-  Arot[0][0] = cos(theta)*cos(psi);
-  Arot[1][0] = cos(phi)*sin(psi) + sin(phi)*sin(theta)*cos(psi);
-  Arot[2][0] = sin(phi)*sin(psi) - cos(phi)*sin(theta)*cos(psi);
-  Arot[0][1] = -cos(theta)*sin(psi);
-  Arot[1][1] = cos(phi)*cos(psi) - sin(phi)*sin(theta)*sin(psi);
-  Arot[2][1] = sin(phi)*cos(psi) + cos(phi)*sin(theta)*sin(psi);
-  Arot[0][2] = sin(theta);
-  Arot[1][2] = -sin(phi)*cos(theta);
-  Arot[2][2] = cos(phi)*cos(theta);
+  EulerAngleMatrix(phi,theta,psi,Arot);
 
   for (k=0; k<3; k++) vecaux[k] = vec[k];
 
@@ -240,25 +258,42 @@ static inline void EulerAngleRotation
 
 
 //=============================================================================
-//  GaussRand
-//  Calculates Gaussian random number using Box-Muller method.
+//  EulerAngleRotation
+//  Rotate given vector around specified Euler angles
 //=============================================================================
-static inline FLOAT GaussRand(FLOAT mean, FLOAT sigma)
+template <typename T>
+static inline void EulerAngleArrayRotation
+(int N,
+ T phi,
+ T theta,
+ T psi,
+ T *vec)
 {
-  FLOAT U = 0.0;
-  FLOAT V = 0.0;
+  int i;
+  int k;
+  T Arot[3][3];
+  T vecaux[3];
 
-  while (U == 0.0) {
-    U = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
-    V = (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;
-  };
+  EulerAngleMatrix(phi,theta,psi,Arot);
 
-  return sqrt(-2.0*log(U))*cos(2*pi*V);
+  for (i=0; i<N; i++) {
+    for (k=0; k<3; k++) vecaux[k] = vec[3*i + k];
+    
+    for (k=0; k<3; k++)
+      vec[3*i + k] = 
+	Arot[0][k]*vecaux[0] + Arot[1][k]*vecaux[1] + Arot[2][k]*vecaux[2];
+
+  }
+
+  return;
 }
 
 
 
-
+//=============================================================================
+//  clamp
+//  ...
+//=============================================================================
 inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max) {
   bool smaller = value < min;
   if (smaller) return min;
@@ -268,6 +303,11 @@ inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max) {
 }
 
 
+
+//=============================================================================
+//  ParticleBoxOverlap
+//  ...
+//=============================================================================
 template <int ndim>
 inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box) {
 
@@ -289,6 +329,11 @@ inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box) {
 }
 
 
+
+//=============================================================================
+//  ParticleInBox
+//  ..
+//=============================================================================
 template <int ndim>
 inline bool ParticleInBox (SphParticle<ndim>& part, Box<ndim>& box) {
   for (int k=0; k<ndim; k++) {

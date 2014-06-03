@@ -40,6 +40,8 @@
 #include "ExternalPotential.h"
 #include "Precision.h"
 #include "Parameters.h"
+#include "Radiation.h"
+#include "RandomNumber.h"
 #include "SimUnits.h"
 #include "SphKernel.h"
 #include "Sph.h"
@@ -233,6 +235,8 @@ class Simulation : public SimulationBase
   int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
 #if defined(FFTW_TURBULENCE)
   void GenerateTurbulentVelocityField(int, int, DOUBLE, DOUBLE *);
+  void InterpolateVelocityField(int, int, FLOAT, FLOAT, 
+                                FLOAT *, FLOAT *,FLOAT *);
 #endif
 
 
@@ -245,13 +249,11 @@ class Simulation : public SimulationBase
   virtual void ImportArray(double* input, int size, 
                            string quantity, string type="sph");
   virtual void PreSetupForPython(void);
-  virtual void ProcessGodunovSphParameters(void);
-  virtual void ProcessNbodyParameters(void);
-  virtual void ProcessParameters(void);
-  virtual void ProcessSphParameters(void);
+  virtual void ProcessParameters(void)=0;
   virtual void OutputDiagnostics(void);
   virtual void UpdateDiagnostics(void);
   virtual void SetComFrame(void);
+  virtual void ProcessNbodyParameters(void);
 
 #if defined(VERIFY_ALL)
   void VerifyBlockTimesteps(void);
@@ -306,6 +308,8 @@ class Simulation : public SimulationBase
   Nbody<ndim> *nbody;                 ///< N-body algorithm pointer
   Nbody<ndim> *subsystem;             ///< N-body object for sub-systems
   NbodySystemTree<ndim> nbodytree;    ///< N-body tree to create sub-systems
+  Radiation<ndim> *radiation;         ///< Radiation field object
+  RandomNumber *randnumb;             ///< Random number object (pointer)
   Sinks<ndim> sinks;                  ///< Sink particle object
   Sph<ndim> *sph;                     ///< SPH algorithm pointer
   SphIntegration<ndim> *sphint;       ///< SPH Integration scheme pointer
@@ -330,9 +334,11 @@ class Simulation : public SimulationBase
 template <int ndim>
 class SphSimulation : public Simulation<ndim> 
 {
+ public:
   using SimulationBase::restart;
   using SimulationBase::simparams;
   using SimulationBase::timing;
+  using Simulation<ndim>::extpot;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
   using Simulation<ndim>::sinks;
@@ -340,7 +346,164 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::nbodytree;
   using Simulation<ndim>::sphint;
   using Simulation<ndim>::uint;
+  using Simulation<ndim>::litesnap;
+  using Simulation<ndim>::LocalGhosts;
+  using Simulation<ndim>::simbox;
+  using Simulation<ndim>::simunits;
+  using Simulation<ndim>::Nstepsmax;
+  using Simulation<ndim>::run_id;
+  using Simulation<ndim>::out_file_form;
+  using Simulation<ndim>::tend;
+  using Simulation<ndim>::noutputstep;
+  using Simulation<ndim>::nbody_single_timestep;
+  using Simulation<ndim>::ParametersProcessed;
+  using Simulation<ndim>::n;
+  using Simulation<ndim>::Nblocksteps;
+  using Simulation<ndim>::Nfullsteps;
+  using Simulation<ndim>::Nlevels;
+  using Simulation<ndim>::Nsteps;
+  using Simulation<ndim>::t;
+  using Simulation<ndim>::timestep;
+  using Simulation<ndim>::level_step;
+  using Simulation<ndim>::Noutsnap;
+  using Simulation<ndim>::tlitesnapnext;
+  using Simulation<ndim>::tsnapnext;
+  using Simulation<ndim>::dt_litesnap;
+  using Simulation<ndim>::dt_snap;
+  using Simulation<ndim>::dt_python;
+  using Simulation<ndim>::level_diff_max;
+  using Simulation<ndim>::level_max;
+  using Simulation<ndim>::integration_step;
+  using Simulation<ndim>::nresync;
+  using Simulation<ndim>::dt_max;
+  using Simulation<ndim>::sph_single_timestep;
+  using Simulation<ndim>::sink_particles;
+  using Simulation<ndim>::randnumb;
+  using Simulation<ndim>::rank;
+  using Simulation<ndim>::rebuild_tree;
+  using Simulation<ndim>::ndiagstep;
+  using Simulation<ndim>::ntreebuildstep;
+  using Simulation<ndim>::ntreestockstep;
+  using Simulation<ndim>::tmax_wallclock;
   using Simulation<ndim>::sphneib;
+  using Simulation<ndim>::radiation;
+#ifdef MPI_PARALLEL
+  using Simulation<ndim>::mpicontrol;
+  using Simulation<ndim>::MpiGhosts;
+#endif
+
+  SphSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
+  virtual void ProcessSphParameters(void)=0;
+  virtual void PostInitialConditionsSetup(void);
+  virtual void MainLoop(void);
+  virtual void ComputeGlobalTimestep(void);
+  virtual void ComputeBlockTimesteps(void);
+  virtual void ProcessParameters(void);
+
+};
+
+
+
+//=============================================================================
+//  Class GradhSphSimulation
+/// \brief   grad-h SPH simulation class.
+/// \details grad-h SPH Simulation class definition, inherited from 
+///          SphSimulation, which controls the main program flow for 
+///          grad-h SPH simulations.
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    17/03/2014
+//=============================================================================
+template <int ndim>
+class GradhSphSimulation: public SphSimulation<ndim> 
+{
+ public:
+
+  using SimulationBase::restart;
+  using SimulationBase::simparams;
+  using SimulationBase::timing;
+  using Simulation<ndim>::extpot;
+  using Simulation<ndim>::sph;
+  using Simulation<ndim>::nbody;
+  using SphSimulation<ndim>::sinks;
+  using Simulation<ndim>::subsystem;
+  using Simulation<ndim>::nbodytree;
+  using Simulation<ndim>::sphint;
+  using Simulation<ndim>::uint;
+  using Simulation<ndim>::LocalGhosts;
+  using Simulation<ndim>::simbox;
+  using Simulation<ndim>::simunits;
+  using Simulation<ndim>::Nstepsmax;
+  using Simulation<ndim>::run_id;
+  using Simulation<ndim>::out_file_form;
+  using Simulation<ndim>::tend;
+  using Simulation<ndim>::noutputstep;
+  using Simulation<ndim>::nbody_single_timestep;
+  using Simulation<ndim>::ParametersProcessed;
+  using Simulation<ndim>::n;
+  using Simulation<ndim>::Nblocksteps;
+  using Simulation<ndim>::Nlevels;
+  using Simulation<ndim>::Nsteps;
+  using Simulation<ndim>::randnumb;
+  using Simulation<ndim>::t;
+  using Simulation<ndim>::timestep;
+  using Simulation<ndim>::level_step;
+  using Simulation<ndim>::Noutsnap;
+  using Simulation<ndim>::tsnapnext;
+  using Simulation<ndim>::dt_snap;
+  using Simulation<ndim>::dt_python;
+  using Simulation<ndim>::level_diff_max;
+  using Simulation<ndim>::level_max;
+  using Simulation<ndim>::integration_step;
+  using Simulation<ndim>::nresync;
+  using Simulation<ndim>::dt_max;
+  using Simulation<ndim>::sph_single_timestep;
+  using Simulation<ndim>::sink_particles;
+  using Simulation<ndim>::rank;
+  using Simulation<ndim>::rebuild_tree;
+  using Simulation<ndim>::ndiagstep;
+  using Simulation<ndim>::ntreebuildstep;
+  using Simulation<ndim>::ntreestockstep;
+  using SphSimulation<ndim>::radiation;
+  using SphSimulation<ndim>::sphneib;
+  using SphSimulation<ndim>::tmax_wallclock;
+#ifdef MPI_PARALLEL
+  using Simulation<ndim>::mpicontrol;
+  using Simulation<ndim>::MpiGhosts;
+#endif
+
+  GradhSphSimulation (Parameters* parameters): 
+    SphSimulation<ndim>(parameters) {};
+  virtual void ProcessSphParameters(void);
+
+};
+
+
+
+//=============================================================================
+//  Class SM2012SphSimulation
+/// \brief   Saitoh & Makino (2012) SPH simulation class.
+/// \details Saitoh & Makino(2012) SPH Simulation class definition, inherited 
+///          from SphSimulation, which controls the main program flow for 
+///          grad-h SPH simulations.
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    17/03/2014
+//=============================================================================
+template <int ndim>
+class SM2012SphSimulation: public SphSimulation<ndim> 
+{
+ public:
+
+  using SimulationBase::restart;
+  using SimulationBase::simparams;
+  using SimulationBase::timing;
+  using Simulation<ndim>::extpot;
+  using Simulation<ndim>::sph;
+  using Simulation<ndim>::nbody;
+  using SphSimulation<ndim>::sinks;
+  using Simulation<ndim>::subsystem;
+  using Simulation<ndim>::nbodytree;
+  using Simulation<ndim>::sphint;
+  using Simulation<ndim>::uint;
   using Simulation<ndim>::LocalGhosts;
   using Simulation<ndim>::simbox;
   using Simulation<ndim>::simunits;
@@ -372,20 +535,19 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::sink_particles;
   using Simulation<ndim>::rank;
   using Simulation<ndim>::rebuild_tree;
+  using Simulation<ndim>::ndiagstep;
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
+  using SphSimulation<ndim>::sphneib;
+  using SphSimulation<ndim>::tmax_wallclock;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
   using Simulation<ndim>::MpiGhosts;
 #endif
 
-public:
-
-  SphSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
-  virtual void PostInitialConditionsSetup(void);
-  virtual void MainLoop(void);
-  virtual void ComputeGlobalTimestep(void);
-  virtual void ComputeBlockTimesteps(void);
+  SM2012SphSimulation (Parameters* parameters): 
+    SphSimulation<ndim>(parameters) {};
+  virtual void ProcessSphParameters(void);
 
 };
 
@@ -401,63 +563,63 @@ public:
 /// \date    03/04/2013
 //=============================================================================
 template <int ndim>
-class GodunovSphSimulation : public Simulation<ndim> 
+class GodunovSphSimulation: public SphSimulation<ndim> 
 {
-  using SimulationBase::restart;
-  using SimulationBase::simparams;
-  using SimulationBase::timing;
-  using Simulation<ndim>::sph;
-  using Simulation<ndim>::nbody;
-  using Simulation<ndim>::sinks;
-  using Simulation<ndim>::subsystem;
-  using Simulation<ndim>::nbodytree;
-  using Simulation<ndim>::sphint;
-  using Simulation<ndim>::uint;
-  using Simulation<ndim>::sphneib;
-  using Simulation<ndim>::LocalGhosts;
-  using Simulation<ndim>::simbox;
-  using Simulation<ndim>::simunits;
-  using Simulation<ndim>::Nstepsmax;
-  using Simulation<ndim>::run_id;
-  using Simulation<ndim>::out_file_form;
-  using Simulation<ndim>::tend;
-  using Simulation<ndim>::noutputstep;
-  using Simulation<ndim>::nbody_single_timestep;
-  using Simulation<ndim>::ParametersProcessed;
-  using Simulation<ndim>::n;
-  using Simulation<ndim>::Nblocksteps;
-  using Simulation<ndim>::Nfullsteps;
-  using Simulation<ndim>::Nlevels;
-  using Simulation<ndim>::Nsteps;
-  using Simulation<ndim>::t;
-  using Simulation<ndim>::timestep;
-  using Simulation<ndim>::level_step;
-  using Simulation<ndim>::Noutsnap;
-  using Simulation<ndim>::tsnapnext;
-  using Simulation<ndim>::dt_snap;
-  using Simulation<ndim>::dt_python;
-  using Simulation<ndim>::level_diff_max;
-  using Simulation<ndim>::level_max;
-  using Simulation<ndim>::integration_step;
-  using Simulation<ndim>::nresync;
-  using Simulation<ndim>::dt_max;
-  using Simulation<ndim>::sph_single_timestep;
-  using Simulation<ndim>::sink_particles;
-  using Simulation<ndim>::rebuild_tree;
-  using Simulation<ndim>::ntreebuildstep;
-  using Simulation<ndim>::ntreestockstep;
+  using SphSimulation<ndim>::restart;
+  using Simulation<ndim>::simparams;
+  using SphSimulation<ndim>::timing;
+  using SphSimulation<ndim>::sph;
+  using SphSimulation<ndim>::nbody;
+  using SphSimulation<ndim>::sinks;
+  using SphSimulation<ndim>::subsystem;
+  using SphSimulation<ndim>::nbodytree;
+  using SphSimulation<ndim>::sphint;
+  using SphSimulation<ndim>::uint;
+  using SphSimulation<ndim>::sphneib;
+  using SphSimulation<ndim>::LocalGhosts;
+  using SphSimulation<ndim>::simbox;
+  using SphSimulation<ndim>::simunits;
+  using SphSimulation<ndim>::Nstepsmax;
+  using SphSimulation<ndim>::run_id;
+  using SphSimulation<ndim>::out_file_form;
+  using SphSimulation<ndim>::tend;
+  using SphSimulation<ndim>::noutputstep;
+  using SphSimulation<ndim>::nbody_single_timestep;
+  using SphSimulation<ndim>::ParametersProcessed;
+  using SphSimulation<ndim>::n;
+  using SphSimulation<ndim>::Nblocksteps;
+  using SphSimulation<ndim>::Nlevels;
+  using SphSimulation<ndim>::Nsteps;
+  using SphSimulation<ndim>::t;
+  using SphSimulation<ndim>::timestep;
+  using SphSimulation<ndim>::level_step;
+  using SphSimulation<ndim>::Noutsnap;
+  using SphSimulation<ndim>::tsnapnext;
+  using SphSimulation<ndim>::dt_snap;
+  using SphSimulation<ndim>::dt_python;
+  using SphSimulation<ndim>::level_diff_max;
+  using SphSimulation<ndim>::level_max;
+  using SphSimulation<ndim>::integration_step;
+  using SphSimulation<ndim>::nresync;
+  using SphSimulation<ndim>::dt_max;
+  using SphSimulation<ndim>::sph_single_timestep;
+  using SphSimulation<ndim>::sink_particles;
+  using SphSimulation<ndim>::rebuild_tree;
+  using SphSimulation<ndim>::ntreebuildstep;
+  using SphSimulation<ndim>::ntreestockstep;
 #ifdef MPI_PARALLEL
-  using Simulation<ndim>::MpiGhosts;
+using SphSimulation<ndim>::MpiGhosts;
 #endif
 
 public:
 
   GodunovSphSimulation (Parameters* parameters): 
-    Simulation<ndim>(parameters) {};
+    SphSimulation<ndim>(parameters) {};
   virtual void PostInitialConditionsSetup(void);
   virtual void MainLoop(void);
   virtual void ComputeGlobalTimestep(void);
   virtual void ComputeBlockTimesteps(void);
+  virtual void ProcessSphParameters(void);
 
 };
 
@@ -477,7 +639,7 @@ class NbodySimulation : public Simulation<ndim>
   using SimulationBase::restart;
   using SimulationBase::simparams;
   using SimulationBase::timing;
-  using Simulation<ndim>::sph;
+  using Simulation<ndim>::extpot;
   using Simulation<ndim>::nbody;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
@@ -496,6 +658,9 @@ class NbodySimulation : public Simulation<ndim>
   using Simulation<ndim>::Nfullsteps;
   using Simulation<ndim>::Nlevels;
   using Simulation<ndim>::Nsteps;
+  using Simulation<ndim>::ndiagstep;
+  using Simulation<ndim>::sph;
+  using Simulation<ndim>::tmax_wallclock;
   using Simulation<ndim>::t;
   using Simulation<ndim>::timestep;
   using Simulation<ndim>::level_step;
@@ -515,6 +680,7 @@ public:
   virtual void MainLoop(void);
   virtual void ComputeGlobalTimestep(void);
   virtual void ComputeBlockTimesteps(void);
+  virtual void ProcessParameters(void);
 
 };
 

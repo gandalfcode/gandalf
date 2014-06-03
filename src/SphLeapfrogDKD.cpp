@@ -41,8 +41,8 @@ using namespace std;
 //  SphLeapfrogDKD::SphLeapfrogDKD
 /// SphLeapfrogDKD class constructor
 //=============================================================================
-template <int ndim>
-SphLeapfrogDKD<ndim>::SphLeapfrogDKD(DOUBLE accel_mult_aux, 
+template <int ndim, template <int> class ParticleType>
+SphLeapfrogDKD<ndim, ParticleType>::SphLeapfrogDKD(DOUBLE accel_mult_aux,
                                      DOUBLE courant_mult_aux,
                                      DOUBLE energy_mult_aux,
 				     eosenum gas_eos_aux,
@@ -58,8 +58,8 @@ SphLeapfrogDKD<ndim>::SphLeapfrogDKD(DOUBLE accel_mult_aux,
 //  SphLeapfrogDKD::~SphLeapfrog()
 /// SphLeapfrogDKD class destructor
 //=============================================================================
-template <int ndim>
-SphLeapfrogDKD<ndim>::~SphLeapfrogDKD()
+template <int ndim, template <int> class ParticleType>
+SphLeapfrogDKD<ndim, ParticleType>::~SphLeapfrogDKD()
 {
 }
 
@@ -74,62 +74,66 @@ SphLeapfrogDKD<ndim>::~SphLeapfrogDKD()
 /// If particle has reached the half-step, then set as active to compute 
 /// the 'kick' acceleration terms.
 //=============================================================================
-template <int ndim>
-void SphLeapfrogDKD<ndim>::AdvanceParticles
+template <int ndim, template <int> class ParticleType>
+void SphLeapfrogDKD<ndim, ParticleType>::AdvanceParticles
 (int n,                             ///< [in] Integer time in block time struct
  FLOAT timestep,                    ///< [in] Base timestep value
- Sph<ndim> *sph)                    ///< [inout] Pointer to SPH object
+ int Npart,                         ///< [in] Number of particles
+ SphParticle<ndim>* sph_gen)        ///< [inout] Pointer to SPH particle array
 {
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
   FLOAT dt;                         // Timestep since start of step
-  SphParticle<ndim> *part;          // SPH particle pointer
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphLeapfrogDKD::AdvanceParticles]");
   timing->StartTimingSection("SPH_LFDKD_ADVANCE_PARTICLES",2);
 
+
   // Advance positions and velocities of all SPH particles
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,dt,i,k,nstep,part)\
-  shared(n,sph,timestep)
-  for (i=0; i<sph->Nsph; i++) {
+#pragma omp parallel for default(none) private(dn,dt,i,k,nstep)\
+  shared(n,sphdata,timestep,Npart)
+  for (i=0; i<Npart; i++) {
+    SphParticle<ndim>& part = sphdata[i];
+    if (part.itype == dead) continue;
 
     // Compute time since beginning of current step
-    nstep = sph->sphintdata[i].nstep;
-    dn = n - sph->sphintdata[i].nlast;
+    nstep = part.nstep;
+    dn = n - part.nlast;
     dt = timestep*(FLOAT) dn;
-    part = sph->sphintdata[i].part;
 
     // Advance particle positions and velocities depending on if we're before 
     // or after the half-step.
     if (dn < nstep) {
       for (k=0; k<ndim; k++) 
-	part->r[k] = sph->sphintdata[i].r0[k] + sph->sphintdata[i].v0[k]*dt;
+	part.r[k] = part.r0[k] + part.v0[k]*dt;
       for (k=0; k<ndim; k++) 
-	part->v[k] = sph->sphintdata[i].v0[k] + part->a[k]*dt;
+	part.v[k] = part.v0[k] + part.a[k]*dt;
     }
     else {
       for (k=0; k<ndim; k++) 
-	part->v[k] = sph->sphintdata[i].v0[k] + part->a[k]*dt;
-      for (k=0; k<ndim; k++) part->r[k] = sph->sphintdata[i].r0[k] + 
-	0.5*(sph->sphintdata[i].v0[k] + part->v[k])*dt;
+	part.v[k] = part.v0[k] + part.a[k]*dt;
+      for (k=0; k<ndim; k++) part.r[k] = part.r0[k] +
+	0.5*(part.v0[k] + part.v[k])*dt;
     }
 
     // Integrate time-dependent viscosity
-    if (tdavisc != notdav) part->alpha += part->dalphadt*timestep;
+    if (tdavisc != notdav) part.alpha += part.dalphadt*timestep;
 
     // Integrate explicit energy equation
     if (gas_eos == energy_eqn) 
-      part->u = sph->sphintdata[i].u0 + part->dudt*dt;
+      part.u = part.u0 + part.dudt*dt;
 
     // Set particle as active at end of step
-    if (dn == nstep/2) part->active = true;
-    else part->active = false;
+    if (dn == nstep/2) part.active = true;
+    else part.active = false;
 
     // Flag all dead particles as inactive here
-    if (part->itype == dead) part->active = false;
+    if (part.itype == dead) part.active = false;
+
   }
   //---------------------------------------------------------------------------
 
@@ -144,11 +148,12 @@ void SphLeapfrogDKD<ndim>::AdvanceParticles
 //  SphLeapfrogDKD::CorrectionTerms
 /// Empty function.  No correction terms for Leapfrog drift-kick-drift scheme.
 //=============================================================================
-template <int ndim>
-void SphLeapfrogDKD<ndim>::CorrectionTerms
+template <int ndim, template <int> class ParticleType>
+void SphLeapfrogDKD<ndim, ParticleType>::CorrectionTerms
 (int n,                             ///< [in] Integer time in block time struct
  FLOAT timestep,                    ///< [in] Base timestep value
- Sph<ndim> *sph)                    ///< [inout] Pointer to SPH object
+ int Npart,                         ///< [in] Number of particles
+ SphParticle<ndim>* sph_gen)        ///< [inout] Pointer to SPH particle array
 {
   return;
 }
@@ -160,36 +165,40 @@ void SphLeapfrogDKD<ndim>::CorrectionTerms
 /// Record all important SPH particle quantities at the end of the step for  
 /// the start of the new timestep.
 //=============================================================================
-template <int ndim>
-void SphLeapfrogDKD<ndim>::EndTimestep
+template <int ndim, template <int> class ParticleType>
+void SphLeapfrogDKD<ndim, ParticleType>::EndTimestep
 (int n,                             ///< [in] Integer time in block time struct
  FLOAT timestep,                    ///< [in] Base timestep value
- Sph<ndim> *sph)                    ///< [inout] Pointer to SPH object
+ int Npart,                         ///< [in] Number of particles
+ SphParticle<ndim>* sph_gen)        ///< [inout] Pointer to SPH particle array
 {
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
-  SphParticle<ndim> *part;          // SPH particle pointer
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphLeapfrogDKD::EndTimestep]");
   timing->StartTimingSection("SPH_LFDKD_END_TIMESTEP",2);
 
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep,part) shared(n,sph)
-  for (i=0; i<sph->Nsph; i++) {
-    dn = n - sph->sphintdata[i].nlast;
-    nstep = sph->sphintdata[i].nstep;
-    part = sph->sphintdata[i].part;
+#pragma omp parallel for default(none) private(dn,i,k,nstep) \
+  shared(n,Npart,sphdata)
+  for (i=0; i<Npart; i++) {
+    SphParticle<ndim>& part = sphdata[i];
+    if (part.itype == dead) continue;
+
+    dn = n - part.nlast;
+    nstep = part.nstep;
 
     if (dn == nstep) {
-      for (k=0; k<ndim; k++) sph->sphintdata[i].r0[k] = part->r[k];
-      for (k=0; k<ndim; k++) sph->sphintdata[i].v0[k] = part->v[k];
-      for (k=0; k<ndim; k++) sph->sphintdata[i].a0[k] = part->a[k];
-      sph->sphintdata[i].nlast = n;
-      part->active = false;
+      for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
+      for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
+      for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
+      part.nlast = n;
+      part.active = false;
       if (gas_eos == energy_eqn) {
-	sph->sphintdata[i].u0 = part->u;
+	part.u0 = part.u;
       }
     }
   }
@@ -207,11 +216,13 @@ void SphLeapfrogDKD<ndim>::EndTimestep
 /// Record all important SPH particle quantities at the end of the step for  
 /// the start of the new timestep.
 //=============================================================================
-template <int ndim>
-int SphLeapfrogDKD<ndim>::CheckTimesteps
+template <int ndim, template <int> class ParticleType>
+int SphLeapfrogDKD<ndim, ParticleType>::CheckTimesteps
 (int level_diff_max,                ///< [in] Max. allowed SPH neib dt diff
+ int level_step,                    ///< [in] Level of base timestep
  int n,                             ///< [in] Integer time in block time struct
- Sph<ndim> *sph)                    ///< [inout] Pointer to SPH object
+ int Npart,                         ///< [in] Number of particles
+ SphParticle<ndim>* sph_gen)        ///< [inout] Pointer to SPH particle array
 {
   int activecount = 0;              // ..
   int dn;                           // Integer time since beginning of step
@@ -220,31 +231,38 @@ int SphLeapfrogDKD<ndim>::CheckTimesteps
   int level_new;                    // ..
   int nnewstep;                     // ..
   int nstep;                        // Particle (integer) step size
-  SphParticle<ndim> *part;          // SPH particle pointer
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphLeapfrogDKD::CheckTimesteps]");
   timing->StartTimingSection("SPH_LFDKD_CHECK_TIMESTEPS",2);
 
+
   //---------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,level_new,nnewstep,part)\
-  shared(level_diff_max,n,sph) reduction(+:activecount)
-  for (i=0; i<sph->Nsph; i++) {
-    dn = n - sph->sphintdata[i].nlast;
-    part = sph->sphintdata[i].part;
-    if (dn == sph->sphintdata[i].nstep) continue;
+
+#pragma omp parallel for default(none) private(dn,level_new,nnewstep)\
+  shared(level_diff_max,level_step,n,sphdata,Npart) reduction(+:activecount)
+  for (i=0; i<Npart; i++) {
+    SphParticle<ndim>& part = sphdata[i];
+    if (part.itype == dead) continue;
+
+    dn = n - part.nlast;
+    if (dn == part.nstep) continue;
 
     // Check if neighbour timesteps are too small.  If so, then reduce 
     // timestep if possible
-    if (part->levelneib - part->level > level_diff_max) {
-      level_new = part->levelneib - level_diff_max;
-      nnewstep = sph->sphintdata[i].nstep/pow(2,level_new - part->level);
+    if (part.levelneib - part.level > level_diff_max) {
+      level_new = part.levelneib - level_diff_max;
+      nnewstep = pow(2,level_step - level_new);
+      //nnewstep = part.nstep/pow(2,level_new - part.level);
 
       // If new level is correctly synchronised at the half-step of the 
       // new-step (where acceleration is computed), then change all quantities
-      if (2*dn == nnewstep) {
-        part->level = level_new;
-        sph->sphintdata[i].nstep = nnewstep;
-        part->active = true;
+      //if (2*dn == nnewstep) {
+      if ((2*dn)%nnewstep == 0) {
+        if (dn > 0) part.nstep = dn;
+        //part.nstep = nnewstep;
+        part.level = level_new;
+        part.active = true;
         activecount++;
       }
     }
@@ -259,6 +277,9 @@ int SphLeapfrogDKD<ndim>::CheckTimesteps
 
 
 // Template class instances for each dimensionality value (1, 2 and 3)
-template class SphLeapfrogDKD<1>;
-template class SphLeapfrogDKD<2>;
-template class SphLeapfrogDKD<3>;
+template class SphLeapfrogDKD<1, GradhSphParticle>;
+template class SphLeapfrogDKD<2, GradhSphParticle>;
+template class SphLeapfrogDKD<3, GradhSphParticle>;
+template class SphLeapfrogDKD<1, SM2012SphParticle>;
+template class SphLeapfrogDKD<2, SM2012SphParticle>;
+template class SphLeapfrogDKD<3, SM2012SphParticle>;
