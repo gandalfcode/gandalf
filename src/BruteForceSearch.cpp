@@ -923,7 +923,7 @@ template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::GetExportInfo (
     int Nproc,        ///< [in] Number of processor we want to send the information to
     Sph<ndim>*  sph,  ///< [in] Pointer to sph object
-    vector<ParticleType<ndim> >& particles_to_export )  ///< [inout] Vector where the particles to export will be stored
+    vector<char >& particles_to_export )  ///< [inout] Vector where the particles to export will be stored
     {
 
   //Find number of active particles
@@ -939,7 +939,7 @@ void BruteForceSearch<ndim,ParticleType>::GetExportInfo (
 
 
   particles_to_export.clear();
-  particles_to_export.resize(Nactive);
+  particles_to_export.resize(Nactive*sizeof(ParticleType<ndim>));
 
 //  //Copy positions of active particles inside arrays
 //  int j=0;
@@ -955,7 +955,7 @@ void BruteForceSearch<ndim,ParticleType>::GetExportInfo (
   int j=0;
   for (int i=0; i< sph->Nsph; i++) {
     if (sphdata[i].active) {
-        particles_to_export[j] = sphdata[i];
+        copy(&particles_to_export[j*sizeof(ParticleType<ndim>)] , &sphdata[i]);
       j++;
     }
   }
@@ -973,8 +973,8 @@ void BruteForceSearch<ndim,ParticleType>::GetExportInfo (
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::UnpackExported (
-    vector<ParticleType<ndim> >& received_array,
-    vector<int>& N_received_particles_from_proc,
+    vector<char >& received_array,
+    vector<int>& Nbytes_exported_from_proc,
     Sph<ndim>* sph,
     int rank) {
 
@@ -986,13 +986,14 @@ void BruteForceSearch<ndim,ParticleType>::UnpackExported (
 
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
 
-  for (int Nproc = 0; Nproc<N_received_particles_from_proc.size(); Nproc++) {
+  for (int Nproc = 0; Nproc<Nbytes_exported_from_proc.size(); Nproc++) {
 
-    int N_received_particles = N_received_particles_from_proc[Nproc];
+    int N_received_bytes = Nbytes_exported_from_proc[Nproc];
+    int N_received_particles = N_received_bytes/sizeof(ParticleType<ndim>);
 
     //Avoid inserting my own particles
     if (Nproc==rank) {
-      offset += N_received_particles;
+      offset += N_received_bytes;
       continue;
     }
 
@@ -1009,7 +1010,7 @@ void BruteForceSearch<ndim,ParticleType>::UnpackExported (
 
     //Copy received particles inside SPH main arrays
     for (int i=0; i<N_received_particles; i++) {
-      sphdata[i+sph->Ntot] = received_array[i+offset];
+      copy( &sphdata[i+sph->Ntot] , &received_array[i*sizeof(ParticleType<ndim>)+offset]);
     }
 
     //Update the SPH counters
@@ -1017,7 +1018,7 @@ void BruteForceSearch<ndim,ParticleType>::UnpackExported (
     sph->NImportedParticles += N_received_particles;
 
     //Update the offset
-    offset += N_received_particles;
+    offset += N_received_bytes;
 
   }
 
@@ -1030,21 +1031,21 @@ void BruteForceSearch<ndim,ParticleType>::UnpackExported (
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::GetBackExportInfo (
-    vector<ParticleType<ndim> >& send_buffer, ///< [inout] These arrays will be overwritten with the information to send
-    vector<int>& N_exported_particles_from_proc,
+    vector<char >& send_buffer, ///< [inout] These arrays will be overwritten with the information to send
+    vector<int>& Nbytes_exported_from_proc,
     Sph<ndim>* sph,   ///< [in] Pointer to the SPH object
     int rank
     ) {
 
   //loop over the processors, removing particles as we go
   int removed_particles=0;
-  for (int Nproc=0 ; Nproc < N_exported_particles_from_proc.size(); Nproc++ ) {
+  for (int Nproc=0 ; Nproc < Nbytes_exported_from_proc.size(); Nproc++ ) {
 
     //My local particles were not inserted
     if (rank==Nproc)
       continue;
 
-    const int N_received_particles = N_exported_particles_from_proc[Nproc];
+    const int N_received_particles = Nbytes_exported_from_proc[Nproc]/sizeof(ParticleType<ndim>);
 
 //    //Copy the accelerations and gravitational potential of the particles
 //    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
@@ -1061,7 +1062,7 @@ void BruteForceSearch<ndim,ParticleType>::GetBackExportInfo (
     int j=0;
     const int start_index = sph->Nsph + sph->Nghost + removed_particles;
     for (int i=start_index; i<start_index + N_received_particles; i++) {
-      send_buffer[removed_particles+j] = sphdata[i];
+      copy (&send_buffer[(removed_particles+j)*sizeof(ParticleType<ndim>)],&sphdata[i]);
       j++;
     }
 
@@ -1077,7 +1078,7 @@ void BruteForceSearch<ndim,ParticleType>::GetBackExportInfo (
 
   assert(sph->NImportedParticles == 0);
   assert(sph->Ntot == sph->Nsph + sph->Nghost);
-  assert(send_buffer.size() == removed_particles);
+  assert(send_buffer.size() == removed_particles*sizeof(ParticleType<ndim>));
 
 }
 
@@ -1088,7 +1089,7 @@ void BruteForceSearch<ndim,ParticleType>::GetBackExportInfo (
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::UnpackReturnedExportInfo (
-    vector<ParticleType<ndim> >& received_information,
+    vector<char >& received_information,
     vector<int>& recv_displs,
     Sph<ndim>* sph,
     int rank
@@ -1123,20 +1124,21 @@ void BruteForceSearch<ndim,ParticleType>::UnpackReturnedExportInfo (
       if (rank==Nproc)
         continue;
 
-      ParticleType<ndim>& received_particle = received_information[i+recv_displs[Nproc] ];
+      ParticleType<ndim>* received_particle = reinterpret_cast<ParticleType<ndim>*>
+      (&received_information[i * sizeof(ParticleType<ndim>) + recv_displs[Nproc] ]);
 
 
-      assert(sphdata[j].iorig == received_particle.iorig);
+      assert(sphdata[j].iorig == received_particle->iorig);
 
       for (int k=0; k<ndim; k++) {
-        sphdata[j].a[k] += received_particle.a[k];
-        sphdata[j].agrav[k] += received_particle.agrav[k];
+        sphdata[j].a[k] += received_particle->a[k];
+        sphdata[j].agrav[k] += received_particle->agrav[k];
       }
-      sphdata[j].gpot += received_particle.gpot;
-      sphdata[j].gpe += received_particle.gpe;
-      sphdata[j].dudt += received_particle.dudt;
-      sphdata[j].div_v += received_particle.div_v;
-      sphdata[j].levelneib = max(sphdata[j].levelneib, received_particle.levelneib);
+      sphdata[j].gpot += received_particle->gpot;
+      sphdata[j].gpe += received_particle->gpe;
+      sphdata[j].dudt += received_particle->dudt;
+      sphdata[j].div_v += received_particle->div_v;
+      sphdata[j].levelneib = max(sphdata[j].levelneib, received_particle->levelneib);
 
     }
 

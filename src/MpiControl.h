@@ -58,9 +58,6 @@ template <int ndim>
 class MpiControl
 {
  protected:
-  //Convenience functions to send and receive particles
-  //virtual void SendParticles(int Node, int Nparticles, int* list, SphParticle<ndim>* )=0;
-  //virtual void ReceiveParticles (int Node, int& Nparticles, SphParticle<ndim>** array)=0;
 
 
   MPI_Datatype box_type;             ///< Datatype for the box
@@ -74,9 +71,9 @@ class MpiControl
   std::vector<int> displacements_send;
   std::vector<int> num_particles_to_be_received;
   std::vector<int> receive_displs;
-  std::vector<int> N_exported_particles_from_proc;
+  std::vector<int> Nbytes_exported_from_proc;
   int tot_particles_to_receive;
-  int Nparticles_to_be_exported;
+  int Nbytes_to_be_exported;
 
   std::vector<Box<ndim> > boxes_buffer;     ///< Buffer needed by the UpdateAllBoundingBoxes routine
 
@@ -143,10 +140,10 @@ class MpiControlType : public MpiControl<ndim> {
   using MpiControl<ndim>::num_particles_to_be_received;
   using MpiControl<ndim>::receive_displs;
   using MpiControl<ndim>::tot_particles_to_receive;
-  using MpiControl<ndim>::N_exported_particles_from_proc;
+  using MpiControl<ndim>::Nbytes_exported_from_proc;
   using MpiControl<ndim>::ExportParticleType;
   using MpiControl<ndim>::ExportBackParticleType;
-  using MpiControl<ndim>::Nparticles_to_be_exported;
+  using MpiControl<ndim>::Nbytes_to_be_exported;
 
 
   void SendParticles(int Node, int Nparticles, int* list, ParticleType<ndim>* );
@@ -156,7 +153,7 @@ class MpiControlType : public MpiControl<ndim> {
 
   MPI_Datatype particle_type;        ///< Datatype for the particles
 
-  int received_exported_particles;   ///<Number of received exported particles
+  int Nbytes_received_exported;   ///<Number of bytes of received export information
 
 
   //Buffers needed to send and receive particles

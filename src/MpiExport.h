@@ -93,6 +93,25 @@ struct BytesChunk {
   int size;
 };
 
+template <class T>
+void copy (char* pointer, T* element) {
+  char*  element_unsafe = reinterpret_cast<char*> (element);
+  char* running_element = element_unsafe;
+  for (;running_element<element_unsafe+sizeof(T); running_element++, pointer++) {
+    *pointer = *running_element;
+  }
+}
+
+template <class T>
+void copy (T* element, char* pointer) {
+  char* element_unsafe = reinterpret_cast<char*> (element);
+  char* running_element = element_unsafe;
+  for (;running_element<element_unsafe+sizeof(T); running_element++, pointer++) {
+      *running_element = *pointer;
+    }
+
+}
+
 
 
 #endif /* MPIEXPORT_H_ */
