@@ -21,8 +21,8 @@
 //=============================================================================
 
 
-#ifndef _DOMAIN_BOX__H
-#define _DOMAIN_BOX__H
+#ifndef _DOMAIN_BOX_H_
+#define _DOMAIN_BOX_H_
 
 
 #include <string>
@@ -59,6 +59,7 @@ MPI_Datatype CreateBoxType (Box<ndim> dummy) {
 #endif
 
 
+
 //=============================================================================
 //  Structure DomainBox
 /// \brief  Bounding box data structure.
@@ -78,6 +79,7 @@ struct DomainBox {
   FLOAT boxsize[ndim];                  ///< Side-lengths of bounding box
   FLOAT boxhalf[ndim];                  ///< Half side-lengths of bounding box
 };
+
 
 
 //=============================================================================

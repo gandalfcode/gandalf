@@ -134,6 +134,7 @@ class MpiControlType : public MpiControl<ndim> {
   using MpiControl<ndim>::mpinode;
   using MpiControl<ndim>::mpibox;
   using MpiControl<ndim>::rank;
+  using MpiControl<ndim>::neibsearch;
   using MpiControl<ndim>::Nloadbalance;
   using MpiControl<ndim>::timing;
 
@@ -150,7 +151,7 @@ class MpiControlType : public MpiControl<ndim> {
 
 
   void SendParticles(int Node, int Nparticles, int* list, ParticleType<ndim>* );
-  void ReceiveParticles (int Node, int& Nparticles, ParticleType<ndim>** array);
+  void ReceiveParticles(int Node, int& Nparticles, ParticleType<ndim>** array);
 
   std::vector<ParticleType<ndim> > sendbuffer; ///< Used by the SendParticles routine
 
@@ -175,7 +176,7 @@ public:
 
   virtual void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters* , DomainBox<ndim>, bool&);
   virtual void LoadBalancing(Sph<ndim> *, Nbody<ndim> *);
-  int SendReceiveGhosts(ParticleType<ndim>** array, Sph<ndim>* sph);
+  int SendReceiveGhosts(const FLOAT, Sph<ndim> *,ParticleType<ndim>**);
   int UpdateGhostParticles(ParticleType<ndim>** array);
   virtual void ExportParticlesBeforeForceLoop (Sph<ndim>* sph);
   virtual void GetExportedParticlesAccelerations (Sph<ndim>* sph);

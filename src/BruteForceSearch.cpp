@@ -802,8 +802,8 @@ void BruteForceSearch<ndim,ParticleType>::SearchBoundaryGhostParticles
 template <int ndim, template<int> class ParticleType>
 int BruteForceSearch<ndim,ParticleType>::SearchMpiGhostParticles
 (const FLOAT tghost,                ///< [in] Expected ghost life-time
- const DomainBox<ndim> &mpibox,     ///< [in] Bounding box of MPI domain
- Sph<ndim> *sph,              ///< [in] Pointer to SPH object
+ const Box<ndim> &mpibox,           ///< [in] Bounding box of MPI domain
+ Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
  vector<int> &export_list)          ///< [out] List of particle ids
 {
   int i;
@@ -834,10 +834,60 @@ int BruteForceSearch<ndim,ParticleType>::SearchMpiGhostParticles
 
   }
   //---------------------------------------------------------------------------
-    
-
-    return Nexport;
+  
+  return Nexport;
 }
+
+
+
+//=============================================================================
+//  BruteForceSearch::FindMpiTransferParticles
+/// Compute on behalf of the MpiControl class the particles that are outside 
+/// the domain after a load balancing and need to be transferred to other nodes
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::FindMpiTransferParticles
+(Sph<ndim>* sph,                            ///< [in] Pointer to sph class
+ vector<vector<int> >& particles_to_export, ///< [inout] Vector that for each 
+                                            ///< node gives the list of particles to export
+ vector<int>& all_particles_to_export,      ///< [inout] Vector containing all the particles that will be exported by this processor
+ const vector<int>& potential_nodes,        ///< [in] Vector containing the potential nodes we might be sending particles to
+ MpiNode<ndim>* mpinodes)                   ///< [in] Array of other mpi nodes
+{
+  int i;
+  int inode;
+  int node_number;
+  ParticleType<ndim> *sphdata = 
+    static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
+
+
+  // Loop over particles and prepare the ones to export
+  //---------------------------------------------------------------------------
+  for (i=0; i<sph->Nsph; i++) {
+    ParticleType<ndim>& part = sphdata[i];
+
+    // Loop over potential domains and see if we need to transfer 
+    // this particle to them
+    //-------------------------------------------------------------------------
+    for (inode=0; inode<potential_nodes.size(); inode++) {
+      node_number = potential_nodes[inode];
+
+      // If particle belongs to this domain, add to vector and break from loop
+      if (ParticleInBox(part,mpinodes[node_number].domain)) {
+        particles_to_export[node_number].push_back(i);
+        all_particles_to_export.push_back(i);
+        break;
+      }
+
+    }
+    //-------------------------------------------------------------------------
+
+  }
+  //---------------------------------------------------------------------------
+
+  return;
+}
+
 
 
 

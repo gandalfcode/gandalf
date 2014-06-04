@@ -1037,17 +1037,22 @@ void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations (Sph<n
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
-(ParticleType<ndim>** array,        ///< Main SPH particle array
- Sph<ndim>* sph)                    ///< Main SPH object pointer
+(const FLOAT tghost,                ///< Ghost 'lifetime'
+ Sph<ndim>* sph,                    ///< Main SPH object pointer
+ ParticleType<ndim>** array)        ///< Main SPH particle array
 {
   int i;                            // Particle counter
+  int iaux;                         // ..
   int index;                        // ..
   int iparticle;                    // ..
+  int j;                            // ..
   int Nexport;                      // ..
   int Npart;                        // ..
   int running_counter;              // ..
   int inode;                        // MPI node index
   vector<int> overlapping_nodes;    // List of nodes that overlap this domain
+  vector<int> ghost_export_list;    // List of particles ids to be exported
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
 
   if (rank == 0) debug2("[MpiControl::SendReceiveGhosts]");
 
@@ -1069,10 +1074,26 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
 
   // Ask the neighbour search class to compute the list of particles to export
   // For now, hard-coded the BruteForce class
+  //BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,
+  //				                 &mpibox,sph->kernp,timing);
+
+  /*for (iaux=0; iaux<overlapping_nodes.size(); iaux++) {
+    inode = overlapping_nodes[iaux];
+    ghost_export_list.clear();
+    Nexport = neibsearch->SearchMpiGhostParticles(tghost,mpinode[inode].domain,
+						  sph,ghost_export_list);
+    for (j=0; j<ghost_export_list.size(); j++) {
+      i = ghost_export_list[j];
+      particles_to_export_per_node[inode].push_back(&sphdata[i]);
+    }
+    }*/
+
+
   BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,
 				                 &mpibox,sph->kernp,timing);
   bruteforce.FindGhostParticlesToExport(sph,particles_to_export_per_node,
                                         overlapping_nodes,mpinode);
+
 
   // Prepare arrays with no. of particles to export per node and displacements
   fill(num_particles_export_per_node.begin(),

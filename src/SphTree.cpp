@@ -1937,8 +1937,8 @@ void SphTree<ndim, ParticleType >::SearchBoundaryGhostParticles
 template <int ndim, template<int> class ParticleType>
 int SphTree<ndim,ParticleType>::SearchMpiGhostParticles
 (const FLOAT tghost,                ///< [in] Expected ghost life-time
- const DomainBox<ndim> &mpibox,     ///< [in] Bounding box of MPI domain
- Sph<ndim> *sph,              ///< [in] Pointer to SPH object
+ const Box<ndim> &mpibox,           ///< [in] Bounding box of MPI domain
+ Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
  vector<int> &export_list)          ///< [out] List of particle ids
 {
   int c;                            // Cell counter
@@ -2001,6 +2001,86 @@ int SphTree<ndim,ParticleType>::SearchMpiGhostParticles
 
 
   return Nexport;
+}
+
+
+
+//=============================================================================
+//  SphTree::FindMpiTransferParticles
+/// ..
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void SphTree<ndim,ParticleType>::FindMpiTransferParticles
+(Sph<ndim>* sph,                            ///< [in] Pointer to sph class
+ vector<vector<int> >& particles_to_export, ///< [inout] Vector that for each 
+ ///< node gives the list of particles to export
+ vector<int>& all_particles_to_export,      ///< [inout] Vector containing all the particles that will be exported by this processor
+ const vector<int>& potential_nodes,        ///< [in] Vector containing the potential nodes we might be sending particles to
+ MpiNode<ndim>* mpinodes)                   ///< [in] Array of other mpi nodes
+{
+  int c;
+  int i;
+  int inode;
+  int node_number;
+  KDTreeCell<ndim> *cell;
+  ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
+
+
+  // Loop over potential domains and walk the tree for each bounding box
+  //-------------------------------------------------------------------------
+  for (inode=0; inode<potential_nodes.size(); inode++) {
+    node_number = potential_nodes[inode];
+    
+    Box<ndim>& nodebox = mpinodes[node_number].domain;
+
+
+    // Start from root-cell
+    c = 0;
+    
+    //-------------------------------------------------------------------------
+    while (c < Ncell) {
+      cell = &(tree->kdcell[c]);
+
+      // If maximum cell scatter box overlaps MPI domain, open cell
+      //-----------------------------------------------------------------------
+      if (tree->BoxOverlap(cell->bbmin,cell->bbmax,
+                           nodebox.boxmin,nodebox.boxmax)) {
+
+	// If not a leaf-cell, then open cell to first child cell
+	if (cell->level != tree->ltot)
+	  c++;
+	
+	else if (cell->N == 0)
+	  c = cell->cnext;
+	
+	// If leaf-cell, check through particles in turn to find ghosts and 
+	// add to list to be exported
+	else if (cell->level == tree->ltot) {
+	  i = cell->ifirst;
+	  while (i != -1) {
+	    if (ParticleInBox(sphdata[i],mpinodes[node_number].domain)) {
+	      particles_to_export[node_number].push_back(i);
+	      all_particles_to_export.push_back(i);
+	    }
+	    if (i == cell->ilast) break;
+	    i = tree->inext[i];
+	  };
+	  c = cell->cnext;
+	}
+      }
+      
+      // If not in range, then open next cell
+      //-----------------------------------------------------------------------
+      else
+	c = cell->cnext;
+      
+    }
+    //-------------------------------------------------------------------------
+
+  }
+  //---------------------------------------------------------------------------
+
+  return;
 }
 #endif
 
