@@ -1072,27 +1072,23 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
     particles_to_export_per_node[inode].clear();
   }
 
-  // Ask the neighbour search class to compute the list of particles to export
-  // For now, hard-coded the BruteForce class
-  //BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,
-  //				                 &mpibox,sph->kernp,timing);
 
-  /*for (iaux=0; iaux<overlapping_nodes.size(); iaux++) {
+  for (iaux=0; iaux<overlapping_nodes.size(); iaux++) {
     inode = overlapping_nodes[iaux];
     ghost_export_list.clear();
     Nexport = neibsearch->SearchMpiGhostParticles(tghost,mpinode[inode].domain,
-						  sph,ghost_export_list);
+  						  sph,ghost_export_list);
     for (j=0; j<ghost_export_list.size(); j++) {
       i = ghost_export_list[j];
       particles_to_export_per_node[inode].push_back(&sphdata[i]);
     }
-    }*/
+  }
 
 
-  BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,
-				                 &mpibox,sph->kernp,timing);
-  bruteforce.FindGhostParticlesToExport(sph,particles_to_export_per_node,
-                                        overlapping_nodes,mpinode);
+  //BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,
+  //			                 &mpibox,sph->kernp,timing);
+  //bruteforce.FindGhostParticlesToExport(sph,particles_to_export_per_node,
+  //                                overlapping_nodes,mpinode);
 
 
   // Prepare arrays with no. of particles to export per node and displacements
