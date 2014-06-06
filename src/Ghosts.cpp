@@ -203,7 +203,7 @@ void MPIGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
   int i;
   int j;
   ParticleType<ndim>* ghost_array;
-  int Nmpighosts = mpicontrol->SendReceiveGhosts(&ghost_array, sph);
+  int Nmpighosts = mpicontrol->SendReceiveGhosts(tghost,sph,&ghost_array);
 
   if (sph->Ntot + Nmpighosts > sph->Nsphmax) {
     cout << "Error: not enough memory for MPI ghosts!!! " << Nmpighosts 
@@ -216,7 +216,7 @@ void MPIGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
 
   for (j=0; j<Nmpighosts; j++) {
     i = start_index + j;
-    main_array[i] =  ghost_array[j];
+    main_array[i] = ghost_array[j];
     main_array[i].active = false;
   }
 

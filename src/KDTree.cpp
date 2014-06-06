@@ -54,6 +54,8 @@ KDTree<ndim,ParticleType>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
 {
   allocated_tree = false;
   ltot           = 0;
+  Ncell          = 0;
+  Ncellmax       = 0;
   Ntot           = 0;
   Ntotmax        = 0;
   Ntotmaxold     = 0;
@@ -1254,10 +1256,8 @@ int KDTree<ndim,ParticleType>::ComputeGatherNeighbourList
 
   //for (k=0; k<ndim; k++) cout << "gather : " << gatherboxmin[k] << "   " << gatherboxmax[k] << endl;
   //cout << "Nneib : " << Nneib << "    " << Nneibmax << endl;
-  //cout << "Ncell : " << Ncell << "    " << ltot << endl;
-
-
-
+  //cout << "Ncell : " << Ncell << "    " << ltot << "    " << Ntot <<endl;
+  //cin >> i;
 
   // Start with root cell and walk through entire tree
   cc = 0;
@@ -1266,9 +1266,9 @@ int KDTree<ndim,ParticleType>::ComputeGatherNeighbourList
   while (cc < Ncell) {
 
     //cout << "cc : " << cc << "   " << Ncell << "   " 
-    // << BoxOverlap(gatherboxmin,gatherboxmax,
-    //	       kdcell[cc].bbmin,kdcell[cc].bbmax) << "   "
-    // << kdcell[cc].cnext << endl;
+    //<< BoxOverlap(gatherboxmin,gatherboxmax,
+    //       kdcell[cc].bbmin,kdcell[cc].bbmax) << "   "
+    //<< kdcell[cc].cnext << endl;
     //cin >> i;
 
     // Check if bounding boxes overlap with each other

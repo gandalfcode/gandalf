@@ -45,6 +45,7 @@ using namespace std;
 
 #if defined MPI_PARALLEL
 #include "MpiExport.h"
+#include "MpiNode.h"
 #endif
 
 
@@ -110,8 +111,11 @@ class SphNeighbourSearch
 #ifdef MPI_PARALLEL
   virtual void BuildMpiGhostTree(bool, int, int, int, int, int, 
                                  SphParticle<ndim> *, Sph<ndim> *, FLOAT) = 0;
-  virtual int SearchMpiGhostParticles(const FLOAT, const DomainBox<ndim> &, 
+  virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &, 
                                       Sph<ndim> *, vector<int> &) = 0;
+  virtual void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
+                                        vector<int>&, const vector<int>&, 
+					MpiNode<ndim>*) = 0;
 #endif
 
 
@@ -190,11 +194,17 @@ protected:
   //                           vector<vector<int> > &);
   void BuildMpiGhostTree(bool, int, int, int, int, int, 
                          SphParticle<ndim> *, Sph<ndim> *, FLOAT) {};
-  int SearchMpiGhostParticles(const FLOAT, const DomainBox<ndim> &,
+  int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                               Sph<ndim> *, vector<int> &);
+  void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
+				vector<int>&, const vector<int>&, 
+				MpiNode<ndim>*);
 
-  void FindGhostParticlesToExport(Sph<ndim>* sph, std::vector<std::vector<ParticleType<ndim>* > >&,
-      const std::vector<int>&, MpiNode<ndim>*);
+
+  void FindGhostParticlesToExport(Sph<ndim>* sph, 
+                                  vector<vector<ParticleType<ndim>* > >&,
+                                  const vector<int>&, MpiNode<ndim>*);
+
   void FindParticlesToTransfer(Sph<ndim>* sph, std::vector<std::vector<int> >& particles_to_export,
       std::vector<int>& all_particles_to_export, const std::vector<int>& potential_nodes, MpiNode<ndim>* mpinodes);
   void GetExportInfo(int Nproc, Sph<ndim>* sph, vector<ParticleType<ndim> >&);
@@ -370,8 +380,11 @@ class SphTree: public SphNeighbourSearch<ndim>
 #ifdef MPI_PARALLEL
   void BuildMpiGhostTree(bool, int, int, int, int, int, 
                          SphParticle<ndim> *, Sph<ndim> *, FLOAT);
-  int SearchMpiGhostParticles(const FLOAT, const DomainBox<ndim> &,
+  int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                               Sph<ndim> *, vector<int> &);
+  void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
+				vector<int>&, const vector<int>&, 
+				MpiNode<ndim>*);
 #endif
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(int, int, int, int *, 

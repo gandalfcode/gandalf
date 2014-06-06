@@ -316,6 +316,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,
                                       sph->GetParticlesArray(),sph,nbody);
     }
+    else 
+      sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
+                         sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
+                         sph,timestep);
 
 #ifdef MPI_PARALLEL
     mpicontrol->UpdateAllBoundingBoxes(sph->Nsph, sph, sph->kernp);
