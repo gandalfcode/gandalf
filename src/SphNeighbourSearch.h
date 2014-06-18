@@ -113,9 +113,11 @@ class SphNeighbourSearch
                                  SphParticle<ndim> *, Sph<ndim> *, FLOAT) = 0;
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &, 
                                       Sph<ndim> *, vector<int> &) = 0;
+  virtual int SearchHydroExportParticles(const Box<ndim> &,
+                                         Sph<ndim> *, vector<int> &) = 0;
   virtual void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
-                                        vector<int>&, const vector<int>&, 
-					MpiNode<ndim>*) = 0;
+                                        vector<int>&, const vector<int>&,
+                                        MpiNode<ndim>*) = 0;
 #endif
 
 
@@ -196,11 +198,11 @@ protected:
                          SphParticle<ndim> *, Sph<ndim> *, FLOAT) {};
   int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                               Sph<ndim> *, vector<int> &);
+  int SearchHydroExportParticles(const Box<ndim> &,
+                                 Sph<ndim> *, vector<int> &);
   void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
-				vector<int>&, const vector<int>&, 
-				MpiNode<ndim>*);
-
-
+                                vector<int>&, const vector<int>&,
+                                MpiNode<ndim>*);
   void FindGhostParticlesToExport(Sph<ndim>* sph, 
                                   vector<vector<ParticleType<ndim>* > >&,
                                   const vector<int>&, MpiNode<ndim>*);
@@ -382,9 +384,11 @@ class SphTree: public SphNeighbourSearch<ndim>
                          SphParticle<ndim> *, Sph<ndim> *, FLOAT);
   int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                               Sph<ndim> *, vector<int> &);
+  int SearchHydroExportParticles(const Box<ndim> &,
+                                 Sph<ndim> *, vector<int> &);
   void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
-				vector<int>&, const vector<int>&, 
-				MpiNode<ndim>*);
+                                vector<int>&, const vector<int>&,
+                                MpiNode<ndim>*);
 #endif
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(int, int, int, int *, 

@@ -209,8 +209,8 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
       // Compute distances and the reciprical between the current particle 
       // and all neighbours here
       //-----------------------------------------------------------------------
-      for (jj=0; jj<Nneib; jj++) { 
-	j = neiblist[jj];
+      for (jj=0; jj<Nneib; jj++) {
+        j = neiblist[jj];
     	for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - rp[k];
     	drsqd[jj] = DotProduct(dr,dr,ndim);
       }
@@ -835,6 +835,52 @@ int BruteForceSearch<ndim,ParticleType>::SearchMpiGhostParticles
   }
   //---------------------------------------------------------------------------
   
+  return Nexport;
+}
+
+
+
+//=============================================================================
+//  BruteForceSearch::SearchHydroExportParticles
+/// Compute on behalf of the MpiControl class the ghost particles we need
+/// to export to other nodes.
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+int BruteForceSearch<ndim,ParticleType>::SearchHydroExportParticles
+(const Box<ndim> &mpibox,           ///< [in] Bounding box of MPI domain
+ Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
+ vector<int> &export_list)          ///< [out] List of particle ids
+{
+  int i;
+  int k;
+  int Nexport = 0;                  // No. of MPI ghosts to export
+  FLOAT scattermin[ndim];
+  FLOAT scattermax[ndim];
+  const FLOAT grange = ghost_range*kernrange;
+  ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* >
+  (sph->GetParticlesArray());
+    
+  // Loop over particles and prepare the ones to export
+  //---------------------------------------------------------------------------
+  for (i=0; i<sph->Nsph; i++) {
+    ParticleType<ndim>& part = sphdata[i];
+        
+    // Construct maximum cell bounding box depending on particle velocities
+    for (k=0; k<ndim; k++) {
+      scattermin[k] = part.r[k] - grange*part.h;
+      scattermax[k] = part.r[k] + grange*part.h;
+    }
+        
+    // If maximum cell scatter box overlaps MPI domain, open cell
+    if (BoxOverlap(ndim,scattermin,scattermax,mpibox.boxmin,mpibox.boxmax) &&
+        part.active) {
+      export_list.push_back(i);
+      Nexport++;
+    }
+        
+  }
+  //---------------------------------------------------------------------------
+    
   return Nexport;
 }
 
