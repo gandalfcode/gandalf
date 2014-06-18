@@ -130,6 +130,7 @@ struct SphParticle : public Particle<ndim>
   FLOAT div_v;                      ///< Velocity divergence
   FLOAT alpha;                      ///< Artificial viscosity alpha value
   FLOAT dalphadt;                   ///< Rate of change of alpha
+  FLOAT ionfrac;                    ///< Ionisation fraction
   FLOAT adot[ndim];                 ///< 1st time derivative of acceleration
 
 
@@ -149,6 +150,7 @@ struct SphParticle : public Particle<ndim>
     div_v = (FLOAT) 0.0;
     alpha = (FLOAT) 0.0;
     dalphadt = (FLOAT) 0.0;
+    ionfrac = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) adot[k] = (FLOAT) 0.0;
   }
 

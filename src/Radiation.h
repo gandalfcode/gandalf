@@ -34,6 +34,7 @@
 #include <ostream>
 #include "CodeTiming.h"
 #include "EnergyEquation.h"
+#include "EOS.h"
 #include "DomainBox.h"
 #include "KDRadiationTree.h"
 #include "Nbody.h"
@@ -127,6 +128,7 @@ class Radiation
                                     SinkParticle<ndim> *) = 0;
 
   CodeTiming *timing;               ///< Pointer to code timing object
+  SimUnits *units;                  ///< Pointer to code units object
 
 };
 
@@ -176,7 +178,7 @@ class MultipleSourceIonisation : public Radiation<ndim>
 /// \author  D. A. Hubber, A. P. Whitworth
 /// \date    25/04/2014
 //=============================================================================
-template <int ndim, template<int> class ParticleType, template<int> class CellType>
+template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 class TreeMonteCarlo : public Radiation<ndim>
 {
   using Radiation<ndim>::timing;
@@ -209,9 +211,69 @@ class TreeMonteCarlo : public Radiation<ndim>
   FLOAT packetenergy;                           // Energy in photon packet
   RandomNumber *randnumb;                       // Random number object pointer
 
-  KDRadiationTree<ndim,ParticleType,CellType> *radtree;  // Radiation tree
+  KDRadiationTree<ndim,nfreq,ParticleType,CellType> *radtree;  // Rad. tree
 
 };
+
+
+
+//=============================================================================
+//  Class MonochromaticIonisationMonteCarlo
+/// \brief   Class that propagates radiation through KD-tree
+/// \details Class that propagates radiation through KD-tree
+/// \author  D. A. Hubber, A. P. Whitworth
+/// \date    25/04/2014
+//=============================================================================
+template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
+class MonochromaticIonisationMonteCarlo : public Radiation<ndim>
+{
+  using Radiation<ndim>::timing;
+
+ public:
+
+
+  // Constructor and destructor
+  //---------------------------------------------------------------------------
+  MonochromaticIonisationMonteCarlo(int, int, FLOAT, DOUBLE, RandomNumber *, 
+                                    SimUnits *, EOS<ndim> *);
+  ~MonochromaticIonisationMonteCarlo();
+
+
+  // Function prototypes
+  //---------------------------------------------------------------------------
+  virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *, 
+                                    NbodyParticle<ndim> **, 
+                                    SinkParticle<ndim> *) ;
+  void IterateRadiationField(int, int, int, int, SphParticle<ndim> *, 
+                             NbodyParticle<ndim> **, SinkParticle<ndim> *) ;
+  PhotonPacket<ndim> GenerateNewPhotonPacket(RadiationSource<ndim> &);
+  void ScatterPhotonPacket(PhotonPacket<ndim> &);
+  bool UpdateIonisationFraction(void);
+
+
+  // Variables
+  //---------------------------------------------------------------------------
+  int Nphoton;                      // No. of photon packets
+  FLOAT boundaryradius;             // Radius from which isotropic 
+                                    // photons are emitted.
+  FLOAT across;                     // Photoionisation cross-section
+  FLOAT arecomb;                    // Recombination coefficient
+  FLOAT Eion;                       // Ionisation energy
+  FLOAT invEion;                    // 1 / Eion
+  FLOAT packetenergy;               // Energy in photon packet
+  FLOAT temp_ion;                   // ..
+  DOUBLE invmh;                     // ..
+  DOUBLE ionconst;                  // ..
+  DOUBLE NLyC;                      // No. of ionising photons per second
+  RandomNumber *randnumb;           // Random number object pointer
+  SimUnits *units;                  // ..
+  EOS<ndim> *eos;                   // Pointer to main EOS object
+
+  KDRadiationTree<ndim,nfreq,ParticleType,CellType> *radtree;  // Rad. tree
+
+};
+
+
 
 
 

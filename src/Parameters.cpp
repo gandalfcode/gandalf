@@ -330,6 +330,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["mu_ion"] = 0.678;
   floatparams["temp_ion"] = 1e4;
   floatparams["Ndotmin"] = 1e47;
+  floatparams["NLyC"] = 1e49;
 
   // Boundary conditions parameters
   //---------------------------------------------------------------------------

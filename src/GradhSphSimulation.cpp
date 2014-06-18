@@ -240,8 +240,12 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
        floatparams["gamma_eos"],pow(simunits.r.outscale*simunits.r.outcgs,3.)/
        pow(simunits.m.outscale*simunits.m.outcgs,2.),simunits.temp.outscale);
   else if (gas_radiation == "treemc")
-    radiation = new TreeMonteCarlo<ndim,GradhSphParticle,KDRadTreeCell>
+    radiation = new TreeMonteCarlo<ndim,1,GradhSphParticle,KDRadTreeCell>
       (intparams["Nphoton"],intparams["Nleafmax"],randnumb);
+  else if (gas_radiation == "monoionisation")
+    radiation = new MonochromaticIonisationMonteCarlo<ndim,1,GradhSphParticle,MonoIonTreeCell>
+      (intparams["Nphoton"],intparams["Nleafmax"],floatparams["temp_ion"],
+       floatparams["NLyC"],randnumb,&simunits,sph->eos);
   else if (gas_radiation == "none")
     radiation = new NullRadiation<ndim>();
   else {

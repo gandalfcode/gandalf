@@ -1,5 +1,5 @@
 //=============================================================================
-//  TreeMonteCarlo.cpp
+//  MonochromaticIonisationMonteCarlo.cpp
 //  Class for controlling Monte-Carlo radiation transport algorithms walking 
 //  a KD-tree constructed from the gas positions.
 //
@@ -31,6 +31,7 @@
 #include <cstring>
 #include <math.h>
 #include "Precision.h"
+#include "Constants.h"
 #include "Radiation.h"
 #include "Debug.h"
 using namespace std;
@@ -38,38 +39,73 @@ using namespace std;
 
 
 //=============================================================================
-//  TreeMonteCarlo::TreeMonteCarlo()
-/// Constructor for KD-tree radiation class
+//  MonochromaticIonisationMonteCarlo::MonochromaticIonisationMonteCarlo()
+/// Constructor for ..
 //=============================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
-TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::TreeMonteCarlo
-(int Nphotonaux, int Nleafmaxaux, RandomNumber *randaux)
+MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::MonochromaticIonisationMonteCarlo
+(int Nphotonaux, int Nleafmaxaux, FLOAT tempionaux, DOUBLE NLyCaux, 
+ RandomNumber *randaux, SimUnits *unitsaux, EOS<ndim> *eosaux)
 {
-  Nphoton = Nphotonaux;
   randnumb = randaux;
+  units    = unitsaux;
+  Nphoton  = Nphotonaux;
+  NLyC     = 1.0e49; //NLyCaux;
+  temp_ion = tempionaux/units->temp.outscale;
+
+  ionconst = NLyC*m_hydrogen*1.0e3*7.9e-18*units->r.outscale*units->r.outcgs/
+    (units->m.outscale*units->m.outcgs*2.7e-13*(FLOAT) Nphoton);
+
+  cout << "Rstromgren   : " << pow(3.0*m_hydrogen*m_hydrogen*NLyC/(4.0*pi*2.7e-19*1.6e-17*1.6e-17),onethird)/r_pc << endl;
+  cout << "Opacity      : " << 7.9e-22*1.6e-17/m_hydrogen << endl;
+
+
+  // Set all physical values here (scaled to dimensionless units)
+  NLyC         = NLyC*units->t.outscale*units->t.outSI;
+  Eion         = 13.6*e_charge/units->E.outscale/units->E.outSI;
+  invEion      = 1.0/Eion;
+  packetenergy = Eion*NLyC/(FLOAT) Nphoton;
+  across       = 7.9e-18/pow(units->r.outscale*units->r.outcgs,2);
+  arecomb      = 2.7e-13*units->t.outscale*units->t.outcgs/
+    pow(units->r.outscale*units->r.outcgs,3);
+  invmh        = units->m.outscale*units->m.outSI/m_hydrogen;
+
+  cout << "Rstromgren2  : " 
+       << pow(3.0*NLyC/(4.0*pi*arecomb*invmh*invmh*pow(1.6e-17/(units->rho.outscale*units->rho.outSI),2)),onethird)*units->r.outscale << endl;
+
+
+  cout << "Eion         : " << Eion << endl;
+  cout << "invEion      : " << invEion << endl;
+  cout << "packetenergy : " << packetenergy << "   " << NLyC 
+       << "    " << NLyCaux << "   " << Nphoton << endl;
+  cout << "across       : " << across << endl;
+  cout << "arecomb      : " << arecomb << endl;
+  cout << "invmh        : " << invmh << endl;
+  //exit(0);
+
   radtree = new KDRadiationTree<ndim,nfreq,ParticleType,CellType>(Nleafmaxaux);
 }
 
 
 
 //=============================================================================
-//  TreeMonteCarlo::~TreeMonteCarlo()
+//  MonochromaticIonisationMonteCarlo::~MonochromaticIonisationMonteCarlo()
 /// Destructor for KD-tree radiation class
 //=============================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
-TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::~TreeMonteCarlo()
+MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::~MonochromaticIonisationMonteCarlo()
 {
 }
 
 
 
 //=============================================================================
-//  TreeMonteCarlo::UpdateRadiationField
+//  MonochromaticIonisationMonteCarlo::UpdateRadiationField
 /// Update the radiation field by iterating the MCRT method on the tree 
 /// several times until acceptable convergence has been achieved.
 //=============================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
-void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
+void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
 (int Nsph,                          ///< No. of SPH particle
  int Nnbody,                        ///< No. of N-body particles
  int Nsink,                         ///< No. of sink particles
@@ -77,21 +113,24 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
  NbodyParticle<ndim> **nbodydata,   ///< N-body data array
  SinkParticle<ndim> *sinkdata)      ///< Sink data array
 {
+  bool converged;                   // Is radiation field converged?
   int c;                            // Cell counter
+  int i;
   int isource;                      // Radiation source i.d.
+  int it;                           // Iteration counter
   int k;                            // Dimension counter
   int level;                        // Level to walk tree on
   RadiationSource<ndim> source;     // Current radiation source
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* >(sph_gen);
 
 
-  debug2("[TreeMonteCarlo::UpdateRadiationField]");
+  debug2("[MonochromaticIonisationMonteCarlo::UpdateRadiationField]");
  
 
   // Re-build radiation tree from scratch
-  timing->StartTimingSection("RADTREE_BUILD",2);
+  timing->StartTimingSection("IONTREE_BUILD",2);
   radtree->BuildTree(Nsph,Nsph,sphdata);
-  timing->EndTimingSection("RADTREE_BUILD");
+  timing->EndTimingSection("IONTREE_BUILD");
 
   // Compute maximum radius of cell extent from co-ordinate centre, in order 
   // to know where to emit external photons from
@@ -105,18 +144,60 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
   // Perform single iteration step on computing radiation field
   timing->StartTimingSection("RADTREE_MONTE_CARLO",2);
   level = radtree->ltot;
-  IterateRadiationField(level,Nsph,Nnbody,Nsink,sph_gen,nbodydata,sinkdata);
+
+  int Nit = 1;
+
+  // Set initial opacities of cells
+  for (c=0; c<radtree->Ncell; c++) {
+    radtree->radcell[c].opacity[0] = (1.0 - radtree->radcell[c].Xold)*
+      across*radtree->radcell[c].rho*invmh;
+  }
+
+  //for (c=0; c<radtree->Ncell; c++) 
+  //cout << "Opacities : " << c << "   " << radtree->radcell[c].opacity[0] << endl;
+
+
+  // Main Monte Carlo iteration loop  
+  //---------------------------------------------------------------------------
+  for (it=0; it<Nit; it++) {
+
+    for (c=0; c<radtree->Ncell; c++) radtree->radcell[c].lsum[0] = 0.0;
+
+
+    // Perform one iteration step of the radiation field
+    IterateRadiationField(level,Nsph,Nnbody,Nsink,sph_gen,nbodydata,sinkdata);
+
+    // Update the radiation field on all higher cells
+    radtree->SumRadiationField(level,radtree->radcell[0]);
+
+    // Update ionisation fractions and check if converged
+    converged = UpdateIonisationFraction();
+
+    // If converged early, exit iteration loop
+    if (converged) {
+      cout << "Converged radiation field in " << it << " iteration(s)" << endl;
+      //break;
+    }
+
+  }
+  //---------------------------------------------------------------------------
+
+
   timing->EndTimingSection("RADTREE_MONTE_CARLO");
 
 
-  // Update the radiation field on all higher cells
-  radtree->SumRadiationField(level,radtree->radcell[0]);
 
-
-  // Normalise photon energy density for all cells
-  //for (c=0; c<radtree->Ncell; c++)
-  //radtree->radcell[c].uphoton = 
-  //  radtree->radcell[c].lsum/radtree->radcell[c].volume;
+  // Set thermal properties of all particles in leaf cells
+  for (c=0; c<radtree->Ncell; c++) {
+    if (radtree->radcell[c].level == level) {
+      i = radtree->radcell[c].ifirst;
+      while (i != -1) {
+	sphdata[i].ionfrac = radtree->radcell[c].Xion;
+	if (i == radtree->radcell[c].ilast) break;
+	i = radtree->inext[i];
+      };
+    }
+  }
 
 
   // Output info to file for plotting
@@ -137,8 +218,15 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
 	  radtree->radcell[c].N == 0) continue;
       outfile << sqrt(DotProduct(radtree->radcell[c].rcell,
 				 radtree->radcell[c].rcell,ndim)) << "   "
-	      << radtree->radcell[c].lsum[0]/radtree->radcell[c].volume 
-	      << "    " << radtree->radcell[c].Nphoton << "    " 
+	      << radtree->radcell[c].Xion << "   " 
+	      << radtree->radcell[c].Xold << "   " 
+	      << radtree->radcell[c].opacity[0]/(units->r.outscale*units->r.outSI) << "   " 
+	      << pow(units->r.outscale*units->r.outcgs,2)*
+	radtree->radcell[c].opacity[0]/radtree->radcell[c].rho/invmh << "   " 
+	      << radtree->radcell[c].lsum[0] << "   " 
+	      << radtree->radcell[c].temp << "   " 
+	      << radtree->radcell[c].rho << "   " 
+	      << radtree->radcell[c].Nphoton << "    " 
 	      << radtree->radcell[c].N << "    " 
 	      << radtree->radcell[c].volume << endl;
     }
@@ -152,12 +240,12 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
 
 
 //=============================================================================
-//  TreeMonteCarlo::IterateRadiationField
+//  MonochromaticIonisationMonteCarlo::IterateRadiationField
 /// Single iteration step for updating the radiation field using the 
 /// tree-MCRT method.
 //=============================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
-void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
+void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
 (int level,                         ///< Level to walk tree on
  int Nsph,                          ///< No. of SPH particle
  int Nnbody,                        ///< No. of N-body particles
@@ -192,7 +280,6 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
   for (k=0; k<ndim; k++) source.r[k] = 0.0;
   source.c = radtree->FindCell(0,level,source.r);
   source.luminosity = 1.0;
-  packetenergy = source.luminosity/(FLOAT) Nphoton;
   kfreq = 0;
 
   cout << "Source located at : " << source.c << "   " 
@@ -229,6 +316,12 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
 					      photon.r,photon.eray,
 					      photon.inveray,dpath);
 
+      /*cout << "Photon will travel : " << tau << "   " << taumax << "   " 
+	   << (taumax - tau)/radtree->radcell[photon.c].opacity[kfreq] 
+	   << "   " << dpath << "   " 
+	   << radtree->radcell[photon.c].opacity[kfreq] << endl;
+	   cin >> k;*/
+
       // Check if maximum optical depth has been reached in order to 
       // scatter or absorb/re-emit photon.
       //-----------------------------------------------------------------------
@@ -238,19 +331,11 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
         dpath = (taumax - tau)/radtree->radcell[photon.c].opacity[kfreq];
         for (k=0; k<ndim; k++) photon.r[k] += dpath*photon.eray[k];
 #pragma omp atomic
-        radtree->radcell[photon.c].lsum[kfreq] += packetenergy*dpath;
+        radtree->radcell[photon.c].lsum[kfreq] += dpath; //packetenergy*dpath;
 #pragma omp atomic
         radtree->radcell[photon.c].Nphoton++;
 
-        // Scatter photon (isotropic scattering for now)
-        ScatterPhotonPacket(photon);
-
-	// Calculate new optical depth to be travelled by scattered photon
-	rand1 = randnumb->floatrand();
-	taumax = -log(rand1);
-	tau = 0.0;
-	Nscattercount++;
-
+	break;
       }
 
       // Otherwise, photon continues through cell and exits to adjacent cell
@@ -261,7 +346,7 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
         // radiation field of cell
         for (k=0; k<ndim; k++) photon.r[k] += dpath*photon.eray[k];
 #pragma omp atomic
-        radtree->radcell[photon.c].lsum[kfreq] += packetenergy*dpath;
+        radtree->radcell[photon.c].lsum[kfreq] += dpath; //packetenergy*dpath;
 #pragma omp atomic
         radtree->radcell[photon.c].Nphoton++;
         //radtree->radcell[photon.c].uphoton += packetenergy*dpath;
@@ -320,12 +405,74 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
 
 
 //=============================================================================
-//  TreeMonteCarlo::GenerateNewPhotonPacket
+//  MonochromaticIonisationMonteCarlo::UpdateIonisationFraction
 /// Create a new photon packet for a given radiation source. 
 /// Currently only implements point sources.
 //=============================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
-PhotonPacket<ndim> TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::GenerateNewPhotonPacket
+bool MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateIonisationFraction(void)
+{
+  bool converged = true;
+  int c;
+  int k;
+  int Nconverged = 0;
+  FLOAT nfrac;
+  MonoIonTreeCell<ndim,nfreq> *cell;
+
+
+  //---------------------------------------------------------------------------
+  for (c=0; c<radtree->Ncell; c++) {
+    cell = &(radtree->radcell[c]);
+
+    // Record old ionisation fraction to later test convergence
+    for (int j=0; j<20; j++) {
+    cell->Xold = cell->Xion + small_number;
+    
+    // Compute new ionisation fraction and temperature
+    //nfrac = NLyC*across*cell->lsum[0]/(Nphoton*arecomb*invmh*cell->volume*cell->rho*cell->Xold);
+    nfrac = ionconst*cell->lsum[0]/(cell->volume*cell->rho*cell->Xold);
+    cell->Xion = nfrac/(1.0 + nfrac);
+    cell->temp = temp_ion*cell->Xion;
+    cell->opacity[0] = ((FLOAT) 1.0 - cell->Xion)*across*cell->rho*invmh;
+
+    }
+
+    //cout << "Ionisation fraction : " << cell->Xion << "    " << nfrac 
+    // << "    " << nelectron << "    " << cell->opacity[0] << endl;
+
+    // Check if ionisation fraction has converged or not
+    if (cell->Xion < small_number && cell->Xold < small_number) {
+      Nconverged++;
+      continue;
+    }
+    else if (cell->Xion > small_number && 
+	     fabs(cell->Xion - cell->Xold)/cell->Xion > 0.1) 
+      converged = false;
+    else if (cell->Xold > small_number && 
+	     fabs(cell->Xion - cell->Xold)/cell->Xold > 0.1) 
+      converged = false;
+    else 
+      Nconverged++;
+    
+  }
+  //---------------------------------------------------------------------------
+
+  cout << "Cell ionisation fractions converged? : " << converged << "   " 
+       << Nconverged << "    " << radtree->Ncell << "   " 
+       << (FLOAT) Nconverged / (FLOAT) radtree->Ncell << endl;
+
+  return converged;
+}
+
+
+
+//=============================================================================
+//  MonochromaticIonisationMonteCarlo::GenerateNewPhotonPacket
+/// Create a new photon packet for a given radiation source. 
+/// Currently only implements point sources.
+//=============================================================================
+template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
+PhotonPacket<ndim> MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::GenerateNewPhotonPacket
 (RadiationSource<ndim> &source)
 {
   int k;                            // Dimension counter
@@ -383,11 +530,11 @@ PhotonPacket<ndim> TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::GenerateNew
 
 
 //=============================================================================
-//  TreeMonteCarlo::ScatterPhotonPacket
+//  MonochromaticIonisationMonteCarlo::ScatterPhotonPacket
 /// Scatter photon packet inot random, isotropic direction.
 //=============================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
-void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::ScatterPhotonPacket
+void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::ScatterPhotonPacket
 (PhotonPacket<ndim> &photon)        ///< [inout] Reference to photon packet
 {
   int k;                            // Dimension counter
@@ -408,12 +555,7 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::ScatterPhotonPacket
 
 
 
-template class TreeMonteCarlo<1,1,GradhSphParticle,KDRadTreeCell>;
-template class TreeMonteCarlo<2,1,GradhSphParticle,KDRadTreeCell>;
-template class TreeMonteCarlo<3,1,GradhSphParticle,KDRadTreeCell>;
-//template class TreeMonteCarlo<1,SM2012SphParticle>;
-//template class TreeMonteCarlo<2,SM2012SphParticle>;
-//template class TreeMonteCarlo<3,SM2012SphParticle>;
-//template class TreeMonteCarlo<1,GodunovSphParticle>;
-//template class TreeMonteCarlo<2,GodunovSphParticle>;
-//template class TreeMonteCarlo<3,GodunovSphParticle>;
+template class MonochromaticIonisationMonteCarlo<1,1,GradhSphParticle,MonoIonTreeCell>;
+template class MonochromaticIonisationMonteCarlo<2,1,GradhSphParticle,MonoIonTreeCell>;
+template class MonochromaticIonisationMonteCarlo<3,1,GradhSphParticle,MonoIonTreeCell>;
+

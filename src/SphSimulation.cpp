@@ -163,6 +163,17 @@ void SphSimulation<ndim>::ProcessParameters(void)
 				           floatparams["gamma_eos"],
 				           floatparams["rho_bary"],
 				           &simunits,sphneib);
+  else if ((gas_eos == "energy_eqn" || gas_eos == "constant_temp" ||
+       gas_eos == "isothermal" || gas_eos == "barotropic" ||
+       gas_eos == "barotropic2") && gas_radiation == "monoionisation")
+    sph->eos = new MCRadiationEOS<ndim>(gas_eos,
+                                        floatparams["temp0"],
+                                        floatparams["temp_ion"],
+				        floatparams["mu_bar"],
+				        floatparams["mu_ion"],
+				        floatparams["gamma_eos"],
+				        floatparams["rho_bary"],
+				        &simunits);
   else if (gas_eos == "energy_eqn" || gas_eos == "constant_temp")
     sph->eos = new Adiabatic<ndim>(floatparams["temp0"],
 				   floatparams["mu_bar"],
@@ -444,8 +455,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
                        sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
     // Update the radiation field
-    radiation->UpdateRadiationField(sph->Nsph, nbody->Nnbody, sinks.Nsink,
-				    partdata, nbody->nbodydata, sinks.sink);
+    for (int jj=0; jj<5; jj++)
+      radiation->UpdateRadiationField(sph->Nsph, nbody->Nnbody, sinks.Nsink,
+				      partdata, nbody->nbodydata, sinks.sink);
 
     // Update thermal properties (if radiation field has altered them)
     for (i=0; i<sph->Nsph;i++) {
@@ -619,8 +631,11 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
       // Update the radiation field
-      radiation->UpdateRadiationField(sph->Nsph, nbody->Nnbody, sinks.Nsink,
-                                      partdata, nbody->nbodydata, sinks.sink);
+      if (Nsteps%4 == 0) {
+	radiation->UpdateRadiationField(sph->Nsph, nbody->Nnbody, sinks.Nsink,
+					partdata, nbody->nbodydata, sinks.sink);
+	for (i=0; i<sph->Nsph; i++) sph->ComputeThermalProperties(partdata[i]);
+      }
 
 
       // Copy properties from original particles to ghost particles

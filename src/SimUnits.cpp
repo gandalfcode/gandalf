@@ -390,6 +390,7 @@ DOUBLE EnergyUnit::SIUnit(string unit_string)
   if (unit_string == "J") return 1.0;
   else if (unit_string == "erg") return 1.0e-7;
   else if (unit_string == "GJ") return 1.0e12;
+  else if (unit_string == "eV") return e_charge;
   else if (unit_string == "10^40erg") return 1.0e33;
   else if (unit_string == "") return 1.0;
   else {
@@ -410,6 +411,7 @@ string EnergyUnit::LatexLabel(string unit_string)
   if (unit_string == "J") return "J";
   else if (unit_string == "erg") return "erg";
   else if (unit_string == "GJ") return "GJ";
+  else if (unit_string == "eV") return "eV";
   else if (unit_string == "10^40erg") return "10^{40}\\,erg";
   else return "";
 }

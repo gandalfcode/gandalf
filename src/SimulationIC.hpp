@@ -747,6 +747,7 @@ void Simulation<ndim>::UniformSphere(void)
 
   // Local copies of important parameters
   int Npart = simparams->intparams["Nsph"];
+  FLOAT mcloud = simparams->floatparams["mcloud"];
   FLOAT radius = simparams->floatparams["radius"];
   FLOAT rhofluid = simparams->floatparams["rhofluid1"];
   FLOAT press = simparams->floatparams["press1"];
@@ -754,6 +755,12 @@ void Simulation<ndim>::UniformSphere(void)
   string particle_dist = simparams->stringparams["particle_distribution"];
 
   debug2("[Simulation::UniformSphere]");
+
+  mcloud /= simunits.m.outscale;
+  radius /= simunits.r.outscale;
+  rhofluid /= simunits.rho.outscale;
+  press /= simunits.press.outscale;
+
 
   r = new FLOAT[ndim*Npart];
 
@@ -782,6 +789,10 @@ void Simulation<ndim>::UniformSphere(void)
   if (ndim == 1) volume = 2.0*radius;
   else if (ndim == 2) volume = pi*radius*radius;
   else if (ndim == 3) volume = 4.0*onethird*pi*pow(radius,3);
+  //if (mcloud > small_number && radius > small_number) 
+  //  rhofluid = mcloud / volume;
+  rhofluid = mcloud / volume;
+
 
   // Record particle positions and initialise all other variables
 #pragma omp parallel for default(none)\
@@ -793,7 +804,8 @@ void Simulation<ndim>::UniformSphere(void)
       part.v[k] = (FLOAT) 0.0;
       part.a[k] = (FLOAT) 0.0;
     }
-    part.m = rhofluid*volume / (FLOAT) Npart;
+    //part.m = rhofluid*volume / (FLOAT) Npart;
+    part.m = mcloud / (FLOAT) Npart;  
     part.h = sph->h_fac*pow(part.m/rhofluid,invndim);
     part.u = press/rhofluid/gammaone;
     part.iorig = i;
