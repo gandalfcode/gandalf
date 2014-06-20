@@ -796,7 +796,7 @@ void Simulation<ndim>::UniformSphere(void)
 
   // Record particle positions and initialise all other variables
 #pragma omp parallel for default(none)\
-  shared(gammaone,Npart,press,r,rhofluid,volume) private(i,k)
+  shared(gammaone,mcloud,Npart,press,r,rhofluid,volume) private(i,k)
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->GetParticleIPointer(i);
     for (k=0; k<ndim; k++) {

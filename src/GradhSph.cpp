@@ -548,7 +548,10 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
   //---------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
+
     assert(neibpart[j].itype != dead);
+    assert(neibpart[j].h > 0.0);
+    assert(neibpart[j].rho > 0.0);
 
     for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
     for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
@@ -735,7 +738,7 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
 (int i,                             ///< id of particle
  int Ndirect,                       ///< No. of nearby 'gather' neighbours
  int *directlist,                   ///< id of gather neighbour in neibpart
- SphParticle<ndim> &parti,          ///< Particle i data
+ SphParticle<ndim> &part,           ///< Particle i data
  SphParticle<ndim> *sph_gen)            ///< Neighbour particle data
 {
   int j;                            // Neighbour particle id
@@ -747,7 +750,8 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
   FLOAT invdr3;                     // 1 / dist^3
   FLOAT rp[ndim];                   // Local copy of particle position
 
-  GradhSphParticle<ndim>* sph = static_cast<GradhSphParticle<ndim>* > (sph_gen);
+  GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
+  GradhSphParticle<ndim>* sphdata = static_cast<GradhSphParticle<ndim>* > (sph_gen);
 
   for (k=0; k<ndim; k++) rp[k] = parti.r[k];
 
@@ -755,16 +759,16 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
   //---------------------------------------------------------------------------
   for (jj=0; jj<Ndirect; jj++) {
     j = directlist[jj];
-    assert(sph[j].itype != dead);
+    assert(sphdata[j].itype != dead);
 
-    for (k=0; k<ndim; k++) dr[k] = sph[j].r[k] - parti.r[k];
+    for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - parti.r[k];
     drsqd = DotProduct(dr,dr,ndim) + small_number;
     invdrmag = 1.0/sqrt(drsqd);
     invdr3 = invdrmag*invdrmag*invdrmag;
 
     // Add contribution to current particle
-    for (k=0; k<ndim; k++) parti.agrav[k] += sph[j].m*dr[k]*invdr3;
-    parti.gpot += sph[j].m*invdrmag;
+    for (k=0; k<ndim; k++) parti.agrav[k] += sphdata[j].m*dr[k]*invdr3;
+    parti.gpot += sphdata[j].m*invdrmag;
 
   }
   //---------------------------------------------------------------------------
@@ -782,7 +786,7 @@ template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::ComputeStarGravForces
 (int N,                             ///< No. of stars
  NbodyParticle<ndim> **nbodydata,   ///< Array of star pointers
- SphParticle<ndim> &parti)          ///< SPH particle reference
+ SphParticle<ndim> &part)           ///< SPH particle reference
 {
   int j;                            // Star counter
   int k;                            // Dimension counter
@@ -794,6 +798,7 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
   FLOAT invdrmag;                   // 1 / drmag
   FLOAT invhmean;                   // 1 / hmean
   FLOAT paux;                       // Aux. force variable
+  GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
 
   // Loop over all stars and add each contribution
   //---------------------------------------------------------------------------

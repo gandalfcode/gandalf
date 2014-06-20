@@ -95,8 +95,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
  Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
  Nbody<ndim> *nbody)                ///< [in] Pointer to N-body object
 {
-  int celldone;                     // ..
-  int okflag;                       // ..
+  int celldone;                     // Flag if cell is done
+  int okflag;                       // Flag if particle is done
   int cc;                           // Aux. cell counter
   int cactive;                      // No. of active
   int i;                            // Particle id
@@ -117,9 +117,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
   FLOAT rp[ndim];                   // Local copy of particle position
   FLOAT *drsqd;                     // Position vectors to gather neibs
   FLOAT *gpot;                      // Potential for particles
-  FLOAT *gpot2;                     // ..
+  FLOAT *gpot2;                     // Reduced gpot array for efficiency
   FLOAT *m;                         // Distances to gather neibs
-  FLOAT *m2;                        // ..
+  FLOAT *m2;                        // Reduced m array for efficiency
   FLOAT *mu;                        // mass*u for gather neibs
   FLOAT *mu2;                       // ..
   FLOAT *r;                         // Positions of neibs
@@ -330,7 +330,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   int Nneibmax;                     // Max. no. of neighbours
   int *activelist;                  // List of active particle ids
   int *interactlist;                // List of interactng SPH neighbours
-  int *levelneib;                   // ..
+  int *levelneib;                   // Array of longest neighbour timesteps
   int *neiblist;                    // List of neighbour ids
   FLOAT draux[ndim];                // Aux. relative position vector
   FLOAT drsqd;                      // Distance squared
@@ -341,8 +341,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   FLOAT *invdrmag;                  // Array of 1/drmag between particles
   KDTreeCell<ndim> *cell;           // Pointer to binary tree cell
   KDTreeCell<ndim> **celllist;      // List of binary tree pointers
-  ParticleType<ndim> *activepart;   // ..
-  ParticleType<ndim> *neibpart;     // ..
+  ParticleType<ndim> *activepart;   // Local array of active particles
+  ParticleType<ndim> *neibpart;     // Local array of neighbouring particles
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[GradhSphTree::UpdateAllSphHydroForces]");
@@ -568,7 +568,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
   int okflag;                       // Flag if h-rho iteration is valid
   int Nactive;                      // No. of active particles in cell
   int Ndirect;                      // No. of direct-sum gravity particles
-  int Ndirectaux;                   // ..
+  int Ndirectaux;                   // Aux. direct-sum neighbour counter
   int Ndirectmax;                   // Max. no. of direct sum particles
   int Ngravcell;                    // No. of gravity cells
   int Ngravcellmax;                 // Max. no. of gravity cells
@@ -578,18 +578,18 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
   int *activelist;                  // List of active particle ids
   int *directlist;                  // List of direct sum particle ids
   int *interactlist;                // List of interacting neighbour ids
-  int *levelneib;                   // ..
+  int *levelneib;                   // Array of maximum neighbour timesteps
   int *neiblist;                    // List of neighbour ids
   FLOAT macfactor;                  // Gravity MAC factor
   FLOAT draux[ndim];                // Aux. relative position vector
   FLOAT drsqd;                      // Distance squared
   FLOAT hrangesqdi;                 // Kernel gather extent
-  FLOAT rp[ndim];                   // .. 
+  FLOAT rp[ndim];                   // Local copy of particle position
   KDTreeCell<ndim> *cell;           // Pointer to kd-tree cell
   KDTreeCell<ndim> **celllist;      // List of pointers to kd-tree cells
   KDTreeCell<ndim> **gravcelllist;  // List of pointers to grav. cells
-  ParticleType<ndim> *activepart;   // ..
-  ParticleType<ndim> *neibpart;     // ..
+  ParticleType<ndim> *activepart;   // Local array of active particles
+  ParticleType<ndim> *neibpart;     // Local array of neighbouring particles
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[GradhSphTree::UpdateAllSphForces]");
@@ -832,14 +832,14 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
   int cactive;                      // No. of active cells
   int cc;                           // Aux. cell counter
   int i;                            // Particle id
-  int ithread;                      // ..
+  int ithread;                      // OpenMP thread id
   int j;                            // Aux. particle counter
   int jj;                           // Aux. particle counter
   int k;                            // Dimension counter
   int okflag;                       // Flag if h-rho iteration is valid
   int Nactive;                      // No. of active particles in cell
   int Ndirect;                      // No. of direct-sum gravity particles
-  int Ndirectaux;                   // ..
+  int Ndirectaux;                   // Aux. direct sum particle counter
   int Ndirectmax;                   // Max. no. of direct sum particles
   int Ngravcell;                    // No. of gravity cells
   int Ngravcellmax;                 // Max. no. of gravity cells
@@ -849,18 +849,18 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
   int *activelist;                  // List of active particle ids
   int *directlist;                  // List of direct sum particle ids
   int *interactlist;                // List of interacting neighbour ids
-  int *levelneib;                   // ..
+  int *levelneib;                   // Max. neighbour timestep level array
   int *neiblist;                    // List of neighbour ids
   FLOAT draux[ndim];                // Aux. relative position vector
   FLOAT drsqd;                      // Distance squared
   FLOAT hrangesqdi;                 // Kernel gather extent
   FLOAT macfactor;                  // Gravity MAC factor
-  FLOAT rp[ndim];                   // .. 
+  FLOAT rp[ndim];                   // Local copy of particle position
   KDTreeCell<ndim> *cell;           // Pointer to binary tree cell
   KDTreeCell<ndim> **celllist;      // List of pointers to binary tree cells
   KDTreeCell<ndim> **gravcelllist;  // List of pointers to grav. cells
-  ParticleType<ndim> *activepart;   // ..
-  ParticleType<ndim> *neibpart;     // ..
+  ParticleType<ndim> *activepart;   // Local array containing active particles
+  ParticleType<ndim> *neibpart;     // Local array containing neighbours
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[GradhSphTree::UpdateAllSphGravForces]");

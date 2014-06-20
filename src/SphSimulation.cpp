@@ -634,7 +634,10 @@ void SphSimulation<ndim>::MainLoop(void)
       if (Nsteps%4 == 0) {
 	radiation->UpdateRadiationField(sph->Nsph, nbody->Nnbody, sinks.Nsink,
 					partdata, nbody->nbodydata, sinks.sink);
-	for (i=0; i<sph->Nsph; i++) sph->ComputeThermalProperties(partdata[i]);
+	for (i=0; i<sph->Nsph; i++) {
+	  SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+	  sph->ComputeThermalProperties(part);
+	}
       }
 
 
