@@ -385,7 +385,25 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     //sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
   }
-
+    
+#ifdef MPI_PARALLEL
+/*    for (i=0; i<sph->Nsph; i++) {
+        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        part.active = true;
+    }
+    cout << "Bounding box : " << mpicontrol->mpinode[rank].domain.boxmin[0] << "   " << mpicontrol->mpinode[rank].domain.boxmax[0] << endl;
+    
+    for (int j=0; j<Nmpi; j++) {
+        if (rank == j) continue;
+        cout << "Neib box : " << j << "   " << mpicontrol->mpinode[j].domain.boxmin[0] << "   " << mpicontrol->mpinode[j].domain.boxmax[0] << endl;    vector<int> export_list;
+        sphneib->SearchHydroExportParticles(mpicontrol->mpinode[j].domain,sph,export_list);
+        cout << "Found " << export_list.size() << " particle(s) for exporting to domain " << j << endl;
+        for (int i=0; i<export_list.size(); i++)
+            cout << "part : " << export_list[i] << endl;
+    }
+    exit(0);*/
+#endif
+    
 
   // Compute all initial N-body terms
   //---------------------------------------------------------------------------
@@ -495,6 +513,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   this->CalculateDiagnostics();
   this->diag0 = this->diag;
   this->setup = true;
+    
+    
+
+    
 
   return;
 }

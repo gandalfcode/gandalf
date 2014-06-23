@@ -117,6 +117,8 @@ protected:
                                  SphParticle<ndim> *, Sph<ndim> *, FLOAT) = 0;
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &, 
                                       Sph<ndim> *, vector<int> &) = 0;
+  virtual int SearchHydroExportParticles(const Box<ndim> &,
+                                         Sph<ndim> *, vector<int> &) = 0;
   virtual void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
                                         vector<int>&, const vector<int>&, 
 					MpiNode<ndim>*) = 0;
@@ -205,11 +207,11 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
                          SphParticle<ndim> *, Sph<ndim> *, FLOAT) {};
   int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                               Sph<ndim> *, vector<int> &);
+  int SearchHydroExportParticles(const Box<ndim> &,
+                                 Sph<ndim> *, vector<int> &);
   void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
-				vector<int>&, const vector<int>&, 
-				MpiNode<ndim>*);
-
-
+                                vector<int>&, const vector<int>&,
+                                MpiNode<ndim>*);
   void FindGhostParticlesToExport(Sph<ndim>* sph, 
                                   vector<vector<ParticleType<ndim>* > >&,
                                   const vector<int>&, MpiNode<ndim>*);
@@ -397,6 +399,8 @@ protected:
                          SphParticle<ndim> *, Sph<ndim> *, FLOAT);
   int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                               Sph<ndim> *, vector<int> &);
+  int SearchHydroExportParticles(const Box<ndim> &,
+                                 Sph<ndim> *, vector<int> &);
   void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
 				vector<int>&, const vector<int>&, 
 				MpiNode<ndim>*);

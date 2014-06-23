@@ -380,7 +380,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   if (cactive == 0) return;
 
   // Update ghost tree smoothing length values here
-  ghosttree->UpdateHmaxValues(tree->kdcell[0],sphdata);
+  if (ghosttree->Ntot > 0)
+    ghosttree->UpdateHmaxValues(ghosttree->kdcell[0],sphdata);
 
 
   // Set-up all OMP threads
@@ -625,7 +626,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
   timing->StartTimingSection("SPH_ALL_FORCES",2);
 
   // Update ghost tree smoothing length values here
-  ghosttree->UpdateHmaxValues(tree->kdcell[0],sphdata);
+  if (ghosttree->Ntot > 0)
+    ghosttree->UpdateHmaxValues(ghosttree->kdcell[0],sphdata);
 
   // Find list of all cells that contain active particles
 #if defined (MPI_PARALLEL)
@@ -899,7 +901,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
   timing->StartTimingSection("SPH_GRAV_FORCES",2);
 
   // Update ghost tree smoothing length values here
-  ghosttree->UpdateHmaxValues(tree->kdcell[0],sphdata);
+  if (ghosttree->Ntot > 0)
+    ghosttree->UpdateHmaxValues(ghosttree->kdcell[0],sphdata);
 
   // Find list of all cells that contain active particles
 #if defined (MPI_PARALLEL)
