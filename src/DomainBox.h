@@ -67,15 +67,16 @@ MPI_Datatype CreateBoxType (Box<ndim> dummy) {
 /// \date   03/04/2013
 //=============================================================================
 template <int ndim>
-struct DomainBox {
+struct DomainBox : public Box<ndim>
+{
   string x_boundary_lhs;                ///< x-dimension LHS boundary condition
   string x_boundary_rhs;                ///< x-dimension RHS boundary condition
   string y_boundary_lhs;                ///< y-dimension LHS boundary condition
   string y_boundary_rhs;                ///< y-dimension RHS boundary condition
   string z_boundary_lhs;                ///< z-dimension LHS boundary condition
   string z_boundary_rhs;                ///< z-dimension RHS boundary condition
-  FLOAT boxmin[ndim];                   ///< Minimum bounding box extent
-  FLOAT boxmax[ndim];                   ///< Maximum bounding box extent
+  //FLOAT boxmin[ndim];                   ///< Minimum bounding box extent
+  //FLOAT boxmax[ndim];                   ///< Maximum bounding box extent
   FLOAT boxsize[ndim];                  ///< Side-lengths of bounding box
   FLOAT boxhalf[ndim];                  ///< Half side-lengths of bounding box
 };

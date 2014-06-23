@@ -1914,7 +1914,7 @@ void KDTree<ndim,ParticleType>::ComputeFastMonopoleForces
   if (ndim == 3) {
 
     for (cc=0; cc<Ngravcell; cc++) {
-#ifndef(MPI_PARALLEL)
+#ifndef MPI_PARALLEL
       assert(cell->id != gravcelllist[cc]->id);
 #endif
       mc = gravcelllist[cc]->m;
