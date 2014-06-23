@@ -424,13 +424,16 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).active = true;
 
     LocalGhosts->CopySphDataToGhosts(simbox,sph);
+
+    sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
+                       sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
+		       sph,timestep);
+
 #ifdef MPI_PARALLEL
 //    MpiGhosts->CopySphDataToGhosts(simbox,sph);
     mpicontrol->ExportParticlesBeforeForceLoop(sph);
 #endif
-    sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
-                       sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
-		       sph,timestep);
+
 
     // Update the radiation field
     radiation->UpdateRadiationField(sph->Nsph, nbody->Nnbody, sinks.Nsink,

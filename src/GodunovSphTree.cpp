@@ -311,6 +311,9 @@ void GodunovSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
   delete[] celllist;
 
+  // Update tree smoothing length values here
+  tree->UpdateHmaxValues(tree->kdcell[0],sphdata);
+
   timing->EndTimingSection("SPH_PROPERTIES");
 
   return;
@@ -366,14 +369,17 @@ void GodunovSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
 
   // Find list of all cells that contain active particles
+#if defined (MPI_PARALLEL)
+  celllist = new KDTreeCell<ndim>*[tree->Ncellmax];
+#else
   celllist = new KDTreeCell<ndim>*[tree->gtot];
-  cactive = tree->ComputeActiveCellList(celllist);
+#endif  cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
   if (cactive == 0) return;
 
-  // Update tree smoothing length values here
-  tree->UpdateHmaxValues(tree->kdcell[0],sphdata);
+  // Update ghost tree smoothing length values here
+  ghosttree->UpdateHmaxValues(tree->kdcell[0],sphdata);
 
 
   // Set-up all OMP threads
@@ -615,12 +621,15 @@ void GodunovSphTree<ndim,ParticleType>::UpdateAllSphForces
   debug2("[GodunovSphTree::UpdateAllSphForces]");
   timing->StartTimingSection("SPH_ALL_FORCES",2);
 
-  // Update tree smoothing length values here
-  tree->UpdateHmaxValues(tree->kdcell[0],sphdata);
+  // Update ghosttree smoothing length values here
+  ghosttree->UpdateHmaxValues(tree->kdcell[0],sphdata);
 
   // Find list of all cells that contain active particles
+#if defined (MPI_PARALLEL)
+  celllist = new KDTreeCell<ndim>*[tree->Ncellmax];
+#else
   celllist = new KDTreeCell<ndim>*[tree->gtot];
-  cactive = tree->ComputeActiveCellList(celllist);
+#endif  cactive = tree->ComputeActiveCellList(celllist);
 
 
   // Set-up all OMP threads
@@ -885,12 +894,15 @@ void GodunovSphTree<ndim,ParticleType>::UpdateAllSphGravForces
   debug2("[GodunovSphTree::UpdateAllSphGravForces]");
   timing->StartTimingSection("SPH_GRAV_FORCES",2);
 
-  // Update tree smoothing length values here
-  tree->UpdateHmaxValues(tree->kdcell[0],sphdata);
+  // Update ghost tree smoothing length values here
+  ghosttree->UpdateHmaxValues(tree->kdcell[0],sphdata);
 
   // Find list of all cells that contain active particles
+#if defined (MPI_PARALLEL)
+  celllist = new KDTreeCell<ndim>*[tree->Ncellmax];
+#else
   celllist = new KDTreeCell<ndim>*[tree->gtot];
-  cactive = tree->ComputeActiveCellList(celllist);
+#endif  cactive = tree->ComputeActiveCellList(celllist);
 
 
   // Set-up all OMP threads

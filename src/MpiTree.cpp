@@ -258,6 +258,21 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
     return;
   }
 
+  i = cell.ifirst;
+  for (k=0; k< ndim; k++) {
+    cell.bbmin[k]=+big_number;
+    cell.bbmax[k] = -big_number;
+  }
+  for (i=cell.ifirst; i<=cell.ilast; i++) {
+    int j = ids[i];
+    for (k=0; k< ndim; k++) {
+      if (cell.bbmin[k]>partdata[j].r[k])
+        cell.bbmin[k]=partdata[j].r[k];
+      if (cell.bbmax[k]<partdata[j].r[k])
+              cell.bbmax[k]=partdata[j].r[k];
+    }
+  }
+
   // Determine dimension to split the cell along.
   // For now, simply split along direction of the bounding box's longest axis
   for (k=0; k<ndim; k++) {

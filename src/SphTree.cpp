@@ -25,6 +25,7 @@
 #include <cstdlib>
 #include <cassert>
 #include <iostream>
+#include <numeric>
 #include <string>
 #include <math.h>
 #include <vector>
@@ -1007,6 +1008,272 @@ void SphTree<ndim,ParticleType>::FindMpiTransferParticles
 
   return;
 }
+
+
+//=============================================================================
+//  SphTree::GetExportInfo
+/// Get the array with the information that needs to be exported to the given
+/// processor (note: Nproc is ignored at the moment, as we always need to export
+/// all particles to the other processors)
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void SphTree<ndim,ParticleType>::GetExportInfo (
+    int Nproc,        ///< [in] Number of processor we want to send the information to
+    Sph<ndim>*  sph,  ///< [in] Pointer to sph object
+    vector<char >& send_buffer )  ///< [inout] Vector where the particles to export will be stored
+    {
+
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+
+  int Nactive=0;
+  for (int i=0; i<sph->Nsph; i++) {
+    if (sphdata[i].active)
+      Nactive++;
+  }
+
+  // Work out size of the information we are sending
+  send_buffer.clear();
+  ids_active_particles.clear();
+  const int size_particles = Nactive*sizeof(ParticleType<ndim>);
+  //Header consists of number of particles and number of cells
+  const int size_header = 2*sizeof(int);
+  // Get active cells and their number (so that we know how much memory to allocate)
+  vector<KDTreeCell<ndim>*> celllist(tree->gtot);
+  assert(tree->Nimportedcell==0);
+  int cactive = tree->ComputeActiveCellList(&celllist[0]);
+  const int size_cells = cactive*sizeof(KDTreeCell<ndim>);
+  send_buffer.resize(size_particles+size_cells+size_header);
+
+  //Write the header
+  copy(&send_buffer[0],&Nactive);
+  copy(&send_buffer[sizeof(int)],&cactive);
+
+
+  //Copy cells to export inside array
+  int offset = size_header;
+  int activelist[Nleafmax];
+  int exported_particles = 0;
+  for (int i=0; i<cactive; i++) {
+    copy(&send_buffer[offset],celllist[i]);
+    const int Nactive_cell = tree->ComputeActiveParticleList(celllist[i],sphdata,activelist);
+    // Update the ifirst and ilast pointers in the cell
+    KDTreeCell<ndim>* exported_cell = reinterpret_cast<KDTreeCell<ndim>*> (&send_buffer[offset]);
+    exported_cell->ifirst = exported_particles;
+    exported_cell->ilast = exported_particles+Nactive_cell-1;
+    offset += sizeof(KDTreeCell<ndim>);
+    // Copy active particles
+    for (int iparticle=0; iparticle<Nactive_cell; iparticle++) {
+      ids_active_particles.push_back(activelist[iparticle]);
+      copy(&send_buffer[offset],&sphdata[activelist[iparticle]]);
+      offset += sizeof(ParticleType<ndim>);
+    }
+    exported_particles += Nactive_cell;
+  }
+  assert(exported_particles == Nactive);
+  assert(offset == send_buffer.size());
+
+
+}
+
+
+//=============================================================================
+//  SphTree::UnpackExported
+/// Unpack the information exported from the other processors, contaning the particles
+/// that were exported and
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void SphTree<ndim,ParticleType>::UnpackExported (
+    vector<char >& received_array,
+    vector<int>& Nbytes_exported_from_proc,
+    Sph<ndim>* sph,
+    int rank) {
+
+
+  int offset = 0;
+
+
+  assert(sph->NImportedParticles==0);
+  tree->Nimportedcell=0;
+  tree->Ncelltot=tree->Ncell;
+
+  N_imported_part_per_proc.resize(Nbytes_exported_from_proc.size());
+
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+
+  for (int Nproc = 0; Nproc<Nbytes_exported_from_proc.size(); Nproc++) {
+
+    int N_received_bytes = Nbytes_exported_from_proc[Nproc];
+    int N_received_particles; int N_received_cells;
+    copy(&N_received_particles,&received_array[offset]);
+    N_imported_part_per_proc[Nproc]=N_received_particles;
+    copy(&N_received_cells,&received_array[offset+sizeof(int)]);
+
+    //Avoid inserting my own particles
+    if (Nproc==rank) {
+      offset += N_received_bytes;
+      continue;
+    }
+
+    //Ensure there is enough memory
+    if (sph->Ntot + N_received_particles > sph->Nsphmax) {
+      ExceptionHandler::getIstance().raise("Error while receiving imported particles: not enough memory!");
+    }
+    if (tree->Ncelltot + N_received_cells > tree->Ncellmax) {
+      ExceptionHandler::getIstance().raise("Error while receiving imported cells: not enough memory!");
+    }
+
+
+    //Copy received particles inside SPH main arrays and received cells inside the tree array
+    //Also update the linked list
+    int particle_index = sph->Ntot;
+    offset += 2*sizeof(int);
+    for (int icell=0; icell<N_received_cells; icell++) {
+      KDTreeCell<ndim>& dest_cell = tree->kdcell[icell+tree->Ncelltot];
+      copy(&dest_cell,&received_array[offset]);
+      offset += sizeof(KDTreeCell<ndim>);
+      // Offset the ifirst and ilast pointers
+      dest_cell.ifirst += sph->Ntot;
+      dest_cell.ilast += sph->Ntot;
+      // Now copy the received particles inside the SPH main arrays
+      for (int iparticle=0;iparticle<dest_cell.Nactive;iparticle++) {
+        copy( &sphdata[particle_index] , &received_array[offset]);
+        tree->inext[particle_index] = particle_index + 1;
+        particle_index++; offset+=sizeof(ParticleType<ndim>);
+      }
+
+    }
+
+    //Update the SPH counters
+    sph->Ntot += N_received_particles;
+    sph->NImportedParticles += N_received_particles;
+
+    //Update the tree counters
+    tree->Nimportedcell += N_received_cells;
+    tree->Ncelltot      += N_received_cells;
+    tree->Ntot          = sph->Ntot;
+
+  }
+
+  assert (offset == std::accumulate(Nbytes_exported_from_proc.begin(), Nbytes_exported_from_proc.end(),0));
+
+
+}
+
+
+//=============================================================================
+//  SphTree::GetBackExportInfo
+/// Return the data to transmit back to the other processors (particle acceleration etc.)
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+int SphTree<ndim,ParticleType>::GetBackExportInfo (
+    vector<char >& send_buffer, ///< [inout] These arrays will be overwritten with the information to send
+    vector<int>& Nbytes_exported_from_proc,
+    Sph<ndim>* sph,   ///< [in] Pointer to the SPH object
+    int rank
+    ) {
+
+  int InitialNImportedParticles = sph->NImportedParticles;
+
+  //loop over the processors, removing particles as we go
+  int removed_particles=0;
+  send_buffer.resize(sph->NImportedParticles * sizeof(ParticleType<ndim>));
+  for (int Nproc=0 ; Nproc < N_imported_part_per_proc.size(); Nproc++ ) {
+
+    //My local particles were not inserted
+    if (rank==Nproc)
+      continue;
+
+    const int N_received_particles = N_imported_part_per_proc[Nproc];
+
+//    //Copy the accelerations and gravitational potential of the particles
+//    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+//    int j=0;
+//    for (int i=sph->Nsph - N_received_particles; i<sph->Nsph; i++) {
+//      for (int k=0; k<ndim; k++)
+//        send_buffer[removed_particles+j].a[k] = sphdata[i].a[k];
+//      send_buffer[removed_particles+j].gpot = sphdata[i].gpot;
+//      j++;
+//    }
+
+    //Copy the particles inside the send buffer
+    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+    int j=0;
+    const int start_index = sph->Nsph + sph->Nghost + removed_particles;
+    for (int i=start_index; i<start_index + N_received_particles; i++) {
+      copy (&send_buffer[(removed_particles+j)*sizeof(ParticleType<ndim>)],&sphdata[i]);
+      j++;
+    }
+
+    assert(j==N_received_particles);
+
+    removed_particles += j;
+
+    //Decrease the particle counter
+    sph->Ntot -= N_received_particles;
+    sph->NImportedParticles -= N_received_particles;
+
+    //Update the information about how much data is expected
+    Nbytes_exported_from_proc[Nproc] = N_received_particles*sizeof(ParticleType<ndim>);
+
+  }
+
+  tree->Ncelltot = tree->Ncell;
+  tree->Nimportedcell=0;
+  tree->Ntot          -= InitialNImportedParticles;
+
+  assert(sph->NImportedParticles == 0);
+  assert(sph->Ntot == sph->Nsph + sph->Nghost);
+  assert(send_buffer.size() == removed_particles*sizeof(ParticleType<ndim>));
+
+  return ids_active_particles.size()*sizeof(ParticleType<ndim>);
+
+}
+
+//=============================================================================
+//  SphTree::UnpackReturnedExportInfo
+/// Unpack the data that was returned by the other processors, summing the accelerations to the particles
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void SphTree<ndim,ParticleType>::UnpackReturnedExportInfo (
+    vector<char >& received_information,
+    vector<int>& recv_displs,
+    Sph<ndim>* sph,
+    int rank
+    ) {
+
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+
+  //For each particle, sum up some of the quantities returned by other processors
+  for (int i=0; i< ids_active_particles.size(); i++ ) {
+    const int j = ids_active_particles[i];
+
+    for(int Nproc=0; Nproc<recv_displs.size(); Nproc++ ) {
+
+      if (rank==Nproc)
+        continue;
+
+      ParticleType<ndim>* received_particle = reinterpret_cast<ParticleType<ndim>*>
+      (&received_information[i * sizeof(ParticleType<ndim>) + recv_displs[Nproc] ]);
+
+      assert(sphdata[j].iorig == received_particle->iorig);
+
+      for (int k=0; k<ndim; k++) {
+        sphdata[j].a[k] += received_particle->a[k];
+        sphdata[j].agrav[k] += received_particle->agrav[k];
+      }
+      sphdata[j].gpot += received_particle->gpot;
+      sphdata[j].gpe += received_particle->gpe;
+      sphdata[j].dudt += received_particle->dudt;
+      sphdata[j].div_v += received_particle->div_v;
+      sphdata[j].levelneib = max(sphdata[j].levelneib, received_particle->levelneib);
+
+    }
+
+  }
+
+}
+
+
 #endif
 
 

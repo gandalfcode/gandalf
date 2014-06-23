@@ -93,6 +93,20 @@ struct BytesChunk {
   int size;
 };
 
+template <class T>
+inline void copy (char* pointer, T* element) {
+  void*  element_unsafe = reinterpret_cast<void*> (element);
+  void* pointer_unsafe = reinterpret_cast<void*> (pointer);
+  memcpy(pointer_unsafe,element_unsafe,sizeof(T));
+}
+
+template <class T>
+inline void copy (T* element, char* pointer) {
+  void* element_unsafe = reinterpret_cast<void*> (element);
+  void* pointer_unsafe = reinterpret_cast<void*> (pointer);
+  memcpy(element_unsafe,pointer_unsafe,sizeof(T));
+}
+
 
 
 #endif /* MPIEXPORT_H_ */
