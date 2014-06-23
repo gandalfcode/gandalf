@@ -94,22 +94,17 @@ struct BytesChunk {
 };
 
 template <class T>
-void copy (char* pointer, T* element) {
-  char*  element_unsafe = reinterpret_cast<char*> (element);
-  char* running_element = element_unsafe;
-  for (;running_element<element_unsafe+sizeof(T); running_element++, pointer++) {
-    *pointer = *running_element;
-  }
+inline void copy (char* pointer, T* element) {
+  void*  element_unsafe = reinterpret_cast<void*> (element);
+  void* pointer_unsafe = reinterpret_cast<void*> (pointer);
+  memcpy(pointer_unsafe,element_unsafe,sizeof(T));
 }
 
 template <class T>
-void copy (T* element, char* pointer) {
-  char* element_unsafe = reinterpret_cast<char*> (element);
-  char* running_element = element_unsafe;
-  for (;running_element<element_unsafe+sizeof(T); running_element++, pointer++) {
-      *running_element = *pointer;
-    }
-
+inline void copy (T* element, char* pointer) {
+  void* element_unsafe = reinterpret_cast<void*> (element);
+  void* pointer_unsafe = reinterpret_cast<void*> (pointer);
+  memcpy(element_unsafe,pointer_unsafe,sizeof(T));
 }
 
 

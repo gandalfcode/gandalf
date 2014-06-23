@@ -76,6 +76,10 @@ class MpiNode;
 template <int ndim>
 class SphNeighbourSearch
 {
+#if defined MPI_PARALLEL
+protected:
+  vector<int> ids_active_particles;
+#endif
  public:
 
   //---------------------------------------------------------------------------
@@ -116,6 +120,14 @@ class SphNeighbourSearch
   virtual void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
                                         vector<int>&, const vector<int>&, 
 					MpiNode<ndim>*) = 0;
+  virtual void GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&)=0;
+  virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
+        Sph<ndim>* sph, int rank)=0;
+  virtual int GetBackExportInfo(vector<char >& received_array, vector<int>& N_exported_particles_from_proc,
+        Sph<ndim>* sph, int rank)=0;
+  virtual void UnpackReturnedExportInfo(vector<char >& received_information, vector<int>& recv_displs,
+      Sph<ndim>* sph, int rank)=0;
+
 #endif
 
 
@@ -147,10 +159,6 @@ class SphNeighbourSearch
 template <int ndim, template<int> class ParticleType>
 class BruteForceSearch: public SphNeighbourSearch<ndim>
 {
-#if defined MPI_PARALLEL
-protected:
-  vector<int> ids_active_particles;
-#endif
  public:
 
   using SphNeighbourSearch<ndim>::neibcheck;
@@ -189,6 +197,7 @@ protected:
   void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
 
 #ifdef MPI_PARALLEL
+  using SphNeighbourSearch<ndim>::ids_active_particles;
   //void SearchMpiGhostParticles(const FLOAT, const Sph<ndim> *,
   //                           const vector<int> &, const MpiNode<ndim> *,
   //                           vector<vector<int> > &);
@@ -207,13 +216,14 @@ protected:
 
   void FindParticlesToTransfer(Sph<ndim>* sph, std::vector<std::vector<int> >& particles_to_export,
       std::vector<int>& all_particles_to_export, const std::vector<int>& potential_nodes, MpiNode<ndim>* mpinodes);
-  void GetExportInfo(int Nproc, Sph<ndim>* sph, vector<ParticleType<ndim> >&);
-  void UnpackExported (vector<ParticleType<ndim> >& arrays, vector<int>& N_received_particles_from_proc,
+  virtual void GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&);
+  virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
       Sph<ndim>* sph, int rank);
-  void GetBackExportInfo(vector<ParticleType<ndim> >& received_array, vector<int>& N_exported_particles_from_proc,
+  virtual int GetBackExportInfo(vector<char >& received_array, vector<int>& N_exported_particles_from_proc,
       Sph<ndim>* sph, int rank);
-  void UnpackReturnedExportInfo(vector<ParticleType<ndim> >& received_information, vector<int>& recv_displs,
+  virtual void UnpackReturnedExportInfo(vector<char >& received_information, vector<int>& recv_displs,
       Sph<ndim>* sph, int rank);
+
 #endif
 };
 
@@ -338,6 +348,11 @@ class GodunovSphBruteForce: public BruteForceSearch<ndim,ParticleType>
 template <int ndim, template<int> class ParticleType>
 class SphTree: public SphNeighbourSearch<ndim>
 {
+#if defined MPI_PARALLEL
+protected:
+  using SphNeighbourSearch<ndim>::ids_active_particles;
+  vector<int> N_imported_part_per_proc;
+#endif
  public:
 
   using SphNeighbourSearch<ndim>::neibcheck;
@@ -385,6 +400,13 @@ class SphTree: public SphNeighbourSearch<ndim>
   void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
 				vector<int>&, const vector<int>&, 
 				MpiNode<ndim>*);
+  virtual void GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&);
+  virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
+        Sph<ndim>* sph, int rank);
+  virtual int GetBackExportInfo(vector<char >& received_array, vector<int>& N_exported_particles_from_proc,
+        Sph<ndim>* sph, int rank);
+  virtual void UnpackReturnedExportInfo(vector<char >& received_information, vector<int>& recv_displs,
+      Sph<ndim>* sph, int rank);
 #endif
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(int, int, int, int *, 

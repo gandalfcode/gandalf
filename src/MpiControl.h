@@ -73,7 +73,6 @@ class MpiControl
   std::vector<int> receive_displs;
   std::vector<int> Nbytes_exported_from_proc;
   int tot_particles_to_receive;
-  int Nbytes_to_be_exported;
 
   std::vector<Box<ndim> > boxes_buffer;     ///< Buffer needed by the UpdateAllBoundingBoxes routine
 
@@ -131,7 +130,6 @@ class MpiControlType : public MpiControl<ndim> {
   using MpiControl<ndim>::mpinode;
   using MpiControl<ndim>::mpibox;
   using MpiControl<ndim>::rank;
-  using MpiControl<ndim>::neibsearch;
   using MpiControl<ndim>::Nloadbalance;
   using MpiControl<ndim>::timing;
 
@@ -144,7 +142,7 @@ class MpiControlType : public MpiControl<ndim> {
   using MpiControl<ndim>::Nbytes_exported_from_proc;
   using MpiControl<ndim>::ExportParticleType;
   using MpiControl<ndim>::ExportBackParticleType;
-  using MpiControl<ndim>::Nbytes_to_be_exported;
+  using MpiControl<ndim>::neibsearch;
 
 
   void SendParticles(int Node, int Nparticles, int* list, ParticleType<ndim>* );
@@ -153,9 +151,6 @@ class MpiControlType : public MpiControl<ndim> {
   std::vector<ParticleType<ndim> > sendbuffer; ///< Used by the SendParticles routine
 
   MPI_Datatype particle_type;        ///< Datatype for the particles
-
-  int Nbytes_received_exported;   ///<Number of bytes of received export information
-
 
   //Buffers needed to send and receive particles
   std::vector<std::vector<ParticleType<ndim>* > > particles_to_export_per_node;

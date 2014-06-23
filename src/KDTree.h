@@ -172,5 +172,10 @@ class KDTree
   FLOAT invthetamaxsqd;             ///< 1 / thetamaxsqd
   KDTreeCell<ndim> *kdcell;         ///< Main tree array
 
+#if defined MPI_PARALLEL
+  int Nimportedcell;                ///< No. of imported cells
+  int Ncelltot;                         ///< Total number of cells
+#endif
+
 };
 #endif

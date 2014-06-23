@@ -71,6 +71,10 @@ KDTree<ndim,ParticleType>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
 #else
   Nthreads       = 1;
 #endif
+#if defined MPI_PARALLEL
+  Ncelltot       = 0;
+  Nimportedcell =0;
+#endif
 }
 
 
@@ -1893,7 +1897,9 @@ void KDTree<ndim,ParticleType>::ComputeFastMonopoleForces
   if (ndim == 3) {
 
     for (cc=0; cc<Ngravcell; cc++) {
+#ifndef(MPI_PARALLEL)
       assert(cell->id != gravcelllist[cc]->id);
+#endif
       mc = gravcelllist[cc]->m;
       for (k=0; k<ndim; k++) dr[k] = gravcelllist[cc]->r[k] - rc[k];
       drsqd = DotProduct(dr,dr,ndim);
@@ -1943,8 +1949,8 @@ int KDTree<ndim,ParticleType>::ComputeActiveCellList
     if (kdcell[c].Nactive > 0) celllist[Nactive++] = &kdcell[c];
 
 #ifdef MPI_PARALLEL
-  //  for (c=Ncell+1; c<Ncell+Nimportedcell; c++)
-  //if (kdcell[c].Nactive > 0) celllist[Nactive++] = &kdcell[c];
+    for (c=Ncell; c<Ncell+Nimportedcell; c++)
+      if (kdcell[c].Nactive > 0) celllist[Nactive++] = &kdcell[c];
 #endif
 
   return Nactive;

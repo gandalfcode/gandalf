@@ -25,6 +25,7 @@
 
 #include <iostream>
 #include <math.h>
+#include <numeric>
 #include "SphNeighbourSearch.h"
 #include "Sph.h"
 #include "Parameters.h"
@@ -1080,12 +1081,16 @@ void BruteForceSearch<ndim,ParticleType>::UnpackExported (
 /// Return the data to transmit back to the other processors (particle acceleration etc.)
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void BruteForceSearch<ndim,ParticleType>::GetBackExportInfo (
+int BruteForceSearch<ndim,ParticleType>::GetBackExportInfo (
     vector<char >& send_buffer, ///< [inout] These arrays will be overwritten with the information to send
     vector<int>& Nbytes_exported_from_proc,
     Sph<ndim>* sph,   ///< [in] Pointer to the SPH object
     int rank
     ) {
+
+  int Nbytes_received_exported = std::accumulate(Nbytes_exported_from_proc.begin(), Nbytes_exported_from_proc.end(), 0);
+
+  send_buffer.resize(Nbytes_received_exported-Nbytes_exported_from_proc[rank]);
 
   //loop over the processors, removing particles as we go
   int removed_particles=0;
@@ -1129,6 +1134,8 @@ void BruteForceSearch<ndim,ParticleType>::GetBackExportInfo (
   assert(sph->NImportedParticles == 0);
   assert(sph->Ntot == sph->Nsph + sph->Nghost);
   assert(send_buffer.size() == removed_particles*sizeof(ParticleType<ndim>));
+
+  return ids_active_particles.size()*sizeof(ParticleType<ndim>);
 
 }
 
