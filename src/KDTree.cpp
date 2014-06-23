@@ -196,7 +196,7 @@ void KDTree<ndim,ParticleType>::BuildTree
   for (k=0; k<ndim; k++) kdcell[0].bbmax[k] = big_number;
   for (k=0; k<ndim; k++) kdcell[0].cexit[0][k] = -1;
   for (k=0; k<ndim; k++) kdcell[0].cexit[1][k] = -1;
-  for (i=ifirst; i<=ilast; i++) inext[i] = -1;
+  for (i=ifirst; i<=ilast; i++) inext[i] = i+1;
 
   // If number of particles remains unchanged, use old id list 
   // (nearly sorted list should be faster for quick select).
@@ -362,6 +362,23 @@ void KDTree<ndim,ParticleType>::DivideTreeCell
     StockCellProperties(cell,partdata);
     return;
   }
+
+#if defined(MPI_PARALLEL)
+  i = cell.ifirst;
+  for (k=0; k< ndim; k++) {
+    cell.bbmin[k]=+big_number;
+    cell.bbmax[k] = -big_number;
+  }
+  for (i=cell.ifirst; i<=cell.ilast; i++) {
+    int j = ids[i];
+    for (k=0; k< ndim; k++) {
+      if (cell.bbmin[k]>partdata[j].r[k])
+        cell.bbmin[k]=partdata[j].r[k];
+      if (cell.bbmax[k]<partdata[j].r[k])
+              cell.bbmax[k]=partdata[j].r[k];
+    }
+  }
+#endif
 
   // Determine dimension to split the cell along.
   // For now, simply split along direction of the bounding box's longest axis
