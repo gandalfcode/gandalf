@@ -31,6 +31,7 @@
 using namespace std;
 
 
+
 //=============================================================================
 //  main
 /// Main GANDALF program for running executables from the command line.
@@ -47,14 +48,16 @@ int main(int argc, char** argv)
   ExceptionHandler::makeExceptionHandler(cplusplus); // Exception handler
 
 
-  // Initialise all MPI processes (if activated in Makefile)
 #ifdef MPI_PARALLEL
+  // Initialise all MPI processes (if activated in Makefile)
   MPI_Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  //Tell exception handler to call MPI_Abort on error
+    
+  // Tell exception handler to call MPI_Abort on error
   ExceptionHandler::set_mpi(1);
+    
 #ifdef _OPENMP
-  //Check that OpenMP and MPI can work together
+  // Check that OpenMP and MPI can work together
   int mpi_thread_support;
   MPI_Query_thread(&mpi_thread_support);
   if (mpi_thread_support == MPI_THREAD_SINGLE)
@@ -80,15 +83,13 @@ int main(int argc, char** argv)
     exit(-1);
   }
 
-
   // Read parameters file immediately and record to file
   params->ReadParamsFile(paramfile);
   params->RecordParametersToFile();
 
-
   // Create simulation object with required dimensionality and parameters
   sim = SimulationBase::SimulationFactory(params->intparams["ndim"],
-					  params->stringparams["sim"],params);
+                                          params->stringparams["sim"],params);
   sim->timing = timing;
   sim->restart = restart;
 

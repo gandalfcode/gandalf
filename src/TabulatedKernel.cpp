@@ -59,24 +59,24 @@ TabulatedKernel<ndim>::TabulatedKernel(string KernelName, int resaux):
 
   kernel = SphKernel<ndim>::KernelFactory (KernelName);
 
-  this->kernrange = kernel->kernrange;
+  this->kernrange    = kernel->kernrange;
   this->kernrangesqd = kernel->kernrangesqd;
   this->invkernrange = kernel->invkernrange;
-  resinvkernrange = res/this->kernrange;
+  this->kernnorm     = kernel->kernnorm;
+  resinvkernrange    = res/this->kernrange;
   resinvkernrangesqd = res/this->kernrangesqd;
-  this->kernnorm = kernel->kernnorm;
 
   // Allocate memory
-  tableW0 = new FLOAT[res];
-  tableW1 = new FLOAT[res];
-  tableWomega = new FLOAT[res];
-  tableWzeta = new FLOAT[res];
-  tableWgrav = new FLOAT[res];
-  tableWpot = new FLOAT[res];
-  tableW0_s2 = new FLOAT[res];
+  tableW0        = new FLOAT[res];
+  tableW1        = new FLOAT[res];
+  tableWomega    = new FLOAT[res];
+  tableWzeta     = new FLOAT[res];
+  tableWgrav     = new FLOAT[res];
+  tableWpot      = new FLOAT[res];
+  tableW0_s2     = new FLOAT[res];
   tableWomega_s2 = new FLOAT[res];
-  tableWzeta_s2 = new FLOAT[res];
-  tableLOS = new FLOAT[res];
+  tableWzeta_s2  = new FLOAT[res];
+  tableLOS       = new FLOAT[res];
 
   // Initialize the tables
   initializeTable(tableW0,&SphKernel<ndim>::w0);

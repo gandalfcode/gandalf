@@ -108,16 +108,13 @@ void SphLeapfrogDKD<ndim, ParticleType>::AdvanceParticles
     // Advance particle positions and velocities depending on if we're before 
     // or after the half-step.
     if (dn < nstep) {
-      for (k=0; k<ndim; k++) 
-	part.r[k] = part.r0[k] + part.v0[k]*dt;
-      for (k=0; k<ndim; k++) 
-	part.v[k] = part.v0[k] + part.a[k]*dt;
+      for (k=0; k<ndim; k++) part.r[k] = part.r0[k] + part.v0[k]*dt;
+      for (k=0; k<ndim; k++) part.v[k] = part.v0[k] + part.a[k]*dt;
     }
     else {
-      for (k=0; k<ndim; k++) 
-	part.v[k] = part.v0[k] + part.a[k]*dt;
+      for (k=0; k<ndim; k++) part.v[k] = part.v0[k] + part.a[k]*dt;
       for (k=0; k<ndim; k++) part.r[k] = part.r0[k] +
-	0.5*(part.v0[k] + part.v[k])*dt;
+        0.5*(part.v0[k] + part.v[k])*dt;
     }
 
     // Integrate time-dependent viscosity
@@ -198,7 +195,7 @@ void SphLeapfrogDKD<ndim, ParticleType>::EndTimestep
       part.nlast = n;
       part.active = false;
       if (gas_eos == energy_eqn) {
-	part.u0 = part.u;
+        part.u0 = part.u;
       }
     }
   }
@@ -224,12 +221,12 @@ int SphLeapfrogDKD<ndim, ParticleType>::CheckTimesteps
  int Npart,                         ///< [in] Number of particles
  SphParticle<ndim>* sph_gen)        ///< [inout] Pointer to SPH particle array
 {
-  int activecount = 0;              // ..
+  int activecount = 0;              // No. of newly active particles
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
   int k;                            // Dimension counter
-  int level_new;                    // ..
-  int nnewstep;                     // ..
+  int level_new;                    // New timestep level
+  int nnewstep;                     // New integer timestep
   int nstep;                        // Particle (integer) step size
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
@@ -253,14 +250,11 @@ int SphLeapfrogDKD<ndim, ParticleType>::CheckTimesteps
     if (part.levelneib - part.level > level_diff_max) {
       level_new = part.levelneib - level_diff_max;
       nnewstep = pow(2,level_step - level_new);
-      //nnewstep = part.nstep/pow(2,level_new - part.level);
 
       // If new level is correctly synchronised at the half-step of the 
       // new-step (where acceleration is computed), then change all quantities
-      //if (2*dn == nnewstep) {
       if ((2*dn)%nnewstep == 0) {
         if (dn > 0) part.nstep = dn;
-        //part.nstep = nnewstep;
         part.level = level_new;
         part.active = true;
         activecount++;

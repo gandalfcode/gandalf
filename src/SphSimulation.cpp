@@ -376,14 +376,17 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
 #endif
 
+
+    // Zero accelerations
+    for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).active = true;
+    //for (i=0; i<sph->Nsph; i++) cout << "active : " << sph->GetParticleIPointer(i).active << endl;
+
     // Update neighbour tree
     rebuild_tree = true;
     sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
                        sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
     level_step = 1;
 
-    // Zero accelerations
-    for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).active = true;
 
     // For Eigenvalue MAC, need non-zero values
     for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).gpot = big_number;

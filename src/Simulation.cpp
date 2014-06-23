@@ -585,7 +585,6 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
 	 floatparams["nbody_mult"], KernelName);
     }
     else if (intparams["tabulated_kernel"] == 0) {
-      // Depending on the kernel, instantiate a different GradSph object
       if (KernelName == "m4") {
 	nbody = new NbodyLeapfrogKDK<ndim, M4Kernel> 
 	  (intparams["nbody_softening"], intparams["sub_systems"],
@@ -613,7 +612,6 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
       ExceptionHandler::getIstance().raise(message);
     }
   }
-  // Create N-body object based on chosen method in params file
   //---------------------------------------------------------------------------
   else if (stringparams["nbody"] == "lfdkd") {
     string KernelName = stringparams["kernel"];
@@ -623,7 +621,6 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
 	 floatparams["nbody_mult"], KernelName);
     }
     else if (intparams["tabulated_kernel"] == 0) {
-      // Depending on the kernel, instantiate a different GradSph object
       if (KernelName == "m4") {
 	nbody = new NbodyLeapfrogDKD<ndim, M4Kernel> 
 	  (intparams["nbody_softening"], intparams["sub_systems"],
@@ -661,7 +658,6 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
 	 floatparams["nbody_mult"], KernelName);
     }
     else if (intparams["tabulated_kernel"] == 0) {
-      // Depending on the kernel, instantiate a different GradSph object
       if (KernelName == "m4") {
 	nbody = new NbodyHermite4<ndim, M4Kernel> 
 	  (intparams["nbody_softening"], intparams["sub_systems"],
@@ -698,7 +694,6 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
 	 floatparams["nbody_mult"], KernelName, intparams["Npec"]);
     }
     else if (intparams["tabulated_kernel"] == 0) {
-      // Depending on the kernel, instantiate a different GradSph object
       if (KernelName == "m4") {
 	nbody = new NbodyHermite4TS<ndim, M4Kernel>
 	  (intparams["nbody_softening"], intparams["sub_systems"],
@@ -748,7 +743,6 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
 	   floatparams["subsys_mult"], KernelName);
       }
       else if (intparams["tabulated_kernel"] == 0) {
-	// Depending on the kernel, instantiate a different GradSph object
 	if (KernelName == "m4") {
 	  subsystem = new NbodyLeapfrogKDK<ndim, M4Kernel> 
 	    (intparams["nbody_softening"], intparams["sub_systems"],
@@ -785,7 +779,6 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
 	   floatparams["subsys_mult"], KernelName);
       }
       else if (intparams["tabulated_kernel"] == 0) {
-	// Depending on the kernel, instantiate a different GradSph object
 	if (KernelName == "m4") {
 	  subsystem = new NbodyHermite4<ndim, M4Kernel> 
 	    (intparams["nbody_softening"], intparams["sub_systems"],
@@ -822,7 +815,6 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
 	   floatparams["subsys_mult"], KernelName, intparams["Npec"]);
       }
       else if (intparams["tabulated_kernel"] == 0) {
-	// Depending on the kernel, instantiate a different GradSph object
 	if (KernelName == "m4") {
 	  subsystem = new NbodyHermite4TS<ndim, M4Kernel>
 	    (intparams["nbody_softening"], intparams["sub_systems"],

@@ -432,17 +432,18 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::DivideTreeCell
   }
 #endif
 
+
   // Re-set the cell first and last particles now that child cells have been 
   // re-ordered by the QuickSelect algorithm
-  cell.ifirst = radcell[cell.c1].ifirst;
-  cell.ilast = radcell[cell.c2].ilast;
-  inext[radcell[cell.c1].ilast] = radcell[cell.c2].ifirst;
-
-  if (cell.N != radcell[cell.c1].N + radcell[cell.c2].N) {
-    cout << "Checking : " << cell.N << "   " << radcell[cell.c1].N 
-	 << "    " << radcell[cell.c2].N << endl;
+  if (radcell[cell.c1].N > 0) {
+    cell.ifirst = radcell[cell.c1].ifirst;
+    inext[radcell[cell.c1].ilast] = radcell[cell.c2].ifirst;
   }
-  assert(cell.N == radcell[cell.c1].N + radcell[cell.c2].N);
+  else {
+    cell.ifirst = radcell[cell.c2].ifirst;
+  }
+  cell.ilast = radcell[cell.c2].ilast;
+
 
   // Stock all cell properties once constructed
   StockCellProperties(cell,partdata);
@@ -736,12 +737,12 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::OptimiseTree(void)
         else if (k_divide == k && radcell[c2].N > 0)
           cexit = c2;
         else if (radcell[cexit+1].N > 0 && 
-	 radcell[cexit+1].bbmax[k_divide] >= cell->bbmax[k_divide] &&
-	 radcell[cexit+1].bbmin[k_divide] <= cell->bbmin[k_divide])
+	  radcell[cexit+1].bbmax[k_divide] >= cell->bbmax[k_divide] &&
+	  radcell[cexit+1].bbmin[k_divide] <= cell->bbmin[k_divide])
 	  cexit = cexit + 1;
         else if (radcell[c2].N > 0 && 
-	 radcell[c2].bbmax[k_divide] >= cell->bbmax[k_divide] &&
-	 radcell[c2].bbmin[k_divide] <= cell->bbmin[k_divide])
+	  radcell[c2].bbmax[k_divide] >= cell->bbmax[k_divide] &&
+	  radcell[c2].bbmin[k_divide] <= cell->bbmin[k_divide])
 	  cexit = c2;
 	else 
 	  break;

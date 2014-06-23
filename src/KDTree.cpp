@@ -53,6 +53,7 @@ KDTree<ndim,ParticleType>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                                   string gravity_mac_aux, string multipole_aux)
 {
   allocated_tree = false;
+  lactive        = 0;
   ltot           = 0;
   Ntot           = 0;
   Ntotmax        = 0;
@@ -162,13 +163,8 @@ void KDTree<ndim,ParticleType>::BuildTree
 #endif
 
   // Set no. of tree members to total number of SPH particles (inc. ghosts)
-  gtot       = 0;
-  ltot_old   = ltot;
-  //Ntotold    = Ntot;
-  //Ntot       = Npart;
-  //Ntotmaxold = Ntotmax;
-  //Ntotmax    = max(Ntot,Ntotmax);
-  ///Ntotmax    = max(Ntotmax,Npartmax);
+  gtot = 0;
+  ltot_old = ltot;
   
   // Compute the size of all tree-related arrays now we know number of points
   ComputeTreeSize();
@@ -190,7 +186,8 @@ void KDTree<ndim,ParticleType>::BuildTree
   for (k=0; k<ndim; k++) kdcell[0].cexit[0][k] = -1;
   for (k=0; k<ndim; k++) kdcell[0].cexit[1][k] = -1;
   for (i=0; i<Ntot; i++) inext[i] = -1;
-  
+
+
   // If number of particles remains unchanged, use old id list 
   // (nearly sorted list should be faster for quick select).
   if (Ntot != Ntotold)
@@ -218,6 +215,7 @@ void KDTree<ndim,ParticleType>::ComputeTreeSize(void)
 {
   debug2("[KDTree::ComputeTreeSize]");
 
+
   // Calculate maximum level of tree that can contain max. no. of particles
   lmax = 0;
   while (Nleafmax*pow(2,lmax) < Ntotmax) {
@@ -226,6 +224,12 @@ void KDTree<ndim,ParticleType>::ComputeTreeSize(void)
   gmax = pow(2,lmax);
   Ncellmax = 2*gmax - 1;
 
+  // Calculate level of tree that can contain all current particles
+  lactive = 0;
+  while (Nleafmax*pow(2,lactive) < Ntot) {
+    lactive++;
+  };
+  gactive = pow(2,lactive);
 
   // Calculate level of tree that can contain all current particles
   ltot = 0;
@@ -240,7 +244,7 @@ void KDTree<ndim,ParticleType>::ComputeTreeSize(void)
 #if defined(VERIFY_ALL)
   cout << "No. of ptcls in tree  : " << Ntot << "   " << Ntotmax << endl;
   cout << "No. of grid-cells     : " << gtot << "   " << gmax << endl;
-  cout << "No. of levels on tree : " << ltot << "   " << lmax << endl;
+  cout << "No. of levels on tree : " << ltot << "   " << lmax << "    " << lactive << endl;
   cout << "No. of cells in tree  : " << Ncell << "   " << Ncellmax << endl; 
 #endif
 
@@ -276,7 +280,7 @@ void KDTree<ndim,ParticleType>::CreateTreeStructure(void)
   }
 
   // Zero tree cell variables
-  for (g=0; g<gtot; g++) g2c[g] = 0;
+  for (g=0; g<gmax; g++) g2c[g] = 0;
   for (c=0; c<Ncell; c++) {
     kdcell[c].c2g = 0;
     kdcell[c].c1 = -1;
@@ -295,8 +299,6 @@ void KDTree<ndim,ParticleType>::CreateTreeStructure(void)
     kdcell[c].id = c;
     if (kdcell[c].level == ltot) {                    // If on leaf level
       kdcell[c].cnext = c + 1;                        // id of next cell
-      kdcell[c].c2g = g;                              // Record leaf id
-      g2c[g++] = c;                                   // Record inverse id
     }
     else {
       kdcell[c+1].level = kdcell[c].level + 1;          // Level of 1st child
@@ -304,6 +306,10 @@ void KDTree<ndim,ParticleType>::CreateTreeStructure(void)
       kdcell[c].c2 = c + c2L[kdcell[c].level];          // id of 2nd child
       kdcell[kdcell[c].c2].level = kdcell[c].level + 1; // Level of 2nd child
       kdcell[c].cnext = c + cNL[kdcell[c].level];       // Next cell id
+    }
+    if (kdcell[c].level == lactive) {
+      kdcell[c].c2g = g;                              // Record leaf id
+      g2c[g++] = c;                                   // Record inverse id
     }
 
   }
@@ -342,7 +348,6 @@ void KDTree<ndim,ParticleType>::DivideTreeCell
   if (cell.level == ltot) {
     if (cell.N > 0) {
       for (j=cell.ifirst; j<cell.ilast; j++) inext[ids[j]] = ids[j+1];
-      //inext[ids[cell.ilast]] = -1;
       cell.ifirst = ids[cell.ifirst];
       cell.ilast = ids[cell.ilast];
     }
@@ -433,15 +438,26 @@ void KDTree<ndim,ParticleType>::DivideTreeCell
 
   // Re-set the cell first and last particles now that child cells have been 
   // re-ordered by the QuickSelect algorithm
-  cell.ifirst = kdcell[cell.c1].ifirst;
+  if (kdcell[cell.c1].N > 0) {
+    cell.ifirst = kdcell[cell.c1].ifirst;
+    inext[kdcell[cell.c1].ilast] = kdcell[cell.c2].ifirst;
+  }
+  else {
+    cell.ifirst = kdcell[cell.c2].ifirst;
+  }
   cell.ilast = kdcell[cell.c2].ilast;
-  inext[kdcell[cell.c1].ilast] = kdcell[cell.c2].ifirst;
 
 
+#ifdef VERIFY_ALL
   if (cell.N != kdcell[cell.c1].N + kdcell[cell.c2].N) {
     cout << "Checking : " << cell.N << "   " << kdcell[cell.c1].N 
 	 << "    " << kdcell[cell.c2].N << endl;
   }
+  if (cell.ifirst == -1 && cell.ilast != -1) {
+    cout << "WTF?? : " << cell.id << "   " << cell.ifirst << "   " << cell.ilast << "    " << cell.N << "   " << "   " << kdcell[cell.c1].N << "    " << kdcell[cell.c2].N << "   " << cell.level << endl;
+    exit(0);
+  }
+#endif
   assert(cell.N == kdcell[cell.c1].N + kdcell[cell.c2].N);
 
   // Stock all cell properties once constructed
@@ -618,8 +634,8 @@ FLOAT KDTree<ndim,ParticleType>::QuickSelect
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void KDTree<ndim,ParticleType>::StockTree
-(KDTreeCell<ndim> &cell,       ///< Reference to cell to be stocked
- ParticleType<ndim> *partdata)        ///< SPH particle data array
+(KDTreeCell<ndim> &cell,            ///< Reference to cell to be stocked
+ ParticleType<ndim> *partdata)      ///< SPH particle data array
 {
   int i;                            // Aux. child cell counter
 
@@ -731,6 +747,7 @@ void KDTree<ndim,ParticleType>::StockCellProperties
       if (partdata[i].itype != dead) {
 	cell.N++;
 	if (partdata[i].active) cell.Nactive++;
+	//cout << "WTF?? : " << i << "   " << partdata[i].active << "   " << cell.Nactive << endl;
 	cell.hmax = max(cell.hmax,partdata[i].h);
 	cell.m += partdata[i].m;
 	for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
@@ -818,6 +835,7 @@ void KDTree<ndim,ParticleType>::StockCellProperties
     }
 
     cell.N = child1.N + child2.N;
+    cell.Nactive = child1.Nactive + child2.Nactive;
     if (cell.N > 0) {
       cell.m = child1.m + child2.m;
       for (k=0; k<ndim; k++) cell.r[k] =
@@ -1042,7 +1060,8 @@ void KDTree<ndim,ParticleType>::UpdateActiveParticleCounters
   for (c=0; c<Ncell; c++) {
     kdcell[c].Nactive = 0;
 
-    if (kdcell[c].level != ltot) continue;
+    //if (kdcell[c].level != ltot) continue;
+    if (kdcell[c].level != lactive) continue;
     i = kdcell[c].ifirst;
     ilast = kdcell[c].ilast;
 
@@ -1927,8 +1946,11 @@ int KDTree<ndim,ParticleType>::ComputeActiveCellList
   int c;                            // Cell counter
   int Nactive = 0;                  // No. of active leaf cells in tree
 
+  //for (c=0; c<Ncell; c++)
+  //if (kdcell[c].Nactive > 0) celllist[Nactive++] = &kdcell[c];
   for (c=0; c<Ncell; c++)
-    if (kdcell[c].Nactive > 0) celllist[Nactive++] = &kdcell[c];
+    if (kdcell[c].level == lactive && kdcell[c].Nactive > 0) 
+      celllist[Nactive++] = &kdcell[c];
 
   return Nactive;
 }

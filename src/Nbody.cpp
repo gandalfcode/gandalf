@@ -124,23 +124,27 @@ template <int ndim>
 void Nbody<ndim>::IntegrateInternalMotion
 (SystemParticle<ndim>* systemi,     ///< [inout] System that we wish to 
                                     ///<         integrate the internal motion
- int n,                             ///< [in]    ...
- DOUBLE timestep,                   ///< [in]    ...
+ int n,                             ///< [in]    Integer time
+ DOUBLE timestep,                   ///< [in]    Minimum timestep value
  DOUBLE tlocal_end)                 ///< [in]    Time to integrate the 
                                     ///<         internal motion for.
 {
-  int i;                                              // ..
-  int it;                                             // Iteration counter
-  int k;                                              // ..
-  int Nchildren = systemi->Nchildren;                 // No. of child systems
-  int nlocal_steps = 0;                               // ..
-  DOUBLE dt;                                          // ..
-  DOUBLE tlocal=0.0;                                  // ..
-  DOUBLE rcom[ndim];                                  // ..
-  DOUBLE vcom[ndim];                                  // ..
-  DOUBLE acom[ndim];                                  // ..
-  DOUBLE adotcom[ndim];                               // ..
-  NbodyParticle<ndim>** children = systemi->children; // Child systems
+  int i;                            // Star counter
+  int it;                           // Iteration counter
+  int k;                            // Dimension counter
+  int Nchildren;                    // No. of child systems
+  int nlocal_steps = 0;             // No. of locally integrated steps
+  DOUBLE dt;                        // Timestep
+  DOUBLE tlocal=0.0;                // Local integration time
+  DOUBLE rcom[ndim];                // Position of centre-of-mass
+  DOUBLE vcom[ndim];                // Velocity of centre-of-mass
+  DOUBLE acom[ndim];                // Acceleration of centre-of-mass
+  DOUBLE adotcom[ndim];             // Jerk of centre-of-mass
+  NbodyParticle<ndim>** children;   // Child systems
+
+
+  Nchildren = systemi->Nchildren;
+  children = systemi->children;
 
   // Zero all COM summation variables
   for (k=0; k<ndim; k++) rcom[k] = 0.0;
