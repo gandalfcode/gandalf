@@ -263,6 +263,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   char* filename_str = new char[strlen(filename.c_str())+1];
   strcpy(filename_str,filename.c_str());
   MPI_File_open(MPI_COMM_WORLD, filename_str, MPI_MODE_CREATE|MPI_MODE_WRONLY,MPI_INFO_NULL, &file);
+  MPI_File_set_size(file,0);
   delete[] filename_str;
   //Collect total number of particles
   int Ntotsph;
