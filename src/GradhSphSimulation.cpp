@@ -217,7 +217,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
       (sph->kernp->kernrange,&simbox,sph->kernp,timing);
   else if (stringparams["neib_search"] == "tree") {
     sphneib = new GradhSphTree<ndim,GradhSphParticle>
-     (intparams["Nleafmax"],floatparams["thetamaxsqd"],
+     (intparams["Nleafmax"],this->Nmpi,floatparams["thetamaxsqd"],
       sph->kernp->kernrange,floatparams["macerror"],
       stringparams["gravity_mac"],stringparams["multipole"],
       &simbox,sph->kernp,timing);

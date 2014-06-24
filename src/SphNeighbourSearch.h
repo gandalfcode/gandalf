@@ -367,7 +367,7 @@ protected:
 
 
   //---------------------------------------------------------------------------
-  SphTree(int, FLOAT, FLOAT, FLOAT, string, string,
+  SphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
           DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~SphTree();
 
@@ -427,6 +427,7 @@ protected:
   // Additional variables for grid
   //---------------------------------------------------------------------------
   const int Nleafmax;               ///< Max. number of particles per leaf cell
+  const int Nmpi;                   ///< No. of MPI processes
   const FLOAT thetamaxsqd;          ///< Geometric opening angle squared
   const FLOAT invthetamaxsqd;       ///< 1 / thetamaxsqd
   const FLOAT macerror;             ///< Error tolerance for gravity tree-MAC
@@ -450,6 +451,8 @@ protected:
 #ifdef MPI_PARALLEL
   KDTree<ndim,ParticleType> *mpighosttree;  ///< Pointer to tree containing 
                                             ///< ghosts from other MPI procs.
+  KDTree<ndim,ParticleType> **prunedtree;   ///< 'Pruned' tree for MPI nodes.
+                                            ///< i.e. only uses top levels
 #endif
 
   bool allocated_buffer;            ///< ..
@@ -508,7 +511,7 @@ class GradhSphTree: public SphTree<ndim,ParticleType>
 
 
   //---------------------------------------------------------------------------
-  GradhSphTree(int, FLOAT, FLOAT, FLOAT, string, string, 
+  GradhSphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
                DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~GradhSphTree();
 
@@ -569,7 +572,7 @@ class SM2012SphTree: public SphTree<ndim,ParticleType>
 
 
   //---------------------------------------------------------------------------
-  SM2012SphTree(int, FLOAT, FLOAT, FLOAT, string, string, 
+  SM2012SphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
                 DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~SM2012SphTree();
 
@@ -630,7 +633,7 @@ class GodunovSphTree: public SphTree<ndim,ParticleType>
 
 
   //---------------------------------------------------------------------------
-  GodunovSphTree(int, FLOAT, FLOAT, FLOAT, string, string, 
+  GodunovSphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
                DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~GodunovSphTree();
 

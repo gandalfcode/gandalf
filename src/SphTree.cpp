@@ -51,6 +51,7 @@ using namespace std;
 template <int ndim, template<int> class ParticleType>
 SphTree<ndim,ParticleType>::SphTree
 (int Nleafmaxaux,
+ int Nmpiaux,
  FLOAT thetamaxsqdaux,
  FLOAT kernrangeaux,
  FLOAT macerroraux,
@@ -61,6 +62,7 @@ SphTree<ndim,ParticleType>::SphTree
  CodeTiming *timingaux):
   SphNeighbourSearch<ndim>(kernrangeaux,boxaux,kernaux,timingaux),
   Nleafmax(Nleafmaxaux),
+  Nmpi(Nmpiaux),
   thetamaxsqd(thetamaxsqdaux),
   invthetamaxsqd(1.0/thetamaxsqdaux),
   gravity_mac(gravity_mac_aux),
@@ -93,6 +95,14 @@ SphTree<ndim,ParticleType>::SphTree
   mpighosttree = new KDTree<ndim,ParticleType>(Nleafmaxaux, thetamaxsqdaux, 
                                                kernrangeaux, macerroraux, 
                                                gravity_mac_aux, multipole_aux);
+    
+  // Set-up multiple pruned trees, one for each MPI process
+  prunedtree = new KDTree<ndim,ParticleType>*[Nmpi];
+  for (int j=0; j<Nmpi; j++) {
+    prunedtree[j] = new KDTree<ndim,ParticleType>(Nleafmaxaux, thetamaxsqdaux,
+                                                  kernrangeaux, macerroraux,
+                                                  gravity_mac_aux, multipole_aux);
+  }
 #endif
 
 }

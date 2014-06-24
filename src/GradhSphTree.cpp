@@ -49,6 +49,7 @@ using namespace std;
 template <int ndim, template<int> class ParticleType>
 GradhSphTree<ndim,ParticleType>::GradhSphTree
 (int Nleafmaxaux,
+ int Nmpiaux,
  FLOAT thetamaxsqdaux,
  FLOAT kernrangeaux,
  FLOAT macerroraux,
@@ -57,7 +58,7 @@ GradhSphTree<ndim,ParticleType>::GradhSphTree
  DomainBox<ndim> *boxaux,
  SphKernel<ndim> *kernaux,
  CodeTiming *timingaux):
-  SphTree<ndim,ParticleType>(Nleafmaxaux,thetamaxsqdaux,kernrangeaux,
+  SphTree<ndim,ParticleType>(Nleafmaxaux,Nmpiaux,thetamaxsqdaux,kernrangeaux,
                              macerroraux,gravity_mac_aux,multipole_aux,
                              boxaux,kernaux,timingaux)
 {
