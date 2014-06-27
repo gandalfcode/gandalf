@@ -117,12 +117,10 @@ protected:
                                  SphParticle<ndim> *, Sph<ndim> *, FLOAT) = 0;
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &, 
                                       Sph<ndim> *, vector<int> &) = 0;
-  virtual int SearchHydroExportParticles(const Box<ndim> &,
-                                         Sph<ndim> *, vector<int> &) = 0;
   virtual void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
                                         vector<int>&, const vector<int>&, 
 					MpiNode<ndim>*) = 0;
-  virtual void GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&)=0;
+  virtual void GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>*)=0;
   virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
         Sph<ndim>* sph, int rank)=0;
   virtual int GetBackExportInfo(vector<char >& received_array, vector<int>& N_exported_particles_from_proc,
@@ -218,7 +216,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
 
   void FindParticlesToTransfer(Sph<ndim>* sph, std::vector<std::vector<int> >& particles_to_export,
       std::vector<int>& all_particles_to_export, const std::vector<int>& potential_nodes, MpiNode<ndim>* mpinodes);
-  virtual void GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&);
+  virtual void GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>*);
   virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
       Sph<ndim>* sph, int rank);
   virtual int GetBackExportInfo(vector<char >& received_array, vector<int>& N_exported_particles_from_proc,
@@ -400,11 +398,11 @@ protected:
   int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                               Sph<ndim> *, vector<int> &);
   int SearchHydroExportParticles(const Box<ndim> &,
-                                 Sph<ndim> *, vector<int> &);
+                                 Sph<ndim> *, vector<KDTreeCell<ndim> *> &);
   void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
 				vector<int>&, const vector<int>&, 
 				MpiNode<ndim>*);
-  virtual void GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&);
+  virtual void GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>*);
   virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
         Sph<ndim>* sph, int rank);
   virtual int GetBackExportInfo(vector<char >& received_array, vector<int>& N_exported_particles_from_proc,

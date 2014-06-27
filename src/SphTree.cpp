@@ -873,7 +873,7 @@ template <int ndim, template<int> class ParticleType>
 int SphTree<ndim,ParticleType>::SearchHydroExportParticles
 (const Box<ndim> &mpibox,           ///< [in] Bounding box of MPI domain
  Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
- vector<int> &export_list)          ///< [out] List of particle ids
+ vector<KDTreeCell<ndim> *> &cell_list)          ///< [out] List of particle ids
 {
   int c;                            // Cell counter
   int i;
@@ -911,18 +911,21 @@ int SphTree<ndim,ParticleType>::SearchHydroExportParticles
       else if (cell->N == 0)
         c = cell->cnext;
             
-      // If leaf-cell, check through particles in turn to find ghosts and
-      // add to list to be exported
+      // If leaf-cell and active, add the cell to the list of cells being exported
       else if (cell->level == tree->ltot) {
-        i = cell->ifirst;
-        while (i != -1) {
-          if (sphdata[i].active) {
-            export_list.push_back(i);
-            Nexport++;
-          }
-          if (i == cell->ilast) break;
-          i = tree->inext[i];
-        };
+//        i = cell->ifirst;
+//        while (i != -1) {
+//          if (sphdata[i].active) {
+//            export_list.push_back(i);
+//            Nexport++;
+//          }
+//          if (i == cell->ilast) break;
+//          i = tree->inext[i];
+//        };
+        if (cell->Nactive>0) {
+          Nexport += cell->Nactive;
+          cell_list.push_back(cell);
+        }
         c = cell->cnext;
       }
     }
@@ -934,9 +937,9 @@ int SphTree<ndim,ParticleType>::SearchHydroExportParticles
         
   }
   //-------------------------------------------------------------------------
-    
-    
+
   return Nexport;
+    
 }
 
 
@@ -1030,27 +1033,44 @@ template <int ndim, template<int> class ParticleType>
 void SphTree<ndim,ParticleType>::GetExportInfo (
     int Nproc,        ///< [in] Number of processor we want to send the information to
     Sph<ndim>*  sph,  ///< [in] Pointer to sph object
-    vector<char >& send_buffer )  ///< [inout] Vector where the particles to export will be stored
+    vector<char >& send_buffer,   ///< [inout] Vector where the particles to export will be stored
+    MpiNode<ndim>* mpinode )       ///< [in] Array with information for the other mpi nodes
     {
 
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
 
   int Nactive=0;
-  for (int i=0; i<sph->Nsph; i++) {
-    if (sphdata[i].active)
-      Nactive++;
-  }
 
   // Work out size of the information we are sending
   send_buffer.clear();
   ids_active_particles.clear();
-  const int size_particles = Nactive*sizeof(ParticleType<ndim>);
   //Header consists of number of particles and number of cells
   const int size_header = 2*sizeof(int);
   // Get active cells and their number (so that we know how much memory to allocate)
-  vector<KDTreeCell<ndim>*> celllist(tree->gtot);
+  vector<KDTreeCell<ndim>*> celllist;
+  celllist.reserve(tree->gtot);
   assert(tree->Nimportedcell==0);
-  int cactive = tree->ComputeActiveCellList(&celllist[0]);
+  int cactive;
+  bool hydro_only = !sph->self_gravity && sph->hydro_forces;
+  if (hydro_only) {
+    for (int j=0; j<Nmpi; j++) {
+            if (Nproc == j) continue;
+            Nactive += SearchHydroExportParticles(mpinode[j].domain,sph,celllist);
+    }
+    //WARNING: works only for 2 processors! Otherwise the same cell could be sent more than once
+    cactive = celllist.size();
+  }
+  else {
+
+    for (int i=0; i<sph->Nsph; i++) {
+      if (sphdata[i].active)
+        Nactive++;
+    }
+
+    celllist.resize(tree->gtot);
+    cactive = tree->ComputeActiveCellList(&celllist[0]);
+  }
+  const int size_particles = Nactive*sizeof(ParticleType<ndim>);
   const int size_cells = cactive*sizeof(KDTreeCell<ndim>);
   send_buffer.resize(size_particles+size_cells+size_header);
 
