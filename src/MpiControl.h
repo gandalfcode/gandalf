@@ -72,6 +72,8 @@ class MpiControl
   std::vector<int> num_particles_to_be_received;
   std::vector<int> receive_displs;
   std::vector<int> Nbytes_exported_from_proc;
+  std::vector<int> Nbytes_to_each_proc;
+
   int tot_particles_to_receive;
 
   std::vector<Box<ndim> > boxes_buffer;     ///< Buffer needed by the UpdateAllBoundingBoxes routine
@@ -105,6 +107,7 @@ class MpiControl
   virtual void ExportParticlesBeforeForceLoop (Sph<ndim>* sph) =0;
   virtual void GetExportedParticlesAccelerations (Sph<ndim>* sph) =0;
 
+  void CommunicatePrunedTrees() {neibsearch->CommunicatePrunedTrees(my_matches,rank);};
 
   // MPI control variables
   //---------------------------------------------------------------------------
@@ -140,6 +143,7 @@ class MpiControlType : public MpiControl<ndim> {
   using MpiControl<ndim>::receive_displs;
   using MpiControl<ndim>::tot_particles_to_receive;
   using MpiControl<ndim>::Nbytes_exported_from_proc;
+  using MpiControl<ndim>::Nbytes_to_each_proc;
   using MpiControl<ndim>::ExportParticleType;
   using MpiControl<ndim>::ExportBackParticleType;
   using MpiControl<ndim>::neibsearch;

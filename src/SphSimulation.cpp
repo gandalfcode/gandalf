@@ -653,6 +653,7 @@ void SphSimulation<ndim>::MainLoop(void)
       // Copy properties from original particles to ghost particles
       LocalGhosts->CopySphDataToGhosts(simbox,sph);
 #ifdef MPI_PARALLEL
+      mpicontrol->CommunicatePrunedTrees();
       sphneib->UpdateDistantSphForces(rank,sph->Nsph,sph->Ntot,
 				      sph->GetParticlesArray(),sph,nbody);
 

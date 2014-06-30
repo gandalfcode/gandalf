@@ -122,13 +122,14 @@ protected:
   virtual void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
                                         vector<int>&, const vector<int>&, 
 					MpiNode<ndim>*) = 0;
-  virtual void GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>*)=0;
+  virtual int GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>&, int, int)=0;
   virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
-        Sph<ndim>* sph, int rank)=0;
-  virtual int GetBackExportInfo(vector<char >& received_array, vector<int>& N_exported_particles_from_proc,
-        Sph<ndim>* sph, int rank)=0;
+        Sph<ndim>* sph)=0;
+  virtual void GetBackExportInfo(vector<char >& received_array, vector<int>& N_exported_particles_from_proc,
+        vector<int>&, Sph<ndim>* sph, int rank)=0;
   virtual void UnpackReturnedExportInfo(vector<char >& received_information, vector<int>& recv_displs,
       Sph<ndim>* sph, int rank)=0;
+  virtual void CommunicatePrunedTrees(vector<int>&, int)=0;
 
 #endif
 
@@ -220,13 +221,14 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
 
   void FindParticlesToTransfer(Sph<ndim>* sph, std::vector<std::vector<int> >& particles_to_export,
       std::vector<int>& all_particles_to_export, const std::vector<int>& potential_nodes, MpiNode<ndim>* mpinodes);
-  virtual void GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>*);
+  virtual int GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>&, int, int);
   virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
-      Sph<ndim>* sph, int rank);
-  virtual int GetBackExportInfo(vector<char >& received_array, vector<int>& N_exported_particles_from_proc,
-      Sph<ndim>* sph, int rank);
+      Sph<ndim>* sph);
+  virtual void GetBackExportInfo(vector<char >& received_array, vector<int>& N_exported_particles_from_proc,
+      vector<int>&, Sph<ndim>* sph, int rank);
   virtual void UnpackReturnedExportInfo(vector<char >& received_information, vector<int>& recv_displs,
       Sph<ndim>* sph, int rank);
+  virtual void CommunicatePrunedTrees(vector<int>&, int) {};
 
 #endif
 };
@@ -353,6 +355,7 @@ template <int ndim, template<int> class ParticleType>
 class SphTree: public SphNeighbourSearch<ndim>
 {
 #if defined MPI_PARALLEL
+  vector<vector<int> > ids_sent_particles;
 protected:
   using SphNeighbourSearch<ndim>::ids_active_particles;
   vector<int> N_imported_part_per_proc;
@@ -409,13 +412,14 @@ protected:
   void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
 				vector<int>&, const vector<int>&, 
 				MpiNode<ndim>*);
-  virtual void GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>*);
+  virtual int GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>&, int, int);
   virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
-        Sph<ndim>* sph, int rank);
-  virtual int GetBackExportInfo(vector<char >& received_array, vector<int>& N_exported_particles_from_proc,
-        Sph<ndim>* sph, int rank);
+        Sph<ndim>* sph);
+  virtual void GetBackExportInfo(vector<char >& received_array, vector<int>& N_exported_particles_from_proc,
+        vector<int>&, Sph<ndim>* sph, int rank);
   virtual void UnpackReturnedExportInfo(vector<char >& received_information, vector<int>& recv_displs,
       Sph<ndim>* sph, int rank);
+  virtual void CommunicatePrunedTrees(vector<int>&, int);
 #endif
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(int, int, int, int *, 
