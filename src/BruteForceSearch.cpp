@@ -1017,27 +1017,41 @@ void BruteForceSearch<ndim,ParticleType>::FindParticlesToTransfer
 /// all particles to the other processors)
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void BruteForceSearch<ndim,ParticleType>::GetExportInfo (
+int BruteForceSearch<ndim,ParticleType>::GetExportInfo (
     int Nproc,        ///< [in] Number of processor we want to send the information to
     Sph<ndim>*  sph,  ///< [in] Pointer to sph object
     vector<char >& particles_to_export, ///< [inout] Vector where the particles to export will be stored
-    MpiNode<ndim>* mpinode)                    ///< [in]  Array with information for the other mpi nodes
+    MpiNode<ndim>& mpinode,
+    int rank,
+    int Nmpi)                    ///< [in]  Array with information for the other mpi nodes
     {
 
-  //Find number of active particles
-  ids_active_particles.clear();
+  const bool first_proc = (Nproc==0) || (rank==0 && Nproc==1);
+
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
-  for (int i=0; i< sph->Nsph; i++) {
-    if (sphdata[i].active) {
-      ids_active_particles.push_back(i);
+
+  //Find number of active particles
+
+  if (first_proc) {
+    ids_active_particles.clear();
+    for (int i=0; i< sph->Nsph; i++) {
+      if (sphdata[i].active) {
+        ids_active_particles.push_back(i);
+      }
     }
   }
 
   const int Nactive = ids_active_particles.size();
+  const int size_export = Nactive*sizeof(ParticleType<ndim>);
 
-
-  particles_to_export.clear();
-  particles_to_export.resize(Nactive*sizeof(ParticleType<ndim>));
+  if (first_proc) {
+    particles_to_export.clear();
+    particles_to_export.reserve((Nmpi-1)*size_export);
+    particles_to_export.resize(size_export);
+  }
+  else {
+    particles_to_export.resize(particles_to_export.size()+size_export);
+  }
 
 //  //Copy positions of active particles inside arrays
 //  int j=0;
@@ -1050,7 +1064,7 @@ void BruteForceSearch<ndim,ParticleType>::GetExportInfo (
 //  }
 
   //Copy particles to export inside arrays
-  int j=0;
+  int j=(particles_to_export.size()-size_export)/sizeof(ParticleType<ndim>);
   for (int i=0; i< sph->Nsph; i++) {
     if (sphdata[i].active) {
         copy(&particles_to_export[j*sizeof(ParticleType<ndim>)] , &sphdata[i]);
@@ -1058,7 +1072,7 @@ void BruteForceSearch<ndim,ParticleType>::GetExportInfo (
     }
   }
 
-  assert(j==Nactive);
+  return size_export;
 
 
 }
@@ -1073,8 +1087,7 @@ template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::UnpackExported (
     vector<char >& received_array,
     vector<int>& Nbytes_exported_from_proc,
-    Sph<ndim>* sph,
-    int rank) {
+    Sph<ndim>* sph) {
 
 
   int offset = 0;
@@ -1088,12 +1101,6 @@ void BruteForceSearch<ndim,ParticleType>::UnpackExported (
 
     int N_received_bytes = Nbytes_exported_from_proc[Nproc];
     int N_received_particles = N_received_bytes/sizeof(ParticleType<ndim>);
-
-    //Avoid inserting my own particles
-    if (Nproc==rank) {
-      offset += N_received_bytes;
-      continue;
-    }
 
     //Ensure there is enough memory
     if (sph->Ntot + N_received_particles > sph->Nsphmax) {
@@ -1128,24 +1135,21 @@ void BruteForceSearch<ndim,ParticleType>::UnpackExported (
 /// Return the data to transmit back to the other processors (particle acceleration etc.)
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-int BruteForceSearch<ndim,ParticleType>::GetBackExportInfo (
+void BruteForceSearch<ndim,ParticleType>::GetBackExportInfo (
     vector<char >& send_buffer, ///< [inout] These arrays will be overwritten with the information to send
     vector<int>& Nbytes_exported_from_proc,
+    vector<int>& Nbytes_to_each_proc,
     Sph<ndim>* sph,   ///< [in] Pointer to the SPH object
     int rank
     ) {
 
   int Nbytes_received_exported = std::accumulate(Nbytes_exported_from_proc.begin(), Nbytes_exported_from_proc.end(), 0);
 
-  send_buffer.resize(Nbytes_received_exported-Nbytes_exported_from_proc[rank]);
+  send_buffer.resize(Nbytes_received_exported);
 
   //loop over the processors, removing particles as we go
   int removed_particles=0;
   for (int Nproc=0 ; Nproc < Nbytes_exported_from_proc.size(); Nproc++ ) {
-
-    //My local particles were not inserted
-    if (rank==Nproc)
-      continue;
 
     const int N_received_particles = Nbytes_exported_from_proc[Nproc]/sizeof(ParticleType<ndim>);
 
@@ -1182,7 +1186,6 @@ int BruteForceSearch<ndim,ParticleType>::GetBackExportInfo (
   assert(sph->Ntot == sph->Nsph + sph->Nghost);
   assert(send_buffer.size() == removed_particles*sizeof(ParticleType<ndim>));
 
-  return ids_active_particles.size()*sizeof(ParticleType<ndim>);
 
 }
 

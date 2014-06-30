@@ -87,6 +87,7 @@ MpiControl<ndim>::MpiControl()
   num_particles_to_be_received.resize(Nmpi);
   receive_displs.resize(Nmpi);
   Nbytes_exported_from_proc.resize(Nmpi);
+  Nbytes_to_each_proc.resize(Nmpi);
 
   CreateLeagueCalendar();
 
@@ -946,21 +947,30 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
 template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop (Sph<ndim>* sph) {
 
-  //Get the vector to do the gather to all other processors
-  vector<char> gather_vector;
-  neibsearch->GetExportInfo(rank, sph,gather_vector, mpinode);
-  int Nbytes_to_be_exported = gather_vector.size();
+  //Get the information to send to the other processors
+  vector<char> send_buffer;
+
+  for (int Nproc=0; Nproc<Nmpi; Nproc++) {
+    //No need to send anything to ourselves
+    if (Nproc == rank)
+      continue;
+    //Append at the end of send_vector the information we are sending and get how much it is
+    Nbytes_to_each_proc[Nproc] = neibsearch->GetExportInfo(Nproc, sph, send_buffer, mpinode[Nproc],rank,Nmpi);
+  }
+  int Nbytes_to_be_exported = send_buffer.size();
+  assert(std::accumulate(Nbytes_to_each_proc.begin(),Nbytes_to_each_proc.end(),0)==Nbytes_to_be_exported);
 
   //First need to know how many bytes each processor is sending
-  MPI_Allgather(&Nbytes_to_be_exported, 1, MPI_INT, &Nbytes_exported_from_proc[0],
-      1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Alltoall(&Nbytes_to_each_proc[0],1,MPI_INT,&Nbytes_exported_from_proc[0],1,MPI_INT,MPI_COMM_WORLD);
 
   //Can now compute the displacements
-  vector<int> displs_proc(Nmpi);
-  int running_counter=0;
+  vector<int> displs_recv(Nmpi), displs_send(Nmpi);
+  int running_counter_recv=0, running_counter_send=0;
   for (int inode=1; inode<Nmpi; inode++) {
-    running_counter += Nbytes_exported_from_proc[inode-1];
-    displs_proc[inode]=running_counter;
+    running_counter_recv += Nbytes_exported_from_proc[inode-1];
+    running_counter_send += Nbytes_to_each_proc[inode-1];
+    displs_recv[inode]=running_counter_recv;
+    displs_send[inode]=running_counter_send;
   }
 
   //Compute total number of particles to be received (including the ones from ourselves)
@@ -969,12 +979,12 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop (Sph<ndim
   //Allocate memory to receive all the particles
   vector<char > receive_buffer(Nbytes_received_exported);
 
-  //Gather the information from every other processor
-  MPI_Allgatherv(&gather_vector[0], Nbytes_to_be_exported, MPI_CHAR, &receive_buffer[0],
-      &Nbytes_exported_from_proc[0], &displs_proc[0], MPI_CHAR, MPI_COMM_WORLD);
+ //Perform the actual communication
+  MPI_Alltoallv(&send_buffer[0],&Nbytes_to_each_proc[0],&displs_send[0],MPI_CHAR,&receive_buffer[0],
+      &Nbytes_exported_from_proc[0],&displs_recv[0],MPI_CHAR, MPI_COMM_WORLD);
 
   //Unpack the received arrays
-  neibsearch->UnpackExported(receive_buffer, Nbytes_exported_from_proc, sph, rank);
+  neibsearch->UnpackExported(receive_buffer, Nbytes_exported_from_proc, sph);
 
 }
 
@@ -989,27 +999,24 @@ void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations (Sph<n
   vector<char> send_buffer;
 
   //Get the array with the acceleration for every other processor
-  int Nybtes_to_receive = neibsearch->GetBackExportInfo(send_buffer, Nbytes_exported_from_proc, sph, rank);
+  //Quite confusingly, note that the role of the two arays with the number of bytes from/to
+  //each processor is now reversed (from is to send and to is to receive)
+  neibsearch->GetBackExportInfo(send_buffer, Nbytes_exported_from_proc, Nbytes_to_each_proc, sph, rank);
 
   vector<int> send_displs(Nmpi);
-  Nbytes_exported_from_proc[rank]=0;
   compute_displs (send_displs, Nbytes_exported_from_proc);
 
   //Allocate receive buffer
-  vector<char > receive_buffer(Nybtes_to_receive*(Nmpi-1));
+  const int Nbytes_to_receive = std::accumulate(Nbytes_to_each_proc.begin(),Nbytes_to_each_proc.end(),0);
+  vector<char > receive_buffer(Nbytes_to_receive);
 
   //Prepare receive counts and displacements
-  vector<int> recv_counts(Nmpi);
-  std::fill(recv_counts.begin(), recv_counts.end(), Nybtes_to_receive);
-  recv_counts[rank]=0;
   vector<int> recv_displs(Nmpi);
-  compute_displs (recv_displs, recv_counts);
-
-
+  compute_displs (recv_displs, Nbytes_to_each_proc);
 
   //Do the actual communication
   MPI_Alltoallv(&send_buffer[0], &Nbytes_exported_from_proc[0],  &send_displs[0],
-      MPI_CHAR, &receive_buffer[0], &recv_counts[0], &recv_displs[0], MPI_CHAR, MPI_COMM_WORLD );
+      MPI_CHAR, &receive_buffer[0], &Nbytes_to_each_proc[0], &recv_displs[0], MPI_CHAR, MPI_COMM_WORLD );
 
   //Unpack the received information to update accelerations
   neibsearch->UnpackReturnedExportInfo(receive_buffer, recv_displs, sph, rank);

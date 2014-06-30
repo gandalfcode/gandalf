@@ -1030,11 +1030,13 @@ void SphTree<ndim,ParticleType>::FindMpiTransferParticles
 /// all particles to the other processors)
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void SphTree<ndim,ParticleType>::GetExportInfo (
+int SphTree<ndim,ParticleType>::GetExportInfo (
     int Nproc,        ///< [in] Number of processor we want to send the information to
     Sph<ndim>*  sph,  ///< [in] Pointer to sph object
     vector<char >& send_buffer,   ///< [inout] Vector where the particles to export will be stored
-    MpiNode<ndim>* mpinode )       ///< [in] Array with information for the other mpi nodes
+    MpiNode<ndim>& mpinode,
+    int rank,
+    int Nmpi)       ///< [in] Array with information for the other mpi nodes
     {
 
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
@@ -1055,7 +1057,7 @@ void SphTree<ndim,ParticleType>::GetExportInfo (
   if (hydro_only) {
     for (int j=0; j<Nmpi; j++) {
             if (Nproc == j) continue;
-            Nactive += SearchHydroExportParticles(mpinode[j].domain,sph,celllist);
+            Nactive += SearchHydroExportParticles(mpinode.domain,sph,celllist);
     }
     //WARNING: works only for 2 processors! Otherwise the same cell could be sent more than once
     cactive = celllist.size();
@@ -1115,8 +1117,7 @@ template <int ndim, template<int> class ParticleType>
 void SphTree<ndim,ParticleType>::UnpackExported (
     vector<char >& received_array,
     vector<int>& Nbytes_exported_from_proc,
-    Sph<ndim>* sph,
-    int rank) {
+    Sph<ndim>* sph) {
 
 
   int offset = 0;
@@ -1139,10 +1140,10 @@ void SphTree<ndim,ParticleType>::UnpackExported (
     copy(&N_received_cells,&received_array[offset+sizeof(int)]);
 
     //Avoid inserting my own particles
-    if (Nproc==rank) {
-      offset += N_received_bytes;
-      continue;
-    }
+//    if (Nproc==rank) {
+//      offset += N_received_bytes;
+//      continue;
+//    }
 
     //Ensure there is enough memory
     if (sph->Ntot + N_received_particles > sph->Nsphmax) {
@@ -1195,9 +1196,10 @@ void SphTree<ndim,ParticleType>::UnpackExported (
 /// Return the data to transmit back to the other processors (particle acceleration etc.)
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-int SphTree<ndim,ParticleType>::GetBackExportInfo (
+void SphTree<ndim,ParticleType>::GetBackExportInfo (
     vector<char >& send_buffer, ///< [inout] These arrays will be overwritten with the information to send
     vector<int>& Nbytes_exported_from_proc,
+    vector<int>& Nbytes_to_each_proc,
     Sph<ndim>* sph,   ///< [in] Pointer to the SPH object
     int rank
     ) {
@@ -1255,7 +1257,7 @@ int SphTree<ndim,ParticleType>::GetBackExportInfo (
   assert(sph->Ntot == sph->Nsph + sph->Nghost);
   assert(send_buffer.size() == removed_particles*sizeof(ParticleType<ndim>));
 
-  return ids_active_particles.size()*sizeof(ParticleType<ndim>);
+//  return ids_active_particles.size()*sizeof(ParticleType<ndim>);
 
 }
 
