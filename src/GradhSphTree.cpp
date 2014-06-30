@@ -128,9 +128,14 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
   KDTreeCell<ndim> **celllist;      // List of binary cell pointers
   ParticleType<ndim> *activepart;   // ..
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
-
+#ifdef MPI_PARALLEL
+  int Nactivetot = 0;                      // Total number of active particles
+  double twork = timing->WallClockTime();  // Start time (for load balancing)
+#endif
+    
   debug2("[GradhSphTree::UpdateAllSphProperties]");
   timing->StartTimingSection("SPH_PROPERTIES",2);
+
 
   // Find list of all cells that contain active particles
   celllist = new KDTreeCell<ndim>*[tree->gtot];
@@ -185,17 +190,17 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
         // Find list of active particles in current cell
         Nactive = tree->ComputeActiveParticleList(cell,sphdata,activelist);
 
-	for (j=0; j<Nactive; j++)
-	  activepart[j] = sphdata[activelist[j]];
+        for (j=0; j<Nactive; j++)
+          activepart[j] = sphdata[activelist[j]];
 
         // Compute neighbour list for cell from particles on all trees
-	Nneib = 0;
+        Nneib = 0;
         Nneib = tree->ComputeGatherNeighbourList(sphdata,cell,hmax,
                                                  Nneibmax,Nneib,neiblist);
-	//cout << "Nneibmax1 : " << Nneibmax << "   " << Nneib << endl;
+        //cout << "Nneibmax1 : " << Nneibmax << "   " << Nneib << endl;
         Nneib = ghosttree->ComputeGatherNeighbourList(sphdata,cell,hmax,
                                                       Nneibmax,Nneib,neiblist);
-	//cout << "Nneibmax2 : " << Nneibmax << "   " << Nneib << endl;
+        //cout << "Nneibmax2 : " << Nneibmax << "   " << Nneib << endl;
 #ifdef MPI_PARALLEL
         Nneib = mpighosttree->ComputeGatherNeighbourList(sphdata,cell,hmax,
                                                  Nneibmax,Nneib,neiblist);
@@ -218,7 +223,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
           m = new FLOAT[Nneibmax];
           m2 = new FLOAT[Nneibmax];
           r = new FLOAT[Nneibmax*ndim];
-	  Nneib = 0;
+          Nneib = 0;
           Nneib = tree->ComputeGatherNeighbourList(sphdata,cell,hmax,
                                            Nneibmax,Nneib,neiblist);
           Nneib = ghosttree->ComputeGatherNeighbourList(sphdata,cell,hmax,
@@ -269,7 +274,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
           // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
           if (neibcheck) 
-	    this->CheckValidNeighbourList(i,Ntot,Nneib,neiblist,
+            this->CheckValidNeighbourList(i,Ntot,Nneib,neiblist,
                                           sphdata,"gather");
 #endif
 
@@ -291,7 +296,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
       //-----------------------------------------------------------------------
 
       for (j=0; j<Nactive; j++) 
-	sphdata[activelist[j]] = activepart[j];
+        sphdata[activelist[j]] = activepart[j];
+        
+#ifdef MPI_PARALLEL
+      Nactivetot += Nactive;
+#endif
 
     }
     //=========================================================================
@@ -310,6 +319,15 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
   }
   //===========================================================================
 
+  // Compute time spent in routine and in each cell for load balancing
+#ifdef MPI_PARALLEL
+  twork = timing->WallClockTime() - twork;
+  for (cc=0; cc<cactive; cc++) {
+    celllist[cc]->worktot +=
+      twork*(double) celllist[cc]->Nactive / (double) Nactivetot;
+  }
+#endif
+    
   delete[] celllist;
 
   // Update tree smoothing length values here

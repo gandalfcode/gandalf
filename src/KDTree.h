@@ -76,7 +76,7 @@ struct KDTreeCell {
   FLOAT dhmaxdt;                    ///< Rate of change of maximum h
   FLOAT q[5];                       ///< Quadrupole moment tensor
 #ifdef MPI_PARALLEL
-  FLOAT worktot;                    ///< Total work in cell
+  double worktot;                   ///< Total work in cell
 #endif
 };
 
