@@ -796,6 +796,24 @@ void BruteForceSearch<ndim,ParticleType>::SearchBoundaryGhostParticles
 
 #if defined MPI_PARALLEL
 //=============================================================================
+//  BruteForceSearch::UpdateDistantSphForces
+/// ..
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::UpdateDistantSphForces
+(int rank,                          ///< [in] ..
+ int Nsph,                          ///< [in] No. of SPH particles
+ int Ntot,                          ///< [in] No. of SPH + ghost particles
+ SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
+ Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
+ Nbody<ndim> *nbody)                ///< [in] Pointer to N-body object
+{
+  return;
+}
+
+
+
+//=============================================================================
 //  BruteForceSearch::SearchMpiGhostParticles
 /// Compute on behalf of the MpiControl class the ghost particles we need 
 /// to export to other nodes.

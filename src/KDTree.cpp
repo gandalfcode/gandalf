@@ -850,6 +850,9 @@ void KDTree<ndim,ParticleType>::StockCellProperties
       cell.cdistsqd = max(DotProduct(dr,dr,ndim),
 			  cell.hmax*cell.hmax)/thetamaxsqd;
       cell.rmax = sqrt(DotProduct(dr,dr,ndim));
+#ifdef MPI_PARALLEL
+      cell.worktot = child1.worktot + child2.worktot;
+#endif
     }
     
     // Now add individual quadrupole moment terms
@@ -928,12 +931,16 @@ void KDTree<ndim,ParticleType>::ExtrapolateCellProperties
   debug2("[KDTree::ExtrapolateCellProperties]");
 
 
-  // Loop backwards over all tree cells to ensure child cells are always
-  // computed first before being summed in parent cells.
+  // ...
   //===========================================================================
-  for (c=Ncell-1; c>=0; c--) {
+  for (c=0; c<Ncell; c++) {
 
     for (k=0; k<ndim; k++) kdcell[c].r[k] += kdcell[c].v[k]*dt;
+    for (k=0; k<ndim; k++) kdcell[c].rcell[k] += kdcell[c].v[k]*dt;
+    for (k=0; k<ndim; k++) kdcell[c].bbmin[k] += kdcell[c].v[k]*dt;
+    for (k=0; k<ndim; k++) kdcell[c].bbmax[k] += kdcell[c].v[k]*dt;
+    for (k=0; k<ndim; k++) kdcell[c].hboxmin[k] += kdcell[c].v[k]*dt;
+    for (k=0; k<ndim; k++) kdcell[c].hboxmax[k] += kdcell[c].v[k]*dt;
     //kdcell[c].rmax += kdcell[c].drmaxdt*dt;
     //kdcell[c].hmax += kdcell[c].dhmaxdt*dt;
 
@@ -1972,6 +1979,114 @@ int KDTree<ndim,ParticleType>::ComputeActiveCellList
 
   return Nactive;
 }
+
+
+
+#ifdef MPI_PARALLEL
+//=============================================================================
+//  KDTree::ComputeGravityInteractionList
+/// Computes and returns number of SPH neighbours (Nneib), direct sum particles
+/// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
+/// the gravity tree walk for active particles inside cell c.
+/// Currently defaults to the geometric opening criteria.
+/// If any of the interactions list arrays (neiblist,directlist,gravcelllist) 
+/// overflow, return with error code (-1) to reallocate more memory.
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+int KDTree<ndim,ParticleType>::ComputeDistantGravityInteractionList
+(const KDTreeCell<ndim> *cell,        ///< [in] Pointer to cell
+ const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
+ const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
+ int Ngravcell,                       ///< [in] Current no. of cells in array
+ KDTreeCell<ndim> **gravcelllist)     ///< [out] Array of pointers to cells
+{
+  int cc;                             // Cell counter
+  int i;                              // Particle id
+  int j;                              // Aux. particle counter
+  int k;                              // Neighbour counter
+  int Ngravcelltemp = Ngravcell;      // ..
+  FLOAT dr[ndim];                     // Relative position vector
+  FLOAT drsqd;                        // Distance squared
+  FLOAT rc[ndim];                     // Position of cell
+  FLOAT hrangemax;                    // Maximum kernel extent 
+  FLOAT rmax;                         // Radius of sphere containing particles
+
+  // Make local copies of important cell properties
+  for (k=0; k<ndim; k++) rc[k] = cell->rcell[k];
+  hrangemax = cell->rmax + kernrange*cell->hmax;
+  rmax = cell->rmax;
+
+  // Start with root cell and walk through entire tree
+  cc = 0;
+
+
+  // Walk through all cells in tree to determine particle and cell 
+  // interaction lists
+  //===========================================================================
+  while (cc < Ncell) {
+
+    for (k=0; k<ndim; k++) dr[k] = kdcell[cc].rcell[k] - rc[k];
+    drsqd = DotProduct(dr,dr,ndim);
+
+    
+    // Check if bounding boxes overlap with each other
+    //-------------------------------------------------------------------------
+    if (BoxOverlap(cell->bbmin,cell->bbmax,
+                   kdcell[cc].hboxmin,kdcell[cc].hboxmax) ||
+	BoxOverlap(cell->hboxmin,cell->hboxmax,
+                   kdcell[cc].bbmin,kdcell[cc].bbmax)) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (kdcell[cc].level != ltot)
+        cc++;
+
+      else if (kdcell[cc].N == 0)
+	cc = kdcell[cc].cnext;
+
+      // If leaf-cell, add particles to list
+      else if (kdcell[cc].level == ltot) {
+	return -1;
+      }
+
+    }
+
+    // Check if cell is far enough away to use the COM approximation
+    //-------------------------------------------------------------------------
+    else if (drsqd > kdcell[cc].cdistsqd && drsqd > kdcell[cc].mac*macfactor 
+	     && kdcell[cc].N > 0) {
+
+      gravcelllist[Ngravcelltemp++] = &(kdcell[cc]);
+      cc = kdcell[cc].cnext;
+
+    }
+
+    // If cell is too close, open cell to interogate children cells.
+    // If cell is too close and a leaf cell, then add particles to direct list.
+    //-------------------------------------------------------------------------
+    else if (!(drsqd > kdcell[cc].cdistsqd && 
+	       drsqd > kdcell[cc].mac*macfactor) && kdcell[cc].N > 0) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (kdcell[cc].level != ltot)
+         cc++;
+
+      // If leaf-cell, add particles to list
+      else 
+       	return -1;
+
+    }
+
+    // If not in range, then open next cell
+    //-------------------------------------------------------------------------
+    else
+      cc = kdcell[cc].cnext;
+
+  };
+  //===========================================================================
+
+  return Ngravcelltemp;
+}
+#endif
 
 
 

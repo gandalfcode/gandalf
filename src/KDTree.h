@@ -75,6 +75,9 @@ struct KDTreeCell {
   FLOAT drmaxdt;                    ///< Rate of change of bounding sphere
   FLOAT dhmaxdt;                    ///< Rate of change of maximum h
   FLOAT q[5];                       ///< Quadrupole moment tensor
+#ifdef MPI_PARALLEL
+  FLOAT worktot;                    ///< Total work in cell
+#endif
 };
 
 
@@ -135,6 +138,11 @@ class KDTree
 				   KDTreeCell<ndim> **);
   void ComputeFastMonopoleForces(int, int, KDTreeCell<ndim> **, 
 				 KDTreeCell<ndim> *, ParticleType<ndim> *);
+#ifdef MPI_PARALLEL
+  int ComputeDistantGravityInteractionList(const KDTreeCell<ndim> *, 
+					   const FLOAT, const int, int, 
+					   KDTreeCell<ndim> **);
+#endif
 #if defined(VERIFY_ALL)
   void ValidateTree(ParticleType<ndim> *);
 #endif

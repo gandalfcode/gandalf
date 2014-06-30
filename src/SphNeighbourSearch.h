@@ -113,6 +113,8 @@ protected:
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim>, 
                                             Sph<ndim> *)=0;
 #ifdef MPI_PARALLEL
+  virtual void UpdateDistantSphForces(int, int, int, SphParticle<ndim> *, 
+                                      Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void BuildMpiGhostTree(bool, int, int, int, int, int, 
                                  SphParticle<ndim> *, Sph<ndim> *, FLOAT) = 0;
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &, 
@@ -200,6 +202,8 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
 
 #ifdef MPI_PARALLEL
   using SphNeighbourSearch<ndim>::ids_active_particles;
+  void UpdateDistantSphForces(int, int, int, SphParticle<ndim> *, 
+                              Sph<ndim> *, Nbody<ndim> *);
   //void SearchMpiGhostParticles(const FLOAT, const Sph<ndim> *,
   //                           const vector<int> &, const MpiNode<ndim> *,
   //                           vector<vector<int> > &);
@@ -395,8 +399,11 @@ protected:
   void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
 
 #ifdef MPI_PARALLEL
+  void UpdateDistantSphForces(int, int, int, SphParticle<ndim> *, 
+                              Sph<ndim> *, Nbody<ndim> *);
   void BuildMpiGhostTree(bool, int, int, int, int, int, 
                          SphParticle<ndim> *, Sph<ndim> *, FLOAT);
+  void BuildPrunedTree(int, int);
   int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                               Sph<ndim> *, vector<int> &);
   int SearchHydroExportParticles(const Box<ndim> &,
@@ -448,12 +455,6 @@ protected:
   KDTree<ndim,ParticleType> *tree;  ///< Pointer to tree
   KDTree<ndim,ParticleType> *ghosttree;  ///< Pointer to tree containing ghosts
                                          ///< on local domain
-#ifdef MPI_PARALLEL
-  KDTree<ndim,ParticleType> *mpighosttree;  ///< Pointer to tree containing 
-                                            ///< ghosts from other MPI procs.
-  KDTree<ndim,ParticleType> **prunedtree;   ///< 'Pruned' tree for MPI nodes.
-                                            ///< i.e. only uses top levels
-#endif
 
   bool allocated_buffer;            ///< ..
   int Nthreads;                     ///< ..
@@ -464,6 +465,16 @@ protected:
   int **levelneibbuf;               ///< ..
   ParticleType<ndim> **neibpartbuf;   // Local copy of neighbouring ptcls
   ParticleType<ndim> **activepartbuf; // Local copy of SPH particle  
+
+#ifdef MPI_PARALLEL
+  int Nprunedcellmax;                       ///< ..
+  int *Ncellexport;                         ///< ..
+  int **cellexportlist;                     ///< List of cells
+  KDTree<ndim,ParticleType> *mpighosttree;  ///< Pointer to tree containing 
+                                            ///< ghosts from other MPI procs.
+  KDTree<ndim,ParticleType> **prunedtree;   ///< 'Pruned' tree for MPI nodes.
+                                            ///< i.e. only uses top levels
+#endif
 
 };
 

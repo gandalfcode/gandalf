@@ -448,6 +448,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 		       sph,timestep);
 
 #ifdef MPI_PARALLEL
+    sphneib->UpdateDistantSphForces(rank,sph->Nsph,sph->Ntot,
+				    sph->GetParticlesArray(),sph,nbody);
+
 //    MpiGhosts->CopySphDataToGhosts(simbox,sph);
     mpicontrol->ExportParticlesBeforeForceLoop(sph);
 #endif
@@ -513,9 +516,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   this->CalculateDiagnostics();
   this->diag0 = this->diag;
   this->setup = true;
-    
-    
-
     
 
   return;
@@ -653,6 +653,9 @@ void SphSimulation<ndim>::MainLoop(void)
       // Copy properties from original particles to ghost particles
       LocalGhosts->CopySphDataToGhosts(simbox,sph);
 #ifdef MPI_PARALLEL
+      sphneib->UpdateDistantSphForces(rank,sph->Nsph,sph->Ntot,
+				      sph->GetParticlesArray(),sph,nbody);
+
 //      MpiGhosts->CopySphDataToGhosts(simbox,sph);
       mpicontrol->ExportParticlesBeforeForceLoop(sph);
 #endif
