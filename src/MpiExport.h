@@ -24,6 +24,7 @@
 #ifndef MPIEXPORT_H_
 #define MPIEXPORT_H_
 
+#include <cstring>
 #include "Precision.h"
 
 

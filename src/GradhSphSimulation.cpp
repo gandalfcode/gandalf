@@ -209,6 +209,10 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
+#if defined MPI_PARALLEL
+  mpicontrol = new MpiControlType<ndim, GradhSphParticle>;
+  mpicontrol->timing = timing;
+#endif
 
   // Create neighbour searching object based on chosen method in params file
   //-------------------------------------------------------------------------
@@ -217,7 +221,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
       (sph->kernp->kernrange,&simbox,sph->kernp,timing);
   else if (stringparams["neib_search"] == "tree") {
     sphneib = new GradhSphTree<ndim,GradhSphParticle>
-     (intparams["Nleafmax"],this->Nmpi,floatparams["thetamaxsqd"],
+     (intparams["Nleafmax"],mpicontrol->Nmpi,floatparams["thetamaxsqd"],
       sph->kernp->kernrange,floatparams["macerror"],
       stringparams["gravity_mac"],stringparams["multipole"],
       &simbox,sph->kernp,timing);
@@ -232,9 +236,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   //sphneib->kernrange = sph->kernp->kernrange;
 
 #if defined MPI_PARALLEL
-  mpicontrol = new MpiControlType<ndim, GradhSphParticle>;
   mpicontrol->SetNeibSearch(sphneib);
-  mpicontrol->timing = timing;
 #endif
 
 

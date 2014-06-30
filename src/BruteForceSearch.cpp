@@ -1038,7 +1038,8 @@ template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::GetExportInfo (
     int Nproc,        ///< [in] Number of processor we want to send the information to
     Sph<ndim>*  sph,  ///< [in] Pointer to sph object
-    vector<char >& particles_to_export )  ///< [inout] Vector where the particles to export will be stored
+    vector<char >& particles_to_export, ///< [inout] Vector where the particles to export will be stored
+    MpiNode<ndim>* mpinode)                    ///< [in]  Array with information for the other mpi nodes
     {
 
   //Find number of active particles

@@ -948,7 +948,7 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop (Sph<ndim
 
   //Get the vector to do the gather to all other processors
   vector<char> gather_vector;
-  neibsearch->GetExportInfo(0, sph,gather_vector);
+  neibsearch->GetExportInfo(rank, sph,gather_vector, mpinode);
   int Nbytes_to_be_exported = gather_vector.size();
 
   //First need to know how many bytes each processor is sending
