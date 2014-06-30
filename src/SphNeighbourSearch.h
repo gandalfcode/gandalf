@@ -349,6 +349,7 @@ template <int ndim, template<int> class ParticleType>
 class SphTree: public SphNeighbourSearch<ndim>
 {
 #if defined MPI_PARALLEL
+  vector<vector<int> > ids_sent_particles;
 protected:
   using SphNeighbourSearch<ndim>::ids_active_particles;
   vector<int> N_imported_part_per_proc;
