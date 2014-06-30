@@ -1532,6 +1532,43 @@ void SphTree<ndim,ParticleType>::UnpackReturnedExportInfo (
 
 }
 
+template <int ndim, template<int> class ParticleType>
+void SphTree<ndim,ParticleType>::CommunicatePrunedTrees (
+    vector<int>& my_matches,
+    int rank ) {
+
+
+  for (int iturn=0; iturn>my_matches.size(); iturn++) {
+    //See who we need to communicate with
+    int inode = my_matches[iturn];
+
+    //Decide if sending or receiving first
+    bool send_turn;
+    if (rank<inode) {
+      send_turn = true;
+    }
+    else {
+      send_turn = false;
+    }
+
+    //Do the actual communication
+    for (int i=0; i<2; i++) {
+      if (send_turn) {
+        KDTree<ndim, ParticleType>* tree = prunedtree[rank];
+        MPI_Send(tree->kdcell,tree->Ncell*sizeof(KDTreeCell<ndim>),MPI_CHAR,inode,3,MPI_COMM_WORLD);
+        send_turn=false;
+      }
+      else {
+        KDTree<ndim, ParticleType>* tree = prunedtree[inode];
+        MPI_Status status;
+        MPI_Recv(tree->kdcell,tree->Ncell*sizeof(KDTreeCell<ndim>),MPI_CHAR,inode,3,MPI_COMM_WORLD,&status);
+        send_turn=true;
+      }
+    }
+
+  }
+}
+
 
 #endif
 

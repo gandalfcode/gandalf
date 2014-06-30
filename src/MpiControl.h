@@ -107,6 +107,7 @@ class MpiControl
   virtual void ExportParticlesBeforeForceLoop (Sph<ndim>* sph) =0;
   virtual void GetExportedParticlesAccelerations (Sph<ndim>* sph) =0;
 
+  void CommunicatePrunedTrees() {neibsearch->CommunicatePrunedTrees(my_matches,rank);};
 
   // MPI control variables
   //---------------------------------------------------------------------------

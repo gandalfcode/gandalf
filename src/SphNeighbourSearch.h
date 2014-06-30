@@ -129,6 +129,7 @@ protected:
         vector<int>&, Sph<ndim>* sph, int rank)=0;
   virtual void UnpackReturnedExportInfo(vector<char >& received_information, vector<int>& recv_displs,
       Sph<ndim>* sph, int rank)=0;
+  virtual void CommunicatePrunedTrees(vector<int>&, int)=0;
 
 #endif
 
@@ -227,6 +228,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
       vector<int>&, Sph<ndim>* sph, int rank);
   virtual void UnpackReturnedExportInfo(vector<char >& received_information, vector<int>& recv_displs,
       Sph<ndim>* sph, int rank);
+  virtual void CommunicatePrunedTrees(vector<int>&, int) {};
 
 #endif
 };
@@ -417,6 +419,7 @@ protected:
         vector<int>&, Sph<ndim>* sph, int rank);
   virtual void UnpackReturnedExportInfo(vector<char >& received_information, vector<int>& recv_displs,
       Sph<ndim>* sph, int rank);
+  virtual void CommunicatePrunedTrees(vector<int>&, int);
 #endif
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(int, int, int, int *, 
