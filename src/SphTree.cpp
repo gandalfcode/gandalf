@@ -1,7 +1,7 @@
 //=============================================================================
 //  SphTree.cpp
-//  Contains all functions for building, stocking and walking for the 
-//  binary KD tree for SPH particles.  
+//  Contains all functions for building, stocking and walking for the
+//  binary KD tree for SPH particles.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -81,28 +81,33 @@ SphTree<ndim,ParticleType>::SphTree
 #endif
 
   // Set-up main tree object
-  tree = new KDTree<ndim,ParticleType>(Nleafmaxaux, thetamaxsqdaux, 
-                                       kernrangeaux, macerroraux, 
+  tree = new KDTree<ndim,ParticleType>(Nleafmaxaux, thetamaxsqdaux,
+                                       kernrangeaux, macerroraux,
                                        gravity_mac_aux, multipole_aux);
 
   // Set-up ghost-particle tree object
-  ghosttree = new KDTree<ndim,ParticleType>(Nleafmaxaux, thetamaxsqdaux, 
-                                            kernrangeaux, macerroraux, 
+  ghosttree = new KDTree<ndim,ParticleType>(Nleafmaxaux, thetamaxsqdaux,
+                                            kernrangeaux, macerroraux,
                                             gravity_mac_aux, multipole_aux);
 
 #ifdef MPI_PARALLEL
   // Set-up ghost-particle tree object
-  mpighosttree = new KDTree<ndim,ParticleType>(Nleafmaxaux, thetamaxsqdaux, 
-                                               kernrangeaux, macerroraux, 
+  mpighosttree = new KDTree<ndim,ParticleType>(Nleafmaxaux, thetamaxsqdaux,
+                                               kernrangeaux, macerroraux,
                                                gravity_mac_aux, multipole_aux);
-    
+
   // Set-up multiple pruned trees, one for each MPI process
   prunedtree = new KDTree<ndim,ParticleType>*[Nmpi];
   for (int j=0; j<Nmpi; j++) {
-    prunedtree[j] = new KDTree<ndim,ParticleType>(Nleafmaxaux, thetamaxsqdaux,
-                                                  kernrangeaux, macerroraux,
-                                                  gravity_mac_aux, multipole_aux);
+    prunedtree[j] = new KDTree<ndim,ParticleType>
+      (Nleafmaxaux, thetamaxsqdaux, kernrangeaux, macerroraux,
+       gravity_mac_aux, multipole_aux);
   }
+
+  Ncellexport = new int[Nmpi];
+  Npartexport = new int[Nmpi];
+  cellexportlist = new int*[Nmpi];
+  for (int j=0; j<Nmpi; j++) cellexportlist[j] = new int[1];
 
   ids_sent_particles.resize(Nmpi);
 #endif
@@ -128,7 +133,7 @@ SphTree<ndim,ParticleType>::~SphTree()
 
 //=============================================================================
 //  SphTree::AllocateMemory
-/// Allocate memory for binary tree as requested.  If more memory is required 
+/// Allocate memory for tree as requested.  If more memory is required
 /// than currently allocated, tree is deallocated and reallocated here.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -139,7 +144,7 @@ void SphTree<ndim,ParticleType>::AllocateMemory(Sph<ndim> *sph)
   debug2("[SphTree::AllocateMemory]");
 
   if (!allocated_buffer) {
-    
+
     Nneibmaxbuf = new int[Nthreads];
     Ndirectmaxbuf = new int[Nthreads];
     Ngravcellmaxbuf = new int[Nthreads];
@@ -147,7 +152,7 @@ void SphTree<ndim,ParticleType>::AllocateMemory(Sph<ndim> *sph)
     activelistbuf = new int*[Nthreads];
     activepartbuf = new ParticleType<ndim>*[Nthreads];
     neibpartbuf = new ParticleType<ndim>*[Nthreads];
-    
+
     for (ithread=0; ithread<Nthreads; ithread++) {
       Nneibmaxbuf[ithread] = max(1,4*sph->Ngather);
       Ndirectmaxbuf[ithread] = max(1,4*sph->Ngather);
@@ -201,7 +206,7 @@ void SphTree<ndim,ParticleType>::DeallocateMemory(void)
 
 //=============================================================================
 //  SphTree::BuildTree
-/// Main routine to control how the tree is built, re-stocked and interpolated 
+/// Main routine to control how the tree is built, re-stocked and interpolated
 /// during each timestep.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -241,7 +246,7 @@ void SphTree<ndim,ParticleType>::BuildTree
     Ntotmaxold = Ntotmax;
     Ntotmax = max(Ntotmax,Ntot);
     Ntotmax = max(Ntotmax,sph->Nsphmax);
-    
+
     tree->ifirst = 0;
     tree->ilast = sph->Nsph - 1;
     tree->Ntot = sph->Nsph;
@@ -251,7 +256,13 @@ void SphTree<ndim,ParticleType>::BuildTree
     tree->BuildTree(Npart,Npartmax,sphdata,timestep);
 
     AllocateMemory(sph);
-    
+#ifdef MPI_PARALLEL
+    if (tree->Ntotmax > tree->Ntotmaxold) {
+      for (i=Nmpi-1; i>=0; i--) delete[] cellexportlist[i];
+      for (i=0; i<Nmpi; i++) cellexportlist[i] = new int[tree->gmax];
+    }
+#endif
+
   }
 
   // Else stock the tree
@@ -277,7 +288,6 @@ void SphTree<ndim,ParticleType>::BuildTree
 
   timing->EndTimingSection("BUILD_TREE");
 
-
   return;
 }
 
@@ -285,7 +295,7 @@ void SphTree<ndim,ParticleType>::BuildTree
 
 //=============================================================================
 //  SphTree::BuildGhostTree
-/// Main routine to control how the tree is built, re-stocked and interpolated 
+/// Main routine to control how the tree is built, re-stocked and interpolated
 /// during each timestep.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -327,7 +337,7 @@ void SphTree<ndim,ParticleType>::BuildGhostTree
     ghosttree->Ntotmax = max(ghosttree->Ntotmax,ghosttree->Ntot);
     ghosttree->Ntotmax = max(ghosttree->Ntotmax,sph->Nsphmax);
     ghosttree->BuildTree(ghosttree->Ntot,ghosttree->Ntotmax,sphdata,timestep);
-    
+
   }
 
   // Else stock the tree
@@ -404,9 +414,9 @@ void SphTree<ndim,ParticleType>::UpdateAllSphDerivatives
 
 //=============================================================================
 //  SphTree::UpdateAllSphDudt
-/// Compute all local 'gather' properties of currently active particles, and 
-/// then compute each particle's contribution to its (active) neighbour 
-/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
+/// Compute all local 'gather' properties of currently active particles, and
+/// then compute each particle's contribution to its (active) neighbour
+/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -472,7 +482,7 @@ void SphTree<ndim, ParticleType >::SearchBoundaryGhostParticles
 
   // Create ghost particles in x-dimension
   //===========================================================================
-  if ((simbox.x_boundary_lhs == "open" && 
+  if ((simbox.x_boundary_lhs == "open" &&
        simbox.x_boundary_rhs == "open") == 0) {
 
     // Start from root-cell
@@ -484,25 +494,25 @@ void SphTree<ndim, ParticleType >::SearchBoundaryGhostParticles
 
       // If x-bounding box overlaps edge of x-domain, open cell
       //-----------------------------------------------------------------------
-      if (cell->bbmin[0] + min(0.0,cell->v[0]*tghost) < 
-	  simbox.boxmin[0] + grange*cell->hmax ||
-          cell->bbmax[0] + max(0.0,cell->v[0]*tghost) > 
-	  simbox.boxmax[0] - grange*cell->hmax) {
+      if (cell->bbmin[0] + min(0.0,cell->v[0]*tghost) <
+          simbox.boxmin[0] + grange*cell->hmax ||
+          cell->bbmax[0] + max(0.0,cell->v[0]*tghost) >
+          simbox.boxmax[0] - grange*cell->hmax) {
 
         // If not a leaf-cell, then open cell to first child cell
         if (cell->level != tree->ltot)
           c++;
 
         else if (cell->N == 0)
-	  c = cell->cnext;
+          c = cell->cnext;
 
         // If leaf-cell, check through particles in turn to find ghosts
         else if (cell->level == tree->ltot) {
           i = cell->ifirst;
-    	  while (i != -1) {
+    	    while (i != -1) {
             sph->CheckXBoundaryGhostParticle(i,tghost,simbox);
             if (i == cell->ilast) break;
-    	    i = tree->inext[i];
+    	      i = tree->inext[i];
           };
           c = cell->cnext;
         }
@@ -522,7 +532,7 @@ void SphTree<ndim, ParticleType >::SearchBoundaryGhostParticles
 
   // Create ghost particles in y-dimension
   //===========================================================================
-  if (ndim >= 2 && (simbox.y_boundary_lhs == "open" && 
+  if (ndim >= 2 && (simbox.y_boundary_lhs == "open" &&
 		    simbox.y_boundary_rhs == "open") == 0) {
 
     // Start from root-cell
@@ -534,25 +544,25 @@ void SphTree<ndim, ParticleType >::SearchBoundaryGhostParticles
 
       // If x-bounding box overlaps edge of x-domain, open cell
       //-----------------------------------------------------------------------
-      if (cell->bbmin[1] + min(0.0,cell->v[1]*tghost) < 
-	  simbox.boxmin[1] + grange*cell->hmax ||
-          cell->bbmax[1] + max(0.0,cell->v[1]*tghost) > 
-	  simbox.boxmax[1] - grange*cell->hmax) {
+      if (cell->bbmin[1] + min(0.0,cell->v[1]*tghost) <
+          simbox.boxmin[1] + grange*cell->hmax ||
+          cell->bbmax[1] + max(0.0,cell->v[1]*tghost) >
+          simbox.boxmax[1] - grange*cell->hmax) {
 
         // If not a leaf-cell, then open cell to first child cell
         if (cell->level != tree->ltot)
           c++;
 
         else if (cell->N == 0)
-	  c = cell->cnext;
+          c = cell->cnext;
 
         // If leaf-cell, check through particles in turn to find ghosts
         else if (cell->level == tree->ltot) {
           i = cell->ifirst;
-    	  while (i != -1) {
+    	    while (i != -1) {
             sph->CheckYBoundaryGhostParticle(i,tghost,simbox);
             if (i == cell->ilast) break;
-    	    i = tree->inext[i];
+    	      i = tree->inext[i];
           };
           c = cell->cnext;
         }
@@ -578,7 +588,7 @@ void SphTree<ndim, ParticleType >::SearchBoundaryGhostParticles
 
   // Create ghost particles in z-dimension
   //===========================================================================
-  if (ndim == 3 && (simbox.z_boundary_lhs == "open" && 
+  if (ndim == 3 && (simbox.z_boundary_lhs == "open" &&
 		    simbox.z_boundary_rhs == "open") == 0) {
 
     // Start from root-cell
@@ -590,25 +600,25 @@ void SphTree<ndim, ParticleType >::SearchBoundaryGhostParticles
 
       // If x-bounding box overlaps edge of x-domain, open cell
       //-----------------------------------------------------------------------
-      if (cell->bbmin[2] + min(0.0,cell->v[2]*tghost) < 
-	  simbox.boxmin[2] + grange*cell->hmax ||
-          cell->bbmax[2] + max(0.0,cell->v[2]*tghost) > 
-	  simbox.boxmax[2] - grange*cell->hmax) {
+      if (cell->bbmin[2] + min(0.0,cell->v[2]*tghost) <
+          simbox.boxmin[2] + grange*cell->hmax ||
+          cell->bbmax[2] + max(0.0,cell->v[2]*tghost) >
+          simbox.boxmax[2] - grange*cell->hmax) {
 
         // If not a leaf-cell, then open cell to first child cell
         if (cell->level != tree->ltot)
           c++;
 
         else if (cell->N == 0)
-	  c = cell->cnext;
+          c = cell->cnext;
 
         // If leaf-cell, check through particles in turn to find ghosts
         else if (cell->level == tree->ltot) {
           i = cell->ifirst;
-    	  while (i != -1) {
+    	    while (i != -1) {
             sph->CheckZBoundaryGhostParticle(i,tghost,simbox);
             if (i == cell->ilast) break;
-    	    i = tree->inext[i];
+    	      i = tree->inext[i];
           };
           c = cell->cnext;
         }
@@ -648,14 +658,14 @@ void SphTree<ndim, ParticleType >::SearchBoundaryGhostParticles
 
 #ifdef MPI_PARALLEL
 //=============================================================================
-//  GradhSphTree::UpdateDistantSphForces
-/// Compute all local 'gather' properties of currently active particles, and 
-/// then compute each particle's contribution to its (active) neighbour 
-/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
+//  GradhSphTree::UpdateGravityExportList
+/// Compute all local 'gather' properties of currently active particles, and
+/// then compute each particle's contribution to its (active) neighbour
+/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void SphTree<ndim,ParticleType>::UpdateDistantSphForces
+void SphTree<ndim,ParticleType>::UpdateGravityExportList
 (int rank,                          ///< [in] ..
  int Nsph,                          ///< [in] No. of SPH particles
  int Ntot,                          ///< [in] No. of SPH + ghost particles
@@ -731,8 +741,8 @@ void SphTree<ndim,ParticleType>::UpdateDistantSphForces
 
       // Compute average/maximum term for computing gravity MAC
       if (gravity_mac == "eigenmac") {
-	for (j=0; j<Nactive; j++) 
-	  macfactor = max(macfactor,pow(1.0/activepart[j].gpot,twothirds));
+        for (j=0; j<Nactive; j++)
+          macfactor = max(macfactor,pow(1.0/activepart[j].gpot,twothirds));
       }
 
       // Zero/initialise all summation variables for active particles
@@ -745,17 +755,17 @@ void SphTree<ndim,ParticleType>::UpdateDistantSphForces
       // If pruned tree is too close, record cell id for exporting
       //-----------------------------------------------------------------------
       for (j=0; j<Nmpi; j++) {
-	if (j == rank) continue;
+        if (j == rank) continue;
 
-	Ngravcelltemp = prunedtree[j]->ComputeDistantGravityInteractionList
-	  (cell,macfactor,Ngravcellmax,Ngravcell,gravcelllist);
+        Ngravcelltemp = prunedtree[j]->ComputeDistantGravityInteractionList
+          (cell,macfactor,Ngravcellmax,Ngravcell,gravcelllist);
 
         // If pruned tree is too close (flagged by -1), then record cell id
-	// for exporting to other MPI processes
-	if (Ngravcelltemp == -1)
-	  cellexportlist[j][Ncellexport[j]++] = cell->id;
-	else 
-	  Ngravcell = Ngravcelltemp;
+	      // for exporting to other MPI processes
+        if (Ngravcelltemp == -1)
+          cellexportlist[j][Ncellexport[j]++] = cell->id;
+        else
+	        Ngravcell = Ngravcelltemp;
 
       }
       //-----------------------------------------------------------------------
@@ -770,7 +780,7 @@ void SphTree<ndim,ParticleType>::UpdateDistantSphForces
         if (multipole == "monopole")
           tree->ComputeCellMonopoleForces(activepart[j].gpot,
                                           activepart[j].agrav,
-				          activepart[j].r,
+                                          activepart[j].r,
                                           Ngravcell,gravcelllist);
         else if (multipole == "quadrupole")
           tree->ComputeCellQuadrupoleForces(activepart[j].gpot,
@@ -784,8 +794,8 @@ void SphTree<ndim,ParticleType>::UpdateDistantSphForces
 
       // Compute 'fast' multipole terms here
       if (multipole == "fast_monopole")
-	tree->ComputeFastMonopoleForces(Nactive,Ngravcell,gravcelllist,
-				        cell,activepart);
+        tree->ComputeFastMonopoleForces(Nactive,Ngravcell,gravcelllist,
+				                                cell,activepart);
 
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
@@ -816,8 +826,94 @@ void SphTree<ndim,ParticleType>::UpdateDistantSphForces
 
 
 //=============================================================================
+//  SphTree::UpdateHydroExportList
+/// Compute all local 'gather' properties of currently active particles, and
+/// then compute each particle's contribution to its (active) neighbour
+/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to
+/// construct local neighbour lists for all particles  inside the cell.
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void SphTree<ndim,ParticleType>::UpdateHydroExportList
+(int rank,                          ///< [in] ..
+ int Nsph,                          ///< [in] No. of SPH particles
+ int Ntot,                          ///< [in] No. of SPH + ghost particles
+ SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
+ Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
+ Nbody<ndim> *nbody)                ///< [in] Pointer to N-body object
+{
+  bool overlapflag;                 // ..
+  int cactive;                      // No. of active cells
+  int cc;                           // Aux. cell counter
+  int i;                            // Particle id
+  int ithread;                      // ..
+  int j;                            // Aux. particle counter
+  int jj;                           // Aux. particle counter
+  KDTreeCell<ndim> *cell;           // Pointer to binary tree cell
+  KDTreeCell<ndim> **celllist;      // List of pointers to binary tree cells
+
+
+  debug2("[SphTree::UpdateDistantSphForces]");
+  timing->StartTimingSection("MPI_HYDRO_EXPORT",2);
+
+
+  // Find list of all cells that contain active particles
+  celllist = new KDTreeCell<ndim>*[2*tree->gtot];
+  cactive = tree->ComputeActiveCellList(celllist);
+
+  // Reset all export lists
+  for (j=0; j<Nmpi; j++) Ncellexport[j] = 0;
+
+
+  // Set-up all OMP threads
+  //===========================================================================
+#pragma omp parallel default(none) shared(celllist,cactive,cout) \
+  private(cc,cell,i,ithread,j,jj,overlapflag)
+  {
+#if defined _OPENMP
+    ithread = omp_get_thread_num();
+#else
+    ithread = 0;
+#endif
+
+    // Loop over all active cells
+    //=========================================================================
+#pragma omp for schedule(guided)
+    for (cc=0; cc<cactive; cc++) {
+      cell = celllist[cc];
+
+      // Loop over all distant pruned trees and compute list of cells.
+      // If pruned tree is too close, record cell id for exporting
+      //-----------------------------------------------------------------------
+      for (j=0; j<Nmpi; j++) {
+        if (j == rank) continue;
+
+        overlapflag = prunedtree[j]->ComputeHydroTreeCellOverlap(cell);
+
+        // If pruned tree is too close (flagged by -1), then record cell id
+        // for exporting to other MPI processes
+        if (overlapflag) cellexportlist[j][Ncellexport[j]++] = cell->id;
+
+      }
+      //-----------------------------------------------------------------------
+
+    }
+    //=========================================================================
+
+  }
+  //===========================================================================
+
+  delete[] celllist;
+
+  timing->EndTimingSection("MPI_HYDRO_EXPORT");
+
+  return;
+}
+
+
+
+//=============================================================================
 //  SphTree::BuildPrunedTree
-/// Main routine to control how the tree is built, re-stocked and interpolated 
+/// Main routine to control how the tree is built, re-stocked and interpolated
 /// during each timestep.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -836,27 +932,34 @@ void SphTree<ndim,ParticleType>::BuildPrunedTree
   debug2("[SphTree::BuildPrunedTree]");
   timing->StartTimingSection("BUILD_PRUNED_TREE",2);
 
-  // Set level at which tree will be pruned
-  prunedtree[rank]->ltot_old = prunedtree[rank]->ltot;
-  prunedtree[rank]->ltot = pruning_level;
   cnew = 0;
-  
-  // Compute the size of all tree-related arrays now we know number of points
-  prunedtree[rank]->ComputeTreeSize();
-  Nprunedcellmax = Nmpi*prunedtree[rank]->Ncellmax;
-  
-  // Allocate (or reallocate if needed) all tree memory
-  prunedtree[rank]->AllocateTreeMemory();
-  
-  // If the number of levels in the tree has changed (due to destruction or  
-  // creation of new particles) then re-create tree data structure 
-  // including linked lists and cell pointers
-  if (prunedtree[rank]->ltot != prunedtree[rank]->ltot_old) 
-    prunedtree[rank]->CreateTreeStructure();
+  Nprunedcellmax = 0;
 
 
+  // Set level at which tree will be pruned (for all trees)
+  //---------------------------------------------------------------------------
+  for (i=0; i<Nmpi; i++) {
+    prunedtree[i]->ltot_old = prunedtree[i]->ltot;
+    prunedtree[i]->ltot     = pruning_level;
+    prunedtree[i]->gmax     = pow(2,pruning_level);
+    prunedtree[i]->Ncellmax = 2*prunedtree[i]->gmax - 1;
+    prunedtree[i]->Ncell    = 2*prunedtree[i]->gmax - 1;
+    Nprunedcellmax += prunedtree[i]->Ncellmax;
 
-  // Now walk through main tree cell-by-cell and copy all important data 
+    // Allocate (or reallocate if needed) all tree memory
+    prunedtree[i]->AllocateTreeMemory();
+
+    // If the number of levels in the tree has changed (due to destruction or
+    // creation of new particles) then re-create tree data structure
+    // including linked lists and cell pointers
+    if (prunedtree[i]->ltot != prunedtree[i]->ltot_old)
+      prunedtree[i]->CreateTreeStructure();
+
+  }
+  //---------------------------------------------------------------------------
+
+
+  // Now walk through main tree cell-by-cell and copy all important data
   // to pruned tree cells
   //---------------------------------------------------------------------------
   for (c=0; c<tree->Ncell; c++) {
@@ -879,6 +982,13 @@ void SphTree<ndim,ParticleType>::BuildPrunedTree
   }
   //---------------------------------------------------------------------------
 
+  cout << "Pruned tree size : " << prunedtree[rank]->Ncell << "    "
+       << prunedtree[rank]->ltot << "    " << pruning_level << endl;
+  for (c=0; c<prunedtree[rank]->Ncell; c++) {
+    cout << "bb[" << c << "] : " << prunedtree[rank]->kdcell[c].bbmin[0]
+         << "    " << prunedtree[rank]->kdcell[c].bbmax[0]
+         << "    level : " << prunedtree[rank]->kdcell[c].level << endl;
+  }
 
   return;
 }
@@ -887,7 +997,7 @@ void SphTree<ndim,ParticleType>::BuildPrunedTree
 
 //=============================================================================
 //  SphTree::BuildMpiGhostTree
-/// Main routine to control how the tree is built, re-stocked and interpolated 
+/// Main routine to control how the tree is built, re-stocked and interpolated
 /// during each timestep.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -931,7 +1041,7 @@ void SphTree<ndim,ParticleType>::BuildMpiGhostTree
     mpighosttree->Ntotmax = max(mpighosttree->Ntotmax,sph->Nsphmax);
     mpighosttree->BuildTree(mpighosttree->Ntot,mpighosttree->Ntotmax,
                             sphdata,timestep);
-    
+
   }
 
   // Else stock the tree
@@ -986,50 +1096,50 @@ int SphTree<ndim,ParticleType>::SearchMpiGhostParticles
 
   // Start from root-cell
   c = 0;
-  
+
   //---------------------------------------------------------------------------
   while (c < tree->Ncell) {
     cell = &(tree->kdcell[c]);
 
     // Construct maximum cell bounding box depending on particle velocities
     for (k=0; k<ndim; k++) {
-      scattermin[k] = 
-	cell->bbmin[k] + min(0.0,cell->v[k]*tghost) - grange*cell->hmax;
-      scattermax[k] = 
-	cell->bbmax[k] + max(0.0,cell->v[k]*tghost) + grange*cell->hmax;
+      scattermin[k] =
+        cell->bbmin[k] + min(0.0,cell->v[k]*tghost) - grange*cell->hmax;
+      scattermax[k] =
+        cell->bbmax[k] + max(0.0,cell->v[k]*tghost) + grange*cell->hmax;
     }
 
-    
+
     // If maximum cell scatter box overlaps MPI domain, open cell
     //-------------------------------------------------------------------------
     if (tree->BoxOverlap(scattermin,scattermax,mpibox.boxmin,mpibox.boxmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (cell->level != tree->ltot)
-	c++;
-      
+        c++;
+
       else if (cell->N == 0)
-	c = cell->cnext;
-      
-      // If leaf-cell, check through particles in turn to find ghosts and 
+        c = cell->cnext;
+
+      // If leaf-cell, check through particles in turn to find ghosts and
       // add to list to be exported
       else if (cell->level == tree->ltot) {
-	i = cell->ifirst;
-	while (i != -1) {
-	  export_list.push_back(i);
-	  Nexport++;
-	  if (i == cell->ilast) break;
-	  i = tree->inext[i];
-	};
-	c = cell->cnext;
+        i = cell->ifirst;
+        while (i != -1) {
+          export_list.push_back(i);
+          Nexport++;
+          if (i == cell->ilast) break;
+          i = tree->inext[i];
+        };
+        c = cell->cnext;
       }
     }
-    
+
     // If not in range, then open next cell
     //-------------------------------------------------------------------------
     else
       c = cell->cnext;
-    
+
   }
   //---------------------------------------------------------------------------
 
@@ -1037,50 +1147,50 @@ int SphTree<ndim,ParticleType>::SearchMpiGhostParticles
 
   // Start from root-cell of ghost-tree
   c = 0;
-  
+
   //---------------------------------------------------------------------------
   while (c < ghosttree->Ncell) {
     cell = &(ghosttree->kdcell[c]);
 
     // Construct maximum cell bounding box depending on particle velocities
     for (k=0; k<ndim; k++) {
-      scattermin[k] = 
-	cell->bbmin[k] + min(0.0,cell->v[k]*tghost) - grange*cell->hmax;
-      scattermax[k] = 
-	cell->bbmax[k] + max(0.0,cell->v[k]*tghost) + grange*cell->hmax;
+      scattermin[k] =
+        cell->bbmin[k] + min(0.0,cell->v[k]*tghost) - grange*cell->hmax;
+      scattermax[k] =
+        cell->bbmax[k] + max(0.0,cell->v[k]*tghost) + grange*cell->hmax;
     }
-    
+
     // If maximum cell scatter box overlaps MPI domain, open cell
     //-------------------------------------------------------------------------
     if (ghosttree->BoxOverlap(scattermin,scattermax,
-			      mpibox.boxmin,mpibox.boxmax)) {
+        mpibox.boxmin,mpibox.boxmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (cell->level != ghosttree->ltot)
-	c++;
-      
+        c++;
+
       else if (cell->N == 0)
-	c = cell->cnext;
-      
-      // If leaf-cell, check through particles in turn to find ghosts and 
+        c = cell->cnext;
+
+      // If leaf-cell, check through particles in turn to find ghosts and
       // add to list to be exported
       else if (cell->level == ghosttree->ltot) {
-	i = cell->ifirst;
-	while (i != -1) {
-	  export_list.push_back(i);
-	  Nexport++;
-	  if (i == cell->ilast) break;
-	  i = ghosttree->inext[i];
-	};
-	c = cell->cnext;
+        i = cell->ifirst;
+        while (i != -1) {
+          export_list.push_back(i);
+          Nexport++;
+          if (i == cell->ilast) break;
+          i = ghosttree->inext[i];
+        };
+        c = cell->cnext;
       }
     }
-    
+
     // If not in range, then open next cell
     //-------------------------------------------------------------------------
     else
       c = cell->cnext;
-    
+
   }
   //---------------------------------------------------------------------------
 
@@ -1113,40 +1223,31 @@ int SphTree<ndim,ParticleType>::SearchHydroExportParticles
 
   // Start from root-cell
   c = 0;
-    
+
   //---------------------------------------------------------------------------
   while (c < tree->Ncell) {
     cell = &(tree->kdcell[c]);
-        
+
     // Construct maximum cell bounding box depending on particle velocities
     for (k=0; k<ndim; k++) {
       scattermin[k] = cell->bbmin[k] - grange*cell->hmax;
       scattermax[k] = cell->bbmax[k] + grange*cell->hmax;
     }
-        
-        
+
+
     // If maximum cell scatter box overlaps MPI domain, open cell
     //-------------------------------------------------------------------------
     if (tree->BoxOverlap(scattermin,scattermax,mpibox.boxmin,mpibox.boxmax)) {
-          
+
       // If not a leaf-cell, then open cell to first child cell
       if (cell->level != tree->ltot)
         c++;
-            
+
       else if (cell->N == 0)
         c = cell->cnext;
-            
+
       // If leaf-cell and active, add the cell to the list of cells being exported
       else if (cell->level == tree->ltot) {
-//        i = cell->ifirst;
-//        while (i != -1) {
-//          if (sphdata[i].active) {
-//            export_list.push_back(i);
-//            Nexport++;
-//          }
-//          if (i == cell->ilast) break;
-//          i = tree->inext[i];
-//        };
         if (cell->Nactive>0) {
           Nexport += cell->Nactive;
           cell_list.push_back(cell);
@@ -1154,17 +1255,17 @@ int SphTree<ndim,ParticleType>::SearchHydroExportParticles
         c = cell->cnext;
       }
     }
-        
+
     // If not in range, then open next cell
     //-----------------------------------------------------------------------
     else
       c = cell->cnext;
-        
+
   }
   //-------------------------------------------------------------------------
 
   return Nexport;
-    
+
 }
 
 
@@ -1176,8 +1277,8 @@ int SphTree<ndim,ParticleType>::SearchHydroExportParticles
 template <int ndim, template<int> class ParticleType>
 void SphTree<ndim,ParticleType>::FindMpiTransferParticles
 (Sph<ndim>* sph,                            ///< [in] Pointer to sph class
- vector<vector<int> >& particles_to_export, ///< [inout] Vector that for each 
- ///< node gives the list of particles to export
+ vector<vector<int> >& particles_to_export, ///< [inout] Vector that for each
+                                            ///< node gives the list of particles to export
  vector<int>& all_particles_to_export,      ///< [inout] Vector containing all the particles that will be exported by this processor
  const vector<int>& potential_nodes,        ///< [in] Vector containing the potential nodes we might be sending particles to
  MpiNode<ndim>* mpinodes)                   ///< [in] Array of other mpi nodes
@@ -1194,13 +1295,13 @@ void SphTree<ndim,ParticleType>::FindMpiTransferParticles
   //-------------------------------------------------------------------------
   for (inode=0; inode<potential_nodes.size(); inode++) {
     node_number = potential_nodes[inode];
-    
+
     Box<ndim>& nodebox = mpinodes[node_number].domain;
 
 
     // Start from root-cell
     c = 0;
-    
+
     //-------------------------------------------------------------------------
     while (c < Ncell) {
       cell = &(tree->kdcell[c]);
@@ -1213,11 +1314,11 @@ void SphTree<ndim,ParticleType>::FindMpiTransferParticles
 	// If not a leaf-cell, then open cell to first child cell
 	if (cell->level != tree->ltot)
 	  c++;
-	
+
 	else if (cell->N == 0)
 	  c = cell->cnext;
-	
-	// If leaf-cell, check through particles in turn to find ghosts and 
+
+	// If leaf-cell, check through particles in turn to find ghosts and
 	// add to list to be exported
 	else if (cell->level == tree->ltot) {
 	  i = cell->ifirst;
@@ -1232,12 +1333,12 @@ void SphTree<ndim,ParticleType>::FindMpiTransferParticles
 	  c = cell->cnext;
 	}
       }
-      
+
       // If not in range, then open next cell
       //-----------------------------------------------------------------------
       else
 	c = cell->cnext;
-      
+
     }
     //-------------------------------------------------------------------------
 
@@ -1486,6 +1587,8 @@ void SphTree<ndim,ParticleType>::GetBackExportInfo (
 
 }
 
+
+
 //=============================================================================
 //  SphTree::UnpackReturnedExportInfo
 /// Unpack the data that was returned by the other processors, summing the accelerations to the particles
@@ -1532,15 +1635,23 @@ void SphTree<ndim,ParticleType>::UnpackReturnedExportInfo (
 
 }
 
+
+
+//=============================================================================
+//  SphTree::CommunicatePrunedTrees
+/// ..
+//=============================================================================
 template <int ndim, template<int> class ParticleType>
 void SphTree<ndim,ParticleType>::CommunicatePrunedTrees (
     vector<int>& my_matches,
     int rank ) {
 
+  //---------------------------------------------------------------------------
+  for (int iturn=0; iturn<my_matches.size(); iturn++) {
 
-  for (int iturn=0; iturn>my_matches.size(); iturn++) {
     //See who we need to communicate with
     int inode = my_matches[iturn];
+    cout << "inode : " << rank << "   " << inode << "    " << iturn << endl;
 
     //Decide if sending or receiving first
     bool send_turn;
@@ -1555,18 +1666,31 @@ void SphTree<ndim,ParticleType>::CommunicatePrunedTrees (
     for (int i=0; i<2; i++) {
       if (send_turn) {
         KDTree<ndim, ParticleType>* tree = prunedtree[rank];
-        MPI_Send(tree->kdcell,tree->Ncell*sizeof(KDTreeCell<ndim>),MPI_CHAR,inode,3,MPI_COMM_WORLD);
+        MPI_Send(tree->kdcell,tree->Ncell*sizeof(KDTreeCell<ndim>),
+                 MPI_CHAR,inode,3,MPI_COMM_WORLD);
         send_turn=false;
       }
       else {
         KDTree<ndim, ParticleType>* tree = prunedtree[inode];
         MPI_Status status;
-        MPI_Recv(tree->kdcell,tree->Ncell*sizeof(KDTreeCell<ndim>),MPI_CHAR,inode,3,MPI_COMM_WORLD,&status);
+        MPI_Recv(tree->kdcell,tree->Ncell*sizeof(KDTreeCell<ndim>),
+                 MPI_CHAR,inode,3,MPI_COMM_WORLD,&status);
         send_turn=true;
       }
     }
 
   }
+  //---------------------------------------------------------------------------
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  for (int i=0; i<Nmpi; i++) {
+    cout << "Writing pruned tree " << i << " for process " << rank << endl;
+    cout << "Ncell : " << prunedtree[i]->Ncell << endl;
+    cout << "r : " << prunedtree[i]->kdcell[0].r[0]
+         << "   box : " << prunedtree[i]->kdcell[0].bbmin[0]
+         << "   " << prunedtree[i]->kdcell[0].bbmax[0] << endl;
+  }
+
 }
 
 
@@ -1577,8 +1701,8 @@ void SphTree<ndim,ParticleType>::CommunicatePrunedTrees (
 #if defined(VERIFY_ALL)
 //=============================================================================
 //  SphNeighbourSearch::CheckValidNeighbourList
-/// Checks that the neighbour list generated by the grid is valid in that it 
-/// (i) does include all true neighbours, and 
+/// Checks that the neighbour list generated by the grid is valid in that it
+/// (i) does include all true neighbours, and
 /// (ii) all true neigbours are only included once and once only.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -1613,7 +1737,7 @@ void SphTree<ndim,ParticleType>::CheckValidNeighbourList
   }
   else if (neibtype == "all") {
     for (j=0; j<Ntot; j++) {
-      for (k=0; k<ndim; k++) 
+      for (k=0; k<ndim; k++)
         dr[k] = partdata[j].r[k] - partdata[i].r[k];
       drsqd = DotProduct(dr,dr,ndim);
       if (drsqd < kernrangesqd*partdata[i].h*partdata[i].h ||
@@ -1625,10 +1749,10 @@ void SphTree<ndim,ParticleType>::CheckValidNeighbourList
   // Now compare each given neighbour with true neighbour list for validation
   for (j=0; j<Ntrueneib; j++) {
     count = 0;
-    for (k=0; k<Nneib; k++) 
+    for (k=0; k<Nneib; k++)
       if (neiblist[k] == trueneiblist[j]) count++;
 
-    // If the true neighbour is not in the list, or included multiple times, 
+    // If the true neighbour is not in the list, or included multiple times,
     // then output to screen and terminate program
     if (count != 1) {
       InsertionSortIds(Nneib,neiblist);

@@ -161,6 +161,7 @@ class SimulationBase
   int Noutsnap;                     ///< No. of output snapshots
   int Noutlitesnap;                 ///< No. of lite output snapshots
   int Nthreads;                     ///< Max no. of (OpenMP) threads
+  int pruning_level;                ///< Level to prune trees for MPI
   int rank;                         ///< Process i.d. (for MPI simulations)
   int sink_particles;               ///< Switch on sink particles
   int sph_single_timestep;          ///< Flag if SPH ptcls use same step
@@ -334,6 +335,7 @@ class SphSimulation : public Simulation<ndim>
 {
  public:
   using SimulationBase::Nmpi;
+  using SimulationBase::pruning_level;
   using SimulationBase::restart;
   using SimulationBase::simparams;
   using SimulationBase::timing;

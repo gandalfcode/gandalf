@@ -1,6 +1,6 @@
 //=============================================================================
 //  KDTree.cpp
-//  Contains all functions for building, stocking and walking for the 
+//  Contains all functions for building, stocking and walking for the
 //  binary KD-tree for SPH particles.
 //  Based on code courtesy of O. Lomax and A. Whitworth
 //
@@ -48,8 +48,8 @@ using namespace std;
 /// KDTree constructor.  Initialises various variables.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-KDTree<ndim,ParticleType>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux, 
-                                  FLOAT kernrangeaux, FLOAT macerroraux, 
+KDTree<ndim,ParticleType>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
+                                  FLOAT kernrangeaux, FLOAT macerroraux,
                                   string gravity_mac_aux, string multipole_aux)
 {
   allocated_tree = false;
@@ -93,7 +93,7 @@ KDTree<ndim,ParticleType>::~KDTree()
 
 //=============================================================================
 //  KDTree::AllocateTreeMemory
-/// Allocate memory for KD-tree as requested.  If more memory is required 
+/// Allocate memory for KD-tree as requested.  If more memory is required
 /// than currently allocated, tree is deallocated and reallocated here.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -146,7 +146,7 @@ void KDTree<ndim,ParticleType>::DeallocateTreeMemory(void)
 //=============================================================================
 //  KDTree::BuildTree
 /// Call all routines to build/re-build the KD-tree on the local node.
-/// If OpenMP is activated, the local domain is partitioned into sub-trees 
+/// If OpenMP is activated, the local domain is partitioned into sub-trees
 /// in order to improve the scalability of building and stocking the tree.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -175,18 +175,18 @@ void KDTree<ndim,ParticleType>::BuildTree
   //Ntotmaxold = Ntotmax;
   //Ntotmax    = max(Ntot,Ntotmax);
   ///Ntotmax    = max(Ntotmax,Npartmax);
-  
+
   // Compute the size of all tree-related arrays now we know number of points
   ComputeTreeSize();
-  
+
   // Allocate (or reallocate if needed) all tree memory
   AllocateTreeMemory();
-  
-  // If the number of levels in the tree has changed (due to destruction or  
-  // creation of new particles) then re-create tree data structure 
+
+  // If the number of levels in the tree has changed (due to destruction or
+  // creation of new particles) then re-create tree data structure
   // including linked lists and cell pointers
   if (ltot != ltot_old) CreateTreeStructure();
-  
+
   // Set properties for root cell before constructing tree
   kdcell[0].N = Ntot;
   kdcell[0].ifirst = ifirst;
@@ -198,20 +198,20 @@ void KDTree<ndim,ParticleType>::BuildTree
   for (k=0; k<ndim; k++) kdcell[0].cexit[1][k] = -1;
   for (i=ifirst; i<=ilast; i++) inext[i] = i+1;
 
-  // If number of particles remains unchanged, use old id list 
+  // If number of particles remains unchanged, use old id list
   // (nearly sorted list should be faster for quick select).
   if (Ntot > 0) {
     if (Ntot != Ntotold)
-      for (i=ifirst; i<=ilast; i++) ids[i] = i;   
-    
+      for (i=ifirst; i<=ilast; i++) ids[i] = i;
+
     // Recursively build tree from root node down
     DivideTreeCell(ifirst,ilast,partdata,kdcell[0]);
-  
+
 #if defined(VERIFY_ALL)
     ValidateTree(partdata);
 #endif
   }
-  
+
   return;
 }
 
@@ -219,7 +219,7 @@ void KDTree<ndim,ParticleType>::BuildTree
 
 //=============================================================================
 //  KDTree::ComputeTreeSize
-/// Compute the maximum size (i.e. no. of levels, cells and leaf cells) of 
+/// Compute the maximum size (i.e. no. of levels, cells and leaf cells) of
 /// the KD-tree.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -250,7 +250,7 @@ void KDTree<ndim,ParticleType>::ComputeTreeSize(void)
   cout << "No. of ptcls in tree  : " << Ntot << "   " << Ntotmax << endl;
   cout << "No. of grid-cells     : " << gtot << "   " << gmax << endl;
   cout << "No. of levels on tree : " << ltot << "   " << lmax << endl;
-  cout << "No. of cells in tree  : " << Ncell << "   " << Ncellmax << endl; 
+  cout << "No. of cells in tree  : " << Ncell << "   " << Ncellmax << endl;
 #endif
 
   return;
@@ -391,7 +391,7 @@ void KDTree<ndim,ParticleType>::DivideTreeCell
   cell.k_divide = k_divide;
 
 
-  // Find median value along selected division plane and re-order array 
+  // Find median value along selected division plane and re-order array
   // so particles reside on correct side of division
   rdivide = QuickSelect(cell.ifirst,cell.ilast,
 			cell.ifirst+cell.N/2,k_divide,partdata);
@@ -430,7 +430,7 @@ void KDTree<ndim,ParticleType>::DivideTreeCell
 #pragma omp parallel default(none) private(i) \
   shared(cell,ifirst,ilast,partdata) num_threads(2)
     {
-#pragma omp for 
+#pragma omp for
       for (i=0; i<2; i++) {
 	if (i == 0) DivideTreeCell(ifirst,ifirst+cell.N/2-1,
                                    partdata,kdcell[cell.c1]);
@@ -458,7 +458,7 @@ void KDTree<ndim,ParticleType>::DivideTreeCell
 #endif
 
   if (cell.N != kdcell[cell.c1].N + kdcell[cell.c2].N) {
-    cout << "Checking : " << cell.N << "   " << kdcell[cell.c1].N 
+    cout << "Checking : " << cell.N << "   " << kdcell[cell.c1].N
 	 << "    " << kdcell[cell.c2].N << endl;
   }
   assert(cell.N == kdcell[cell.c1].N + kdcell[cell.c2].N);
@@ -474,7 +474,7 @@ void KDTree<ndim,ParticleType>::DivideTreeCell
 #ifdef REORDER_PARTICLES
 //=============================================================================
 //  KDTree::QuickSelect
-/// Find median and sort particles in arrays to ensure they are the correct 
+/// Find median and sort particles in arrays to ensure they are the correct
 /// side of the division.  Uses the QuickSelect algorithm.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -515,11 +515,11 @@ FLOAT KDTree<ndim,ParticleType>::QuickSelect
     for (j=left; j<right; j++) {
 
       if (partdata[j].r[k] <= rpivot) {
-	temppart = partdata[j];
-	partdata[j] = partdata[jguess];
-	partdata[jguess] = temppart;
-	partdata[j] = partdata[jguess];
-	jguess++;
+        temppart = partdata[j];
+        partdata[j] = partdata[jguess];
+        partdata[jguess] = temppart;
+        partdata[j] = partdata[jguess];
+        jguess++;
       }
 
     }
@@ -533,11 +533,11 @@ FLOAT KDTree<ndim,ParticleType>::QuickSelect
     partdata[right] = partdata[jguess];
 
 
-    // jguess is lower than jpivot.  
+    // jguess is lower than jpivot.
     // Only need to search between jguess+1 and right
     if (jguess < jpivot) left = jguess + 1;
 
-    // jguess is higher than jpivot.  
+    // jguess is higher than jpivot.
     // Only need to search between left and jguess-1
     else if (jguess > jpivot) right = jguess - 1;
 
@@ -553,7 +553,7 @@ FLOAT KDTree<ndim,ParticleType>::QuickSelect
 #else
 //=============================================================================
 //  KDTree::QuickSelect
-/// Find median and sort particles in arrays to ensure they are the correct 
+/// Find median and sort particles in arrays to ensure they are the correct
 /// side of the division.  Uses the QuickSelect algorithm.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -592,9 +592,9 @@ FLOAT KDTree<ndim,ParticleType>::QuickSelect
     for (j=left; j<right; j++) {
       //assert(j < Ntot);
       if (partdata[ids[j]].r[k] <= rpivot) {
-	jtemp = ids[j];
-	ids[j] = ids[jguess];
-	ids[jguess] = jtemp;
+        jtemp = ids[j];
+        ids[j] = ids[jguess];
+        ids[jguess] = jtemp;
         jguess++;
       }
 
@@ -613,11 +613,11 @@ FLOAT KDTree<ndim,ParticleType>::QuickSelect
     //assert(jpivot < Ntot);
 
 
-    // jguess is lower than jpivot.  
+    // jguess is lower than jpivot.
     // Only need to search between jguess+1 and right
     if (jguess < jpivot) left = jguess + 1;
 
-    // jguess is higher than jpivot.  
+    // jguess is higher than jpivot.
     // Only need to search between left and jguess-1
     else if (jguess > jpivot) right = jguess - 1;
 
@@ -633,12 +633,13 @@ FLOAT KDTree<ndim,ParticleType>::QuickSelect
 
 //=============================================================================
 //  KDTree::StockTree
-/// ..
+/// Stock given tree cell in KD-tree.  If cell is not a leaf-cell, recursively
+/// calls itself for its two child cells.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void KDTree<ndim,ParticleType>::StockTree
-(KDTreeCell<ndim> &cell,       ///< Reference to cell to be stocked
- ParticleType<ndim> *partdata)        ///< SPH particle data array
+(KDTreeCell<ndim> &cell,            ///< Reference to cell to be stocked
+ ParticleType<ndim> *partdata)      ///< SPH particle data array
 {
   int i;                            // Aux. child cell counter
 
@@ -648,21 +649,21 @@ void KDTree<ndim,ParticleType>::StockTree
     if (pow(2,cell.level) < Nthreads) {
 #pragma omp parallel for default(none) private(i) shared(cell,partdata) num_threads(2)
       for (i=0; i<2; i++) {
-	if (i == 0) StockTree(kdcell[cell.c1],partdata);
-	else if (i == 1) StockTree(kdcell[cell.c2],partdata);
+        if (i == 0) StockTree(kdcell[cell.c1],partdata);
+        else if (i == 1) StockTree(kdcell[cell.c2],partdata);
       }
     }
     else {
       for (i=0; i<2; i++) {
-	if (i == 0) StockTree(kdcell[cell.c1],partdata);
-	else if (i == 1) StockTree(kdcell[cell.c2],partdata);
+        if (i == 0) StockTree(kdcell[cell.c1],partdata);
+        else if (i == 1) StockTree(kdcell[cell.c2],partdata);
       }
     }
 #else
     for (i=0; i<2; i++) {
       if (i == 0) StockTree(kdcell[cell.c1],partdata);
       else if (i == 1) StockTree(kdcell[cell.c2],partdata);
-    }  
+    }
 #endif
   }
 
@@ -676,7 +677,7 @@ void KDTree<ndim,ParticleType>::StockTree
 
 //=============================================================================
 //  KDTree::StockCellProperties
-/// Calculate the physical properties (e.g. total mass, centre-of-mass, 
+/// Calculate the physical properties (e.g. total mass, centre-of-mass,
 /// opening-distance, etc..) of all cells in the tree.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -722,89 +723,85 @@ void KDTree<ndim,ParticleType>::StockCellProperties
   //---------------------------------------------------------------------------
   if (cell.level == ltot) {
 
-    // First, check if any particles have been accreted and remove them 
-    // from the linked list.  If cell no longer contains any live particles, 
+    // First, check if any particles have been accreted and remove them
+    // from the linked list.  If cell no longer contains any live particles,
     // then set N = 0 to ensure cell is not included in future tree-walks.
     i = cell.ifirst;
     cell.ifirst = -1;
     iaux = -1;
     while (i != -1) {
       if (partdata[i].itype != dead) {
-    	if (iaux == -1) cell.ifirst = i;
-	else inext[iaux] = i;
-	iaux = i;
+        if (iaux == -1) cell.ifirst = i;
+        else inext[iaux] = i;
+        iaux = i;
       }
-      //else {
-      //cout << "Found and removing dead particle?? : " << i << "    " << 
-      //  cell.ifirst << "   " << cell.ilast << "   " << cell.id << endl;
-      //}
       if (i == cell.ilast) break;
       i = inext[i];
     };
     cell.ilast = iaux;
-    
+
 
     // Loop over all particles in cell summing their contributions
     i = cell.ifirst;
     while (i != -1) {
       if (partdata[i].itype != dead) {
-	cell.N++;
-	if (partdata[i].active) cell.Nactive++;
-	cell.hmax = max(cell.hmax,partdata[i].h);
-	cell.m += partdata[i].m;
-	for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
-	for (k=0; k<ndim; k++) cell.v[k] += partdata[i].m*partdata[i].v[k];
-	for (k=0; k<ndim; k++) {
-	  if (partdata[i].r[k] < cell.bbmin[k]) 
+        cell.N++;
+        if (partdata[i].active) cell.Nactive++;
+        cell.hmax = max(cell.hmax,partdata[i].h);
+        cell.m += partdata[i].m;
+        for (k=0; k<ndim; k++) cell.r[k] += partdata[i].m*partdata[i].r[k];
+        for (k=0; k<ndim; k++) cell.v[k] += partdata[i].m*partdata[i].v[k];
+        for (k=0; k<ndim; k++) {
+          if (partdata[i].r[k] < cell.bbmin[k])
             cell.bbmin[k] = partdata[i].r[k];
-	  if (partdata[i].r[k] > cell.bbmax[k])
+          if (partdata[i].r[k] > cell.bbmax[k])
             cell.bbmax[k] = partdata[i].r[k];
-	  if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hboxmin[k]) 
-	    cell.hboxmin[k] = partdata[i].r[k] - kernrange*partdata[i].h;
-	  if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hboxmax[k])
-	    cell.hboxmax[k] = partdata[i].r[k] + kernrange*partdata[i].h;
-	}
+          if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hboxmin[k])
+            cell.hboxmin[k] = partdata[i].r[k] - kernrange*partdata[i].h;
+          if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hboxmax[k])
+            cell.hboxmax[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+        }
       }
       if (i == cell.ilast) break;
       i = inext[i];
     };
-    
+
     // Normalise all cell values
     if (cell.N > 0) {
       for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
       for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
-      for (k=0; k<ndim; k++) 
-	cell.rcell[k] = 0.5*(cell.bbmin[k] + cell.bbmax[k]);
+      for (k=0; k<ndim; k++)
+        cell.rcell[k] = 0.5*(cell.bbmin[k] + cell.bbmax[k]);
       for (k=0; k<ndim; k++) dr[k] = 0.5*(cell.bbmax[k] - cell.bbmin[k]);
       cell.cdistsqd = max(DotProduct(dr,dr,ndim),
-			  cell.hmax*cell.hmax)/thetamaxsqd;
+      cell.hmax*cell.hmax)/thetamaxsqd;
       cell.rmax = sqrt(DotProduct(dr,dr,ndim));
     }
-    
+
     // Compute quadrupole moment terms if selected
     if (multipole == "quadrupole") {
       i = cell.ifirst;
-      
+
       while (i != -1) {
-	if (partdata[i].itype != dead) {
-	  mi = partdata[i].m;
-	  for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
-	  drsqd = DotProduct(dr,dr,ndim);
-	  if (ndim == 3) {
-	    cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-	    cell.q[1] += mi*3.0*dr[0]*dr[1];
-	    cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
-	    cell.q[3] += mi*3.0*dr[2]*dr[0];
-	    cell.q[4] += mi*3.0*dr[2]*dr[1];
-	  }
-	  else if (ndim == 2) {
-	    cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-	    cell.q[1] += mi*3.0*dr[0]*dr[1];
-	    cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
-	  }
-	}
-	if (i == cell.ilast) break;
-	i = inext[i];
+        if (partdata[i].itype != dead) {
+          mi = partdata[i].m;
+          for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
+          drsqd = DotProduct(dr,dr,ndim);
+          if (ndim == 3) {
+            cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
+            cell.q[1] += mi*3.0*dr[0]*dr[1];
+            cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+            cell.q[3] += mi*3.0*dr[2]*dr[0];
+            cell.q[4] += mi*3.0*dr[2]*dr[1];
+          }
+          else if (ndim == 2) {
+            cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
+            cell.q[1] += mi*3.0*dr[0]*dr[1];
+            cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+          }
+        }
+        if (i == cell.ilast) break;
+        i = inext[i];
       }
     }
 
@@ -812,23 +809,23 @@ void KDTree<ndim,ParticleType>::StockCellProperties
   // For non-leaf cells, sum together two children cells
   //---------------------------------------------------------------------------
   else {
-    
+
     if (child1.N > 0) {
       for (k=0; k<ndim; k++)
-	cell.bbmin[k] = min(child1.bbmin[k],cell.bbmin[k]);
+        cell.bbmin[k] = min(child1.bbmin[k],cell.bbmin[k]);
       for (k=0; k<ndim; k++)
-	cell.bbmax[k] = max(child1.bbmax[k],cell.bbmax[k]);
+        cell.bbmax[k] = max(child1.bbmax[k],cell.bbmax[k]);
       for (k=0; k<ndim; k++)
-	cell.hboxmin[k] = min(child1.hboxmin[k],cell.hboxmin[k]);
+        cell.hboxmin[k] = min(child1.hboxmin[k],cell.hboxmin[k]);
       for (k=0; k<ndim; k++)
-	cell.hboxmax[k] = max(child1.hboxmax[k],cell.hboxmax[k]);
+        cell.hboxmax[k] = max(child1.hboxmax[k],cell.hboxmax[k]);
       cell.hmax = max(cell.hmax,child1.hmax);
     }
     if (child2.N > 0) {
       for (k=0; k<ndim; k++)
-	cell.bbmin[k] = min(child2.bbmin[k],cell.bbmin[k]);
+        cell.bbmin[k] = min(child2.bbmin[k],cell.bbmin[k]);
       for (k=0; k<ndim; k++)
-	cell.bbmax[k] = max(child2.bbmax[k],cell.bbmax[k]);
+        cell.bbmax[k] = max(child2.bbmax[k],cell.bbmax[k]);
       for (k=0; k<ndim; k++)
         cell.hboxmin[k] = min(child2.hboxmin[k],cell.hboxmin[k]);
       for (k=0; k<ndim; k++)
@@ -840,58 +837,58 @@ void KDTree<ndim,ParticleType>::StockCellProperties
     if (cell.N > 0) {
       cell.m = child1.m + child2.m;
       for (k=0; k<ndim; k++) cell.r[k] =
-	(child1.m*child1.r[k] + child2.m*child2.r[k])/cell.m;
+        (child1.m*child1.r[k] + child2.m*child2.r[k])/cell.m;
       for (k=0; k<ndim; k++) cell.v[k] =
-	(child1.m*child1.v[k] + child2.m*child2.v[k])/cell.m;
-      for (k=0; k<ndim; k++) 
-	cell.rcell[k] = 0.5*(cell.bbmin[k] + cell.bbmax[k]);
-      for (k=0; k<ndim; k++) 
-	dr[k] = 0.5*(cell.bbmax[k] - cell.bbmin[k]);
+        (child1.m*child1.v[k] + child2.m*child2.v[k])/cell.m;
+      for (k=0; k<ndim; k++)
+        cell.rcell[k] = 0.5*(cell.bbmin[k] + cell.bbmax[k]);
+      for (k=0; k<ndim; k++)
+        dr[k] = 0.5*(cell.bbmax[k] - cell.bbmin[k]);
       cell.cdistsqd = max(DotProduct(dr,dr,ndim),
-			  cell.hmax*cell.hmax)/thetamaxsqd;
+      cell.hmax*cell.hmax)/thetamaxsqd;
       cell.rmax = sqrt(DotProduct(dr,dr,ndim));
 #ifdef MPI_PARALLEL
       cell.worktot = child1.worktot + child2.worktot;
 #endif
     }
-    
+
     // Now add individual quadrupole moment terms
     if (multipole == "quadrupole" && child1.N > 0) {
       mi = child1.m;
       for (k=0; k<ndim; k++) dr[k] = child1.r[k] - cell.r[k];
       drsqd = DotProduct(dr,dr,ndim);
       if (ndim == 3) {
-	cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-	cell.q[1] += mi*3.0*dr[0]*dr[1];
-	cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
-	cell.q[3] += mi*3.0*dr[2]*dr[0];
-	cell.q[4] += mi*3.0*dr[2]*dr[1];
+        cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
+        cell.q[1] += mi*3.0*dr[0]*dr[1];
+        cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+        cell.q[3] += mi*3.0*dr[2]*dr[0];
+        cell.q[4] += mi*3.0*dr[2]*dr[1];
       }
       else if (ndim == 2) {
-	cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-	cell.q[1] += mi*3.0*dr[0]*dr[1];
-	cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+        cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
+        cell.q[1] += mi*3.0*dr[0]*dr[1];
+        cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
       }
     }
-    
+
     if (multipole == "quadrupole" && child2.N > 0) {
       mi = child2.m;
       for (k=0; k<ndim; k++) dr[k] = child2.r[k] - cell.r[k];
       drsqd = DotProduct(dr,dr,ndim);
       if (ndim == 3) {
-	cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-	cell.q[1] += mi*3.0*dr[0]*dr[1];
-	cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
-	cell.q[3] += mi*3.0*dr[2]*dr[0];
-	cell.q[4] += mi*3.0*dr[2]*dr[1];
+        cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
+        cell.q[1] += mi*3.0*dr[0]*dr[1];
+        cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+        cell.q[3] += mi*3.0*dr[2]*dr[0];
+        cell.q[4] += mi*3.0*dr[2]*dr[1];
       }
       else if (ndim == 2) {
-	cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-	cell.q[1] += mi*3.0*dr[0]*dr[1];
-	cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+        cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
+        cell.q[1] += mi*3.0*dr[0]*dr[1];
+        cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
       }
     }
-    
+
   }
   //---------------------------------------------------------------------------
 
@@ -899,9 +896,9 @@ void KDTree<ndim,ParticleType>::StockCellProperties
   // Calculate eigenvalue MAC criteria
   if (gravity_mac == "eigenmac") {
     if (ndim == 3)
-      p = cell.q[0]*cell.q[2] 
-	- (cell.q[0] + cell.q[2])*(cell.q[0] + cell.q[2])
-	- cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];
+      p = cell.q[0]*cell.q[2]
+        - (cell.q[0] + cell.q[2])*(cell.q[0] + cell.q[2])
+        - cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];
     if (p >= 0.0) cell.mac = 0.0;
     else {
       lambda = 2.0*sqrt(-p/3.0);
@@ -973,21 +970,21 @@ void KDTree<ndim,ParticleType>::UpdateHmaxValues
 #pragma omp parallel for default(none) private(i) \
   shared(cell,partdata) num_threads(2)
       for (i=0; i<2; i++) {
-	if (i == 0) UpdateHmaxValues(kdcell[cell.c1],partdata);
-	else if (i == 1) UpdateHmaxValues(kdcell[cell.c2],partdata);
+        if (i == 0) UpdateHmaxValues(kdcell[cell.c1],partdata);
+        else if (i == 1) UpdateHmaxValues(kdcell[cell.c2],partdata);
       }
     }
     else {
       for (i=0; i<2; i++) {
-	if (i == 0) UpdateHmaxValues(kdcell[cell.c1],partdata);
-	else if (i == 1) UpdateHmaxValues(kdcell[cell.c2],partdata);
+        if (i == 0) UpdateHmaxValues(kdcell[cell.c1],partdata);
+        else if (i == 1) UpdateHmaxValues(kdcell[cell.c2],partdata);
       }
     }
 #else
     for (i=0; i<2; i++) {
       if (i == 0) UpdateHmaxValues(kdcell[cell.c1],partdata);
       else if (i == 1) UpdateHmaxValues(kdcell[cell.c2],partdata);
-    }  
+    }
 #endif
   }
 
@@ -1002,15 +999,15 @@ void KDTree<ndim,ParticleType>::UpdateHmaxValues
   //---------------------------------------------------------------------------
   if (cell.level == ltot) {
     i = cell.ifirst;
-    
+
     // Loop over all particles in cell summing their contributions
     while (i != -1) {
       cell.hmax = max(cell.hmax,partdata[i].h);
       for (k=0; k<ndim; k++) {
-	if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hboxmin[k]) 
-	  cell.hboxmin[k] = partdata[i].r[k] - kernrange*partdata[i].h;
-	if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hboxmax[k])
-	  cell.hboxmax[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+        if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hboxmin[k])
+          cell.hboxmin[k] = partdata[i].r[k] - kernrange*partdata[i].h;
+        if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hboxmax[k])
+          cell.hboxmax[k] = partdata[i].r[k] + kernrange*partdata[i].h;
       }
       if (i == cell.ilast) break;
       i = inext[i];
@@ -1025,18 +1022,18 @@ void KDTree<ndim,ParticleType>::UpdateHmaxValues
     if (kdcell[cc].N > 0) {
       cell.hmax = max(cell.hmax,kdcell[cc].hmax);
       for (k=0; k<ndim; k++)
-	cell.hboxmin[k] = min(kdcell[cc].hboxmin[k],cell.hboxmin[k]);
+        cell.hboxmin[k] = min(kdcell[cc].hboxmin[k],cell.hboxmin[k]);
       for (k=0; k<ndim; k++)
-	cell.hboxmax[k] = max(kdcell[cc].hboxmax[k],cell.hboxmax[k]);
+        cell.hboxmax[k] = max(kdcell[cc].hboxmax[k],cell.hboxmax[k]);
     }
     if (kdcell[ccc].N > 0) {
       cell.hmax = max(cell.hmax,kdcell[ccc].hmax);
       for (k=0; k<ndim; k++)
-	cell.hboxmin[k] = min(kdcell[ccc].hboxmin[k],cell.hboxmin[k]);
+        cell.hboxmin[k] = min(kdcell[ccc].hboxmin[k],cell.hboxmin[k]);
       for (k=0; k<ndim; k++)
-	cell.hboxmax[k] = max(kdcell[ccc].hboxmax[k],cell.hboxmax[k]);
+        cell.hboxmax[k] = max(kdcell[ccc].hboxmax[k],cell.hboxmax[k]);
     }
-    
+
   }
   //---------------------------------------------------------------------------
 
@@ -1047,7 +1044,7 @@ void KDTree<ndim,ParticleType>::UpdateHmaxValues
 
 //=============================================================================
 //  KDTree::UpdateActiveParticleCounters
-/// Loop through all leaf cells in KD-tree and update all active 
+/// Loop through all leaf cells in KD-tree and update all active
 /// particle counters.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -1106,8 +1103,8 @@ int KDTree<ndim,ParticleType>::ComputeActiveParticleList
 
   // Walk through linked list to obtain list and number of active ptcls.
   while (i != -1) {
-    if (i < Ntot && partdata[i].active && 
-	partdata[i].itype != dead) activelist[Nactive++] = i;
+    if (i < Ntot && partdata[i].active &&
+        partdata[i].itype != dead) activelist[Nactive++] = i;
     if (i == ilast) break;
     i = inext[i];
   };
@@ -1200,22 +1197,22 @@ int KDTree<ndim,ParticleType>::ComputeGatherNeighbourList
         cc++;
 
       else if (kdcell[cc].N == 0)
-	cc = kdcell[cc].cnext;
+        cc = kdcell[cc].cnext;
 
       // If leaf-cell, add particles to list
       else if (kdcell[cc].level == ltot && Nneib + Nleafmax < Nneibmax) {
         i = kdcell[cc].ifirst;
-    	while (i != -1) {
+          while (i != -1) {
           neiblist[Nneib++] = i;
           if (i == kdcell[cc].ilast) break;
-    	  i = inext[i];
+          i = inext[i];
         };
         cc = kdcell[cc].cnext;
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
       else if (kdcell[cc].level == ltot && Nneib + Nleafmax >= Nneibmax)
-    	return -1;
+        return -1;
 
     }
 
@@ -1282,22 +1279,11 @@ int KDTree<ndim,ParticleType>::ComputeGatherNeighbourList
   for (k=0; k<ndim; k++) gatherboxmax[k] = cell->bbmax[k] + kernrange*hmax;
 
 
-  //for (k=0; k<ndim; k++) cout << "gather : " << gatherboxmin[k] << "   " << gatherboxmax[k] << endl;
-  //cout << "Nneib : " << Nneib << "    " << Nneibmax << endl;
-  //cout << "Ncell : " << Ncell << "    " << ltot << "    " << Ntot <<endl;
-  //cin >> i;
-
   // Start with root cell and walk through entire tree
   cc = 0;
 
   //===========================================================================
   while (cc < Ncell) {
-
-    //cout << "cc : " << cc << "   " << Ncell << "   " 
-    //<< BoxOverlap(gatherboxmin,gatherboxmax,
-    //       kdcell[cc].bbmin,kdcell[cc].bbmax) << "   "
-    //<< kdcell[cc].cnext << endl;
-    //cin >> i;
 
     // Check if bounding boxes overlap with each other
     //-------------------------------------------------------------------------
@@ -1309,15 +1295,15 @@ int KDTree<ndim,ParticleType>::ComputeGatherNeighbourList
         cc++;
 
       else if (kdcell[cc].N == 0)
-	cc = kdcell[cc].cnext;
+        cc = kdcell[cc].cnext;
 
       // If leaf-cell, add particles to list
       else if (kdcell[cc].level == ltot && Ntemp + Nleafmax < Nneibmax) {
         i = kdcell[cc].ifirst;
-    	while (i != -1) {
+        while (i != -1) {
           neiblist[Ntemp++] = i;
           if (i == kdcell[cc].ilast) break;
-    	  i = inext[i];
+          i = inext[i];
         };
         cc = kdcell[cc].cnext;
       }
@@ -1344,7 +1330,6 @@ int KDTree<ndim,ParticleType>::ComputeGatherNeighbourList
     if (partdata[i].itype == dead) continue;
     for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
-    //cout << "Checking neibs : " << drsqd << "   " << hrangemaxsqd << "   " << Ntemp << "   " << Nneib << endl;
     if (drsqd < hrangemaxsqd) neiblist[Nneib++] = i;
   }
 
@@ -1361,7 +1346,7 @@ int KDTree<ndim,ParticleType>::ComputeGatherNeighbourList
 /// Includes all particles in the selected cell, plus all particles
 /// contained in adjacent cells (including diagonal cells).
 /// Wrapper around the true implementation inside KDTree.
-/// If allocated memory array containing neighbour ids (neiblist) overflows, 
+/// If allocated memory array containing neighbour ids (neiblist) overflows,
 /// return with error code (-1) in order to reallocate more memory.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -1404,30 +1389,30 @@ int KDTree<ndim,ParticleType>::ComputeNeighbourList
     //-------------------------------------------------------------------------
     if (BoxOverlap(cell->bbmin,cell->bbmax,
                    kdcell[cc].hboxmin,kdcell[cc].hboxmax) ||
-	BoxOverlap(cell->hboxmin,cell->hboxmax,
-	           kdcell[cc].bbmin,kdcell[cc].bbmax)) {
+        BoxOverlap(cell->hboxmin,cell->hboxmax,
+	                 kdcell[cc].bbmin,kdcell[cc].bbmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (kdcell[cc].level != ltot)
         cc++;
 
       else if (kdcell[cc].N == 0)
-	cc = kdcell[cc].cnext;
+        cc = kdcell[cc].cnext;
 
       // If leaf-cell, add particles to list
       else if (kdcell[cc].level == ltot && Ntemp + Nleafmax < Nneibmax) {
         i = kdcell[cc].ifirst;
-    	while (i != -1) {
+        while (i != -1) {
           neiblist[Ntemp++] = i;
           if (i == kdcell[cc].ilast) break;
-    	  i = inext[i];
+          i = inext[i];
         };
         cc = kdcell[cc].cnext;
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
       else if (kdcell[cc].level == ltot && Ntemp + Nleafmax >= Nneibmax)
-    	return -1;
+        return -1;
 
     }
 
@@ -1462,7 +1447,7 @@ int KDTree<ndim,ParticleType>::ComputeNeighbourList
 /// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
 /// the gravity tree walk for active particles inside cell c.
 /// Currently defaults to the geometric opening criteria.
-/// If any of the interactions list arrays (neiblist,directlist,gravcelllist) 
+/// If any of the interactions list arrays (neiblist,directlist,gravcelllist)
 /// overflow, return with error code (-1) to reallocate more memory.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -1488,7 +1473,7 @@ int KDTree<ndim,ParticleType>::ComputeGravityInteractionList
   FLOAT dr[ndim];                     // Relative position vector
   FLOAT drsqd;                        // Distance squared
   FLOAT rc[ndim];                     // Position of cell
-  FLOAT hrangemax;                    // Maximum kernel extent 
+  FLOAT hrangemax;                    // Maximum kernel extent
   FLOAT rmax;                         // Radius of sphere containing particles
 
   // Make local copies of important cell properties
@@ -1503,7 +1488,7 @@ int KDTree<ndim,ParticleType>::ComputeGravityInteractionList
   Ngravcell = 0;
 
 
-  // Walk through all cells in tree to determine particle and cell 
+  // Walk through all cells in tree to determine particle and cell
   // interaction lists
   //===========================================================================
   while (cc < Ncell) {
@@ -1511,12 +1496,12 @@ int KDTree<ndim,ParticleType>::ComputeGravityInteractionList
     for (k=0; k<ndim; k++) dr[k] = kdcell[cc].rcell[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
 
-    
+
     // Check if bounding boxes overlap with each other
     //-------------------------------------------------------------------------
     if (BoxOverlap(cell->bbmin,cell->bbmax,
                    kdcell[cc].hboxmin,kdcell[cc].hboxmax) ||
-	BoxOverlap(cell->hboxmin,cell->hboxmax,
+        BoxOverlap(cell->hboxmin,cell->hboxmax,
                    kdcell[cc].bbmin,kdcell[cc].bbmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
@@ -1524,15 +1509,15 @@ int KDTree<ndim,ParticleType>::ComputeGravityInteractionList
         cc++;
 
       else if (kdcell[cc].N == 0)
-	cc = kdcell[cc].cnext;
+        cc = kdcell[cc].cnext;
 
       // If leaf-cell, add particles to list
       else if (kdcell[cc].level == ltot && Nneib + Nleafmax <= Nneibmax) {
         i = kdcell[cc].ifirst;
-    	while (i != -1) {
+        while (i != -1) {
           neiblist[Nneib++] = i;
           if (i == kdcell[cc].ilast) break;
-    	  i = inext[i];
+          i = inext[i];
         };
         cc = kdcell[cc].cnext;
       }
@@ -1545,15 +1530,15 @@ int KDTree<ndim,ParticleType>::ComputeGravityInteractionList
 
     // Check if cell is far enough away to use the COM approximation
     //-------------------------------------------------------------------------
-    else if (drsqd > kdcell[cc].cdistsqd && drsqd > kdcell[cc].mac*macfactor 
-	     && kdcell[cc].N > 0) {
+    else if (drsqd > kdcell[cc].cdistsqd && drsqd > kdcell[cc].mac*macfactor
+              && kdcell[cc].N > 0) {
 
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
-      if (kdcell[cc].level == ltot && kdcell[cc].N == 1 && 
-	  Ndirect + Nneib < Ndirectmax)
+      if (kdcell[cc].level == ltot && kdcell[cc].N == 1 &&
+          Ndirect + Nneib < Ndirectmax)
         directlist[Ndirect++] = kdcell[cc].ifirst;
-      else if (Ngravcell < Ngravcellmax) 
+      else if (Ngravcell < Ngravcellmax)
         gravcelllist[Ngravcell++] = &(kdcell[cc]);
       else
         return -2;
@@ -1577,14 +1562,14 @@ int KDTree<ndim,ParticleType>::ComputeGravityInteractionList
         while (i != -1) {
           directlist[Ndirect++] = i;
           if (i == kdcell[cc].ilast) break;
-       	  i = inext[i];
+          i = inext[i];
         };
         cc = kdcell[cc].cnext;
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
       else if (kdcell[cc].level == ltot && Ndirect + Nleafmax > Ndirectmax)
-       	return -3;
+        return -3;
 
     }
 
@@ -1605,7 +1590,7 @@ int KDTree<ndim,ParticleType>::ComputeGravityInteractionList
     if (partdata[i].itype == dead) continue;
     for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
-    if (drsqd < hrangemax || drsqd < 
+    if (drsqd < hrangemax || drsqd <
         (rmax + kernrange*partdata[i].h)*(rmax + kernrange*partdata[i].h))
       neiblist[Nneibtemp++] = i;
     else if (Ndirect + Nneibtemp < Ndirectmax)
@@ -1627,7 +1612,7 @@ int KDTree<ndim,ParticleType>::ComputeGravityInteractionList
 /// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
 /// the gravity tree walk for active particles inside cell c.
 /// Currently defaults to the geometric opening criteria.
-/// If any of the interactions list arrays (neiblist,directlist,gravcelllist) 
+/// If any of the interactions list arrays (neiblist,directlist,gravcelllist)
 /// overflow, return with error code (-1) to reallocate more memory.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -1664,7 +1649,7 @@ int KDTree<ndim,ParticleType>::ComputeStarGravityInteractionList
   Ngravcell = 0;
 
 
-  // Walk through all cells in tree to determine particle and cell 
+  // Walk through all cells in tree to determine particle and cell
   // interaction lists
   //===========================================================================
   while (cc < Ncell) {
@@ -1672,7 +1657,7 @@ int KDTree<ndim,ParticleType>::ComputeStarGravityInteractionList
     for (k=0; k<ndim; k++) dr[k] = kdcell[cc].rcell[k] - rs[k];
     drsqd = DotProduct(dr,dr,ndim);
 
-    
+
     // Check if cells contain SPH neighbours
     //-------------------------------------------------------------------------
     if (drsqd < pow(0.5*hrangemax + kdcell[cc].rmax + 0.5*kernrange*kdcell[cc].hmax,2)) {
@@ -1684,17 +1669,17 @@ int KDTree<ndim,ParticleType>::ComputeStarGravityInteractionList
       // If leaf-cell, add particles to list
       else if (kdcell[cc].level == ltot && Nneib + Nleafmax <= Nneibmax) {
         i = kdcell[cc].ifirst;
-    	while (i != -1) {
-	  if (partdata[i].itype != dead) neiblist[Nneib++] = i;
+        while (i != -1) {
+          if (partdata[i].itype != dead) neiblist[Nneib++] = i;
           if (i == kdcell[cc].ilast) break;
-    	  i = inext[i];
+          i = inext[i];
         };
         cc = kdcell[cc].cnext;
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
       else if (kdcell[cc].level == ltot && Nneib + Nleafmax > Nneibmax)
-    	return -1;
+        return -1;
 
     }
 
@@ -1704,10 +1689,10 @@ int KDTree<ndim,ParticleType>::ComputeStarGravityInteractionList
 
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
-      if (kdcell[cc].level == ltot && kdcell[cc].N == 1 && 
-	  Ndirect + Nneib < Ndirectmax) {
-	if (partdata[kdcell[cc].ifirst].itype != dead)
-	  directlist[Ndirect++] = kdcell[cc].ifirst;
+      if (kdcell[cc].level == ltot && kdcell[cc].N == 1 &&
+          Ndirect + Nneib < Ndirectmax) {
+        if (partdata[kdcell[cc].ifirst].itype != dead)
+            directlist[Ndirect++] = kdcell[cc].ifirst;
       }
       else if (Ngravcell < Ngravcellmax && kdcell[cc].N > 0)
         gravcelllist[Ngravcell++] = &(kdcell[cc]);
@@ -1730,16 +1715,16 @@ int KDTree<ndim,ParticleType>::ComputeStarGravityInteractionList
       else if (kdcell[cc].level == ltot && Ndirect + Nleafmax <= Ndirectmax) {
         i = kdcell[cc].ifirst;
         while (i != -1) {
-	  if (partdata[i].itype != dead) directlist[Ndirect++] = i;
+          if (partdata[i].itype != dead) directlist[Ndirect++] = i;
           if (i == kdcell[cc].ilast) break;
-       	  i = inext[i];
+          i = inext[i];
         };
         cc = kdcell[cc].cnext;
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
       else if (kdcell[cc].level == ltot && Ndirect + Nleafmax > Ndirectmax)
-       	return -1;
+        return -1;
 
     }
 
@@ -1759,7 +1744,7 @@ int KDTree<ndim,ParticleType>::ComputeStarGravityInteractionList
 
 //=============================================================================
 //  KDTree::ComputeCellMonopoleForces
-/// Compute the force on particle 'parti' due to all cells obtained in the 
+/// Compute the force on particle 'parti' due to all cells obtained in the
 /// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -1805,7 +1790,7 @@ void KDTree<ndim,ParticleType>::ComputeCellMonopoleForces
 
 //=============================================================================
 //  KDTree::ComputeCellQuadrupoleForces
-/// Compute the force on particle 'parti' due to all cells obtained in the 
+/// Compute the force on particle 'parti' due to all cells obtained in the
 /// gravity tree walk including the quadrupole moment correction term.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -1840,7 +1825,7 @@ void KDTree<ndim,ParticleType>::ComputeCellQuadrupoleForces
     invdr5 = invdrsqd*invdrsqd*invdrmag;
 
     // First add monopole term for acceleration
-    for (k=0; k<ndim; k++) 
+    for (k=0; k<ndim; k++)
       agrav[k] += cell->m*dr[k]*invdrsqd*invdrmag;
 
     // Now add quadrupole moment terms depending on dimensionality
@@ -1850,13 +1835,13 @@ void KDTree<ndim,ParticleType>::ComputeCellQuadrupoleForces
          2.0*(cell->q[1]*dr[0]*dr[1] + cell->q[3]*dr[0]*dr[2] +
          cell->q[4]*dr[1]*dr[2]);
       qfactor = 2.5*qscalar*invdr5*invdrsqd;
-      agrav[0] += 
+      agrav[0] +=
         (cell->q[0]*dr[0] + cell->q[1]*dr[1] + cell->q[3]*dr[2])*invdr5
-	- qfactor*dr[0];
-      agrav[1] += 
+         - qfactor*dr[0];
+      agrav[1] +=
         (cell->q[1]*dr[0] + cell->q[2]*dr[1] + cell->q[4]*dr[2])*invdr5
-	- qfactor*dr[1];
-      agrav[2] += 
+         - qfactor*dr[1];
+      agrav[2] +=
         (cell->q[3]*dr[0] + cell->q[4]*dr[1] -
          (cell->q[0] + cell->q[2])*dr[2])*invdr5 - qfactor*dr[2];
       gpot += cell->m*invdrmag + 0.5*qscalar*invdr5;
@@ -1865,12 +1850,10 @@ void KDTree<ndim,ParticleType>::ComputeCellQuadrupoleForces
       qscalar = cell->q[0]*dr[0]*dr[0] + cell->q[2]*dr[1]*dr[1] +
         2.0*cell->q[1]*dr[0]*dr[1];
       qfactor = 2.5*qscalar*invdr5*invdrsqd;
-      agrav[0] += (cell->q[0]*dr[0] + cell->q[1]*dr[1])*invdr5 - 
-	qfactor*dr[0];
-      //2.5*qscalar*dr[0]*invdr5*invdrsqd;
+      agrav[0] += (cell->q[0]*dr[0] + cell->q[1]*dr[1])*invdr5 -
+        qfactor*dr[0];
       agrav[1] += (cell->q[1]*dr[0] + cell->q[2]*dr[1])*invdr5 -
-	qfactor*dr[1];
-      //2.5*qscalar*dr[1]*invdr5*invdrsqd;
+        qfactor*dr[1];
       gpot += cell->m*invdrmag + 0.5*qscalar*invdr5;
     }
 
@@ -1885,7 +1868,7 @@ void KDTree<ndim,ParticleType>::ComputeCellQuadrupoleForces
 
 //=============================================================================
 //  KDTree::ComputeFastMonopoleForces
-/// Compute the force on particle 'parti' due to all cells obtained in the 
+/// Compute the force on particle 'parti' due to all cells obtained in the
 /// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -1946,8 +1929,8 @@ void KDTree<ndim,ParticleType>::ComputeFastMonopoleForces
       activepart[j].agrav[0] += ac[0] + q[0]*dr[0] + q[1]*dr[1] + q[3]*dr[2];
       activepart[j].agrav[1] += ac[1] + q[1]*dr[0] + q[2]*dr[1] + q[4]*dr[2];
       activepart[j].agrav[2] += ac[2] + q[3]*dr[0] + q[4]*dr[1] + q[5]*dr[2];
-      activepart[j].gpot += 
-	cellpot + dphi[0]*dr[0] + dphi[1]*dr[1] + dphi[2]*dr[2];
+      activepart[j].gpot +=
+        cellpot + dphi[0]*dr[0] + dphi[1]*dr[1] + dphi[2]*dr[2];
     }
 
   }
@@ -1984,12 +1967,12 @@ int KDTree<ndim,ParticleType>::ComputeActiveCellList
 
 #ifdef MPI_PARALLEL
 //=============================================================================
-//  KDTree::ComputeGravityInteractionList
+//  KDTree::ComputeDistantGravityInteractionList
 /// Computes and returns number of SPH neighbours (Nneib), direct sum particles
 /// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
 /// the gravity tree walk for active particles inside cell c.
 /// Currently defaults to the geometric opening criteria.
-/// If any of the interactions list arrays (neiblist,directlist,gravcelllist) 
+/// If any of the interactions list arrays (neiblist,directlist,gravcelllist)
 /// overflow, return with error code (-1) to reallocate more memory.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -2008,7 +1991,7 @@ int KDTree<ndim,ParticleType>::ComputeDistantGravityInteractionList
   FLOAT dr[ndim];                     // Relative position vector
   FLOAT drsqd;                        // Distance squared
   FLOAT rc[ndim];                     // Position of cell
-  FLOAT hrangemax;                    // Maximum kernel extent 
+  FLOAT hrangemax;                    // Maximum kernel extent
   FLOAT rmax;                         // Radius of sphere containing particles
 
   // Make local copies of important cell properties
@@ -2020,7 +2003,7 @@ int KDTree<ndim,ParticleType>::ComputeDistantGravityInteractionList
   cc = 0;
 
 
-  // Walk through all cells in tree to determine particle and cell 
+  // Walk through all cells in tree to determine particle and cell
   // interaction lists
   //===========================================================================
   while (cc < Ncell) {
@@ -2028,12 +2011,12 @@ int KDTree<ndim,ParticleType>::ComputeDistantGravityInteractionList
     for (k=0; k<ndim; k++) dr[k] = kdcell[cc].rcell[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
 
-    
+
     // Check if bounding boxes overlap with each other
     //-------------------------------------------------------------------------
     if (BoxOverlap(cell->bbmin,cell->bbmax,
                    kdcell[cc].hboxmin,kdcell[cc].hboxmax) ||
-	BoxOverlap(cell->hboxmin,cell->hboxmax,
+        BoxOverlap(cell->hboxmin,cell->hboxmax,
                    kdcell[cc].bbmin,kdcell[cc].bbmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
@@ -2041,18 +2024,18 @@ int KDTree<ndim,ParticleType>::ComputeDistantGravityInteractionList
         cc++;
 
       else if (kdcell[cc].N == 0)
-	cc = kdcell[cc].cnext;
+        cc = kdcell[cc].cnext;
 
       // If leaf-cell, add particles to list
       else if (kdcell[cc].level == ltot) {
-	return -1;
+        return -1;
       }
 
     }
 
     // Check if cell is far enough away to use the COM approximation
     //-------------------------------------------------------------------------
-    else if (drsqd > kdcell[cc].cdistsqd && drsqd > kdcell[cc].mac*macfactor 
+    else if (drsqd > kdcell[cc].cdistsqd && drsqd > kdcell[cc].mac*macfactor
 	     && kdcell[cc].N > 0) {
 
       gravcelllist[Ngravcelltemp++] = &(kdcell[cc]);
@@ -2063,7 +2046,7 @@ int KDTree<ndim,ParticleType>::ComputeDistantGravityInteractionList
     // If cell is too close, open cell to interogate children cells.
     // If cell is too close and a leaf cell, then add particles to direct list.
     //-------------------------------------------------------------------------
-    else if (!(drsqd > kdcell[cc].cdistsqd && 
+    else if (!(drsqd > kdcell[cc].cdistsqd &&
 	       drsqd > kdcell[cc].mac*macfactor) && kdcell[cc].N > 0) {
 
       // If not a leaf-cell, then open cell to first child cell
@@ -2071,7 +2054,7 @@ int KDTree<ndim,ParticleType>::ComputeDistantGravityInteractionList
          cc++;
 
       // If leaf-cell, add particles to list
-      else 
+      else
        	return -1;
 
     }
@@ -2085,6 +2068,61 @@ int KDTree<ndim,ParticleType>::ComputeDistantGravityInteractionList
   //===========================================================================
 
   return Ngravcelltemp;
+}
+
+
+
+//=============================================================================
+//  KDTree::ComputeHydroTreeCellOverlap
+/// Computes and returns number of SPH neighbours (Nneib), direct sum particles
+/// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
+/// the gravity tree walk for active particles inside cell c.
+/// Currently defaults to the geometric opening criteria.
+/// If any of the interactions list arrays (neiblist,directlist,gravcelllist)
+/// overflow, return with error code (-1) to reallocate more memory.
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+bool KDTree<ndim,ParticleType>::ComputeHydroTreeCellOverlap
+(const KDTreeCell<ndim> *cell)      ///< [in] Pointer to cell
+{
+  int cc = 0;                       // Cell counter
+
+  // Walk through all cells in tree to determine particle and cell
+  // interaction lists
+  //===========================================================================
+  while (cc < Ncell) {
+
+    // Check if bounding boxes overlap with each other
+    //-------------------------------------------------------------------------
+    if (BoxOverlap(cell->bbmin,cell->bbmax,
+                   kdcell[cc].hboxmin,kdcell[cc].hboxmax) ||
+        BoxOverlap(cell->hboxmin,cell->hboxmax,
+                   kdcell[cc].bbmin,kdcell[cc].bbmax)) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (kdcell[cc].level != ltot)
+        cc++;
+
+      else if (kdcell[cc].N == 0)
+        cc = kdcell[cc].cnext;
+
+      // If cell is overlapping with any leaf, then flag overlap on return
+      else if (kdcell[cc].level == ltot) {
+        return true;
+      }
+
+    }
+
+    // If not in range, then open next cell
+    //-------------------------------------------------------------------------
+    else
+      cc = kdcell[cc].cnext;
+
+  };
+  //===========================================================================
+
+  // If we've walked the entire tree wihout any leaf overlaps, flag no overlap
+  return false;
 }
 #endif
 
@@ -2147,12 +2185,12 @@ void KDTree<ndim,ParticleType>::ValidateTree
   // Check inext linked list values and ids array are all valid
   for (i=ifirst; i<=ilast; i++) {
     if (!(ids[i] >= ifirst && ids[i] <= ilast)) {
-      cout << "Problem with ids array : " 
+      cout << "Problem with ids array : "
 	   << i << "   " << ids[i] << endl;
       exit(0);
     }
     if (!(inext[i] >= -1)) {
-      cout << "Problem with inext linked lists : " 
+      cout << "Problem with inext linked lists : "
 	   << i << "   " << inext[i] << endl;
       exit(0);
     }
@@ -2179,7 +2217,7 @@ void KDTree<ndim,ParticleType>::ValidateTree
 	if (partdata[i].active) activecount++;
 	if (partdata[i].active) Nactivecount++;
         if (partdata[i].h > cell.hmax) {
-	  cout << "hmax flag error : " << c << "    " 
+	  cout << "hmax flag error : " << c << "    "
 	       << partdata[i].h << "   " << cell.hmax << endl;
 	  exit(0);
 	}
@@ -2187,18 +2225,18 @@ void KDTree<ndim,ParticleType>::ValidateTree
 	i = inext[i];
       }
       if (leafcount > Nleafmax) {
-	cout << "Leaf particle count error : " 
+	cout << "Leaf particle count error : "
 	     << leafcount << "   " << Nleafmax << endl;
 	exit(0);
       }
       if (activecount > leafcount) {
-	cout << "Leaf particle count error : " 
+	cout << "Leaf particle count error : "
 	     << leafcount << "   " << Nleafmax << endl;
 	exit(0);
       }
     }
 
-    // Check that bounding boxes of cells on each level do not overlap 
+    // Check that bounding boxes of cells on each level do not overlap
     // each other
     for (cc=0; cc<Ncell; cc++) {
       if (c != cc && kdcell[cc].level == cell.level) {
@@ -2211,7 +2249,7 @@ void KDTree<ndim,ParticleType>::ValidateTree
 	}
       }
       if (overlap_flag) {
-	cout << "Brother/sister cell overlap error!! : " << c << "   " 
+	cout << "Brother/sister cell overlap error!! : " << c << "   "
              << cc << endl;
 	exit(0);
       }
@@ -2222,7 +2260,7 @@ void KDTree<ndim,ParticleType>::ValidateTree
   // Check particles are included in the tree once and once only
   for (i=ifirst; i<=ilast; i++) {
     if (pcount[i] != 1) {
-      cout << "Problem with child cell ptcl counter : " << i << "   " 
+      cout << "Problem with child cell ptcl counter : " << i << "   "
 	   << pcount[i] << endl;
       kill_flag = true;
     }
@@ -2230,14 +2268,14 @@ void KDTree<ndim,ParticleType>::ValidateTree
 
   // Check all particles accounted for
   if (Ncount != Ntot) {
-    cout << "Ncount problem with KD-tree : " 
+    cout << "Ncount problem with KD-tree : "
 	 << Ncount << "   " << Ntot << endl;
     kill_flag = true;
   }
 
   // Check active particles don't exceed total number of particles
   if (Nactivecount > Ntot) {
-    cout << "Nactivecount problem with KD-tree : " 
+    cout << "Nactivecount problem with KD-tree : "
 	 << Nactivecount << "   " << Ntot << endl;
     kill_flag = true;
   }

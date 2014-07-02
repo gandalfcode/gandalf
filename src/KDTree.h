@@ -85,7 +85,7 @@ struct KDTreeCell {
 //=============================================================================
 //  Class KDTree
 /// \brief   Class containing binary tree
-/// \details Binary tree data structure used for efficient neighbour searching 
+/// \details Binary tree data structure used for efficient neighbour searching
 ///          and computation of gravitational forces
 /// \author  D. A. Hubber, O. Lomax, A. P. Whitworth
 /// \date    08/01/2014
@@ -114,34 +114,35 @@ class KDTree
   void UpdateHmaxValues(KDTreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
   int ComputeActiveCellList(KDTreeCell<ndim> **);
-  int ComputeActiveParticleList(KDTreeCell<ndim> *, 
+  int ComputeActiveParticleList(KDTreeCell<ndim> *,
                                 ParticleType<ndim> *, int *);
-  int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *, 
-                                 const FLOAT, const int, int *); 
-  int ComputeGatherNeighbourList(const ParticleType<ndim> *, 
-                                 const KDTreeCell<ndim> *, const FLOAT, 
+  int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
+                                 const FLOAT, const int, int *);
+  int ComputeGatherNeighbourList(const ParticleType<ndim> *,
+                                 const KDTreeCell<ndim> *, const FLOAT,
                                  const int, int &, int *);
-  int ComputeNeighbourList(const ParticleType<ndim> *, 
-                           const KDTreeCell<ndim> *, const int, int &,int *); 
-  int ComputeGravityInteractionList(const ParticleType<ndim> *, 
-                                    const KDTreeCell<ndim> *, const FLOAT, 
-                                    const int, const int, const int,   
+  int ComputeNeighbourList(const ParticleType<ndim> *,
+                           const KDTreeCell<ndim> *, const int, int &,int *);
+  int ComputeGravityInteractionList(const ParticleType<ndim> *,
+                                    const KDTreeCell<ndim> *, const FLOAT,
+                                    const int, const int, const int,
                                     int &, int &, int &, int *, int *,
                                     KDTreeCell<ndim> **);
   int ComputeStarGravityInteractionList(NbodyParticle<ndim> *, FLOAT, int, int,
-					int, int &, int &, int &, int *, int *,
-					KDTreeCell<ndim> **, 
-					ParticleType<ndim> *);
-  void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, 
-				 KDTreeCell<ndim> **);
-  void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, 
-				   KDTreeCell<ndim> **);
-  void ComputeFastMonopoleForces(int, int, KDTreeCell<ndim> **, 
-				 KDTreeCell<ndim> *, ParticleType<ndim> *);
+                                        int, int &, int &, int &, int *, int *,
+                                        KDTreeCell<ndim> **,
+                                        ParticleType<ndim> *);
+  void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int,
+                                 KDTreeCell<ndim> **);
+  void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int,
+                                   KDTreeCell<ndim> **);
+  void ComputeFastMonopoleForces(int, int, KDTreeCell<ndim> **,
+                                 KDTreeCell<ndim> *, ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
-  int ComputeDistantGravityInteractionList(const KDTreeCell<ndim> *, 
-					   const FLOAT, const int, int, 
-					   KDTreeCell<ndim> **);
+  int ComputeDistantGravityInteractionList(const KDTreeCell<ndim> *,
+                                           const FLOAT, const int, int,
+                                           KDTreeCell<ndim> **);
+  bool ComputeHydroTreeCellOverlap(const KDTreeCell<ndim> *);
 #endif
 #if defined(VERIFY_ALL)
   void ValidateTree(ParticleType<ndim> *);
