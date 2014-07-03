@@ -106,8 +106,8 @@ SphTree<ndim,ParticleType>::SphTree
 
   Ncellexport = new int[Nmpi];
   Npartexport = new int[Nmpi];
-  cellexportlist = new int*[Nmpi];
-  for (int j=0; j<Nmpi; j++) cellexportlist[j] = new int[1];
+  cellexportlist = new KDTreeCell<ndim>**[Nmpi];
+  for (int j=0; j<Nmpi; j++) cellexportlist[j] = NULL;
 
   ids_sent_particles.resize(Nmpi);
 #endif
@@ -257,9 +257,9 @@ void SphTree<ndim,ParticleType>::BuildTree
 
     AllocateMemory(sph);
 #ifdef MPI_PARALLEL
-    if (tree->Ntotmax > tree->Ntotmaxold) {
+    if (Ntotmax > Ntotmaxold) {
       for (i=Nmpi-1; i>=0; i--) delete[] cellexportlist[i];
-      for (i=0; i<Nmpi; i++) cellexportlist[i] = new int[tree->gmax];
+      for (i=0; i<Nmpi; i++) cellexportlist[i] = new KDTreeCell<ndim>*[tree->gmax];
     }
 #endif
 
@@ -704,7 +704,10 @@ void SphTree<ndim,ParticleType>::UpdateGravityExportList
   cactive = tree->ComputeActiveCellList(celllist);
 
   // Reset all export lists
-  for (j=0; j<Nmpi; j++) Ncellexport[j] = 0;
+  for (j=0; j<Nmpi; j++) {
+    Ncellexport[j] = 0;
+    Npartexport[j] = 0;
+  }
 
 
   // Set-up all OMP threads
@@ -754,6 +757,7 @@ void SphTree<ndim,ParticleType>::UpdateGravityExportList
       // Loop over all distant pruned trees and compute list of cells.
       // If pruned tree is too close, record cell id for exporting
       //-----------------------------------------------------------------------
+      Ngravcell = 0;
       for (j=0; j<Nmpi; j++) {
         if (j == rank) continue;
 
@@ -762,8 +766,10 @@ void SphTree<ndim,ParticleType>::UpdateGravityExportList
 
         // If pruned tree is too close (flagged by -1), then record cell id
 	      // for exporting to other MPI processes
-        if (Ngravcelltemp == -1)
-          cellexportlist[j][Ncellexport[j]++] = cell->id;
+        if (Ngravcelltemp == -1) {
+          cellexportlist[j][Ncellexport[j]++] = cell;
+          Npartexport[j] += Nactive;
+        }
         else
 	        Ngravcell = Ngravcelltemp;
 
@@ -861,7 +867,10 @@ void SphTree<ndim,ParticleType>::UpdateHydroExportList
   cactive = tree->ComputeActiveCellList(celllist);
 
   // Reset all export lists
-  for (j=0; j<Nmpi; j++) Ncellexport[j] = 0;
+  for (j=0; j<Nmpi; j++) {
+    Ncellexport[j] = 0;
+    Npartexport[j] = 0;
+  }
 
 
   // Set-up all OMP threads
@@ -891,7 +900,10 @@ void SphTree<ndim,ParticleType>::UpdateHydroExportList
 
         // If pruned tree is too close (flagged by -1), then record cell id
         // for exporting to other MPI processes
-        if (overlapflag) cellexportlist[j][Ncellexport[j]++] = cell->id;
+        if (overlapflag) {
+          cellexportlist[j][Ncellexport[j]++] = cell;
+          Npartexport[j] += cell->Nactive;
+        }
 
       }
       //-----------------------------------------------------------------------
@@ -981,14 +993,6 @@ void SphTree<ndim,ParticleType>::BuildPrunedTree
 
   }
   //---------------------------------------------------------------------------
-
-  cout << "Pruned tree size : " << prunedtree[rank]->Ncell << "    "
-       << prunedtree[rank]->ltot << "    " << pruning_level << endl;
-  for (c=0; c<prunedtree[rank]->Ncell; c++) {
-    cout << "bb[" << c << "] : " << prunedtree[rank]->kdcell[c].bbmin[0]
-         << "    " << prunedtree[rank]->kdcell[c].bbmax[0]
-         << "    level : " << prunedtree[rank]->kdcell[c].level << endl;
-  }
 
   return;
 }
@@ -1376,22 +1380,28 @@ int SphTree<ndim,ParticleType>::GetExportInfo (
   int Nactive=0, cactive;
 
   // Get active cells and their number (so that we know how much memory to allocate)
-  vector<KDTreeCell<ndim>*> celllist;
-  celllist.reserve(tree->gtot);
-  if (hydro_only) {
-    Nactive += SearchHydroExportParticles(mpinode.domain,sph,celllist);
-    cactive = celllist.size();
-  }
-  else {
+//  vector<KDTreeCell<ndim>*> celllist;
+//  celllist.reserve(tree->gtot);
+//  if (hydro_only) {
+//    Nactive += SearchHydroExportParticles(mpinode.domain,sph,celllist);
+//    cactive = celllist.size();
+//  }
+//  else {
+//
+//    for (int i=0; i<sph->Nsph; i++) {
+//      if (sphdata[i].active)
+//        Nactive++;
+//    }
+//
+//    celllist.resize(tree->gtot);
+//    cactive = tree->ComputeActiveCellList(&celllist[0]);
+//  }
 
-    for (int i=0; i<sph->Nsph; i++) {
-      if (sphdata[i].active)
-        Nactive++;
-    }
+  KDTreeCell<ndim>** celllist = cellexportlist[Nproc];
+  cactive = Ncellexport[Nproc];
+  Nactive = Npartexport[Nproc];
 
-    celllist.resize(tree->gtot);
-    cactive = tree->ComputeActiveCellList(&celllist[0]);
-  }
+
 
   // Work out size of the information we are sending
   //Header consists of number of particles and number of cells
@@ -1681,15 +1691,6 @@ void SphTree<ndim,ParticleType>::CommunicatePrunedTrees (
 
   }
   //---------------------------------------------------------------------------
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  for (int i=0; i<Nmpi; i++) {
-    cout << "Writing pruned tree " << i << " for process " << rank << endl;
-    cout << "Ncell : " << prunedtree[i]->Ncell << endl;
-    cout << "r : " << prunedtree[i]->kdcell[0].r[0]
-         << "   box : " << prunedtree[i]->kdcell[0].bbmin[0]
-         << "   " << prunedtree[i]->kdcell[0].bbmax[0] << endl;
-  }
 
 }
 

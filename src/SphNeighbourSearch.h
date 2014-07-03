@@ -474,7 +474,7 @@ protected:
   int Nprunedcellmax;                       ///< ..
   int *Ncellexport;                         ///< ..
   int *Npartexport;                         ///< ..
-  int **cellexportlist;                     ///< List of cells
+  KDTreeCell<ndim> ***cellexportlist;                     ///< List of cells
   KDTree<ndim,ParticleType> *mpighosttree;  ///< Pointer to tree containing
                                             ///< ghosts from other MPI procs.
   KDTree<ndim,ParticleType> **prunedtree;   ///< 'Pruned' tree for MPI nodes.
