@@ -49,14 +49,14 @@ template <int ndim, template<int> class ParticleType>
 MpiTree<ndim,ParticleType>::MpiTree(int Nmpiaux)
 {
   allocated_tree = false;
-  ltot       = 0;
-  Ntot       = 0;
-  Ntotmax    = 0;
-  Nmpi       = Nmpiaux;
+  ltot     = 0;
+  Ntot     = 0;
+  Ntotmax  = 0;
+  Nmpi     = Nmpiaux;
 #if defined _OPENMP
-  Nthreads   = omp_get_max_threads();
+  Nthreads = omp_get_max_threads();
 #else
-  Nthreads   = 1;
+  Nthreads = 1;
 #endif
 }
 
@@ -75,7 +75,7 @@ MpiTree<ndim,ParticleType>::~MpiTree()
 
 //=============================================================================
 //  MpiTree::AllocateTreeMemory
-/// Allocate memory for KD-tree as requested.  If more memory is required 
+/// Allocate memory for KD-tree as requested.  If more memory is required
 /// than currently allocated, tree is deallocated and reallocated here.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -127,15 +127,15 @@ void MpiTree<ndim,ParticleType>::DeallocateMemory(void)
 
 //=============================================================================
 //  MpiTree::ComputeTreeSize
-/// Compute the maximum size (i.e. no. of levels, cells and leaf cells) of 
-/// the KD tree.
+/// Compute the maximum size (i.e. no. of levels, cells and leaf cells) of
+/// the MPI KD-tree.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void MpiTree<ndim,ParticleType>::ComputeTreeSize(void)
 {
   debug2("[MpiTree::ComputeTreeSize]");
 
-  // Calculate level of tree that can contain required number of MPI 
+  // Calculate level of tree that can contain required number of MPI
   // nodes on lowest level
   ltot = 0;
   while (pow(2,ltot) < Nmpi) {
@@ -147,8 +147,10 @@ void MpiTree<ndim,ParticleType>::ComputeTreeSize(void)
   Ncell = 2*gtot - 1;
   Ncellmax = Ncell;
 
+#ifdef VERIFY_ALL
   cout << "No. of levels on MPI tree : " << ltot << "   " << ltot << endl;
-  cout << "No. of MPI cells in tree  : " << Nmpi << "   " << gtot << endl; 
+  cout << "No. of MPI cells in tree  : " << Nmpi << "   " << gtot << endl;
+#endif
 
   return;
 }
@@ -190,6 +192,7 @@ void MpiTree<ndim,ParticleType>::CreateTreeStructure(MpiNode<ndim> *mpinode)
     tree[c].ifirst = -1;
     tree[c].ilast = -1;
     tree[c].N = 0;
+    tree[c].nodes.clear();
   }
   g = 0;
   tree[0].level = 0;
@@ -204,7 +207,7 @@ void MpiTree<ndim,ParticleType>::CreateTreeStructure(MpiNode<ndim> *mpinode)
     }
     else {
       tree[c+1].level = tree[c].level + 1;          // Level of 1st child
-      tree[c].c1 = c + 1;
+      tree[c].c1 = c + 1;                           // ..
       tree[c].c2 = c + c2L[tree[c].level];          // id of 2nd child
       tree[tree[c].c2].level = tree[c].level + 1;   // Level of 2nd child
       tree[c].cnext = c + cNL[tree[c].level];       // Next cell id
@@ -239,7 +242,7 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
   int k;                            // Dimension counter
   int k_divide = 0;                 // Division dimension
   FLOAT rkmax = 0.0;                // Max. box size of all dimensions
-  FLOAT rdivide;                    // Coordinate value at division
+  FLOAT r_divide;                   // Coordinate value at division
 
 
   // If cell is a leaf cell, do not divide further and set linked lists
@@ -254,7 +257,8 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
       cell.ifirst = -1;
       cell.ilast = -1;
     }
-    //StockCellProperties(cell,partdata);
+    cell.nodes.clear();
+    cell.nodes.push_back(cell.c2g);
     return;
   }
 
@@ -284,16 +288,15 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
   cell.k_divide = k_divide;
 
 
-  // Find median value along selected division plane and re-order array 
+  // Find median value along selected division plane and re-order array
   // so particles reside on correct side of division
-  rdivide = QuickSelect(cell.ifirst,cell.ilast,
-			cell.ifirst+cell.N/2,k_divide,partdata);
+  r_divide = QuickSelect(cell.ifirst,cell.ilast,
+                        cell.ifirst+cell.N/2,k_divide,partdata);
+  cell.r_divide = r_divide;
 
   // Set properties of first child cell
   for (k=0; k<ndim; k++) tree[cell.c1].bbmin[k] = cell.bbmin[k];
   for (k=0; k<ndim; k++) tree[cell.c1].bbmax[k] = cell.bbmax[k];
-  //for (k=0; k<ndim; k++) tree[cell.c1].cexit[0][k] = cell.cexit[0][k];
-  //for (k=0; k<ndim; k++) tree[cell.c1].cexit[1][k] = cell.cexit[1][k];
   tree[cell.c1].N = cell.N/2;
   if (tree[cell.c1].N != 0) {
     tree[cell.c1].ifirst = ifirst;
@@ -303,8 +306,6 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
   // Set properties of second child cell
   for (k=0; k<ndim; k++) tree[cell.c2].bbmin[k] = cell.bbmin[k];
   for (k=0; k<ndim; k++) tree[cell.c2].bbmax[k] = cell.bbmax[k];
-  //for (k=0; k<ndim; k++) tree[cell.c2].cexit[0][k] = cell.cexit[0][k];
-  //for (k=0; k<ndim; k++) tree[cell.c2].cexit[1][k] = cell.cexit[1][k];
   tree[cell.c2].N = cell.N - tree[cell.c1].N;
   if (tree[cell.c2].N != 0) {
     tree[cell.c2].ifirst = ifirst + cell.N/2;
@@ -315,10 +316,8 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
 
   // Set new cell boundaries depending on number of particles in cells
   if (tree[cell.c1].N > 0 && tree[cell.c2].N > 0) {
-    tree[cell.c1].bbmax[k_divide] = rdivide;
-    tree[cell.c2].bbmin[k_divide] = rdivide;
-    //tree[cell.c1].cexit[1][k_divide] = cell.c2;
-    //tree[cell.c2].cexit[0][k_divide] = cell.c1;
+    tree[cell.c1].bbmax[k_divide] = r_divide;
+    tree[cell.c2].bbmin[k_divide] = r_divide;
   }
   else if (tree[cell.c2].N > 0) {
     tree[cell.c1].bbmax[k_divide] = -big_number;
@@ -331,12 +330,12 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
 #pragma omp parallel default(none) private(i) \
   shared(cell,ifirst,ilast,partdata) num_threads(2)
     {
-#pragma omp for 
+#pragma omp for
       for (i=0; i<2; i++) {
-	if (i == 0) DivideTreeCell(ifirst,ifirst+cell.N/2-1,
+        if (i == 0) DivideTreeCell(ifirst,ifirst+cell.N/2-1,
                                    partdata,tree[cell.c1]);
-	else if (i == 1) DivideTreeCell(ifirst+cell.N/2,ilast,
-                                        partdata,tree[cell.c2]);
+        else if (i == 1) DivideTreeCell(ifirst+cell.N/2,ilast,
+                                         partdata,tree[cell.c2]);
       }
 #pragma omp barrier
     }
@@ -358,14 +357,15 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
   }
 #endif
 
+  // Join node lists of two cells together
+  cell.nodes = tree[cell.c1].nodes;
+  cell.nodes.insert(cell.nodes.end(),tree[cell.c2].nodes.begin(),tree[cell.c2].nodes.end());
+
   if (cell.N != tree[cell.c1].N + tree[cell.c2].N) {
-    cout << "Checking : " << cell.N << "   " << tree[cell.c1].N 
-	 << "    " << tree[cell.c2].N << endl;
+    cout << "Checking : " << cell.N << "   " << tree[cell.c1].N
+         << "    " << tree[cell.c2].N << endl;
   }
   assert(cell.N == tree[cell.c1].N + tree[cell.c2].N);
-
-  // Stock all cell properties once constructed
-  //StockCellProperties(cell,partdata);
 
   return;
 }
@@ -374,7 +374,7 @@ void MpiTree<ndim,ParticleType>::DivideTreeCell
 
 //=============================================================================
 //  MpiTree::QuickSelect
-/// Find median and sort particles in arrays to ensure they are the correct 
+/// Find median and sort particles in arrays to ensure they are the correct
 /// side of the division.  Uses the QuickSelect algorithm.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -414,9 +414,9 @@ FLOAT MpiTree<ndim,ParticleType>::QuickSelect
     for (j=left; j<right; j++) {
       assert(j < Ntot);
       if (partdata[ids[j]].r[k] < rpivot) {
-	jtemp = ids[j];
-	ids[j] = ids[jguess];
-	ids[jguess] = jtemp;
+        jtemp = ids[j];
+        ids[j] = ids[jguess];
+        ids[jguess] = jtemp;
         jguess++;
       }
 
@@ -429,11 +429,11 @@ FLOAT MpiTree<ndim,ParticleType>::QuickSelect
     ids[right] = ids[jguess];
     ids[jguess] = jtemp;
 
-    // jguess is lower than jpivot.  
+    // jguess is lower than jpivot.
     // Only need to search between jguess+1 and right
     if (jguess < jpivot) left = jguess + 1;
 
-    // jguess is higher than jpivot.  
+    // jguess is higher than jpivot.
     // Only need to search between left and jguess-1
     else if (jguess > jpivot) right = jguess - 1;
 
@@ -448,8 +448,7 @@ FLOAT MpiTree<ndim,ParticleType>::QuickSelect
 
 //=============================================================================
 //  MpiTree::FindCell
-/// Find i.d. of cell adjacent to current cell that the radiation packet is 
-/// travelling into.
+/// ...
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 int MpiTree<ndim,ParticleType>::FindCell
@@ -481,9 +480,48 @@ int MpiTree<ndim,ParticleType>::FindCell
   //---------------------------------------------------------------------------
 
   return c;
-} 
+}
 
- 
+
+
+//=============================================================================
+//  MpiTree::UpdateBoundingBoxes
+/// ...
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void MpiTree<ndim,ParticleType>::UpdateBoundingBoxes(void)
+{
+  int c;
+  int c1;
+  int c2;
+  int k;
+  int k_divide;
+  FLOAT r_divide;
+
+  for (c=0; c<Ncell; c++) {
+    if (tree[c].level == ltot) continue;
+
+    c1 = c + 1;
+    c2 = tree[c].c2;
+    k_divide = tree[c].k_divide;
+    r_divide = tree[c].r_divide;
+
+    // Adjust bounding box of 1st child
+    for (k=0; k<ndim; k++) tree[c1].bbmin[k] = tree[c].bbmin[k];
+    for (k=0; k<ndim; k++) tree[c1].bbmax[k] = tree[c].bbmax[k];
+    tree[c1].bbmax[k_divide] = r_divide;
+
+    // Adjust bounding box of 2nd child
+    for (k=0; k<ndim; k++) tree[c2].bbmin[k] = tree[c].bbmin[k];
+    for (k=0; k<ndim; k++) tree[c2].bbmax[k] = tree[c].bbmax[k];
+    tree[c1].bbmin[k_divide] = r_divide;
+
+  }
+
+  return;
+}
+
+
 
 
 template class MpiTree<1,GradhSphParticle>;

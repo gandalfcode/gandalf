@@ -22,7 +22,6 @@
 
 
 
-
 #ifndef _MPI_TREE_H_
 #define _MPI_TREE_H_
 
@@ -50,7 +49,7 @@ struct MpiTreeCell {
   int c1;                           ///< First child cell
   int c2;                           ///< Second child cell
   int c2g;                          ///< i.d. of tree-cell c/grid-cell g
-  int clevel;
+  int clevel;                       ///< ..
   int cnext;                        ///< i.d. of next cell if not opened
   int k_divide;                     ///< Dimension along which cell is split
   int level;                        ///< Level of cell on tree
@@ -62,8 +61,10 @@ struct MpiTreeCell {
   FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
   FLOAT m;                          ///< Mass contained in cell
   FLOAT volume;                     ///< Cell volume
-  FLOAT rwork[ndim];
-  FLOAT worktot;
+  FLOAT r_divide;                   ///<
+  FLOAT rwork[ndim];                ///< ..
+  FLOAT worktot;                    ///< ..
+  vector<int> nodes;                ///< ..
 };
 
 
@@ -72,7 +73,7 @@ struct MpiTreeCell {
 //  Class MpiTree
 /// \brief   ..
 /// \details ..
-/// \author  D. A. Hubber, A. P. Whitworth
+/// \author  D. A. Hubber, O. Lomax, A. P. Whitworth
 /// \date    25/04/2014
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -93,28 +94,29 @@ class MpiTree
   void DivideTreeCell(int, int, ParticleType<ndim> *, MpiTreeCell<ndim> &);
   int FindCell(int, FLOAT *);
   FLOAT QuickSelect(int, int, int, int, ParticleType<ndim> *);
+  void UpdateBoundingBoxes(void);
 
 
   //---------------------------------------------------------------------------
-  bool allocated_tree;
-  int gtot;
-  int gmax;
-  int lmax;
-  int ltot;
-  int Ncell;
-  int Ncellmax;
-  int Nmpi;
-  int Nsph;
-  int Ntot;
-  int Ntotmax;
+  bool allocated_tree;              ///< ..
+  int gtot;                         ///< ..
+  int gmax;                         ///< ..
+  int lmax;                         ///< ..
+  int ltot;                         ///< ..
+  int Ncell;                        ///< ..
+  int Ncellmax;                     ///< ..
+  int Nmpi;                         ///< ..
+  int Nsph;                         ///< ..
+  int Ntot;                         ///< ..
+  int Ntotmax;                      ///< ..
   int Nthreads;                     ///< No. of OpenMP threads
-  int *g2c;
+  int *g2c;                         ///< ..
   int *ids;                         ///< Particle ids
   int *inext;                       ///< Linked list for grid search
-  MpiTreeCell<ndim> *tree;       ///< ..
+  MpiTreeCell<ndim> *tree;          ///< ..
 
-  int *klevel;
-  DomainBox<ndim> *box;
+  int *klevel;                      ///< ..
+  DomainBox<ndim> *box;             ///< ..
 
 };
 #endif

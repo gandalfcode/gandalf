@@ -2186,12 +2186,12 @@ void KDTree<ndim,ParticleType>::ValidateTree
   for (i=ifirst; i<=ilast; i++) {
     if (!(ids[i] >= ifirst && ids[i] <= ilast)) {
       cout << "Problem with ids array : "
-	   << i << "   " << ids[i] << endl;
+           << i << "   " << ids[i] << endl;
       exit(0);
     }
     if (!(inext[i] >= -1)) {
       cout << "Problem with inext linked lists : "
-	   << i << "   " << inext[i] << endl;
+           << i << "   " << inext[i] << endl;
       exit(0);
     }
   }
@@ -2211,28 +2211,28 @@ void KDTree<ndim,ParticleType>::ValidateTree
     if (cell.level == ltot) {
       i = cell.ifirst;
       while (i != -1) {
-	pcount[i]++;
-	leafcount++;
-	Ncount++;
-	if (partdata[i].active) activecount++;
-	if (partdata[i].active) Nactivecount++;
+        pcount[i]++;
+        leafcount++;
+        Ncount++;
+        if (partdata[i].active) activecount++;
+        if (partdata[i].active) Nactivecount++;
         if (partdata[i].h > cell.hmax) {
-	  cout << "hmax flag error : " << c << "    "
-	       << partdata[i].h << "   " << cell.hmax << endl;
-	  exit(0);
-	}
+          cout << "hmax flag error : " << c << "    "
+               << partdata[i].h << "   " << cell.hmax << endl;
+          exit(0);
+        }
         if (i == cell.ilast) break;
-	i = inext[i];
+        i = inext[i];
       }
       if (leafcount > Nleafmax) {
-	cout << "Leaf particle count error : "
-	     << leafcount << "   " << Nleafmax << endl;
-	exit(0);
+        cout << "Leaf particle count error : "
+             << leafcount << "   " << Nleafmax << endl;
+        exit(0);
       }
       if (activecount > leafcount) {
-	cout << "Leaf particle count error : "
-	     << leafcount << "   " << Nleafmax << endl;
-	exit(0);
+        cout << "Leaf particle count error : "
+             << leafcount << "   " << Nleafmax << endl;
+        exit(0);
       }
     }
 
@@ -2240,18 +2240,18 @@ void KDTree<ndim,ParticleType>::ValidateTree
     // each other
     for (cc=0; cc<Ncell; cc++) {
       if (c != cc && kdcell[cc].level == cell.level) {
-	if (ndim == 2) {
-	  if (cell.bbmin[0] < kdcell[cc].bbmax[0] &&
-	      cell.bbmax[0] > kdcell[cc].bbmin[0] &&
-	      cell.bbmin[1] < kdcell[cc].bbmax[1] &&
-	      cell.bbmax[1] > kdcell[cc].bbmin[1])
-	    overlap_flag = true;
-	}
+        if (ndim == 2) {
+          if (cell.bbmin[0] < kdcell[cc].bbmax[0] &&
+              cell.bbmax[0] > kdcell[cc].bbmin[0] &&
+              cell.bbmin[1] < kdcell[cc].bbmax[1] &&
+              cell.bbmax[1] > kdcell[cc].bbmin[1])
+            overlap_flag = true;
+        }
       }
       if (overlap_flag) {
-	cout << "Brother/sister cell overlap error!! : " << c << "   "
+        cout << "Brother/sister cell overlap error!! : " << c << "   "
              << cc << endl;
-	exit(0);
+        exit(0);
       }
     }
   }
@@ -2261,7 +2261,7 @@ void KDTree<ndim,ParticleType>::ValidateTree
   for (i=ifirst; i<=ilast; i++) {
     if (pcount[i] != 1) {
       cout << "Problem with child cell ptcl counter : " << i << "   "
-	   << pcount[i] << endl;
+           << pcount[i] << endl;
       kill_flag = true;
     }
   }
@@ -2269,14 +2269,14 @@ void KDTree<ndim,ParticleType>::ValidateTree
   // Check all particles accounted for
   if (Ncount != Ntot) {
     cout << "Ncount problem with KD-tree : "
-	 << Ncount << "   " << Ntot << endl;
+         << Ncount << "   " << Ntot << endl;
     kill_flag = true;
   }
 
   // Check active particles don't exceed total number of particles
   if (Nactivecount > Ntot) {
     cout << "Nactivecount problem with KD-tree : "
-	 << Nactivecount << "   " << Ntot << endl;
+         << Nactivecount << "   " << Ntot << endl;
     kill_flag = true;
   }
 

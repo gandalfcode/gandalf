@@ -125,6 +125,9 @@ protected:
   virtual void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
                                         vector<int>&, const vector<int>&,
                                         MpiNode<ndim>*) = 0;
+  virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *,
+                                          vector<int>&, vector<int>&,
+                                          MpiNode<ndim> *) = 0;
   virtual int GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>&, int, int)=0;
   virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
         Sph<ndim>* sph)=0;
@@ -219,7 +222,8 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
   void FindGhostParticlesToExport(Sph<ndim>* sph,
                                   vector<vector<ParticleType<ndim>* > >&,
                                   const vector<int>&, MpiNode<ndim>*);
-
+  FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *, vector<int>&,
+                                  vector<int>&, MpiNode<ndim> *) {};
   void FindParticlesToTransfer(Sph<ndim>* sph, std::vector<std::vector<int> >& particles_to_export,
       std::vector<int>& all_particles_to_export, const std::vector<int>& potential_nodes, MpiNode<ndim>* mpinodes);
   virtual int GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>&, int, int);
@@ -414,6 +418,8 @@ protected:
   void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
                                 vector<int>&, const vector<int>&,
                                 MpiNode<ndim>*);
+  FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT*, vector<int>&,
+                                  vector<int>&, MpiNode<ndim> *);
   virtual int GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>&, int, int);
   virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
         Sph<ndim>* sph);

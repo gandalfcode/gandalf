@@ -1,6 +1,6 @@
 //=============================================================================
 //  InlineFuncs.h
-//  Contains definitions of any useful small utility functions that can be 
+//  Contains definitions of any useful small utility functions that can be
 //  inlined to improve readability/performance of the code.
 //
 //  This file is part of GANDALF :
@@ -37,7 +37,7 @@ using namespace std;
 
 //=============================================================================
 //  DotProduct
-//  Calculates the dot product between two vectors, v1 and v2, 
+//  Calculates the dot product between two vectors, v1 and v2,
 //  of given length 'ndim'
 //=============================================================================
 template <typename T>
@@ -102,7 +102,7 @@ static inline T max3(T v1, T v2, T v3)
 //  sgn
 //  Sign function.  Returns (a) -1 if T < 0, (b) 0 if T = 0, (c) +1 if T > 0.
 //=============================================================================
-template <typename T> 
+template <typename T>
 static inline int sgn(T val)
 {
   return (T(0) < val) - (val < T(0));
@@ -161,13 +161,13 @@ static inline void Heapsort
 
 #if defined(VERIFY_ALL)
   for (q=1; q<q_TOT; q++)
-    if (V[qV[q]] < V[qV[q-1]]) 
+    if (V[qV[q]] < V[qV[q-1]])
       cout << "Not properly ranked : "
-	   << q << "   " 
+	   << q << "   "
 	   << q_TOT << "   "
 	   << V[qV[q-2]] << "   "
 	   << V[qV[q-1]] << "   "
-	   << V[qV[q]] << "   " 
+	   << V[qV[q]] << "   "
 	   << V[qV[q+1]] << endl;
 #endif
 
@@ -344,6 +344,41 @@ static inline bool BoxOverlap (const int ndim,
 
 
 //=============================================================================
+//  FractionalBoxOverlap
+/// Returns what fraction of box 1 overlaps box 2
+//=============================================================================
+static inline FLOAT FractionalBoxOverlap
+(const int ndim,
+ FLOAT *box1min,         ///< Minimum extent of box 1
+ FLOAT *box1max,         ///< Maximum extent of box 1
+ FLOAT *box2min,         ///< Minimum extent of box 2
+ FLOAT *box2max)         ///< Maximum extent of box 2
+ {
+   int k;
+   FLOAT area = 1.0;
+   FLOAT overlap = 1.0;
+   FLOAT frac = 0.0;
+
+   for (k=0; k<ndim; k++) {
+     area *= (box1max[k] - box1min[k]);
+     if (box1min[k] > box2min[k] && box1max[k] < box2max[k])
+       overlap *= (box1max[k] - box1min[k]);
+     else if (box1min[k] < box2min[k] && box1max[k] < box2max[k])
+       overlap *= (box1max[k] - box2min[k]);
+     else if (box1min[k] > box2min[k] && box1max[k] > box2max[k])
+       overlap *= (box2max[k] - box1min[k]);
+     else
+       overlap = 0.0;
+   }
+
+   if (area > 0.0) frac = overlap/area;
+
+   return frac;
+ }
+
+
+
+//=============================================================================
 //  ParticleBoxOverlap
 //  ...
 //=============================================================================
@@ -380,6 +415,8 @@ inline bool ParticleInBox (SphParticle<ndim>& part, Box<ndim>& box) {
   }
   return true;
 }
+
+
 
 //=============================================================================
 //  compute_displs

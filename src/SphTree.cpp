@@ -1311,27 +1311,27 @@ void SphTree<ndim,ParticleType>::FindMpiTransferParticles
       if (tree->BoxOverlap(cell->bbmin,cell->bbmax,
                            nodebox.boxmin,nodebox.boxmax)) {
 
-	// If not a leaf-cell, then open cell to first child cell
-	if (cell->level != tree->ltot)
-	  c++;
+        // If not a leaf-cell, then open cell to first child cell
+        if (cell->level != tree->ltot)
+          c++;
 
-	else if (cell->N == 0)
-	  c = cell->cnext;
+        else if (cell->N == 0)
+          c = cell->cnext;
 
-	// If leaf-cell, check through particles in turn to find ghosts and
-	// add to list to be exported
-	else if (cell->level == tree->ltot) {
-	  i = cell->ifirst;
-	  while (i != -1) {
-	    if (ParticleInBox(sphdata[i],mpinodes[node_number].domain)) {
-	      particles_to_export[node_number].push_back(i);
-	      all_particles_to_export.push_back(i);
-	    }
-	    if (i == cell->ilast) break;
-	    i = tree->inext[i];
-	  };
-	  c = cell->cnext;
-	}
+        // If leaf-cell, check through particles in turn to find ghosts and
+        // add to list to be exported
+        else if (cell->level == tree->ltot) {
+          i = cell->ifirst;
+          while (i != -1) {
+            if (ParticleInBox(sphdata[i],mpinodes[node_number].domain)) {
+                particles_to_export[node_number].push_back(i);
+              all_particles_to_export.push_back(i);
+            }
+            if (i == cell->ilast) break;
+            i = tree->inext[i];
+          };
+          c = cell->cnext;
+        }
       }
 
       // If not in range, then open next cell
@@ -1351,10 +1351,61 @@ void SphTree<ndim,ParticleType>::FindMpiTransferParticles
 
 
 //=============================================================================
+//  SphTree::FindLoadBalancingDivision
+/// Get the array with the information that needs to be exported to the given
+/// processor (note: Nproc is ignored at the moment, as we always need to 
+/// export all particles to the other processors).
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+FLOAT SphTree<ndim,ParticleType>::FindLoadBalancingDivision
+(int k_divide,
+ FLOAT r_old,
+ FLOAT bbmin[ndim],
+ FLOAT bbmax[ndim],
+ vector<int> &leftnodes,
+ vector<int> &rightnodes,
+ MpiNode<ndim> *mpinode)
+{
+  FLOAT r_divide = r_old;
+  FLOAT r_max = bbmax[k_divide];
+  FLOAT r_min = bbmin[k_divide];
+  FLOAT workleft;
+  FLOAT workright;
+  FLOAT workfrac;
+  FLOAT worktol = 0.001;
+
+  //---------------------------------------------------------------------------
+  do {
+    workleft = 0.0;
+    workright = 0.0;
+
+    for (int i=0; i<leftnodes.size(); i++) {
+      int inode = leftnodes[i];
+    }
+
+    // If fraction of work on either side of division is too inbalanced,
+    // calculate new position of division and perform another iteration.
+    // Otherwise exit iteration loop.
+    workfrac = workleft / (workleft + workright);
+    if (workfrac < 0.5 - worktol) r_min = r_divide;
+    else if (workfrac > 0.5 + worktol) r_max = r_divide;
+    else break;
+
+    r_divide = 0.5*(r_min + r_max);
+
+  } while (fabs(workfrac - 0.5) < worktol);
+  //---------------------------------------------------------------------------
+
+  return r_divide;
+}
+
+
+
+//=============================================================================
 //  SphTree::GetExportInfo
 /// Get the array with the information that needs to be exported to the given
-/// processor (note: Nproc is ignored at the moment, as we always need to export
-/// all particles to the other processors)
+/// processor (note: Nproc is ignored at the moment, as we always need to 
+/// export all particles to the other processors)
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 int SphTree<ndim,ParticleType>::GetExportInfo (
