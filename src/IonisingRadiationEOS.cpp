@@ -1,8 +1,8 @@
 //=============================================================================
 //  IonisingRadiationEOS.cpp
-//  Contains all function definitions for a barotropic Equation of state of 
+//  Contains all function definitions for a barotropic Equation of state of
 //  the form T = temp0*(1 + (rho/rho_bary)^{gamma - 1}).
-//  Used for star formation simulations to approximate the combined isothermal 
+//  Used for star formation simulations to approximate the combined isothermal
 //  and optically-thich adiabatic regimes of the gas collapse phase.
 //
 //  This file is part of GANDALF :
@@ -31,11 +31,11 @@
 
 //=============================================================================
 //  IonisingRadiation::IonisingRadiation()
-/// Default constructor for barotropic EOS.  Passes and sets important 
+/// Default constructor for barotropic EOS.  Passes and sets important
 /// thermal physics variables.
 //=============================================================================
 template <int ndim>
-IonisingRadiation<ndim>::IonisingRadiation(string gas_eos, FLOAT temp0aux, 
+IonisingRadiation<ndim>::IonisingRadiation(string gas_eos, FLOAT temp0aux,
                                            FLOAT mu_bar_aux, FLOAT gamma_aux,
                                            FLOAT rho_bary_aux, SimUnits *units,
                                            SphNeighbourSearch<ndim> *sphneib):
@@ -86,7 +86,7 @@ FLOAT IonisingRadiation<ndim>::Pressure(SphParticle<ndim> &part)
 
 //=============================================================================
 //  IonisingRadiation::EntropicFunction
-/// Calculates and returns value of Entropic function (= P/rho^gamma) for 
+/// Calculates and returns value of Entropic function (= P/rho^gamma) for
 /// referenced particle
 //=============================================================================
 template <int ndim>
@@ -118,22 +118,22 @@ FLOAT IonisingRadiation<ndim>::SoundSpeed(SphParticle<ndim> &part)
 template <int ndim>
 FLOAT IonisingRadiation<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
 {
-  //return temp0*(1.0 + pow(part.rho*invrho_bary,gammam1))/gammam1/mu_bar;
-  return eos->SpecificInternalEnergy(part);
+  FLOAT non_ionised = eos->SpecificInternalEnergy(part);
+  if (part.u > non_ionised) return part.u;
+  else return non_ionised;
 }
 
 
 
 //=============================================================================
 //  IonisingRadiation::Temperature
-/// Returns temperature of particle.  Approximates gas in the isothermal 
-/// regime (T = temp0 for rho << rho_bary) and in the optically thick 
+/// Returns temperature of particle.  Approximates gas in the isothermal
+/// regime (T = temp0 for rho << rho_bary) and in the optically thick
 /// adiabatic phase (T = const*rho^{gamma - 1} for rho >> rho_bary).
 //=============================================================================
 template <int ndim>
 FLOAT IonisingRadiation<ndim>::Temperature(SphParticle<ndim> &part)
 {
-  //return temp0*(1.0 + pow(part.rho*invrho_bary,gammam1));
   return eos->Temperature(part);
 }
 
@@ -142,4 +142,3 @@ FLOAT IonisingRadiation<ndim>::Temperature(SphParticle<ndim> &part)
 template class IonisingRadiation<1>;
 template class IonisingRadiation<2>;
 template class IonisingRadiation<3>;
-

@@ -1,7 +1,7 @@
 //=============================================================================
 //  Parameters.h
-//  Class definition for Parameters class.  Contains all data structures and 
-//  functions for reading and storing simulation parameters before they 
+//  Class definition for Parameters class.  Contains all data structures and
+//  functions for reading and storing simulation parameters before they
 //  are processed by the Simulation class.
 //
 //  This file is part of GANDALF :
@@ -59,11 +59,11 @@ class Parameters
   void PrintParameters(void);
   void RecordParametersToFile(void);
   std::string TrimWhiteSpace(std::string);
-  
+
   // Maps containing parameters for all available data types
   //---------------------------------------------------------------------------
   std::map <std::string,int> intparams;             ///< Integer parameters
-  std::map <std::string,float> floatparams;         ///< Float parameters
+  std::map <std::string,double> floatparams;        ///< Float parameters
   std::map <std::string,std::string> stringparams;  ///< String parameters
 
 };

@@ -60,7 +60,7 @@ SimulationBase* SimulationBase::SimulationFactory
   // Check ndim is valid
   if (ndim < 1 || ndim > 3) {
     stringstream msg;
-    msg << "Error: ndim must be either 1, 2, 3; the value " 
+    msg << "Error: ndim must be either 1, 2, 3; the value "
         << ndim << "is not allowed!";
     ExceptionHandler::getIstance().raise(msg.str());
   }
@@ -68,7 +68,7 @@ SimulationBase* SimulationBase::SimulationFactory
   // Check simulation type is valid
   if (simtype != "sph" && simtype != "gradhsph" && simtype != "sm2012sph" &&
       simtype != "godunov_sph" && simtype != "nbody" ) {
-    string msg = "Error: the simulation type " + simtype + 
+    string msg = "Error: the simulation type " + simtype +
       " was not recognized";
     ExceptionHandler::getIstance().raise(msg);
   }
@@ -79,7 +79,7 @@ SimulationBase* SimulationBase::SimulationFactory
   params->stringparams["sim"] = simtype;
 
 
-  // Create and return Simulation object depending on the chosen algorithm 
+  // Create and return Simulation object depending on the chosen algorithm
   // and the dimensionality.
   if (ndim == 1) {
     if (simtype == "gradhsph" || simtype == "sph")
@@ -118,7 +118,7 @@ SimulationBase* SimulationBase::SimulationFactory
 
 //=============================================================================
 //  SimulationBase::SimulationBase
-/// SimulationBase constructor, initialising important simulation variables. 
+/// SimulationBase constructor, initialising important simulation variables.
 //=============================================================================
 SimulationBase::SimulationBase
 (Parameters* params)                ///< [in] Pointer to parameters object
@@ -214,7 +214,7 @@ void SimulationBase::SetParam(string key, string value)
 {
   // Error checking
   if (ParametersProcessed) {
-    string msg = 
+    string msg =
       "Error: the non-return point for setting parameters has been reached!";
     ExceptionHandler::getIstance().raise(msg);
   }
@@ -230,7 +230,7 @@ void SimulationBase::SetParam(string key, string value)
 
 //=============================================================================
 //  SphSimulationBase::SetParam
-/// Accessor function for modifying an int value, wrapper around the one for 
+/// Accessor function for modifying an int value, wrapper around the one for
 /// string value. Also checks that the non return point has not been reached
 //=============================================================================
 void SimulationBase::SetParam(string key, int value)
@@ -244,10 +244,10 @@ void SimulationBase::SetParam(string key, int value)
 
 //=============================================================================
 //  SimulationBase::SetParam
-/// Accessor function for modifying a float value, wrapper around the one for 
+/// Accessor function for modifying a float value, wrapper around the one for
 /// string value.  Also checks that the non return point has not been reached.
 //=============================================================================
-void SimulationBase::SetParam(string key, float value)
+void SimulationBase::SetParam(string key, double value)
 {
   ostringstream convert;
   convert << value;
@@ -276,15 +276,17 @@ std::list<string>* SimulationBase::GetIntAndFloatParameterKeys()
 {
   if (! keys.empty())
     return &keys;
-  
-  for (std::map<string, int>::iterator it=simparams->intparams.begin() ; it != simparams->intparams.end(); it++) {
+
+  for (std::map<string, int>::iterator it=simparams->intparams.begin() ;
+       it != simparams->intparams.end(); it++) {
     keys.push_back(it->first);
   }
-  
-  for (std::map<string, float>::iterator it=simparams->floatparams.begin() ; it != simparams->floatparams.end(); it++) {
+
+  for (std::map<string, double>::iterator it=simparams->floatparams.begin() ;
+       it != simparams->floatparams.end(); it++) {
     keys.push_back(it->first);
   }
-  
+
   return &keys;
 }
 
@@ -296,10 +298,10 @@ std::list<string>* SimulationBase::GetIntAndFloatParameterKeys()
 /// (optional argument), will only advance the simulation by 'Nadvance' steps.
 //=============================================================================
 void SimulationBase::Run
-(int Nadvance)                      ///< [in] Selected max no. of integer 
+(int Nadvance)                      ///< [in] Selected max no. of integer
                                     ///<      timesteps (Optional argument).
 {
-  int Ntarget;                      // Target step no before finishing 
+  int Ntarget;                      // Target step no before finishing
                                     // main code integration.
   ofstream outfile;                 // Stream to create temp. file for
 
@@ -309,7 +311,7 @@ void SimulationBase::Run
   if (Nadvance < 0) Ntarget = Nstepsmax;
   else Ntarget = Nsteps + Nadvance;
 
-  // Continue to run simulation until we reach the required time, or 
+  // Continue to run simulation until we reach the required time, or
   // exeeded the maximum allowed number of steps.
   //---------------------------------------------------------------------------
   while (t < tend && Nsteps < Ntarget) {
@@ -320,7 +322,7 @@ void SimulationBase::Run
     Output();
 
     // Special condition to check if maximum wall-clock time has been reached
-    if (kill_simulation || 
+    if (kill_simulation ||
 	timing->WallClockTime() - timing->tstart_wall > 0.99*tmax_wallclock) {
       cout << "Reached maximum wall-clock time.  Killing simulation." << endl;
       outfile.open("cont");
@@ -350,7 +352,7 @@ void SimulationBase::Run
 /// If provided, will only advance the simulation by 'Nadvance' steps.
 //=============================================================================
 list<SphSnapshotBase*> SimulationBase::InteractiveRun
-(int Nadvance)                      ///< [in] Selected max no. of integer 
+(int Nadvance)                      ///< [in] Selected max no. of integer
                                     ///<      timesteps (Optional argument).
 {
   int Ntarget;                      // Selected integer timestep
@@ -370,16 +372,16 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
   // exeeded the maximum allowed number of steps.
   //---------------------------------------------------------------------------
   while (t < tend && Nsteps < Ntarget && tdiff < dt_python) {
-	
+
     // Evolve the simulation one step
     MainLoop();
 
     // Update all diagnostics (including binaries) here for now
     if (t >= tsnapnext) CalculateDiagnostics();
-	  
+
     // Call output routine
     filename=Output();
-	  
+
     // If we have written a snapshot, create a new snapshot object
     if (filename.length() != 0) {
       SphSnapshotBase* snapshot =
@@ -473,16 +475,16 @@ string SimulationBase::Output(void)
     outfile.close();
 
     // Finally, calculate wall-clock time interval since last output snapshot
-    if (tsnap_wallclock > 0.0) 
+    if (tsnap_wallclock > 0.0)
       dt_snap_wall = timing->WallClockTime() - tsnap_wallclock;
     tsnap_wallclock = timing->WallClockTime();
 
-    // If simulation is too close to maximum wall-clock time, end 
+    // If simulation is too close to maximum wall-clock time, end
     // prematurely
     if (timing->ttot_wall > 0.95*tmax_wallclock) {
       kill_simulation = true;
     }
-    //if (tsnap_wallclock > 0.0 && 
+    //if (tsnap_wallclock > 0.0 &&
     //	2.0*dt_snap_wall > tmax_wallclock - timing->ttot_wall) {
     //kill_simulation = true;
     //}
@@ -524,16 +526,16 @@ void SimulationBase::SetupSimulation(void)
   if (simparams->stringparams["ic"] == "python") {
     if (!ParametersProcessed) {
       string msg = "Error: you are attempting to setup a simulation with "
-	"initial conditions generated from Python. Before setting up the "
-	"simulation, you need to import the initial conditions";
+                   "initial conditions generated from Python. Before setting up the "
+                   "simulation, you need to import the initial conditions";
       ExceptionHandler::getIstance().raise(msg);
     }
   }
   else {
     if (ParametersProcessed) {
       string msg = "The parameters of the simulation have been already "
-	"processed. It means that you shouldn't be calling this function, "
-	"please consult the documentation.";
+                   "processed. It means that you shouldn't be calling this function, "
+                  "please consult the documentation.";
       ExceptionHandler::getIstance().raise(msg);
     }
     ProcessParameters();
@@ -543,14 +545,14 @@ void SimulationBase::SetupSimulation(void)
   //---------------------------------------------------------------------------
   if (rank == 0) {
     GenerateIC();
-    
+
     // Change to COM frame if selected
     if (simparams->intparams["com_frame"] == 1) SetComFrame();
 
   }
   //---------------------------------------------------------------------------
 
-  // Perform the rest of the initialisation, calculating all initial particle 
+  // Perform the rest of the initialisation, calculating all initial particle
   // quantities and setting up trees.
   PostInitialConditionsSetup();
 
@@ -565,50 +567,50 @@ void SimulationBase::SetupSimulation(void)
 
 //=============================================================================
 //  Simulation::ProcessNbodyParameters
-/// Process all the options chosen in the parameters file for setting up 
+/// Process all the options chosen in the parameters file for setting up
 /// objects related to stars and N-body integration.
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::ProcessNbodyParameters(void)
 {
   map<string, int> &intparams = simparams->intparams;
-  map<string, float> &floatparams = simparams->floatparams;
+  map<string, double> &floatparams = simparams->floatparams;
   map<string, string> &stringparams = simparams->stringparams;
-  
+
   // Create N-body object based on chosen method in params file
   //---------------------------------------------------------------------------
   if (stringparams["nbody"] == "lfkdk") {
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
-      nbody = new NbodyLeapfrogKDK<ndim, TabulatedKernel> 
-	(intparams["nbody_softening"], intparams["sub_systems"],
-	 floatparams["nbody_mult"], KernelName);
+      nbody = new NbodyLeapfrogKDK<ndim, TabulatedKernel>
+        (intparams["nbody_softening"], intparams["sub_systems"],
+         floatparams["nbody_mult"], KernelName);
     }
     else if (intparams["tabulated_kernel"] == 0) {
       if (KernelName == "m4") {
-	nbody = new NbodyLeapfrogKDK<ndim, M4Kernel> 
-	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["nbody_mult"], KernelName);
+        nbody = new NbodyLeapfrogKDK<ndim, M4Kernel>
+          (intparams["nbody_softening"], intparams["sub_systems"],
+           floatparams["nbody_mult"], KernelName);
       }
       else if (KernelName == "quintic") {
-	nbody = new NbodyLeapfrogKDK<ndim, QuinticKernel> 
-	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["nbody_mult"], KernelName);
+        nbody = new NbodyLeapfrogKDK<ndim, QuinticKernel>
+          (intparams["nbody_softening"], intparams["sub_systems"],
+           floatparams["nbody_mult"], KernelName);
       }
       else if (KernelName == "gaussian") {
-	nbody = new NbodyLeapfrogKDK<ndim, GaussianKernel> 
-	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["nbody_mult"], KernelName);
+        nbody = new NbodyLeapfrogKDK<ndim, GaussianKernel>
+          (intparams["nbody_softening"], intparams["sub_systems"],
+           floatparams["nbody_mult"], KernelName);
       }
       else {
-	string message = "Unrecognised parameter : kernel = " +
-	  simparams->stringparams["kernel"];
-	ExceptionHandler::getIstance().raise(message);
+        string message = "Unrecognised parameter : kernel = " +
+          simparams->stringparams["kernel"];
+        ExceptionHandler::getIstance().raise(message);
       }
     }
     else {
       string message = "Invalid option for the tabulated_kernel parameter: " +
-	stringparams["tabulated_kernel"];
+        stringparams["tabulated_kernel"];
       ExceptionHandler::getIstance().raise(message);
     }
   }
@@ -616,23 +618,23 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
   else if (stringparams["nbody"] == "lfdkd") {
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
-      nbody = new NbodyLeapfrogDKD<ndim, TabulatedKernel> 
+      nbody = new NbodyLeapfrogDKD<ndim, TabulatedKernel>
 	(intparams["nbody_softening"], intparams["sub_systems"],
 	 floatparams["nbody_mult"], KernelName);
     }
     else if (intparams["tabulated_kernel"] == 0) {
       if (KernelName == "m4") {
-	nbody = new NbodyLeapfrogDKD<ndim, M4Kernel> 
+	nbody = new NbodyLeapfrogDKD<ndim, M4Kernel>
 	  (intparams["nbody_softening"], intparams["sub_systems"],
 	   floatparams["nbody_mult"], KernelName);
       }
       else if (KernelName == "quintic") {
-	nbody = new NbodyLeapfrogDKD<ndim, QuinticKernel> 
+	nbody = new NbodyLeapfrogDKD<ndim, QuinticKernel>
 	  (intparams["nbody_softening"], intparams["sub_systems"],
 	   floatparams["nbody_mult"], KernelName);
       }
       else if (KernelName == "gaussian") {
-	nbody = new NbodyLeapfrogDKD<ndim, GaussianKernel> 
+	nbody = new NbodyLeapfrogDKD<ndim, GaussianKernel>
 	  (intparams["nbody_softening"], intparams["sub_systems"],
 	   floatparams["nbody_mult"], KernelName);
       }
@@ -653,23 +655,23 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
   else if (stringparams["nbody"] == "hermite4") {
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
-      nbody = new NbodyHermite4<ndim, TabulatedKernel> 
+      nbody = new NbodyHermite4<ndim, TabulatedKernel>
 	(intparams["nbody_softening"], intparams["sub_systems"],
 	 floatparams["nbody_mult"], KernelName);
     }
     else if (intparams["tabulated_kernel"] == 0) {
       if (KernelName == "m4") {
-	nbody = new NbodyHermite4<ndim, M4Kernel> 
+	nbody = new NbodyHermite4<ndim, M4Kernel>
 	  (intparams["nbody_softening"], intparams["sub_systems"],
 	   floatparams["nbody_mult"], KernelName);
       }
       else if (KernelName == "quintic") {
-	nbody = new NbodyHermite4<ndim, QuinticKernel> 
+	nbody = new NbodyHermite4<ndim, QuinticKernel>
 	  (intparams["nbody_softening"], intparams["sub_systems"],
 	   floatparams["nbody_mult"], KernelName);
       }
       else if (KernelName == "gaussian") {
-	nbody = new NbodyHermite4<ndim, GaussianKernel> 
+	nbody = new NbodyHermite4<ndim, GaussianKernel>
 	  (intparams["nbody_softening"], intparams["sub_systems"],
 	   floatparams["nbody_mult"], KernelName);
       }
@@ -723,7 +725,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
   }
   //---------------------------------------------------------------------------
   else {
-    string message = "Unrecognised parameter : nbody = " 
+    string message = "Unrecognised parameter : nbody = "
       + simparams->stringparams["nbody"];
     ExceptionHandler::getIstance().raise(message);
   }
@@ -738,23 +740,23 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
     if (stringparams["sub_system_integration"] == "lfkdk") {
       string KernelName = stringparams["kernel"];
       if (intparams["tabulated_kernel"] == 1) {
-	subsystem = new NbodyLeapfrogKDK<ndim, TabulatedKernel> 
+	subsystem = new NbodyLeapfrogKDK<ndim, TabulatedKernel>
 	  (intparams["nbody_softening"], intparams["sub_systems"],
 	   floatparams["subsys_mult"], KernelName);
       }
       else if (intparams["tabulated_kernel"] == 0) {
 	if (KernelName == "m4") {
-	  subsystem = new NbodyLeapfrogKDK<ndim, M4Kernel> 
+	  subsystem = new NbodyLeapfrogKDK<ndim, M4Kernel>
 	    (intparams["nbody_softening"], intparams["sub_systems"],
 	     floatparams["subsys_mult"], KernelName);
 	}
 	else if (KernelName == "quintic") {
-	  subsystem = new NbodyLeapfrogKDK<ndim, QuinticKernel> 
+	  subsystem = new NbodyLeapfrogKDK<ndim, QuinticKernel>
 	    (intparams["nbody_softening"], intparams["sub_systems"],
 	     floatparams["subsys_mult"], KernelName);
 	}
 	else if (KernelName == "gaussian") {
-	  subsystem = new NbodyLeapfrogKDK<ndim, GaussianKernel> 
+	  subsystem = new NbodyLeapfrogKDK<ndim, GaussianKernel>
 	    (intparams["nbody_softening"], intparams["sub_systems"],
 	     floatparams["subsys_mult"], KernelName);
 	}
@@ -774,23 +776,23 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
     else if (stringparams["sub_system_integration"] == "hermite4") {
       string KernelName = stringparams["kernel"];
       if (intparams["tabulated_kernel"] == 1) {
-	subsystem = new NbodyHermite4<ndim, TabulatedKernel> 
+	subsystem = new NbodyHermite4<ndim, TabulatedKernel>
 	  (intparams["nbody_softening"], intparams["sub_systems"],
 	   floatparams["subsys_mult"], KernelName);
       }
       else if (intparams["tabulated_kernel"] == 0) {
 	if (KernelName == "m4") {
-	  subsystem = new NbodyHermite4<ndim, M4Kernel> 
+	  subsystem = new NbodyHermite4<ndim, M4Kernel>
 	    (intparams["nbody_softening"], intparams["sub_systems"],
 	     floatparams["subsys_mult"], KernelName);
 	}
 	else if (KernelName == "quintic") {
-	  subsystem = new NbodyHermite4<ndim, QuinticKernel> 
+	  subsystem = new NbodyHermite4<ndim, QuinticKernel>
 	    (intparams["nbody_softening"], intparams["sub_systems"],
 	     floatparams["subsys_mult"], KernelName);
 	}
 	else if (KernelName == "gaussian") {
-	  subsystem = new NbodyHermite4<ndim, GaussianKernel> 
+	  subsystem = new NbodyHermite4<ndim, GaussianKernel>
 	    (intparams["nbody_softening"], intparams["sub_systems"],
 	     floatparams["subsys_mult"], KernelName);
 	}
@@ -844,7 +846,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
     }
     //-------------------------------------------------------------------------
     else {
-      string message = "Unrecognised parameter : sub_system_integration = " 
+      string message = "Unrecognised parameter : sub_system_integration = "
 	+ simparams->stringparams["sub_system_integration"];
       ExceptionHandler::getIstance().raise(message);
     }
@@ -877,7 +879,7 @@ void Simulation<ndim>::AllocateParticleMemory(void)
       N = max(nbody->Nstar,1024);
     }
     else N = nbody->Nstar;
-    
+
     // Now call all memory allocation routines
     nbody->AllocateMemory(N);
     sinks.AllocateMemory(N);
@@ -944,7 +946,7 @@ void Simulation<ndim>::PreSetupForPython(void)
 
 //=============================================================================
 //  Simulation::ImportArrayNbody
-/// Import an array containing nbody particle properties from python to 
+/// Import an array containing nbody particle properties from python to
 /// C++ arrays.
 //=============================================================================
 template <int ndim>
@@ -957,7 +959,7 @@ void Simulation<ndim>::ImportArrayNbody
   FLOAT (StarParticle<ndim>::*quantitypvec)[ndim]; //Pointer to component of vector quantity
   int index; //If it's a component of a vector quantity, we need to know its index
   bool scalar; //Is the requested quantity a scalar?
-  
+
   //Check that the size is correct
   if (size != nbody->Nstar) {
     stringstream message;
@@ -966,7 +968,7 @@ void Simulation<ndim>::ImportArrayNbody
 	    << nbody->Nstar << " star particles";
     ExceptionHandler::getIstance().raise(message.str());
   }
-  
+
   // Now set pointer to the correct value inside the particle data structure
   //---------------------------------------------------------------------------
   if (quantity == "x") {
@@ -1055,7 +1057,7 @@ void Simulation<ndim>::ImportArrayNbody
       (particlep->*quantitypvec)[index] = input[i];
     }
   }
-  
+
   return;
 }
 
@@ -1063,7 +1065,7 @@ void Simulation<ndim>::ImportArrayNbody
 
 //=============================================================================
 //  Simulation::ImportArraySph
-/// Import an array containing sph particle properties from python to 
+/// Import an array containing sph particle properties from python to
 /// C++ arrays.
 //=============================================================================
 template <int ndim>
@@ -1074,14 +1076,14 @@ void Simulation<ndim>::ImportArraySph
 {
   FLOAT SphParticle<ndim>::*quantityp; // Pointer to scalar quantity
   FLOAT (SphParticle<ndim>::*quantitypvec)[ndim]; // Pointer to component of vector quantity
-  int index;                        // If it's a component of a vector 
+  int index;                        // If it's a component of a vector
                                     // quantity, we need to know its index
   bool scalar;                      // Is the requested quantity a scalar?
 
   // Check that the size is correct
   if (size != sph->Nsph) {
     stringstream message;
-    message << "Error: the array you are passing has a size of " 
+    message << "Error: the array you are passing has a size of "
         << size << ", but memory has been allocated for "
         << sph->Nsph << " particles";
     ExceptionHandler::getIstance().raise(message.str());
@@ -1202,9 +1204,9 @@ template <int ndim>
 void Simulation<ndim>::ImportArray
 (double* input,                     ///< [in] Input array
  int size,                          ///< [in] Size of the input array
- string quantity,                   ///< [in] Which quantity should be set 
+ string quantity,                   ///< [in] Which quantity should be set
                                     ///<      equal to the given array
- string type)                       ///< [in] Which particle type should be 
+ string type)                       ///< [in] Which particle type should be
                                     ///<      assigned the array
 {
   debug2("[Simulation::ImportArray]");

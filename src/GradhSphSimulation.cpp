@@ -48,7 +48,7 @@ using namespace std;
 
 //=============================================================================
 //  Simulation::ProcessSphParameters
-/// Process all the options chosen in the parameters file, setting various 
+/// Process all the options chosen in the parameters file, setting various
 /// simulation variables and creating important simulation objects.
 //=============================================================================
 template <int ndim>
@@ -61,7 +61,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
   // Local references to parameter variables for brevity
   map<string, int> &intparams = simparams->intparams;
-  map<string, float> &floatparams = simparams->floatparams;
+  map<string, double> &floatparams = simparams->floatparams;
   map<string, string> &stringparams = simparams->stringparams;
   string KernelName = stringparams["kernel"];
   string gas_radiation = stringparams["radiation"];
@@ -90,7 +90,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   }
   else {
     string message = "Unrecognised parameter : avisc = " +
-      simparams->stringparams["avisc"] + "   or time_dependent_avisc : " + 
+      simparams->stringparams["avisc"] + "   or time_dependent_avisc : " +
       simparams->stringparams["time_dependent_avisc"];
     ExceptionHandler::getIstance().raise(message);
   }
@@ -129,30 +129,30 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   // Create 'grad-h' SPH object depending on choice of kernel
   //===========================================================================
   if (intparams["tabulated_kernel"] == 1) {
-    sph = new GradhSph<ndim, TabulatedKernel> 
+    sph = new GradhSph<ndim, TabulatedKernel>
       (intparams["hydro_forces"], intparams["self_gravity"],
        floatparams["alpha_visc"], floatparams["beta_visc"],
-       floatparams["h_fac"], floatparams["h_converge"], 
+       floatparams["h_fac"], floatparams["h_converge"],
        avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
   }
   else if (intparams["tabulated_kernel"] == 0) {
     // Depending on the kernel, instantiate a different GradSph object
     if (KernelName == "m4") {
-      sph = new GradhSph<ndim, M4Kernel> 
+      sph = new GradhSph<ndim, M4Kernel>
 	(intparams["hydro_forces"], intparams["self_gravity"],
 	 floatparams["alpha_visc"], floatparams["beta_visc"],
 	 floatparams["h_fac"], floatparams["h_converge"],
 	 avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
     }
     else if (KernelName == "quintic") {
-      sph = new GradhSph<ndim, QuinticKernel> 
+      sph = new GradhSph<ndim, QuinticKernel>
 	(intparams["hydro_forces"], intparams["self_gravity"],
 	 floatparams["alpha_visc"], floatparams["beta_visc"],
 	 floatparams["h_fac"], floatparams["h_converge"],
 	 avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
     }
     else if (KernelName == "gaussian") {
-      sph = new GradhSph<ndim, GaussianKernel> 
+      sph = new GradhSph<ndim, GaussianKernel>
 	(intparams["hydro_forces"], intparams["self_gravity"],
 	 floatparams["alpha_visc"], floatparams["beta_visc"],
 	 floatparams["h_fac"], floatparams["h_converge"],
@@ -185,7 +185,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     integration_step = max(integration_step,2);
   }
   else {
-    string message = "Unrecognised parameter : sph_integration = " 
+    string message = "Unrecognised parameter : sph_integration = "
       + simparams->stringparams["sph_integration"];
     ExceptionHandler::getIstance().raise(message);
   }
@@ -216,7 +216,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
       &simbox,sph->kernp,timing);
   }
   else {
-    string message = "Unrecognised parameter : neib_search = " 
+    string message = "Unrecognised parameter : neib_search = "
       + simparams->stringparams["neib_search"];
     ExceptionHandler::getIstance().raise(message);
   }
@@ -282,4 +282,3 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 template class GradhSphSimulation<1>;
 template class GradhSphSimulation<2>;
 template class GradhSphSimulation<3>;
-

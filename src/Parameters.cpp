@@ -1,6 +1,6 @@
 //=============================================================================
 //  Parameters.cpp
-//  Contains all functions for calculating default values and reading in 
+//  Contains all functions for calculating default values and reading in
 //  new values from the simulation parameter file.
 //
 //  This file is part of GANDALF :
@@ -58,7 +58,8 @@ Parameters::~Parameters()
 //  Parameters::Parameters
 /// Alternative Parameters constructor
 //=============================================================================
-Parameters::Parameters(const Parameters& other) {
+Parameters::Parameters(const Parameters& other)
+{
   this->intparams = other.intparams;
   this->stringparams = other.stringparams;
   this->floatparams = other.floatparams;
@@ -68,7 +69,7 @@ Parameters::Parameters(const Parameters& other) {
 
 //=============================================================================
 //  Parameters::ReadParamsFile
-/// Read and parse parameter file 'filename'.  If file doesn't exist, or 
+/// Read and parse parameter file 'filename'.  If file doesn't exist, or
 /// file does not contain a simulation run id, then quit program here.
 //=============================================================================
 void Parameters::ReadParamsFile
@@ -92,13 +93,13 @@ void Parameters::ReadParamsFile
     }
   }
   else {
-    string message = "The specified parameter file: " + filename + 
+    string message = "The specified parameter file: " + filename +
       " does not exist, aborting";
     ExceptionHandler::getIstance().raise(message);
   }
   inputfile.close();
 
-  // Now verify that parameters file contains a run id in order to generate 
+  // Now verify that parameters file contains a run id in order to generate
   // labelled output files.  If not defined, then quit program with exception.
   if (stringparams["run_id"] == "") {
     string message = "The parameter file: " + filename +
@@ -106,7 +107,7 @@ void Parameters::ReadParamsFile
     ExceptionHandler::getIstance().raise(message);
   }
 
-  // Check if any deactivated options have been selected or not, and also 
+  // Check if any deactivated options have been selected or not, and also
   // verify certain key parameters are valid.
   CheckInvalidParameters();
 
@@ -118,12 +119,12 @@ void Parameters::ReadParamsFile
 //=============================================================================
 //  Parameters::ParseLine
 /// Parse a single line read from the parameters file.
-/// Identifies if the line is in the form 'Comments : variable = value', or 
+/// Identifies if the line is in the form 'Comments : variable = value', or
 /// 'variable = value', and if so, stores value in memory.
 /// If line begins with a hash charatcer '#', then ignore line as a comment.
 ///============================================================================
 void Parameters::ParseLine
-(string paramline)                  ///< [in] Line from parameters file 
+(string paramline)                  ///< [in] Line from parameters file
                                     ///<      to be parsed.
 {
   // First, trim all white space from line
@@ -137,7 +138,7 @@ void Parameters::ParseLine
   // Ignore line if it is a comment (i.e. begins with a hash character)
   if (hash_pos == 0) return;
 
-  // If line is not in the correct format (either equals is not present, 
+  // If line is not in the correct format (either equals is not present,
   // or equals is before the colon) then skip line and return.
   if (equal_pos >= length || (colon_pos < length && colon_pos > equal_pos))
     return;
@@ -317,7 +318,7 @@ void Parameters::SetDefaultValues(void)
   intparams["create_sinks"] = 0;
   intparams["smooth_accretion"] = 0;
   floatparams["rho_sink"] = 1.e-12;
-  floatparams["alpha_ss"] = 0.01; 
+  floatparams["alpha_ss"] = 0.01;
   floatparams["sink_radius"] = 3.0;
   floatparams["smooth_accrete_frac"] = 0.01;
   floatparams["smooth_accrete_dt"] = 0.01;
@@ -480,7 +481,7 @@ void Parameters::PrintParameters(void)
   }
 
   // Print all float parameters
-  std::map <std::string, float>::iterator it2;
+  std::map <std::string, double>::iterator it2;
   for (it2=floatparams.begin(); it2 != floatparams.end(); ++it2) {
     std::cout << it2->first << " = " << it2->second << std::endl;
   }
@@ -516,7 +517,7 @@ void Parameters::RecordParametersToFile(void)
   }
 
   // Write all float parameters
-  std::map <std::string, float>::iterator it2;
+  std::map <std::string, double>::iterator it2;
   for (it2=floatparams.begin(); it2 != floatparams.end(); ++it2) {
     outfile << it2->first << " = " << it2->second << endl;
   }
@@ -544,7 +545,7 @@ std::string Parameters::TrimWhiteSpace(std::string instr)
   string outstr;                    // Final string without any whitespace
 
   // Loop over all characters and ignore any white-space characters
-  for (i=0; i < instr.length(); i++) {
+  for (i=0; i<instr.length(); i++) {
     if (instr[i] != ' ') outstr += instr[i];
   }
 
@@ -555,7 +556,7 @@ std::string Parameters::TrimWhiteSpace(std::string instr)
 
 //=============================================================================
 //  Parameters::CheckInvalidParameters
-/// Check if any features deemed unstable and/or buggy are switched on in the 
+/// Check if any features deemed unstable and/or buggy are switched on in the
 /// parameters file.  If so, then throw an exception with an error message.
 //=============================================================================
 void Parameters::CheckInvalidParameters(void)
@@ -569,25 +570,23 @@ void Parameters::CheckInvalidParameters(void)
   if (stringparams["sim"] == "sph" || stringparams["sim"] == "godunov_sph") {
 
     // Cannot use grid with self-gravity
-    if (stringparams["neib_search"] == "grid" &&
-        intparams["self_gravity"] == 1) {
+    if (stringparams["neib_search"] == "grid" && intparams["self_gravity"] == 1) {
       cout << "Parameter error : Cannot compute self-gravity with "
-	   << "grid neighbour search";
+           << "grid neighbour search" << endl;
       errorflag = true;
     }
-    
-    // Saitoh & Makino (2012) currently deactivated while development of MPI 
+
+    // Saitoh & Makino (2012) currently deactivated while development of MPI
     // and other related features are underway.
     if (stringparams["sim"] == "sph" && stringparams["sph"] == "sm2012") {
-      cout << "Saitoh & Makino (2012) SPH algorithm currently disabled";
+      cout << "Saitoh & Makino (2012) SPH algorithm currently disabled" << endl;
       errorflag = true;
     }
-    
-    // Godunov SPH (Inutsuka 2002) with 2nd-order Riemann solver currently 
+
+    // Godunov SPH (Inutsuka 2002) with 2nd-order Riemann solver currently
     // deactivated for the meatime
-    if (stringparams["sim"] == "godunov_sph" && 
-        intparams["riemann_order"] == 2) {
-      cout << "Godunov SPH with 2nd-order Riemann solver currently disabled";
+    if (stringparams["sim"] == "godunov_sph" && intparams["riemann_order"] == 2) {
+      cout << "Godunov SPH with 2nd-order Riemann solver currently disabled" << endl;
       errorflag = true;
     }
 

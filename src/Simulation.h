@@ -92,28 +92,28 @@ class SimulationBase
 
  public:
 
-  static SimulationBase* SimulationFactory(int ndim, string simtype, 
-					   Parameters* params);
+  static SimulationBase* SimulationFactory(int ndim, string simtype,
+                                           Parameters* params);
 
   // Constructor and Destructor
   //---------------------------------------------------------------------------
   SimulationBase(Parameters* params);
   ~SimulationBase();
-  
+
   // Subroutine prototypes
   //---------------------------------------------------------------------------
   string GetParam(string key);
   string Output(void);
   void SetParam(string key, string value);
   void SetParam(string key, int value);
-  void SetParam(string ket, float value);
-  std::list<string>* GetIntAndFloatParameterKeys();
+  void SetParam(string ket, double value);
+  list<string>* GetIntAndFloatParameterKeys();
   void SetupSimulation(void);
   void SplashScreen(void);
   void Run(int=-1);
   list<SphSnapshotBase*> InteractiveRun(int=-1);
 
-  virtual void ImportArray(double* input, int size, 
+  virtual void ImportArray(double* input, int size,
                            string quantity, string type="sph") = 0;
   virtual void MainLoop(void)=0;
   virtual void PostInitialConditionsSetup(void)=0;
@@ -142,10 +142,10 @@ class SimulationBase
   int level_diff_max;               ///< Max. allowed neib timestep level diff
   int level_max;                    ///< Maximum timestep level
   int level_step;                   ///< Level of smallest timestep unit
-  int litesnap;                     ///< ..
+  int litesnap;                     ///< Activate lite snapshots (for movies)
   int n;                            ///< Integer time counter
   int nbody_single_timestep;        ///< Flag if stars use same timestep
-  int ndims;                        ///< Aux. dimensionality variable. 
+  int ndims;                        ///< Aux. dimensionality variable.
                                     ///< Required for python routines.
   int ndiagstep;                    ///< Diagnostic output frequency (in units
                                     ///< of full block timestep steps)
@@ -196,19 +196,19 @@ class SimulationBase
 //=============================================================================
 //  Class Simulation
 /// \brief   Main Simulation class.
-/// \details Main parent Simulation class from which all other simulation 
+/// \details Main parent Simulation class from which all other simulation
 ///          objects (e.g. SphSimulation) inherit from.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=============================================================================
 template <int ndim>
-class Simulation : public SimulationBase 
+class Simulation : public SimulationBase
 {
   void ImportArraySph(double* input, int size, string quantity);
   void ImportArrayNbody(double* input, int size, string quantity);
 
  public:
-  Simulation(Parameters* parameters) : 
+  Simulation(Parameters* parameters) :
     SimulationBase(parameters),
     nbody(NULL),
     sph(NULL) {this->ndims=ndim;};
@@ -225,8 +225,8 @@ class Simulation : public SimulationBase
   void AddBinaryStar(DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE,
                      DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE *,DOUBLE *,
                      NbodyParticle<ndim> &, NbodyParticle<ndim> &);
-  void AddAzimuthalDensityPerturbation(int, int, FLOAT, FLOAT *, FLOAT *); 
-  void AddRotationalVelocityField(int, FLOAT, FLOAT *, FLOAT *, FLOAT *); 
+  void AddAzimuthalDensityPerturbation(int, int, FLOAT, FLOAT *, FLOAT *);
+  void AddRotationalVelocityField(int, FLOAT, FLOAT *, FLOAT *, FLOAT *);
   void AddRandomBox(int, FLOAT *, DomainBox<ndim>);
   void AddRandomSphere(int, FLOAT *, FLOAT *, FLOAT);
   void AddCubicLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
@@ -235,7 +235,7 @@ class Simulation : public SimulationBase
   int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
 #if defined(FFTW_TURBULENCE)
   void GenerateTurbulentVelocityField(int, int, DOUBLE, DOUBLE *);
-  void InterpolateVelocityField(int, int, FLOAT, FLOAT, 
+  void InterpolateVelocityField(int, int, FLOAT, FLOAT,
                                 FLOAT *, FLOAT *,FLOAT *);
 #endif
 
@@ -246,7 +246,7 @@ class Simulation : public SimulationBase
   virtual void ComputeGlobalTimestep(void)=0;
   virtual void ComputeBlockTimesteps(void)=0;
   virtual void GenerateIC(void);
-  virtual void ImportArray(double* input, int size, 
+  virtual void ImportArray(double* input, int size,
                            string quantity, string type="sph");
   virtual void PreSetupForPython(void);
   virtual void ProcessParameters(void)=0;
@@ -326,13 +326,13 @@ class Simulation : public SimulationBase
 //=============================================================================
 //  Class SphSimulation
 /// \brief   Main SphSimulation class.
-/// \details Main SphSimulation class definition, inherited from Simulation, 
+/// \details Main SphSimulation class definition, inherited from Simulation,
 ///          which controls the main program flow for SPH simulations.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=============================================================================
 template <int ndim>
-class SphSimulation : public Simulation<ndim> 
+class SphSimulation : public Simulation<ndim>
 {
  public:
   using SimulationBase::restart;
@@ -407,14 +407,14 @@ class SphSimulation : public Simulation<ndim>
 //=============================================================================
 //  Class GradhSphSimulation
 /// \brief   grad-h SPH simulation class.
-/// \details grad-h SPH Simulation class definition, inherited from 
-///          SphSimulation, which controls the main program flow for 
+/// \details grad-h SPH Simulation class definition, inherited from
+///          SphSimulation, which controls the main program flow for
 ///          grad-h SPH simulations.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    17/03/2014
 //=============================================================================
 template <int ndim>
-class GradhSphSimulation: public SphSimulation<ndim> 
+class GradhSphSimulation: public SphSimulation<ndim>
 {
  public:
 
@@ -471,7 +471,7 @@ class GradhSphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::MpiGhosts;
 #endif
 
-  GradhSphSimulation (Parameters* parameters): 
+  GradhSphSimulation (Parameters* parameters):
     SphSimulation<ndim>(parameters) {};
   virtual void ProcessSphParameters(void);
 
@@ -482,14 +482,14 @@ class GradhSphSimulation: public SphSimulation<ndim>
 //=============================================================================
 //  Class SM2012SphSimulation
 /// \brief   Saitoh & Makino (2012) SPH simulation class.
-/// \details Saitoh & Makino(2012) SPH Simulation class definition, inherited 
-///          from SphSimulation, which controls the main program flow for 
+/// \details Saitoh & Makino(2012) SPH Simulation class definition, inherited
+///          from SphSimulation, which controls the main program flow for
 ///          grad-h SPH simulations.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    17/03/2014
 //=============================================================================
 template <int ndim>
-class SM2012SphSimulation: public SphSimulation<ndim> 
+class SM2012SphSimulation: public SphSimulation<ndim>
 {
  public:
 
@@ -545,7 +545,7 @@ class SM2012SphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::MpiGhosts;
 #endif
 
-  SM2012SphSimulation (Parameters* parameters): 
+  SM2012SphSimulation (Parameters* parameters):
     SphSimulation<ndim>(parameters) {};
   virtual void ProcessSphParameters(void);
 
@@ -556,14 +556,14 @@ class SM2012SphSimulation: public SphSimulation<ndim>
 //=============================================================================
 //  Class GodunovSphSimulation
 /// \brief   Main GodunovSphSimulation class.
-/// \details Main GodunovSphSimulation class definition, inherited from 
-///          Simulation, which controls the main program flow for Godunov 
+/// \details Main GodunovSphSimulation class definition, inherited from
+///          Simulation, which controls the main program flow for Godunov
 ///          SPH simulations (Inutsuka 2002).
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=============================================================================
 template <int ndim>
-class GodunovSphSimulation: public SphSimulation<ndim> 
+class GodunovSphSimulation: public SphSimulation<ndim>
 {
   using SphSimulation<ndim>::restart;
   using Simulation<ndim>::simparams;
@@ -613,7 +613,7 @@ using SphSimulation<ndim>::MpiGhosts;
 
 public:
 
-  GodunovSphSimulation (Parameters* parameters): 
+  GodunovSphSimulation (Parameters* parameters):
     SphSimulation<ndim>(parameters) {};
   virtual void PostInitialConditionsSetup(void);
   virtual void MainLoop(void);
@@ -628,13 +628,13 @@ public:
 //=============================================================================
 //  Class NbodySimulation
 /// \brief   Main class for running N-body only simulations.
-/// \details Main NbodySimulation class definition, inherited from Simulation, 
+/// \details Main NbodySimulation class definition, inherited from Simulation,
 ///          which controls the main program flow for N-body only simulations.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
 //=============================================================================
 template <int ndim>
-class NbodySimulation : public Simulation<ndim> 
+class NbodySimulation : public Simulation<ndim>
 {
   using SimulationBase::restart;
   using SimulationBase::simparams;
