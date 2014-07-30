@@ -32,8 +32,8 @@
 //=============================================================================
 //  Class NbodyParticle
 /// \brief   N-body particle data structure
-/// \details Main parent N-body particle data structure.  All main other 
-///          N-body particle types (e.g. stars, systems, sinks) are derived 
+/// \details Main parent N-body particle data structure.  All main other
+///          N-body particle types (e.g. stars, systems, sinks) are derived
 ///          from this class.
 /// \author  D. A. Hubber
 /// \date    15/04/2013
@@ -45,7 +45,7 @@ class NbodyParticle
 
   bool active;                      ///< Flag if active (i.e. recompute step)
   int istar;                        ///< Internal i.d.
-  int level;                        ///< Current timestep level    
+  int level;                        ///< Current timestep level
   int nstep;                        ///< Integer step-size of particle
   int nlast;                        ///< Integer time at beginning of step
   int Ncomp;                        ///< No. of internal components
@@ -71,8 +71,9 @@ class NbodyParticle
   DOUBLE gpe_internal;              ///< Internal grav. potential energy
   DOUBLE gpe_pert;                  ///< Perturber grav. potential energy
   DOUBLE dt;                        ///< Particle timestep
-  DOUBLE dt_internal;               ///< Internal timestep 
+  DOUBLE dt_internal;               ///< Internal timestep
                                     ///< (e.g. due to sub-systems)
+  DOUBLE NLyC;                      ///< No. of ionising photons per second
 
 
   // Star particle constructor to initialise all values
@@ -96,17 +97,18 @@ class NbodyParticle
     for (int k=0; k<ndim; k++) adot0[k] = 0.0;
     for (int k=0; k<ndim; k++) apert[k] = 0.0;
     for (int k=0; k<ndim; k++) adotpert[k] = 0.0;
-    m = 0;
-    h = 0;
-    invh = 0.0;
-    hfactor = 0.0;
-    gpot = 0.0;
-    gpe = 0.0;
+    m            = 0;
+    h            = 0;
+    invh         = 0.0;
+    hfactor      = 0.0;
+    gpot         = 0.0;
+    gpe          = 0.0;
     gpe_internal = 0.0;
-    gpe_pert = 0.0;
-    dt = 0.0;
-    dt_internal = big_number;
-  } 
+    gpe_pert     = 0.0;
+    dt           = 0.0;
+    dt_internal  = big_number;
+    NLyC         = 0.0;
+  }
 
 };
 #endif

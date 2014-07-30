@@ -43,14 +43,14 @@ const FLOAT Sph<ndim>::invndim;
 
 //=============================================================================
 //  Sph::Sph
-/// Constructor for parent SPH class.  Initialises important variables and 
+/// Constructor for parent SPH class.  Initialises important variables and
 /// sets important parameters using initialialisation lists.
 //=============================================================================
 template <int ndim>
-Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux, 
-               FLOAT alpha_visc_aux, FLOAT beta_visc_aux, FLOAT h_fac_aux, 
-               FLOAT h_converge_aux, aviscenum avisc_aux, acondenum acond_aux, 
-	       tdaviscenum tdavisc_aux, string gas_eos_aux, string KernelName,
+Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux,
+               FLOAT alpha_visc_aux, FLOAT beta_visc_aux, FLOAT h_fac_aux,
+               FLOAT h_converge_aux, aviscenum avisc_aux, acondenum acond_aux,
+               tdaviscenum tdavisc_aux, string gas_eos_aux, string KernelName,
                int size_sph):
   hydro_forces(hydro_forces_aux),
   self_gravity(self_gravity_aux),
@@ -106,8 +106,8 @@ void Sph<ndim>::SphBoundingBox
 
 //=============================================================================
 //  Sph::InitialSmoothingLengthGuess
-/// Perform initial guess of smoothing.  In the abscence of more sophisticated 
-/// techniques, we guess the smoothing length assuming a uniform density 
+/// Perform initial guess of smoothing.  In the abscence of more sophisticated
+/// techniques, we guess the smoothing length assuming a uniform density
 /// medium with the same volume and total mass.
 //=============================================================================
 template <int ndim>
@@ -124,7 +124,7 @@ void Sph<ndim>::InitialSmoothingLengthGuess(void)
   // Calculate bounding box containing all SPH particles
   SphBoundingBox(rmax,rmin,Nsph);
 
-  // Depending on the dimensionality, calculate the average smoothing 
+  // Depending on the dimensionality, calculate the average smoothing
   // length assuming a uniform density distribution filling the bounding box.
   //---------------------------------------------------------------------------
   if (ndim == 1) {

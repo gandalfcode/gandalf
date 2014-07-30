@@ -1,6 +1,6 @@
 //=============================================================================
 //  NbodyHermite4TS.cpp
-//  Contains functions for integrating star particle positions and velocities 
+//  Contains functions for integrating star particle positions and velocities
 //  using the 4th-order Hermite scheme (Makino & Aarseth 1992) using
 //  time-symmetric iterations (Hut et al. 1995??).
 //
@@ -47,7 +47,7 @@ using namespace std;
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 NbodyHermite4TS<ndim, kernelclass>::NbodyHermite4TS
-(int nbody_softening_aux, int sub_systems_aux, 
+(int nbody_softening_aux, int sub_systems_aux,
  DOUBLE nbody_mult_aux, string KernelName, int Npec) :
   NbodyHermite4<ndim, kernelclass>(nbody_softening_aux, sub_systems_aux,
                       nbody_mult_aux, KernelName, Npec)
@@ -69,8 +69,8 @@ NbodyHermite4TS<ndim, kernelclass>::~NbodyHermite4TS()
 
 //=============================================================================
 //  NbodyHermite4TS::CorrectionTerms
-/// Compute 2nd and 3rd time derivatives of the acceleration using Hermite 
-/// interpolation.  Finally correct positions to 5th order and velocities to 
+/// Compute 2nd and 3rd time derivatives of the acceleration using Hermite
+/// interpolation.  Finally correct positions to 5th order and velocities to
 /// 4th order using higher-order derivatives.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
@@ -100,26 +100,26 @@ void NbodyHermite4TS<ndim, kernelclass>::CorrectionTerms
       invdt = 1.0 / dt;
 
       for (k=0; k<ndim; k++) {
-        star[i]->a2dot[k] = 
+        star[i]->a2dot[k] =
           (-6.0*(star[i]->a0[k] - star[i]->a[k]) - dt*
            (4.0*star[i]->adot0[k] + 2.0*star[i]->adot[k]))*invdt*invdt;
-        star[i]->a3dot[k] = 
+        star[i]->a3dot[k] =
           (12.0*(star[i]->a0[k] - star[i]->a[k]) + 6.0*dt*
            (star[i]->adot0[k] + star[i]->adot[k]))*invdt*invdt*invdt;
       }
 
       for (k=0; k<ndim; k++) {
-        star[i]->v[k] = star[i]->v0[k] 
+        star[i]->v[k] = star[i]->v0[k]
           + 0.5*(star[i]->a0[k] + star[i]->a[k])*dt
 	      //+ 0.1*(star[i]->adot[k] - star[i]->adot0[k])*dt*dt;
           - onetwelfth*(star[i]->adot[k] - star[i]->adot0[k])*dt*dt;
-        star[i]->r[k] = star[i]->r0[k] 
+        star[i]->r[k] = star[i]->r0[k]
           + 0.5*(star[i]->v0[k] + star[i]->v[k])*dt
           //+ 0.1*(star[i]->a[k] - star[i]->a0[k])*dt*dt;
           - onetwelfth*(star[i]->a[k] - star[i]->a0[k])*dt*dt;
       }
     }
-    
+
   }
   //---------------------------------------------------------------------------
 
@@ -136,11 +136,11 @@ void NbodyHermite4TS<ndim, kernelclass>::CorrectionTerms
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
-(SystemParticle<ndim>* systemi,     ///< [inout] System that we wish to 
+(SystemParticle<ndim>* systemi,     ///< [inout] System that we wish to
                                     ///<         integrate the internal motion
  int n,                             ///< [in]    Integer time
  DOUBLE timestep,                   ///< [in]    Smallest timestep
- DOUBLE tlocal_end)                 ///< [in]    Time to integrate the 
+ DOUBLE tlocal_end)                 ///< [in]    Time to integrate the
                                     ///<         internal motion for.
 {
   int i;                            // Particle counter
@@ -183,7 +183,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
   //cout << "Initial aext : " << aext[0]/systemi->m << "    " << aext[1]/systemi->m << endl;
 
 
-  // If using perturbers, record local copies and remove contribution to 
+  // If using perturbers, record local copies and remove contribution to
   // external acceleration and jerk terms
   //---------------------------------------------------------------------------
   if (perturbers == 1 && Npert > 0) {
@@ -197,7 +197,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
       for (k=0; k<ndim; k++) perturber[i].r[k] = systemi->perturber[i]->r[k];
       for (k=0; k<ndim; k++) perturber[i].v[k] = systemi->perturber[i]->v[k];
       for (k=0; k<ndim; k++) perturber[i].a[k] = systemi->perturber[i]->a[k];
-      for (k=0; k<ndim; k++) 
+      for (k=0; k<ndim; k++)
         perturber[i].adot[k] = systemi->perturber[i]->adot[k];
       for (k=0; k<ndim; k++) perturber[i].r0[k] = systemi->perturber[i]->r[k];
       for (k=0; k<ndim; k++) perturber[i].v0[k] = systemi->perturber[i]->v[k];
@@ -390,7 +390,7 @@ void NbodyHermite4TS<ndim, kernelclass>::IntegrateInternalMotion
   //cout << "FINAL SYSTEM R : " << systemi->r[0] << "    " << systemi->r[1] << endl;
   //cout << "FINAL SYSTEM A : " << systemi->a[0] << "    " << systemi->a[1] << endl;
 
-  // Finally, add perturbations on perturber itself to main arrays before 
+  // Finally, add perturbations on perturber itself to main arrays before
   // deallocating local memory
   if (perturbers == 1 && Npert > 0) {
     for (i=0; i<Npert; i++) {

@@ -1,7 +1,7 @@
 //=============================================================================
 //  GradhSphTree.cpp
-//  Contains all functions for building, stocking and walking for the 
-//  binary KD tree for SPH particles.  
+//  Contains all functions for building, stocking and walking for the
+//  binary KD tree for SPH particles.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -82,9 +82,9 @@ GradhSphTree<ndim,ParticleType>::~GradhSphTree()
 
 //=============================================================================
 //  GradhSphTree::UpdateAllSphProperties
-/// Compute all local 'gather' properties of currently active particles, and 
-/// then compute each particle's contribution to its (active) neighbour 
-/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
+/// Compute all local 'gather' properties of currently active particles, and
+/// then compute each particle's contribution to its (active) neighbour
+/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -195,12 +195,13 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
         // recompute the neighbour lists.
         while (Nneib == -1) {
           delete[] r;
+          delete[] m2;
           delete[] m;
           delete[] drsqd;
           delete[] gpot2;
           delete[] gpot;
           delete[] neiblist;
-          Nneibmax = 2*Nneibmax; 
+          Nneibmax = 2*Nneibmax;
           neiblist = new int[Nneibmax];
           gpot = new FLOAT[Nneibmax];
           gpot2 = new FLOAT[Nneibmax];
@@ -208,8 +209,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
           m = new FLOAT[Nneibmax];
           m2 = new FLOAT[Nneibmax];
           r = new FLOAT[Nneibmax*ndim];
-          Nneib = tree->ComputeGatherNeighbourList(cell,Nneibmax,neiblist,
-                                                   hmax,sphdata);
+          Nneib = tree->ComputeGatherNeighbourList(cell,Nneibmax,neiblist,hmax,sphdata);
         };
 
 
@@ -251,7 +251,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
           // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-          if (neibcheck) 
+          if (neibcheck)
 	    this->CheckValidNeighbourList(i,Ntot,Nneib,neiblist,
                                           sphdata,"gather");
 #endif
@@ -273,7 +273,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
       } while (celldone == 0);
       //-----------------------------------------------------------------------
 
-      for (j=0; j<Nactive; j++) 
+      for (j=0; j<Nactive; j++)
 	sphdata[activelist[j]] = activepart[j];
 
     }
@@ -304,9 +304,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
 //=============================================================================
 //  GradhSphTree::UpdateAllSphHydroForces
-/// Compute all local 'gather' properties of currently active particles, and 
-/// then compute each particle's contribution to its (active) neighbour 
-/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
+/// Compute all local 'gather' properties of currently active particles, and
+/// then compute each particle's contribution to its (active) neighbour
+/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -373,7 +373,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
     ithread = 0;
 #endif
     Nneibmax = Nneibmaxbuf[ithread];
-    activelist = activelistbuf[ithread];    
+    activelist = activelistbuf[ithread];
     activepart = activepartbuf[ithread];
     neibpart = neibpartbuf[ithread];
     levelneib = levelneibbuf[ithread];
@@ -428,7 +428,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
         dr = new FLOAT[Nneibmax*ndim];
         drmag = new FLOAT[Nneibmax];
         invdrmag = new FLOAT[Nneibmax];
-        neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax]; 
+        neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax];
 	neibpart = neibpartbuf[ithread];
         Nneib = tree->ComputeNeighbourList(cell,Nneibmax,
                                            neiblist,sphdata);
@@ -452,7 +452,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
         // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-        if (neibcheck) 
+        if (neibcheck)
 	  this->CheckValidNeighbourList(i,Ntot,Nneib,neiblist,
 					sphdata,"all");
 #endif
@@ -478,7 +478,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
               dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
             interactlist[Ninteract] = jj;
             Ninteract++;
-	    levelneib[neiblist[jj]] = 
+	    levelneib[neiblist[jj]] =
 	      max(levelneib[neiblist[jj]],activepart[j].level);
 	  }
 
@@ -545,9 +545,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
 //=============================================================================
 //  GradhSphTree::UpdateAllSphForces
-/// Compute all local 'gather' properties of currently active particles, and 
-/// then compute each particle's contribution to its (active) neighbour 
-/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
+/// Compute all local 'gather' properties of currently active particles, and
+/// then compute each particle's contribution to its (active) neighbour
+/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -648,7 +648,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 
       // Compute average/maximum term for computing gravity MAC
       if (gravity_mac == "eigenmac") {
-	for (j=0; j<Nactive; j++) 
+	for (j=0; j<Nactive; j++)
 	  macfactor = max(macfactor,pow(1.0/activepart[j].gpot,twothirds));
       }
 
@@ -690,7 +690,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 	directlist = new int[Ndirectmax];
 	gravcelllist = new KDTreeCell<ndim>*[Ngravcellmax];
 	neibpart = new ParticleType<ndim>[Nneibmax];
-	neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax]; 
+	neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax];
 	neibpart = neibpartbuf[ithread];
 	okflag = tree->ComputeGravityInteractionList(cell,macfactor,
 					             Nneibmax,Ndirectmax,
@@ -709,7 +709,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
 
-        // Determine SPH neighbour interaction list 
+        // Determine SPH neighbour interaction list
         // (to ensure we don't compute pair-wise forces twice)
         Ninteract = 0;
 	Ndirectaux = Ndirect;
@@ -727,7 +727,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 	    directlist[Ndirectaux++] = neiblist[jj];
 	  else if (i != neiblist[jj]) {
             interactlist[Ninteract++] = jj;
-	    levelneib[neiblist[jj]] = 
+	    levelneib[neiblist[jj]] =
 	      max(levelneib[neiblist[jj]],activepart[j].level);
 	  }
         }
@@ -816,9 +816,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 
 //=============================================================================
 //  GradhSphTree::UpdateAllSphGravForces
-/// Compute all local 'gather' properties of currently active particles, and 
-/// then compute each particle's contribution to its (active) neighbour 
-/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
+/// Compute all local 'gather' properties of currently active particles, and
+/// then compute each particle's contribution to its (active) neighbour
+/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to
 /// construct local neighbour lists for all particles  inside the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -919,7 +919,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
 
       // Compute average/maximum term for computing gravity MAC
       if (gravity_mac == "eigenmac") {
-	for (j=0; j<Nactive; j++) 
+	for (j=0; j<Nactive; j++)
 	  macfactor = max(macfactor,pow(1.0/activepart[j].gpot,twothirds));
       }
 
@@ -961,7 +961,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
 	directlist = new int[Ndirectmax];
 	gravcelllist = new KDTreeCell<ndim>*[Ngravcellmax];
 	neibpart = new ParticleType<ndim>[Nneibmax];
-	neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax]; 
+	neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax];
 	neibpart = neibpartbuf[ithread];
 	okflag = tree->ComputeGravityInteractionList(cell,macfactor,
 					             Nneibmax,Ndirectmax,
@@ -982,7 +982,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
 
-        // Determine SPH neighbour interaction list 
+        // Determine SPH neighbour interaction list
         // (to ensure we don't compute pair-wise forces twice)
         Ninteract = 0;
 	Ndirectaux = Ndirect;
@@ -1000,7 +1000,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphGravForces
 	    directlist[Ndirectaux++] = neiblist[jj];
 	  else if (i != neiblist[jj]) {
             interactlist[Ninteract++] = jj;
-	    levelneib[neiblist[jj]] = 
+	    levelneib[neiblist[jj]] =
 	      max(levelneib[neiblist[jj]],activepart[j].level);
 	  }
         }

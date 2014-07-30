@@ -232,8 +232,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   nbodytree.gpehard     = floatparams["gpehard"];
   nbodytree.gpesoft     = floatparams["gpesoft"];
   nbody->perturbers     = intparams["perturbers"];
-  if (intparams["sub_systems"] == 1)
-    subsystem->perturbers = intparams["perturbers"];
+  if (intparams["sub_systems"] == 1) subsystem->perturbers = intparams["perturbers"];
 
 
   // Sink particles
@@ -321,6 +320,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Set pointer to SPH particle data
   partdata = sph->GetParticlesArray();
+
 
   // Perform initial MPI decomposition
   //---------------------------------------------------------------------------
@@ -436,6 +436,11 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   }
 
 
+  // Read-in N-body table here
+  nbody->LoadStellarPropertiesTable(&simunits);
+  nbody->UpdateStellarProperties();
+
+
   // Compute all initial SPH force terms
   //---------------------------------------------------------------------------
   if (sph->Nsph > 0) {
@@ -498,7 +503,12 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   //---------------------------------------------------------------------------
   if (nbody->Nstar > 0) {
 
-    nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
+    if (nbody->nbody_softening == 1) {
+      nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody,nbody->nbodydata);
+    }
+    else {
+      nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
+    }
     if (sph->self_gravity == 1 && sph->Nsph > 0)
       sphneib->UpdateAllStarGasForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
     nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
@@ -634,7 +644,7 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
       // Update the radiation field
-      if (Nsteps%4 == 0) {
+      if (Nsteps%1 == 0) {
         radiation->UpdateRadiationField(sph->Nsph, nbody->Nnbody, sinks.Nsink,
                                         partdata, nbody->nbodydata, sinks.sink);
         for (i=0; i<sph->Nsph; i++) {
@@ -704,10 +714,16 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
       // Calculate forces, force derivatives etc.., for active stars/systems
-      nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
+      if (nbody->nbody_softening == 1) {
+        nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody,nbody->nbodydata);
+      }
+      else {
+        nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
+      }
 
-      if (sph->self_gravity == 1 && sph->Nsph > 0)
-	sphneib->UpdateAllStarGasForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+      if (sph->self_gravity == 1 && sph->Nsph > 0) {
+        sphneib->UpdateAllStarGasForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+      }
 
       // Calculate correction step for all stars at end of step, except the
       // final iteration (since correction is computed in EndStep also).
@@ -738,10 +754,12 @@ void SphSimulation<ndim>::MainLoop(void)
     //if (sinks.create_sinks == 1 &&
     //(rebuild_tree || Nsteps%ntreebuildstep == 0))
     // sinks.SearchForNewSinkParticles(n,sph,nbody);
-    if (sinks.create_sinks == 1 &&
-	(rebuild_tree || Nfullsteps%ntreebuildstep == 0))
+    if (sinks.create_sinks == 1 && (rebuild_tree || Nfullsteps%ntreebuildstep == 0))
       sinks.SearchForNewSinkParticles(n,sph,nbody);
-    if (sinks.Nsink > 0) sinks.AccreteMassToSinks(sph,nbody,n,timestep);
+    if (sinks.Nsink > 0) {
+      sinks.AccreteMassToSinks(sph,nbody,n,timestep);
+      nbody->UpdateStellarProperties();
+    }
     if (t >= tsnapnext && sinks.Nsink > 0) {
       sph->DeleteDeadParticles();
       rebuild_tree = true;

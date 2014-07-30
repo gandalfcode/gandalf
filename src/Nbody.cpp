@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  Nbody.cpp
 //  Contains main N-body class functions.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <algorithm>
@@ -26,6 +26,9 @@
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
+#include <ostream>
+#include <fstream>
+#include <sstream>
 #include <math.h>
 #include "Precision.h"
 #include "Debug.h"
@@ -41,17 +44,18 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Nbody::Nbody
 /// Nbody class constructor
-//=============================================================================
+//=================================================================================================
 template <int ndim>
-Nbody<ndim>::Nbody(int nbody_softening_aux, int sub_systems_aux, 
+Nbody<ndim>::Nbody(int nbody_softening_aux, int sub_systems_aux,
                    DOUBLE nbody_mult_aux, string KernelName, int Npec_aux):
   nbody_softening(nbody_softening_aux),
   sub_systems(sub_systems_aux),
   nbody_mult(nbody_mult_aux),
   kerntab(TabulatedKernel<ndim>(KernelName)),
+  Npec(Npec_aux),
   Nstar(0),
   Nstarmax(0),
   Nsystem(0),
@@ -60,16 +64,16 @@ Nbody<ndim>::Nbody(int nbody_softening_aux, int sub_systems_aux,
   Nnbodymax(0),
   reset_tree(0),
   allocated(false),
-  Npec(Npec_aux)
+  Nstellartable(0)
 {
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Nbody::AllocateMemory
 /// Allocate all memory required for stars and N-body system particles.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Nbody<ndim>::AllocateMemory(int N)
 {
@@ -90,13 +94,13 @@ void Nbody<ndim>::AllocateMemory(int N)
 
   return;
 }
- 
 
 
-//=============================================================================
+
+//=================================================================================================
 //  Nbody::DeallocateMemory
 /// Deallocate all N-body memory.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Nbody<ndim>::DeallocateMemory(void)
 {
@@ -114,20 +118,156 @@ void Nbody<ndim>::DeallocateMemory(void)
 
 
 
-//=============================================================================
+//=================================================================================================
+//  Nbody::LoadStellarPropertiesTable
+/// Loads table from file containing properties of high-mass stars, including mass-loss rates,
+/// wind speeds, total luminosities, effective surface temperatures and ionising photon flux.
+//=================================================================================================
+template<int ndim>
+void Nbody<ndim>::LoadStellarPropertiesTable
+(SimUnits *simunits)
+{
+  string filename = "stellar.dat";  // Stellar table filename
+  string dummystring;               // Dummy string to skip unimportant lines
+  ifstream infile;                  // Input stream object
+  int i;                            // Table element counter
+
+  debug2("[Nbody::LoadStellarPropertiesTable]");
+
+  infile.open(filename.c_str());
+
+  infile >> Nstellartable;
+  stellartable = new StellarTableElement[Nstellartable];
+  getline(infile,dummystring);
+  getline(infile,dummystring);
+  getline(infile,dummystring);
+  getline(infile,dummystring);
+  getline(infile,dummystring);
+
+  for (i=0; i<Nstellartable; i++) {
+    infile >> stellartable[i].mass >> stellartable[i].luminosity >> stellartable[i].NLyC
+           >> stellartable[i].Teff >> stellartable[i].mdot >> stellartable[i].vwind;
+    stellartable[i].mass       /= simunits->m.inscale;
+    stellartable[i].luminosity /= simunits->L.inscale;
+    stellartable[i].Teff       /= simunits->temp.inscale;
+    stellartable[i].mdot       /= simunits->dmdt.inscale;
+    stellartable[i].vwind      /= simunits->v.inscale;
+  }
+
+  infile.close();
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  Nbody::UpdateStellarProperties
+/// Updates the stellar properties of all stars/sinks based on their new mass after accretion.
+//=================================================================================================
+template<int ndim>
+void Nbody<ndim>::UpdateStellarProperties(void)
+{
+  int i;                            // Star counter
+  int jbin;                         // Stellar table bin number
+  DOUBLE frac;                      // Linear interpolation weighting factor
+  DOUBLE ms;                        // Mass of star
+
+  debug2("[Nbody::UpdateStellarProperties]");
+
+  //-----------------------------------------------------------------------------------------------
+  for (i=0; i<Nstar; i++) {
+    ms = nbodydata[i]->m;
+
+    // Search through all table entries and find bin that contains mass
+    for (jbin=0; jbin<Nstellartable - 1; jbin++) {
+      if (ms >= stellartable[jbin].mass && ms < stellartable[jbin+1].mass) break;
+    }
+
+    // If mass exceeds last bin, simply use largest mass values for stellar properties
+    // Otherwise, use linear interpolation between tabulated values
+    if (jbin == Nstellartable-1) {
+      jbin = Nstellartable - 2;
+      frac = 1.0;
+    }
+    else {
+      frac = (ms - stellartable[jbin].mass)/(stellartable[jbin+1].mass - stellartable[jbin].mass);
+    }
+
+    // Set all stellar properties (only NLyC for now)
+    nbodydata[i]->NLyC =
+      pow(10.0,(1.0 - frac)*stellartable[jbin].NLyC + frac*stellartable[jbin+1].NLyC);
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+
+//=================================================================================================
+//  Nbody::CalculateDirectGravForces
+/// Calculate all star-star force contributions for active systems using
+/// direct summation with unsoftened gravity.
+//=================================================================================================
+template <int ndim>
+void Nbody<ndim>::CalculateDirectGravForces
+(int N,                             ///< Number of stars
+ NbodyParticle<ndim> **star)        ///< Array of stars/systems
+{
+  int i,j,k;                        // Star and dimension counters
+  DOUBLE dr[ndim];                  // Relative position vector
+  DOUBLE drdt;                      // Rate of change of distance
+  DOUBLE drsqd;                     // Distance squared
+  DOUBLE dv[ndim];                  // Relative velocity vector
+  DOUBLE invdrmag;                  // 1 / drmag
+
+  debug2("[Nbody::CalculateDirectGravForces]");
+
+  // Loop over all (active) stars
+  //-----------------------------------------------------------------------------------------------
+  for (i=0; i<N; i++) {
+    if (star[i]->active == 0) continue;
+
+    // Sum grav. contributions for all other stars (excluding star itself)
+    //---------------------------------------------------------------------------------------------
+    for (j=0; j<N; j++) {
+      if (i == j) continue;
+
+      for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      drsqd = DotProduct(dr,dr,ndim);
+      invdrmag = 1.0/sqrt(drsqd);
+      drdt = DotProduct(dv,dr,ndim)*invdrmag;
+
+      star[i]->gpot += star[j]->m*invdrmag;
+      for (k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
+      for (k=0; k<ndim; k++) star[i]->adot[k] +=
+        star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+
+    }
+    //---------------------------------------------------------------------------------------------
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return;
+}
+
+
+//=================================================================================================
 //  Nbody::IntegrateInternalMotion
-/// This function integrates the internal motion of a system. First integrates
-/// the internal motion of its sub-systems by recursively calling their method,
-/// then integrates the COM of the sub-systems.
-//=============================================================================
+/// This function integrates the internal motion of a system. First integrates the internal motion
+/// of its sub-systems by recursively calling their method, then integrates their COMs.
+//=================================================================================================
 template <int ndim>
 void Nbody<ndim>::IntegrateInternalMotion
-(SystemParticle<ndim>* systemi,     ///< [inout] System that we wish to 
-                                    ///<         integrate the internal motion
+(SystemParticle<ndim>* systemi,     ///< [inout] System to integrate the internal motionv for
  int n,                             ///< [in]    Integer time
  DOUBLE timestep,                   ///< [in]    Minimum timestep value
- DOUBLE tlocal_end)                 ///< [in]    Time to integrate the 
-                                    ///<         internal motion for.
+ DOUBLE tlocal_end)                 ///< [in]    Time to integrate the internal motion for
 {
   int i;                            // Star counter
   int it;                           // Iteration counter
@@ -153,7 +293,7 @@ void Nbody<ndim>::IntegrateInternalMotion
   for (k=0; k<ndim; k++) adotcom[k] = 0.0;
 
   // Make local copies of children and calculate COM properties
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<Nchildren; i++) {
     for (k=0; k<ndim; k++) rcom[k] += children[i]->m*children[i]->r[k];
     for (k=0; k<ndim; k++) vcom[k] += children[i]->m*children[i]->v[k];
@@ -169,7 +309,7 @@ void Nbody<ndim>::IntegrateInternalMotion
 
 
   // Now convert to COM frame
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<Nchildren; i++) {
     for (k=0; k<ndim; k++) children[i]->r[k] -= rcom[k];
     for (k=0; k<ndim; k++) children[i]->r0[k] -= rcom[k];
@@ -188,7 +328,7 @@ void Nbody<ndim>::IntegrateInternalMotion
 
 
   // Main time integration loop
-  //===========================================================================
+  //===============================================================================================
   do {
 
     // Calculate time-step
@@ -203,10 +343,10 @@ void Nbody<ndim>::IntegrateInternalMotion
     AdvanceParticles(nlocal_steps, Nchildren, children, dt);
 
     // Time-symmetric iteration loop
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     for (it=0; it<Npec; it++) {
 
-      //Zero all acceleration terms
+      // Zero all acceleration terms
       for (i=0; i<Nchildren; i++) {
         children[i]->gpot = 0.0;
         children[i]->gpe_internal = 0.0;
@@ -218,34 +358,33 @@ void Nbody<ndim>::IntegrateInternalMotion
 
       // Calculate forces, derivatives and other terms
       CalculateDirectGravForces(Nchildren, children);
-      
+
       // Apply correction terms
       CorrectionTerms(nlocal_steps, Nchildren, children, dt);
     }
-    //-------------------------------------------------------------------------
 
     // Now loop over children and, if they are systems, integrate
     // their internal motion
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     for (i=0; i<Nchildren; i++) {
 
-      if (children[i]->Ncomp > 1)
-	// The cast is needed because the function is defined only in
-	// SystemParticle, not in NbodyParticle.  
-	// The safety of the cast relies on the correctness of the Ncomp value
-	IntegrateInternalMotion(static_cast<SystemParticle<ndim>* > 
-				(children[i]), n, timestep, dt);
+      if (children[i]->Ncomp > 1) {
+        // The cast is needed because the function is defined only in SystemParticle, not in
+        // NbodyParticle.  The safety of the cast relies on the correctness of the Ncomp value.
+        IntegrateInternalMotion(static_cast<SystemParticle<ndim>* >
+          (children[i]), n, timestep, dt);
+      }
     }
 
     // Set end-of-step variables
     EndTimestep(nlocal_steps, Nchildren, children);
 
   } while (tlocal < tlocal_end);
-  //===========================================================================
+  //===============================================================================================
 
 
   // Copy children back to main coordinate system
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<Nchildren; i++) {
     for (k=0; k<ndim; k++) children[i]->r[k] += systemi->r[k];
     for (k=0; k<ndim; k++) children[i]->r0[k] += systemi->r[k];

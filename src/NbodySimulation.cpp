@@ -75,6 +75,18 @@ void NbodySimulation<ndim>::ProcessParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
+  // Set-up random number generator object
+  //---------------------------------------------------------------------------
+  if (stringparams["rand_algorithm"] == "xorshift")
+    randnumb = new XorshiftRand(intparams["randseed"]);
+  else if (stringparams["rand_algorithm"] == "none")
+    randnumb = new DefaultSystemRand(intparams["randseed"]);
+  else {
+    string message = "Unrecognised parameter : rand_algorithm= " +
+      stringparams["rand_algorithm"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
   // Set-up all output units for scaling parameters
   simunits.SetupUnits(simparams);
 

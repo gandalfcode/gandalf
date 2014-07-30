@@ -659,6 +659,7 @@ class NbodySimulation : public Simulation<ndim>
   using Simulation<ndim>::Nlevels;
   using Simulation<ndim>::Nsteps;
   using Simulation<ndim>::ndiagstep;
+  using Simulation<ndim>::randnumb;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::tmax_wallclock;
   using Simulation<ndim>::t;

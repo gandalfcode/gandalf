@@ -292,20 +292,18 @@ std::list<string>* SimulationBase::GetIntAndFloatParameterKeys()
 
 
 
-//=============================================================================
-//  SphSimulation::Run
-/// Controls the simulation main loop, including exit conditions.  If provided
-/// (optional argument), will only advance the simulation by 'Nadvance' steps.
-//=============================================================================
+//=================================================================================================
+//  SimulationBase::Run
+/// Controls the simulation main loop, including exit conditions.  If provided as an optional
+/// argument, will only advance the simulation by 'Nadvance' steps.
+//=================================================================================================
 void SimulationBase::Run
-(int Nadvance)                      ///< [in] Selected max no. of integer
-                                    ///<      timesteps (Optional argument).
+(int Nadvance)                      ///< [in] Selected max no. of timesteps (Optional argument).
 {
-  int Ntarget;                      // Target step no before finishing
-                                    // main code integration.
+  int Ntarget;                      // Target step no before finishing main code integration.
   ofstream outfile;                 // Stream to create temp. file for
 
-  debug1("[SphSimulation::Run]");
+  debug1("[SimulationBase::Run]");
 
   // Set integer timestep exit condition if provided as parameter.
   if (Nadvance < 0) Ntarget = Nstepsmax;
@@ -313,7 +311,7 @@ void SimulationBase::Run
 
   // Continue to run simulation until we reach the required time, or
   // exeeded the maximum allowed number of steps.
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   while (t < tend && Nsteps < Ntarget) {
 
     timing->StartTimingSection("RUN",1);
@@ -322,8 +320,7 @@ void SimulationBase::Run
     Output();
 
     // Special condition to check if maximum wall-clock time has been reached
-    if (kill_simulation ||
-	timing->WallClockTime() - timing->tstart_wall > 0.99*tmax_wallclock) {
+    if (kill_simulation || timing->WallClockTime() - timing->tstart_wall > 0.99*tmax_wallclock) {
       cout << "Reached maximum wall-clock time.  Killing simulation." << endl;
       outfile.open("cont");
       outfile.close();
@@ -333,7 +330,7 @@ void SimulationBase::Run
     timing->EndTimingSection("RUN");
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   CalculateDiagnostics();
   OutputDiagnostics();

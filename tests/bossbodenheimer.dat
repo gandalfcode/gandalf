@@ -87,6 +87,7 @@ Artificial viscosity beta value             : beta_visc = 2.0
 Use leapfrog N-body integration scheme      : nbody = lfkdk
 Activate sink particles in code             : sink_particles = 1
 Allow creation of new sink particles        : create_sinks = 1
+Use gravitational softening for sinks       : nbody_softening = 1
 
 
 Use smooth accretion in sinks               : smooth_accretion = 0

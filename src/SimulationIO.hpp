@@ -56,7 +56,7 @@ bool SimulationBase::ReadSnapshotFile
 {
   debug2("[Simulation::ReadSnapshotFile]");
 
-  cout << "Reading snapshot : " << filename 
+  cout << "Reading snapshot : " << filename
        << "   format : " << fileform << endl;
 
   // Read in snapshot file to main memory
@@ -138,7 +138,7 @@ HeaderInfo SimulationBase::ReadHeaderSnapshotFile
 //=============================================================================
 //  Simulation::ReadColumnHeaderFile
 /// Function for reading the header file of a snapshot. Does not modify the
-/// variables of the Simulation class, but rather returns information in a 
+/// variables of the Simulation class, but rather returns information in a
 /// HeaderInfo struct.
 //=============================================================================
 template <int ndim>
@@ -168,10 +168,10 @@ void Simulation<ndim>::ReadColumnHeaderFile
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::ReadColumnSnapshotFile
 /// Reads a column format data snapshot of given filename.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 bool Simulation<ndim>::ReadColumnSnapshotFile
 (string filename)                   ///< Filename of column data snapshot file
@@ -193,44 +193,41 @@ bool Simulation<ndim>::ReadColumnSnapshotFile
   i = 0;
 
   // Read in data depending on dimensionality
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   while (infile.good() && i < sph->Nsph) {
     SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-    if (ndim == 1) 
-      infile >> part.r[0] >> part.v[0] >> part.m >> part.h
-	     >> part.rho >> part.u;
-    else if (ndim == 2) 
+    if (ndim == 1)
+      infile >> part.r[0] >> part.v[0] >> part.m >> part.h >> part.rho >> part.u;
+    else if (ndim == 2)
       infile >> part.r[0] >> part.r[1] >> part.v[0] >> part.v[1]
              >> part.m >> part.h >> part.rho >> part.u;
-    else if (ndim == 3) 
-      infile >> part.r[0] >> part.r[1] >> part.r[2] >> part.v[0]
-             >> part.v[1] >> part.v[2] >> part.m >> part.h
-	     >> part.rho >> part.u;
+    else if (ndim == 3)
+      infile >> part.r[0] >> part.r[1] >> part.r[2] >> part.v[0] >> part.v[1] >> part.v[2]
+             >> part.m >> part.h >> part.rho >> part.u;
     i++;
   }
 
   nbody->Nstar = info.Nstar;
+  sinks.Nsink = info.Nstar;
   nbody->AllocateMemory(nbody->Nstar);
   i = 0;
 
   // Read in data depending on dimensionality
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   while (infile.good() && i < nbody->Nstar) {
-    if (ndim == 1) 
-      infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].v[0] 
-	     >> nbody->stardata[i].m >> nbody->stardata[i].h
-	     >> raux >> raux;
-    else if (ndim == 2) 
-      infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].r[1] 
-	     >> nbody->stardata[i].v[0] >> nbody->stardata[i].v[1] 
-	     >> nbody->stardata[i].m >> nbody->stardata[i].h
-	     >> raux >> raux;
-    else if (ndim == 3) 
-      infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].r[1] 
-	     >> nbody->stardata[i].r[2] >> nbody->stardata[i].v[0] 
-	     >> nbody->stardata[i].v[1] >> nbody->stardata[i].v[2] 
-	     >> nbody->stardata[i].m >> nbody->stardata[i].h
-	     >> raux >> raux;
+    if (ndim == 1)
+      infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].v[0] >> nbody->stardata[i].m
+             >> nbody->stardata[i].h >> raux >> raux;
+    else if (ndim == 2)
+      infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].r[1] >> nbody->stardata[i].v[0]
+             >> nbody->stardata[i].v[1] >> nbody->stardata[i].m >> nbody->stardata[i].h
+             >> raux >> raux;
+    else if (ndim == 3)
+      infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].r[1] >> nbody->stardata[i].r[2]
+             >> nbody->stardata[i].v[0] >> nbody->stardata[i].v[1] >> nbody->stardata[i].v[2]
+             >> nbody->stardata[i].m >> nbody->stardata[i].h >> raux >> raux;
+    sinks.sink[i].radius = nbody->kernp->kernrange*nbody->stardata[i].h;
+    sinks.sink[i].star = &(nbody->stardata[i]);
     i++;
   }
 
@@ -281,7 +278,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   //---------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-    if (ndim == 1) 
+    if (ndim == 1)
       outfile << part.r[0]*simunits.r.outscale << "   "
               << part.v[0]*simunits.v.outscale << "   "
               << part.m*simunits.m.outscale << "   "
@@ -289,7 +286,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
               << part.rho*simunits.rho.outscale << "   "
               << part.u*simunits.u.outscale
               << endl;
-    else if (ndim == 2) 
+    else if (ndim == 2)
       outfile << part.r[0]*simunits.r.outscale << "   "
               << part.r[1]*simunits.r.outscale << "   "
               << part.v[0]*simunits.v.outscale << "   "
@@ -299,7 +296,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
               << part.rho*simunits.rho.outscale << "   "
               << part.u*simunits.u.outscale
               << endl;
-    else if (ndim == 3) 
+    else if (ndim == 3)
       outfile << part.r[0]*simunits.r.outscale << "   "
               << part.r[1]*simunits.r.outscale << "   "
               << part.r[2]*simunits.r.outscale << "   "
@@ -348,7 +345,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   // Write data for Nbody particles
   //---------------------------------------------------------------------------
   for (i=0; i<nbody->Nstar; i++) {
-    if (ndim == 1) 
+    if (ndim == 1)
       outfile << nbody->stardata[i].r[0]*simunits.r.outscale << "   "
               << nbody->stardata[i].v[0]*simunits.v.outscale << "   "
               << nbody->stardata[i].m*simunits.m.outscale << "   "
@@ -356,7 +353,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
               << 0.0 << "   "
               << 0.0
               << endl;
-    else if (ndim == 2) 
+    else if (ndim == 2)
       outfile << nbody->stardata[i].r[0]*simunits.r.outscale << "   "
               << nbody->stardata[i].r[1]*simunits.r.outscale << "   "
               << nbody->stardata[i].v[0]*simunits.v.outscale << "   "
@@ -366,7 +363,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
               << 0.0 << "   "
               << 0.0
               << endl;
-    else if (ndim == 3) 
+    else if (ndim == 3)
       outfile << nbody->stardata[i].r[0]*simunits.r.outscale << "   "
               << nbody->stardata[i].r[1]*simunits.r.outscale << "   "
               << nbody->stardata[i].r[2]*simunits.r.outscale << "   "
@@ -429,7 +426,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   //---------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-    if (ndim == 1) 
+    if (ndim == 1)
       outfile << part.r[0]*simunits.r.outscale << "   "
 	      << part.v[0]*simunits.v.outscale << "   "
 	      << part.m*simunits.m.outscale << "   "
@@ -437,7 +434,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 	      << part.rho*simunits.rho.outscale << "   "
 	      << part.u*simunits.u.outscale
 	      << endl;
-    else if (ndim == 2) 
+    else if (ndim == 2)
       outfile << part.r[0]*simunits.r.outscale << "   "
 	      << part.r[1]*simunits.r.outscale << "   "
 	      << part.v[0]*simunits.v.outscale << "   "
@@ -447,7 +444,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 	      << part.rho*simunits.rho.outscale << "   "
 	      << part.u*simunits.u.outscale
 	      << endl;
-    else if (ndim == 3) 
+    else if (ndim == 3)
       outfile << part.r[0]*simunits.r.outscale << "   "
 	      << part.r[1]*simunits.r.outscale << "   "
 	      << part.r[2]*simunits.r.outscale << "   "
@@ -464,7 +461,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   // Write data for SPH particles
   //---------------------------------------------------------------------------
   for (i=0; i<nbody->Nstar; i++) {
-    if (ndim == 1) 
+    if (ndim == 1)
       outfile << nbody->stardata[i].r[0]*simunits.r.outscale << "   "
 	      << nbody->stardata[i].v[0]*simunits.v.outscale << "   "
 	      << nbody->stardata[i].m*simunits.m.outscale << "   "
@@ -472,7 +469,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 	      << 0.0 << "   "
 	      << 0.0
 	      << endl;
-    else if (ndim == 2) 
+    else if (ndim == 2)
       outfile << nbody->stardata[i].r[0]*simunits.r.outscale << "   "
 	      << nbody->stardata[i].r[1]*simunits.r.outscale << "   "
 	      << nbody->stardata[i].v[0]*simunits.v.outscale << "   "
@@ -482,7 +479,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 	      << 0.0 << "   "
 	      << 0.0
 	      << endl;
-    else if (ndim == 3) 
+    else if (ndim == 3)
       outfile << nbody->stardata[i].r[0]*simunits.r.outscale << "   "
 	      << nbody->stardata[i].r[1]*simunits.r.outscale << "   "
 	      << nbody->stardata[i].r[2]*simunits.r.outscale << "   "
@@ -506,7 +503,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 //=============================================================================
 //  Simulation::ReadSerenFormHeaderFile
 /// Function for reading the header file of a snapshot. Does not modify the
-/// variables of the Simulation class, but rather returns information in a 
+/// variables of the Simulation class, but rather returns information in a
 /// HeaderInfo struct.
 //=============================================================================
 template <int ndim>
@@ -648,7 +645,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   //sph->mgas_orig = ddata[2];
 
   // Read in unit data
-  if (nunit > 0) 
+  if (nunit > 0)
     for (i=0; i<nunit; i++) infile >> unit_data[i];
 
   // Read in unit variables here
@@ -681,8 +678,8 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 
   // Read infile ids of arrays contained in file
   if (ndata > 0)
-    for (i=0; i<ndata; i++) 
-      infile >> typedata[i][0] >> typedata[i][1] 
+    for (i=0; i<ndata; i++)
+      infile >> typedata[i][0] >> typedata[i][1]
 	     >> typedata[i][2] >> typedata[i][3] >> typedata[i][4];
 
   // Allocate memory now we know particle numbers
@@ -703,7 +700,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
         infile >> part.iorig;
       }
-    }    
+    }
 
     // Positions
     //-------------------------------------------------------------------------
@@ -810,8 +807,8 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
           nbody->stardata[i].m = sdata[1+2*ndim];
           nbody->stardata[i].h = sdata[2+2*ndim];
           nbody->stardata[i].radius = sdata[3+2*ndim];
-	  sinks.sink[i].radius = sdata[3+2*ndim];
-	  sinks.sink[i].star = &(nbody->stardata[i]);
+          sinks.sink[i].radius = sdata[3+2*ndim];
+          sinks.sink[i].star = &(nbody->stardata[i]);
         }
       }
     }
@@ -829,7 +826,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 
   // Close file
   infile.close();
-  
+
   return true;
 }
 
@@ -1095,7 +1092,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
     for (i=0; i<nbody->Nstar; i++) {
       outfile_format << true  << true << endl;
       outfile_format << i+1  << 0 << endl;
-      for (k=0; k<ndim; k++) 
+      for (k=0; k<ndim; k++)
         sdata[k+1] = nbody->stardata[i].r[k]*simunits.r.outscale;
       for (k=0; k<ndim; k++)
         sdata[k+1+ndim] = nbody->stardata[i].v[k]*simunits.v.outscale;
@@ -1668,7 +1665,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 
 //=============================================================================
 //  Simulation::WriteSerenLiteSnapshotFile
-/// Write SPH and N-body particle data to snapshot file in Seren 'lite' format 
+/// Write SPH and N-body particle data to snapshot file in Seren 'lite' format
 /// (i.e. stripped down, low-memory data for basic visualisation and movies).
 //=============================================================================
 template <int ndim>
@@ -1869,9 +1866,9 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
     for (i=0; i<nbody->Nstar; i++) {
       writer.write_value(true); writer.write_value(true);
       writer.write_value(i+1); writer.write_value(0);
-      for (k=0; k<ndim; k++) sdata[k+1] = 
+      for (k=0; k<ndim; k++) sdata[k+1] =
 	(float) (nbody->stardata[i].r[k]*simunits.r.outscale);
-      for (k=0; k<ndim; k++) sdata[k+1+ndim] = 
+      for (k=0; k<ndim; k++) sdata[k+1+ndim] =
 	(float) (nbody->stardata[i].v[k]*simunits.v.outscale);
       sdata[1+2*ndim] = (float) (nbody->stardata[i].m*simunits.m.outscale);
       sdata[2+2*ndim] = (float) (nbody->stardata[i].h*simunits.r.outscale);
@@ -1892,7 +1889,7 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
 
 //=============================================================================
 //  Simulation::ConvertToCodeUnits
-/// For any simulations loaded into memory via a snapshot file, all particle 
+/// For any simulations loaded into memory via a snapshot file, all particle
 /// variables are converted into dimensionless code units here.
 //=============================================================================
 template <int ndim>
