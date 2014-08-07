@@ -529,7 +529,7 @@ class RenderPlotCommand (PlotCommand):
     def __init__(self, xquantity, yquantity, renderquantity, snap, simno,
                  overplot, autoscale, autoscalerender, coordlimits,
                  zslice=None, xunit="default", yunit="default", 
-                 renderunit="default", res=64, interpolation='nearest'):
+                 renderunit="default", res=64, interpolation='nearest',**kwargs):
         PlotCommand.__init__(self, xquantity, yquantity, snap, simno, 
                              overplot, autoscale, xunit, yunit)
         self.renderquantity = renderquantity
@@ -542,7 +542,7 @@ class RenderPlotCommand (PlotCommand):
         self.renderunitname = ""
         self.res = res
         self.interpolation = interpolation
-
+	self._kwargs = kwargs
 
     #--------------------------------------------------------------------------
     def update(self, plotting, fig, ax, products, data):
@@ -571,7 +571,7 @@ class RenderPlotCommand (PlotCommand):
 
     #--------------------------------------------------------------------------
     def execute(self, plotting, fig, ax, data):
-        im = ax.imshow(data.render_data, extent=(self.xmin, self.xmax, self.ymin, self.ymax), interpolation=self.interpolation)
+        im = ax.imshow(data.render_data, extent=(self.xmin, self.xmax, self.ymin, self.ymax), interpolation=self.interpolation, **self._kwargs)
         
         # Set limits
         if not self.autoscalerender:
