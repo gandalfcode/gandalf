@@ -256,11 +256,9 @@ void Sinks<ndim>::CreateNewSinkParticle
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->GetParticleIPointer(i);
     if (part.itype == dead) continue;
-    for (k=0; k<ndim; k++)
-      dr[k] = sink[Nsink].star->r[k] - part.r[k];
+    for (k=0; k<ndim; k++) dr[k] = sink[Nsink].star->r[k] - part.r[k];
     drsqd = DotProduct(dr,dr,ndim);
-    if (drsqd < pow(sink[Nsink].radius,2))
-      sink[Nsink].mmax += part.m;
+    if (drsqd < pow(sink[Nsink].radius,2)) sink[Nsink].mmax += part.m;
   }
   cout << "-------------------------------------------------" << endl;
   cout << "Created new sink particle : " << isink << "    " << Nsink << endl;

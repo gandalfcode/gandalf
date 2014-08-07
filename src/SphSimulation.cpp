@@ -97,23 +97,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
   }
 
 
-  // Quick random number check
-  /*FLOAT rav = 0;
-  int nrand = 4;
-  int bin[10];
-  for (int k=0; k<10; k++) bin[k] = 0;
-  for (int i=0; i<nrand; i++) {
-    FLOAT rrand = randnumb->floatrand();
-    int k = (int) (rrand*10.0);
-    bin[k]++;
-    cout << "rrand : " << i << "   " << rrand << endl;
-    rav += rrand;
-  }
-  cout << "rav : " << rav/(FLOAT) nrand << endl;
-  for (int k=0; k<10; k++) cout << "bin[" << k << "] : " << bin[k] << endl;
-  randnumb->PrintRandomNumberRange();
-  exit(0);*/
-
   // Set-up all output units for scaling parameters
   simunits.SetupUnits(simparams);
 
@@ -219,10 +202,12 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
 
   // Set all other SPH parameter variables
-  sph->Nsph           = intparams["Nsph"];
-  sph->Nsphmax        = intparams["Nsphmax"];
-  sph->create_sinks   = intparams["create_sinks"];
-  sph->alpha_visc_min = floatparams["alpha_visc_min"];
+  sph->Nsph            = intparams["Nsph"];
+  sph->Nsphmax         = intparams["Nsphmax"];
+  sph->create_sinks    = intparams["create_sinks"];
+  sph->fixed_sink_mass = intparams["fixed_sink_mass"];
+  sph->msink_fixed     = floatparams["m1"];
+  sph->alpha_visc_min  = floatparams["alpha_visc_min"];
 
 
   // Set important variables for N-body objects
@@ -379,7 +364,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Zero accelerations
     for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).active = true;
-    //for (i=0; i<sph->Nsph; i++) cout << "active : " << sph->GetParticleIPointer(i).active << endl;
 
     // Update neighbour tree
     rebuild_tree = true;
@@ -465,7 +449,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Update the radiation field
     for (int jj=0; jj<5; jj++)
       radiation->UpdateRadiationField(sph->Nsph, nbody->Nnbody, sinks.Nsink,
-				      partdata, nbody->nbodydata, sinks.sink);
+                                      partdata, nbody->nbodydata, sinks.sink);
 
     // Update thermal properties (if radiation field has altered them)
     for (i=0; i<sph->Nsph;i++) {

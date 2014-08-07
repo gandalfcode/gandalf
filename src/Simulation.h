@@ -220,26 +220,6 @@ class Simulation : public SimulationBase
   void DeallocateParticleMemory(void);
 
 
-  // Initial conditions helper routines
-  //---------------------------------------------------------------------------
-  void AddBinaryStar(DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE,
-                     DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE *,DOUBLE *,
-                     NbodyParticle<ndim> &, NbodyParticle<ndim> &);
-  void AddAzimuthalDensityPerturbation(int, int, FLOAT, FLOAT *, FLOAT *);
-  void AddRotationalVelocityField(int, FLOAT, FLOAT *, FLOAT *, FLOAT *);
-  void AddRandomBox(int, FLOAT *, DomainBox<ndim>);
-  void AddRandomSphere(int, FLOAT *, FLOAT *, FLOAT);
-  void AddCubicLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
-  void AddHexagonalLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
-  int AddLatticeSphere(int, FLOAT *, FLOAT *, FLOAT, string);
-  int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
-#if defined(FFTW_TURBULENCE)
-  void GenerateTurbulentVelocityField(int, int, DOUBLE, DOUBLE *);
-  void InterpolateVelocityField(int, int, FLOAT, FLOAT,
-                                FLOAT *, FLOAT *,FLOAT *);
-#endif
-
-
   // Subroutine prototypes
   //---------------------------------------------------------------------------
   virtual void CalculateDiagnostics(void);
@@ -263,6 +243,7 @@ class Simulation : public SimulationBase
   //---------------------------------------------------------------------------
   void BinaryAccretion(void);
   void BinaryStar(void);
+  void BondiAccretion(void);
   void BossBodenheimer(void);
   void CheckInitialConditions(void);
   void ContactDiscontinuity(void);
@@ -278,6 +259,27 @@ class Simulation : public SimulationBase
   void TurbulentCore(void);
   void UniformBox(void);
   void UniformSphere(void);
+
+  // Initial conditions helper routines
+  //---------------------------------------------------------------------------
+  void AddBinaryStar(DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE,
+                     DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE *,DOUBLE *,
+                     NbodyParticle<ndim> &, NbodyParticle<ndim> &);
+  void AddAzimuthalDensityPerturbation(int, int, FLOAT, FLOAT *, FLOAT *);
+  void AddRotationalVelocityField(int, FLOAT, FLOAT *, FLOAT *, FLOAT *);
+  void AddRandomBox(int, FLOAT *, DomainBox<ndim>);
+  void AddRandomSphere(int, FLOAT *, FLOAT *, FLOAT);
+  void AddCubicLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
+  void AddHexagonalLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
+  int AddLatticeSphere(int, FLOAT *, FLOAT *, FLOAT, string);
+  int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
+  void ComputeBondiSolution(int, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
+#if defined(FFTW_TURBULENCE)
+  void GenerateTurbulentVelocityField(int, int, DOUBLE, DOUBLE *);
+  void InterpolateVelocityField(int, int, FLOAT, FLOAT,
+                                FLOAT *, FLOAT *,FLOAT *);
+#endif
+
 
   // Input-output routines
   //---------------------------------------------------------------------------

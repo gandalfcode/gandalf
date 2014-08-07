@@ -44,8 +44,8 @@ using namespace std;
 //=============================================================================
 //  Class SinkParticle
 /// \brief   Individual sink particle data structure
-/// \details Main parent N-body particle data structure.  All main other 
-///          N-body particle types (e.g. stars, systems, sinks) are derived 
+/// \details Main parent N-body particle data structure.  All main other
+///          N-body particle types (e.g. stars, systems, sinks) are derived
 ///          from this class.
 /// \author  D. A. Hubber
 /// \date    15/04/2013
@@ -58,6 +58,7 @@ class SinkParticle
   StarParticle<ndim> *star;         ///< Pointer to connected star particle
   int istar;                        ///< i.d. of connected star particle
   int Ngas;                         ///< No. of gas particles inside sink
+  DOUBLE macctot;                   ///< Total accreted mass
   DOUBLE radius;                    ///< Softening/sink radius of particle
   DOUBLE dt;                        ///< Particle timestep
   DOUBLE dmdt;                      ///< Accretion rate
@@ -80,16 +81,17 @@ class SinkParticle
   //---------------------------------------------------------------------------
   SinkParticle()
   {
-    radius = 0.0;
-    dt = 0.0;
-    dmdt = 0.0;
-    racc = 0.0;
-    ketot = 0.0;
-    gpetot = 0.0;
+    macctot  = 0.0;
+    radius   = 0.0;
+    dt       = 0.0;
+    dmdt     = 0.0;
+    racc     = 0.0;
+    ketot    = 0.0;
+    gpetot   = 0.0;
     rotketot = 0.0;
-    utot = 0.0;
+    utot     = 0.0;
     for (int k=0; k<3; k++) angmom[k] = 0.0;
-  } 
+  }
 
 };
 
@@ -98,8 +100,8 @@ class SinkParticle
 //=============================================================================
 //  Class Sinks
 /// \brief   Main sink particle class.
-/// \details Main sink particle class for searching for and creating new 
-///          sinks, and for controlling the accretion of SPH particles 
+/// \details Main sink particle class for searching for and creating new
+///          sinks, and for controlling the accretion of SPH particles
 ///          onto sink particles.
 /// \author  D. A. Hubber
 /// \date    08/06/2013
@@ -111,7 +113,7 @@ class Sinks
 
   Sinks();
   ~Sinks();
-  
+
   // Function prototypes
   //---------------------------------------------------------------------------
   void AllocateMemory(int);
@@ -119,8 +121,8 @@ class Sinks
   void SearchForNewSinkParticles(int, Sph<ndim> *, Nbody<ndim> *);
   void CreateNewSinkParticle(SphParticle<ndim>&, int, Sph<ndim> *, Nbody<ndim> *);
   void AccreteMassToSinks(Sph<ndim> *, Nbody<ndim> *, int, DOUBLE);
-  //void UpdateSystemProperties(void);
-  
+
+
   // Local class variables
   //---------------------------------------------------------------------------
   bool allocated_memory;            ///< Has sink memory been allocated?
@@ -139,6 +141,6 @@ class Sinks
   SinkParticle<ndim> *sink;         ///< Main sink particle array
 
   CodeTiming *timing;               ///< Pointer to code timing objectx
-      
+
 };
 #endif
