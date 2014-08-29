@@ -1,8 +1,8 @@
 //=============================================================================
-//  IonisingRadiationEOS.cpp
-//  Contains all function definitions for a barotropic Equation of state of
+//  MCRadiationEOS.cpp
+//  Contains all function definitions for a barotropic Equation of state of 
 //  the form T = temp0*(1 + (rho/rho_bary)^{gamma - 1}).
-//  Used for star formation simulations to approximate the combined isothermal
+//  Used for star formation simulations to approximate the combined isothermal 
 //  and optically-thich adiabatic regimes of the gas collapse phase.
 //
 //  This file is part of GANDALF :
@@ -29,16 +29,17 @@
 #include "Sph.h"
 
 
+
 //=============================================================================
-//  IonisingRadiation::IonisingRadiation()
-/// Default constructor for barotropic EOS.  Passes and sets important
+//  MCRadiationEOS::MCRadiationEOS()
+/// Default constructor for barotropic EOS.  Passes and sets important 
 /// thermal physics variables.
 //=============================================================================
 template <int ndim>
-IonisingRadiation<ndim>::IonisingRadiation(string gas_eos, FLOAT temp0aux,
-                                           FLOAT mu_bar_aux, FLOAT gamma_aux,
-                                           FLOAT rho_bary_aux, SimUnits *units,
-                                           SphNeighbourSearch<ndim> *sphneib):
+MCRadiationEOS<ndim>::MCRadiationEOS(string gas_eos, FLOAT temp0aux, 
+				     FLOAT tempionaux, FLOAT mu_bar_aux, 
+                                     FLOAT mu_ion_aux, FLOAT gamma_aux,
+                                     FLOAT rho_bary_aux, SimUnits *units):
   EOS<ndim>(gamma_aux)
 {
   // Set 'internal' EOS for non-ionised gas
@@ -54,43 +55,46 @@ IonisingRadiation<ndim>::IonisingRadiation(string gas_eos, FLOAT temp0aux,
     string message = "Unrecognised parameter : gas_eos = " + gas_eos;
     ExceptionHandler::getIstance().raise(message);
   }
-  temp0 = temp0aux/units->temp.outscale;
   mu_bar = mu_bar_aux;
+  mu_ion = mu_ion_aux;
+  temp0 = temp0aux/units->temp.outscale;
+  temp_ion = tempionaux/units->temp.outscale;
 }
 
 
 
 //=============================================================================
-//  IonisingRadiation::~IonisingRadiation()
-/// IonisingRadiation EOS destructor
+//  MCRadiationEOS::~MCRadiationEOS()
+/// MCRadiationEOS EOS destructor
 //=============================================================================
 template <int ndim>
-IonisingRadiation<ndim>::~IonisingRadiation()
+MCRadiationEOS<ndim>::~MCRadiationEOS()
 {
 }
 
 
 
 //=============================================================================
-//  IonisingRadiation::Pressure
+//  MCRadiationEOS::Pressure
 /// Calculates and returns thermal pressure of referenced particle
 //=============================================================================
 template <int ndim>
-FLOAT IonisingRadiation<ndim>::Pressure(SphParticle<ndim> &part)
+FLOAT MCRadiationEOS<ndim>::Pressure(SphParticle<ndim> &part)
 {
   //return gammam1*part.rho*part.u;
-  return eos->Pressure(part);
+  //;eos->Pressure(part);
+  return gammam1*part.rho*part.u;
 }
 
 
 
 //=============================================================================
-//  IonisingRadiation::EntropicFunction
-/// Calculates and returns value of Entropic function (= P/rho^gamma) for
+//  MCRadiationEOS::EntropicFunction
+/// Calculates and returns value of Entropic function (= P/rho^gamma) for 
 /// referenced particle
 //=============================================================================
 template <int ndim>
-FLOAT IonisingRadiation<ndim>::EntropicFunction(SphParticle<ndim> &part)
+FLOAT MCRadiationEOS<ndim>::EntropicFunction(SphParticle<ndim> &part)
 {
   //return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
   return eos->EntropicFunction(part);
@@ -99,46 +103,49 @@ FLOAT IonisingRadiation<ndim>::EntropicFunction(SphParticle<ndim> &part)
 
 
 //=============================================================================
-//  IonisingRadiation::SoundSpeed
+//  MCRadiationEOS::SoundSpeed
 /// Returns isothermal sound speed of SPH particle
 //=============================================================================
 template <int ndim>
-FLOAT IonisingRadiation<ndim>::SoundSpeed(SphParticle<ndim> &part)
+FLOAT MCRadiationEOS<ndim>::SoundSpeed(SphParticle<ndim> &part)
 {
   //return sqrt(gammam1*part.u);
-  return eos->SoundSpeed(part);
+  return part.ionfrac*sqrt(gammam1*part.u) + 
+    (1.0 - part.ionfrac)*eos->SoundSpeed(part);
 }
 
 
 
 //=============================================================================
-//  IonisingRadiation::SpecificInternalEnergy
+//  MCRadiationEOS::SpecificInternalEnergy
 /// Returns specific internal energy
 //=============================================================================
 template <int ndim>
-FLOAT IonisingRadiation<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
+FLOAT MCRadiationEOS<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
 {
-  FLOAT non_ionised = eos->SpecificInternalEnergy(part);
-  if (part.u > non_ionised) return part.u;
-  else return non_ionised;
+  //cout << "u : " << part.ionfrac << "  " << temp_ion << "   " << gammam1 << "   " << mu_ion << "  "  
+  //   << (1.0 - part.ionfrac) << "   " <<  eos->SpecificInternalEnergy(part) << endl;
+  return part.ionfrac*temp_ion/gammam1/mu_ion + 
+    (1.0 - part.ionfrac)*eos->SpecificInternalEnergy(part);
 }
 
 
 
 //=============================================================================
-//  IonisingRadiation::Temperature
-/// Returns temperature of particle.  Approximates gas in the isothermal
-/// regime (T = temp0 for rho << rho_bary) and in the optically thick
+//  MCRadiationEOS::Temperature
+/// Returns temperature of particle.  Approximates gas in the isothermal 
+/// regime (T = temp0 for rho << rho_bary) and in the optically thick 
 /// adiabatic phase (T = const*rho^{gamma - 1} for rho >> rho_bary).
 //=============================================================================
 template <int ndim>
-FLOAT IonisingRadiation<ndim>::Temperature(SphParticle<ndim> &part)
+FLOAT MCRadiationEOS<ndim>::Temperature(SphParticle<ndim> &part)
 {
-  return eos->Temperature(part);
+  return part.ionfrac*temp_ion + (1.0 - part.ionfrac)*eos->Temperature(part);
 }
 
 
 
-template class IonisingRadiation<1>;
-template class IonisingRadiation<2>;
-template class IonisingRadiation<3>;
+template class MCRadiationEOS<1>;
+template class MCRadiationEOS<2>;
+template class MCRadiationEOS<3>;
+

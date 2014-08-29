@@ -43,7 +43,7 @@ using namespace std;
 //  Struct KDRadTreeCell
 /// KD radiation-tree cell data structure.
 //=============================================================================
-template <int ndim>
+template <int ndim, int nfreq>
 struct KDRadTreeCell {
   bool uniform;                     ///< Is cell sufficiently uniform?
   int id;                           ///< i.d. number of cell
@@ -66,24 +66,29 @@ struct KDRadTreeCell {
   FLOAT rho;                        ///< Average density in cell
   FLOAT sigma_rho;                  ///< Variance of density
   FLOAT temp;                       ///< Average temperature in cell
-  FLOAT lsum;                       ///< Summation of photon path lengths
   FLOAT volume;                     ///< Cell volume
-  FLOAT uphoton;                    ///< Photon energy density
-  FLOAT opacity;                    ///< ...
+  FLOAT lsum[nfreq];                ///< Summation of photon path lengths
+  FLOAT opacity[nfreq];             ///< ...
 };
 
 
 
 //=============================================================================
-//  Struct IonisationTreeCell
+//  Struct MonoIonTreeCell
 /// KD radiation-tree cell data structure.
 //=============================================================================
-/*template <int ndim>
-struct IonisationTreeCell : public KDRadiationTreeCell<ndim>
+template <int ndim, int nfreq>
+struct MonoIonTreeCell : public KDRadTreeCell<ndim,nfreq>
 {
   FLOAT Xion;
-  FLOAT opacity[2];
-  };*/
+  FLOAT Xold;
+
+  MonoIonTreeCell() {
+    Xion = 0.99999;
+    Xold = 0.99999;
+  }
+
+};
 
 
 
@@ -94,7 +99,7 @@ struct IonisationTreeCell : public KDRadiationTreeCell<ndim>
 /// \author  D. A. Hubber, A. P. Whitworth
 /// \date    25/04/2014
 //=============================================================================
-template <int ndim, template<int> class ParticleType, template<int> class CellType>
+template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 class KDRadiationTree
 {
  public:
@@ -113,16 +118,16 @@ class KDRadiationTree
   void DeallocateMemory(void);
   void ComputeTreeSize(void);
   void CreateTreeStructure(void);
-  void DivideTreeCell(int, int, ParticleType<ndim> *, CellType<ndim> &);
+  void DivideTreeCell(int, int, ParticleType<ndim> *, CellType<ndim,nfreq> &);
   int FindAdjacentCell(int, int, FLOAT *);
   int FindCell(int, int, FLOAT *);
-  int FindRayExitFace(KDRadTreeCell<ndim> &, FLOAT *, 
+  int FindRayExitFace(CellType<ndim,nfreq> &, FLOAT *, 
                       FLOAT *, FLOAT *, FLOAT &);
   void OptimiseTree(void);
   FLOAT QuickSelect(int, int, int, int, ParticleType<ndim> *);
-  void StockTree(CellType<ndim> &, ParticleType<ndim> *);
-  void StockCellProperties(CellType<ndim> &, ParticleType<ndim> *);
-  void SumRadiationField(int, CellType<ndim> &);
+  void StockTree(CellType<ndim,nfreq> &, ParticleType<ndim> *);
+  void StockCellProperties(CellType<ndim,nfreq> &, ParticleType<ndim> *);
+  void SumRadiationField(int, CellType<ndim,nfreq> &);
 
 
   // Variables
@@ -143,7 +148,7 @@ class KDRadiationTree
   int Nthreads;                     ///< No. of OpenMP threads
   int *ids;                         ///< Particle ids
   int *inext;                       ///< Linked list for grid search
-  CellType<ndim> *radcell;          ///< Array of tree cells
+  CellType<ndim,nfreq> *radcell;    ///< Array of tree cells
 
 };
 #endif

@@ -108,7 +108,7 @@ void CodeTiming::EndTimingSection
 {
   int iblock;                       // Integer i.d. of timing block in arrays
 
- // If block not in list, then print error message and return
+  // If block not in list, then print error message and return
   if (blockno.find(s1) == blockno.end()) {
     cout << "Error : looking for incorrect timing block : " << s1 << endl;
     return;
@@ -139,13 +139,13 @@ void CodeTiming::EndTimingSection
 void CodeTiming::ComputeTimingStatistics
 (string run_id)                     ///< String i.d. of current simulation
 {
-  int iblock;                       // ..
-  int level;                        // ..
-  DOUBLE tcount = 0.0;              // ..
-  DOUBLE tcount_wall = 0.0;         // ..
-  string filename;                  // ..
-  string fileend = "timing";        // ..
-  ofstream outfile;                 // ..
+  int iblock;                       // Timing block counter
+  int level;                        // Timing block level
+  DOUBLE tcount = 0.0;              // Total time
+  DOUBLE tcount_wall = 0.0;         // Total wall-clock time
+  string filename;                  // Filename for writing statistics
+  string fileend = "timing";        // Filename ending
+  ofstream outfile;                 // Output file stream object
 
   filename = run_id + "." + fileend;
   outfile.open(filename.c_str());
@@ -202,7 +202,7 @@ void CodeTiming::ComputeTimingStatistics
 
 //=============================================================================
 //  CodeTiming::WallClockTime
-/// ..
+/// Returns current world clock time (from set point) in seconds
 //=============================================================================
 double CodeTiming::WallClockTime(void)
 {

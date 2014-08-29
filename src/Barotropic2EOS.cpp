@@ -1,7 +1,8 @@
 //=============================================================================
 //  Barotropic2EOS.cpp
 //  Contains all function definitions for a barotropic Equation of state of 
-//  the form T = temp0*(1 + (rho/rho_bary)^{gamma - 1}).
+//  the form T = temp0,                               (rho < rho_bary),
+//             = temp0*(rho/rho_bary)^{gamma - 1}),   (rho > rho_bary).
 //  Used for star formation simulations to approximate the combined isothermal 
 //  and optically-thich adiabatic regimes of the gas collapse phase.
 //
@@ -26,7 +27,7 @@
 
 #include <math.h>
 #include "EOS.h"
-#include "Sph.h"
+#include "SphParticle.h"
 
 
 
@@ -113,8 +114,8 @@ FLOAT Barotropic2<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
 //=============================================================================
 //  Barotropic2::Temperature
 /// Returns temperature of particle.  Approximates gas in the isothermal 
-/// regime (T = temp0 for rho << rho_bary) and in the optically thick 
-/// adiabatic phase (T = const*rho^{gamma - 1} for rho >> rho_bary).
+/// regime (T = temp0 for rho < rho_bary) and in the optically thick
+/// adiabatic phase (T = const*rho^{gamma - 1} for rho > rho_bary).
 //=============================================================================
 template <int ndim>
 FLOAT Barotropic2<ndim>::Temperature(SphParticle<ndim> &part)

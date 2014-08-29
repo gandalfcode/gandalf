@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  Nbody.h
 //  Main N-body class
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _NBODY_H_
@@ -36,58 +36,64 @@
 #include "StarParticle.h"
 #include "SystemParticle.h"
 #include "SphParticle.h"
+#include "SimUnits.h"
 using namespace std;
+
 
 template <int ndim> class Sph;
 
-//=============================================================================
+
+//=================================================================================================
 //  Class Nbody
 /// \brief   Main N-body class.
-/// \details Main N-body class for computing forces between stars/systems 
+/// \details Main N-body class for computing forces between stars/systems
 ///          for N-body dynamics.
 /// \author  D. A. Hubber
 /// \date    15/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class Nbody
 {
  public:
 
   // Constructor and destructor functions
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   Nbody(int nbody_softening_aux, int sub_systems_aux, DOUBLE nbody_mult_aux,
-	string KernelName, int);
+        string KernelName, int);
 
 
   // N-body array memory allocation functions
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   void AllocateMemory(int);
   void DeallocateMemory(void);
+  void LoadStellarPropertiesTable(SimUnits *);
+  void UpdateStellarProperties(void);
+
+
+  // N-body gravitational acceleration routines
+  //-----------------------------------------------------------------------------------------------
+  virtual void CalculateDirectGravForces(int, NbodyParticle<ndim> **);
 
 
   // Other functions
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   virtual void AdvanceParticles(int, int, NbodyParticle<ndim> **,DOUBLE) = 0;
   virtual void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **) = 0;
-  virtual void CalculateDirectGravForces(int, NbodyParticle<ndim> **) = 0;
-  virtual void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int, 
-					int *, int *, Sph<ndim> *) = 0;
+  virtual void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **) = 0;
+  virtual void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int,
+                                        int *, int *, Sph<ndim> *) = 0;
   virtual void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
-                                        NbodyParticle<ndim> *,
-                                        DOUBLE *, DOUBLE *) = 0;
-  virtual void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **, 
-                                        DOUBLE) = 0;
+                                        NbodyParticle<ndim> *, DOUBLE *, DOUBLE *) = 0;
+  virtual void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE) = 0;
   virtual void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE) = 0;
-  virtual void UpdateChildStars(SystemParticle<ndim>* system,
-                                int, DOUBLE, DOUBLE tend) = 0;
+  virtual void UpdateChildStars(SystemParticle<ndim>* system, int, DOUBLE, DOUBLE) = 0;
   virtual void EndTimestep(int, int, NbodyParticle<ndim> **) = 0;
   virtual DOUBLE Timestep(NbodyParticle<ndim> *) = 0;
-  virtual void IntegrateInternalMotion(SystemParticle<ndim>* system,
-                                       int, DOUBLE, DOUBLE tend);
+  virtual void IntegrateInternalMotion(SystemParticle<ndim>* system, int, DOUBLE, DOUBLE);
 
 
   // N-body counters and main data arrays
-  //---------------------------------------------------------------------------
+  //----------------------------------------------------------------------------------------------
   bool allocated;                       ///< Is N-body memory allocated
   int Nnbody;                           ///< No. of N-body particles
   int Nnbodymax;                        ///< Max. no. of N-body particles
@@ -100,10 +106,10 @@ class Nbody
 
   const int nbody_softening;            ///< Use softened-gravity for stars?
   const int sub_systems;                ///< Create sub-systems?
-  const int Npec;                       ///< Number of iterations (if using  
+  const int Npec;                       ///< Number of iterations (if using
                                         ///< a time-symmetric integrator)
   const DOUBLE nbody_mult;              ///< N-body timestep multiplier
- 
+
   static const int vdim=ndim;           ///< Local copy of vdim
   static const FLOAT invndim=1./ndim;   ///< Copy of 1/ndim
 
@@ -114,16 +120,30 @@ class Nbody
   struct SystemParticle<ndim> *system;  ///< Main system particle array
 
   CodeTiming *timing;                   ///< Pointer to code timing object
-  ExternalPotential<ndim> *extpot;    ///< Pointer to external potential object
+  ExternalPotential<ndim> *extpot;      ///< Pointer to external potential object
+
+
+  // Data structures and array for storing stellar property data
+  //-----------------------------------------------------------------------------------------------
+  struct StellarTableElement {
+    FLOAT mass;
+    FLOAT luminosity;
+    FLOAT NLyC;
+    FLOAT Teff;
+    FLOAT mdot;
+    FLOAT vwind;
+  };
+  int Nstellartable;
+  struct StellarTableElement *stellartable;
 
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class NbodyLeapfrogKDK
 /// Class definition for N-body Leapfrog kick-drift-kick integration scheme.
-//=============================================================================
+//=================================================================================================
 #if !defined(SWIG)
 template <int ndim, template<int> class kernelclass>
 class NbodyLeapfrogKDK: public Nbody<ndim>
@@ -142,17 +162,14 @@ public:
 
   void AdvanceParticles(int, int, NbodyParticle<ndim> **,DOUBLE);
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
-  void CalculateDirectGravForces(int, NbodyParticle<ndim> **);
-  void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int, 
-				int *, int *, Sph<ndim> *);
+  void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **);
+  void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int, int *, int *, Sph<ndim> *);
   void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
-				NbodyParticle<ndim> *, DOUBLE *, DOUBLE *);
+                                NbodyParticle<ndim> *, DOUBLE *, DOUBLE *);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
-  void UpdateChildStars(SystemParticle<ndim>* system,
-                                  int, DOUBLE, DOUBLE tend);
+  void UpdateChildStars(SystemParticle<ndim>* system,int, DOUBLE, DOUBLE);
   void EndTimestep(int, int, NbodyParticle<ndim> **);
-  void IntegrateInternalMotion(SystemParticle<ndim>* system,
-                               int, DOUBLE, DOUBLE tend);
+  void IntegrateInternalMotion(SystemParticle<ndim>* system, int, DOUBLE, DOUBLE);
   void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
@@ -164,10 +181,10 @@ public:
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class NbodyLeapfrogDKD
 /// Class definition for N-body Leapfrog drift-kick-drift integration scheme.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 class NbodyLeapfrogDKD: public Nbody<ndim>
 {
@@ -185,18 +202,15 @@ public:
 
   void AdvanceParticles(int, int, NbodyParticle<ndim> **,DOUBLE);
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
-  void CalculateDirectGravForces(int, NbodyParticle<ndim> **);
-  void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int, 
-				int *, int *, Sph<ndim> *);
+  void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **);
+  void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int, int *, int *, Sph<ndim> *);
   void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
-				NbodyParticle<ndim> *, DOUBLE *, DOUBLE *);
-  void CorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
-  void UpdateChildStars(SystemParticle<ndim>* system,
-                                  int, DOUBLE, DOUBLE tend);
+                                NbodyParticle<ndim> *, DOUBLE *, DOUBLE *) {};
+  void CorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE) {};
+  void UpdateChildStars(SystemParticle<ndim>* system, int, DOUBLE, DOUBLE) {};
   void EndTimestep(int, int, NbodyParticle<ndim> **);
-  void IntegrateInternalMotion(SystemParticle<ndim>* system,
-                               int, DOUBLE, DOUBLE tend);
-  void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
+  void IntegrateInternalMotion(SystemParticle<ndim>* system, int, DOUBLE, DOUBLE) {};
+  void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE) {};
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;           ///< Local copy of vdim
@@ -207,10 +221,10 @@ public:
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class NbodyHermite4
 /// Class definition for N-body 4th-order Hermite integration scheme.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 class NbodyHermite4: public Nbody<ndim>
 {
@@ -230,17 +244,14 @@ public:
 
   void AdvanceParticles(int, int, NbodyParticle<ndim> **,DOUBLE);
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
-  void CalculateDirectGravForces(int, NbodyParticle<ndim> **);
-  void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int, 
-				int *, int *, Sph<ndim> *);
+  void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **);
+  void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int, int *, int *, Sph<ndim> *);
   void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
-				NbodyParticle<ndim> *, DOUBLE *, DOUBLE *);
+                                NbodyParticle<ndim> *, DOUBLE *, DOUBLE *);
   void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE);
   void EndTimestep(int, int, NbodyParticle<ndim> **);
-  void IntegrateInternalMotion(SystemParticle<ndim>* system,
-                               int, DOUBLE, DOUBLE tend);
-  void UpdateChildStars(SystemParticle<ndim>* system,
-                        int, DOUBLE, DOUBLE tend);
+  void IntegrateInternalMotion(SystemParticle<ndim>* system, int, DOUBLE, DOUBLE);
+  void UpdateChildStars(SystemParticle<ndim>* system, int, DOUBLE, DOUBLE);
   void PerturberCorrectionTerms(int, int, NbodyParticle<ndim> **, DOUBLE);
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
@@ -252,11 +263,10 @@ public:
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class NbodyHermite4TS
-/// Class definition for N-body 4th-order Hermite integration scheme using
-/// time-symmetric iteration.
-//=============================================================================
+/// Class definition for N-body 4th-order Hermite scheme using time-symmetric iteration.
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 class NbodyHermite4TS: public NbodyHermite4<ndim, kernelclass>
 {
@@ -280,8 +290,7 @@ public:
   ~NbodyHermite4TS();
 
   void CorrectionTerms(int, int, NbodyParticle<ndim> **,DOUBLE);
-  void IntegrateInternalMotion(SystemParticle<ndim>* system,
-                               int, DOUBLE, DOUBLE tend);
+  void IntegrateInternalMotion(SystemParticle<ndim>* system, int, DOUBLE, DOUBLE);
 
 };
 #endif

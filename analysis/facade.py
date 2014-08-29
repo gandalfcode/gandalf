@@ -204,7 +204,7 @@ Optional arguments:
 def render(x, y, render, snap="current", sim="current", overplot=False,
            autoscale=False, autoscalerender=False, coordlimits=None,
            zslice=None, xunit="default", yunit="default",
-           renderunit="default", res=64, interpolation='nearest'):
+           renderunit="default", res=64, interpolation='nearest',**kwargs):
     '''Create a rendered plot from selected particle data.
 
 Required arguments:
@@ -267,7 +267,7 @@ Optional arguments:
     command = Commands.RenderPlotCommand(x, y, render, snap, simno, overplot,
                                          autoscale, autoscalerender,
                                          coordlimits, zslice, xunit, yunit,
-                                         renderunit, res, interpolation)
+                                         renderunit, res, interpolation,**kwargs)
     data = command.prepareData(Singletons.globallimits)
     Singletons.queue.put([command, data])
 

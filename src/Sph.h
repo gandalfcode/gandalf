@@ -88,8 +88,9 @@ class Sph
   virtual int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                        SphParticle<ndim> &, Nbody<ndim> *) = 0;
   virtual void ComputeThermalProperties(SphParticle<ndim> &) = 0;
-  virtual void ComputeSphHydroForces(int, int, int *, FLOAT *, FLOAT *, 
-                                     FLOAT *, SphParticle<ndim> &,
+  virtual void ComputeSphHydroForces(const int, const int, const int *, 
+                                     const FLOAT *, const FLOAT *, 
+                                     const FLOAT *, SphParticle<ndim> &,
                                      SphParticle<ndim> *) = 0;
   virtual void ComputeSphHydroGravForces(int, int, int *, SphParticle<ndim> &, 
 					 SphParticle<ndim> *) = 0;
@@ -229,7 +230,8 @@ class GradhSph: public Sph<ndim>
 			    SphParticle<ndim> *);
   void ComputeSphHydroGravForces(int, int, int *, SphParticle<ndim> &, 
 				 SphParticle<ndim> *);
-  void ComputeSphHydroForces(int, int, int *, FLOAT *, FLOAT *, FLOAT *,
+  void ComputeSphHydroForces(const int, const int, const int *, 
+                             const FLOAT *, const FLOAT *, const FLOAT *,
 			     SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphNeibDudt(int, int, int *, FLOAT *, FLOAT *,
 			  FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
@@ -296,7 +298,8 @@ class SM2012Sph: public Sph<ndim>
   int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
   void ComputeThermalProperties(SphParticle<ndim> &);
-  void ComputeSphHydroForces(int, int, int *, FLOAT *, FLOAT *, FLOAT *,
+  void ComputeSphHydroForces(const int, const int, const int *, 
+                             const FLOAT *, const FLOAT *, const FLOAT *,
 			     SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphHydroGravForces(int, int, int *, SphParticle<ndim> &, 
 				 SphParticle<ndim> *);
@@ -368,7 +371,8 @@ class GodunovSph: public Sph<ndim>
   int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *);
   void ComputeThermalProperties(SphParticle<ndim> &);
-  void ComputeSphHydroForces(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
+  void ComputeSphHydroForces(const int, const int, const int *, 
+                             const FLOAT *, const FLOAT *, const FLOAT *,
 			     SphParticle<ndim> &, SphParticle<ndim> *);
   void ComputeSphHydroGravForces(int, int, int *, SphParticle<ndim> &, 
 				 SphParticle<ndim> *);
@@ -441,7 +445,8 @@ class NullSph: public Sph<ndim>
   int ComputeH(int, int, FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                SphParticle<ndim> &, Nbody<ndim> *) {};
   void ComputeThermalProperties(SphParticle<ndim> &) {};
-  void ComputeSphHydroForces(int, int, int *, FLOAT *, FLOAT *, FLOAT *, 
+  void ComputeSphHydroForces(const int, const int, const int *, 
+			     const FLOAT *, const FLOAT *, const FLOAT *, 
 			     SphParticle<ndim> &, SphParticle<ndim> *) {};
   void ComputeSphHydroGravForces(int, int, int *, SphParticle<ndim> &, 
 				 SphParticle<ndim> *) {};

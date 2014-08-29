@@ -356,14 +356,14 @@ void GodunovSph<ndim, kernelclass>::ComputeThermalProperties
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GodunovSph<ndim, kernelclass >::ComputeSphHydroForces
-(int i,                             ///< [in] id of particle
- int Nneib,                         ///< [in] No. of neibs in neibpart array
- int *neiblist,                     ///< [in] id of gather neibs in neibpart
- FLOAT *drmag,                      ///< [in] Distances of gather neighbours
- FLOAT *invdrmag,                   ///< [in] Inverse distances of gather neibs
- FLOAT *dr,                         ///< [in] Position vector of gather neibs
- SphParticle<ndim> &part,          ///< [inout] Particle i data
- SphParticle<ndim> *neibpart_gen)       ///< [inout] Neighbour particle data
+(const int i,                       ///< [in] id of particle
+ const int Nneib,                   ///< [in] No. of neins in neibpart array
+ const int *neiblist,               ///< [in] id of gather neibs in neibpart
+ const FLOAT *drmag,                ///< [in] Distances of gather neighbours
+ const FLOAT *invdrmag,             ///< [in] Inverse distances of gather neibs
+ const FLOAT *dr,                   ///< [in] Position vector of gather neibs
+ SphParticle<ndim> &part,           ///< [inout] Particle i data
+ SphParticle<ndim> *neibpart_gen)   ///< [inout] Neighbour particle data
 {
   int j;                            // Neighbour list id
   int jj;                           // Aux. neighbour counter

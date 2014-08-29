@@ -238,4 +238,38 @@ class IonisingRadiation: public EOS<ndim>
   EOS<ndim> *eos;
 
 };
+
+
+
+//=============================================================================
+//  Class MCRadiationEOS
+/// \brief   Ionising radiation from stars/sinks including general EOS
+/// \details Ionising radiation from stars/sinks including general EOS
+/// \author  S. Balfour, D. A. Hubber
+/// \date    24/04/2014
+//=============================================================================
+template <int ndim>
+class MCRadiationEOS: public EOS<ndim>
+{
+  using EOS<ndim>::gamma;
+  using EOS<ndim>::gammam1;
+
+ public:
+
+  MCRadiationEOS(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, SimUnits *);
+  ~MCRadiationEOS();
+
+  FLOAT Pressure(SphParticle<ndim> &);
+  FLOAT EntropicFunction(SphParticle<ndim> &);
+  FLOAT SoundSpeed(SphParticle<ndim> &);
+  FLOAT Temperature(SphParticle<ndim> &);
+  FLOAT SpecificInternalEnergy(SphParticle<ndim> &);
+
+  FLOAT mu_bar;
+  FLOAT mu_ion;
+  FLOAT temp0;
+  FLOAT temp_ion;
+  EOS<ndim> *eos;
+
+};
 #endif

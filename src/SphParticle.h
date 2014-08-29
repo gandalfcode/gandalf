@@ -34,13 +34,13 @@
 #endif
 
 
-enum ptype{gas, icm, boundary, cdm, dead, 
+enum ptype{gas, icm, boundary, cdm, dead,
            x_lhs_periodic, x_lhs_mirror, x_rhs_periodic, x_rhs_mirror,
            y_lhs_periodic, y_lhs_mirror, y_rhs_periodic, y_rhs_mirror,
            z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror,
-	   Nsphtypes};
+           Nsphtypes};
 enum eosenum{isothermal, barotropic, barotropic2,
-	     energy_eqn, constant_temp, nspheos};
+             energy_eqn, constant_temp, nspheos};
 
 
 
@@ -130,6 +130,7 @@ struct SphParticle : public Particle<ndim>
   FLOAT div_v;                      ///< Velocity divergence
   FLOAT alpha;                      ///< Artificial viscosity alpha value
   FLOAT dalphadt;                   ///< Rate of change of alpha
+  FLOAT ionfrac;                    ///< Ionisation fraction
   FLOAT adot[ndim];                 ///< 1st time derivative of acceleration
 
 
@@ -149,6 +150,7 @@ struct SphParticle : public Particle<ndim>
     div_v = (FLOAT) 0.0;
     alpha = (FLOAT) 0.0;
     dalphadt = (FLOAT) 0.0;
+    ionfrac = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) adot[k] = (FLOAT) 0.0;
   }
 
@@ -158,9 +160,9 @@ struct SphParticle : public Particle<ndim>
     MPI_Datatype types[1] = {MPI_BYTE};
     MPI_Aint offsets[1] = {0};
     int blocklen[1] = {sizeof(SphParticle<ndim>)};
-    
+
     MPI_Type_create_struct(1,blocklen,offsets,types,&particle_type);
-    
+
     return particle_type;
   }
 #endif

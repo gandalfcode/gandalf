@@ -48,12 +48,12 @@ class RandomNumber
   RandomNumber() {};
   ~RandomNumber() {};
 
-  virtual int intrand(void);
-  virtual long int longintrand(void);
-  virtual FLOAT floatrand(void);
-  virtual DOUBLE doublerand(void);
-  virtual FLOAT gaussrand(FLOAT, FLOAT);
-  virtual void PrintRandomNumberRange(void);
+  virtual int intrand(void) = 0;
+  virtual long int longintrand(void) = 0;
+  virtual FLOAT floatrand(void) = 0;
+  virtual DOUBLE doublerand(void) = 0;
+  virtual FLOAT gaussrand(FLOAT, FLOAT) = 0;
+  virtual void PrintRandomNumberRange(void) = 0;
 
 };
 

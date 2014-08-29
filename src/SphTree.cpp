@@ -187,15 +187,15 @@ void SphTree<ndim,ParticleType>::DeallocateMemory(void)
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void SphTree<ndim,ParticleType>::BuildTree
-(bool rebuild_tree,                 ///< Flag to rebuild tree
- int n,                             ///< Integer time
- int ntreebuildstep,                ///< Tree build frequency
- int ntreestockstep,                ///< Tree stocking frequency
- int Npart,                         ///< No. of particles
- int Npartmax,                      ///< Max. no. of particles
- SphParticle<ndim> *sph_gen,        ///< Particle data array
- Sph<ndim> *sph,                    ///< Pointer to SPH object
- FLOAT timestep)                    ///< Smallest physical timestep
+(bool rebuild_tree,                 ///< [in] Flag to rebuild tree
+ int n,                             ///< [in] Integer time
+ int ntreebuildstep,                ///< [in] Tree build frequency
+ int ntreestockstep,                ///< [in] Tree stocking frequency
+ int Npart,                         ///< [in] No. of particles
+ int Npartmax,                      ///< [in] Max. no. of particles
+ SphParticle<ndim> *sph_gen,        ///< [inout] Particle data array
+ Sph<ndim> *sph,                    ///< [inout] Pointer to SPH object
+ FLOAT timestep)                    ///< [in] Smallest physical timestep
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
@@ -304,36 +304,36 @@ void SphTree<ndim,ParticleType>::UpdateAllSphProperties
  Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
  Nbody<ndim> *nbody)                ///< [in] Pointer to N-body object
 {
-  int celldone;                    // ..
-  int okflag;                      // ..
-  int cc;                          // Aux. cell counter
-  int cactive;                     // No. of active
-  int i;                           // Particle id
-  int j;                           // Aux. particle counter
-  int jj;                          // Aux. particle counter
-  int k;                           // Dimension counter
-  int Nactive;                     // No. of active particles in cell
-  int Ngather;                     // No. of near gather neighbours
-  int Nneib;                       // No. of neighbours
-  int Nneibmax;                    // Max. no. of neighbours
-  int *activelist;                 // List of active particle ids
-  int *neiblist;                   // List of neighbour ids
-  FLOAT draux[ndim];               // Aux. relative position vector var
-  FLOAT drsqdaux;                  // Distance squared
-  FLOAT hrangesqd;                 // Kernel extent
-  FLOAT hmax;                      // Maximum smoothing length
-  FLOAT rp[ndim];                  // Local copy of particle position
-  FLOAT *drsqd;                    // Position vectors to gather neibs
-  FLOAT *gpot;                     // Potential for particles
-  FLOAT *gpot2;                    // ..
-  FLOAT *m;                        // Distances to gather neibs
-  FLOAT *m2;                       // ..
-  FLOAT *mu;                       // mass*u for gather neibs
-  FLOAT *mu2;                      // ..
-  FLOAT *r;                        // Positions of neibs
-  KDTreeCell<ndim> *cell;          // Pointer to binary tree cell
-  KDTreeCell<ndim> **celllist;     // List of binary cell pointers
-  ParticleType<ndim> *activepart;  // ..
+  int celldone;                     // ..
+  int okflag;                       // ..
+  int cc;                           // Aux. cell counter
+  int cactive;                      // No. of active
+  int i;                            // Particle id
+  int j;                            // Aux. particle counter
+  int jj;                           // Aux. particle counter
+  int k;                            // Dimension counter
+  int Nactive;                      // No. of active particles in cell
+  int Ngather;                      // No. of near gather neighbours
+  int Nneib;                        // No. of neighbours
+  int Nneibmax;                     // Max. no. of neighbours
+  int *activelist;                  // List of active particle ids
+  int *neiblist;                    // List of neighbour ids
+  FLOAT draux[ndim];                // Aux. relative position vector var
+  FLOAT drsqdaux;                   // Distance squared
+  FLOAT hrangesqd;                  // Kernel extent
+  FLOAT hmax;                       // Maximum smoothing length
+  FLOAT rp[ndim];                   // Local copy of particle position
+  FLOAT *drsqd;                     // Position vectors to gather neibs
+  FLOAT *gpot;                      // Potential for particles
+  FLOAT *gpot2;                     // ..
+  FLOAT *m;                         // Distances to gather neibs
+  FLOAT *m2;                        // ..
+  FLOAT *mu;                        // mass*u for gather neibs
+  FLOAT *mu2;                       // ..
+  FLOAT *r;                         // Positions of neibs
+  KDTreeCell<ndim> *cell;           // Pointer to binary tree cell
+  KDTreeCell<ndim> **celllist;      // List of binary cell pointers
+  ParticleType<ndim> *activepart;   // ..
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   int Nneibcount = 0;
@@ -815,11 +815,11 @@ void SphTree<ndim,ParticleType>::UpdateAllSphForces
   FLOAT drsqd;                      // Distance squared
   FLOAT hrangesqdi;                 // Kernel gather extent
   FLOAT rp[ndim];                   // .. 
-  KDTreeCell<ndim> *cell;       // Pointer to binary tree cell
-  KDTreeCell<ndim> **celllist;  // List of pointers to binary tree cells
-  KDTreeCell<ndim> **gravcelllist; // List of pointers to grav. cells
-  ParticleType<ndim> *activepart;    // ..
-  ParticleType<ndim> *neibpart;      // ..
+  KDTreeCell<ndim> *cell;           // Pointer to binary tree cell
+  KDTreeCell<ndim> **celllist;      // List of pointers to binary tree cells
+  KDTreeCell<ndim> **gravcelllist;  // List of pointers to grav. cells
+  ParticleType<ndim> *activepart;   // ..
+  ParticleType<ndim> *neibpart;     // ..
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   int Nactivecount = 0;

@@ -84,28 +84,6 @@ class EnergyPEC: public EnergyEquation<ndim>
 
 
 //=============================================================================
-//  EnergyLeapfrogDKD
-/// Class definition for energy equation integration class using a
-/// Leapfrog drift-kick-drift scheme
-//=============================================================================
-template <int ndim>
-class EnergyLeapfrogDKD: public EnergyEquation<ndim>
-{
- public:
-
-  EnergyLeapfrogDKD(DOUBLE);
-  ~EnergyLeapfrogDKD();
-
-  void EnergyIntegration(int, int, SphParticle<ndim> *, FLOAT);
-  void EnergyCorrectionTerms(int, int, SphParticle<ndim> *, FLOAT);
-  void EndTimestep(int, int, FLOAT, SphParticle<ndim> *);
-  DOUBLE Timestep(SphParticle<ndim> &);
-
-};
-
-
-
-//=============================================================================
 //  EnergyGodunovIntegration
 /// ..
 //=============================================================================

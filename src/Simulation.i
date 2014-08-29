@@ -43,7 +43,6 @@
 #include "UnitInfo.h"
 #include "HeaderInfo.h"
 #include "CodeTiming.h"
-#include "RandomNumber.h"
 
 void catch_alarm (int SIG) {
 signal(SIGINT, catch_alarm);
@@ -207,4 +206,3 @@ ExceptionHandler::makeExceptionHandler(python);
 %include "SphKernel.h"
 %include "UnitInfo.h"
 %include "CodeTiming.h"
-%include "RandomNumber.h"

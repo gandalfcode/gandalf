@@ -230,7 +230,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
   FLOAT h_upper_bound = hmax;       // Upper bound on h
   FLOAT invhsqd;                    // (1 / h)^2
   FLOAT ssqd;                       // Kernel parameter squared, (r/h)^2
-
   GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
 
 
@@ -244,13 +243,13 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
     // Initialise all variables for this value of h
     iteration++;
-    parti.invh = (FLOAT) 1.0/parti.h;
-    parti.hfactor = pow(parti.invh,ndim);
-    parti.rho = (FLOAT) 0.0;
+    parti.invh     = (FLOAT) 1.0/parti.h;
+    parti.rho      = (FLOAT) 0.0;
     parti.invomega = (FLOAT) 0.0;
-    parti.zeta = (FLOAT) 0.0;
-    parti.chi = (FLOAT) 0.0;
-    invhsqd = parti.invh*parti.invh;
+    parti.zeta     = (FLOAT) 0.0;
+    parti.chi      = (FLOAT) 0.0;
+    parti.hfactor  = pow(parti.invh,ndim);
+    invhsqd        = parti.invh*parti.invh;
 
     // Loop over all nearest neighbours in list to calculate 
     // density, omega and zeta.
@@ -398,12 +397,12 @@ void GradhSph<ndim, kernelclass>::ComputeThermalProperties
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
-(int i,                             ///< [in] id of particle
- int Nneib,                         ///< [in] No. of neins in neibpart array
- int *neiblist,                     ///< [in] id of gather neibs in neibpart
- FLOAT *drmag,                      ///< [in] Distances of gather neighbours
- FLOAT *invdrmag,                   ///< [in] Inverse distances of gather neibs
- FLOAT *dr,                         ///< [in] Position vector of gather neibs
+(const int i,                       ///< [in] id of particle
+ const int Nneib,                   ///< [in] No. of neins in neibpart array
+ const int *neiblist,               ///< [in] id of gather neibs in neibpart
+ const FLOAT *drmag,                ///< [in] Distances of gather neighbours
+ const FLOAT *invdrmag,             ///< [in] Inverse distances of gather neibs
+ const FLOAT *dr,                   ///< [in] Position vector of gather neibs
  SphParticle<ndim> &part,           ///< [inout] Particle i data
  SphParticle<ndim> *neibpart_gen)   ///< [inout] Neighbour particle data
 {
@@ -412,13 +411,12 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
   int k;                            // Dimension counter
   FLOAT alpha_mean;                 // Mean articial viscosity alpha value
   FLOAT draux[ndim];                // Relative position vector
-  FLOAT dv[ndim];                   // Relative velocity vector
+  //FLOAT dv[ndim];                   // Relative velocity vector
   FLOAT dvdr;                       // Dot product of dv and dr
   FLOAT wkerni;                     // Value of w1 kernel function
   FLOAT wkernj;                     // Value of w1 kernel function
   FLOAT vsignal;                    // Signal velocity
   FLOAT paux;                       // Aux. pressure force variable
-  FLOAT uaux;                       // Aux. internal energy variable
   FLOAT winvrho;                    // 0.5*(wkerni + wkernj)*invrhomean
 
   GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
@@ -435,8 +433,11 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
     wkernj = neibpart[j].hfactor*kern.w1(drmag[jj]*neibpart[j].invh);
 
     for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
-    for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
-    dvdr = DotProduct(dv,draux,ndim);
+    //for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
+    //dvdr = DotProduct(dv,draux,ndim);
+    dvdr = DotProduct(neibpart[j].v,draux,ndim) ;
+    dvdr -= DotProduct(parti.v,draux,ndim);
+
 
     // Add contribution to velocity divergence
     parti.div_v -= neibpart[j].m*dvdr*wkerni;
@@ -456,29 +457,26 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
       // Artificial viscosity term
       if (avisc == mon97) {
         vsignal = parti.sound + neibpart[j].sound - beta_visc*alpha_visc*dvdr;
-        paux -= (FLOAT) alpha_visc*vsignal*dvdr*winvrho;
-        uaux = (FLOAT) 0.5*alpha_visc*vsignal*dvdr*dvdr*winvrho;
-        parti.dudt -= neibpart[j].m*uaux;
+        paux -= alpha_visc*vsignal*dvdr*winvrho;
+        parti.dudt -= neibpart[j].m*alpha_visc*vsignal*dvdr*dvdr*winvrho;
       }
       else if (avisc == mon97mm97) {
-        alpha_mean = 0.5*(parti.alpha + neibpart[j].alpha);
+        alpha_mean = (FLOAT) 0.5*(parti.alpha + neibpart[j].alpha);
         vsignal = parti.sound + neibpart[j].sound - beta_visc*alpha_mean*dvdr;
-        paux -= (FLOAT) alpha_mean*vsignal*dvdr*winvrho;
-        uaux = (FLOAT) 0.5*alpha_mean*vsignal*dvdr*dvdr*winvrho;
-        parti.dudt -= neibpart[j].m*uaux;
+        paux -= alpha_mean*vsignal*dvdr*winvrho;
+        parti.dudt -= neibpart[j].m*alpha_mean*vsignal*dvdr*dvdr*winvrho;
       }
 
       // Artificial conductivity term
       if (acond == wadsley2008) {
-        uaux = (FLOAT) 0.5*dvdr*(neibpart[j].u - parti.u)*
+        parti.dudt += neibpart[j].m*dvdr*(neibpart[j].u - parti.u)*
 	      (parti.invrho*wkerni + neibpart[j].invrho*wkernj);
-        parti.dudt += neibpart[j].m*uaux;
       }
       else if (acond == price2008) {
-    	vsignal = sqrt(fabs(eos->Pressure(parti) - eos->Pressure(neibpart[j]))
-		       *0.5*(parti.invrho + neibpart[j].invrho));
-        parti.dudt += 0.5*neibpart[j].m*vsignal*
-	  (parti.u - neibpart[j].u)*winvrho;
+    	vsignal = 
+        parti.dudt += (FLOAT) 0.5*neibpart[j].m*(parti.u - neibpart[j].u)*
+	  winvrho*(parti.invrho + neibpart[j].invrho)*
+	  sqrt(fabs(eos->Pressure(parti) - eos->Pressure(neibpart[j])));
       }
 	
     }
@@ -493,6 +491,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
 
   // Set velocity divergence and compressional heating rate terms
   parti.div_v *= parti.invrho;
+  parti.dudt *= (FLOAT) 0.5;
   parti.dudt -= eos->Pressure(parti)*parti.div_v*parti.invrho*parti.invomega;
   parti.dalphadt = 0.1*parti.sound*(alpha_visc_min - parti.alpha)*
     parti.invh + max(-parti.div_v,0.0)*(alpha_visc - parti.alpha);
@@ -517,8 +516,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
 (int i,                             ///< [in] id of particle
  int Nneib,                         ///< [in] No. of neins in neibpart array
  int *neiblist,                     ///< [in] id of gather neibs in neibpart
- SphParticle<ndim> &part,          ///< [inout] Particle i data
- SphParticle<ndim> *neibpart_gen)       ///< [inout] Neighbour particle data
+ SphParticle<ndim> &part,           ///< [inout] Particle i data
+ SphParticle<ndim> *neibpart_gen)   ///< [inout] Neighbour particle data
 {
   int j;                            // Neighbour list id
   int jj;                           // Aux. neighbour counter
@@ -548,7 +547,10 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
   //---------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
+
     assert(neibpart[j].itype != dead);
+    assert(neibpart[j].h > 0.0);
+    assert(neibpart[j].rho > 0.0);
 
     for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
     for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
@@ -735,7 +737,7 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
 (int i,                             ///< id of particle
  int Ndirect,                       ///< No. of nearby 'gather' neighbours
  int *directlist,                   ///< id of gather neighbour in neibpart
- SphParticle<ndim> &parti,          ///< Particle i data
+ SphParticle<ndim> &part,           ///< Particle i data
  SphParticle<ndim> *sph_gen)            ///< Neighbour particle data
 {
   int j;                            // Neighbour particle id
@@ -747,7 +749,8 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
   FLOAT invdr3;                     // 1 / dist^3
   FLOAT rp[ndim];                   // Local copy of particle position
 
-  GradhSphParticle<ndim>* sph = static_cast<GradhSphParticle<ndim>* > (sph_gen);
+  GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
+  GradhSphParticle<ndim>* sphdata = static_cast<GradhSphParticle<ndim>* > (sph_gen);
 
   for (k=0; k<ndim; k++) rp[k] = parti.r[k];
 
@@ -755,16 +758,16 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
   //---------------------------------------------------------------------------
   for (jj=0; jj<Ndirect; jj++) {
     j = directlist[jj];
-    assert(sph[j].itype != dead);
+    assert(sphdata[j].itype != dead);
 
-    for (k=0; k<ndim; k++) dr[k] = sph[j].r[k] - parti.r[k];
+    for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - parti.r[k];
     drsqd = DotProduct(dr,dr,ndim) + small_number;
     invdrmag = 1.0/sqrt(drsqd);
     invdr3 = invdrmag*invdrmag*invdrmag;
 
     // Add contribution to current particle
-    for (k=0; k<ndim; k++) parti.agrav[k] += sph[j].m*dr[k]*invdr3;
-    parti.gpot += sph[j].m*invdrmag;
+    for (k=0; k<ndim; k++) parti.agrav[k] += sphdata[j].m*dr[k]*invdr3;
+    parti.gpot += sphdata[j].m*invdrmag;
 
   }
   //---------------------------------------------------------------------------
@@ -782,7 +785,7 @@ template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::ComputeStarGravForces
 (int N,                             ///< No. of stars
  NbodyParticle<ndim> **nbodydata,   ///< Array of star pointers
- SphParticle<ndim> &parti)          ///< SPH particle reference
+ SphParticle<ndim> &part)           ///< SPH particle reference
 {
   int j;                            // Star counter
   int k;                            // Dimension counter
@@ -794,6 +797,7 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
   FLOAT invdrmag;                   // 1 / drmag
   FLOAT invhmean;                   // 1 / hmean
   FLOAT paux;                       // Aux. force variable
+  GradhSphParticle<ndim>& parti = static_cast<GradhSphParticle<ndim>& > (part);
 
   // Loop over all stars and add each contribution
   //---------------------------------------------------------------------------

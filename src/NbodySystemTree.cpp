@@ -46,13 +46,13 @@ template <int ndim>
 NbodySystemTree<ndim>::NbodySystemTree()
 {
   allocated_tree = false;
-  Nnode = 0;
-  Nnodemax = 0;
-  Nbinary = 0;
-  Ntriple = 0;
+  Nnode      = 0;
+  Nnodemax   = 0;
+  Nbinary    = 0;
+  Ntriple    = 0;
   Nquadruple = 0;
-  Norbit = 0;
-  Norbitmax = 0;
+  Norbit     = 0;
+  Norbitmax  = 0;
 }
 
 
@@ -139,18 +139,17 @@ void NbodySystemTree<ndim>::CreateNbodySystemTree
 
   // Initialise all node variables before adding stars
   for (i=0; i<Nnodemax; i++) {
-    NNtree[i].ichild1 = -1;
-    NNtree[i].ichild2 = -1;
-    NNtree[i].iparent = -1;
-    NNtree[i].inearest = -1;
-    NNtree[i].radius = 0.0;
-    NNtree[i].rsqdnearest = big_number_dp;
-    NNtree[i].radius = 0.0;
-    NNtree[i].gpe = 0.0;
+    NNtree[i].ichild1      = -1;
+    NNtree[i].ichild2      = -1;
+    NNtree[i].iparent      = -1;
+    NNtree[i].inearest     = -1;
+    NNtree[i].Ncomp        = 0;
+    NNtree[i].Nstar        = 0;
+    NNtree[i].Nchildlist   = 0;
+    NNtree[i].gpe          = 0.0;
     NNtree[i].gpe_internal = 0.0;
-    NNtree[i].Ncomp = 0;
-    NNtree[i].Nstar = 0;
-    NNtree[i].Nchildlist = 0;
+    NNtree[i].radius       = 0.0;
+    NNtree[i].rsqdnearest  = big_number_dp;
   }
 
   // Add one star to each lead node, recording the position and id
@@ -217,16 +216,16 @@ void NbodySystemTree<ndim>::CreateNbodySystemTree
           NNtree[Nnode].ichild2 = j;
           for (k=0; k<ndim; k++)
             NNtree[Nnode].rpos[k] = 0.5*(NNtree[i].r[k] + NNtree[j].r[k]);
-          for (k=0; k<ndim; k++) 
-	    dr[k] = NNtree[Nnode].rpos[k] - NNtree[i].rpos[k];
+          for (k=0; k<ndim; k++)
+            dr[k] = NNtree[Nnode].rpos[k] - NNtree[i].rpos[k];
           drsqd = DotProduct(dr,dr,ndim);
           NNtree[Nnode].radius = sqrt(drsqd);
           NNtree[Nnode].Nstar = NNtree[i].Nstar + NNtree[j].Nstar;
           NNtree[Nnode].Ncomp = NNtree[i].Ncomp + NNtree[j].Ncomp;
           Nnode++;
 #if defined(VERIFY_ALL)
-	  cout << "Adding new node to tree : " << Nnode - 1 << "   " 
-	       << i << "    " << j << endl;
+          cout << "Adding new node to tree : " << Nnode - 1 << "   "
+               << i << "    " << j << endl;
 #endif
         }
 
@@ -278,13 +277,13 @@ void NbodySystemTree<ndim>::BuildSubSystems
   debug2("[NbodySystemTree::BuildSubSystems]");
 
   // Set all counters
-  nbody->Nnbody = 0;
+  nbody->Nnbody  = 0;
   nbody->Nsystem = 0;
-  Nsystem = 0;
-  Norbit = 0;
-  Nbinary = 0;
-  Ntriple = 0;
-  Nquadruple = 0;
+  Nsystem        = 0;
+  Norbit         = 0;
+  Nbinary        = 0;
+  Ntriple        = 0;
+  Nquadruple     = 0;
 
 
   // Loop through all nodes of tree and compute all physical quantities
@@ -293,7 +292,7 @@ void NbodySystemTree<ndim>::BuildSubSystems
 
 #if defined(VERIFY_ALL)
     cout << "Stocking node : " << c << "    Ncomp : " 
-	 << NNtree[c].Ncomp << endl;
+         << NNtree[c].Ncomp << endl;
 #endif
 
     // If node contains one star, set all properties equal to star values
@@ -329,7 +328,7 @@ void NbodySystemTree<ndim>::BuildSubSystems
       NNtree[c].h = max(NNtree[c1].h,NNtree[c2].h);
       NNtree[c].gpe = NNtree[c1].gpe + NNtree[c2].gpe; 
       for (k=0; k<ndim; k++) {
-	NNtree[c].rpos[k] = 0.5*(NNtree[c1].rpos[k] + NNtree[c2].rpos[k]);
+        NNtree[c].rpos[k] = 0.5*(NNtree[c1].rpos[k] + NNtree[c2].rpos[k]);
         NNtree[c].r[k] = (NNtree[c1].m*NNtree[c1].r[k] +
 			  NNtree[c2].m*NNtree[c2].r[k])/NNtree[c].m;
         NNtree[c].v[k] = (NNtree[c1].m*NNtree[c1].v[k] +
@@ -348,12 +347,12 @@ void NbodySystemTree<ndim>::BuildSubSystems
 
 #if defined(VERIFY_ALL)
       cout << "Stocking system data : " << c << "    " << NNtree[c].r[0] 
-	   << "    " << NNtree[c].r[1] << endl;
+           << "    " << NNtree[c].r[1] << endl;
       cout << "Child energies : " << NNtree[c].gpe << "    " 
-	   << NNtree[c1].gpe << "   " << NNtree[c2].gpe
-	   << "     " << NNtree[c].gpe_internal << "     " 
-	   << NNtree[c1].gpe_internal << "    " 
-	   << NNtree[c2].gpe_internal << endl;
+           << NNtree[c1].gpe << "   " << NNtree[c2].gpe
+           << "     " << NNtree[c].gpe_internal << "     "
+           << NNtree[c1].gpe_internal << "    "
+           << NNtree[c2].gpe_internal << endl;
 #endif
 
 
@@ -633,7 +632,7 @@ void NbodySystemTree<ndim>::RestockTreeNodes
       NNtree[c].h = max(NNtree[c1].h,NNtree[c2].h);
       NNtree[c].gpe = NNtree[c1].gpe + NNtree[c2].gpe; 
       for (k=0; k<ndim; k++) {
-	NNtree[c].rpos[k] = 0.5*(NNtree[c1].rpos[k] + NNtree[c2].rpos[k]);
+        NNtree[c].rpos[k] = 0.5*(NNtree[c1].rpos[k] + NNtree[c2].rpos[k]);
         NNtree[c].r[k] = (NNtree[c1].m*NNtree[c1].r[k] +
 			  NNtree[c2].m*NNtree[c2].r[k])/NNtree[c].m;
         NNtree[c].v[k] = (NNtree[c1].m*NNtree[c1].v[k] +
@@ -646,7 +645,7 @@ void NbodySystemTree<ndim>::RestockTreeNodes
 			  NNtree[c2].m*NNtree[c2].a2dot[k])/NNtree[c].m;
         NNtree[c].a3dot[k] = (NNtree[c1].m*NNtree[c1].a3dot[k] +
 			  NNtree[c2].m*NNtree[c2].a3dot[k])/NNtree[c].m;
-	dr[k] = NNtree[c].rpos[k] - NNtree[c1].rpos[k];
+        dr[k] = NNtree[c].rpos[k] - NNtree[c1].rpos[k];
       }
       drsqd = DotProduct(dr,dr,ndim);
 
@@ -687,9 +686,9 @@ void NbodySystemTree<ndim>::FindBinarySystems
   debug2("[NbodySystemTree::FindBinarySystems]");
 
   // Set all counters
-  Norbit = 0;
-  Nbinary = 0;
-  Ntriple = 0;
+  Norbit     = 0;
+  Nbinary    = 0;
+  Ntriple    = 0;
   Nquadruple = 0;
 
   // Loop through all nodes of tree and compute all physical quantities

@@ -53,7 +53,7 @@ template class NbodySimulation<3>;
 
 //=============================================================================
 //  NbodySimulation::ProcessParameters
-/// Process all the options chosen in the parameters file, setting various 
+/// Process all the options chosen in the parameters file, setting various
 /// simulation variables and creating important simulation objects.
 //=============================================================================
 template <int ndim>
@@ -61,7 +61,7 @@ void NbodySimulation<ndim>::ProcessParameters(void)
 {
   // Local references to parameter variables for brevity
   map<string, int> &intparams = simparams->intparams;
-  map<string, float> &floatparams = simparams->floatparams;
+  map<string, double> &floatparams = simparams->floatparams;
   map<string, string> &stringparams = simparams->stringparams;
   string sim = stringparams["sim"];
   string KernelName = stringparams["kernel"];
@@ -75,6 +75,18 @@ void NbodySimulation<ndim>::ProcessParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
+  // Set-up random number generator object
+  //---------------------------------------------------------------------------
+  if (stringparams["rand_algorithm"] == "xorshift")
+    randnumb = new XorshiftRand(intparams["randseed"]);
+  else if (stringparams["rand_algorithm"] == "none")
+    randnumb = new DefaultSystemRand(intparams["randseed"]);
+  else {
+    string message = "Unrecognised parameter : rand_algorithm= " +
+      stringparams["rand_algorithm"];
+    ExceptionHandler::getIstance().raise(message);
+  }
+
   // Set-up all output units for scaling parameters
   simunits.SetupUnits(simparams);
 
@@ -83,11 +95,11 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   sph = new NullSph<ndim>
     (intparams["hydro_forces"], intparams["self_gravity"],
      floatparams["alpha_visc"], floatparams["beta_visc"],
-     floatparams["h_fac"], floatparams["h_converge"], 
-     noav, noac, notdav, stringparams["gas_eos"], 
+     floatparams["h_fac"], floatparams["h_converge"],
+     noav, noac, notdav, stringparams["gas_eos"],
      KernelName, sizeof(SphParticle<ndim>));
-  
-  
+
+
   // Process all N-body parameters and set-up main N-body objects
   this->ProcessNbodyParameters();
 
@@ -101,7 +113,7 @@ void NbodySimulation<ndim>::ProcessParameters(void)
 					floatparams["rplummer"]);
   }
   else {
-    string message = "Unrecognised parameter : external_potential = " 
+    string message = "Unrecognised parameter : external_potential = "
       + simparams->stringparams["external_potential"];
     ExceptionHandler::getIstance().raise(message);
   }
@@ -115,7 +127,7 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   nbodytree.gpehard     = floatparams["gpehard"];
   nbodytree.gpesoft     = floatparams["gpesoft"];
   nbody->perturbers     = intparams["perturbers"];
-  if (intparams["sub_systems"] == 1) 
+  if (intparams["sub_systems"] == 1)
     subsystem->perturbers = intparams["perturbers"];
 
 
@@ -260,7 +272,7 @@ void NbodySimulation<ndim>::MainLoop(void)
     // If we are obliged to re-build the tree, then recompute the grav.
     // potential for all star particles (could be optimised in the future).
     if (nbody->reset_tree == 1) {
-      
+
       // Zero all acceleration terms
       for (i=0; i<nbody->Nstar; i++) {
         for (k=0; k<ndim; k++) nbody->stardata[i].a[k] = 0.0;
@@ -272,7 +284,7 @@ void NbodySimulation<ndim>::MainLoop(void)
         nbody->nbodydata[i] = &(nbody->stardata[i]);
       }
       nbody->Nnbody = nbody->Nstar;
-     
+
       nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
       nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
 
@@ -289,7 +301,7 @@ void NbodySimulation<ndim>::MainLoop(void)
   // Compute timesteps for all particles
   if (Nlevels == 1)
     this->ComputeGlobalTimestep();
-  else 
+  else
     this->ComputeBlockTimesteps();
 
   // Advance time variables
@@ -330,7 +342,7 @@ void NbodySimulation<ndim>::MainLoop(void)
 					      nbody->nbodydata[i]->a,
 					      nbody->nbodydata[i]->adot,
 					      nbody->nbodydata[i]->gpot);
-      
+
       // Calculate correction step for all stars at end of step
       nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
 
@@ -347,10 +359,10 @@ void NbodySimulation<ndim>::MainLoop(void)
   for (i=0; i<nbody->Nnbody; i++) {
     if (nbody->nbodydata[i]->Ncomp > 1) {
       // The cast is needed because the function is defined only in
-      // SystemParticle, not in NbodyParticle.  
+      // SystemParticle, not in NbodyParticle.
       // The safety of the cast relies on the correctness of the Ncomp value
-      subsystem->IntegrateInternalMotion(static_cast<SystemParticle<ndim>* > 
-                                         (nbody->nbodydata[i]), n, 
+      subsystem->IntegrateInternalMotion(static_cast<SystemParticle<ndim>* >
+                                         (nbody->nbodydata[i]), n,
 					 timestep, timestep);
     }
   }
@@ -361,13 +373,13 @@ void NbodySimulation<ndim>::MainLoop(void)
     nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
   }
 
-  // Update properties of child stars in sub-systems to correctly 
+  // Update properties of child stars in sub-systems to correctly
   // match updates to the parent system particle
   if (nbody->sub_systems == 1) {
     for (i=0; i<nbody->Nnbody; i++) {
       if (nbody->nbodydata[i]->Ncomp > 1)
-	subsystem->UpdateChildStars(static_cast<SystemParticle<ndim>* > 
-				    (nbody->nbodydata[i]),  
+	subsystem->UpdateChildStars(static_cast<SystemParticle<ndim>* >
+				    (nbody->nbodydata[i]),
 				    n, timestep, timestep);
     }
   }
@@ -382,7 +394,7 @@ void NbodySimulation<ndim>::MainLoop(void)
 
 //=============================================================================
 //  NbodySimulation::ComputeGlobalTimestep
-/// Computes global timestep for SPH simulation.  Calculates the minimum 
+/// Computes global timestep for SPH simulation.  Calculates the minimum
 /// timestep for all SPH and N-body particles in the simulation.
 //=============================================================================
 template <int ndim>
@@ -409,7 +421,7 @@ void NbodySimulation<ndim>::ComputeGlobalTimestep(void)
     timestep = dt_min;
     for (i=0; i<nbody->Nnbody; i++) {
       nbody->nbodydata[i]->level = 0;
-      nbody->nbodydata[i]->nstep = 
+      nbody->nbodydata[i]->nstep =
         pow(2,level_step - nbody->nbodydata[i]->level);
       nbody->nbodydata[i]->nlast = n;
       nbody->nbodydata[i]->dt = timestep;
@@ -486,11 +498,11 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
     level_max = Nlevels - 1;
     level_step = level_max + integration_step - 1;
     dt_max = timestep*powf(2.0,level_max);
-    
+
     // Calculate the maximum level occupied by all SPH particles
-    level_max_nbody = 
+    level_max_nbody =
       min((int) (invlogetwo*log(dt_max/dt_min_nbody)) + 1, level_max);
-      
+
     // Populate timestep levels with N-body particles.
     // Ensures that N-body particles occupy levels lower than all SPH particles
     for (i=0; i<nbody->Nnbody; i++) {
@@ -499,7 +511,7 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
       level = max(level,0);
       nbody->nbodydata[i]->level = level;
       nbody->nbodydata[i]->nlast = n;
-      nbody->nbodydata[i]->nstep = 
+      nbody->nbodydata[i]->nstep =
 	pow(2,level_step - nbody->nbodydata[i]->level);
     }
 
@@ -507,14 +519,14 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
     timestep = dt_max / (DOUBLE) nresync;
 
   }
-  // If not resynchronising, check if any SPH/N-body particles need to move  
+  // If not resynchronising, check if any SPH/N-body particles need to move
   // up or down timestep levels.
   //===========================================================================
   else {
 
     level_max_old = level_max;
     level_max = 0;
-    
+
 
 #pragma omp parallel default(none) shared(dt_min,dt_min_nbody,level_max_nbody)\
   private(dt,dt_min_aux,dt_nbody,i,imin,istep,last_level,level)\
@@ -529,17 +541,17 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
       //-----------------------------------------------------------------------
 #pragma omp for
       for (i=0; i<nbody->Nnbody; i++) {
-	
+
 	// Skip particles that are not at end of step
 	if (nbody->nbodydata[i]->nlast == n) {
 	  nstep = nbody->nbodydata[i]->nstep;
 	  last_level = nbody->nbodydata[i]->level;
-	  
+
 	  // Compute new timestep value and level number
 	  dt = nbody->Timestep(nbody->nbodydata[i]);
 	  nbody->nbodydata[i]->dt = dt;
 	  level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
-	  
+
 	  // Move up one level (if levels are correctly synchronised) or
 	  // down several levels if required
 	  if (level < last_level && last_level > 1 && n%(2*nstep) == 0)
@@ -548,19 +560,19 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
 	    nbody->nbodydata[i]->level = level;
 	  else
 	    nbody->nbodydata[i]->level = last_level;
-	  
+
 	  nbody->nbodydata[i]->nlast = n;
 	  nbody->nbodydata[i]->nstep =
 	    pow(2,level_step - nbody->nbodydata[i]->level);
 	}
-	
+
 	// Find maximum level of all N-body particles
 	level_nbody = max(level_nbody,nbody->nbodydata[i]->level);
 	level_max_aux = max(level_max_aux,nbody->nbodydata[i]->level);
 	dt_nbody = min(dt_nbody,nbody->nbodydata[i]->dt);
       }
       //-----------------------------------------------------------------------
-      
+
 
 #pragma omp critical
       {
@@ -577,19 +589,19 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
     // For now, don't allow levels to be removed
     //level_max = max(level_max,level_max_old);
     level_step = level_max + integration_step - 1;
-  
-    
+
+
     // Update all timestep variables if we have removed or added any levels
     //-------------------------------------------------------------------------
     if (level_max != level_max_old) {
-      
+
       // Increase maximum timestep level if correctly synchronised
       istep = pow(2,level_step - level_max_old + 1);
       if (level_max <= level_max_old - 1 && level_max_old > 1 && n%istep == 0)
 	level_max = level_max_old - 1;
       else if (level_max == level_max_old)
 	level_max = level_max_old;
-      
+
       // Adjust integer time if levels added or removed
       if (level_max > level_max_old) {
 	nfactor = pow(2,level_max - level_max_old);
@@ -606,10 +618,10 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
 
       // Update values of nstep for both SPH and star particles
       for (i=0; i<nbody->Nnbody; i++) {
-	if (nbody->nbodydata[i]->nlast == n) nbody->nbodydata[i]->nstep = 
+	if (nbody->nbodydata[i]->nlast == n) nbody->nbodydata[i]->nstep =
 	  pow(2,level_step - nbody->nbodydata[i]->level);
       }
-    
+
       nresync = pow(2,level_step);
       timestep = dt_max / (DOUBLE) nresync;
 

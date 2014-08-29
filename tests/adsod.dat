@@ -2,7 +2,7 @@
 # Adiabatic Sod shock tube test
 # Creates an adiabatic Sod shocktube test
 #----------------------------------------
-comment				   : out_file_form = sf
+
 
 #-----------------------------
 # Initial conditions variables
@@ -37,7 +37,8 @@ RHS boundary type in x-dimension            : x_boundary_rhs = periodic
 Simulation end time                         : tend = 0.3
 Regular snapshot output frequency           : dt_snap = 0.1
 Time for first snapshot                     : tsnapfirst = 0.0
-Screen output frequency (in no. of steps)   : noutputstep = 1
+Screen output frequency (in no. of steps)   : noutputstep = 32
+Output file format                          : out_file_form = su
 
 
 #------------------------

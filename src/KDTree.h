@@ -143,8 +143,10 @@ class KDTree
   string gravity_mac;               ///< Multipole-acceptance criteria for tree
   string multipole;                 ///< Multipole-order for cell gravity
   bool allocated_tree;              ///< Are grid arrays allocated?
+  int gactive;                      ///< ..
   int gmax;                         ///< Max. no. of grid/leaf cells
   int gtot;                         ///< Total number of grid/leaf cells
+  int lactive;                      ///< Level containing active particles
   int lmax;                         ///< Max. no. of levels
   int ltot;                         ///< Total number of levels in tree
   int ltot_old;                     ///< Prev. value of ltot

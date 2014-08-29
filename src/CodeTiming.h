@@ -63,30 +63,30 @@ class CodeTiming
   
   // CodeTiming class variables
   //---------------------------------------------------------------------------
-  static const int Nblockmax=256;
-  int Nblock;
-  int Nlevelmax;
-  clock_t tstart;
-  clock_t tend;
-  double tstart_wall;
-  double tend_wall;
-  DOUBLE ttot;
-  DOUBLE ttot_wall;
-  map<string,int> blockno;
+  static const int Nblockmax=256;   ///< Max. no. of code timing blocks
+  int Nblock;                       ///< No. of timing blocks
+  int Nlevelmax;                    ///< Max. no. of timing levels
+  double tstart_wall;               ///< ..
+  double tend_wall;                 ///< ..
+  DOUBLE ttot;                      ///< ..
+  DOUBLE ttot_wall;                 ///< ..
+  clock_t tstart;                   ///< ..
+  clock_t tend;                     ///< ..
+  map<string,int> blockno;          ///< ..
 
 
   struct TimingBlock {
     bool timing_flag;
     int timing_level;
     int Ncalled;
-    clock_t tstart;
-    clock_t tend;
     double tstart_wall;
     double tend_wall;
     double ttot_wall;
     double tfraction_wall;
     DOUBLE ttot;
     DOUBLE tfraction;
+    clock_t tstart;
+    clock_t tend;
     string block_name;
     
     TimingBlock()
@@ -101,8 +101,9 @@ class CodeTiming
       block_name = "";
     }
     
-  };  
-  struct TimingBlock block[Nblockmax];
+  };
+
+  TimingBlock block[Nblockmax];
     
 };
 #endif

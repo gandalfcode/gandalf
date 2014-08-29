@@ -1,7 +1,7 @@
 //=============================================================================
 //  InlineFuncs.h
 //  Contains definitions of any useful small utility functions that can be 
-//  inlined to improve readability/performance of the code.
+//  templated and/or inlined to improve readability/performance of the code.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -258,8 +258,8 @@ static inline void EulerAngleRotation
 
 
 //=============================================================================
-//  EulerAngleRotation
-//  Rotate given vector around specified Euler angles
+//  EulerAngleArrayRotation
+//  Rotate given array of vectors around specified Euler angles
 //=============================================================================
 template <typename T>
 static inline void EulerAngleArrayRotation

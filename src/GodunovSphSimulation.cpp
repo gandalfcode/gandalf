@@ -64,22 +64,22 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
   tdaviscenum tdavisc;              // Time-dependent viscosity enum
 
   map<string, int> &intparams = simparams->intparams;
-  map<string, float> &floatparams = simparams->floatparams;
+  map<string, double> &floatparams = simparams->floatparams;
   map<string, string> &stringparams = simparams->stringparams;
   string KernelName = stringparams["kernel"];
 
   // Create SPH object based on chosen method in params file
   //---------------------------------------------------------------------------
   if (intparams["tabulated_kernel"] == 1) {
-    sph = new GodunovSph<ndim, TabulatedKernel> 
+    sph = new GodunovSph<ndim, TabulatedKernel>
       (intparams["hydro_forces"], intparams["self_gravity"],
        floatparams["alpha_visc"], floatparams["beta_visc"],
-       floatparams["h_fac"], floatparams["h_converge"], 
+       floatparams["h_fac"], floatparams["h_converge"],
        avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
   }
   else if (intparams["tabulated_kernel"] == 0) {
     if (KernelName == "gaussian") {
-      sph = new GodunovSph<ndim, GaussianKernel> 
+      sph = new GodunovSph<ndim, GaussianKernel>
         (intparams["hydro_forces"], intparams["self_gravity"],
          floatparams["alpha_visc"], floatparams["beta_visc"],
          floatparams["h_fac"], floatparams["h_converge"],
@@ -111,7 +111,7 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
- 
+
   // Create SPH particle integration object
   //---------------------------------------------------------------------------
   sphint = new SphGodunovIntegration<ndim, GodunovSphParticle>(floatparams["accel_mult"],
@@ -138,7 +138,7 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
       &simbox,sph->kernp,timing);
   }
   else {
-    string message = "Unrecognised parameter : neib_search = " 
+    string message = "Unrecognised parameter : neib_search = "
       + simparams->stringparams["neib_search"];
     ExceptionHandler::getIstance().raise(message);
   }
@@ -161,7 +161,7 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
   MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
 #endif
 
-  
+
   return;
 }
 
@@ -207,7 +207,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
       sph->mmean += part.m;
     }
     sph->mmean /= (FLOAT) sph->Nsph;
-    
+
     sph->InitialSmoothingLengthGuess();
     //sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
@@ -297,9 +297,9 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     //sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
     // Compute timesteps for all particles
-    if (Nlevels == 1) 
+    if (Nlevels == 1)
       this->ComputeGlobalTimestep();
-    else 
+    else
       this->ComputeBlockTimesteps();
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
@@ -342,11 +342,11 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Compute timesteps for all particles
   nresync = n;
-  if (Nlevels == 1) 
+  if (Nlevels == 1)
     this->ComputeGlobalTimestep();
-  else 
+  else
     this->ComputeBlockTimesteps();
-  
+
   this->CalculateDiagnostics();
   this->OutputDiagnostics();
   this->diag0 = this->diag;
@@ -404,10 +404,10 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
 
     // Update cells containing active particles
     sphneib->UpdateActiveParticleCounters(partdata,sph);
-    
+
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
-    
+
     // Compute timesteps for all particles
     if (Nlevels == 1)
       this->ComputeGlobalTimestep();
@@ -433,7 +433,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
 //        sph->sphdata[i].levelneib = 0;
 //      }
 //    }
-    
+
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)
       sphneib->UpdateAllSphForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
@@ -441,7 +441,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
       sphneib->UpdateAllSphHydroForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
     else if (sph->self_gravity == 1)
       sphneib->UpdateAllSphGravForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
-    
+
     // Compute contribution to grav. accel from stars
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -449,7 +449,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
         sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,part);
       }
     }
-    
+
     // Add accelerations
     if (sph->self_gravity == 1) {
       for (i=0; i<sph->Nsph; i++) {
@@ -517,7 +517,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
 
 //=============================================================================
 //  GodunovSphSimulation::ComputeGlobalTimestep
-/// Computes global timestep for Godunov SPH simulation.  Calculates the 
+/// Computes global timestep for Godunov SPH simulation.  Calculates the
 /// minimum timestep for all SPH and N-body particles in the simulation.
 //=============================================================================
 template <int ndim>
@@ -548,7 +548,7 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
         part.dt = sphint->Timestep(part,sph);
         dt = min(dt,part.dt);
       }
-      
+
       // If integrating energy equation, include energy timestep
       if (simparams->stringparams["gas_eos"] == "energy_eqn") {
 #pragma omp for
@@ -573,7 +573,7 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
     for (i=0; i<nbody->Nnbody; i++)
       dt_min = min(dt_min,nbody->Timestep(nbody->nbodydata[i]));
 
-    
+
     // Set all particles to same timestep
     timestep = dt_min;
     for (i=0; i<sph->Nsph; i++) {
@@ -587,7 +587,7 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
     }
     for (i=0; i<nbody->Nnbody; i++) {
       nbody->nbodydata[i]->level = 0;
-      nbody->nbodydata[i]->nstep = 
+      nbody->nbodydata[i]->nstep =
         pow(2,level_step - nbody->nbodydata[i]->level);
       nbody->nbodydata[i]->nlast = n;
       nbody->nbodydata[i]->dt = timestep;
@@ -654,7 +654,7 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
       if (dt < dt_min_sph) dt_min_sph = dt;
       part.dt = dt;
     }
-    
+
     // Now compute minimum timestep due to stars/systems
     for (i=0; i<nbody->Nnbody; i++) {
       dt = nbody->Timestep(nbody->nbodydata[i]);
@@ -667,16 +667,16 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
     level_max = Nlevels - 1;
     level_step = level_max + integration_step - 1;
     dt_max = timestep*powf(2.0,level_max);
-    
+
     // Calculate the maximum level occupied by all SPH particles
-    level_max_sph = min((int) (invlogetwo*log(dt_max/dt_min_sph)) + 1, 
+    level_max_sph = min((int) (invlogetwo*log(dt_max/dt_min_sph)) + 1,
 			level_max);
-    level_max_nbody = min((int) (invlogetwo*log(dt_max/dt_min_nbody)) + 1, 
+    level_max_nbody = min((int) (invlogetwo*log(dt_max/dt_min_nbody)) + 1,
 			  level_max);
 
-    // If enforcing a single SPH timestep, set it here.  Otherwise, populate 
+    // If enforcing a single SPH timestep, set it here.  Otherwise, populate
     // the timestep levels with SPH particles.
-    if (sph_single_timestep == 1) 
+    if (sph_single_timestep == 1)
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
         part.level = level_max_sph;
@@ -702,7 +702,7 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
       level = max(level,0);
       nbody->nbodydata[i]->level = level;
       nbody->nbodydata[i]->nlast = n;
-      nbody->nbodydata[i]->nstep = 
+      nbody->nbodydata[i]->nstep =
         pow(2,level_step - nbody->nbodydata[i]->level);
     }
 
@@ -711,7 +711,7 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
 
   }
 
-  // If not resynchronising, check if any SPH/N-body particles need to move  
+  // If not resynchronising, check if any SPH/N-body particles need to move
   // up or down timestep levels.
   //===========================================================================
   else {
@@ -756,7 +756,7 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
       level_max = max(level_max,part.level);
     }
     //-------------------------------------------------------------------------
-      
+
 
     // Now find all N-body particles at the beginning of a new timestep
     //-------------------------------------------------------------------------
@@ -772,9 +772,9 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
 	nbody->nbodydata[i]->dt = dt;
 	level = min((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
 
-	// Move up one level (if levels are correctly synchronised) or 
+	// Move up one level (if levels are correctly synchronised) or
 	// down several levels if required
-	if (level < last_level && last_level > 1 && n%(2*nstep) == 0) 
+	if (level < last_level && last_level > 1 && n%(2*nstep) == 0)
 	  nbody->nbodydata[i]->level = last_level - 1;
 	else if (level > last_level)
 	  nbody->nbodydata[i]->level = level;
@@ -782,7 +782,7 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
 	  nbody->nbodydata[i]->level = last_level;
 
 	nbody->nbodydata[i]->nlast = n;
-	nbody->nbodydata[i]->nstep = 
+	nbody->nbodydata[i]->nstep =
 	  pow(2,level_step - nbody->nbodydata[i]->level);
       }
 
@@ -791,7 +791,7 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
       level_max = max(level_max,nbody->nbodydata[i]->level);
     }
     //-------------------------------------------------------------------------
-      
+
 
     // Set fixed SPH timestep level here in case maximum has changed
     if (sph_single_timestep == 1) {
@@ -812,7 +812,7 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
         part.nstep = pow(2,level_step - part.level);
     }
     for (i=0; i<nbody->Nnbody; i++) {
-      if (nbody->nbodydata[i]->nlast == n) nbody->nbodydata[i]->nstep = 
+      if (nbody->nbodydata[i]->nlast == n) nbody->nbodydata[i]->nstep =
 	pow(2,level_step - nbody->nbodydata[i]->level);
     }
 
@@ -862,8 +862,3 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
 
   return;
 }
-
-
-
-
-

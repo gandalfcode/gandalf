@@ -57,7 +57,7 @@ void Simulation<ndim>::GenerateIC(void)
   debug2("[Simulation::GenerateIC]");
 
 
-  // First, check special case of restarting a simulation, in which case 
+  // First, check special case of restarting a simulation, in which case
   // determine the name of the last snapshot file to be re-read
   //---------------------------------------------------------------------------
   if (restart) {
@@ -76,7 +76,7 @@ void Simulation<ndim>::GenerateIC(void)
   }
 
 
-  // If not a restart, generate initial conditions either from external 
+  // If not a restart, generate initial conditions either from external
   // file or created on the fly.
   //---------------------------------------------------------------------------
   if (simparams->stringparams["ic"] == "file") {
@@ -121,7 +121,7 @@ void Simulation<ndim>::GenerateIC(void)
     return;
   //---------------------------------------------------------------------------
   else {
-    string message = "Unrecognised parameter : ic = " 
+    string message = "Unrecognised parameter : ic = "
       + simparams->stringparams["ic"];
     ExceptionHandler::getIstance().raise(message);
   }
@@ -274,7 +274,7 @@ void Simulation<ndim>::BinaryAccretion(void)
     box1.boxmax[0] = simbox.boxmin[0] + simbox.boxhalf[0];
     box2.boxmin[0] = simbox.boxmin[0] + simbox.boxhalf[0];
     box2.boxmax[0] = simbox.boxmax[0];
-  }    
+  }
   else {
     string message = "Invalid number of particles chosen";
     ExceptionHandler::getIstance().raise(message);
@@ -310,7 +310,7 @@ void Simulation<ndim>::BinaryAccretion(void)
   AllocateParticleMemory();
 
 
-  // Add a cube of random particles defined by the simulation bounding box and 
+  // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
   //---------------------------------------------------------------------------
   if (Nbox1 > 0) {
@@ -325,7 +325,7 @@ void Simulation<ndim>::BinaryAccretion(void)
       string message = "Invalid particle distribution option";
       ExceptionHandler::getIstance().raise(message);
     }
-    
+
     // Record positions in main memory
     for (i=0; i<Nbox1; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -342,7 +342,7 @@ void Simulation<ndim>::BinaryAccretion(void)
   }
 
 
-  // Add a cube of random particles defined by the simulation bounding box and 
+  // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
   //---------------------------------------------------------------------------
   if (Nbox2 > 0) {
@@ -357,7 +357,7 @@ void Simulation<ndim>::BinaryAccretion(void)
       string message = "Invalid particle distribution option";
       ExceptionHandler::getIstance().raise(message);
     }
-    
+
     // Record positions in main memory
     for (j=0; j<Nbox2; j++) {
       i = Nbox1 + j;
@@ -393,7 +393,7 @@ void Simulation<ndim>::BinaryAccretion(void)
   cout << "vbin        : " << vmachbin*sqrt(press1/rhofluid1) << endl;
   cout << "Bondi accretion, dmdt : " << 4.0*pi*rhofluid1*
     (m1 + m2)*(m1 + m2)/pow(press1/rhofluid1,1.5) << endl;
-  cout << "No. of particles      : " << Nbox1 << "   " << Nbox2 << "   " 
+  cout << "No. of particles      : " << Nbox1 << "   " << Nbox2 << "   "
        << sph->Nsph << endl;
 
   // Set hmin_sink here, since no other sinks will be formed
@@ -568,35 +568,35 @@ void Simulation<ndim>::ShockTube(void)
     sph->Nghostmax = sph->Nsphmax - sph->Nsph;
     sph->Ntot = sph->Nsph;
     for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).active = true;
-    
+
     //sph->InitialSmoothingLengthGuess();
     sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
                        sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
-    
+
     // Search ghost particles
     LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
-    
+
     // Update neighbour tree
     //sph->InitialSmoothingLengthGuess();
     sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
                        sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
-    
+
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
-    
+
     sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
                        sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
     sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
-    
+
     LocalGhosts->CopySphDataToGhosts(simbox,sph);
-    
+
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
-    
+
 
     uaux = new FLOAT[sph->Nsph];
     vaux = new FLOAT[sph->Nsph*ndim];
-    
+
     // Now compute smoothed quantities
 #pragma omp parallel for default(none) shared(uaux,vaux) \
   private(dr,drmag,drsqd,i,j,k,wnorm)
@@ -684,10 +684,10 @@ void Simulation<ndim>::UniformBox(void)
     Nbox = Nlattice[0]*Nlattice[1]*Nlattice[2];
   }
 
-  // Add a cube of random particles defined by the simulation bounding box and 
+  // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
   if (particle_dist == "random") {
-    r = new FLOAT[ndim*Npart]; 
+    r = new FLOAT[ndim*Npart];
     AddRandomBox(Npart,r,simbox);
   }
   else if (particle_dist == "cubic_lattice") {
@@ -747,6 +747,7 @@ void Simulation<ndim>::UniformSphere(void)
 
   // Local copies of important parameters
   int Npart = simparams->intparams["Nsph"];
+  FLOAT mcloud = simparams->floatparams["mcloud"];
   FLOAT radius = simparams->floatparams["radius"];
   FLOAT rhofluid = simparams->floatparams["rhofluid1"];
   FLOAT press = simparams->floatparams["press1"];
@@ -754,6 +755,12 @@ void Simulation<ndim>::UniformSphere(void)
   string particle_dist = simparams->stringparams["particle_distribution"];
 
   debug2("[Simulation::UniformSphere]");
+
+  mcloud /= simunits.m.outscale;
+  radius /= simunits.r.outscale;
+  rhofluid /= simunits.rho.outscale;
+  press /= simunits.press.outscale;
+
 
   r = new FLOAT[ndim*Npart];
 
@@ -763,11 +770,11 @@ void Simulation<ndim>::UniformSphere(void)
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random")
     AddRandomSphere(Npart,r,rcentre,radius);
-  else if (particle_dist == "cubic_lattice" || 
+  else if (particle_dist == "cubic_lattice" ||
 	   particle_dist == "hexagonal_lattice") {
     Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
-    if (Nsphere != Npart) 
-      cout << "Warning! Unable to converge to required " 
+    if (Nsphere != Npart)
+      cout << "Warning! Unable to converge to required "
 	   << "no. of ptcls due to lattice symmetry" << endl;
     Npart = Nsphere;
   }
@@ -782,10 +789,14 @@ void Simulation<ndim>::UniformSphere(void)
   if (ndim == 1) volume = 2.0*radius;
   else if (ndim == 2) volume = pi*radius*radius;
   else if (ndim == 3) volume = 4.0*onethird*pi*pow(radius,3);
+  //if (mcloud > small_number && radius > small_number)
+  //  rhofluid = mcloud / volume;
+  rhofluid = mcloud / volume;
+
 
   // Record particle positions and initialise all other variables
 #pragma omp parallel for default(none)\
-  shared(gammaone,Npart,press,r,rhofluid,volume) private(i,k)
+  shared(gammaone,mcloud,Npart,press,r,rhofluid,volume) private(i,k)
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->GetParticleIPointer(i);
     for (k=0; k<ndim; k++) {
@@ -793,7 +804,8 @@ void Simulation<ndim>::UniformSphere(void)
       part.v[k] = (FLOAT) 0.0;
       part.a[k] = (FLOAT) 0.0;
     }
-    part.m = rhofluid*volume / (FLOAT) Npart;
+    //part.m = rhofluid*volume / (FLOAT) Npart;
+    part.m = mcloud / (FLOAT) Npart;
     part.h = sph->h_fac*pow(part.m/rhofluid,invndim);
     part.u = press/rhofluid/gammaone;
     part.iorig = i;
@@ -1077,9 +1089,9 @@ void Simulation<ndim>::KHI(void)
   sph->Nghostmax = sph->Nsphmax - sph->Nsph;
   sph->Ntot = sph->Nsph;
   for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).active = true;
-  
+
   initial_h_provided = true;
-  
+
   // Search ghost particles
   LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
 
@@ -1090,7 +1102,7 @@ void Simulation<ndim>::KHI(void)
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
-  
+
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->GetParticleIPointer(i);
     part.u = press1/part.rho/gammaone;
@@ -1138,11 +1150,11 @@ void Simulation<ndim>::NohProblem(void)
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random")
     AddRandomSphere(Npart,r,rcentre,radius);
-  else if (particle_dist == "cubic_lattice" || 
+  else if (particle_dist == "cubic_lattice" ||
 	   particle_dist == "hexagonal_lattice") {
     Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
-    if (Nsphere != Npart) 
-      cout << "Warning! Unable to converge to required " 
+    if (Nsphere != Npart)
+      cout << "Warning! Unable to converge to required "
 	   << "no. of ptcls due to lattice symmetry" << endl;
     Npart = Nsphere;
   }
@@ -1166,7 +1178,7 @@ void Simulation<ndim>::NohProblem(void)
     for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k];
     drsqd = DotProduct(dr,dr,ndim);
     drmag = sqrt(drsqd) + small_number;
-    for (k=0; k<ndim; k++) 
+    for (k=0; k<ndim; k++)
       part.v[k] = -1.0*dr[k]/drmag;
     part.m = rhofluid*volume/(FLOAT) Npart;
     part.h = sph->h_fac*pow(part.m/rhofluid,invndim);
@@ -1184,7 +1196,7 @@ void Simulation<ndim>::NohProblem(void)
 
 //=============================================================================
 //  Simulation::BossBodenheimer
-/// Set-up Boss-Bodenheimer (1979) initial conditions for collapse of a 
+/// Set-up Boss-Bodenheimer (1979) initial conditions for collapse of a
 /// rotating uniform sphere with an imposed m=2 azimuthal density perturbation.
 //=============================================================================
 template <int ndim>
@@ -1229,11 +1241,11 @@ void Simulation<ndim>::BossBodenheimer(void)
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random")
     AddRandomSphere(Npart,r,rcentre,radius);
-  else if (particle_dist == "cubic_lattice" || 
+  else if (particle_dist == "cubic_lattice" ||
 	   particle_dist == "hexagonal_lattice") {
     Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
-    if (Nsphere != Npart) 
-      cout << "Warning! Unable to converge to required " 
+    if (Nsphere != Npart)
+      cout << "Warning! Unable to converge to required "
 	   << "no. of ptcls due to lattice symmetry" << endl;
     Npart = Nsphere;
   }
@@ -1282,7 +1294,7 @@ void Simulation<ndim>::BossBodenheimer(void)
 
 //=============================================================================
 //  Simulation::TurbulentCore
-/// Set-up Boss-Bodenheimer (1979) initial conditions for collapse of a 
+/// Set-up Boss-Bodenheimer (1979) initial conditions for collapse of a
 /// rotating uniform sphere with an imposed m=2 azimuthal density perturbation.
 //=============================================================================
 template <int ndim>
@@ -1335,15 +1347,15 @@ void Simulation<ndim>::TurbulentCore(void)
 
   // Add a sphere of random particles with origin 'rcentre' and radius 'radius'
   for (k=0; k<ndim; k++) rcentre[k] = (FLOAT) 0.0;
-  
+
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random")
     AddRandomSphere(Npart,r,rcentre,radius);
-  else if (particle_dist == "cubic_lattice" || 
+  else if (particle_dist == "cubic_lattice" ||
 	   particle_dist == "hexagonal_lattice") {
     Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
-    if (Nsphere != Npart) 
-      cout << "Warning! Unable to converge to required " 
+    if (Nsphere != Npart)
+      cout << "Warning! Unable to converge to required "
 	   << "no. of ptcls due to lattice symmetry" << endl;
     Npart = Nsphere;
   }
@@ -1412,7 +1424,7 @@ void Simulation<ndim>::TurbulentCore(void)
   keturb = 0.0;
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-    keturb += 
+    keturb +=
       part.m*DotProduct(part.v,part.v,ndim);
   }
   keturb *= 0.5;
@@ -1437,7 +1449,7 @@ void Simulation<ndim>::TurbulentCore(void)
 
 //=============================================================================
 //  Simulation::PlummerSphere
-/// Generate a Plummer sphere containing either stars, gas or a mixture of 
+/// Generate a Plummer sphere containing either stars, gas or a mixture of
 /// both.  Uses the algorithm described by Aarseth et al. (197?).
 //=============================================================================
 template <int ndim>
@@ -1463,7 +1475,9 @@ void Simulation<ndim>::PlummerSphere(void)
   FLOAT rstar = simparams->floatparams["rstar"];
 
   debug1("[Simulation::PlummerSphere]");
-    
+  cout << "Nsph : " << Nsph << "    Nstar : " << Nstar << endl;
+  cout << "nbody : " << nbody << "    rstar : " << rstar << endl;
+
   sph->Nsph = Nsph;
   sph->Ntot = Nsph;
   nbody->Nstar = Nstar;
@@ -1473,7 +1487,7 @@ void Simulation<ndim>::PlummerSphere(void)
   raux = gasfrac + starfrac;
   gasfrac /= raux;
   starfrac /= raux;
-  
+
 
   // Loop over all particles (gas and stars)
   //===========================================================================
@@ -1510,8 +1524,8 @@ void Simulation<ndim>::PlummerSphere(void)
       nbody->stardata[i].r[2] = z;
       nbody->stardata[i].m = starfrac / (FLOAT) Nstar;
     }
-       
-    // Maximum velocity for this distance 
+
+    // Maximum velocity for this distance
     ve = sqrt(2.0 / sqrt(1.0 + rad*rad));
 
 
@@ -1528,18 +1542,17 @@ void Simulation<ndim>::PlummerSphere(void)
     x6 = randnumb->floatrand();
     x7 = randnumb->floatrand();
     w = (1.0 - 2.0*x6)*vm;
-       
+
 
     // Set velocity depending on particle type
     //-------------------------------------------------------------------------
     if (j >= Nstar && j < Nstar + Nsph) {
       i = j - Nstar;
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-      for(k=0; k<ndim; k++) part.v[k] = 0.0;
+      for (k=0; k<ndim; k++) part.v[k] = 0.0;
       part.sound = sqrt(0.1666666 / sqrt(1.0 + rad*rad));
       part.rho = 1.0;
-      part.u = part.sound*
-        part.sound/(gamma_eos - 1.0);
+      part.u = part.sound*part.sound/(gamma_eos - 1.0);
     }
     else {
       i = j;
@@ -1547,7 +1560,7 @@ void Simulation<ndim>::PlummerSphere(void)
       nbody->stardata[i].v[1] = sqrt(vm*vm - w*w)*sin(twopi*x7);
       nbody->stardata[i].v[2] = w;
     }
-      
+
   }
   //===========================================================================
 
@@ -1566,15 +1579,19 @@ void Simulation<ndim>::PlummerSphere(void)
     part.m    = part.m*mplummer;
     if (i < Nsph) part.u = part.u*(mplummer/rplummer);
   }
+  cout << "HERE!! : " << i << "   " << Nstar << endl;
+  cout << "rplummer : " << rplummer << "     mplummer : " << mplummer << endl;
+  //cout << nbody->kernp->invkernrange << "    " << rstar << endl;
   for (i=0; i<Nstar; i++) {
+    cout << "NOW HERE!! : " << i << endl;
     for (k=0; k<ndim; k++) {
       nbody->stardata[i].r[k] = nbody->stardata[i].r[k]*rplummer;
       nbody->stardata[i].v[k] = nbody->stardata[i].v[k]*vplummer;
     }
     nbody->stardata[i].m      = nbody->stardata[i].m*mplummer;
     //nbody->stardata[i].radius = rstar;
-    nbody->stardata[i].h      = sph->kernp->invkernrange*rstar;
-    nbody->stardata[i].invh   = 1.0 / nbody->stardata[i].h;
+    //nbody->stardata[i].h      = nbody->kernp->invkernrange*rstar;
+    nbody->stardata[i].invh   = 1.0 / (nbody->stardata[i].h + small_number_dp);
   }
 
   return;
@@ -1651,7 +1668,7 @@ void Simulation<ndim>::SedovBlastWave(void)
   // Set pointer to SPH particle data
   partdata = sph->GetParticlesArray();
 
-  // Add a cube of random particles defined by the simulation bounding box and 
+  // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
   if (particle_dist == "random")
     AddRandomBox(Nbox,r,simbox);
@@ -1683,12 +1700,12 @@ void Simulation<ndim>::SedovBlastWave(void)
 
   // Search ghost particles
   LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
-  
+
   initial_h_provided = true;
   rebuild_tree = true;
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
                      sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
-  
+
   sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
   // Update neighbour tre
@@ -1900,7 +1917,7 @@ void Simulation<ndim>::SoundWave(void)
 
     // Set positions in main array with corresponind velocity perturbation
     for (k=0; k<ndim; k++) part.r[k] = xnew;
-    for (k=0; k<ndim; k++) 
+    for (k=0; k<ndim; k++)
       part.v[k] = csound*amp*sin(kwave*xnew);
     part.m = rhofluid1*lambda/(FLOAT) Npart;
     part.h = sph->h_fac*pow(part.m/rhofluid1,invndim);
@@ -2221,7 +2238,7 @@ void Simulation<ndim>::AddRandomSphere
 
     // Continously loop until random particle lies inside sphere
     do {
-      for (k=0; k<ndim; k++) 
+      for (k=0; k<ndim; k++)
 	rpos[k] = 1.0 - 2.0*randnumb->floatrand();
       rad = DotProduct(rpos,rpos,ndim);
     } while (rad > radius);
@@ -2276,11 +2293,11 @@ int Simulation<ndim>::AddLatticeSphere
     ExceptionHandler::getIstance().raise(message);
   }
 
-  // Now cut-out sphere from lattice containing exact number of particles 
+  // Now cut-out sphere from lattice containing exact number of particles
   // (unless lattice structure prevents this).
   Naux = CutSphere(Npart,Naux,radius,raux,box1,false);
 
-  // Rotate sphere through random Euler angles (to prevent alignment problems 
+  // Rotate sphere through random Euler angles (to prevent alignment problems
   // during tree construction)
   theta = acos(sqrtf(randnumb->floatrand()));
   phi = twopi*randnumb->floatrand();
@@ -2318,18 +2335,18 @@ void Simulation<ndim>::AddCubicLattice
 
   debug2("[Simulation::AddCubicLattice]");
 
-  // If normalised, ensure equal spacing between all lattice layers.  
+  // If normalised, ensure equal spacing between all lattice layers.
   // Otherwise set spacing to fit bounding box
   if (normalise) {
-    for (k=0; k<ndim; k++) 
+    for (k=0; k<ndim; k++)
       spacing[k] = (box.boxmax[0] - box.boxmin[0])/(FLOAT) Nlattice[0];
   }
   else {
-    for (k=0; k<ndim; k++) 
+    for (k=0; k<ndim; k++)
       spacing[k] = (box.boxmax[k] - box.boxmin[k])/(FLOAT) Nlattice[k];
   }
 
-  
+
   // Create lattice depending on dimensionality
   //---------------------------------------------------------------------------
   if (ndim == 1) {
@@ -2388,17 +2405,17 @@ void Simulation<ndim>::AddHexagonalLattice
 
   debug2("[Simulation::AddHexagonalLattice]");
 
-  // If normalised, ensure equal spacing between all particles.  
+  // If normalised, ensure equal spacing between all particles.
   // Otherwise set spacing to fit bounding box.
   if (normalise) {
-    for (k=0; k<ndim; k++) 
+    for (k=0; k<ndim; k++)
       rad[k] = 0.5*(box.boxmax[0] - box.boxmin[0])/(FLOAT) Nlattice[0];
   }
   else {
-    for (k=0; k<ndim; k++) 
+    for (k=0; k<ndim; k++)
       rad[k] = 0.5*(box.boxmax[k] - box.boxmin[k])/(FLOAT) Nlattice[k];
   }
-  
+
 
   // Create lattice depending on dimensionality
   //---------------------------------------------------------------------------
@@ -2414,9 +2431,9 @@ void Simulation<ndim>::AddHexagonalLattice
     for (jj=0; jj<Nlattice[1]; jj++) {
       for (ii=0; ii<Nlattice[0]; ii++) {
 	i = jj*Nlattice[0] + ii;
-	r[ndim*i] = box.boxmin[0] + 0.5*rad[0] + 
+	r[ndim*i] = box.boxmin[0] + 0.5*rad[0] +
 	  (2.0*(FLOAT)ii + (FLOAT)(jj%2))*rad[0];
-	r[ndim*i + 1] = box.boxmin[1] + 0.5*sqrt(3.0)*rad[1] + 
+	r[ndim*i + 1] = box.boxmin[1] + 0.5*sqrt(3.0)*rad[1] +
 	  (FLOAT)jj*sqrt(3.0)*rad[1];
       }
     }
@@ -2430,11 +2447,11 @@ void Simulation<ndim>::AddHexagonalLattice
       for (jj=0; jj<Nlattice[1]; jj++) {
 	for (ii=0; ii<Nlattice[0]; ii++) {
 	  i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
-	  r[ndim*i] = box.boxmin[0] + 0.5*rad[0] + 
+	  r[ndim*i] = box.boxmin[0] + 0.5*rad[0] +
 	    (2.0*(FLOAT)ii + (FLOAT)(jj%2) + (FLOAT)((kk+1)%2))*rad[0];
-	  r[ndim*i + 1] = box.boxmin[1] + 0.5*sqrt(3.0)*rad[1] + 
+	  r[ndim*i + 1] = box.boxmin[1] + 0.5*sqrt(3.0)*rad[1] +
 	    (FLOAT)jj*sqrt(3.0)*rad[1] + (FLOAT)(kk%2)*rad[1]/sqrt(3.0);
-	  r[ndim*i + 2] = box.boxmin[2] + sqrt(6.0)*rad[2]/3.0 + 
+	  r[ndim*i + 2] = box.boxmin[2] + sqrt(6.0)*rad[2]/3.0 +
 	    (FLOAT)kk*2.0*sqrt(6.0)*rad[2]/3.0;
 	}
       }
@@ -2448,7 +2465,7 @@ void Simulation<ndim>::AddHexagonalLattice
 
 //=============================================================================
 //  Simulation::CutSphere
-/// Cut-out a sphere containing exactly 'Nsphere' particles from a uniform 
+/// Cut-out a sphere containing exactly 'Nsphere' particles from a uniform
 /// box of particles.
 //=============================================================================
 template <int ndim>
@@ -2478,7 +2495,7 @@ int Simulation<ndim>::CutSphere
     r_high = min(r_high,(FLOAT)0.5*(box.boxmax[k] - box.boxmin[k]));
   }
 
-  // Bisection iteration to determine the radius containing the desired 
+  // Bisection iteration to determine the radius containing the desired
   // number of particles
   //---------------------------------------------------------------------------
   do {
@@ -2492,8 +2509,8 @@ int Simulation<ndim>::CutSphere
       if (drsqd <= radius*radius) Ninterior++;
     }
 
-    // If it's impossible to converge on the desired number of particles, due 
-    // to lattice configurations, then exit iteration with approximate number 
+    // If it's impossible to converge on the desired number of particles, due
+    // to lattice configurations, then exit iteration with approximate number
     // of particles (must be less than Nsphere due to memory).
     if (Ninterior < Nsphere && fabs(r_high - r_low)/radius < 1.e-8) break;
 
@@ -2504,7 +2521,7 @@ int Simulation<ndim>::CutSphere
   } while (Ninterior != Nsphere);
 
 
-  // Now that the radius containing require number has been identified, 
+  // Now that the radius containing require number has been identified,
   // record only the particles inside the sphere.
   //---------------------------------------------------------------------------
   Ninterior = 0;
@@ -2557,7 +2574,7 @@ void Simulation<ndim>::AddAzimuthalDensityPerturbation
   for (i=0; i<Npart; i++) {
     for (k=0; k<ndim; k++) rpos[k] = r[ndim*i + k] - rcentre[k];
 
-    // Calculate distance from z-axis and 
+    // Calculate distance from z-axis and
     Rsqd = rpos[0]*rpos[0] + rpos[1]*rpos[1];
     Rmag = sqrt(Rsqd);
 
@@ -2573,7 +2590,7 @@ void Simulation<ndim>::AddAzimuthalDensityPerturbation
     if (phi < amp/(FLOAT) mpert) phi = phi + twopi;
 
     // Numerically find new phi angle for perturbation.  Search through
-    // grid of values, find upper and lower bounds, then use linear 
+    // grid of values, find upper and lower bounds, then use linear
     // interpolation to find new value of phi.
     for (j=1; j<tabtot; j++) {
       phi1 = spacing*(FLOAT) (j - 1);
@@ -2628,7 +2645,7 @@ void Simulation<ndim>::AddRotationalVelocityField
     for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k] - rcentre[k];
     for (k=0; k<ndim; k++) v[ndim*i + k] = 0.0;
 
-    // Calculate distance from z-axis and 
+    // Calculate distance from z-axis and
     Rsqd = dr[0]*dr[0] + dr[1]*dr[1];
     Rmag = sqrt(Rsqd);
 
@@ -2690,12 +2707,12 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
   kmin = -(gridsize/2 - 1);
   kmax = gridsize/2;
   krange = kmax - kmin + 1;
-  cout << "kmin : " << kmin << "    kmax : " << kmax << "    krange : " 
+  cout << "kmin : " << kmin << "    kmax : " << kmax << "    krange : "
        << krange << "    gridsize : " << gridsize << endl;
   if (krange != gridsize) exit(0);
 
   power = new DOUBLE*[3];  phase = new DOUBLE*[3];
-  for (d=0; d<3; d++) power[d] = new DOUBLE[krange*krange*krange];  
+  for (d=0; d<3; d++) power[d] = new DOUBLE[krange*krange*krange];
   for (d=0; d<3; d++) phase[d] = new DOUBLE[krange*krange*krange];
   incomplexfield = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*gridsize*gridsize*gridsize);
   outcomplexfield = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*gridsize*gridsize*gridsize);
@@ -2735,62 +2752,62 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
 	  ii = (i + krange)%krange;
 	  jj = (j + krange)%krange;
 	  kk = (k + krange)%krange;
-	  
+
 	  // cycle antiparallel k-vectors
-	  //if (k < 0) continue;            
+	  //if (k < 0) continue;
 	  //if (k == 0) {
 	  //  if (j < 0) continue;
 	  //  if (j == 0 && i < 0) continue;
 	  //}
-	  
+
 	  // Central power = 0
 	  if (i == 0 && j == 0 && k == 0) continue;
 	  if (i*i + j*j + k*k >= kmax*kmax) continue;
-	  
+
 	  // Power value, to be multipled by random power chosen from a Gaussian
 	  // This is what gives the slope of the eventual power spectrum
 	  for (d=0; d<3; d++)
 	    F[d] = sqrt(pow(sqrt((DOUBLE)(i*i + j*j + k*k)),power_turb));
-	  
+
 	  for (d=0; d<3; d++) {
 	    Rnd[0] = randnumb->floatrand();
-	    
+
 	    // Random phase between 0 and 2*pi (actually -pi and +pi).
 	    phase[d][ii + krange*jj + krange*krange*kk] =
-	      (2.0*Rnd[0] - 1.0)*pi;	  
-	    
+	      (2.0*Rnd[0] - 1.0)*pi;
+
 	    // Create Gaussian distributed random numbers
 	    Rnd[1] = randnumb->gaussrand(0.0,1.0);
 	    Rnd[2] = randnumb->gaussrand(0.0,1.0);
 	    F[d] = Rnd[1]*F[d];
 	  }
-	  
+
 	  // Helmholtz decomposition!
 	  unitk[0] = (DOUBLE) i;
 	  unitk[1] = (DOUBLE) j;
 	  unitk[2] = (DOUBLE) k;
 	  DOUBLE ksqd = DotProduct(unitk,unitk,3);
 	  for (d=0; d<3; d++) unitk[d] /= sqrt(ksqd);
-	  
-	  // For curl free turbulence, vector F should be 
+
+	  // For curl free turbulence, vector F should be
 	  // parallel/anti-parallel to vector k
 	  if (curlfree) {
 	    for (d=0; d<3; d++)
-	      power[d][ii + krange*jj + krange*krange*kk] 
+	      power[d][ii + krange*jj + krange*krange*kk]
 		= unitk[d]*DotProduct(F,unitk,3);
 	  }
-	  // For divergence free turbulence, vector F should be perpendicular 
+	  // For divergence free turbulence, vector F should be perpendicular
 	  // to vector k
 	  else if (divfree) {
 	    for (d=0; d<3; d++)
-	      power[d][ii + krange*jj + krange*krange*kk] 
+	      power[d][ii + krange*jj + krange*krange*kk]
 		= F[d] - unitk[d]*DotProduct(F,unitk,3);
 	  }
 	  else {
 	    for (d=0; d<3; d++)
 	      power[d][ii + krange*jj + krange*krange*kk] = F[d];
 	  }
-	  
+
 	}
       }
     }
@@ -2800,7 +2817,7 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
 
 
   DOUBLE power_spectrum[kmax+1][3];
-  for (i=0; i<kmax+1; i++) 
+  for (i=0; i<kmax+1; i++)
     for (d=0; d<3; d++) power_spectrum[i][d] = 0.0;
   for (i=kmin; i<=kmax; i++) {
     for (j=kmin; j<=kmax; j++) {
@@ -2811,7 +2828,7 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
 	DOUBLE kmag = sqrt((DOUBLE)(i*i + j*j + k*k));
 	if (kmag >= kmax) kmag = kmax;
 	int ibin = (int) (1.0001*kmag);
-	power_spectrum[ibin][0] += 
+	power_spectrum[ibin][0] +=
 	  pow(power[0][ii + krange*jj + krange*krange*kk],2);
 	power_spectrum[ibin][1] +=
 	  pow(power[1][ii + krange*jj + krange*krange*kk],2);
@@ -2821,11 +2838,11 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
     }
   }
   //for (i=1; i<kmax+1; i++)
-  //cout << "POWER3 : " << i << "   " << power_spectrum[i][0] << "   " 
+  //cout << "POWER3 : " << i << "   " << power_spectrum[i][0] << "   "
   // << power_spectrum[i][1] << "   " << power_spectrum[i][2] << endl;
   //for (i=1; i<kmax+1; i++)
-  //cout << "POWER3 : " << i << "   " << sqrt(power_spectrum[i][0]) << "   " 
-  // << sqrt(power_spectrum[i][1]) << "   " 
+  //cout << "POWER3 : " << i << "   " << sqrt(power_spectrum[i][0]) << "   "
+  // << sqrt(power_spectrum[i][1]) << "   "
   // << sqrt(power_spectrum[i][2]) << endl;
 
   plan = fftw_plan_dft_3d(gridsize, gridsize, gridsize, incomplexfield,
@@ -2852,24 +2869,24 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
 	  incomplexfield[ii +krange*jj + krange*krange*kk][1]
 	    = power[d][ii + krange*jj + krange*krange*kk]*
 	    sin(phase[d][ii + krange*jj + krange*krange*kk]);
-	  //cout << "COMPLEX[" << d << "   " << i << "," << j << "," << k << "] : " 
+	  //cout << "COMPLEX[" << d << "   " << i << "," << j << "," << k << "] : "
 	  //   << incomplexfield[0][ii +krange*jj +krange*krange*kk] << "   "
 	  //   << incomplexfield[1][ii +krange*jj +krange*krange*kk] << endl;
 
 	}
       }
     }
-    
+
     //fftw_execute_dft(plan, complexfield, complexfield);
     fftw_execute_dft(plan, incomplexfield, outcomplexfield);
-    
+
 
     for (i=0; i<krange; i++) {
       for (j=0; j<krange; j++) {
 	for (k=0; k<krange; k++) {
-	  vfield[d + 3*i + 3*krange*j + 3*krange*krange*k] = 
+	  vfield[d + 3*i + 3*krange*j + 3*krange*krange*k] =
 	    outcomplexfield[i + krange*j + krange*krange*k][0];
-	  //cout << "VFIELD?? : " << d << "    " << 
+	  //cout << "VFIELD?? : " << d << "    " <<
 	  //outcomplexfield[0][i + krange*j + krange*krange*k] << endl;
 	}
       }
@@ -2881,15 +2898,15 @@ void Simulation<ndim>::GenerateTurbulentVelocityField
   /*for (i=0; i<krange; i++) {
     for (j=0; j<krange; j++) {
       for (k=0; k<krange; k++) {
-  	cout << "v[" << i << "," << j << "," << k << "] : " 
-	     << vfield[3*i + 3*krange*j + 3*krange*krange*k] << "    " 
-	     << vfield[1 + 3*i + 3*krange*j + 3*krange*krange*k] << "    " 
-	     << vfield[2 + 3*i + 3*krange*j + 3*krange*krange*k] << "    " 
+  	cout << "v[" << i << "," << j << "," << k << "] : "
+	     << vfield[3*i + 3*krange*j + 3*krange*krange*k] << "    "
+	     << vfield[1 + 3*i + 3*krange*j + 3*krange*krange*k] << "    "
+	     << vfield[2 + 3*i + 3*krange*j + 3*krange*krange*k] << "    "
 	     << endl;
       }
     }
     }*/
-  
+
 
   fftw_destroy_plan(plan);
 
@@ -2936,16 +2953,16 @@ void Simulation<ndim>::InterpolateVelocityField
     i = (int) dx[0];
     j = (int) dx[1];
     k = (int) dx[2];
-    
-    if (i > Ngrid || j > Ngrid || k > Ngrid || 
+
+    if (i > Ngrid || j > Ngrid || k > Ngrid ||
 	i < 0 || j < 0 || k < 0)  {
-      cout << "Problem with velocity interpolation grid!! : " 
+      cout << "Problem with velocity interpolation grid!! : "
 	   << i << "    " << j << "    " << k << "   " << Ngrid << endl;
       exit(0);
     }
-    
+
     for (kk=0; kk<ndim; kk++) dx[kk] -= (int) dx[kk];
-    
+
     // Interpolate to get more accurate velocities
     if (ndim == 3) {
       vint[0] = (1.0 - dx[0])*(1.0 - dx[1])*(1.0 - dx[2]);
@@ -2957,41 +2974,40 @@ void Simulation<ndim>::InterpolateVelocityField
       vint[6] = dx[0]*dx[1]*(1.0 - dx[2]);
       vint[7] = dx[0]*dx[1]*dx[2];
 
-      v[ndim*p] = 
-	vint[0]*vfield[3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*k] + 
-	vint[1]*vfield[3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] + 
-	vint[2]*vfield[3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] + 
-	vint[3]*vfield[3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*(k+1)] + 
-	vint[4]*vfield[3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*k] + 
-	vint[5]*vfield[3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] + 
-	vint[6]*vfield[3*(i+1) + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] + 
+      v[ndim*p] =
+	vint[0]*vfield[3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*k] +
+	vint[1]*vfield[3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] +
+	vint[2]*vfield[3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] +
+	vint[3]*vfield[3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*(k+1)] +
+	vint[4]*vfield[3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*k] +
+	vint[5]*vfield[3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] +
+	vint[6]*vfield[3*(i+1) + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] +
 	vint[7]*vfield[3*(i+1) + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*(k+1)];
 
-      v[ndim*p+1] = 
-	vint[0]*vfield[1 + 3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*k] + 
-	vint[1]*vfield[1 + 3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] + 
-	vint[2]*vfield[1 + 3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] + 
-	vint[3]*vfield[1 + 3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*(k+1)] + 
-	vint[4]*vfield[1 + 3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*k] + 
-	vint[5]*vfield[1 + 3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] + 
-	vint[6]*vfield[1 + 3*(i+1) + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] + 
+      v[ndim*p+1] =
+	vint[0]*vfield[1 + 3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*k] +
+	vint[1]*vfield[1 + 3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] +
+	vint[2]*vfield[1 + 3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] +
+	vint[3]*vfield[1 + 3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*(k+1)] +
+	vint[4]*vfield[1 + 3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*k] +
+	vint[5]*vfield[1 + 3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] +
+	vint[6]*vfield[1 + 3*(i+1) + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] +
 	vint[7]*vfield[1 + 3*(i+1) + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*(k+1)];
 
-      v[ndim*p+2] = 
-	vint[0]*vfield[2 + 3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*k] + 
-	vint[1]*vfield[2 + 3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] + 
-	vint[2]*vfield[2 + 3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] + 
-	vint[3]*vfield[2 + 3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*(k+1)] + 
-	vint[4]*vfield[2 + 3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*k] + 
-	vint[5]*vfield[2 + 3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] + 
-	vint[6]*vfield[2 + 3*(i+1) + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] + 
+      v[ndim*p+2] =
+	vint[0]*vfield[2 + 3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*k] +
+	vint[1]*vfield[2 + 3*i + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] +
+	vint[2]*vfield[2 + 3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] +
+	vint[3]*vfield[2 + 3*i + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*(k+1)] +
+	vint[4]*vfield[2 + 3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*k] +
+	vint[5]*vfield[2 + 3*(i+1) + 3*Ngrid*j + 3*Ngrid*Ngrid*(k+1)] +
+	vint[6]*vfield[2 + 3*(i+1) + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*k] +
 	vint[7]*vfield[2 + 3*(i+1) + 3*Ngrid*(j+1) + 3*Ngrid*Ngrid*(k+1)];
 
     }
   }
   //---------------------------------------------------------------------------
-  
+
   return;
 }
 #endif
-
