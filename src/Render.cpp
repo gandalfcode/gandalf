@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  Render.cpp
 //  Contains all functions for generating rendered images from SPH snapshots.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <iostream>
@@ -40,10 +40,10 @@
 using namespace std;
 
 
-//=============================================================================
+//=================================================================================================
 //  RenderBase::RenderFactory
 /// Create new render object for simulation object depending on dimensionality.
-//=============================================================================
+//=================================================================================================
 RenderBase* RenderBase::RenderFactory
 (int ndim,                          ///< Simulation dimensionality
  SimulationBase* sim)               ///< Simulation object pointer
@@ -66,10 +66,10 @@ RenderBase* RenderBase::RenderFactory
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Render::Render
 /// Render class constructor.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 Render<ndim>::Render(SimulationBase* sim):
 sph(static_cast<Sph<ndim>* > (static_cast<Simulation<ndim>* > (sim)->sph))
@@ -78,10 +78,10 @@ sph(static_cast<Sph<ndim>* > (static_cast<Simulation<ndim>* > (sim)->sph))
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Render::~Render
 /// Render class destructor.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 Render<ndim>::~Render()
 {
@@ -89,11 +89,11 @@ Render<ndim>::~Render()
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Render::CreateColumnRenderingGrid
 /// Calculate column integrated SPH averaged quantities on a grid for use in
 /// generated rendered images in python code.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 int Render<ndim>::CreateColumnRenderingGrid
 (int ixgrid,                       ///< [in] No. of x-grid spacings
@@ -115,12 +115,16 @@ int Render<ndim>::CreateColumnRenderingGrid
   int c;                           // Rendering grid cell counter
   int i;                           // Particle counter
   int j;                           // Aux. counter
+  int ii,jj;                       // ..
   int idummy;                      // Dummy integer to verify valid arrays
+  int imin,imax,jmin,jmax;         // Grid limits for column density interpolation
   int Nsph = snap.Nsph;            // No. of SPH particles in snap
+  float dx,dy,invdx,invdy;         // ..
   float dr[2];                     // Rel. position vector on grid plane
   float drsqd;                     // Distance squared on grid plane
   float drmag;                     // Distance
   float dummyfloat = 0.0;          // Dummy variable for function argument
+  float hrange;                    // ..
   float hrangesqd;                 // Kernel range squared
   float invh;                      // 1/h
   float wkern;                     // Kernel value
@@ -139,13 +143,14 @@ int Render<ndim>::CreateColumnRenderingGrid
   if ((xstring != "x" && xstring != "y" && xstring != "z") ||
       (ystring != "x" && ystring != "y" && ystring != "z")) return -1;
 
+  cout << "Generating rendered image!" << endl;
+
   // First, verify x, y, m, rho, h and render strings are valid
   snap.ExtractArray(xstring,"sph",&xvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
   snap.ExtractArray(ystring,"sph",&yvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(renderstring,"sph",&rendervalues,&idummy,
-                    scaling_factor,renderunit);
+  snap.ExtractArray(renderstring,"sph",&rendervalues,&idummy,scaling_factor,renderunit);
   arraycheck = min(idummy,arraycheck);
   snap.ExtractArray("m","sph",&mvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
@@ -162,97 +167,79 @@ int Render<ndim>::CreateColumnRenderingGrid
   rgrid = new float[2*Ngrid];
 
   // Create grid positions here (need to improve in the future)
+  dx = (xmax - xmin) / (float) ixgrid;
+  dy = (ymax - ymin) / (float) iygrid;
+  invdx = 1.0/dx;
+  invdy = 1.0/dy;
   c = 0;
   for (j=iygrid-1; j>=0; j--) {
     for (i=0; i<ixgrid; i++) {
-      rgrid[2*c] = xmin + ((float) i + 0.5f)*(xmax - xmin)/(float)ixgrid;
-      rgrid[2*c + 1] = ymin + ((float) j + 0.5f)*(ymax - ymin)/(float)iygrid;
+      rgrid[2*c] = xmin + ((float) i + 0.5f)*dx;
+      rgrid[2*c + 1] = ymin + ((float) j + 0.5f)*dy;
       c++;
     }
   }
 
-  // Zero arrays before computing rendering
+  // Zero arrays before computing rendered values
   for (c=0; c<Ngrid; c++) values[c] = (float) 0.0;
   for (c=0; c<Ngrid; c++) rendernorm[c] = (float) 0.0;
 
 
-  // Create rendered grid depending on dimensionality
-  //===========================================================================
-  if (ndim == 2) {
 
-    // Loop over all particles in snapshot
-    //------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(c,dr,drmag,drsqd,hrangesqd) \
-  private(invh,i,wkern,wnorm) shared(hvalues,mvalues,Nsph,rhovalues,rgrid) \
-  shared(xvalues,yvalues,rendervalues,values,rendernorm,Ngrid)
-    for (i=0; i<Nsph; i++) {
-      invh = 1.0/hvalues[i];
-      wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);
-      hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
-      
-      // Now loop over all pixels and add current particles
-      //-----------------------------------------------------------------------
-      for (c=0; c<Ngrid; c++) {
-    	dr[0] = rgrid[2*c] - xvalues[i];
-        dr[1] = rgrid[2*c + 1] - yvalues[i];
+// Loop over all particles in snapshot
+//=================================================================================================
+#pragma omp parallel for default(none) private(c,dr,drmag,drsqd,hrange,hrangesqd,i,ii,imax,imin)\
+ private(invh,jj,jmax,jmin,wkern,wnorm) shared(cout,dx,dy,invdx,invdy,ixgrid,iygrid,hvalues)\
+ shared(mvalues,Ngrid)\
+ shared(Nsph,rendernorm,rendervalues,rhovalues,rgrid,values,xmin,xmax,xvalues,ymin,ymax,yvalues)
+  for (i=0; i<Nsph; i++) {
+    hrange = sph->kerntab.kernrange*hvalues[i];
+
+    if (xvalues[i] + hrange < xmin || xvalues[i] - hrange > xmax ||
+        yvalues[i] + hrange < ymin || yvalues[i] - hrange > ymax) continue;
+
+    // Compute grid coordinate limits for computing kernel convolution
+    imin = (xvalues[i] - hrange - xmin)*invdx;  imin = max(0,imin);  imin = min(ixgrid-1,imin);
+    imax = (xvalues[i] + hrange - xmin)*invdx;  imax = max(0,imax);  imax = min(ixgrid-1,imax);
+    jmin = (yvalues[i] - hrange - ymin)*invdy;  jmin = max(0,jmin);  jmin = min(iygrid-1,jmin);
+    jmax = (yvalues[i] + hrange - ymin)*invdy;  jmax = max(0,jmax);  jmax = min(iygrid-1,jmax);
+
+    // If kernel does not overlap rendered image, skip particle entirely
+    //if (imin == imax || jmin == jmax) continue;
+    invh = 1.0/hvalues[i];
+    wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);
+    hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
+
+    // Now loop over all pixels for particle
+    //---------------------------------------------------------------------------------------------
+    for (jj=jmin; jj<=jmax; jj++) {
+      for (ii=imin; ii<=imax; ii++) {
+        c = ii + (iygrid - jj - 1)*ixgrid;
+        dr[0] = xmin + dx*(float) ii - xvalues[i];
+        dr[1] = ymin + dy*(float) jj - yvalues[i];
         drsqd = dr[0]*dr[0] + dr[1]*dr[1];
-	
-        if (drsqd > hrangesqd) continue;
-	
+        //if (drsqd > hrangesqd) continue;
         drmag = sqrt(drsqd);
-        wkern = float(sph->kerntab.w0((FLOAT) (drmag*invh)));
-	
+        if (ndim == 2) wkern = float(sph->kerntab.w0((FLOAT) (drmag*invh)));
+        else if (ndim == 3) wkern = float(sph->kerntab.wLOS((FLOAT) (drmag*invh)));
 #pragma omp atomic
         values[c] += wnorm*rendervalues[i]*wkern;
 #pragma omp atomic
         rendernorm[c] += wnorm*wkern;
       }
-      //-----------------------------------------------------------------------
-      
     }
-    //-------------------------------------------------------------------------
-
-    // Normalise all grid cells
-    for (c=0; c<Ngrid; c++) {
-      if (rendernorm[c] > 1.e-10) values[c] /= rendernorm[c];
-    }
-
+   //----------------------------------------------------------------------------------------------
 
   }
-  //===========================================================================
-  else if (ndim == 3) {
+  //===============================================================================================
 
-    // Loop over all particles in snapshot
-    //-------------------------------------------------------------------------
-    for (i=0; i<snap.Nsph; i++) {
-      invh = 1.0f/hvalues[i];
-      wnorm = mvalues[i]/rhovalues[i]*pow(invh,(ndim - 1));
-      hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
-      
-      // Now loop over all pixels and add current particles
-      //-----------------------------------------------------------------------
-      for (c=0; c<Ngrid; c++) {
-	
-    	dr[0] = rgrid[2*c] - xvalues[i];
-        dr[1] = rgrid[2*c + 1] - yvalues[i];
-        drsqd = dr[0]*dr[0] + dr[1]*dr[1];
-	
-        if (drsqd > hrangesqd) continue;
-	
-        drmag = sqrt(drsqd);
-        wkern = float(sph->kerntab.wLOS((FLOAT) (drmag*invh)));
-	
-        values[c] += wnorm*rendervalues[i]*wkern;
-        rendernorm[c] += wnorm*wkern;
-      }
-      //-----------------------------------------------------------------------
-
-    }
-    //-------------------------------------------------------------------------
-
+  // Normalise all grid cells
+  for (c=0; c<Ngrid; c++) {
+    if (rendernorm[c] > 1.e-10) values[c] /= rendernorm[c];
   }
-  //===========================================================================
 
+
+cout << "Finished generating image" << endl;
 
   // Free all locally allocated memory
   delete[] rgrid;
@@ -263,10 +250,10 @@ int Render<ndim>::CreateColumnRenderingGrid
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Render::CreateSliceRenderingGrid
 /// Calculate gridded SPH properties on a slice for slice-rendering.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 int Render<ndim>::CreateSliceRenderingGrid
 (int ixgrid,                       ///< [in] No. of x-grid spacings
@@ -291,10 +278,15 @@ int Render<ndim>::CreateSliceRenderingGrid
   int i;                           // Particle counter
   int j;                           // Aux. counter
   int idummy;                      // Dummy integer to verify correct array
+  int ii,jj;
+  int imin,imax,jmin,jmax;         // Grid limits for column density interpolation
+  int Nsph = snap.Nsph;            // No. of SPH particles in snap
+  float dx,dy,invdx,invdy;         // ..
   float dr[3];                     // Rel. position vector on grid plane
   float drsqd;                     // Distance squared on grid plane
   float drmag;                     // Distance
   float dummyfloat = 0.0;          // Dummy float for function arguments
+  float hrange;
   float hrangesqd;                 // Kernel range squared
   float invh;                      // 1/h
   float skern;                     // r/h
@@ -317,20 +309,19 @@ int Render<ndim>::CreateSliceRenderingGrid
 	  (ystring != "x" && ystring != "y" && ystring != "z")) return -1;
 
   // First, verify x, y, z, m, rho, h and render strings are valid
-  snap.ExtractArray(xstring,"sph",&xvalues,&idummy,dummyfloat,dummystring); 
+  snap.ExtractArray(xstring,"sph",&xvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(ystring,"sph",&yvalues,&idummy,dummyfloat,dummystring); 
+  snap.ExtractArray(ystring,"sph",&yvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(zstring,"sph",&zvalues,&idummy,dummyfloat,dummystring); 
+  snap.ExtractArray(zstring,"sph",&zvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray(renderstring,"sph",&rendervalues,&idummy,
-                    scaling_factor,renderunit); 
+  snap.ExtractArray(renderstring,"sph",&rendervalues,&idummy,scaling_factor,renderunit);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("m","sph",&mvalues,&idummy,dummyfloat,dummystring); 
+  snap.ExtractArray("m","sph",&mvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("rho","sph",&rhovalues,&idummy,dummyfloat,dummystring); 
+  snap.ExtractArray("rho","sph",&rhovalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
-  snap.ExtractArray("h","sph",&hvalues,&idummy,dummyfloat,dummystring); 
+  snap.ExtractArray("h","sph",&hvalues,&idummy,dummyfloat,dummystring);
   arraycheck = min(idummy,arraycheck);
 
   // If any are invalid, exit here with failure code
@@ -339,15 +330,20 @@ int Render<ndim>::CreateSliceRenderingGrid
   rendernorm = new float[Ngrid];
   rgrid = new float[2*Ngrid];
 
-  // Create grid positions here
+  // Create grid positions here (need to improve in the future)
+  dx = (xmax - xmin) / (float) ixgrid;
+  dy = (ymax - ymin) / (float) iygrid;
+  invdx = 1.0/dx;
+  invdy = 1.0/dy;
   c = 0;
   for (j=iygrid-1; j>=0; j--) {
     for (i=0; i<ixgrid; i++) {
-      rgrid[2*c] = xmin + ((float) i + 0.5f)*(xmax - xmin)/(float)ixgrid;
-      rgrid[2*c + 1] = ymin + ((float) j + 0.5f)*(ymax - ymin)/(float)iygrid;
+      rgrid[2*c] = xmin + ((float) i + 0.5f)*dx;
+      rgrid[2*c + 1] = ymin + ((float) j + 0.5f)*dy;
       c++;
     }
   }
+
 
   // Zero arrays before computing rendering
   for (c=0; c<Ngrid; c++) values[c] = 0.0f;
@@ -355,41 +351,58 @@ int Render<ndim>::CreateSliceRenderingGrid
 
 
   // Loop over all particles in snapshot
-  //---------------------------------------------------------------------------
-  for (i=0; i<snap.Nsph; i++) {
+  //=================================================================================================
+#pragma omp parallel for default(none) private(c,dr,drmag,drsqd,hrange,hrangesqd,i,ii,imax,imin)\
+   private(invh,jj,jmax,jmin,wkern,wnorm) shared(cout,dx,dy,invdx,invdy,ixgrid,iygrid,hvalues)\
+   shared(mvalues,Ngrid,Nsph,rendernorm,rendervalues,rhovalues,rgrid,values,xmin,xmax,xvalues)\
+   shared(ymin,ymax,yvalues,zvalues,zslice)
+  for (i=0; i<Nsph; i++) {
+    hrange = sph->kerntab.kernrange*hvalues[i];
+
+    if (xvalues[i] + hrange < xmin || xvalues[i] - hrange > xmax ||
+        yvalues[i] + hrange < ymin || yvalues[i] - hrange > ymax ||
+        zvalues[i] + hrange < zslice || zvalues[i] - hrange > zslice) continue;
+
+    // Compute grid coordinate limits for computing kernel convolution
+    imin = (xvalues[i] - hrange - xmin)*invdx;  imin = max(0,imin);  imin = min(ixgrid-1,imin);
+    imax = (xvalues[i] + hrange - xmin)*invdx;  imax = max(0,imax);  imax = min(ixgrid-1,imax);
+    jmin = (yvalues[i] - hrange - ymin)*invdy;  jmin = max(0,jmin);  jmin = min(iygrid-1,jmin);
+    jmax = (yvalues[i] + hrange - ymin)*invdy;  jmax = max(0,jmax);  jmax = min(iygrid-1,jmax);
+
+    // If kernel does not overlap rendered image, skip particle entirely
+    //if (imin == imax || jmin == jmax) continue;
     invh = 1.0/hvalues[i];
     wnorm = mvalues[i]/rhovalues[i]*pow(invh,ndim);
     hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
 
-    // Now loop over all pixels and add current particles
-    //-------------------------------------------------------------------------
-    for (c=0; c<Ngrid; c++) {
-
-      dr[0] = rgrid[2*c] - xvalues[i];
-      dr[1] = rgrid[2*c + 1] - yvalues[i];
-      dr[2] = zslice - zvalues[i];
-      drsqd = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
-      
-      if (drsqd > hrangesqd) continue;
-
-      drmag = sqrt(drsqd);
-      skern = (FLOAT) (drmag*invh);
-      wkern = float(sph->kerntab.w0(skern));
-
+    // Now loop over all pixels for particle
+    //---------------------------------------------------------------------------------------------
+    for (jj=jmin; jj<=jmax; jj++) {
+      for (ii=imin; ii<=imax; ii++) {
+        c = ii + (iygrid - jj - 1)*ixgrid;
+        dr[0] = xmin + dx*(float) ii - xvalues[i];
+        dr[1] = ymin + dy*(float) jj - yvalues[i];
+        dr[2] = zslice - zvalues[i];
+        drsqd = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
+        //if (drsqd > hrangesqd) continue;
+        drmag = sqrt(drsqd);
+        wkern = float(sph->kerntab.w0((FLOAT) (drmag*invh)));
 #pragma omp atomic
-      values[c] += wnorm*rendervalues[i]*wkern;
+        values[c] += wnorm*rendervalues[i]*wkern;
 #pragma omp atomic
-      rendernorm[c] += wnorm*wkern;
-
+        rendernorm[c] += wnorm*wkern;
+      }
     }
-    //-------------------------------------------------------------------------
+   //----------------------------------------------------------------------------------------------
 
   }
-  //---------------------------------------------------------------------------
+  //===============================================================================================
+
 
   // Normalise all grid cells
-  for (c=0; c<Ngrid; c++)
+  for (c=0; c<Ngrid; c++) {
     if (rendernorm[c] > 1.e-10) values[c] /= rendernorm[c];
+  }
 
   // Free all locally allocated memory
   delete[] rgrid;
