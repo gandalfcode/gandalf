@@ -205,20 +205,6 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSPHForces
 
 
 //=================================================================================================
-//  NbodyLeapfrogDKD::CalculateAllStartupQuantities
-/// Empty function for Leapfrog-KDK (no additional quantities required).
-//=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateAllStartupQuantities
-(int N,                             ///< Number of stars
- NbodyParticle<ndim> **star)        ///< Array of stars/systems
-{
-  return;
-}
-
-
-
-//=================================================================================================
 //  NbodyLeapfrogDKD::AdvanceParticles
 /// Integrate star positions to 2nd order, and star velocities to 1st
 /// order from the beginning of the step to the current simulation time, i.e.
@@ -231,8 +217,9 @@ template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::AdvanceParticles
 (int n,                             ///< Integer time
  int N,                             ///< No. of stars/systems
- NbodyParticle<ndim> **star,        ///< Main star/system array
- DOUBLE timestep)                   ///< Smallest timestep value
+ DOUBLE t,                          ///< Current time
+ DOUBLE timestep,                   ///< Smallest timestep value
+ NbodyParticle<ndim> **star)        ///< Main star/system array
 {
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
@@ -249,7 +236,8 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::AdvanceParticles
     // Compute time since beginning of step
     nstep = star[i]->nstep;
     dn = n - star[i]->nlast;
-    dt = timestep*(FLOAT) dn;
+    //dt = timestep*(FLOAT) dn;
+    dt = t - star[i]->tlast;
 
     // Advance positions and velocities to first order
     if (dn < nstep) {
@@ -282,6 +270,8 @@ template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::EndTimestep
 (int n,                             ///< Integer time
  int N,                             ///< No. of stars/systems
+ DOUBLE t,                          ///< Current time
+ DOUBLE timestep,                   ///< Smallest timestep value
  NbodyParticle<ndim> **star)        ///< Main star/system array
 {
   int dn;                           // Integer time since beginning of step
@@ -303,6 +293,7 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::EndTimestep
       for (k=0; k<ndim; k++) star[i]->a0[k] = star[i]->a[k];
       star[i]->active = false;
       star[i]->nlast = n;
+      star[i]->tlast = t;
     }
   }
   //-----------------------------------------------------------------------------------------------

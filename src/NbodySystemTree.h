@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  NbodySystemTree.h
 //  Contains definitions for Nearest neighbour tree class and data structures.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _NBODY_SYSTEM_TREE_H_
@@ -39,69 +39,70 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Structure NNTreeCell
 /// \brief   Class definition for N-body nearest neighbour tree data structure.
 /// \details Class definition for N-body nearest neighbour tree data structure.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    10/06/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 struct NNTreeCell {
-  int ichild1;                      ///< i.d. of child 1
-  int ichild2;                      ///< i.d. of child 2
-  int inearest;                     ///< i.d. of nearest node (for building)
-  int iparent;                      ///< i.d. of parent node
-  int Ncomp;                        ///< No. of components in node
-  int Nstar;                        ///< No. of stars in node
-  int Nchildlist;                   ///< No. of systems in list
-  DOUBLE radius;                    ///< Radius of bounding sphere of node
-  DOUBLE rsqdnearest;               ///< Distance squared to nearest node
-  DOUBLE r[ndim];                   ///< Position of centre of mass
-  DOUBLE rpos[ndim];                ///< Centre of position of node
-  DOUBLE v[ndim];                   ///< Velocity of centre of mass
-  DOUBLE a[ndim];                   ///< Acceleration of centre of mass
-  DOUBLE adot[ndim];                ///< Jerk of node
-  DOUBLE a2dot[ndim];               ///< 2nd derivative of node
-  DOUBLE a3dot[ndim];               ///< 3rd derivative of node
-  DOUBLE m;                         ///< Mass contained in node
-  DOUBLE h;                         ///< Smoothing length of node
-  DOUBLE gpot;                      ///< Gravitational potential at node centre
-  DOUBLE gpe;                       ///< Total gpe of node components
-  DOUBLE gpe_internal;              ///< Total internal gpe of node components
-  DOUBLE tcross;                    ///< Crossing time of node components
-  NbodyParticle<ndim>* childlist[Ncompmax];  ///< List of child components
+  int ichild1;                                ///< i.d. of child 1
+  int ichild2;                                ///< i.d. of child 2
+  int inearest;                               ///< i.d. of nearest node (for building)
+  int iparent;                                ///< i.d. of parent node
+  int Ncomp;                                  ///< No. of components in node
+  int Nstar;                                  ///< No. of stars in node
+  int Nchildlist;                             ///< No. of systems in list
+  DOUBLE radius;                              ///< Radius of bounding sphere of node
+  DOUBLE rsqdnearest;                         ///< Distance squared to nearest node
+  DOUBLE r[ndim];                             ///< Position of centre of mass
+  DOUBLE rpos[ndim];                          ///< Centre of position of node
+  DOUBLE v[ndim];                             ///< Velocity of centre of mass
+  DOUBLE a[ndim];                             ///< Acceleration of centre of mass
+  DOUBLE adot[ndim];                          ///< Jerk of node
+  DOUBLE a2dot[ndim];                         ///< 2nd derivative of node
+  DOUBLE a3dot[ndim];                         ///< 3rd derivative of node
+  DOUBLE m;                                   ///< Mass contained in node
+  DOUBLE h;                                   ///< Smoothing length of node
+  DOUBLE gpot;                                ///< Gravitational potential at node centre
+  DOUBLE gpe;                                 ///< Total gpe of node components
+  DOUBLE gpe_internal;                        ///< Total internal gpe of node components
+  DOUBLE tcross;                              ///< Crossing time of node components
+  NbodyParticle<ndim>* childlist[Ncompmax];   ///< List of child components
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class NbodySystemTree
 /// \brief   Class definition for N-body nearest neighbour tree.
-/// \details Class definition for N-body nearest neighbour tree.  Used to 
-///          identify and construct sub-systems for efficient integration of 
-///          bound mutiple systems and high-accuracy integration of close 
-///          encounters.
+/// \details Class definition for N-body nearest neighbour tree.  Used to identify and construct
+///          sub-systems for efficient integration of bound mutiple systems and high-accuracy
+///          integration of close encounters.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    10/06/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class NbodySystemTree
 {
  public:
 
   // Constructor and destructor
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   NbodySystemTree();
   ~NbodySystemTree();
 
 
   // Other function definitions
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   void AllocateMemory(int);
   void DeallocateMemory(void);
+  void ComputeNewBinaryOrbit(const int, const int, const int, NNTreeCell<ndim> &,
+                             NNTreeCell<ndim> &, NNTreeCell<ndim> &);
   void CreateNbodySystemTree(Nbody<ndim> *);
-  void BuildSubSystems(Nbody<ndim> *);
+  void BuildSubSystems(int, int, DOUBLE, Nbody<ndim> *);
   void FindBinarySystems(Nbody<ndim> *);
   void FindPerturberLists(Nbody<ndim> *);
   void OutputBinaryProperties(Nbody<ndim> *);
@@ -109,7 +110,7 @@ class NbodySystemTree
 
 
   // Class variables and main arrays for nearest neighbour tree and binaries
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   bool allocated_tree;              ///< Is NN-tree memory allocated?
   int Nbinary;                      ///< No. of binary stars
   int Nnode;                        ///< No. of nodes of NN-tree

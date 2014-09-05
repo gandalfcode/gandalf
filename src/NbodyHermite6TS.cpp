@@ -1,5 +1,5 @@
 //=================================================================================================
-//  NbodyHermite4.cpp
+//  NbodyHermite6TS.cpp
 //  Contains functions for integrating star particle positions and velocities
 //  using the 4th-order Hermite scheme (Makino & Aarseth 1992).
 //
@@ -42,11 +42,11 @@ using namespace std;
 
 
 //=================================================================================================
-//  NbodyHermite4::NbodyHermite4()
+//  NbodyHermite6TS::NbodyHermite6TS()
 /// N-body 4th-order Hermite class constructor
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-NbodyHermite4<ndim, kernelclass>::NbodyHermite4
+NbodyHermite6TS<ndim, kernelclass>::NbodyHermite6TS
 (int nbody_softening_aux, int sub_systems_aux,
  DOUBLE nbody_mult_aux, string KernelName, int Npec) :
   Nbody<ndim>(nbody_softening_aux, sub_systems_aux, nbody_mult_aux, KernelName, Npec),
@@ -58,23 +58,117 @@ NbodyHermite4<ndim, kernelclass>::NbodyHermite4
 
 
 //=================================================================================================
-//  NbodyHermite4::~NbodyHermite4()
+//  NbodyHermite6TS::~NbodyHermite6TS()
 /// N-body 4th-order Hermite class destructor
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-NbodyHermite4<ndim, kernelclass>::~NbodyHermite4()
+NbodyHermite6TS<ndim, kernelclass>::~NbodyHermite6TS()
 {
 }
 
 
 
 //=================================================================================================
-//  NbodyHermite4::CalculateDirectSmoothedGravForces
+//  NbodyHermite6TS::CalculateDirectGravForces
+/// Calculate all star-star force contributions for active systems using
+/// direct summation with unsoftened gravity.
+//=================================================================================================
+template <int ndim, template<int> class kernelclass>
+void NbodyHermite6TS<ndim,kernelclass>::CalculateDirectGravForces
+(int N,                             ///< Number of stars
+ NbodyParticle<ndim> **star)        ///< Array of stars/systems
+{
+  int i,j,k;                        // Star and dimension counters
+  DOUBLE a[ndim];                   // Acceleration
+  DOUBLE adot[ndim];                // 1st time derivative of accel (jerk)
+  DOUBLE afac,bfac;                 // Aux. summation variables
+  DOUBLE da[ndim];                  // Relative acceleration
+  DOUBLE dr[ndim];                  // Relative position vector
+  DOUBLE drdt;                      // Rate of change of distance
+  DOUBLE drsqd;                     // Distance squared
+  DOUBLE dv[ndim];                  // Relative velocity vector
+  DOUBLE invdrmag;                  // 1 / drmag
+  DOUBLE invdrsqd;                  // 1 / drsqd
+  DOUBLE dvsqd;                     // Velocity squared
+
+  debug2("[NbodyHermite6TS::CalculateDirectGravForces]");
+
+  // Loop over all (active) stars
+  //-----------------------------------------------------------------------------------------------
+  for (i=0; i<N; i++) {
+    if (star[i]->active == 0) continue;
+
+    // Sum grav. contributions for all other stars (excluding star itself)
+    //---------------------------------------------------------------------------------------------
+    for (j=0; j<N; j++) {
+      if (i == j) continue;
+
+      for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      drsqd = DotProduct(dr,dr,ndim) + small_number_dp;
+      invdrmag = 1.0/sqrt(drsqd);
+      drdt = DotProduct(dv,dr,ndim)*invdrmag;
+
+      star[i]->gpot += star[j]->m*invdrmag;
+      for (k=0; k<ndim; k++) star[i]->a[k] += star[j]->m*dr[k]*pow(invdrmag,3);
+      for (k=0; k<ndim; k++) star[i]->adot[k] +=
+        star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+
+    }
+    //---------------------------------------------------------------------------------------------
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+
+  // Loop over all stars a second time to compute 2nd time derivative
+  //-----------------------------------------------------------------------------------------------
+  for (i=0; i<N; i++) {
+    if (star[i]->active == 0) continue;
+    for (k=0; k<ndim; k++) star[i]->a2dot[k] = 0.0;
+
+    // Sum grav. contributions for all other stars (excluding star itself)
+    //---------------------------------------------------------------------------------------------
+    for (j=0; j<N; j++) {
+      if (i == j) continue;
+
+      for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
+      for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
+      for (k=0; k<ndim; k++) da[k] = star[j]->a[k] - star[i]->a[k];
+      drsqd = DotProduct(dr,dr,ndim) + small_number_dp;
+      dvsqd = DotProduct(dv,dv,ndim);
+      invdrsqd = 1.0/drsqd;
+      invdrmag = sqrt(invdrsqd);
+      drdt = DotProduct(dv,dr,ndim)*invdrmag;
+      for (k=0; k<ndim; k++) a[k] = star[j]->m*dr[k]*pow(invdrmag,3);
+      for (k=0; k<ndim; k++) adot[k] =
+        star[j]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+
+      // Now compute 2nd and 3rd order derivatives
+      afac = DotProduct(dv,dr,ndim)*invdrsqd;
+      bfac = dvsqd*invdrsqd + afac*afac + DotProduct(da,dr,ndim)*invdrsqd;
+
+      for (k=0; k<ndim; k++) star[i]->a2dot[k] =
+        star[j]->m*da[k]*invdrsqd*invdrmag - 6.0*afac*adot[k] - 3.0*bfac*a[k];
+
+    }
+    //---------------------------------------------------------------------------------------------
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  NbodyHermite6TS::CalculateDirectSmoothedGravForces
 /// Calculate all star-star force contributions for active systems using kernel-softened
 /// softened gravity.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-void NbodyHermite4<ndim, kernelclass>::CalculateDirectSmoothedGravForces
+void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 (int N,                             ///< [in] Number of stars
  NbodyParticle<ndim> **star)        ///< [inout] Array of stars/systems
 {
@@ -89,7 +183,7 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSmoothedGravForces
   DOUBLE paux;                      // Common force factor
   DOUBLE wmean;                     // Mean-h kernel factor
 
-  debug2("[NbodyHermite4::CalculateDirectSmoothedGravForces]");
+  debug2("[NbodyHermite6TS::CalculateDirectSmoothedGravForces]");
 
   // Loop over all (active) stars
   //-----------------------------------------------------------------------------------------------
@@ -129,11 +223,11 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
 
 //=================================================================================================
-//  NbodyHermite4::CalculateDirectSPHForces
+//  NbodyHermite6TS::CalculateDirectSPHForces
 /// Calculate all ..
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
+void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSPHForces
 (NbodyParticle<ndim> *star,         ///< [inout] Pointer to star
  int Nsph,                          ///< [in] Number of gas particles
  int Ndirect,                       ///< [in] ..
@@ -152,7 +246,7 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
   DOUBLE paux;                      // Aux. force variable
   DOUBLE wkern;                     // SPH kernel value
 
-  debug2("[NbodyHermite4::CalculateDirectSPHForces]");
+  debug2("[NbodyHermite6TS::CalculateDirectSPHForces]");
 
 
   // Sum grav. contributions from all neighbouring SPH particles
@@ -214,12 +308,12 @@ void NbodyHermite4<ndim, kernelclass>::CalculateDirectSPHForces
 
 
 //=================================================================================================
-//  NbodyHermite4::CalculateAllStartupQuantities
+//  NbodyHermite6TS::CalculateAllStartupQuantities
 /// Calculate all initial properties that are required before the first
 /// timestep integration, i.e. 2nd and 3rd acceleration time derivatives.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-void NbodyHermite4<ndim, kernelclass>::CalculateAllStartupQuantities
+void NbodyHermite6TS<ndim, kernelclass>::CalculateAllStartupQuantities
 (int N,                             ///< Number of stars
  NbodyParticle<ndim> **star)        ///< Array of stars/systems
 {
@@ -238,7 +332,7 @@ void NbodyHermite4<ndim, kernelclass>::CalculateAllStartupQuantities
   DOUBLE invdrsqd;                  // 1 / drsqd
   DOUBLE dvsqd;                     // Velocity squared
 
-  debug2("[NbodyHermite4::CalculateAllStartupQuantities]");
+  debug2("[NbodyHermite6TS::CalculateAllStartupQuantities]");
 
 
   // Loop over all stars
@@ -290,7 +384,7 @@ void NbodyHermite4<ndim, kernelclass>::CalculateAllStartupQuantities
 
 
 //=================================================================================================
-//  NbodyHermite4::AdvanceParticles
+//  NbodyHermite6TS::AdvanceParticles
 /// Integrate particle positions to 3nd order, and particle velocities to 2nd
 /// order from the beginning of the step to the current simulation time, i.e.
 /// r(t+dt) = r(t) + v(t)*dt + a(t)*dt^2/2 + adot(t)*dt^3/6,
@@ -299,7 +393,7 @@ void NbodyHermite4<ndim, kernelclass>::CalculateAllStartupQuantities
 /// the end-of-step force computation.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-void NbodyHermite4<ndim, kernelclass>::AdvanceParticles
+void NbodyHermite6TS<ndim, kernelclass>::AdvanceParticles
 (int n,                             ///< Integer time
  int N,                             ///< No. of stars/systems
  DOUBLE t,                          ///< Current time
@@ -311,8 +405,9 @@ void NbodyHermite4<ndim, kernelclass>::AdvanceParticles
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
   DOUBLE dt;                        // Timestep since start of step
+  DOUBLE dt2;                       // dt*dt
 
-  debug2("[NbodyHermite4::AdvanceParticles]");
+  debug2("[NbodyHermite6TS::AdvanceParticles]");
 
   // Advance positions and velocities of all systems
   //-----------------------------------------------------------------------------------------------
@@ -323,12 +418,14 @@ void NbodyHermite4<ndim, kernelclass>::AdvanceParticles
     dn = n - star[i]->nlast;
     //dt = timestep*(FLOAT) dn;
     dt = t - star[i]->tlast;
+    dt2 = dt*dt;
 
     // Advance positions to third order and velocities to second order
-    for (k=0; k<ndim; k++) star[i]->r[k] = star[i]->r0[k] +
-      star[i]->v0[k]*dt + 0.5*star[i]->a0[k]*dt*dt + onesixth*star[i]->adot0[k]*dt*dt*dt;
-    for (k=0; k<vdim; k++) star[i]->v[k] = star[i]->v0[k] +
-      star[i]->a0[k]*dt + 0.5*star[i]->adot0[k]*dt*dt;
+    for (k=0; k<ndim; k++) star[i]->r[k] = star[i]->r0[k] + star[i]->v0[k]*dt +
+      0.5*star[i]->a0[k]*dt2 + onesixth_dp*star[i]->adot0[k]*dt2*dt +
+      0.5*onetwelfth_dp*star[i]->a2dot0[k]*dt2*dt2;
+    for (k=0; k<vdim; k++) star[i]->v[k] = star[i]->v0[k] + star[i]->a0[k]*dt +
+      0.5*star[i]->adot0[k]*dt2 + onesixth_dp*star[i]->a2dot0[k]*dt2*dt;
 
     // If at end of step, set system particle as active
     if (dn == nstep) star[i]->active = true;
@@ -342,12 +439,12 @@ void NbodyHermite4<ndim, kernelclass>::AdvanceParticles
 
 
 //=================================================================================================
-//  NbodyHermite4::CorrectionTerms
+//  NbodyHermite6TS::CorrectionTerms
 /// Compute 2nd and 3rd time derivatives of the acceleration using Hermite interpolation.  Finally
 /// correct positions to 5th order and velocities to 4th order using higher-order derivatives.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-void NbodyHermite4<ndim, kernelclass>::CorrectionTerms
+void NbodyHermite6TS<ndim, kernelclass>::CorrectionTerms
 (int n,                             ///< Integer time
  int N,                             ///< No. of stars/systems
  DOUBLE t,                          ///< Current time
@@ -361,8 +458,9 @@ void NbodyHermite4<ndim, kernelclass>::CorrectionTerms
   DOUBLE dt;                        // Physical time step size
   DOUBLE dt3;                       // dt*dt*dt
   DOUBLE invdt;                     // 1 / dt
+  static const DOUBLE one120 = 1.0/120.0;  // 1/120
 
-  debug2("[NbodyHermite4::CorrectionTerms]");
+  debug2("[NbodyHermite6TS::CorrectionTerms]");
 
   // Loop over all system particles
   //-----------------------------------------------------------------------------------------------
@@ -377,23 +475,19 @@ void NbodyHermite4<ndim, kernelclass>::CorrectionTerms
       invdt = 1.0 / dt;
 
       for (k=0; k<ndim; k++) {
-        star[i]->a2dot[k] = (-6.0*(star[i]->a0[k] - star[i]->a[k]) -
-                             dt*(4.0*star[i]->adot0[k] + 2.0*star[i]->adot[k]))*invdt*invdt;
         star[i]->a3dot[k] = (12.0*(star[i]->a0[k] - star[i]->a[k]) +
                              6.0*dt*(star[i]->adot0[k] + star[i]->adot[k]))*invdt*invdt*invdt;
       }
 
-      //for (k=0; k<ndim; k++) {
-      //  star[i]->v[k] = star[i]->v0[k] + 0.5*(star[i]->a0[k] + star[i]->a[k])*dt -
-      //    onetwelfth*(star[i]->adot[k] - star[i]->adot0[k])*dt*dt;
-      //  star[i]->r[k] = star[i]->r0[k] + 0.5*(star[i]->v0[k] + star[i]->v[k])*dt -
-      //    onetwelfth*(star[i]->a[k] - star[i]->a0[k])*dt*dt;
-      //}
-
       for (k=0; k<ndim; k++) {
-        star[i]->r[k] += star[i]->a2dot[k]*dt3*dt/24.0 + star[i]->a3dot[k]*dt3*dt*dt/120.0;
-        star[i]->v[k] += star[i]->a2dot[k]*dt3/6.0 + star[i]->a3dot[k]*dt3*dt/24.0;
+        star[i]->v[k] = star[i]->v0[k] + 0.5*(star[i]->a0[k] + star[i]->a[k])*dt -
+          0.1*(star[i]->adot[k] - star[i]->adot0[k])*dt*dt +
+          one120*(star[i]->a2dot[k] + star[i]->a2dot0[k])*dt3;
+        star[i]->r[k] = star[i]->r0[k] + 0.5*(star[i]->v0[k] + star[i]->v[k])*dt -
+          0.1*(star[i]->a[k] - star[i]->a0[k])*dt*dt +
+          one120*(star[i]->adot[k] + star[i]->adot0[k])*dt3;
       }
+
     }
 
   }
@@ -405,56 +499,29 @@ void NbodyHermite4<ndim, kernelclass>::CorrectionTerms
 
 
 //=================================================================================================
-//  NbodyHermite4::PerturberCorrectionTerms
+//  NbodyHermite6TS::PerturberCorrectionTerms
 /// ..
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-void NbodyHermite4<ndim, kernelclass>::PerturberCorrectionTerms
+void NbodyHermite6TS<ndim, kernelclass>::PerturberCorrectionTerms
 (int n,                             ///< Integer time
  int N,                             ///< No. of stars/systems
  DOUBLE t,                          ///< Current time
  DOUBLE timestep,                   ///< Smallest timestep value
  NbodyParticle<ndim> **star)        ///< Main star/system array
 {
-  int dn;                           // Integer time since beginning of step
-  int i;                            // Particle counter
-  int k;                            // Dimension counter
-  int nstep;                        // Particle (integer) step size
-  DOUBLE dt;                        // Physical time step size
-  DOUBLE invdt;                     // 1 / dt
-
-  debug2("[NbodyHermite4::PerturberCorrectionTerms]");
-
-  // Loop over all system particles
-  //-----------------------------------------------------------------------------------------------
-  for (i=0; i<N; i++) {
-    dn = n - star[i]->nlast;
-    nstep = star[i]->nstep;
-
-    if (dn == nstep) {
-      //dt = timestep*(DOUBLE) nstep;
-      dt = t - star[i]->tlast;
-      invdt = 1.0 / dt;
-
-      for (k=0; k<ndim; k++) star[i]->a[k] += star[i]->apert[k]*invdt;
-      for (k=0; k<ndim; k++) star[i]->adot[k] += star[i]->adotpert[k]*invdt;
-    }
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
   return;
 }
 
 
 
 //=================================================================================================
-//  NbodyHermite4::EndTimestep
+//  NbodyHermite6TS::EndTimestep
 /// Record all important star particle quantities at the end of the step
 /// for the start of the new timestep.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-void NbodyHermite4<ndim, kernelclass>::EndTimestep
+void NbodyHermite6TS<ndim, kernelclass>::EndTimestep
 (int n,                             ///< Integer time
  int N,                             ///< No. of stars/systems
  DOUBLE t,                          ///< Current time
@@ -466,7 +533,7 @@ void NbodyHermite4<ndim, kernelclass>::EndTimestep
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
 
-  debug2("[NbodyHermite4::EndTimestep]");
+  debug2("[NbodyHermite6TS::EndTimestep]");
 
   // Loop over all system particles
   //-----------------------------------------------------------------------------------------------
@@ -480,6 +547,7 @@ void NbodyHermite4<ndim, kernelclass>::EndTimestep
       for (k=0; k<ndim; k++) star[i]->v0[k] = star[i]->v[k];
       for (k=0; k<ndim; k++) star[i]->a0[k] = star[i]->a[k];
       for (k=0; k<ndim; k++) star[i]->adot0[k] = star[i]->adot[k];
+      for (k=0; k<ndim; k++) star[i]->a2dot0[k] = star[i]->a2dot[k];
       for (k=0; k<ndim; k++) star[i]->apert[k] = 0.0;
       for (k=0; k<ndim; k++) star[i]->adotpert[k] = 0.0;
       star[i]->active = false;
@@ -496,12 +564,12 @@ void NbodyHermite4<ndim, kernelclass>::EndTimestep
 
 
 //=================================================================================================
-//  NbodyHermite4::Timestep
+//  NbodyHermite6TS::Timestep
 /// Calculate the N-body timestep for a given star using the standard Aarseth timestep, i.e.
 /// $dt = gamma*\sqrt{\frac{a*a2 + a1^2}{a1*a3 + a2^2}}$.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-DOUBLE NbodyHermite4<ndim, kernelclass>::Timestep
+DOUBLE NbodyHermite6TS<ndim, kernelclass>::Timestep
 (NbodyParticle<ndim> *star)         ///< Reference to star/system particle
 {
   DOUBLE timestep;                  // Minimum value of particle timesteps
@@ -542,15 +610,15 @@ DOUBLE NbodyHermite4<ndim, kernelclass>::Timestep
 
 // Template class instances for each dimensionality value (1, 2 and 3) and
 // employed kernel (M4, Quintic, Gaussian and tabulated).
-template class NbodyHermite4<1, M4Kernel>;
-template class NbodyHermite4<1, QuinticKernel>;
-template class NbodyHermite4<1, GaussianKernel>;
-template class NbodyHermite4<1, TabulatedKernel>;
-template class NbodyHermite4<2, M4Kernel>;
-template class NbodyHermite4<2, QuinticKernel>;
-template class NbodyHermite4<2, GaussianKernel>;
-template class NbodyHermite4<2, TabulatedKernel>;
-template class NbodyHermite4<3, M4Kernel>;
-template class NbodyHermite4<3, QuinticKernel>;
-template class NbodyHermite4<3, GaussianKernel>;
-template class NbodyHermite4<3, TabulatedKernel>;
+template class NbodyHermite6TS<1, M4Kernel>;
+template class NbodyHermite6TS<2, M4Kernel>;
+template class NbodyHermite6TS<3, M4Kernel>;
+template class NbodyHermite6TS<1, QuinticKernel>;
+template class NbodyHermite6TS<2, QuinticKernel>;
+template class NbodyHermite6TS<3, QuinticKernel>;
+template class NbodyHermite6TS<1, GaussianKernel>;
+template class NbodyHermite6TS<2, GaussianKernel>;
+template class NbodyHermite6TS<3, GaussianKernel>;
+template class NbodyHermite6TS<1, TabulatedKernel>;
+template class NbodyHermite6TS<2, TabulatedKernel>;
+template class NbodyHermite6TS<3, TabulatedKernel>;

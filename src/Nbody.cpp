@@ -81,15 +81,13 @@ void Nbody<ndim>::AllocateMemory(int N)
 
   if (N > Nstarmax) {
     if (allocated) DeallocateMemory();
-    Nstarmax = N;
-    //Nsystem = N;
+    Nstarmax   = N;
     Nsystemmax = N;
-    //Nnbody = N;
-    Nnbodymax = Nstarmax + Nsystemmax;
-    nbodydata = new struct NbodyParticle<ndim>*[Nnbodymax];
-    stardata = new struct StarParticle<ndim>[Nstarmax];
-    system = new struct SystemParticle<ndim>[Nsystemmax];
-    allocated = true;
+    Nnbodymax  = Nstarmax + Nsystemmax;
+    nbodydata  = new struct NbodyParticle<ndim>*[Nnbodymax];
+    stardata   = new struct StarParticle<ndim>[Nstarmax];
+    system     = new struct SystemParticle<ndim>[Nsystemmax];
+    allocated  = true;
   }
 
   return;
@@ -257,6 +255,93 @@ void Nbody<ndim>::CalculateDirectGravForces
 }
 
 
+
+//=================================================================================================
+//  Nbody::CalculatePerturberForces
+/// Calculate perturber tidal forces on all stars in a N-body sub-system.
+//=================================================================================================
+template <int ndim>
+void Nbody<ndim>::CalculatePerturberForces
+(int N,                             ///< Number of stars
+ int Npert,                         ///< Number of perturbing stars
+ NbodyParticle<ndim> **star,        ///< Array of stars/systems
+ NbodyParticle<ndim> *perturber,    ///< Array of perturbing stars/systems
+ DOUBLE *apert,                     ///< Tidal acceleration due to perturbers
+ DOUBLE *adotpert)                  ///< Tidal jerk due to perturbers
+{
+  int i,j,k;                        // Star and dimension counters
+  DOUBLE dr[ndim];                  // Relative position vector
+  DOUBLE drdt;                      // Rate of change of distance
+  DOUBLE drsqd;                     // Distance squared
+  DOUBLE dv[ndim];                  // Relative velocity vector
+  DOUBLE invdrmag;                  // 1 / drmag
+  DOUBLE rcom[ndim];                // Position of centre-of-mass
+  DOUBLE vcom[ndim];                // Velocity of centre-of-mass
+  DOUBLE msystot = 0.0;             // Total system mass
+
+  debug2("[Nbody::CalculatePerturberForces]");
+
+  // First, compute position and velocity of system COM
+  for (k=0; k<ndim; k++) rcom[k] = 0.0;
+  for (k=0; k<ndim; k++) vcom[k] = 0.0;
+  for (i=0; i<N; i++) {
+    msystot += star[i]->m;
+    for (k=0; k<ndim; k++) rcom[k] += star[i]->m*star[i]->r[k];
+    for (k=0; k<ndim; k++) vcom[k] += star[i]->m*star[i]->v[k];
+  }
+  for (k=0; k<ndim; k++) rcom[k] /= msystot;
+  for (k=0; k<ndim; k++) vcom[k] /= msystot;
+
+  // Calculate the accel. and jerk of the perturber on the system COM
+  for (j=0; j<Npert; j++) {
+    for (k=0; k<ndim; k++) dr[k] = rcom[k] - perturber[j].r[k];
+    for (k=0; k<ndim; k++) dv[k] = vcom[k] - perturber[j].v[k];
+    drsqd = DotProduct(dr,dr,ndim);
+    invdrmag = 1.0/sqrt(drsqd);
+    drdt = DotProduct(dv,dr,ndim)*invdrmag;
+    for (k=0; k<ndim; k++) apert[ndim*j + k] = -msystot*dr[k]*pow(invdrmag,3);
+    for (k=0; k<ndim; k++) adotpert[ndim*j + k] =
+      -msystot*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+  }
+
+  // Loop over all (active) stars
+  //-----------------------------------------------------------------------------------------------
+  for (i=0; i<N; i++) {
+    if (star[i]->active == 0) continue;
+
+    // Sum grav. contributions for all perturbing stars.
+    //---------------------------------------------------------------------------------------------
+    for (j=0; j<Npert; j++) {
+
+      for (k=0; k<ndim; k++) dr[k] = perturber[j].r[k] - star[i]->r[k];
+      for (k=0; k<ndim; k++) dv[k] = perturber[j].v[k] - star[i]->v[k];
+      drsqd = DotProduct(dr,dr,ndim);
+      invdrmag = 1.0/sqrt(drsqd);
+      drdt = DotProduct(dv,dr,ndim)*invdrmag;
+
+      // First, add contribution of perturber to star
+      star[i]->gpe_pert += star[i]->m*perturber[j].m*invdrmag;
+      star[i]->gpot += perturber[j].m*invdrmag;
+      for (k=0; k<ndim; k++) star[i]->a[k] += perturber[j].m*dr[k]*pow(invdrmag,3);
+      for (k=0; k<ndim; k++) star[i]->adot[k] += perturber[j].m*
+        pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+
+      // Next, add contribution of star to perturber
+      for (k=0; k<ndim; k++) apert[ndim*j + k] -= star[i]->m*dr[k]*pow(invdrmag,3);
+      for (k=0; k<ndim; k++) adotpert[ndim*j + k] -=
+        star[i]->m*pow(invdrmag,3)*(dv[k] - 3.0*drdt*invdrmag*dr[k]);
+
+    }
+    //---------------------------------------------------------------------------------------------
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return;
+}
+
+
+
 //=================================================================================================
 //  Nbody::IntegrateInternalMotion
 /// This function integrates the internal motion of a system. First integrates the internal motion
@@ -265,66 +350,122 @@ void Nbody<ndim>::CalculateDirectGravForces
 template <int ndim>
 void Nbody<ndim>::IntegrateInternalMotion
 (SystemParticle<ndim>* systemi,     ///< [inout] System to integrate the internal motionv for
- int n,                             ///< [in]    Integer time
- DOUBLE timestep,                   ///< [in]    Minimum timestep value
- DOUBLE tlocal_end)                 ///< [in]    Time to integrate the internal motion for
+ const int n,                       ///< [in]    Integer time
+ const DOUBLE tstart,               ///< [in]    Initial (local) simulation time
+ const DOUBLE tend)                 ///< [in]    Final (current) simulation
 {
-  int i;                            // Star counter
+  int i;                            // Particle counter
   int it;                           // Iteration counter
   int k;                            // Dimension counter
   int Nchildren;                    // No. of child systems
-  int nlocal_steps = 0;             // No. of locally integrated steps
-  DOUBLE dt;                        // Timestep
-  DOUBLE tlocal=0.0;                // Local integration time
-  DOUBLE rcom[ndim];                // Position of centre-of-mass
-  DOUBLE vcom[ndim];                // Velocity of centre-of-mass
-  DOUBLE acom[ndim];                // Acceleration of centre-of-mass
-  DOUBLE adotcom[ndim];             // Jerk of centre-of-mass
+  int Npert;                        // No. of perturbing systems
+  int Nstar;                        // Total no. of stars
+  int nsteps_local=0;               // Local no. of steps
+  DOUBLE aext[ndim];                // Acceleration due to external stars
+  DOUBLE adotext[ndim];             // Jerk due to external stars
+  DOUBLE a2dotext[ndim];            // Snap due to external stars
+  DOUBLE dt;                        // Local timestep
+  DOUBLE gpotext;                   // Grav. potential due to external sources
+  DOUBLE tlocal=tstart;             // Local time counter
+  DOUBLE tpert;                     // Time since beginning of step for perturbing stars
+  DOUBLE *apert;                    // Acceleration for perturbers
+  DOUBLE *adotpert;                 // Jerk for perturbers
   NbodyParticle<ndim>** children;   // Child systems
+  NbodyParticle<ndim>* perturber;   // Local array of perturber properties
 
+  // Only integrate internal motion once COM motion has finished
+  if (n - systemi->nlast != systemi->nstep) return;
 
+  debug2("[Nbody::IntegrateInternalMotion]");
+
+  // Allocate memory for both stars and perturbers
   Nchildren = systemi->Nchildren;
+  Npert = systemi->Npert;
+  Nstar = Nchildren + Npert;
   children = systemi->children;
 
-  // Zero all COM summation variables
-  for (k=0; k<ndim; k++) rcom[k] = 0.0;
-  for (k=0; k<ndim; k++) vcom[k] = 0.0;
-  for (k=0; k<ndim; k++) acom[k] = 0.0;
-  for (k=0; k<ndim; k++) adotcom[k] = 0.0;
+  // Record total acceleration and jerk terms in order to compute external force
+  // (i.e. force due to all object outside system that are not perturbers)
+  for (k=0; k<ndim; k++) aext[k] = systemi->m*systemi->a0[k];
+  for (k=0; k<ndim; k++) adotext[k] = systemi->m*systemi->adot0[k];
+  for (k=0; k<ndim; k++) a2dotext[k] = systemi->m*systemi->a2dot0[k];
+  gpotext = systemi->m*systemi->gpot;
 
-  // Make local copies of children and calculate COM properties
+
+  // If using perturbers, record local copies and remove contribution to
+  // external acceleration and jerk terms
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<Nchildren; i++) {
-    for (k=0; k<ndim; k++) rcom[k] += children[i]->m*children[i]->r[k];
-    for (k=0; k<ndim; k++) vcom[k] += children[i]->m*children[i]->v[k];
-    for (k=0; k<ndim; k++) acom[k] += children[i]->m*children[i]->a[k];
-    for (k=0; k<ndim; k++) adotcom[k] += children[i]->m*children[i]->adot[k];
+  if (perturbers == 1 && Npert > 0) {
+    perturber = new NbodyParticle<ndim>[Npert];
+    apert     = new DOUBLE[ndim*Npert];
+    adotpert  = new DOUBLE[ndim*Npert];
+
+    // Create local copies of perturbers
+    for (i=0; i<Npert; i++) {
+      perturber[i].m = systemi->perturber[i]->m;
+      perturber[i].nlast = systemi->perturber[i]->nlast;
+      perturber[i].tlast = systemi->perturber[i]->tlast;
+
+      for (k=0; k<ndim; k++) perturber[i].apert[k] = 0.0;
+      for (k=0; k<ndim; k++) perturber[i].adotpert[k] = 0.0;
+      for (k=0; k<ndim; k++) perturber[i].r0[k] = systemi->perturber[i]->r0[k];
+      for (k=0; k<ndim; k++) perturber[i].v0[k] = systemi->perturber[i]->v0[k];
+      for (k=0; k<ndim; k++) perturber[i].a0[k] = systemi->perturber[i]->a0[k];
+      for (k=0; k<ndim; k++) perturber[i].adot[k] = systemi->perturber[i]->adot0[k];
+
+      // Set properties of perturbers at beginning of current step
+      tpert = tlocal - perturber[i].tlast;
+      for (k=0; k<ndim; k++) perturber[i].r[k] = perturber[i].r0[k] + perturber[i].v0[k]*tpert +
+        0.5*perturber[i].a0[k]*tpert*tpert + onesixth*perturber[i].adot0[k]*tpert*tpert*tpert;
+      for (k=0; k<ndim; k++) perturber[i].v[k] = perturber[i].v0[k] +
+        perturber[i].a0[k]*tpert + 0.5*perturber[i].adot0[k]*tpert*tpert;
+      for (k=0; k<ndim; k++) perturber[i].a[k] = perturber[i].a0[k] + perturber[i].adot0[k]*tpert;
+      for (k=0; k<ndim; k++) perturber[i].adot[k] = perturber[i].adot0[k];
+    }
   }
 
-  // Normalise COM values
-  for (k=0; k<ndim; k++) rcom[k] /= systemi->m;
-  for (k=0; k<ndim; k++) vcom[k] /= systemi->m;
-  for (k=0; k<ndim; k++) acom[k] /= systemi->m;
-  for (k=0; k<ndim; k++) adotcom[k] /= systemi->m;
 
-
-  // Now convert to COM frame
+  // Initialise child properties
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<Nchildren; i++) {
-    for (k=0; k<ndim; k++) children[i]->r[k] -= rcom[k];
-    for (k=0; k<ndim; k++) children[i]->r0[k] -= rcom[k];
-    for (k=0; k<ndim; k++) children[i]->v[k] -= vcom[k];
-    for (k=0; k<ndim; k++) children[i]->v0[k] -= vcom[k];
-    for (k=0; k<ndim; k++) children[i]->a[k] -= acom[k];
-    for (k=0; k<ndim; k++) children[i]->a0[k] -= acom[k];
-    for (k=0; k<ndim; k++) children[i]->adot[k] -= adotcom[k];
-    for (k=0; k<ndim; k++) children[i]->adot0[k] -= adotcom[k];
-    for (k=0; k<ndim; k++) children[i]->a2dot[k] -= 0.0;
-    for (k=0; k<ndim; k++) children[i]->a3dot[k] -= 0.0;
-    children[i]->active = true;
-    children[i]->nstep = 1;
-    children[i]->level = 0;
+    for (k=0; k<ndim; k++) children[i]->a[k]        = 0.0;
+    for (k=0; k<ndim; k++) children[i]->adot[k]     = 0.0;
+    for (k=0; k<ndim; k++) children[i]->apert[k]    = 0.0;
+    for (k=0; k<ndim; k++) children[i]->adotpert[k] = 0.0;
+    children[i]->gpot         = 0.0;
+    children[i]->gpe          = 0.0;
+    children[i]->gpe_pert     = 0.0;
+    children[i]->gpe_internal = 0.0;
+    children[i]->active       = true;
   }
+
+  if (perturbers == 1 && Npert > 0) {
+    this->CalculatePerturberForces(Nchildren, Npert, children, perturber, apert, adotpert);
+    for (i=0; i<Nchildren; i++) {
+      for (k=0; k<ndim; k++) aext[k] -= children[i]->m*children[i]->a[k];
+      for (k=0; k<ndim; k++) adotext[k] -= children[i]->m*children[i]->adot[k];
+      for (k=0; k<ndim; k++) a2dotext[k] -= children[i]->m*children[i]->a2dot[k];
+      gpotext -= children[i]->gpe_pert;
+    }
+  }
+  for (k=0; k<ndim; k++) aext[k] /= systemi->m;
+  for (k=0; k<ndim; k++) adotext[k] /= systemi->m;
+  for (k=0; k<ndim; k++) a2dotext[k] /= systemi->m;
+  gpotext /= systemi->m;
+
+  // Calculate forces, derivatives and other terms
+  CalculateDirectGravForces(Nchildren, children);
+
+  // Add perturbing force and jerk to all child stars
+  for (i=0; i<Nchildren; i++) {
+    for (k=0; k<ndim; k++) children[i]->a[k]    += aext[k];
+    for (k=0; k<ndim; k++) children[i]->adot[k] += adotext[k];
+    for (k=0; k<ndim; k++) children[i]->a0[k]    = children[i]->a[k];
+    for (k=0; k<ndim; k++) children[i]->adot0[k] = children[i]->adot[k];
+  }
+
+  // Calculate higher order derivatives
+  this->CalculateAllStartupQuantities(Nchildren, children);
 
 
   // Main time integration loop
@@ -332,15 +473,32 @@ void Nbody<ndim>::IntegrateInternalMotion
   do {
 
     // Calculate time-step
-    dt = std::min(big_number, tlocal_end - tlocal);
+    dt = std::min(big_number, 1.00000000000001*(tend - tlocal));
     for (i=0; i<Nchildren; i++) {
+      children[i]->nlast = n - 1;
+      children[i]->nstep = 1;
       dt = std::min(dt, Timestep(children[i]));
     }
+    nsteps_local += 1;
     tlocal += dt;
-    nlocal_steps +=1;
 
     // Advance position and velocities
-    AdvanceParticles(nlocal_steps, Nchildren, children, dt);
+    AdvanceParticles(n, Nchildren, tlocal, dt, children);
+
+    // Advance positions and velocities of perturbers
+    if (perturbers == 1 && Npert > 0) {
+      for (i=0; i<Npert; i++) {
+        tpert = tlocal - perturber[i].tlast;
+        for (k=0; k<ndim; k++) perturber[i].r[k] = perturber[i].r0[k] +
+          perturber[i].v0[k]*tpert + 0.5*perturber[i].a0[k]*tpert*tpert +
+          onesixth*perturber[i].adot0[k]*tpert*tpert*tpert;
+        for (k=0; k<ndim; k++) perturber[i].v[k] = perturber[i].v0[k] +
+          perturber[i].a0[k]*tpert + 0.5*perturber[i].adot0[k]*tpert*tpert;
+        for (k=0; k<ndim; k++) perturber[i].a[k] = perturber[i].a0[k] +
+          perturber[i].adot0[k]*tpert;
+      }
+    }
+
 
     // Time-symmetric iteration loop
     //---------------------------------------------------------------------------------------------
@@ -348,54 +506,177 @@ void Nbody<ndim>::IntegrateInternalMotion
 
       // Zero all acceleration terms
       for (i=0; i<Nchildren; i++) {
-        children[i]->gpot = 0.0;
-        children[i]->gpe_internal = 0.0;
-        for (k=0; k<ndim; k++) children[i]->a[k] = 0.0;
-        for (k=0; k<ndim; k++) children[i]->adot[k] = 0.0;
-        for (k=0; k<ndim; k++) children[i]->a2dot[k] = 0.0;
-        for (k=0; k<ndim; k++) children[i]->a3dot[k] = 0.0;
+        children[i]->active = true;
+        children[i]->gpot = gpotext;
+        children[i]->gpe_pert = children[i]->m*gpotext;
+        for (k=0; k<ndim; k++) children[i]->a[k] = aext[k];
+        for (k=0; k<ndim; k++) children[i]->adot[k] = adotext[k];
+        for (k=0; k<ndim; k++) children[i]->a2dot[k] = a2dotext[k];
+        for (k=0; k<ndim; k++) children[i]->apert[k] = 0.0;
+        for (k=0; k<ndim; k++) children[i]->adotpert[k] = 0.0;
       }
 
       // Calculate forces, derivatives and other terms
       CalculateDirectGravForces(Nchildren, children);
 
+      // Add perturbation terms
+      if (perturbers == 1 && Npert > 0) {
+        this->CalculatePerturberForces(Nchildren, Npert, children, perturber, apert, adotpert);
+      }
+
       // Apply correction terms
-      CorrectionTerms(nlocal_steps, Nchildren, children, dt);
+      CorrectionTerms(n, Nchildren, tlocal, dt, children);
+
     }
-
-    // Now loop over children and, if they are systems, integrate
-    // their internal motion
     //---------------------------------------------------------------------------------------------
-    for (i=0; i<Nchildren; i++) {
 
+    // Add perturber forces to local arrays
+    //if (perturbers == 1 && Npert > 0) {
+    //  for (i=0; i<Npert; i++) {
+    //    for (k=0; k<ndim; k++) perturber[i].apert[k] += apert[ndim*i + k]*dt;
+    //    for (k=0; k<ndim; k++) perturber[i].adotpert[k] += adotpert[ndim*i + k]*dt;
+    //  }
+    //}
+
+    // Now loop over children and, if they are systems, integrate their internal motion
+    for (i=0; i<Nchildren; i++) {
       if (children[i]->Ncomp > 1) {
+        //cout << "Integrating internal motion again!! : " << i << "    " << children[i]->Ncomp << endl;
         // The cast is needed because the function is defined only in SystemParticle, not in
         // NbodyParticle.  The safety of the cast relies on the correctness of the Ncomp value.
-        IntegrateInternalMotion(static_cast<SystemParticle<ndim>* >
-          (children[i]), n, timestep, dt);
+        IntegrateInternalMotion(static_cast<SystemParticle<ndim>* > (children[i]),
+                                n, tlocal - dt, tlocal);
       }
     }
 
-    // Set end-of-step variables
-    EndTimestep(nlocal_steps, Nchildren, children);
+    // Calculate correction terms on perturbing stars due to sub-systems
+    //if (perturbers == 1 && Npert > 0) {
+    //  this->PerturberCorrectionTerms(n, Nchildren, tlocal, dt, children);
+    //  CorrectionTerms(n, Nchildren, tlocal, dt, children);
+    //}
 
-  } while (tlocal < tlocal_end);
+    // Correct positions of all child stars in any hierarchical systems
+    this->UpdateChildStars(systemi);
+    //for (i=0; i<Nchildren; i++) {
+      //cout << "NCOMP? : " << i << "   " << children[i]->Ncomp << "    " << Nchildren << endl;
+    //  if (children[i]->Ncomp > 1) {
+    //    this->UpdateChildStars(static_cast<SystemParticle<ndim>* > (children[i]));
+    //  }
+    //}
+
+    // Set end-of-step variables
+    EndTimestep(n, Nchildren, tlocal, dt, children);
+
+
+  } while (tlocal < tend);
   //===============================================================================================
 
 
   // Copy children back to main coordinate system
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<Nchildren; i++) {
-    for (k=0; k<ndim; k++) children[i]->r[k] += systemi->r[k];
-    for (k=0; k<ndim; k++) children[i]->r0[k] += systemi->r[k];
-    for (k=0; k<ndim; k++) children[i]->v[k] += systemi->v[k];
-    for (k=0; k<ndim; k++) children[i]->v0[k] += systemi->v[k];
-    for (k=0; k<ndim; k++) children[i]->a[k] += systemi->a[k];
-    for (k=0; k<ndim; k++) children[i]->a0[k] += systemi->a[k];
-    for (k=0; k<ndim; k++) children[i]->adot[k] += systemi->adot[k];
-    for (k=0; k<ndim; k++) children[i]->adot0[k] += systemi->adot[k];
-    children[i]->gpot = children[i]->gpot + systemi->gpot;
+    children[i]->gpe = children[i]->m*children[i]->gpot;
   }
+
+  systemi->gpe_internal = 0.0;
+  for (i=0; i<Nchildren; i++) {
+    systemi->gpe_internal +=
+      0.5*children[i]->m*(children[i]->gpot - children[i]->gpe_pert/children[i]->m - gpotext);
+  }
+
+
+
+  // Finally, add perturbations on perturber itself to main arrays before deallocating local memory
+  if (perturbers == 1 && Npert > 0) {
+    //for (i=0; i<Npert; i++) {
+    //  for (k=0; k<ndim; k++) systemi->perturber[i]->apert[k] += perturber[i].apert[k];
+    //  for (k=0; k<ndim; k++) systemi->perturber[i]->adotpert[k] += perturber[i].adotpert[k];
+    //}
+    delete[] adotpert;
+    delete[] apert;
+    delete[] perturber;
+  }
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  Nbody::UpdateChildStars
+/// Update/correct the positions and velocities of all child stars in sub-systems to correctly
+/// represent the new COM of the system.
+//=================================================================================================
+template <int ndim>
+void Nbody<ndim>::UpdateChildStars
+(SystemParticle<ndim>* systemi)     ///< [inout] ..
+{
+  int i;                            // ..
+  int k;                            // ..
+  int Nchildren;                    // ..
+  DOUBLE msystot=0.0;               // ..
+  DOUBLE rcom[ndim];                // ..
+  DOUBLE vcom[ndim];                // ..
+  DOUBLE acom[ndim];                // ..
+  DOUBLE adotcom[ndim];             // ..
+  DOUBLE a2dotcom[ndim];            // ..
+  NbodyParticle<ndim>** children;   // Child systems
+
+  // Only correct positions at end of step
+  //if (n - systemi->nlast != systemi->nstep) return;
+
+  debug2("[Nbody::UpdateChildStars]");
+
+  // Allocate memory for both stars and perturbers
+  Nchildren = systemi->Nchildren;
+  children = systemi->children;
+
+  // First calculate old COM
+  for (k=0; k<ndim; k++) rcom[k] = 0.0;
+  for (k=0; k<ndim; k++) vcom[k] = 0.0;
+  for (k=0; k<ndim; k++) acom[k] = 0.0;
+  for (k=0; k<ndim; k++) adotcom[k] = 0.0;
+  for (k=0; k<ndim; k++) a2dotcom[k] = 0.0;
+
+  for (i=0; i<Nchildren; i++) {
+    msystot += children[i]->m;
+    for (k=0; k<ndim; k++) rcom[k] += children[i]->m*children[i]->r[k];
+    for (k=0; k<ndim; k++) vcom[k] += children[i]->m*children[i]->v[k];
+    for (k=0; k<ndim; k++) acom[k] += children[i]->m*children[i]->a[k];
+    for (k=0; k<ndim; k++) adotcom[k] += children[i]->m*children[i]->adot[k];
+    for (k=0; k<ndim; k++) a2dotcom[k] += children[i]->m*children[i]->a2dot[k];
+  }
+
+  for (k=0; k<ndim; k++) rcom[k] /= msystot;
+  for (k=0; k<ndim; k++) vcom[k] /= msystot;
+  for (k=0; k<ndim; k++) acom[k] /= msystot;
+  for (k=0; k<ndim; k++) adotcom[k] /= msystot;
+  for (k=0; k<ndim; k++) a2dotcom[k] /= msystot;
+
+//cout << "ACOM : " << acom[0] << "   " << acom[1] << "    " << acom[1] << endl;
+//cin >> k;
+
+  // Now translate positions to new COM
+  for (i=0; i<Nchildren; i++) {
+    for (k=0; k<ndim; k++) children[i]->r[k] += systemi->r[k] - rcom[k];
+    for (k=0; k<ndim; k++) children[i]->v[k] += systemi->v[k] - vcom[k];
+    for (k=0; k<ndim; k++) children[i]->a[k] += systemi->a[k] - acom[k];
+    for (k=0; k<ndim; k++) children[i]->adot[k] += systemi->adot[k] - adotcom[k];
+    for (k=0; k<ndim; k++) children[i]->a2dot[k] += systemi->a2dot[k] - a2dotcom[k];
+    for (k=0; k<ndim; k++) children[i]->r0[k] = children[i]->r[k];
+    for (k=0; k<ndim; k++) children[i]->v0[k] = children[i]->v[k];
+    for (k=0; k<ndim; k++) children[i]->a0[k] = children[i]->a[k];
+    for (k=0; k<ndim; k++) children[i]->adot0[k] = children[i]->adot[k];
+    for (k=0; k<ndim; k++) children[i]->a2dot0[k] = children[i]->a2dot[k];
+  }
+
+  // Now update the positions of any 'grand-children' (i.e. for hierarchies)
+  for (i=0; i<Nchildren; i++) {
+    if (children[i]->Ncomp > 1) {
+      UpdateChildStars(static_cast<SystemParticle<ndim>* > (children[i]));
+    }
+  }
+
 
   return;
 }

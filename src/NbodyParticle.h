@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  NbodyParticle.h
 //  Main N-body particle data structure.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _NBODY_PARTICLE_H_
@@ -29,15 +29,14 @@
 #include "Constants.h"
 
 
-//=============================================================================
+//=================================================================================================
 //  Class NbodyParticle
 /// \brief   N-body particle data structure
-/// \details Main parent N-body particle data structure.  All main other
-///          N-body particle types (e.g. stars, systems, sinks) are derived
-///          from this class.
+/// \details Main parent N-body particle data structure.  All main other N-body particle types
+///          (e.g. stars, systems, sinks) are derived from this class.
 /// \author  D. A. Hubber
 /// \date    15/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class NbodyParticle
 {
@@ -59,6 +58,7 @@ class NbodyParticle
   DOUBLE v0[ndim];                  ///< Velocity at beginning of step
   DOUBLE a0[ndim];                  ///< Acceleration at beginning of step
   DOUBLE adot0[ndim];               ///< Jerk at beginning of step
+  DOUBLE a2dot0[ndim];              ///< ..
   DOUBLE apert[ndim];               ///< Acceleration due to perturbers
   DOUBLE adotpert[ndim];            ///< Jerk due to perturbers
   DOUBLE m;                         ///< Star mass
@@ -71,8 +71,8 @@ class NbodyParticle
   DOUBLE gpe_internal;              ///< Internal grav. potential energy
   DOUBLE gpe_pert;                  ///< Perturber grav. potential energy
   DOUBLE dt;                        ///< Particle timestep
-  DOUBLE dt_internal;               ///< Internal timestep
-                                    ///< (e.g. due to sub-systems)
+  DOUBLE dt_internal;               ///< Internal timestep (e.g. due to sub-systems)
+  DOUBLE tlast;                     ///< Time at beginning of last step
   DOUBLE NLyC;                      ///< No. of ionising photons per second
 
 
@@ -107,6 +107,7 @@ class NbodyParticle
     gpe_pert     = 0.0;
     dt           = 0.0;
     dt_internal  = big_number;
+    tlast        = 0.0;
     NLyC         = 0.0;
   }
 
