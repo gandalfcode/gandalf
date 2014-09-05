@@ -10,6 +10,13 @@
 Simulation run id string                    : run_id = TRIPLE1
 Select SPH simulation                       : sim = nbody
 Select shocktube initial conditions         : ic = triple
+Triple semi-major axis                      : abin = 1.0
+Inner binary semi-major axis                : abin2 = 0.01
+Binary orbital eccentricity                 : ebin = 0.0
+Inner orbital eccentricity                  : ebin = 0.0
+Binary primary mass                         : m1 = 0.25
+Secondary mass                              : m2 = 0.25
+Secondary mass                              : m3 = 0.5
 Dimensionality of cube                      : ndim = 3
 Use dimensionless units                     : dimensionless = 1
 
@@ -36,9 +43,10 @@ Star particle integration option            : nbody = hermite4ts
 Use softening?                              : nbody_softening = 0
 Identify and integrate sub-systems?         : sub_systems = 1
 Use perturbing stars in sub-systems         : perturbers = 0
+Update sub-system frequency                 : nsystembuildstep = 1
 Output binary statistics                    : binary_stats = 1
-Grav. energy fraction for sub-systems       : gpesoft = 0.05
-Grav. energy fraction for sub-systems       : gpehard = 0.001
+Grav. energy fraction for sub-systems       : gpesoft = 0.2
+Grav. energy fraction for sub-systems       : gpehard = 0.00001
 No. of P(EC)^n iteration steps              : Npec = 2
 Sub-system integration scheme               : sub_system_integration = hermite4ts
 
@@ -47,7 +55,7 @@ Sub-system integration scheme               : sub_system_integration = hermite4t
 #-------------------------
 N-body timestep multiplier                  : nbody_mult = 0.1
 Sub-system timestep multiplier              : subsys_mult = 0.05
-No. of block timestep levels                : Nlevels = 1
+No. of block timestep levels                : Nlevels = 3
 
 
 

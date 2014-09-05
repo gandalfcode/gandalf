@@ -10,10 +10,10 @@
 Simulation run id string                    : run_id = BB1
 Run SPH simulation                          : sim = sph
 Select shocktube initial conditions         : ic = bb
-Input file format                           : in_file_form = sf
-Output file format                          : out_file_form = sf
+Input file format                           : in_file_form = su
+Output file format                          : out_file_form = su
 Dimensionality of cube                      : ndim = 3
-No. of SPH particles                        : Nsph = 4000
+No. of SPH particles                        : Nsph = 8000
 Local arrangement of particles              : particle_distribution = hexagonal_lattice
 Cloud mass                                  : mcloud = 1.0
 Radius of cloud                             : radius = 0.01037
@@ -40,7 +40,7 @@ Angular velocity unit                       : angveloutunit = rad_s
 # Simulation time variables
 #--------------------------
 Simulation end time                         : tend = 0.05
-Regular snapshot output frequency           : dt_snap = 0.0005
+Regular snapshot output frequency           : dt_snap = 0.0002
 Time of first snapshot                      : tsnapfirst = 0.01
 Screen output frequency (in no. of steps)   : noutputstep = 16
 Diagnostic output frequency                 : ndiagstep = 32
@@ -88,9 +88,7 @@ Use leapfrog N-body integration scheme      : nbody = lfkdk
 Activate sink particles in code             : sink_particles = 1
 Allow creation of new sink particles        : create_sinks = 1
 Use gravitational softening for sinks       : nbody_softening = 1
-
-
-Use smooth accretion in sinks               : smooth_accretion = 0
+Use smooth accretion in sinks               : smooth_accretion = 1
 Mass cut-off for smooth accretion           : smooth_accrete_frac = 0.05
 Timestep cup-off for smooth accretion       : smooth_accrete_dt = 0.05
 Select adaptive sink radii                  : sink_radius_mode = hmult
@@ -114,7 +112,7 @@ Max. timestep level difference              : level_diff_max = 2
 # Tree options
 #-------------
 SPH neighbour search algorithm              : neib_search = tree
-Tree re-build frequency                     : nbuildstep = 1
+Tree re-build frequency                     : ntreebuildstep = 1
 No. of particles in leaf cell               : Nleafmax = 6
 Tree opening angle (squared)                : thetamaxsqd = 0.15
 Multipole option                            : multipole = fast_monopole
