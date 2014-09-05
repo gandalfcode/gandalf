@@ -1593,6 +1593,8 @@ void Simulation<ndim>::BondiAccretion(void)
   nbody->stardata[0].m = msink;
   nbody->stardata[0].radius = rsink;
   nbody->stardata[0].h = nbody->kernp->invkernrange*nbody->stardata[0].radius;
+  nbody->stardata[0].invh = 1.0/nbody->stardata[0].h;
+  nbody->stardata[0].hfactor = pow(nbody->stardata[0].invh,ndim);
   sinks.sink[0].star = &(nbody->stardata[0]);
   sinks.sink[0].radius = rsink;
   sinks.sink[0].racc = rsink;
@@ -1610,7 +1612,7 @@ void Simulation<ndim>::BondiAccretion(void)
   }
 
   cout << "mmax : " << sinks.sink[0].mmax << "    " << sinks.sink[0].mmax/mp << endl;
-  cout << "rsink : " << rsink/rsonic << endl;
+  cout << "rsink : " << rsink << "     rsink/rsonic : " << rsink/rsonic << endl;
   //exit(0);
 
   initial_h_provided = false;
@@ -1765,8 +1767,8 @@ void Simulation<ndim>::PlummerSphere(void)
       nbody->stardata[i].v[k] = nbody->stardata[i].v[k]*vplummer;
     }
     nbody->stardata[i].m      = nbody->stardata[i].m*mplummer;
-    //nbody->stardata[i].radius = rstar;
-    //nbody->stardata[i].h      = nbody->kernp->invkernrange*rstar;
+    nbody->stardata[i].radius = rstar;
+    nbody->stardata[i].h      = nbody->kernp->invkernrange*rstar;
     nbody->stardata[i].invh   = 1.0 / (nbody->stardata[i].h + small_number_dp);
   }
 
@@ -2157,8 +2159,8 @@ void Simulation<ndim>::BinaryStar(void)
 
 
 //=============================================================================
-//  SphSimulation::TripleStar
-/// Create a simple quadruple star problem
+//  Simulation::TripleStar
+/// Create a simple triple star problem
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::TripleStar(void)
@@ -2166,8 +2168,7 @@ void Simulation<ndim>::TripleStar(void)
   int k;                           // Dimension counter
   DOUBLE rbinary[ndim];            // Position of binary COM
   DOUBLE vbinary[ndim];            // Velocity of binary COM
-  NbodyParticle<ndim> b1;          // Star/binary 1
-  NbodyParticle<ndim> b2;          // Star/binary 2
+  NbodyParticle<ndim> b1;          // Inner binary COM particle
 
   // Triple star parameters
   FLOAT m1 = simparams->floatparams["m1"];
@@ -2197,11 +2198,11 @@ void Simulation<ndim>::TripleStar(void)
   // Compute main binary orbit
   for (k=0; k<ndim; k++) rbinary[k] = 0.0;
   for (k=0; k<ndim; k++) vbinary[k] = 0.0;
-  AddBinaryStar(abin1,ebin1,m1,m2+m3,0.0001,0.0001,phirot,thetarot,psirot,
-                0.0,rbinary,vbinary,b1,nbody->stardata[2]);
+  AddBinaryStar(abin1,ebin1,m1+m2,m3,0.0001,0.0001,phirot,thetarot,psirot,0.0,
+                rbinary,vbinary,b1,nbody->stardata[2]);
 
   // Now compute both components
-  AddBinaryStar(abin2,ebin2,m2,m3,0.0001,0.0001,phirot,thetarot,psirot,0.0,
+  AddBinaryStar(abin2,ebin2,m1,m2,0.0001,0.0001,phirot,thetarot,psirot,0.0,
                 b1.r,b1.v,nbody->stardata[0],nbody->stardata[1]);
 
   return;
@@ -2210,7 +2211,7 @@ void Simulation<ndim>::TripleStar(void)
 
 
 //=============================================================================
-//  SphSimulation::QuadrupleStar
+//  Simulation::QuadrupleStar
 /// Create a simple quadruple star problem
 //=============================================================================
 template <int ndim>
@@ -2265,11 +2266,11 @@ void Simulation<ndim>::QuadrupleStar(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::AddBinaryStar
 /// Add a binary star of given mass, eccentricity and separation.
 /// (Code provided courtesy of S. P. Goodwin; 29/09/2013)
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::AddBinaryStar
 (DOUBLE sma,                       ///< Semi-major axis
@@ -2291,6 +2292,7 @@ void Simulation<ndim>::AddBinaryStar
   FLOAT mbin = m1 + m2;            // Total binary mass
 
   debug2("[Simulation::AddBinaryStar]");
+
 
   if (ndim == 1) {
     string message = "Binary test not available in 1D";
@@ -2342,8 +2344,8 @@ void Simulation<ndim>::AddBinaryStar
   s2.m = m2;
   s2.h = h2;
   s2.invh = 1.0 / s2.h;
-  s2.r[0] -= sep*cos(theta)*m2/mbin;
-  s2.r[1] -= sep*sin(theta)*m2/mbin;
+  s2.r[0] -= sep*cos(theta)*m1/mbin;
+  s2.r[1] -= sep*sin(theta)*m1/mbin;
   s2.v[0] -= -vel*cos(0.5*pi - theta + phi)*m1/mbin;
   s2.v[1] -= vel*sin(0.5*pi - theta + phi)*m1/mbin;
 
@@ -2359,18 +2361,16 @@ void Simulation<ndim>::AddBinaryStar
   for (k=0; k<ndim; k++) s2.r[k] += rbinary[k];
   for (k=0; k<ndim; k++) s2.v[k] += vbinary[k];
 
-
-
   return;
 }
 
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::AddRandomBox
 /// Populate given bounding box with random particles.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::AddRandomBox
 (int Npart,                         ///< [in] No. of particles
@@ -2381,8 +2381,7 @@ void Simulation<ndim>::AddRandomBox
 
   for (int i=0; i<Npart; i++) {
     for (int k=0; k<ndim; k++) {
-      r[ndim*i + k] = box.boxmin[k] + (box.boxmax[k] - box.boxmin[k])*
-	randnumb->floatrand();
+      r[ndim*i + k] = box.boxmin[k] + (box.boxmax[k] - box.boxmin[k])*randnumb->floatrand();
     }
   }
 
@@ -2391,10 +2390,10 @@ void Simulation<ndim>::AddRandomBox
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::AddRandomsphere
 /// Add random sphere of particles
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::AddRandomSphere
 (int Npart,                         ///< [in] No. of particles in sphere
@@ -2409,7 +2408,7 @@ void Simulation<ndim>::AddRandomSphere
   debug2("[Simulation::AddRandomSphere]");
 
   // Loop over all required particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<Npart; i++) {
 
     // Continously loop until random particle lies inside sphere
@@ -2421,7 +2420,7 @@ void Simulation<ndim>::AddRandomSphere
 
     for (k=0; k<ndim; k++) r[ndim*i + k] = rcentre[k] + rpos[k];
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   return;
 }

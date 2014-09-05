@@ -72,7 +72,7 @@ SphIntegration<ndim>::~SphIntegration()
 
 //=============================================================================
 //  SphIntegration::Timestep
-/// Default timestep size for SPH particles.  Takes the minimum of : 
+/// Default timestep size for SPH particles.  Takes the minimum of :
 /// (i)  const*h/(sound_speed + h*|div_v|)    (Courant condition)
 /// (ii) const*sqrt(h/|a|)                    (Acceleration condition)
 //=============================================================================
@@ -85,7 +85,7 @@ DOUBLE SphIntegration<ndim>::Timestep
   DOUBLE adotmag;                   // Magnitude of particle jerk
   DOUBLE amag;                      // Magnitude of particle acceleration
 
-  // Courant condition.  If hydro forces are not used, compute the 
+  // Courant condition.  If hydro forces are not used, compute the
   // timescale using only div_v, i.e. the compression timescale.
   if (sph->hydro_forces == 1 && sph->avisc == mon97 && part.sinkid != -1)
     timestep = courant_mult*part.h/
@@ -115,8 +115,8 @@ DOUBLE SphIntegration<ndim>::Timestep
 		   (DOUBLE) (part.u/(fabs(part.dudt) + small_number)));
 
   // If stars are included, calculate the timestep due to the jerk
-  adotmag = sqrt(DotProduct(part.adot,part.adot,ndim));
-  timestep = min(timestep, accel_mult*amag/(adotmag + small_number_dp));
+  //adotmag = sqrt(DotProduct(part.adot,part.adot,ndim));
+  //timestep = min(timestep, accel_mult*amag/(adotmag + small_number_dp));
 
   return timestep;
 }

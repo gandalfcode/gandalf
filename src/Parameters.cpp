@@ -308,6 +308,7 @@ void Parameters::SetDefaultValues(void)
   intparams["nbody_softening"] = 1;
   intparams["perturbers"] = 0;
   intparams["binary_stats"] = 0;
+  intparams["nsystembuildstep"] = 1;
   floatparams["gpefrac"] = 5.0e-2;
   floatparams["gpesoft"] = 2.0e-2;
   floatparams["gpehard"] = 1.0e-3;

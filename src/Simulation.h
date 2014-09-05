@@ -1,12 +1,13 @@
-//=============================================================================
+//=================================================================================================
 //  Simulation.h
-//  Contains definitions for following data structures and classes:
-//  - DomainBox
-//  - Diagnostics
+//  Contains definitions for following simulation classes:
 //  - SimulationBase
 //  - Simulation
 //  - SphSimulation
+//  - GradhSphSimulation
+//  - SM2012SphSimulation
 //  - GodunovSphSimulation
+//  - NbodySimulation
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -24,7 +25,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _SIMULATION_H_
@@ -64,12 +65,12 @@ using namespace std;
 class SphSnapshotBase;
 
 
-//=============================================================================
+//=================================================================================================
 //  Class SimulationBase
 /// \brief  Creates a simulation object depending on the dimensionality.
 /// \author D. A. Hubber, G. Rosotti
 /// \date   03/04/2013
-//=============================================================================
+//=================================================================================================
 class SimulationBase
 {
   // Subroutines only for internal use of the class
@@ -96,12 +97,12 @@ class SimulationBase
                                            Parameters* params);
 
   // Constructor and Destructor
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   SimulationBase(Parameters* params);
   ~SimulationBase();
 
   // Subroutine prototypes
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   string GetParam(string key);
   string Output(void);
   void SetParam(string key, string value);
@@ -113,8 +114,7 @@ class SimulationBase
   void Run(int=-1);
   list<SphSnapshotBase*> InteractiveRun(int=-1);
 
-  virtual void ImportArray(double* input, int size,
-                           string quantity, string type="sph") = 0;
+  virtual void ImportArray(double* input, int size, string quantity, string type="sph") = 0;
   virtual void MainLoop(void)=0;
   virtual void PostInitialConditionsSetup(void)=0;
   virtual void PreSetupForPython(void)=0;
@@ -123,14 +123,14 @@ class SimulationBase
 
 
   // Input-output routines
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   bool ReadSnapshotFile(string,string);
   bool WriteSnapshotFile(string,string);
   HeaderInfo ReadHeaderSnapshotFile(string filename, string format);
 
 
   // Variables
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   bool setup;                       ///< Flag if simulation is setup
   bool initial_h_provided;          ///< Have initial h values been calculated?
   bool kill_simulation;             ///< Kill simulation flag
@@ -151,6 +151,7 @@ class SimulationBase
                                     ///< of full block timestep steps)
   int noutputstep;                  ///< Output frequency
   int nresync;                      ///< Integer time for resynchronisation
+  int nsystembuildstep;             ///< Integer time between rebuilding N-body system tree
   int ntreebuildstep;               ///< Integer time between rebuilding tree
   int ntreestockstep;               ///< Integer time between restocking tree
   int Nblocksteps;                  ///< No. of full block timestep steps
@@ -653,6 +654,7 @@ class NbodySimulation : public Simulation<ndim>
   using Simulation<ndim>::out_file_form;
   using Simulation<ndim>::tend;
   using Simulation<ndim>::noutputstep;
+  using Simulation<ndim>::nsystembuildstep;
   using Simulation<ndim>::nbody_single_timestep;
   using Simulation<ndim>::ParametersProcessed;
   using Simulation<ndim>::n;
