@@ -1,7 +1,7 @@
 //=============================================================================
 //  SM2012Sph.cpp
-//  Contains all functions for calculating SPH quantities using the method 
-//  proposed by Saitoh & Makino (2012) in the conservative formalation 
+//  Contains all functions for calculating SPH quantities using the method
+//  proposed by Saitoh & Makino (2012) in the conservative formalation
 //  of Hopkins (2013).
 //
 //  This file is part of GANDALF :
@@ -49,10 +49,10 @@ template <int ndim, template<int> class kernelclass>
 SM2012Sph<ndim, kernelclass >::SM2012Sph(int hydro_forces_aux,
 	    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
 	    FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
-	    acondenum acond_aux, tdaviscenum tdavisc_aux, string gas_eos_aux, 
+	    acondenum acond_aux, tdaviscenum tdavisc_aux, string gas_eos_aux,
             string KernelName):
   Sph<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux, beta_visc_aux,
-	    h_fac_aux, h_converge_aux, avisc_aux, acond_aux, tdavisc_aux, 
+	    h_fac_aux, h_converge_aux, avisc_aux, acond_aux, tdavisc_aux,
             gas_eos_aux, KernelName, sizeof(SM2012SphParticle<ndim>)),
   kern(kernelclass<ndim>(KernelName))
 {
@@ -193,20 +193,22 @@ void SM2012Sph<ndim, kernelclass>::ReorderParticles(void)
   return;
 }
 
+
+
 //=============================================================================
 //  SM2012Sph::ComputeH
-/// Compute the value of the smoothing length of particle 'i' by iterating  
+/// Compute the value of the smoothing length of particle 'i' by iterating
 /// the relation : h = h_fac*(m/rho)^(1/ndim).
-/// Uses the previous value of h as a starting guess and then uses either 
-/// a Newton-Rhapson solver, or fixed-point iteration, to converge on the 
-/// correct value of h.  The maximum tolerance used for deciding whether the 
+/// Uses the previous value of h as a starting guess and then uses either
+/// a Newton-Rhapson solver, or fixed-point iteration, to converge on the
+/// correct value of h.  The maximum tolerance used for deciding whether the
 /// iteration has converged is given by the 'h_converge' parameter.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 int SM2012Sph<ndim, kernelclass >::ComputeH
-(int i,                             ///< [in] id of particle
- int Nneib,                         ///< [in] No. of potential neighbours
- FLOAT hmax,                        ///< [in] Max. h permitted by neib list
+(const int i,                             ///< [in] id of particle
+ const int Nneib,                         ///< [in] No. of potential neighbours
+ const FLOAT hmax,                        ///< [in] Max. h permitted by neib list
  FLOAT *m,                          ///< [in] Array of neib. masses
  FLOAT *mu,                         ///< [in] Array of m*u (not needed here)
  FLOAT *drsqd,                      ///< [in] Array of neib. distances squared
@@ -238,7 +240,7 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
     parti.hfactor = pow(parti.invh,ndim);
     invhsqd = parti.invh*parti.invh;
 
-    // Loop over all nearest neighbours in list to calculate 
+    // Loop over all nearest neighbours in list to calculate
     // density.
     //-------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
@@ -258,10 +260,10 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
     		fabs(parti.h - h_fac*pow(parti.m*parti.invrho,
     				invndim)) < h_converge) break;
 
-    // Use fixed-point iteration, i.e. h_new = h_fac*(m/rho_old)^(1/ndim), 
-    // for now.  If this does not converge in a reasonable number of 
-    // iterations (iteration_max), then assume something is wrong and switch 
-    // to a bisection method, which should be guaranteed to converge, 
+    // Use fixed-point iteration, i.e. h_new = h_fac*(m/rho_old)^(1/ndim),
+    // for now.  If this does not converge in a reasonable number of
+    // iterations (iteration_max), then assume something is wrong and switch
+    // to a bisection method, which should be guaranteed to converge,
     // albeit much more slowly.  (N.B. will implement Newton-Raphson soon)
     //-------------------------------------------------------------------------
     if (iteration < iteration_max)
@@ -274,7 +276,7 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
       if (parti.rho < small_number ||
 	  parti.rho*pow(parti.h,ndim) > pow(h_fac,ndim)*parti.m)
         h_upper_bound = parti.h;
-      else 
+      else
         h_lower_bound = parti.h;
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
@@ -284,11 +286,11 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
       ExceptionHandler::getIstance().raise(message);
     }
 
-    // If the smoothing length is too large for the neighbour list, exit 
+    // If the smoothing length is too large for the neighbour list, exit
     // routine and flag neighbour list error in order to generate a larger
     // neighbour list (not properly implemented yet).
     if (parti.h > hmax) return 0;
-    
+
   } while (parti.h > h_lower_bound && parti.h < h_upper_bound);
   //===========================================================================
 
@@ -304,13 +306,13 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
 
   // Set important thermal variables here
   ComputeThermalProperties(parti);
-  
+
   // Calculate the minimum neighbour potential
   // (used later to identify new sinks)
   if (create_sinks == 1) {
     parti.potmin = true;
     for (j=0; j<Nneib; j++)
-      if (gpot[j] > 1.000000001*parti.gpot && 
+      if (gpot[j] > 1.000000001*parti.gpot &&
 	  drsqd[j]*invhsqd < kern.kernrangesqd) parti.potmin = false;
   }
 
@@ -347,12 +349,11 @@ template <int ndim, template<int> class kernelclass>
 void SM2012Sph<ndim, kernelclass>::ComputeThermalProperties
 (SphParticle<ndim> &part_gen)        ///< [inout] Particle i data
 {
-  SM2012SphParticle<ndim>& part = 
-    static_cast<SM2012SphParticle<ndim> &> (part_gen);
+  SM2012SphParticle<ndim>& part = static_cast<SM2012SphParticle<ndim> &> (part_gen);
 
-  part.invq = (FLOAT) 1.0/part.q;
-  part.u = eos->SpecificInternalEnergy(part);
-  part.sound = eos->SoundSpeed(part);
+  part.invq    = (FLOAT) 1.0/part.q;
+  part.u       = eos->SpecificInternalEnergy(part);
+  part.sound   = eos->SoundSpeed(part);
   part.pfactor = eos->Pressure(part)*part.invrho*part.invq;
 
   return;
@@ -362,11 +363,11 @@ void SM2012Sph<ndim, kernelclass>::ComputeThermalProperties
 
 //=============================================================================
 //  SM2012Sph::ComputeSphHydroForces
-/// Compute SPH neighbour force pairs for 
+/// Compute SPH neighbour force pairs for
 /// (i) All neighbour interactions of particle i with id j > i,
 /// (ii) Active neighbour interactions of particle j with id j > i
 /// (iii) All inactive neighbour interactions of particle i with id j < i.
-/// This ensures that all particle-particle pair interactions are only 
+/// This ensures that all particle-particle pair interactions are only
 /// computed once only for efficiency.
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
@@ -427,7 +428,7 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
       (parti.invrho + neibpart[j].invrho);
       //winvrho = (FLOAT) (wkerni + wkernj)/
       // (parti.rho + neibpart[j].rho);
-	
+
       // Artificial viscosity term
       if (avisc == mon97) {
         vsignal = parti.sound + neibpart[j].sound - beta_visc*alpha_visc*dvdr;
@@ -461,18 +462,18 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
         neibpart[j].dudt -= 0.5*parti.m*vsignal*
           (parti.u - neibpart[j].u)*winvrho;
       }
-	
+
     }
     //-------------------------------------------------------------------------
 
-      
+
     uaux = 0.5*neibpart[j].m*neibpart[j].u*dvdr*(wkerni + wkernj);
 
     // Add total hydro contribution to acceleration for particle i
     for (k=0; k<ndim; k++) parti.a[k] += neibpart[j].m*draux[k]*paux;
     parti.dudt += 0.5*neibpart[j].m*neibpart[j].u*dvdr*(wkerni + wkernj)*
       parti.pfactor;
-      
+
     // If neighbour is also active, add contribution to force here
     for (k=0; k<ndim; k++) neibpart[j].a[k] -= parti.m*draux[k]*paux;
     neibpart[j].dudt += 0.5*parti.m*parti.u*dvdr*(wkerni + wkernj)*
@@ -486,105 +487,6 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
 }
 
 
-
-//=============================================================================
-//  SM2012Sph::ComputeSphGravForces
-/// Compute SPH neighbour force pairs for 
-/// (i) All neighbour interactions of particle i with id j > i,
-/// (ii) Active neighbour interactions of particle j with id j > i
-/// (iii) All inactive neighbour interactions of particle i with id j < i.
-/// This ensures that all particle-particle pair interactions are only 
-/// computed once only for efficiency.
-//=============================================================================
-template <int ndim, template<int> class kernelclass>
-void SM2012Sph<ndim, kernelclass >::ComputeSphGravForces
-(int i,                                 // id of particle
- int Nneib,                             // No. of neighbours in neibpart array
- int *neiblist,                         // id of gather neighbour in neibpart
- SphParticle<ndim> &parti,                    // Particle i data
- SphParticle<ndim> *neibpart)                 // Neighbour particle data
-{
-  return;
-}
-
-
-
-//=============================================================================
-//  SM2012Sph::ComputeSphNeibDudt
-/// Empty definition
-//=============================================================================
-template <int ndim, template<int> class kernelclass>
-void SM2012Sph<ndim, kernelclass >::ComputeSphNeibDudt
-(int i, int Nneib, int *neiblist, FLOAT *drmag, 
- FLOAT *invdrmag, FLOAT *dr, SphParticle<ndim> &parti, SphParticle<ndim> *neibpart)
-{
-  return;
-}
-
-
-
-//=============================================================================
-//  SM2012Sph::ComputeSphDerivatives
-/// Empty definition
-//=============================================================================
-template <int ndim, template<int> class kernelclass>
-void SM2012Sph<ndim, kernelclass >::ComputeSphDerivatives
-(int i, int Nneib, int *neiblist, FLOAT *drmag, 
- FLOAT *invdrmag, FLOAT *dr, SphParticle<ndim> &parti, SphParticle<ndim> *neibpart)
-{
-  return;
-}
-
-
-
-//=============================================================================
-//  SM2012Sph::ComputeSphHydroGravForces
-/// Empty function (for now).
-//=============================================================================
-template <int ndim, template<int> class kernelclass>
-void SM2012Sph<ndim, kernelclass >::ComputeSphHydroGravForces
-(int i,                             ///< [in] id of particle
- int Nneib,                         ///< [in] No. of neibs in neibpart array
- int *neiblist,                     ///< [in] id of gather neibs in neibpart
- SphParticle<ndim> &parti,          ///< [inout] Particle i data
- SphParticle<ndim> *neibpart)       ///< [inout] Neighbour particle data
-{
-  return;
-}
-
-
-
-
-//=============================================================================
-//  SM2012Sph::ComputeGravForces
-/// Compute the contribution to the total gravitational force of particle 'i' 
-/// due to 'Nneib' neighbouring particles in the list 'neiblist'.
-//=============================================================================
-template <int ndim, template<int> class kernelclass>
-void SM2012Sph<ndim, kernelclass >::ComputeDirectGravForces
-(int i,                                 // id of particle
- int Ndirect,                           // No. of nearby 'gather' neighbours
- int *directlist,                       // id of gather neighbour in neibpart
- SphParticle<ndim> &parti,                    // Particle i data
- SphParticle<ndim> *sph)                      // Neighbour particle data
-{
-  return;
-}
-
-
-
-//=============================================================================
-//  SM2012Sph::ComputeStarGravForces
-/// ..
-//=============================================================================
-template <int ndim, template<int> class kernelclass>
-void SM2012Sph<ndim, kernelclass>::ComputeStarGravForces
-(int N,
- NbodyParticle<ndim> **nbodydata,
- SphParticle<ndim> &parti)
-{
-  return;
-}
 
 
 template class SM2012Sph<1, M4Kernel>;
