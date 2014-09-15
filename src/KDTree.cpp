@@ -2072,54 +2072,43 @@ int KDTree<ndim,ParticleType>::ComputeDistantGravityInteractionList
 
 
 
-//=============================================================================
+//=================================================================================================
 //  KDTree::ComputeHydroTreeCellOverlap
-/// Computes and returns number of SPH neighbours (Nneib), direct sum particles
-/// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
-/// the gravity tree walk for active particles inside cell c.
-/// Currently defaults to the geometric opening criteria.
-/// If any of the interactions list arrays (neiblist,directlist,gravcelllist)
-/// overflow, return with error code (-1) to reallocate more memory.
-//=============================================================================
+/// ...
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 bool KDTree<ndim,ParticleType>::ComputeHydroTreeCellOverlap
 (const KDTreeCell<ndim> *cell)      ///< [in] Pointer to cell
 {
   int cc = 0;                       // Cell counter
 
-  // Walk through all cells in tree to determine particle and cell
-  // interaction lists
-  //===========================================================================
+  // Walk through all cells in tree to determine particle and cell interaction lists
+  //===============================================================================================
   while (cc < Ncell) {
 
     // Check if bounding boxes overlap with each other
-    //-------------------------------------------------------------------------
-    if (BoxOverlap(cell->bbmin,cell->bbmax,
-                   kdcell[cc].hboxmin,kdcell[cc].hboxmax) ||
-        BoxOverlap(cell->hboxmin,cell->hboxmax,
-                   kdcell[cc].bbmin,kdcell[cc].bbmax)) {
+    //---------------------------------------------------------------------------------------------
+    if (BoxOverlap(cell->bbmin,cell->bbmax,kdcell[cc].hboxmin,kdcell[cc].hboxmax) ||
+        BoxOverlap(cell->hboxmin,cell->hboxmax,kdcell[cc].bbmin,kdcell[cc].bbmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (kdcell[cc].level != ltot)
-        cc++;
+      if (kdcell[cc].level != ltot) cc++;
 
-      else if (kdcell[cc].N == 0)
-        cc = kdcell[cc].cnext;
+      // If cell contains no particle (dead leaf?) then move to next cell
+      else if (kdcell[cc].N == 0) cc = kdcell[cc].cnext;
 
       // If cell is overlapping with any leaf, then flag overlap on return
-      else if (kdcell[cc].level == ltot) {
-        return true;
-      }
+      else if (kdcell[cc].level == ltot) return true;
 
     }
 
     // If not in range, then open next cell
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else
       cc = kdcell[cc].cnext;
 
   };
-  //===========================================================================
+  //===============================================================================================
 
   // If we've walked the entire tree wihout any leaf overlaps, flag no overlap
   return false;
@@ -2129,10 +2118,10 @@ bool KDTree<ndim,ParticleType>::ComputeHydroTreeCellOverlap
 
 
 #if defined(VERIFY_ALL)
-//=============================================================================
+//=================================================================================================
 //  KDTree::ValidateTree
 /// Performs various sanity and validation checks on KD-tree structure.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void KDTree<ndim,ParticleType>::ValidateTree
 (ParticleType<ndim> *partdata)      ///< Pointer to SPH class
@@ -2185,20 +2174,18 @@ void KDTree<ndim,ParticleType>::ValidateTree
   // Check inext linked list values and ids array are all valid
   for (i=ifirst; i<=ilast; i++) {
     if (!(ids[i] >= ifirst && ids[i] <= ilast)) {
-      cout << "Problem with ids array : "
-           << i << "   " << ids[i] << endl;
+      cout << "Problem with ids array : " << i << "   " << ids[i] << endl;
       exit(0);
     }
     if (!(inext[i] >= -1)) {
-      cout << "Problem with inext linked lists : "
-           << i << "   " << inext[i] << endl;
+      cout << "Problem with inext linked lists : " << i << "   " << inext[i] << endl;
       exit(0);
     }
   }
 
 
   // Loop over all cells in tree
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
     cell = kdcell[c];
     activecount = 0;
@@ -2225,19 +2212,16 @@ void KDTree<ndim,ParticleType>::ValidateTree
         i = inext[i];
       }
       if (leafcount > Nleafmax) {
-        cout << "Leaf particle count error : "
-             << leafcount << "   " << Nleafmax << endl;
+        cout << "Leaf particle count error : " << leafcount << "   " << Nleafmax << endl;
         exit(0);
       }
       if (activecount > leafcount) {
-        cout << "Leaf particle count error : "
-             << leafcount << "   " << Nleafmax << endl;
+        cout << "Leaf particle count error : " << leafcount << "   " << Nleafmax << endl;
         exit(0);
       }
     }
 
-    // Check that bounding boxes of cells on each level do not overlap
-    // each other
+    // Check that bounding boxes of cells on each level do not overlap each other
     for (cc=0; cc<Ncell; cc++) {
       if (c != cc && kdcell[cc].level == cell.level) {
         if (ndim == 2) {
@@ -2249,41 +2233,38 @@ void KDTree<ndim,ParticleType>::ValidateTree
         }
       }
       if (overlap_flag) {
-        cout << "Brother/sister cell overlap error!! : " << c << "   "
-             << cc << endl;
+        cout << "Brother/sister cell overlap error!! : " << c << "   " << cc << endl;
         exit(0);
       }
     }
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   // Check particles are included in the tree once and once only
   for (i=ifirst; i<=ilast; i++) {
     if (pcount[i] != 1) {
-      cout << "Problem with child cell ptcl counter : " << i << "   "
-           << pcount[i] << endl;
+      cout << "Problem with child cell ptcl counter : " << i << "   " << pcount[i] << endl;
       kill_flag = true;
     }
   }
 
   // Check all particles accounted for
   if (Ncount != Ntot) {
-    cout << "Ncount problem with KD-tree : "
-         << Ncount << "   " << Ntot << endl;
+    cout << "Ncount problem with KD-tree : " << Ncount << "   " << Ntot << endl;
     kill_flag = true;
   }
 
   // Check active particles don't exceed total number of particles
   if (Nactivecount > Ntot) {
-    cout << "Nactivecount problem with KD-tree : "
-         << Nactivecount << "   " << Ntot << endl;
+    cout << "Nactivecount problem with KD-tree : " << Nactivecount << "   " << Ntot << endl;
     kill_flag = true;
   }
 
   // Check number of particles on all levels is consistent
   for (l=0; l<ltot; l++) {
     if (lcount[l] != Ntot) {
-      cout << "Problem with SPH particles on level : " << l << "    " << lcount[l] << "    " << Ntot << endl;
+      cout << "Problem with SPH particles on level : " << l << "    "
+           << lcount[l] << "    " << Ntot << endl;
       kill_flag = true;
     }
   }

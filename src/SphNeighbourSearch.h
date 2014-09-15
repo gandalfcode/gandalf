@@ -108,10 +108,8 @@ protected:
   virtual void UpdateAllStarGasForces(int, int, SphParticle<ndim> *,
                                       Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *) = 0;
-  virtual void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *,
-                                       Sph<ndim> *) = 0;
-  virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim>,
-                                            Sph<ndim> *)=0;
+  virtual void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *) = 0;
+  virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *)=0;
 #ifdef MPI_PARALLEL
   virtual void UpdateGravityExportList(int, int, int, SphParticle<ndim> *,
                                        Sph<ndim> *, Nbody<ndim> *) = 0;
@@ -123,19 +121,19 @@ protected:
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                                       Sph<ndim> *, vector<int> &) = 0;
   virtual void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
-                                        vector<int>&, const vector<int>&,
-                                        MpiNode<ndim>*) = 0;
+                                        vector<int>&, const vector<int>&, MpiNode<ndim>*) = 0;
   virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *,
-                                          vector<int>&, vector<int>&,
-                                          MpiNode<ndim> *) = 0;
-  virtual int GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>&, int, int)=0;
+                                          vector<int>&, vector<int>&, MpiNode<ndim> *) = 0;
+  virtual int GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&,
+                            MpiNode<ndim>&, int, int) = 0;
   virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
-        Sph<ndim>* sph)=0;
-  virtual void GetBackExportInfo(vector<char >& received_array, vector<int>& N_exported_particles_from_proc,
-        vector<int>&, Sph<ndim>* sph, int rank)=0;
-  virtual void UnpackReturnedExportInfo(vector<char >& received_information, vector<int>& recv_displs,
-      Sph<ndim>* sph, int rank)=0;
-  virtual void CommunicatePrunedTrees(vector<int>&, int)=0;
+                               Sph<ndim>* sph) = 0;
+  virtual void GetBackExportInfo(vector<char >& received_array,
+                                 vector<int>& N_exported_particles_from_proc,
+                                 vector<int>&, Sph<ndim>* sph, int rank) = 0;
+  virtual void UnpackReturnedExportInfo(vector<char >& received_information,
+                                        vector<int>& recv_displs, Sph<ndim>* sph, int rank) = 0;
+  virtual void CommunicatePrunedTrees(vector<int>&, int) = 0;
 #endif
 
 
@@ -261,14 +259,12 @@ class GradhSphBruteForce: public BruteForceSearch<ndim,ParticleType>
 
 
   //---------------------------------------------------------------------------
-  GradhSphBruteForce(FLOAT, DomainBox<ndim> *,
-                     SphKernel<ndim> *, CodeTiming *);
+  GradhSphBruteForce(FLOAT, DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~GradhSphBruteForce();
 
 
   //---------------------------------------------------------------------------
-  void UpdateAllSphProperties(int, int, SphParticle<ndim> *,
-                              Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphProperties(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
 
 };
 
@@ -296,14 +292,12 @@ class SM2012SphBruteForce: public BruteForceSearch<ndim,ParticleType>
 
 
   //---------------------------------------------------------------------------
-  SM2012SphBruteForce(FLOAT, DomainBox<ndim> *,
-                     SphKernel<ndim> *, CodeTiming *);
+  SM2012SphBruteForce(FLOAT, DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~SM2012SphBruteForce();
 
 
   //---------------------------------------------------------------------------
-  void UpdateAllSphProperties(int, int, SphParticle<ndim> *,
-                              Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphProperties(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
 
 
 };
@@ -332,14 +326,12 @@ class GodunovSphBruteForce: public BruteForceSearch<ndim,ParticleType>
 
 
   //---------------------------------------------------------------------------
-  GodunovSphBruteForce(FLOAT, DomainBox<ndim> *,
-                       SphKernel<ndim> *, CodeTiming *);
+  GodunovSphBruteForce(FLOAT, DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~GodunovSphBruteForce();
 
 
   //---------------------------------------------------------------------------
-  void UpdateAllSphProperties(int, int, SphParticle<ndim> *,
-                              Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphProperties(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *);
   void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *);
 
