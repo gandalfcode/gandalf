@@ -1,5 +1,5 @@
 //=============================================================================
-//  KDTree.h
+//  OctTree.h
 //  Header file containing class definitions for constructing and updating
 //  the KD-tree.
 //
@@ -22,8 +22,8 @@
 //=============================================================================
 
 
-#ifndef _KD_TREE_H_
-#define _KD_TREE_H_
+#ifndef _OCT_TREE_H_
+#define _OCT_TREE_H_
 
 #include <assert.h>
 #include <iostream>
@@ -44,11 +44,11 @@ using namespace std;
 
 
 //=============================================================================
-//  Struct KDTreeCell
+//  Struct OctTreeCell
 /// KD-tree cell data structure
 //=============================================================================
 template <int ndim>
-struct KDTreeCell {
+struct OctTreeCell {
   int c1;                           ///< First child cell
   int c2;                           ///< Second child cell
   int c2g;                          ///< i.d. of tree-cell c/grid-cell g
@@ -84,7 +84,7 @@ struct KDTreeCell {
 
 
 //=============================================================================
-//  Class KDTree
+//  Class OctTree
 /// \brief   Class containing binary tree
 /// \details Binary tree data structure used for efficient neighbour searching
 ///          and computation of gravitational forces
@@ -92,7 +92,7 @@ struct KDTreeCell {
 /// \date    08/01/2014
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-class KDTree : public Tree<ndim,ParticleType,TreeCell>
+class OctTree : public Tree<ndim,ParticleType,TreeCell>
 {
  public:
 
@@ -130,8 +130,8 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  KDTree(int, FLOAT, FLOAT, FLOAT, string, string);
-  ~KDTree();
+  OctTree(int, FLOAT, FLOAT, FLOAT, string, string);
+  ~OctTree();
 
 
   //---------------------------------------------------------------------------
@@ -184,7 +184,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
 #endif
 
 
-  // Additional variables for KD-tree
+  // Additional variables for octal tree
   //-----------------------------------------------------------------------------------------------
 
 

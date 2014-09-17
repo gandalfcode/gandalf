@@ -1,6 +1,6 @@
 //=============================================================================
 //  SM2012SphSimulation.cpp
-//  Contains all main functions controlling Saitoh & Makino (2012) SPH 
+//  Contains all main functions controlling Saitoh & Makino (2012) SPH
 //  simulation work-flow.
 //
 //  This file is part of GANDALF :
@@ -57,7 +57,7 @@ template class SM2012SphSimulation<3>;
 
 //=============================================================================
 //  SM2012SphSimulation::ProcessSphParameters
-/// Process all the options chosen in the parameters file, setting various 
+/// Process all the options chosen in the parameters file, setting various
 /// simulation variables and creating important simulation objects.
 //=============================================================================
 template <int ndim>
@@ -138,7 +138,7 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
   //===========================================================================
   if (stringparams["sph"] == "sm2012") {
     if (intparams["tabulated_kernel"] == 1) {
-      sph = new SM2012Sph<ndim, TabulatedKernel> 
+      sph = new SM2012Sph<ndim, TabulatedKernel>
         (intparams["hydro_forces"], intparams["self_gravity"],
 	 floatparams["alpha_visc"], floatparams["beta_visc"],
 	 floatparams["h_fac"], floatparams["h_converge"],
@@ -147,21 +147,21 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
     else if (intparams["tabulated_kernel"] == 0){
       // Depending on the kernel, instantiate a different SM2012 object
       if (KernelName == "m4") {
-	sph = new SM2012Sph<ndim, M4Kernel> 
+	sph = new SM2012Sph<ndim, M4Kernel>
 	  (intparams["hydro_forces"], intparams["self_gravity"],
 	   floatparams["alpha_visc"], floatparams["beta_visc"],
 	   floatparams["h_fac"], floatparams["h_converge"],
 	   avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
       }
       else if (KernelName == "quintic") {
-	sph = new SM2012Sph<ndim, QuinticKernel> 
+	sph = new SM2012Sph<ndim, QuinticKernel>
 	  (intparams["hydro_forces"], intparams["self_gravity"],
 	   floatparams["alpha_visc"], floatparams["beta_visc"],
 	   floatparams["h_fac"], floatparams["h_converge"],
 	   avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
       }
       else if (KernelName == "gaussian") {
-	sph = new SM2012Sph<ndim, GaussianKernel> 
+	sph = new SM2012Sph<ndim, GaussianKernel>
 	  (intparams["hydro_forces"], intparams["self_gravity"],
 	   floatparams["alpha_visc"], floatparams["beta_visc"],
 	   floatparams["h_fac"], floatparams["h_converge"],
@@ -182,7 +182,7 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
 
   //===========================================================================
   else {
-    string message = "Invalid or unrecognised parameter : sph = " 
+    string message = "Invalid or unrecognised parameter : sph = "
       + simparams->stringparams["sph"];
     ExceptionHandler::getIstance().raise(message);
   }
@@ -205,7 +205,7 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
     integration_step = max(integration_step,2);
   }
   else {
-    string message = "Unrecognised parameter : sph_integration = " 
+    string message = "Unrecognised parameter : sph_integration = "
       + simparams->stringparams["sph_integration"];
     ExceptionHandler::getIstance().raise(message);
   }
@@ -231,15 +231,20 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
   if (stringparams["neib_search"] == "bruteforce")
     sphneib = new SM2012SphBruteForce<ndim,SM2012SphParticle>
      (sph->kernp->kernrange,&simbox,sph->kernp,this->timing);
-  else if (stringparams["neib_search"] == "tree") {
-    sphneib = new SM2012SphTree<ndim,SM2012SphParticle>
-     (intparams["Nleafmax"],this->Nmpi,floatparams["thetamaxsqd"],
-      sph->kernp->kernrange,floatparams["macerror"],
-      stringparams["gravity_mac"],stringparams["multipole"],
+  else if (stringparams["neib_search"] == "kdtree") {
+    sphneib = new SM2012SphKDTree<ndim,SM2012SphParticle,KDTreeCell>
+     (intparams["Nleafmax"],this->Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
+      floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
+      &simbox,sph->kernp,timing);
+  }
+  else if (stringparams["neib_search"] == "octtree") {
+    sphneib = new SM2012SphOctTree<ndim,SM2012SphParticle,OctTreeCell>
+     (intparams["Nleafmax"],this->Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
+      floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
       &simbox,sph->kernp,timing);
   }
   else {
-    string message = "Unrecognised parameter : neib_search = " 
+    string message = "Unrecognised parameter : neib_search = "
       + simparams->stringparams["neib_search"];
     ExceptionHandler::getIstance().raise(message);
   }

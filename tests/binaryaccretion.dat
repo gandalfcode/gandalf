@@ -132,7 +132,7 @@ No. of block timestep levels                : Nlevels = 4
 #---------------------
 # Optimisation options
 #---------------------
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = kdtree
 Tree re-build frequency                     : ntreebuildstep = 16
 Tree stock frequency                        : ntreestockstep = 1
 No. of particles in leaf cell               : Nleafmax = 8

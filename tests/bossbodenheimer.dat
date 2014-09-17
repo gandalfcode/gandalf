@@ -94,7 +94,7 @@ Mass cut-off for smooth accretion           : smooth_accrete_frac = 0.05
 Timestep cup-off for smooth accretion       : smooth_accrete_dt = 0.05
 Select adaptive sink radii                  : sink_radius_mode = hmult
 Set sink radius equal to kernel extent      : sink_radius = 2.0
-Sink formation density                      : rho_sink = 2.0e-12
+Sink formation density                      : rho_sink = 5.0e-13
 
 
 #-------------------------
@@ -112,7 +112,7 @@ Max. timestep level difference              : level_diff_max = 2
 #-------------
 # Tree options
 #-------------
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = kdtree
 Tree re-build frequency                     : nbuildstep = 1
 No. of particles in leaf cell               : Nleafmax = 6
 Tree opening angle (squared)                : thetamaxsqd = 0.15

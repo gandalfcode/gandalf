@@ -41,12 +41,12 @@
 #include "DomainBox.h"
 #include "Parameters.h"
 #include "KDTree.h"
-using namespace std;
-
+#include "OctTree.h"
 #if defined MPI_PARALLEL
 #include "MpiExport.h"
 #include "MpiNode.h"
 #endif
+using namespace std;
 
 
 // Forward declaration of Sph to break circular dependency
@@ -58,9 +58,6 @@ class Sph;
 template <int ndim>
 class MpiNode;
 #endif
-
-
-//static const FLOAT ghost_range = 1.6;
 
 
 
@@ -109,7 +106,7 @@ protected:
                                       Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *) = 0;
   virtual void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *) = 0;
-  virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *)=0;
+  virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *) = 0;
 #ifdef MPI_PARALLEL
   virtual void UpdateGravityExportList(int, int, int, SphParticle<ndim> *,
                                        Sph<ndim> *, Nbody<ndim> *) = 0;
@@ -347,7 +344,7 @@ class GodunovSphBruteForce: public BruteForceSearch<ndim,ParticleType>
 /// \author  D. A. Hubber
 /// \date    08/01/2014
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 class SphTree: public SphNeighbourSearch<ndim>
 {
 #if defined MPI_PARALLEL
@@ -368,7 +365,7 @@ protected:
 
 
   //---------------------------------------------------------------------------
-  SphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+  SphTree(int, int, FLOAT, FLOAT, FLOAT, string, string, 
           DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~SphTree();
 
@@ -406,7 +403,7 @@ protected:
   int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                               Sph<ndim> *, vector<int> &);
   int SearchHydroExportParticles(const Box<ndim> &,
-                                 Sph<ndim> *, vector<KDTreeCell<ndim> *> &);
+                                 Sph<ndim> *, vector<TreeCell<ndim> *> &);
   void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
                                 vector<int>&, const vector<int>&,
                                 MpiNode<ndim>*);
@@ -454,9 +451,9 @@ protected:
   int Ntotmaxold;                   ///< Old value of Ntotmax
   FLOAT hmax;                       ///< Store hmax in the tree
   FLOAT theta;                      ///< Geometric opening angle
-  KDTree<ndim,ParticleType> *tree;  ///< Pointer to tree
-  KDTree<ndim,ParticleType> *ghosttree;  ///< Pointer to tree containing ghosts
-                                         ///< on local domain
+  Tree<ndim,ParticleType,TreeCell> *tree;       ///< Pointer to tree
+  Tree<ndim,ParticleType,TreeCell> *ghosttree;  ///< Pointer to tree containing ghosts
+                                                ///< on local domain
 
   bool allocated_buffer;            ///< ..
   int Nthreads;                     ///< ..
@@ -473,9 +470,9 @@ protected:
   int *Ncellexport;                         ///< ..
   int *Npartexport;                         ///< ..
   int **cellexportlist;                     ///< List of cells
-  KDTree<ndim,ParticleType> *mpighosttree;  ///< Pointer to tree containing
+  Tree<ndim,ParticleType,TreeCell> *mpighosttree;  ///< Pointer to tree containing
                                             ///< ghosts from other MPI procs.
-  KDTree<ndim,ParticleType> **prunedtree;   ///< 'Pruned' tree for MPI nodes.
+  Tree<ndim,ParticleType,TreeCell> **prunedtree;   ///< 'Pruned' tree for MPI nodes.
                                             ///< i.e. only uses top levels
 #endif
 
@@ -491,36 +488,36 @@ protected:
 /// \author  D. A. Hubber
 /// \date    08/01/2014
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-class GradhSphTree: public SphTree<ndim,ParticleType>
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
 {
  public:
 
-  using SphTree<ndim,ParticleType>::activelistbuf;
-  using SphTree<ndim,ParticleType>::activepartbuf;
-  using SphTree<ndim,ParticleType>::allocated_buffer;
-  using SphTree<ndim,ParticleType>::box;
-  using SphTree<ndim,ParticleType>::gravity_mac;
-  using SphTree<ndim,ParticleType>::kernp;
-  using SphTree<ndim,ParticleType>::kernrange;
-  using SphTree<ndim,ParticleType>::kernrangesqd;
-  using SphTree<ndim,ParticleType>::levelneibbuf;
-  using SphTree<ndim,ParticleType>::multipole;
-  using SphTree<ndim,ParticleType>::neibcheck;
-  using SphTree<ndim,ParticleType>::neibpartbuf;
-  using SphTree<ndim,ParticleType>::Ndirectmaxbuf;
-  using SphTree<ndim,ParticleType>::Ngravcellmaxbuf;
-  using SphTree<ndim,ParticleType>::Nleafmax;
-  using SphTree<ndim,ParticleType>::Nneibmaxbuf;
-  using SphTree<ndim,ParticleType>::Ntot;
-  using SphTree<ndim,ParticleType>::Ntotmax;
-  using SphTree<ndim,ParticleType>::Ntotmaxold;
-  using SphTree<ndim,ParticleType>::Ntotold;
-  using SphTree<ndim,ParticleType>::timing;
-  using SphTree<ndim,ParticleType>::tree;
-  using SphTree<ndim,ParticleType>::ghosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::activelistbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::activepartbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::allocated_buffer;
+  using SphTree<ndim,ParticleType,TreeCell>::box;
+  using SphTree<ndim,ParticleType,TreeCell>::gravity_mac;
+  using SphTree<ndim,ParticleType,TreeCell>::kernp;
+  using SphTree<ndim,ParticleType,TreeCell>::kernrange;
+  using SphTree<ndim,ParticleType,TreeCell>::kernrangesqd;
+  using SphTree<ndim,ParticleType,TreeCell>::levelneibbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::multipole;
+  using SphTree<ndim,ParticleType,TreeCell>::neibcheck;
+  using SphTree<ndim,ParticleType,TreeCell>::neibpartbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::Ndirectmaxbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::Ngravcellmaxbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::Nleafmax;
+  using SphTree<ndim,ParticleType,TreeCell>::Nneibmaxbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::Ntot;
+  using SphTree<ndim,ParticleType,TreeCell>::Ntotmax;
+  using SphTree<ndim,ParticleType,TreeCell>::Ntotmaxold;
+  using SphTree<ndim,ParticleType,TreeCell>::Ntotold;
+  using SphTree<ndim,ParticleType,TreeCell>::timing;
+  using SphTree<ndim,ParticleType,TreeCell>::tree;
+  using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
-  using SphTree<ndim,ParticleType>::mpighosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
 #endif
 
 
@@ -545,6 +542,62 @@ class GradhSphTree: public SphTree<ndim,ParticleType>
 
 
 //=============================================================================
+//  Class GradhSphKDTree
+/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
+/// \details kd-tree data structure used for efficient neighbour searching
+///          and computation of gravitational forces for grad-h SPH.
+/// \author  D. A. Hubber
+/// \date    17/09/2014
+//=============================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+class GradhSphKDTree: public GradhSphTree<ndim,ParticleType,TreeCell>
+{
+ public:
+
+  using SphTree<ndim,ParticleType,TreeCell>::tree;
+  using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
+#ifdef MPI_PARALLEL
+  using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+#endif
+
+
+  //---------------------------------------------------------------------------
+  GradhSphKDTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+                 DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+
+};
+
+
+
+//=============================================================================
+//  Class GradhSphOctTree
+/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
+/// \details kd-tree data structure used for efficient neighbour searching
+///          and computation of gravitational forces for grad-h SPH.
+/// \author  D. A. Hubber
+/// \date    17/09/2014
+//=============================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+class GradhSphOctTree: public GradhSphTree<ndim,ParticleType,TreeCell>
+{
+ public:
+
+  using SphTree<ndim,ParticleType,TreeCell>::tree;
+  using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
+#ifdef MPI_PARALLEL
+  using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+#endif
+
+
+  //---------------------------------------------------------------------------
+  GradhSphOctTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+                  DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+
+};
+
+
+
+//=============================================================================
 //  Class SM2012SphTree
 /// \brief   Class containing kd-tree for computing grad-h SPH force loops.
 /// \details kd-tree data structure used for efficient neighbour searching
@@ -552,36 +605,36 @@ class GradhSphTree: public SphTree<ndim,ParticleType>
 /// \author  D. A. Hubber
 /// \date    08/01/2014
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-class SM2012SphTree: public SphTree<ndim,ParticleType>
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+class SM2012SphTree: public SphTree<ndim,ParticleType,TreeCell>
 {
  public:
 
-  using SphTree<ndim,ParticleType>::activelistbuf;
-  using SphTree<ndim,ParticleType>::activepartbuf;
-  using SphTree<ndim,ParticleType>::allocated_buffer;
-  using SphTree<ndim,ParticleType>::box;
-  using SphTree<ndim,ParticleType>::gravity_mac;
-  using SphTree<ndim,ParticleType>::kernp;
-  using SphTree<ndim,ParticleType>::kernrange;
-  using SphTree<ndim,ParticleType>::kernrangesqd;
-  using SphTree<ndim,ParticleType>::levelneibbuf;
-  using SphTree<ndim,ParticleType>::multipole;
-  using SphTree<ndim,ParticleType>::neibcheck;
-  using SphTree<ndim,ParticleType>::neibpartbuf;
-  using SphTree<ndim,ParticleType>::Ndirectmaxbuf;
-  using SphTree<ndim,ParticleType>::Ngravcellmaxbuf;
-  using SphTree<ndim,ParticleType>::Nleafmax;
-  using SphTree<ndim,ParticleType>::Nneibmaxbuf;
-  using SphTree<ndim,ParticleType>::Ntot;
-  using SphTree<ndim,ParticleType>::Ntotmax;
-  using SphTree<ndim,ParticleType>::Ntotmaxold;
-  using SphTree<ndim,ParticleType>::Ntotold;
-  using SphTree<ndim,ParticleType>::timing;
-  using SphTree<ndim,ParticleType>::tree;
-  using SphTree<ndim,ParticleType>::ghosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::activelistbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::activepartbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::allocated_buffer;
+  using SphTree<ndim,ParticleType,TreeCell>::box;
+  using SphTree<ndim,ParticleType,TreeCell>::gravity_mac;
+  using SphTree<ndim,ParticleType,TreeCell>::kernp;
+  using SphTree<ndim,ParticleType,TreeCell>::kernrange;
+  using SphTree<ndim,ParticleType,TreeCell>::kernrangesqd;
+  using SphTree<ndim,ParticleType,TreeCell>::levelneibbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::multipole;
+  using SphTree<ndim,ParticleType,TreeCell>::neibcheck;
+  using SphTree<ndim,ParticleType,TreeCell>::neibpartbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::Ndirectmaxbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::Ngravcellmaxbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::Nleafmax;
+  using SphTree<ndim,ParticleType,TreeCell>::Nneibmaxbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::Ntot;
+  using SphTree<ndim,ParticleType,TreeCell>::Ntotmax;
+  using SphTree<ndim,ParticleType,TreeCell>::Ntotmaxold;
+  using SphTree<ndim,ParticleType,TreeCell>::Ntotold;
+  using SphTree<ndim,ParticleType,TreeCell>::timing;
+  using SphTree<ndim,ParticleType,TreeCell>::tree;
+  using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
-  using SphTree<ndim,ParticleType>::mpighosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
 #endif
 
 
@@ -606,6 +659,62 @@ class SM2012SphTree: public SphTree<ndim,ParticleType>
 
 
 //=============================================================================
+//  Class SM2012SphKDTree
+/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
+/// \details kd-tree data structure used for efficient neighbour searching
+///          and computation of gravitational forces for grad-h SPH.
+/// \author  D. A. Hubber
+/// \date    17/09/2014
+//=============================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+class SM2012SphKDTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
+{
+ public:
+
+  using SphTree<ndim,ParticleType,TreeCell>::tree;
+  using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
+#ifdef MPI_PARALLEL
+  using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+#endif
+
+
+  //---------------------------------------------------------------------------
+  SM2012SphKDTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+                  DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+
+};
+
+
+
+//=============================================================================
+//  Class SM2012SphOctTree
+/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
+/// \details kd-tree data structure used for efficient neighbour searching
+///          and computation of gravitational forces for grad-h SPH.
+/// \author  D. A. Hubber
+/// \date    17/09/2014
+//=============================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+class SM2012SphOctTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
+{
+ public:
+
+  using SphTree<ndim,ParticleType,TreeCell>::tree;
+  using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
+#ifdef MPI_PARALLEL
+  using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+#endif
+
+
+  //---------------------------------------------------------------------------
+  SM2012SphOctTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+                   DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+
+};
+
+
+
+//=============================================================================
 //  Class GodunovSphTree
 /// \brief   Class containing kd-tree for computing grad-h SPH force loops.
 /// \details kd-tree data structure used for efficient neighbour searching
@@ -613,36 +722,36 @@ class SM2012SphTree: public SphTree<ndim,ParticleType>
 /// \author  D. A. Hubber
 /// \date    08/01/2014
 //=============================================================================
-template <int ndim, template<int> class ParticleType>
-class GodunovSphTree: public SphTree<ndim,ParticleType>
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+class GodunovSphTree: public SphTree<ndim,ParticleType,TreeCell>
 {
  public:
 
-  using SphTree<ndim,ParticleType>::activelistbuf;
-  using SphTree<ndim,ParticleType>::activepartbuf;
-  using SphTree<ndim,ParticleType>::allocated_buffer;
-  using SphTree<ndim,ParticleType>::box;
-  using SphTree<ndim,ParticleType>::gravity_mac;
-  using SphTree<ndim,ParticleType>::kernp;
-  using SphTree<ndim,ParticleType>::kernrange;
-  using SphTree<ndim,ParticleType>::kernrangesqd;
-  using SphTree<ndim,ParticleType>::levelneibbuf;
-  using SphTree<ndim,ParticleType>::multipole;
-  using SphTree<ndim,ParticleType>::neibcheck;
-  using SphTree<ndim,ParticleType>::neibpartbuf;
-  using SphTree<ndim,ParticleType>::Ndirectmaxbuf;
-  using SphTree<ndim,ParticleType>::Ngravcellmaxbuf;
-  using SphTree<ndim,ParticleType>::Nleafmax;
-  using SphTree<ndim,ParticleType>::Nneibmaxbuf;
-  using SphTree<ndim,ParticleType>::Ntot;
-  using SphTree<ndim,ParticleType>::Ntotmax;
-  using SphTree<ndim,ParticleType>::Ntotmaxold;
-  using SphTree<ndim,ParticleType>::Ntotold;
-  using SphTree<ndim,ParticleType>::timing;
-  using SphTree<ndim,ParticleType>::tree;
-  using SphTree<ndim,ParticleType>::ghosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::activelistbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::activepartbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::allocated_buffer;
+  using SphTree<ndim,ParticleType,TreeCell>::box;
+  using SphTree<ndim,ParticleType,TreeCell>::gravity_mac;
+  using SphTree<ndim,ParticleType,TreeCell>::kernp;
+  using SphTree<ndim,ParticleType,TreeCell>::kernrange;
+  using SphTree<ndim,ParticleType,TreeCell>::kernrangesqd;
+  using SphTree<ndim,ParticleType,TreeCell>::levelneibbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::multipole;
+  using SphTree<ndim,ParticleType,TreeCell>::neibcheck;
+  using SphTree<ndim,ParticleType,TreeCell>::neibpartbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::Ndirectmaxbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::Ngravcellmaxbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::Nleafmax;
+  using SphTree<ndim,ParticleType,TreeCell>::Nneibmaxbuf;
+  using SphTree<ndim,ParticleType,TreeCell>::Ntot;
+  using SphTree<ndim,ParticleType,TreeCell>::Ntotmax;
+  using SphTree<ndim,ParticleType,TreeCell>::Ntotmaxold;
+  using SphTree<ndim,ParticleType,TreeCell>::Ntotold;
+  using SphTree<ndim,ParticleType,TreeCell>::timing;
+  using SphTree<ndim,ParticleType,TreeCell>::tree;
+  using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
-  using SphTree<ndim,ParticleType>::mpighosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
 #endif
 
 
@@ -663,6 +772,62 @@ class GodunovSphTree: public SphTree<ndim,ParticleType>
                               Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *);
   void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *);
+
+};
+
+
+
+//=============================================================================
+//  Class GodunovSphKDTree
+/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
+/// \details kd-tree data structure used for efficient neighbour searching
+///          and computation of gravitational forces for grad-h SPH.
+/// \author  D. A. Hubber
+/// \date    17/09/2014
+//=============================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+class GodunovSphKDTree: public GodunovSphTree<ndim,ParticleType,TreeCell>
+{
+ public:
+
+  using SphTree<ndim,ParticleType,TreeCell>::tree;
+  using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
+#ifdef MPI_PARALLEL
+  using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+#endif
+
+
+  //---------------------------------------------------------------------------
+  GodunovSphKDTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+                  DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+
+};
+
+
+
+//=============================================================================
+//  Class GodunovSphOctTree
+/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
+/// \details kd-tree data structure used for efficient neighbour searching
+///          and computation of gravitational forces for grad-h SPH.
+/// \author  D. A. Hubber
+/// \date    17/09/2014
+//=============================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+class GodunovSphOctTree: public GodunovSphTree<ndim,ParticleType,TreeCell>
+{
+ public:
+
+  using SphTree<ndim,ParticleType,TreeCell>::tree;
+  using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
+#ifdef MPI_PARALLEL
+  using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+#endif
+
+
+  //---------------------------------------------------------------------------
+  GodunovSphOctTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+                   DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
 
 };
 #endif

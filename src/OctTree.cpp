@@ -1,7 +1,7 @@
 //=============================================================================
-//  KDTree.cpp
+//  OctTree.cpp
 //  Contains all functions for building, stocking and walking for the
-//  binary KD-tree for SPH particles.
+//  octal-spatial tree for SPH particles.
 //  Based on code courtesy of O. Lomax and A. Whitworth
 //
 //  This file is part of GANDALF :
@@ -34,7 +34,7 @@
 #include "InlineFuncs.h"
 #include "SphParticle.h"
 #include "Sph.h"
-#include "KDTree.h"
+#include "OctTree.h"
 #include "Debug.h"
 #if defined _OPENMP
 #include <omp.h>
@@ -44,11 +44,11 @@ using namespace std;
 
 
 //=============================================================================
-//  KDTree::KDTree
-/// KDTree constructor.  Initialises various variables.
+//  OctTree::OctTree
+/// OctTree constructor.  Initialises various variables.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-KDTree<ndim,ParticleType,TreeCell>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
+OctTree<ndim,ParticleType,TreeCell>::OctTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                                   FLOAT kernrangeaux, FLOAT macerroraux,
                                   string gravity_mac_aux, string multipole_aux)
 {
@@ -80,11 +80,11 @@ KDTree<ndim,ParticleType,TreeCell>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux
 
 
 //=============================================================================
-//  KDTree::~KDTree
-/// KDTree destructor.  Deallocates tree memory upon object destruction.
+//  OctTree::~OctTree
+/// OctTree destructor.  Deallocates tree memory upon object destruction.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-KDTree<ndim,ParticleType,TreeCell>::~KDTree()
+OctTree<ndim,ParticleType,TreeCell>::~OctTree()
 {
   if (allocated_tree) DeallocateTreeMemory();
 }
@@ -92,16 +92,16 @@ KDTree<ndim,ParticleType,TreeCell>::~KDTree()
 
 
 //=============================================================================
-//  KDTree::AllocateTreeMemory
+//  OctTree::AllocateTreeMemory
 /// Allocate memory for KD-tree as requested.  If more memory is required
 /// than currently allocated, tree is deallocated and reallocated here.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
+void OctTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
 {
   int ithread;                      // Thread id number
 
-  debug2("[KDTree::AllocateTreeMemory]");
+  debug2("[OctTree::AllocateTreeMemory]");
 
   if (!allocated_tree || Ntotmax > Ntotmaxold) {
     if (allocated_tree) DeallocateTreeMemory();
@@ -122,13 +122,13 @@ void KDTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
 
 
 //=============================================================================
-//  KDTree::DeallocateTreeMemory
+//  OctTree::DeallocateTreeMemory
 /// Deallocates all KD-tree memory
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::DeallocateTreeMemory(void)
+void OctTree<ndim,ParticleType,TreeCell>::DeallocateTreeMemory(void)
 {
-  debug2("[KDTree::DeallocateTreeMemory]");
+  debug2("[OctTree::DeallocateTreeMemory]");
 
   if (allocated_tree) {
     delete[] celldata;
@@ -144,13 +144,13 @@ void KDTree<ndim,ParticleType,TreeCell>::DeallocateTreeMemory(void)
 
 
 //=============================================================================
-//  KDTree::BuildTree
+//  OctTree::BuildTree
 /// Call all routines to build/re-build the KD-tree on the local node.
 /// If OpenMP is activated, the local domain is partitioned into sub-trees
 /// in order to improve the scalability of building and stocking the tree.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::BuildTree
+void OctTree<ndim,ParticleType,TreeCell>::BuildTree
 (int Npart,                         ///< No. of particles
  int Npartmax,                      ///< Max. no. of particles
  ParticleType<ndim> *partdata,      ///< Particle data array
@@ -159,7 +159,7 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   int i;                            // Particle counter
   int k;                            // Dimension counter
 
-  debug2("[KDTree::BuildTree]");
+  debug2("[OctTree::BuildTree]");
   //timing->StartTimingSection("BUILD_TREE",2);
 
   // Activate nested parallelism for tree building routines
@@ -218,14 +218,14 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
 
 
 //=============================================================================
-//  KDTree::ComputeTreeSize
+//  OctTree::ComputeTreeSize
 /// Compute the maximum size (i.e. no. of levels, cells and leaf cells) of
 /// the KD-tree.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::ComputeTreeSize(void)
+void OctTree<ndim,ParticleType,TreeCell>::ComputeTreeSize(void)
 {
-  debug2("[KDTree::ComputeTreeSize]");
+  debug2("[OctTree::ComputeTreeSize]");
 
   // Calculate maximum level of tree that can contain max. no. of particles
   lmax = 0;
@@ -259,12 +259,12 @@ void KDTree<ndim,ParticleType,TreeCell>::ComputeTreeSize(void)
 
 
 //=============================================================================
-//  KDTree::CreateTreeStructure
+//  OctTree::CreateTreeStructure
 /// Create the raw tree skeleton structure once the tree size is known.
 /// Sets all cell pointer variables and all cell levels.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
+void OctTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
 {
   int c;                            // Dummy id of tree-level, then tree-cell
   int g;                            // Dummy id of grid-cell
@@ -272,7 +272,7 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
   int *c2L;                         // Increment to second child-cell
   int *cNL;                         // Increment to next cell if cell unopened
 
-  debug2("[KDTree::CreateTreeStructure]");
+  debug2("[OctTree::CreateTreeStructure]");
 
   // Allocate memory for local arrays
   c2L = new int[ltot + 1];
@@ -329,11 +329,11 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
 
 
 //=============================================================================
-//  KDTree::DivideTreeCell
+//  OctTree::DivideTreeCell
 /// Recursive routine to divide a tree cell into two children cells.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
+void OctTree<ndim,ParticleType,TreeCell>::DivideTreeCell
 (int ifirst,                        ///< Aux. id of first particle in cell
  int ilast,                         ///< Aux. id of last particle in cell
  ParticleType<ndim> *partdata,      ///< Pointer to main SPH object
@@ -473,12 +473,12 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
 
 #ifdef REORDER_PARTICLES
 //=============================================================================
-//  KDTree::QuickSelect
+//  OctTree::QuickSelect
 /// Find median and sort particles in arrays to ensure they are the correct
 /// side of the division.  Uses the QuickSelect algorithm.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
+FLOAT OctTree<ndim,ParticleType,TreeCell>::QuickSelect
 (int left,                          ///< Left-most id of particle in array
  int right,                         ///< Right-most id of particle in array
  int jpivot,                        ///< Pivot/median point
@@ -552,12 +552,12 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
 
 #else
 //=============================================================================
-//  KDTree::QuickSelect
+//  OctTree::QuickSelect
 /// Find median and sort particles in arrays to ensure they are the correct
 /// side of the division.  Uses the QuickSelect algorithm.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
+FLOAT OctTree<ndim,ParticleType,TreeCell>::QuickSelect
 (int left,                          ///< Left-most id of particle in array
  int right,                         ///< Right-most id of particle in array
  int jpivot,                        ///< Pivot/median point
@@ -632,12 +632,12 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
 
 
 //=============================================================================
-//  KDTree::StockTree
+//  OctTree::StockTree
 /// Stock given tree cell in KD-tree.  If cell is not a leaf-cell, recursively
 /// calls itself for its two child cells.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::StockTree
+void OctTree<ndim,ParticleType,TreeCell>::StockTree
 (TreeCell<ndim> &cell,            ///< Reference to cell to be stocked
  ParticleType<ndim> *partdata)      ///< SPH particle data array
 {
@@ -676,12 +676,12 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
 
 
 //=============================================================================
-//  KDTree::StockCellProperties
+//  OctTree::StockCellProperties
 /// Calculate the physical properties (e.g. total mass, centre-of-mass,
 /// opening-distance, etc..) of all cells in the tree.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
+void OctTree<ndim,ParticleType,TreeCell>::StockCellProperties
 (TreeCell<ndim> &cell,            ///< Reference to current tree cell
  ParticleType<ndim> *partdata)      ///< Particle data array
 {
@@ -915,17 +915,17 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
 
 //=============================================================================
-//  KDTree::ExtrapolateCellProperties
+//  OctTree::ExtrapolateCellProperties
 /// Extrapolate important physical properties of all cells in the tree.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
+void OctTree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
 (FLOAT dt)                          ///< Smallest timestep size
 {
   int c;                            // Cell counter
   int k;                            // Dimension counter
 
-  debug2("[KDTree::ExtrapolateCellProperties]");
+  debug2("[OctTree::ExtrapolateCellProperties]");
 
 
   // ...
@@ -950,12 +950,12 @@ void KDTree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
 
 
 //=============================================================================
-//  KDTree::UpdateHmaxValues
+//  OctTree::UpdateHmaxValues
 /// Calculate the physical properties (e.g. total mass, centre-of-mass,
 /// opening-distance, etc..) of all cells in the tree.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
+void OctTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
 (TreeCell<ndim> &cell,        ///< KD-tree cell
  ParticleType<ndim> *partdata)        ///< SPH particle data array
 {
@@ -1043,19 +1043,19 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
 
 
 //=============================================================================
-//  KDTree::UpdateActiveParticleCounters
+//  OctTree::UpdateActiveParticleCounters
 /// Loop through all leaf cells in KD-tree and update all active
 /// particle counters.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
+void OctTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 (ParticleType<ndim> *partdata)      ///< ..
 {
   int c;                            // Cell counter
   int i;                            // SPH particle index
   int ilast;                        // Last particle in linked list
 
-  debug2("[KDTree::UpdateActiveParticleCounters]");
+  debug2("[OctTree::UpdateActiveParticleCounters]");
   //timing->StartTimingSection("TREE_UPDATE_COUNTERS",2);
 
 
@@ -1087,12 +1087,12 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 
 
 //=============================================================================
-//  KDTree::ComputeActiveParticleList
+//  OctTree::ComputeActiveParticleList
 /// Returns the number (Nactive) and list of ids (activelist) of all active
 /// SPH particles in the given cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int KDTree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
+int OctTree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
 (TreeCell<ndim> *cellptr,           ///< [in] Pointer to cell
  ParticleType<ndim> *partdata,      ///< [in] Pointer to particle data array
  int *activelist)                   ///< [out] List of active particles in cell
@@ -1114,11 +1114,11 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
 
 
 //=============================================================================
-//  KDTree::BoxOverlap
+//  OctTree::BoxOverlap
 /// Check if two bounding boxes overlap.  If yes, then returns true.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-bool KDTree<ndim,ParticleType,TreeCell>::BoxOverlap
+bool OctTree<ndim,ParticleType,TreeCell>::BoxOverlap
 (const FLOAT box1min[ndim],         ///< Minimum extent of box 1
  const FLOAT box1max[ndim],         ///< Maximum extent of box 1
  const FLOAT box2min[ndim],         ///< Minimum extent of box 2
@@ -1151,15 +1151,15 @@ bool KDTree<ndim,ParticleType,TreeCell>::BoxOverlap
 
 
 //=============================================================================
-//  KDTree::ComputeGatherNeighbourList
+//  OctTree::ComputeGatherNeighbourList
 /// Computes and returns number of neighbour, 'Nneib', and the list
 /// of neighbour ids, 'neiblist', for all particles inside cell 'c'.
 /// Includes all particles in the selected cell, plus all particles
 /// contained in adjacent cells (including diagonal cells).
-/// Wrapper around the true implementation inside KDTree
+/// Wrapper around the true implementation inside OctTree
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int KDTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
+int OctTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 (const ParticleType<ndim> *partdata,  ///< [in] Particle data array
  const FLOAT rp[ndim],                ///< [in] Search position
  const FLOAT rsearch,                 ///< [in] Maximum smoothing length
@@ -1241,15 +1241,15 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
 
 //=============================================================================
-//  KDTree::ComputeGatherNeighbourList
+//  OctTree::ComputeGatherNeighbourList
 /// Computes and returns number of neighbour, 'Nneib', and the list
 /// of neighbour ids, 'neiblist', for all particles inside cell 'c'.
 /// Includes all particles in the selected cell, plus all particles
 /// contained in adjacent cells (including diagonal cells).
-/// Wrapper around the true implementation inside KDTree
+/// Wrapper around the true implementation inside OctTree
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int KDTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
+int OctTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 (const ParticleType<ndim> *partdata,  ///< [in] Particle data array
  const TreeCell<ndim> *cellptr,       ///< [in] Pointer to current cell
  const FLOAT hmax,                    ///< [in] Maximum smoothing length
@@ -1339,17 +1339,17 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
 
 //=============================================================================
-//  KDTree::ComputeNeighbourList
+//  OctTree::ComputeNeighbourList
 /// Computes and returns number of neighbour, 'Nneib', and the list
 /// of neighbour ids, 'neiblist', for all particles inside cell 'c'.
 /// Includes all particles in the selected cell, plus all particles
 /// contained in adjacent cells (including diagonal cells).
-/// Wrapper around the true implementation inside KDTree.
+/// Wrapper around the true implementation inside OctTree.
 /// If allocated memory array containing neighbour ids (neiblist) overflows,
 /// return with error code (-1) in order to reallocate more memory.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int KDTree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
+int OctTree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 (const ParticleType<ndim> *partdata,  ///< [in] Particle data array
  const TreeCell<ndim> *cellptr,       ///< [in] Cell pointer
  const int Nneibmax,                  ///< [in] Max. no. of neighbours
@@ -1441,7 +1441,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
 
 //=============================================================================
-//  KDTree::ComputeGravityInteractionList
+//  OctTree::ComputeGravityInteractionList
 /// Computes and returns number of SPH neighbours (Nneib), direct sum particles
 /// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
 /// the gravity tree walk for active particles inside cell c.
@@ -1450,7 +1450,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 /// overflow, return with error code (-1) to reallocate more memory.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
+int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
 (const ParticleType<ndim> *partdata,  ///< [in] Particle data array
  const TreeCell<ndim> *cellptr,       ///< [in] Pointer to cell
  const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
@@ -1606,7 +1606,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
 
 
 //=============================================================================
-//  KDTree::ComputeStarGravityInteractionList
+//  OctTree::ComputeStarGravityInteractionList
 /// Computes and returns number of SPH neighbours (Nneib), direct sum particles
 /// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
 /// the gravity tree walk for active particles inside cell c.
@@ -1615,7 +1615,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
 /// overflow, return with error code (-1) to reallocate more memory.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int KDTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
+int OctTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
 (NbodyParticle<ndim> *star,         ///< [in] Nbody particle
  FLOAT macfactor,                   ///< [in] Gravity MAC factor
  int Nneibmax,                      ///< [in] Max. no. of SPH neighbours
@@ -1742,12 +1742,12 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
 
 
 //=============================================================================
-//  KDTree::ComputeCellMonopoleForces
+//  OctTree::ComputeCellMonopoleForces
 /// Compute the force on particle 'parti' due to all cells obtained in the
 /// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::ComputeCellMonopoleForces
+void OctTree<ndim,ParticleType,TreeCell>::ComputeCellMonopoleForces
 (FLOAT &gpot,                       ///< [inout] Grav. potential
  FLOAT agrav[ndim],                 ///< [inout] Acceleration array
  FLOAT rp[ndim],                    ///< [in] Position of point
@@ -1788,12 +1788,12 @@ void KDTree<ndim,ParticleType,TreeCell>::ComputeCellMonopoleForces
 
 
 //=============================================================================
-//  KDTree::ComputeCellQuadrupoleForces
+//  OctTree::ComputeCellQuadrupoleForces
 /// Compute the force on particle 'parti' due to all cells obtained in the
 /// gravity tree walk including the quadrupole moment correction term.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::ComputeCellQuadrupoleForces
+void OctTree<ndim,ParticleType,TreeCell>::ComputeCellQuadrupoleForces
 (FLOAT &gpot,                       ///< [inout] Grav. potential
  FLOAT agrav[ndim],                 ///< [inout] Acceleration array
  FLOAT rp[ndim],                    ///< [in] Position of point
@@ -1866,12 +1866,12 @@ void KDTree<ndim,ParticleType,TreeCell>::ComputeCellQuadrupoleForces
 
 
 //=============================================================================
-//  KDTree::ComputeFastMonopoleForces
+//  OctTree::ComputeFastMonopoleForces
 /// Compute the force on particle 'parti' due to all cells obtained in the
 /// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
+void OctTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
 (int Nactive,                       ///< [in] No. of active particles
  int Ngravcell,                     ///< [in] No. of tree cells in list
  TreeCell<ndim> **gravcelllist,     ///< [in] List of tree cell ids
@@ -1940,12 +1940,12 @@ void KDTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
 
 
 //=============================================================================
-//  KDTree::ComputeActiveCellList
+//  OctTree::ComputeActiveCellList
 /// Returns the number of cells containing active particles, 'Nactive', and
 /// the i.d. list of cells contains active particles, 'celllist'
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int KDTree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
+int OctTree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
 (TreeCell<ndim> **celllist)       ///< Cells id array containing active ptcls
 {
   int c;                            // Cell counter
@@ -1966,7 +1966,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
 
 #ifdef MPI_PARALLEL
 //=============================================================================
-//  KDTree::ComputeDistantGravityInteractionList
+//  OctTree::ComputeDistantGravityInteractionList
 /// Computes and returns number of SPH neighbours (Nneib), direct sum particles
 /// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
 /// the gravity tree walk for active particles inside cell c.
@@ -1975,7 +1975,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
 /// overflow, return with error code (-1) to reallocate more memory.
 //=============================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int KDTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
+int OctTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 (const TreeCell<ndim> *cellptr,       ///< [in] Pointer to cell
  const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
  const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
@@ -2072,11 +2072,11 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 
 
 //=================================================================================================
-//  KDTree::ComputeHydroTreeCellOverlap
+//  OctTree::ComputeHydroTreeCellOverlap
 /// ...
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-bool KDTree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
+bool OctTree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
 (const TreeCell<ndim> *cellptr)     ///< [in] Pointer to cell
 {
   int cc = 0;                       // Cell counter
@@ -2118,11 +2118,11 @@ bool KDTree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
 
 #if defined(VERIFY_ALL)
 //=================================================================================================
-//  KDTree::ValidateTree
+//  OctTree::ValidateTree
 /// Performs various sanity and validation checks on KD-tree structure.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
+void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
 (ParticleType<ndim> *partdata)      ///< Pointer to SPH class
 {
   bool overlap_flag = false;        // Flag if cell bounding boxes overlap
@@ -2142,7 +2142,7 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
   int *pcount;                      // Array for counting particles in tree
   TreeCell<ndim> cell;            // Local copy of KD-tree cell
 
-  debug2("[KDTree::ValidateTree]");
+  debug2("[OctTree::ValidateTree]");
 
   ccount = new int[Ncellmax];
   pcount = new int[Ntotmax];
@@ -2279,12 +2279,12 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
 
 
 
-template class KDTree<1,GradhSphParticle,KDTreeCell>;
-template class KDTree<2,GradhSphParticle,KDTreeCell>;
-template class KDTree<3,GradhSphParticle,KDTreeCell>;
-template class KDTree<1,SM2012SphParticle,KDTreeCell>;
-template class KDTree<2,SM2012SphParticle,KDTreeCell>;
-template class KDTree<3,SM2012SphParticle,KDTreeCell>;
-template class KDTree<1,GodunovSphParticle,KDTreeCell>;
-template class KDTree<2,GodunovSphParticle,KDTreeCell>;
-template class KDTree<3,GodunovSphParticle,KDTreeCell>;
+template class OctTree<1,GradhSphParticle,OctTreeCell>;
+template class OctTree<2,GradhSphParticle,OctTreeCell>;
+template class OctTree<3,GradhSphParticle,OctTreeCell>;
+template class OctTree<1,SM2012SphParticle,OctTreeCell>;
+template class OctTree<2,SM2012SphParticle,OctTreeCell>;
+template class OctTree<3,SM2012SphParticle,OctTreeCell>;
+template class OctTree<1,GodunovSphParticle,OctTreeCell>;
+template class OctTree<2,GodunovSphParticle,OctTreeCell>;
+template class OctTree<3,GodunovSphParticle,OctTreeCell>;
