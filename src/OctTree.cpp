@@ -1,8 +1,7 @@
-//=============================================================================
+//=================================================================================================
 //  OctTree.cpp
 //  Contains all functions for building, stocking and walking for the
 //  octal-spatial tree for SPH particles.
-//  Based on code courtesy of O. Lomax and A. Whitworth
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -20,7 +19,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <cstdlib>
@@ -43,10 +42,10 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::OctTree
 /// OctTree constructor.  Initialises various variables.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 OctTree<ndim,ParticleType,TreeCell>::OctTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                                   FLOAT kernrangeaux, FLOAT macerroraux,
@@ -79,10 +78,10 @@ OctTree<ndim,ParticleType,TreeCell>::OctTree(int Nleafmaxaux, FLOAT thetamaxsqda
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::~OctTree
 /// OctTree destructor.  Deallocates tree memory upon object destruction.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 OctTree<ndim,ParticleType,TreeCell>::~OctTree()
 {
@@ -91,16 +90,14 @@ OctTree<ndim,ParticleType,TreeCell>::~OctTree()
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::AllocateTreeMemory
-/// Allocate memory for KD-tree as requested.  If more memory is required
+/// Allocate memory for octal tree as requested.  If more memory is required
 /// than currently allocated, tree is deallocated and reallocated here.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
 {
-  int ithread;                      // Thread id number
-
   debug2("[OctTree::AllocateTreeMemory]");
 
   if (!allocated_tree || Ntotmax > Ntotmaxold) {
@@ -121,10 +118,10 @@ void OctTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::DeallocateTreeMemory
-/// Deallocates all KD-tree memory
-//=============================================================================
+/// Deallocates all octal tree memory
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::DeallocateTreeMemory(void)
 {
@@ -143,21 +140,19 @@ void OctTree<ndim,ParticleType,TreeCell>::DeallocateTreeMemory(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::BuildTree
-/// Call all routines to build/re-build the KD-tree on the local node.
-/// If OpenMP is activated, the local domain is partitioned into sub-trees
-/// in order to improve the scalability of building and stocking the tree.
-//=============================================================================
+/// Call all routines to build/re-build the octal tree on the local node.
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::BuildTree
-(int Npart,                         ///< No. of particles
- int Npartmax,                      ///< Max. no. of particles
- ParticleType<ndim> *partdata,      ///< Particle data array
- FLOAT timestep)                    ///< Smallest physical timestep
+(int Npart,                            ///< No. of particles
+ int Npartmax,                         ///< Max. no. of particles
+ ParticleType<ndim> *partdata,         ///< Particle data array
+ FLOAT timestep)                       ///< Smallest physical timestep
 {
-  int i;                            // Particle counter
-  int k;                            // Dimension counter
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
 
   debug2("[OctTree::BuildTree]");
   //timing->StartTimingSection("BUILD_TREE",2);
@@ -176,16 +171,8 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   //Ntotmax    = max(Ntot,Ntotmax);
   ///Ntotmax    = max(Ntotmax,Npartmax);
 
-  // Compute the size of all tree-related arrays now we know number of points
-  ComputeTreeSize();
-
   // Allocate (or reallocate if needed) all tree memory
   AllocateTreeMemory();
-
-  // If the number of levels in the tree has changed (due to destruction or
-  // creation of new particles) then re-create tree data structure
-  // including linked lists and cell pointers
-  if (ltot != ltot_old) CreateTreeStructure();
 
   // Set properties for root cell before constructing tree
   celldata[0].N = Ntot;
@@ -201,11 +188,12 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   // If number of particles remains unchanged, use old id list
   // (nearly sorted list should be faster for quick select).
   if (Ntot > 0) {
-    if (Ntot != Ntotold)
+    if (Ntot != Ntotold) {
       for (i=ifirst; i<=ilast; i++) ids[i] = i;
+    }
 
     // Recursively build tree from root node down
-    DivideTreeCell(ifirst,ilast,partdata,celldata[0]);
+    //DivideTreeCell(ifirst,ilast,partdata,celldata[0]);
 
 #if defined(VERIFY_ALL)
     ValidateTree(partdata);
@@ -217,431 +205,17 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
 
 
 
-//=============================================================================
-//  OctTree::ComputeTreeSize
-/// Compute the maximum size (i.e. no. of levels, cells and leaf cells) of
-/// the KD-tree.
-//=============================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void OctTree<ndim,ParticleType,TreeCell>::ComputeTreeSize(void)
-{
-  debug2("[OctTree::ComputeTreeSize]");
-
-  // Calculate maximum level of tree that can contain max. no. of particles
-  lmax = 0;
-  while (Nleafmax*pow(2,lmax) < Ntotmax) {
-    lmax++;
-  };
-  gmax = pow(2,lmax);
-  Ncellmax = 2*gmax - 1;
-
-
-  // Calculate level of tree that can contain all current particles
-  ltot = 0;
-  while (Nleafmax*pow(2,ltot) < Ntot) {
-    ltot++;
-  };
-  gtot = pow(2,ltot);
-  Ncell = 2*gtot - 1;
-
-
-  // Optional output (for debugging)
-#if defined(VERIFY_ALL)
-  cout << "No. of ptcls in tree  : " << Ntot << "   " << Ntotmax << endl;
-  cout << "No. of grid-cells     : " << gtot << "   " << gmax << endl;
-  cout << "No. of levels on tree : " << ltot << "   " << lmax << endl;
-  cout << "No. of cells in tree  : " << Ncell << "   " << Ncellmax << endl;
-#endif
-
-  return;
-}
-
-
-
-//=============================================================================
-//  OctTree::CreateTreeStructure
-/// Create the raw tree skeleton structure once the tree size is known.
-/// Sets all cell pointer variables and all cell levels.
-//=============================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void OctTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
-{
-  int c;                            // Dummy id of tree-level, then tree-cell
-  int g;                            // Dummy id of grid-cell
-  int l;                            // Dummy id of level
-  int *c2L;                         // Increment to second child-cell
-  int *cNL;                         // Increment to next cell if cell unopened
-
-  debug2("[OctTree::CreateTreeStructure]");
-
-  // Allocate memory for local arrays
-  c2L = new int[ltot + 1];
-  cNL = new int[ltot + 1];
-
-  // Set pointers to second child-cell (if opened) and next cell (if unopened)
-  for (l=0; l<ltot; l++) {
-    c2L[l] = pow(2,ltot - l);
-    cNL[l] = 2*c2L[l] - 1;
-  }
-
-  // Zero tree cell variables
-  for (g=0; g<gtot; g++) g2c[g] = 0;
-  for (c=0; c<Ncell; c++) {
-    celldata[c].c2g = 0;
-    celldata[c].c1 = -1;
-    celldata[c].c2 = -1;
-    celldata[c].ifirst = -1;
-    celldata[c].ilast = -1;
-    celldata[c].N = 0;
-    celldata[c].Nactive = 0;
-  }
-  g = 0;
-  celldata[0].level = 0;
-
-  // Loop over all cells and set all other pointers
-  //---------------------------------------------------------------------------
-  for (c=0; c<Ncell; c++) {
-    celldata[c].id = c;
-    if (celldata[c].level == ltot) {                    // If on leaf level
-      celldata[c].cnext = c + 1;                        // id of next cell
-      celldata[c].c2g = g;                              // Record leaf id
-      g2c[g++] = c;                                   // Record inverse id
-    }
-    else {
-      celldata[c+1].level = celldata[c].level + 1;          // Level of 1st child
-      celldata[c].c1 = c + 1;
-      celldata[c].c2 = c + c2L[celldata[c].level];          // id of 2nd child
-      celldata[celldata[c].c2].level = celldata[c].level + 1; // Level of 2nd child
-      celldata[c].cnext = c + cNL[celldata[c].level];       // Next cell id
-    }
-
-  }
-  //---------------------------------------------------------------------------
-
-
-  // Free locally allocated memory
-  delete[] cNL;
-  delete[] c2L;
-
-  return;
-}
-
-
-
-//=============================================================================
-//  OctTree::DivideTreeCell
-/// Recursive routine to divide a tree cell into two children cells.
-//=============================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void OctTree<ndim,ParticleType,TreeCell>::DivideTreeCell
-(int ifirst,                        ///< Aux. id of first particle in cell
- int ilast,                         ///< Aux. id of last particle in cell
- ParticleType<ndim> *partdata,      ///< Pointer to main SPH object
- TreeCell<ndim> &cell)            ///< Cell to be divided
-{
-  int i;                            // Aux. child cell counter
-  int j;                            // Aux. particle counter
-  int k;                            // Dimension counter
-  int k_divide = 0;                 // Division dimension
-  FLOAT rkmax = 0.0;                // Max. box size of all dimensions
-  FLOAT rdivide;                    // Coordinate value at division
-
-
-  // If cell is a leaf cell, do not divide further and set linked lists
-  if (cell.level == ltot) {
-    if (cell.N > 0) {
-      for (j=cell.ifirst; j<cell.ilast; j++) inext[ids[j]] = ids[j+1];
-      inext[ids[cell.ilast]] = -1;
-      cell.ifirst = ids[cell.ifirst];
-      cell.ilast = ids[cell.ilast];
-    }
-    else {
-      cell.ifirst = -1;
-      cell.ilast = -1;
-    }
-    StockCellProperties(cell,partdata);
-    return;
-  }
-
-#if defined(MPI_PARALLEL)
-  i = cell.ifirst;
-  for (k=0; k< ndim; k++) {
-    cell.bbmin[k]=+big_number;
-    cell.bbmax[k] = -big_number;
-  }
-  for (i=cell.ifirst; i<=cell.ilast; i++) {
-    int j = ids[i];
-    for (k=0; k< ndim; k++) {
-      if (cell.bbmin[k]>partdata[j].r[k])
-        cell.bbmin[k]=partdata[j].r[k];
-      if (cell.bbmax[k]<partdata[j].r[k])
-              cell.bbmax[k]=partdata[j].r[k];
-    }
-  }
-#endif
-
-  // Determine dimension to split the cell along.
-  // For now, simply split along direction of the bounding box's longest axis
-  for (k=0; k<ndim; k++) {
-    if (cell.bbmax[k] - cell.bbmin[k] > rkmax) {
-      rkmax = cell.bbmax[k] - cell.bbmin[k];
-      k_divide = k;
-    }
-  }
-  cell.k_divide = k_divide;
-
-
-  // Find median value along selected division plane and re-order array
-  // so particles reside on correct side of division
-  rdivide = QuickSelect(cell.ifirst,cell.ilast,
-			cell.ifirst+cell.N/2,k_divide,partdata);
-
-  // Set properties of first child cell
-  for (k=0; k<ndim; k++) celldata[cell.c1].bbmin[k] = cell.bbmin[k];
-  for (k=0; k<ndim; k++) celldata[cell.c1].bbmax[k] = cell.bbmax[k];
-  for (k=0; k<ndim; k++) celldata[cell.c1].cexit[0][k] = cell.cexit[0][k];
-  for (k=0; k<ndim; k++) celldata[cell.c1].cexit[1][k] = cell.cexit[1][k];
-  celldata[cell.c1].bbmax[k_divide] = rdivide;
-  celldata[cell.c1].cexit[1][k_divide] = cell.c2;
-  celldata[cell.c1].N = cell.N/2;
-  if (celldata[cell.c1].N != 0) {
-    celldata[cell.c1].ifirst = ifirst;
-    celldata[cell.c1].ilast = ifirst + cell.N/2 - 1;
-  }
-
-  // Set properties of second child cell
-  for (k=0; k<ndim; k++) celldata[cell.c2].bbmin[k] = cell.bbmin[k];
-  for (k=0; k<ndim; k++) celldata[cell.c2].bbmax[k] = cell.bbmax[k];
-  for (k=0; k<ndim; k++) celldata[cell.c2].cexit[0][k] = cell.cexit[0][k];
-  for (k=0; k<ndim; k++) celldata[cell.c2].cexit[1][k] = cell.cexit[1][k];
-  celldata[cell.c2].bbmin[k_divide] = rdivide;
-  celldata[cell.c2].cexit[0][k_divide] = cell.c1;
-  celldata[cell.c2].N = cell.N - celldata[cell.c1].N;
-  if (celldata[cell.c2].N != 0) {
-    celldata[cell.c2].ifirst = ifirst + cell.N/2;
-    celldata[cell.c2].ilast = ilast;
-  }
-  assert(cell.N == celldata[cell.c1].N + celldata[cell.c2].N);
-
-
-  // Now divide the new child cells as a recursive function
-#if defined _OPENMP
-  if (pow(2,cell.level) < Nthreads) {
-#pragma omp parallel default(none) private(i) \
-  shared(cell,ifirst,ilast,partdata) num_threads(2)
-    {
-#pragma omp for
-      for (i=0; i<2; i++) {
-	if (i == 0) DivideTreeCell(ifirst,ifirst+cell.N/2-1,
-                                   partdata,celldata[cell.c1]);
-	else if (i == 1) DivideTreeCell(ifirst+cell.N/2,ilast,
-                                        partdata,celldata[cell.c2]);
-      }
-#pragma omp barrier
-    }
-  }
-  else {
-    for (i=0; i<2; i++) {
-      if (i == 0) DivideTreeCell(ifirst,ifirst+cell.N/2-1,
-                                 partdata,celldata[cell.c1]);
-      else if (i == 1) DivideTreeCell(ifirst+cell.N/2,ilast,
-                                      partdata,celldata[cell.c2]);
-    }
-  }
-#else
-  for (i=0; i<2; i++) {
-    if (i == 0) DivideTreeCell(ifirst,ifirst+cell.N/2-1,
-                               partdata,celldata[cell.c1]);
-    else if (i == 1) DivideTreeCell(ifirst+cell.N/2,ilast,
-                                    partdata,celldata[cell.c2]);
-  }
-#endif
-
-  if (cell.N != celldata[cell.c1].N + celldata[cell.c2].N) {
-    cout << "Checking : " << cell.N << "   " << celldata[cell.c1].N
-	 << "    " << celldata[cell.c2].N << endl;
-  }
-  assert(cell.N == celldata[cell.c1].N + celldata[cell.c2].N);
-
-  // Stock all cell properties once constructed
-  StockCellProperties(cell,partdata);
-
-  return;
-}
-
-
-
-#ifdef REORDER_PARTICLES
-//=============================================================================
-//  OctTree::QuickSelect
-/// Find median and sort particles in arrays to ensure they are the correct
-/// side of the division.  Uses the QuickSelect algorithm.
-//=============================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-FLOAT OctTree<ndim,ParticleType,TreeCell>::QuickSelect
-(int left,                          ///< Left-most id of particle in array
- int right,                         ///< Right-most id of particle in array
- int jpivot,                        ///< Pivot/median point
- int k,                             ///< Dimension of sort
- ParticleType<ndim> *partdata)      ///< Pointer to main particle data array
-{
-  int i;                            // ..
-  int j;                            // ..
-  int jguess;                       // ..
-  int jtemp;                        // ..
-  FLOAT rpivot;                     // ..
-  ParticleType<ndim> temppart;      // ..
-
-
-  // Place all particles left or right of chosen pivot point.
-  // Iterate until correct median pivot has been identified.
-  //---------------------------------------------------------------------------
-  do {
-
-    // Make a guess of pivot value
-    jguess = (left + right)/2;
-    rpivot = partdata[jguess].r[k];
-
-    // ..
-    temppart = partdata[jguess];
-    partdata[jguess] = partdata[right];
-    partdata[right] = temppart;
-    partdata[jguess] = partdata[right];
-
-    // ..
-    jguess = left;
-
-    //-------------------------------------------------------------------------
-    for (j=left; j<right; j++) {
-
-      if (partdata[j].r[k] <= rpivot) {
-        temppart = partdata[j];
-        partdata[j] = partdata[jguess];
-        partdata[jguess] = temppart;
-        partdata[j] = partdata[jguess];
-        jguess++;
-      }
-
-    }
-    //-------------------------------------------------------------------------
-
-
-    // Move ?? particle from end of array to index i
-    temppart = partdata[right];
-    partdata[right] = partdata[jguess];
-    partdata[jguess] = temppart;
-    partdata[right] = partdata[jguess];
-
-
-    // jguess is lower than jpivot.
-    // Only need to search between jguess+1 and right
-    if (jguess < jpivot) left = jguess + 1;
-
-    // jguess is higher than jpivot.
-    // Only need to search between left and jguess-1
-    else if (jguess > jpivot) right = jguess - 1;
-
-
-  } while (jguess != jpivot);
-  //---------------------------------------------------------------------------
-
-
-  return rpivot;
-}
-
-
-#else
-//=============================================================================
-//  OctTree::QuickSelect
-/// Find median and sort particles in arrays to ensure they are the correct
-/// side of the division.  Uses the QuickSelect algorithm.
-//=============================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-FLOAT OctTree<ndim,ParticleType,TreeCell>::QuickSelect
-(int left,                          ///< Left-most id of particle in array
- int right,                         ///< Right-most id of particle in array
- int jpivot,                        ///< Pivot/median point
- int k,                             ///< Dimension of sort
- ParticleType<ndim> *partdata)      ///< Pointer to main SPH object
-{
-  int i;                            // ..
-  int j;                            // ..
-  int jguess;                       // ..
-  int jtemp;                        // ..
-  FLOAT rpivot;                     // ..
-
-
-  // Place all particles left or right of chosen pivot point.
-  // Iterate until correct median pivot has been identified.
-  //---------------------------------------------------------------------------
-  do {
-
-    // Make a guess of pivot value
-    jguess = (left + right)/2;
-    rpivot = partdata[ids[jguess]].r[k];
-
-    // ..
-    jtemp = ids[jguess];
-    ids[jguess] = ids[right];
-    ids[right] = jtemp;
-
-    // ..
-    jguess = left;
-
-    //-------------------------------------------------------------------------
-    for (j=left; j<right; j++) {
-      //assert(j < Ntot);
-      if (partdata[ids[j]].r[k] <= rpivot) {
-        jtemp = ids[j];
-        ids[j] = ids[jguess];
-        ids[jguess] = jtemp;
-        jguess++;
-      }
-
-    }
-    //-------------------------------------------------------------------------
-
-
-    // Move ?? particle from end of array to index i
-    jtemp = ids[right];
-    ids[right] = ids[jguess];
-    ids[jguess] = jtemp;
-
-    //assert(left < Ntot);
-    //assert(right < Ntot);
-    //assert(jguess < Ntot);
-    //assert(jpivot < Ntot);
-
-
-    // jguess is lower than jpivot.
-    // Only need to search between jguess+1 and right
-    if (jguess < jpivot) left = jguess + 1;
-
-    // jguess is higher than jpivot.
-    // Only need to search between left and jguess-1
-    else if (jguess > jpivot) right = jguess - 1;
-
-  } while (jguess != jpivot);
-  //---------------------------------------------------------------------------
-
-
-  return rpivot;
-}
-#endif
-
-
-
-//=============================================================================
+//=================================================================================================
 //  OctTree::StockTree
 /// Stock given tree cell in KD-tree.  If cell is not a leaf-cell, recursively
 /// calls itself for its two child cells.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::StockTree
-(TreeCell<ndim> &cell,            ///< Reference to cell to be stocked
- ParticleType<ndim> *partdata)      ///< SPH particle data array
+ (TreeCell<ndim> &cell,                ///< Reference to cell to be stocked
+  ParticleType<ndim> *partdata)        ///< SPH particle data array
 {
-  int i;                            // Aux. child cell counter
+  int i;                               // Aux. child cell counter
 
   // If cell is not leaf, stock child cells
   if (cell.level != ltot) {
@@ -675,28 +249,28 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::StockCellProperties
 /// Calculate the physical properties (e.g. total mass, centre-of-mass,
 /// opening-distance, etc..) of all cells in the tree.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::StockCellProperties
-(TreeCell<ndim> &cell,            ///< Reference to current tree cell
- ParticleType<ndim> *partdata)      ///< Particle data array
+ (TreeCell<ndim> &cell,                ///< Reference to current tree cell
+  ParticleType<ndim> *partdata)        ///< Particle data array
 {
-  int cc,ccc;                       // Cell counters
-  int i;                            // Particle counter
-  int iaux;                         // Aux. particle i.d. variable
-  int j;                            // ..
-  int k;                            // Dimension counter
-  FLOAT dr[ndim];                   // Relative position vector
-  FLOAT drsqd;                      // Distance squared
-  FLOAT mi;                         // Mass of particle i
-  FLOAT p = 0.0;                    // ..
-  FLOAT lambda = 0.0;               // ..
-  TreeCell<ndim> &child1 = celldata[cell.c1];
-  TreeCell<ndim> &child2 = celldata[cell.c2];
+  int cc,ccc;                          // Cell counters
+  int i;                               // Particle counter
+  int iaux;                            // Aux. particle i.d. variable
+  int j;                               // ..
+  int k;                               // Dimension counter
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT mi;                            // Mass of particle i
+  FLOAT p = 0.0;                       // ..
+  FLOAT lambda = 0.0;                  // ..
+  TreeCell<ndim> &child1 = celldata[cell.c1];  // ..
+  TreeCell<ndim> &child2 = celldata[cell.c2];  // ..
 
 
   // Zero all summation variables for all cells
@@ -914,22 +488,22 @@ void OctTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::ExtrapolateCellProperties
 /// Extrapolate important physical properties of all cells in the tree.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
-(FLOAT dt)                          ///< Smallest timestep size
+ (FLOAT dt)                            ///< Smallest timestep size
 {
-  int c;                            // Cell counter
-  int k;                            // Dimension counter
+  int c;                               // Cell counter
+  int k;                               // Dimension counter
 
   debug2("[OctTree::ExtrapolateCellProperties]");
 
 
   // ...
-  //===========================================================================
+  //-----------------------------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
 
     for (k=0; k<ndim; k++) celldata[c].r[k] += celldata[c].v[k]*dt;
@@ -942,18 +516,18 @@ void OctTree<ndim,ParticleType,TreeCell>::ExtrapolateCellProperties
     //celldata[c].hmax += celldata[c].dhmaxdt*dt;
 
   }
-  //===========================================================================
+  //-----------------------------------------------------------------------------------------------
 
   return;
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::UpdateHmaxValues
 /// Calculate the physical properties (e.g. total mass, centre-of-mass,
 /// opening-distance, etc..) of all cells in the tree.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
 (TreeCell<ndim> &cell,        ///< KD-tree cell
@@ -1042,18 +616,17 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::UpdateActiveParticleCounters
-/// Loop through all leaf cells in KD-tree and update all active
-/// particle counters.
-//=============================================================================
+/// Loop through all leaf cells in KD-tree and update all active particle counters.
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
-(ParticleType<ndim> *partdata)      ///< ..
+ (ParticleType<ndim> *partdata)        ///< ..
 {
-  int c;                            // Cell counter
-  int i;                            // SPH particle index
-  int ilast;                        // Last particle in linked list
+  int c;                               // Cell counter
+  int i;                               // SPH particle index
+  int ilast;                           // Last particle in linked list
 
   debug2("[OctTree::UpdateActiveParticleCounters]");
   //timing->StartTimingSection("TREE_UPDATE_COUNTERS",2);
@@ -1086,20 +659,20 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::ComputeActiveParticleList
 /// Returns the number (Nactive) and list of ids (activelist) of all active
 /// SPH particles in the given cell.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int OctTree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
-(TreeCell<ndim> *cellptr,           ///< [in] Pointer to cell
- ParticleType<ndim> *partdata,      ///< [in] Pointer to particle data array
- int *activelist)                   ///< [out] List of active particles in cell
+ (TreeCell<ndim> *cellptr,             ///< [in] Pointer to cell
+  ParticleType<ndim> *partdata,        ///< [in] Pointer to particle data array
+  int *activelist)                     ///< [out] List of active particles in cell
 {
   int i = cellptr->ifirst;             // Local particle id (set to first ptcl id)
   int ilast = cellptr->ilast;          // i.d. of last particle in cell c
-  int Nactive = 0;                  // No. of active particles in cell
+  int Nactive = 0;                     // No. of active particles in cell
 
   // Walk through linked list to obtain list and number of active ptcls.
   while (i != -1) {
@@ -1113,16 +686,16 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::BoxOverlap
 /// Check if two bounding boxes overlap.  If yes, then returns true.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 bool OctTree<ndim,ParticleType,TreeCell>::BoxOverlap
-(const FLOAT box1min[ndim],         ///< Minimum extent of box 1
- const FLOAT box1max[ndim],         ///< Maximum extent of box 1
- const FLOAT box2min[ndim],         ///< Minimum extent of box 2
- const FLOAT box2max[ndim])         ///< Maximum extent of box 2
+ (const FLOAT box1min[ndim],           ///< Minimum extent of box 1
+  const FLOAT box1max[ndim],           ///< Maximum extent of box 1
+  const FLOAT box2min[ndim],           ///< Minimum extent of box 2
+  const FLOAT box2max[ndim])           ///< Maximum extent of box 2
 {
   if (ndim == 1) {
     if (box1min[0] > box2max[0]) return false;
@@ -1150,31 +723,30 @@ bool OctTree<ndim,ParticleType,TreeCell>::BoxOverlap
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::ComputeGatherNeighbourList
-/// Computes and returns number of neighbour, 'Nneib', and the list
-/// of neighbour ids, 'neiblist', for all particles inside cell 'c'.
-/// Includes all particles in the selected cell, plus all particles
-/// contained in adjacent cells (including diagonal cells).
+/// Computes and returns number of neighbour, 'Nneib', and the list of neighbour ids, 'neiblist',
+/// for all particles inside cell 'c'.  Includes all particles in the selected cell, plus all
+/// particles contained in adjacent cells (including diagonal cells).
 /// Wrapper around the true implementation inside OctTree
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int OctTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
-(const ParticleType<ndim> *partdata,  ///< [in] Particle data array
- const FLOAT rp[ndim],                ///< [in] Search position
- const FLOAT rsearch,                 ///< [in] Maximum smoothing length
- const int Nneibmax,                  ///< [in] Max. no. of neighbours
- int *neiblist)                       ///< [out] List of neighbour i.d.s
+ (const ParticleType<ndim> *partdata,  ///< [in] Particle data array
+  const FLOAT rp[ndim],                ///< [in] Search position
+  const FLOAT rsearch,                 ///< [in] Maximum smoothing length
+  const int Nneibmax,                  ///< [in] Max. no. of neighbours
+  int *neiblist)                       ///< [out] List of neighbour i.d.s
 {
-  int cc;                             // Cell counter
-  int i;                              // Particle id
-  int j;                              // Aux. particle counter
-  int k;                              // Neighbour counter
-  int Nneib = 0;                      // Neighbour counter
-  int Ntemp = 0;                      // Temporary neighbour counter
-  FLOAT dr[ndim];                     // Relative position vector
-  FLOAT drsqd;                        // Distance squared
-  FLOAT rsearchsqd;                   // Search radius squared
+  int cc;                              // Cell counter
+  int i;                               // Particle id
+  int j;                               // Aux. particle counter
+  int k;                               // Neighbour counter
+  int Nneib = 0;                       // Neighbour counter
+  int Ntemp = 0;                       // Temporary neighbour counter
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT rsearchsqd;                    // Search radius squared
 
   // Start with root cell and walk through entire tree
   cc = 0;
@@ -1240,14 +812,14 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::ComputeGatherNeighbourList
 /// Computes and returns number of neighbour, 'Nneib', and the list
 /// of neighbour ids, 'neiblist', for all particles inside cell 'c'.
 /// Includes all particles in the selected cell, plus all particles
 /// contained in adjacent cells (including diagonal cells).
 /// Wrapper around the true implementation inside OctTree
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int OctTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 (const ParticleType<ndim> *partdata,  ///< [in] Particle data array
@@ -1338,7 +910,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::ComputeNeighbourList
 /// Computes and returns number of neighbour, 'Nneib', and the list
 /// of neighbour ids, 'neiblist', for all particles inside cell 'c'.
@@ -1347,25 +919,25 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 /// Wrapper around the true implementation inside OctTree.
 /// If allocated memory array containing neighbour ids (neiblist) overflows,
 /// return with error code (-1) in order to reallocate more memory.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int OctTree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
-(const ParticleType<ndim> *partdata,  ///< [in] Particle data array
- const TreeCell<ndim> *cellptr,       ///< [in] Cell pointer
- const int Nneibmax,                  ///< [in] Max. no. of neighbours
- int &Nneib,                          ///< [inout] No. of neighbours
- int *neiblist)                       ///< [out] List of neighbour i.d.s
+ (const ParticleType<ndim> *partdata,  ///< [in] Particle data array
+  const TreeCell<ndim> *cellptr,       ///< [in] Cell pointer
+  const int Nneibmax,                  ///< [in] Max. no. of neighbours
+  int &Nneib,                          ///< [inout] No. of neighbours
+  int *neiblist)                       ///< [out] List of neighbour i.d.s
 {
-  int cc;                             // Cell counter
-  int i;                              // Particle id
-  int j;                              // Aux. particle counter
-  int k;                              // Neighbour counter
-  int Ntemp = Nneib;                  // Temp. no. of neighbouts
-  FLOAT dr[ndim];                     // Relative position vector
-  FLOAT drsqd;                        // Distance squared
-  FLOAT rc[ndim];                     // Position of cell
-  FLOAT hrangemaxsqd;                 // Maximum kernel extent (squared)
-  FLOAT rmax;                         // Max. extent of particles from cell COM
+  int cc;                              // Cell counter
+  int i;                               // Particle id
+  int j;                               // Aux. particle counter
+  int k;                               // Neighbour counter
+  int Ntemp = Nneib;                   // Temp. no. of neighbouts
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT rc[ndim];                      // Position of cell
+  FLOAT hrangemaxsqd;                  // Maximum kernel extent (squared)
+  FLOAT rmax;                          // Max. extent of particles from cell COM
 
   // Exit immediately if we have overflowed the neighbour list buffer
   if (Nneib == -1) return -1;
@@ -1440,7 +1012,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::ComputeGravityInteractionList
 /// Computes and returns number of SPH neighbours (Nneib), direct sum particles
 /// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
@@ -1448,32 +1020,32 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 /// Currently defaults to the geometric opening criteria.
 /// If any of the interactions list arrays (neiblist,directlist,gravcelllist)
 /// overflow, return with error code (-1) to reallocate more memory.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
-(const ParticleType<ndim> *partdata,  ///< [in] Particle data array
- const TreeCell<ndim> *cellptr,       ///< [in] Pointer to cell
- const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
- const int Nneibmax,                  ///< [in] Max. no. of SPH neighbours
- const int Ndirectmax,                ///< [in] Max. no. of direct-sum neibs
- const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
- int &Nneib,                          ///< [out] No. of SPH neighbours
- int &Ndirect,                        ///< [out] No. of direct-sum neighbours
- int &Ngravcell,                      ///< [out] No. of cell interactions
- int *neiblist,                       ///< [out] List of SPH neighbour ids
- int *directlist,                     ///< [out] List of direct-sum neib ids
- TreeCell<ndim> **gravcelllist)       ///< [out] List of cell ids
+ (const ParticleType<ndim> *partdata,  ///< [in] Particle data array
+  const TreeCell<ndim> *cellptr,       ///< [in] Pointer to cell
+  const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
+  const int Nneibmax,                  ///< [in] Max. no. of SPH neighbours
+  const int Ndirectmax,                ///< [in] Max. no. of direct-sum neibs
+  const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
+  int &Nneib,                          ///< [out] No. of SPH neighbours
+  int &Ndirect,                        ///< [out] No. of direct-sum neighbours
+  int &Ngravcell,                      ///< [out] No. of cell interactions
+  int *neiblist,                       ///< [out] List of SPH neighbour ids
+  int *directlist,                     ///< [out] List of direct-sum neib ids
+  TreeCell<ndim> **gravcelllist)       ///< [out] List of cell ids
 {
-  int cc;                             // Cell counter
-  int i;                              // Particle id
-  int j;                              // Aux. particle counter
-  int k;                              // Neighbour counter
-  int Nneibtemp = 0;                  // Aux. counter
-  FLOAT dr[ndim];                     // Relative position vector
-  FLOAT drsqd;                        // Distance squared
-  FLOAT rc[ndim];                     // Position of cell
-  FLOAT hrangemax;                    // Maximum kernel extent
-  FLOAT rmax;                         // Radius of sphere containing particles
+  int cc;                              // Cell counter
+  int i;                               // Particle id
+  int j;                               // Aux. particle counter
+  int k;                               // Neighbour counter
+  int Nneibtemp = 0;                   // Aux. counter
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT rc[ndim];                      // Position of cell
+  FLOAT hrangemax;                     // Maximum kernel extent
+  FLOAT rmax;                          // Radius of sphere containing particles
 
   // Make local copies of important cell properties
   for (k=0; k<ndim; k++) rc[k] = cellptr->rcell[k];
@@ -1605,7 +1177,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::ComputeStarGravityInteractionList
 /// Computes and returns number of SPH neighbours (Nneib), direct sum particles
 /// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
@@ -1613,29 +1185,29 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
 /// Currently defaults to the geometric opening criteria.
 /// If any of the interactions list arrays (neiblist,directlist,gravcelllist)
 /// overflow, return with error code (-1) to reallocate more memory.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int OctTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
-(NbodyParticle<ndim> *star,         ///< [in] Nbody particle
- FLOAT macfactor,                   ///< [in] Gravity MAC factor
- int Nneibmax,                      ///< [in] Max. no. of SPH neighbours
- int Ndirectmax,                    ///< [in] Max. no. of direct-sum neighbours
- int Ngravcellmax,                  ///< [in] Max. no. of cell interactions
- int &Nneib,                        ///< [out] No. of SPH neighbours
- int &Ndirect,                      ///< [out] No. of direct-sum neighbours
- int &Ngravcell,                    ///< [out] No. of cell interactions
- int *neiblist,                     ///< [out] List of SPH neighbour ids
- int *directlist,                   ///< [out] List of direct-sum neighbour ids
- TreeCell<ndim> **gravcelllist,   ///< [out] List of cell ids
- ParticleType<ndim> *partdata)      ///< [in] Particle data array
+ (NbodyParticle<ndim> *star,           ///< [in] Nbody particle
+  FLOAT macfactor,                     ///< [in] Gravity MAC factor
+  int Nneibmax,                        ///< [in] Max. no. of SPH neighbours
+  int Ndirectmax,                      ///< [in] Max. no. of direct-sum neighbours
+  int Ngravcellmax,                    ///< [in] Max. no. of cell interactions
+  int &Nneib,                          ///< [out] No. of SPH neighbours
+  int &Ndirect,                        ///< [out] No. of direct-sum neighbours
+  int &Ngravcell,                      ///< [out] No. of cell interactions
+  int *neiblist,                       ///< [out] List of SPH neighbour ids
+  int *directlist,                     ///< [out] List of direct-sum neighbour ids
+  TreeCell<ndim> **gravcelllist,       ///< [out] List of cell ids
+  ParticleType<ndim> *partdata)        ///< [in] Particle data array
 {
-  int cc;                           // Cell counter
-  int i;                            // Particle id
-  int k;                            // Neighbour counter
-  FLOAT dr[ndim];                   // Relative position vector
-  FLOAT drsqd;                      // Distance squared
-  FLOAT hrangemax;                  // Maximum kernel extent
-  FLOAT rs[ndim];                   // Position of star
+  int cc;                              // Cell counter
+  int i;                               // Particle id
+  int k;                               // Neighbour counter
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT hrangemax;                     // Maximum kernel extent
+  FLOAT rs[ndim];                      // Position of star
 
   // Make local copies of important cell properties
   for (k=0; k<ndim; k++) rs[k] = star->r[k];
@@ -1741,28 +1313,28 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::ComputeCellMonopoleForces
 /// Compute the force on particle 'parti' due to all cells obtained in the
 /// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::ComputeCellMonopoleForces
-(FLOAT &gpot,                       ///< [inout] Grav. potential
- FLOAT agrav[ndim],                 ///< [inout] Acceleration array
- FLOAT rp[ndim],                    ///< [in] Position of point
- int Ngravcell,                     ///< [in] No. of tree cells in list
- TreeCell<ndim> **gravcelllist)   ///< [in] List of tree cell ids
+ (FLOAT &gpot,                         ///< [inout] Grav. potential
+  FLOAT agrav[ndim],                   ///< [inout] Acceleration array
+  FLOAT rp[ndim],                      ///< [in] Position of point
+  int Ngravcell,                       ///< [in] No. of tree cells in list
+  TreeCell<ndim> **gravcelllist)       ///< [in] List of tree cell ids
 {
-  int cc;                           // Aux. cell counter
-  int k;                            // Dimension counter
-  FLOAT dr[ndim];                   // Relative position vector
-  FLOAT drsqd;                      // Distance squared
-  FLOAT invdrmag;                   // 1 / distance
-  FLOAT invdrsqd;                   // 1 / drsqd
-  FLOAT invdr3;                     // 1 / dist^3
-  FLOAT mc;                         // Mass of cell
-  TreeCell<ndim> *cellptr;          // Pointer to gravity tree cell
+  int cc;                              // Aux. cell counter
+  int k;                               // Dimension counter
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT invdrmag;                      // 1 / distance
+  FLOAT invdrsqd;                      // 1 / drsqd
+  FLOAT invdr3;                        // 1 / dist^3
+  FLOAT mc;                            // Mass of cell
+  TreeCell<ndim> *cellptr;             // Pointer to gravity tree cell
 
   // Loop over all neighbouring particles in list
   //---------------------------------------------------------------------------
@@ -1787,29 +1359,29 @@ void OctTree<ndim,ParticleType,TreeCell>::ComputeCellMonopoleForces
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::ComputeCellQuadrupoleForces
 /// Compute the force on particle 'parti' due to all cells obtained in the
 /// gravity tree walk including the quadrupole moment correction term.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::ComputeCellQuadrupoleForces
-(FLOAT &gpot,                       ///< [inout] Grav. potential
- FLOAT agrav[ndim],                 ///< [inout] Acceleration array
- FLOAT rp[ndim],                    ///< [in] Position of point
- int Ngravcell,                     ///< [in] No. of tree cells in list
- TreeCell<ndim> **gravcelllist)   ///< [in] List of tree cell ids
+ (FLOAT &gpot,                         ///< [inout] Grav. potential
+  FLOAT agrav[ndim],                   ///< [inout] Acceleration array
+  FLOAT rp[ndim],                      ///< [in] Position of point
+  int Ngravcell,                       ///< [in] No. of tree cells in list
+  TreeCell<ndim> **gravcelllist)       ///< [in] List of tree cell ids
 {
-  int cc;                           // Aux. cell counter
-  int k;                            // Dimension counter
-  FLOAT dr[ndim];                   // Relative position vector
-  FLOAT drsqd;                      // Distance squared
-  FLOAT invdrsqd;                   // 1 / drsqd
-  FLOAT invdrmag;                   // 1 / distance
-  FLOAT invdr5;                     // 1 / distance^5
-  FLOAT qfactor;                    // Constant factor for optimisation
-  FLOAT qscalar;                    // Quadrupole moment scalar quantity
-  TreeCell<ndim> *cellptr;           // Pointer to gravity tree cell
+  int cc;                              // Aux. cell counter
+  int k;                               // Dimension counter
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT invdrsqd;                      // 1 / drsqd
+  FLOAT invdrmag;                      // 1 / distance
+  FLOAT invdr5;                        // 1 / distance^5
+  FLOAT qfactor;                       // Constant factor for optimisation
+  FLOAT qscalar;                       // Quadrupole moment scalar quantity
+  TreeCell<ndim> *cellptr;             // Pointer to gravity tree cell
 
 
   // Loop over all neighbouring particles in list
@@ -1865,33 +1437,33 @@ void OctTree<ndim,ParticleType,TreeCell>::ComputeCellQuadrupoleForces
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::ComputeFastMonopoleForces
 /// Compute the force on particle 'parti' due to all cells obtained in the
 /// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
-(int Nactive,                       ///< [in] No. of active particles
- int Ngravcell,                     ///< [in] No. of tree cells in list
- TreeCell<ndim> **gravcelllist,     ///< [in] List of tree cell ids
- TreeCell<ndim> *cellptr,           ///< [in] Current cell pointer
- ParticleType<ndim> *activepart)    ///< [inout] Active SPH particle array
+ (int Nactive,                         ///< [in] No. of active particles
+  int Ngravcell,                       ///< [in] No. of tree cells in list
+  TreeCell<ndim> **gravcelllist,       ///< [in] List of tree cell ids
+  TreeCell<ndim> *cellptr,             ///< [in] Current cell pointer
+  ParticleType<ndim> *activepart)      ///< [inout] Active SPH particle array
 {
-  int cc;                           // Aux. cell counter
-  int j;                            // ..
-  int k;                            // Dimension counter
-  FLOAT ac[ndim];                   // ..
-  FLOAT dr[ndim];                   // Relative position vector
-  FLOAT drsqd;                      // Distance squared
-  FLOAT invdrmag;                   // 1 / distance
-  FLOAT invdrsqd;                   // 1 / drsqd
-  FLOAT invdr3;                     // 1 / dist^3
-  FLOAT mc;                         // Mass of cell
-  FLOAT q[6];                       // Local copy of quadrupole moment
-  FLOAT dphi[3];                    // ..
-  FLOAT cellpot;                    // ..
-  FLOAT rc[ndim];                   // ..
+  int cc;                              // Aux. cell counter
+  int j;                               // ..
+  int k;                               // Dimension counter
+  FLOAT ac[ndim];                      // ..
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT invdrmag;                      // 1 / distance
+  FLOAT invdrsqd;                      // 1 / drsqd
+  FLOAT invdr3;                        // 1 / dist^3
+  FLOAT mc;                            // Mass of cell
+  FLOAT q[6];                          // Local copy of quadrupole moment
+  FLOAT dphi[3];                       // ..
+  FLOAT cellpot;                       // ..
+  FLOAT rc[ndim];                      // ..
 
   for (k=0; k<ndim; k++) rc[k] = cellptr->r[k];
   for (k=0; k<ndim; k++) ac[k] = 0.0;
@@ -1939,11 +1511,11 @@ void OctTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
 
 
 
-//=============================================================================
+//=================================================================================================
 //  OctTree::ComputeActiveCellList
 /// Returns the number of cells containing active particles, 'Nactive', and
 /// the i.d. list of cells contains active particles, 'celllist'
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int OctTree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
 (TreeCell<ndim> **celllist)       ///< Cells id array containing active ptcls
@@ -1965,7 +1537,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
 
 
 #ifdef MPI_PARALLEL
-//=============================================================================
+//=================================================================================================
 //  OctTree::ComputeDistantGravityInteractionList
 /// Computes and returns number of SPH neighbours (Nneib), direct sum particles
 /// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
@@ -1973,25 +1545,25 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
 /// Currently defaults to the geometric opening criteria.
 /// If any of the interactions list arrays (neiblist,directlist,gravcelllist)
 /// overflow, return with error code (-1) to reallocate more memory.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int OctTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
-(const TreeCell<ndim> *cellptr,       ///< [in] Pointer to cell
- const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
- const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
- int Ngravcell,                       ///< [in] Current no. of cells in array
- TreeCell<ndim> **gravcelllist)      ///< [out] Array of pointers to cells
+ (const TreeCell<ndim> *cellptr,       ///< [in] Pointer to cell
+  const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
+  const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
+  int Ngravcell,                       ///< [in] Current no. of cells in array
+  TreeCell<ndim> **gravcelllist)       ///< [out] Array of pointers to cells
 {
-  int cc;                             // Cell counter
-  int i;                              // Particle id
-  int j;                              // Aux. particle counter
-  int k;                              // Neighbour counter
-  int Ngravcelltemp = Ngravcell;      // ..
-  FLOAT dr[ndim];                     // Relative position vector
-  FLOAT drsqd;                        // Distance squared
-  FLOAT rc[ndim];                     // Position of cell
-  FLOAT hrangemax;                    // Maximum kernel extent
-  FLOAT rmax;                         // Radius of sphere containing particles
+  int cc;                              // Cell counter
+  int i;                               // Particle id
+  int j;                               // Aux. particle counter
+  int k;                               // Neighbour counter
+  int Ngravcelltemp = Ngravcell;       // ..
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT rc[ndim];                      // Position of cell
+  FLOAT hrangemax;                     // Maximum kernel extent
+  FLOAT rmax;                          // Radius of sphere containing particles
 
   // Make local copies of important cell properties
   for (k=0; k<ndim; k++) rc[k] = cellptr->rcell[k];
@@ -2077,9 +1649,9 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 bool OctTree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
-(const TreeCell<ndim> *cellptr)     ///< [in] Pointer to cell
+ (const TreeCell<ndim> *cellptr)       ///< [in] Pointer to cell
 {
-  int cc = 0;                       // Cell counter
+  int cc = 0;                          // Cell counter
 
   // Walk through all cells in tree to determine particle and cell interaction lists
   //===============================================================================================
@@ -2123,24 +1695,24 @@ bool OctTree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
-(ParticleType<ndim> *partdata)      ///< Pointer to SPH class
+ (ParticleType<ndim> *partdata)        ///< Pointer to SPH class
 {
-  bool overlap_flag = false;        // Flag if cell bounding boxes overlap
-  bool hmax_flag = false;           // Flag if ptcls have larger h than hmax
-  bool kill_flag = false;
-  int activecount;                  // Active particles in leaf cell
-  int c;                            // Cell counter
-  int cc;                           // Aux. cell counter
-  int i;                            // Particle counter
-  int j;                            // Aux. particle counter
-  int l;                            // Tree level
-  int leafcount;                    // Leaf cell counter
-  int Nactivecount=0;               // Counter for total no. of active ptcls
-  int Ncount=0;                     // Total particle counter
-  int *ccount;                      // Array for counting cells
-  int *lcount;                      // Array for counting ptcls on each level
-  int *pcount;                      // Array for counting particles in tree
-  TreeCell<ndim> cell;            // Local copy of KD-tree cell
+  bool overlap_flag = false;           // Flag if cell bounding boxes overlap
+  bool hmax_flag = false;              // Flag if ptcls have larger h than hmax
+  bool kill_flag = false;              // ..
+  int activecount;                     // Active particles in leaf cell
+  int c;                               // Cell counter
+  int cc;                              // Aux. cell counter
+  int i;                               // Particle counter
+  int j;                               // Aux. particle counter
+  int l;                               // Tree level
+  int leafcount;                       // Leaf cell counter
+  int Nactivecount=0;                  // Counter for total no. of active ptcls
+  int Ncount=0;                        // Total particle counter
+  int *ccount;                         // Array for counting cells
+  int *lcount;                         // Array for counting ptcls on each level
+  int *pcount;                         // Array for counting particles in tree
+  TreeCell<ndim> cell;                 // Local copy of KD-tree cell
 
   debug2("[OctTree::ValidateTree]");
 
