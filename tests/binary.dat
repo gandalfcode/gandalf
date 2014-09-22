@@ -13,9 +13,9 @@ Select shocktube initial conditions         : ic = binary
 Dimensionality of cube                      : ndim = 3
 Binary semi-major axis                      : abin = 1.0
 Binary orbital eccentricity                 : ebin = 0.0
-Binary primary mass                         : m1 = 0.9
-Secondary mass                              : m2 = 0.1
-Euler angle theta rotation                  : thetarot = 1.570796
+Binary primary mass                         : m1 = 0.8
+Secondary mass                              : m2 = 0.2
+Euler angle theta rotation                  : thetarot = 0.0  #1.570796
 Use dimensionless units                     : dimensionless = 1
 
 
@@ -23,8 +23,8 @@ Use dimensionless units                     : dimensionless = 1
 # Simulation time variables
 #--------------------------
 Simulation end time                         : tend = 10.0
-Regular snapshot output frequency           : dt_snap = 1.0
-First snapshot                              : tsnapfirst = 1.0
+Regular snapshot output frequency           : dt_snap = 0.2
+First snapshot                              : tsnapfirst = 0.2
 Screen output frequency (in no. of steps)   : noutputstep = 32
 Diagnostic output frequency                 : ndiagstep = 256
 
@@ -33,21 +33,22 @@ Diagnostic output frequency                 : ndiagstep = 256
 # SPH softening kernel options
 #-----------------------------
 SPH smoothing kernel choice                 : kernel = m4
-Tabulate SPH kernel                         : tabulated_kernel = 1
+Tabulate SPH kernel                         : tabulated_kernel = 0
 
 
 #-------------------------
 # N-body algorithm options
 #-------------------------
-Star particle integration option            : nbody = hermite4ts
-Use softening?                              : nbody_softening = 0
+Star particle integration option            : nbody = hermite6ts
+Use softening?                              : nbody_softening = 1
 Identify and integrate sub-systems?         : sub_systems = 0
+Update sub-system frequency                 : nsystembuildstep = 4
 Use perturbing stars in sub-systems         : perturbers = 0
 Output binary statistics                    : binary_stats = 1
 Grav. energy fraction for sub-systems       : gpesoft = 0.0001
 Grav. energy fraction for sub-systems       : gpehard = 0.001
 No. of P(EC)^n iteration steps              : Npec = 2
-Sub-system integration scheme               : sub_system_integration = hermite4ts
+Sub-system integration scheme               : sub_system_integration = hermite6ts
 
 #-------------------------
 # Time integration options

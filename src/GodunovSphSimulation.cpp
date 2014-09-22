@@ -338,7 +338,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EndTimestep(n,sph->Nsph,timestep,sph->GetParticlesArray());
   sphint->EndTimestep(n,timestep,sph->Nsph,sph->GetParticlesArray());
-  nbody->EndTimestep(n,nbody->Nstar,nbody->nbodydata);
+  nbody->EndTimestep(n,nbody->Nstar,t,timestep,nbody->nbodydata);
 
   // Compute timesteps for all particles
   nresync = n;
@@ -383,7 +383,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
   sphint->AdvanceParticles(n,(FLOAT) timestep,sph->Nsph,sph->GetParticlesArray());
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EnergyIntegration(n,sph->Nsph,sph->GetParticlesArray(),(FLOAT) timestep);
-  nbody->AdvanceParticles(n,nbody->Nstar,nbody->nbodydata,timestep);
+  nbody->AdvanceParticles(n,nbody->Nstar,t,timestep,nbody->nbodydata);
 
   // Check all boundary conditions
   LocalGhosts->CheckBoundaries(simbox,sph);
@@ -499,12 +499,12 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
       //                              sph->sphdata,nbody->nbodydata);
 
       // Calculate correction step for all stars at end of step
-      nbody->CorrectionTerms(n,nbody->Nnbody,nbody->nbodydata,timestep);
+      nbody->CorrectionTerms(n,nbody->Nnbody,t,timestep,nbody->nbodydata);
 
     }
     //-------------------------------------------------------------------------
 
-    nbody->EndTimestep(n,nbody->Nnbody,nbody->nbodydata);
+    nbody->EndTimestep(n,nbody->Nnbody,t,timestep,nbody->nbodydata);
 
   }
   //---------------------------------------------------------------------------

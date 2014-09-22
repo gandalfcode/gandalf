@@ -541,7 +541,7 @@ void Simulation<ndim>::ReadSerenFormHeaderFile
   // Check dimensionality matches if using fixed dimensions
   if (info.ndim != ndim) {
     std::ostringstream stream;
-    stream << "Incorrect no. of dimensions in file : "
+    stream << "No. of dimensions in file : "
      << info.ndim << "  [ndim : " << ndim << "]" << endl;
     ExceptionHandler::getIstance().raise(stream.str());
   }
@@ -1431,7 +1431,6 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   DOUBLE ddata[50];                 // Double float data array
   string unit_data[50];             // String ids of units written
   string data_id[50];               // String ids of arrays written
-
 
   debug2("[Simulation::WriteSerenUnformSnapshotFile]");
 

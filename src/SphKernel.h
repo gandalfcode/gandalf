@@ -1,6 +1,6 @@
 //=============================================================================
 //  SphKernel.h
-//  Contains all routines for computing kernel functions, calculatiung and 
+//  Contains all routines for computing kernel functions, calculatiung and
 //  storing kernel tables for quick look-up of values.
 //
 //  This file is part of GANDALF :
@@ -32,11 +32,12 @@
 using namespace std;
 
 
+
 //=============================================================================
 //  Class SphKernel
 /// \brief   Parent class for all SPH kernel options.
-/// \details Contains all (virtual) SPH kernel functions.  All functions 
-///          are fully defined in inheritated child class implementations 
+/// \details Contains all (virtual) SPH kernel functions.  All functions
+///          are fully defined in inheritated child class implementations
 ///          (i.e. M4, Quintic or Gaussian kernels).
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
@@ -123,8 +124,7 @@ template <int ndim>
 inline FLOAT M4Kernel<ndim>::w0(FLOAT s)  ///< [in] Kernel parameter, r/h
 {
   if (s < (FLOAT) 1.0)
-    return (this->kernnorm)*
-      ((FLOAT) 1.0 - (FLOAT) 1.5*s*s + (FLOAT) 0.75*s*s*s);
+    return (this->kernnorm)*((FLOAT) 1.0 - (FLOAT) 1.5*s*s + (FLOAT) 0.75*s*s*s);
   else if (s < (FLOAT) 2.0)
     return (FLOAT) 0.25*(this->kernnorm)*pow((FLOAT) 2.0 - s,3);
   else
@@ -152,7 +152,7 @@ inline FLOAT M4Kernel<ndim>::w1(FLOAT s)  ///< [in] Kernel parameter, r/h
 
 //=============================================================================
 //  M4Kernel::womega
-/// Partial derivative of kernel with respect to smoothing length, $dW/dh$, 
+/// Partial derivative of kernel with respect to smoothing length, $dW/dh$,
 /// to compute omega/f correction term for M4 kernel.
 //=============================================================================
 template <int ndim>
@@ -176,17 +176,17 @@ inline FLOAT M4Kernel<ndim>::womega(FLOAT s)  ///< [in] Kernel parameter, r/h
 
 //=============================================================================
 //  M4Kernel::wzeta
-/// Partial derivative of potential kernel with respect to h.  Used to compute 
+/// Partial derivative of potential kernel with respect to h.  Used to compute
 /// gravitational zeta correction term when using grad-h SPH and M4 kernel.
 //=============================================================================
 template <int ndim>
 inline FLOAT M4Kernel<ndim>::wzeta(FLOAT s)  ///< [in] Kernel parameter, r/h
 {
   if (s < (FLOAT) 1.0)
-    return (FLOAT) 1.4 - (FLOAT) 2.0*s*s + (FLOAT) 1.5*pow(s,4) 
+    return (FLOAT) 1.4 - (FLOAT) 2.0*s*s + (FLOAT) 1.5*pow(s,4)
       - (FLOAT) 0.6*pow(s,5);
   else if (s < (FLOAT) 2.0)
-    return (FLOAT) 1.6 - (FLOAT) 4.0*s*s + (FLOAT) 4.0*pow(s,3) 
+    return (FLOAT) 1.6 - (FLOAT) 4.0*s*s + (FLOAT) 4.0*pow(s,3)
       - (FLOAT) 1.5*pow(s,4) + (FLOAT) 0.2*pow(s,5);
   else
     return 0.0;
@@ -196,7 +196,7 @@ inline FLOAT M4Kernel<ndim>::wzeta(FLOAT s)  ///< [in] Kernel parameter, r/h
 
 //=============================================================================
 //  M4Kernel::wgrav
-/// Volume intergated kernel function to compute kernel-softened gravitational 
+/// Volume intergated kernel function to compute kernel-softened gravitational
 /// force for M4 kernel.
 //=============================================================================
 template <int ndim>
@@ -215,7 +215,7 @@ inline FLOAT M4Kernel<ndim>::wgrav(FLOAT s)  ///< [in] Kernel parameter, r/h
 
 //=============================================================================
 //  M4Kernel::wpot
-/// Volume integrated kernel function for computing softened gravitational 
+/// Volume integrated kernel function for computing softened gravitational
 /// potential using M4 kernel.
 //=============================================================================
 template <int ndim>
@@ -291,11 +291,9 @@ inline FLOAT QuinticKernel<ndim>::w1(FLOAT s)
   if (s < 1.0)
     return (this->kernnorm)*(-120.0*s + 120.0*pow(s,3) - 50.0*pow(s,4));
   else if (s < 2.0)
-    return (this->kernnorm)*(75.0 - 420.0*s + 450.0*s*s -
-             180.0*pow(s,3) + 25.0*pow(s,4));
+    return (this->kernnorm)*(75.0 - 420.0*s + 450.0*s*s - 180.0*pow(s,3) + 25.0*pow(s,4));
   else if (s < 3.0)
-    return (this->kernnorm)*(-405.0 + 540.0*s - 270.0*s*s +
-             60.0*pow(s,3) - 5.0*pow(s,4));
+    return (this->kernnorm)*(-405.0 + 540.0*s - 270.0*s*s + 60.0*pow(s,3) - 5.0*pow(s,4));
   else
     return 0.0;
 }
@@ -312,21 +310,16 @@ inline FLOAT QuinticKernel<ndim>::womega(FLOAT s)
   if (s < 1.0)
     return (this->kernnorm)*
       (-66.0*(this->ndimpr) + 60.0*((this->ndimpr) + 2.0)*s*s -
-       30.0*((this->ndimpr) + 4.0)*pow(s,4) +
-       10.0*((this->ndimpr) + 5.0)*pow(s,5));
+       30.0*((this->ndimpr) + 4.0)*pow(s,4) + 10.0*((this->ndimpr) + 5.0)*pow(s,5));
   else if (s < 2.0)
     return (this->kernnorm)*
-      (-51.0*(this->ndimpr) - 75.0*((this->ndimpr) + 1.0)*s +
-       210.0*((this->ndimpr) + 2.0)*s*s - 
-       150.0*((this->ndimpr) + 3.0)*pow(s,3) +
-       45.0*((this->ndimpr) + 4.0)*pow(s,4) - 
+      (-51.0*(this->ndimpr) - 75.0*((this->ndimpr) + 1.0)*s + 210.0*((this->ndimpr) + 2.0)*s*s -
+       150.0*((this->ndimpr) + 3.0)*pow(s,3) + 45.0*((this->ndimpr) + 4.0)*pow(s,4) -
        5.0*((this->ndimpr) + 5.0)*pow(s,5));
   else if (s < 3.0)
     return (this->kernnorm)*
-      (-243.0*(this->ndimpr) + 405.0*((this->ndimpr) + 1.0)*s -
-       270.0*((this->ndimpr) + 2.0)*s*s +
-       90.0*((this->ndimpr) + 3.0)*pow(s,3) -
-       15.0*((this->ndimpr) + 4.0)*pow(s,4) +
+      (-243.0*(this->ndimpr) + 405.0*((this->ndimpr) + 1.0)*s - 270.0*((this->ndimpr) + 2.0)*s*s +
+       90.0*((this->ndimpr) + 3.0)*pow(s,3) - 15.0*((this->ndimpr) + 4.0)*pow(s,4) +
        ((this->ndimpr) + 5.0)*pow(s,5));
   else
     return 0.0;
@@ -342,16 +335,16 @@ template <int ndim>
 inline FLOAT QuinticKernel<ndim>::wzeta(FLOAT s)
 {
   if (s < (FLOAT) 1.0)
-    return (FLOAT) 33.0*s*s - (FLOAT) 15.0*pow(s,4) + (FLOAT) 5.0*pow(s,6) - 
+    return (FLOAT) 33.0*s*s - (FLOAT) 15.0*pow(s,4) + (FLOAT) 5.0*pow(s,6) -
       (FLOAT) 1.42857142857*pow(s,7) - (FLOAT) 34.14285714;
   else if (s < 2.0)
-    return (FLOAT) 25.5*s*s + (FLOAT) 25.0*pow(s,3) - (FLOAT) 52.5*pow(s,4) 
-      + (FLOAT) 30.0*pow(s,5) - (FLOAT) 7.5*pow(s,6)  
+    return (FLOAT) 25.5*s*s + (FLOAT) 25.0*pow(s,3) - (FLOAT) 52.5*pow(s,4)
+      + (FLOAT) 30.0*pow(s,5) - (FLOAT) 7.5*pow(s,6)
       + (FLOAT) 0.7142857143*pow(s,7) - 33.785714286;
   else if (s < (FLOAT) 3.0)
-    return (FLOAT) 121.5*s*s - (FLOAT) 135.0*pow(s,3) + 
-      (FLOAT) 67.5*pow(s,4) - (FLOAT) 18.0*pow(s,5) + 
-      (FLOAT) 2.5*pow(s,6) - (FLOAT) 0.142857143*pow(s,7) - 
+    return (FLOAT) 121.5*s*s - (FLOAT) 135.0*pow(s,3) +
+      (FLOAT) 67.5*pow(s,4) - (FLOAT) 18.0*pow(s,5) +
+      (FLOAT) 2.5*pow(s,6) - (FLOAT) 0.142857143*pow(s,7) -
       (FLOAT) 52.07142857;
   else
     return 0.0;
@@ -367,16 +360,13 @@ template <int ndim>
 inline FLOAT QuinticKernel<ndim>::wgrav(FLOAT s)
 {
   if (s < 1.0)
-    return (12.0/359.0)*(22.0*s - 12.0*pow(s,3) + 
-			 (30.0/7.0)*pow(s,5) - (5.0/4.0)*pow(s,6));
+    return (12.0/359.0)*(22.0*s - 12.0*pow(s,3) + (30.0/7.0)*pow(s,5) - (5.0/4.0)*pow(s,6));
   else if (s < 2.0)
-    return (12.0/359.0)*(17.0*s + (75.0/4.0)*s*s - 42.0*pow(s,3) + 
-			 25.0*pow(s,4) - (45.0/7.0)*pow(s,5) + 
-			 (5.0/8.0)*pow(s,6) + (5.0/56.0)/(s*s));
+    return (12.0/359.0)*(17.0*s + (75.0/4.0)*s*s - 42.0*pow(s,3) +
+      25.0*pow(s,4) - (45.0/7.0)*pow(s,5) + (5.0/8.0)*pow(s,6) + (5.0/56.0)/(s*s));
   else if (s < 3.0)
-    return (12.0/359.0)*(81.0*s - (405.0/4.0)*pow(s,2) + 54.0*pow(s,3) - 
-			 15.0*pow(s,4) + (15.0/7.0)*pow(s,5) -
-			 (1.0/8.0)*pow(s,6) - (507.0/56.0)/(s*s));
+    return (12.0/359.0)*(81.0*s - (405.0/4.0)*pow(s,2) + 54.0*pow(s,3) -
+      15.0*pow(s,4) + (15.0/7.0)*pow(s,5) - (1.0/8.0)*pow(s,6) - (507.0/56.0)/(s*s));
   else
     return 1.0/(s*s);
 }
@@ -391,18 +381,14 @@ template <int ndim>
 inline FLOAT QuinticKernel<ndim>::wpot(FLOAT s)
 {
   if (s < 1.0)
-    return (12.0/359.0)*(-11.0*s*s + 3.0*pow(s,4) - (5.0/7.0)*pow(s,6) + 
-			 (5.0/28.0)*pow(s,7) + (478.0/14.0));
+    return (12.0/359.0)*(-11.0*s*s + 3.0*pow(s,4) - (5.0/7.0)*pow(s,6) +
+      (5.0/28.0)*pow(s,7) + (478.0/14.0));
   else if (s < 2.0)
-    return (12.0/359.0)*(-(17.0/2.0)*s*s - (25.0/4.0)*pow(s,3) + 
-			 (21.0/2.0)*pow(s,4) - 5.0*pow(s,5) + 
-			 (15.0/14.0)*pow(s,6) - (5.0/56.0)*pow(s,7) + 
-			 (473.0/14.0) + (5.0/56.0)/s);
+    return (12.0/359.0)*(-(17.0/2.0)*s*s - (25.0/4.0)*pow(s,3) + (21.0/2.0)*pow(s,4) -
+      5.0*pow(s,5) + (15.0/14.0)*pow(s,6) - (5.0/56.0)*pow(s,7) + (473.0/14.0) + (5.0/56.0)/s);
   else if (s < 3.0)
-    return (12.0/359.0)*(-(81.0/2.0)*s*s + (135.0/4.0)*pow(s,3) - 
-			 (27.0/2.0)*pow(s,4) + 3.0*pow(s,5) - 
-			 (5.0/14.0)*pow(s,6) + (1.0/56.0)*pow(s,7) + 
-			 (729.0/14.0) - (507.0/56.0)/s);
+    return (12.0/359.0)*(-(81.0/2.0)*s*s + (135.0/4.0)*pow(s,3) - (27.0/2.0)*pow(s,4) +
+      3.0*pow(s,5) - (5.0/14.0)*pow(s,6) + (1.0/56.0)*pow(s,7) + (729.0/14.0) - (507.0/56.0)/s);
   else
     return 1.0/s;
 }
@@ -413,7 +399,7 @@ inline FLOAT QuinticKernel<ndim>::wpot(FLOAT s)
 //  Class GaussianKernel
 /// \brief   Gaussian kernel class including functions
 /// \details Contains all SPH kernel function definitions for Gaussian kernel.
-///          Gaussian kernel formally extends to infinity, so for 
+///          Gaussian kernel formally extends to infinity, so for
 ///          computational efficiency, this kernel only extends to 3h.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
@@ -534,13 +520,13 @@ inline FLOAT GaussianKernel<ndim>::wpot(FLOAT s)
 //  Class TabulatedKernel
 /// \brief   Class to tabulate arbitrary kernel function for quick look-up.
 /// \details Tabulates all functions of any arbitrary kernel choice.
-///          Allows quick look-up of kernel values rather than computing 
+///          Allows quick look-up of kernel values rather than computing
 ///          relatively expensive polynomial (with/without divisions).
 /// \author  G. Rosotti
 /// \date    03/04/2013
 //=============================================================================
 template <int ndim>
-class TabulatedKernel: public SphKernel<ndim> 
+class TabulatedKernel: public SphKernel<ndim>
 {
  private:
 
@@ -593,8 +579,7 @@ class TabulatedKernel: public SphKernel<ndim>
   /// ..
   //===========================================================================
   FLOAT tableLookup (FLOAT* table, FLOAT s) {
-    if (s >= (this->kernrange))
-      return (FLOAT) 0.0;
+    if (s >= (this->kernrange)) return (FLOAT) 0.0;
     FLOAT indexf = s*resinvkernrange;
     int index = (int) indexf;
     return table[index];
@@ -607,8 +592,7 @@ class TabulatedKernel: public SphKernel<ndim>
   /// ..
   //===========================================================================
   FLOAT tableLookupSqd(FLOAT* table, FLOAT s) {
-    if (s >= (this->kernrangesqd))
-      return (FLOAT) 0.0;
+    if (s >= (this->kernrangesqd)) return (FLOAT) 0.0;
     FLOAT indexf = s*resinvkernrangesqd;
     int index = (int) indexf;
     return table[index];
@@ -621,8 +605,7 @@ class TabulatedKernel: public SphKernel<ndim>
   /// ..
   //===========================================================================
   FLOAT GravTableLookup (FLOAT* table, FLOAT s) {
-    if (s >= (this->kernrange))
-      return (FLOAT) 1.0/(s*s);
+    if (s >= (this->kernrange)) return (FLOAT) 1.0/(s*s);
     FLOAT indexf = s*resinvkernrange;
     int index = (int) indexf;
     return table[index];
@@ -635,8 +618,7 @@ class TabulatedKernel: public SphKernel<ndim>
   /// ..
   //===========================================================================
   FLOAT GravPotTableLookup (FLOAT* table, FLOAT s) {
-    if (s >= (this->kernrange))
-      return (FLOAT) 1.0/s;
+    if (s >= (this->kernrange)) return (FLOAT) 1.0/s;
     FLOAT indexf = s*resinvkernrange;
     int index = (int) indexf;
     return table[index];

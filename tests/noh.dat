@@ -43,7 +43,7 @@ Screen output frequency (in no. of steps)   : noutputstep = 128
 
 
 #------------------------
-# Thermal physics options
+#ï¿½Thermal physics options
 #------------------------
 Switch-on hydrodynamical forces             : hydro_forces = 1
 Main gas thermal physics treatment          : gas_eos = energy_eqn
@@ -56,6 +56,7 @@ Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = quintic
 SPH smoothing length iteration tolerance    : h_converge = 0.02
+Tabulate SPH kernel                         : tabulated_kernel = 1
 
 
 #---------------------------------
@@ -71,7 +72,6 @@ Artificial viscosity beta value             : beta_visc = 2.0
 # Time integration options
 #-------------------------
 SPH particle integration option             : sph_integration = lfkdk
-Integration of gas thermal energy           : energy_integration = PEC
 SPH Courant timestep condition multiplier   : courant_mult = 0.1
 SPH acceleration condition multiplier       : accel_mult = 0.1
 SPH energy equation timestep multiplier     : energy_mult = 0.4
@@ -79,10 +79,9 @@ No. of block timestep levels                : Nlevels = 4
 
 
 #---------------------
-# Optimisation options
+# Tree options
 #---------------------
-Tabulate SPH kernel                         : tabulated_kernel = 1
-SPH neighbour search algorithm              : neib_search = grid
+SPH neighbour search algorithm              : neib_search = tree
 
 
 #--------------

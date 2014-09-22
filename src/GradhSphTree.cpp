@@ -184,8 +184,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
         // Find list of active particles in current cell
         Nactive = tree->ComputeActiveParticleList(cell,sphdata,activelist);
 
-	for (j=0; j<Nactive; j++)
-	  activepart[j] = sphdata[activelist[j]];
+        for (j=0; j<Nactive; j++) activepart[j] = sphdata[activelist[j]];
 
         // Compute neighbour list for cell depending on physics options
         Nneib = tree->ComputeGatherNeighbourList(cell,Nneibmax,neiblist,
@@ -251,9 +250,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
           // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-          if (neibcheck)
-	    this->CheckValidNeighbourList(i,Ntot,Nneib,neiblist,
-                                          sphdata,"gather");
+          if (neibcheck) this->CheckValidNeighbourList(i,Ntot,Nneib,neiblist, sphdata,"gather");
 #endif
 
           // Compute smoothing length and other gather properties for ptcl i
@@ -273,8 +270,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
       } while (celldone == 0);
       //-----------------------------------------------------------------------
 
-      for (j=0; j<Nactive; j++)
-	sphdata[activelist[j]] = activepart[j];
+      for (j=0; j<Nactive; j++) sphdata[activelist[j]] = activepart[j];
 
     }
     //=========================================================================
@@ -404,7 +400,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
         activepart[j].dudt = (FLOAT) 0.0;
         activepart[j].dalphadt = (FLOAT) 0.0;
         activepart[j].levelneib = 0;
+        activepart[j].gpot = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) activepart[j].agrav[k] = (FLOAT) 0.0;
       }
 
       // Compute neighbour list for cell depending on physics options
@@ -503,8 +501,11 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
-    	i = activelist[j];
+        i = activelist[j];
         for (k=0; k<ndim; k++) sphdata[i].a[k] = activepart[j].a[k];
+        for (k=0; k<ndim; k++) sphdata[i].agrav[k] = activepart[j].agrav[k];
+        for (k=0; k<ndim; k++) sphdata[i].a[k] += sphdata[i].agrav[k];
+        sphdata[i].gpot = activepart[j].gpot;
         sphdata[i].dudt = activepart[j].dudt;
         sphdata[i].dalphadt = activepart[j].dalphadt;
         sphdata[i].div_v = activepart[j].div_v;

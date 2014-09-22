@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  Sinks.h
 //  Main sink particle class
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _SINKS_H_
@@ -41,15 +41,14 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class SinkParticle
 /// \brief   Individual sink particle data structure
-/// \details Main parent N-body particle data structure.  All main other 
-///          N-body particle types (e.g. stars, systems, sinks) are derived 
-///          from this class.
+/// \details Main parent N-body particle data structure.  All main other N-body particle types
+///          (e.g. stars, systems, sinks) are derived from this class.
 /// \author  D. A. Hubber
 /// \date    15/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class SinkParticle
 {
@@ -58,6 +57,7 @@ class SinkParticle
   StarParticle<ndim> *star;         ///< Pointer to connected star particle
   int istar;                        ///< i.d. of connected star particle
   int Ngas;                         ///< No. of gas particles inside sink
+  DOUBLE macctot;                   ///< Total accreted mass
   DOUBLE radius;                    ///< Softening/sink radius of particle
   DOUBLE dt;                        ///< Particle timestep
   DOUBLE dmdt;                      ///< Accretion rate
@@ -77,52 +77,65 @@ class SinkParticle
 
 
   // Star particle constructor to initialise all values
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   SinkParticle()
   {
-    radius = 0.0;
-    dt = 0.0;
-    dmdt = 0.0;
-    racc = 0.0;
-    ketot = 0.0;
-    gpetot = 0.0;
+    star     = 0;
+    istar    = -1;
+    Ngas     = 0;
+    macctot  = 0.0;
+    radius   = 0.0;
+    dt       = 0.0;
+    dmdt     = 0.0;
+    menc     = 0.0;
+    mmax     = 0.0;
+    racc     = 0.0;
+    ketot    = 0.0;
+    gpetot   = 0.0;
     rotketot = 0.0;
-    utot = 0.0;
+    utot     = 0.0;
+    taccrete = 0.0;
+    trad     = 0.0;
+    trot     = 0.0;
+    tvisc    = 0.0;
     for (int k=0; k<3; k++) angmom[k] = 0.0;
-  } 
+    for (int k=0; k<ndim; k++) fhydro[k] = 0.0;
+  }
 
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class Sinks
 /// \brief   Main sink particle class.
-/// \details Main sink particle class for searching for and creating new 
-///          sinks, and for controlling the accretion of SPH particles 
-///          onto sink particles.
+/// \details Main sink particle class for searching for and creating new sinks, and for
+///          controlling the accretion of SPH particles onto sink particles.
 /// \author  D. A. Hubber
 /// \date    08/06/2013
-//=============================================================================
+//=================================================================================================
 template<int ndim>
 class Sinks
 {
  public:
 
+  // Constructor and destructor
+  //-----------------------------------------------------------------------------------------------
   Sinks();
   ~Sinks();
-  
+
+
   // Function prototypes
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   void AllocateMemory(int);
   void DeallocateMemory(void);
-  void SearchForNewSinkParticles(int, Sph<ndim> *, Nbody<ndim> *);
-  void CreateNewSinkParticle(SphParticle<ndim>&, int, Sph<ndim> *, Nbody<ndim> *);
+  void SearchForNewSinkParticles(int, FLOAT, Sph<ndim> *, Nbody<ndim> *);
+  void CreateNewSinkParticle(SphParticle<ndim>&, int, FLOAT, Sph<ndim> *, Nbody<ndim> *);
   void AccreteMassToSinks(Sph<ndim> *, Nbody<ndim> *, int, DOUBLE);
-  //void UpdateSystemProperties(void);
-  
+
+
   // Local class variables
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   bool allocated_memory;            ///< Has sink memory been allocated?
   int Nsink;                        ///< No. of sink particles
   int Nsinkmax;                     ///< Max. no. of sink particles
@@ -132,13 +145,12 @@ class Sinks
   FLOAT alpha_ss;                   ///< Shakura-Sunyaev alpha viscosity
   FLOAT rho_sink;                   ///< Sink formation density
   FLOAT sink_radius;                ///< New sink radius (in units of h)
-  FLOAT smooth_accrete_frac;        ///< ..
+  FLOAT smooth_accrete_frac;        ///< Minimum particle mass fraction
   FLOAT smooth_accrete_dt;          ///< ..
   string sink_radius_mode;          ///< Sink radius mode
 
   SinkParticle<ndim> *sink;         ///< Main sink particle array
-
   CodeTiming *timing;               ///< Pointer to code timing objectx
-      
+
 };
 #endif

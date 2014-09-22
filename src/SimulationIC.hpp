@@ -91,6 +91,8 @@ void Simulation<ndim>::GenerateIC(void)
     BinaryStar();
   else if (simparams->stringparams["ic"] == "binaryacc")
     BinaryAccretion();
+  else if (simparams->stringparams["ic"] == "bondi")
+    BondiAccretion();
   else if (simparams->stringparams["ic"] == "box")
     UniformBox();
   else if (simparams->stringparams["ic"] == "cdiscontinuity")
@@ -890,7 +892,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
           part.r[0] += simbox.boxsize[0];
         part.v[0] = 0.0;
         part.m = rhofluid1*volume/(FLOAT) Nbox1;
-	part.h = sph->h_fac*pow(part.m/rhofluid1,invndim);
+        part.h = sph->h_fac*pow(part.m/rhofluid1,invndim);
         if (sph->gas_eos == "isothermal")
           part.u = temp0/gammaone/mu_bar;
         else
@@ -910,7 +912,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
           part.r[0] += simbox.boxsize[0];
         part.v[0] = 0.0;
         part.m = rhofluid2*volume/(FLOAT) Nbox2;
-	part.h = sph->h_fac*pow(part.m/rhofluid2,invndim);
+        part.h = sph->h_fac*pow(part.m/rhofluid2,invndim);
         if (sph->gas_eos == "isothermal")
           part.u = temp0/gammaone/mu_bar;
         else
@@ -937,7 +939,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
 
   initial_h_provided = true;
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-		     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
   // Search ghost particles
   LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
@@ -945,13 +947,13 @@ void Simulation<ndim>::ContactDiscontinuity(void)
 
   // Update neighbour tree
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-		     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-		     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
   sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
@@ -1155,7 +1157,7 @@ void Simulation<ndim>::NohProblem(void)
     Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
     if (Nsphere != Npart)
       cout << "Warning! Unable to converge to required "
-	   << "no. of ptcls due to lattice symmetry" << endl;
+           << "no. of ptcls due to lattice symmetry" << endl;
     Npart = Nsphere;
   }
   else {
@@ -1241,12 +1243,11 @@ void Simulation<ndim>::BossBodenheimer(void)
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random")
     AddRandomSphere(Npart,r,rcentre,radius);
-  else if (particle_dist == "cubic_lattice" ||
-	   particle_dist == "hexagonal_lattice") {
+  else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
     Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
     if (Nsphere != Npart)
       cout << "Warning! Unable to converge to required "
-	   << "no. of ptcls due to lattice symmetry" << endl;
+           << "no. of ptcls due to lattice symmetry" << endl;
     Npart = Nsphere;
   }
   else {
@@ -1447,21 +1448,198 @@ void Simulation<ndim>::TurbulentCore(void)
 
 
 
-//=============================================================================
+//=================================================================================================
+//  Simulation::BondiAccretion
+/// Set-up spherically symmetric Bondi accretion test problem.  First, numerically solve Bondi's
+/// differential equations about the sonic point to obtain the numerical solution.  Next stretch
+/// a uniform particle distribution to the correct radial profile.  Finally add a sink of the
+/// correct size and mass and simulate accretion onto the sink.
+//=================================================================================================
+template <int ndim>
+void Simulation<ndim>::BondiAccretion(void)
+{
+  int i;                            // Particle counter
+  int k;                            // Dimension counter
+  int Nsphere;                      // Actual number of particles in sphere
+  FLOAT dr[ndim];                   // Relative position vector
+  FLOAT drmag;                      // Distance
+  FLOAT drsqd;                      // Distance squared
+  FLOAT mp;                         // Mass of one particle
+  FLOAT racc;                       // Bondi accretion radius
+  FLOAT rcentre[ndim];              // Position of sphere centre
+  FLOAT rho;                        // Fluid density
+  FLOAT rsonic;                     // Sonic radius
+  FLOAT *r;                         // Positions of all particles
+  FLOAT *v;                         // Velocities of all particles
+  FLOAT *w,*x,*y,*z;                // Arrays for numerical Bondi solution
+
+  // Create local copies of initial conditions parameters
+  int Npart = simparams->intparams["Nsph"];
+  FLOAT temp0 = simparams->floatparams["temp0"];
+  FLOAT gammam1 = simparams->floatparams["gamma_eos"];
+  FLOAT mu_bar = simparams->floatparams["mu_bar"];
+  FLOAT mcloud = simparams->floatparams["mcloud"];
+  FLOAT msink = simparams->floatparams["m1"];
+  FLOAT rsink = simparams->floatparams["sink_radius"];
+  FLOAT rhogas = simparams->floatparams["rhofluid1"];
+  string particle_dist = simparams->stringparams["particle_distribution"];
+
+  debug2("[Simulation::BondiAccretion]");
+
+  // Convert any parameters to code units
+  temp0  /= simunits.temp.outscale;
+  mcloud /= simunits.m.outscale;
+  msink  /= simunits.m.outscale;
+  FLOAT radius = 1.0;
+
+  FLOAT asound = sqrtf(temp0/mu_bar);
+  racc = 2.0*msink/asound/asound;
+  rsonic = 0.5*msink/asound/asound;
+  FLOAT dmdt = exp(1.5)*pi*msink*msink*rhogas/powf(asound,3);
+
+  r = new FLOAT[ndim*Npart];
+  v = new FLOAT[ndim*Npart];
+
+  // Add a sphere of random particles with origin 'rcentre' and radius 'radius'
+  for (k=0; k<ndim; k++) rcentre[k] = (FLOAT) 0.0;
+
+  // Create the sphere depending on the choice of initial particle distribution
+  if (particle_dist == "random")
+    AddRandomSphere(Npart,r,rcentre,radius);
+  else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
+    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    if (Nsphere != Npart)
+      cout << "Warning! Unable to converge to required "
+           << "no. of ptcls due to lattice symmetry" << endl;
+    Npart = Nsphere;
+  }
+  else {
+    string message = "Invalid particle distribution option";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  // Allocate local and main particle memory
+  sph->Nsph = Npart;
+  AllocateParticleMemory();
+  //mp = mcloud / (FLOAT) Npart;
+  //mp = 4.0*pi*powf(rsonic,3)*rhogas*mcloud / (FLOAT) Npart;
+
+  // Find Bondi solution
+  int Ntablemax = 4000;
+  w = new FLOAT[Ntablemax];
+  x = new FLOAT[Ntablemax];
+  y = new FLOAT[Ntablemax];
+  z = new FLOAT[Ntablemax];
+  ComputeBondiSolution(Ntablemax,w,x,y,z);
+
+  // First check that mass of cloud is not greater than that provided by the table
+  if (mcloud > z[Ntablemax-1]) {
+    cout << "Cloud mass too big" << endl;
+    exit(0);
+  }
+
+  // Find radius of cloud
+  int iradius;
+  for (i=0; i<Ntablemax; i++) {
+    iradius = i;
+    if (z[i] >= mcloud) break;
+  }
+  FLOAT remainder = (mcloud - z[iradius-1])/(z[iradius] - z[iradius - 1]);
+  radius = x[iradius - 1] + remainder*(x[iradius] - x[iradius - 1]);
+  cout << "Cloud mass : " << mcloud        << "    iradius   : " << iradius << endl;
+  cout << "Radius     : " << radius*rsonic << "    remainder : " << remainder << endl;
+  cout << "rsonic     : " << rsonic        << "    racc      : " << racc << endl;
+  cout << "temp0      : " << temp0         << "    asound    : " << asound << endl;
+  cout << "dmdt       : " << dmdt << endl;
+
+
+  // Now stretch particles in radial direction and rescale masses to reproduce the required
+  // density distribution provided by the numiercal solution.
+  //-----------------------------------------------------------------------------------------------
+  //mp = 4.0_PR*pi*pow(rsonic,3)*rhogas*mcloud / (FLOAT) Npart;
+  //mp = 0.5_PR*PI*rhogas*mcloud*msink**3 / (agas**6) / real(pgas,PR)
+  //mp = mcloud/(FLOAT) Npart;
+  mp = 4.0*pi*powf(rsonic,3)*rhogas*mcloud / (FLOAT) Npart;
+  cout << "mp : " << mp << "    "
+       << 0.5*pi*rhogas*mcloud*powf(msink,3)/powf(asound,6)/(FLOAT) Npart << endl;
+
+
+  for (i=0; i<Npart; i++) {
+    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k] - rcentre[k];
+    FLOAT drmag = sqrtf(DotProduct(dr,dr,ndim)) + small_number;
+    FLOAT mint = mcloud*powf(drmag,3);
+    for (int j=0; j<Ntablemax; j++) {
+      iradius = j;
+      if (z[j] >= mint) break;
+    }
+    remainder = (mint - z[iradius-1])/(z[iradius] - z[iradius - 1]);
+    FLOAT radp = x[iradius - 1] + remainder*(x[iradius] - x[iradius - 1]);
+    FLOAT vradp = w[iradius - 1] + remainder*(w[iradius] - w[iradius - 1]);
+    for (k=0; k<ndim; k++) r[ndim*i + k] = rsonic*r[ndim*i + k]*radp/drmag;
+    for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
+    for (k=0; k<ndim; k++) part.v[k] = -asound*vradp*dr[k]/drmag;
+    part.m = mp;
+    //cout << "r : " << i << "   " << part.r[0] << "   " << part.r[1] << "   " << part.r[2] << endl;
+  }
+
+
+  // Now add star/sink particle
+  rsink *= rsonic;
+  nbody->Nstar = 1;
+  sinks.Nsink = 1;
+  for (k=0; k<ndim; k++) nbody->stardata[0].r[k] = 0.0;
+  for (k=0; k<ndim; k++) nbody->stardata[0].v[k] = 0.0;
+  nbody->stardata[0].m = msink;
+  nbody->stardata[0].radius = rsink;
+  nbody->stardata[0].h = nbody->kernp->invkernrange*nbody->stardata[0].radius;
+  nbody->stardata[0].invh = 1.0/nbody->stardata[0].h;
+  nbody->stardata[0].hfactor = pow(nbody->stardata[0].invh,ndim);
+  sinks.sink[0].star = &(nbody->stardata[0]);
+  sinks.sink[0].radius = rsink;
+  sinks.sink[0].racc = rsink;
+  sinks.sink[0].mmax = 0.0;
+  sinks.sink[0].menc = 0.0;
+
+
+  // Find total mass inside sink and set to mmax
+  for (i=0; i<Npart; i++) {
+    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (k=0; k<ndim; k++) dr[k] = part.r[k] - rcentre[k];
+    drsqd = DotProduct(dr,dr,ndim);
+    if (drsqd > rsink*rsink) continue;
+    sinks.sink[0].mmax += part.m;
+  }
+
+  cout << "mmax : " << sinks.sink[0].mmax << "    " << sinks.sink[0].mmax/mp << endl;
+  cout << "rsink : " << rsink << "     rsink/rsonic : " << rsink/rsonic << endl;
+  //exit(0);
+
+  initial_h_provided = false;
+
+  delete[] v;
+  delete[] r;
+
+  return;
+}
+
+
+
+//=================================================================================================
 //  Simulation::PlummerSphere
-/// Generate a Plummer sphere containing either stars, gas or a mixture of
-/// both.  Uses the algorithm described by Aarseth et al. (197?).
-//=============================================================================
+/// Generate a Plummer sphere containing either stars, gas or a mixture of both.
+/// Uses the algorithm described by Aarseth et al. (197?).
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::PlummerSphere(void)
 {
-  bool flag;                        // Aux. flag
-  int i,j,k;                        // Particle and dimension counter
-  FLOAT raux;                       // Aux. float variable
-  FLOAT rcentre[ndim];              // Position of centre of Plummer sphere
-  FLOAT vplummer;                   // ..
-  FLOAT x1,x2,x3,x4,x5,x6,x7;       // ..
-  FLOAT rad,vm,ve,t1,t2,w,z;        // ..
+  bool flag;                           // Aux. flag
+  int i,j,k;                           // Particle and dimension counter
+  FLOAT raux;                          // Aux. float variable
+  FLOAT rcentre[ndim];                 // Position of centre of Plummer sphere
+  FLOAT vplummer;                      // ..
+  FLOAT x1,x2,x3,x4,x5,x6,x7;          // ..
+  FLOAT rad,vm,ve,t1,t2,w,z;           // ..
 
   // Local copies of important parameters
   int Nsph = simparams->intparams["Nsph"];
@@ -1475,8 +1653,6 @@ void Simulation<ndim>::PlummerSphere(void)
   FLOAT rstar = simparams->floatparams["rstar"];
 
   debug1("[Simulation::PlummerSphere]");
-  cout << "Nsph : " << Nsph << "    Nstar : " << Nstar << endl;
-  cout << "nbody : " << nbody << "    rstar : " << rstar << endl;
 
   sph->Nsph = Nsph;
   sph->Ntot = Nsph;
@@ -1490,7 +1666,7 @@ void Simulation<ndim>::PlummerSphere(void)
 
 
   // Loop over all particles (gas and stars)
-  //===========================================================================
+  //===============================================================================================
   for (j=0; j<Nsph+Nstar; j++) {
 
     do {
@@ -1508,7 +1684,7 @@ void Simulation<ndim>::PlummerSphere(void)
 
 
     // Set position depending on particle type
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     if (j >= Nstar && j < Nstar + Nsph) {
       i = j - Nstar;
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -1530,7 +1706,7 @@ void Simulation<ndim>::PlummerSphere(void)
 
 
     // Velocity of particle
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     do {
       x4 = randnumb->floatrand();
       x5 = randnumb->floatrand();
@@ -1545,7 +1721,7 @@ void Simulation<ndim>::PlummerSphere(void)
 
 
     // Set velocity depending on particle type
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     if (j >= Nstar && j < Nstar + Nsph) {
       i = j - Nstar;
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -1562,7 +1738,7 @@ void Simulation<ndim>::PlummerSphere(void)
     }
 
   }
-  //===========================================================================
+  //===============================================================================================
 
 
   // Instanly move to COM
@@ -1579,18 +1755,15 @@ void Simulation<ndim>::PlummerSphere(void)
     part.m    = part.m*mplummer;
     if (i < Nsph) part.u = part.u*(mplummer/rplummer);
   }
-  cout << "HERE!! : " << i << "   " << Nstar << endl;
-  cout << "rplummer : " << rplummer << "     mplummer : " << mplummer << endl;
-  //cout << nbody->kernp->invkernrange << "    " << rstar << endl;
+
   for (i=0; i<Nstar; i++) {
-    cout << "NOW HERE!! : " << i << endl;
     for (k=0; k<ndim; k++) {
       nbody->stardata[i].r[k] = nbody->stardata[i].r[k]*rplummer;
       nbody->stardata[i].v[k] = nbody->stardata[i].v[k]*vplummer;
     }
     nbody->stardata[i].m      = nbody->stardata[i].m*mplummer;
-    //nbody->stardata[i].radius = rstar;
-    //nbody->stardata[i].h      = nbody->kernp->invkernrange*rstar;
+    nbody->stardata[i].radius = rstar;
+    nbody->stardata[i].h      = nbody->kernp->invkernrange*rstar;
     nbody->stardata[i].invh   = 1.0 / (nbody->stardata[i].h + small_number_dp);
   }
 
@@ -1981,8 +2154,8 @@ void Simulation<ndim>::BinaryStar(void)
 
 
 //=============================================================================
-//  SphSimulation::TripleStar
-/// Create a simple quadruple star problem
+//  Simulation::TripleStar
+/// Create a simple triple star problem
 //=============================================================================
 template <int ndim>
 void Simulation<ndim>::TripleStar(void)
@@ -1990,8 +2163,7 @@ void Simulation<ndim>::TripleStar(void)
   int k;                           // Dimension counter
   DOUBLE rbinary[ndim];            // Position of binary COM
   DOUBLE vbinary[ndim];            // Velocity of binary COM
-  NbodyParticle<ndim> b1;          // Star/binary 1
-  NbodyParticle<ndim> b2;          // Star/binary 2
+  NbodyParticle<ndim> b1;          // Inner binary COM particle
 
   // Triple star parameters
   FLOAT m1 = simparams->floatparams["m1"];
@@ -2021,11 +2193,11 @@ void Simulation<ndim>::TripleStar(void)
   // Compute main binary orbit
   for (k=0; k<ndim; k++) rbinary[k] = 0.0;
   for (k=0; k<ndim; k++) vbinary[k] = 0.0;
-  AddBinaryStar(abin1,ebin1,m1,m2+m3,0.0001,0.0001,phirot,thetarot,psirot,
-                0.0,rbinary,vbinary,b1,nbody->stardata[2]);
+  AddBinaryStar(abin1,ebin1,m1+m2,m3,0.0001,0.0001,phirot,thetarot,psirot,0.0,
+                rbinary,vbinary,b1,nbody->stardata[2]);
 
   // Now compute both components
-  AddBinaryStar(abin2,ebin2,m2,m3,0.0001,0.0001,phirot,thetarot,psirot,0.0,
+  AddBinaryStar(abin2,ebin2,m1,m2,0.0001,0.0001,phirot,thetarot,psirot,0.0,
                 b1.r,b1.v,nbody->stardata[0],nbody->stardata[1]);
 
   return;
@@ -2034,7 +2206,7 @@ void Simulation<ndim>::TripleStar(void)
 
 
 //=============================================================================
-//  SphSimulation::QuadrupleStar
+//  Simulation::QuadrupleStar
 /// Create a simple quadruple star problem
 //=============================================================================
 template <int ndim>
@@ -2089,11 +2261,11 @@ void Simulation<ndim>::QuadrupleStar(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::AddBinaryStar
 /// Add a binary star of given mass, eccentricity and separation.
 /// (Code provided courtesy of S. P. Goodwin; 29/09/2013)
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::AddBinaryStar
 (DOUBLE sma,                       ///< Semi-major axis
@@ -2115,6 +2287,7 @@ void Simulation<ndim>::AddBinaryStar
   FLOAT mbin = m1 + m2;            // Total binary mass
 
   debug2("[Simulation::AddBinaryStar]");
+
 
   if (ndim == 1) {
     string message = "Binary test not available in 1D";
@@ -2166,8 +2339,8 @@ void Simulation<ndim>::AddBinaryStar
   s2.m = m2;
   s2.h = h2;
   s2.invh = 1.0 / s2.h;
-  s2.r[0] -= sep*cos(theta)*m2/mbin;
-  s2.r[1] -= sep*sin(theta)*m2/mbin;
+  s2.r[0] -= sep*cos(theta)*m1/mbin;
+  s2.r[1] -= sep*sin(theta)*m1/mbin;
   s2.v[0] -= -vel*cos(0.5*pi - theta + phi)*m1/mbin;
   s2.v[1] -= vel*sin(0.5*pi - theta + phi)*m1/mbin;
 
@@ -2183,18 +2356,16 @@ void Simulation<ndim>::AddBinaryStar
   for (k=0; k<ndim; k++) s2.r[k] += rbinary[k];
   for (k=0; k<ndim; k++) s2.v[k] += vbinary[k];
 
-
-
   return;
 }
 
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::AddRandomBox
 /// Populate given bounding box with random particles.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::AddRandomBox
 (int Npart,                         ///< [in] No. of particles
@@ -2205,8 +2376,7 @@ void Simulation<ndim>::AddRandomBox
 
   for (int i=0; i<Npart; i++) {
     for (int k=0; k<ndim; k++) {
-      r[ndim*i + k] = box.boxmin[k] + (box.boxmax[k] - box.boxmin[k])*
-	randnumb->floatrand();
+      r[ndim*i + k] = box.boxmin[k] + (box.boxmax[k] - box.boxmin[k])*randnumb->floatrand();
     }
   }
 
@@ -2215,10 +2385,10 @@ void Simulation<ndim>::AddRandomBox
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::AddRandomsphere
 /// Add random sphere of particles
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::AddRandomSphere
 (int Npart,                         ///< [in] No. of particles in sphere
@@ -2233,19 +2403,19 @@ void Simulation<ndim>::AddRandomSphere
   debug2("[Simulation::AddRandomSphere]");
 
   // Loop over all required particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<Npart; i++) {
 
     // Continously loop until random particle lies inside sphere
     do {
       for (k=0; k<ndim; k++)
-	rpos[k] = 1.0 - 2.0*randnumb->floatrand();
+      rpos[k] = 1.0 - 2.0*randnumb->floatrand();
       rad = DotProduct(rpos,rpos,ndim);
     } while (rad > radius);
 
     for (k=0; k<ndim; k++) r[ndim*i + k] = rcentre[k] + rpos[k];
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   return;
 }
@@ -2371,12 +2541,12 @@ void Simulation<ndim>::AddCubicLattice
   shared(box,Nlattice,r,spacing) private(i,ii,jj,kk)
     for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
-	for (ii=0; ii<Nlattice[0]; ii++) {
-	  i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
-	  r[ndim*i] = box.boxmin[0] + ((FLOAT)ii + 0.5)*spacing[0];
-	  r[ndim*i + 1] = box.boxmin[1] + ((FLOAT)jj + 0.5)*spacing[1];
-	  r[ndim*i + 2] = box.boxmin[2] + ((FLOAT)kk + 0.5)*spacing[2];
-	}
+        for (ii=0; ii<Nlattice[0]; ii++) {
+          i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
+          r[ndim*i] = box.boxmin[0] + ((FLOAT)ii + 0.5)*spacing[0];
+          r[ndim*i + 1] = box.boxmin[1] + ((FLOAT)jj + 0.5)*spacing[1];
+          r[ndim*i + 2] = box.boxmin[2] + ((FLOAT)kk + 0.5)*spacing[2];
+        }
       }
     }
   }
@@ -2430,11 +2600,9 @@ void Simulation<ndim>::AddHexagonalLattice
   else if (ndim == 2) {
     for (jj=0; jj<Nlattice[1]; jj++) {
       for (ii=0; ii<Nlattice[0]; ii++) {
-	i = jj*Nlattice[0] + ii;
-	r[ndim*i] = box.boxmin[0] + 0.5*rad[0] +
-	  (2.0*(FLOAT)ii + (FLOAT)(jj%2))*rad[0];
-	r[ndim*i + 1] = box.boxmin[1] + 0.5*sqrt(3.0)*rad[1] +
-	  (FLOAT)jj*sqrt(3.0)*rad[1];
+        i = jj*Nlattice[0] + ii;
+        r[ndim*i] = box.boxmin[0] + 0.5*rad[0] + (2.0*(FLOAT)ii + (FLOAT)(jj%2))*rad[0];
+        r[ndim*i + 1] = box.boxmin[1] + 0.5*sqrt(3.0)*rad[1] + (FLOAT)jj*sqrt(3.0)*rad[1];
       }
     }
   }
@@ -2445,15 +2613,15 @@ void Simulation<ndim>::AddHexagonalLattice
   shared(box,Nlattice,r,rad) private(i,ii,jj,kk)
     for (kk=0; kk<Nlattice[2]; kk++) {
       for (jj=0; jj<Nlattice[1]; jj++) {
-	for (ii=0; ii<Nlattice[0]; ii++) {
-	  i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
-	  r[ndim*i] = box.boxmin[0] + 0.5*rad[0] +
-	    (2.0*(FLOAT)ii + (FLOAT)(jj%2) + (FLOAT)((kk+1)%2))*rad[0];
-	  r[ndim*i + 1] = box.boxmin[1] + 0.5*sqrt(3.0)*rad[1] +
-	    (FLOAT)jj*sqrt(3.0)*rad[1] + (FLOAT)(kk%2)*rad[1]/sqrt(3.0);
-	  r[ndim*i + 2] = box.boxmin[2] + sqrt(6.0)*rad[2]/3.0 +
-	    (FLOAT)kk*2.0*sqrt(6.0)*rad[2]/3.0;
-	}
+        for (ii=0; ii<Nlattice[0]; ii++) {
+          i = kk*Nlattice[0]*Nlattice[1] + jj*Nlattice[0] + ii;
+          r[ndim*i] = box.boxmin[0] + 0.5*rad[0] +
+            (2.0*(FLOAT)ii + (FLOAT)(jj%2) + (FLOAT)((kk+1)%2))*rad[0];
+          r[ndim*i + 1] = box.boxmin[1] + 0.5*sqrt(3.0)*rad[1] +
+            (FLOAT)jj*sqrt(3.0)*rad[1] + (FLOAT)(kk%2)*rad[1]/sqrt(3.0);
+          r[ndim*i + 2] = box.boxmin[2] + sqrt(6.0)*rad[2]/3.0 +
+            (FLOAT)kk*2.0*sqrt(6.0)*rad[2]/3.0;
+        }
       }
     }
   }
@@ -2659,6 +2827,163 @@ void Simulation<ndim>::AddRotationalVelocityField
     }
   }
   //---------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  Simulation::ComputeBondiSolution
+/// Compute the numerical solution to the Bondi accretion problem.
+/// Translated from F90 subroutine written by A. P. Whitworth.
+//=================================================================================================
+template <int ndim>
+void Simulation<ndim>::ComputeBondiSolution
+(int Ntable,
+ FLOAT *w,
+ FLOAT *x,
+ FLOAT *y,
+ FLOAT *z)
+{
+  const int isonic = 2*Ntable/3;    // Position in table for sonic point
+  const FLOAT asympt = exp(1.5);    // ..
+  FLOAT epsilon = 0.001;            // ..
+
+  int i;                            // ..
+  FLOAT disc,dx,hdx;                // ..
+  FLOAT f1,f2,f3,f4,f5;             // ..
+  FLOAT g1,g2,g3,g4,g5;             // ..
+  FLOAT w0,x0,y0,z0;                // ..
+  FLOAT x1,x2,x3,x4;                // ..
+  FLOAT w1,w2,w3,w4;                // ..
+  FLOAT z1;                         // ..
+  FLOAT *dlnx,*lw,*lx,*ly,*lz;      // ..
+
+  debug2("[Simulation::ComputeBondiSolution]");
+
+  dlnx = new FLOAT[Ntable];
+  lw   = new FLOAT[Ntable];
+  lx   = new FLOAT[Ntable];
+  ly   = new FLOAT[Ntable];
+  lz   = new FLOAT[Ntable];
+
+  // Set values for the sonic point directly
+  x[isonic]  = 1.0;
+  lx[isonic] = 0.0;
+  w[isonic]  = 1.0;
+  lw[isonic] = 0.0;
+  y[isonic]  = asympt;
+  ly[isonic] = log10(y[isonic]);
+  z[isonic]  = 2.4102434440;
+  lz[isonic] = log10(z[isonic]);
+
+
+  f5 = 0.0;
+  g5 = 0.0;
+  x1 = 1.0 + epsilon;
+  w1 = 1.0 - epsilon;
+  z1 = 2.4102434440 + asympt*epsilon;
+  i = isonic + 1;
+
+  //-----------------------------------------------------------------------------------------------
+  do {
+    disc = 100.0*log10(x1) + (FLOAT) isonic - (FLOAT) i;
+    if (disc > 0.0) {
+      lx[i]   = 0.01*(double)(i - isonic);
+      x[i]    = powf(10.0,lx[i]);
+      dlnx[i] = (x[i] - x1)/x1;
+      w[i]    = w1 + f5*(x[i] - x1);
+      lw[i]   = log10(w[i]);
+      y[i]    = asympt/(x[i]*x[i]*w[i]);
+      ly[i]   = log10(y[i]);
+      z[i]    = z1 + g5*(x[i] - x1);
+      lz[i]   = log10(z[i]);
+      i++;
+    }
+    dx = x1*epsilon;
+    hdx = 0.5*dx;
+    f1 = 2.0*((1.0/x1) - (1.0/(x1*x1)))/(w1 - (1.0/w1));
+    g1 = asympt/w1;
+    x2 = x1 + hdx;
+    w2 = w1 + f1*hdx;
+    f2 = 2.0*((1.0/x2) - (1.0/(x2*x2)))/(w2 - (1.0/w2));
+    g2 = asympt/w2;
+    w3 = w1 + f2*hdx;
+    f3 = 2.0*((1.0/x2) - (1.0/(x2*x2)))/(w3 - (1.0/w3));
+    g3 = asympt/w3;
+    x4 = x1 + dx;
+    w4 = w1 + f3*dx;
+    f4 = 2.0*((1.0/x4) - (1.0/(x4*x4)))/(w4 - (1.0/w4));
+    g4 = asympt/w4;
+    x1 = x4;
+    f5 = (f1 + 2.0*f2 + 2.0*f3 + f4)/6.0;
+    w1 = w1 + f5*dx;
+    g5 = (g1 + 2.0*g2 + 2.0*g3 + g4)/6.0;
+    z1 = z1 + g5*dx;
+  } while (i < Ntable);
+
+
+  epsilon = -epsilon;
+  x1 = 1.0 + epsilon;
+  w1 = 1.0 - epsilon;
+  z1 = 2.4102434440 + asympt*epsilon;
+  i = isonic - 1;
+
+  do {
+    disc = (FLOAT) i - 100.0*log10(x1) - (FLOAT) isonic;
+    if (disc > 0.0) {
+      lx[i]   = 0.01*(FLOAT) (i - isonic);
+      x[i]    = powf(10.0,lx[i]);
+      dlnx[i] = (x[i] - x1)/x1;
+      w[i]    = w1 + f5*(x[i] - x1);
+      lw[i]   = log10(w[i]);
+      y[i]    = asympt/(x[i]*x[i]*w[i]);
+      ly[i]   = log10(y[i]);
+      z[i]    = z1 + g5*(x[i] - x1);
+      lz[i]   = -8.0;
+      if (z[i] > 0.1E-07) lz[i] = log10(z[i]);
+      i--;
+    }
+    dx = x1*epsilon;
+    hdx = 0.5*dx;
+    f1 = 2.0*((1.0/x1) - (1.0/(x1*x1)))/(w1 - (1.0/w1));
+    g1 = asympt/w1;
+    x2 = x1 + hdx;
+    w2 = w1 + f1*hdx;
+    f2 = 2.0*((1.0/x2) - (1.0/(x2*x2)))/(w2 - (1.0/w2));
+    g2 = asympt/w2;
+    w3 = w1 + f2*hdx;
+    f3 = 2.0*((1.0/x2) - (1.0/(x2*x2)))/(w3 - (1.0/w3));
+    g3 = asympt/w3;
+    x4 = x1 + dx;
+    w4 = w1 + f3*dx;
+    f4 = 2.0*((1.0/x4) - (1.0/(x4*x4)))/(w4 - (1.0/w4));
+    g4 = asympt/w4;
+    x1 = x4;
+    f5 = (f1 + 2.0*f2 + 2.0*f3 + f4)/6.0;
+    w1 = w1 + f5*dx;
+    g5 = (g1 + 2.0*g2 + 2.0*g3 + g4)/6.0;
+    z1 = z1 + g5*dx;
+  } while (i >= 0);
+
+
+  // Write to file (for checking)
+  ofstream outfile;
+  string filename = "BONDI_SOLUTION.dat";
+  outfile.open(filename.c_str());
+  for (i=0; i<Ntable; i++) {
+    outfile << x[i] << "    " << z[i] << "    " << y[i] << "    " << w[i] << endl;
+  }
+  outfile.close();
+
+
+  // Free up all locally allocated arrays
+  delete[] lz;
+  delete[] ly;
+  delete[] lx;
+  delete[] lw;
+  delete[] dlnx;
 
   return;
 }

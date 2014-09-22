@@ -305,9 +305,10 @@ void Parameters::SetDefaultValues(void)
   intparams["sub_systems"] = 0;
   stringparams["sub_system_integration"] = "hermite4";
   intparams["Npec"] = 1;
-  intparams["nbody_softening"] = 0;
+  intparams["nbody_softening"] = 1;
   intparams["perturbers"] = 0;
   intparams["binary_stats"] = 0;
+  intparams["nsystembuildstep"] = 1;
   floatparams["gpefrac"] = 5.0e-2;
   floatparams["gpesoft"] = 2.0e-2;
   floatparams["gpehard"] = 1.0e-3;
@@ -317,6 +318,7 @@ void Parameters::SetDefaultValues(void)
   intparams["sink_particles"] = 0;
   intparams["create_sinks"] = 0;
   intparams["smooth_accretion"] = 0;
+  intparams["fixed_sink_mass"] = 0;
   floatparams["rho_sink"] = 1.e-12;
   floatparams["alpha_ss"] = 0.01;
   floatparams["sink_radius"] = 3.0;
@@ -400,6 +402,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["vmachbin"] = 1.0;
   floatparams["alpha_turb"] = 0.1;
   floatparams["power_turb"] = -4.0;
+  floatparams["asound"] = 1.0;
 
   // Random number generator parameters
   //---------------------------------------------------------------------------

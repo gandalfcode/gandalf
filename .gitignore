@@ -5,7 +5,12 @@
 *.pyc
 *.cxx
 *.sf.*
+*.slite.*
 *.su.*
+*.dat
+*.mp4
+*.mpeg
+*.png
 *.restart
 *.timing
 *~

@@ -1,7 +1,7 @@
-//=============================================================================
+//=================================================================================================
 //  SM2012SphTree.cpp
-//  Contains all functions for building, stocking and walking for the 
-//  binary KD tree for SPH particles.  
+//  Contains all functions for building, stocking and walking for the
+//  binary KD tree for SPH particles.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -19,7 +19,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <cstdlib>
@@ -42,10 +42,10 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012SphTree::SM2012SphTree
 /// SM2012SphTree constructor.  Initialises various variables.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 SM2012SphTree<ndim,ParticleType>::SM2012SphTree
 (int Nleafmaxaux,
@@ -65,10 +65,10 @@ SM2012SphTree<ndim,ParticleType>::SM2012SphTree
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012SphTree::~SM2012SphTree
 /// SM2012SphTree destructor.  Deallocates tree memory upon object destruction.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 SM2012SphTree<ndim,ParticleType>::~SM2012SphTree()
 {
@@ -80,13 +80,13 @@ SM2012SphTree<ndim,ParticleType>::~SM2012SphTree()
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012SphTree::UpdateAllSphProperties
-/// Compute all local 'gather' properties of currently active particles, and 
-/// then compute each particle's contribution to its (active) neighbour 
-/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
+/// Compute all local 'gather' properties of currently active particles, and
+/// then compute each particle's contribution to its (active) neighbour
+/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to
 /// construct local neighbour lists for all particles  inside the cell.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void SM2012SphTree<ndim,ParticleType>::UpdateAllSphProperties
 (int Nsph,                          ///< [in] No. of SPH particles
@@ -137,7 +137,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphProperties
 
 
   // Set-up all OMP threads
-  //===========================================================================
+  //===============================================================================================
 #pragma omp parallel default(none) private(activelist,activepart,cc,cell)\
   private(celldone,draux,drsqd,drsqdaux,gpot,gpot2,hmax,hrangesqd,i,ithread,j)\
   private(jj,k,okflag,m,mu,m2,mu2,Nactive,neiblist,Ngather,Nneib,Nneibmax,r,rp)	\
@@ -166,7 +166,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphProperties
     r = new FLOAT[Nneibmax*ndim];
 
     // Loop over all active cells
-    //=========================================================================
+    //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       cell = celllist[cc];
@@ -176,7 +176,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphProperties
 
       // If hmax is too small so the neighbour lists are invalid, make hmax
       // larger and then recompute for the current active cell.
-      //-----------------------------------------------------------------------
+      //-------------------------------------------------------------------------------------------
       do {
         hmax = 1.05*hmax;
         celldone = 1;
@@ -201,7 +201,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphProperties
           delete[] gpot2;
           delete[] gpot;
           delete[] neiblist;
-          Nneibmax = 2*Nneibmax; 
+          Nneibmax = 2*Nneibmax;
           neiblist = new int[Nneibmax];
           gpot = new FLOAT[Nneibmax];
           gpot2 = new FLOAT[Nneibmax];
@@ -224,7 +224,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphProperties
 
 
         // Loop over all active particles in the cell
-        //---------------------------------------------------------------------
+        //-----------------------------------------------------------------------------------------
         for (j=0; j<Nactive; j++) {
           i = activelist[j];
           for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
@@ -234,7 +234,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphProperties
           Ngather = 0;
 
           // Compute distance (squared) to all
-          //-------------------------------------------------------------------
+          //---------------------------------------------------------------------------------------
           for (jj=0; jj<Nneib; jj++) {
             for (k=0; k<ndim; k++) draux[k] = r[ndim*jj + k] - rp[k];
             drsqdaux = DotProduct(draux,draux,ndim);
@@ -248,11 +248,11 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphProperties
             }
 
           }
-          //-------------------------------------------------------------------
+          //---------------------------------------------------------------------------------------
 
           // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-          if (neibcheck) 
+          if (neibcheck)
 	    this->CheckValidNeighbourList(i,Ntot,Nneib,neiblist,
                                           sphdata,"gather");
 #endif
@@ -269,16 +269,16 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphProperties
           }
 
         }
-        //---------------------------------------------------------------------
+        //-----------------------------------------------------------------------------------------
 
       } while (celldone == 0);
-      //-----------------------------------------------------------------------
+      //-------------------------------------------------------------------------------------------
 
-      for (j=0; j<Nactive; j++) 
+      for (j=0; j<Nactive; j++)
 	sphdata[activelist[j]] = activepart[j];
 
     }
-    //=========================================================================
+    //=============================================================================================
 
     // Free-up all memory
     delete[] r;
@@ -292,7 +292,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphProperties
     delete[] activelist;
 
   }
-  //===========================================================================
+  //===============================================================================================
 
   delete[] celllist;
 
@@ -303,13 +303,13 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphProperties
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012SphTree::UpdateAllSphHydroForces
-/// Compute all local 'gather' properties of currently active particles, and 
-/// then compute each particle's contribution to its (active) neighbour 
-/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
+/// Compute all local 'gather' properties of currently active particles, and
+/// then compute each particle's contribution to its (active) neighbour
+/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to
 /// construct local neighbour lists for all particles  inside the cell.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void SM2012SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 (int Nsph,                          ///< [in] No. of SPH particles
@@ -362,7 +362,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
 
   // Set-up all OMP threads
-  //===========================================================================
+  //===============================================================================================
 #pragma omp parallel default(none) private(activelist,activepart,cc,cell,dr)\
   private(draux,drmag,drsqd,hrangesqdi,i,interactlist,ithread,invdrmag,j,jj,k)\
   private(levelneib,Nactive,neiblist,neibpart,Ninteract,Nneib,Nneibmax,rp) \
@@ -374,7 +374,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
     ithread = 0;
 #endif
     Nneibmax = Nneibmaxbuf[ithread];
-    activelist = activelistbuf[ithread];    
+    activelist = activelistbuf[ithread];
     activepart = activepartbuf[ithread];
     neibpart = neibpartbuf[ithread];
     levelneib = levelneibbuf[ithread];
@@ -389,7 +389,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
 
     // Loop over all active cells
-    //=========================================================================
+    //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       cell = celllist[cc];
@@ -428,7 +428,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
         dr = new FLOAT[Nneibmax*ndim];
         drmag = new FLOAT[Nneibmax];
         invdrmag = new FLOAT[Nneibmax];
-        neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax]; 
+        neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax];
 	neibpart = neibpartbuf[ithread];
         Nneib = tree->ComputeNeighbourList(cell,Nneibmax,
                                            neiblist,sphdata);
@@ -442,7 +442,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
 
       // Loop over all active particles in the cell
-      //-----------------------------------------------------------------------
+      //-------------------------------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
 
@@ -452,7 +452,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
         // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-        if (neibcheck) 
+        if (neibcheck)
 	  this->CheckValidNeighbourList(i,Ntot,Nneib,neiblist,
 					sphdata,"all");
 #endif
@@ -461,7 +461,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
         // and all neighbours here, for both gather and inactive scatter neibs.
         // Only consider particles with j > i to compute pair forces once
         // unless particle j is inactive.
-        //---------------------------------------------------------------------
+        //-----------------------------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
 	  // Skip current active particle
@@ -478,19 +478,19 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
               dr[Ninteract*ndim + k] = draux[k]*invdrmag[Ninteract];
             interactlist[Ninteract] = jj;
             Ninteract++;
-	    levelneib[neiblist[jj]] = 
+	    levelneib[neiblist[jj]] =
 	      max(levelneib[neiblist[jj]],activepart[j].level);
 	  }
 
         }
-        //---------------------------------------------------------------------
+        //-----------------------------------------------------------------------------------------
 
         // Compute all neighbour contributions to hydro forces
         sph->ComputeSphHydroForces(i,Ninteract,interactlist,
 				   drmag,invdrmag,dr,activepart[j],neibpart);
 
       }
-      //-----------------------------------------------------------------------
+      //-------------------------------------------------------------------------------------------
 
 
       // Compute all star forces for active particles
@@ -512,7 +512,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
       }
 
     }
-    //=========================================================================
+    //=============================================================================================
 
 
     // Finally, add all contributions from distant pair-wise forces to arrays
@@ -531,7 +531,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
     //delete[] activelist;
 
   }
-  //===========================================================================
+  //===============================================================================================
 
   delete[] celllist;
 
@@ -542,13 +542,13 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012SphTree::UpdateAllSphForces
-/// Compute all local 'gather' properties of currently active particles, and 
-/// then compute each particle's contribution to its (active) neighbour 
-/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
+/// Compute all local 'gather' properties of currently active particles, and
+/// then compute each particle's contribution to its (active) neighbour
+/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to
 /// construct local neighbour lists for all particles  inside the cell.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void SM2012SphTree<ndim,ParticleType>::UpdateAllSphForces
 (int Nsph,                          ///< [in] No. of SPH particles
@@ -583,7 +583,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphForces
   FLOAT draux[ndim];                // Aux. relative position vector
   FLOAT drsqd;                      // Distance squared
   FLOAT hrangesqdi;                 // Kernel gather extent
-  FLOAT rp[ndim];                   // .. 
+  FLOAT rp[ndim];                   // ..
   KDTreeCell<ndim> *cell;           // Pointer to kd-tree cell
   KDTreeCell<ndim> **celllist;      // List of pointers to kd-tree cells
   KDTreeCell<ndim> **gravcelllist;  // List of pointers to grav. cells
@@ -603,7 +603,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphForces
 
 
   // Set-up all OMP threads
-  //===========================================================================
+  //===============================================================================================
 #pragma omp parallel default(none) shared(celllist,cactive,nbody,sph,sphdata,cout) \
   private(activepart,activelist,cc,cell,directlist,draux,drsqd,gravcelllist) \
   private(hrangesqdi,i,interactlist,ithread,j,jj,k,levelneib,macfactor)	\
@@ -633,7 +633,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphForces
 
 
     // Loop over all active cells
-    //=========================================================================
+    //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       cell = celllist[cc];
@@ -647,7 +647,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphForces
 
       // Compute average/maximum term for computing gravity MAC
       if (gravity_mac == "eigenmac") {
-	for (j=0; j<Nactive; j++) 
+	for (j=0; j<Nactive; j++)
 	  macfactor = max(macfactor,pow(1.0/activepart[j].gpot,twothirds));
       }
 
@@ -688,7 +688,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphForces
 	directlist = new int[Ndirectmax];
 	gravcelllist = new KDTreeCell<ndim>*[Ngravcellmax];
 	neibpart = new ParticleType<ndim>[Nneibmax];
-	neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax]; 
+	neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax];
 	neibpart = neibpartbuf[ithread];
 	okflag = tree->ComputeGravityInteractionList(cell,macfactor,
 					             Nneibmax,Ndirectmax,
@@ -703,18 +703,18 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphForces
 
 
       // Loop over all active particles in the cell
-      //-----------------------------------------------------------------------
+      //-------------------------------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
 
-        // Determine SPH neighbour interaction list 
+        // Determine SPH neighbour interaction list
         // (to ensure we don't compute pair-wise forces twice)
         Ninteract = 0;
 	Ndirectaux = Ndirect;
         for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
         hrangesqdi = activepart[j].hrangesqd;
 
-	//---------------------------------------------------------------------
+        //-----------------------------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
@@ -725,11 +725,11 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphForces
 	    directlist[Ndirectaux++] = neiblist[jj];
 	  else if (i != neiblist[jj]) {
             interactlist[Ninteract++] = jj;
-	    levelneib[neiblist[jj]] = 
+	    levelneib[neiblist[jj]] =
 	      max(levelneib[neiblist[jj]],activepart[j].level);
 	  }
         }
-	//---------------------------------------------------------------------
+        //-----------------------------------------------------------------------------------------
 
 
         // Compute forces between SPH neighbours (hydro and gravity)
@@ -754,7 +754,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphForces
                                             Ngravcell,gravcelllist);
 
       }
-      //-----------------------------------------------------------------------
+      //-------------------------------------------------------------------------------------------
 
 
       // Compute 'fast' multipole terms here
@@ -781,7 +781,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphForces
       }
 
     }
-    //=========================================================================
+    //=============================================================================================
 
 
     // Finally, add all contributions from distant pair-wise forces to arrays
@@ -801,7 +801,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphForces
     //delete[] levelneib;
 
   }
-  //===========================================================================
+  //===============================================================================================
 
   delete[] celllist;
 
@@ -812,13 +812,13 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphForces
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012SphTree::UpdateAllSphGravForces
-/// Compute all local 'gather' properties of currently active particles, and 
-/// then compute each particle's contribution to its (active) neighbour 
-/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to 
+/// Compute all local 'gather' properties of currently active particles, and
+/// then compute each particle's contribution to its (active) neighbour
+/// neighbour hydro forces.  Optimises the algorithm by using grid-cells to
 /// construct local neighbour lists for all particles  inside the cell.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void SM2012SphTree<ndim,ParticleType>::UpdateAllSphGravForces
 (int Nsph,                          ///< [in] No. of SPH particles
@@ -853,7 +853,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphGravForces
   FLOAT drsqd;                      // Distance squared
   FLOAT hrangesqdi;                 // Kernel gather extent
   FLOAT macfactor;                  // Gravity MAC factor
-  FLOAT rp[ndim];                   // .. 
+  FLOAT rp[ndim];                   // ..
   KDTreeCell<ndim> *cell;           // Pointer to binary tree cell
   KDTreeCell<ndim> **celllist;      // List of pointers to binary tree cells
   KDTreeCell<ndim> **gravcelllist;  // List of pointers to grav. cells
@@ -873,7 +873,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphGravForces
 
 
   // Set-up all OMP threads
-  //===========================================================================
+  //===============================================================================================
 #pragma omp parallel default(none) shared(celllist,cactive,nbody,sph,sphdata,cout) \
   private(activepart,activelist,cc,cell,directlist,draux,drsqd,gravcelllist) \
   private(hrangesqdi,i,interactlist,ithread,j,jj,k,levelneib,macfactor)	\
@@ -903,7 +903,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphGravForces
 
 
     // Loop over all active cells
-    //=========================================================================
+    //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       cell = celllist[cc];
@@ -917,7 +917,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphGravForces
 
       // Compute average/maximum term for computing gravity MAC
       if (gravity_mac == "eigenmac") {
-	for (j=0; j<Nactive; j++) 
+	for (j=0; j<Nactive; j++)
 	  macfactor = max(macfactor,pow(1.0/activepart[j].gpot,twothirds));
       }
 
@@ -958,7 +958,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphGravForces
 	directlist = new int[Ndirectmax];
 	gravcelllist = new KDTreeCell<ndim>*[Ngravcellmax];
 	neibpart = new ParticleType<ndim>[Nneibmax];
-	neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax]; 
+	neibpartbuf[ithread] = new ParticleType<ndim>[Nneibmax];
 	neibpart = neibpartbuf[ithread];
 	okflag = tree->ComputeGravityInteractionList(cell,macfactor,
 					             Nneibmax,Ndirectmax,
@@ -975,11 +975,11 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphGravForces
       }
 
       // Loop over all active particles in the cell
-      //-----------------------------------------------------------------------
+      //-------------------------------------------------------------------------------------------
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
 
-        // Determine SPH neighbour interaction list 
+        // Determine SPH neighbour interaction list
         // (to ensure we don't compute pair-wise forces twice)
         Ninteract = 0;
 	Ndirectaux = Ndirect;
@@ -997,7 +997,7 @@ void SM2012SphTree<ndim,ParticleType>::UpdateAllSphGravForces
 	    directlist[Ndirectaux++] = neiblist[jj];
 	  else if (i != neiblist[jj]) {
             interactlist[Ninteract++] = jj;
-	    levelneib[neiblist[jj]] = 
+	    levelneib[neiblist[jj]] =
 	      max(levelneib[neiblist[jj]],activepart[j].level);
 	  }
         }

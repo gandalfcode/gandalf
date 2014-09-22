@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  SimAnalysis.cpp
 //  Contains various analysis routines for Simulation object.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <iostream>
@@ -41,11 +41,11 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::CalculateDiagnostics
-/// Calculates all diagnostic quantities (e.g. conserved quantities), 
+/// Calculates all diagnostic quantities (e.g. conserved quantities),
 /// saves to the diagnostic data structure and outputs to screen.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::CalculateDiagnostics(void)
 {
@@ -152,7 +152,7 @@ void Simulation<ndim>::CalculateDiagnostics(void)
     }
   }
 
-  // Add internal angular momentum (due to sink accretion) and subtract 
+  // Add internal angular momentum (due to sink accretion) and subtract
   // accreted hydro momentum to maintain conservation of individual impulses.
   for (i=0; i<sinks.Nsink; i++) {
     for (k=0; k<3; k++) diag.angmom[k] += sinks.sink[i].angmom[k];
@@ -188,11 +188,10 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::OutputDiagnostics
-/// Output all diagnostic quantities that are computed in 
-/// CalculateDiagnostics to screen.
-//=============================================================================
+/// Output all diagnostic quantities that are computed in CalculateDiagnostics to screen.
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::OutputDiagnostics(void)
 {
@@ -206,10 +205,10 @@ void Simulation<ndim>::OutputDiagnostics(void)
   cout << "mtot        : " << diag.mtot*simunits.m.outscale << endl;
   cout << "Etot        : " << diag.Etot*simunits.E.outscale << endl;
   cout << "ketot       : " << diag.ketot*simunits.E.outscale << endl;
-  if (sph->hydro_forces == 1) 
-    cout << "utot        : " << diag.utot*simunits.E.outscale << endl;
-  if (sph->self_gravity == 1 || nbody->Nstar > 0)
+  if (sph->hydro_forces == 1)  cout << "utot        : " << diag.utot*simunits.E.outscale << endl;
+  if (sph->self_gravity == 1 || nbody->Nstar > 0) {
     cout << "gpetot      : " << diag.gpetot*simunits.E.outscale << endl;
+  }
   if (ndim == 1) {
     cout << "rcom        : " << diag.rcom[0] << endl;
     cout << "vcom        : " << diag.vcom[0] << endl;
@@ -226,8 +225,8 @@ void Simulation<ndim>::OutputDiagnostics(void)
     cout << "ang mom     : " << diag.angmom[2] << endl;
     cout << "mom         : " << diag.mom[0] << "   " << diag.mom[1] << endl;
     cout << "force       : " << diag.force[0] << "   " << diag.force[1] << endl;
-    if (sph->self_gravity == 1 || nbody->Nstar > 0) 
-      cout << "force_grav  : " << diag.force_grav[0] << "   " 
+    if (sph->self_gravity == 1 || nbody->Nstar > 0)
+      cout << "force_grav  : " << diag.force_grav[0] << "   "
 	   << diag.force_grav[1] << endl;
     if (sph->hydro_forces == 1)
       cout << "force_hydro : " << diag.force_hydro[0] << "   "
@@ -235,27 +234,28 @@ void Simulation<ndim>::OutputDiagnostics(void)
   }
   else if (ndim == 3) {
     cout << "rcom        : " << diag.rcom[0] << "   "
-	 << diag.rcom[1] << "   " << diag.rcom[2] << endl;
+         << diag.rcom[1] << "   " << diag.rcom[2] << endl;
     cout << "vcom        : " << diag.vcom[0] << "   "
-	 << diag.vcom[1] << "   " << diag.vcom[2] << endl;
+         << diag.vcom[1] << "   " << diag.vcom[2] << endl;
     cout << "ang mom     : " << diag.angmom[0] << "   "
-	 << diag.angmom[1] << "   " << diag.angmom[2] << endl;
-    cout << "mom         : " << diag.mom[0] << "   " 
-	 << diag.mom[1] << "   " << diag.mom[2] << endl;
-    cout << "force       : " << diag.force[0] << "   " 
-	 << diag.force[1] << "   " << diag.force[2] << endl;
-    if (sph->self_gravity == 1 || nbody->Nstar > 0) 
-      cout << "force_grav  : " << diag.force_grav[0] << "   " 
-	   << diag.force_grav[1] << "   " << diag.force_grav[2] << endl;
-    if (sph->hydro_forces == 1)
+         << diag.angmom[1] << "   " << diag.angmom[2] << endl;
+    cout << "mom         : " << diag.mom[0] << "   "
+         << diag.mom[1] << "   " << diag.mom[2] << endl;
+    cout << "force       : " << diag.force[0] << "   "
+         << diag.force[1] << "   " << diag.force[2] << endl;
+    if (sph->self_gravity == 1 || nbody->Nstar > 0) {
+      cout << "force_grav  : " << diag.force_grav[0] << "   "
+           << diag.force_grav[1] << "   " << diag.force_grav[2] << endl;
+    }
+    if (sph->hydro_forces == 1) {
       cout << "force_hydro : " << diag.force_hydro[0] << "   "
            << diag.force_hydro[1] << "   " << diag.force_hydro[2] << endl;
+    }
   }
 
   // Calculate binary statistics if required
-  if (simparams->intparams["binary_stats"] == 1) {
-    nbodytree.OutputBinaryProperties(nbody);
-  }
+  if (simparams->intparams["binary_stats"] == 1) nbodytree.OutputBinaryProperties(nbody);
+
 
   return;
 }

@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  SystemParticle.h
 //  Main system particle data structure
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _SYSTEM_PARTICLE_H_
@@ -35,12 +35,12 @@ static const int Npertmax = 4;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Structure SystemParticle
 /// \brief  System particle data structure
 /// \author D. A. Hubber, G. Rosotti
 /// \date   10/05/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class SystemParticle: public NbodyParticle<ndim>
 {

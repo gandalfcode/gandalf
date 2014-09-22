@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  RandomNumber.h
 //  ..
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _RANDOM_NUMBER_H_
@@ -34,13 +34,13 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class RandomNumber
 /// \brief   Base class for generating random number sequence
 /// \details ...
 /// \author  D. A. Hubber
 /// \date    24/05/2014
-//=============================================================================
+//=================================================================================================
 class RandomNumber
 {
  public:
@@ -59,14 +59,14 @@ class RandomNumber
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class XorshiftRand
 /// \brief   'xorshift' random number generator
 /// \details 'xorshift' random number generator
 ///          (See Numerical Recipes 3rd Ed. Chap 3, wikipedia 'Xorshift')
 /// \author  D. A. Hubber
 /// \date    24/05/2014
-//=============================================================================
+//=================================================================================================
 class XorshiftRand : public RandomNumber
 {
  private:
@@ -86,36 +86,39 @@ class XorshiftRand : public RandomNumber
   unsigned long int x;
 
   // Constructor and destructor
-  XorshiftRand(unsigned long int _seed): RandomNumber(), x(_seed) 
+  XorshiftRand(unsigned long int _seed): RandomNumber(), x(_seed)
     {
       for (int k=0; k<10; k++) xorshiftrand();
     };
   ~XorshiftRand() {};
 
 
-  inline unsigned long int xorshiftrand(void) {
+  inline unsigned long int xorshiftrand(void)
+  {
     x ^= x >> a1;
     x ^= x << a2;
     x ^= x >> a3;
     return x*amod;
   }
 
-  inline int intrand(void) {return (int) xorshiftrand(); }
-  inline long int longintrand(void) {return (long int) xorshiftrand(); }
-  inline FLOAT floatrand(void) {return invrandmax*(FLOAT) xorshiftrand(); }
-  inline DOUBLE doublerand(void) {return invrandmax*(DOUBLE) xorshiftrand(); }
+  inline int intrand(void) {return (int) xorshiftrand();}
+  inline long int longintrand(void) {return (long int) xorshiftrand();}
+  inline FLOAT floatrand(void) {return invrandmax*(FLOAT) xorshiftrand();}
+  inline DOUBLE doublerand(void) {return invrandmax*(DOUBLE) xorshiftrand();}
 
-  inline FLOAT gaussrand(FLOAT mean, FLOAT sigma) {
+  inline FLOAT gaussrand(FLOAT mean, FLOAT sigma)
+  {
     FLOAT U = 0.0;
-    FLOAT V = 0.0;    
+    FLOAT V = 0.0;
     while (U == 0.0) {
       U = floatrand();
       V = floatrand();
     };
     return sqrt(-2.0*log(U))*cos(2*pi*V);
   }
-  
-  void PrintRandomNumberRange(void) {
+
+  void PrintRandomNumberRange(void)
+  {
     cout << "Integer range;         min : 1,    max : " << pow(2,64) << endl;
     cout << "Floating point range;  min : 0.0,  max : 1.0" << endl;
     return;
@@ -125,14 +128,14 @@ class XorshiftRand : public RandomNumber
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class DefaultSystemRand
 /// \brief   Default random number class which calls system generator.
-/// \details Default random number class which calls system generator.  
+/// \details Default random number class which calls system generator.
 ///          Only used when no other generator is selected in parameters file.
 /// \author  D. A. Hubber
 /// \date    24/05/2014
-//=============================================================================
+//=================================================================================================
 class DefaultSystemRand : public RandomNumber
 {
  public:
@@ -143,14 +146,13 @@ class DefaultSystemRand : public RandomNumber
 
   inline int intrand(void) {return (int) rand()%RAND_MAX;}
   inline long int longintrand(void) {return (long int) rand()%RAND_MAX;}
-  inline FLOAT floatrand(void) 
-    {return (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;}
-  inline DOUBLE doublerand(void) 
-    {return (DOUBLE)(rand()%RAND_MAX)/(DOUBLE)RAND_MAX;}
+  inline FLOAT floatrand(void) {return (FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX;}
+  inline DOUBLE doublerand(void) {return (DOUBLE)(rand()%RAND_MAX)/(DOUBLE)RAND_MAX;}
 
-  inline FLOAT gaussrand(FLOAT mean, FLOAT sigma) {
+  inline FLOAT gaussrand(FLOAT mean, FLOAT sigma)
+  {
     FLOAT U = 0.0;
-    FLOAT V = 0.0;    
+    FLOAT V = 0.0;
     while (U == 0.0) {
       U = floatrand();
       V = floatrand();
@@ -158,7 +160,8 @@ class DefaultSystemRand : public RandomNumber
     return sqrt(-2.0*log(U))*cos(2*pi*V);
   }
 
-  void PrintRandomNumberRange(void) {
+  void PrintRandomNumberRange(void)
+  {
     cout << "Integer range;         min : 1,    max : " << RAND_MAX << endl;
     cout << "Floating point range;  min : 0.0,  max : 1.0" << endl;
     return;
