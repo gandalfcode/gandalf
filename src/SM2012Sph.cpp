@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  SM2012Sph.cpp
 //  Contains all functions for calculating SPH quantities using the method
 //  proposed by Saitoh & Makino (2012) in the conservative formalation
@@ -20,7 +20,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <cstdio>
@@ -41,10 +41,10 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012Sph::SM2012Sph
 /// Saitoh & Makino (2012) SPH object constructor.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 SM2012Sph<ndim, kernelclass >::SM2012Sph(int hydro_forces_aux,
 	    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
@@ -63,22 +63,23 @@ SM2012Sph<ndim, kernelclass >::SM2012Sph(int hydro_forces_aux,
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012Sph::~SM2012Sph
 /// Saitoh & Makino (2012) SPH object destructor.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 SM2012Sph<ndim, kernelclass >::~SM2012Sph()
 {
 }
 
 
-//=============================================================================
+
+//=================================================================================================
 //  SM2012Sph::AllocateMemory
 /// Allocate main SPH particle array.  Currently sets the maximum memory to
 /// be 10 times the numbers of particles to allow space for ghost particles
 /// and new particle creation.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void SM2012Sph<ndim, kernelclass>::AllocateMemory(int N)
 {
@@ -103,10 +104,12 @@ void SM2012Sph<ndim, kernelclass>::AllocateMemory(int N)
   return;
 }
 
-//=============================================================================
+
+
+//=================================================================================================
 //  SM2012Sph::DeallocateMemory
 /// Deallocate main array containing SPH particle data.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void SM2012Sph<ndim, kernelclass>::DeallocateMemory(void)
 {
@@ -122,15 +125,17 @@ void SM2012Sph<ndim, kernelclass>::DeallocateMemory(void)
   return;
 }
 
-//=============================================================================
+
+
+//=================================================================================================
 //  SM2012Sph::DeleteDeadParticles
 /// Delete 'dead' (e.g. accreted) SPH particles from the main arrays.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void SM2012Sph<ndim, kernelclass>::DeleteDeadParticles(void)
 {
   int i;                            // Particle counter
-  int itype;
+  int itype;                        // ..
   int Ndead = 0;                    // No. of 'dead' particles
   int Nlive = 0;                    // No. of 'live' particles
   int ilast = Nsph;                 // Aux. counter of last free slot
@@ -146,9 +151,9 @@ void SM2012Sph<ndim, kernelclass>::DeleteDeadParticles(void)
       Ndead++;
       ilast--;
       if (i < ilast) {
-    sphdata[i] = sphdata[ilast];
-    sphdata[ilast].itype = dead;
-    sphdata[ilast].m = 0.0;
+        sphdata[i] = sphdata[ilast];
+        sphdata[ilast].itype = dead;
+        sphdata[ilast].m = 0.0;
       }
       else break;
       itype = sphdata[i].itype;
@@ -169,15 +174,15 @@ void SM2012Sph<ndim, kernelclass>::DeleteDeadParticles(void)
 }
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012Sph::ReorderParticles
 /// Delete selected SPH particles from the main arrays.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void SM2012Sph<ndim, kernelclass>::ReorderParticles(void)
 {
   int i;                                // Particle counter
-  SM2012SphParticle<ndim> *sphdataaux;        // Aux. SPH particle array
+  SM2012SphParticle<ndim> *sphdataaux;  // Aux. SPH particle array
 
   sphdataaux = new SM2012SphParticle<ndim>[Nsph];
 
@@ -195,7 +200,7 @@ void SM2012Sph<ndim, kernelclass>::ReorderParticles(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012Sph::ComputeH
 /// Compute the value of the smoothing length of particle 'i' by iterating
 /// the relation : h = h_fac*(m/rho)^(1/ndim).
@@ -203,7 +208,7 @@ void SM2012Sph<ndim, kernelclass>::ReorderParticles(void)
 /// a Newton-Rhapson solver, or fixed-point iteration, to converge on the
 /// correct value of h.  The maximum tolerance used for deciding whether the
 /// iteration has converged is given by the 'h_converge' parameter.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 int SM2012Sph<ndim, kernelclass >::ComputeH
 (const int i,                             ///< [in] id of particle
@@ -228,27 +233,29 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
 
   SM2012SphParticle<ndim>& parti = static_cast<SM2012SphParticle<ndim>& > (part);
 
+
   // Main smoothing length iteration loop
-  //===========================================================================
+  //===============================================================================================
   do {
 
     // Initialise all variables for this value of h
     iteration++;
-    parti.invh = (FLOAT) 1.0/parti.h;
-    parti.rho = (FLOAT) 0.0;
-    parti.q = (FLOAT) 0.0;
-    parti.hfactor = pow(parti.invh,ndim);
-    invhsqd = parti.invh*parti.invh;
+    parti.invh     = (FLOAT) 1.0/parti.h;
+    parti.rho      = (FLOAT) 0.0;
+    //parti.invomega = (FLOAT) 0.0;
+    parti.q        = (FLOAT) 0.0;
+    parti.hfactor  = pow(parti.invh,ndim);
+    invhsqd        = parti.invh*parti.invh;
 
     // Loop over all nearest neighbours in list to calculate
     // density.
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       ssqd = drsqd[j]*invhsqd;
       parti.rho += m[j]*kern.w0_s2(ssqd);
       parti.q += mu[j]*kern.w0_s2(ssqd);
     }
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
 
     parti.rho *= parti.hfactor;
     parti.q *= parti.hfactor;
@@ -257,15 +264,14 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
 
     // If h changes below some fixed tolerance, exit iteration loop
     if (parti.rho > (FLOAT) 0.0 && parti.h > h_lower_bound &&
-    		fabs(parti.h - h_fac*pow(parti.m*parti.invrho,
-    				invndim)) < h_converge) break;
+        fabs(parti.h - h_fac*pow(parti.m*parti.invrho,invndim)) < h_converge) break;
 
     // Use fixed-point iteration, i.e. h_new = h_fac*(m/rho_old)^(1/ndim),
     // for now.  If this does not converge in a reasonable number of
     // iterations (iteration_max), then assume something is wrong and switch
     // to a bisection method, which should be guaranteed to converge,
     // albeit much more slowly.  (N.B. will implement Newton-Raphson soon)
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     if (iteration < iteration_max)
       parti.h = h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim);
 
@@ -273,8 +279,7 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
 
     else if (iteration < 5*iteration_max) {
-      if (parti.rho < small_number ||
-	  parti.rho*pow(parti.h,ndim) > pow(h_fac,ndim)*parti.m)
+      if (parti.rho < small_number || parti.rho*pow(parti.h,ndim) > pow(h_fac,ndim)*parti.m)
         h_upper_bound = parti.h;
       else
         h_lower_bound = parti.h;
@@ -292,17 +297,16 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
     if (parti.h > hmax) return 0;
 
   } while (parti.h > h_lower_bound && parti.h < h_upper_bound);
-  //===========================================================================
+  //===============================================================================================
 
 
   // Normalise all SPH sums correctly
-  parti.h = max(h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim),
-                h_lower_bound);
-  parti.invh = (FLOAT) 1.0/parti.h;
-  parti.hfactor = pow(parti.invh,ndim+1);
+  parti.h         = max(h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim),h_lower_bound);
+  parti.invh      = (FLOAT) 1.0/parti.h;
+  parti.hfactor   = pow(parti.invh,ndim+1);
   parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
-  parti.div_v = (FLOAT) 0.0;
-  parti.dudt = (FLOAT) 0.0;
+  parti.div_v     = (FLOAT) 0.0;
+  parti.dudt      = (FLOAT) 0.0;
 
   // Set important thermal variables here
   ComputeThermalProperties(parti);
@@ -313,11 +317,11 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
     parti.potmin = true;
     for (j=0; j<Nneib; j++)
       if (gpot[j] > 1.000000001*parti.gpot &&
-	  drsqd[j]*invhsqd < kern.kernrangesqd) parti.potmin = false;
+          drsqd[j]*invhsqd < kern.kernrangesqd) parti.potmin = false;
   }
 
   // If there are star particles, compute N-body chi correction term
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (nbody->nbody_softening == 1) {
     for (j=0; j<nbody->Nstar; j++) {
       invhsqd = pow(2.0 / (parti.h + nbody->stardata[j].h),2);
@@ -341,10 +345,10 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012Sph::ComputeThermalProperties
 /// Compute all thermal properties for grad-h SPH method for given particle.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void SM2012Sph<ndim, kernelclass>::ComputeThermalProperties
 (SphParticle<ndim> &part_gen)        ///< [inout] Particle i data
@@ -361,7 +365,7 @@ void SM2012Sph<ndim, kernelclass>::ComputeThermalProperties
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012Sph::ComputeSphHydroForces
 /// Compute SPH neighbour force pairs for
 /// (i) All neighbour interactions of particle i with id j > i,
@@ -369,7 +373,7 @@ void SM2012Sph<ndim, kernelclass>::ComputeThermalProperties
 /// (iii) All inactive neighbour interactions of particle i with id j < i.
 /// This ensures that all particle-particle pair interactions are only
 /// computed once only for efficiency.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
 (const int i,                       ///< [in] id of particle
@@ -401,7 +405,7 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
 
 
   // Loop over all potential neighbours in the list
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
     wkerni = parti.hfactor*kern.w1(drmag[jj]*parti.invh);
@@ -421,13 +425,11 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
 
 
     // Add dissipation terms (for approaching particle pairs)
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     if (dvdr < (FLOAT) 0.0) {
 
-      winvrho = (FLOAT) 0.25*(wkerni + wkernj)*
-      (parti.invrho + neibpart[j].invrho);
-      //winvrho = (FLOAT) (wkerni + wkernj)/
-      // (parti.rho + neibpart[j].rho);
+      winvrho = (FLOAT) 0.25*(wkerni + wkernj)*(parti.invrho + neibpart[j].invrho);
+      //winvrho = (FLOAT) (wkerni + wkernj)/(parti.rho + neibpart[j].rho);
 
       // Artificial viscosity term
       if (avisc == mon97) {
@@ -464,7 +466,7 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
       }
 
     }
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
 
 
     uaux = 0.5*neibpart[j].m*neibpart[j].u*dvdr*(wkerni + wkernj);
@@ -480,12 +482,11 @@ void SM2012Sph<ndim, kernelclass >::ComputeSphHydroForces
       neibpart[j].pfactor;
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
 
   return;
 }
-
 
 
 

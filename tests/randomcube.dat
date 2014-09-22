@@ -1,6 +1,6 @@
 #--------------------------------------------------------------
 # Relaxing random cube test
-# Relax a cube of randomly placed particles using an isothermal 
+# Relax a cube of randomly placed particles using an isothermal
 # EOS with artificial viscosity
 #--------------------------------------------------------------
 
@@ -82,10 +82,10 @@ No. of block timestep levels                : Nlevels = 1
 # Optimisation options
 #---------------------
 Tabulate SPH kernel                         : tabulated_kernel = 1
-SPH neighbour search algorithm              : neib_search = bruteforce
+SPH neighbour search algorithm              : neib_search = tree
 
 
 #--------------
-# Misc. options
+#ï¿½Misc. options
 #--------------
 Switch-off self-gravity of gas              : self_gravity = 0

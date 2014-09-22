@@ -1625,21 +1625,21 @@ void Simulation<ndim>::BondiAccretion(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::PlummerSphere
-/// Generate a Plummer sphere containing either stars, gas or a mixture of
-/// both.  Uses the algorithm described by Aarseth et al. (197?).
-//=============================================================================
+/// Generate a Plummer sphere containing either stars, gas or a mixture of both.
+/// Uses the algorithm described by Aarseth et al. (197?).
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::PlummerSphere(void)
 {
-  bool flag;                        // Aux. flag
-  int i,j,k;                        // Particle and dimension counter
-  FLOAT raux;                       // Aux. float variable
-  FLOAT rcentre[ndim];              // Position of centre of Plummer sphere
-  FLOAT vplummer;                   // ..
-  FLOAT x1,x2,x3,x4,x5,x6,x7;       // ..
-  FLOAT rad,vm,ve,t1,t2,w,z;        // ..
+  bool flag;                           // Aux. flag
+  int i,j,k;                           // Particle and dimension counter
+  FLOAT raux;                          // Aux. float variable
+  FLOAT rcentre[ndim];                 // Position of centre of Plummer sphere
+  FLOAT vplummer;                      // ..
+  FLOAT x1,x2,x3,x4,x5,x6,x7;          // ..
+  FLOAT rad,vm,ve,t1,t2,w,z;           // ..
 
   // Local copies of important parameters
   int Nsph = simparams->intparams["Nsph"];
@@ -1653,8 +1653,6 @@ void Simulation<ndim>::PlummerSphere(void)
   FLOAT rstar = simparams->floatparams["rstar"];
 
   debug1("[Simulation::PlummerSphere]");
-  cout << "Nsph : " << Nsph << "    Nstar : " << Nstar << endl;
-  cout << "nbody : " << nbody << "    rstar : " << rstar << endl;
 
   sph->Nsph = Nsph;
   sph->Ntot = Nsph;
@@ -1668,7 +1666,7 @@ void Simulation<ndim>::PlummerSphere(void)
 
 
   // Loop over all particles (gas and stars)
-  //===========================================================================
+  //===============================================================================================
   for (j=0; j<Nsph+Nstar; j++) {
 
     do {
@@ -1686,7 +1684,7 @@ void Simulation<ndim>::PlummerSphere(void)
 
 
     // Set position depending on particle type
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     if (j >= Nstar && j < Nstar + Nsph) {
       i = j - Nstar;
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -1708,7 +1706,7 @@ void Simulation<ndim>::PlummerSphere(void)
 
 
     // Velocity of particle
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     do {
       x4 = randnumb->floatrand();
       x5 = randnumb->floatrand();
@@ -1723,7 +1721,7 @@ void Simulation<ndim>::PlummerSphere(void)
 
 
     // Set velocity depending on particle type
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     if (j >= Nstar && j < Nstar + Nsph) {
       i = j - Nstar;
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -1740,7 +1738,7 @@ void Simulation<ndim>::PlummerSphere(void)
     }
 
   }
-  //===========================================================================
+  //===============================================================================================
 
 
   // Instanly move to COM
@@ -1757,11 +1755,8 @@ void Simulation<ndim>::PlummerSphere(void)
     part.m    = part.m*mplummer;
     if (i < Nsph) part.u = part.u*(mplummer/rplummer);
   }
-  cout << "HERE!! : " << i << "   " << Nstar << endl;
-  cout << "rplummer : " << rplummer << "     mplummer : " << mplummer << endl;
-  //cout << nbody->kernp->invkernrange << "    " << rstar << endl;
+
   for (i=0; i<Nstar; i++) {
-    cout << "NOW HERE!! : " << i << endl;
     for (k=0; k<ndim; k++) {
       nbody->stardata[i].r[k] = nbody->stardata[i].r[k]*rplummer;
       nbody->stardata[i].v[k] = nbody->stardata[i].v[k]*vplummer;

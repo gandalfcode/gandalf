@@ -263,9 +263,9 @@ int GradhSph<ndim, kernelclass>::ComputeH
     }
     //---------------------------------------------------------------------------------------------
 
-    parti.rho *= parti.hfactor;
+    parti.rho      *= parti.hfactor;
     parti.invomega *= parti.hfactor;
-    parti.zeta *= invhsqd;
+    parti.zeta     *= invhsqd;
 
     if (parti.rho > (FLOAT) 0.0) parti.invrho = (FLOAT) 1.0/parti.rho;
 

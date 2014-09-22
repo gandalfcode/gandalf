@@ -39,8 +39,7 @@ enum ptype{gas, icm, boundary, cdm, dead,
            y_lhs_periodic, y_lhs_mirror, y_rhs_periodic, y_rhs_mirror,
            z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror,
            Nsphtypes};
-enum eosenum{isothermal, barotropic, barotropic2,
-             energy_eqn, constant_temp, nspheos};
+enum eosenum{isothermal, barotropic, barotropic2, energy_eqn, constant_temp, Nspheos};
 
 
 
@@ -92,17 +91,17 @@ struct Particle
     for (int k=0; k<ndim; k++) v0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) agrav[k] = (FLOAT) 0.0;
-    m = (FLOAT) 0.0;
-    h = (FLOAT) 0.0;
+    m         = (FLOAT) 0.0;
+    h         = (FLOAT) 0.0;
     hrangesqd = (FLOAT) 0.0;
-    rho = (FLOAT) 0.0;
-    u = (FLOAT) 0.0;
-    u0 = (FLOAT) 0.0;
-    dudt = (FLOAT) 0.0;
-    dudt0 = (FLOAT) 0.0;
-    gpot = (FLOAT) 0.0;
-    gpe = (FLOAT) 0.0;
-    dt = (DOUBLE) 0.0;
+    rho       = (FLOAT) 0.0;
+    u         = (FLOAT) 0.0;
+    u0        = (FLOAT) 0.0;
+    dudt      = (FLOAT) 0.0;
+    dudt0     = (FLOAT) 0.0;
+    gpot      = (FLOAT) 0.0;
+    gpe       = (FLOAT) 0.0;
+    dt        = (DOUBLE) 0.0;
   }
 
 };
@@ -141,16 +140,16 @@ struct SphParticle : public Particle<ndim>
     potmin = false;
     levelneib = 0;
     sinkid = -1;
-    invh = (FLOAT) 0.0;
-    hfactor = (FLOAT) 0.0;
-    invrho = (FLOAT) 0.0;
-    press = (FLOAT) 0.0;
-    pfactor = (FLOAT) 0.0;
-    sound = (FLOAT) 0.0;
-    div_v = (FLOAT) 0.0;
-    alpha = (FLOAT) 0.0;
+    invh     = (FLOAT) 0.0;
+    hfactor  = (FLOAT) 0.0;
+    invrho   = (FLOAT) 0.0;
+    press    = (FLOAT) 0.0;
+    pfactor  = (FLOAT) 0.0;
+    sound    = (FLOAT) 0.0;
+    div_v    = (FLOAT) 0.0;
+    alpha    = (FLOAT) 0.0;
     dalphadt = (FLOAT) 0.0;
-    ionfrac = (FLOAT) 0.0;
+    ionfrac  = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) adot[k] = (FLOAT) 0.0;
   }
 
@@ -231,9 +230,11 @@ struct GodunovSphParticle : public SphParticle<ndim>
   GodunovSphParticle() {
     for (int k=0; k<ndim; k++) gradrho[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) gradP[k] = (FLOAT) 0.0;
-    for (int k=0; k<ndim; k++)
-      for (int kk=0; kk<ndim; kk++)
+    for (int k=0; k<ndim; k++) {
+      for (int kk=0; kk<ndim; kk++) {
         gradv[k][kk] = (FLOAT) 0.0;
+      }
+    }
   }
 
 };

@@ -1,6 +1,6 @@
-//=============================================================================
+//=================================================================================================
 //  SM2012SphBruteForce.cpp
-//  Contains all routines for generating SPH neighbour lists using 
+//  Contains all routines for generating SPH neighbour lists using
 //  brute-force (i.e. direct summation over all particles).
 //
 //  This file is part of GANDALF :
@@ -19,7 +19,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 
@@ -39,10 +39,10 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012SphBruteForce::SM2012SphBruteForce
 /// SM2012SphBruteForce class constructor
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 SM2012SphBruteForce<ndim,ParticleType>::SM2012SphBruteForce
 (FLOAT kernrangeaux,
@@ -55,10 +55,10 @@ SM2012SphBruteForce<ndim,ParticleType>::SM2012SphBruteForce
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012SphBruteForce::~SM2012SphBruteForce
 /// SM2012SphBruteForce class destructor
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 SM2012SphBruteForce<ndim,ParticleType>::~SM2012SphBruteForce()
 {
@@ -66,12 +66,11 @@ SM2012SphBruteForce<ndim,ParticleType>::~SM2012SphBruteForce()
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012SphBruteForce::UpdateAllSphProperties
-/// Routine for computing SPH properties (smoothing lengths, densities and 
-/// forces) for all active SPH particle using neighbour lists generated 
-/// using brute force (i.e. direct summation).
-//=============================================================================
+/// Routine for computing SPH properties (smoothing lengths, densities and forces) for all active
+/// SPH particle using neighbour lists generated using brute force (i.e. direct summation).
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
 (int Nsph,                          ///< [in] No. of SPH particles
@@ -108,15 +107,16 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
     Nneib++;
   }
 
+
   // Create parallel threads
-  //===========================================================================
+  //===============================================================================================
 #pragma omp parallel default(none) private(dr,drsqd,i,j,jj,k,okflag,rp)	\
   shared(gpot,m,mu,nbody,neiblist,Nneib,Nsph,Ntot,sph,sphdata)
   {
     drsqd = new FLOAT[Ntot];
 
     // Compute smoothing lengths of all SPH particles
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
 #pragma omp for
     for (i=0; i<Nsph; i++) {
 
@@ -125,27 +125,26 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
 
       for (k=0; k<ndim; k++) rp[k] = sphdata[i].r[k];
 
-      // Compute distances and the reciprical between the current particle 
+      // Compute distances and the reciprical between the current particle
       // and all neighbours here
-      //-----------------------------------------------------------------------
-      for (jj=0; jj<Nneib; jj++) { 
-	j = neiblist[jj];
-    	for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - rp[k];
-    	drsqd[jj] = DotProduct(dr,dr,ndim);
+      //-------------------------------------------------------------------------------------------
+      for (jj=0; jj<Nneib; jj++) {
+        j = neiblist[jj];
+        for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - rp[k];
+        drsqd[jj] = DotProduct(dr,dr,ndim);
       }
-      //-----------------------------------------------------------------------
+      //-------------------------------------------------------------------------------------------
 
       // Compute all SPH gather properties
-      okflag = sph->ComputeH(i,Nneib,big_number,m,mu,drsqd,
-                             gpot,sphdata[i],nbody);
-  
+      okflag = sph->ComputeH(i,Nneib,big_number,m,mu,drsqd,gpot,sphdata[i],nbody);
+
     }
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
 
     delete[] drsqd;
 
   }
-  //===========================================================================
+  //===============================================================================================
 
   delete[] neiblist;
   delete[] mu;
@@ -157,12 +156,10 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012SphBruteForce::UpdateAllSphHydroForces
-/// Routine for computing SPH properties (smoothing lengths, densities and 
-/// forces) for all active SPH particle using neighbour lists generated 
-/// using brute force (i.e. direct summation).
-//=============================================================================
+/// ...
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphHydroForces
 (int Nsph,                          ///< [in] No. of SPH particles
@@ -194,7 +191,7 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphHydroForces
 
 
   // Compute smoothing lengths of all SPH particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<Nsph; i++) {
 
     // Skip over inactive particles
@@ -202,9 +199,6 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphHydroForces
 
     // Zero all arrays to be updated
     for (k=0; k<ndim; k++) sphdata[i].a[k] = (FLOAT) 0.0;
-    for (k=0; k<ndim; k++) sphdata[i].agrav[k] = (FLOAT) 0.0;
-    sphdata[i].gpot = (FLOAT) 0.0;
-    sphdata[i].gpe = (FLOAT) 0.0;
     sphdata[i].dudt = (FLOAT) 0.0;
     sphdata[i].levelneib = 0;
 
@@ -212,27 +206,25 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphHydroForces
     hrangesqdi = pow(kernfac*kernp->kernrange*sphdata[i].h,2);
     Nneib = 0;
 
-    // Compute distances and the reciprical between the current particle 
-    // and all neighbours here
-    //-------------------------------------------------------------------------
+    // Compute distances and the reciprical between the current particle and all neighbours here
+    //---------------------------------------------------------------------------------------------
     for (j=0; j<Ntot; j++) {
       if (sphdata[j].itype == dead) continue;
       hrangesqdj = pow(kernfac*kernp->kernrange*sphdata[j].h,2);
       for (k=0; k<ndim; k++) draux[k] = sphdata[j].r[k] - rp[k];
       drsqd = DotProduct(draux,draux,ndim);
       if ((drsqd < hrangesqdi || drsqd < hrangesqdj) && i != j) {
-    	neiblist[Nneib] = j;
-    	drmag[Nneib] = sqrt(drsqd);
-    	invdrmag[Nneib] = (FLOAT) 1.0/(drmag[Nneib] + small_number);
-    	for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
-    	Nneib++;
+        neiblist[Nneib] = j;
+        drmag[Nneib] = sqrt(drsqd);
+        invdrmag[Nneib] = (FLOAT) 1.0/(drmag[Nneib] + small_number);
+        for (k=0; k<ndim; k++) dr[Nneib*ndim + k] = draux[k]*invdrmag[Nneib];
+        Nneib++;
       }
     }
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
 
     // Compute all SPH hydro forces
-    sph->ComputeSphHydroForces(i,Nneib,neiblist,drmag,invdrmag,dr,
-			       sphdata[i],sphdata);
+    sph->ComputeSphHydroForces(i,Nneib,neiblist,drmag,invdrmag,dr,sphdata[i],sphdata);
 
     // Compute all star forces
     sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sphdata[i]);
@@ -240,9 +232,9 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphHydroForces
     sphdata[i].active = false;
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
-  
+
   // Free all allocated memory
   delete[] invdrmag;
   delete[] drmag;
@@ -255,10 +247,10 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphHydroForces
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012SphBruteForce::UpdateAllSphForces
 /// Empty function for now
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphForces
 (int Nsph,                            ///< [in] ..
@@ -279,7 +271,7 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphForces
 
 
   // Compute smoothing lengths of all SPH particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<Nsph; i++) {
 
     // Skip over inactive particles
@@ -294,18 +286,15 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphForces
     sphdata[i].levelneib = 0;
 
     // Add self-contribution to gravitational potential
-    sphdata[i].gpot += sphdata[i].m*
-      sphdata[i].invh*kernp->wpot(0.0);
+    sphdata[i].gpot += sphdata[i].m*sphdata[i].invh*kernp->wpot(0.0);
 
-    // Determine interaction list (to ensure we don't compute pair-wise
-    // forces twice)
+    // Determine interaction list (to ensure we don't compute pair-wise forces twice)
     Nneib = 0;
     for (j=0; j<Nsph; j++)
       if (i != j && sphdata[j].itype != dead) neiblist[Nneib++] = j;
 
     // Compute forces between SPH neighbours (hydro and gravity)
-    sph->ComputeSphHydroGravForces(i,Nneib,neiblist,
-                                   sphdata[i],sphdata);
+    sph->ComputeSphHydroGravForces(i,Nneib,neiblist,sphdata[i],sphdata);
 
     // Compute all star forces
     sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sphdata[i]);
@@ -314,7 +303,7 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphForces
     sphdata[i].active = false;
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   delete[] neiblist;
 
@@ -323,12 +312,10 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphForces
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SM2012SphBruteForce::UpdateAllSphGravForces
-/// Routine for computing SPH properties (smoothing lengths, densities and 
-/// forces) for all active SPH particle using neighbour lists generated 
-/// using brute force (i.e. direct summation).
-//=============================================================================
+/// ...
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphGravForces
 (int Nsph,                            ///< [in] ..
@@ -348,7 +335,7 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphGravForces
   neiblist = new int[Ntot];
 
   // Compute smoothing lengths of all SPH particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<Nsph; i++) {
 
     // Skip over inactive particles
@@ -363,8 +350,7 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphGravForces
     sphdata[i].levelneib = 0;
 
     // Add self-contribution to gravitational potential
-    sphdata[i].gpot += sphdata[i].m*
-      sphdata[i].invh*kernp->wpot(0.0);
+    sphdata[i].gpot += sphdata[i].m*sphdata[i].invh*kernp->wpot(0.0);
 
     // Determine interaction list (to ensure we don't compute pair-wise
     // forces twice)
@@ -382,7 +368,7 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphGravForces
     sphdata[i].active = false;
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   delete[] neiblist;
 

@@ -21,9 +21,9 @@
 
 
 CPP                = g++-4
-PYTHON             = python
-F2PY               = f2py
-FFTW               = 0
+PYTHON             = python2.7
+F2PY               = f2py2.7
+FFTW               = 1
 COMPILER_MODE      = FAST
 PRECISION          = DOUBLE
 OPENMP             = 0
@@ -32,13 +32,13 @@ DEBUG_LEVEL        = 0
 REORDER_PARTICLES  = 0
 
 
-# Select location of python and numpy libraries.  If blank, make will try to 
-# find the location of the libraries automatically using installed python 
-# utilities.  If you have multiple versions of python installed on your 
+# Select location of python and numpy libraries.  If blank, make will try to
+# find the location of the libraries automatically using installed python
+# utilities.  If you have multiple versions of python installed on your
 # computer, then select the prefered version with the PYTHON variable above.
 #------------------------------------------------------------------------------
-PYLIB = 
-NUMPY = 
+PYLIB =
+NUMPY =
 
 
 # Don't delete this command! Makes sure that defined variables here are passed

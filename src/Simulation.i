@@ -126,7 +126,7 @@ throw StopError("CTRL-C received");
 	}
 	catch (GandalfError &e) {
 		PyErr_SetString(PyExc_Exception,e.msg.c_str());
-		return NULL;		
+		return NULL;
 	}
 }
 
@@ -161,7 +161,7 @@ throw StopError("CTRL-C received");
     _save = PyEval_SaveThread();
     try{
         $action
-        PyEval_RestoreThread(_save);        
+        PyEval_RestoreThread(_save);
     }
     catch (StopError e){
         PyEval_RestoreThread(_save);
@@ -169,7 +169,7 @@ throw StopError("CTRL-C received");
     	return NULL;
     }
 }
-    
+
 %include "numpy.i"
 %init %{
 import_array();
@@ -177,11 +177,11 @@ ExceptionHandler::makeExceptionHandler(python);
 %}
 %numpy_typemaps(float, NPY_FLOAT, int)
  /* %include <boost_any.i> */
- 
+
  namespace std {
     %template(map_string_int) map<string, int>;
     %template(map_string_string) map<string, string>;
-    %template(map_string_float) map<string, float>;
+    %template(map_string_float) map<string, double>;
     %template(list_snap_base_pointer) list<SphSnapshotBase* >;
     %template(list_strings) list<string>;
     /*%template(map_string_any) map<string, boost::any>;*/
@@ -193,9 +193,9 @@ ExceptionHandler::makeExceptionHandler(python);
  %apply (double* IN_ARRAY1, int DIM1) {(double* input, int size)}
 
  %apply float& OUTPUT { float& scaling_factor };
- 
- %include "HeaderInfo.h" 
-  
+
+ %include "HeaderInfo.h"
+
 %include "Precision.h"
 %include "Simulation.h"
 %include "Parameters.h"

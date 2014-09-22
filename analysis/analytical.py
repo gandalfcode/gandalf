@@ -39,7 +39,7 @@ after creation if needed).
     '''
     def __init__(self):
         pass
-    
+
     def compute(self, x, y):
         pass
 
@@ -47,7 +47,7 @@ after creation if needed).
 #------------------------------------------------------------------------------
 class freefall (AnalyticalSolution):
     '''Analytical solution for the freefall collapse test.'''
-    
+
     def __init__(self, sim, time):
         AnalyticalSolution.__init__(self)
         self.time = time
@@ -85,11 +85,11 @@ class freefall (AnalyticalSolution):
 #------------------------------------------------------------------------------
 class noh (AnalyticalSolution):
     '''Analytical solution for the Noh problem test.'''
-    
+
     def __init__(self, sim, time):
         AnalyticalSolution.__init__(self)
         self.time = time
-        
+
         # Extract the parameters
         simfloatparams = sim.simparams.floatparams
         self.radius = simfloatparams["radius"]
@@ -98,7 +98,7 @@ class noh (AnalyticalSolution):
         self.ndim = sim.ndims
         self.iMAX = 1000
         self.gamma = simfloatparams["gamma_eos"]
-        
+
     def compute(self, x, y):
         '''Computes the exact solution of the Noh problem for
         1, 2 and 3 dimensions'''
@@ -124,29 +124,29 @@ class noh (AnalyticalSolution):
 #------------------------------------------------------------------------------
 class shocktube (AnalyticalSolution):
     '''Analytical solution for the 1D shock tube test.'''
-    
+
     def __init__(self, sim, time):
         AnalyticalSolution.__init__(self)
         self.time = time
-        
+
         # Extract the parameters
         simfloatparams = sim.simparams.floatparams
         self.RHOinL = simfloatparams["rhofluid1"]
         self.RHOinR = simfloatparams["rhofluid2"]
-        self.UinL = simfloatparams["vfluid1[0]"]
-        self.UinR = simfloatparams["vfluid2[0]"]
-        self.PinL = simfloatparams["press1"]
-        self.PinR = simfloatparams["press2"]
-        self.xL = simfloatparams["boxmin[0]"]
-        self.x0 = 0.0
-        self.xR = simfloatparams["boxmax[0]"]
-        self.time = time
-        self.iMAX = 50000
+        self.UinL   = simfloatparams["vfluid1[0]"]
+        self.UinR   = simfloatparams["vfluid2[0]"]
+        self.PinL   = simfloatparams["press1"]
+        self.PinR   = simfloatparams["press2"]
+        self.xL     = simfloatparams["boxmin[0]"]
+        self.x0     = 0.0
+        self.xR     = simfloatparams["boxmax[0]"]
+        self.time   = time
+        self.iMAX   = 50000
         if sim.simparams.stringparams["gas_eos"] == "isothermal":
             self.gamma = 1+1e-5
         else:
             self.gamma = simfloatparams["gamma_eos"]
-        
+
     def compute(self, x, y):
         '''Computes the exact solution of the Riemann problem.
         Gets passed two strings with the quantities that are needed
@@ -157,20 +157,20 @@ class shocktube (AnalyticalSolution):
         shocktub.shocktub(self.RHOinL, self.RHOinR, self.UinL, self.UinR,
                  self.PinL, self.PinR, self.xL, self.x0, self.xR,
                  self.time, self.iMAX, self.gamma)
-        
+
         # Reads the data from the text file produced
         data = np.genfromtxt('sod.out',names=['x','rho','vx','press','u'])
         return data[x], data[y]
-    
+
 
 #------------------------------------------------------------------------------
 class soundwave (AnalyticalSolution):
     '''Analytical solution for the 1D sound wave perturbation test.'''
-    
+
     def __init__(self, sim, time):
         AnalyticalSolution.__init__(self)
         self.time = time
-        
+
         # Extract the parameters
         simfloatparams = sim.simparams.floatparams
         self.rho = simfloatparams["rhofluid1"]
@@ -195,17 +195,17 @@ class soundwave (AnalyticalSolution):
             self.gamma = 1+1e-5
         else:
             self.gamma = simfloatparams["gamma_eos"]
-        
+
     def compute(self, ix, iy):
         x = np.arange(self.xL,self.xR,1.0/self.iMAX)
         rho = self.rho*(1.0 + self.amp*np.sin(self.kwave*x - self.omega*self.time))
         vx = self.csound*self.amp*np.sin(self.kwave*x - self.omega*self.time)
         ax = -self.csound*self.csound*self.kwave*self.rho*self.amp*np.cos(self.kwave*x - self.omega*self.time)
-        if ix == "x" and iy == "rho": 
+        if ix == "x" and iy == "rho":
             return x,rho
-        elif ix == "x" and iy == "vx": 
+        elif ix == "x" and iy == "vx":
             return x,vx
-        elif ix == "x" and iy == "ax": 
+        elif ix == "x" and iy == "ax":
             return x,ax
         else:
             raise KeyError("There were errors in the quantity you requested")

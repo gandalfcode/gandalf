@@ -1,6 +1,6 @@
-//=============================================================================
+//=================================================================================================
 //  Simulation.cpp
-//  Contains all main functions controlling SPH simulation work-flow.
+//  Contains all main functions controlling the simulation work-flow.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <iostream>
@@ -46,14 +46,14 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SimulationBase::SimulationFactory
 /// Creates a simulation object depending on the dimensionality.
-//=============================================================================
+//=================================================================================================
 SimulationBase* SimulationBase::SimulationFactory
-(int ndim,                          ///< [in] No. of dimensions
- string simtype,                    ///< [in] Simulation type
- Parameters* params)                ///< [in] Pointer to parameters object
+ (int ndim,                            ///< [in] No. of dimensions
+  string simtype,                      ///< [in] Simulation type
+  Parameters* params)                  ///< [in] Pointer to parameters object
 {
   debug1("[SimulationBase::SimulationFactory]");
 
@@ -116,12 +116,12 @@ SimulationBase* SimulationBase::SimulationFactory
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SimulationBase::SimulationBase
 /// SimulationBase constructor, initialising important simulation variables.
-//=============================================================================
+//=================================================================================================
 SimulationBase::SimulationBase
-(Parameters* params)                ///< [in] Pointer to parameters object
+ (Parameters* params)                ///< [in] Pointer to parameters object
 {
   simparams = new Parameters(*params);
   paramfile             = "";
@@ -163,20 +163,20 @@ SimulationBase::SimulationBase
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SimulationBase::~SimulationBase
 /// SimulationBase destructor
-//=============================================================================
+//=================================================================================================
 SimulationBase::~SimulationBase()
 {
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SimulationBase::SplashScreen
 /// Write splash screen to standard output.
-//=============================================================================
+//=================================================================================================
 void SimulationBase::SplashScreen(void)
 {
   cout << "******************************************************************************" << endl;
@@ -205,17 +205,18 @@ void SimulationBase::SplashScreen(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SimulationBase::SetParam
 /// Accessor function for modifying a string value. Also checks that the
 /// non return point has not been reached
-//=============================================================================
-void SimulationBase::SetParam(string key, string value)
+//=================================================================================================
+void SimulationBase::SetParam
+ (string key,                          ///< [in] Parameter string name
+  string value)                        ///< [in] Parameter string value
 {
   // Error checking
   if (ParametersProcessed) {
-    string msg =
-      "Error: the non-return point for setting parameters has been reached!";
+    string msg = "Error: the non-return point for setting parameters has been reached!";
     ExceptionHandler::getIstance().raise(msg);
   }
   if (key == "ndim") {
@@ -228,12 +229,14 @@ void SimulationBase::SetParam(string key, string value)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSimulationBase::SetParam
 /// Accessor function for modifying an int value, wrapper around the one for
 /// string value. Also checks that the non return point has not been reached
-//=============================================================================
-void SimulationBase::SetParam(string key, int value)
+//=================================================================================================
+void SimulationBase::SetParam
+ (string key,                          ///< [in] Parameter string name
+  int value)                           ///< [in] Parameter integer value
 {
   ostringstream convert;
   convert << value;
@@ -242,12 +245,14 @@ void SimulationBase::SetParam(string key, int value)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SimulationBase::SetParam
 /// Accessor function for modifying a float value, wrapper around the one for
 /// string value.  Also checks that the non return point has not been reached.
-//=============================================================================
-void SimulationBase::SetParam(string key, double value)
+//=================================================================================================
+void SimulationBase::SetParam
+ (string key,                          ///< [in] Parameter string name
+  double value)                        ///< [in] Parameter float (double) value
 {
   ostringstream convert;
   convert << value;
@@ -256,11 +261,11 @@ void SimulationBase::SetParam(string key, double value)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SimulationBase::GetParam
 /// Accessor function for getting a parameter value
 /// Wrapper around the corresponding function in Parameters
-//=============================================================================
+//=================================================================================================
 string SimulationBase::GetParam(string key)
 {
   return simparams->GetParameter(key);
@@ -268,10 +273,10 @@ string SimulationBase::GetParam(string key)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SimulationBase::GetIntAndFloatParameterKeys
 /// Returns a list containing the keys of all the int and float parameters
-//=============================================================================
+//=================================================================================================
 std::list<string>* SimulationBase::GetIntAndFloatParameterKeys()
 {
   if (! keys.empty())
@@ -298,10 +303,13 @@ std::list<string>* SimulationBase::GetIntAndFloatParameterKeys()
 /// argument, will only advance the simulation by 'Nadvance' steps.
 //=================================================================================================
 void SimulationBase::Run
-(int Nadvance)                      ///< [in] Selected max no. of timesteps (Optional argument).
+ (int Nadvance)                        ///< [in] Selected max no. of timesteps (Optional argument)
 {
-  int Ntarget;                      // Target step no before finishing main code integration.
-  ofstream outfile;                 // Stream to create temp. file for
+  int Ntarget;                         // Target step no before finishing main code integration.
+  string filename;                     // Output snapshot filename
+  string filename2;                    // ..
+  stringstream ss;                     // Stream object for preparing filename
+  ofstream outfile;                    // Stream of restart file
 
   debug1("[SimulationBase::Run]");
 
@@ -319,8 +327,22 @@ void SimulationBase::Run
     MainLoop();
     Output();
 
-    // Special condition to check if maximum wall-clock time has been reached
+    // Special condition to check if maximum wall-clock time has been reached.
+    // Create special file 'cont' for c2pap restarts.
     if (kill_simulation || timing->WallClockTime() - timing->tstart_wall > 0.99*tmax_wallclock) {
+
+      // Prepare filename for new snapshot
+      filename = run_id + "." + out_file_form + ".tmp";
+      ss.str(std::string());
+      WriteSnapshotFile(filename,out_file_form);
+
+      // Now write name and format of snapshot to file (for restarts)
+      filename2 = run_id + ".restart";
+      outfile.open(filename2.c_str());
+      outfile << out_file_form << endl;
+      outfile << filename << endl;
+      outfile.close();
+
       cout << "Reached maximum wall-clock time.  Killing simulation." << endl;
       outfile.open("cont");
       outfile.close();
@@ -344,21 +366,20 @@ void SimulationBase::Run
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SimulationBase::InteractiveRun
 /// Controls the simulation main loop, including exit conditions.
 /// If provided, will only advance the simulation by 'Nadvance' steps.
-//=============================================================================
+//=================================================================================================
 list<SphSnapshotBase*> SimulationBase::InteractiveRun
-(int Nadvance)                      ///< [in] Selected max no. of integer
-                                    ///<      timesteps (Optional argument).
+ (int Nadvance)                        ///< [in] Max no. of integer steps (Optional argument)
 {
-  int Ntarget;                      // Selected integer timestep
-  DOUBLE tdiff = 0.0;               // Measured time difference
-  clock_t tstart = clock();         // Initial CPU clock time
-  string filename;                  // Name of the output file
-  list<SphSnapshotBase*> snap_list; // List of snapshots produced while running
-                                    // that will be passed back to Python
+  int Ntarget;                         // Selected integer timestep
+  DOUBLE tdiff = 0.0;                  // Measured time difference
+  clock_t tstart = clock();            // Initial CPU clock time
+  string filename;                     // Name of the output file
+  list<SphSnapshotBase*> snap_list;    // List of snapshots produced while running
+                                       // that will be passed back to Python
 
   debug2("[SimulationBase::InteractiveRun]");
 
@@ -368,7 +389,7 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
 
   // Continue to run simulation until we reach the required time, or
   // exeeded the maximum allowed number of steps.
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   while (t < tend && Nsteps < Ntarget && tdiff < dt_python) {
 
     // Evolve the simulation one step
@@ -392,7 +413,7 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
     tdiff = (DOUBLE) (clock() - tstart) / (DOUBLE) CLOCKS_PER_SEC;
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
 
   // Calculate and process all diagnostic quantities
@@ -407,14 +428,14 @@ list<SphSnapshotBase*> SimulationBase::InteractiveRun
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SimulationBase::Output
 /// Controls when regular output snapshots are written by the code.
-//=============================================================================
+//=================================================================================================
 string SimulationBase::Output(void)
 {
   string filename;                  // Output snapshot filename
-  string filename2;
+  string filename2;                 // ..
   string nostring;                  // String of number of snapshots
   string fileend;                   // Name of restart file
   stringstream ss;                  // Stream object for preparing filename
@@ -423,15 +444,19 @@ string SimulationBase::Output(void)
   debug2("[SimulationBase::Output]");
   timing->StartTimingSection("OUTPUT",2);
 
-  if (rank == 0)
-    if (Nsteps%noutputstep == 0)
+
+  // Output time and no of steps for root process
+  if (rank == 0) {
+    if (Nsteps%noutputstep == 0) {
       cout << "t : " << t*simunits.t.outscale << " " << simunits.t.outunit
            << "    dt : " << timestep*simunits.t.outscale << " "
            << simunits.t.outunit << "    Nsteps : " << Nsteps << endl;
+    }
+  }
 
 
   // Output a lite-data snapshot for producing movies
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (litesnap == 1 && t >= tlitesnapnext) {
 
     // Prepare filename for new snapshot
@@ -446,11 +471,11 @@ string SimulationBase::Output(void)
     WriteSnapshotFile(filename,"slite");
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
 
   // Output a data snapshot if reached required time
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (t >= tsnapnext) {
 
     // Prepare filename for new snapshot
@@ -473,23 +498,17 @@ string SimulationBase::Output(void)
     outfile.close();
 
     // Finally, calculate wall-clock time interval since last output snapshot
-    if (tsnap_wallclock > 0.0)
-      dt_snap_wall = timing->WallClockTime() - tsnap_wallclock;
+    if (tsnap_wallclock > 0.0) dt_snap_wall = timing->WallClockTime() - tsnap_wallclock;
     tsnap_wallclock = timing->WallClockTime();
 
-    // If simulation is too close to maximum wall-clock time, end
-    // prematurely
+    // If simulation is too close to maximum wall-clock time, end prematurely
     if (timing->ttot_wall > 0.95*tmax_wallclock) {
       kill_simulation = true;
     }
-    //if (tsnap_wallclock > 0.0 &&
-    //	2.0*dt_snap_wall > tmax_wallclock - timing->ttot_wall) {
-    //kill_simulation = true;
-    //}
-
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
+
 
   // Output diagnostics to screen if passed sufficient number of block steps
   if (Nblocksteps%ndiagstep == 0 && n == nresync) {
@@ -506,10 +525,10 @@ string SimulationBase::Output(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SimulationBase::SetupSimulation
 /// Main function for setting up a new SPH simulation.
-//=============================================================================
+//=================================================================================================
 void SimulationBase::SetupSimulation(void)
 {
   debug1("[SimulationBase::Setup]");
@@ -523,37 +542,34 @@ void SimulationBase::SetupSimulation(void)
   // Process the parameters file setting up all simulation objects
   if (simparams->stringparams["ic"] == "python") {
     if (!ParametersProcessed) {
-      string msg = "Error: you are attempting to setup a simulation with "
-                   "initial conditions generated from Python. Before setting up the "
-                   "simulation, you need to import the initial conditions";
+      string msg = "Error: you are attempting to setup a simulation with initial conditions "
+                   "generated from Python. Before setting up the simulation, you need to "
+                   "import the initial conditions";
       ExceptionHandler::getIstance().raise(msg);
     }
   }
   else {
     if (ParametersProcessed) {
-      string msg = "The parameters of the simulation have been already "
-                   "processed. It means that you shouldn't be calling this function, "
-                  "please consult the documentation.";
+      string msg = "The parameters of the simulation have been already processed. It means that "
+                   "you shouldn't be calling this function, please consult the documentation.";
       ExceptionHandler::getIstance().raise(msg);
     }
     ProcessParameters();
   }
 
   // Generate initial conditions for simulation on root process (for MPI jobs)
-  //---------------------------------------------------------------------------
   if (rank == 0) {
     GenerateIC();
 
     // Change to COM frame if selected
     if (simparams->intparams["com_frame"] == 1) SetComFrame();
-
   }
-  //---------------------------------------------------------------------------
 
   // Perform the rest of the initialisation, calculating all initial particle
   // quantities and setting up trees.
   PostInitialConditionsSetup();
 
+  // Initial output before simulation begins
   Output();
 
   timing->EndTimingSection("SETUP");
@@ -563,11 +579,11 @@ void SimulationBase::SetupSimulation(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::ProcessNbodyParameters
 /// Process all the options chosen in the parameters file for setting up
 /// objects related to stars and N-body integration.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::ProcessNbodyParameters(void)
 {
@@ -927,18 +943,19 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
 
 
 
-//============================================================================
+//=================================================================================================
 //  Simulation::AllocateParticleMemory
 /// Allocate all memory for both SPH and N-body particles.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::AllocateParticleMemory(void)
 {
-  int N;                            ///< Max. no. of stars/sinks
+  int N;                               // Max. no. of stars/sinks
 
   debug2("[Simulation::AllocateParticleMemory]");
 
   // Allocate N-body memory (if using N-body)
+  //-----------------------------------------------------------------------------------------------
   if (nbody) {
 
     // If sink particles are employed, allow enough memory for new sinks
@@ -951,6 +968,7 @@ void Simulation<ndim>::AllocateParticleMemory(void)
     nbody->AllocateMemory(N);
     sinks.AllocateMemory(N);
   }
+  //-----------------------------------------------------------------------------------------------
 
   // Allocate SPH memory, if being used
   if (sph) sph->AllocateMemory(sph->Nsph);
@@ -961,10 +979,10 @@ void Simulation<ndim>::AllocateParticleMemory(void)
 
 
 
-//============================================================================
+//=================================================================================================
 //  Simulation::DeallocateParticleMemory
 /// Deallocate all particle memory
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::DeallocateParticleMemory(void)
 {
@@ -979,10 +997,10 @@ void Simulation<ndim>::DeallocateParticleMemory(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::PreSetupForPython
 /// Initialisation routine called by python interface.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::PreSetupForPython(void)
 {
@@ -1011,23 +1029,22 @@ void Simulation<ndim>::PreSetupForPython(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::ImportArrayNbody
-/// Import an array containing nbody particle properties from python to
-/// C++ arrays.
-//=============================================================================
+/// Import an array containing nbody particle properties from python to C++ arrays.
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::ImportArrayNbody
-(double* input,                     ///< Array of values from python
- int size,                          ///< No. of array elements
- string quantity)                   ///< String id of quantity being imported
+ (double* input,                       ///< [in] Array of values from python
+  int size,                            ///< [in] No. of array elements
+  string quantity)                     ///< [in] String id of quantity being imported
 {
-  FLOAT StarParticle<ndim>::*quantityp; //Pointer to scalar quantity
-  FLOAT (StarParticle<ndim>::*quantitypvec)[ndim]; //Pointer to component of vector quantity
-  int index; //If it's a component of a vector quantity, we need to know its index
-  bool scalar; //Is the requested quantity a scalar?
+  FLOAT StarParticle<ndim>::*quantityp;            // Pointer to scalar quantity
+  FLOAT (StarParticle<ndim>::*quantitypvec)[ndim]; // Pointer to component of vector quantity
+  int index;                                       // Component index (if quantity is a vector)
+  bool scalar;                                     // Is the requested quantity a scalar?
 
-  //Check that the size is correct
+  // Check that the size is correct
   if (size != nbody->Nstar) {
     stringstream message;
     message << "Error: the array you are passing has a size of "
@@ -1037,13 +1054,13 @@ void Simulation<ndim>::ImportArrayNbody
   }
 
   // Now set pointer to the correct value inside the particle data structure
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (quantity == "x") {
     quantitypvec = &StarParticle<ndim>::r;
     index = 0;
     scalar = false;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (quantity == "y") {
     if (ndim < 2) {
       string message = "Error: loading y-coordinate array for ndim < 2";
@@ -1053,7 +1070,7 @@ void Simulation<ndim>::ImportArrayNbody
     index = 1;
     scalar = false;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (quantity == "z") {
     if (ndim < 3) {
       string message = "Error: loading y-coordinate array for ndim < 3";
@@ -1063,13 +1080,13 @@ void Simulation<ndim>::ImportArrayNbody
     index = 2;
     scalar = false;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (quantity == "vx") {
     quantitypvec = &StarParticle<ndim>::v;
     index = 0;
     scalar = false;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (quantity == "vy") {
     if (ndim < 2) {
       string message = "Error: loading vy array for ndim < 2";
@@ -1079,7 +1096,7 @@ void Simulation<ndim>::ImportArrayNbody
     index = 1;
     scalar = false;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (quantity == "vz") {
     if (ndim < 3) {
       string message = "Error: loading vz array for ndim < 3";
@@ -1089,31 +1106,30 @@ void Simulation<ndim>::ImportArrayNbody
     index = 2;
     scalar = false;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (quantity == "m") {
     quantityp = &StarParticle<ndim>::m;
     scalar = true;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (quantity == "h") {
     quantityp = &StarParticle<ndim>::h;
     scalar = true;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else {
     string message = "Quantity " + quantity + "not recognised";
     ExceptionHandler::getIstance().raise(message);
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
 
   // Finally loop over particles and set all values
   // (Note that the syntax for scalar is different from the one for vectors)
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (scalar) {
     int i=0;
-    for (StarParticle<ndim>* particlep = nbody->stardata;
-	 particlep < nbody->stardata+size; particlep++, i++) {
+    for (StarParticle<ndim>* particlep = nbody->stardata; particlep < nbody->stardata+size; particlep++, i++) {
       particlep->*quantityp = input[i];
     }
   }
@@ -1130,40 +1146,38 @@ void Simulation<ndim>::ImportArrayNbody
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::ImportArraySph
-/// Import an array containing sph particle properties from python to
-/// C++ arrays.
-//=============================================================================
+/// Import an array containing sph particle properties from python to C++ arrays.
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::ImportArraySph
-(double* input,                     ///< Array of values imported from python
- int size,                          ///< No. of elements in array
- string quantity)                   ///< String id of quantity
+ (double* input,                       ///< [in] Array of values imported from python
+  int size,                            ///< [in] No. of elements in array
+  string quantity)                     ///< [in] String id of quantity
 {
-  FLOAT SphParticle<ndim>::*quantityp; // Pointer to scalar quantity
+  FLOAT SphParticle<ndim>::*quantityp;            // Pointer to scalar quantity
   FLOAT (SphParticle<ndim>::*quantitypvec)[ndim]; // Pointer to component of vector quantity
-  int index;                        // If it's a component of a vector
-                                    // quantity, we need to know its index
-  bool scalar;                      // Is the requested quantity a scalar?
+  int index;                                      // If it's a component of a vector
+                                                  // quantity, we need to know its index
+  bool scalar;                                    // Is the requested quantity a scalar?
 
   // Check that the size is correct
   if (size != sph->Nsph) {
     stringstream message;
     message << "Error: the array you are passing has a size of "
-        << size << ", but memory has been allocated for "
-        << sph->Nsph << " particles";
+        << size << ", but memory has been allocated for " << sph->Nsph << " particles";
     ExceptionHandler::getIstance().raise(message.str());
   }
 
   // Now set pointer to the correct value inside the particle data structure
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (quantity == "x") {
     quantitypvec = &SphParticle<ndim>::r;
     index = 0;
     scalar = false;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (quantity == "y") {
     if (ndim < 2) {
       string message = "Error: loading y-coordinate array for ndim < 2";
@@ -1173,7 +1187,7 @@ void Simulation<ndim>::ImportArraySph
     index = 1;
     scalar = false;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (quantity == "z") {
     if (ndim < 3) {
       string message = "Error: loading y-coordinate array for ndim < 3";
@@ -1183,13 +1197,13 @@ void Simulation<ndim>::ImportArraySph
     index = 2;
     scalar = false;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (quantity == "vx") {
     quantitypvec = &SphParticle<ndim>::v;
     index = 0;
     scalar = false;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (quantity == "vy") {
     if (ndim < 2) {
       string message = "Error: loading vy array for ndim < 2";
@@ -1199,7 +1213,7 @@ void Simulation<ndim>::ImportArraySph
     index = 1;
     scalar = false;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (quantity == "vz") {
     if (ndim < 3) {
       string message = "Error: loading vz array for ndim < 3";
@@ -1209,41 +1223,41 @@ void Simulation<ndim>::ImportArraySph
     index = 2;
     scalar = false;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (quantity == "rho") {
     //TODO: at the moment, if rho or h are uploaded, they will be just ignored.
     //Add some facility to use them
     quantityp = &SphParticle<ndim>::rho;
     scalar = true;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (quantity == "h") {
     quantityp = &SphParticle<ndim>::h;
     scalar = true;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (quantity == "u") {
     //TODO: add some facility for uploading either u, T, or cs, and compute automatically the other ones
     //depending on the EOS
     quantityp = &SphParticle<ndim>::u;
     scalar=true;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (quantity == "m") {
     quantityp = &SphParticle<ndim>::m;
     scalar = true;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else {
     string message = "Quantity " + quantity + "not recognised";
     ExceptionHandler::getIstance().raise(message);
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
 
   // Finally loop over particles and set all values
   // (Note that the syntax for scalar is different from the one for vectors)
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (scalar) {
     for (int i=0; i<size; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -1262,19 +1276,17 @@ void Simulation<ndim>::ImportArraySph
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::ImportArray
 /// Import an array containing particle properties from python to C++ arrays.
 /// This is a wrapper around ImportArraySph and ImportArrayNbody
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::ImportArray
-(double* input,                     ///< [in] Input array
- int size,                          ///< [in] Size of the input array
- string quantity,                   ///< [in] Which quantity should be set
-                                    ///<      equal to the given array
- string type)                       ///< [in] Which particle type should be
-                                    ///<      assigned the array
+ (double* input,                     ///< [in] Input array
+  int size,                          ///< [in] Size of the input array
+  string quantity,                   ///< [in] Which quantity should be set equal to the given array
+  string type)                       ///< [in] Which particle type should be assigned the array
 {
   debug2("[Simulation::ImportArray]");
 
@@ -1312,10 +1324,10 @@ void Simulation<ndim>::ImportArray
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::SetComFrame
 /// Move all particles to centre-of-mass frame.
-//=============================================================================
+//=================================================================================================
 template<int ndim>
 void Simulation<ndim>::SetComFrame(void)
 {
@@ -1344,10 +1356,10 @@ void Simulation<ndim>::SetComFrame(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::UpdateDiagnostics
 /// Update energy error value after computing diagnostic quantities.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::UpdateDiagnostics(void)
 {
