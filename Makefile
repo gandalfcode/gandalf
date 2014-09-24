@@ -39,6 +39,7 @@ REORDER_PARTICLES  = 0
 #------------------------------------------------------------------------------
 PYLIB =
 NUMPY =
+GTEST = $(GTEST_DIR)
 
 
 # Don't delete this command! Makes sure that defined variables here are passed
@@ -53,6 +54,9 @@ all:
 
 executable:
 	@+$(MAKE) executable -C src
+
+unittests:
+	@+$(MAKE) unittests -C src
 
 clean:
 	@+$(MAKE) clean -C src
