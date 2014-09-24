@@ -216,11 +216,7 @@ TEST_OBJ = TestScaling.o TestTree.o #Parameters.o SimUnits.o Exception.o
 	$(CPP) $(CFLAGS) -c $< $(OPT)
 
 %.o: %.cpp
-<<<<<<< HEAD
-	$(CPP) $(CFLAGS) -c $< -I$(GTEST) $(OPT)
-=======
 	$(CPP) $(OPT) $(CFLAGS) -c $< -I$(GTEST)/include
->>>>>>> fb9995dd5b5e96072ad7015d39431848373a3129
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
