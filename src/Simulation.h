@@ -342,6 +342,7 @@ class SphSimulation : public Simulation<ndim>
   using SimulationBase::simparams;
   using SimulationBase::timing;
   using Simulation<ndim>::extpot;
+  using Simulation<ndim>::kill_simulation;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
   using Simulation<ndim>::sinks;

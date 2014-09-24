@@ -747,7 +747,8 @@ void SphSimulation<ndim>::MainLoop(void)
       sinks.AccreteMassToSinks(sph,nbody,n,timestep);
       nbody->UpdateStellarProperties();
     }
-    if (t >= tsnapnext && sinks.Nsink > 0) {
+    if ((t >= tsnapnext && sinks.Nsink > 0) || kill_simulation ||
+         timing->WallClockTime() - timing->tstart_wall > 0.99*tmax_wallclock) {
       sph->DeleteDeadParticles();
       rebuild_tree = true;
     }
