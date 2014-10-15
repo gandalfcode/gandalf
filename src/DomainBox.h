@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  DomainBox.h
 //  ..
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _DOMAIN_BOX__H
@@ -32,17 +32,22 @@
 using namespace std;
 
 
-//=============================================================================
+enum boundaryEnum{openBoundary, periodicBoundary, mirrorBoundary, wallBoundary, Nboundarytypes};
+
+
+//=================================================================================================
 //  Structure Box
 /// \brief  Simplified bounding box data structure.
 /// \author D. A. Hubber, G. Rosotti
 /// \date   15/11/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 struct Box {
   FLOAT boxmin[ndim];                   ///< Minimum bounding box extent
   FLOAT boxmax[ndim];                   ///< Maximum bounding box extent
 };
+
+
 
 #ifdef MPI_PARALLEL
 template <int ndim>
@@ -59,20 +64,21 @@ MPI_Datatype CreateBoxType (Box<ndim> dummy) {
 #endif
 
 
-//=============================================================================
+
+//=================================================================================================
 //  Structure DomainBox
 /// \brief  Bounding box data structure.
 /// \author D. A. Hubber, G. Rosotti
 /// \date   03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 struct DomainBox {
-  string x_boundary_lhs;                ///< x-dimension LHS boundary condition
-  string x_boundary_rhs;                ///< x-dimension RHS boundary condition
-  string y_boundary_lhs;                ///< y-dimension LHS boundary condition
-  string y_boundary_rhs;                ///< y-dimension RHS boundary condition
-  string z_boundary_lhs;                ///< z-dimension LHS boundary condition
-  string z_boundary_rhs;                ///< z-dimension RHS boundary condition
+  boundaryEnum x_boundary_lhs;          ///< x-dimension LHS boundary condition
+  boundaryEnum x_boundary_rhs;          ///< x-dimension RHS boundary condition
+  boundaryEnum y_boundary_lhs;          ///< y-dimension LHS boundary condition
+  boundaryEnum y_boundary_rhs;          ///< y-dimension RHS boundary condition
+  boundaryEnum z_boundary_lhs;          ///< z-dimension LHS boundary condition
+  boundaryEnum z_boundary_rhs;          ///< z-dimension RHS boundary condition
   FLOAT boxmin[ndim];                   ///< Minimum bounding box extent
   FLOAT boxmax[ndim];                   ///< Maximum bounding box extent
   FLOAT boxsize[ndim];                  ///< Side-lengths of bounding box
@@ -80,17 +86,19 @@ struct DomainBox {
 };
 
 
-//=============================================================================
-/// \brief  Helper function to find if any of the boundaries is "special" (that is, mirror or periodic)
+
+//=================================================================================================
+/// \brief  Helper function to find if any of the boundaries is "special" (mirror or periodic)
 /// \author D. A. Hubber, G. Rosotti
 /// \date   28/10/2013
 /// \return A boolean saying whether any "special" boundary was found
-//=============================================================================
+//=================================================================================================
 template <int ndim>
-bool IsAnyBoundarySpecial(const DomainBox<ndim>& box) {
-  vector<string> special;
-  special.push_back("mirror");
-  special.push_back("periodic");
+bool IsAnyBoundarySpecial(const DomainBox<ndim>& box)
+{
+  vector<boundaryEnum> special;
+  special.push_back(mirrorBoundary);
+  special.push_back(periodicBoundary);
 
   if (ndim >= 1) {
     if (std::find(special.begin(), special.end(), box.x_boundary_lhs) != special.end() ) return true;
@@ -109,21 +117,42 @@ bool IsAnyBoundarySpecial(const DomainBox<ndim>& box) {
 }
 
 
-//=============================================================================
+
+//=================================================================================================
+///  ...
+//=================================================================================================
+inline boundaryEnum setBoundaryType(string boundaryString)
+{
+  if (boundaryString == "open") return openBoundary;
+  else if (boundaryString == "periodic") return periodicBoundary;
+  else if (boundaryString == "mirror") return mirrorBoundary;
+  else if (boundaryString == "wall") return wallBoundary;
+  else {
+    exit(0);
+  }
+}
+
+
+
+//=================================================================================================
 /// \brief  Helper function to say if a value is contained inside an interval
-//=============================================================================
+//=================================================================================================
 inline bool valueInRange(FLOAT value, FLOAT min, FLOAT max)
-{ return (value >= min) && (value <= max); }
+{
+  return (value >= min) && (value <= max);
+}
 
 
-//=============================================================================
+
+//=================================================================================================
 /// \brief  Helper function to find if two boxes overlap
 /// \author D. A. Hubber, G. Rosotti
 /// \date   12/11/2013
 /// \return A boolean saying whether the boxes overlap
-//=============================================================================
+//=================================================================================================
 template <int ndim>
-inline bool BoxesOverlap (Box<ndim>& A, Box<ndim>& B) {
+inline bool BoxesOverlap (Box<ndim>& A, Box<ndim>& B)
+{
   bool coord_overlap[ndim];
 
   for (int i=0; i<ndim; i++) {
@@ -141,4 +170,19 @@ inline bool BoxesOverlap (Box<ndim>& A, Box<ndim>& B) {
 }
 
 
+
+//=================================================================================================
+/// \brief  Helper function to find if two boxes overlap
+/// \author D. A. Hubber, G. Rosotti
+/// \date   12/11/2013
+/// \return A boolean saying whether the boxes overlap
+//=================================================================================================
+template <int ndim>
+inline void NearestPeriodicVector(DomainBox<ndim> &box, FLOAT dr[ndim])
+{
+  if (box.x_boundary_lhs == periodicBoundary && box.x_boundary_rhs == periodicBoundary) {
+    //if (
+  }
+
+}
 #endif

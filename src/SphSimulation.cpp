@@ -102,21 +102,21 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   // Boundary condition variables
   //---------------------------------------------------------------------------
-  simbox.x_boundary_lhs = stringparams["x_boundary_lhs"];
-  simbox.x_boundary_rhs = stringparams["x_boundary_rhs"];
+  simbox.x_boundary_lhs = setBoundaryType(stringparams["x_boundary_lhs"]);
+  simbox.x_boundary_rhs = setBoundaryType(stringparams["x_boundary_rhs"]);
   simbox.boxmin[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
   simbox.boxmax[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
 
   if (ndim > 1) {
-    simbox.y_boundary_lhs = stringparams["y_boundary_lhs"];
-    simbox.y_boundary_rhs = stringparams["y_boundary_rhs"];
+    simbox.y_boundary_lhs = setBoundaryType(stringparams["y_boundary_lhs"]);
+    simbox.y_boundary_rhs = setBoundaryType(stringparams["y_boundary_rhs"]);
     simbox.boxmin[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
     simbox.boxmax[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
   }
 
   if (ndim == 3) {
-    simbox.z_boundary_lhs = stringparams["z_boundary_lhs"];
-    simbox.z_boundary_rhs = stringparams["z_boundary_rhs"];
+    simbox.z_boundary_lhs = setBoundaryType(stringparams["z_boundary_lhs"]);
+    simbox.z_boundary_rhs = setBoundaryType(stringparams["z_boundary_rhs"]);
     simbox.boxmin[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
     simbox.boxmax[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
   }
@@ -199,6 +199,13 @@ void SphSimulation<ndim>::ProcessParameters(void)
   }
   sph->extpot = extpot;
   nbody->extpot = extpot;
+
+
+  // Create Ewald periodic gravity object
+  if (periodicBoundaries) {
+    ewald = new Ewald<ndim>(simbox,intparams["gr_bhewaldseriesn"],intparams["in"],
+                            floatparams["ewald_mult"],floatparams["ixmin"],floatparams["ixmax"]);
+  }
 
 
   // Set all other SPH parameter variables

@@ -1,6 +1,6 @@
 //=============================================================================
 //  BruteForceSearch.cpp
-//  Contains all routines for generating SPH neighbour lists using 
+//  Contains all routines for generating SPH neighbour lists using
 //  brute-force (i.e. direct summation over all particles).
 //
 //  This file is part of GANDALF :
@@ -68,8 +68,8 @@ BruteForceSearch<ndim,ParticleType>::~BruteForceSearch()
 
 //=============================================================================
 //  BruteForceSearch::BuildTree
-/// For Brute Force neighbour searching, there is no tree to construct but 
-/// we chose to delete any dead SPH particles here to be consistent with 
+/// For Brute Force neighbour searching, there is no tree to construct but
+/// we chose to delete any dead SPH particles here to be consistent with
 /// the tree neighbour search.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -148,8 +148,8 @@ int BruteForceSearch<ndim,ParticleType>::GetGatherNeighbourList
 
 //=============================================================================
 //  BruteForceSearch::UpdateAllSphProperties
-/// Routine for computing SPH properties (smoothing lengths, densities and 
-/// forces) for all active SPH particle using neighbour lists generated 
+/// Routine for computing SPH properties (smoothing lengths, densities and
+/// forces) for all active SPH particle using neighbour lists generated
 /// using brute force (i.e. direct summation).
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -205,10 +205,10 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
 
       for (k=0; k<ndim; k++) rp[k] = sphdata[i].r[k];
 
-      // Compute distances and the reciprical between the current particle 
+      // Compute distances and the reciprical between the current particle
       // and all neighbours here
       //-----------------------------------------------------------------------
-      for (jj=0; jj<Nneib; jj++) { 
+      for (jj=0; jj<Nneib; jj++) {
 	j = neiblist[jj];
     	for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - rp[k];
     	drsqd[jj] = DotProduct(dr,dr,ndim);
@@ -218,7 +218,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
       // Compute all SPH gather properties
       okflag = sph->ComputeH(i,Nneib,big_number,m,mu,drsqd,
                              gpot,sphdata[i],nbody);
-  
+
     }
     //-------------------------------------------------------------------------
 
@@ -239,8 +239,8 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
 
 //=============================================================================
 //  BruteForceSearch::UpdateAllSphHydroForces
-/// Routine for computing SPH properties (smoothing lengths, densities and 
-/// forces) for all active SPH particle using neighbour lists generated 
+/// Routine for computing SPH properties (smoothing lengths, densities and
+/// forces) for all active SPH particle using neighbour lists generated
 /// using brute force (i.e. direct summation).
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -292,7 +292,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
     hrangesqdi = pow(kernfac*kernp->kernrange*sphdata[i].h,2);
     Nneib = 0;
 
-    // Compute distances and the reciprical between the current particle 
+    // Compute distances and the reciprical between the current particle
     // and all neighbours here
     //-------------------------------------------------------------------------
     for (j=0; j<Ntot; j++) {
@@ -322,7 +322,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
   }
   //---------------------------------------------------------------------------
 
-  
+
   // Free all allocated memory
   delete[] invdrmag;
   delete[] drmag;
@@ -405,8 +405,8 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
 
 //=============================================================================
 //  BruteForceSearch::UpdateAllSphGravForces
-/// Routine for computing SPH properties (smoothing lengths, densities and 
-/// forces) for all active SPH particle using neighbour lists generated 
+/// Routine for computing SPH properties (smoothing lengths, densities and
+/// forces) for all active SPH particle using neighbour lists generated
 /// using brute force (i.e. direct summation).
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -471,9 +471,98 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
 
 
 
+//=================================================================================================
+//  BruteForceSearch::UpdateAllSphPeriodicGravForces
+/// ...
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicGravForces
+ (int Nsph,                           ///< [in] No. of SPH particles
+  int Ntot,                           ///< [in] Total no. of particles
+  SphParticle<ndim> *sph_gen,         ///< [in] Pointer to SPH particle array
+  Sph<ndim> *sph,                     ///< [inout] Pointer to SPH object
+  Nbody<ndim> *nbody,                 ///< [in] Pointer to N-body object
+  DomainBox<ndim> &simbox,            ///< [in] Simulation box with periodic information
+  Ewald<ndim> *ewald)                 ///< [in] Pointer to Ewald object for periodic forces
+{
+  int i,j,k;                          // Particle and dimension counters
+  int Nneib;                          // No. of neighbours
+  int *neiblist;                      // List of neighbour ids
+  FLOAT potperiodic;                  // Periodic potential correction
+  FLOAT aperiodic[ndim];              // Periodic acceleration correction
+  FLOAT dr[ndim];                     // Relative displacement vector
+  ParticleType<ndim>* neibdata;       // Local copy of neighbouring particles
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+
+  debug2("[BruteForceSearch::UpdateAllSphPeriodicGravForces]");
+
+  // Allocate memory for storing neighbour ids and position data
+  neiblist = new int[Ntot];
+  neibdata = new ParticleType<ndim>[Ntot];
+
+  // Compute smoothing lengths of all SPH particles
+  //-----------------------------------------------------------------------------------------------
+  for (i=0; i<Nsph; i++) {
+
+    // Skip over inactive particles
+    if (!sphdata[i].active || sphdata[i].itype == dead) continue;
+
+    // Zero all arrays to be updated
+    for (k=0; k<ndim; k++) sphdata[i].a[k] = (FLOAT) 0.0;
+    for (k=0; k<ndim; k++) sphdata[i].agrav[k] = (FLOAT) 0.0;
+    sphdata[i].gpot = (FLOAT) 0.0;
+    sphdata[i].gpe = (FLOAT) 0.0;
+    sphdata[i].dudt = (FLOAT) 0.0;
+    sphdata[i].levelneib = 0;
+
+    // Add self-contribution to gravitational potential
+    sphdata[i].gpot += sphdata[i].m*sphdata[i].invh*kernp->wpot(0.0);
+
+    // Determine interaction list (to ensure we don't compute pair-wise forces twice).
+    // Also make sure that only the closest periodic replica is considered.
+    Nneib = 0;
+    for (j=0; j<Nsph; j++) {
+      neibdata[j] = sphdata[j];
+      if (i != j && sphdata[j].itype != dead) {
+        neiblist[Nneib++] = j;
+        //for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - sphdata[i].r[k];
+        //NearestPeriodicVector(simbox,dr);
+        //for (k=0; k<ndim; k++) neibdata[j].r[k] = sphdata[i].r[k] + dr[k];
+      };
+    }
+
+    // Compute forces between SPH neighbours (hydro and gravity)
+    sph->ComputeSphGravForces(i,Nneib,neiblist,sphdata[i],sphdata);
+
+    // Now add the periodic correction force
+    for (j=0; j<Nneib; j++) {
+      for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - sphdata[i].r[k];
+      NearestPeriodicVector(simbox,dr);
+      ewald->CalculatePeriodicCorrection(neibdata[j].m,dr,aperiodic,potperiodic);
+      for (k=0; k<ndim; k++) sphdata[i].agrav[k] += aperiodic[k];
+      sphdata[i].gpot += potperiodic;
+    }
+
+    // Compute all star forces
+    sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sphdata[i]);
+
+    for (k=0; k<ndim; k++) sphdata[i].a[k] += sphdata[i].agrav[k];
+    sphdata[i].active = false;
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  delete[] neibdata;
+  delete[] neiblist;
+
+  return;
+}
+
+
+
 //=============================================================================
 //  BruteForceSearch::UpdateAllSphDerivatives
-/// Compute all SPH derivatives required for 2nd-order Riemann solver in 
+/// Compute all SPH derivatives required for 2nd-order Riemann solver in
 /// Godunov SPH method.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
@@ -518,7 +607,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphDerivatives
     hrangesqd = pow(kernp->kernrange*sphdata[i].h,2);
     Nneib = 0;
 
-    // Compute distances and the reciprical between the current particle 
+    // Compute distances and the reciprical between the current particle
     // and all neighbours here
     //-------------------------------------------------------------------------
     for (j=0; j<Ntot; j++) {
@@ -599,7 +688,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphDudt
     hrangesqdi = pow(kernfac*kernp->kernrange*sphdata[i].h,2);
     Nneib = 0;
 
-    // Compute distances and the reciprical between the current particle 
+    // Compute distances and the reciprical between the current particle
     // and all neighbours here
     //-------------------------------------------------------------------------
     for (j=0; j<Ntot; j++) {
@@ -665,7 +754,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
 
   // Allocate memory for storing neighbour ids and position data
   neiblist = new int[Nsph];
-  for (i=0; i<Nsph; i++) 
+  for (i=0; i<Nsph; i++)
     if (sphdata[i].itype != dead) neiblist[Nneib++] = i;
 
   // Compute smoothing lengths of all SPH particles

@@ -350,6 +350,14 @@ void Parameters::SetDefaultValues(void)
   floatparams["boxmax[1]"] = -9.9e30;
   floatparams["boxmax[2]"] = 9.9e30;
 
+  // Ewald periodic gravity parameters
+  //---------------------------------------------------------------------------
+  intparams["gr_bhewaldseriesn"] = 10;
+  intparams["in"] = 3000;
+  floatparams["ewald_mult"] = 1.0;
+  floatparams["ixmin"] = 1.0e-8;
+  floatparams["ixmax"] = 10.0;
+
   // Initial conditions parameters
   //---------------------------------------------------------------------------
   stringparams["particle_distribution"] = "cubic_lattice";

@@ -38,6 +38,7 @@
 #include "CodeTiming.h"
 #include "Diagnostics.h"
 #include "DomainBox.h"
+#include "Ewald.h"
 #include "ExternalPotential.h"
 #include "Precision.h"
 #include "Parameters.h"
@@ -135,6 +136,7 @@ class SimulationBase
   bool initial_h_provided;          ///< Have initial h values been calculated?
   bool kill_simulation;             ///< Kill simulation flag
   bool ParametersProcessed;         ///< Flag if params are already processed
+  bool periodicBoundaries;          ///< Flag if periodic boundaries are being used
   bool rebuild_tree;                ///< Flag to rebuild neighbour tree
   bool rescale_particle_data;       ///< Flag to scale data to code units
   bool restart;                     ///< Flag to restart from last snapshot
@@ -307,6 +309,7 @@ class Simulation : public SimulationBase
   Diagnostics<ndim> diag;             ///< Current diagnostic state
   EnergyEquation<ndim> *uint;         ///< Energy equation pointer
   ExternalPotential<ndim> *extpot;    ///< Pointer to external potential object
+  Ewald<ndim> *ewald;                 ///< Ewald periodic gravity object
   Ghosts<ndim>* LocalGhosts;          ///< Periodic ghost particle object
   Nbody<ndim> *nbody;                 ///< N-body algorithm pointer
   Nbody<ndim> *subsystem;             ///< N-body object for sub-systems
@@ -338,10 +341,12 @@ template <int ndim>
 class SphSimulation : public Simulation<ndim>
 {
  public:
+  using SimulationBase::periodicBoundaries;
   using SimulationBase::restart;
   using SimulationBase::simparams;
   using SimulationBase::timing;
   using Simulation<ndim>::extpot;
+  using Simulation<ndim>::ewald;
   using Simulation<ndim>::kill_simulation;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;

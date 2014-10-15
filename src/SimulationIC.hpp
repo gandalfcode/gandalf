@@ -160,26 +160,26 @@ void Simulation<ndim>::CheckInitialConditions(void)
     okflag = true;
 
     if (part.r[0] < simbox.boxmin[0])
-      if (simbox.x_boundary_lhs == "periodic") okflag = false;
+      if (simbox.x_boundary_lhs == periodicBoundary) okflag = false;
     if (part.r[0] > simbox.boxmax[0])
-      if (simbox.x_boundary_rhs == "periodic") okflag = false;
+      if (simbox.x_boundary_rhs == periodicBoundary) okflag = false;
 
     if (ndim >= 2 && part.r[1] < simbox.boxmin[1])
-      if (simbox.y_boundary_lhs == "periodic") okflag = false;
+      if (simbox.y_boundary_lhs == periodicBoundary) okflag = false;
     if (ndim >= 2 && part.r[1] > simbox.boxmax[1])
-      if (simbox.y_boundary_rhs == "periodic") okflag = false;
+      if (simbox.y_boundary_rhs == periodicBoundary) okflag = false;
 
     if (ndim == 3 && part.r[2] < simbox.boxmin[2])
-      if (simbox.z_boundary_lhs == "periodic") okflag = false;
+      if (simbox.z_boundary_lhs == periodicBoundary) okflag = false;
     if (ndim == 3 && part.r[2] > simbox.boxmax[2])
-      if (simbox.z_boundary_rhs == "periodic") okflag = false;
+      if (simbox.z_boundary_rhs == periodicBoundary) okflag = false;
 
     // If flag indicates a problem, print error and quit
     if (!okflag) {
       cout << "Particle " << i << " not inside periodic box" << endl;
       for (k=0; k<ndim; k++)
-	cout << "r[" << k << "] : " << part.r[k] << "    "
-	     << simbox.boxmin[k] << "    " << simbox.boxmax[k] << endl;
+        cout << "r[" << k << "] : " << part.r[k] << "    "
+             << simbox.boxmin[k] << "    " << simbox.boxmax[k] << endl;
     }
 
     valid_ic = okflag;

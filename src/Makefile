@@ -132,7 +132,7 @@ endif
 # GNU scientific library linkage
 #--------------------------------------------------------------------------------------------------
 ifeq ($(GSL),1)
-CFLAGS += -DGANDALF_GSL_LIBRARY
+CFLAGS += -DGANDALF_GSL
 OPT += -I/usr/local/include -L/usr/local/lib -lgsl -lgslcblas
 endif
 
@@ -187,6 +187,7 @@ OBJ += SphNeighbourSearch.o BruteForceSearch.o KDTree.o SphTree.o
 OBJ += GradhSphTree.o GradhSphBruteForce.o
 OBJ += SM2012SphBruteForce.o SM2012SphTree.o
 OBJ += GodunovSphBruteForce.o GodunovSphTree.o
+OBJ += Ewald.o
 OBJ += AdiabaticEOS.o IsothermalEOS.o BarotropicEOS.o Barotropic2EOS.o
 OBJ += IonisingRadiationEOS.o MCRadiationEOS.o
 OBJ += MultipleSourceIonisation.o
