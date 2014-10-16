@@ -124,6 +124,11 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
   //---------------------------------------------------------------------------
   uint = new EnergyGodunovIntegration<ndim>(floatparams["energy_mult"]);
 
+#if defined MPI_PARALLEL
+
+  mpicontrol = new MpiControlType<ndim, GodunovSphParticle>;
+
+#endif
 
   // Create neighbour searching object based on chosen method in params file
   //-------------------------------------------------------------------------
@@ -132,13 +137,13 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
      (sph->kernp->kernrange,&simbox,sph->kernp,this->timing);
   else if (stringparams["neib_search"] == "kdtree") {
     sphneib = new GodunovSphKDTree<ndim,GodunovSphParticle,KDTreeCell>
-     (intparams["Nleafmax"],this->Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
+     (intparams["Nleafmax"],mpicontrol->Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
       floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
       &simbox,sph->kernp,timing);
   }
   else if (stringparams["neib_search"] == "octtree") {
     sphneib = new GodunovSphOctTree<ndim,GodunovSphParticle,OctTreeCell>
-     (intparams["Nleafmax"],this->Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
+     (intparams["Nleafmax"],mpicontrol->Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
       floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
       &simbox,sph->kernp,timing);
   }
@@ -147,10 +152,8 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
       + simparams->stringparams["neib_search"];
     ExceptionHandler::getIstance().raise(message);
   }
+
 #if defined MPI_PARALLEL
-
-  mpicontrol = new MpiControlType<ndim, GodunovSphParticle>;
-
   mpicontrol->SetNeibSearch(sphneib);
 #endif
 

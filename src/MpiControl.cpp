@@ -598,36 +598,36 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   for (inode=0; inode<Nmpi; inode++) worktot += 0.0;
 
 
-  // Loop over all non-leaf levels (starting from the root) and compute the work on each MPI-tree
-  // division, adjusting the divide to balance the work on both sides.
-  //-----------------------------------------------------------------------------------------------
-  for (l=0; l<mpitree->ltot-1; l++) {
-
-    // Loop over all MPI tree cells on current balancing level
-    for (c=0; c<mpitree->Ncell; c++) {
-      if (mpitree->tree[c].level != l) continue;
-      c2 = mpitree->tree[c].c2;
-
-      // Now find new division between child cells that is load-balanced
-      mpitree->tree[c].r_divide = neibsearch->FindLoadBalancingDivision
-        (mpitree->tree[c].k_divide,mpitree->tree[c].r_divide,mpitree->tree[c].bbmin,
-         mpitree->tree[c].bbmax,mpitree->tree[c+1].nodes,mpitree->tree[c2].nodes,mpinode);
-
-    }
-
-    // Update all cell bounding boxes now new divisions have been computed
-    mpitree->UpdateBoundingBoxes();
-
-    // Finally update all MPI node bounding boxes
-    for (inode=0; inode<Nmpi; inode++) {
-      int icell = mpitree->g2c[inode];
-
-      // Create bounding boxes containing particles in each sub-tree
-      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] = mpitree->tree[icell].bbmin[k];
-      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] = mpitree->tree[icell].bbmax[k];
-    }
-
-  }
+//  // Loop over all non-leaf levels (starting from the root) and compute the work on each MPI-tree
+//  // division, adjusting the divide to balance the work on both sides.
+//  //-----------------------------------------------------------------------------------------------
+//  for (l=0; l<mpitree->ltot-1; l++) {
+//
+//    // Loop over all MPI tree cells on current balancing level
+//    for (c=0; c<mpitree->Ncell; c++) {
+//      if (mpitree->tree[c].level != l) continue;
+//      c2 = mpitree->tree[c].c2;
+//
+//      // Now find new division between child cells that is load-balanced
+//      mpitree->tree[c].r_divide = neibsearch->FindLoadBalancingDivision
+//        (mpitree->tree[c].k_divide,mpitree->tree[c].r_divide,mpitree->tree[c].bbmin,
+//         mpitree->tree[c].bbmax,mpitree->tree[c+1].nodes,mpitree->tree[c2].nodes,mpinode);
+//
+//    }
+//
+//    // Update all cell bounding boxes now new divisions have been computed
+//    mpitree->UpdateBoundingBoxes();
+//
+//    // Finally update all MPI node bounding boxes
+//    for (inode=0; inode<Nmpi; inode++) {
+//      int icell = mpitree->g2c[inode];
+//
+//      // Create bounding boxes containing particles in each sub-tree
+//      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] = mpitree->tree[icell].bbmin[k];
+//      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] = mpitree->tree[icell].bbmax[k];
+//    }
+//
+//  }
   //-----------------------------------------------------------------------------------------------
 
   // Prepare lists of particles that now occupy other processor domains that need to be transfered

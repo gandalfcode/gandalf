@@ -660,7 +660,7 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
   int k;                               // Dimension counter
   int okflag;                          // Flag if h-rho iteration is valid
   int Nactive;                         // No. of active particles in current cell
-  int Ngravcell;                       // No. of gravity cells
+  int Ngravcell=0;                       // No. of gravity cells
   int Ngravcellmax;                    // Max. size of gravity cell pointer array
   int Ngravcelltemp;                   // Aux. gravity cell counter
   FLOAT macfactor;                     // Gravity MAC factor for cell

@@ -225,6 +225,11 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
+#if defined MPI_PARALLEL
+
+  mpicontrol = new MpiControlType<ndim, SM2012SphParticle>;
+
+#endif
 
   // Create neighbour searching object based on chosen method in params file
   //-------------------------------------------------------------------------
@@ -233,13 +238,13 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
      (sph->kernp->kernrange,&simbox,sph->kernp,this->timing);
   else if (stringparams["neib_search"] == "kdtree") {
     sphneib = new SM2012SphKDTree<ndim,SM2012SphParticle,KDTreeCell>
-     (intparams["Nleafmax"],this->Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
+     (intparams["Nleafmax"],mpicontrol->Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
       floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
       &simbox,sph->kernp,timing);
   }
   else if (stringparams["neib_search"] == "octtree") {
     sphneib = new SM2012SphOctTree<ndim,SM2012SphParticle,OctTreeCell>
-     (intparams["Nleafmax"],this->Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
+     (intparams["Nleafmax"],mpicontrol->Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
       floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
       &simbox,sph->kernp,timing);
   }
@@ -248,13 +253,10 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
       + simparams->stringparams["neib_search"];
     ExceptionHandler::getIstance().raise(message);
   }
+
 #if defined MPI_PARALLEL
-
-  mpicontrol = new MpiControlType<ndim, SM2012SphParticle>;
-
   mpicontrol->SetNeibSearch(sphneib);
 #endif
-
 
   // Depending on the dimensionality, calculate expected neighbour number
   //---------------------------------------------------------------------------

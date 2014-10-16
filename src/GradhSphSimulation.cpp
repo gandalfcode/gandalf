@@ -221,13 +221,13 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
       (sph->kernp->kernrange,&simbox,sph->kernp,timing);
   else if (stringparams["neib_search"] == "kdtree") {
     sphneib = new GradhSphKDTree<ndim,GradhSphParticle,KDTreeCell>
-     (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
+     (intparams["Nleafmax"],mpicontrol->Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
       floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
       &simbox,sph->kernp,timing);
   }
   else if (stringparams["neib_search"] == "octtree") {
     sphneib = new GradhSphOctTree<ndim,GradhSphParticle,OctTreeCell>
-     (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
+     (intparams["Nleafmax"],mpicontrol->Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
       floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
       &simbox,sph->kernp,timing);
   }
