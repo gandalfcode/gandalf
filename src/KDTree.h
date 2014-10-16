@@ -126,6 +126,10 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::theta;
   using Tree<ndim,ParticleType,TreeCell>::thetamaxsqd;
   using Tree<ndim,ParticleType,TreeCell>::invthetamaxsqd;
+#ifdef MPI_PARALLEL
+  using Tree<ndim,ParticleType,TreeCell>::Nimportedcell;
+  using Tree<ndim,ParticleType,TreeCell>::Ncelltot;
+#endif
 
 
   // Constructor and destructor

@@ -85,8 +85,8 @@ SphTree<ndim,ParticleType,TreeCell>::SphTree
 #ifdef MPI_PARALLEL
   Ncellexport = new int[Nmpi];
   Npartexport = new int[Nmpi];
-  cellexportlist = new int*[Nmpi];
-  for (int j=0; j<Nmpi; j++) cellexportlist[j] = new int[1];
+  cellexportlist = new TreeCell<ndim>**[Nmpi];
+  for (int j=0; j<Nmpi; j++) cellexportlist[j] = NULL;
 
   ids_sent_particles.resize(Nmpi);
 #endif
@@ -236,9 +236,9 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildTree
 
     AllocateMemory(sph);
 #ifdef MPI_PARALLEL
-    if (tree->Ntotmax > tree->Ntotmaxold) {
+    if (Ntotmax > Ntotmaxold) {
       for (i=Nmpi-1; i>=0; i--) delete[] cellexportlist[i];
-      for (i=0; i<Nmpi; i++) cellexportlist[i] = new int[tree->gmax];
+      for (i=0; i<Nmpi; i++) cellexportlist[i] = new TreeCell<ndim>*[tree->gmax];
     }
 #endif
 
@@ -682,7 +682,10 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
   cactive = tree->ComputeActiveCellList(celllist);
 
   // Reset all export lists
-  for (j=0; j<Nmpi; j++) Ncellexport[j] = 0;
+  for (j=0; j<Nmpi; j++) {
+    Ncellexport[j] = 0;
+    Npartexport[j] = 0;
+  }
 
 
   // Set-up all OMP threads
@@ -739,7 +742,7 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 
         // If pruned tree is too close (flagged by -1), then record cell id
         // for exporting to other MPI processes
-        if (Ngravcelltemp == -1) cellexportlist[j][Ncellexport[j]++] = cellptr->id;
+        if (Ngravcelltemp == -1) cellexportlist[j][Ncellexport[j]++] = cellptr;
         else Ngravcell = Ngravcelltemp;
 
       }
@@ -832,7 +835,10 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
   cactive = tree->ComputeActiveCellList(celllist);
 
   // Reset all export lists
-  for (j=0; j<Nmpi; j++) Ncellexport[j] = 0;
+  for (j=0; j<Nmpi; j++) {
+    Ncellexport[j] = 0;
+    Npartexport[j] = 0;
+  }
 
 
   // Set-up all OMP threads
@@ -862,7 +868,7 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
 
         // If pruned tree is too close (flagged by -1), then record cell id
         // for exporting to other MPI processes
-        if (overlapflag) cellexportlist[j][Ncellexport[j]++] = cellptr->id;
+        if (overlapflag) cellexportlist[j][Ncellexport[j]++] = cellptr;
 
       }
       //-------------------------------------------------------------------------------------------
@@ -922,8 +928,8 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
 
     // If the number of levels in the tree has changed (due to destruction or creation of new
     // particles) then re-create tree data structure including linked lists and cell pointers
-    if (prunedtree[i]->ltot != prunedtree[i]->ltot_old)
-      prunedtree[i]->CreateTreeStructure();
+    //if (prunedtree[i]->ltot != prunedtree[i]->ltot_old)
+      //prunedtree[i]->CreateTreeStructure();
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -959,6 +965,7 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
          << "    " << prunedtree[rank]->celldata[c].bbmax[0]
          << "    level : " << prunedtree[rank]->celldata[c].level << endl;
   }
+
 
   return;
 }
@@ -1079,7 +1086,7 @@ int SphTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
 
     // If maximum cell scatter box overlaps MPI domain, open cell
     //---------------------------------------------------------------------------------------------
-    if (tree->BoxOverlap(scattermin,scattermax,mpibox.boxmin,mpibox.boxmax)) {
+    if (BoxOverlap(ndim,scattermin,scattermax,mpibox.boxmin,mpibox.boxmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (cellptr->level != tree->ltot)
@@ -1127,7 +1134,7 @@ int SphTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
 
     // If maximum cell scatter box overlaps MPI domain, open cell
     //---------------------------------------------------------------------------------------------
-    if (ghosttree->BoxOverlap(scattermin,scattermax,mpibox.boxmin,mpibox.boxmax)) {
+    if (BoxOverlap(ndim,scattermin,scattermax,mpibox.boxmin,mpibox.boxmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (cellptr->level != ghosttree->ltot)
@@ -1180,7 +1187,7 @@ int SphTree<ndim,ParticleType,TreeCell>::SearchHydroExportParticles
   int Nexport = 0;                         // No. of MPI ghosts to export
   FLOAT scattermin[ndim];                  // ..
   FLOAT scattermax[ndim];                  // ..
-  TreeCell<ndim> *cell;                  // ..
+  TreeCell<ndim> *cellptr;                  // ..
   const FLOAT grange = ghost_range*kernrange;
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
 
@@ -1194,36 +1201,36 @@ int SphTree<ndim,ParticleType,TreeCell>::SearchHydroExportParticles
 
     // Construct maximum cell bounding box depending on particle velocities
     for (k=0; k<ndim; k++) {
-      scattermin[k] = cell->bbmin[k] - grange*cell->hmax;
-      scattermax[k] = cell->bbmax[k] + grange*cell->hmax;
+      scattermin[k] = cellptr->bbmin[k] - grange*cellptr->hmax;
+      scattermax[k] = cellptr->bbmax[k] + grange*cellptr->hmax;
     }
 
 
     // If maximum cell scatter box overlaps MPI domain, open cell
     //---------------------------------------------------------------------------------------------
-    if (tree->BoxOverlap(scattermin,scattermax,mpibox.boxmin,mpibox.boxmax)) {
+    if (BoxOverlap(ndim,scattermin,scattermax,mpibox.boxmin,mpibox.boxmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (cell->level != tree->ltot)
+      if (cellptr->level != tree->ltot)
         c++;
 
-      else if (cell->N == 0)
-        c = cell->cnext;
+      else if (cellptr->N == 0)
+        c = cellptr->cnext;
 
       // If leaf-cell and active, add the cell to the list of cells being exported
-      else if (cell->level == tree->ltot) {
-        if (cell->Nactive>0) {
-          Nexport += cell->Nactive;
-          cell_list.push_back(cell);
+      else if (cellptr->level == tree->ltot) {
+        if (cellptr->Nactive>0) {
+          Nexport += cellptr->Nactive;
+          cell_list.push_back(cellptr);
         }
-        c = cell->cnext;
+        c = cellptr->cnext;
       }
     }
 
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
     else
-      c = cell->cnext;
+      c = cellptr->cnext;
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -1273,35 +1280,35 @@ void SphTree<ndim,ParticleType,TreeCell>::FindMpiTransferParticles
 
       // If maximum cell scatter box overlaps MPI domain, open cell
       //-------------------------------------------------------------------------------------------
-      if (tree->BoxOverlap(cell->bbmin,cell->bbmax,nodebox.boxmin,nodebox.boxmax)) {
+      if (BoxOverlap(ndim,cellptr->bbmin,cellptr->bbmax,nodebox.boxmin,nodebox.boxmax)) {
 
         // If not a leaf-cell, then open cell to first child cell
-        if (cell->level != tree->ltot)
+        if (cellptr->level != tree->ltot)
           c++;
 
-        else if (cell->N == 0)
-          c = cell->cnext;
+        else if (cellptr->N == 0)
+          c = cellptr->cnext;
 
         // If leaf-cell, check through particles in turn to find ghosts and
         // add to list to be exported
-        else if (cell->level == tree->ltot) {
-          i = cell->ifirst;
+        else if (cellptr->level == tree->ltot) {
+          i = cellptr->ifirst;
           while (i != -1) {
             if (ParticleInBox(sphdata[i],mpinodes[node_number].domain)) {
               particles_to_export[node_number].push_back(i);
               all_particles_to_export.push_back(i);
             }
-            if (i == cell->ilast) break;
+            if (i == cellptr->ilast) break;
             i = tree->inext[i];
           };
-          c = cell->cnext;
+          c = cellptr->cnext;
         }
       }
 
       // If not in range, then open next cell
       //-------------------------------------------------------------------------------------------
       else
-        c = cell->cnext;
+        c = cellptr->cnext;
 
     }
     //---------------------------------------------------------------------------------------------
@@ -1403,6 +1410,11 @@ int SphTree<ndim,ParticleType,TreeCell>::GetExportInfo
     cactive = tree->ComputeActiveCellList(&celllist[0]);
   }
 
+  //TreeCell<ndim>** celllist = cellexportlist[Nproc];
+  cactive = Ncellexport[Nproc];
+  Nactive = Npartexport[Nproc];
+
+
   // Work out size of the information we are sending
   //Header consists of number of particles and number of cells
   const int size_header = 2*sizeof(int);
@@ -1445,6 +1457,7 @@ int SphTree<ndim,ParticleType,TreeCell>::GetExportInfo
   return size_particles+size_cells+size_header;
 
 }
+
 
 
 //=================================================================================================
@@ -1678,13 +1691,13 @@ void SphTree<ndim,ParticleType,TreeCell>::CommunicatePrunedTrees
     //Do the actual communication
     for (int i=0; i<2; i++) {
       if (send_turn) {
-        KDTree<ndim, ParticleType>* tree = prunedtree[rank];
+        Tree<ndim, ParticleType, TreeCell>* tree = prunedtree[rank];
         MPI_Send(tree->celldata,tree->Ncell*sizeof(TreeCell<ndim>),
                  MPI_CHAR,inode,3,MPI_COMM_WORLD);
         send_turn=false;
       }
       else {
-        KDTree<ndim, ParticleType>* tree = prunedtree[inode];
+        Tree<ndim, ParticleType, TreeCell>* tree = prunedtree[inode];
         MPI_Status status;
         MPI_Recv(tree->celldata,tree->Ncell*sizeof(TreeCell<ndim>),
                  MPI_CHAR,inode,3,MPI_COMM_WORLD,&status);

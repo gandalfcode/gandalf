@@ -385,7 +385,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #ifdef MPI_PARALLEL
     sphneib->BuildPrunedTree(pruning_level,rank);
     mpicontrol->CommunicatePrunedTrees();
-    exit(0);
+//    exit(0);
 #endif
 
   }

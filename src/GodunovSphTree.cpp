@@ -77,9 +77,9 @@ GodunovSphKDTree<ndim,ParticleType,TreeCell>::GodunovSphKDTree
                                                        macerroraux, gravity_mac_aux, multipole_aux);
 
   // Set-up multiple pruned trees, one for each MPI process
-  prunedtree = new KDTree<ndim,ParticleType,KDTreeCell>*[Nmpi];
+  prunedtree = new KDTree<ndim,ParticleType,TreeCell>*[Nmpi];
   for (int j=0; j<Nmpi; j++) {
-    prunedtree[j] = new KDTree<ndim,ParticleType,KDTreeCell>
+    prunedtree[j] = new KDTree<ndim,ParticleType,TreeCell>
       (Nleafmaxaux, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
   }
 #endif
@@ -121,9 +121,9 @@ GodunovSphOctTree<ndim,ParticleType,TreeCell>::GodunovSphOctTree
                                                          macerroraux, gravity_mac_aux, multipole_aux);
 
   // Set-up multiple pruned trees, one for each MPI process
-  prunedtree = new OctTree<ndim,ParticleType,KDTreeCell>*[Nmpi];
+  prunedtree = new OctTree<ndim,ParticleType,TreeCell>*[Nmpi];
   for (int j=0; j<Nmpi; j++) {
-    prunedtree[j] = new OctTree<ndim,ParticleType,KDTreeCell>
+    prunedtree[j] = new OctTree<ndim,ParticleType,TreeCell>
       (Nleafmaxaux, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
   }
 #endif

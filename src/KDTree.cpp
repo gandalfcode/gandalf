@@ -2038,6 +2038,9 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 	     && celldata[cc].N > 0) {
 
       gravcelllist[Ngravcelltemp++] = &(celldata[cc]);
+      if (Ngravcelltemp>=Ngravcellmax) {
+        ExceptionHandler::getIstance().raise("Too many interaction cells in disant gravity interaction list!!!");
+      }
       cc = celldata[cc].cnext;
 
     }

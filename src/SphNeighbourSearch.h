@@ -365,7 +365,7 @@ protected:
 
 
   //---------------------------------------------------------------------------
-  SphTree(int, int, FLOAT, FLOAT, FLOAT, string, string, 
+  SphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
           DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~SphTree();
 
@@ -469,7 +469,7 @@ protected:
   int Nprunedcellmax;                       ///< ..
   int *Ncellexport;                         ///< ..
   int *Npartexport;                         ///< ..
-  int **cellexportlist;                     ///< List of cells
+  TreeCell<ndim> ***cellexportlist;  ///< List of cells
   Tree<ndim,ParticleType,TreeCell> *mpighosttree;  ///< Pointer to tree containing
                                             ///< ghosts from other MPI procs.
   Tree<ndim,ParticleType,TreeCell> **prunedtree;   ///< 'Pruned' tree for MPI nodes.
@@ -518,6 +518,8 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
+  using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
 #endif
 
 
@@ -558,6 +560,8 @@ class GradhSphKDTree: public GradhSphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
+  using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
 #endif
 
 
@@ -586,6 +590,8 @@ class GradhSphOctTree: public GradhSphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
+  using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
 #endif
 
 
@@ -635,6 +641,8 @@ class SM2012SphTree: public SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
+  using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
 #endif
 
 
@@ -675,6 +683,8 @@ class SM2012SphKDTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
+  using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
 #endif
 
 
@@ -703,6 +713,8 @@ class SM2012SphOctTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
+  using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
 #endif
 
 
@@ -752,6 +764,8 @@ class GodunovSphTree: public SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
+  using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
 #endif
 
 
@@ -794,6 +808,8 @@ class GodunovSphKDTree: public GodunovSphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
+  using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
 #endif
 
 
@@ -822,6 +838,8 @@ class GodunovSphOctTree: public GodunovSphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
+  using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
 #endif
 
 
