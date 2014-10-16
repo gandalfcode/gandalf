@@ -76,7 +76,7 @@ SM2012SphKDTree<ndim,ParticleType,TreeCell>::SM2012SphKDTree
                                                        macerroraux, gravity_mac_aux, multipole_aux);
 
   // Set-up multiple pruned trees, one for each MPI process
-  prunedtree = new KDTree<ndim,ParticleType,TreeCell>*[Nmpi];
+  *(prunedtree) = *(new KDTree<ndim,ParticleType,TreeCell>*[Nmpi]);
   for (int j=0; j<Nmpi; j++) {
     prunedtree[j] = new KDTree<ndim,ParticleType,TreeCell>
       (Nleafmaxaux, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
@@ -120,7 +120,7 @@ SM2012SphOctTree<ndim,ParticleType,TreeCell>::SM2012SphOctTree
                                                          macerroraux, gravity_mac_aux, multipole_aux);
 
   // Set-up multiple pruned trees, one for each MPI process
-  prunedtree = new OctTree<ndim,ParticleType,TreeCell>*[Nmpi];
+  *(prunedtree) = *(new OctTree<ndim,ParticleType,TreeCell>*[Nmpi]);
   for (int j=0; j<Nmpi; j++) {
     prunedtree[j] = new OctTree<ndim,ParticleType,TreeCell>
       (Nleafmaxaux, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
