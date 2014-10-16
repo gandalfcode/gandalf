@@ -340,7 +340,7 @@ class SphTree: public SphNeighbourSearch<ndim>
   void UpdateAllSphGravForces(int, int, SphParticle<ndim> *,
                               Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
-                                      Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) {};
+                                      Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
   void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *);
   void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *);
   void UpdateActiveParticleCounters(SphParticle<ndim> *, Sph<ndim> *);

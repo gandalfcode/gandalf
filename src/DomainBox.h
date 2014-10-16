@@ -181,7 +181,20 @@ template <int ndim>
 inline void NearestPeriodicVector(DomainBox<ndim> &box, FLOAT dr[ndim])
 {
   if (box.x_boundary_lhs == periodicBoundary && box.x_boundary_rhs == periodicBoundary) {
-    //if (
+    if (dr[0] > box.boxhalf[0]) dr[0] -= box.boxsize[0];
+    else if (dr[0] < -box.boxhalf[0]) dr[0] += box.boxsize[0];
+  }
+  if (ndim > 1) {
+    if (box.y_boundary_lhs == periodicBoundary && box.y_boundary_rhs == periodicBoundary) {
+      if (dr[1] > box.boxhalf[1]) dr[1] -= box.boxsize[1];
+      else if (dr[1] < -box.boxhalf[1]) dr[1] += box.boxsize[1];
+    }
+  }
+  if (ndim == 3) {
+    if (box.z_boundary_lhs == periodicBoundary && box.z_boundary_rhs == periodicBoundary) {
+      if (dr[2] > box.boxhalf[2]) dr[2] -= box.boxsize[2];
+      else if (dr[2] < -box.boxhalf[2]) dr[2] += box.boxsize[2];
+    }
   }
 
 }
