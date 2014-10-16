@@ -1393,24 +1393,24 @@ int SphTree<ndim,ParticleType,TreeCell>::GetExportInfo
   assert(tree->Nimportedcell==0);
 
   // Get active cells and their number (so that we know how much memory to allocate)
-  vector<TreeCell<ndim>*> celllist;
-  celllist.reserve(tree->gtot);
-  if (hydro_only) {
-    Nactive += SearchHydroExportParticles(mpinode.domain,sph,celllist);
-    cactive = celllist.size();
-  }
-  else {
+//  vector<TreeCell<ndim>*> celllist;
+//  celllist.reserve(tree->gtot);
+//  if (hydro_only) {
+//    Nactive += SearchHydroExportParticles(mpinode.domain,sph,celllist);
+//    cactive = celllist.size();
+//  }
+//  else {
+//
+//    for (int i=0; i<sph->Nsph; i++) {
+//      if (sphdata[i].active)
+//        Nactive++;
+//    }
+//
+//    celllist.resize(tree->gtot);
+//    cactive = tree->ComputeActiveCellList(&celllist[0]);
+//  }
 
-    for (int i=0; i<sph->Nsph; i++) {
-      if (sphdata[i].active)
-        Nactive++;
-    }
-
-    celllist.resize(tree->gtot);
-    cactive = tree->ComputeActiveCellList(&celllist[0]);
-  }
-
-  //TreeCell<ndim>** celllist = cellexportlist[Nproc];
+  TreeCell<ndim>** celllist = cellexportlist[Nproc];
   cactive = Ncellexport[Nproc];
   Nactive = Npartexport[Nproc];
 
