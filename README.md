@@ -9,6 +9,11 @@ GANDALF is a new hybrid SPH and N-body code for combined star formation, planet 
 
 The code is open-source and can be downloaded anonimously. Users are encouraged to use a github account so bug reports and other suggestions can be made on the github code pages, or to e-mail the authors so we can e-mail notifications and bug-fixes.
 
+Webpage
+---------
+
+The webpage for the code can be found at http://gandalfcode.github.io/gandalf/
+
 
 Download
 ---------------------
