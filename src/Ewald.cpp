@@ -38,7 +38,7 @@ using namespace std;
 //=================================================================================================
 template <int ndim>
 Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int _nEwaldGrid,
-                   DOUBLE _ewald_mult, DOUBLE _ixmin, DOUBLE _ixmax):
+                   DOUBLE _ewald_mult, DOUBLE _ixmin, DOUBLE _ixmax, CodeTiming* _timing):
   gr_bhewaldseriesn(_gr_bhewaldseriesn),
   in(_in),
   nEwaldGrid(_nEwaldGrid),
@@ -47,7 +47,8 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
   ixmax(_ixmax),
   lx_per(simbox.boxsize[0]),
   ly_per(simbox.boxsize[1]),
-  lz_per(simbox.boxsize[2])
+  lz_per(simbox.boxsize[2]),
+  timing(_timing)
 {
   // Create table for Ewald object
 
@@ -69,6 +70,9 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
   DOUBLE linv, linv2, linv_acc;
   DOUBLE rrel[4];
   DOUBLE Lewald[3];				// Size of the Ewald field
+
+  debug2("[Ewald::Ewald]");
+  timing->StartTimingSection("EWALD",2);
 
 // set ewald_periodicity for given type of boundary conditions
   ewald_periodicity = 0;
@@ -180,8 +184,8 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
   printf("Ewald test %8d %8d %8d %16.10e %16.10e %16.10e %16.10e %16.10e %16.10e \n",
       Ngrid[0],Ngrid[1],Ngrid[2],Lewald[0],Lewald[1],Lewald[2],dI[0],dI[1],dI[2]);
 // generate the Ewald field
-// from 0 to one_component-1 is stored potential, 
-// from one_component*jj to one_component*(jj+1)-1 is stored 
+// from 0 to one_component-1 is stored potential,
+// from one_component*jj to one_component*(jj+1)-1 is stored
 // the jj component of acceleration (jj=1 is x, 2 is y, 3 is z)
   ewald_field = new DOUBLE[4*one_component];
   ewald_fields = new DOUBLE[4*one_component];
@@ -248,55 +252,55 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
                 if (ewald_periodicity==1) {
                   ewald_field[ewald_index] = ewald_field[ewald_index] + PotLong1p2i(hi, ewald_dzeta, linv, x, y, z);
                   ewald_fieldl[ewald_index] = ewald_fieldl[ewald_index] + PotLong1p2i(hi, ewald_dzeta, linv, x, y, z);
-                  ewald_field[ewald_index+one_component] = ewald_field[ewald_index+one_component] + 
+                  ewald_field[ewald_index+one_component] = ewald_field[ewald_index+one_component] +
                       linv_acc*(AccLong1p2iPer(hi, ewald_dzeta, linv, x, y, z));
-                  ewald_fieldl[ewald_index+one_component] = ewald_fieldl[ewald_index+one_component] + 
+                  ewald_fieldl[ewald_index+one_component] = ewald_fieldl[ewald_index+one_component] +
                       linv_acc*(AccLong1p2iPer(hi, ewald_dzeta, linv, x, y, z));
-                  ewald_field[ewald_index + 2*one_component] = ewald_field[ewald_index + 2*one_component] + 
+                  ewald_field[ewald_index + 2*one_component] = ewald_field[ewald_index + 2*one_component] +
                       linv_acc*(AccLong1p2iIso(hi, ewald_dzeta, linv, x, y, z));
-                  ewald_fieldl[ewald_index + 2*one_component] = ewald_fieldl[ewald_index + 2*one_component] + 
+                  ewald_fieldl[ewald_index + 2*one_component] = ewald_fieldl[ewald_index + 2*one_component] +
                       linv_acc*(AccLong1p2iIso(hi, ewald_dzeta, linv, x, y, z));
-                  ewald_field[ewald_index + 3*one_component] = ewald_field[ewald_index + 3*one_component] + 
+                  ewald_field[ewald_index + 3*one_component] = ewald_field[ewald_index + 3*one_component] +
                       linv_acc*(AccLong1p2iIso(hi, ewald_dzeta, linv, x, z, y));
-                  ewald_fieldl[ewald_index + 3*one_component] = ewald_fieldl[ewald_index + 3*one_component] +  
+                  ewald_fieldl[ewald_index + 3*one_component] = ewald_fieldl[ewald_index + 3*one_component] +
                       linv_acc*(AccLong1p2iIso(hi, ewald_dzeta, linv, x, z, y));
 //        printf("%d %d %d %e %e \n",hi,hj,hk,linv_acc*(AccLong1p2iIso(hi, ewald_dzeta, linv, x, y, z)),linv_acc);
                 } else if (ewald_periodicity==3) {
                       ewald_field[ewald_index] = ewald_field[ewald_index] + PotLong2p1i(ewald_dzeta, linv, ratio_pinv, x, y, z, hi, hj, ewc1, ewc2);
-                      ewald_fieldl[ewald_index] = ewald_fieldl[ewald_index] + 
+                      ewald_fieldl[ewald_index] = ewald_fieldl[ewald_index] +
                           PotLong2p1i(ewald_dzeta, linv, ratio_pinv, x, y, z, hi, hj, ewc1, ewc2);
-                      ewald_field[ewald_index+one_component] = ewald_field[ewald_index+one_component] + 
+                      ewald_field[ewald_index+one_component] = ewald_field[ewald_index+one_component] +
                           hi*(AccLong2p1iPer(ewald_dzeta, linv, ratio_pinv, x, y, z, hi, hj, ewc1, ewc2));
-                      ewald_fieldl[ewald_index+one_component] = ewald_fieldl[ewald_index+one_component] + 
+                      ewald_fieldl[ewald_index+one_component] = ewald_fieldl[ewald_index+one_component] +
                           hi*(AccLong2p1iPer(ewald_dzeta, linv, ratio_pinv, x, y, z, hi, hj, ewc1, ewc2));
-                      ewald_field[ewald_index + 2*one_component] = ewald_field[ewald_index + 2*one_component] + 
+                      ewald_field[ewald_index + 2*one_component] = ewald_field[ewald_index + 2*one_component] +
                           hj*ratio_pinv*(AccLong2p1iPer(ewald_dzeta, linv, ratio_pinv, x, y, z, hi, hj, ewc1, ewc2));
-                      ewald_fieldl[ewald_index + 2*one_component] = ewald_fieldl[ewald_index + 2*one_component] + 
+                      ewald_fieldl[ewald_index + 2*one_component] = ewald_fieldl[ewald_index + 2*one_component] +
                           hj*ratio_pinv*(AccLong2p1iPer(ewald_dzeta, linv, ratio_pinv, x, y, z, hi, hj, ewc1, ewc2));
-                      ewald_field[ewald_index + 3*one_component] = ewald_field[ewald_index + 3*one_component] + 
+                      ewald_field[ewald_index + 3*one_component] = ewald_field[ewald_index + 3*one_component] +
                           AccLong2p1iIso(ewald_dzeta, linv, ratio_pinv, x, y, z, hi, hj, ewc1, ewc2);
-                      ewald_fieldl[ewald_index + 3*one_component] = ewald_fieldl[ewald_index + 3*one_component] + 
+                      ewald_fieldl[ewald_index + 3*one_component] = ewald_fieldl[ewald_index + 3*one_component] +
                           AccLong2p1iIso(ewald_dzeta, linv, ratio_pinv, x, y, z, hi, hj, ewc1, ewc2);
                 } else if (ewald_periodicity==7) {
                     if ((pow(hi,2)+pow(hj,2)+pow(hk,2)) > 0) {
                       ewc3 = pow(hi,2)+pow(hj*ratio_pinv1,2)+pow(hk*ratio_pinv2,2);
                       ewc4 = twopi*linv*(hi*x+hj*y*ratio_pinv1+hk*z*ratio_pinv2);
-                      ewald_field[ewald_index] = ewald_field[ewald_index] + 
+                      ewald_field[ewald_index] = ewald_field[ewald_index] +
                           linv2*exp(-ewald_dzeta*ewc3)*cos(ewc4)/ewc3;
-                      ewald_fieldl[ewald_index] = ewald_fieldl[ewald_index] + 
+                      ewald_fieldl[ewald_index] = ewald_fieldl[ewald_index] +
                           linv2*exp(-ewald_dzeta*ewc3)*cos(ewc4)/ewc3;
-                      ewald_field[ewald_index+one_component] = ewald_field[ewald_index+one_component] + 
+                      ewald_field[ewald_index+one_component] = ewald_field[ewald_index+one_component] +
                           AccLong3pPer(hi, linv_acc, ewald_dzeta, ewc3, ewc4);
-                      ewald_fieldl[ewald_index+one_component] = ewald_fieldl[ewald_index+one_component] + 
+                      ewald_fieldl[ewald_index+one_component] = ewald_fieldl[ewald_index+one_component] +
                           AccLong3pPer(hi, linv_acc, ewald_dzeta, ewc3, ewc4);
-                      ewald_field[ewald_index + 2*one_component] = ewald_field[ewald_index + 2*one_component] + 
+                      ewald_field[ewald_index + 2*one_component] = ewald_field[ewald_index + 2*one_component] +
                           ratio_pinv1*(AccLong3pPer(hj, linv_acc, ewald_dzeta, ewc3, ewc4));
-                      ewald_fieldl[ewald_index + 2*one_component] = ewald_fieldl[ewald_index + 2*one_component] + 
+                      ewald_fieldl[ewald_index + 2*one_component] = ewald_fieldl[ewald_index + 2*one_component] +
                           ratio_pinv1*(AccLong3pPer(hj, linv_acc, ewald_dzeta, ewc3, ewc4));
 //     on the two following lines was a bug (missing ratio_pinv2) - it may preserve in one of the previous versions !!!
-                      ewald_field[ewald_index + 3*one_component] = ewald_field[ewald_index + 3*one_component] + 
+                      ewald_field[ewald_index + 3*one_component] = ewald_field[ewald_index + 3*one_component] +
                           ratio_pinv2*(AccLong3pPer(hk, linv_acc, ewald_dzeta, ewc3, ewc4));
-                      ewald_fieldl[ewald_index + 3*one_component] = ewald_fieldl[ewald_index + 3*one_component] + 
+                      ewald_fieldl[ewald_index + 3*one_component] = ewald_fieldl[ewald_index + 3*one_component] +
                           ratio_pinv2*(AccLong3pPer(hk, linv_acc, ewald_dzeta, ewc3, ewc4));
                     }
                 }
@@ -335,6 +339,8 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
 
         printf("potC1p2i %16.10lf %16.10lf %16.10lf %16.10lf\n",potC1p2i,2.0*linv*log(2*lx_per),
            ewald_field[Ngrid[0]*(Ngrid[1]-1)],ewald_field[Ngrid[0]*(Ngrid[1]-1)]+0.5/lx_per);
+
+  timing->EndTimingSection("EWALD");
 }
 
 
@@ -377,13 +383,13 @@ void Ewald<ndim>::CalculatePeriodicCorrection
     a[k] = b - il[k];
   }
 
-// in isolated direction(s) at distance longer than 2*(the size of comp. domain in 
+// in isolated direction(s) at distance longer than 2*(the size of comp. domain in
 // periodic direction) is Ewald field approximated by analytical formula
   if (ewald_periodicity != 7) {
 //    if (fmax(fmax(il[0],il[1]),il[2]) >= 4*(nEwaldGrid-1)) {
     if (max3(ip[0],ip[1],ip[2]) > 4*(nEwaldGrid-1)) {
 
-// compute 1/r term explicitly. Hopefully in the future 
+// compute 1/r term explicitly. Hopefully in the future
 // this value will be simply passed to the routine
 // the term 1/r or 1/r**2 is subtracted to compensate for the major contribution
       drAbsInv = 1.0/sqrt(pow(dr[0],2) + pow(dr[1],2) + pow(dr[2],2));

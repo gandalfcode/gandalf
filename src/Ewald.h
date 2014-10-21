@@ -32,6 +32,7 @@
 #include "Precision.h"
 #include "DomainBox.h"
 #include "Constants.h"
+#include "CodeTiming.h"
 using namespace std;
 //#ifdef GANDALF_GSL
 #include <gsl/gsl_sf.h>
@@ -53,7 +54,7 @@ class Ewald
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  Ewald(DomainBox<ndim> &, int, int, int, DOUBLE, DOUBLE, DOUBLE);
+  Ewald(DomainBox<ndim> &, int, int, int, DOUBLE, DOUBLE, DOUBLE, CodeTiming *);
   ~Ewald();
 
 
@@ -110,6 +111,8 @@ class Ewald
   const DOUBLE ly_per;
   const DOUBLE lz_per;
   const int nEwaldGrid;
+
+  CodeTiming* timing;
 
 };
 #endif

@@ -207,7 +207,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
     ewaldGravity = true;
     ewald = new Ewald<ndim>(simbox,intparams["gr_bhewaldseriesn"],intparams["in"],
                             intparams["nEwaldGrid"],floatparams["ewald_mult"],
-                            floatparams["ixmin"],floatparams["ixmax"]);
+                            floatparams["ixmin"],floatparams["ixmax"],timing);
   }
 
 
