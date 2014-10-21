@@ -712,6 +712,7 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
     for (cc=0; cc<cactive; cc++) {
       cellptr = celllist[cc];
       macfactor = 0.0;
+      Ngravcell = 0;
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cellptr,sphdata,activelist);
@@ -742,7 +743,10 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 
         // If pruned tree is too close (flagged by -1), then record cell id
         // for exporting to other MPI processes
-        if (Ngravcelltemp == -1) cellexportlist[j][Ncellexport[j]++] = cellptr;
+        if (Ngravcelltemp == -1) {
+          cellexportlist[j][Ncellexport[j]++] = cellptr;
+          Npartexport[j] += Nactive;
+        }
         else Ngravcell = Ngravcelltemp;
 
       }
@@ -825,6 +829,8 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
   int jj;                              // Aux. particle counter
   TreeCell<ndim> *cellptr;           // Pointer to binary tree cell
   TreeCell<ndim> **celllist;         // List of pointers to binary tree cells
+  int *activelist;                     // List of active particles
+
 
   debug2("[SphTree::UpdateDistantSphForces]");
   timing->StartTimingSection("MPI_HYDRO_EXPORT",2);
@@ -833,6 +839,8 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
   // Find list of all cells that contain active particles
   celllist = new TreeCell<ndim>*[2*tree->gtot];
   cactive = tree->ComputeActiveCellList(celllist);
+
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   // Reset all export lists
   for (j=0; j<Nmpi; j++) {
@@ -851,6 +859,7 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
 #else
     ithread = 0;
 #endif
+    activelist = activelistbuf[ithread];
 
     // Loop over all active cells
     //=============================================================================================
@@ -868,7 +877,11 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
 
         // If pruned tree is too close (flagged by -1), then record cell id
         // for exporting to other MPI processes
-        if (overlapflag) cellexportlist[j][Ncellexport[j]++] = cellptr;
+        if (overlapflag) {
+          cellexportlist[j][Ncellexport[j]++] = cellptr;
+          const int Nactive = tree->ComputeActiveParticleList(cellptr,sphdata,activelist);
+          Npartexport[j] += Nactive;
+        }
 
       }
       //-------------------------------------------------------------------------------------------

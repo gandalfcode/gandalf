@@ -114,6 +114,9 @@ void KDTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
     celldata = new struct TreeCell<ndim>[Ncellmax];
 
     allocated_tree = true;
+
+    CreateTreeStructure();
+
   }
 
   return;
