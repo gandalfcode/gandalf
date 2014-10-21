@@ -133,6 +133,7 @@ class SimulationBase
   // Variables
   //-----------------------------------------------------------------------------------------------
   bool setup;                       ///< Flag if simulation is setup
+  bool ewaldGravity;                ///< Flag if periodic graivty is being used
   bool initial_h_provided;          ///< Have initial h values been calculated?
   bool kill_simulation;             ///< Kill simulation flag
   bool ParametersProcessed;         ///< Flag if params are already processed
@@ -250,6 +251,7 @@ class Simulation : public SimulationBase
   void BossBodenheimer(void);
   void CheckInitialConditions(void);
   void ContactDiscontinuity(void);
+  void EwaldDensity(void);
   void KHI(void);
   void NohProblem(void);
   void PlummerSphere(void);
@@ -265,16 +267,17 @@ class Simulation : public SimulationBase
 
   // Initial conditions helper routines
   //---------------------------------------------------------------------------
+  void AddAzimuthalDensityPerturbation(int, int, FLOAT, FLOAT *, FLOAT *);
   void AddBinaryStar(DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE,
                      DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE *,DOUBLE *,
                      NbodyParticle<ndim> &, NbodyParticle<ndim> &);
-  void AddAzimuthalDensityPerturbation(int, int, FLOAT, FLOAT *, FLOAT *);
-  void AddRotationalVelocityField(int, FLOAT, FLOAT *, FLOAT *, FLOAT *);
-  void AddRandomBox(int, FLOAT *, DomainBox<ndim>);
-  void AddRandomSphere(int, FLOAT *, FLOAT *, FLOAT);
   void AddCubicLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
   void AddHexagonalLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
   int AddLatticeSphere(int, FLOAT *, FLOAT *, FLOAT, string);
+  void AddRotationalVelocityField(int, FLOAT, FLOAT *, FLOAT *, FLOAT *);
+  void AddRandomBox(int, FLOAT *, DomainBox<ndim>);
+  void AddRandomSphere(int, FLOAT *, FLOAT *, FLOAT);
+  void AddSinusoidalDensityPerturbation(int, FLOAT, FLOAT, FLOAT *);
   int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
   void ComputeBondiSolution(int, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
 #if defined(FFTW_TURBULENCE)
@@ -341,6 +344,7 @@ template <int ndim>
 class SphSimulation : public Simulation<ndim>
 {
  public:
+  using SimulationBase::ewaldGravity;
   using SimulationBase::periodicBoundaries;
   using SimulationBase::restart;
   using SimulationBase::simparams;

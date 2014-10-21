@@ -82,7 +82,7 @@ struct KDTreeCell {
 //=============================================================================
 //  Class KDTree
 /// \brief   Class containing binary tree
-/// \details Binary tree data structure used for efficient neighbour searching 
+/// \details Binary tree data structure used for efficient neighbour searching
 ///          and computation of gravitational forces
 /// \author  D. A. Hubber, O. Lomax, A. P. Whitworth
 /// \date    08/01/2014
@@ -112,27 +112,29 @@ class KDTree
   void UpdateHmaxValues(KDTreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
   int ComputeActiveCellList(KDTreeCell<ndim> **);
-  int ComputeActiveParticleList(KDTreeCell<ndim> *, 
+  int ComputeActiveParticleList(KDTreeCell<ndim> *,
                                 ParticleType<ndim> *, int *);
-  int ComputeGatherNeighbourList(FLOAT *, FLOAT, int, int *, 
+  int ComputeGatherNeighbourList(FLOAT *, FLOAT, int, int *,
                                  ParticleType<ndim> *);
-  int ComputeGatherNeighbourList(const KDTreeCell<ndim> *, const int, int *, 
+  int ComputeGatherNeighbourList(const KDTreeCell<ndim> *, const int, int *,
                                  const FLOAT, const ParticleType<ndim> *);
-  int ComputeNeighbourList(const KDTreeCell<ndim> *, const int, int *, 
+  int ComputeNeighbourList(const KDTreeCell<ndim> *, const int, int *,
                            const ParticleType<ndim> *);
-  int ComputeGravityInteractionList(KDTreeCell<ndim> *, FLOAT, int, int,  
+  int ComputeGravityInteractionList(KDTreeCell<ndim> *, FLOAT, int, int,
                                     int, int &, int &, int &, int *, int *,
-                                    KDTreeCell<ndim> **, 
-				    ParticleType<ndim> *);
+                                    KDTreeCell<ndim> **, ParticleType<ndim> *);
+  int ComputePeriodicGravityInteractionList(KDTreeCell<ndim> *, DomainBox<ndim> &, FLOAT,
+                                            int, int, int, int &, int &, int &, int *, int *,
+                                            KDTreeCell<ndim> **, ParticleType<ndim> *);
   int ComputeStarGravityInteractionList(NbodyParticle<ndim> *, FLOAT, int, int,
 					int, int &, int &, int &, int *, int *,
-					KDTreeCell<ndim> **, 
+					KDTreeCell<ndim> **,
 					ParticleType<ndim> *);
-  void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, 
+  void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int,
 				 KDTreeCell<ndim> **);
-  void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, 
+  void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int,
 				   KDTreeCell<ndim> **);
-  void ComputeFastMonopoleForces(int, int, KDTreeCell<ndim> **, 
+  void ComputeFastMonopoleForces(int, int, KDTreeCell<ndim> **,
 				 KDTreeCell<ndim> *, ParticleType<ndim> *);
 #if defined(VERIFY_ALL)
   void ValidateTree(ParticleType<ndim> *);

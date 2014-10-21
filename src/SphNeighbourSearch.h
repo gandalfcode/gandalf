@@ -89,6 +89,8 @@ class SphNeighbourSearch
                                        Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphGravForces(int, int, SphParticle<ndim> *,
                                       Sph<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
+                                          Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) = 0;
   virtual void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                               Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) = 0;
   virtual void UpdateActiveParticleCounters(SphParticle<ndim> *,
@@ -155,6 +157,8 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
                                Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphGravForces(int, int, SphParticle<ndim> *,
                               Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
+                                  Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
   void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                       Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
   void UpdateActiveParticleCounters(SphParticle<ndim> *, Sph<ndim> *);
@@ -339,8 +343,10 @@ class SphTree: public SphNeighbourSearch<ndim>
                                Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphGravForces(int, int, SphParticle<ndim> *,
                               Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
+                                  Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) {};
   void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
-                                      Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
+                                      Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) {};
   void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *);
   void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *);
   void UpdateActiveParticleCounters(SphParticle<ndim> *, Sph<ndim> *);

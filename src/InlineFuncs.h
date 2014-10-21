@@ -1,6 +1,6 @@
 //=============================================================================
 //  InlineFuncs.h
-//  Contains definitions of any useful small utility functions that can be 
+//  Contains definitions of any useful small utility functions that can be
 //  templated and/or inlined to improve readability/performance of the code.
 //
 //  This file is part of GANDALF :
@@ -37,7 +37,7 @@ using namespace std;
 
 //=============================================================================
 //  DotProduct
-//  Calculates the dot product between two vectors, v1 and v2, 
+//  Calculates the dot product between two vectors, v1 and v2,
 //  of given length 'ndim'
 //=============================================================================
 template <typename T>
@@ -77,7 +77,7 @@ static inline T min3(T v1, T v2, T v3)
 {
    T vmin = v1;
    if (v2 < vmin) vmin = v2;
-   if (v3 < vmin) vmin = v2;
+   if (v3 < vmin) vmin = v3;
    return vmin;
 }
 
@@ -92,7 +92,7 @@ static inline T max3(T v1, T v2, T v3)
 {
    T vmax = v1;
    if (v2 > vmax) vmax = v2;
-   if (v3 > vmax) vmax = v2;
+   if (v3 > vmax) vmax = v3;
    return vmax;
 }
 
@@ -102,7 +102,7 @@ static inline T max3(T v1, T v2, T v3)
 //  sgn
 //  Sign function.  Returns (a) -1 if T < 0, (b) 0 if T = 0, (c) +1 if T > 0.
 //=============================================================================
-template <typename T> 
+template <typename T>
 static inline int sgn(T val)
 {
   return (T(0) < val) - (val < T(0));
@@ -161,13 +161,13 @@ static inline void Heapsort
 
 #if defined(VERIFY_ALL)
   for (q=1; q<q_TOT; q++)
-    if (V[qV[q]] < V[qV[q-1]]) 
+    if (V[qV[q]] < V[qV[q-1]])
       cout << "Not properly ranked : "
-	   << q << "   " 
+	   << q << "   "
 	   << q_TOT << "   "
 	   << V[qV[q-2]] << "   "
 	   << V[qV[q-1]] << "   "
-	   << V[qV[q]] << "   " 
+	   << V[qV[q]] << "   "
 	   << V[qV[q+1]] << endl;
 #endif
 
@@ -278,9 +278,9 @@ static inline void EulerAngleArrayRotation
 
   for (i=0; i<N; i++) {
     for (k=0; k<3; k++) vecaux[k] = vec[3*i + k];
-    
+
     for (k=0; k<3; k++)
-      vec[3*i + k] = 
+      vec[3*i + k] =
 	Arot[0][k]*vecaux[0] + Arot[1][k]*vecaux[1] + Arot[2][k]*vecaux[2];
 
   }

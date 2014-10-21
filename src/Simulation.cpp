@@ -142,9 +142,11 @@ SimulationBase::SimulationBase
   tsnaplast             = 0.0;
   tlitesnaplast         = 0.0;
   tsnap_wallclock       = 0.0;
+  ewaldGravity          = false;
   initial_h_provided    = false;
   kill_simulation       = false;
   ParametersProcessed   = false;
+  periodicBoundaries    = false;
   rescale_particle_data = false;
   restart               = false;
   setup                 = false;

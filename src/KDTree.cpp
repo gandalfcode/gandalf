@@ -1587,6 +1587,169 @@ int KDTree<ndim,ParticleType>::ComputeGravityInteractionList
 
 
 
+//=================================================================================================
+//  KDTree::ComputePeriodicravityInteractionList
+/// Computes and returns number of SPH neighbours (Nneib), direct sum particles
+/// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
+/// the gravity tree walk for active particles inside cell c.
+/// Currently defaults to the geometric opening criteria.
+/// If any of the interactions list arrays (neiblist,directlist,gravcelllist)
+/// overflow, return with error code (-1) to reallocate more memory.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+int KDTree<ndim,ParticleType>::ComputePeriodicGravityInteractionList
+ (KDTreeCell<ndim> *cell,           ///< [in] Pointer to cell
+  DomainBox<ndim> &simbox,          ///< [in] Simulation box object
+  FLOAT macfactor,                  ///< [in] Gravity MAC particle factor
+  int Nneibmax,                     ///< [in] Max. no. of SPH neighbours
+  int Ndirectmax,                   ///< [in] Max. no. of direct-sum neighbours
+  int Ngravcellmax,                 ///< [in] Max. no. of cell interactions
+  int &Nneib,                       ///< [out] No. of SPH neighbours
+  int &Ndirect,                     ///< [out] No. of direct-sum neighbours
+  int &Ngravcell,                   ///< [out] No. of cell interactions
+  int *neiblist,                    ///< [out] List of SPH neighbour ids
+  int *directlist,                  ///< [out] List of direct-sum neighbour ids
+  KDTreeCell<ndim> **gravcelllist,  ///< [out] List of cell ids
+  ParticleType<ndim> *partdata)     ///< [in] Particle data array
+{
+  int cc;                           // Cell counter
+  int i;                            // Particle id
+  int j;                            // Aux. particle counter
+  int k;                            // Neighbour counter
+  int Nneibtemp = 0;                // Aux. counter
+  FLOAT dr[ndim];                   // Relative position vector
+  FLOAT drsqd;                      // Distance squared
+  FLOAT rc[ndim];                   // Position of cell
+  FLOAT hrangemax;                  // Maximum kernel extent
+  FLOAT rmax;                       // Radius of sphere containing particles
+
+  // Make local copies of important cell properties
+  for (k=0; k<ndim; k++) rc[k] = cell->rcell[k];
+  hrangemax = cell->rmax + kernrange*cell->hmax;
+  rmax = cell->rmax;
+
+  // Start with root cell and walk through entire tree
+  cc = 0;
+  Nneib = 0;
+  Ndirect = 0;
+  Ngravcell = 0;
+
+
+  // Walk through all cells in tree to determine particle and cell
+  // interaction lists
+  //===========================================================================
+  while (cc < Ncell) {
+
+    for (k=0; k<ndim; k++) dr[k] = kdcell[cc].rcell[k] - rc[k];
+    drsqd = DotProduct(dr,dr,ndim);
+
+
+    // Check if bounding boxes overlap with each other
+    //-------------------------------------------------------------------------
+    if (BoxOverlap(cell->bbmin,cell->bbmax,kdcell[cc].hboxmin,kdcell[cc].hboxmax) ||
+        BoxOverlap(cell->hboxmin,cell->hboxmax,kdcell[cc].bbmin,kdcell[cc].bbmax)) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (kdcell[cc].level != ltot)
+        cc++;
+
+      else if (kdcell[cc].N == 0)
+        cc = kdcell[cc].cnext;
+
+      // If leaf-cell, add particles to list
+      else if (kdcell[cc].level == ltot && Nneib + Nleafmax <= Nneibmax) {
+        i = kdcell[cc].ifirst;
+        while (i != -1) {
+          neiblist[Nneib++] = i;
+          if (i == kdcell[cc].ilast) break;
+          i = inext[i];
+        };
+        cc = kdcell[cc].cnext;
+      }
+
+      // If leaf-cell, but we've run out of memory, return with error-code (-1)
+      else if (kdcell[cc].level == ltot && Nneib + Nleafmax > Nneibmax)
+      return -1;
+
+    }
+
+    // Check if cell is far enough away to use the COM approximation
+    //-------------------------------------------------------------------------
+    else if (drsqd > kdcell[cc].cdistsqd && drsqd > kdcell[cc].mac*macfactor
+       && kdcell[cc].N > 0) {
+
+      // If cell is a leaf-cell with only one particle, more efficient to
+      // compute the gravitational contribution from the particle than the cell
+      if (kdcell[cc].level == ltot && kdcell[cc].N == 1 && Ndirect + Nneib < Ndirectmax)
+        directlist[Ndirect++] = kdcell[cc].ifirst;
+      else if (Ngravcell < Ngravcellmax)
+        gravcelllist[Ngravcell++] = &(kdcell[cc]);
+      else
+        return -2;
+      cc = kdcell[cc].cnext;
+
+    }
+
+    // If cell is too close, open cell to interogate children cells.
+    // If cell is too close and a leaf cell, then add particles to direct list.
+    //-------------------------------------------------------------------------
+    else if (!(drsqd > kdcell[cc].cdistsqd && drsqd > kdcell[cc].mac*macfactor )
+       && kdcell[cc].N > 0) {
+
+      // If not a leaf-cell, then open cell to first child cell
+      if (kdcell[cc].level != ltot)
+         cc++;
+
+      // If leaf-cell, add particles to list
+      else if (kdcell[cc].level == ltot && Ndirect + Nleafmax <= Ndirectmax) {
+        i = kdcell[cc].ifirst;
+        while (i != -1) {
+          directlist[Ndirect++] = i;
+          if (i == kdcell[cc].ilast) break;
+           i = inext[i];
+        };
+        cc = kdcell[cc].cnext;
+      }
+
+      // If leaf-cell, but we've run out of memory, return with error-code (-1)
+      else if (kdcell[cc].level == ltot && Ndirect + Nleafmax > Ndirectmax)
+         return -3;
+
+    }
+
+    // If not in range, then open next cell
+    //-------------------------------------------------------------------------
+    else
+      cc = kdcell[cc].cnext;
+
+  };
+  //===========================================================================
+
+
+  // Now, trim the list to remove particles that are definitely not neighbours.
+  // If not an SPH neighbour, then add to direct gravity sum list.
+  hrangemax = hrangemax*hrangemax;
+  for (j=Nneibtemp; j<Nneib; j++) {
+    i = neiblist[j];
+    if (partdata[i].itype == dead) continue;
+    for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
+    drsqd = DotProduct(dr,dr,ndim);
+    if (drsqd < hrangemax || drsqd <
+        (rmax + kernrange*partdata[i].h)*(rmax + kernrange*partdata[i].h))
+      neiblist[Nneibtemp++] = i;
+    else if (Ndirect + Nneibtemp < Ndirectmax)
+      directlist[Ndirect++] = i;
+    else
+     return -3;
+  }
+  Nneib = Nneibtemp;
+
+
+  return 1;
+}
+
+
+
 //=============================================================================
 //  KDTree::ComputeStarGravityInteractionList
 /// Computes and returns number of SPH neighbours (Nneib), direct sum particles

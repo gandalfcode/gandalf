@@ -202,9 +202,12 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
 
   // Create Ewald periodic gravity object
-  if (periodicBoundaries) {
+  periodicBoundaries = IsAnyBoundarySpecial(simbox);
+  if (periodicBoundaries && intparams["self_gravity"] == 1) {
+    ewaldGravity = true;
     ewald = new Ewald<ndim>(simbox,intparams["gr_bhewaldseriesn"],intparams["in"],
-                            floatparams["ewald_mult"],floatparams["ixmin"],floatparams["ixmax"]);
+                            intparams["nEwaldGrid"],floatparams["ewald_mult"],
+                            floatparams["ixmin"],floatparams["ixmax"]);
   }
 
 
@@ -476,7 +479,11 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
-    if (sph->hydro_forces == 1 && sph->self_gravity == 1)
+    if (ewaldGravity && sph->hydro_forces == 1 && sph->self_gravity == 1)
+      sphneib->UpdateAllSphPeriodicForces(sph->Nsph,sph->Ntot,partdata,sph,nbody,simbox,ewald);
+    else if (ewaldGravity && sph->self_gravity == 1)
+      sphneib->UpdateAllSphPeriodicGravForces(sph->Nsph,sph->Ntot,partdata,sph,nbody,simbox,ewald);
+    else if (sph->hydro_forces == 1 && sph->self_gravity == 1)
       sphneib->UpdateAllSphForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
     else if (sph->hydro_forces == 1)
       sphneib->UpdateAllSphHydroForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
@@ -659,8 +666,12 @@ void SphSimulation<ndim>::MainLoop(void)
 #endif
 
 
-      // Compute SPH gravity and hydro forces, depending on which are activated
-      if (sph->hydro_forces == 1 && sph->self_gravity == 1)
+      // Calculate SPH gravity and hydro forces, depending on which are activated
+      if (ewaldGravity && sph->hydro_forces == 1 && sph->self_gravity == 1)
+        sphneib->UpdateAllSphPeriodicForces(sph->Nsph,sph->Ntot,partdata,sph,nbody,simbox,ewald);
+      else if (ewaldGravity && sph->self_gravity == 1)
+        sphneib->UpdateAllSphPeriodicGravForces(sph->Nsph,sph->Ntot,partdata,sph,nbody,simbox,ewald);
+      else if (sph->hydro_forces == 1 && sph->self_gravity == 1)
         sphneib->UpdateAllSphForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
       else if (sph->hydro_forces == 1)
         sphneib->UpdateAllSphHydroForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);

@@ -352,11 +352,13 @@ void Parameters::SetDefaultValues(void)
 
   // Ewald periodic gravity parameters
   //---------------------------------------------------------------------------
+  intparams["ewald"] = 1;
   intparams["gr_bhewaldseriesn"] = 10;
-  intparams["in"] = 3000;
+  intparams["in"] = 500;
+  intparams["nEwaldGrid"] = 16;
   floatparams["ewald_mult"] = 1.0;
   floatparams["ixmin"] = 1.0e-8;
-  floatparams["ixmax"] = 10.0;
+  floatparams["ixmax"] = 5.0;
 
   // Initial conditions parameters
   //---------------------------------------------------------------------------
@@ -411,6 +413,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["alpha_turb"] = 0.1;
   floatparams["power_turb"] = -4.0;
   floatparams["asound"] = 1.0;
+  floatparams["zmax"] = 1.0;
 
   // Random number generator parameters
   //---------------------------------------------------------------------------

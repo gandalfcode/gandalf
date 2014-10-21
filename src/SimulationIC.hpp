@@ -42,24 +42,25 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::GenerateIC
 /// Generate initial conditions for SPH simulation chosen in parameters file.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::GenerateIC(void)
 {
+  ifstream f;                       // Stream of input file
   string in_file;                   // Restart snapshot filename
   string in_file_form;              // Restart snapshot file format
   string filename;                  // Simulation '.restart' filename
-  ifstream f;                       // Stream of input file
+  string ic = simparams->stringparams["ic"];
 
   debug2("[Simulation::GenerateIC]");
 
 
   // First, check special case of restarting a simulation, in which case
   // determine the name of the last snapshot file to be re-read
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (restart) {
     filename = run_id + ".restart";
     f.open(filename.c_str());
@@ -76,58 +77,57 @@ void Simulation<ndim>::GenerateIC(void)
   }
 
 
-  // If not a restart, generate initial conditions either from external
-  // file or created on the fly.
-  //---------------------------------------------------------------------------
-  if (simparams->stringparams["ic"] == "file") {
-    ReadSnapshotFile(simparams->stringparams["in_file"],
-		     simparams->stringparams["in_file_form"]);
+  // If not a restart, generate initial conditions either from external file or created on the fly.
+  //-----------------------------------------------------------------------------------------------
+  if (ic == "file") {
+    ReadSnapshotFile(simparams->stringparams["in_file"], simparams->stringparams["in_file_form"]);
     rescale_particle_data = true;
   }
-  //---------------------------------------------------------------------------
-  else if (simparams->stringparams["ic"] == "bb")
+  //-----------------------------------------------------------------------------------------------
+  else if (ic == "bb")
     BossBodenheimer();
-  else if (simparams->stringparams["ic"] == "binary")
+  else if (ic == "binary")
     BinaryStar();
-  else if (simparams->stringparams["ic"] == "binaryacc")
+  else if (ic == "binaryacc")
     BinaryAccretion();
-  else if (simparams->stringparams["ic"] == "bondi")
+  else if (ic == "bondi")
     BondiAccretion();
-  else if (simparams->stringparams["ic"] == "box")
+  else if (ic == "box")
     UniformBox();
-  else if (simparams->stringparams["ic"] == "cdiscontinuity")
+  else if (ic == "cdiscontinuity")
     ContactDiscontinuity();
-  else if (simparams->stringparams["ic"] == "khi")
+  else if (ic == "ewaldsine" || ic == "ewaldslab")
+    EwaldDensity();
+  else if (ic == "khi")
     KHI();
-  else if (simparams->stringparams["ic"] == "noh")
+  else if (ic == "noh")
     NohProblem();
-  else if (simparams->stringparams["ic"] == "plummer")
+  else if (ic == "plummer")
     PlummerSphere();
-  else if (simparams->stringparams["ic"] == "quadruple")
+  else if (ic == "quadruple")
     QuadrupleStar();
-  else if (simparams->stringparams["ic"] == "sedov")
+  else if (ic == "sedov")
     SedovBlastWave();
-  else if (simparams->stringparams["ic"] == "shearflow")
+  else if (ic == "shearflow")
     ShearFlow();
-  else if (simparams->stringparams["ic"] == "shocktube")
+  else if (ic == "shocktube")
     ShockTube();
-  else if (simparams->stringparams["ic"] == "soundwave")
+  else if (ic == "soundwave")
     SoundWave();
-  else if (simparams->stringparams["ic"] == "sphere")
+  else if (ic == "sphere")
     UniformSphere();
-  else if (simparams->stringparams["ic"] == "triple")
+  else if (ic == "triple")
     TripleStar();
-  else if (simparams->stringparams["ic"] == "turbcore")
+  else if (ic == "turbcore")
     TurbulentCore();
-  else if (simparams->stringparams["ic"] == "python")
+  else if (ic == "python")
     return;
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else {
-    string message = "Unrecognised parameter : ic = "
-      + simparams->stringparams["ic"];
+    string message = "Unrecognised parameter : ic = " + ic;
     ExceptionHandler::getIstance().raise(message);
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   // Scale particle data to dimensionless code units if required
   if (rescale_particle_data) ConvertToCodeUnits();
@@ -1626,6 +1626,158 @@ void Simulation<ndim>::BondiAccretion(void)
 
 
 //=================================================================================================
+//  Simulation::EwaldDensity
+/// Set-up simple density distributions to test Ewald periodic gravity field.
+//=================================================================================================
+template <int ndim>
+void Simulation<ndim>::EwaldDensity(void)
+{
+  int i,k;                          // Particle and dimension counters
+  int Nlattice1[ndim];              // Lattice size
+  FLOAT csound;                     // (Isothermal) sound speed
+  FLOAT diff;                       // Frac difference (for position iteration)
+  FLOAT h0;                         // Slab scale height
+  FLOAT lambda;                     // Wavelength of perturbation
+  FLOAT kwave;                      // Wave number of perturbing sound wave
+  FLOAT omegawave;                  // Angular frequency of sound wave
+  FLOAT ugas;                       // Internal energy of gas
+  FLOAT volume;                     // Simulation box volume
+  FLOAT xold;                       // Old x-position (for iteration)
+  FLOAT xnew;                       // New x-position (for iteration)
+  FLOAT *r;                         // Particle positions
+
+  // Make local copies of parameters for setting up problem
+  string ic       = simparams->stringparams["ic"];
+  FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
+  FLOAT press1    = simparams->floatparams["press1"];
+  FLOAT gamma     = simparams->floatparams["gamma_eos"];
+  FLOAT gammaone  = gamma - 1.0;
+  FLOAT amp       = simparams->floatparams["amp"];
+  FLOAT temp0     = simparams->floatparams["temp0"];
+  FLOAT mu_bar    = simparams->floatparams["mu_bar"];
+  FLOAT zmax      = simparams->floatparams["zmax"];
+  Nlattice1[0]    = simparams->intparams["Nlattice1[0]"];
+  Nlattice1[1]    = simparams->intparams["Nlattice1[1]"];
+  Nlattice1[2]    = simparams->intparams["Nlattice1[2]"];
+
+
+  debug2("[Simulation::EwaldDensity]");
+
+
+  if (sph->gas_eos == "isothermal") {
+    ugas   = temp0/gammaone/mu_bar;
+    press1 = gammaone*rhofluid1*ugas;
+    csound = sqrt(press1/rhofluid1);
+  }
+  else {
+    ugas   = press1/rhofluid1/gammaone;
+    csound = sqrt(gamma*press1/rhofluid1);
+  }
+
+  lambda = simbox.boxsize[0];
+  volume = simbox.boxsize[0]*simbox.boxsize[1]*simbox.boxsize[2];
+  kwave = twopi/lambda;
+  omegawave = twopi*csound/lambda;
+
+  // Allocate local and main particle memory
+  int Npart = Nlattice1[0]*Nlattice1[1]*Nlattice1[2];
+  sph->Nsph = Npart;
+  //Nlattice1[0] = Npart;
+  AllocateParticleMemory();
+  r = new FLOAT[ndim*sph->Nsph];
+
+
+  // 1D sinusoidal density perturbation
+  //===============================================================================================
+  if (ic == "ewaldsine") {
+
+    lambda = simbox.boxmax[0] - simbox.boxmin[0];
+    kwave = twopi/lambda;
+    omegawave = twopi*csound/lambda;
+
+    // Add regular distribution of SPH particles
+    AddCubicLattice(Npart,Nlattice1,r,simbox,false);
+
+    // Add sinusoidal density perturbation to particle distribution
+    AddSinusoidalDensityPerturbation(Npart,amp,lambda,r);
+
+    // Set all other particle quantities
+    //---------------------------------------------------------------------------------------------
+    for (i=0; i<Npart; i++) {
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+
+      // Set positions in main array with corresponind velocity perturbation
+      for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
+      for (k=0; k<ndim; k++) part.v[k] = 0.0;
+      //for (k=0; k<ndim; k++) part.v[k] = csound*amp*sin(kwave*r[ndim*i]);
+      part.m = rhofluid1*volume/(FLOAT) Npart;
+      part.h = sph->h_fac*pow(part.m/rhofluid1,invndim);
+
+      if (sph->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
+      else part.u = press1/rhofluid1/gammaone;
+
+    }
+    //---------------------------------------------------------------------------------------------
+
+
+  }
+  //===============================================================================================
+  else if (ic == "ewaldslab") {
+
+    h0 = csound/sqrtf(twopi*rhofluid1);
+
+    // Rescale periodic box (and other variables)
+    lambda = simbox.boxmax[2];
+    for (k=0; k<ndim; k++) {
+      simbox.boxmin[k] *= zmax*h0/lambda;
+      simbox.boxmax[k] *= zmax*h0/lambda;
+      simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
+      simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
+    }
+
+    // Add regular distribution of SPH particles
+    AddCubicLattice(Npart,Nlattice1,r,simbox,false);
+
+    volume = simbox.boxsize[0]*simbox.boxsize[1]*simbox.boxsize[2];
+    FLOAT volp = volume/(FLOAT) Npart;
+
+    /*cout << "rho0 : " << rhofluid1 << endl;
+    cout << "h0   : " << h0 << endl;
+    cout << "zmax : " << zmax << "    " << zmax*h0 << endl;
+    cout << "Mass : " << 2.0*rhofluid1*h0 << endl;
+    cout << "boxsize : " << simbox.boxmax[2] << endl;*/
+
+
+    // Set all other particle quantities
+    //---------------------------------------------------------------------------------------------
+    for (i=0; i<Npart; i++) {
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+
+      // Set positions in main array with corresponind velocity perturbation
+      for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
+      for (k=0; k<ndim; k++) part.v[k] = 0.0;
+      part.rho = rhofluid1/powf(cosh(part.r[2]/h0),2);
+      part.m   = part.rho*volp;
+      part.h   = sph->h_fac*pow(part.m/part.rho,invndim);
+
+      if (sph->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
+      else part.u = press1/rhofluid1/gammaone;
+
+    }
+    //---------------------------------------------------------------------------------------------
+
+
+  }
+  //===============================================================================================
+
+  initial_h_provided = true;
+
+  return;
+}
+
+
+
+//=================================================================================================
 //  Simulation::PlummerSphere
 /// Generate a Plummer sphere containing either stars, gas or a mixture of both.
 /// Uses the algorithm described by Aarseth et al. (197?).
@@ -2011,10 +2163,10 @@ void Simulation<ndim>::ShearFlow(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::SoundWave
 /// Set-up isothermal sound-wave test.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::SoundWave(void)
 {
@@ -2031,15 +2183,15 @@ void Simulation<ndim>::SoundWave(void)
   FLOAT *r;                         // Particle positions
 
   // Make local copies of parameters for setting up problem
-  int Npart = simparams->intparams["Nsph"];
+  int Npart       = simparams->intparams["Nsph"];
   FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
-  FLOAT press1 = simparams->floatparams["press1"];
-  FLOAT gamma = simparams->floatparams["gamma_eos"];
-  FLOAT gammaone = gamma - 1.0;
-  FLOAT amp = simparams->floatparams["amp"];
-  FLOAT temp0 = simparams->floatparams["temp0"];
-  FLOAT mu_bar = simparams->floatparams["mu_bar"];
-  Nlattice1[0] = simparams->intparams["Nlattice1[0]"];
+  FLOAT press1    = simparams->floatparams["press1"];
+  FLOAT gamma     = simparams->floatparams["gamma_eos"];
+  FLOAT gammaone  = gamma - 1.0;
+  FLOAT amp       = simparams->floatparams["amp"];
+  FLOAT temp0     = simparams->floatparams["temp0"];
+  FLOAT mu_bar    = simparams->floatparams["mu_bar"];
+  Nlattice1[0]    = simparams->intparams["Nlattice1[0]"];
 
   debug2("[Simulation::SoundWave]");
 
@@ -2049,12 +2201,12 @@ void Simulation<ndim>::SoundWave(void)
   }
 
   if (sph->gas_eos == "isothermal") {
-    ugas = temp0/gammaone/mu_bar;
+    ugas   = temp0/gammaone/mu_bar;
     press1 = gammaone*rhofluid1*ugas;
     csound = sqrt(press1/rhofluid1);
   }
   else {
-    ugas = press1/rhofluid1/gammaone;
+    ugas   = press1/rhofluid1/gammaone;
     csound = sqrt(gamma*press1/rhofluid1);
   }
 
@@ -2071,36 +2223,24 @@ void Simulation<ndim>::SoundWave(void)
   // Add regular distribution of SPH particles
   AddCubicLattice(Npart,Nlattice1,r,simbox,false);
 
+  // Add sinusoidal density perturbation to particle distribution
+  AddSinusoidalDensityPerturbation(Npart,amp,lambda,r);
 
-  // Set positions of all particles to produce density perturbation
-  //---------------------------------------------------------------------------
+  // Set all other particle quantities
+  //----------------------------------------------------------------------------------------------
   for (i=0; i<Npart; i++) {
     SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-    xnew = r[ndim*i];
-
-    // Solve iterative procedure for particle positions in sound wave
-    do {
-      xold = xnew;
-      xnew = r[ndim*i] - amp*(1.0 - cos(kwave*xnew))/kwave;
-      diff = fabs((xnew - xold)/lambda);
-    } while (diff > 1.0e-6);
-
-    if (xnew > simbox.boxmax[0]) xnew -= simbox.boxsize[0];
-    if (xnew < simbox.boxmin[0]) xnew += simbox.boxsize[0];
 
     // Set positions in main array with corresponind velocity perturbation
-    for (k=0; k<ndim; k++) part.r[k] = xnew;
-    for (k=0; k<ndim; k++)
-      part.v[k] = csound*amp*sin(kwave*xnew);
+    for (k=0; k<ndim; k++) part.r[k] = r[ndim*i];
+    for (k=0; k<ndim; k++) part.v[k] = csound*amp*sin(kwave*r[ndim*i]);
     part.m = rhofluid1*lambda/(FLOAT) Npart;
     part.h = sph->h_fac*pow(part.m/rhofluid1,invndim);
 
-    if (sph->gas_eos == "isothermal")
-      part.u = temp0/gammaone/mu_bar;
-    else
-      part.u = press1/rhofluid1/gammaone;
+    if (sph->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
+    else part.u = press1/rhofluid1/gammaone;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   initial_h_provided = true;
 
@@ -2386,7 +2526,7 @@ void Simulation<ndim>::AddRandomBox
 
 
 //=================================================================================================
-//  Simulation::AddRandomsphere
+//  Simulation::AddRandomSphere
 /// Add random sphere of particles
 //=================================================================================================
 template <int ndim>
@@ -2779,6 +2919,53 @@ void Simulation<ndim>::AddAzimuthalDensityPerturbation
 
   }
   //---------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  Simulation::AddSinusoidalDensityPerturbation
+/// Add a 1D sinusoidal density perturbation (in x-direction) to given uniform density field.
+//=================================================================================================
+template <int ndim>
+void Simulation<ndim>::AddSinusoidalDensityPerturbation
+(int Npart,                         ///< [in] No. of particles in sphere
+ FLOAT amp,                         ///< [in] Amplitude of perturbation
+ FLOAT lambda,                      ///< [in] Wave number of perturbation
+ FLOAT *r)                          ///< [inout] Positions of particles
+{
+  int i,k;                          // Particle and dimension counters
+  int j;                            // Aux. counter
+  FLOAT diff;                       // Convergence error/difference
+  FLOAT xold;                       // ..
+  FLOAT xnew;                       // New particle position
+  FLOAT kwave = twopi/lambda;       // ..
+
+  debug2("[Simulation::AddSinusoidalDensityPerturbation]");
+
+
+  // Loop over all required particles
+  //-----------------------------------------------------------------------------------------------
+#pragma omp parallel for default(none)
+  for (i=0; i<Npart; i++) {
+    xnew = r[ndim*i];
+
+    // Solve iterative procedure for particle positions in sinusoid
+    do {
+      xold = xnew;
+      xnew = r[ndim*i] - amp*(1.0 - cos(kwave*xnew))/kwave;
+      diff = fabs((xnew - xold)/lambda);
+    } while (diff > 1.0e-6);
+
+    if (xnew > simbox.boxmax[0]) xnew -= simbox.boxsize[0];
+    if (xnew < simbox.boxmin[0]) xnew += simbox.boxsize[0];
+
+    r[ndim*i] = xnew;
+  }
+  //-----------------------------------------------------------------------------------------------
+
 
   return;
 }
