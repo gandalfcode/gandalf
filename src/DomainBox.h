@@ -112,11 +112,13 @@ bool IsAnyBoundarySpecial(const DomainBox<ndim>& box) {
 }
 
 
+
 //=============================================================================
 /// \brief  Helper function to say if a value is contained inside an interval
 //=============================================================================
 inline bool valueInRange(FLOAT value, FLOAT min, FLOAT max)
 { return (value >= min) && (value <= max); }
+
 
 
 //=============================================================================
@@ -140,6 +142,61 @@ inline bool BoxesOverlap (Box<ndim>& A, Box<ndim>& B) {
   }
 
   return result;
+
+}
+
+
+
+//=================================================================================================
+/// \brief  Helper function to find if two boxes overlap
+/// \author D. A. Hubber, G. Rosotti
+/// \date   12/11/2013
+/// \return A boolean saying whether the boxes overlap
+//=================================================================================================
+/*template <int ndim>
+inline void NearestPeriodicVector(DomainBox<ndim> &box, FLOAT dr[ndim])
+{
+  if (box.x_boundary_lhs == periodicBoundary && box.x_boundary_rhs == periodicBoundary) {
+    if (dr[0] > box.boxhalf[0]) dr[0] -= box.boxsize[0];
+    else if (dr[0] < -box.boxhalf[0]) dr[0] += box.boxsize[0];
+  }
+  if (ndim > 1) {
+    if (box.y_boundary_lhs == periodicBoundary && box.y_boundary_rhs == periodicBoundary) {
+      if (dr[1] > box.boxhalf[1]) dr[1] -= box.boxsize[1];
+      else if (dr[1] < -box.boxhalf[1]) dr[1] += box.boxsize[1];
+    }
+  }
+  if (ndim == 3) {
+    if (box.z_boundary_lhs == periodicBoundary && box.z_boundary_rhs == periodicBoundary) {
+      if (dr[2] > box.boxhalf[2]) dr[2] -= box.boxsize[2];
+      else if (dr[2] < -box.boxhalf[2]) dr[2] += box.boxsize[2];
+    }
+  }
+
+}*/
+
+
+
+//=================================================================================================
+/// \brief  Helper function to find if two boxes overlap
+/// \author D. A. Hubber, G. Rosotti
+/// \date   12/11/2013
+/// \return A boolean saying whether the boxes overlap
+//=================================================================================================
+template <int ndim>
+inline bool FractionalBoxOverlap
+ (Box<ndim> &box1,                     ///< ..
+  Box<ndim> &box2,                     ///< ..
+  DomainBox<ndim> &simbox,             ///< ..
+  FLOAT &overlapfrac)                  ///< ..
+{
+  int k;
+  FLOAT dr[ndim];
+
+  // First, calculate relative position vector between boxes
+  for (k=0; k<ndim; k++) dr[k] = box2.r[k] - box1.r[k];
+
+  // Calculate closest position vector to nearest
 
 }
 

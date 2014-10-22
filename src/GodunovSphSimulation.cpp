@@ -137,13 +137,13 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
      (sph->kernp->kernrange,&simbox,sph->kernp,this->timing);
   else if (stringparams["neib_search"] == "kdtree") {
     sphneib = new GodunovSphKDTree<ndim,GodunovSphParticle,KDTreeCell>
-     (intparams["Nleafmax"],mpicontrol->Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
+     (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
       floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
       &simbox,sph->kernp,timing);
   }
   else if (stringparams["neib_search"] == "octtree") {
     sphneib = new GodunovSphOctTree<ndim,GodunovSphParticle,OctTreeCell>
-     (intparams["Nleafmax"],mpicontrol->Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
+     (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
       floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
       &simbox,sph->kernp,timing);
   }

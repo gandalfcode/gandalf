@@ -484,20 +484,22 @@ int MpiTree<ndim,ParticleType>::FindCell
 
 
 
-//=============================================================================
+//=================================================================================================
 //  MpiTree::UpdateBoundingBoxes
-/// ...
-//=============================================================================
+/// Update the bounding boxes of all nodes on lower levels of the tree based on adjustment of
+/// higher level division (such as for load-balancing).
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MpiTree<ndim,ParticleType>::UpdateBoundingBoxes(void)
 {
-  int c;
-  int c1;
-  int c2;
-  int k;
-  int k_divide;
-  FLOAT r_divide;
+  int c;                               // Cell counter
+  int c1;                              // 1st child cell id
+  int c2;                              // 2nd child cell id
+  int k;                               // Dimension counter
+  int k_divide;                        // Dimension of cell division (between children)
+  FLOAT r_divide;                      // Position of division
 
+  //-----------------------------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
     if (tree[c].level == ltot) continue;
 
@@ -517,6 +519,7 @@ void MpiTree<ndim,ParticleType>::UpdateBoundingBoxes(void)
     tree[c1].bbmin[k_divide] = r_divide;
 
   }
+  //-----------------------------------------------------------------------------------------------
 
   return;
 }

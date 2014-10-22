@@ -1328,30 +1328,43 @@ void SphTree<ndim,ParticleType,TreeCell>::FindMpiTransferParticles
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 FLOAT SphTree<ndim,ParticleType,TreeCell>::FindLoadBalancingDivision
-(int k_divide,
- FLOAT r_old,
- FLOAT bbmin[ndim],
- FLOAT bbmax[ndim],
- vector<int> &leftnodes,
- vector<int> &rightnodes,
- MpiNode<ndim> *mpinode)
+ (int k_divide,                        ///< Dimension of cell division
+  FLOAT r_old,                         ///< Old position of cell division
+  Box<ndim> &box)                      ///< Parent box to divide
 {
-  FLOAT r_divide = r_old;
-  FLOAT r_max = bbmax[k_divide];
-  FLOAT r_min = bbmin[k_divide];
-  FLOAT workleft;
-  FLOAT workright;
-  FLOAT workfrac;
-  FLOAT worktol = 0.001;
+  int i;
+  int k;
+  FLOAT r_divide = r_old;              // Cell division location
+  FLOAT r_max = box.boxmax[k_divide];  // Max. for bisection iteration of division
+  FLOAT r_min = box.boxmin[k_divide];  // Min. for bisection iteration of division
+  FLOAT workleft;                      // Work computed on LHS of division
+  FLOAT workright;                     // Work computed on RHS of division
+  FLOAT workfrac;                      // Fraction of work on LHS
+  FLOAT worktol = 0.001;               // Work balance tolerance for iteration
+  Box<ndim> boxleft = box;             // LHS box
+  Box<ndim> boxright = box;            // RHS box
 
+
+  // Find the work-balance position through bisection iteration
   //-----------------------------------------------------------------------------------------------
   do {
     workleft = 0.0;
     workright = 0.0;
+    boxleft.boxmax[k_divide] = r_divide;
+    boxright.boxmin[k_divide] = r_divide;
 
-    for (int i=0; i<leftnodes.size(); i++) {
-      int inode = leftnodes[i];
+
+    // Compute work included in left-hand side
+    for (i=0; i<Nmpi; i++) {
+      workleft += 0.0;
     }
+
+
+    // Compute work included in right-hand side
+    for (i=0; i<Nmpi; i++) {
+      workright += 0.0;
+    }
+
 
     // If fraction of work on either side of division is too inbalanced,
     // calculate new position of division and perform another iteration.

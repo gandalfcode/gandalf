@@ -598,37 +598,38 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   for (inode=0; inode<Nmpi; inode++) worktot += 0.0;
 
 
-//  // Loop over all non-leaf levels (starting from the root) and compute the work on each MPI-tree
-//  // division, adjusting the divide to balance the work on both sides.
-//  //-----------------------------------------------------------------------------------------------
-//  for (l=0; l<mpitree->ltot-1; l++) {
-//
-//    // Loop over all MPI tree cells on current balancing level
-//    for (c=0; c<mpitree->Ncell; c++) {
-//      if (mpitree->tree[c].level != l) continue;
-//      c2 = mpitree->tree[c].c2;
-//
-//      // Now find new division between child cells that is load-balanced
-//      mpitree->tree[c].r_divide = neibsearch->FindLoadBalancingDivision
-//        (mpitree->tree[c].k_divide,mpitree->tree[c].r_divide,mpitree->tree[c].bbmin,
-//         mpitree->tree[c].bbmax,mpitree->tree[c+1].nodes,mpitree->tree[c2].nodes,mpinode);
-//
-//    }
-//
-//    // Update all cell bounding boxes now new divisions have been computed
-//    mpitree->UpdateBoundingBoxes();
-//
-//    // Finally update all MPI node bounding boxes
-//    for (inode=0; inode<Nmpi; inode++) {
-//      int icell = mpitree->g2c[inode];
-//
-//      // Create bounding boxes containing particles in each sub-tree
-//      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] = mpitree->tree[icell].bbmin[k];
-//      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] = mpitree->tree[icell].bbmax[k];
-//    }
-//
-//  }
+  // Starting with the highest MpiTree division, start adjusting divisional positions to achieve
+  // equal amounts of work on each side of the divide.  Use the extrapolated cells from each
+  // pruned tree to compute work done.
   //-----------------------------------------------------------------------------------------------
+  /*for (l=0; l<mpitree->ltot-1; l++) {
+
+    // Loop over all MPI tree cells on current balancing level
+    for (c=0; c<mpitree->Ncell; c++) {
+      if (mpitree->tree[c].level != l) continue;
+      c2 = mpitree->tree[c].c2;
+
+      // Now find new division between child cells that is load-balanced
+      mpitree->tree[c].r_divide = neibsearch->FindLoadBalancingDivision
+        (mpitree->tree[c].k_divide, mpitree->tree[c].r_divide, mpitree->tree[c].bbmin,
+         mpitree->tree[c].bbmax, mpitree->tree[c+1].nodes, mpitree->tree[c2].nodes, mpinode);
+    }
+
+    // Update all cell bounding boxes now new divisions have been computed
+    mpitree->UpdateBoundingBoxes();
+
+    // Finally update all MPI node bounding boxes
+    for (inode=0; inode<Nmpi; inode++) {
+      int icell = mpitree->g2c[inode];
+
+      // Create bounding boxes containing particles in each sub-tree
+      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] = mpitree->tree[icell].bbmin[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] = mpitree->tree[icell].bbmax[k];
+    }
+
+  }*/
+  //-----------------------------------------------------------------------------------------------
+
 
   // Prepare lists of particles that now occupy other processor domains that need to be transfered
 
@@ -637,9 +638,7 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   potential_nodes.reserve(Nmpi);
   for (int inode=0; inode<Nmpi; inode++) {
     if (inode == rank) continue;
-    if (BoxesOverlap(mpinode[inode].domain,mpinode[rank].rbox)) {
-      potential_nodes.push_back(inode);
-    }
+    if (BoxesOverlap(mpinode[inode].domain,mpinode[rank].rbox)) potential_nodes.push_back(inode);
   }
 
 
@@ -647,7 +646,7 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   std::vector<std::vector<int> > particles_to_transfer (Nmpi);
   std::vector<int> all_particles_to_export;
   BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,&mpibox,sph->kernp,timing);
-  bruteforce.FindParticlesToTransfer(sph, particles_to_transfer,all_particles_to_export,
+  bruteforce.FindParticlesToTransfer(sph, particles_to_transfer, all_particles_to_export,
                                      potential_nodes, mpinode);
 
   // Send and receive particles from/to all other nodes
