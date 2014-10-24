@@ -80,7 +80,7 @@ GradhSphKDTree<ndim,ParticleType,TreeCell>::GradhSphKDTree
   prunedtree = (Tree<ndim,ParticleType,TreeCell> **) prunedtree_derived;
   for (int j=0; j<Nmpi; j++) {
     prunedtree[j] = new KDTree<ndim,ParticleType,TreeCell>
-      (Nleafmaxaux, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
+      (1, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
   }
 #endif
 }

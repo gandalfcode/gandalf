@@ -230,13 +230,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
   }
 
 
-  // Now simulation object is created, set-up various MPI variables
-#ifdef MPI_PARALLEL
-  rank = mpicontrol->rank;
-  Nmpi = mpicontrol->Nmpi;
-#endif
-
-
   // Flag that we've processed all parameters already
   ParametersProcessed = true;
 

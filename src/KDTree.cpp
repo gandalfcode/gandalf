@@ -103,6 +103,8 @@ void KDTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
 
   debug2("[KDTree::AllocateTreeMemory]");
 
+  ComputeTreeSize();
+
   if (!allocated_tree || Ntotmax > Ntotmaxold) {
     if (allocated_tree) DeallocateTreeMemory();
     Ntotmax = max(Ntotmax,Ntot);
@@ -115,9 +117,11 @@ void KDTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
 
     allocated_tree = true;
 
-    CreateTreeStructure();
+    //CreateTreeStructure();
 
   }
+
+  CreateTreeStructure();
 
   return;
 }
@@ -287,6 +291,7 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
     cNL[l] = 2*c2L[l] - 1;
   }
 
+
   // Zero tree cell variables
   for (g=0; g<gtot; g++) g2c[g] = 0;
   for (c=0; c<Ncell; c++) {
@@ -300,6 +305,7 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
   }
   g = 0;
   celldata[0].level = 0;
+
 
   // Loop over all cells and set all other pointers
   //---------------------------------------------------------------------------
@@ -317,6 +323,9 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
       celldata[celldata[c].c2].level = celldata[c].level + 1; // Level of 2nd child
       celldata[c].cnext = c + cNL[celldata[c].level];       // Next cell id
     }
+
+    // Some assert statements (for debugging)
+    assert(c >= celldata[c].level);
 
   }
   //---------------------------------------------------------------------------
@@ -2083,9 +2092,9 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 bool KDTree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
-(const TreeCell<ndim> *cellptr)     ///< [in] Pointer to cell
+ (const TreeCell<ndim> *cellptr)       ///< [in] Pointer to cell
 {
-  int cc = 0;                       // Cell counter
+  int cc = 0;                          // Cell counter
 
   // Walk through all cells in tree to determine particle and cell interaction lists
   //===============================================================================================
@@ -2100,7 +2109,7 @@ bool KDTree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
       if (celldata[cc].level != ltot) cc++;
 
       // If cell contains no particle (dead leaf?) then move to next cell
-      else if (celldata[cc].N == 0) cc = celldata[cc].cnext;
+      //else if (celldata[cc].N == 0) cc = celldata[cc].cnext;
 
       // If cell is overlapping with any leaf, then flag overlap on return
       else if (celldata[cc].level == ltot) return true;

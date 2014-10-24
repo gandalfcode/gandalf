@@ -212,6 +212,8 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 #if defined MPI_PARALLEL
   mpicontrol = new MpiControlType<ndim, GradhSphParticle>;
   mpicontrol->timing = timing;
+  rank = mpicontrol->rank;
+  Nmpi = mpicontrol->Nmpi;
 #endif
 
   // Create neighbour searching object based on chosen method in params file

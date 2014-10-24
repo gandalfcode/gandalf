@@ -383,8 +383,8 @@ protected:
                                Sph<ndim> *, Nbody<ndim> *) {};
   void UpdateAllSphGravForces(int, int, SphParticle<ndim> *,
                               Sph<ndim> *, Nbody<ndim> *) {};
-  void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *);
-  void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *);
+  void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *) {};
+  void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *) {};
   void UpdateActiveParticleCounters(SphParticle<ndim> *, Sph<ndim> *);
   virtual void UpdateAllStarGasForces(int, int, SphParticle<ndim> *,
 				      Sph<ndim> *, Nbody<ndim> *) {};
