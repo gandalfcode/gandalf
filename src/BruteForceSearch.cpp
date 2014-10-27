@@ -494,7 +494,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicForces
   ParticleType<ndim>* neibdata;       // Local copy of neighbouring particles
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
-  debug2("[BruteForceSearch::UpdateAllSphPeriodicGravForces]");
+  debug2("[BruteForceSearch::UpdateAllSphPeriodicForces]");
 
   // Allocate memory for storing neighbour ids and position data
   neiblist = new int[Ntot];
@@ -503,7 +503,6 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicForces
   // Compute smoothing lengths of all SPH particles
   //-----------------------------------------------------------------------------------------------
   for (i=0; i<Nsph; i++) {
-
     // Skip over inactive particles
     if (!sphdata[i].active || sphdata[i].itype == dead) continue;
 
@@ -525,9 +524,9 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicForces
       neibdata[j] = sphdata[j];
       if (i != j && sphdata[j].itype != dead) {
         neiblist[Nneib++] = j;
-        //for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - sphdata[i].r[k];
-        //NearestPeriodicVector(simbox,dr);
-        //for (k=0; k<ndim; k++) neibdata[j].r[k] = sphdata[i].r[k] + dr[k];
+        for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - sphdata[i].r[k];
+        NearestPeriodicVector(simbox,dr);
+        for (k=0; k<ndim; k++) neibdata[j].r[k] = sphdata[i].r[k] + dr[k];
       };
     }
 
@@ -537,11 +536,12 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicForces
     // Now add the periodic correction force
     for (j=0; j<Nneib; j++) {
       for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - sphdata[i].r[k];
-      NearestPeriodicVector(simbox,dr);
+//      NearestPeriodicVector(simbox,dr);
       ewald->CalculatePeriodicCorrection(neibdata[j].m,dr,aperiodic,potperiodic);
       for (k=0; k<ndim; k++) sphdata[i].agrav[k] += aperiodic[k];
       sphdata[i].gpot += potperiodic;
     }
+
 
     // Compute all star forces
     sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sphdata[i]);
@@ -614,19 +614,19 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphPeriodicGravForces
       neibdata[j] = sphdata[j];
       if (i != j && sphdata[j].itype != dead) {
         neiblist[Nneib++] = j;
-        //for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - sphdata[i].r[k];
-        //NearestPeriodicVector(simbox,dr);
-        //for (k=0; k<ndim; k++) neibdata[j].r[k] = sphdata[i].r[k] + dr[k];
+        for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - sphdata[i].r[k];
+        NearestPeriodicVector(simbox,dr);
+        for (k=0; k<ndim; k++) neibdata[j].r[k] = sphdata[i].r[k] + dr[k];
       };
     }
 
     // Compute forces between SPH neighbours (hydro and gravity)
-    sph->ComputeSphGravForces(i,Nneib,neiblist,sphdata[i],sphdata);
+    sph->ComputeSphGravForces(i,Nneib,neiblist,sphdata[i],neibdata);
 
     // Now add the periodic correction force
     for (j=0; j<Nneib; j++) {
       for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - sphdata[i].r[k];
-      NearestPeriodicVector(simbox,dr);
+      //NearestPeriodicVector(simbox,dr);
       ewald->CalculatePeriodicCorrection(neibdata[j].m,dr,aperiodic,potperiodic);
       for (k=0; k<ndim; k++) sphdata[i].agrav[k] += aperiodic[k];
       sphdata[i].gpot += potperiodic;

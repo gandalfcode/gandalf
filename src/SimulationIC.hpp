@@ -96,7 +96,7 @@ void Simulation<ndim>::GenerateIC(void)
     UniformBox();
   else if (ic == "cdiscontinuity")
     ContactDiscontinuity();
-  else if (ic == "ewaldsine" || ic == "ewaldslab")
+  else if (ic == "ewaldsine" || ic == "ewaldsine2" || ic == "ewaldslab" ||  ic == "ewaldcylinder")
     EwaldDensity();
   else if (ic == "khi")
     KHI();
@@ -1637,6 +1637,7 @@ void Simulation<ndim>::EwaldDensity(void)
   FLOAT csound;                     // (Isothermal) sound speed
   FLOAT diff;                       // Frac difference (for position iteration)
   FLOAT h0;                         // Slab scale height
+  FLOAT a2inv;                      // Squared inverse scale height for cylinder
   FLOAT lambda;                     // Wavelength of perturbation
   FLOAT kwave;                      // Wave number of perturbing sound wave
   FLOAT omegawave;                  // Angular frequency of sound wave
@@ -1722,24 +1723,59 @@ void Simulation<ndim>::EwaldDensity(void)
 
   }
   //===============================================================================================
-  else if (ic == "ewaldslab") {
+  else if (ic == "ewaldsine2") {
 
-    h0 = csound/sqrtf(twopi*rhofluid1);
-
-    // Rescale periodic box (and other variables)
-    lambda = simbox.boxmax[2];
-    for (k=0; k<ndim; k++) {
-      simbox.boxmin[k] *= zmax*h0/lambda;
-      simbox.boxmax[k] *= zmax*h0/lambda;
-      simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
-      simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
-    }
+    lambda = simbox.boxmax[0] - simbox.boxmin[0];
+    kwave = twopi/lambda;
 
     // Add regular distribution of SPH particles
     AddCubicLattice(Npart,Nlattice1,r,simbox,false);
 
     volume = simbox.boxsize[0]*simbox.boxsize[1]*simbox.boxsize[2];
     FLOAT volp = volume/(FLOAT) Npart;
+//    printf("Initial conditions - boxsize %16.8e %16.8e %16.8e \n",simbox.boxsize[0],simbox.boxsize[1],simbox.boxsize[2]);
+    // Set all other particle quantities
+    //---------------------------------------------------------------------------------------------
+    for (i=0; i<Npart; i++) {
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+
+      // Set positions in main array with corresponind velocity perturbation
+      for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
+      for (k=0; k<ndim; k++) part.v[k] = 0.0;
+      part.rho = rhofluid1*(1.0+amp*sin(kwave*part.r[0]));
+      part.m   = part.rho*volp;
+      part.h   = sph->h_fac*pow(part.m/part.rho,invndim);
+
+      if (sph->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
+      else part.u = press1/rhofluid1/gammaone;
+
+    }
+    //---------------------------------------------------------------------------------------------
+
+
+  }
+
+
+  //===============================================================================================
+  else if (ic == "ewaldslab") {
+
+    h0 = csound/sqrtf(twopi*rhofluid1);
+
+    // Rescale periodic box (and other variables)
+    //lambda = simbox.boxmax[2];
+    //for (k=0; k<ndim; k++) {
+    //  simbox.boxmin[k] *= zmax*h0/lambda;
+    //  simbox.boxmax[k] *= zmax*h0/lambda;
+    //  simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
+    //  simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
+    //}
+
+    // Add regular distribution of SPH particles
+    AddCubicLattice(Npart,Nlattice1,r,simbox,false);
+
+    volume = simbox.boxsize[0]*simbox.boxsize[1]*simbox.boxsize[2];
+    FLOAT volp = volume/(FLOAT) Npart;
+//    printf("Initial conditions - boxsize %16.8e %16.8e %16.8e \n",simbox.boxsize[0],simbox.boxsize[1],simbox.boxsize[2]);
 
     /*cout << "rho0 : " << rhofluid1 << endl;
     cout << "h0   : " << h0 << endl;
@@ -1768,6 +1804,55 @@ void Simulation<ndim>::EwaldDensity(void)
 
 
   }
+  //===============================================================================================
+  else if (ic == "ewaldcylinder") {
+
+    a2inv = pi*rhofluid1*0.5/pow(csound,2);
+
+    // Rescale periodic box (and other variables)
+    //lambda = simbox.boxmax[2];
+    //for (k=0; k<ndim; k++) {
+    //  simbox.boxmin[k] *= zmax*h0/lambda;
+    //  simbox.boxmax[k] *= zmax*h0/lambda;
+    //  simbox.boxsize[k] = simbox.boxmax[k] - simbox.boxmin[k];
+    //  simbox.boxhalf[k] = 0.5*simbox.boxsize[k];
+    //}
+
+    // Add regular distribution of SPH particles
+    AddCubicLattice(Npart,Nlattice1,r,simbox,false);
+
+    volume = simbox.boxsize[0]*simbox.boxsize[1]*simbox.boxsize[2];
+    FLOAT volp = volume/(FLOAT) Npart;
+//    printf("Initial conditions - boxsize %16.8e %16.8e %16.8e \n",simbox.boxsize[0],simbox.boxsize[1],simbox.boxsize[2]);
+
+    /*cout << "rho0 : " << rhofluid1 << endl;
+    cout << "h0   : " << h0 << endl;
+    cout << "zmax : " << zmax << "    " << zmax*h0 << endl;
+    cout << "Mass : " << 2.0*rhofluid1*h0 << endl;
+    cout << "boxsize : " << simbox.boxmax[2] << endl;*/
+
+
+    // Set all other particle quantities
+    //---------------------------------------------------------------------------------------------
+    for (i=0; i<Npart; i++) {
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+
+      // Set positions in main array with corresponind velocity perturbation
+      for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
+      for (k=0; k<ndim; k++) part.v[k] = 0.0;
+      part.rho = rhofluid1/pow((1.0+a2inv*(pow(part.r[1],2) + pow(part.r[2],2))),2);
+      part.m   = part.rho*volp;
+      part.h   = sph->h_fac*pow(part.m/part.rho,invndim);
+
+      if (sph->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
+      else part.u = press1/rhofluid1/gammaone;
+
+    }
+    //---------------------------------------------------------------------------------------------
+
+
+  }
+
   //===============================================================================================
 
   initial_h_provided = true;
