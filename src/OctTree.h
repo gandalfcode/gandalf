@@ -1,7 +1,6 @@
-//=============================================================================
-//  KDTree.h
-//  Header file containing class definitions for constructing and updating
-//  the KD-tree.
+//=================================================================================================
+//  OctTree.h
+//  Header file containing class definitions for constructing and updating the octal tree.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -19,11 +18,11 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
-#ifndef _KD_TREE_H_
-#define _KD_TREE_H_
+#ifndef _OCT_TREE_H_
+#define _OCT_TREE_H_
 
 #include <assert.h>
 #include <iostream>
@@ -43,12 +42,12 @@ using namespace std;
 
 
 
-//=============================================================================
-//  Struct KDTreeCell
+//=================================================================================================
+//  Struct OctTreeCell
 /// KD-tree cell data structure
-//=============================================================================
+//=================================================================================================
 template <int ndim>
-struct KDTreeCell {
+struct OctTreeCell {
   int c1;                           ///< First child cell
   int c2;                           ///< Second child cell
   int c2g;                          ///< i.d. of tree-cell c/grid-cell g
@@ -83,16 +82,16 @@ struct KDTreeCell {
 
 
 
-//=============================================================================
-//  Class KDTree
+//=================================================================================================
+//  Class OctTree
 /// \brief   Class containing binary tree
 /// \details Binary tree data structure used for efficient neighbour searching
 ///          and computation of gravitational forces
 /// \author  D. A. Hubber, O. Lomax, A. P. Whitworth
-/// \date    08/01/2014
-//=============================================================================
+/// \date    17/08/2014
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-class KDTree : public Tree<ndim,ParticleType,TreeCell>
+class OctTree : public Tree<ndim,ParticleType,TreeCell>
 {
  public:
 
@@ -134,57 +133,41 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  KDTree(int, FLOAT, FLOAT, FLOAT, string, string);
-  ~KDTree();
+  OctTree(int, FLOAT, FLOAT, FLOAT, string, string);
+  ~OctTree();
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   void BuildTree(int, int, ParticleType<ndim> *, FLOAT);
   void AllocateTreeMemory(void);
   void DeallocateTreeMemory(void);
   bool BoxOverlap(const FLOAT *, const FLOAT *, const FLOAT *, const FLOAT *);
-  void ComputeTreeSize(void);
-  void CreateTreeStructure(void);
-  void DivideTreeCell(int, int, ParticleType<ndim> *, TreeCell<ndim> &);
   void ExtrapolateCellProperties(FLOAT);
-  FLOAT QuickSelect(int, int, int, int, ParticleType<ndim> *);
   void StockTree(TreeCell<ndim> &, ParticleType<ndim> *);
   void StockCellProperties(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
-
   int ComputeActiveCellList(TreeCell<ndim> **);
-  int ComputeActiveParticleList(TreeCell<ndim> *,
-                                ParticleType<ndim> *, int *);
+  int ComputeActiveParticleList(TreeCell<ndim> *, ParticleType<ndim> *, int *);
   int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
                                  const FLOAT, const int, int *);
-  int ComputeGatherNeighbourList(const ParticleType<ndim> *,
-                                 const TreeCell<ndim> *, const FLOAT,
-                                 const int, int &, int *);
-  int ComputeNeighbourList(const ParticleType<ndim> *,
-                           const TreeCell<ndim> *, const int, int &,int *);
-  int ComputeGravityInteractionList(const ParticleType<ndim> *,
-                                    const TreeCell<ndim> *, const FLOAT,
-                                    const int, const int, const int,
-                                    int &, int &, int &, int *, int *,
-                                    TreeCell<ndim> **);
-  int ComputePeriodicGravityInteractionList(KDTreeCell<ndim> *, DomainBox<ndim> &, FLOAT,
-                                            int, int, int, int &, int &, int &, int *, int *,
-                                            KDTreeCell<ndim> **, ParticleType<ndim> *);
+  int ComputeGatherNeighbourList(const ParticleType<ndim> *, const TreeCell<ndim> *,
+                                 const FLOAT, const int, int &, int *);
+  int ComputeNeighbourList(const ParticleType<ndim> *, const TreeCell<ndim> *,
+                           const int, int &,int *);
+  int ComputeGravityInteractionList(const ParticleType<ndim> *, const TreeCell<ndim> *,
+                                    const FLOAT, const int, const int, const int,
+                                    int &, int &, int &, int *, int *, TreeCell<ndim> **);
   int ComputeStarGravityInteractionList(NbodyParticle<ndim> *, FLOAT, int, int,
                                         int, int &, int &, int &, int *, int *,
-                                        TreeCell<ndim> **,
-                                        ParticleType<ndim> *);
-  void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int,
-                                 TreeCell<ndim> **);
-  void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int,
-                                   TreeCell<ndim> **);
+                                        TreeCell<ndim> **, ParticleType<ndim> *);
+  void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> **);
+  void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> **);
   void ComputeFastMonopoleForces(int, int, TreeCell<ndim> **,
                                  TreeCell<ndim> *, ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
-  int ComputeDistantGravityInteractionList(const TreeCell<ndim> *,
-                                           const FLOAT, const int, int,
-                                           TreeCell<ndim> **);
+  int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT, const int,
+                                           int, TreeCell<ndim> **);
   bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *);
 #endif
 #if defined(VERIFY_ALL)
@@ -192,8 +175,9 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
 #endif
 
 
-  int gactive;
-  int lactive;
+  // Additional variables for octal tree
+  //-----------------------------------------------------------------------------------------------
+
 
 };
 #endif

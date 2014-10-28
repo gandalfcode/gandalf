@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  Sph.cpp
 //  Contains important default routines for Sph class.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <cstdio>
@@ -41,11 +41,11 @@ const FLOAT Sph<ndim>::invndim;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Sph::Sph
 /// Constructor for parent SPH class.  Initialises important variables and
 /// sets important parameters using initialialisation lists.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux,
                FLOAT alpha_visc_aux, FLOAT beta_visc_aux, FLOAT h_fac_aux,
@@ -64,7 +64,9 @@ Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux,
   allocated(false),
   Nsph(0),
   Nsphmax(0),
+  Nmpighost(0),
   NPeriodicGhost(0),
+  NImportedParticles(0),
   avisc(avisc_aux),
   acond(acond_aux),
   tdavisc(tdavisc_aux),
@@ -75,10 +77,10 @@ Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux,
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Sph::SphBoundingBox
 /// Calculate the bounding box containing all SPH particles.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Sph<ndim>::SphBoundingBox
 (FLOAT rmax[ndim],                  ///< [out] Maximum extent of bounding box
@@ -104,12 +106,11 @@ void Sph<ndim>::SphBoundingBox
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Sph::InitialSmoothingLengthGuess
-/// Perform initial guess of smoothing.  In the abscence of more sophisticated
-/// techniques, we guess the smoothing length assuming a uniform density
-/// medium with the same volume and total mass.
-//=============================================================================
+/// Perform initial guess of smoothing.  In the abscence of more sophisticated techniques, we guess
+/// the smoothing length assuming a uniform density medium with the same volume and total mass.
+//=================================================================================================
 template <int ndim>
 void Sph<ndim>::InitialSmoothingLengthGuess(void)
 {
@@ -152,9 +153,165 @@ void Sph<ndim>::InitialSmoothingLengthGuess(void)
     SphParticle<ndim>& part = GetParticleIPointer(i);
     part.h = h_guess;
     part.invh = 1.0/h_guess;
-    part.hrangesqd =
-      kernfacsqd*kernp->kernrangesqd*part.h*part.h;
+    part.hrangesqd = kernfacsqd*kernp->kernrangesqd*part.h*part.h;
   }
+
+  return;
+}
+
+
+
+//=============================================================================
+//  Sph::CheckXBoundaryGhostParticle
+/// ...
+//=============================================================================
+template <int ndim>
+void Sph<ndim>::CheckXBoundaryGhostParticle
+(const int i,
+ const FLOAT tghost,
+ const DomainBox<ndim> &simbox)
+{
+  SphParticle<ndim>& part = GetParticleIPointer(i);
+
+  if (part.r[0] + min(0.0,part.v[0]*tghost) <
+      simbox.boxmin[0] + ghost_range*kernrange*part.h) {
+    if (simbox.x_boundary_lhs == periodicBoundary)
+      CreateBoundaryGhostParticle(i,0,x_lhs_periodic,
+				       part.r[0] + simbox.boxsize[0],
+				       part.v[0]);
+    if (simbox.x_boundary_lhs == mirrorBoundary)
+      CreateBoundaryGhostParticle(i,0,x_lhs_mirror,
+				       2.0*simbox.boxmin[0] - part.r[0],
+				       -part.v[0]);
+  }
+  if (part.r[0] + max(0.0,part.v[0]*tghost) >
+      simbox.boxmax[0] - ghost_range*kernrange*part.h) {
+    if (simbox.x_boundary_rhs == periodicBoundary)
+      CreateBoundaryGhostParticle(i,0,x_rhs_periodic,
+				       part.r[0] - simbox.boxsize[0],
+				       part.v[0]);
+    if (simbox.x_boundary_rhs == mirrorBoundary)
+      CreateBoundaryGhostParticle(i,0,x_rhs_mirror,
+				       2.0*simbox.boxmax[0] - part.r[0],
+				       -part.v[0]);
+  }
+
+  return;
+}
+
+
+
+//=============================================================================
+//  Sph::CheckYBoundaryGhostParticle
+/// ...
+//=============================================================================
+template <int ndim>
+void Sph<ndim>::CheckYBoundaryGhostParticle
+(const int i,
+ const FLOAT tghost,
+ const DomainBox<ndim> &simbox)
+{
+  SphParticle<ndim>& part = GetParticleIPointer(i);
+
+  if (part.r[1] + min(0.0,part.v[1]*tghost) <
+      simbox.boxmin[1] + ghost_range*kernrange*part.h) {
+    if (simbox.y_boundary_lhs == periodicBoundary)
+      CreateBoundaryGhostParticle(i,1,y_lhs_periodic,
+				       part.r[1] + simbox.boxsize[1],
+				       part.v[1]);
+    if (simbox.y_boundary_lhs == mirrorBoundary)
+      CreateBoundaryGhostParticle(i,1,y_lhs_mirror,
+				       2.0*simbox.boxmin[1] - part.r[1],
+				       -part.v[1]);
+  }
+  if (part.r[1] + max(0.0,part.v[1]*tghost) >
+      simbox.boxmax[1] - ghost_range*kernrange*part.h) {
+    if (simbox.y_boundary_rhs == periodicBoundary)
+      CreateBoundaryGhostParticle(i,1,y_rhs_periodic,
+				       part.r[1] - simbox.boxsize[1],
+				       part.v[1]);
+    if (simbox.y_boundary_rhs == mirrorBoundary)
+      CreateBoundaryGhostParticle(i,1,y_rhs_mirror,
+				       2.0*simbox.boxmax[1] - part.r[1],
+				       -part.v[1]);
+  }
+  return;
+}
+
+
+
+//=============================================================================
+//  Sph::CheckZBoundaryGhostParticle
+/// ...
+//=============================================================================
+template <int ndim>
+void Sph<ndim>::CheckZBoundaryGhostParticle
+(const int i,
+ const FLOAT tghost,
+ const DomainBox<ndim> &simbox)
+{
+  SphParticle<ndim>& part = GetParticleIPointer(i);
+
+  if (part.r[2] + min(0.0,part.v[2]*tghost) <
+      simbox.boxmin[2] + ghost_range*kernrange*part.h) {
+    if (simbox.z_boundary_lhs == periodicBoundary)
+      CreateBoundaryGhostParticle(i,2,z_lhs_periodic,
+				  part.r[2] + simbox.boxsize[2],part.v[2]);
+    if (simbox.z_boundary_lhs == mirrorBoundary)
+      CreateBoundaryGhostParticle(i,2,z_lhs_mirror,
+				  2.0*simbox.boxmin[2] - part.r[2],-part.v[2]);
+  }
+  if (part.r[2] + max(0.0,part.v[2]*tghost) >
+      simbox.boxmax[2] - ghost_range*kernrange*part.h) {
+    if (simbox.z_boundary_rhs == periodicBoundary)
+      CreateBoundaryGhostParticle(i,2,z_rhs_periodic,
+				       part.r[2] - simbox.boxsize[2],
+				       part.v[2]);
+    if (simbox.z_boundary_rhs == mirrorBoundary)
+      CreateBoundaryGhostParticle(i,2,z_rhs_mirror,
+				       2.0*simbox.boxmax[2] - part.r[2],
+				       -part.v[2]);
+  }
+  return;
+}
+
+
+
+
+//=============================================================================
+//  Sph::CreateBoundaryGhostParticle
+/// Create a new ghost particle from either
+/// (i) a real SPH particle (i < Nsph), or
+/// (ii) an existing ghost particle (i >= Nsph).
+//=============================================================================
+template <int ndim>
+void Sph<ndim>::CreateBoundaryGhostParticle
+(const int i,                       ///< [in] i.d. of original particle
+ const int k,                       ///< [in] Boundary dimension for new ghost
+ const int ghosttype,               ///< [in] ..
+ const FLOAT rk,                    ///< [in] k-position of original particle
+ const FLOAT vk)                    ///< [in] k-velocity of original particle
+{
+  // Increase ghost counter and check there's enough space in memory
+  if (Nghost > Nghostmax) {
+    cout << "Nghost : " << Nghost << "     Nghostmax : " << Nghostmax << endl;
+    string message= "Not enough memory for new ghost";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  int id_new_ghost = Nsph + Nghost;
+  SphParticle<ndim>& origpart = GetParticleIPointer(i);
+  SphParticle<ndim>& ghostpart = GetParticleIPointer(id_new_ghost);
+
+  // If there's enough memory, create ghost particle in arrays
+  ghostpart = origpart;
+  ghostpart.r[k] = rk;
+  ghostpart.v[k] = rk;
+  ghostpart.active = false;
+  ghostpart.itype = ghosttype;
+  ghostpart.iorig = i;
+
+  Nghost = Nghost + 1;
 
   return;
 }

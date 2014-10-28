@@ -349,6 +349,10 @@ void Parameters::SetDefaultValues(void)
   floatparams["boxmax[0]"] = 9.9e30;
   floatparams["boxmax[1]"] = -9.9e30;
   floatparams["boxmax[2]"] = 9.9e30;
+    
+  // MPI parameters
+  //---------------------------------------------------------------------------
+  intparams["pruning_level"] = 6;
 
   // Ewald periodic gravity parameters
   //---------------------------------------------------------------------------

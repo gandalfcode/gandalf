@@ -87,7 +87,7 @@ Maximum timestep level difference           : level_diff_max = 1
 # Optimisation options
 #---------------------
 Tabulate SPH kernel                         : tabulated_kernel = 1
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = kdtree
 No. of particles per leaf cell              : Nleafmax = 6
 
 

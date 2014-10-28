@@ -123,6 +123,68 @@ DOUBLE SphIntegration<ndim>::Timestep
 
 
 
+//=============================================================================
+//  SphIntegration::CheckBoundaries
+/// Check all particles to see if any have crossed the simulation bounding
+/// box.  If so, then move the particles to their new location on the other
+/// side of the periodic box.
+//=============================================================================
+template <int ndim>
+void SphIntegration<ndim>::CheckBoundaries
+(DomainBox<ndim> &simbox,
+ Sph<ndim> *sph)
+{
+  // Loop over all particles and check if any lie outside the periodic box.
+  // If so, then re-position with periodic wrapping.
+  //---------------------------------------------------------------------------
+#pragma omp parallel for default(none) shared(simbox,sph)
+  for (int i=0; i<sph->Nsph; i++) {
+    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+
+
+    if (part.r[0] < simbox.boxmin[0])
+      if (simbox.x_boundary_lhs == periodicBoundary) {
+        part.r[0] += simbox.boxsize[0];
+        part.r0[0] += simbox.boxsize[0];
+      }
+    if (part.r[0] > simbox.boxmax[0])
+      if (simbox.x_boundary_rhs == periodicBoundary) {
+        part.r[0] -= simbox.boxsize[0];
+        part.r0[0] -= simbox.boxsize[0];
+      }
+
+    if (ndim >= 2 && part.r[1] < simbox.boxmin[1])
+      if (simbox.y_boundary_lhs == periodicBoundary) {
+        part.r[1] += simbox.boxsize[1];
+        part.r0[1] += simbox.boxsize[1];
+      }
+    if (ndim >= 2 && part.r[1] > simbox.boxmax[1])
+      if (simbox.y_boundary_rhs == periodicBoundary) {
+        part.r[1] -= simbox.boxsize[1];
+        part.r0[1] -= simbox.boxsize[1];
+      }
+
+    if (ndim == 3 && part.r[2] < simbox.boxmin[2])
+      if (simbox.z_boundary_lhs == periodicBoundary) {
+        part.r[2] += simbox.boxsize[2];
+        part.r0[2] += simbox.boxsize[2];
+      }
+    if (ndim == 3 && part.r[2] > simbox.boxmax[2])
+      if (simbox.z_boundary_rhs == periodicBoundary) {
+        part.r[2] -= simbox.boxsize[2];
+        part.r0[2] -= simbox.boxsize[2];
+      }
+
+  }
+  //---------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+
+
 
 // Create instances of SphIntegration templates for all dimensions (1,2 and 3)
 template class SphIntegration<1>;

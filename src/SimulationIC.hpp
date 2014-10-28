@@ -576,21 +576,21 @@ void Simulation<ndim>::ShockTube(void)
                        sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
     // Search ghost particles
-    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+    sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
 
     // Update neighbour tree
     //sph->InitialSmoothingLengthGuess();
-    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                       sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+    sphneib->BuildGhostTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+                            sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
+    LocalGhosts->CopySphDataToGhosts(simbox,sph);
     sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
                        sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
-    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
-
-    LocalGhosts->CopySphDataToGhosts(simbox,sph);
+    sphneib->BuildGhostTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+                            sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
@@ -942,7 +942,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
                      sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
   // Search ghost particles
-  LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+  sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
 
 
   // Update neighbour tree
@@ -1066,8 +1066,7 @@ void Simulation<ndim>::KHI(void)
       for (k=0; k<ndim; k++) part.r[k] = r[ndim*j + k];
       for (k=0; k<ndim; k++) part.v[k] = 0.0;
       part.r[1] -= 0.25*simbox.boxsize[1];
-      if (part.r[1] < simbox.boxmin[1])
-        part.r[1] += simbox.boxsize[1];
+      if (part.r[1] < simbox.boxmin[1]) part.r[1] += simbox.boxsize[1];
       part.v[0] = vfluid2[0];
       part.m = rhofluid2*volume/(FLOAT) Nbox2;
       part.h = sph->h_fac*pow(part.m/rhofluid2,invndim);
@@ -1094,13 +1093,15 @@ void Simulation<ndim>::KHI(void)
 
   initial_h_provided = true;
 
-  // Search ghost particles
-  LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
-
   // Update neighbour tree
   rebuild_tree = true;
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-		     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+
+  // Search ghost particles
+  sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
+  sphneib->BuildGhostTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+                          sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
@@ -2109,7 +2110,7 @@ void Simulation<ndim>::SedovBlastWave(void)
   for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).active = true;
 
   // Search ghost particles
-  LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+  sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
 
   initial_h_provided = true;
   rebuild_tree = true;

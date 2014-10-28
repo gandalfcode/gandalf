@@ -222,17 +222,27 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
+#if defined MPI_PARALLEL
+
+  mpicontrol = new MpiControlType<ndim, SM2012SphParticle>;
+
+#endif
 
   // Create neighbour searching object based on chosen method in params file
   //-------------------------------------------------------------------------
   if (stringparams["neib_search"] == "bruteforce")
     sphneib = new SM2012SphBruteForce<ndim,SM2012SphParticle>
      (sph->kernp->kernrange,&simbox,sph->kernp,this->timing);
-  else if (stringparams["neib_search"] == "tree") {
-    sphneib = new SM2012SphTree<ndim,SM2012SphParticle>
-     (intparams["Nleafmax"],floatparams["thetamaxsqd"],
-      sph->kernp->kernrange,floatparams["macerror"],
-      stringparams["gravity_mac"],stringparams["multipole"],
+  else if (stringparams["neib_search"] == "kdtree") {
+    sphneib = new SM2012SphKDTree<ndim,SM2012SphParticle,KDTreeCell>
+     (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
+      floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
+      &simbox,sph->kernp,timing);
+  }
+  else if (stringparams["neib_search"] == "octtree") {
+    sphneib = new SM2012SphOctTree<ndim,SM2012SphParticle,OctTreeCell>
+     (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
+      floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
       &simbox,sph->kernp,timing);
   }
   else {
@@ -240,10 +250,10 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
       + simparams->stringparams["neib_search"];
     ExceptionHandler::getIstance().raise(message);
   }
-#if defined MPI_PARALLEL
-  mpicontrol.SetNeibSearch(sphneib);
-#endif
 
+#if defined MPI_PARALLEL
+  mpicontrol->SetNeibSearch(sphneib);
+#endif
 
   // Depending on the dimensionality, calculate expected neighbour number
   //---------------------------------------------------------------------------
@@ -260,7 +270,7 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
   else
     LocalGhosts = new NullGhosts<ndim>();
 #ifdef MPI_PARALLEL
-  MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
+  MpiGhosts = new MPIGhostsSpecific<ndim, SM2012SphParticle>(mpicontrol);
 #endif
 
 

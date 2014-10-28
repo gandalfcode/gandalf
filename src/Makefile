@@ -182,9 +182,8 @@ OBJ += NbodySimulation.o
 OBJ += M4Kernel.o QuinticKernel.o GaussianKernel.o TabulatedKernel.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o SphLeapfrogDKD.o
 OBJ += SphGodunovIntegration.o EnergyGodunovIntegration.o RiemannSolver.o
-#OBJ += SphNeighbourSearch.o
-OBJ += SphNeighbourSearch.o BruteForceSearch.o KDTree.o SphTree.o
-OBJ += GradhSphTree.o GradhSphBruteForce.o
+OBJ += SphNeighbourSearch.o BruteForceSearch.o KDTree.o OctTree.o SphTree.o
+OBJ += GradhSphBruteForce.o GradhSphTree.o
 OBJ += SM2012SphBruteForce.o SM2012SphTree.o
 OBJ += GodunovSphBruteForce.o GodunovSphTree.o
 OBJ += Ewald.o
@@ -205,7 +204,7 @@ OBJ += SphSnapshot.o
 OBJ += CodeTiming.o
 
 ifeq ($(MPI),1)
-OBJ += MpiNode.o MpiControl.o
+OBJ += MpiNode.o MpiTree.o MpiControl.o
 endif
 
 

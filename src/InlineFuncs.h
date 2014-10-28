@@ -304,6 +304,112 @@ inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max) {
 
 
 
+
+//=============================================================================
+//  BoxOverlap
+/// Check if two bounding boxes overlap.  If yes, then returns true.
+//=============================================================================
+static inline bool BoxOverlap (const int ndim,
+ FLOAT *box1min,         ///< Minimum extent of box 1
+ FLOAT *box1max,         ///< Maximum extent of box 1
+ FLOAT *box2min,         ///< Minimum extent of box 2
+ FLOAT *box2max)         ///< Maximum extent of box 2
+{
+  if (ndim == 1) {
+    if (box1min[0] > box2max[0]) return false;
+    if (box2min[0] > box1max[0]) return false;
+    return true;
+  }
+  else if (ndim == 2) {
+    if (box1min[0] > box2max[0]) return false;
+    if (box2min[0] > box1max[0]) return false;
+    if (box1min[1] > box2max[1]) return false;
+    if (box2min[1] > box1max[1]) return false;
+    return true;
+  }
+  else if (ndim == 3) {
+    if (box1min[0] > box2max[0]) return false;
+    if (box2min[0] > box1max[0]) return false;
+    if (box1min[1] > box2max[1]) return false;
+    if (box2min[1] > box1max[1]) return false;
+    if (box1min[2] > box2max[2]) return false;
+    if (box2min[2] > box1max[2]) return false;
+    return true;
+  }
+}
+
+
+
+//=============================================================================
+//  BoxOverlap
+/// Check if two bounding boxes overlap.  If yes, then returns true.
+//=============================================================================
+static inline bool BoxOverlap (const int ndim,
+ const FLOAT *box1min,         ///< Minimum extent of box 1
+ const FLOAT *box1max,         ///< Maximum extent of box 1
+ const FLOAT *box2min,         ///< Minimum extent of box 2
+ const FLOAT *box2max)         ///< Maximum extent of box 2
+{
+  if (ndim == 1) {
+    if (box1min[0] > box2max[0]) return false;
+    if (box2min[0] > box1max[0]) return false;
+    return true;
+  }
+  else if (ndim == 2) {
+    if (box1min[0] > box2max[0]) return false;
+    if (box2min[0] > box1max[0]) return false;
+    if (box1min[1] > box2max[1]) return false;
+    if (box2min[1] > box1max[1]) return false;
+    return true;
+  }
+  else if (ndim == 3) {
+    if (box1min[0] > box2max[0]) return false;
+    if (box2min[0] > box1max[0]) return false;
+    if (box1min[1] > box2max[1]) return false;
+    if (box2min[1] > box1max[1]) return false;
+    if (box1min[2] > box2max[2]) return false;
+    if (box2min[2] > box1max[2]) return false;
+    return true;
+  }
+}
+
+
+
+//=============================================================================
+//  FractionalBoxOverlap
+/// Returns what fraction of box 1 overlaps box 2
+//=============================================================================
+static inline FLOAT FractionalBoxOverlap
+(const int ndim,
+ FLOAT *box1min,         ///< Minimum extent of box 1
+ FLOAT *box1max,         ///< Maximum extent of box 1
+ FLOAT *box2min,         ///< Minimum extent of box 2
+ FLOAT *box2max)         ///< Maximum extent of box 2
+ {
+   int k;
+   FLOAT area = 1.0;
+   FLOAT overlap = 1.0;
+   FLOAT frac = 0.0;
+
+   for (k=0; k<ndim; k++) {
+     area *= (box1max[k] - box1min[k]);
+     if (box1min[k] > box2min[k] && box1max[k] < box2max[k])
+       overlap *= (box1max[k] - box1min[k]);
+     else if (box1min[k] < box2min[k] && box1max[k] < box2max[k])
+       overlap *= (box1max[k] - box2min[k]);
+     else if (box1min[k] > box2min[k] && box1max[k] > box2max[k])
+       overlap *= (box2max[k] - box1min[k]);
+     else
+       overlap = 0.0;
+   }
+
+   if (area > 0.0) frac = overlap/area;
+
+   return frac;
+ }
+
+
+
 //=============================================================================
 //  ParticleBoxOverlap
 //  ...
@@ -340,6 +446,31 @@ inline bool ParticleInBox (SphParticle<ndim>& part, Box<ndim>& box) {
     if (part.r[k] < box.boxmin[k] || part.r[k] > box.boxmax[k]) return false;
   }
   return true;
+}
+
+
+
+//=============================================================================
+//  compute_displs
+/// Given a vector of counts, compute the displacement of the elements and save it
+/// in displs
+//=============================================================================
+inline void compute_displs (std::vector<int>& displs, std::vector<int>& counts) {
+
+  const int size = displs.size();
+
+  if (size==0)
+    return;
+
+  displs[0]=0;
+
+  if (size==1)
+    return;
+
+  for (int i=1; i<size; i++) {
+    displs[i] = counts[i-1]+displs[i-1];
+  }
+
 }
 
 

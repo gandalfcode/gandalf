@@ -179,7 +179,7 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 
   // For MPI, collect all diagnostic information on root node
 #ifdef MPI_PARALLEL
-  mpicontrol.CollateDiagnosticsData(diag);
+  mpicontrol->CollateDiagnosticsData(diag);
 #endif
 
 

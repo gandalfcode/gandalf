@@ -48,20 +48,18 @@ using namespace std;
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 GradhSph<ndim, kernelclass>::GradhSph(int hydro_forces_aux, int self_gravity_aux,
-    FLOAT alpha_visc_aux, FLOAT beta_visc_aux, FLOAT h_fac_aux, FLOAT h_converge_aux,
-    aviscenum avisc_aux, acondenum acond_aux, tdaviscenum tdavisc_aux,
-    string gas_eos_aux, string KernelName):
+  FLOAT alpha_visc_aux, FLOAT beta_visc_aux, FLOAT h_fac_aux, FLOAT h_converge_aux,
+  aviscenum avisc_aux, acondenum acond_aux, tdaviscenum tdavisc_aux,
+  string gas_eos_aux, string KernelName):
   Sph<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux, beta_visc_aux,
             h_fac_aux, h_converge_aux, avisc_aux, acond_aux, tdavisc_aux,
             gas_eos_aux, KernelName, sizeof(GradhSphParticle<ndim>)),
   kern(kernelclass<ndim>(KernelName))
-  //kernp(&kern),
-  //kernfac(1.0),
-  //kernfacsqd(1.0)
 {
   this->kernp = &kern;
   this->kernfac = (FLOAT) 1.0;
   this->kernfacsqd = (FLOAT) 1.0;
+  this->kernrange = this->kernp->kernrange;
 }
 
 
@@ -94,7 +92,7 @@ void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
     // Set conservative estimate for maximum number of particles, assuming
     // extra space required for periodic ghost particles
     if (Nsphmax < N)
-      Nsphmax = pow(pow(N,invndim) + 8.0*kernp->kernrange,ndim);
+      Nsphmax = 10*pow(pow(N,invndim) + 8.0*kernp->kernrange,ndim);
     //Nsphmax = N;
 
     iorder = new int[Nsphmax];
@@ -365,7 +363,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::ComputeThermalProperties
-(SphParticle<ndim> &part_gen)        ///< [inout] Particle i data
+ (SphParticle<ndim> &part_gen)         ///< [inout] Particle i data
 {
   GradhSphParticle<ndim>& part = static_cast<GradhSphParticle<ndim> &> (part_gen);
 
@@ -505,11 +503,11 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroForces
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
-(const int i,                       ///< [in] id of particle
- const int Nneib,                   ///< [in] No. of neins in neibpart array
- int *neiblist,                     ///< [in] id of gather neibs in neibpart
- SphParticle<ndim> &part,           ///< [inout] Particle i data
- SphParticle<ndim> *neibpart_gen)   ///< [inout] Neighbour particle data
+ (const int i,                      ///< [in] id of particle
+  const int Nneib,                  ///< [in] No. of neins in neibpart array
+  int *neiblist,                    ///< [in] id of gather neibs in neibpart
+  SphParticle<ndim> &part,          ///< [inout] Particle i data
+  SphParticle<ndim> *neibpart_gen)  ///< [inout] Neighbour particle data
 {
   int j;                            // Neighbour list id
   int jj;                           // Aux. neighbour counter
@@ -675,6 +673,7 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
     parti.gpot += neibpart[j].m*gaux;
 
   }
+
   //===============================================================================================
 
   return;

@@ -35,6 +35,7 @@
 #include "NbodyParticle.h"
 #include "Nbody.h"
 #include "Parameters.h"
+#include "DomainBox.h"
 #include "EOS.h"
 #include "RiemannSolver.h"
 #include "ExternalPotential.h"
@@ -51,6 +52,8 @@ class EOS;
 enum aviscenum{noav, mon97, mon97mm97, mon97cd2010};
 enum acondenum{noac, wadsley2008, price2008};
 enum tdaviscenum{notdav, mm97, cd2010};
+
+static const FLOAT ghost_range = 1.6;
 
 
 //=================================================================================================
@@ -111,6 +114,15 @@ class Sph
   virtual void ReorderParticles(void)=0;
   void SphBoundingBox(FLOAT *, FLOAT *, int);
   void InitialSmoothingLengthGuess(void);
+  void CheckXBoundaryGhostParticle(const int, const FLOAT,
+                                   const DomainBox<ndim> &);
+  void CheckYBoundaryGhostParticle(const int, const FLOAT,
+                                   const DomainBox<ndim> &);
+  void CheckZBoundaryGhostParticle(const int, const FLOAT,
+                                   const DomainBox<ndim> &);
+  void CreateBoundaryGhostParticle(const int, const int, const int,
+                                   const FLOAT, const FLOAT);
+  //void CopySphDataToBoundaryGhosts(DomainBox<ndim> *);
 
 
   // Functions needed to hide some implementation details
@@ -144,12 +156,15 @@ class Sph
   int Ngather;                        ///< Average no. of gather neighbours
   int Nsph;                           ///< No. of SPH particles in simulation
   int Nghost;                         ///< No. of ghost SPH particles
+  int Nmpighost;                      ///< No. of MPI ghost particles
   int NPeriodicGhost;                 ///< No. of periodic ghost particles
+  int NImportedParticles;             ///< No. of imported particles (to compute forces on behalf of other processors)
   int Ntot;                           ///< No. of real + ghost particles
   int Nsphmax;                        ///< Max. no. of SPH particles in array
   int Nghostmax;                      ///< Max. allowed no. of ghost particles
   int riemann_order;                  ///< Order of Riemann solver
   FLOAT alpha_visc_min;               ///< Min. time-dependent viscosity alpha
+  FLOAT kernrange;                    ///< Kernel range
   FLOAT kernfac;                      ///< Kernel range neighbour fraction
   FLOAT kernfacsqd;                   ///< Kernel range neib. fraction squared
   FLOAT mmean;                        ///< Mean SPH particle mass

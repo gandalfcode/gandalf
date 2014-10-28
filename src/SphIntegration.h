@@ -28,6 +28,7 @@
 #include "Precision.h"
 #include "CodeTiming.h"
 #include "Constants.h"
+#include "DomainBox.h"
 #include "Sph.h"
 #include "EOS.h"
 #include "Parameters.h"
@@ -58,6 +59,7 @@ class SphIntegration
   virtual void EndTimestep(int, FLOAT, int, SphParticle<ndim> *) = 0;
   virtual int CheckTimesteps(int, int, int, int, SphParticle<ndim> *) = 0;
   virtual DOUBLE Timestep(SphParticle<ndim> &, Sph<ndim> *);
+  virtual void CheckBoundaries(DomainBox<ndim> &, Sph<ndim> *);
   
   const DOUBLE accel_mult;
   const DOUBLE courant_mult;

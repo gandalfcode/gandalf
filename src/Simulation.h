@@ -94,8 +94,8 @@ class SimulationBase
 
  public:
 
-  static SimulationBase* SimulationFactory(int ndim, string simtype,
-                                           Parameters* params);
+  static SimulationBase* SimulationFactory(int ndim, string simtype, Parameters* params);
+
 
   // Constructor and Destructor
   //-----------------------------------------------------------------------------------------------
@@ -166,6 +166,7 @@ class SimulationBase
   int Noutsnap;                     ///< No. of output snapshots
   int Noutlitesnap;                 ///< No. of lite output snapshots
   int Nthreads;                     ///< Max no. of (OpenMP) threads
+  int pruning_level;                ///< Level to prune trees for MPI
   int rank;                         ///< Process i.d. (for MPI simulations)
   int sink_particles;               ///< Switch on sink particles
   int sph_single_timestep;          ///< Flag if SPH ptcls use same step
@@ -324,7 +325,7 @@ class Simulation : public SimulationBase
   SphIntegration<ndim> *sphint;       ///< SPH Integration scheme pointer
   SphNeighbourSearch<ndim> *sphneib;  ///< SPH Neighbour scheme pointer
 #ifdef MPI_PARALLEL
-  MpiControl<ndim> mpicontrol;        ///< MPI control object
+  MpiControl<ndim>* mpicontrol;        ///< MPI control object
   Ghosts<ndim>* MpiGhosts;            ///< MPI ghost particle object
 #endif
 
@@ -346,6 +347,8 @@ class SphSimulation : public Simulation<ndim>
  public:
   using SimulationBase::ewaldGravity;
   using SimulationBase::periodicBoundaries;
+  using SimulationBase::Nmpi;
+  using SimulationBase::pruning_level;
   using SimulationBase::restart;
   using SimulationBase::simparams;
   using SimulationBase::timing;
@@ -431,6 +434,7 @@ class GradhSphSimulation: public SphSimulation<ndim>
 {
  public:
 
+  using SimulationBase::Nmpi;
   using SimulationBase::restart;
   using SimulationBase::simparams;
   using SimulationBase::timing;
@@ -506,6 +510,7 @@ class SM2012SphSimulation: public SphSimulation<ndim>
 {
  public:
 
+  using SimulationBase::Nmpi;
   using SimulationBase::restart;
   using SimulationBase::simparams;
   using SimulationBase::timing;
@@ -578,6 +583,7 @@ class SM2012SphSimulation: public SphSimulation<ndim>
 template <int ndim>
 class GodunovSphSimulation: public SphSimulation<ndim>
 {
+  using SimulationBase::Nmpi;
   using SphSimulation<ndim>::restart;
   using Simulation<ndim>::simparams;
   using SphSimulation<ndim>::timing;
@@ -621,7 +627,8 @@ class GodunovSphSimulation: public SphSimulation<ndim>
   using SphSimulation<ndim>::ntreebuildstep;
   using SphSimulation<ndim>::ntreestockstep;
 #ifdef MPI_PARALLEL
-using SphSimulation<ndim>::MpiGhosts;
+  using Simulation<ndim>::mpicontrol;
+  using SphSimulation<ndim>::MpiGhosts;
 #endif
 
 public:
@@ -649,6 +656,7 @@ public:
 template <int ndim>
 class NbodySimulation : public Simulation<ndim>
 {
+  using SimulationBase::Nmpi;
   using SimulationBase::restart;
   using SimulationBase::simparams;
   using SimulationBase::timing;

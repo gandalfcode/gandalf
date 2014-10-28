@@ -25,6 +25,7 @@
 
 #include <iostream>
 #include <math.h>
+#include <numeric>
 #include "SphNeighbourSearch.h"
 #include "Sph.h"
 #include "Parameters.h"
@@ -80,7 +81,8 @@ void BruteForceSearch<ndim,ParticleType>::BuildTree
  int ntreestockstep,                ///< Tree stocking frequency
  int Npart,                         ///< No. of particles
  int Npartmax,                      ///< Max. no. of particles
- SphParticle<ndim> *sph_gen, Sph<ndim> *sph,        ///< Particle data array
+ SphParticle<ndim> *sph_gen,        ///< Generic pointer to SPH data array
+ Sph<ndim> *sph,                    ///< Particle data array
  FLOAT timestep)                    ///< Smallest physical timestep
 {
   sph->DeleteDeadParticles();
@@ -103,19 +105,19 @@ void BruteForceSearch<ndim,ParticleType>::UpdateActiveParticleCounters
 
 
 //=============================================================================
-//  BruteForceSearch::UpdateAllSphProperties
+//  BruteForceSearch::GetGatherNeighbourList
 /// ..
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 int BruteForceSearch<ndim,ParticleType>::GetGatherNeighbourList
-(FLOAT rp[ndim],                    ///< ..
- FLOAT rsearch,                     ///< ..
- SphParticle<ndim> *sph_gen,        ///< ..
- int Nsph,                          ///< ..
- int Nneibmax,                      ///< ..
- int *neiblist)                     ///< ..
+(FLOAT rp[ndim],                    ///< [in] Position
+ FLOAT rsearch,                     ///< [in] Search radius
+ SphParticle<ndim> *sph_gen,        ///< [in] Pointer to SPH data array
+ int Nsph,                          ///< [in] No. of SPH particles
+ int Nneibmax,                      ///< [in] Max. size of neighbour list
+ int *neiblist)                     ///< [out] List of neighbour ids
 {
-  int i,k;                          // ..
+  int i,k;                          // Particle and dimension counters
   int Nneib = 0;                    // No. of (non-dead) neighbours
   FLOAT dr[ndim];                   // Relative distance vector
   FLOAT drsqd;                      // Distance squared
@@ -209,9 +211,9 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
       // and all neighbours here
       //-----------------------------------------------------------------------
       for (jj=0; jj<Nneib; jj++) {
-	j = neiblist[jj];
-    	for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - rp[k];
-    	drsqd[jj] = DotProduct(dr,dr,ndim);
+        j = neiblist[jj];
+        for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - rp[k];
+        drsqd[jj] = DotProduct(dr,dr,ndim);
       }
       //-----------------------------------------------------------------------
 
@@ -272,10 +274,14 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
   drmag = new FLOAT[Ntot];
   invdrmag = new FLOAT[Ntot];
 
+  const int offset_imported = sph->Nghost;
 
-  // Compute smoothing lengths of all SPH particles
+  // Compute forces of real and imported particles
   //---------------------------------------------------------------------------
-  for (i=0; i<Nsph; i++) {
+  for (int ipart=0; ipart<Nsph+sph->NImportedParticles; ipart++) {
+
+    if (ipart < Nsph) i = ipart;
+    else i = ipart + offset_imported;
 
     // Skip over inactive particles
     if (!sphdata[i].active || sphdata[i].itype == dead) continue;
@@ -295,11 +301,12 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
     // Compute distances and the reciprical between the current particle
     // and all neighbours here
     //-------------------------------------------------------------------------
-    for (j=0; j<Ntot; j++) {
+    for (j=0; j<sph->Nsph + sph->NPeriodicGhost; j++) {
       if (sphdata[j].itype == dead) continue;
       hrangesqdj = pow(kernfac*kernp->kernrange*sphdata[j].h,2);
       for (k=0; k<ndim; k++) draux[k] = sphdata[j].r[k] - rp[k];
       drsqd = DotProduct(draux,draux,ndim);
+
       if ((drsqd < hrangesqdi || drsqd < hrangesqdj) && i != j) {
     	neiblist[Nneib] = j;
     	drmag[Nneib] = sqrt(drsqd);
@@ -337,13 +344,13 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
 
 //=============================================================================
 //  BruteForceSearch::UpdateAllSphForces
-/// Empty function for now
+/// Update all sph forces (both hydro and gravity)
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
-(int Nsph,                            ///< [in] ..
- int Ntot,                            ///< [in] ..
- SphParticle<ndim> *sph_gen,          ///< [in] ..
+(int Nsph,                            ///< [in] No. of SPH particles
+ int Ntot,                            ///< [in] Total no. of particles
+ SphParticle<ndim> *sph_gen,          ///< [inout] Pointer to SPH data
  Sph<ndim> *sph,                      ///< [inout] Pointer to SPH object
  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
@@ -357,10 +364,14 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
   // Allocate memory for storing neighbour ids and position data
   neiblist = new int[Ntot];
 
+  const int offset_imported = sph->Nghost;
 
-  // Compute smoothing lengths of all SPH particles
+  // Compute forces for real and imported particles
   //---------------------------------------------------------------------------
-  for (i=0; i<Nsph; i++) {
+  for (int ipart=0; ipart<Nsph+sph->NImportedParticles; ipart++) {
+
+    if (ipart < Nsph) i = ipart;
+    else i = ipart + offset_imported;
 
     // Skip over inactive particles
     if (!sphdata[i].active || sphdata[i].itype == dead) continue;
@@ -374,13 +385,12 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
     sphdata[i].levelneib = 0;
 
     // Add self-contribution to gravitational potential
-    sphdata[i].gpot += sphdata[i].m*
-      sphdata[i].invh*kernp->wpot(0.0);
+    sphdata[i].gpot += sphdata[i].m*sphdata[i].invh*kernp->wpot(0.0);
 
     // Determine interaction list (to ensure we don't compute pair-wise
     // forces twice)
     Nneib = 0;
-    for (j=0; j<Nsph; j++)
+    for (j=0; j<sph->Nsph + sph->NPeriodicGhost; j++)
       if (i != j && sphdata[j].itype != dead) neiblist[Nneib++] = j;
 
     // Compute forces between SPH neighbours (hydro and gravity)
@@ -427,9 +437,16 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
   // Allocate memory for storing neighbour ids and position data
   neiblist = new int[Ntot];
 
-  // Compute smoothing lengths of all SPH particles
+  const int offset_imported = sph->Nghost;
+
+  // Compute forces for real and imported particles
   //---------------------------------------------------------------------------
-  for (i=0; i<Nsph; i++) {
+  for (int iparticle=0; iparticle<Nsph+sph->NImportedParticles; iparticle++) {
+
+      if (iparticle<Nsph)
+        i=iparticle;
+      else
+        i=iparticle+offset_imported;
 
     // Skip over inactive particles
     if (!sphdata[i].active || sphdata[i].itype == dead) continue;
@@ -738,7 +755,8 @@ template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::UpdateAllSphDudt
 (int Nsph,                            ///< [in] ..
  int Ntot,                            ///< [in] ..
- SphParticle<ndim> *sph_gen, Sph<ndim> *sph)          ///< [inout] Pointer to SPH object
+ SphParticle<ndim> *sph_gen,          ///< [inout] ..
+ Sph<ndim> *sph)                      ///< [inout] Pointer to SPH object
 {
   int i,j,k;                          // Particle and dimension counters
   int Nneib;                          // No. of neighbours
@@ -830,7 +848,8 @@ template <int ndim, template<int> class ParticleType>
 void BruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
 (int Nsph,                            ///< [in] ..
  int Ntot,                            ///< [in] No. of SPH particles
- SphParticle<ndim> *sph_gen, Sph<ndim> *sph,          ///< [inout] Pointer to SPH ptcl array
+ SphParticle<ndim> *sph_gen,          ///< [in] ..
+ Sph<ndim> *sph,                      ///< [inout] Pointer to SPH ptcl array
  Nbody<ndim> *nbody)                  ///< [inout] Pointer to N-body object
 {
   int i;                              // Particle and dimension counters
@@ -867,50 +886,326 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
 
 
 
+//=============================================================================
+//  BruteForceSearch::SearchBoundaryGhostParticles
+/// Search domain to create any required ghost particles near any boundaries.
+/// Currently only searches to create periodic or mirror ghost particles.
+//=============================================================================
+template <int ndim, template <int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::SearchBoundaryGhostParticles
+(FLOAT tghost,                      ///< Ghost particle 'lifetime'
+ DomainBox<ndim> simbox,            ///< Simulation box structure
+ Sph<ndim> *sph)                    ///< Sph object pointer
+{
+  int i;                            // Particle counter
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
+
+  // Set all relevant particle counters
+  sph->Nghost         = 0;
+  sph->NPeriodicGhost = 0;
+  sph->Nghostmax      = sph->Nsphmax - sph->Nsph;
+  sph->Ntot           = sph->Nsph;
+
+
+  // If all boundaries are open, immediately return to main loop
+  if (simbox.x_boundary_lhs == openBoundary && simbox.x_boundary_rhs == openBoundary &&
+      simbox.y_boundary_lhs == openBoundary && simbox.y_boundary_rhs == openBoundary &&
+      simbox.z_boundary_lhs == openBoundary && simbox.z_boundary_rhs == openBoundary)
+    return;
+
+
+  debug2("[BruteForceSearch::SearchBoundaryGhostParticles]");
+
+
+  // Create ghost particles in x-dimension
+  //---------------------------------------------------------------------------
+  if ((simbox.x_boundary_lhs == openBoundary &&
+       simbox.x_boundary_rhs == openBoundary) == 0) {
+
+    for (i=0; i<sph->Ntot; i++) {
+      sph->CheckXBoundaryGhostParticle(i,tghost,simbox);
+    }
+
+    sph->Ntot = sph->Nsph + sph->Nghost;
+  }
+
+
+  // Create ghost particles in y-dimension
+  //---------------------------------------------------------------------------
+  if (ndim >= 2 && (simbox.y_boundary_lhs == openBoundary &&
+		    simbox.y_boundary_rhs == openBoundary) == 0) {
+
+    for (i=0; i<sph->Ntot; i++) {
+      sph->CheckYBoundaryGhostParticle(i,tghost,simbox);
+    }
+
+    sph->Ntot = sph->Nsph + sph->Nghost;
+  }
+
+
+  // Create ghost particles in z-dimension
+  //---------------------------------------------------------------------------
+  if (ndim == 3 && (simbox.z_boundary_lhs == openBoundary &&
+		    simbox.z_boundary_rhs == openBoundary) == 0) {
+
+    for (i=0; i<sph->Ntot; i++) {
+      sph->CheckZBoundaryGhostParticle(i,tghost,simbox);
+    }
+
+    sph->Ntot = sph->Nsph + sph->Nghost;
+  }
+
+
+  // Quit here if we've run out of memory for ghosts
+  if (sph->Ntot > sph->Nsphmax) {
+    string message="Not enough memory for ghost particles";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  sph->NPeriodicGhost = sph->Nghost;
+
+  return;
+}
+
+
+
 #if defined MPI_PARALLEL
 //=============================================================================
-//  BruteForceSearch::FindGhostParticlesToExport
-/// Compute on behalf of the MpiControl class the ghost particles we need to export to other nodes
+//  BruteForceSearch::UpdateGravityExportList
+/// ..
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void BruteForceSearch<ndim,ParticleType>::FindGhostParticlesToExport(
-    Sph<ndim>* sph,    ///< [in] Pointer to sph class
-    std::vector<std::vector<SphParticle<ndim>* > >& particles_to_export_per_node, ///< [inout] Vector that will be filled with values
-    const std::vector<int>& overlapping_nodes, ///< [in] Vector containing which nodes overlap our hbox
-    MpiNode<ndim>* mpinodes) ///< [in] Array of other mpi nodes
+void BruteForceSearch<ndim,ParticleType>::UpdateGravityExportList
+(int rank,                          ///< [in] ..
+ int Nsph,                          ///< [in] No. of SPH particles
+ int Ntot,                          ///< [in] No. of SPH + ghost particles
+ SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
+ Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
+ Nbody<ndim> *nbody)                ///< [in] Pointer to N-body object
 {
+  return;
+}
 
-  //Loop over particles and prepare the ones to export
-  for (int i=0; i<Ntot; i++) {
-    SphParticle<ndim>& part = sphdata[i];
 
-    //Loop over potential domains and see if we need to export this particle to them
-    for (int inode=0; inode<overlapping_nodes.size(); inode++) {
-      int node_number = overlapping_nodes[inode];
+
+//=============================================================================
+//  BruteForceSearch::UpdateHydroExportList
+/// ..
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::UpdateHydroExportList
+(int rank,                          ///< [in] ..
+ int Nsph,                          ///< [in] No. of SPH particles
+ int Ntot,                          ///< [in] No. of SPH + ghost particles
+ SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
+ Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
+ Nbody<ndim> *nbody)                ///< [in] Pointer to N-body object
+{
+  return;
+}
+
+
+
+//=============================================================================
+//  BruteForceSearch::SearchMpiGhostParticles
+/// Compute on behalf of the MpiControl class the ghost particles we need
+/// to export to other nodes.
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+int BruteForceSearch<ndim,ParticleType>::SearchMpiGhostParticles
+(const FLOAT tghost,                ///< [in] Expected ghost life-time
+ const Box<ndim> &mpibox,           ///< [in] Bounding box of MPI domain
+ Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
+ vector<int> &export_list)          ///< [out] List of particle ids
+{
+  int i;                            // ..
+  int k;                            // ..
+  int Nexport = 0;                  // No. of MPI ghosts to export
+  FLOAT scattermin[ndim];           // ..
+  FLOAT scattermax[ndim];           // ..
+  const FLOAT grange = ghost_range*kernrange;
+  ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* >
+    (sph->GetParticlesArray());
+
+  // Loop over particles and prepare the ones to export
+  //---------------------------------------------------------------------------
+  for (i=0; i<sph->Nsph; i++) {
+    ParticleType<ndim>& part = sphdata[i];
+
+    // Construct maximum cell bounding box depending on particle velocities
+    for (k=0; k<ndim; k++) {
+      scattermin[k] = part.r[k] + min(0.0,part.v[k]*tghost) - grange*part.h;
+      scattermax[k] = part.r[k] + max(0.0,part.v[k]*tghost) + grange*part.h;
+    }
+
+    // If maximum cell scatter box overlaps MPI domain, open cell
+    if (BoxOverlap(ndim,scattermin,scattermax,mpibox.boxmin,mpibox.boxmax)) {
+      export_list.push_back(i);
+      Nexport++;
+    }
+
+  }
+  //---------------------------------------------------------------------------
+
+  return Nexport;
+}
+
+
+
+//=============================================================================
+//  BruteForceSearch::SearchHydroExportParticles
+/// Compute on behalf of the MpiControl class the ghost particles we need
+/// to export to other nodes.
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+int BruteForceSearch<ndim,ParticleType>::SearchHydroExportParticles
+(const Box<ndim> &mpibox,           ///< [in] Bounding box of MPI domain
+ Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
+ vector<int> &export_list)          ///< [out] List of particle ids
+{
+  int i;                            // ..
+  int k;                            // ..
+  int Nexport = 0;                  // No. of MPI ghosts to export
+  FLOAT scattermin[ndim];           // ..
+  FLOAT scattermax[ndim];           // ..
+  const FLOAT grange = ghost_range*kernrange;
+  ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* >
+    (sph->GetParticlesArray());
+
+  // Loop over particles and prepare the ones to export
+  //---------------------------------------------------------------------------
+  for (i=0; i<sph->Nsph; i++) {
+    ParticleType<ndim>& part = sphdata[i];
+
+    // Construct maximum cell bounding box depending on particle velocities
+    for (k=0; k<ndim; k++) {
+      scattermin[k] = part.r[k] - grange*part.h;
+      scattermax[k] = part.r[k] + grange*part.h;
+    }
+
+    // If maximum cell scatter box overlaps MPI domain, open cell
+    if (BoxOverlap(ndim,scattermin,scattermax,mpibox.boxmin,mpibox.boxmax) &&
+        part.active) {
+      export_list.push_back(i);
+      Nexport++;
+    }
+
+  }
+  //---------------------------------------------------------------------------
+
+  return Nexport;
+}
+
+
+
+//=============================================================================
+//  BruteForceSearch::FindMpiTransferParticles
+/// Compute on behalf of the MpiControl class the particles that are outside
+/// the domain after a load balancing and need to be transferred to other nodes
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::FindMpiTransferParticles
+(Sph<ndim>* sph,                            ///< [in] Pointer to sph class
+ vector<vector<int> >& particles_to_export, ///< [inout] Vector that for each
+                                            ///< node gives the list of particles to export
+ vector<int>& all_particles_to_export,      ///< [inout] Vector containing all the particles that will be exported by this processor
+ const vector<int>& potential_nodes,        ///< [in] Vector containing the potential nodes we might be sending particles to
+ MpiNode<ndim>* mpinodes)                   ///< [in] Array of other mpi nodes
+{
+  int i;
+  int inode;
+  int node_number;
+  ParticleType<ndim> *sphdata =
+    static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
+
+
+  // Loop over particles and prepare the ones to export
+  //---------------------------------------------------------------------------
+  for (i=0; i<sph->Nsph; i++) {
+    ParticleType<ndim>& part = sphdata[i];
+
+    // Loop over potential domains and see if we need to transfer
+    // this particle to them
+    //-------------------------------------------------------------------------
+    for (inode=0; inode<potential_nodes.size(); inode++) {
+      node_number = potential_nodes[inode];
+
+      // If particle belongs to this domain, add to vector and break from loop
+      if (ParticleInBox(part,mpinodes[node_number].domain)) {
+        particles_to_export[node_number].push_back(i);
+        all_particles_to_export.push_back(i);
+        break;
+      }
+
+    }
+    //-------------------------------------------------------------------------
+
+  }
+  //---------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+
+//=============================================================================
+//  BruteForceSearch::FindGhostParticlesToExport
+/// Compute on behalf of the MpiControl class the ghost particles we need
+/// to export to other nodes.
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::FindGhostParticlesToExport
+(Sph<ndim>* sph,                            ///< [in] Pointer to sph class
+ vector<vector<ParticleType<ndim>*> >& particles_to_export_per_node, ///< [inout] Vector that will be filled with values
+ const std::vector<int>& overlapping_nodes, ///< [in] Vector containing which
+                                            ///<      nodes overlap our hbox
+ MpiNode<ndim>* mpinodes)                   ///< [in] Array of other mpi nodes
+{
+  int i;                                    // ..
+  int inode;                                // ..
+  int node_number;                          // ..
+  ParticleType<ndim> *sphdata =
+    static_cast<ParticleType<ndim>*> (sph->GetParticlesArray());
+
+  // Loop over particles and prepare the ones to export
+  for (i=0; i<sph->Ntot; i++) {
+    ParticleType<ndim>& part = sphdata[i];
+
+    // Loop over potential domains and find particles to export to them
+    for (inode=0; inode<overlapping_nodes.size(); inode++) {
+      node_number = overlapping_nodes[inode];
       if (ParticleBoxOverlap(part,mpinodes[node_number].hbox)) {
         particles_to_export_per_node[node_number].push_back(&part);
       }
     }
   }
+
+  return;
 }
+
+
 
 //=============================================================================
 //  BruteForceSearch::FindParticlesToTransfer
-/// Compute on behalf of the MpiControl class the particles that are outside the
-/// domain after a load balancing and need to be transferred to other nodes
+/// Compute on behalf of the MpiControl class the particles that are outside
+/// the domain after a load balancing and need to be transferred to other nodes
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
-void BruteForceSearch<ndim,ParticleType>::FindParticlesToTransfer(
-    Sph<ndim>* sph,    ///< [in] Pointer to sph class
-    std::vector<std::vector<int> >& particles_to_export, ///< [inout] Vector that for each node gives the list of particles to export
-    std::vector<int>& all_particles_to_export,  ///< [inout] Vector containing all the particles that will be exported by this processor
-    const std::vector<int>& potential_nodes, ///< [in] Vector containing the potential nodes we might be sending particles to
-    MpiNode<ndim>* mpinodes) ///< [in] Array of other mpi nodes
+void BruteForceSearch<ndim,ParticleType>::FindParticlesToTransfer
+(Sph<ndim>* sph,    ///< [in] Pointer to sph class
+ std::vector<std::vector<int> >& particles_to_export, ///< [inout] Vector that for each node gives the list of particles to export
+ std::vector<int>& all_particles_to_export,  ///< [inout] Vector containing all the particles that will be exported by this processor
+ const std::vector<int>& potential_nodes, ///< [in] Vector containing the potential nodes we might be sending particles to
+ MpiNode<ndim>* mpinodes) ///< [in] Array of other mpi nodes
 {
 
+  ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* >
+    (sph->GetParticlesArray());
+
   //Loop over particles and prepare the ones to export
-  for (int i=0; i<Nsph; i++) {
-    SphParticle<ndim>& part = sphdata[i];
+  for (int i=0; i<sph->Nsph; i++) {
+    ParticleType<ndim>& part = sphdata[i];
 
     //Loop over potential domains and see if we need to transfer this particle to them
     for (int inode=0; inode<potential_nodes.size(); inode++) {
@@ -925,7 +1220,255 @@ void BruteForceSearch<ndim,ParticleType>::FindParticlesToTransfer(
   }
 }
 
+
+//=============================================================================
+//  BruteForceSearch::GetExportInfo
+/// Get the array with the information that needs to be exported to the given
+/// processor (note: Nproc is ignored at the moment, as we always need to export
+/// all particles to the other processors)
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+int BruteForceSearch<ndim,ParticleType>::GetExportInfo (
+    int Nproc,        ///< [in] Number of processor we want to send the information to
+    Sph<ndim>*  sph,  ///< [in] Pointer to sph object
+    vector<char >& particles_to_export, ///< [inout] Vector where the particles to export will be stored
+    MpiNode<ndim>& mpinode,
+    int rank,
+    int Nmpi)                    ///< [in]  Array with information for the other mpi nodes
+    {
+
+  const bool first_proc = (Nproc==0) || (rank==0 && Nproc==1);
+
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+
+  //Find number of active particles
+
+  if (first_proc) {
+    ids_active_particles.clear();
+    for (int i=0; i< sph->Nsph; i++) {
+      if (sphdata[i].active) {
+        ids_active_particles.push_back(i);
+      }
+    }
+  }
+
+  const int Nactive = ids_active_particles.size();
+  const int size_export = Nactive*sizeof(ParticleType<ndim>);
+
+  if (first_proc) {
+    particles_to_export.clear();
+    particles_to_export.reserve((Nmpi-1)*size_export);
+    particles_to_export.resize(size_export);
+  }
+  else {
+    particles_to_export.resize(particles_to_export.size()+size_export);
+  }
+
+//  //Copy positions of active particles inside arrays
+//  int j=0;
+//  for (int i=0; i< sph->Nsph; i++) {
+//    if (sphdata[i].active) {
+//      for (int k=0; k<ndim; k++)
+//        particles_to_export[j].r[k] = sphdata[i].r[k];
+//      j++;
+//    }
+//  }
+
+  //Copy particles to export inside arrays
+  int j=(particles_to_export.size()-size_export)/sizeof(ParticleType<ndim>);
+  for (int i=0; i< sph->Nsph; i++) {
+    if (sphdata[i].active) {
+        copy(&particles_to_export[j*sizeof(ParticleType<ndim>)] , &sphdata[i]);
+      j++;
+    }
+  }
+
+  return size_export;
+
+
+}
+
+
+//=============================================================================
+//  BruteForceSearch::UnpackExported
+/// Unpack the information exported from the other processors, contaning the positions
+/// of the particles that were exported
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::UnpackExported (
+    vector<char >& received_array,
+    vector<int>& Nbytes_exported_from_proc,
+    Sph<ndim>* sph) {
+
+
+  int offset = 0;
+
+
+  assert(sph->NImportedParticles==0);
+
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+
+  for (int Nproc = 0; Nproc<Nbytes_exported_from_proc.size(); Nproc++) {
+
+    int N_received_bytes = Nbytes_exported_from_proc[Nproc];
+    int N_received_particles = N_received_bytes/sizeof(ParticleType<ndim>);
+
+    //Ensure there is enough memory
+    if (sph->Ntot + N_received_particles > sph->Nsphmax) {
+      ExceptionHandler::getIstance().raise("Error while receiving imported particles: not enough memory!");
+    }
+
+//    //Copy particle positions inside SPH main arrays
+//    for (int i=0; i<N_received_particles; i++) {
+//      for (int k=0; k<ndim; k++)
+//        sphdata[i+sph->Ntot].r[k] = received_array[i+offset].r[k];
+//    }
+
+    //Copy received particles inside SPH main arrays
+    for (int i=0; i<N_received_particles; i++) {
+      copy( &sphdata[i+sph->Ntot] , &received_array[i*sizeof(ParticleType<ndim>)+offset]);
+    }
+
+    //Update the SPH counters
+    sph->Ntot += N_received_particles;
+    sph->NImportedParticles += N_received_particles;
+
+    //Update the offset
+    offset += N_received_bytes;
+
+  }
+
+}
+
+
+//=============================================================================
+//  BruteForceSearch::GetBackExportInfo
+/// Return the data to transmit back to the other processors (particle acceleration etc.)
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::GetBackExportInfo (
+    vector<char >& send_buffer, ///< [inout] These arrays will be overwritten with the information to send
+    vector<int>& Nbytes_exported_from_proc,
+    vector<int>& Nbytes_to_each_proc,
+    Sph<ndim>* sph,   ///< [in] Pointer to the SPH object
+    int rank
+    ) {
+
+  int Nbytes_received_exported = std::accumulate(Nbytes_exported_from_proc.begin(), Nbytes_exported_from_proc.end(), 0);
+
+  send_buffer.resize(Nbytes_received_exported);
+
+  //loop over the processors, removing particles as we go
+  int removed_particles=0;
+  for (int Nproc=0 ; Nproc < Nbytes_exported_from_proc.size(); Nproc++ ) {
+
+    const int N_received_particles = Nbytes_exported_from_proc[Nproc]/sizeof(ParticleType<ndim>);
+
+//    //Copy the accelerations and gravitational potential of the particles
+//    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+//    int j=0;
+//    for (int i=sph->Nsph - N_received_particles; i<sph->Nsph; i++) {
+//      for (int k=0; k<ndim; k++)
+//        send_buffer[removed_particles+j].a[k] = sphdata[i].a[k];
+//      send_buffer[removed_particles+j].gpot = sphdata[i].gpot;
+//      j++;
+//    }
+
+    //Copy the particles inside the send buffer
+    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+    int j=0;
+    const int start_index = sph->Nsph + sph->Nghost + removed_particles;
+    for (int i=start_index; i<start_index + N_received_particles; i++) {
+      copy (&send_buffer[(removed_particles+j)*sizeof(ParticleType<ndim>)],&sphdata[i]);
+      j++;
+    }
+
+    assert(j==N_received_particles);
+
+    removed_particles += j;
+
+    //Decrease the particle counter
+    sph->Ntot -= N_received_particles;
+    sph->NImportedParticles -= N_received_particles;
+
+  }
+
+  assert(sph->NImportedParticles == 0);
+  assert(sph->Ntot == sph->Nsph + sph->Nghost);
+  assert(send_buffer.size() == removed_particles*sizeof(ParticleType<ndim>));
+
+
+}
+
+
+//=============================================================================
+//  BruteForceSearch::UnpackReturnedExportInfo
+/// Unpack the data that was returned by the other processors, summing the accelerations to the particles
+//=============================================================================
+template <int ndim, template<int> class ParticleType>
+void BruteForceSearch<ndim,ParticleType>::UnpackReturnedExportInfo (
+    vector<char >& received_information,
+    vector<int>& recv_displs,
+    Sph<ndim>* sph,
+    int rank
+    ) {
+
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+
+//  //For each particle, sum up the accelerations returned by other processors
+//  for (int i=0; i< ids_active_particles.size(); i++ ) {
+//    const int j = ids_active_particles[i];
+//
+//    for(int Nproc=0; Nproc<recv_displs.size(); Nproc++ ) {
+//
+//      if (rank==Nproc)
+//        continue;
+//
+//      for (int k=0; k<ndim; k++)
+//        sphdata[j].a[k] += received_information[i+recv_displs[Nproc] ].a[k];
+//      sphdata[j].gpot += received_information[i+recv_displs[Nproc] ].gpot;
+//    }
+//
+//  }
+
+  //For each particle, sum up some of the quantities returned by other processors
+
+
+  for (int i=0; i< ids_active_particles.size(); i++ ) {
+    const int j = ids_active_particles[i];
+
+    for(int Nproc=0; Nproc<recv_displs.size(); Nproc++ ) {
+
+      if (rank==Nproc)
+        continue;
+
+      ParticleType<ndim>* received_particle = reinterpret_cast<ParticleType<ndim>*>
+      (&received_information[i * sizeof(ParticleType<ndim>) + recv_displs[Nproc] ]);
+
+
+      assert(sphdata[j].iorig == received_particle->iorig);
+
+      for (int k=0; k<ndim; k++) {
+        sphdata[j].a[k] += received_particle->a[k];
+        sphdata[j].agrav[k] += received_particle->agrav[k];
+      }
+      sphdata[j].gpot += received_particle->gpot;
+      sphdata[j].gpe += received_particle->gpe;
+      sphdata[j].dudt += received_particle->dudt;
+      sphdata[j].div_v += received_particle->div_v;
+      sphdata[j].levelneib = max(sphdata[j].levelneib, received_particle->levelneib);
+
+    }
+
+  }
+
+}
+
+
+
 #endif
+
+
 
 template class BruteForceSearch<1,GradhSphParticle>;
 template class BruteForceSearch<2,GradhSphParticle>;

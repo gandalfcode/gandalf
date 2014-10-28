@@ -492,21 +492,26 @@ string SimulationBase::Output(void)
     WriteSnapshotFile(filename,out_file_form);
 
     // Now write name and format of snapshot to file (for restarts)
-    fileend = "restart";
-    filename2 = run_id + "." + fileend;
-    outfile.open(filename2.c_str());
-    outfile << out_file_form << endl;
-    outfile << filename << endl;
-    outfile.close();
+    if (rank == 0) {
 
-    // Finally, calculate wall-clock time interval since last output snapshot
-    if (tsnap_wallclock > 0.0) dt_snap_wall = timing->WallClockTime() - tsnap_wallclock;
-    tsnap_wallclock = timing->WallClockTime();
+      fileend = "restart";
+      filename2 = run_id + "." + fileend;
+      outfile.open(filename2.c_str());
+      outfile << out_file_form << endl;
+      outfile << filename << endl;
+      outfile.close();
 
-    // If simulation is too close to maximum wall-clock time, end prematurely
-    if (timing->ttot_wall > 0.95*tmax_wallclock) {
-      kill_simulation = true;
+      // Finally, calculate wall-clock time interval since last output snapshot
+      if (tsnap_wallclock > 0.0) dt_snap_wall = timing->WallClockTime() - tsnap_wallclock;
+      tsnap_wallclock = timing->WallClockTime();
+
+      // If simulation is too close to maximum wall-clock time, end prematurely
+      if (timing->ttot_wall > 0.95*tmax_wallclock) {
+        kill_simulation = true;
+      }
+
     }
+
 
   }
   //-----------------------------------------------------------------------------------------------
