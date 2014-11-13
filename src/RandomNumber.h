@@ -26,6 +26,7 @@
 
 
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <math.h>
 #include "Constants.h"

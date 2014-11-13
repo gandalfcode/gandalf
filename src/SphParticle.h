@@ -76,6 +76,7 @@ struct Particle
   FLOAT gpot;                       ///< Gravitational potential
   FLOAT gpe;                        ///< Gravitational potential energy
   DOUBLE dt;                        ///< Particle timestep
+  DOUBLE tlast;                     ///< Time at beginning of current step
 
   Particle() {
     active = false;
@@ -102,6 +103,8 @@ struct Particle
     gpot      = (FLOAT) 0.0;
     gpe       = (FLOAT) 0.0;
     dt        = (DOUBLE) 0.0;
+    tlast     = (DOUBLE) 0.0;
+
   }
 
 };

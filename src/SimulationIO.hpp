@@ -459,7 +459,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 	      << endl;
   }
 
-  // Write data for SPH particles
+  // Write data for N-body particles
   //---------------------------------------------------------------------------
   for (i=0; i<nbody->Nstar; i++) {
     if (ndim == 1)
@@ -1589,8 +1589,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-      for (int k=0; k<ndim; k++)
-	writer.write_value(part.r[k]*simunits.r.outscale);
+      for (int k=0; k<ndim; k++) writer.write_value(part.r[k]*simunits.r.outscale);
     }
 
     // Masses

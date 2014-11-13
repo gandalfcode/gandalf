@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  Parameters.cpp
 //  Contains all functions for calculating default values and reading in
 //  new values from the simulation parameter file.
@@ -19,7 +19,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <cstdio>
@@ -34,10 +34,10 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Parameters::Parameters
 /// Constructor for Parameters class
-//=============================================================================
+//=================================================================================================
 Parameters::Parameters()
 {
   SetDefaultValues();
@@ -45,19 +45,19 @@ Parameters::Parameters()
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Parameters::~Parameters
 /// Parameters destructor
-//=============================================================================
+//=================================================================================================
 Parameters::~Parameters()
 {
 }
 
 
-//=============================================================================
+//=================================================================================================
 //  Parameters::Parameters
 /// Alternative Parameters constructor
-//=============================================================================
+//=================================================================================================
 Parameters::Parameters(const Parameters& other)
 {
   this->intparams = other.intparams;
@@ -67,11 +67,11 @@ Parameters::Parameters(const Parameters& other)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Parameters::ReadParamsFile
 /// Read and parse parameter file 'filename'.  If file doesn't exist, or
 /// file does not contain a simulation run id, then quit program here.
-//=============================================================================
+//=================================================================================================
 void Parameters::ReadParamsFile
 (string filename)                   ///< [in] Parameters file to be read
 {
@@ -116,16 +116,15 @@ void Parameters::ReadParamsFile
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Parameters::ParseLine
 /// Parse a single line read from the parameters file.
 /// Identifies if the line is in the form 'Comments : variable = value', or
 /// 'variable = value', and if so, stores value in memory.
 /// If line begins with a hash charatcer '#', then ignore line as a comment.
-///============================================================================
+///================================================================================================
 void Parameters::ParseLine
-(string paramline)                  ///< [in] Line from parameters file
-                                    ///<      to be parsed.
+ (string paramline)                    ///< [in] Line from parameters file to be parsed.
 {
   // First, trim all white space from line
   paramline = TrimWhiteSpace(paramline);
@@ -140,8 +139,7 @@ void Parameters::ParseLine
 
   // If line is not in the correct format (either equals is not present,
   // or equals is before the colon) then skip line and return.
-  if (equal_pos >= length || (colon_pos < length && colon_pos > equal_pos))
-    return;
+  if (equal_pos >= length || (colon_pos < length && colon_pos > equal_pos)) return;
 
   // Extract variable name and value from line
   std::string var_name = paramline.substr(colon_pos+1,equal_pos-colon_pos-1);
@@ -155,22 +153,22 @@ void Parameters::ParseLine
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Parameters::SetDefaultValues
 /// Record all parameter variable names in memory also setting default values.
-//=============================================================================
+//=================================================================================================
 void Parameters::SetDefaultValues(void)
 {
   debug1("[Parameters::SetDefaultValues]");
 
   // Main simulation algorithm parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   intparams["ndim"] = 3;
   stringparams["sim"] = "sph";
   stringparams["nbody"] = "hermite4";
 
   // Simulation id, filename and output time parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   stringparams["ic"] = "box";
   stringparams["run_id"] = "";
   stringparams["in_file"] = "";
@@ -183,12 +181,13 @@ void Parameters::SetDefaultValues(void)
   intparams["Nstepsmax"] = 99999999;
   intparams["noutputstep"] = 128;
   intparams["ndiagstep"] = 1024;
+  intparams["nrestartstep"] = 512;
   intparams["litesnap"] = 0;
   floatparams["dt_litesnap"] = 0.2;
   floatparams["tlitesnapfirst"] = 0.0;
 
   // Unit and scaling parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   intparams["dimensionless"] = 0;
   stringparams["rinunit"] = "";
   stringparams["minunit"] = "";
@@ -236,7 +235,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["tempoutunit"] = "K";
 
   // Integration scheme and timestep parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   floatparams["accel_mult"] = 0.3;
   floatparams["courant_mult"] = 0.15;
   floatparams["nbody_mult"] = 0.1;
@@ -247,7 +246,7 @@ void Parameters::SetDefaultValues(void)
   intparams["nbody_single_timestep"] = 0;
 
   // SPH parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   stringparams["sph_integration"] = "lfkdk";
   stringparams["kernel"] = "m4";
   intparams["tabulated_kernel"] = 1;
@@ -255,7 +254,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["h_converge"] = 0.01;
 
   // Thermal physics parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   intparams["hydro_forces"] = 1;
   stringparams["gas_eos"] = "energy_eqn";
   stringparams["energy_integration"] = "PEC";
@@ -267,7 +266,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["eta_eos"] = 1.4;
 
   // Artificial viscosity parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   stringparams["avisc"] = "mon97";
   stringparams["acond"] = "none";
   stringparams["time_dependent_avisc"] = "none";
@@ -276,13 +275,13 @@ void Parameters::SetDefaultValues(void)
   floatparams["beta_visc"] = 2.0;
 
   // Riemann solver parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   stringparams["riemann_solver"] = "exact";
   stringparams["slope_limiter"] = "mine";
   intparams["riemann_order"] = 1;
 
   // Gravity parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   intparams["self_gravity"] = 0;
   stringparams["grav_kernel"] = "mean_h";
   stringparams["external_potential"] = "none";
@@ -290,7 +289,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["mplummer_extpot"] = 1.0;
 
   // Neighbour searching and tree-gravity parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   stringparams["neib_search"] = "tree";
   stringparams["gravity_mac"] = "geometric";
   stringparams["multipole"] = "quadrupole";
@@ -301,7 +300,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["macerror"] = 0.0001;
 
   // N-body parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   intparams["sub_systems"] = 0;
   stringparams["sub_system_integration"] = "hermite4";
   intparams["Npec"] = 1;
@@ -314,7 +313,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["gpehard"] = 1.0e-3;
 
   // Sink particle parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   intparams["sink_particles"] = 0;
   intparams["create_sinks"] = 0;
   intparams["smooth_accretion"] = 0;
@@ -327,7 +326,7 @@ void Parameters::SetDefaultValues(void)
   stringparams["sink_radius_mode"] = "hmult";
 
   // Radiation algortihm parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   stringparams["radiation"] = "none";
   intparams["Nphoton"] = 10000;
   floatparams["mu_ion"] = 0.678;
@@ -336,7 +335,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["NLyC"] = 1e49;
 
   // Boundary conditions parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   stringparams["x_boundary_lhs"] = "open";
   stringparams["x_boundary_rhs"] = "open";
   stringparams["y_boundary_lhs"] = "open";
@@ -349,13 +348,13 @@ void Parameters::SetDefaultValues(void)
   floatparams["boxmax[0]"] = 9.9e30;
   floatparams["boxmax[1]"] = -9.9e30;
   floatparams["boxmax[2]"] = 9.9e30;
-    
+
   // MPI parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   intparams["pruning_level"] = 6;
 
   // Ewald periodic gravity parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   intparams["ewald"] = 1;
   intparams["gr_bhewaldseriesn"] = 10;
   intparams["in"] = 500;
@@ -365,7 +364,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["ixmax"] = 5.0;
 
   // Initial conditions parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   stringparams["particle_distribution"] = "cubic_lattice";
   intparams["smooth_ic"] = 0;
   intparams["com_frame"] = 0;
@@ -420,12 +419,12 @@ void Parameters::SetDefaultValues(void)
   floatparams["zmax"] = 1.0;
 
   // Random number generator parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   stringparams["rand_algorithm"] = "none";
   intparams["randseed"] = 0;
 
   // Python parameters
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   floatparams["dt_python"] = 8.0;
 
   return;
@@ -433,12 +432,12 @@ void Parameters::SetDefaultValues(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Parameters::GetParameter
-/// ...
-//=============================================================================
+/// Gets (string) value for given parameter
+//=================================================================================================
 string Parameters::GetParameter
-(string key)                        ///< [in] Parameter key to be searched
+ (string key)                          ///< [in] Parameter key to be searched
 {
   if (intparams.count(key) == 1) {
     std::stringstream value;
@@ -462,14 +461,14 @@ string Parameters::GetParameter
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Parameters::SetParameter
 /// Set parameter value in memory.  Checks in turn if parameter is a
 /// string, float or integer before recording value.
-//=============================================================================
+//=================================================================================================
 void Parameters::SetParameter
-(string key,                        ///< [in] Parameter key to be searched
- string value)                      ///< [in] Parameter value if key found
+ (string key,                          ///< [in] Parameter key to be searched
+  string value)                        ///< [in] Parameter value if key found
 {
   if (intparams.count(key) == 1)
     std::stringstream(value) >> intparams[key];
@@ -484,10 +483,10 @@ void Parameters::SetParameter
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Parameters::PrintParameters
 /// Prints all parameters stored in memory to screen.
-//=============================================================================
+//=================================================================================================
 void Parameters::PrintParameters(void)
 {
   debug1("[Parameters::PrintParameters]");
@@ -515,10 +514,10 @@ void Parameters::PrintParameters(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Parameters::RecordParametersToFile
 /// Writes all recorded parameters to file named 'run_id.param'
-//=============================================================================
+//=================================================================================================
 void Parameters::RecordParametersToFile(void)
 {
   string filename = stringparams["run_id"] + ".param";  // Output filename
@@ -553,14 +552,15 @@ void Parameters::RecordParametersToFile(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Parameters::TrimWhiteSpace
 /// Trims string of all white space
-//=============================================================================
-std::string Parameters::TrimWhiteSpace(std::string instr)
+//=================================================================================================
+std::string Parameters::TrimWhiteSpace
+ (std::string instr)                   ///< [in] Input string to be trimmed
 {
-  unsigned int i;                   // Character counter
-  string outstr;                    // Final string without any whitespace
+  unsigned int i;                      // Character counter
+  string outstr;                       // Final string without any whitespace
 
   // Loop over all characters and ignore any white-space characters
   for (i=0; i<instr.length(); i++) {
@@ -572,27 +572,20 @@ std::string Parameters::TrimWhiteSpace(std::string instr)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Parameters::CheckInvalidParameters
 /// Check if any features deemed unstable and/or buggy are switched on in the
 /// parameters file.  If so, then throw an exception with an error message.
-//=============================================================================
+//=================================================================================================
 void Parameters::CheckInvalidParameters(void)
 {
-  bool errorflag = false;           ///< Flag for any invlaid parameters
+  bool errorflag = false;              ///< Flag for any invlaid parameters
 
   debug2("[Parameters::CheckInvalidParameters]");
 
   // SPH simulation specific errors
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (stringparams["sim"] == "sph" || stringparams["sim"] == "godunov_sph") {
-
-    // Cannot use grid with self-gravity
-    if (stringparams["neib_search"] == "grid" && intparams["self_gravity"] == 1) {
-      cout << "Parameter error : Cannot compute self-gravity with "
-           << "grid neighbour search" << endl;
-      errorflag = true;
-    }
 
     // Saitoh & Makino (2012) currently deactivated while development of MPI
     // and other related features are underway.
@@ -601,15 +594,14 @@ void Parameters::CheckInvalidParameters(void)
       errorflag = true;
     }
 
-    // Godunov SPH (Inutsuka 2002) with 2nd-order Riemann solver currently
-    // deactivated for the meatime
+    // Godunov SPH (Inutsuka 2002) with 2nd-order Riemann solver currently deactivated
     if (stringparams["sim"] == "godunov_sph" && intparams["riemann_order"] == 2) {
       cout << "Godunov SPH with 2nd-order Riemann solver currently disabled" << endl;
       errorflag = true;
     }
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
 
   // If any single error has been registered, throw exception and terminate.

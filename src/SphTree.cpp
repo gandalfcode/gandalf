@@ -122,21 +122,21 @@ void SphTree<ndim,ParticleType,TreeCell>::AllocateMemory(Sph<ndim> *sph)
   if (!allocated_buffer) {
 
     Nneibmaxbuf     = new int[Nthreads];
-    Ndirectmaxbuf   = new int[Nthreads];
     Ngravcellmaxbuf = new int[Nthreads];
     levelneibbuf    = new int*[Nthreads];
     activelistbuf   = new int*[Nthreads];
     activepartbuf   = new ParticleType<ndim>*[Nthreads];
     neibpartbuf     = new ParticleType<ndim>*[Nthreads];
+    cellbuf         = new TreeCell<ndim>*[Nthreads];
 
     for (ithread=0; ithread<Nthreads; ithread++) {
       Nneibmaxbuf[ithread]     = max(1,4*sph->Ngather);
-      Ndirectmaxbuf[ithread]   = max(1,4*sph->Ngather);
       Ngravcellmaxbuf[ithread] = max(1,4*sph->Ngather);
       levelneibbuf[ithread]    = new int[Ntotmax];
       activelistbuf[ithread]   = new int[Nleafmax];
       activepartbuf[ithread]   = new ParticleType<ndim>[Nleafmax];
       neibpartbuf[ithread]     = new ParticleType<ndim>[Nneibmaxbuf[ithread]];
+      cellbuf[ithread]         = new TreeCell<ndim>[Ngravcellmaxbuf[ithread]];
     }
     allocated_buffer = true;
 
@@ -161,8 +161,10 @@ void SphTree<ndim,ParticleType,TreeCell>::DeallocateMemory(void)
   if (allocated_buffer) {
 
     for (ithread=0; ithread<Nthreads; ithread++) {
+      delete[] cellbuf[ithread];
       delete[] neibpartbuf[ithread];
       delete[] activepartbuf[ithread];
+      delete[] activelistbuf[ithread];
       delete[] levelneibbuf[ithread];
     }
     delete[] neibpartbuf;
@@ -170,7 +172,6 @@ void SphTree<ndim,ParticleType,TreeCell>::DeallocateMemory(void)
     delete[] activelistbuf;
     delete[] levelneibbuf;
     delete[] Ngravcellmaxbuf;
-    delete[] Ndirectmaxbuf;
     delete[] Nneibmaxbuf;
 
   }
@@ -183,8 +184,7 @@ void SphTree<ndim,ParticleType,TreeCell>::DeallocateMemory(void)
 //=================================================================================================
 //  SphTree::BuildTree
 /// Main routine to control how the tree is built, re-stocked and interpolated during each step.
-//=============================================================================
-
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void SphTree<ndim,ParticleType,TreeCell>::BuildTree
 (bool rebuild_tree,                 ///< [in] Flag to rebuild tree
@@ -224,13 +224,11 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildTree
     Ntotmax    = max(Ntotmax,sph->Nsphmax);
     assert(Ntotmax >= Ntot);
 
-    tree->ifirst     = 0;
-    tree->ilast      = sph->Nsph - 1;
     tree->Ntot       = sph->Nsph;
     tree->Ntotmaxold = tree->Ntotmax;
     tree->Ntotmax    = max(tree->Ntotmax,tree->Ntot);
     tree->Ntotmax    = max(tree->Ntotmax,sph->Nsphmax);
-    tree->BuildTree(Npart,Npartmax,sphdata,timestep);
+    tree->BuildTree(0, sph->Nsph-1, Npart, Npartmax, sphdata, timestep);
 
     AllocateMemory(sph);
 #ifdef MPI_PARALLEL
@@ -308,13 +306,12 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostTree
   //-----------------------------------------------------------------------------------------------
   if (n%ntreebuildstep == 0 || rebuild_tree) {
 
-    ghosttree->ifirst     = sph->Nsph;
-    ghosttree->ilast      = sph->Nsph + sph->NPeriodicGhost - 1;
     ghosttree->Ntot       = sph->NPeriodicGhost;
     ghosttree->Ntotmaxold = ghosttree->Ntotmax;
     ghosttree->Ntotmax    = max(ghosttree->Ntotmax,ghosttree->Ntot);
     ghosttree->Ntotmax    = max(ghosttree->Ntotmax,sph->Nsphmax);
-    ghosttree->BuildTree(ghosttree->Ntot,ghosttree->Ntotmax,sphdata,timestep);
+    ghosttree->BuildTree(sph->Nsph, sph->Nsph + sph->NPeriodicGhost - 1,
+                         ghosttree->Ntot, ghosttree->Ntotmax, sphdata, timestep);
 
   }
 
@@ -1014,13 +1011,13 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildMpiGhostTree
   //-----------------------------------------------------------------------------------------------
   if (n%ntreebuildstep == 0 || rebuild_tree) {
 
-    mpighosttree->ifirst     = sph->Nsph + sph->NPeriodicGhost;
-    mpighosttree->ilast      = sph->Nsph + sph->NPeriodicGhost +sph->Nmpighost - 1;
     mpighosttree->Ntot       = sph->Nmpighost;
     mpighosttree->Ntotmaxold = mpighosttree->Ntotmax;
     mpighosttree->Ntotmax    = max(mpighosttree->Ntotmax,mpighosttree->Ntot);
     mpighosttree->Ntotmax    = max(mpighosttree->Ntotmax,sph->Nsphmax);
-    mpighosttree->BuildTree(mpighosttree->Ntot,mpighosttree->Ntotmax,sphdata,timestep);
+    mpighosttree->BuildTree(sph->Nsph + sph->NPeriodicGhost,
+                            sph->Nsph + sph->NPeriodicGhost +sph->Nmpighost - 1,
+                            mpighosttree->Ntot, mpighosttree->Ntotmax, sphdata, timestep);
 
   }
 
@@ -1756,6 +1753,7 @@ void SphTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
  ParticleType<ndim> *partdata,      ///< [in] Array of particle data
  string neibtype)                   ///< [in] Neighbour search type
 {
+  bool invalid_flag = false;        // ..
   int count;                        // Valid neighbour counter
   int j;                            // Neighbour particle counter
   int k;                            // Dimension counter
@@ -1777,8 +1775,7 @@ void SphTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
   }
   else if (neibtype == "all") {
     for (j=0; j<Ntot; j++) {
-      for (k=0; k<ndim; k++)
-        dr[k] = partdata[j].r[k] - partdata[i].r[k];
+      for (k=0; k<ndim; k++) dr[k] = partdata[j].r[k] - partdata[i].r[k];
       drsqd = DotProduct(dr,dr,ndim);
       if (drsqd < kernrangesqd*partdata[i].h*partdata[i].h ||
           drsqd < kernrangesqd*partdata[j].h*partdata[j].h) trueneiblist[Ntrueneib++] = j;
@@ -1788,22 +1785,40 @@ void SphTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
   // Now compare each given neighbour with true neighbour list for validation
   for (j=0; j<Ntrueneib; j++) {
     count = 0;
-    for (k=0; k<Nneib; k++)
-      if (neiblist[k] == trueneiblist[j]) count++;
+    for (k=0; k<Nneib; k++) {
+      if (neiblist[k] == trueneiblist[j]) {
+        count++;
+      }
+    }
 
     // If the true neighbour is not in the list, or included multiple times,
     // then output to screen and terminate program
     if (count != 1) {
-      InsertionSortIds(Nneib,neiblist);
-      cout << "Problem with neighbour lists : " << i << "  " << j << "   "
-           << count << "   " << partdata[i].r[0] << "   " << partdata[i].h << endl;
-      cout << "Nneib : " << Nneib << "   Ntrueneib : " << Ntrueneib << endl;
-      PrintArray("neiblist     : ",Nneib,neiblist);
-      PrintArray("trueneiblist : ",Ntrueneib,trueneiblist);
-      string message = "Problem with neighbour lists in grid search";
-      ExceptionHandler::getIstance().raise(message);
+      for (k=0; k<ndim; k++) dr[k] = partdata[trueneiblist[j]].r[k] - partdata[i].r[k];
+      drsqd = DotProduct(dr,dr,ndim);
+      cout << "Could not find neighbour " << j << "   " << trueneiblist[j] << "     " << i
+           << "      " << sqrt(drsqd)/kernrange/partdata[i].h << "     "
+           << sqrt(drsqd)/kernrange/partdata[trueneiblist[j]].h << "    "
+           << partdata[trueneiblist[j]].r[0] << endl;
+      invalid_flag = true;
     }
+
   }
+
+  // If the true neighbour is not in the list, or included multiple times,
+  // then output to screen and terminate program
+  if (invalid_flag) {
+    InsertionSort(Nneib,neiblist);
+    cout << "Problem with neighbour lists : " << i << "  " << j << "   "
+         << count << "   " << partdata[i].r[0] << "   " << partdata[i].h << endl;
+    cout << "Nneib : " << Nneib << "   Ntrueneib : " << Ntrueneib
+         << "    neibtype : " << neibtype << endl;
+    PrintArray("neiblist     : ",Nneib,neiblist);
+    PrintArray("trueneiblist : ",Ntrueneib,trueneiblist);
+    string message = "Problem with neighbour lists in grid search";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
 
   delete[] trueneiblist;
 
@@ -1812,6 +1827,12 @@ void SphTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
 #endif
 
 
+template class SphTree<1,SphParticle,KDTreeCell>;
+template class SphTree<2,SphParticle,KDTreeCell>;
+template class SphTree<3,SphParticle,KDTreeCell>;
+template class SphTree<1,SphParticle,OctTreeCell>;
+template class SphTree<2,SphParticle,OctTreeCell>;
+template class SphTree<3,SphParticle,OctTreeCell>;
 
 template class SphTree<1,GradhSphParticle,KDTreeCell>;
 template class SphTree<2,GradhSphParticle,KDTreeCell>;

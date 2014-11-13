@@ -177,21 +177,53 @@ static inline void Heapsort
 
 
 //=============================================================================
-//  InsertionSortIds
-//  Sort list of integers (e.g. ids of particles) into ascending order.
+//  InsertionSort
+//  Sort list of quantities into ascending order.
 //=============================================================================
-static inline void InsertionSortIds
+template <typename T>
+static inline void InsertionSort
 (int Nsort,                         ///< No. of values to be sorted
- int *ids)                          ///< List of particle ids
+ T *r)                              ///< List of values to be sorted
 {
-  int i,iaux,j;
+  int i,j;
+  T raux;
 
   for (j=1; j<Nsort; j++) {
+    raux = r[j];
+    for (i=j-1; i>=0; i--) {
+      if (r[i] <= raux) break;
+      r[i+1] = r[i];
+    }
+    r[i+1] = raux;
+  }
+
+  return;
+}
+
+
+
+//=============================================================================
+//  InsertionSortIds
+//  Sort ...
+//=============================================================================
+template <typename T>
+static inline void InsertionSortIds
+ (int Nsort,                           ///< No. of values to be sorted
+  int *ids,                            ///< List of particle ids
+  T *r)                                ///< ...
+{
+  int i,iaux,j;
+  T raux;
+
+  for (j=1; j<Nsort; j++) {
+    raux = r[j];
     iaux = ids[j];
     for (i=j-1; i>=0; i--) {
-      if (ids[i] <= iaux) break;
+      if (r[i] <= raux) break;
+      r[i+1] = r[i];
       ids[i+1] = ids[i];
     }
+    r[i+1] = raux;
     ids[i+1] = iaux;
   }
 

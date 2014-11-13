@@ -138,7 +138,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
 
 
   //-----------------------------------------------------------------------------------------------
-  void BuildTree(int, int, ParticleType<ndim> *, FLOAT);
+  void BuildTree(int, int, int, int, ParticleType<ndim> *, FLOAT);
   void AllocateTreeMemory(void);
   void DeallocateTreeMemory(void);
   bool BoxOverlap(const FLOAT *, const FLOAT *, const FLOAT *, const FLOAT *);
@@ -148,26 +148,30 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
   int ComputeActiveCellList(TreeCell<ndim> **);
-  int ComputeActiveParticleList(TreeCell<ndim> *, ParticleType<ndim> *, int *);
+  int ComputeActiveParticleList(TreeCell<ndim> &, ParticleType<ndim> *, int *);
   int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
-                                 const FLOAT, const int, int *);
-  int ComputeGatherNeighbourList(const ParticleType<ndim> *, const TreeCell<ndim> *,
-                                 const FLOAT, const int, int &, int *);
-  int ComputeNeighbourList(const ParticleType<ndim> *, const TreeCell<ndim> *,
-                           const int, int &,int *);
-  int ComputeGravityInteractionList(const ParticleType<ndim> *, const TreeCell<ndim> *,
-                                    const FLOAT, const int, const int, const int,
-                                    int &, int &, int &, int *, int *, TreeCell<ndim> **);
-  int ComputeStarGravityInteractionList(NbodyParticle<ndim> *, FLOAT, int, int,
-                                        int, int &, int &, int &, int *, int *,
-                                        TreeCell<ndim> **, ParticleType<ndim> *);
-  void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> **);
-  void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> **);
-  void ComputeFastMonopoleForces(int, int, TreeCell<ndim> **,
-                                 TreeCell<ndim> *, ParticleType<ndim> *);
+                                 const FLOAT, const int, int *) {};
+  int ComputeGatherNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+                                 const FLOAT, const int, int &, int *) {};
+  int ComputeNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+                           const int, int &, int *, ParticleType<ndim> *) {};
+  int ComputeGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+                                    const FLOAT, const int, const int, int &, int &, int &, int &,
+                                    int *, int *, int *, TreeCell<ndim> *, ParticleType<ndim> *) {};
+  int ComputePeriodicGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+                                            const DomainBox<ndim> &, const FLOAT, const int, const int,
+                                            int &, int &, int &, int &, int *, int *, int *,
+                                            TreeCell<ndim> *, ParticleType<ndim> *) {};
+  int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
+                                        const int, const int, int &, int &, int &, int *, int *,
+                                        TreeCell<ndim> *, ParticleType<ndim> *) {};
+  void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> *);
+  void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> *);
+  void ComputeFastMonopoleForces(int, int, TreeCell<ndim> *,
+                                 TreeCell<ndim> &, ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
-  int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT, const int,
-                                           int, TreeCell<ndim> **);
+  int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT,
+                                           const int, int, TreeCell<ndim> **);
   bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *);
 #endif
 #if defined(VERIFY_ALL)

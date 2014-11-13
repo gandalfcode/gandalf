@@ -146,7 +146,9 @@ void OctTree<ndim,ParticleType,TreeCell>::DeallocateTreeMemory(void)
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::BuildTree
-(int Npart,                            ///< No. of particles
+(int _ifirst,                         ///< i.d. of first particle
+ int _ilast,                          ///< i.d. of last particle
+ int Npart,                            ///< No. of particles
  int Npartmax,                         ///< Max. no. of particles
  ParticleType<ndim> *partdata,         ///< Particle data array
  FLOAT timestep)                       ///< Smallest physical timestep
@@ -175,6 +177,8 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   AllocateTreeMemory();
 
   // Set properties for root cell before constructing tree
+  ifirst = _ifirst;
+  ilast  = _ilast;
   celldata[0].N = Ntot;
   celldata[0].ifirst = ifirst;
   celldata[0].ilast = ilast;
@@ -274,27 +278,27 @@ void OctTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
 
   // Zero all summation variables for all cells
-  cell.Nactive = 0;
-  cell.N = 0;
-  cell.m = 0.0;
-  cell.hmax = 0.0;
-  cell.rmax = 0.0;
-  cell.dhmaxdt = 0.0;
-  cell.drmaxdt = 0.0;
-  cell.mac = 0.0;
+  cell.Nactive  = 0;
+  cell.N        = 0;
+  cell.m        = 0.0;
+  cell.hmax     = 0.0;
+  cell.rmax     = 0.0;
+  cell.dhmaxdt  = 0.0;
+  cell.drmaxdt  = 0.0;
+  cell.mac      = 0.0;
   cell.cdistsqd = big_number;
   for (k=0; k<ndim; k++) cell.r[k] = 0.0;
   for (k=0; k<ndim; k++) cell.v[k] = 0.0;
+  for (k=0; k<ndim; k++) cell.rcell[k] = 0.0;
   for (k=0; k<ndim; k++) cell.bbmin[k] = big_number;
   for (k=0; k<ndim; k++) cell.bbmax[k] = -big_number;
   for (k=0; k<ndim; k++) cell.hboxmin[k] = big_number;
   for (k=0; k<ndim; k++) cell.hboxmax[k] = -big_number;
   for (k=0; k<5; k++) cell.q[k] = 0.0;
-  for (k=0; k<ndim; k++) cell.rcell[k] = 0.0;
 
 
   // If this is a leaf cell, sum over all particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (cell.level == ltot) {
 
     // First, check if any particles have been accreted and remove them
@@ -381,7 +385,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockCellProperties
 
   }
   // For non-leaf cells, sum together two children cells
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else {
 
     if (child1.N > 0) {
@@ -464,7 +468,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockCellProperties
     }
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
 
   // Calculate eigenvalue MAC criteria
@@ -666,12 +670,12 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int OctTree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
- (TreeCell<ndim> *cellptr,             ///< [in] Pointer to cell
+ (TreeCell<ndim> &cell,             ///< [in] Pointer to cell
   ParticleType<ndim> *partdata,        ///< [in] Pointer to particle data array
   int *activelist)                     ///< [out] List of active particles in cell
 {
-  int i = cellptr->ifirst;             // Local particle id (set to first ptcl id)
-  int ilast = cellptr->ilast;          // i.d. of last particle in cell c
+  int i = cell.ifirst;             // Local particle id (set to first ptcl id)
+  int ilast = cell.ilast;          // i.d. of last particle in cell c
   int Nactive = 0;                     // No. of active particles in cell
 
   // Walk through linked list to obtain list and number of active ptcls.
@@ -724,596 +728,6 @@ bool OctTree<ndim,ParticleType,TreeCell>::BoxOverlap
 
 
 //=================================================================================================
-//  OctTree::ComputeGatherNeighbourList
-/// Computes and returns number of neighbour, 'Nneib', and the list of neighbour ids, 'neiblist',
-/// for all particles inside cell 'c'.  Includes all particles in the selected cell, plus all
-/// particles contained in adjacent cells (including diagonal cells).
-/// Wrapper around the true implementation inside OctTree
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int OctTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
- (const ParticleType<ndim> *partdata,  ///< [in] Particle data array
-  const FLOAT rp[ndim],                ///< [in] Search position
-  const FLOAT rsearch,                 ///< [in] Maximum smoothing length
-  const int Nneibmax,                  ///< [in] Max. no. of neighbours
-  int *neiblist)                       ///< [out] List of neighbour i.d.s
-{
-  int cc;                              // Cell counter
-  int i;                               // Particle id
-  int j;                               // Aux. particle counter
-  int k;                               // Neighbour counter
-  int Nneib = 0;                       // Neighbour counter
-  int Ntemp = 0;                       // Temporary neighbour counter
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT rsearchsqd;                    // Search radius squared
-
-  // Start with root cell and walk through entire tree
-  cc = 0;
-  rsearchsqd = rsearch*rsearch;
-
-  //===========================================================================
-  while (cc < Ncell) {
-
-    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rp[k];
-    drsqd = DotProduct(dr,dr,ndim);
-
-
-    // Check if bounding boxes overlap with each other
-    //-------------------------------------------------------------------------
-    if (drsqd < (rsearch + celldata[cc].rmax)*(rsearch + celldata[cc].rmax)) {
-
-      // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].level != ltot)
-        cc++;
-
-      else if (celldata[cc].N == 0)
-        cc = celldata[cc].cnext;
-
-      // If leaf-cell, add particles to list
-      else if (celldata[cc].level == ltot && Nneib + Nleafmax < Nneibmax) {
-        i = celldata[cc].ifirst;
-          while (i != -1) {
-          neiblist[Nneib++] = i;
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
-        };
-        cc = celldata[cc].cnext;
-      }
-
-      // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].level == ltot && Nneib + Nleafmax >= Nneibmax)
-        return -1;
-
-    }
-
-    // If not in range, then open next cell
-    //-------------------------------------------------------------------------
-    else
-      cc = celldata[cc].cnext;
-
-  };
-  //===========================================================================
-
-
-  // Now, trim the list to remove particles that are definitely not neighbours
-  for (j=0; j<Nneib; j++) {
-    i = neiblist[j];
-    if (partdata[i].itype == dead) continue;
-    for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rp[k];
-    drsqd = DotProduct(dr,dr,ndim);
-    if (drsqd < rsearchsqd) neiblist[Ntemp++] = i;
-  }
-  Nneib = Ntemp;
-
-
-  return Nneib;
-}
-
-
-
-//=================================================================================================
-//  OctTree::ComputeGatherNeighbourList
-/// Computes and returns number of neighbour, 'Nneib', and the list
-/// of neighbour ids, 'neiblist', for all particles inside cell 'c'.
-/// Includes all particles in the selected cell, plus all particles
-/// contained in adjacent cells (including diagonal cells).
-/// Wrapper around the true implementation inside OctTree
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int OctTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
-(const ParticleType<ndim> *partdata,  ///< [in] Particle data array
- const TreeCell<ndim> *cellptr,       ///< [in] Pointer to current cell
- const FLOAT hmax,                    ///< [in] Maximum smoothing length
- const int Nneibmax,                  ///< [in] Max. no. of neighbours
- int &Nneib,                          ///< [inout] No. of neighbours
- int *neiblist)                       ///< [out] List of neighbour i.d.s
-{
-  int cc;                             // Cell counter
-  int i;                              // Particle id
-  int j;                              // Aux. particle counter
-  int k;                              // Neighbour counter
-  int Ntemp = Nneib;                  // Temporary neighbour counter
-  FLOAT dr[ndim];                     // Relative position vector
-  FLOAT drsqd;                        // Distance squared
-  FLOAT gatherboxmin[ndim];           // Minimum gather neighbour box
-  FLOAT gatherboxmax[ndim];           // Maximum gather neighbour box
-  FLOAT hrangemaxsqd;                 // Maximum SPH kernel extent
-  FLOAT rc[ndim];                     // Position of cell
-
-  // Exit immediately if we have overflowed the neighbour list buffer
-  if (Nneib == -1) return -1;
-
-  hrangemaxsqd = pow(cellptr->rmax + kernrange*hmax,2);
-  for (k=0; k<ndim; k++) rc[k] = cellptr->rcell[k];
-  for (k=0; k<ndim; k++) gatherboxmin[k] = cellptr->bbmin[k] - kernrange*hmax;
-  for (k=0; k<ndim; k++) gatherboxmax[k] = cellptr->bbmax[k] + kernrange*hmax;
-
-
-  // Start with root cell and walk through entire tree
-  cc = 0;
-
-  //===========================================================================
-  while (cc < Ncell) {
-
-    // Check if bounding boxes overlap with each other
-    //-------------------------------------------------------------------------
-    if (BoxOverlap(gatherboxmin,gatherboxmax,
-        celldata[cc].bbmin,celldata[cc].bbmax)) {
-
-      // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].level != ltot)
-        cc++;
-
-      else if (celldata[cc].N == 0)
-        cc = celldata[cc].cnext;
-
-      // If leaf-cell, add particles to list
-      else if (celldata[cc].level == ltot && Ntemp + Nleafmax < Nneibmax) {
-        i = celldata[cc].ifirst;
-        while (i != -1) {
-          neiblist[Ntemp++] = i;
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
-        };
-        cc = celldata[cc].cnext;
-      }
-
-      // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].level == ltot && Ntemp + Nleafmax >= Nneibmax)
-    	return -1;
-
-    }
-
-    // If not in range, then open next cell
-    //-------------------------------------------------------------------------
-    else
-      cc = celldata[cc].cnext;
-
-  };
-  //===========================================================================
-
-
-  // Now, trim the list to remove particles that are definitely not neighbours
-  //hrangemax = hrangemax*hrangemax;
-  for (j=Nneib; j<Ntemp; j++) {
-    i = neiblist[j];
-    if (partdata[i].itype == dead) continue;
-    for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
-    drsqd = DotProduct(dr,dr,ndim);
-    if (drsqd < hrangemaxsqd) neiblist[Nneib++] = i;
-  }
-
-
-  return Nneib;
-}
-
-
-
-//=================================================================================================
-//  OctTree::ComputeNeighbourList
-/// Computes and returns number of neighbour, 'Nneib', and the list
-/// of neighbour ids, 'neiblist', for all particles inside cell 'c'.
-/// Includes all particles in the selected cell, plus all particles
-/// contained in adjacent cells (including diagonal cells).
-/// Wrapper around the true implementation inside OctTree.
-/// If allocated memory array containing neighbour ids (neiblist) overflows,
-/// return with error code (-1) in order to reallocate more memory.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int OctTree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
- (const ParticleType<ndim> *partdata,  ///< [in] Particle data array
-  const TreeCell<ndim> *cellptr,       ///< [in] Cell pointer
-  const int Nneibmax,                  ///< [in] Max. no. of neighbours
-  int &Nneib,                          ///< [inout] No. of neighbours
-  int *neiblist)                       ///< [out] List of neighbour i.d.s
-{
-  int cc;                              // Cell counter
-  int i;                               // Particle id
-  int j;                               // Aux. particle counter
-  int k;                               // Neighbour counter
-  int Ntemp = Nneib;                   // Temp. no. of neighbouts
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT rc[ndim];                      // Position of cell
-  FLOAT hrangemaxsqd;                  // Maximum kernel extent (squared)
-  FLOAT rmax;                          // Max. extent of particles from cell COM
-
-  // Exit immediately if we have overflowed the neighbour list buffer
-  if (Nneib == -1) return -1;
-
-  for (k=0; k<ndim; k++) rc[k] = cellptr->r[k];
-  hrangemaxsqd = pow(cellptr->rmax + kernrange*cellptr->hmax,2);
-  rmax = cellptr->rmax;
-
-  // Start with root cell and walk through entire tree
-  cc = 0;
-
-
-  //===========================================================================
-  while (cc < Ncell) {
-
-    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
-    drsqd = DotProduct(dr,dr,ndim);
-
-    // Check if bounding boxes overlap with each other
-    //-------------------------------------------------------------------------
-    if (BoxOverlap(cellptr->bbmin,cellptr->bbmax,
-                   celldata[cc].hboxmin,celldata[cc].hboxmax) ||
-        BoxOverlap(cellptr->hboxmin,cellptr->hboxmax,
-	                 celldata[cc].bbmin,celldata[cc].bbmax)) {
-
-      // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].level != ltot)
-        cc++;
-
-      else if (celldata[cc].N == 0)
-        cc = celldata[cc].cnext;
-
-      // If leaf-cell, add particles to list
-      else if (celldata[cc].level == ltot && Ntemp + Nleafmax < Nneibmax) {
-        i = celldata[cc].ifirst;
-        while (i != -1) {
-          neiblist[Ntemp++] = i;
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
-        };
-        cc = celldata[cc].cnext;
-      }
-
-      // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].level == ltot && Ntemp + Nleafmax >= Nneibmax)
-        return -1;
-
-    }
-
-    // If not in range, then open next cell
-    //-------------------------------------------------------------------------
-    else
-      cc = celldata[cc].cnext;
-  };
-  //===========================================================================
-
-
-  // Now, trim the list to remove particles that are definitely not neighbours
-  for (j=Nneib; j<Ntemp; j++) {
-    i = neiblist[j];
-    if (partdata[i].itype == dead) continue;
-    for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
-    drsqd = DotProduct(dr,dr,ndim);
-    if (drsqd < hrangemaxsqd || drsqd <
-        (rmax + kernrange*partdata[i].h)*(rmax + kernrange*partdata[i].h));
-      neiblist[Nneib++] = i;
-  }
-
-
-  return Nneib;
-}
-
-
-
-//=================================================================================================
-//  OctTree::ComputeGravityInteractionList
-/// Computes and returns number of SPH neighbours (Nneib), direct sum particles
-/// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
-/// the gravity tree walk for active particles inside cell c.
-/// Currently defaults to the geometric opening criteria.
-/// If any of the interactions list arrays (neiblist,directlist,gravcelllist)
-/// overflow, return with error code (-1) to reallocate more memory.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
- (const ParticleType<ndim> *partdata,  ///< [in] Particle data array
-  const TreeCell<ndim> *cellptr,       ///< [in] Pointer to cell
-  const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
-  const int Nneibmax,                  ///< [in] Max. no. of SPH neighbours
-  const int Ndirectmax,                ///< [in] Max. no. of direct-sum neibs
-  const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
-  int &Nneib,                          ///< [out] No. of SPH neighbours
-  int &Ndirect,                        ///< [out] No. of direct-sum neighbours
-  int &Ngravcell,                      ///< [out] No. of cell interactions
-  int *neiblist,                       ///< [out] List of SPH neighbour ids
-  int *directlist,                     ///< [out] List of direct-sum neib ids
-  TreeCell<ndim> **gravcelllist)       ///< [out] List of cell ids
-{
-  int cc;                              // Cell counter
-  int i;                               // Particle id
-  int j;                               // Aux. particle counter
-  int k;                               // Neighbour counter
-  int Nneibtemp = 0;                   // Aux. counter
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT rc[ndim];                      // Position of cell
-  FLOAT hrangemax;                     // Maximum kernel extent
-  FLOAT rmax;                          // Radius of sphere containing particles
-
-  // Make local copies of important cell properties
-  for (k=0; k<ndim; k++) rc[k] = cellptr->rcell[k];
-  hrangemax = cellptr->rmax + kernrange*cellptr->hmax;
-  rmax = cellptr->rmax;
-
-  // Start with root cell and walk through entire tree
-  cc = 0;
-  Nneib = 0;
-  Ndirect = 0;
-  Ngravcell = 0;
-
-
-  // Walk through all cells in tree to determine particle and cell
-  // interaction lists
-  //===========================================================================
-  while (cc < Ncell) {
-
-    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
-    drsqd = DotProduct(dr,dr,ndim);
-
-
-    // Check if bounding boxes overlap with each other
-    //-------------------------------------------------------------------------
-    if (BoxOverlap(cellptr->bbmin,cellptr->bbmax,
-                   celldata[cc].hboxmin,celldata[cc].hboxmax) ||
-        BoxOverlap(cellptr->hboxmin,cellptr->hboxmax,
-                   celldata[cc].bbmin,celldata[cc].bbmax)) {
-
-      // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].level != ltot)
-        cc++;
-
-      else if (celldata[cc].N == 0)
-        cc = celldata[cc].cnext;
-
-      // If leaf-cell, add particles to list
-      else if (celldata[cc].level == ltot && Nneib + Nleafmax <= Nneibmax) {
-        i = celldata[cc].ifirst;
-        while (i != -1) {
-          neiblist[Nneib++] = i;
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
-        };
-        cc = celldata[cc].cnext;
-      }
-
-      // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].level == ltot && Nneib + Nleafmax > Nneibmax)
-    	return -1;
-
-    }
-
-    // Check if cell is far enough away to use the COM approximation
-    //-------------------------------------------------------------------------
-    else if (drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor
-              && celldata[cc].N > 0) {
-
-      // If cell is a leaf-cell with only one particle, more efficient to
-      // compute the gravitational contribution from the particle than the cell
-      if (celldata[cc].level == ltot && celldata[cc].N == 1 &&
-          Ndirect + Nneib < Ndirectmax)
-        directlist[Ndirect++] = celldata[cc].ifirst;
-      else if (Ngravcell < Ngravcellmax)
-        gravcelllist[Ngravcell++] = &(celldata[cc]);
-      else
-        return -2;
-      cc = celldata[cc].cnext;
-
-    }
-
-    // If cell is too close, open cell to interogate children cells.
-    // If cell is too close and a leaf cell, then add particles to direct list.
-    //-------------------------------------------------------------------------
-    else if (!(drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor )
-	     && celldata[cc].N > 0) {
-
-      // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].level != ltot)
-         cc++;
-
-      // If leaf-cell, add particles to list
-      else if (celldata[cc].level == ltot && Ndirect + Nleafmax <= Ndirectmax) {
-        i = celldata[cc].ifirst;
-        while (i != -1) {
-          directlist[Ndirect++] = i;
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
-        };
-        cc = celldata[cc].cnext;
-      }
-
-      // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].level == ltot && Ndirect + Nleafmax > Ndirectmax)
-        return -3;
-
-    }
-
-    // If not in range, then open next cell
-    //-------------------------------------------------------------------------
-    else
-      cc = celldata[cc].cnext;
-
-  };
-  //===========================================================================
-
-
-  // Now, trim the list to remove particles that are definitely not neighbours.
-  // If not an SPH neighbour, then add to direct gravity sum list.
-  hrangemax = hrangemax*hrangemax;
-  for (j=Nneibtemp; j<Nneib; j++) {
-    i = neiblist[j];
-    if (partdata[i].itype == dead) continue;
-    for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
-    drsqd = DotProduct(dr,dr,ndim);
-    if (drsqd < hrangemax || drsqd <
-        (rmax + kernrange*partdata[i].h)*(rmax + kernrange*partdata[i].h))
-      neiblist[Nneibtemp++] = i;
-    else if (Ndirect + Nneibtemp < Ndirectmax)
-      directlist[Ndirect++] = i;
-    else
-     return -3;
-  }
-  Nneib = Nneibtemp;
-
-
-  return 1;
-}
-
-
-
-//=================================================================================================
-//  OctTree::ComputeStarGravityInteractionList
-/// Computes and returns number of SPH neighbours (Nneib), direct sum particles
-/// (Ndirect) and number of cells (Ngravcell), including lists of ids, from
-/// the gravity tree walk for active particles inside cell c.
-/// Currently defaults to the geometric opening criteria.
-/// If any of the interactions list arrays (neiblist,directlist,gravcelllist)
-/// overflow, return with error code (-1) to reallocate more memory.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-int OctTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
- (NbodyParticle<ndim> *star,           ///< [in] Nbody particle
-  FLOAT macfactor,                     ///< [in] Gravity MAC factor
-  int Nneibmax,                        ///< [in] Max. no. of SPH neighbours
-  int Ndirectmax,                      ///< [in] Max. no. of direct-sum neighbours
-  int Ngravcellmax,                    ///< [in] Max. no. of cell interactions
-  int &Nneib,                          ///< [out] No. of SPH neighbours
-  int &Ndirect,                        ///< [out] No. of direct-sum neighbours
-  int &Ngravcell,                      ///< [out] No. of cell interactions
-  int *neiblist,                       ///< [out] List of SPH neighbour ids
-  int *directlist,                     ///< [out] List of direct-sum neighbour ids
-  TreeCell<ndim> **gravcelllist,       ///< [out] List of cell ids
-  ParticleType<ndim> *partdata)        ///< [in] Particle data array
-{
-  int cc;                              // Cell counter
-  int i;                               // Particle id
-  int k;                               // Neighbour counter
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT hrangemax;                     // Maximum kernel extent
-  FLOAT rs[ndim];                      // Position of star
-
-  // Make local copies of important cell properties
-  for (k=0; k<ndim; k++) rs[k] = star->r[k];
-  hrangemax = kernrange*star->h;
-
-  // Start with root cell and walk through entire tree
-  cc = 0;
-  Nneib = 0;
-  Ndirect = 0;
-  Ngravcell = 0;
-
-
-  // Walk through all cells in tree to determine particle and cell
-  // interaction lists
-  //===========================================================================
-  while (cc < Ncell) {
-
-    for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rs[k];
-    drsqd = DotProduct(dr,dr,ndim);
-
-
-    // Check if cells contain SPH neighbours
-    //-------------------------------------------------------------------------
-    if (drsqd < pow(0.5*hrangemax + celldata[cc].rmax + 0.5*kernrange*celldata[cc].hmax,2)) {
-
-      // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].level != ltot)
-        cc++;
-
-      // If leaf-cell, add particles to list
-      else if (celldata[cc].level == ltot && Nneib + Nleafmax <= Nneibmax) {
-        i = celldata[cc].ifirst;
-        while (i != -1) {
-          if (partdata[i].itype != dead) neiblist[Nneib++] = i;
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
-        };
-        cc = celldata[cc].cnext;
-      }
-
-      // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].level == ltot && Nneib + Nleafmax > Nneibmax)
-        return -1;
-
-    }
-
-    // Check if cell is far enough away to use the COM approximation
-    //-------------------------------------------------------------------------
-    else if (drsqd > celldata[cc].cdistsqd && celldata[cc].N > 0) {
-
-      // If cell is a leaf-cell with only one particle, more efficient to
-      // compute the gravitational contribution from the particle than the cell
-      if (celldata[cc].level == ltot && celldata[cc].N == 1 &&
-          Ndirect + Nneib < Ndirectmax) {
-        if (partdata[celldata[cc].ifirst].itype != dead)
-            directlist[Ndirect++] = celldata[cc].ifirst;
-      }
-      else if (Ngravcell < Ngravcellmax && celldata[cc].N > 0)
-        gravcelllist[Ngravcell++] = &(celldata[cc]);
-      else
-        return -1;
-      cc = celldata[cc].cnext;
-
-    }
-
-    // If cell is too close, open cell to interogate children cells.
-    // If cell is too close and a leaf cell, then add particles to direct list.
-    //-------------------------------------------------------------------------
-    else if (drsqd <= celldata[cc].cdistsqd && celldata[cc].N > 0) {
-
-      // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].level != ltot)
-         cc++;
-
-      // If leaf-cell, add particles to list
-      else if (celldata[cc].level == ltot && Ndirect + Nleafmax <= Ndirectmax) {
-        i = celldata[cc].ifirst;
-        while (i != -1) {
-          if (partdata[i].itype != dead) directlist[Ndirect++] = i;
-          if (i == celldata[cc].ilast) break;
-          i = inext[i];
-        };
-        cc = celldata[cc].cnext;
-      }
-
-      // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].level == ltot && Ndirect + Nleafmax > Ndirectmax)
-        return -1;
-
-    }
-
-    // If not in range, then open next cell
-    //-------------------------------------------------------------------------
-    else
-      cc = celldata[cc].cnext;
-
-  };
-  //===========================================================================
-
-
-  return 1;
-}
-
-
-
-//=================================================================================================
 //  OctTree::ComputeCellMonopoleForces
 /// Compute the force on particle 'parti' due to all cells obtained in the
 /// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
@@ -1324,7 +738,7 @@ void OctTree<ndim,ParticleType,TreeCell>::ComputeCellMonopoleForces
   FLOAT agrav[ndim],                   ///< [inout] Acceleration array
   FLOAT rp[ndim],                      ///< [in] Position of point
   int Ngravcell,                       ///< [in] No. of tree cells in list
-  TreeCell<ndim> **gravcelllist)       ///< [in] List of tree cell ids
+  TreeCell<ndim> *gravcell)            ///< [in] List of tree cell ids
 {
   int cc;                              // Aux. cell counter
   int k;                               // Dimension counter
@@ -1339,14 +753,14 @@ void OctTree<ndim,ParticleType,TreeCell>::ComputeCellMonopoleForces
   // Loop over all neighbouring particles in list
   //---------------------------------------------------------------------------
   for (cc=0; cc<Ngravcell; cc++) {
-    cellptr = gravcelllist[cc];
+    cellptr = &(gravcell[cc]);
 
     mc = cellptr->m;
     for (k=0; k<ndim; k++) dr[k] = cellptr->r[k] - rp[k];
-    drsqd = DotProduct(dr,dr,ndim) + small_number;
+    drsqd    = DotProduct(dr,dr,ndim) + small_number;
     invdrsqd = 1.0/drsqd;
     invdrmag = sqrt(invdrsqd);
-    invdr3 = invdrsqd*invdrmag;
+    invdr3   = invdrsqd*invdrmag;
 
     gpot += mc*invdrmag;
     for (k=0; k<ndim; k++) agrav[k] += mc*dr[k]*invdr3;
@@ -1370,7 +784,7 @@ void OctTree<ndim,ParticleType,TreeCell>::ComputeCellQuadrupoleForces
   FLOAT agrav[ndim],                   ///< [inout] Acceleration array
   FLOAT rp[ndim],                      ///< [in] Position of point
   int Ngravcell,                       ///< [in] No. of tree cells in list
-  TreeCell<ndim> **gravcelllist)       ///< [in] List of tree cell ids
+  TreeCell<ndim> *gravcell)            ///< [in] List of tree cell ids
 {
   int cc;                              // Aux. cell counter
   int k;                               // Dimension counter
@@ -1387,17 +801,16 @@ void OctTree<ndim,ParticleType,TreeCell>::ComputeCellQuadrupoleForces
   // Loop over all neighbouring particles in list
   //---------------------------------------------------------------------------
   for (cc=0; cc<Ngravcell; cc++) {
-    cellptr = gravcelllist[cc];
+    cellptr = &(gravcell[cc]);
 
     for (k=0; k<ndim; k++) dr[k] = cellptr->r[k] - rp[k];
-    drsqd = DotProduct(dr,dr,ndim) + small_number;
+    drsqd    = DotProduct(dr,dr,ndim) + small_number;
     invdrsqd = 1.0/drsqd;
     invdrmag = sqrt(invdrsqd);
-    invdr5 = invdrsqd*invdrsqd*invdrmag;
+    invdr5   = invdrsqd*invdrsqd*invdrmag;
 
     // First add monopole term for acceleration
-    for (k=0; k<ndim; k++)
-      agrav[k] += cellptr->m*dr[k]*invdrsqd*invdrmag;
+    for (k=0; k<ndim; k++) agrav[k] += cellptr->m*dr[k]*invdrsqd*invdrmag;
 
     // Now add quadrupole moment terms depending on dimensionality
     if (ndim == 3) {
@@ -1446,8 +859,8 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 void OctTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
  (int Nactive,                         ///< [in] No. of active particles
   int Ngravcell,                       ///< [in] No. of tree cells in list
-  TreeCell<ndim> **gravcelllist,       ///< [in] List of tree cell ids
-  TreeCell<ndim> *cellptr,             ///< [in] Current cell pointer
+  TreeCell<ndim> *gravcell,            ///< [in] List of tree cell ids
+  TreeCell<ndim> &cell,                ///< [in] Current cell pointer
   ParticleType<ndim> *activepart)      ///< [inout] Active SPH particle array
 {
   int cc;                              // Aux. cell counter
@@ -1465,7 +878,7 @@ void OctTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
   FLOAT cellpot;                       // ..
   FLOAT rc[ndim];                      // ..
 
-  for (k=0; k<ndim; k++) rc[k] = cellptr->r[k];
+  for (k=0; k<ndim; k++) rc[k] = cell.r[k];
   for (k=0; k<ndim; k++) ac[k] = 0.0;
   for (k=0; k<ndim; k++) dphi[k] = 0.0;
   for (k=0; k<6; k++) q[k] = 0;
@@ -1476,10 +889,10 @@ void OctTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
 
     for (cc=0; cc<Ngravcell; cc++) {
 #ifndef MPI_PARALLEL
-      assert(cellptr->id != gravcelllist[cc]->id);
+      assert(cell.id != gravcell[cc].id);
 #endif
-      mc = gravcelllist[cc]->m;
-      for (k=0; k<ndim; k++) dr[k] = gravcelllist[cc]->r[k] - rc[k];
+      mc = gravcell[cc].m;
+      for (k=0; k<ndim; k++) dr[k] = gravcell[cc].r[k] - rc[k];
       drsqd = DotProduct(dr,dr,ndim);
       invdrsqd = 1.0/drsqd;
       invdrmag = sqrt(invdrsqd);
@@ -1518,17 +931,19 @@ void OctTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int OctTree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
-(TreeCell<ndim> **celllist)       ///< Cells id array containing active ptcls
+(TreeCell<ndim> **celllist)         ///< Cells id array containing active ptcls
 {
   int c;                            // Cell counter
   int Nactive = 0;                  // No. of active leaf cells in tree
 
-  for (c=0; c<Ncell; c++)
-    if (celldata[c].Nactive > 0) celllist[Nactive++] = &celldata[c];
+  for (c=0; c<Ncell; c++) {
+    if (celldata[c].Nactive > 0) celllist[Nactive++] = &(celldata[c]);
+  }
 
 #ifdef MPI_PARALLEL
-    for (c=Ncell; c<Ncell+Nimportedcell; c++)
-      if (celldata[c].Nactive > 0) celllist[Nactive++] = &celldata[c];
+  for (c=Ncell; c<Ncell+Nimportedcell; c++) {
+    if (celldata[c].Nactive > 0) celllist[Nactive++] = &(celldata[c]);
+  }
 #endif
 
   return Nactive;

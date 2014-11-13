@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  SimulationIC.hpp
 //  Contains all routines for generating initial conditions on the fly.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <iostream>
@@ -1591,16 +1591,15 @@ void Simulation<ndim>::BondiAccretion(void)
   sinks.Nsink = 1;
   for (k=0; k<ndim; k++) nbody->stardata[0].r[k] = 0.0;
   for (k=0; k<ndim; k++) nbody->stardata[0].v[k] = 0.0;
-  nbody->stardata[0].m = msink;
+  nbody->stardata[0].m      = msink;
   nbody->stardata[0].radius = rsink;
-  nbody->stardata[0].h = nbody->kernp->invkernrange*nbody->stardata[0].radius;
-  nbody->stardata[0].invh = 1.0/nbody->stardata[0].h;
-  nbody->stardata[0].hfactor = pow(nbody->stardata[0].invh,ndim);
-  sinks.sink[0].star = &(nbody->stardata[0]);
-  sinks.sink[0].radius = rsink;
-  sinks.sink[0].racc = rsink;
-  sinks.sink[0].mmax = 0.0;
-  sinks.sink[0].menc = 0.0;
+  nbody->stardata[0].h      = nbody->kernp->invkernrange*nbody->stardata[0].radius;
+  nbody->stardata[0].invh   = 1.0/nbody->stardata[0].h;
+  sinks.sink[0].star        = &(nbody->stardata[0]);
+  sinks.sink[0].radius      = rsink;
+  sinks.sink[0].racc        = rsink;
+  sinks.sink[0].mmax        = 0.0;
+  sinks.sink[0].menc        = 0.0;
 
 
   // Find total mass inside sink and set to mmax
@@ -3034,7 +3033,7 @@ void Simulation<ndim>::AddSinusoidalDensityPerturbation
 
   // Loop over all required particles
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none)
+#pragma omp parallel for default(none) shared(amp,kwave,lambda,Npart,r) private(diff,i,xnew,xold)
   for (i=0; i<Npart; i++) {
     xnew = r[ndim*i];
 

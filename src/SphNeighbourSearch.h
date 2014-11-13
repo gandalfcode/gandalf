@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  SphNeighbourSearch.h
 //  Header file containing class definitions for all SPH neighbour searching
 //  data structures and algorithms.
@@ -19,7 +19,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _SPH_NEIGHBOUR_SEARCH_H_
@@ -62,15 +62,14 @@ class MpiNode;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class SphNeighbourSearch
 /// \brief   SphNeighbourSearch class definition.
-/// \details Contains routines for creating the SPH neighbour search data
-///          structure, and for computing local neighbour lists and calling
-///          SPH functions (e.g. computing h, SPH forces, etc..).
+/// \details Class for creating the SPH neighbour search data structure, and for computing local
+///          neighbour lists and calling SPH functions (e.g. computing h, SPH forces, etc..).
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class SphNeighbourSearch
 {
@@ -80,23 +79,21 @@ protected:
 #endif
  public:
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   SphNeighbourSearch(FLOAT, DomainBox<ndim> *,
                      SphKernel<ndim> *, CodeTiming *);
   ~SphNeighbourSearch();
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   virtual void BuildTree(bool, int, int, int, int, int,
                          SphParticle<ndim> *, Sph<ndim> *, FLOAT) = 0;
   virtual void BuildGhostTree(bool, int, int, int, int, int,
                               SphParticle<ndim> *, Sph<ndim> *, FLOAT) = 0;
-  virtual int GetGatherNeighbourList(FLOAT *, FLOAT, SphParticle<ndim> *,
-                                     int, int, int *) = 0;
+  virtual int GetGatherNeighbourList(FLOAT *, FLOAT, SphParticle<ndim> *, int, int, int *) = 0;
   virtual void UpdateAllSphProperties(int, int, SphParticle<ndim> *,
-                                     Sph<ndim> *, Nbody<ndim> *) = 0;
-  virtual void UpdateAllSphForces(int, int, SphParticle<ndim> *,
-                                  Sph<ndim> *, Nbody<ndim> *) = 0;
+                                      Sph<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *,
                                        Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphGravForces(int, int, SphParticle<ndim> *,
@@ -105,8 +102,7 @@ protected:
                                           Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) = 0;
   virtual void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                               Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) = 0;
-  virtual void UpdateActiveParticleCounters(SphParticle<ndim> *,
-                                            Sph<ndim> *) = 0;
+  virtual void UpdateActiveParticleCounters(SphParticle<ndim> *, Sph<ndim> *) = 0;
   virtual void UpdateAllStarGasForces(int, int, SphParticle<ndim> *,
                                       Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *) = 0;
@@ -138,12 +134,12 @@ protected:
 #endif
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   const FLOAT kernrange;            ///< Kernel extent (in units of h)
   const FLOAT kernrangesqd;         ///< Kernel extent (squared)
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   CodeTiming *timing;               ///< Pointer to code timing object
   DomainBox<ndim> *box;             ///< Pointer to simulation bounding box
   SphKernel<ndim> *kernp;           ///< Pointer to SPH kernel object
@@ -155,14 +151,14 @@ protected:
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class BruteForceSearch
 /// \brief   ..
 /// \details Class for computing SPH neighbour lists using brute force only
 ///          (i.e. direct summation over all particles).
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 class BruteForceSearch: public SphNeighbourSearch<ndim>
 {
@@ -176,54 +172,41 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
   using SphNeighbourSearch<ndim>::kernrangesqd;
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   BruteForceSearch(FLOAT, DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~BruteForceSearch();
 
 
-  //---------------------------------------------------------------------------
-  void BuildTree(bool, int, int, int, int, int,
-                 SphParticle<ndim> *, Sph<ndim> *, FLOAT);
+  //-----------------------------------------------------------------------------------------------
+  void BuildTree(bool, int, int, int, int, int, SphParticle<ndim> *, Sph<ndim> *, FLOAT);
   void BuildGhostTree(bool, int, int, int, int, int,
                       SphParticle<ndim> *, Sph<ndim> *, FLOAT) {};
-  int GetGatherNeighbourList(FLOAT *, FLOAT, SphParticle<ndim> *,
-                             int, int, int *);
-  void UpdateAllSphProperties(int, int, SphParticle<ndim> *,
-                              Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphForces(int, int, SphParticle<ndim> *,
-                          Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *,
-                               Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *,
-                              Sph<ndim> *, Nbody<ndim> *);
+  int GetGatherNeighbourList(FLOAT *, FLOAT, SphParticle<ndim> *, int, int, int *);
+  void UpdateAllSphProperties(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                   Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
   void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                       Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
-  void UpdateActiveParticleCounters(SphParticle<ndim> *, Sph<ndim> *);
-  void UpdateAllStarGasForces(int, int, SphParticle<ndim> *,
-                              Sph<ndim> *, Nbody<ndim> *);
+  void UpdateActiveParticleCounters(SphParticle<ndim> *, Sph<ndim> *) {};
+  void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *);
   void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *);
   void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
 
 #ifdef MPI_PARALLEL
   using SphNeighbourSearch<ndim>::ids_active_particles;
-  void UpdateGravityExportList(int, int, int, SphParticle<ndim> *,
-                               Sph<ndim> *, Nbody<ndim> *);
-  void UpdateHydroExportList(int, int, int, SphParticle<ndim> *,
-                             Sph<ndim> *, Nbody<ndim> *);
+  void UpdateGravityExportList(int, int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  void UpdateHydroExportList(int, int, int, SphParticle<ndim> *,  Sph<ndim> *, Nbody<ndim> *);
   void BuildMpiGhostTree(bool, int, int, int, int, int,
                          SphParticle<ndim> *, Sph<ndim> *, FLOAT) {};
-  int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
-                              Sph<ndim> *, vector<int> &);
-  int SearchHydroExportParticles(const Box<ndim> &,
-                                 Sph<ndim> *, vector<int> &);
+  int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &, Sph<ndim> *, vector<int> &);
+  int SearchHydroExportParticles(const Box<ndim> &, Sph<ndim> *, vector<int> &);
   void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
-                                vector<int>&, const vector<int>&,
-                                MpiNode<ndim>*);
-  void FindGhostParticlesToExport(Sph<ndim>* sph,
-                                  vector<vector<ParticleType<ndim>* > >&,
+                                vector<int>&, const vector<int>&, MpiNode<ndim>*);
+  void FindGhostParticlesToExport(Sph<ndim>* sph, vector<vector<ParticleType<ndim>* > >&,
                                   const vector<int>&, MpiNode<ndim>*);
   FLOAT FindLoadBalancingDivision(int, FLOAT, Box<ndim> &) {};
   void FindParticlesToTransfer(Sph<ndim>* sph, std::vector<std::vector<int> >& particles_to_export,
@@ -241,14 +224,14 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class GradhSphBruteForce
 /// \brief   ..
 /// \details Class for computing SPH neighbour lists using brute force only
 ///          (i.e. direct summation over all particles).
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    12/05/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 class GradhSphBruteForce: public BruteForceSearch<ndim,ParticleType>
 {
@@ -262,26 +245,26 @@ class GradhSphBruteForce: public BruteForceSearch<ndim,ParticleType>
   using SphNeighbourSearch<ndim>::kernrangesqd;
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   GradhSphBruteForce(FLOAT, DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~GradhSphBruteForce();
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   void UpdateAllSphProperties(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
 
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class SM2012SphBruteForce
 /// \brief   ..
 /// \details Class for computing SPH neighbour lists using brute force only
 ///          (i.e. direct summation over all particles).
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    12/05/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 class SM2012SphBruteForce: public BruteForceSearch<ndim,ParticleType>
 {
@@ -295,26 +278,26 @@ class SM2012SphBruteForce: public BruteForceSearch<ndim,ParticleType>
   using SphNeighbourSearch<ndim>::kernrangesqd;
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   SM2012SphBruteForce(FLOAT, DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~SM2012SphBruteForce();
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   void UpdateAllSphProperties(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
 
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class GodunovSphBruteForce
 /// \brief   ..
 /// \details Class for computing SPH neighbour lists using brute force only
 ///          (i.e. direct summation over all particles).
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    12/05/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 class GodunovSphBruteForce: public BruteForceSearch<ndim,ParticleType>
 {
@@ -328,12 +311,12 @@ class GodunovSphBruteForce: public BruteForceSearch<ndim,ParticleType>
   using SphNeighbourSearch<ndim>::kernrangesqd;
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   GodunovSphBruteForce(FLOAT, DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~GodunovSphBruteForce();
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   void UpdateAllSphProperties(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *);
   void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *);
@@ -342,14 +325,13 @@ class GodunovSphBruteForce: public BruteForceSearch<ndim,ParticleType>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class SphTree
-/// \brief   Class containing binary tree
-/// \details Binary tree data structure used for efficient neighbour searching
-///          and computation of gravitational forces
+/// \brief   Class containing tree for efficient neighbour searching and gravity calculations.
+/// \details ..
 /// \author  D. A. Hubber
 /// \date    08/01/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 class SphTree: public SphNeighbourSearch<ndim>
 {
@@ -370,27 +352,20 @@ protected:
   using SphNeighbourSearch<ndim>::kernrangesqd;
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   SphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
           DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~SphTree();
 
 
-  //---------------------------------------------------------------------------
-  void BuildTree(bool, int, int, int, int, int,
-                 SphParticle<ndim> *, Sph<ndim> *, FLOAT);
-  void BuildGhostTree(bool, int, int, int, int, int,
-                      SphParticle<ndim> *, Sph<ndim> *, FLOAT);
-  int GetGatherNeighbourList(FLOAT *, FLOAT, SphParticle<ndim> *,
-                             int, int, int *);
-  void UpdateAllSphProperties(int, int, SphParticle<ndim> *,
-			      Sph<ndim> *, Nbody<ndim> *) {};
-  void UpdateAllSphForces(int, int, SphParticle<ndim> *,
-                          Sph<ndim> *, Nbody<ndim> *) {};
-  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *,
-                               Sph<ndim> *, Nbody<ndim> *) {};
-  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *,
-                              Sph<ndim> *, Nbody<ndim> *) {};
+  //-----------------------------------------------------------------------------------------------
+  void BuildTree(bool, int, int, int, int, int, SphParticle<ndim> *, Sph<ndim> *, FLOAT);
+  void BuildGhostTree(bool, int, int, int, int, int, SphParticle<ndim> *, Sph<ndim> *, FLOAT);
+  int GetGatherNeighbourList(FLOAT *, FLOAT, SphParticle<ndim> *, int, int, int *);
+  void UpdateAllSphProperties(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
   void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                   Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) {};
   void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
@@ -398,104 +373,96 @@ protected:
   void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *) {};
   void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *) {};
   void UpdateActiveParticleCounters(SphParticle<ndim> *, Sph<ndim> *);
-  virtual void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
   void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
 
 #ifdef MPI_PARALLEL
-  void UpdateGravityExportList(int, int, int, SphParticle<ndim> *,
-                               Sph<ndim> *, Nbody<ndim> *);
-  void UpdateHydroExportList(int, int, int, SphParticle<ndim> *,
-                             Sph<ndim> *, Nbody<ndim> *);
-  void BuildMpiGhostTree(bool, int, int, int, int, int,
-                         SphParticle<ndim> *, Sph<ndim> *, FLOAT);
+  void UpdateGravityExportList(int, int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  void UpdateHydroExportList(int, int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  void BuildMpiGhostTree(bool, int, int, int, int, int, SphParticle<ndim> *, Sph<ndim> *, FLOAT);
   void BuildPrunedTree(int, int);
-  int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
-                              Sph<ndim> *, vector<int> &);
-  int SearchHydroExportParticles(const Box<ndim> &,
-                                 Sph<ndim> *, vector<TreeCell<ndim> *> &);
+  int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &, Sph<ndim> *, vector<int> &);
+  int SearchHydroExportParticles(const Box<ndim> &, Sph<ndim> *, vector<TreeCell<ndim> *> &);
   void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
-                                vector<int>&, const vector<int>&,
-                                MpiNode<ndim>*);
+                                vector<int>&, const vector<int>&, MpiNode<ndim>*);
   FLOAT FindLoadBalancingDivision(int, FLOAT, Box<ndim> &);
   virtual int GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>&, int, int);
   virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
         Sph<ndim>* sph);
-  virtual void GetBackExportInfo(vector<char >& received_array, vector<int>& N_exported_particles_from_proc,
-        vector<int>&, Sph<ndim>* sph, int rank);
-  virtual void UnpackReturnedExportInfo(vector<char >& received_information, vector<int>& recv_displs,
-      Sph<ndim>* sph, int rank);
+  virtual void GetBackExportInfo(vector<char >& received_array,
+    vector<int>& N_exported_particles_from_proc, vector<int>&, Sph<ndim>* sph, int rank);
+  virtual void UnpackReturnedExportInfo(vector<char >& received_information,
+                                        vector<int>& recv_displs, Sph<ndim>* sph, int rank);
   virtual void CommunicatePrunedTrees(vector<int>&, int);
 #endif
 #if defined(VERIFY_ALL)
-  void CheckValidNeighbourList(int, int, int, int *,
-                               ParticleType<ndim> *, string);
+  void CheckValidNeighbourList(int, int, int, int *, ParticleType<ndim> *, string);
 #endif
 
 
   // Additional functions for binary tree neighbour search
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   void AllocateMemory(Sph<ndim> *);
   void DeallocateMemory(void);
 
 
   // Additional variables for grid
-  //---------------------------------------------------------------------------
-  const int Nleafmax;               ///< Max. number of particles per leaf cell
-  const int Nmpi;                   ///< No. of MPI processes
-  const FLOAT thetamaxsqd;          ///< Geometric opening angle squared
-  const FLOAT invthetamaxsqd;       ///< 1 / thetamaxsqd
-  const FLOAT macerror;             ///< Error tolerance for gravity tree-MAC
-  const string gravity_mac;         ///< Multipole-acceptance criteria for tree
-  const string multipole;           ///< Multipole-order for cell gravity
+  //-----------------------------------------------------------------------------------------------
+  const int Nleafmax;                              ///< Max. number of particles per leaf cell
+  const int Nmpi;                                  ///< No. of MPI processes
+  const FLOAT thetamaxsqd;                         ///< Geometric opening angle squared
+  const FLOAT invthetamaxsqd;                      ///< 1 / thetamaxsqd
+  const FLOAT macerror;                            ///< Error tolerance for gravity tree-MAC
+  const string gravity_mac;                        ///< Multipole-acceptance criteria for tree
+  const string multipole;                          ///< Multipole-order for cell gravity
 
   // Class variables
-  //---------------------------------------------------------------------------
-  int Ncell;                        ///< Current no. of grid cells
-  int Ncellmax;                     ///< Max. allowed no. of grid cells
-  int Nlistmax;                     ///< Max. length of neighbour list
-  int Ntot;                         ///< No. of current points in list
-  int Ntotold;                      ///< Prev. no. of particles
-  int Ntotmax;                      ///< Max. no. of points in list
-  int Ntotmaxold;                   ///< Old value of Ntotmax
-  FLOAT hmax;                       ///< Store hmax in the tree
-  FLOAT theta;                      ///< Geometric opening angle
-  Tree<ndim,ParticleType,TreeCell> *tree;       ///< Pointer to tree
-  Tree<ndim,ParticleType,TreeCell> *ghosttree;  ///< Pointer to tree containing ghosts
-                                                ///< on local domain
+  //-----------------------------------------------------------------------------------------------
+  int Ncell;                                       ///< Current no. of grid cells
+  int Ncellmax;                                    ///< Max. allowed no. of grid cells
+  int Nlistmax;                                    ///< Max. length of neighbour list
+  int Ntot;                                        ///< No. of current points in list
+  int Ntotold;                                     ///< Prev. no. of particles
+  int Ntotmax;                                     ///< Max. no. of points in list
+  int Ntotmaxold;                                  ///< Old value of Ntotmax
+  FLOAT hmax;                                      ///< Store hmax in the tree
+  FLOAT theta;                                     ///< Geometric opening angle
+  Tree<ndim,ParticleType,TreeCell> *tree;          ///< Pointer to main (local) tree
+  Tree<ndim,ParticleType,TreeCell> *ghosttree;     ///< Pointer to tree containing ghosts
+                                                   ///< on local domain
 
-  bool allocated_buffer;            ///< ..
-  int Nthreads;                     ///< ..
-  int *Nneibmaxbuf;                 ///< ..
-  int *Ndirectmaxbuf;               ///< ..
-  int *Ngravcellmaxbuf;             ///< ..
-  int **activelistbuf;              ///< ..
-  int **levelneibbuf;               ///< ..
-  ParticleType<ndim> **neibpartbuf;   // Local copy of neighbouring ptcls
-  ParticleType<ndim> **activepartbuf; // Local copy of SPH particle
+  bool allocated_buffer;                           ///< ..
+  int Nthreads;                                    ///< ..
+  int *Nneibmaxbuf;                                ///< ..
+  int *Ngravcellmaxbuf;                            ///< ..
+  int **activelistbuf;                             ///< ..
+  int **levelneibbuf;                              ///< ..
+  ParticleType<ndim> **neibpartbuf;                ///< Local copy of neighbouring ptcls
+  ParticleType<ndim> **activepartbuf;              ///< Local copy of SPH particle
+  TreeCell<ndim> **cellbuf;                        ///< ..
 
 #ifdef MPI_PARALLEL
-  int Nprunedcellmax;                       ///< ..
-  int *Ncellexport;                         ///< ..
-  int *Npartexport;                         ///< ..
-  TreeCell<ndim> ***cellexportlist;  ///< List of cells
+  int Nprunedcellmax;                              ///< ..
+  int *Ncellexport;                                ///< ..
+  int *Npartexport;                                ///< ..
+  TreeCell<ndim> ***cellexportlist;                ///< List of cells
   Tree<ndim,ParticleType,TreeCell> *mpighosttree;  ///< Pointer to tree containing
-                                            ///< ghosts from other MPI procs.
+                                                   ///< ghosts from other MPI procs.
   Tree<ndim,ParticleType,TreeCell> **prunedtree;   ///< 'Pruned' tree for MPI nodes.
-                                            ///< i.e. only uses top levels
+                                                   ///< i.e. only uses top levels
 #endif
 
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class GradhSphTree
-/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
-/// \details kd-tree data structure used for efficient neighbour searching
-///          and computation of gravitational forces for grad-h SPH.
+/// \brief   Class containing tree for computing grad-h SPH force loops.
+/// \details ...
 /// \author  D. A. Hubber
 /// \date    08/01/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
 {
@@ -505,6 +472,7 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::activepartbuf;
   using SphTree<ndim,ParticleType,TreeCell>::allocated_buffer;
   using SphTree<ndim,ParticleType,TreeCell>::box;
+  using SphTree<ndim,ParticleType,TreeCell>::cellbuf;
   using SphTree<ndim,ParticleType,TreeCell>::gravity_mac;
   using SphTree<ndim,ParticleType,TreeCell>::kernp;
   using SphTree<ndim,ParticleType,TreeCell>::kernrange;
@@ -513,7 +481,6 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::multipole;
   using SphTree<ndim,ParticleType,TreeCell>::neibcheck;
   using SphTree<ndim,ParticleType,TreeCell>::neibpartbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::Ndirectmaxbuf;
   using SphTree<ndim,ParticleType,TreeCell>::Ngravcellmaxbuf;
   using SphTree<ndim,ParticleType,TreeCell>::Nleafmax;
   using SphTree<ndim,ParticleType,TreeCell>::Nneibmaxbuf;
@@ -531,34 +498,32 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
 #endif
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   GradhSphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
                DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~GradhSphTree();
 
 
-  //---------------------------------------------------------------------------
-  void UpdateAllSphProperties(int, int, SphParticle<ndim> *,
-                 Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphForces(int, int, SphParticle<ndim> *,
-                          Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *,
-                               Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *,
-                              Sph<ndim> *, Nbody<ndim> *);
+  //-----------------------------------------------------------------------------------------------
+  void UpdateAllSphProperties(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
+                                  Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
 
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class GradhSphKDTree
-/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
-/// \details kd-tree data structure used for efficient neighbour searching
-///          and computation of gravitational forces for grad-h SPH.
+/// \brief   ...
+/// \details ...
 /// \author  D. A. Hubber
 /// \date    17/09/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 class GradhSphKDTree: public GradhSphTree<ndim,ParticleType,TreeCell>
 {
@@ -573,7 +538,7 @@ class GradhSphKDTree: public GradhSphTree<ndim,ParticleType,TreeCell>
 #endif
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   GradhSphKDTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
                  DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
 
@@ -581,14 +546,13 @@ class GradhSphKDTree: public GradhSphTree<ndim,ParticleType,TreeCell>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class GradhSphOctTree
-/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
-/// \details kd-tree data structure used for efficient neighbour searching
-///          and computation of gravitational forces for grad-h SPH.
+/// \brief   Class containing octal tree for computing grad-h SPH force loops.
+/// \details ...
 /// \author  D. A. Hubber
 /// \date    17/09/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 class GradhSphOctTree: public GradhSphTree<ndim,ParticleType,TreeCell>
 {
@@ -603,7 +567,7 @@ class GradhSphOctTree: public GradhSphTree<ndim,ParticleType,TreeCell>
 #endif
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   GradhSphOctTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
                   DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
 
@@ -611,14 +575,14 @@ class GradhSphOctTree: public GradhSphTree<ndim,ParticleType,TreeCell>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class SM2012SphTree
-/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
+/// \brief   Class containing tree for computing Saitoh & Makino (2012) SPH force loops.
 /// \details kd-tree data structure used for efficient neighbour searching
 ///          and computation of gravitational forces for grad-h SPH.
 /// \author  D. A. Hubber
 /// \date    08/01/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 class SM2012SphTree: public SphTree<ndim,ParticleType,TreeCell>
 {
@@ -628,6 +592,7 @@ class SM2012SphTree: public SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::activepartbuf;
   using SphTree<ndim,ParticleType,TreeCell>::allocated_buffer;
   using SphTree<ndim,ParticleType,TreeCell>::box;
+  using SphTree<ndim,ParticleType,TreeCell>::cellbuf;
   using SphTree<ndim,ParticleType,TreeCell>::gravity_mac;
   using SphTree<ndim,ParticleType,TreeCell>::kernp;
   using SphTree<ndim,ParticleType,TreeCell>::kernrange;
@@ -636,7 +601,6 @@ class SM2012SphTree: public SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::multipole;
   using SphTree<ndim,ParticleType,TreeCell>::neibcheck;
   using SphTree<ndim,ParticleType,TreeCell>::neibpartbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::Ndirectmaxbuf;
   using SphTree<ndim,ParticleType,TreeCell>::Ngravcellmaxbuf;
   using SphTree<ndim,ParticleType,TreeCell>::Nleafmax;
   using SphTree<ndim,ParticleType,TreeCell>::Nneibmaxbuf;
@@ -654,34 +618,31 @@ class SM2012SphTree: public SphTree<ndim,ParticleType,TreeCell>
 #endif
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   SM2012SphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
                 DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~SM2012SphTree();
 
 
-  //---------------------------------------------------------------------------
-  void UpdateAllSphProperties(int, int, SphParticle<ndim> *,
-                 Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphForces(int, int, SphParticle<ndim> *,
-                          Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *,
-                               Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *,
-                              Sph<ndim> *, Nbody<ndim> *);
+  //-----------------------------------------------------------------------------------------------
+  void UpdateAllSphProperties(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
 
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class SM2012SphKDTree
 /// \brief   Class containing kd-tree for computing grad-h SPH force loops.
 /// \details kd-tree data structure used for efficient neighbour searching
 ///          and computation of gravitational forces for grad-h SPH.
 /// \author  D. A. Hubber
 /// \date    17/09/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 class SM2012SphKDTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
 {
@@ -696,7 +657,7 @@ class SM2012SphKDTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
 #endif
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   SM2012SphKDTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
                   DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
 
@@ -704,14 +665,14 @@ class SM2012SphKDTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class SM2012SphOctTree
 /// \brief   Class containing kd-tree for computing grad-h SPH force loops.
 /// \details kd-tree data structure used for efficient neighbour searching
 ///          and computation of gravitational forces for grad-h SPH.
 /// \author  D. A. Hubber
 /// \date    17/09/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 class SM2012SphOctTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
 {
@@ -726,7 +687,7 @@ class SM2012SphOctTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
 #endif
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   SM2012SphOctTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
                    DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
 
@@ -734,14 +695,14 @@ class SM2012SphOctTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class GodunovSphTree
 /// \brief   Class containing kd-tree for computing grad-h SPH force loops.
 /// \details kd-tree data structure used for efficient neighbour searching
 ///          and computation of gravitational forces for grad-h SPH.
 /// \author  D. A. Hubber
 /// \date    08/01/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 class GodunovSphTree: public SphTree<ndim,ParticleType,TreeCell>
 {
@@ -751,6 +712,7 @@ class GodunovSphTree: public SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::activepartbuf;
   using SphTree<ndim,ParticleType,TreeCell>::allocated_buffer;
   using SphTree<ndim,ParticleType,TreeCell>::box;
+  using SphTree<ndim,ParticleType,TreeCell>::cellbuf;
   using SphTree<ndim,ParticleType,TreeCell>::gravity_mac;
   using SphTree<ndim,ParticleType,TreeCell>::kernp;
   using SphTree<ndim,ParticleType,TreeCell>::kernrange;
@@ -759,7 +721,6 @@ class GodunovSphTree: public SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::multipole;
   using SphTree<ndim,ParticleType,TreeCell>::neibcheck;
   using SphTree<ndim,ParticleType,TreeCell>::neibpartbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::Ndirectmaxbuf;
   using SphTree<ndim,ParticleType,TreeCell>::Ngravcellmaxbuf;
   using SphTree<ndim,ParticleType,TreeCell>::Nleafmax;
   using SphTree<ndim,ParticleType,TreeCell>::Nneibmaxbuf;
@@ -777,36 +738,33 @@ class GodunovSphTree: public SphTree<ndim,ParticleType,TreeCell>
 #endif
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   GodunovSphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
                  DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
   ~GodunovSphTree();
 
 
-  //---------------------------------------------------------------------------
-  void UpdateAllSphProperties(int, int, SphParticle<ndim> *,
-                 Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphForces(int, int, SphParticle<ndim> *,
-                          Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *,
-                               Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *,
-                              Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *);
-  void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *);
+  //-----------------------------------------------------------------------------------------------
+  void UpdateAllSphProperties(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *) {};
+  void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *) {};
 
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class GodunovSphKDTree
 /// \brief   Class containing kd-tree for computing grad-h SPH force loops.
 /// \details kd-tree data structure used for efficient neighbour searching
 ///          and computation of gravitational forces for grad-h SPH.
 /// \author  D. A. Hubber
 /// \date    17/09/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 class GodunovSphKDTree: public GodunovSphTree<ndim,ParticleType,TreeCell>
 {
@@ -821,7 +779,7 @@ class GodunovSphKDTree: public GodunovSphTree<ndim,ParticleType,TreeCell>
 #endif
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   GodunovSphKDTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
                   DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
 
@@ -829,14 +787,14 @@ class GodunovSphKDTree: public GodunovSphTree<ndim,ParticleType,TreeCell>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class GodunovSphOctTree
 /// \brief   Class containing kd-tree for computing grad-h SPH force loops.
 /// \details kd-tree data structure used for efficient neighbour searching
 ///          and computation of gravitational forces for grad-h SPH.
 /// \author  D. A. Hubber
 /// \date    17/09/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 class GodunovSphOctTree: public GodunovSphTree<ndim,ParticleType,TreeCell>
 {
@@ -851,7 +809,7 @@ class GodunovSphOctTree: public GodunovSphTree<ndim,ParticleType,TreeCell>
 #endif
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   GodunovSphOctTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
                    DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
 

@@ -1,4 +1,4 @@
-#==============================================================================
+#==================================================================================================
 #  GANDALF v0.1.0 Makefile frontend
 #
 #  This file is part of GANDALF :
@@ -17,7 +17,7 @@
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 #  General Public License (http://www.gnu.org/licenses) for more details.
-#==============================================================================
+#==================================================================================================
 
 
 CPP                = g++-4
@@ -37,7 +37,7 @@ REORDER_PARTICLES  = 0
 # find the location of the libraries automatically using installed python
 # utilities.  If you have multiple versions of python installed on your
 # computer, then select the prefered version with the PYTHON variable above.
-#------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
 PYLIB =
 NUMPY =
 GTEST = $(GTEST_DIR)

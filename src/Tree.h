@@ -58,7 +58,7 @@ class Tree
 
 
   //-----------------------------------------------------------------------------------------------
-  virtual void BuildTree(int, int, ParticleType<ndim> *, FLOAT) = 0;
+  virtual void BuildTree(int, int, int, int, ParticleType<ndim> *, FLOAT) = 0;
   virtual void AllocateTreeMemory(void) = 0;
   virtual void DeallocateTreeMemory(void) = 0;
   virtual void ExtrapolateCellProperties(FLOAT) = 0;
@@ -66,26 +66,29 @@ class Tree
   virtual void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *) = 0;
   virtual void UpdateActiveParticleCounters(ParticleType<ndim> *) = 0;
   virtual int ComputeActiveCellList(TreeCell<ndim> **) = 0;
-  virtual int ComputeActiveParticleList(TreeCell<ndim> *, ParticleType<ndim> *, int *) = 0;
+  virtual int ComputeActiveParticleList(TreeCell<ndim> &, ParticleType<ndim> *, int *) = 0;
   virtual int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
                                          const FLOAT, const int, int *) = 0;
-  virtual int ComputeGatherNeighbourList(const ParticleType<ndim> *,
-                                         const TreeCell<ndim> *, const FLOAT,
-                                         const int, int &, int *) = 0;
-  virtual int ComputeNeighbourList(const ParticleType<ndim> *, const TreeCell<ndim> *,
-                                   const int, int &,int *) = 0;
-  virtual int ComputeGravityInteractionList(const ParticleType<ndim> *,
-                                            const TreeCell<ndim> *, const FLOAT,
-                                            const int, const int, const int,
-                                            int &, int &, int &, int *, int *,
-                                            TreeCell<ndim> **) = 0;
-  virtual int ComputeStarGravityInteractionList(NbodyParticle<ndim> *, FLOAT, int, int,
-                                                int, int &, int &, int &, int *, int *,
-                                                TreeCell<ndim> **, ParticleType<ndim> *) = 0;
-  virtual void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> **) = 0;
-  virtual void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> **) = 0;
-  virtual void ComputeFastMonopoleForces(int, int, TreeCell<ndim> **,
-                                         TreeCell<ndim> *, ParticleType<ndim> *) = 0;
+  virtual int ComputeGatherNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+                                         const FLOAT, const int, int &, int *) = 0;
+  virtual int ComputeNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+                                   const int, int &, int *, ParticleType<ndim> *) = 0;
+  virtual int ComputeGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+                                            const FLOAT, const int, const int,
+                                            int &, int &, int &, int &, int *, int *, int *,
+                                            TreeCell<ndim> *, ParticleType<ndim> *) = 0;
+  virtual int ComputePeriodicGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+                                                    const DomainBox<ndim> &, const FLOAT, const int, const int,
+                                                    int &, int &, int &, int &, int *, int *, int *,
+                                                    TreeCell<ndim> *, ParticleType<ndim> *) = 0;
+  virtual int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT,
+                                                const int, const int, const int,
+                                                int &, int &, int &, int *, int *,
+                                                TreeCell<ndim> *, ParticleType<ndim> *) = 0;
+  virtual void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> *) = 0;
+  virtual void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> *) = 0;
+  virtual void ComputeFastMonopoleForces(int, int, TreeCell<ndim> *,
+                                         TreeCell<ndim> &, ParticleType<ndim> *) = 0;
 
 #ifdef MPI_PARALLEL
   virtual int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT,

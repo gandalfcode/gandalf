@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  SphSimulation.cpp
 //  Contains all main functions controlling SPH simulation work-flow.
 //
@@ -18,11 +18,13 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <iostream>
 #include <iomanip>
+#include <ostream>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <math.h>
@@ -54,11 +56,11 @@ template class SphSimulation<3>;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSimulation::ProcessParameters
 /// Process all the options chosen in the parameters file, setting various
 /// simulation variables and creating important simulation objects.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void SphSimulation<ndim>::ProcessParameters(void)
 {
@@ -80,7 +82,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   }
 
   // Set-up random number generator object
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (stringparams["rand_algorithm"] == "xorshift")
     randnumb = new XorshiftRand(intparams["randseed"]);
   else if (stringparams["rand_algorithm"] == "none")
@@ -96,7 +98,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   simunits.SetupUnits(simparams);
 
   // Boundary condition variables
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   simbox.x_boundary_lhs = setBoundaryType(stringparams["x_boundary_lhs"]);
   simbox.x_boundary_rhs = setBoundaryType(stringparams["x_boundary_rhs"]);
   simbox.boxmin[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
@@ -131,7 +133,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   // Thermal physics object.  If energy equation is chosen, also initiate
   // the energy integration object.
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if ((gas_eos == "energy_eqn" || gas_eos == "constant_temp" ||
        gas_eos == "isothermal" || gas_eos == "barotropic" ||
        gas_eos == "barotropic2") && gas_radiation == "ionisation") {
@@ -214,7 +216,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
 
   // Sink particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   sink_particles            = intparams["sink_particles"];
   sinks.sink_particles      = intparams["sink_particles"];
   sinks.create_sinks        = intparams["create_sinks"];
@@ -251,6 +253,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   Nlevels             = intparams["Nlevels"];
   ndiagstep           = intparams["ndiagstep"];
   noutputstep         = intparams["noutputstep"];
+  nrestartstep        = intparams["nrestartstep"];
   ntreebuildstep      = intparams["ntreebuildstep"];
   ntreestockstep      = intparams["ntreestockstep"];
   Nstepsmax           = intparams["Nstepsmax"];
@@ -285,17 +288,17 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSimulation::PostInitialConditionsSetup
 /// Call routines for calculating all initial SPH and N-body quantities
 /// once initial conditions have been set-up.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 {
-  int i;                            // Particle counter
-  int k;                            // Dimension counter
-  SphParticle<ndim> *partdata;      // Pointer to main SPH data array
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
+  SphParticle<ndim> *partdata;         // Pointer to main SPH data array
 
   debug2("[SphSimulation::PostInitialConditionsSetup]");
 
@@ -310,10 +313,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Perform initial MPI decomposition
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
-  mpicontrol->CreateInitialDomainDecomposition(sph,nbody,simparams,simbox,
-                                               this->initial_h_provided);
+  mpicontrol->CreateInitialDomainDecomposition(sph,nbody,simparams,simbox,this->initial_h_provided);
 #endif
 
   // Set time variables here (for now)
@@ -321,7 +323,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   n = 0;
 
   // Set initial smoothing lengths and create initial ghost particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (sph->Nsph > 0) {
 
     // Set all relevant particle counters
@@ -354,16 +356,14 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->neibcheck = false;
     if (!this->initial_h_provided) {
       sph->InitialSmoothingLengthGuess();
-      sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
-                         sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
-                         sph,timestep);
-      sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,
-                                      sph->GetParticlesArray(),sph,nbody);
+      sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,sph->Ntot,
+                         sph->Nsphmax,sph->GetParticlesArray(),sph,timestep);
+      sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,sph->GetParticlesArray(),sph,nbody);
     }
-    else
-      sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
-                         sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
-                         sph,timestep);
+    else {
+      sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,sph->Ntot,
+                         sph->Nsphmax,sph->GetParticlesArray(),sph,timestep);
+    }
 
 #ifdef MPI_PARALLEL
     mpicontrol->UpdateAllBoundingBoxes(sph->Nsph, sph, sph->kernp);
@@ -371,9 +371,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Search ghost particles
     sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
-    sphneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,
-                            sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
-                            sph,timestep);
+    sphneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,sph->Ntot,
+                            sph->Nsphmax,sph->GetParticlesArray(),sph,timestep);
 #ifdef MPI_PARALLEL
     mpicontrol->UpdateAllBoundingBoxes(sph->Nsph+sph->NPeriodicGhost, sph, sph->kernp);
     for (int i=0; i<sph->Nsph+sph->NPeriodicGhost; i++) {
@@ -381,9 +380,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       parti.hrangesqd = sph->kernfacsqd*sph->kernp->kernrangesqd*parti.h*parti.h;
     }
     MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
-    sphneib->BuildMpiGhostTree(true,0,ntreebuildstep,ntreestockstep,
-                               sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
-                               sph,timestep);
+    sphneib->BuildMpiGhostTree(true,0,ntreebuildstep,ntreestockstep,sph->Ntot,
+                               sph->Nsphmax,sph->GetParticlesArray(),sph,timestep);
 #endif
 
 
@@ -392,9 +390,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Update neighbour tree
     rebuild_tree = true;
-    sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
-                       sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
-                       sph,timestep);
+    sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,sph->Ntot,
+                       sph->Nsphmax,sph->GetParticlesArray(),sph,timestep);
     level_step = 1;
 
 
@@ -402,8 +399,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).gpot = big_number;
 
     // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,
-                                    sph->GetParticlesArray(),sph,nbody);
+    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,sph->GetParticlesArray(),sph,nbody);
 
 #ifdef MPI_PARALLEL
     mpicontrol->UpdateAllBoundingBoxes(sph->Nsph, sph, sph->kernp);
@@ -411,21 +407,22 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Search ghost particles
     sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
-    sphneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,
-                            sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
-                            sph,timestep);
+    sphneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,sph->Ntot,
+                            sph->Nsphmax,sph->GetParticlesArray(),sph,timestep);
 #ifdef MPI_PARALLEL
     mpicontrol->UpdateAllBoundingBoxes(sph->Nsph+sph->NPeriodicGhost, sph, sph->kernp);
     MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
-    sphneib->BuildMpiGhostTree(true,0,ntreebuildstep,ntreestockstep,
-                               sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
-                               sph,timestep);
+    sphneib->BuildMpiGhostTree(true,0,ntreebuildstep,ntreestockstep,sph->Ntot,
+                               sph->Nsphmax,sph->GetParticlesArray(),sph,timestep);
 #endif
 
     // Update neighbour tree
     rebuild_tree = true;
     sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
                        sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),sph,timestep);
+    sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
+    sphneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,sph->Ntot,
+                            sph->Nsphmax,sph->GetParticlesArray(),sph,timestep);
     sphneib->neibcheck = true;
 
     // Communicate pruned trees for MPI
@@ -438,9 +435,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   }
 
 
-
   // Compute all initial N-body terms
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (nbody->Nstar > 0) {
 
     // Zero all acceleration terms
@@ -449,14 +445,14 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       for (k=0; k<ndim; k++) nbody->stardata[i].adot[k] = 0.0;
       for (k=0; k<ndim; k++) nbody->stardata[i].a2dot[k] = 0.0;
       for (k=0; k<ndim; k++) nbody->stardata[i].a3dot[k] = 0.0;
-      nbody->stardata[i].gpot = 0.0;
-      nbody->stardata[i].gpe = 0.0;
-      nbody->stardata[i].tlast = t;
+      nbody->stardata[i].gpot   = 0.0;
+      nbody->stardata[i].gpe    = 0.0;
+      nbody->stardata[i].tlast  = t;
       nbody->stardata[i].active = true;
-      nbody->stardata[i].level = 0; //level_step;
-      nbody->stardata[i].nstep = 0;
-      nbody->stardata[i].nlast = 0;
-      nbody->nbodydata[i] = &(nbody->stardata[i]);
+      nbody->stardata[i].level  = 0;
+      nbody->stardata[i].nstep  = 0;
+      nbody->stardata[i].nlast  = 0;
+      nbody->nbodydata[i]       = &(nbody->stardata[i]);
     }
     nbody->Nnbody = nbody->Nstar;
 
@@ -469,24 +465,28 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Compute all initial SPH force terms
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (sph->Nsph > 0) {
 
     // Zero accelerations (here for now)
     for (i=0; i<sph->Ntot; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-      part.level = 0;
-      part.nstep = 0;
-      part.nlast = 0;
+      part.level  = 0;
+      part.nstep  = 0;
+      part.nlast  = 0;
+      part.tlast  = t;
       part.active = false;
     }
     for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).active = true;
 
+    // Copy all other data from real SPH particles to ghosts
     LocalGhosts->CopySphDataToGhosts(simbox,sph);
 
-    sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
-                       sph->Ntot,sph->Nsphmax,sph->GetParticlesArray(),
-                       sph,timestep);
+    //sphneib->BuildTree(true,0,ntreebuildstep,ntreestockstep,sph->Ntot,
+    //                   sph->Nsphmax,sph->GetParticlesArray(),sph,timestep);
+    //sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
+    //sphneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,sph->Ntot,
+    //                        sph->Nsphmax,sph->GetParticlesArray(),sph,timestep);
 
 #ifdef MPI_PARALLEL
     if (sph->self_gravity == 1)
@@ -526,7 +526,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
       sphneib->UpdateAllSphGravForces(sph->Nsph,sph->Ntot,sph->GetParticlesArray(),sph,nbody);
 
 #if defined MPI_PARALLEL
-      mpicontrol->GetExportedParticlesAccelerations(sph);
+    mpicontrol->GetExportedParticlesAccelerations(sph);
 #endif
 
     // Set initial accelerations
@@ -547,7 +547,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Compute initial N-body forces
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (nbody->Nstar > 0) {
 
     if (nbody->nbody_softening == 1) {
@@ -564,7 +564,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Set particle values for initial step (e.g. r0, v0, a0, u0)
-  sphint->EndTimestep(n,0.0,sph->Nsph,sph->GetParticlesArray());
+  sphint->EndTimestep(n,sph->Nsph,t,timestep,sph->GetParticlesArray());
   nbody->EndTimestep(n,nbody->Nstar,t,timestep,nbody->nbodydata);
 
   this->CalculateDiagnostics();
@@ -577,19 +577,19 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSimulation::MainLoop
 /// Main SPH simulation integration loop.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void SphSimulation<ndim>::MainLoop(void)
 {
-  int activecount;                  // Flag if we need to recompute particles
-  int i;                            // Particle loop counter
-  int it;                           // Time-symmetric iteration counter
-  int k;                            // Dimension counter
-  FLOAT tghost;                     // Approx. ghost particle lifetime
-  SphParticle<ndim> *partdata;      // Pointer to main SPH data array
+  int activecount = 0;                 // Flag if we need to recompute particles
+  int i;                               // Particle loop counter
+  int it;                              // Time-symmetric iteration counter
+  int k;                               // Dimension counter
+  FLOAT tghost;                        // Approx. ghost particle lifetime
+  SphParticle<ndim> *partdata;         // Pointer to main SPH data array
 
   debug2("[SphSimulation::MainLoop]");
 
@@ -597,11 +597,9 @@ void SphSimulation<ndim>::MainLoop(void)
   // Set pointer for SPH data array
   partdata = sph->GetParticlesArray();
 
-
   // Compute timesteps for all particles
   if (Nlevels == 1) this->ComputeGlobalTimestep();
   else this->ComputeBlockTimesteps();
-
 
   // Advance time variables
   n = n + 1;
@@ -610,9 +608,8 @@ void SphSimulation<ndim>::MainLoop(void)
   if (n == nresync) Nblocksteps = Nblocksteps + 1;
   if (n%integration_step == 0) Nfullsteps = Nfullsteps + 1;
 
-
   // Advance SPH and N-body particles' positions and velocities
-  sphint->AdvanceParticles(n,(FLOAT) timestep,sph->Nsph,sph->GetParticlesArray());
+  sphint->AdvanceParticles(n,sph->Nsph,(FLOAT) t,(FLOAT) timestep,sph->GetParticlesArray());
   nbody->AdvanceParticles(n,nbody->Nnbody,t,timestep,nbody->nbodydata);
 
   // Check all boundary conditions
@@ -621,13 +618,13 @@ void SphSimulation<ndim>::MainLoop(void)
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) sphint->CheckBoundaries(simbox,sph);
 
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   // MPI : On tree re-build step, determine load balancing for all MPI nodes.
   //       (How is this done?  All computed on root node??)
   //       Send/receive particles to their new nodes.
   //       Compute and transmit all bounding boxes (e.g. all particles, active
   //       particles, h-extent, ghosts, etc..) to all other MPI nodes
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
     sphneib->BuildPrunedTree(pruning_level,rank);
@@ -639,7 +636,7 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
   // Compute all SPH quantities
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (sph->Nsph > 0) {
 
     // Rebuild or update local neighbour and gravity tree
@@ -651,18 +648,15 @@ void SphSimulation<ndim>::MainLoop(void)
     if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
       tghost = timestep*(FLOAT)(ntreebuildstep - 1);
       sphneib->SearchBoundaryGhostParticles(tghost,simbox,sph);
-      sphneib->BuildGhostTree(rebuild_tree,Nsteps,ntreebuildstep,
-                              ntreestockstep,sph->Ntot,sph->Nsphmax,
-                              partdata,sph,timestep);
+      sphneib->BuildGhostTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,
+                              sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 #ifdef MPI_PARALLEL
       sphneib->BuildPrunedTree(pruning_level,rank);
       mpicontrol->CommunicatePrunedTrees();
-      mpicontrol->UpdateAllBoundingBoxes(sph->Nsph+sph->NPeriodicGhost,
-                                         sph,sph->kernp);
+      mpicontrol->UpdateAllBoundingBoxes(sph->Nsph+sph->NPeriodicGhost,sph,sph->kernp);
       MpiGhosts->SearchGhostParticles(tghost,simbox,sph);
-      sphneib->BuildMpiGhostTree(rebuild_tree,Nsteps,ntreebuildstep,
-                                 ntreestockstep,sph->Ntot,sph->Nsphmax,
-                                 partdata,sph,timestep);
+      sphneib->BuildMpiGhostTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,
+                                 sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
 #endif
     }
     // Otherwise copy properties from original particles to ghost particles
@@ -673,21 +667,13 @@ void SphSimulation<ndim>::MainLoop(void)
 #endif
     }
 
-    activecount = 0;
-
 
     // Reorder particles to tree-walk order (not implemented yet)
-
-    //-------------------------------------------------------------------------
-    // MPI : Walk local tree to determine minimum tree to be sent to all other
-    //       MPI nodes.  Pack and send minimum sub-tree, along with the
-    //       MPI-ghost particles contained in leaf cells of the sub-tree.
-    //-------------------------------------------------------------------------
 
 
     // Iterate if we need to immediately change SPH particle timesteps
     // (e.g. due to feedback, or sudden change in neighbour timesteps)
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     do {
 
       // Update cells containing active particles
@@ -695,12 +681,6 @@ void SphSimulation<ndim>::MainLoop(void)
 
       // Calculate all SPH properties
       sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
-
-      //-----------------------------------------------------------------------
-      // MPI : Transmit updated particle properties from parent node to
-      //       other MPI nodes for MPI-ghost particles.
-      //-----------------------------------------------------------------------
-
 
       // Update the radiation field
       if (Nsteps%1 == 0) {
@@ -722,10 +702,10 @@ void SphSimulation<ndim>::MainLoop(void)
 #ifdef MPI_PARALLEL
       if (sph->self_gravity == 1)
         sphneib->UpdateGravityExportList(rank,sph->Nsph,sph->Ntot,
-                                   sph->GetParticlesArray(),sph,nbody);
+                                         sph->GetParticlesArray(),sph,nbody);
       else
         sphneib->UpdateHydroExportList(rank,sph->Nsph,sph->Ntot,
-                                 sph->GetParticlesArray(),sph,nbody);
+                                       sph->GetParticlesArray(),sph,nbody);
 
       // If active particles need forces from other domains, export particles
       mpicontrol->ExportParticlesBeforeForceLoop(sph);
@@ -736,7 +716,8 @@ void SphSimulation<ndim>::MainLoop(void)
       if (ewaldGravity && sph->hydro_forces == 1 && sph->self_gravity == 1)
         sphneib->UpdateAllSphPeriodicForces(sph->Nsph,sph->Ntot,partdata,sph,nbody,simbox,ewald);
       else if (ewaldGravity && sph->self_gravity == 1)
-        sphneib->UpdateAllSphPeriodicGravForces(sph->Nsph,sph->Ntot,partdata,sph,nbody,simbox,ewald);
+        sphneib->UpdateAllSphPeriodicGravForces(sph->Nsph,sph->Ntot,partdata,
+                                                sph,nbody,simbox,ewald);
       else if (sph->hydro_forces == 1 && sph->self_gravity == 1)
         sphneib->UpdateAllSphForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
       else if (sph->hydro_forces == 1)
@@ -758,18 +739,18 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
     } while (activecount > 0);
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
 
   // Compute N-body forces
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (nbody->Nnbody > 0) {
 
     // Iterate for P(EC)^n schemes
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     for (it=0; it<nbody->Npec; it++) {
 
       // Zero all acceleration terms
@@ -810,21 +791,20 @@ void SphSimulation<ndim>::MainLoop(void)
       nbody->CorrectionTerms(n,nbody->Nnbody,t,timestep,nbody->nbodydata);
 
     }
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
 
   rebuild_tree = false;
 
 
   // End-step terms for all SPH particles
-  if (sph->Nsph > 0) sphint->EndTimestep(n,timestep,sph->Nsph,sph->GetParticlesArray());
+  if (sph->Nsph > 0) sphint->EndTimestep(n,sph->Nsph,(FLOAT) t,(FLOAT) timestep,sph->GetParticlesArray());
 
   // End-step terms for all star particles
   if (nbody->Nstar > 0) nbody->EndTimestep(n,nbody->Nnbody,t,timestep,nbody->nbodydata);
-
 
   // Search for new sink particles (if activated) and accrete to existing sinks
   if (sink_particles == 1) {
@@ -848,63 +828,78 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSimulation::ComputeGlobalTimestep
 /// Computes global timestep for SPH simulation.  Calculates the minimum
 /// timestep for all SPH and N-body particles in the simulation.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 {
-  int i;                            // Particle counter
-  DOUBLE dt;                        // Particle timestep
-  DOUBLE dt_min = big_number_dp;    // Local copy of minimum timestep
+  int i;                               // Particle counter
+  DOUBLE dt;                           // Particle timestep
+  DOUBLE dt_min = big_number_dp;       // Local copy of minimum timestep
+  DOUBLE dt_nbody;                     // Aux. minimum N-body timestep
+  DOUBLE dt_sph;                       // Aux. minimum SPH timestep
 
   debug2("[SphSimulation::ComputeGlobalTimestep]");
   timing->StartTimingSection("GLOBAL_TIMESTEPS",2);
 
 
   // Only update timestep when all particles are synced at end of last step.
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (n == nresync) {
 
-    n = 0;
-    level_max = 0;
-    level_step = level_max + integration_step - 1;
-    nresync = integration_step;
+    n            = 0;
+    level_max    = 0;
+    level_step   = level_max + integration_step - 1;
+    nresync      = integration_step;
+    dt_min_nbody = big_number_dp;
+    dt_min_sph   = big_number_dp;
 
     // Find minimum timestep from all SPH particles
-    //-------------------------------------------------------------------------
-#pragma omp parallel default(none) private(i,dt) shared(dt_min)
+    //---------------------------------------------------------------------------------------------
+#pragma omp parallel default(none) private(i,dt,dt_nbody,dt_sph) \
+  shared(dt_min) //,dt_min_nbody,dt_min_sph)
     {
-      dt = big_number_dp;
+      dt       = big_number_dp;
+      dt_nbody = big_number_dp;
+      dt_sph   = big_number_dp;
 
 #pragma omp for
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-        part.level = 0;
+        part.level     = 0;
         part.levelneib = 0;
-        part.nstep = pow(2,level_step - part.level);
-        part.nlast = n;
-        part.dt = sphint->Timestep(part,sph);
-        dt = min(dt,part.dt);
+        part.nstep     = pow(2,level_step - part.level);
+        part.nlast     = n;
+        part.tlast     = t;
+        part.dt        = sphint->Timestep(part,sph);
+        dt             = min(dt,part.dt);
+        dt_sph         = min(dt_sph,part.dt);
       }
 
       // Now compute minimum timestep due to stars/systems
 #pragma omp for
       for (i=0; i<nbody->Nnbody; i++) {
-	nbody->nbodydata[i]->level = 0;
-	nbody->nbodydata[i]->nstep =
-	  pow(2,level_step - nbody->nbodydata[i]->level);
-	nbody->nbodydata[i]->nlast = n;
-	dt_min = min(dt_min,nbody->Timestep(nbody->nbodydata[i]));
+        nbody->nbodydata[i]->level = 0;
+        nbody->nbodydata[i]->nstep = pow(2,level_step - nbody->nbodydata[i]->level);
+        nbody->nbodydata[i]->nlast = n;
+        nbody->nbodydata[i]->tlast = t;
+        nbody->nbodydata[i]->dt    = nbody->Timestep(nbody->nbodydata[i]);
+        dt       = min(dt,nbody->nbodydata[i]->dt);
+        dt_nbody = min(dt_nbody,nbody->nbodydata[i]->dt);
       }
 
 #pragma omp critical
-      if (dt < dt_min) dt_min = dt;
+      {
+        if (dt < dt_min) dt_min = dt;
+        if (dt_sph < dt_min_sph) dt_min_sph = dt_sph;
+        if (dt_nbody < dt_min_nbody) dt_min_nbody = dt_nbody;
+      }
 
     }
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
 
 #ifdef MPI_PARALLEL
     dt = dt_min;
@@ -917,7 +912,7 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
     for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->dt = timestep;
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   timing->EndTimingSection("GLOBAL_TIMESTEPS");
 
@@ -926,10 +921,10 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSimulation::ComputeBlockTimesteps
 /// Compute timesteps for all particles using hierarchical block timesteps.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 {
@@ -937,6 +932,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   int imin;                             // i.d. of ptcl with minimum timestep
   int imin_aux;                         // ..
   int istep;                            // Aux. variable for changing steps
+  int j;                                // Aux. variable
   int last_level;                       // Previous timestep level
   int level;                            // Particle timestep level
   int level_max_aux;                    // Aux. maximum level variable
@@ -951,28 +947,31 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   DOUBLE dt;                            // Aux. timestep variable
   DOUBLE dt_min = big_number_dp;        // Minimum timestep
   DOUBLE dt_min_aux;                    // Aux. minimum timestep variable
-  DOUBLE dt_min_nbody = big_number_dp;  // Maximum N-body particle timestep
-  DOUBLE dt_min_sph = big_number_dp;    // Minimum SPH particle timestep
   DOUBLE dt_nbody;                      // Aux. minimum N-body timestep
   DOUBLE dt_sph;                        // Aux. minimum SPH timestep
+  DOUBLE dt_old = timestep;             // Previous value of timestep
 
   debug2("[SphSimulation::ComputeBlockTimesteps]");
   timing->StartTimingSection("BLOCK_TIMESTEPS",2);
 
 
+  dt_min_nbody = big_number_dp;
+  dt_min_sph = big_number_dp;
+
+
   // Synchronise all timesteps and reconstruct block timestep structure.
-  //===========================================================================
+  //===============================================================================================
   if (n == nresync) {
+
     n = 0;
     timestep = big_number_dp;
 
-#pragma omp parallel default(none) shared(dt_min_sph,dt_min_nbody,imin) \
-  private(dt,dt_min_aux,dt_nbody,dt_sph,i,imin_aux)
+#pragma omp parallel default(none) shared(imin) private(dt,dt_min_aux,dt_nbody,dt_sph,i,imin_aux)
     {
       // Initialise all timestep and min/max variables
       dt_min_aux = big_number_dp;
-      dt_sph = big_number_dp;
-      dt_nbody = big_number_dp;
+      dt_sph     = big_number_dp;
+      dt_nbody   = big_number_dp;
 
       // Find minimum timestep from all SPH particles
 #pragma omp for
@@ -982,24 +981,24 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
         dt = sphint->Timestep(part,sph);
         if (dt < dt_sph) imin_aux = i;
         dt_min_aux = min(dt_min_aux,dt);
-        dt_sph = min(dt_sph,dt);
-        part.dt = dt;
+        dt_sph     = min(dt_sph,dt);
+        part.dt    = dt;
       }
 
       // Now compute minimum timestep due to stars/systems
 #pragma omp for
       for (i=0; i<nbody->Nnbody; i++) {
-        dt = nbody->Timestep(nbody->nbodydata[i]);
+        dt         = nbody->Timestep(nbody->nbodydata[i]);
         dt_min_aux = min(dt_min_aux,dt);
-        dt_nbody = min(dt_nbody,dt);
+        dt_nbody   = min(dt_nbody,dt);
         nbody->nbodydata[i]->dt = dt;
       }
 
 #pragma omp critical
       {
         if (dt_min_aux < timestep) imin = imin_aux;
-        timestep = min(timestep,dt_min_aux);
-        dt_min_sph = min(dt_min_sph,dt_sph);
+        timestep     = min(timestep,dt_min_aux);
+        dt_min_sph   = min(dt_min_sph,dt_sph);
         dt_min_nbody = min(dt_min_nbody,dt_nbody);
       }
 #pragma omp barrier
@@ -1016,41 +1015,13 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
 
     // Calculate new block timestep levels
-    level_max = Nlevels - 1;
+    level_max  = Nlevels - 1;
     level_step = level_max + integration_step - 1;
-    dt_max = timestep*powf(2.0,level_max);
+    dt_max     = timestep*powf(2.0,level_max);
 
     // Calculate the maximum level occupied by all SPH particles
     level_max_sph   = min((int) (invlogetwo*log(dt_max/dt_min_sph)) + 1, level_max);
     level_max_nbody = min((int) (invlogetwo*log(dt_max/dt_min_nbody)) + 1, level_max);
-
-
-    // If enforcing a single SPH timestep, set it here.  Otherwise, populate
-    // the timestep levels with SPH particles.
-    if (sph_single_timestep == 1)
-      for (i=0; i<sph->Nsph; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-        if (part.itype == dead) continue;
-        part.level = level_max_sph;
-        part.levelneib = level_max_sph;
-        part.nlast = n;
-        part.nstep = pow(2,level_step - part.level);
-        level_min_sph = min(level_min_sph,part.level);
-      }
-    else {
-      for (i=0; i<sph->Nsph; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-        if (part.itype == dead) continue;
-        dt = part.dt;
-        level = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
-        level = max(level,0);
-        part.level = level;
-        part.levelneib = level;
-        part.nlast = n;
-        part.nstep = pow(2,level_step - part.level);
-        level_min_sph = min(level_min_sph,part.level);
-      }
-    }
 
     // Populate timestep levels with N-body particles.
     // Ensures that N-body particles occupy levels lower than all SPH particles
@@ -1060,9 +1031,52 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       level = max(level,0);
       nbody->nbodydata[i]->level = max(level,level_max_sph);
       nbody->nbodydata[i]->nlast = n;
-      nbody->nbodydata[i]->nstep =
-	pow(2,level_step - nbody->nbodydata[i]->level);
+      nbody->nbodydata[i]->nstep = pow(2,level_step - nbody->nbodydata[i]->level);
+      nbody->nbodydata[i]->tlast = t;
     }
+
+    // If particles are sink neighbours, set to same timesteps as sinks
+    for (i=0; i<sph->Nsph; i++) {
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      if (part.sinkid != -1) {
+        if (sinks.sink[part.sinkid].star->level - part.level > level_diff_max) {
+          part.level     = sinks.sink[part.sinkid].star->level - level_diff_max;
+          part.levelneib = sinks.sink[part.sinkid].star->level;
+          level_max_sph  = max(level_max_sph,part.level);
+        }
+      }
+    }
+
+    // If enforcing a single SPH timestep, set it here.
+    // Otherwise, populate the timestep levels with SPH particles.
+    if (sph_single_timestep == 1) {
+      for (i=0; i<sph->Nsph; i++) {
+        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        if (part.itype == dead) continue;
+        part.level     = level_max_sph;
+        part.levelneib = level_max_sph;
+        part.nlast     = n;
+        part.tlast     = t;
+        part.nstep     = pow(2,level_step - part.level);
+      }
+      level_min_sph = level_max_sph;
+    }
+    else {
+      for (i=0; i<sph->Nsph; i++) {
+        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        if (part.itype == dead) continue;
+        dt             = part.dt;
+        level          = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
+        level          = max(level,0);
+        part.level     = level;
+        part.levelneib = level;
+        part.nlast     = n;
+        part.tlast     = t;
+        part.nstep     = pow(2,level_step - part.level);
+        level_min_sph  = min(level_min_sph,part.level);
+      }
+    }
+
 
     nresync = pow(2,level_step);
     timestep = dt_max / (DOUBLE) nresync;
@@ -1070,42 +1084,53 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   }
   // If not resynchronising, check if any SPH/N-body particles need to move
   // up or down timestep levels.
-  //===========================================================================
+  //===============================================================================================
   else {
 
-    level_max_old = level_max;
-    level_max = 0;
+    level_max_old   = level_max;
+    level_max       = 0;
     level_max_nbody = 0;
-    level_max_sph = 0;
+    level_max_sph   = 0;
 
 
-#pragma omp parallel default(none) shared(dt_min,dt_min_sph,dt_min_nbody) \
-  shared(imin,level_max_nbody,level_max_sph,level_min_sph)			\
-  private(dt,dt_min_aux,dt_nbody,dt_sph,i,imin_aux,istep,last_level,level)	\
-  private(level_max_aux,level_nbody,level_sph,nstep,nfactor)
+#pragma omp parallel default(none) private(dt,dt_nbody,dt_sph,i,imin_aux) \
+  private(istep,last_level,level,level_max_aux,level_nbody,level_sph,nstep,nfactor) \
+  shared(dt_min,imin,level_max_nbody,level_max_sph,level_min_sph)
     {
-      dt_min_aux = big_number_dp;
-      dt_sph = big_number_dp;
-      dt_nbody = big_number_dp;
+      dt_sph        = big_number_dp;
+      dt_nbody      = big_number_dp;
       level_max_aux = 0;
-      level_nbody = 0;
-      level_sph = 0;
+      level_nbody   = 0;
+      level_sph     = 0;
+
 
       // Find all SPH particles at the beginning of a new timestep
-      //-----------------------------------------------------------------------
+      //-------------------------------------------------------------------------------------------
 #pragma omp for
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
         if (part.itype == dead) continue;
 
-        // Skip particles that are not at end of step
-        if (part.nlast == n) {
-          nstep = part.nstep;
+        // SPH particles whose timestep has been artificially reduced by Saitoh & Makino scheme.
+        if (part.nlast == n && part.nstep != pow(2,level_step - part.level)) {
+          dt    = sphint->Timestep(part,sph);
+          level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
+          level = max(level,part.levelneib - level_diff_max);
+
+          part.level     = max(part.level,level);
+          part.levelneib = part.level;
+          part.dt        = dt;
+          part.nlast     = n;
+          part.tlast     = t;
+          part.nstep     = pow(2,level_step - part.level);
+        }
+        // SPH particles that have naturally reached the end of their step
+        else if (part.nlast == n) {
+          nstep      = part.nstep;
           last_level = part.level;
 
           // Compute new timestep value and level number
-          dt = sphint->Timestep(part,sph);
-          part.dt = dt;
+          dt    = sphint->Timestep(part,sph);
           level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
           level = max(level,part.levelneib - level_diff_max);
 
@@ -1118,8 +1143,11 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
           else
             part.level = last_level;
 
-          part.nlast = n;
-          part.nstep = pow(2,level_step - part.level);
+          part.levelneib = level;
+          part.dt        = dt;
+          part.nlast     = n;
+          part.tlast     = t;
+          part.nstep     = pow(2,level_step - part.level);
         }
 
         // Find maximum level of all SPH particles
@@ -1129,71 +1157,81 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
         dt_sph = min(dt_sph,part.dt);
       }
-      //-----------------------------------------------------------------------
+      //-------------------------------------------------------------------------------------------
 
 
 #pragma omp critical
       {
         if (dt_sph < dt_min_sph) imin = imin_aux;
-        dt_min = min(dt_min,dt_min_aux);
-        dt_min_sph = min(dt_min_sph,dt_sph);
-        level_max = max(level_max,level_max_aux);
-	level_max_sph = max(level_max_sph,level_sph);
+        dt_min        = min(dt_min,dt_sph);
+        dt_min_sph    = min(dt_min_sph,dt_sph);
+        level_max     = max(level_max,level_max_aux);
+        level_max_sph = max(level_max_sph,level_sph);
       }
 #pragma omp barrier
 
 
       // Now find all N-body particles at the beginning of a new timestep
-      //-----------------------------------------------------------------------
+      //-------------------------------------------------------------------------------------------
 #pragma omp for
       for (i=0; i<nbody->Nnbody; i++) {
 
-	// Skip particles that are not at end of step
-	if (nbody->nbodydata[i]->nlast == n) {
-	  nstep = nbody->nbodydata[i]->nstep;
-	  last_level = nbody->nbodydata[i]->level;
+        // Skip particles that are not at end of step
+        if (nbody->nbodydata[i]->nlast == n) {
+          nstep = nbody->nbodydata[i]->nstep;
+          last_level = nbody->nbodydata[i]->level;
 
-	  // Compute new timestep value and level number
-	  dt = nbody->Timestep(nbody->nbodydata[i]);
-	  nbody->nbodydata[i]->dt = dt;
-	  level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
-	  level = max(level,level_max_sph);
-	  //level = max(level,level_min_sph);
+          // Compute new timestep value and level number
+          dt    = nbody->Timestep(nbody->nbodydata[i]);
+          level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
+          level = max(level,level_max_sph);
 
-	  // Move up one level (if levels are correctly synchronised) or
-	  // down several levels if required
-	  if (level < last_level && level > level_max_sph &&
-	      last_level > 1 && n%(2*nstep) == 0)
-	    nbody->nbodydata[i]->level = last_level - 1;
-	  else if (level > last_level)
-	    nbody->nbodydata[i]->level = level;
-	  else
-	    nbody->nbodydata[i]->level = last_level;
+          // Move up one level (if levels are correctly synchronised) or
+          // down several levels if required
+          if (level < last_level && level > level_max_sph && last_level > 1 && n%(2*nstep) == 0)
+            nbody->nbodydata[i]->level = last_level - 1;
+          else if (level > last_level)
+            nbody->nbodydata[i]->level = level;
+          else
+            nbody->nbodydata[i]->level = last_level;
 
-	  nbody->nbodydata[i]->nlast = n;
-	  nbody->nbodydata[i]->nstep =
-	    pow(2,level_step - nbody->nbodydata[i]->level);
-	}
+          nbody->nbodydata[i]->dt    = dt;
+          nbody->nbodydata[i]->nlast = n;
+          nbody->nbodydata[i]->nstep = pow(2,level_step - nbody->nbodydata[i]->level);
+          nbody->nbodydata[i]->tlast = t;
+        }
 
-	// Find maximum level of all N-body particles
-	level_nbody = max(level_nbody,nbody->nbodydata[i]->level);
-	level_max_aux = max(level_max_aux,nbody->nbodydata[i]->level);
-	dt_nbody = min(dt_nbody,nbody->nbodydata[i]->dt);
+        // Find maximum level of all N-body particles
+        level_nbody   = max(level_nbody,nbody->nbodydata[i]->level);
+        level_max_aux = max(level_max_aux,nbody->nbodydata[i]->level);
+        dt_nbody      = min(dt_nbody,nbody->nbodydata[i]->dt);
       }
-      //-----------------------------------------------------------------------
+      //-------------------------------------------------------------------------------------------
 
-
-#pragma omp critical
+      #pragma omp critical
       {
-        dt_min = min(dt_min,dt_min_aux);
-        dt_min_nbody = min(dt_min_nbody,dt_nbody);
-        level_max = max(level_max,level_max_aux);
+        dt_min          = min(dt_min,dt_nbody);
+        dt_min_nbody    = min(dt_min_nbody,dt_nbody);
+        level_max       = max(level_max,level_max_aux);
         level_max_nbody = max(level_max_nbody,level_nbody);
       }
-#pragma omp barrier
+      #pragma omp barrier
+
+
+      // Correct timestep levels for any particles that have entered a sink
+      //-------------------------------------------------------------------------------------------
+  /*#pragma omp for
+      for (i=0; i<sph->Nsph; i++) {
+        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        if (part.itype == dead || part.nlast != n) continue;
+        if (part.sinkid != -1) {
+          if (sinks.sink[part.sinkid].star->level - part.level > level_diff_max) {
+            part.level = sinks.sink[part.sinkid].star->level - level_diff_max;
+          }
+        }
+      }*/
 
     }
-
 
     // For MPI, find the global maximum timestep levels for each processor
 #ifdef MPI_PARALLEL
@@ -1202,9 +1240,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     level = level_max_sph;
     MPI_Allreduce(&level,&level_max_sph,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
 #endif
-    // For now, don't allow levels to be removed
-    //level_max = max(level_max,level_max_old);
-    level_step = level_max + integration_step - 1;
+
 
     // Set fixed SPH timestep level here in case maximum has changed
     if (sph_single_timestep == 1) {
@@ -1216,83 +1252,110 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     }
 
     // Update all timestep variables if we have removed or added any levels
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     if (level_max != level_max_old) {
 
       // Increase maximum timestep level if correctly synchronised
       istep = pow(2,level_step - level_max_old + 1);
       if (level_max <= level_max_old - 1 && level_max_old > 1 && n%istep == 0)
-	level_max = level_max_old - 1;
-      else if (level_max == level_max_old)
-	level_max = level_max_old;
+        level_max = level_max_old - 1;
+      else if (level_max < level_max_old)
+        level_max = level_max_old;
+
+      level_step = level_max + integration_step - 1;
 
       // Adjust integer time if levels added or removed
       if (level_max > level_max_old) {
-	nfactor = pow(2,level_max - level_max_old);
-	n *= nfactor;
-	for (i=0; i<sph->Nsph; i++) {
+        nfactor = pow(2,level_max - level_max_old);
+        n *= nfactor;
+        for (i=0; i<sph->Nsph; i++) {
           SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-	  if (part.itype == dead) continue;
-	  part.nstep *= nfactor;
-	  part.nlast *= nfactor;
-	}
-	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep *= nfactor;
-	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast *= nfactor;
+          if (part.itype == dead) continue;
+          part.nstep *= nfactor;
+          part.nlast *= nfactor;
+        }
+        for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep *= nfactor;
+        for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast *= nfactor;
       }
       else if (level_max < level_max_old) {
-	nfactor = pow(2,level_max_old - level_max);
-	n /= nfactor;
-	for (i=0; i<sph->Nsph; i++) {
+        nfactor = pow(2,level_max_old - level_max);
+        n /= nfactor;
+        for (i=0; i<sph->Nsph; i++) {
           SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-	  if (part.itype == dead) continue;
-	  part.nlast /= nfactor;
-	  part.nstep /= nfactor;
-	}
-	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast /= nfactor;
-	for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep /= nfactor;
+          if (part.itype == dead) continue;
+          part.nlast /= nfactor;
+          part.nstep /= nfactor;
+        }
+        for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nlast /= nfactor;
+        for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->nstep /= nfactor;
       }
-
-      // Update values of nstep for both SPH and star particles
-      for (i=0; i<sph->Nsph; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-        if (part.itype == dead) continue;
-        if (part.nlast == n)
-          part.nstep = pow(2,level_step - part.level);
-      }
-      for (i=0; i<nbody->Nnbody; i++) {
-	if (nbody->nbodydata[i]->nlast == n) nbody->nbodydata[i]->nstep =
-	  pow(2,level_step - nbody->nbodydata[i]->level);
-      }
-
-      nresync = pow(2,level_step);
-      timestep = dt_max / (DOUBLE) nresync;
 
     }
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
+
+    level_step = level_max + integration_step - 1;
+    nresync    = pow(2,level_step);
+    timestep   = dt_max / (DOUBLE) nresync;
+
+    // Update values of nstep for both SPH and star particles
+    for (i=0; i<sph->Nsph; i++) {
+      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      if (part.itype == dead) continue;
+      if (part.nlast == n) part.nstep = pow(2,level_step - part.level);
+    }
+    for (i=0; i<nbody->Nnbody; i++) {
+      if (nbody->nbodydata[i]->nlast == n) nbody->nbodydata[i]->nstep =
+        pow(2,level_step - nbody->nbodydata[i]->level);
+    }
+
+    assert(level_max >= level_max_old - 1);
 
   }
-  //===========================================================================
+  //===============================================================================================
 
 
-#if defined(VERIFY_ALL)
-  //VerifyBlockTimesteps();
-#endif
+  // Various asserts for debugging
+  assert(level_step == level_max + integration_step - 1);
+  assert(n <= nresync);
+  assert(level_max_sph <= level_max);
+  assert(level_max_nbody <= level_max);
+  for (i=0; i<sph->Nsph; i++) {
+    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    if (part.itype == dead) continue;
+    assert(part.level <= level_max);
+    assert(part.nlast <= n);
+    assert(part.tlast <= t);
+    assert(part.nstep == pow(2,level_step - part.level));
+    assert(part.nlast != n || n%part.nstep == 0);
+  }
+  for (i=0; i<nbody->Nnbody; i++) {
+    assert(nbody->nbodydata[i]->level <= level_max);
+    assert(nbody->nbodydata[i]->nlast <= n);
+    assert(nbody->nbodydata[i]->nstep == pow(2,level_step - nbody->nbodydata[i]->level));
+    assert(nbody->nbodydata[i]->nlast != n || n%nbody->nbodydata[i]->nstep == 0);
+    assert(nbody->nbodydata[i]->level >= level_max_sph);
+    assert(nbody->nbodydata[i]->tlast <= t);
+  }
+
 
   timing->EndTimingSection("BLOCK_TIMESTEPS");
 
   return;
 
-/*
+
+
   // Some validations
-  //---------------------------------------------------------------------------
-  int *ninlevel;
+  //-----------------------------------------------------------------------------------------------
+  /*int *ninlevel;
   int Nactive=0;
   ninlevel = new int[level_max+1];
   SphParticle<ndim>& part = sph->GetParticleIPointer(imin);
   cout << "-----------------------------------------------------" << endl;
-  cout << "Checking timesteps : " << level_max << "   " << level_max_sph << "    " << level_max_nbody << "    " << level_step << "   " << level_max_old << endl;
+  cout << "Checking timesteps : " << level_max << "   " << level_max_sph << "    "
+       << level_max_nbody << "    " << level_step << "   " << level_max_old << endl;
   cout << "n : " << n << endl;
-  cout << "dt_min_sph : " << dt_min_sph << "    dt_min_nbody : " << dt_min_nbody << "    timestep : " << timestep << endl;
+  cout << "dt_min_sph : " << dt_min_sph << "    dt_min_nbody : " << dt_min_nbody
+       << "    timestep : " << timestep << endl;
   cout << "imin : " << imin << "    " << part.dt << "     " << part.m/sph->mmean << "    "
        << part.h << "    " << "    " << part.sound << "     " << part.div_v << "     "
        << part.h/(part.sound + part.h*fabs(part.div_v)) << "     "
@@ -1306,21 +1369,12 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   }
   cout << "No. of active SPH particles : " << Nactive << endl;
   cout << "SPH level occupancy" << endl;
-  for (int l=0; l<=level_max; l++)
-    cout << "level : " << l << "     N : " << ninlevel[l] << endl;
+  for (int l=0; l<=level_max; l++) cout << "level : " << l << "     N : " << ninlevel[l] << endl;
 
   for (int l=0; l<=level_max; l++) ninlevel[l] = 0;
   for (i=0; i<nbody->Nstar; i++) ninlevel[nbody->nbodydata[i]->level]++;
   cout << "N-body level occupancy" << endl;
-  for (int l=0; l<=level_max; l++)
-    cout << "level : " << l << "     N : " << ninlevel[l] << endl;
-
-  for (int l=0; l<level_max+1; l++) {
-    if (ninlevel[l] > 0 && l < level_max_sph || timestep < 0.0) {
-      cout << "Something going wrong with timesteps" << endl;
-      exit(0);
-    }
-  }
+  for (int l=0; l<=level_max; l++) cout << "level : " << l << "     N : " << ninlevel[l] << endl;
 
   delete[] ninlevel;
 
