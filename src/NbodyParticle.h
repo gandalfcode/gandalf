@@ -65,7 +65,7 @@ class NbodyParticle
   DOUBLE h;                         ///< Smoothing length
   DOUBLE invh;                      ///< 1 / h
   DOUBLE radius;                    ///< Softening/sink radius of particle
-  DOUBLE hfactor;                   ///< invh^(ndim + 1)
+  //DOUBLE hfactor;                   ///< invh^(ndim + 1)
   DOUBLE gpot;                      ///< Gravitational potential
   DOUBLE gpe;                       ///< Gravitational potential energy
   DOUBLE gpe_internal;              ///< Internal grav. potential energy
@@ -100,7 +100,7 @@ class NbodyParticle
     m            = 0;
     h            = 0;
     invh         = 0.0;
-    hfactor      = 0.0;
+    //hfactor      = 0.0;
     gpot         = 0.0;
     gpe          = 0.0;
     gpe_internal = 0.0;

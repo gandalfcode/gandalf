@@ -124,17 +124,27 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
   //---------------------------------------------------------------------------
   uint = new EnergyGodunovIntegration<ndim>(floatparams["energy_mult"]);
 
+#if defined MPI_PARALLEL
+
+  mpicontrol = new MpiControlType<ndim, GodunovSphParticle>;
+
+#endif
 
   // Create neighbour searching object based on chosen method in params file
   //-------------------------------------------------------------------------
   if (stringparams["neib_search"] == "bruteforce")
     sphneib = new GodunovSphBruteForce<ndim,GodunovSphParticle>
      (sph->kernp->kernrange,&simbox,sph->kernp,this->timing);
-  else if (stringparams["neib_search"] == "tree") {
-    sphneib = new GodunovSphTree<ndim,GodunovSphParticle>
-     (intparams["Nleafmax"],floatparams["thetamaxsqd"],
-      sph->kernp->kernrange,floatparams["macerror"],
-      stringparams["gravity_mac"],stringparams["multipole"],
+  else if (stringparams["neib_search"] == "kdtree") {
+    sphneib = new GodunovSphKDTree<ndim,GodunovSphParticle,KDTreeCell>
+     (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
+      floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
+      &simbox,sph->kernp,timing);
+  }
+  else if (stringparams["neib_search"] == "octtree") {
+    sphneib = new GodunovSphOctTree<ndim,GodunovSphParticle,OctTreeCell>
+     (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
+      floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
       &simbox,sph->kernp,timing);
   }
   else {
@@ -142,8 +152,9 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
       + simparams->stringparams["neib_search"];
     ExceptionHandler::getIstance().raise(message);
   }
+
 #if defined MPI_PARALLEL
-  mpicontrol.SetNeibSearch(sphneib);
+  mpicontrol->SetNeibSearch(sphneib);
 #endif
 
 
@@ -158,7 +169,7 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
   else
     LocalGhosts = new NullGhosts<ndim>();
 #ifdef MPI_PARALLEL
-  MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
+  MpiGhosts = new MPIGhostsSpecific<ndim, GodunovSphParticle>(mpicontrol);
 #endif
 
 
@@ -215,7 +226,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
     // Search ghost particles
-    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+    sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
 #ifdef MPI_PARALLEL
     MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
 #endif
@@ -233,7 +244,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
     // Search ghost particles
-    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+    sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
 #ifdef MPI_PARALLEL
     MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
 #endif
@@ -337,7 +348,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Set particle values for initial step (e.g. r0, v0, a0)
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EndTimestep(n,sph->Nsph,timestep,sph->GetParticlesArray());
-  sphint->EndTimestep(n,timestep,sph->Nsph,sph->GetParticlesArray());
+  sphint->EndTimestep(n,sph->Nsph,t,timestep,sph->GetParticlesArray());
   nbody->EndTimestep(n,nbody->Nstar,t,timestep,nbody->nbodydata);
 
   // Compute timesteps for all particles
@@ -380,13 +391,13 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
   t = t + timestep;
 
   // Advance SPH particles positions and velocities
-  sphint->AdvanceParticles(n,(FLOAT) timestep,sph->Nsph,sph->GetParticlesArray());
+  sphint->AdvanceParticles(n,sph->Nsph,t,timestep,sph->GetParticlesArray());
   if (simparams->stringparams["gas_eos"] == "energy_eqn")
     uint->EnergyIntegration(n,sph->Nsph,sph->GetParticlesArray(),(FLOAT) timestep);
   nbody->AdvanceParticles(n,nbody->Nstar,t,timestep,nbody->nbodydata);
 
   // Check all boundary conditions
-  LocalGhosts->CheckBoundaries(simbox,sph);
+  sphint->CheckBoundaries(simbox,sph);
 
   //---------------------------------------------------------------------------
   if (sph->Nsph > 0) {
@@ -394,7 +405,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     // Reorder particles
 
     // Search ghost particles
-    LocalGhosts->SearchGhostParticles(0.0,simbox,sph);
+    sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
 #ifdef MPI_PARALLEL
     MpiGhosts->SearchGhostParticles(0.0,simbox,sph);
 #endif
@@ -467,7 +478,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     // Set all end-of-step variables
     if (simparams->stringparams["gas_eos"] == "energy_eqn")
       uint->EndTimestep(n,sph->Nsph,timestep,sph->GetParticlesArray());
-    sphint->EndTimestep(n,timestep,sph->Nsph,sph->GetParticlesArray());
+    sphint->EndTimestep(n,sph->Nsph,t,timestep,sph->GetParticlesArray());
 
   }
   //---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  SphIntegration.h
 //  Contains class definitions for all SPH integration schemes.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _SPH_INTEGRATION_H_
@@ -28,6 +28,7 @@
 #include "Precision.h"
 #include "CodeTiming.h"
 #include "Constants.h"
+#include "DomainBox.h"
 #include "Sph.h"
 #include "EOS.h"
 #include "Parameters.h"
@@ -35,14 +36,14 @@
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class SphIntegration
 /// \brief   Main parent Sph Integration class
-/// \details Main parent Sph Integration class.  All employed child classes 
+/// \details Main parent Sph Integration class.  All employed child classes
 ///          (e.g. SphLeapfrogKDK) inherit from this class.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class SphIntegration
 {
@@ -53,12 +54,15 @@ class SphIntegration
   SphIntegration(DOUBLE, DOUBLE, DOUBLE, eosenum, tdaviscenum);
   ~SphIntegration();
 
-  virtual void AdvanceParticles(int, FLOAT, int, SphParticle<ndim> *) = 0;
-  virtual void CorrectionTerms(int, FLOAT, int, SphParticle<ndim> *) = 0;
-  virtual void EndTimestep(int, FLOAT, int, SphParticle<ndim> *) = 0;
-  virtual int CheckTimesteps(int, int, int, int, SphParticle<ndim> *) = 0;
+  virtual void AdvanceParticles(const int, const int, const FLOAT, const FLOAT,
+                                SphParticle<ndim> *) = 0;
+  virtual void CorrectionTerms(const int, const int, const FLOAT, const FLOAT,
+                               SphParticle<ndim> *) = 0;
+  virtual void EndTimestep(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *) = 0;
+  virtual int CheckTimesteps(const int, const int, const int, const int, SphParticle<ndim> *) = 0;
   virtual DOUBLE Timestep(SphParticle<ndim> &, Sph<ndim> *);
-  
+  virtual void CheckBoundaries(DomainBox<ndim> &, Sph<ndim> *);
+
   const DOUBLE accel_mult;
   const DOUBLE courant_mult;
   const DOUBLE energy_mult;
@@ -72,15 +76,15 @@ class SphIntegration
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class SphLeapfrogKDK
 /// \brief   Leapfrog kick-drift-kick SPH particle integration scheme.
-/// \details Class definition for leapfrog kick-drift-kick SPH particle 
-///          integration scheme.  Inherits from main parent SphIntegration 
+/// \details Class definition for leapfrog kick-drift-kick SPH particle
+///          integration scheme.  Inherits from main parent SphIntegration
 ///          class and provides implementations of all virtual functions.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim, template <int> class ParticleType>
 class SphLeapfrogKDK: public SphIntegration<ndim>
 {
@@ -93,24 +97,24 @@ class SphLeapfrogKDK: public SphIntegration<ndim>
   SphLeapfrogKDK(DOUBLE, DOUBLE, DOUBLE, eosenum, tdaviscenum);
   ~SphLeapfrogKDK();
 
-  void AdvanceParticles(int, FLOAT, int, SphParticle<ndim> *);
-  void CorrectionTerms(int, FLOAT, int, SphParticle<ndim> *);
-  void EndTimestep(int, FLOAT, int, SphParticle<ndim> *);
-  int CheckTimesteps(int, int, int, int, SphParticle<ndim> *);
+  void AdvanceParticles(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
+  void CorrectionTerms(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
+  void EndTimestep(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
+  int CheckTimesteps(const int, const int, const int, const int, SphParticle<ndim> *);
 
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class SphLeapfrogDKD
 /// \brief   Leapfrog drift-kick-drift SPH particle integration scheme.
-/// \details Class definition for leapfrog drift-kick-drift SPH particle 
-///          integration scheme.  Inherits from main parent SphIntegration 
+/// \details Class definition for leapfrog drift-kick-drift SPH particle
+///          integration scheme.  Inherits from main parent SphIntegration
 ///          class and provides implementations of all virtual functions.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim, template <int> class ParticleType>
 class SphLeapfrogDKD: public SphIntegration<ndim>
 {
@@ -123,24 +127,24 @@ class SphLeapfrogDKD: public SphIntegration<ndim>
   SphLeapfrogDKD(DOUBLE, DOUBLE, DOUBLE, eosenum, tdaviscenum);
   ~SphLeapfrogDKD();
 
-  void AdvanceParticles(int, FLOAT, int, SphParticle<ndim> *);
-  void CorrectionTerms(int, FLOAT, int, SphParticle<ndim> *);
-  void EndTimestep(int, FLOAT, int, SphParticle<ndim> *);
-  int CheckTimesteps(int, int, int, int, SphParticle<ndim> *);
+  void AdvanceParticles(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
+  void CorrectionTerms(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *) {};
+  void EndTimestep(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
+  int CheckTimesteps(const int, const int, const int, const int, SphParticle<ndim> *);
 
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class SphGodunovIntegration
 /// \brief   Inutsuka (2002) Godunov SPH conservative SPH integration scheme.
-/// \details Class definition for Inutsuka (2002) Godunov SPH conservative 
-///          SPH integration scheme.  Algorithm conserves energy to 
+/// \details Class definition for Inutsuka (2002) Godunov SPH conservative
+///          SPH integration scheme.  Algorithm conserves energy to
 ///          machine precision (for direct summation and global timesteps).
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim, template <int> class ParticleType>
 class SphGodunovIntegration: public SphIntegration<ndim>
 {
@@ -153,10 +157,10 @@ class SphGodunovIntegration: public SphIntegration<ndim>
   SphGodunovIntegration(DOUBLE, DOUBLE, DOUBLE, eosenum, tdaviscenum);
   ~SphGodunovIntegration();
 
-  void AdvanceParticles(int, FLOAT, int, SphParticle<ndim> *);
-  void CorrectionTerms(int, FLOAT, int, SphParticle<ndim> *);
-  void EndTimestep(int, FLOAT, int, SphParticle<ndim> *);
-  int CheckTimesteps(int, int, int, int, SphParticle<ndim> *);
+  void AdvanceParticles(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
+  void CorrectionTerms(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *) {};
+  void EndTimestep(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
+  int CheckTimesteps(const int, const int, const int, const int, SphParticle<ndim> *);
   DOUBLE Timestep(SphParticle<ndim> &, Sph<ndim> *);
 
   static const int vdim = ndim;

@@ -1,6 +1,6 @@
 //=============================================================================
 //  InlineFuncs.h
-//  Contains definitions of any useful small utility functions that can be 
+//  Contains definitions of any useful small utility functions that can be
 //  templated and/or inlined to improve readability/performance of the code.
 //
 //  This file is part of GANDALF :
@@ -37,7 +37,7 @@ using namespace std;
 
 //=============================================================================
 //  DotProduct
-//  Calculates the dot product between two vectors, v1 and v2, 
+//  Calculates the dot product between two vectors, v1 and v2,
 //  of given length 'ndim'
 //=============================================================================
 template <typename T>
@@ -77,7 +77,7 @@ static inline T min3(T v1, T v2, T v3)
 {
    T vmin = v1;
    if (v2 < vmin) vmin = v2;
-   if (v3 < vmin) vmin = v2;
+   if (v3 < vmin) vmin = v3;
    return vmin;
 }
 
@@ -92,7 +92,7 @@ static inline T max3(T v1, T v2, T v3)
 {
    T vmax = v1;
    if (v2 > vmax) vmax = v2;
-   if (v3 > vmax) vmax = v2;
+   if (v3 > vmax) vmax = v3;
    return vmax;
 }
 
@@ -102,7 +102,7 @@ static inline T max3(T v1, T v2, T v3)
 //  sgn
 //  Sign function.  Returns (a) -1 if T < 0, (b) 0 if T = 0, (c) +1 if T > 0.
 //=============================================================================
-template <typename T> 
+template <typename T>
 static inline int sgn(T val)
 {
   return (T(0) < val) - (val < T(0));
@@ -161,13 +161,13 @@ static inline void Heapsort
 
 #if defined(VERIFY_ALL)
   for (q=1; q<q_TOT; q++)
-    if (V[qV[q]] < V[qV[q-1]]) 
+    if (V[qV[q]] < V[qV[q-1]])
       cout << "Not properly ranked : "
-	   << q << "   " 
+	   << q << "   "
 	   << q_TOT << "   "
 	   << V[qV[q-2]] << "   "
 	   << V[qV[q-1]] << "   "
-	   << V[qV[q]] << "   " 
+	   << V[qV[q]] << "   "
 	   << V[qV[q+1]] << endl;
 #endif
 
@@ -177,21 +177,53 @@ static inline void Heapsort
 
 
 //=============================================================================
-//  InsertionSortIds
-//  Sort list of integers (e.g. ids of particles) into ascending order.
+//  InsertionSort
+//  Sort list of quantities into ascending order.
 //=============================================================================
-static inline void InsertionSortIds
+template <typename T>
+static inline void InsertionSort
 (int Nsort,                         ///< No. of values to be sorted
- int *ids)                          ///< List of particle ids
+ T *r)                              ///< List of values to be sorted
 {
-  int i,iaux,j;
+  int i,j;
+  T raux;
 
   for (j=1; j<Nsort; j++) {
+    raux = r[j];
+    for (i=j-1; i>=0; i--) {
+      if (r[i] <= raux) break;
+      r[i+1] = r[i];
+    }
+    r[i+1] = raux;
+  }
+
+  return;
+}
+
+
+
+//=============================================================================
+//  InsertionSortIds
+//  Sort ...
+//=============================================================================
+template <typename T>
+static inline void InsertionSortIds
+ (int Nsort,                           ///< No. of values to be sorted
+  int *ids,                            ///< List of particle ids
+  T *r)                                ///< ...
+{
+  int i,iaux,j;
+  T raux;
+
+  for (j=1; j<Nsort; j++) {
+    raux = r[j];
     iaux = ids[j];
     for (i=j-1; i>=0; i--) {
-      if (ids[i] <= iaux) break;
+      if (r[i] <= raux) break;
+      r[i+1] = r[i];
       ids[i+1] = ids[i];
     }
+    r[i+1] = raux;
     ids[i+1] = iaux;
   }
 
@@ -278,9 +310,9 @@ static inline void EulerAngleArrayRotation
 
   for (i=0; i<N; i++) {
     for (k=0; k<3; k++) vecaux[k] = vec[3*i + k];
-    
+
     for (k=0; k<3; k++)
-      vec[3*i + k] = 
+      vec[3*i + k] =
 	Arot[0][k]*vecaux[0] + Arot[1][k]*vecaux[1] + Arot[2][k]*vecaux[2];
 
   }
@@ -301,6 +333,112 @@ inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max) {
   if (bigger) return max;
   return value;
 }
+
+
+
+
+//=============================================================================
+//  BoxOverlap
+/// Check if two bounding boxes overlap.  If yes, then returns true.
+//=============================================================================
+static inline bool BoxOverlap (const int ndim,
+ FLOAT *box1min,         ///< Minimum extent of box 1
+ FLOAT *box1max,         ///< Maximum extent of box 1
+ FLOAT *box2min,         ///< Minimum extent of box 2
+ FLOAT *box2max)         ///< Maximum extent of box 2
+{
+  if (ndim == 1) {
+    if (box1min[0] > box2max[0]) return false;
+    if (box2min[0] > box1max[0]) return false;
+    return true;
+  }
+  else if (ndim == 2) {
+    if (box1min[0] > box2max[0]) return false;
+    if (box2min[0] > box1max[0]) return false;
+    if (box1min[1] > box2max[1]) return false;
+    if (box2min[1] > box1max[1]) return false;
+    return true;
+  }
+  else if (ndim == 3) {
+    if (box1min[0] > box2max[0]) return false;
+    if (box2min[0] > box1max[0]) return false;
+    if (box1min[1] > box2max[1]) return false;
+    if (box2min[1] > box1max[1]) return false;
+    if (box1min[2] > box2max[2]) return false;
+    if (box2min[2] > box1max[2]) return false;
+    return true;
+  }
+}
+
+
+
+//=============================================================================
+//  BoxOverlap
+/// Check if two bounding boxes overlap.  If yes, then returns true.
+//=============================================================================
+static inline bool BoxOverlap (const int ndim,
+ const FLOAT *box1min,         ///< Minimum extent of box 1
+ const FLOAT *box1max,         ///< Maximum extent of box 1
+ const FLOAT *box2min,         ///< Minimum extent of box 2
+ const FLOAT *box2max)         ///< Maximum extent of box 2
+{
+  if (ndim == 1) {
+    if (box1min[0] > box2max[0]) return false;
+    if (box2min[0] > box1max[0]) return false;
+    return true;
+  }
+  else if (ndim == 2) {
+    if (box1min[0] > box2max[0]) return false;
+    if (box2min[0] > box1max[0]) return false;
+    if (box1min[1] > box2max[1]) return false;
+    if (box2min[1] > box1max[1]) return false;
+    return true;
+  }
+  else if (ndim == 3) {
+    if (box1min[0] > box2max[0]) return false;
+    if (box2min[0] > box1max[0]) return false;
+    if (box1min[1] > box2max[1]) return false;
+    if (box2min[1] > box1max[1]) return false;
+    if (box1min[2] > box2max[2]) return false;
+    if (box2min[2] > box1max[2]) return false;
+    return true;
+  }
+}
+
+
+
+//=============================================================================
+//  FractionalBoxOverlap
+/// Returns what fraction of box 1 overlaps box 2
+//=============================================================================
+static inline FLOAT FractionalBoxOverlap
+(const int ndim,
+ FLOAT *box1min,         ///< Minimum extent of box 1
+ FLOAT *box1max,         ///< Maximum extent of box 1
+ FLOAT *box2min,         ///< Minimum extent of box 2
+ FLOAT *box2max)         ///< Maximum extent of box 2
+ {
+   int k;
+   FLOAT area = 1.0;
+   FLOAT overlap = 1.0;
+   FLOAT frac = 0.0;
+
+   for (k=0; k<ndim; k++) {
+     area *= (box1max[k] - box1min[k]);
+     if (box1min[k] > box2min[k] && box1max[k] < box2max[k])
+       overlap *= (box1max[k] - box1min[k]);
+     else if (box1min[k] < box2min[k] && box1max[k] < box2max[k])
+       overlap *= (box1max[k] - box2min[k]);
+     else if (box1min[k] > box2min[k] && box1max[k] > box2max[k])
+       overlap *= (box2max[k] - box1min[k]);
+     else
+       overlap = 0.0;
+   }
+
+   if (area > 0.0) frac = overlap/area;
+
+   return frac;
+ }
 
 
 
@@ -340,6 +478,31 @@ inline bool ParticleInBox (SphParticle<ndim>& part, Box<ndim>& box) {
     if (part.r[k] < box.boxmin[k] || part.r[k] > box.boxmax[k]) return false;
   }
   return true;
+}
+
+
+
+//=============================================================================
+//  compute_displs
+/// Given a vector of counts, compute the displacement of the elements and save it
+/// in displs
+//=============================================================================
+inline void compute_displs (std::vector<int>& displs, std::vector<int>& counts) {
+
+  const int size = displs.size();
+
+  if (size==0)
+    return;
+
+  displs[0]=0;
+
+  if (size==1)
+    return;
+
+  for (int i=1; i<size; i++) {
+    displs[i] = counts[i-1]+displs[i-1];
+  }
+
 }
 
 

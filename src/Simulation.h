@@ -38,6 +38,7 @@
 #include "CodeTiming.h"
 #include "Diagnostics.h"
 #include "DomainBox.h"
+#include "Ewald.h"
 #include "ExternalPotential.h"
 #include "Precision.h"
 #include "Parameters.h"
@@ -76,6 +77,7 @@ class SimulationBase
   // Subroutines only for internal use of the class
   virtual void CalculateDiagnostics(void)=0;
   virtual void OutputDiagnostics(void)=0;
+  virtual void RecordDiagnostics(void)=0;
   virtual void UpdateDiagnostics(void)=0;
   virtual void GenerateIC(void)=0;
   virtual void ReadColumnHeaderFile(ifstream& infile, HeaderInfo& info)=0;
@@ -93,8 +95,8 @@ class SimulationBase
 
  public:
 
-  static SimulationBase* SimulationFactory(int ndim, string simtype,
-                                           Parameters* params);
+  static SimulationBase* SimulationFactory(int ndim, string simtype, Parameters* params);
+
 
   // Constructor and Destructor
   //-----------------------------------------------------------------------------------------------
@@ -103,16 +105,18 @@ class SimulationBase
 
   // Subroutine prototypes
   //-----------------------------------------------------------------------------------------------
+  list<string>* GetIntAndFloatParameterKeys();
   string GetParam(string key);
+  list<SphSnapshotBase*> InteractiveRun(int=-1);
   string Output(void);
+  void RestartSnapshot(void);
+  void Run(int=-1);
   void SetParam(string key, string value);
   void SetParam(string key, int value);
   void SetParam(string ket, double value);
-  list<string>* GetIntAndFloatParameterKeys();
   void SetupSimulation(void);
   void SplashScreen(void);
-  void Run(int=-1);
-  list<SphSnapshotBase*> InteractiveRun(int=-1);
+
 
   virtual void ImportArray(double* input, int size, string quantity, string type="sph") = 0;
   virtual void MainLoop(void)=0;
@@ -131,13 +135,15 @@ class SimulationBase
 
   // Variables
   //-----------------------------------------------------------------------------------------------
-  bool setup;                       ///< Flag if simulation is setup
+  bool ewaldGravity;                ///< Flag if periodic graivty is being used
   bool initial_h_provided;          ///< Have initial h values been calculated?
   bool kill_simulation;             ///< Kill simulation flag
   bool ParametersProcessed;         ///< Flag if params are already processed
+  bool periodicBoundaries;          ///< Flag if periodic boundaries are being used
   bool rebuild_tree;                ///< Flag to rebuild neighbour tree
   bool rescale_particle_data;       ///< Flag to scale data to code units
   bool restart;                     ///< Flag to restart from last snapshot
+  bool setup;                       ///< Flag if simulation is setup
   int integration_step;             ///< Steps per complete integration step
   int level_diff_max;               ///< Max. allowed neib timestep level diff
   int level_max;                    ///< Maximum timestep level
@@ -149,7 +155,9 @@ class SimulationBase
                                     ///< Required for python routines.
   int ndiagstep;                    ///< Diagnostic output frequency (in units
                                     ///< of full block timestep steps)
+  int nlastrestart;                 ///< Integer time of last restart snapshot
   int noutputstep;                  ///< Output frequency
+  int nrestartstep;                 ///< Integer time between creating temp restart files
   int nresync;                      ///< Integer time for resynchronisation
   int nsystembuildstep;             ///< Integer time between rebuilding N-body system tree
   int ntreebuildstep;               ///< Integer time between rebuilding tree
@@ -163,14 +171,17 @@ class SimulationBase
   int Noutsnap;                     ///< No. of output snapshots
   int Noutlitesnap;                 ///< No. of lite output snapshots
   int Nthreads;                     ///< Max no. of (OpenMP) threads
+  int pruning_level;                ///< Level to prune trees for MPI
   int rank;                         ///< Process i.d. (for MPI simulations)
   int sink_particles;               ///< Switch on sink particles
   int sph_single_timestep;          ///< Flag if SPH ptcls use same step
   DOUBLE dt_litesnap;               ///< Lite-snapshot time interval
   DOUBLE dt_max;                    ///< Value of maximum timestep level
+  DOUBLE dt_min_nbody;              ///< Minimum timestep of all N-body particles
+  DOUBLE dt_min_sph;                ///< Minimum timestep of all SPH particles
+  DOUBLE dt_python;                 ///< Python window update time interval
   DOUBLE dt_snap;                   ///< Snapshot time interval
   DOUBLE dt_snap_wall;              ///< Wallclock time between snapshots
-  DOUBLE dt_python;                 ///< Python window update time interval
   DOUBLE t;                         ///< Current simulation time
   DOUBLE tmax_wallclock;            ///< Max. wall-clock time for sim (in s)
   DOUBLE tend;                      ///< End time of simulation
@@ -194,14 +205,14 @@ class SimulationBase
 
 
 #if !defined(SWIG)
-//=============================================================================
+//=================================================================================================
 //  Class Simulation
 /// \brief   Main Simulation class.
 /// \details Main parent Simulation class from which all other simulation
 ///          objects (e.g. SphSimulation) inherit from.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class Simulation : public SimulationBase
 {
@@ -216,22 +227,22 @@ class Simulation : public SimulationBase
 
 
   // Memory allocation routines
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   void AllocateParticleMemory(void);
   void DeallocateParticleMemory(void);
 
 
   // Subroutine prototypes
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   virtual void CalculateDiagnostics(void);
   virtual void ComputeGlobalTimestep(void)=0;
   virtual void ComputeBlockTimesteps(void)=0;
   virtual void GenerateIC(void);
-  virtual void ImportArray(double* input, int size,
-                           string quantity, string type="sph");
+  virtual void ImportArray(double* input, int size, string quantity, string type="sph");
   virtual void PreSetupForPython(void);
   virtual void ProcessParameters(void)=0;
   virtual void OutputDiagnostics(void);
+  virtual void RecordDiagnostics(void);
   virtual void UpdateDiagnostics(void);
   virtual void SetComFrame(void);
   virtual void ProcessNbodyParameters(void);
@@ -241,13 +252,14 @@ class Simulation : public SimulationBase
 #endif
 
   // Initial conditions routines -> move either to Sph, either to Nbody
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   void BinaryAccretion(void);
   void BinaryStar(void);
   void BondiAccretion(void);
   void BossBodenheimer(void);
   void CheckInitialConditions(void);
   void ContactDiscontinuity(void);
+  void EwaldDensity(void);
   void KHI(void);
   void NohProblem(void);
   void PlummerSphere(void);
@@ -262,17 +274,18 @@ class Simulation : public SimulationBase
   void UniformSphere(void);
 
   // Initial conditions helper routines
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
+  void AddAzimuthalDensityPerturbation(int, int, FLOAT, FLOAT *, FLOAT *);
   void AddBinaryStar(DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE,
                      DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE *,DOUBLE *,
                      NbodyParticle<ndim> &, NbodyParticle<ndim> &);
-  void AddAzimuthalDensityPerturbation(int, int, FLOAT, FLOAT *, FLOAT *);
-  void AddRotationalVelocityField(int, FLOAT, FLOAT *, FLOAT *, FLOAT *);
-  void AddRandomBox(int, FLOAT *, DomainBox<ndim>);
-  void AddRandomSphere(int, FLOAT *, FLOAT *, FLOAT);
   void AddCubicLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
   void AddHexagonalLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
   int AddLatticeSphere(int, FLOAT *, FLOAT *, FLOAT, string);
+  void AddRotationalVelocityField(int, FLOAT, FLOAT *, FLOAT *, FLOAT *);
+  void AddRandomBox(int, FLOAT *, DomainBox<ndim>);
+  void AddRandomSphere(int, FLOAT *, FLOAT *, FLOAT);
+  void AddSinusoidalDensityPerturbation(int, FLOAT, FLOAT, FLOAT *);
   int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
   void ComputeBondiSolution(int, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
 #if defined(FFTW_TURBULENCE)
@@ -283,7 +296,7 @@ class Simulation : public SimulationBase
 
 
   // Input-output routines
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   virtual void ReadColumnHeaderFile(ifstream& infile, HeaderInfo& info);
   virtual bool ReadColumnSnapshotFile(string);
   virtual bool WriteColumnSnapshotFile(string);
@@ -298,7 +311,7 @@ class Simulation : public SimulationBase
 
 
   // Variables
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   static const int vdim=ndim;
   static const FLOAT invndim=1.0/ndim;
 
@@ -307,6 +320,7 @@ class Simulation : public SimulationBase
   Diagnostics<ndim> diag;             ///< Current diagnostic state
   EnergyEquation<ndim> *uint;         ///< Energy equation pointer
   ExternalPotential<ndim> *extpot;    ///< Pointer to external potential object
+  Ewald<ndim> *ewald;                 ///< Ewald periodic gravity object
   Ghosts<ndim>* LocalGhosts;          ///< Periodic ghost particle object
   Nbody<ndim> *nbody;                 ///< N-body algorithm pointer
   Nbody<ndim> *subsystem;             ///< N-body object for sub-systems
@@ -318,7 +332,7 @@ class Simulation : public SimulationBase
   SphIntegration<ndim> *sphint;       ///< SPH Integration scheme pointer
   SphNeighbourSearch<ndim> *sphneib;  ///< SPH Neighbour scheme pointer
 #ifdef MPI_PARALLEL
-  MpiControl<ndim> mpicontrol;        ///< MPI control object
+  MpiControl<ndim>* mpicontrol;       ///< MPI control object
   Ghosts<ndim>* MpiGhosts;            ///< MPI ghost particle object
 #endif
 
@@ -326,22 +340,27 @@ class Simulation : public SimulationBase
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class SphSimulation
 /// \brief   Main SphSimulation class.
 /// \details Main SphSimulation class definition, inherited from Simulation,
 ///          which controls the main program flow for SPH simulations.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class SphSimulation : public Simulation<ndim>
 {
  public:
+  using SimulationBase::ewaldGravity;
+  using SimulationBase::periodicBoundaries;
+  using SimulationBase::Nmpi;
+  using SimulationBase::pruning_level;
   using SimulationBase::restart;
   using SimulationBase::simparams;
   using SimulationBase::timing;
   using Simulation<ndim>::extpot;
+  using Simulation<ndim>::ewald;
   using Simulation<ndim>::kill_simulation;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
@@ -373,6 +392,8 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::tlitesnapnext;
   using Simulation<ndim>::tsnapnext;
   using Simulation<ndim>::dt_litesnap;
+  using Simulation<ndim>::dt_min_nbody;
+  using Simulation<ndim>::dt_min_sph;
   using Simulation<ndim>::dt_snap;
   using Simulation<ndim>::dt_python;
   using Simulation<ndim>::level_diff_max;
@@ -386,6 +407,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::rank;
   using Simulation<ndim>::rebuild_tree;
   using Simulation<ndim>::ndiagstep;
+  using Simulation<ndim>::nrestartstep;
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
   using Simulation<ndim>::tmax_wallclock;
@@ -408,20 +430,20 @@ class SphSimulation : public Simulation<ndim>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class GradhSphSimulation
 /// \brief   grad-h SPH simulation class.
-/// \details grad-h SPH Simulation class definition, inherited from
-///          SphSimulation, which controls the main program flow for
-///          grad-h SPH simulations.
+/// \details grad-h SPH Simulation class definition, inherited from SphSimulation, which controls
+///          the main program flow for grad-h SPH simulations.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    17/03/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class GradhSphSimulation: public SphSimulation<ndim>
 {
  public:
 
+  using SimulationBase::Nmpi;
   using SimulationBase::restart;
   using SimulationBase::simparams;
   using SimulationBase::timing;
@@ -483,20 +505,20 @@ class GradhSphSimulation: public SphSimulation<ndim>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class SM2012SphSimulation
 /// \brief   Saitoh & Makino (2012) SPH simulation class.
-/// \details Saitoh & Makino(2012) SPH Simulation class definition, inherited
-///          from SphSimulation, which controls the main program flow for
-///          grad-h SPH simulations.
+/// \details Saitoh & Makino(2012) SPH Simulation class definition, inherited from SphSimulation,
+///          which controls the main program flow for grad-h SPH simulations.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    17/03/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class SM2012SphSimulation: public SphSimulation<ndim>
 {
  public:
 
+  using SimulationBase::Nmpi;
   using SimulationBase::restart;
   using SimulationBase::simparams;
   using SimulationBase::timing;
@@ -557,18 +579,18 @@ class SM2012SphSimulation: public SphSimulation<ndim>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class GodunovSphSimulation
 /// \brief   Main GodunovSphSimulation class.
-/// \details Main GodunovSphSimulation class definition, inherited from
-///          Simulation, which controls the main program flow for Godunov
-///          SPH simulations (Inutsuka 2002).
+/// \details Main GodunovSphSimulation class definition, inherited from Simulation, which
+///          controls the main program flow for Godunov SPH simulations (Inutsuka 2002).
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class GodunovSphSimulation: public SphSimulation<ndim>
 {
+  using SimulationBase::Nmpi;
   using SphSimulation<ndim>::restart;
   using Simulation<ndim>::simparams;
   using SphSimulation<ndim>::timing;
@@ -612,7 +634,8 @@ class GodunovSphSimulation: public SphSimulation<ndim>
   using SphSimulation<ndim>::ntreebuildstep;
   using SphSimulation<ndim>::ntreestockstep;
 #ifdef MPI_PARALLEL
-using SphSimulation<ndim>::MpiGhosts;
+  using Simulation<ndim>::mpicontrol;
+  using SphSimulation<ndim>::MpiGhosts;
 #endif
 
 public:
@@ -629,17 +652,18 @@ public:
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class NbodySimulation
 /// \brief   Main class for running N-body only simulations.
 /// \details Main NbodySimulation class definition, inherited from Simulation,
 ///          which controls the main program flow for N-body only simulations.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class NbodySimulation : public Simulation<ndim>
 {
+  using SimulationBase::Nmpi;
   using SimulationBase::restart;
   using SimulationBase::simparams;
   using SimulationBase::timing;

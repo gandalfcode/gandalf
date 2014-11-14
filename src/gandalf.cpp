@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
 //  https://github.com/gandalfcode/gandalf
@@ -15,9 +15,10 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -32,16 +33,17 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  main
 /// Main GANDALF program for running executables from the command line.
-//=============================================================================
+//=================================================================================================
 int main(int argc, char** argv)
 {
   bool restart=false;                                // Flag restart simulation
   int rank=0;                                        // Local copy of MPI rank
   string paramfile;                                  // Name of parameters file
   stringstream ss;                                   // Stream char to string
+  ofstream outfile;                                  // Stream of temp restart file
   CodeTiming* timing = new CodeTiming();             // Timing object
   SimulationBase* sim;                               // Main simulation object
   Parameters* params = new Parameters();             // Parameters object
@@ -52,10 +54,10 @@ int main(int argc, char** argv)
   // Initialise all MPI processes (if activated in Makefile)
   MPI_Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-    
+
   // Tell exception handler to call MPI_Abort on error
   ExceptionHandler::set_mpi(1);
-    
+
 #ifdef _OPENMP
   // Check that OpenMP and MPI can work together
   int mpi_thread_support;
@@ -82,6 +84,10 @@ int main(int argc, char** argv)
     cout << "No parameter file specified, aborting..." << endl;
     exit(-1);
   }
+
+  // Create empty file (used for automatic restarts on clusters)
+  outfile.open("cont");
+  outfile.close();
 
   // Read parameters file immediately and record to file
   params->ReadParamsFile(paramfile);

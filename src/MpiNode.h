@@ -55,7 +55,7 @@ class MpiNode
   //---------------------------------------------------------------------------
   void PackNodeData(void);
   void UnpackNodeData(void);
-  void UpdateBoundingBoxData(int, SphParticle<ndim> *, SphKernel<ndim> *);
+  void UpdateBoundingBoxData(int, Sph<ndim> *, SphKernel<ndim> *);
 
 
   // MPI node variables
@@ -63,23 +63,20 @@ class MpiNode
   int ifirst;                       ///< i.d. of first ghost from node
   int ilast;                        ///< i.d. of last ghost from node
   int Nsph;                         ///< No. of SPH particles on node
-  int Ntot;
-  int Ntotmax;
+  int Ntot;                         ///< ..
+  int Ntotmax;                      ///< ..
   int Nghost;                       ///< No. of ghost particles originally
                                     ///< from node exported to current node
-
   FLOAT hmax;                       ///< Maximum smoothing length on node
   FLOAT worktot;                    ///< Total 'work' on each node
   FLOAT rwork[ndim];                ///< Weighted 'centre of work' position
-  FLOAT *worksent;                  ///< ..
-  FLOAT *workreceived;              ///< ..
-
   Box<ndim> domain;                 ///< ..
   Box<ndim> rbox;                   ///< ..
   Box<ndim> hbox;                   ///< ..
 
   int *ids;                         ///< List of particles in tree
-  BinarySubTree<ndim> *nodetree;    ///< Pointer to current node sub-tree
+  FLOAT *worksent;                  ///< ..
+  FLOAT *workreceived;              ///< ..
 
 };
 #endif

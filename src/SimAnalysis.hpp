@@ -23,6 +23,8 @@
 
 #include <iostream>
 #include <iomanip>
+#include <fstream>
+#include <ostream>
 #include <sstream>
 #include <string>
 #include <math.h>
@@ -52,17 +54,17 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   int i;                            // Particle counter
   int k;                            // Dimensionality counter
 
-  debug2("[SphSimulation::CalculateDiagnostics]");
+  debug2("[Simulation::CalculateDiagnostics]");
 
-  diag.Nsph = sph->Nsph;
+  diag.Nsph  = sph->Nsph;
   diag.Nstar = nbody->Nstar;
   diag.Ndead = 0;
 
   // Zero all diagnostic summation variables
-  diag.mtot = 0.0;
-  diag.Etot = 0.0;
-  diag.utot = 0.0;
-  diag.ketot = 0.0;
+  diag.mtot   = 0.0;
+  diag.Etot   = 0.0;
+  diag.utot   = 0.0;
+  diag.ketot  = 0.0;
   diag.gpetot = 0.0;
   for (k=0; k<ndim; k++) diag.rcom[k] = 0.0;
   for (k=0; k<ndim; k++) diag.vcom[k] = 0.0;
@@ -79,18 +81,17 @@ void Simulation<ndim>::CalculateDiagnostics(void)
       diag.Ndead++;
       continue;
     }
-    diag.mtot += part.m;
-    diag.ketot += part.m*
-      DotProduct(part.v,part.v,ndim);
-    diag.utot += part.m*part.u;
+    diag.mtot   += part.m;
+    diag.ketot  += part.m*DotProduct(part.v,part.v,ndim);
+    diag.utot   += part.m*part.u;
     diag.gpetot -= part.m*part.gpot;
     for (k=0; k<ndim; k++) {
-      diag.rcom[k] += part.m*part.r[k];
-      diag.vcom[k] += part.m*part.v[k];
-      diag.mom[k] += part.m*part.v[k];
-      diag.force[k] += part.m*part.a[k];
+      diag.rcom[k]        += part.m*part.r[k];
+      diag.vcom[k]        += part.m*part.v[k];
+      diag.mom[k]         += part.m*part.v[k];
+      diag.force[k]       += part.m*part.a[k];
       diag.force_hydro[k] += part.m*(part.a[k] - part.agrav[k]);
-      diag.force_grav[k] += part.m*part.agrav[k];
+      diag.force_grav[k]  += part.m*part.agrav[k];
     }
   }
 
@@ -99,34 +100,29 @@ void Simulation<ndim>::CalculateDiagnostics(void)
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
       if (part.itype == dead) continue;
-      diag.angmom[2] += part.m*
-        (part.r[0]*part.v[1] - part.r[1]*part.v[0]);
+      diag.angmom[2] += part.m*(part.r[0]*part.v[1] - part.r[1]*part.v[0]);
     }
   }
   else if (ndim == 3) {
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
       if (part.itype == dead) continue;
-      diag.angmom[0] += part.m*
-        (part.r[1]*part.v[2] - part.r[2]*part.v[1]);
-      diag.angmom[1] += part.m*
-        (part.r[2]*part.v[0] - part.r[0]*part.v[2]);
-      diag.angmom[2] += part.m*
-        (part.r[0]*part.v[1] - part.r[1]*part.v[0]);
+      diag.angmom[0] += part.m*(part.r[1]*part.v[2] - part.r[2]*part.v[1]);
+      diag.angmom[1] += part.m*(part.r[2]*part.v[0] - part.r[0]*part.v[2]);
+      diag.angmom[2] += part.m*(part.r[0]*part.v[1] - part.r[1]*part.v[0]);
     }
   }
 
   // Loop over all star particles and add contributions to all quantities
   for (i=0; i<nbody->Nstar; i++) {
-    diag.mtot += nbody->stardata[i].m;
-    diag.ketot += nbody->stardata[i].m*
-      DotProduct(nbody->stardata[i].v,nbody->stardata[i].v,ndim);
+    diag.mtot   += nbody->stardata[i].m;
+    diag.ketot  += nbody->stardata[i].m*DotProduct(nbody->stardata[i].v,nbody->stardata[i].v,ndim);
     diag.gpetot -= nbody->stardata[i].m*nbody->stardata[i].gpot;
     for (k=0; k<ndim; k++) {
-      diag.rcom[k] += nbody->stardata[i].m*nbody->stardata[i].r[k];
-      diag.vcom[k] += nbody->stardata[i].m*nbody->stardata[i].v[k];
-      diag.mom[k] += nbody->stardata[i].m*nbody->stardata[i].v[k];
-      diag.force[k] += nbody->stardata[i].m*nbody->stardata[i].a[k];
+      diag.rcom[k]       += nbody->stardata[i].m*nbody->stardata[i].r[k];
+      diag.vcom[k]       += nbody->stardata[i].m*nbody->stardata[i].v[k];
+      diag.mom[k]        += nbody->stardata[i].m*nbody->stardata[i].v[k];
+      diag.force[k]      += nbody->stardata[i].m*nbody->stardata[i].a[k];
       diag.force_grav[k] += nbody->stardata[i].m*nbody->stardata[i].a[k];
     }
   }
@@ -134,36 +130,32 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   // Add contributions to angular momentum depending on dimensionality
   if (ndim == 2) {
     for (i=0; i<nbody->Nstar; i++)
-      diag.angmom[2] += nbody->stardata[i].m*
-        (nbody->stardata[i].r[0]*nbody->stardata[i].v[1] -
-         nbody->stardata[i].r[1]*nbody->stardata[i].v[0]);
+      diag.angmom[2] += nbody->stardata[i].m*(nbody->stardata[i].r[0]*nbody->stardata[i].v[1] -
+                                              nbody->stardata[i].r[1]*nbody->stardata[i].v[0]);
   }
   else if (ndim == 3) {
     for (i=0; i<nbody->Nstar; i++) {
-      diag.angmom[0] += nbody->stardata[i].m*
-        (nbody->stardata[i].r[1]*nbody->stardata[i].v[2] -
-         nbody->stardata[i].r[2]*nbody->stardata[i].v[1]);
-      diag.angmom[1] += nbody->stardata[i].m*
-        (nbody->stardata[i].r[2]*nbody->stardata[i].v[0] -
-         nbody->stardata[i].r[0]*nbody->stardata[i].v[2]);
-      diag.angmom[2] += nbody->stardata[i].m*
-        (nbody->stardata[i].r[0]*nbody->stardata[i].v[1] -
-         nbody->stardata[i].r[1]*nbody->stardata[i].v[0]);
+      diag.angmom[0] += nbody->stardata[i].m*(nbody->stardata[i].r[1]*nbody->stardata[i].v[2] -
+                                              nbody->stardata[i].r[2]*nbody->stardata[i].v[1]);
+      diag.angmom[1] += nbody->stardata[i].m*(nbody->stardata[i].r[2]*nbody->stardata[i].v[0] -
+                                              nbody->stardata[i].r[0]*nbody->stardata[i].v[2]);
+      diag.angmom[2] += nbody->stardata[i].m*(nbody->stardata[i].r[0]*nbody->stardata[i].v[1] -
+                                              nbody->stardata[i].r[1]*nbody->stardata[i].v[0]);
     }
   }
 
   // Add internal angular momentum (due to sink accretion) and subtract
   // accreted hydro momentum to maintain conservation of individual impulses.
   for (i=0; i<sinks.Nsink; i++) {
-    for (k=0; k<3; k++) diag.angmom[k] += sinks.sink[i].angmom[k];
-    for (k=0; k<3; k++) diag.force_grav[k] -= sinks.sink[i].fhydro[k];
+    for (k=0; k<3; k++) diag.angmom[k]      += sinks.sink[i].angmom[k];
+    for (k=0; k<3; k++) diag.force_grav[k]  -= sinks.sink[i].fhydro[k];
     for (k=0; k<3; k++) diag.force_hydro[k] += sinks.sink[i].fhydro[k];
   }
 
   // Normalise all quantities and sum all contributions to total energy
-  diag.ketot *= 0.5;
+  diag.ketot  *= 0.5;
   diag.gpetot *= 0.5;
-  diag.Etot = diag.ketot;
+  diag.Etot   = diag.ketot;
   for (k=0; k<ndim; k++) diag.rcom[k] /= diag.mtot;
   for (k=0; k<ndim; k++) diag.vcom[k] /= diag.mtot;
   if (sph->hydro_forces == 1) diag.Etot += diag.utot;
@@ -179,9 +171,10 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 
   // For MPI, collect all diagnostic information on root node
 #ifdef MPI_PARALLEL
-  mpicontrol.CollateDiagnosticsData(diag);
+  mpicontrol->CollateDiagnosticsData(diag);
 #endif
 
+  RecordDiagnostics();
 
   return;
 }
@@ -195,7 +188,7 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 template <int ndim>
 void Simulation<ndim>::OutputDiagnostics(void)
 {
-  debug2("[SphSimulation::OutputDiagnostics]");
+  debug2("[Simulation::OutputDiagnostics]");
 
   if (rank != 0) return;
 
@@ -256,6 +249,52 @@ void Simulation<ndim>::OutputDiagnostics(void)
   // Calculate binary statistics if required
   if (simparams->intparams["binary_stats"] == 1) nbodytree.OutputBinaryProperties(nbody);
 
+  return;
+}
+
+
+
+//=================================================================================================
+//  Simulation::RecordDiagnostics
+/// Output all diagnostic quantities that are computed in CalculateDiagnostics to screen.
+//=================================================================================================
+template <int ndim>
+void Simulation<ndim>::RecordDiagnostics(void)
+{
+  debug2("[Simulation::RecordDiagnostics]");
+
+  if (rank != 0) return;
+
+  int k;
+  ofstream outfile;
+  string filename = run_id + ".diag";
+
+  outfile.open(filename.c_str(),std::ofstream::app);
+
+  outfile << t*simunits.t.outscale << "     ";
+  outfile << Nsteps << "      ";
+  outfile << timestep << "      ";
+  outfile << dt_min_sph << "      ";
+  outfile << dt_min_nbody << "      ";
+  outfile << level_max << "      ";
+  outfile << diag.Nsph << "     ";
+  outfile << diag.Nstar << "     ";
+  outfile << diag.Ndead << "     ";
+  outfile << diag.mtot*simunits.m.outscale << "     ";
+  outfile << diag.Etot*simunits.E.outscale << "     ";
+  outfile << diag.ketot*simunits.E.outscale << "     ";
+  outfile << diag.utot*simunits.E.outscale << "     ";
+  outfile << diag.gpetot*simunits.E.outscale << "     ";
+  for (k=0; k<3; k++) outfile << diag.angmom[k]*simunits.angmom.outscale << "     ";
+  for (k=0; k<ndim; k++) outfile << diag.rcom[k]*simunits.r.outscale << "     ";
+  for (k=0; k<ndim; k++) outfile << diag.vcom[k]*simunits.v.outscale << "     ";
+  for (k=0; k<ndim; k++) outfile << diag.mom[k]*simunits.mom.outscale << "     ";
+  for (k=0; k<ndim; k++) outfile << diag.force[k] << "     "; //*simunits.f.outscale << "     ";
+  for (k=0; k<ndim; k++) outfile << diag.force_grav[k] << "      "; //*simunits.f.outscale << "     ";
+  for (k=0; k<ndim; k++) outfile << diag.force_hydro[k] << "      "; //*simunits.f.outscale << endl;
+  outfile << endl;
+
+  outfile.close();
 
   return;
 }

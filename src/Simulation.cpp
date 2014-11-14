@@ -128,6 +128,8 @@ SimulationBase::SimulationBase
   integration_step      = 1;
   litesnap              = 0;
   n                     = 0;
+  nlastrestart          = 0;
+  nrestartstep          = 0;
   nresync               = 0;
   Nblocksteps           = 0;
   Nfullsteps            = 0;
@@ -142,16 +144,18 @@ SimulationBase::SimulationBase
   tsnaplast             = 0.0;
   tlitesnaplast         = 0.0;
   tsnap_wallclock       = 0.0;
+  ewaldGravity          = false;
   initial_h_provided    = false;
   kill_simulation       = false;
   ParametersProcessed   = false;
+  periodicBoundaries    = false;
   rescale_particle_data = false;
   restart               = false;
   setup                 = false;
 #if defined _OPENMP
   if (omp_get_dynamic()) {
     cout << "Warning: the dynamic adjustment of the number threads was on. "
-	 << "For better load-balancing, we will disable it" << endl;
+         << "For better load-balancing, we will disable it" << endl;
   }
   omp_set_dynamic(0);
   Nthreads = omp_get_max_threads();
@@ -328,24 +332,9 @@ void SimulationBase::Run
     Output();
 
     // Special condition to check if maximum wall-clock time has been reached.
-    // Create special file 'cont' for c2pap restarts.
-    if (kill_simulation || timing->WallClockTime() - timing->tstart_wall > 0.99*tmax_wallclock) {
-
-      // Prepare filename for new snapshot
-      filename = run_id + "." + out_file_form + ".tmp";
-      ss.str(std::string());
-      WriteSnapshotFile(filename,out_file_form);
-
-      // Now write name and format of snapshot to file (for restarts)
-      filename2 = run_id + ".restart";
-      outfile.open(filename2.c_str());
-      outfile << out_file_form << endl;
-      outfile << filename << endl;
-      outfile.close();
-
+    if (kill_simulation || timing->WallClockTime() - timing->tstart_wall > 0.95*tmax_wallclock) {
+      RestartSnapshot();
       cout << "Reached maximum wall-clock time.  Killing simulation." << endl;
-      outfile.open("cont");
-      outfile.close();
       break;
     }
 
@@ -360,6 +349,17 @@ void SimulationBase::Run
 
   cout << "Final t : " << t*simunits.t.outscale << " " << simunits.t.outunit
        << "    Total no. of steps : " << Nsteps << endl;
+
+
+  // If reached end of simulation, remove restart file
+  if (t >= tend || Nsteps >= Ntarget) {
+    if (remove("cont") != 0) {
+      cout << "Error deleting cont file" << endl;
+    }
+    else {
+      cout << "cont file successfully deleted" << endl;
+    }
+  }
 
   return;
 }
@@ -490,21 +490,26 @@ string SimulationBase::Output(void)
     WriteSnapshotFile(filename,out_file_form);
 
     // Now write name and format of snapshot to file (for restarts)
-    fileend = "restart";
-    filename2 = run_id + "." + fileend;
-    outfile.open(filename2.c_str());
-    outfile << out_file_form << endl;
-    outfile << filename << endl;
-    outfile.close();
+    if (rank == 0) {
 
-    // Finally, calculate wall-clock time interval since last output snapshot
-    if (tsnap_wallclock > 0.0) dt_snap_wall = timing->WallClockTime() - tsnap_wallclock;
-    tsnap_wallclock = timing->WallClockTime();
+      fileend = "restart";
+      filename2 = run_id + "." + fileend;
+      outfile.open(filename2.c_str());
+      outfile << out_file_form << endl;
+      outfile << filename << endl;
+      outfile.close();
 
-    // If simulation is too close to maximum wall-clock time, end prematurely
-    if (timing->ttot_wall > 0.95*tmax_wallclock) {
-      kill_simulation = true;
+      // Finally, calculate wall-clock time interval since last output snapshot
+      if (tsnap_wallclock > 0.0) dt_snap_wall = timing->WallClockTime() - tsnap_wallclock;
+      tsnap_wallclock = timing->WallClockTime();
+
+      // If simulation is too close to maximum wall-clock time, end prematurely
+      if (timing->ttot_wall > 0.95*tmax_wallclock) {
+        kill_simulation = true;
+      }
+
     }
+
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -516,12 +521,51 @@ string SimulationBase::Output(void)
     OutputDiagnostics();
     UpdateDiagnostics();
     timing->ComputeTimingStatistics(run_id);
+
   }
+
+  // Create temporary snapshot file
+  if (n == nresync && Nsteps - nlastrestart >= nrestartstep) {
+    RestartSnapshot();
+    nlastrestart = Nsteps;
+  }
+
 
   timing->EndTimingSection("OUTPUT");
 
   return filename;
 }
+
+
+
+//=================================================================================================
+//  SimulationBase::RestartSnapshot
+/// ...
+//=================================================================================================
+void SimulationBase::RestartSnapshot(void)
+{
+  string filename;                     // Output snapshot filename
+  string filename2;                    // ..
+  stringstream ss;                     // Stream object for preparing filename
+  ofstream outfile;                    // Stream of restart file
+
+  debug2("[SimulationBase::RestartSnapshot]");
+
+  // Prepare filename for new snapshot
+  filename = run_id + "." + out_file_form + ".tmp";
+  ss.str(std::string());
+  WriteSnapshotFile(filename,out_file_form);
+
+  // Now write name and format of snapshot to file (for restarts)
+  filename2 = run_id + ".restart";
+  outfile.open(filename2.c_str());
+  outfile << out_file_form << endl;
+  outfile << filename << endl;
+  outfile.close();
+
+  return;
+}
+
 
 
 
@@ -592,7 +636,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
   map<string, string> &stringparams = simparams->stringparams;
 
   // Create N-body object based on chosen method in params file
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (stringparams["nbody"] == "lfkdk") {
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
@@ -628,7 +672,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
       ExceptionHandler::getIstance().raise(message);
     }
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (stringparams["nbody"] == "lfdkd") {
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
@@ -665,7 +709,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
     }
     integration_step = max(integration_step,2);
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (stringparams["nbody"] == "hermite4") {
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
@@ -701,7 +745,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
       ExceptionHandler::getIstance().raise(message);
     }
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (stringparams["nbody"] == "hermite4ts") {
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
@@ -737,7 +781,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
       ExceptionHandler::getIstance().raise(message);
     }
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (stringparams["nbody"] == "hermite6ts") {
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
@@ -772,20 +816,20 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
       ExceptionHandler::getIstance().raise(message);
     }
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else {
     string message = "Unrecognised parameter : nbody = "
       + simparams->stringparams["nbody"];
     ExceptionHandler::getIstance().raise(message);
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
 
   // Create sub-system object based on chosen method in params file
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (intparams["sub_systems"] == 1) {
 
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     if (stringparams["sub_system_integration"] == "lfkdk") {
       string KernelName = stringparams["kernel"];
       if (intparams["tabulated_kernel"] == 1) {
@@ -821,7 +865,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
 	ExceptionHandler::getIstance().raise(message);
       }
     }
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (stringparams["sub_system_integration"] == "hermite4") {
       string KernelName = stringparams["kernel"];
       if (intparams["tabulated_kernel"] == 1) {
@@ -857,7 +901,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
 	ExceptionHandler::getIstance().raise(message);
       }
     }
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (stringparams["sub_system_integration"] == "hermite4ts") {
       string KernelName = stringparams["kernel"];
       if (intparams["tabulated_kernel"] == 1) {
@@ -892,7 +936,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
         ExceptionHandler::getIstance().raise(message);
       }
     }
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (stringparams["sub_system_integration"] == "hermite6ts") {
       string KernelName = stringparams["kernel"];
       if (intparams["tabulated_kernel"] == 1) {
@@ -927,16 +971,16 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
         ExceptionHandler::getIstance().raise(message);
       }
     }
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else {
       string message = "Unrecognised parameter : sub_system_integration = "
 	+ simparams->stringparams["sub_system_integration"];
       ExceptionHandler::getIstance().raise(message);
     }
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   return;
 }

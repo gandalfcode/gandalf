@@ -215,7 +215,7 @@ int SM2012Sph<ndim, kernelclass >::ComputeH
  const int Nneib,                         ///< [in] No. of potential neighbours
  const FLOAT hmax,                        ///< [in] Max. h permitted by neib list
  FLOAT *m,                          ///< [in] Array of neib. masses
- FLOAT *mu,                         ///< [in] Array of m*u (not needed here)
+ FLOAT *mu,                         ///< [in] Array of m*u
  FLOAT *drsqd,                      ///< [in] Array of neib. distances squared
  FLOAT *gpot,                       ///< [in] Array of neib. grav. potentials
  SphParticle<ndim> &part,          ///< [inout] Particle i data

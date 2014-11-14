@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  SphIntegration.cpp
 //  Contains default functions for SphIntegration class.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <algorithm>
@@ -38,10 +38,10 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphIntegration::SphIntegration
 /// SphIntegration constructor
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 SphIntegration<ndim>::SphIntegration
 (DOUBLE accel_mult_aux,             ///< Copy of accel timestep multiplier
@@ -59,10 +59,10 @@ SphIntegration<ndim>::SphIntegration
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphIntegration::~SphIntegration
 /// SphIntegration destructor
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 SphIntegration<ndim>::~SphIntegration()
 {
@@ -70,49 +70,46 @@ SphIntegration<ndim>::~SphIntegration()
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphIntegration::Timestep
 /// Default timestep size for SPH particles.  Takes the minimum of :
 /// (i)  const*h/(sound_speed + h*|div_v|)    (Courant condition)
 /// (ii) const*sqrt(h/|a|)                    (Acceleration condition)
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 DOUBLE SphIntegration<ndim>::Timestep
-(SphParticle<ndim> &part,           ///< [inout] Reference to SPH particle
- Sph<ndim> *sph)                    ///< [in] Pointer to main SPH object
+ (SphParticle<ndim> &part,             ///< [inout] Reference to SPH particle
+  Sph<ndim> *sph)                      ///< [in] Pointer to main SPH object
 {
-  DOUBLE timestep;                  // Minimum value of particle timesteps
-  DOUBLE adotmag;                   // Magnitude of particle jerk
-  DOUBLE amag;                      // Magnitude of particle acceleration
+  DOUBLE timestep;                     // Minimum value of particle timesteps
+  DOUBLE adotmag;                      // Magnitude of particle jerk
+  DOUBLE amag;                         // Magnitude of particle acceleration
 
   // Courant condition.  If hydro forces are not used, compute the
   // timescale using only div_v, i.e. the compression timescale.
-  if (sph->hydro_forces == 1 && sph->avisc == mon97 && part.sinkid != -1)
-    timestep = courant_mult*part.h/
-      (part.sound + part.h*fabs(part.div_v) + small_number_dp);
-  if (sph->hydro_forces == 1 && sph->avisc == mon97)
-    //imestep = courant_mult*part.h/
-      //(part.sound + part.h*fabs(part.div_v) +
-       //0.6*(part.sound + 2.0*part.h*fabs(part.div_v))) ;
-    timestep = courant_mult*part.h/
-      (part.sound + part.h*fabs(part.div_v) + small_number_dp);
-  else if (sph->hydro_forces == 1)
-    //imestep = courant_mult*part.h/
-      //(part.sound + part.h*fabs(part.div_v) +
-       //0.6*(part.sound + 2.0*part.h*fabs(part.div_v))) ;
-    timestep = courant_mult*part.h/
-      (part.sound + part.h*fabs(part.div_v) + small_number_dp);
-  else timestep = courant_mult*part.h/
-    (part.h*fabs(part.div_v) + small_number_dp);
+  if (sph->hydro_forces == 1 && sph->avisc == mon97 && part.sinkid != -1) {
+    timestep = courant_mult*part.h/(part.sound + part.h*fabs(part.div_v) + small_number_dp);
+  }
+  else if (sph->hydro_forces == 1 && sph->avisc == mon97) {
+    //timestep = courant_mult*part.h/
+      //(part.sound + part.h*fabs(part.div_v) + 0.6*(part.sound + 2.0*part.h*fabs(part.div_v)));
+    timestep = courant_mult*part.h/(part.sound + part.h*fabs(part.div_v) + small_number_dp);
+  }
+  else if (sph->hydro_forces == 1) {
+    timestep = courant_mult*part.h/(part.sound + part.h*fabs(part.div_v) + small_number_dp);
+  }
+  else {
+    timestep = courant_mult*part.h/(part.h*fabs(part.div_v) + small_number_dp);
+  }
 
   // Acceleration condition
   amag = sqrt(DotProduct(part.a,part.a,ndim));
   timestep = min(timestep, accel_mult*sqrt(part.h/(amag + small_number_dp)));
 
   // Explicit energy integration timestep condition
-  if (gas_eos == energy_eqn)
-    timestep = min(timestep,this->energy_mult*
-		   (DOUBLE) (part.u/(fabs(part.dudt) + small_number)));
+  if (gas_eos == energy_eqn) {
+    timestep = min(timestep,this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number)));
+  }
 
   // If stars are included, calculate the timestep due to the jerk
   //adotmag = sqrt(DotProduct(part.adot,part.adot,ndim));
@@ -120,6 +117,68 @@ DOUBLE SphIntegration<ndim>::Timestep
 
   return timestep;
 }
+
+
+
+//=============================================================================
+//  SphIntegration::CheckBoundaries
+/// Check all particles to see if any have crossed the simulation bounding
+/// box.  If so, then move the particles to their new location on the other
+/// side of the periodic box.
+//=============================================================================
+template <int ndim>
+void SphIntegration<ndim>::CheckBoundaries
+(DomainBox<ndim> &simbox,
+ Sph<ndim> *sph)
+{
+  // Loop over all particles and check if any lie outside the periodic box.
+  // If so, then re-position with periodic wrapping.
+  //---------------------------------------------------------------------------
+#pragma omp parallel for default(none) shared(simbox,sph)
+  for (int i=0; i<sph->Nsph; i++) {
+    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+
+
+    if (part.r[0] < simbox.boxmin[0])
+      if (simbox.x_boundary_lhs == periodicBoundary) {
+        part.r[0] += simbox.boxsize[0];
+        part.r0[0] += simbox.boxsize[0];
+      }
+    if (part.r[0] > simbox.boxmax[0])
+      if (simbox.x_boundary_rhs == periodicBoundary) {
+        part.r[0] -= simbox.boxsize[0];
+        part.r0[0] -= simbox.boxsize[0];
+      }
+
+    if (ndim >= 2 && part.r[1] < simbox.boxmin[1])
+      if (simbox.y_boundary_lhs == periodicBoundary) {
+        part.r[1] += simbox.boxsize[1];
+        part.r0[1] += simbox.boxsize[1];
+      }
+    if (ndim >= 2 && part.r[1] > simbox.boxmax[1])
+      if (simbox.y_boundary_rhs == periodicBoundary) {
+        part.r[1] -= simbox.boxsize[1];
+        part.r0[1] -= simbox.boxsize[1];
+      }
+
+    if (ndim == 3 && part.r[2] < simbox.boxmin[2])
+      if (simbox.z_boundary_lhs == periodicBoundary) {
+        part.r[2] += simbox.boxsize[2];
+        part.r0[2] += simbox.boxsize[2];
+      }
+    if (ndim == 3 && part.r[2] > simbox.boxmax[2])
+      if (simbox.z_boundary_rhs == periodicBoundary) {
+        part.r[2] -= simbox.boxsize[2];
+        part.r0[2] -= simbox.boxsize[2];
+      }
+
+  }
+  //---------------------------------------------------------------------------
+
+  return;
+}
+
+
 
 
 

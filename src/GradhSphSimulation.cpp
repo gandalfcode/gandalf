@@ -202,17 +202,28 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
+#if defined MPI_PARALLEL
+  mpicontrol = new MpiControlType<ndim, GradhSphParticle>;
+  mpicontrol->timing = timing;
+  rank = mpicontrol->rank;
+  Nmpi = mpicontrol->Nmpi;
+#endif
 
   // Create neighbour searching object based on chosen method in params file
   //-------------------------------------------------------------------------
   if (stringparams["neib_search"] == "bruteforce")
     sphneib = new GradhSphBruteForce<ndim,GradhSphParticle>
       (sph->kernp->kernrange,&simbox,sph->kernp,timing);
-  else if (stringparams["neib_search"] == "tree") {
-    sphneib = new GradhSphTree<ndim,GradhSphParticle>
-     (intparams["Nleafmax"],floatparams["thetamaxsqd"],
-      sph->kernp->kernrange,floatparams["macerror"],
-      stringparams["gravity_mac"],stringparams["multipole"],
+  else if (stringparams["neib_search"] == "kdtree") {
+    sphneib = new GradhSphKDTree<ndim,GradhSphParticle,KDTreeCell>
+     (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
+      floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
+      &simbox,sph->kernp,timing);
+  }
+  else if (stringparams["neib_search"] == "octtree") {
+    sphneib = new GradhSphOctTree<ndim,GradhSphParticle,OctTreeCell>
+     (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
+      floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
       &simbox,sph->kernp,timing);
   }
   else {
@@ -223,8 +234,9 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   //sphneib->kernp = sph->kernp;
   sphneib->kernfac = sph->kernfac;
   //sphneib->kernrange = sph->kernp->kernrange;
+
 #if defined MPI_PARALLEL
-  mpicontrol.SetNeibSearch(sphneib);
+  mpicontrol->SetNeibSearch(sphneib);
 #endif
 
 
@@ -258,7 +270,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   else
     LocalGhosts = new NullGhosts<ndim>();
 #ifdef MPI_PARALLEL
-  MpiGhosts = new MPIGhosts<ndim>(&mpicontrol);
+  MpiGhosts = new MPIGhostsSpecific<ndim, GradhSphParticle>(mpicontrol);
 #endif
 
 

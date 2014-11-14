@@ -98,7 +98,7 @@ void MpiNode<ndim>::UnpackNodeData(void)
 template <int ndim>
 void MpiNode<ndim>::UpdateBoundingBoxData
 (int Npart,                        ///< No. of SPH particles
- SphParticle<ndim> *sphdata,       ///< Pointer to SPH data
+ Sph<ndim> *sph,       ///< Pointer to SPH object
  SphKernel<ndim> *kernptr)         ///< Pointer to kernel object
 {
   int i;                           // Particle counter
@@ -113,13 +113,19 @@ void MpiNode<ndim>::UpdateBoundingBoxData
 
   // Loop over all particles and compute new bounding boxes
   //---------------------------------------------------------------------------
+
+  const FLOAT kernange = kernptr->kernrange;
+
   for (i=0; i<Npart; i++) {
-    hrange = 2.0*kernptr->kernrange*sphdata[i].h;
+
+    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+
+    hrange = 2.0*kernange*part.h;
     for (k=0; k<ndim; k++) {
-      rbox.boxmin[k] = min(rbox.boxmin[k],sphdata[i].r[k]);
-      rbox.boxmax[k] = max(rbox.boxmax[k],sphdata[i].r[k]);
-      hbox.boxmin[k] = min(hbox.boxmin[k],sphdata[i].r[k] - hrange);
-      hbox.boxmax[k] = max(hbox.boxmax[k],sphdata[i].r[k] + hrange);
+      rbox.boxmin[k] = min(rbox.boxmin[k],part.r[k]);
+      rbox.boxmax[k] = max(rbox.boxmax[k],part.r[k]);
+      hbox.boxmin[k] = min(hbox.boxmin[k],part.r[k] - hrange);
+      hbox.boxmax[k] = max(hbox.boxmax[k],part.r[k] + hrange);
     }
   }
 

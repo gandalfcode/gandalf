@@ -260,6 +260,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   char* filename_str = new char[strlen(filename.c_str())+1];
   strcpy(filename_str,filename.c_str());
   MPI_File_open(MPI_COMM_WORLD, filename_str, MPI_MODE_CREATE|MPI_MODE_WRONLY,MPI_INFO_NULL, &file);
+  MPI_File_set_size(file,0);
   delete[] filename_str;
   //Collect total number of particles
   int Ntotsph;
@@ -458,7 +459,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 	      << endl;
   }
 
-  // Write data for SPH particles
+  // Write data for N-body particles
   //---------------------------------------------------------------------------
   for (i=0; i<nbody->Nstar; i++) {
     if (ndim == 1)
@@ -1588,8 +1589,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-      for (int k=0; k<ndim; k++)
-	writer.write_value(part.r[k]*simunits.r.outscale);
+      for (int k=0; k<ndim; k++) writer.write_value(part.r[k]*simunits.r.outscale);
     }
 
     // Masses
