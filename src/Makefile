@@ -125,7 +125,8 @@ ifeq ($(FFTW),1)
 CFLAGS += -DFFTW_TURBULENCE
 #OPT += -I/Users/davidhubber/astro/code/gandalf/src -L/Users/davidhubber/astro/code/gandalf/src -lm -lfftw3f
 #OPT += -I/usr/local/include -L/usr/local/lib -lfftw3
-OPT += -I/sw/include -L/sw/lib -lfftw3
+#OPT += -I/sw/include -L/sw/lib -lfftw3
+OPT += $(FFTW_LIB) $(FFTW_INC)
 endif
 
 
@@ -220,7 +221,7 @@ TEST_OBJ = TestScaling.o TestTree.o #Parameters.o SimUnits.o Exception.o
 	$(CPP) $(OPT) $(CFLAGS) -fexceptions -frtti -c $< -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY)
 
 %.o: %.cxx
-	$(CPP) $(OPT) $(CFLAGS) -c $<
+	$(CPP) $(CFLAGS) -c $< $(OPT)
 
 %.o: %.cpp
 	$(CPP) $(OPT) $(CFLAGS) -c $< -I$(GTEST)/include
@@ -245,7 +246,7 @@ all : $(WRAP_OBJ) $(OBJ) Exception.o shocktub.so _SphSim.so executable
 #==================================================================================================
 
 executable : $(OBJ) gandalf.o Exception.o
-	$(CPP) $(CFLAGS) $(OPT) -o gandalf $(OBJ) Exception.o gandalf.o
+	$(CPP) $(CFLAGS) -o gandalf $(OBJ) Exception.o gandalf.o $(OPT)
 	cp gandalf ../bin/gandalf
 
 unittests : $(OBJ) $(TEST_OBJ) Exception.o

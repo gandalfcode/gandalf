@@ -20,14 +20,14 @@
 #==================================================================================================
 
 
-CPP                = g++-4
-PYTHON             = python2.7
-F2PY               = f2py2.7
-FFTW               = 0
-GSL                = 1
+CPP                = icpc
+PYTHON             = python
+F2PY               = f2py
+FFTW               = 1
+GSL                = 0
 COMPILER_MODE      = FAST
 PRECISION          = DOUBLE
-OPENMP             = 0
+OPENMP             = 1
 OUTPUT_LEVEL       = 1
 DEBUG_LEVEL        = 0
 REORDER_PARTICLES  = 0

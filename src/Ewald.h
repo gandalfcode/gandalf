@@ -34,9 +34,9 @@
 #include "Constants.h"
 #include "CodeTiming.h"
 using namespace std;
-//#ifdef GANDALF_GSL
+#ifdef GANDALF_GSL
 #include <gsl/gsl_sf.h>
-//#endif
+#endif
 
 
 
