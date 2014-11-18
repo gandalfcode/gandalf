@@ -352,13 +352,13 @@ template <int ndim>
 class SphSimulation : public Simulation<ndim>
 {
  public:
-  using SimulationBase::ewaldGravity;
-  using SimulationBase::periodicBoundaries;
-  using SimulationBase::Nmpi;
-  using SimulationBase::pruning_level;
-  using SimulationBase::restart;
-  using SimulationBase::simparams;
-  using SimulationBase::timing;
+  using Simulation<ndim>::ewaldGravity;
+  using Simulation<ndim>::periodicBoundaries;
+  using Simulation<ndim>::Nmpi;
+  using Simulation<ndim>::pruning_level;
+  using Simulation<ndim>::restart;
+  using Simulation<ndim>::simparams;
+  using Simulation<ndim>::timing;
   using Simulation<ndim>::extpot;
   using Simulation<ndim>::ewald;
   using Simulation<ndim>::kill_simulation;
@@ -443,10 +443,10 @@ class GradhSphSimulation: public SphSimulation<ndim>
 {
  public:
 
-  using SimulationBase::Nmpi;
-  using SimulationBase::restart;
-  using SimulationBase::simparams;
-  using SimulationBase::timing;
+  using Simulation<ndim>::Nmpi;
+  using Simulation<ndim>::restart;
+  using Simulation<ndim>::simparams;
+  using Simulation<ndim>::timing;
   using Simulation<ndim>::extpot;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
@@ -518,10 +518,10 @@ class SM2012SphSimulation: public SphSimulation<ndim>
 {
  public:
 
-  using SimulationBase::Nmpi;
-  using SimulationBase::restart;
-  using SimulationBase::simparams;
-  using SimulationBase::timing;
+  using Simulation<ndim>::Nmpi;
+  using Simulation<ndim>::restart;
+  using Simulation<ndim>::simparams;
+  using Simulation<ndim>::timing;
   using Simulation<ndim>::extpot;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
@@ -590,7 +590,7 @@ class SM2012SphSimulation: public SphSimulation<ndim>
 template <int ndim>
 class GodunovSphSimulation: public SphSimulation<ndim>
 {
-  using SimulationBase::Nmpi;
+  using Simulation<ndim>::Nmpi;
   using SphSimulation<ndim>::restart;
   using Simulation<ndim>::simparams;
   using SphSimulation<ndim>::timing;
@@ -663,10 +663,10 @@ public:
 template <int ndim>
 class NbodySimulation : public Simulation<ndim>
 {
-  using SimulationBase::Nmpi;
-  using SimulationBase::restart;
-  using SimulationBase::simparams;
-  using SimulationBase::timing;
+  using Simulation<ndim>::Nmpi;
+  using Simulation<ndim>::restart;
+  using Simulation<ndim>::simparams;
+  using Simulation<ndim>::timing;
   using Simulation<ndim>::extpot;
   using Simulation<ndim>::nbody;
   using Simulation<ndim>::subsystem;

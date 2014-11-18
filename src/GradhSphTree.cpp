@@ -184,24 +184,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
   Sph<ndim> *sph,                          ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody)                      ///< [in] Pointer to N-body object
 {
-  int celldone;                            // Flag if cell is done
-  int okflag;                              // Flag if particle is done
-  int cc;                                  // Aux. cell counter
-  int cactive;                             // No. of active
-  int i;                                   // Particle id
-  int ithread;                             // OpenMP thread i.d.
-  int j;                                   // Aux. particle counter
-  int jj;                                  // Aux. particle counter
-  int k;                                   // Dimension counter
-  int Ngather;                             // No. of near gather neighbours
-  int Nneib;                               // No. of neighbours
-  FLOAT draux[ndim];                       // Aux. relative position vector var
-  FLOAT drsqdaux;                          // Distance squared
-  FLOAT hrangesqd;                         // Kernel extent
-  FLOAT hmax;                              // Maximum smoothing length
-  FLOAT rp[ndim];                          // Local copy of particle position
-  //TreeCell<ndim> *cell;                    // Pointer to binary tree cell
-  TreeCell<ndim> **celllist;               // List of binary cell pointers
+  int cactive;                             // No. of active tree cells
+  TreeCell<ndim> *celllist;                // List of active tree cells
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 #ifdef MPI_PARALLEL
   int Nactivetot = 0;                      // Total number of active particles
@@ -213,26 +197,38 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 
 
   // Find list of all cells that contain active particles
-  celllist = new TreeCell<ndim>*[tree->gtot];
+  celllist = new TreeCell<ndim>[tree->gtot];
   cactive = tree->ComputeActiveCellList(celllist);
 
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,sph,sphdata)\
-  private(cc,celldone,draux,drsqdaux,hmax,hrangesqd,i,j,jj,k,okflag,Ngather,Nneib,rp)
+#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,sph,sphdata)
   {
 #if defined _OPENMP
-    int ithread = omp_get_thread_num();
+    const int ithread = omp_get_thread_num();
 #else
-    int ithread = 0;
+    const int ithread = 0;
 #endif
+    int celldone;                            // Flag if cell is done
+    int cc;                                  // Aux. cell counter
+    int i;                                   // Particle id
+    int j;                                   // Aux. particle counter
+    int jj;                                  // Aux. particle counter
+    int k;                                   // Dimension counter
     int Nactive;
+    int Ngather;
+    int Nneib;
+    int okflag;                              // Flag if particle is done
+    FLOAT draux[ndim];                       // Aux. relative position vector var
+    FLOAT drsqdaux;                          // Distance squared
+    FLOAT hrangesqd;                         // Kernel extent
+    FLOAT hmax;                              // Maximum smoothing length
+    FLOAT rp[ndim];                          // Local copy of particle position
+    FLOAT *mu, *mu2;
     int Nneibmax = Nneibmaxbuf[ithread];
     int* activelist = new int[Nleafmax];
-    //int* activelist = activelistbuf[ithread];
     int* neiblist = new int[Nneibmax];
-    FLOAT *mu, *mu2;
     FLOAT* gpot   = new FLOAT[Nneibmax];
     FLOAT* gpot2  = new FLOAT[Nneibmax];
     FLOAT* drsqd  = new FLOAT[Nneibmax];
@@ -247,7 +243,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCell<ndim> cell = *celllist[cc];
+      TreeCell<ndim>& cell = celllist[cc];
       celldone = 1;
       hmax = cell.hmax;
 
@@ -413,16 +409,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
   Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
   int cactive;                         // No. of active cells
-  int cc;                              // Aux. cell counter
-  int i;                               // Particle id
-  int j;                               // Aux. particle counter
-  int jj;                              // Aux. particle counter
-  int k;                               // Dimension counter
-  FLOAT draux[ndim];                   // Aux. relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT hrangesqdi;                    // Kernel gather extent
-  FLOAT rp[ndim];                      // Local copy of particle position
-  TreeCell<ndim> **celllist;           // List of binary tree pointers
+  TreeCell<ndim> *celllist;            // List of active tree cells
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[GradhSphTree::UpdateAllSphHydroForces]");
@@ -431,9 +418,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 
   // Find list of all cells that contain active particles
 #if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>*[tree->Ncellmax];
+  celllist = new TreeCell<ndim>[tree->Ncellmax];
 #else
-  celllist = new TreeCell<ndim>*[tree->gtot];
+  celllist = new TreeCell<ndim>[tree->gtot];
 #endif
   cactive = tree->ComputeActiveCellList(celllist);
 
@@ -447,17 +434,25 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,nbody,sph,sphdata)\
-  private(cc,draux,drsqd,hrangesqdi,i,j,jj,k,rp)
+#pragma omp parallel default(none) shared(cactive,celllist,nbody,sph,sphdata)
   {
 #if defined _OPENMP
     int ithread = omp_get_thread_num();
 #else
     int ithread = 0;
 #endif
+    int cc;                              // Aux. cell counter
+    int i;                               // Particle id
+    int j;                               // Aux. particle counter
+    int jj;                              // Aux. particle counter
+    int k;                               // Dimension counter
     int Nactive;
     int Nneib;
     int Nsphaux;
+    FLOAT draux[ndim];                   // Aux. relative position vector
+    FLOAT drsqd;                         // Distance squared
+    FLOAT hrangesqdi;                    // Kernel gather extent
+    FLOAT rp[ndim];                      // Local copy of particle position
     int Nneibmax      = Nneibmaxbuf[ithread];
     int* activelist   = activelistbuf[ithread];
     int* levelneib    = levelneibbuf[ithread];
@@ -468,7 +463,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
     FLOAT* invdrmag   = new FLOAT[Nneibmax];
     ParticleType<ndim>* activepart = activepartbuf[ithread];
     ParticleType<ndim>* neibpart   = neibpartbuf[ithread];
-    //TreeCell<ndim> *cell;
 
     for (i=0; i<sph->Nsph; i++) levelneib[i] = 0;
 
@@ -477,7 +471,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCell<ndim> cell = *celllist[cc];
+      TreeCell<ndim>& cell = celllist[cc];
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell,sphdata,activelist);
@@ -635,21 +629,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
   Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
   int cactive;                         // No. of active cells
-  int cc;                              // Aux. cell counter
-  int i;                               // Particle id
-  int j;                               // Aux. particle counter
-  int jj;                              // Aux. particle counter
-  int k;                               // Dimension counter
-  int okflag;                          // Flag if h-rho iteration is valid
-  int Ngravcell;                       // No. of gravity cells
-  int Nneib;                           // No. of neighbours
-  FLOAT macfactor;                     // Gravity MAC factor
-  FLOAT draux[ndim];                   // Aux. relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT hrangesqdi;                    // Kernel gather extent
-  FLOAT rp[ndim];                      // ..
-  //TreeCell<ndim> *cell;                // Pointer to kd-tree cell
-  TreeCell<ndim> **celllist;           // List of pointers to tree cells
+  TreeCell<ndim> *celllist;            // List of active cells
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[GradhSphTree::UpdateAllSphForces]");
@@ -660,28 +640,40 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
   // Find list of all cells that contain active particles
 #if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>*[tree->Ncellmax];
+  celllist = new TreeCell<ndim>[tree->Ncellmax];
 #else
-  celllist = new TreeCell<ndim>*[tree->gtot];
+  celllist = new TreeCell<ndim>[tree->gtot];
 #endif
   cactive = tree->ComputeActiveCellList(celllist);
 
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(celllist,cactive,nbody,sph,sphdata,cout)\
-  private(cc,draux,drsqd,hrangesqdi,i,j,jj,k,macfactor,Ngravcell,Nneib,okflag,rp)
+#pragma omp parallel default(none) shared(celllist,cactive,nbody,sph,sphdata,cout)
   {
 #if defined _OPENMP
-    int ithread = omp_get_thread_num();
+    const int ithread = omp_get_thread_num();
 #else
-    int ithread = 0;
+    const int ithread = 0;
 #endif
+    int cc;                              // Aux. cell counter
+    int i;                               // Particle id
+    int j;                               // Aux. particle counter
+    int jj;                              // Aux. particle counter
+    int k;                               // Dimension counter
+    int okflag;                          // Flag if h-rho iteration is valid
     int Nactive;
     int Ndirect;
     int Ndirectaux;
+    int Ngravcell;                       // No. of gravity cells
+    int Nneib;                           // No. of neighbours
     int Nsphaux;
     int Nsphneib;
+    FLOAT macfactor;                     // Gravity MAC factor
+    FLOAT draux[ndim];                   // Aux. relative position vector
+    FLOAT drsqd;                         // Distance squared
+    FLOAT hrangesqdi;                    // Kernel gather extent
+    FLOAT rp[ndim];                      // ..
     int Nneibmax                   = Nneibmaxbuf[ithread];
     int Ngravcellmax               = Ngravcellmaxbuf[ithread];
     int *levelneib                 = levelneibbuf[ithread];
@@ -702,8 +694,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCell<ndim> cell = *celllist[cc];
-      macfactor = 0.0;
+      TreeCell<ndim> &cell = celllist[cc];
+      macfactor = (FLOAT) 0.0;
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell,sphdata,activelist);
@@ -734,8 +726,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
       // If there are too many neighbours, reallocate the arrays and recompute the neighbour lists.
       while (okflag < 0 || Nneib > Nneibmax) {
-        delete[] neibpart;
-        delete[] gravcell;
+        delete[] neibpartbuf[ithread];
+        delete[] cellbuf[ithread];
         delete[] directlist;
         delete[] sphauxlist;
         delete[] sphlist;
@@ -876,23 +868,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
   Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
   int cactive;                         // No. of active cells
-  int cc;                              // Aux. cell counter
-  int i;                               // Particle id
-  int ithread;                         // OpenMP thread id
-  int j;                               // Aux. particle counter
-  int jj;                              // Aux. particle counter
-  int k;                               // Dimension counter
-  int okflag;                          // Flag if h-rho iteration is valid
-  int Ngravcell;                       // No. of gravity cells
-  int Nneib;                           // No. of neighbours
-  int Nneibmax;                        // Max. no. of neighbours
-  FLOAT draux[ndim];                   // Aux. relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT hrangesqdi;                    // Kernel gather extent
-  FLOAT macfactor;                     // Gravity MAC factor
-  FLOAT rp[ndim];                      // ..
-  //TreeCell<ndim> *cell;                // Pointer to binary tree cell
-  TreeCell<ndim> **celllist;           // List of pointers to binary tree cells
+  TreeCell<ndim> *celllist;            // List of active tree cells
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[GradhSphTree::UpdateAllSphGravForces]");
@@ -903,28 +879,40 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 
   // Find list of all cells that contain active particles
 #if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>*[tree->Ncellmax];
+  celllist = new TreeCell<ndim>[tree->Ncellmax];
 #else
-  celllist = new TreeCell<ndim>*[tree->gtot];
+  celllist = new TreeCell<ndim>[tree->gtot];
 #endif
   cactive = tree->ComputeActiveCellList(celllist);
 
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(celllist,cactive,nbody,sph,sphdata,cout) \
-  private(cc,draux,drsqd,hrangesqdi,i,j,jj,k,macfactor,Ngravcell,Nneib,okflag,rp)
+#pragma omp parallel default(none) shared(celllist,cactive,nbody,sph,sphdata,cout)
   {
 #if defined _OPENMP
     int ithread = omp_get_thread_num();
 #else
     int ithread = 0;
 #endif
+    int cc;                              // Aux. cell counter
+    int i;                               // Particle id
+    int j;                               // Aux. particle counter
+    int jj;                              // Aux. particle counter
+    int k;                               // Dimension counter
+    int okflag;                          // Flag if h-rho iteration is valid
     int Nactive;
     int Ndirect;
     int Ndirectaux;
+    int Nneib;                           // No. of neighbours
     int Nsphaux;
     int Nsphneib;
+    int Ngravcell;                       // No. of gravity cells
+    FLOAT draux[ndim];                   // Aux. relative position vector
+    FLOAT drsqd;                         // Distance squared
+    FLOAT hrangesqdi;                    // Kernel gather extent
+    FLOAT macfactor;                     // Gravity MAC factor
+    FLOAT rp[ndim];                      // ..
     int Nneibmax                   = Nneibmaxbuf[ithread];
     int Ngravcellmax               = Ngravcellmaxbuf[ithread];
     int* neiblist                  = new int[Nneibmax];
@@ -945,7 +933,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCell<ndim> cell = *celllist[cc];
+      TreeCell<ndim>& cell = celllist[cc];
       macfactor = 0.0;
 
       // Find list of active particles in current cell
@@ -1120,23 +1108,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
   Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
-  int i;                               // Particle id
-  int j;                               // Aux. particle counter
-  int jj;                              // Aux. particle counter
-  int k;                               // Dimension counter
-  int okflag;                          // Flag if h-rho iteration is valid
   int Nactive;                         // No. of active particles in cell
-  int Ndirect;                         // No. of direct-sum gravity particles
-  int Ndirectaux;                      // ..
-  int Ngravcell;                       // No. of gravity cells
-  int Ngravcellmax;                    // Max. no. of gravity cells
-  int Ninteract;                       // No. of interactions with hydro neibs
-  int Nneib;                           // No. of neighbours
-  int Nneibmax;                        // Max. no. of neighbours
   int *activelist;                     // List of active particle ids
-  int *directlist;                     // List of direct sum particle ids
-  int *neiblist;                       // List of neighbour ids
-  FLOAT macfactor;                     // Gravity MAC factor
   TreeCell<ndim> *gravcelllist;        // List of pointers to grav. cells
   NbodyParticle<ndim> *star;           // Pointer to star particle
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
@@ -1148,29 +1121,38 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
   // Make list of all active stars
   Nactive = 0;
   activelist = new int[nbody->Nstar];
-  for (i=0; i<nbody->Nstar; i++) {
+  for (int i=0; i<nbody->Nstar; i++) {
     if (nbody->nbodydata[i]->active) activelist[Nactive++] = i;
   }
 
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(activelist,Nactive,Ntot,nbody,sph,sphdata,cout) \
-  private(directlist,gravcelllist,i,j,jj,k,macfactor,neiblist) \
-  private(Ndirect,Ndirectaux,Ngravcell,Ngravcellmax) \
-  private(Ninteract,Nneib,Nneibmax,okflag,star)
+#pragma omp parallel default(none) private(star)\
+  shared(activelist,Nactive,Ntot,nbody,sph,sphdata,cout) 
   {
 #if defined _OPENMP
-    int ithread = omp_get_thread_num();
+    const int ithread = omp_get_thread_num();
 #else
-    int ithread = 0;
+    const int ithread = 0;
 #endif
-    Nneibmax = Ntot; //Nneibmaxbuf[ithread];
-    Ngravcellmax = Ngravcellmaxbuf[ithread];
+    int i;                               // Particle id
+    int j;                               // Aux. particle counter
+    int jj;                              // Aux. particle counter
+    int k;                               // Dimension counter
+    int okflag;                          // Flag if h-rho iteration is valid
+    int Ndirect;                         // No. of direct-sum gravity particles
+    int Ndirectaux;                      // ..
+    int Ngravcell;                       // No. of gravity cells
+    int Ninteract;                       // No. of interactions with hydro neibs
+    int Nneib;                           // No. of neighbours
+    FLOAT macfactor;                     // Gravity MAC factor
 
-    neiblist = new int[Nneibmax];
-    directlist = new int[Nneibmax];
-    gravcelllist = new TreeCell<ndim>[Ngravcellmax];
+    int Nneibmax = Ntot; //Nneibmaxbuf[ithread];
+    int Ngravcellmax = Ngravcellmaxbuf[ithread];
+    int* neiblist = new int[Nneibmax];
+    int* directlist = new int[Nneibmax];
+    TreeCell<ndim>* gravcell = new TreeCell<ndim>[Ngravcellmax];
 
 
     // Loop over all active cells
@@ -1188,17 +1170,17 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
       okflag = tree->ComputeStarGravityInteractionList(star,macfactor,Nneibmax,Nneibmax,
                                                        Ngravcellmax,Nneib,Ndirect,
                                                        Ngravcell,neiblist,directlist,
-                                                       gravcelllist,sphdata);
+                                                       gravcell,sphdata);
 
       // If there are too many neighbours, reallocate the arrays and recompute the neighbour lists.
       while (okflag == -1) {
-        delete[] gravcelllist;
+        delete[] gravcell;
         Ngravcellmax = 2*Ngravcellmax;
-        gravcelllist = new TreeCell<ndim>[Ngravcellmax];
+        gravcell = new TreeCell<ndim>[Ngravcellmax];
         okflag = tree->ComputeStarGravityInteractionList(star,macfactor,Nneibmax,Nneibmax,
                                                          Ngravcellmax,Nneib,Ndirect,
                                                          Ngravcell,neiblist,directlist,
-                                                         gravcelllist,sphdata);
+                                                         gravcell,sphdata);
       };
 
       // Compute contributions to star force from nearby SPH particles
@@ -1206,10 +1188,10 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
 
       // Compute gravitational force due to distant cells
       if (multipole == "monopole" || multipole == "fast_monopole") {
-        tree->ComputeCellMonopoleForces(star->gpot,star->a,star->r,Ngravcell,gravcelllist);
+        tree->ComputeCellMonopoleForces(star->gpot,star->a,star->r,Ngravcell,gravcell);
       }
       else if (multipole == "quadrupole") {
-        tree->ComputeCellQuadrupoleForces(star->gpot,star->a,star->r,Ngravcell,gravcelllist);
+        tree->ComputeCellQuadrupoleForces(star->gpot,star->a,star->r,Ngravcell,gravcell);
       }
 
 
@@ -1218,7 +1200,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
 
 
     // Free-up local memory for OpenMP thread
-    delete[] gravcelllist;
+    delete[] gravcell;
     delete[] directlist;
     delete[] neiblist;
 
@@ -1266,7 +1248,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicForces
   FLOAT drsqd;                         // Distance squared
   FLOAT hrangesqdi;                    // Kernel gather extent
   FLOAT rp[ndim];                      // ..
-  TreeCell<ndim> **celllist;           // List of pointers to tree cells
+  TreeCell<ndim> *celllist;           // List of pointers to tree cells
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[GradhSphTree::UpdateAllSphPeriodicForces]");
@@ -1277,9 +1259,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicForces
 
   // Find list of all cells that contain active particles
 #if defined (MPI_PARALLEL)
-  celllist = new TreeCell<ndim>*[tree->Ncellmax];
+  celllist = new TreeCell<ndim>[tree->Ncellmax];
 #else
-  celllist = new TreeCell<ndim>*[tree->gtot];
+  celllist = new TreeCell<ndim>[tree->gtot];
 #endif
   cactive = tree->ComputeActiveCellList(celllist);
 
@@ -1317,7 +1299,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicForces
     //=============================================================================================
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
-      TreeCell<ndim> cell = *celllist[cc];
+      TreeCell<ndim>& cell = celllist[cc];
       macfactor = 0.0;
 
       // Find list of active particles in current cell

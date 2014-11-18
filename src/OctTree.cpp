@@ -931,18 +931,18 @@ void OctTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int OctTree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
-(TreeCell<ndim> **celllist)         ///< Cells id array containing active ptcls
+ (TreeCell<ndim> *celllist)         ///< Cells id array containing active ptcls
 {
   int c;                            // Cell counter
   int Nactive = 0;                  // No. of active leaf cells in tree
 
   for (c=0; c<Ncell; c++) {
-    if (celldata[c].Nactive > 0) celllist[Nactive++] = &(celldata[c]);
+    if (celldata[c].Nactive > 0) celllist[Nactive++] = celldata[c];
   }
 
 #ifdef MPI_PARALLEL
   for (c=Ncell; c<Ncell+Nimportedcell; c++) {
-    if (celldata[c].Nactive > 0) celllist[Nactive++] = &(celldata[c]);
+    if (celldata[c].Nactive > 0) celllist[Nactive++] = celldata[c];
   }
 #endif
 

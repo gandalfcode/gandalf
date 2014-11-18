@@ -2114,20 +2114,20 @@ void KDTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int KDTree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
-(TreeCell<ndim> **celllist)            ///< Array containing copies of cells with active ptcls
+ (TreeCell<ndim> *celllist)            ///< Array containing copies of cells with active ptcls
 {
   int c;                               // Cell counter
   int Nactive = 0;                     // No. of active leaf cells in tree
 
   for (c=0; c<Ncell; c++) {
     if (celldata[c].level == lactive && celldata[c].Nactive > 0) {
-      celllist[Nactive++] = &(celldata[c]);
+      celllist[Nactive++] = celldata[c];
     }
   }
 
 #ifdef MPI_PARALLEL
     for (c=Ncell; c<Ncell+Nimportedcell; c++) {
-      if (celldata[c].Nactive > 0) celllist[Nactive++] = &(celldata[c]);
+      if (celldata[c].Nactive > 0) celllist[Nactive++] = celldata[c];
     }
 #endif
 

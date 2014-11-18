@@ -147,7 +147,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   void StockCellProperties(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
-  int ComputeActiveCellList(TreeCell<ndim> **);
+  int ComputeActiveCellList(TreeCell<ndim> *);
   int ComputeActiveParticleList(TreeCell<ndim> &, ParticleType<ndim> *, int *);
   int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
                                  const FLOAT, const int, int *) {};

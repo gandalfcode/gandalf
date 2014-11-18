@@ -65,7 +65,7 @@ class Tree
   virtual void StockTree(TreeCell<ndim> &, ParticleType<ndim> *) = 0;
   virtual void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *) = 0;
   virtual void UpdateActiveParticleCounters(ParticleType<ndim> *) = 0;
-  virtual int ComputeActiveCellList(TreeCell<ndim> **) = 0;
+  virtual int ComputeActiveCellList(TreeCell<ndim> *) = 0;
   virtual int ComputeActiveParticleList(TreeCell<ndim> &, ParticleType<ndim> *, int *) = 0;
   virtual int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
                                          const FLOAT, const int, int *) = 0;

@@ -22,6 +22,7 @@
 //=================================================================================================
 
 
+#include <cstdio>
 #include <iostream>
 #include <string>
 #include "Exception.h"
@@ -437,7 +438,9 @@ template <int ndim>
 DOUBLE Ewald<ndim>::erfcx(DOUBLE x)
 {
   DOUBLE a;
+#ifdef GANDALF_GSL
   a = pow(x,2) + gsl_sf_log_erfc(x);
+#endif
   return (exp(a));
 }
 
@@ -558,6 +561,7 @@ DOUBLE Ewald<ndim>::IntFPot
   DOUBLE ewald_eta)				///<
 {
   // the function is different for l=0 and the other cases
+#ifdef GANDALF_GSL
   if (l == 0) {
     return((gsl_sf_bessel_J0(x*ewald_eta)-1.0)*exp(-ewald_dzeta*pow(x,2))/x);
   }
@@ -565,6 +569,9 @@ DOUBLE Ewald<ndim>::IntFPot
     return (gsl_sf_bessel_J0(x*ewald_eta)*exp(-ewald_dzeta*pow(x,2))*x/
              (pow((DOUBLE) l,2)+pow(x,2)));
   }
+#else
+  return 0.0;
+#endif
 }
 
 
@@ -580,8 +587,12 @@ DOUBLE Ewald<ndim>::IntFAcc
   DOUBLE ewald_dzeta, 				///<
   DOUBLE ewald_eta)				///<
 {
+#ifdef GANDALF_GSL
   return(gsl_sf_bessel_J1(x*ewald_eta)*exp(-ewald_dzeta*pow(x,2))*
          pow(x,2)/(pow((DOUBLE) l,2)+pow(x,2)));
+#else
+  return 0.0;
+#endif
 }
 
 
