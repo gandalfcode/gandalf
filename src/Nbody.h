@@ -110,7 +110,7 @@ class Nbody
   const DOUBLE nbody_mult;              ///< N-body timestep multiplier
 
   static const int vdim=ndim;           ///< Local copy of vdim
-  static const FLOAT invndim=1./ndim;   ///< Copy of 1/ndim
+  static const DOUBLE invndim=1.0/ndim; ///< Copy of 1/ndim
 
   SphKernel<ndim> *kernp;               ///< Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;        ///< Tabulated version of chosen kernel
@@ -168,9 +168,9 @@ public:
   void PerturberCorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
-  static const int vdim=ndim;         ///< Local copy of vdim
-  static const FLOAT invndim=1./ndim; ///< Copy of 1/ndim
-  kernelclass<ndim> kern;             ///< SPH kernel
+  static const int vdim=ndim;             ///< Local copy of vdim
+  static const DOUBLE invndim=1.0/ndim;   ///< Copy of 1/ndim
+  kernelclass<ndim> kern;                 ///< SPH kernel
 
 };
 
@@ -204,9 +204,9 @@ public:
   void PerturberCorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **) {};
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
-  static const int vdim=ndim;           ///< Local copy of vdim
-  static const FLOAT invndim=1./ndim;   ///< Copy of 1/ndim
-  kernelclass<ndim> kern;               ///< SPH kernel
+  static const int vdim=ndim;             ///< Local copy of vdim
+  static const DOUBLE invndim=1.0/ndim;   ///< Copy of 1/ndim
+  kernelclass<ndim> kern;                 ///< SPH kernel
 
 };
 
@@ -242,9 +242,9 @@ public:
   void PerturberCorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
-  static const int vdim=ndim;           ///< Local copy of vdim
-  static const FLOAT invndim=1.0/ndim;  ///< Copy of 1/ndim
-  kernelclass<ndim> kern;               ///< SPH kernel
+  static const int vdim=ndim;             ///< Local copy of vdim
+  static const DOUBLE invndim=1.0/ndim;   ///< Copy of 1/ndim
+  kernelclass<ndim> kern;                 ///< SPH kernel
 
 };
 
@@ -314,9 +314,9 @@ public:
   void PerturberCorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
-  static const int vdim=ndim;           ///< Local copy of vdim
-  static const FLOAT invndim=1.0/ndim;  ///< Copy of 1/ndim
-  kernelclass<ndim> kern;               ///< SPH kernel
+  static const int vdim=ndim;             ///< Local copy of vdim
+  static const DOUBLE invndim=1.0/ndim;   ///< Copy of 1/ndim
+  kernelclass<ndim> kern;                 ///< SPH kernel
 
 };
 #endif

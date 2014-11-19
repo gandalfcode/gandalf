@@ -257,13 +257,15 @@ void Parameters::SetDefaultValues(void)
   //-----------------------------------------------------------------------------------------------
   intparams["hydro_forces"] = 1;
   stringparams["gas_eos"] = "energy_eqn";
-  stringparams["energy_integration"] = "PEC";
+  stringparams["energy_integration"] = "null";
   floatparams["energy_mult"] = 0.4;
   floatparams["gamma_eos"] = 1.66666666666666;
   floatparams["temp0"] = 1.0;
   floatparams["mu_bar"] = 1.0;
   floatparams["rho_bary"] = 1.0e-14;
   floatparams["eta_eos"] = 1.4;
+  stringparams["radws_table"] = "eos.bell.cc.dat";
+  floatparams["temp_ambient"] = 5.0;
 
   // Artificial viscosity parameters
   //-----------------------------------------------------------------------------------------------

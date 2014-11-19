@@ -122,7 +122,8 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
 
   // Energy integration object
   //---------------------------------------------------------------------------
-  uint = new EnergyGodunovIntegration<ndim>(floatparams["energy_mult"]);
+  //uint = new EnergyGodunovIntegration<ndim>(floatparams["energy_mult"]);
+  uint = new NullEnergy<ndim>(floatparams["energy_mult"]);
 
 #if defined MPI_PARALLEL
 
@@ -346,8 +347,6 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
   }
 
   // Set particle values for initial step (e.g. r0, v0, a0)
-  if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EndTimestep(n,sph->Nsph,timestep,sph->GetParticlesArray());
   sphint->EndTimestep(n,sph->Nsph,t,timestep,sph->GetParticlesArray());
   nbody->EndTimestep(n,nbody->Nstar,t,timestep,nbody->nbodydata);
 
@@ -392,8 +391,6 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
 
   // Advance SPH particles positions and velocities
   sphint->AdvanceParticles(n,sph->Nsph,t,timestep,sph->GetParticlesArray());
-  if (simparams->stringparams["gas_eos"] == "energy_eqn")
-    uint->EnergyIntegration(n,sph->Nsph,sph->GetParticlesArray(),(FLOAT) timestep);
   nbody->AdvanceParticles(n,nbody->Nstar,t,timestep,nbody->nbodydata);
 
   // Check all boundary conditions
@@ -475,9 +472,6 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     // Now update compressional heating rate
     sphneib->UpdateAllSphDudt(sph->Nsph,sph->Ntot,partdata,sph);
 
-    // Set all end-of-step variables
-    if (simparams->stringparams["gas_eos"] == "energy_eqn")
-      uint->EndTimestep(n,sph->Nsph,timestep,sph->GetParticlesArray());
     sphint->EndTimestep(n,sph->Nsph,t,timestep,sph->GetParticlesArray());
 
   }

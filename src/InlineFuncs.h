@@ -359,7 +359,7 @@ static inline bool BoxOverlap (const int ndim,
     if (box2min[1] > box1max[1]) return false;
     return true;
   }
-  else if (ndim == 3) {
+  else {
     if (box1min[0] > box2max[0]) return false;
     if (box2min[0] > box1max[0]) return false;
     if (box1min[1] > box2max[1]) return false;
@@ -394,7 +394,7 @@ static inline bool BoxOverlap (const int ndim,
     if (box2min[1] > box1max[1]) return false;
     return true;
   }
-  else if (ndim == 3) {
+  else {
     if (box1min[0] > box2max[0]) return false;
     if (box2min[0] > box1max[0]) return false;
     if (box1min[1] > box2max[1]) return false;

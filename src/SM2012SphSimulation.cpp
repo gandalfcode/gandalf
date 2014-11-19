@@ -214,7 +214,11 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
   // Energy integration object
   //---------------------------------------------------------------------------
   if (stringparams["energy_integration"] == "PEC") {
-    uint = new EnergyPEC<ndim>(floatparams["energy_mult"]);
+    uint = new EnergyPEC<ndim, SM2012SphParticle>(floatparams["energy_mult"]);
+  }
+  else if (stringparams["energy_integration"] == "null" ||
+            stringparams["energy_integration"] == "none") {
+    uint = new NullEnergy<ndim>(floatparams["energy_mult"]);
   }
   else {
     string message = "Unrecognised parameter : energy_integration = "

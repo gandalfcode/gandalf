@@ -564,6 +564,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Set particle values for initial step (e.g. r0, v0, a0, u0)
+  uint->EndTimestep(n,sph->Nsph,t,timestep,sph->GetParticlesArray());
   sphint->EndTimestep(n,sph->Nsph,t,timestep,sph->GetParticlesArray());
   nbody->EndTimestep(n,nbody->Nstar,t,timestep,nbody->nbodydata);
 
@@ -609,6 +610,7 @@ void SphSimulation<ndim>::MainLoop(void)
   if (n%integration_step == 0) Nfullsteps = Nfullsteps + 1;
 
   // Advance SPH and N-body particles' positions and velocities
+  uint->EnergyIntegration(n,sph->Nsph,(FLOAT) t,(FLOAT) timestep,sph->GetParticlesArray());
   sphint->AdvanceParticles(n,sph->Nsph,(FLOAT) t,(FLOAT) timestep,sph->GetParticlesArray());
   nbody->AdvanceParticles(n,nbody->Nnbody,t,timestep,nbody->nbodydata);
 
@@ -801,7 +803,10 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
   // End-step terms for all SPH particles
-  if (sph->Nsph > 0) sphint->EndTimestep(n,sph->Nsph,(FLOAT) t,(FLOAT) timestep,sph->GetParticlesArray());
+  if (sph->Nsph > 0) {
+    uint->EndTimestep(n,sph->Nsph,(FLOAT) t,(FLOAT) timestep,sph->GetParticlesArray());
+    sphint->EndTimestep(n,sph->Nsph,(FLOAT) t,(FLOAT) timestep,sph->GetParticlesArray());
+  }
 
   // End-step terms for all star particles
   if (nbody->Nstar > 0) nbody->EndTimestep(n,nbody->Nnbody,t,timestep,nbody->nbodydata);

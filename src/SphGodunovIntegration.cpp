@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  SphGodunovIntegration.cpp
 //  Contains functions for integrating SPH particle positions and velocities
 //  using the conservative integration scheme for Godunov SPH described by
@@ -20,7 +20,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <cstdio>
@@ -38,10 +38,10 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphGodunovIntegration::SphGodunovIntegration
 /// SphGodunovIntegration class constructor
-//=============================================================================
+//=================================================================================================
 template <int ndim, template <int> class ParticleType>
 SphGodunovIntegration<ndim, ParticleType>::SphGodunovIntegration(DOUBLE accel_mult_aux,
 						   DOUBLE courant_mult_aux,
@@ -55,10 +55,10 @@ SphGodunovIntegration<ndim, ParticleType>::SphGodunovIntegration(DOUBLE accel_mu
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphGodunovIntegration::~SphGodunovIntegration()
 /// SphGodunovIntegration class destructor
-//=============================================================================
+//=================================================================================================
 template <int ndim, template <int> class ParticleType>
 SphGodunovIntegration<ndim, ParticleType>::~SphGodunovIntegration()
 {
@@ -66,7 +66,7 @@ SphGodunovIntegration<ndim, ParticleType>::~SphGodunovIntegration()
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphGodunovIntegration::AdvanceParticles
 /// Integrate particle positions to 2nd order, and particle velocities to 1st
 /// order from the beginning of the step to the current simulation time, i.e.
@@ -74,7 +74,7 @@ SphGodunovIntegration<ndim, ParticleType>::~SphGodunovIntegration()
 /// $v(t+dt) = v(t) + a(t)*dt$.
 /// Also set particles at the end of step as 'active' in order to compute
 /// the end-of-step force computation.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void SphGodunovIntegration<ndim, ParticleType>::AdvanceParticles
  (const int n,                         ///< [in] Integer time in block time struct
@@ -88,12 +88,11 @@ void SphGodunovIntegration<ndim, ParticleType>::AdvanceParticles
   int k;                            // Dimension counter
   int nstep;                        // Particle (integer) step size
   FLOAT dt;                         // Timestep since start of step
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphGodunovIntegration::AdvanceParticles]");
 
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
-
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,dt,i,k,nstep) shared(sphdata)
   for (i=0; i<Npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
@@ -104,34 +103,32 @@ void SphGodunovIntegration<ndim, ParticleType>::AdvanceParticles
     dt = timestep*(FLOAT) dn;
 
     // Advance particle positions and velocities
-    for (k=0; k<ndim; k++) part.r[k] = part.r0[k] +
-      (part.v0[k] + 0.5*part.a[k]*part.dt)*dt;
-    for (k=0; k<vdim; k++) part.v[k] = part.v0[k] +
-      part.a0[k]*dt;
+    for (k=0; k<ndim; k++) part.r[k] = part.r0[k] + (part.v0[k] + 0.5*part.a[k]*part.dt)*dt;
+    for (k=0; k<vdim; k++) part.v[k] = part.v0[k] + part.a0[k]*dt;
+    part.u = part.u0 + part.dudt*dt;
 
     // Set particle as active at end of step
     if (dn == nstep) part.active = true;
     else part.active = false;
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   return;
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphGodunovIntegration::EndTimestep
-/// Record all important SPH particle quantities at the end of the step for
-/// the start of the new timestep.
-//=============================================================================
+/// Record all important SPH particle quantities at end of the step for the start of new timestep.
+//=================================================================================================
 template <int ndim, template <int> class ParticleType>
 void SphGodunovIntegration<ndim, ParticleType>::EndTimestep
  (const int n,                         ///< [in] Integer time in block time struct
   const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
-  SphParticle<ndim>* sph_gen)        ///< [inout] Pointer to SPH particle array
+  SphParticle<ndim>* sph_gen)          ///< [inout] Pointer to SPH particle array
 {
   int dn;                           // Integer time since beginning of step
   int i;                            // Particle counter
@@ -142,7 +139,7 @@ void SphGodunovIntegration<ndim, ParticleType>::EndTimestep
 
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,k,nstep) shared(sphdata)
   for (i=0; i<Npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
@@ -153,23 +150,25 @@ void SphGodunovIntegration<ndim, ParticleType>::EndTimestep
       for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
       for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
       for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
-      part.nlast = n;
+      part.u0     = part.u;
+      part.dudt0  = part.dudt;
+      part.nlast  = n;
       part.active = false;
       //part.active = true;
     }
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   return;
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphGodunovIntegration::CheckTimesteps
 /// Record all important SPH particle quantities at the end of the step for
 /// the start of the new timestep.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template <int> class ParticleType>
 int SphGodunovIntegration<ndim, ParticleType>::CheckTimesteps
  (const int level_diff_max,            ///< [in] Max. allowed SPH neib dt diff
@@ -190,7 +189,7 @@ int SphGodunovIntegration<ndim, ParticleType>::CheckTimesteps
 
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) shared(sphdata)\
   private(dn,i,k,level_new,nnewstep,nstep) reduction(+:activecount)
   for (i=0; i<npart; i++) {
@@ -215,19 +214,19 @@ int SphGodunovIntegration<ndim, ParticleType>::CheckTimesteps
       }
     }
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   return activecount;
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphIntegration::Timestep
 /// Default timestep size for SPH particles.  Takes the minimum of :
 /// (i)  const*h/(sound_speed + h*|div_v|)    (Courant condition)
 /// (ii) const*sqrt(h/|a|)                    (Acceleration condition)
-//=============================================================================
+//=================================================================================================
 template <int ndim, template <int> class ParticleType>
 DOUBLE SphGodunovIntegration<ndim, ParticleType>::Timestep
 (SphParticle<ndim> &part,           ///< Reference to SPH particle
@@ -240,8 +239,7 @@ DOUBLE SphGodunovIntegration<ndim, ParticleType>::Timestep
   timestep = this->courant_mult*part.h/(part.sound + small_number_dp);
 
   // Local convergence/divergence condition
-  timestep = min(timestep,this->courant_mult/
-                 (fabs(part.div_v) + small_number_dp));
+  timestep = min(timestep,this->courant_mult/(fabs(part.div_v) + small_number_dp));
 
   //Acceleration condition
   //amag = sqrt(DotProduct(part.a,part.a,ndim));

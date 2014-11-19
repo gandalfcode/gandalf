@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  GradhSphSimulation.cpp
 //  Contains all main functions controlling grad-h SPH simulation work-flow.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <iostream>
@@ -46,11 +46,11 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::ProcessSphParameters
 /// Process all the options chosen in the parameters file, setting various
 /// simulation variables and creating important simulation objects.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 {
@@ -74,13 +74,11 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     avisc = noav;
     tdavisc = notdav;
   }
-  else if (stringparams["avisc"] == "mon97" &&
-           stringparams["time_dependent_avisc"] == "mm97") {
+  else if (stringparams["avisc"] == "mon97" && stringparams["time_dependent_avisc"] == "mm97") {
     avisc = mon97mm97;
     tdavisc = mm97;
   }
-  else if (stringparams["avisc"] == "mon97" &&
-           stringparams["time_dependent_avisc"] == "cd2010") {
+  else if (stringparams["avisc"] == "mon97" && stringparams["time_dependent_avisc"] == "cd2010") {
     avisc = mon97cd2010;
     tdavisc = cd2010;
   }
@@ -119,6 +117,8 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     gas_eos = energy_eqn;
   else if (stringparams["gas_eos"] == "constant_temp")
     gas_eos = constant_temp;
+  else if (stringparams["gas_eos"] == "radws")
+    gas_eos = radws;
   else {
     string message = "Unrecognised parameter : gas_eos = " +
         simparams->stringparams["gas_eos"];
@@ -127,7 +127,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
 
   // Create 'grad-h' SPH object depending on choice of kernel
-  //===========================================================================
+  //===============================================================================================
   if (intparams["tabulated_kernel"] == 1) {
     sph = new GradhSph<ndim, TabulatedKernel>
       (intparams["hydro_forces"], intparams["self_gravity"],
@@ -172,7 +172,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
 
   // Create SPH particle integration object
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (stringparams["sph_integration"] == "lfkdk") {
     sphint = new SphLeapfrogKDK<ndim, GradhSphParticle>
       (floatparams["accel_mult"],floatparams["courant_mult"],
@@ -192,9 +192,18 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
 
   // Energy integration object
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (stringparams["energy_integration"] == "PEC") {
-    uint = new EnergyPEC<ndim>(floatparams["energy_mult"]);
+    uint = new EnergyPEC<ndim, GradhSphParticle>(floatparams["energy_mult"]);
+  }
+  else if (stringparams["energy_integration"] == "Radws") {
+    uint = new EnergyRadws<ndim, GradhSphParticle>
+      (floatparams["energy_mult"], stringparams["radws_table"],
+       floatparams["temp_ambient"], &simunits);
+  }
+  else if (stringparams["energy_integration"] == "null" ||
+            stringparams["energy_integration"] == "none") {
+    uint = new NullEnergy<ndim>(floatparams["energy_mult"]);
   }
   else {
     string message = "Unrecognised parameter : energy_integration = "
@@ -210,7 +219,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 #endif
 
   // Create neighbour searching object based on chosen method in params file
-  //-------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (stringparams["neib_search"] == "bruteforce")
     sphneib = new GradhSphBruteForce<ndim,GradhSphParticle>
       (sph->kernp->kernrange,&simbox,sph->kernp,timing);
@@ -241,7 +250,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
 
   // Radiation transport object
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (gas_radiation == "ionisation")
     radiation = new MultipleSourceIonisation<ndim,GradhSphParticle>
       (sphneib,floatparams["mu_bar"],floatparams["mu_ion"],
@@ -264,7 +273,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
 
   // Create ghost particle object
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (IsAnyBoundarySpecial(simbox))
     LocalGhosts = new PeriodicGhostsSpecific<ndim,GradhSphParticle >();
   else
@@ -275,7 +284,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
 
   // Depending on the dimensionality, calculate expected neighbour number
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (ndim == 1)
     sph->Ngather = (int) (2.0*sph->kernp->kernrange*sph->h_fac);
   else if (ndim == 2)

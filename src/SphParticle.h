@@ -39,7 +39,7 @@ enum ptype{gas, icm, boundary, cdm, dead,
            y_lhs_periodic, y_lhs_mirror, y_rhs_periodic, y_rhs_mirror,
            z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror,
            Nsphtypes};
-enum eosenum{isothermal, barotropic, barotropic2, energy_eqn, constant_temp, Nspheos};
+enum eosenum{isothermal, barotropic, barotropic2, energy_eqn, constant_temp, radws, Nspheos};
 
 
 
@@ -133,6 +133,9 @@ struct SphParticle : public Particle<ndim>
   FLOAT alpha;                      ///< Artificial viscosity alpha value
   FLOAT dalphadt;                   ///< Rate of change of alpha
   FLOAT ionfrac;                    ///< Ionisation fraction
+  FLOAT mu_bar;                     ///< mean molecular weight
+  FLOAT ueq;                        ///< equilibrium internal energy
+  FLOAT dt_therm;                   ///< thermalization time scale
   FLOAT adot[ndim];                 ///< 1st time derivative of acceleration
 
 
@@ -153,6 +156,9 @@ struct SphParticle : public Particle<ndim>
     alpha    = (FLOAT) 0.0;
     dalphadt = (FLOAT) 0.0;
     ionfrac  = (FLOAT) 0.0;
+    mu_bar   = (FLOAT) 2.35;
+    ueq      = (FLOAT) 0.0;
+    dt_therm = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) adot[k] = (FLOAT) 0.0;
   }
 
