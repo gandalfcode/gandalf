@@ -117,7 +117,7 @@ void EnergyPEC<ndim,ParticleType>::EnergyIntegration
   timing->StartTimingSection("ENERGY_PEC_INTEGRATION",2);
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dt,i) shared(Npart,sphdata)
+#pragma omp parallel for default(none) private(dt,i) shared(sphdata)
   for (i=0; i<Npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
     if (part.itype == dead) continue;
@@ -157,7 +157,7 @@ void EnergyPEC<ndim,ParticleType>::EnergyCorrectionTerms
   timing->StartTimingSection("ENERGY_PEC_CORRECTION_TERMS",2);
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i) shared(n,Npart,sphdata,timestep)
+#pragma omp parallel for default(none) private(dn,i) shared(sphdata)
   for (i=0; i<Npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
     if (part.itype == dead) continue;
@@ -199,7 +199,7 @@ void EnergyPEC<ndim,ParticleType>::EndTimestep
   timing->StartTimingSection("ENERGY_PEC_END_TIMESTEP",2);
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i) shared(n,Npart,sphdata,timestep)
+#pragma omp parallel for default(none) private(dn,i) shared(sphdata)
   for (i=0; i<Npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
     if (part.itype == dead) continue;

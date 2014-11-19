@@ -219,7 +219,7 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
   timing->StartTimingSection("ENERGY_RADWS_INTEGRATION",2);
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dt,i) shared(Npart,sphdata)
+#pragma omp parallel for default(none) private(dt,i) shared(sphdata)
   for (i=0; i<Npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
     if (part.itype == dead) continue;
@@ -257,7 +257,7 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
   timing->StartTimingSection("ENERGY_RADWS_END_TIMESTEP",2);
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i) shared(n,Npart,sphdata,timestep)
+#pragma omp parallel for default(none) private(dn,i) shared(sphdata)
   for (i=0; i<Npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
     if (part.itype == dead) continue;

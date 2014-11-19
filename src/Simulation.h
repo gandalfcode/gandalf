@@ -288,11 +288,9 @@ class Simulation : public SimulationBase
   void AddSinusoidalDensityPerturbation(int, FLOAT, FLOAT, FLOAT *);
   int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
   void ComputeBondiSolution(int, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
-#if defined(FFTW_TURBULENCE)
   void GenerateTurbulentVelocityField(int, int, DOUBLE, DOUBLE *);
   void InterpolateVelocityField(int, int, FLOAT, FLOAT,
                                 FLOAT *, FLOAT *,FLOAT *);
-#endif
 
 
   // Input-output routines
