@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  SimulationIO.hpp
 //  Contains all functions for reading and writing simulation data
 //  to/from snapshot files.
@@ -19,7 +19,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <iostream>
@@ -46,26 +46,28 @@ static const int string_length = 20;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SimulationBase::ReadSnapshotFile
 /// Read snapshot file with specified filename and format.
-//=============================================================================
+//=================================================================================================
 bool SimulationBase::ReadSnapshotFile
-(string filename,                   ///< [in] Name of input snapshot file
- string fileform)                   ///< [in] Format of input snapshot file
+ (string filename,                     ///< [in] Name of input snapshot file
+  string fileform)                     ///< [in] Format of input snapshot file
 {
   debug2("[Simulation::ReadSnapshotFile]");
 
-  cout << "Reading snapshot : " << filename
-       << "   format : " << fileform << endl;
+  cout << "Reading snapshot : " << filename << "   format : " << fileform << endl;
 
   // Read in snapshot file to main memory
-  if (fileform == "column")
+  if (fileform == "column") {
     return ReadColumnSnapshotFile(filename);
-  else if (fileform == "sf" || fileform == "seren_form")
+  }
+  else if (fileform == "sf" || fileform == "seren_form") {
     return ReadSerenFormSnapshotFile(filename);
-  else if (fileform == "su" || fileform == "seren_unform")
+  }
+  else if (fileform == "su" || fileform == "seren_unform") {
     return ReadSerenUnformSnapshotFile(filename);
+  }
   else {
     cout << "Unrecognised file format" << endl;
     return false;
@@ -78,24 +80,28 @@ bool SimulationBase::ReadSnapshotFile
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SimulationBase::WriteSnapshotFile
 /// Write snapshot file with specified filename and format.
-//=============================================================================
+//=================================================================================================
 bool SimulationBase::WriteSnapshotFile
-(string filename,                   ///< [in] Name of output snapshot file
- string fileform)                   ///< [in] Format of output snapshot file
+ (string filename,                     ///< [in] Name of output snapshot file
+  string fileform)                     ///< [in] Format of output snapshot file
 {
   debug2("[Simulation::WriteSnapshotFile]");
 
-  if (fileform == "column")
+  if (fileform == "column") {
     return WriteColumnSnapshotFile(filename);
-  else if (fileform == "sf" || fileform == "seren_form")
+  }
+  else if (fileform == "sf" || fileform == "seren_form") {
     return WriteSerenFormSnapshotFile(filename);
-  else if (fileform == "su" || fileform == "seren_unform")
+  }
+  else if (fileform == "su" || fileform == "seren_unform") {
     return WriteSerenUnformSnapshotFile(filename);
-  else if (fileform == "slite" || fileform == "seren_lite")
+  }
+  else if (fileform == "slite" || fileform == "seren_lite") {
     return WriteSerenLiteSnapshotFile(filename);
+  }
   else {
     cout << "Unrecognised file format" << endl;
     return false;
@@ -104,47 +110,49 @@ bool SimulationBase::WriteSnapshotFile
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SimulationBase::ReadHeaderSnapshotFile
-/// Read the header of a snapshot file, given the filename and the format.
-/// Return information in a HeaderInfo struct. This is designed to be called
-/// from Python.
-//=============================================================================
+/// Read the header of a snapshot file, given the filename and the format.  Return information
+/// in a HeaderInfo struct. This is designed to be called from Python.
+//=================================================================================================
 HeaderInfo SimulationBase::ReadHeaderSnapshotFile
-(string filename,                   ///< [in] Name of output snapshot file
- string fileform)                   ///< [in] Format of output snapshot file
+ (string filename,                     ///< [in] Name of output snapshot file
+  string fileform)                     ///< [in] Format of output snapshot file
 {
-  HeaderInfo info;                  // ..
-  ifstream infile;                  // ..
+  HeaderInfo info;                     // Important information contained in header file
+  ifstream infile;                     // File stream object
 
   debug2("[Simulation::ReadHeaderSnapshotFile]");
 
   infile.open(filename.c_str());
 
-  if (fileform == "column")
+  if (fileform == "column") {
     ReadColumnHeaderFile(infile, info);
-  else if (fileform == "sf" || fileform == "seren_form")
+  }
+  else if (fileform == "sf" || fileform == "seren_form") {
     ReadSerenFormHeaderFile(infile, info);
-  else if (fileform == "su" || fileform == "seren_unform")
+  }
+  else if (fileform == "su" || fileform == "seren_unform") {
     ReadSerenUnformHeaderFile(infile, info);
-  else
+  }
+  else {
     ExceptionHandler::getIstance().raise("Unrecognised file format");
+  }
 
   return info;
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::ReadColumnHeaderFile
-/// Function for reading the header file of a snapshot. Does not modify the
-/// variables of the Simulation class, but rather returns information in a
-/// HeaderInfo struct.
-//=============================================================================
+/// Function for reading the header file of a snapshot. Does not modify the variables of the
+/// Simulation class, but rather returns information in a HeaderInfo struct.
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::ReadColumnHeaderFile
-(ifstream& infile,                  ///< ..
- HeaderInfo& info)                  ///< ..
+ (ifstream& infile,                    ///< Reference to input file stream object
+  HeaderInfo& info)                    ///< Header data structure
 {
   debug2("[Simulation::ReadColumnHeaderFile]");
 
@@ -174,7 +182,7 @@ void Simulation<ndim>::ReadColumnHeaderFile
 //=================================================================================================
 template <int ndim>
 bool Simulation<ndim>::ReadColumnSnapshotFile
-(string filename)                   ///< Filename of column data snapshot file
+ (string filename)                     ///< Filename of column data snapshot file
 {
   int i;
   FLOAT raux;
@@ -501,16 +509,15 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 #endif
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::ReadSerenFormHeaderFile
-/// Function for reading the header file of a snapshot. Does not modify the
-/// variables of the Simulation class, but rather returns information in a
-/// HeaderInfo struct.
-//=============================================================================
+/// Function for reading the header file of a snapshot. Does not modify the variables of the
+/// Simulation class, but rather returns information in a HeaderInfo struct.
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::ReadSerenFormHeaderFile
-(ifstream& infile,                 ///< Input file stream
- HeaderInfo& info)                 ///< Header info data structure
+ (ifstream& infile,                    ///< [in] Input file stream
+  HeaderInfo& info)                    ///< [out] Header info data structure
 {
   int i;                           // Aux. counter
   int idata[50];                   // Integer data array
@@ -521,7 +528,7 @@ void Simulation<ndim>::ReadSerenFormHeaderFile
 
   // Read information identifying format and precision of file.
   // Then check if each value corresponds to the current values.
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   infile >> dummy;
   infile >> dummy;
   infile >> info.ndim;
@@ -537,7 +544,7 @@ void Simulation<ndim>::ReadSerenFormHeaderFile
   info.Nsph  = idata[0];
   info.Nstar = idata[1];
   info.t     = ddata[0];
-  info.t /= simunits.t.inscale;
+  info.t     /= simunits.t.inscale;
 
   // Check dimensionality matches if using fixed dimensions
   if (info.ndim != ndim) {
@@ -552,10 +559,10 @@ void Simulation<ndim>::ReadSerenFormHeaderFile
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::ReadSerenFormSnapshotFile
 /// Read data from Seren format snapshot file into main arrays.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 {
@@ -589,7 +596,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 
   // Read information identifying format and precision of file.
   // Then check if each value corresponds to the current values.
-  //---------------------------------------------------------------------------
+  //----------------------------------------------------------------------------------------------
   infile >> format_id;
   simparams->TrimWhiteSpace(format_id);
   if (format_id != ascii_tag && format_id != "SERENASCIIDUMPV3") {
@@ -601,19 +608,22 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   infile >> dim_check;
   if (dim_check != ndim) {
     std::ostringstream stream;
-    stream << "Incorrect NDIM in file " << filename << " : got " << dim_check << ", expected " << ndim << endl;
+    stream << "Incorrect NDIM in file " << filename << " : got "
+           << dim_check << ", expected " << ndim << endl;
     ExceptionHandler::getIstance().raise(stream.str());
   }
   infile >> dim_check;
     if (dim_check != ndim) {
       std::ostringstream stream;
-      stream << "Incorrect NDIM in file " << filename << " : got " << dim_check << ", expected " << ndim << endl;
+      stream << "Incorrect NDIM in file " << filename << " : got "
+             << dim_check << ", expected " << ndim << endl;
       ExceptionHandler::getIstance().raise(stream.str());
   }
   infile >> dim_check;
   if (dim_check != ndim) {
     std::ostringstream stream;
-    stream << "Incorrect NDIM in file " << filename << " : got " << dim_check << ", expected " << ndim << endl;
+    stream << "Incorrect NDIM in file " << filename << " : got "
+           << dim_check << ", expected " << ndim << endl;
     ExceptionHandler::getIstance().raise(stream.str());
   }
 
@@ -646,56 +656,60 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   //sph->mgas_orig = ddata[2];
 
   // Read in unit data
-  if (nunit > 0)
+  if (nunit > 0) {
     for (i=0; i<nunit; i++) infile >> unit_data[i];
+  }
 
   // Read in unit variables here
-  simunits.r.inunit = unit_data[0];
-  simunits.m.inunit = unit_data[1];
-  simunits.t.inunit = unit_data[2];
-  simunits.v.inunit = unit_data[3];
-  simunits.a.inunit = unit_data[4];
-  simunits.rho.inunit = unit_data[5];
-  simunits.sigma.inunit = unit_data[6];
-  simunits.press.inunit = unit_data[7];
-  simunits.f.inunit = unit_data[8];
-  simunits.E.inunit = unit_data[9];
-  simunits.mom.inunit = unit_data[10];
+  simunits.r.inunit      = unit_data[0];
+  simunits.m.inunit      = unit_data[1];
+  simunits.t.inunit      = unit_data[2];
+  simunits.v.inunit      = unit_data[3];
+  simunits.a.inunit      = unit_data[4];
+  simunits.rho.inunit    = unit_data[5];
+  simunits.sigma.inunit  = unit_data[6];
+  simunits.press.inunit  = unit_data[7];
+  simunits.f.inunit      = unit_data[8];
+  simunits.E.inunit      = unit_data[9];
+  simunits.mom.inunit    = unit_data[10];
   simunits.angmom.inunit = unit_data[11];
   simunits.angvel.inunit = unit_data[12];
-  simunits.dmdt.inunit = unit_data[13];
-  simunits.L.inunit = unit_data[14];
-  simunits.kappa.inunit = unit_data[15];
-  simunits.B.inunit = unit_data[16];
-  simunits.Q.inunit = unit_data[17];
-  simunits.Jcur.inunit = unit_data[18];
-  simunits.u.inunit = unit_data[19];
-  simunits.temp.inunit = unit_data[20];
+  simunits.dmdt.inunit   = unit_data[13];
+  simunits.L.inunit      = unit_data[14];
+  simunits.kappa.inunit  = unit_data[15];
+  simunits.B.inunit      = unit_data[16];
+  simunits.Q.inunit      = unit_data[17];
+  simunits.Jcur.inunit   = unit_data[18];
+  simunits.u.inunit      = unit_data[19];
+  simunits.temp.inunit   = unit_data[20];
   if (nunit > 21) simunits.dudt.inunit = unit_data[21];
 
   // Read infile ids of arrays contained in file
-  if (ndata > 0)
+  if (ndata > 0) {
     for (i=0; i<ndata; i++) infile >> data_id[i];
+  }
 
   // Read infile ids of arrays contained in file
-  if (ndata > 0)
-    for (i=0; i<ndata; i++)
+  if (ndata > 0) {
+    for (i=0; i<ndata; i++) {
       infile >> typedata[i][0] >> typedata[i][1]
-	     >> typedata[i][2] >> typedata[i][3] >> typedata[i][4];
+             >> typedata[i][2] >> typedata[i][3] >> typedata[i][4];
+    }
+  }
 
   // Allocate memory now we know particle numbers
   AllocateParticleMemory();
 
 
   // Loop through array ids and read each array in turn
-  //===========================================================================
+  //===============================================================================================
   for (j=0; j<ndata; j++) {
 
     ifirst = typedata[j][1];
     ilast = typedata[j][2];
 
     // porig
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     if (data_id[j] == "porig") {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -704,74 +718,79 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     }
 
     // Positions
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "r") {
-      if (ndim == 1)
-	for (i=0; i<sph->Nsph; i++) {
-	  SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-	  infile >> part.r[0];
-	}
-      else if (ndim == 2)
-	for (i=0; i<sph->Nsph; i++) {
-	  SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-	  infile >> part.r[0] >> part.r[1];
-	}
-      else if (ndim == 3)
-	for (i=0; i<sph->Nsph; i++) {
-	  SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-	  infile >> part.r[0] >> part.r[1]
-	           >> part.r[2];
-	}
+      if (ndim == 1) {
+        for (i=0; i<sph->Nsph; i++) {
+          SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+          infile >> part.r[0];
+        }
+      }
+      else if (ndim == 2) {
+        for (i=0; i<sph->Nsph; i++) {
+          SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+          infile >> part.r[0] >> part.r[1];
+        }
+      }
+      else if (ndim == 3) {
+        for (i=0; i<sph->Nsph; i++) {
+          SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+          infile >> part.r[0] >> part.r[1] >> part.r[2];
+        }
+      }
     }
 
     // Masses
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "m") {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
         infile >> part.m;
+        assert(part.m > (FLOAT) 0.0);
       }
     }
 
     // Smoothing lengths
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "h") {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
         infile >> part.h;
       }
+      initial_h_provided = true;
     }
 
     // Velocities
-    //-------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------------------
     else if (data_id[j] == "v") {
-      if (ndim == 1)
-	for (i=0; i<sph->Nsph; i++) {
-	  SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-	  infile >> part.v[0];
-	}
-      else if (ndim == 2)
-	for (i=0; i<sph->Nsph; i++) {
-	  SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-	  infile >> part.v[0] >> part.v[1];
-	}
-
-      else if (ndim == 3)
-	for (i=0; i<sph->Nsph; i++) {
-	  SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-	  infile >> part.v[0] >> part.v[1] >> part.v[2];
-	}
-
+      if (ndim == 1) {
+        for (i=0; i<sph->Nsph; i++) {
+          SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+          infile >> part.v[0];
+        }
+      }
+      else if (ndim == 2) {
+        for (i=0; i<sph->Nsph; i++) {
+          SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+          infile >> part.v[0] >> part.r[1];
+        }
+      }
+      else if (ndim == 3) {
+        for (i=0; i<sph->Nsph; i++) {
+          SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+          infile >> part.v[0] >> part.r[1] >> part.r[2];
+        }
+      }
     }
 
     // Other 1-D redundant information
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if(data_id[j] == "temp") {
       for (i=0; i<sph->Nsph; i++) infile >> rtemp;
     }
 
     // Densities
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "rho") {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -780,7 +799,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     }
 
     // Specific internal energies
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "u") {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -789,7 +808,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     }
 
     // Sinks/stars
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "sink_v1") {
       sink_data_length = 12 + 2*ndim;  //+ 2*dmdt_range_aux;
       int ii;
@@ -808,22 +827,24 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
           nbody->stardata[i].m = sdata[1+2*ndim];
           nbody->stardata[i].h = sdata[2+2*ndim];
           nbody->stardata[i].radius = sdata[3+2*ndim];
-          sinks.sink[i].radius = sdata[3+2*ndim];
+          nbody->nbodydata[i] = &(nbody->stardata[i]);
           sinks.sink[i].star = &(nbody->stardata[i]);
+          sinks.sink[i].radius = sdata[3+2*ndim];
         }
       }
     }
 
     // Skip through arbitrary 1D or 2D array
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (typedata[j][0] >= 1) {
       int kk = typedata[j][0];
-      for (i=ifirst-1; i<ilast; i++)
+      for (i=ifirst-1; i<ilast; i++) {
         for (k=0; k<kk; k++) infile >> dummystring;
+      }
     }
 
   }
-  //===========================================================================
+  //===============================================================================================
 
   // Close file
   infile.close();
@@ -833,10 +854,10 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::WriteSerenFormSnapshotFile
 /// Write SPH and N-body particle data to snapshot file in Seren format.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 {
@@ -877,16 +898,16 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
   // Set units
   if (!simunits.dimensionless) {
-    unit_data[0] = simunits.r.outunit;
-    unit_data[1] = simunits.m.outunit;
-    unit_data[2] = simunits.t.outunit;
-    unit_data[3] = simunits.v.outunit;
-    unit_data[4] = simunits.a.outunit;
-    unit_data[5] = simunits.rho.outunit;
-    unit_data[6] = simunits.sigma.outunit;
-    unit_data[7] = simunits.press.outunit;
-    unit_data[8] = simunits.f.outunit;
-    unit_data[9] = simunits.E.outunit;
+    unit_data[0]  = simunits.r.outunit;
+    unit_data[1]  = simunits.m.outunit;
+    unit_data[2]  = simunits.t.outunit;
+    unit_data[3]  = simunits.v.outunit;
+    unit_data[4]  = simunits.a.outunit;
+    unit_data[5]  = simunits.rho.outunit;
+    unit_data[6]  = simunits.sigma.outunit;
+    unit_data[7]  = simunits.press.outunit;
+    unit_data[8]  = simunits.f.outunit;
+    unit_data[9]  = simunits.E.outunit;
     unit_data[10] = simunits.mom.outunit;
     unit_data[11] = simunits.angmom.outunit;
     unit_data[12] = simunits.angvel.outunit;
@@ -903,69 +924,69 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
 
   // Set array ids and array information data if there are any SPH particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (sph->Nsph > 0) {
     data_id[ndata] = "porig";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 2;
-    typedata[ndata][4] = 0; ndata++;
+    typedata[ndata][0] = 1;          typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph;  typedata[ndata][3] = 2;
+    typedata[ndata][4] = 0;          ndata++;
 
     data_id[ndata] = "r";
-    typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 1; ndata++;
+    typedata[ndata][0] = ndim;       typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph;  typedata[ndata][3] = 4;
+    typedata[ndata][4] = 1;          ndata++;
 
     data_id[ndata] = "m";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 2; ndata++;
+    typedata[ndata][0] = 1;          typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph;  typedata[ndata][3] = 4;
+    typedata[ndata][4] = 2;          ndata++;
 
     data_id[ndata] = "h";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 1; ndata++;
+    typedata[ndata][0] = 1;          typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph;  typedata[ndata][3] = 4;
+    typedata[ndata][4] = 1;          ndata++;
 
     data_id[ndata] = "v";
-    typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 4; ndata++;
+    typedata[ndata][0] = ndim;       typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph;  typedata[ndata][3] = 4;
+    typedata[ndata][4] = 4;          ndata++;
 
     data_id[ndata] = "rho";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 6; ndata++;
+    typedata[ndata][0] = 1;          typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph;  typedata[ndata][3] = 4;
+    typedata[ndata][4] = 6;          ndata++;
 
     data_id[ndata] = "u";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nsph; typedata[ndata][3] = 4;
-    typedata[ndata][4] = 20; ndata++;
+    typedata[ndata][0] = 1;          typedata[ndata][1] = 1;
+    typedata[ndata][2] = sph->Nsph;  typedata[ndata][3] = 4;
+    typedata[ndata][4] = 20;         ndata++;
   }
 
   if (nbody->Nstar > 0) {
     data_id[ndata] = "sink_v1";
-    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = nbody->Nstar; typedata[ndata][3] = 7;
-    typedata[ndata][4] = 0; ndata++;
+    typedata[ndata][0] = 1;             typedata[ndata][1] = 1;
+    typedata[ndata][2] = nbody->Nstar;  typedata[ndata][3] = 7;
+    typedata[ndata][4] = 0;             ndata++;
   }
 
   // Set important header information
-  idata[0] = sph->Nsph;
-  idata[1] = nbody->Nstar;
-  idata[4] = sph->Nsph;
-  idata[19] = nunit;
-  idata[20] = ndata;
-  ilpdata[0] = Noutsnap;
-  ilpdata[1] = Nsteps;
+  idata[0]    = sph->Nsph;
+  idata[1]    = nbody->Nstar;
+  idata[4]    = sph->Nsph;
+  idata[19]   = nunit;
+  idata[20]   = ndata;
+  ilpdata[0]  = Noutsnap;
+  ilpdata[1]  = Nsteps;
   ilpdata[10] = Noutlitesnap;
-  rdata[0] = sph->h_fac;
-  rdata[1] = 0.0;
-  ddata[0] = t*simunits.t.outscale;
-  ddata[1] = tsnaplast*simunits.t.outscale;
-  ddata[2] = sph->mmean*simunits.m.outscale;
-  ddata[10] = tlitesnaplast*simunits.t.outscale;
+  rdata[0]    = sph->h_fac;
+  rdata[1]    = (FLOAT) 0.0;
+  ddata[0]    = t*simunits.t.outscale;
+  ddata[1]    = tsnaplast*simunits.t.outscale;
+  ddata[2]    = sph->mmean*simunits.m.outscale;
+  ddata[10]   = tlitesnaplast*simunits.t.outscale;
 
   // Write header information to file
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   outfile_format << ascii_tag << endl;;
   outfile_format << 4 << endl;
   outfile_format << ndim << endl;
@@ -976,53 +997,54 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   for (i=0; i<50; i++) outfile_format << ilpdata[i] << endl;
   for (i=0; i<50; i++) outfile_format << rdata[i] << endl;
   for (i=0; i<50; i++) outfile_format << ddata[i] << endl;
-  if (nunit > 0)
+  if (nunit > 0) {
     for (i=0; i<nunit; i++) outfile_format << unit_data[i] << endl;
-  if (ndata > 0)
+  }
+  if (ndata > 0) {
     for (i=0; i<ndata; i++) outfile_format << data_id[i] << endl;
-  if (ndata > 0)
-    for (i=0; i<ndata; i++)
-      outfile_format << typedata[i][0] <<  typedata[i][1]
-              << typedata[i][2] << typedata[i][3]
-              << typedata[i][4] << endl;
+  }
+  if (ndata > 0) {
+    for (i=0; i<ndata; i++) {
+      outfile_format << typedata[i][0] <<  typedata[i][1] << typedata[i][2]
+                     << typedata[i][3] << typedata[i][4] << endl;
+    }
+  }
 
   // Write arrays for SPH particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (sph->Nsph > 0) {
 
     // porig
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
       outfile_format << part.iorig << endl;
     }
 
     // Positions
-    //-------------------------------------------------------------------------
-    if (ndim == 1)
+    //---------------------------------------------------------------------------------------------
+    if (ndim == 1) {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
         outfile_format << part.r[0]*simunits.r.outscale << endl;
       }
-
-    else if (ndim == 2)
+    }
+    else if (ndim == 2) {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-        outfile_format << part.r[0]*simunits.r.outscale
-                << part.r[1]*simunits.r.outscale << endl;
+        outfile_format << part.r[0]*simunits.r.outscale << part.r[1]*simunits.r.outscale << endl;
       }
-
-    else if (ndim == 3)
+    }
+    else if (ndim == 3) {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-        outfile_format << part.r[0]*simunits.r.outscale
-                << part.r[1]*simunits.r.outscale
-                << part.r[2]*simunits.r.outscale << endl;
-
+        outfile_format << part.r[0]*simunits.r.outscale << part.r[1]*simunits.r.outscale
+                       << part.r[2]*simunits.r.outscale << endl;
       }
+    }
 
     // Masses
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
       outfile_format << part.m*simunits.m.outscale << endl;
@@ -1030,7 +1052,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
 
     // Smoothing lengths
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
       outfile_format << part.h*simunits.r.outscale << endl;
@@ -1038,31 +1060,31 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
 
     // Velocities
-    //-------------------------------------------------------------------------
-    if (ndim == 1)
+    //---------------------------------------------------------------------------------------------
+    if (ndim == 1) {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
         outfile_format << part.v[0]*simunits.v.outscale << endl;
       }
-
-    else if (ndim == 2)
+    }
+    else if (ndim == 2) {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
         outfile_format << part.v[0]*simunits.v.outscale
                 << part.v[1]*simunits.v.outscale << endl;
       }
-
-    else if (ndim == 3)
+    }
+    else if (ndim == 3) {
       for (i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
         outfile_format << part.v[0]*simunits.v.outscale
                 << part.v[1]*simunits.v.outscale
                 << part.v[2]*simunits.v.outscale << endl;
       }
-
+    }
 
     // Densities
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
       outfile_format << part.rho*simunits.rho.outscale << endl;;
@@ -1070,7 +1092,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
 
     // Specific internal energies
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
       outfile_format << part.u*simunits.u.outscale << endl;
@@ -1080,23 +1102,19 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   }
 
   // Sinks/stars
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (nbody->Nstar > 0) {
     sink_data_length = 12 + 2*ndim; //+ 2*dmdt_range_aux;
     int ii;
     FLOAT sdata[sink_data_length];
     for (k=0; k<sink_data_length; k++) sdata[k] = 0.0;
-    outfile_format << 2  << 2  << 0
-	    << sink_data_length  << 0
-	    << 0 << endl;
+    outfile_format << 2  << 2  << 0 << sink_data_length  << 0 << 0 << endl;
     outfile_format.set_width_integer(8);
     for (i=0; i<nbody->Nstar; i++) {
-      outfile_format << true  << true << endl;
+      outfile_format << true << true << endl;
       outfile_format << i+1  << 0 << endl;
-      for (k=0; k<ndim; k++)
-        sdata[k+1] = nbody->stardata[i].r[k]*simunits.r.outscale;
-      for (k=0; k<ndim; k++)
-        sdata[k+1+ndim] = nbody->stardata[i].v[k]*simunits.v.outscale;
+      for (k=0; k<ndim; k++) sdata[k+1] = nbody->stardata[i].r[k]*simunits.r.outscale;
+      for (k=0; k<ndim; k++) sdata[k+1+ndim] = nbody->stardata[i].v[k]*simunits.v.outscale;
       sdata[1+2*ndim] = nbody->stardata[i].m*simunits.m.outscale;
       sdata[2+2*ndim] = nbody->stardata[i].h*simunits.r.outscale;
       sdata[3+2*ndim] = nbody->stardata[i].radius*simunits.r.outscale;
@@ -1104,7 +1122,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
       outfile << endl;
     }
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   // Close file
   outfile.close();
@@ -1114,18 +1132,17 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::ReadSerenUnformHeaderFile
-/// Function for reading the header file of a snapshot. Does not modify the
-/// variables of the Simulation class, but rather returns information in a
-/// HeaderInfo struct.
-//=============================================================================
+/// Function for reading the header file of a snapshot. Does not modify the variables
+/// of the Simulation class, but rather returns information in a HeaderInfo struct.
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::ReadSerenUnformHeaderFile
-(ifstream& infile,                 ///< Input file stream
- HeaderInfo& info)                 ///< Header info data structure
+ (ifstream& infile,                    ///< Input file stream
+  HeaderInfo& info)                    ///< Header info data structure
 {
-  BinaryReader reader(infile);     // ..
+  BinaryReader reader(infile);         // ..
 
   debug2("[Simulation::ReadSerenUnformHeaderFile]");
 
@@ -1165,10 +1182,10 @@ void Simulation<ndim>::ReadSerenUnformHeaderFile
 }
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::ReadSerenUnformSnapshotFile
 /// Read data from Seren binary format snapshot file into main arrays.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 {
@@ -1191,7 +1208,7 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 
   // Read information identifying format and precision of file.
   // Then check if each value corresponds to the current values.
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   //Tag
   std::vector<char> file_tag(string_length);
@@ -1279,22 +1296,23 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
   }
 
   // Read infile ids of arrays contained in file
-  for (int i=0; i<ndata; i++)
+  for (int i=0; i<ndata; i++) {
     for (int j=0; j<5; j++) reader.read_value(typedata[i][j]);
+  }
 
   // Allocate memory now we know particle numbers
   AllocateParticleMemory();
 
 
   // Loop through array ids and read each array in turn
-  //===========================================================================
+  //===============================================================================================
   for (int j=0; j<ndata; j++) {
 
     int ifirst = typedata[j][1];
     int ilast = typedata[j][2];
 
     // porig
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     if (data_id[j] == "porig") {
       for (int i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -1303,7 +1321,7 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     }
 
     // Positions
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "r") {
       for (int i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -1313,16 +1331,17 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     }
 
     // Masses
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "m") {
       for (int i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
         reader.read_value(part.m);
+        assert(part.m > (FLOAT) 0.0);
       }
     }
 
     // Smoothing lengths
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "h") {
       for (int i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -1331,18 +1350,17 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     }
 
     // Velocities
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "v") {
       for (int i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
         for (int k=0; k< ndim; k++)
           reader.read_value(part.v[k]);
       }
-
     }
 
     // Densities
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "rho") {
       for (int i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -1351,7 +1369,7 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     }
 
     // Specific internal energies
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "u") {
       for (int i=0; i<sph->Nsph; i++) {
         SphParticle<ndim>& part = sph->GetParticleIPointer(i);
@@ -1360,13 +1378,13 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     }
 
     // Skip 1-D redundant information
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if(data_id[j] == "temp") {
       infile.seekg(sizeof(FLOAT)*sph->Nsph,ios_base::cur);
     }
 
     // Sinks/stars
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "sink_v1") {
       int sink_data_length = 12 + 2*ndim;  //+ 2*dmdt_range_aux;
       int ii;
@@ -1387,20 +1405,22 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
           nbody->stardata[i].m = sdata[1+2*ndim];
           nbody->stardata[i].h = sdata[2+2*ndim];
           nbody->stardata[i].radius = sdata[3+2*ndim];
-	  sinks.sink[i].radius = sdata[3+2*ndim];
-	  sinks.sink[i].star = &(nbody->stardata[i]);
+          sinks.sink[i].radius = sdata[3+2*ndim];
+          sinks.sink[i].star = &(nbody->stardata[i]);
+          nbody->nbodydata[i] = &(nbody->stardata[i]);
+          assert(nbody->stardata[i].m > 0.0);
         }
       }
     }
 
     // Skip through arbitrary 1D or 2D array
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (typedata[j][0] >= 1) {
       ExceptionHandler::getIstance().raise("Arbitrary data reading not implemented!");
     }
 
   }
-  //===========================================================================
+  //===============================================================================================
 
 
   infile.close();
@@ -1597,6 +1617,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
       writer.write_value(part.m*simunits.m.outscale);
+      assert(part.m > 0.0);
     }
 
     // Smoothing lengths
@@ -1783,8 +1804,7 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
   //---------------------------------------------------------------------------
   {
     std::ostringstream stream;
-    stream << std::left << std::setw(string_length) << std::setfill(' ')
-                      << binary_tag;
+    stream << std::left << std::setw(string_length) << std::setfill(' ') << binary_tag;
     outfile << stream.str();
   }
 
@@ -1799,18 +1819,17 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
   for (i=0; i<50; i++) writer.write_value(ddata[i]);
   for (i=0; i<nunit; i++) {
     std::ostringstream stream;
-    stream << std::left << std::setw(string_length) << std::setfill(' ')
-                  << unit_data[i];
+    stream << std::left << std::setw(string_length) << std::setfill(' ') << unit_data[i];
     outfile << stream.str();
   }
   for (i=0; i<ndata; i++) {
     std::ostringstream stream;
-    stream << std::left << std::setw(string_length) << std::setfill(' ')
-              << data_id[i];
+    stream << std::left << std::setw(string_length) << std::setfill(' ') << data_id[i];
     outfile << stream.str();
   }
   for (i=0; i<ndata; i++)
     for (int j=0; j< 5; j++) writer.write_value(typedata[i][j]);
+
 
   // Write arrays for SPH particles
   //---------------------------------------------------------------------------
@@ -1820,8 +1839,7 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
     //-------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-      for (int k=0; k<ndim; k++)
-	writer.write_value((float) (part.r[k]*simunits.r.outscale));
+      for (int k=0; k<ndim; k++) writer.write_value((float) (part.r[k]*simunits.r.outscale));
     }
 
     // Masses
@@ -1865,10 +1883,10 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
     for (i=0; i<nbody->Nstar; i++) {
       writer.write_value(true); writer.write_value(true);
       writer.write_value(i+1); writer.write_value(0);
-      for (k=0; k<ndim; k++) sdata[k+1] =
-	(float) (nbody->stardata[i].r[k]*simunits.r.outscale);
-      for (k=0; k<ndim; k++) sdata[k+1+ndim] =
-	(float) (nbody->stardata[i].v[k]*simunits.v.outscale);
+      for (k=0; k<ndim; k++) sdata[k+1] = (float) (nbody->stardata[i].r[k]*simunits.r.outscale);
+      for (k=0; k<ndim; k++) {
+        sdata[k+1+ndim] = (float) (nbody->stardata[i].v[k]*simunits.v.outscale);
+      }
       sdata[1+2*ndim] = (float) (nbody->stardata[i].m*simunits.m.outscale);
       sdata[2+2*ndim] = (float) (nbody->stardata[i].h*simunits.r.outscale);
       sdata[3+2*ndim] = (float)(nbody->stardata[i].radius*simunits.r.outscale);
@@ -1921,6 +1939,7 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
     nbody->stardata[i].m /= simunits.m.inscale;
     nbody->stardata[i].h /= simunits.r.inscale;
     nbody->stardata[i].radius /= simunits.r.inscale;
+    nbody->stardata[i].invh = 1.0/nbody->stardata[i].h;
   }
 
 

@@ -51,16 +51,16 @@ using namespace std;
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 SphTree<ndim,ParticleType,TreeCell>::SphTree
-(int Nleafmaxaux,
- int Nmpiaux,
- FLOAT thetamaxsqdaux,
- FLOAT kernrangeaux,
- FLOAT macerroraux,
- string gravity_mac_aux,
- string multipole_aux,
- DomainBox<ndim> *boxaux,
- SphKernel<ndim> *kernaux,
- CodeTiming *timingaux):
+ (int Nleafmaxaux,
+  int Nmpiaux,
+  FLOAT thetamaxsqdaux,
+  FLOAT kernrangeaux,
+  FLOAT macerroraux,
+  string gravity_mac_aux,
+  string multipole_aux,
+  DomainBox<ndim> *boxaux,
+  SphKernel<ndim> *kernaux,
+  CodeTiming *timingaux):
   SphNeighbourSearch<ndim>(kernrangeaux,boxaux,kernaux,timingaux),
   Nleafmax(Nleafmaxaux),
   Nmpi(Nmpiaux),
@@ -113,9 +113,10 @@ SphTree<ndim,ParticleType,TreeCell>::~SphTree()
 /// than currently allocated, tree is deallocated and reallocated here.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void SphTree<ndim,ParticleType,TreeCell>::AllocateMemory(Sph<ndim> *sph)
+void SphTree<ndim,ParticleType,TreeCell>::AllocateMemory
+ (Sph<ndim> *sph)                      ///< Pointer to SPH object
 {
-  int ithread;                      // Thread id number
+  int ithread;                         // Thread id number
 
   debug2("[SphTree::AllocateMemory]");
 
@@ -154,7 +155,7 @@ void SphTree<ndim,ParticleType,TreeCell>::AllocateMemory(Sph<ndim> *sph)
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void SphTree<ndim,ParticleType,TreeCell>::DeallocateMemory(void)
 {
-  int ithread;                      // Thread id number
+  int ithread;                         // Thread id number
 
   debug2("[SphTree::DeallocateTreeMemory]");
 
@@ -187,18 +188,18 @@ void SphTree<ndim,ParticleType,TreeCell>::DeallocateMemory(void)
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void SphTree<ndim,ParticleType,TreeCell>::BuildTree
-(bool rebuild_tree,                 ///< [in] Flag to rebuild tree
- int n,                             ///< [in] Integer time
- int ntreebuildstep,                ///< [in] Tree build frequency
- int ntreestockstep,                ///< [in] Tree stocking frequency
- int Npart,                         ///< [in] No. of particles
- int Npartmax,                      ///< [in] Max. no. of particles
- SphParticle<ndim> *sph_gen,        ///< [inout] Particle data array
- Sph<ndim> *sph,                    ///< [inout] Pointer to SPH object
- FLOAT timestep)                    ///< [in] Smallest physical timestep
+ (bool rebuild_tree,                   ///< [in] Flag to rebuild tree
+  int n,                               ///< [in] Integer time
+  int ntreebuildstep,                  ///< [in] Tree build frequency
+  int ntreestockstep,                  ///< [in] Tree stocking frequency
+  int Npart,                           ///< [in] No. of particles
+  int Npartmax,                        ///< [in] Max. no. of particles
+  SphParticle<ndim> *sph_gen,          ///< [inout] Particle data array
+  Sph<ndim> *sph,                      ///< [inout] Pointer to SPH object
+  FLOAT timestep)                      ///< [in] Smallest physical timestep
 {
-  int i;                            // Particle counter
-  int k;                            // Dimension counter
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphTree::BuildTree]");
@@ -276,18 +277,18 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildTree
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void SphTree<ndim,ParticleType,TreeCell>::BuildGhostTree
-(bool rebuild_tree,                 ///< Flag to rebuild tree
- int n,                             ///< Integer time
- int ntreebuildstep,                ///< Tree build frequency
- int ntreestockstep,                ///< Tree stocking frequency
- int Npart,                         ///< No. of particles
- int Npartmax,                      ///< Max. no. of particles
- SphParticle<ndim> *sph_gen,        ///< Particle data array
- Sph<ndim> *sph,                    ///< Pointer to SPH object
- FLOAT timestep)                    ///< Smallest physical timestep
+ (bool rebuild_tree,                   ///< Flag to rebuild tree
+  int n,                               ///< Integer time
+  int ntreebuildstep,                  ///< Tree build frequency
+  int ntreestockstep,                  ///< Tree stocking frequency
+  int Npart,                           ///< No. of particles
+  int Npartmax,                        ///< Max. no. of particles
+  SphParticle<ndim> *sph_gen,          ///< Particle data array
+  Sph<ndim> *sph,                      ///< Pointer to SPH object
+  FLOAT timestep)                      ///< Smallest physical timestep
 {
-  int i;                            // Particle counter
-  int k;                            // Dimension counter
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   // If no periodic ghosts exist, do not build tree
@@ -351,14 +352,14 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostTree
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int SphTree<ndim,ParticleType,TreeCell>::GetGatherNeighbourList
-(FLOAT rp[ndim],                    ///< Position vector
- FLOAT rsearch,                     ///< Gather search radius
- SphParticle<ndim> *sph_gen,        ///< Pointer to SPH particle array
- int Nsph,                          ///< No. of SPH particles
- int Nneibmax,                      ///< Max. no. of neighbours
- int *neiblist)                     ///< List of neighbouring particles
+ (FLOAT rp[ndim],                      ///< Position vector
+  FLOAT rsearch,                       ///< Gather search radius
+  SphParticle<ndim> *sph_gen,          ///< Pointer to SPH particle array
+  int Nsph,                            ///< No. of SPH particles
+  int Nneibmax,                        ///< Max. no. of neighbours
+  int *neiblist)                       ///< List of neighbouring particles
 {
-  int Nneib = 0;                    // No. of (non-dead) neighbours
+  int Nneib = 0;                       // No. of (non-dead) neighbours
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphTree::GetGatherNeighbourList]");
@@ -376,7 +377,8 @@ int SphTree<ndim,ParticleType,TreeCell>::GetGatherNeighbourList
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void SphTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
- (SphParticle<ndim> * sphdata_gen, Sph<ndim> * sph)
+ (SphParticle<ndim> * sphdata_gen,     ///< ..
+  Sph<ndim> *sph)                      ///< ..
 {
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sphdata_gen);
   tree->UpdateActiveParticleCounters(sphdata);
@@ -390,10 +392,10 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 /// Currently only searches to create periodic or mirror ghost particles.
 //=================================================================================================
 template <int ndim, template <int> class ParticleType, template<int> class TreeCell>
-void SphTree<ndim, ParticleType,TreeCell>::SearchBoundaryGhostParticles
-(FLOAT tghost,                      ///< Ghost particle 'lifetime'
- DomainBox<ndim> simbox,            ///< Simulation box structure
- Sph<ndim> *sph)                    ///< Sph object pointer
+void SphTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
+ (FLOAT tghost,                        ///< Ghost particle 'lifetime'
+  DomainBox<ndim> simbox,              ///< Simulation box structure
+  Sph<ndim> *sph)                      ///< Sph object pointer
 {
   int c;
   int i;                            // Particle counter
@@ -584,6 +586,198 @@ void SphTree<ndim, ParticleType,TreeCell>::SearchBoundaryGhostParticles
   }
 
   sph->NPeriodicGhost = sph->Nghost;
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  SphTree::ComputeCellMonopoleForces
+/// Compute the force on particle 'parti' due to all cells obtained in the
+/// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void SphTree<ndim,ParticleType,TreeCell>::ComputeCellMonopoleForces
+ (FLOAT &gpot,                         ///< [inout] Grav. potential
+  FLOAT agrav[ndim],                   ///< [inout] Acceleration array
+  FLOAT rp[ndim],                      ///< [in] Position of point
+  int Ngravcell,                       ///< [in] No. of tree cells in list
+  TreeCell<ndim> *gravcell)            ///< [in] List of tree cell ids
+{
+  int cc;                              // Aux. cell counter
+  int k;                               // Dimension counter
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT invdrmag;                      // 1 / distance
+  FLOAT invdrsqd;                      // 1 / drsqd
+  FLOAT invdr3;                        // 1 / dist^3
+  FLOAT mc;                            // Mass of cell
+  TreeCell<ndim> *cellptr;             // Pointer to gravity tree cell
+
+  // Loop over all neighbouring particles in list
+  //-----------------------------------------------------------------------------------------------
+  for (cc=0; cc<Ngravcell; cc++) {
+    cellptr = &(gravcell[cc]);
+
+    mc = cellptr->m;
+    for (k=0; k<ndim; k++) dr[k] = cellptr->r[k] - rp[k];
+    drsqd    = DotProduct(dr,dr,ndim) + small_number;
+    invdrsqd = 1.0/drsqd;
+    invdrmag = sqrt(invdrsqd);
+    invdr3   = invdrsqd*invdrmag;
+
+    gpot += mc*invdrmag;
+    for (k=0; k<ndim; k++) agrav[k] += mc*dr[k]*invdr3;
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  SphTree::ComputeCellQuadrupoleForces
+/// Compute the force on particle 'parti' due to all cells obtained in the
+/// gravity tree walk including the quadrupole moment correction term.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void SphTree<ndim,ParticleType,TreeCell>::ComputeCellQuadrupoleForces
+ (FLOAT &gpot,                         ///< [inout] Grav. potential
+  FLOAT agrav[ndim],                   ///< [inout] Acceleration array
+  FLOAT rp[ndim],                      ///< [in] Position of point
+  int Ngravcell,                       ///< [in] No. of tree cells in list
+  TreeCell<ndim> *gravcell)            ///< [in] List of tree cell ids
+{
+  int cc;                              // Aux. cell counter
+  int k;                               // Dimension counter
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT invdrsqd;                      // 1 / drsqd
+  FLOAT invdrmag;                      // 1 / distance
+  FLOAT invdr5;                        // 1 / distance^5
+  FLOAT qfactor;                       // Constant factor for optimisation
+  FLOAT qscalar;                       // Quadrupole moment scalar quantity
+  TreeCell<ndim> *cellptr;             // Pointer to gravity tree cell
+
+
+  // Loop over all neighbouring particles in list
+  //-----------------------------------------------------------------------------------------------
+  for (cc=0; cc<Ngravcell; cc++) {
+    cellptr = &(gravcell[cc]);
+
+    for (k=0; k<ndim; k++) dr[k] = cellptr->r[k] - rp[k];
+    drsqd = DotProduct(dr,dr,ndim) + small_number;
+    invdrsqd = 1.0/drsqd;
+    invdrmag = sqrt(invdrsqd);
+    invdr5 = invdrsqd*invdrsqd*invdrmag;
+
+    // First add monopole term for acceleration
+    for (k=0; k<ndim; k++) agrav[k] += cellptr->m*dr[k]*invdrsqd*invdrmag;
+
+    // Now add quadrupole moment terms depending on dimensionality
+    if (ndim == 3) {
+      qscalar = cellptr->q[0]*dr[0]*dr[0] + cellptr->q[2]*dr[1]*dr[1] -
+        (cellptr->q[0] + cellptr->q[2])*dr[2]*dr[2] +
+         2.0*(cellptr->q[1]*dr[0]*dr[1] + cellptr->q[3]*dr[0]*dr[2] + cellptr->q[4]*dr[1]*dr[2]);
+      qfactor = 2.5*qscalar*invdr5*invdrsqd;
+      agrav[0] +=
+        (cellptr->q[0]*dr[0] + cellptr->q[1]*dr[1] + cellptr->q[3]*dr[2])*invdr5 - qfactor*dr[0];
+      agrav[1] +=
+        (cellptr->q[1]*dr[0] + cellptr->q[2]*dr[1] + cellptr->q[4]*dr[2])*invdr5 - qfactor*dr[1];
+      agrav[2] += (cellptr->q[3]*dr[0] + cellptr->q[4]*dr[1] -
+        (cellptr->q[0] + cellptr->q[2])*dr[2])*invdr5 - qfactor*dr[2];
+      gpot += cellptr->m*invdrmag + 0.5*qscalar*invdr5;
+    }
+    else if (ndim == 2) {
+      qscalar = cellptr->q[0]*dr[0]*dr[0] + cellptr->q[2]*dr[1]*dr[1] +
+        2.0*cellptr->q[1]*dr[0]*dr[1];
+      qfactor = 2.5*qscalar*invdr5*invdrsqd;
+      agrav[0] += (cellptr->q[0]*dr[0] + cellptr->q[1]*dr[1])*invdr5 - qfactor*dr[0];
+      agrav[1] += (cellptr->q[1]*dr[0] + cellptr->q[2]*dr[1])*invdr5 - qfactor*dr[1];
+      gpot += cellptr->m*invdrmag + 0.5*qscalar*invdr5;
+    }
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  SphTree::ComputeFastMonopoleForces
+/// Compute the force on particle 'parti' due to all cells obtained in the
+/// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void SphTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
+ (int Nactive,                         ///< [in] No. of active particles
+  int Ngravcell,                       ///< [in] No. of tree cells in list
+  TreeCell<ndim> *gravcell,            ///< [in] List of tree cell ids
+  TreeCell<ndim> &cell,                ///< [in] Current cell pointer
+  ParticleType<ndim> *activepart)      ///< [inout] Active SPH particle array
+{
+  int cc;                              // Aux. cell counter
+  int j;                               // ..
+  int k;                               // Dimension counter
+  FLOAT ac[ndim];                      // ..
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT invdrmag;                      // 1 / distance
+  FLOAT invdrsqd;                      // 1 / drsqd
+  FLOAT invdr3;                        // 1 / dist^3
+  FLOAT mc;                            // Mass of cell
+  FLOAT q[6];                          // Local copy of quadrupole moment
+  FLOAT dphi[3];                       // ..
+  FLOAT cellpot;                       // ..
+  FLOAT rc[ndim];                      // ..
+
+  for (k=0; k<ndim; k++) rc[k] = cell.r[k];
+  for (k=0; k<ndim; k++) ac[k] = 0.0;
+  for (k=0; k<ndim; k++) dphi[k] = 0.0;
+  for (k=0; k<6; k++) q[k] = 0;
+  cellpot = 0.0;
+
+
+  //-----------------------------------------------------------------------------------------------
+  if (ndim == 3) {
+
+    for (cc=0; cc<Ngravcell; cc++) {
+#ifndef MPI_PARALLEL
+      assert(cell.id != gravcell[cc].id);
+#endif
+      mc = gravcell[cc].m;
+      for (k=0; k<ndim; k++) dr[k] = gravcell[cc].r[k] - rc[k];
+      drsqd    = DotProduct(dr,dr,ndim);
+      invdrsqd = 1.0/drsqd;
+      invdrmag = sqrt(invdrsqd);
+      invdr3   = invdrsqd*invdrmag;
+      cellpot  += mc*invdrmag;
+      for (k=0; k<ndim; k++) ac[k] += mc*dr[k]*invdr3;
+      for (k=0; k<ndim; k++) dphi[k] += mc*dr[k]*invdr3;
+      q[0] += mc*(3.0*dr[0]*dr[0]*invdr3*invdrsqd - invdrsqd*invdrmag);
+      q[1] += mc*(3.0*dr[0]*dr[1]*invdr3*invdrsqd);
+      q[2] += mc*(3.0*dr[1]*dr[1]*invdr3*invdrsqd - invdrsqd*invdrmag);
+      q[3] += mc*(3.0*dr[2]*dr[0]*invdr3*invdrsqd);
+      q[4] += mc*(3.0*dr[2]*dr[1]*invdr3*invdrsqd);
+      q[5] += mc*(3.0*dr[2]*dr[2]*invdr3*invdrsqd - invdrsqd*invdrmag);
+    }
+
+    for (j=0; j<Nactive; j++) {
+      for (k=0; k<ndim; k++) dr[k] = activepart[j].r[k] - rc[k];
+      activepart[j].agrav[0] += ac[0] + q[0]*dr[0] + q[1]*dr[1] + q[3]*dr[2];
+      activepart[j].agrav[1] += ac[1] + q[1]*dr[0] + q[2]*dr[1] + q[4]*dr[2];
+      activepart[j].agrav[2] += ac[2] + q[3]*dr[0] + q[4]*dr[1] + q[5]*dr[2];
+      activepart[j].gpot += cellpot + dphi[0]*dr[0] + dphi[1]*dr[1] + dphi[2]*dr[2];
+    }
+
+  }
+  //-----------------------------------------------------------------------------------------------
 
   return;
 }
@@ -1808,11 +2002,11 @@ void SphTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
   // If the true neighbour is not in the list, or included multiple times,
   // then output to screen and terminate program
   if (invalid_flag) {
-    InsertionSort(Nneib,neiblist);
     cout << "Problem with neighbour lists : " << i << "  " << j << "   "
          << count << "   " << partdata[i].r[0] << "   " << partdata[i].h << endl;
     cout << "Nneib : " << Nneib << "   Ntrueneib : " << Ntrueneib
          << "    neibtype : " << neibtype << endl;
+    InsertionSort(Nneib,neiblist);
     PrintArray("neiblist     : ",Nneib,neiblist);
     PrintArray("trueneiblist : ",Ntrueneib,trueneiblist);
     string message = "Problem with neighbour lists in grid search";

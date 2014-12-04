@@ -375,7 +375,10 @@ protected:
   void UpdateActiveParticleCounters(SphParticle<ndim> *, Sph<ndim> *);
   void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
   void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
-
+  void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> *);
+  void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> *);
+  void ComputeFastMonopoleForces(int, int, TreeCell<ndim> *,
+                                 TreeCell<ndim> &, ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
   void UpdateGravityExportList(int, int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateHydroExportList(int, int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);

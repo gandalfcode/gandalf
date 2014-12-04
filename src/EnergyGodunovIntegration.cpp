@@ -1,7 +1,7 @@
 //=============================================================================
 //  EnergyGodunovIntegration.cpp
 //  Energy integration scheme for Inutsuka (2002) Godunov SPH algorithm.
-//  Conserves total energy (thermal + kinetic) to machine precision for 
+//  Conserves total energy (thermal + kinetic) to machine precision for
 //  direct sum forces and global timesteps.
 //
 //  This file is part of GANDALF :
@@ -66,7 +66,7 @@ EnergyGodunovIntegration<ndim>::~EnergyGodunovIntegration()
 
 //=============================================================================
 //  EnergyGodunovIntegration::EnergyIntegration
-/// Integrate internal energy to first order from the beginning of the step to 
+/// Integrate internal energy to first order from the beginning of the step to
 /// the current simulation time, i.e. $u(t+dt) = u(t) + dudt(t)*dt$
 //=============================================================================
 template <int ndim>
@@ -109,7 +109,7 @@ void EnergyGodunovIntegration<ndim>::EnergyIntegration
     if (part.u < small_number) {
       cout << "Something wrong with energy integration (0) : " << endl;
       cout << part.u << "   " << sphdata[i].u0 << "  " << part.dudt
-	   << "   " << dt << "   " << nstep << "    " 
+	   << "   " << dt << "   " << nstep << "    "
 	   << sphdata[i].u0/part.dudt << endl;
       cout << " dt_courant : " << part.h/part.sound << "    "
 	   << sphdata[i].u0/(part.dudt + small_number) << "    "
@@ -122,25 +122,13 @@ void EnergyGodunovIntegration<ndim>::EnergyIntegration
 
   return;
 }
- 
 
-
-//=============================================================================
-//  EnergyGodunovIntegration::CorrectionTerms
-/// Empty function (no corrections needed)
-//=============================================================================
-template <int ndim>
-void EnergyGodunovIntegration<ndim>::EnergyCorrectionTerms
-(int n, int Nsph, SphParticle<ndim> *sphdata, FLOAT timestep)
-{
-  return;
-}
 
 
 
 //=============================================================================
 //  EnergyGodunovIntegration::EndTimestep
-/// Record all important thermal quantities at the end of the step for the 
+/// Record all important thermal quantities at the end of the step for the
 /// start of the new timestep.
 //=============================================================================
 template <int ndim>
@@ -178,8 +166,8 @@ void EnergyGodunovIntegration<ndim>::EndTimestep
 
 //=============================================================================
 //  EnergyGodunovIntegration::Timestep
-/// Compute explicit timestep such that u cannot change by a large fraction 
-/// in one step, i.e. dt = const*u/|dudt + epsilon| where epsilon is a small 
+/// Compute explicit timestep such that u cannot change by a large fraction
+/// in one step, i.e. dt = const*u/|dudt + epsilon| where epsilon is a small
 /// number to prevent the denominator becoming zero.
 //=============================================================================
 template <int ndim>

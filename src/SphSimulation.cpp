@@ -820,7 +820,8 @@ void SphSimulation<ndim>::MainLoop(void)
       sinks.AccreteMassToSinks(sph,nbody,n,timestep);
       nbody->UpdateStellarProperties();
     }
-    if ((t >= tsnapnext && sinks.Nsink > 0) || kill_simulation ||
+    // If we will output a snapshot (regular or for restarts), then delete all accreted particles
+    if ((t >= tsnapnext && sinks.Nsink > 0) || n == nresync || kill_simulation ||
          timing->WallClockTime() - timing->tstart_wall > 0.99*tmax_wallclock) {
       sph->DeleteDeadParticles();
       rebuild_tree = true;
@@ -1320,10 +1321,11 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
 
   // Various asserts for debugging
+  assert(timestep >= 0.0);
   assert(level_step == level_max + integration_step - 1);
-  assert(n <= nresync);
   assert(level_max_sph <= level_max);
   assert(level_max_nbody <= level_max);
+  assert(n <= nresync);
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->GetParticleIPointer(i);
     if (part.itype == dead) continue;
@@ -1341,6 +1343,10 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     assert(nbody->nbodydata[i]->level >= level_max_sph);
     assert(nbody->nbodydata[i]->tlast <= t);
   }
+  if (timestep <= 0.0) {
+    cout << "Timestep fallen to zero : " << timestep << endl;
+    exit(0);
+  }
 
 
   timing->EndTimingSection("BLOCK_TIMESTEPS");
@@ -1351,7 +1357,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
   // Some validations
   //-----------------------------------------------------------------------------------------------
-  /*int *ninlevel;
+  int *ninlevel;
   int Nactive=0;
   ninlevel = new int[level_max+1];
   SphParticle<ndim>& part = sph->GetParticleIPointer(imin);
@@ -1383,6 +1389,12 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
   delete[] ninlevel;
 
-  return;*/
+  if (timestep <= 0.0) {
+    cout << "Timestep fallen to zero : " << timestep << endl;
+    exit(0);
+  }
+
+
+  return;
 
 }

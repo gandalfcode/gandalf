@@ -133,7 +133,7 @@ void Simulation<ndim>::GenerateIC(void)
   if (rescale_particle_data) ConvertToCodeUnits();
 
   // Check that the initial conditions are valid
-  if (sph) CheckInitialConditions();
+  CheckInitialConditions();
 
   return;
 }
@@ -994,19 +994,19 @@ void Simulation<ndim>::KHI(void)
   // Record local copies of all important parameters
   FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
   FLOAT rhofluid2 = simparams->floatparams["rhofluid2"];
-  FLOAT press1 = simparams->floatparams["press1"];
-  FLOAT press2 = simparams->floatparams["press2"];
-  FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
-  FLOAT amp = simparams->floatparams["amp"];
-  FLOAT lambda = simparams->floatparams["lambda"];
-  Nlattice1[0] = simparams->intparams["Nlattice1[0]"];
-  Nlattice1[1] = simparams->intparams["Nlattice1[1]"];
-  Nlattice2[0] = simparams->intparams["Nlattice2[0]"];
-  Nlattice2[1] = simparams->intparams["Nlattice2[1]"];
-  vfluid1[0] = simparams->floatparams["vfluid1[0]"];
-  vfluid2[0] = simparams->floatparams["vfluid2[0]"];
+  FLOAT press1    = simparams->floatparams["press1"];
+  FLOAT press2    = simparams->floatparams["press2"];
+  FLOAT gammaone  = simparams->floatparams["gamma_eos"] - 1.0;
+  FLOAT amp       = simparams->floatparams["amp"];
+  FLOAT lambda    = simparams->floatparams["lambda"];
+  Nlattice1[0]    = simparams->intparams["Nlattice1[0]"];
+  Nlattice1[1]    = simparams->intparams["Nlattice1[1]"];
+  Nlattice2[0]    = simparams->intparams["Nlattice2[0]"];
+  Nlattice2[1]    = simparams->intparams["Nlattice2[1]"];
+  vfluid1[0]      = simparams->floatparams["vfluid1[0]"];
+  vfluid2[0]      = simparams->floatparams["vfluid2[0]"];
 
-  debug2("[Simulation::ShockTube]");
+  debug2("[Simulation::KHI]");
 
   if (ndim != 2) {
     string message = "Kelvin-Helmholtz instability only in 2D";
@@ -1046,8 +1046,7 @@ void Simulation<ndim>::KHI(void)
       for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
       for (k=0; k<ndim; k++) part.v[k] = 0.0;
       part.r[1] -= 0.25*simbox.boxsize[1];
-      if (part.r[1] < simbox.boxmin[1])
-        part.r[1] += simbox.boxsize[1];
+      if (part.r[1] < simbox.boxmin[1]) part.r[1] += simbox.boxsize[1];
       part.v[0] = vfluid1[0];
       part.m = rhofluid1*volume/(FLOAT) Nbox1;
       part.h = sph->h_fac*pow(part.m/rhofluid1,invndim);

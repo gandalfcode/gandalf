@@ -85,10 +85,10 @@ class Tree
                                                 const int, const int, const int,
                                                 int &, int &, int &, int *, int *,
                                                 TreeCell<ndim> *, ParticleType<ndim> *) = 0;
-  virtual void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> *) = 0;
-  virtual void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> *) = 0;
-  virtual void ComputeFastMonopoleForces(int, int, TreeCell<ndim> *,
-                                         TreeCell<ndim> &, ParticleType<ndim> *) = 0;
+  //virtual void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> *) = 0;
+  //virtual void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> *) = 0;
+  //virtual void ComputeFastMonopoleForces(int, int, TreeCell<ndim> *,
+  //                                       TreeCell<ndim> &, ParticleType<ndim> *) = 0;
 
 #ifdef MPI_PARALLEL
   virtual int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT,

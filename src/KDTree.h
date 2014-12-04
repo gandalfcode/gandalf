@@ -58,18 +58,18 @@ struct KDTreeCell {
   int level;                        ///< Level of cell on tree
   int ifirst;                       ///< i.d. of first particle in cell
   int ilast;                        ///< i.d. of last particle in cell
-  int N;                            ///< ..
-  int Nactive;                      ///< ..
+  int N;                            ///< No. of particles in cell
+  int Nactive;                      ///< No. of active particles in cell
   int cexit[2][ndim];               ///< Left and right exit cells (per dim)
-  FLOAT cdistsqd;                   ///< ..
+  FLOAT cdistsqd;                   ///< Minimum distance to use COM values
   FLOAT mac;                        ///< Multipole-opening criterion value
   FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
   FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
   FLOAT hboxmin[ndim];              ///< Minimum extent of bounding box
   FLOAT hboxmax[ndim];              ///< Maximum extent of bounding box
-  FLOAT rcell[ndim];                ///< ..
-  FLOAT r[ndim];                    ///< Position of cell
-  FLOAT v[ndim];                    ///< Position of cell
+  FLOAT rcell[ndim];                ///< Geometric centre of cell bounding box
+  FLOAT r[ndim];                    ///< Position of cell COM
+  FLOAT v[ndim];                    ///< Velocity of cell COM
   FLOAT m;                          ///< Mass contained in cell
   FLOAT rmax;                       ///< Radius of bounding sphere
   FLOAT hmax;                       ///< Maximum smoothing length inside cell
@@ -172,10 +172,6 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
                                         const int, const int, int &, int &, int &, int *, int *,
                                         TreeCell<ndim> *, ParticleType<ndim> *);
-  void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> *);
-  void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> *);
-  void ComputeFastMonopoleForces(int, int, TreeCell<ndim> *,
-                                 TreeCell<ndim> &, ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
   int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT, const int,
                                            int, TreeCell<ndim> **);

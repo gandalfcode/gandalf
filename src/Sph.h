@@ -456,7 +456,7 @@ class NullSph: public Sph<ndim>
   virtual void ReorderParticles(void) {};
 
   int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
-               SphParticle<ndim> &, Nbody<ndim> *) {};
+               SphParticle<ndim> &, Nbody<ndim> *) {return -1;}
   void ComputeThermalProperties(SphParticle<ndim> &) {};
   void ComputeSphHydroForces(const int, const int, const int *, const FLOAT *, const FLOAT *,
                              const FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *) {};

@@ -1,4 +1,4 @@
-#==============================================================================
+#==================================================================================================
 #  GANDALF v0.1.0 Makefile
 #
 #  This file is part of GANDALF :
@@ -17,7 +17,7 @@
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 #  General Public License (http://www.gnu.org/licenses) for more details.
-#==============================================================================
+#==================================================================================================
 
 
 ifneq ($(PYTHON),)
@@ -38,7 +38,7 @@ PYFOLDER = ../analysis/swig_generated
 
 
 # Compiler mode flags
-# ----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 ifeq ($(CPP),g++)
 ifeq ($(COMPILER_MODE),FAST)
 OPT += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
@@ -111,7 +111,7 @@ endif
 
 
 # Precision options
-# ----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 ifeq ($(PRECISION),SINGLE)
 CFLAGS += -DGANDALF_SINGLE_PRECISION
 else ifeq ($(PRECISION),DOUBLE)
@@ -120,13 +120,13 @@ endif
 
 
 # FFTW linkage
-#-----------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
 ifeq ($(FFTW),1)
 CFLAGS += -DFFTW_TURBULENCE
 #OPT += -I/Users/davidhubber/astro/code/gandalf/src -L/Users/davidhubber/astro/code/gandalf/src -lm -lfftw3f
 #OPT += -I/usr/local/include -L/usr/local/lib -lfftw3
-#OPT += -I/sw/include -L/sw/lib -lfftw3
-OPT += $(FFTW_LIB) $(FFTW_INC)
+OPT += -I/sw/include -L/sw/lib -lfftw3
+#OPT += $(FFTW_LIB) $(FFTW_INC)
 endif
 
 
@@ -138,8 +138,17 @@ OPT += -I/usr/local/include -L/usr/local/lib -lgsl -lgslcblas
 endif
 
 
+# HEALPix linkage
+#--------------------------------------------------------------------------------------------------
+ifeq ($(HEALPIX),1)
+CFLAGS += -DGANDALF_HEALPIX
+OPT += -I/Users/dah/code/Healpix_3.11/src/cxx/basic_gcc/include
+OPT += -L/Users/dah/code/Healpix_3.11/src/cxx/basic_gcc/lib -lhealpix_cxx
+endif
+
+
 # Debug output flags
-# ----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 ifeq ($(OUTPUT_LEVEL),1)
 CFLAGS += -DDEBUG1
 else ifeq ($(OUTPUT_LEVEL),2)
@@ -209,7 +218,7 @@ OBJ += MpiNode.o MpiTree.o MpiControl.o
 endif
 
 
-TEST_OBJ = TestScaling.o TestTree.o #Parameters.o SimUnits.o Exception.o
+TEST_OBJ = TestScaling.o TestTree.o TestOctTree.o #Parameters.o SimUnits.o Exception.o
 
 .SUFFIXES: .cpp .i .o
 

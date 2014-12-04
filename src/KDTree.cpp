@@ -30,6 +30,7 @@
 #include <math.h>
 #include "Precision.h"
 #include "Exception.h"
+#include "DomainBox.h"
 #include "Parameters.h"
 #include "InlineFuncs.h"
 #include "SphParticle.h"
@@ -233,7 +234,6 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 void KDTree<ndim,ParticleType,TreeCell>::ComputeTreeSize(void)
 {
   debug2("[KDTree::ComputeTreeSize]");
-
 
   // Calculate maximum level of tree that can contain max. no. of particles
   lmax = 0;
@@ -494,7 +494,7 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
 
 
 //=================================================================================================
-//  KDTree::QuickSelect
+//  KDTree::QuickSelectSort
 /// Find median and sort particles in arrays to ensure they are the correct
 /// side of the division.  Uses the QuickSelect algorithm.
 //=================================================================================================
@@ -579,17 +579,17 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelectSort
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
-(int left,                          ///< Left-most id of particle in array
- int right,                         ///< Right-most id of particle in array
- int jpivot,                        ///< Pivot/median point
- int k,                             ///< Dimension of sort
- ParticleType<ndim> *partdata)      ///< Pointer to main SPH object
+ (int left,                            ///< Left-most id of particle in array
+  int right,                           ///< Right-most id of particle in array
+  int jpivot,                          ///< Pivot/median point
+  int k,                               ///< Dimension of sort
+  ParticleType<ndim> *partdata)        ///< Pointer to main SPH object
 {
-  int i;                            // ..
-  int j;                            // ..
-  int jguess;                       // ..
-  int jtemp;                        // ..
-  FLOAT rpivot;                     // ..
+  int i;                               // ..
+  int j;                               // ..
+  int jguess;                          // ..
+  int jtemp;                           // ..
+  FLOAT rpivot;                        // ..
 
 
   // Place all particles left or right of chosen pivot point.
@@ -1637,6 +1637,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
   int k;                               // Neighbour counter
   int Nsphneibtemp = 0;                // Aux. counter
   FLOAT dr[ndim];                      // Relative position vector
+  FLOAT dr_corr[ndim];                 // Periodic correction vector
   FLOAT drsqd;                         // Distance squared
   FLOAT rc[ndim];                      // Position of cell
 
@@ -1657,14 +1658,14 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
   //===============================================================================================
   while (cc < Ncell) {
 
+    // Calculate closest periodic replica of cell
     for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
+    NearestPeriodicVector(simbox,dr,dr_corr);
     drsqd = DotProduct(dr,dr,ndim);
 
-
-    // Check if bounding boxes overlap with each other
-    //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(cell.bbmin,cell.bbmax,celldata[cc].hboxmin,celldata[cc].hboxmax) ||
-        BoxOverlap(cell.hboxmin,cell.hboxmax,celldata[cc].bbmin,celldata[cc].bbmax)) {
+    // Check if bounding spheres overlap with each other (for potential SPH neibs)
+    if (drsqd <= pow(celldata[cc].rmax + cell.rmax + kernrange*cell.hmax,2) ||
+        drsqd <= pow(cell.rmax + celldata[cc].rmax + kernrange*celldata[cc].hmax,2)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].level != ltot)
@@ -1679,7 +1680,9 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
         while (i != -1) {
           sphneiblist[Nsphneib++] = Nneib;
           neiblist[Nneib] = i;
-          neibpart[Nneib++] = partdata[i];
+          neibpart[Nneib] = partdata[i];
+          for (k=0; k<ndim; k++) neibpart[Nneib].r[k] += dr_corr[k];
+          Nneib++;
           if (i == celldata[cc].ilast) break;
           i = inext[i];
         };
@@ -1703,10 +1706,14 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
         i = celldata[cc].ifirst;
         directlist[Ndirect++] = Nneib;
         neiblist[Nneib] = i;
-        neibpart[Nneib++] = partdata[i];
+        neibpart[Nneib] = partdata[i];
+        for (k=0; k<ndim; k++) neibpart[Nneib].r[k] += dr_corr[k];
+        Nneib++;
       }
       else if (Ngravcell < Ngravcellmax) {
-        gravcell[Ngravcell++] = celldata[cc];
+        gravcell[Ngravcell] = celldata[cc];
+        for (k=0; k<ndim; k++) gravcell[Ngravcell].r[k] += dr_corr[k];
+        Ngravcell++;
       }
       else {
         return -2;
@@ -1731,7 +1738,9 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
         while (i != -1) {
           directlist[Ndirect++] = Nneib;
           neiblist[Nneib] = i;
-          neibpart[Nneib++] = partdata[i];
+          neibpart[Nneib] = partdata[i];
+          for (k=0; k<ndim; k++) neibpart[Nneib].r[k] += dr_corr[k];
+          Nneib++;
           if (i == celldata[cc].ilast) break;
           i = inext[i];
         };
@@ -1909,200 +1918,6 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
 
 
   return 1;
-}
-
-
-
-//=================================================================================================
-//  KDTree::ComputeCellMonopoleForces
-/// Compute the force on particle 'parti' due to all cells obtained in the
-/// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::ComputeCellMonopoleForces
- (FLOAT &gpot,                         ///< [inout] Grav. potential
-  FLOAT agrav[ndim],                   ///< [inout] Acceleration array
-  FLOAT rp[ndim],                      ///< [in] Position of point
-  int Ngravcell,                       ///< [in] No. of tree cells in list
-  TreeCell<ndim> *gravcell)            ///< [in] List of tree cell ids
-{
-  int cc;                              // Aux. cell counter
-  int k;                               // Dimension counter
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT invdrmag;                      // 1 / distance
-  FLOAT invdrsqd;                      // 1 / drsqd
-  FLOAT invdr3;                        // 1 / dist^3
-  FLOAT mc;                            // Mass of cell
-  TreeCell<ndim> *cellptr;             // Pointer to gravity tree cell
-
-  // Loop over all neighbouring particles in list
-  //-----------------------------------------------------------------------------------------------
-  for (cc=0; cc<Ngravcell; cc++) {
-    cellptr = &(gravcell[cc]);
-
-    mc = cellptr->m;
-    for (k=0; k<ndim; k++) dr[k] = cellptr->r[k] - rp[k];
-    drsqd    = DotProduct(dr,dr,ndim) + small_number;
-    invdrsqd = 1.0/drsqd;
-    invdrmag = sqrt(invdrsqd);
-    invdr3   = invdrsqd*invdrmag;
-
-    gpot += mc*invdrmag;
-    for (k=0; k<ndim; k++) agrav[k] += mc*dr[k]*invdr3;
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  KDTree::ComputeCellQuadrupoleForces
-/// Compute the force on particle 'parti' due to all cells obtained in the
-/// gravity tree walk including the quadrupole moment correction term.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::ComputeCellQuadrupoleForces
- (FLOAT &gpot,                         ///< [inout] Grav. potential
-  FLOAT agrav[ndim],                   ///< [inout] Acceleration array
-  FLOAT rp[ndim],                      ///< [in] Position of point
-  int Ngravcell,                       ///< [in] No. of tree cells in list
-  TreeCell<ndim> *gravcell)            ///< [in] List of tree cell ids
-{
-  int cc;                              // Aux. cell counter
-  int k;                               // Dimension counter
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT invdrsqd;                      // 1 / drsqd
-  FLOAT invdrmag;                      // 1 / distance
-  FLOAT invdr5;                        // 1 / distance^5
-  FLOAT qfactor;                       // Constant factor for optimisation
-  FLOAT qscalar;                       // Quadrupole moment scalar quantity
-  TreeCell<ndim> *cellptr;             // Pointer to gravity tree cell
-
-
-  // Loop over all neighbouring particles in list
-  //-----------------------------------------------------------------------------------------------
-  for (cc=0; cc<Ngravcell; cc++) {
-    cellptr = &(gravcell[cc]);
-
-    for (k=0; k<ndim; k++) dr[k] = cellptr->r[k] - rp[k];
-    drsqd = DotProduct(dr,dr,ndim) + small_number;
-    invdrsqd = 1.0/drsqd;
-    invdrmag = sqrt(invdrsqd);
-    invdr5 = invdrsqd*invdrsqd*invdrmag;
-
-    // First add monopole term for acceleration
-    for (k=0; k<ndim; k++) agrav[k] += cellptr->m*dr[k]*invdrsqd*invdrmag;
-
-    // Now add quadrupole moment terms depending on dimensionality
-    if (ndim == 3) {
-      qscalar = cellptr->q[0]*dr[0]*dr[0] + cellptr->q[2]*dr[1]*dr[1] -
-        (cellptr->q[0] + cellptr->q[2])*dr[2]*dr[2] +
-         2.0*(cellptr->q[1]*dr[0]*dr[1] + cellptr->q[3]*dr[0]*dr[2] +
-         cellptr->q[4]*dr[1]*dr[2]);
-      qfactor = 2.5*qscalar*invdr5*invdrsqd;
-      agrav[0] +=
-        (cellptr->q[0]*dr[0] + cellptr->q[1]*dr[1] + cellptr->q[3]*dr[2])*invdr5 - qfactor*dr[0];
-      agrav[1] +=
-        (cellptr->q[1]*dr[0] + cellptr->q[2]*dr[1] + cellptr->q[4]*dr[2])*invdr5 - qfactor*dr[1];
-      agrav[2] +=
-        (cellptr->q[3]*dr[0] + cellptr->q[4]*dr[1] -
-         (cellptr->q[0] + cellptr->q[2])*dr[2])*invdr5 - qfactor*dr[2];
-      gpot += cellptr->m*invdrmag + 0.5*qscalar*invdr5;
-    }
-    else if (ndim == 2) {
-      qscalar = cellptr->q[0]*dr[0]*dr[0] + cellptr->q[2]*dr[1]*dr[1] +
-        2.0*cellptr->q[1]*dr[0]*dr[1];
-      qfactor = 2.5*qscalar*invdr5*invdrsqd;
-      agrav[0] += (cellptr->q[0]*dr[0] + cellptr->q[1]*dr[1])*invdr5 - qfactor*dr[0];
-      agrav[1] += (cellptr->q[1]*dr[0] + cellptr->q[2]*dr[1])*invdr5 - qfactor*dr[1];
-      gpot += cellptr->m*invdrmag + 0.5*qscalar*invdr5;
-    }
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  KDTree::ComputeFastMonopoleForces
-/// Compute the force on particle 'parti' due to all cells obtained in the
-/// gravity tree walk.  Uses only monopole moments (i.e. COM) of the cell.
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-void KDTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
- (int Nactive,                         ///< [in] No. of active particles
-  int Ngravcell,                       ///< [in] No. of tree cells in list
-  TreeCell<ndim> *gravcell,            ///< [in] List of tree cell ids
-  TreeCell<ndim> &cell,                ///< [in] Current cell pointer
-  ParticleType<ndim> *activepart)      ///< [inout] Active SPH particle array
-{
-  int cc;                              // Aux. cell counter
-  int j;                               // ..
-  int k;                               // Dimension counter
-  FLOAT ac[ndim];                      // ..
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drsqd;                         // Distance squared
-  FLOAT invdrmag;                      // 1 / distance
-  FLOAT invdrsqd;                      // 1 / drsqd
-  FLOAT invdr3;                        // 1 / dist^3
-  FLOAT mc;                            // Mass of cell
-  FLOAT q[6];                          // Local copy of quadrupole moment
-  FLOAT dphi[3];                       // ..
-  FLOAT cellpot;                       // ..
-  FLOAT rc[ndim];                      // ..
-
-  for (k=0; k<ndim; k++) rc[k] = cell.r[k];
-  for (k=0; k<ndim; k++) ac[k] = 0.0;
-  for (k=0; k<ndim; k++) dphi[k] = 0.0;
-  for (k=0; k<6; k++) q[k] = 0;
-  cellpot = 0.0;
-
-
-  //-----------------------------------------------------------------------------------------------
-  if (ndim == 3) {
-
-    for (cc=0; cc<Ngravcell; cc++) {
-#ifndef MPI_PARALLEL
-      assert(cell.id != gravcell[cc].id);
-#endif
-      mc = gravcell[cc].m;
-      for (k=0; k<ndim; k++) dr[k] = gravcell[cc].r[k] - rc[k];
-      drsqd    = DotProduct(dr,dr,ndim);
-      invdrsqd = 1.0/drsqd;
-      invdrmag = sqrt(invdrsqd);
-      invdr3   = invdrsqd*invdrmag;
-      cellpot  += mc*invdrmag;
-      for (k=0; k<ndim; k++) ac[k] += mc*dr[k]*invdr3;
-      for (k=0; k<ndim; k++) dphi[k] += mc*dr[k]*invdr3;
-      q[0] += mc*(3.0*dr[0]*dr[0]*invdr3*invdrsqd - invdrsqd*invdrmag);
-      q[1] += mc*(3.0*dr[0]*dr[1]*invdr3*invdrsqd);
-      q[2] += mc*(3.0*dr[1]*dr[1]*invdr3*invdrsqd - invdrsqd*invdrmag);
-      q[3] += mc*(3.0*dr[2]*dr[0]*invdr3*invdrsqd);
-      q[4] += mc*(3.0*dr[2]*dr[1]*invdr3*invdrsqd);
-      q[5] += mc*(3.0*dr[2]*dr[2]*invdr3*invdrsqd - invdrsqd*invdrmag);
-    }
-
-    for (j=0; j<Nactive; j++) {
-      for (k=0; k<ndim; k++) dr[k] = activepart[j].r[k] - rc[k];
-      activepart[j].agrav[0] += ac[0] + q[0]*dr[0] + q[1]*dr[1] + q[3]*dr[2];
-      activepart[j].agrav[1] += ac[1] + q[1]*dr[0] + q[2]*dr[1] + q[4]*dr[2];
-      activepart[j].agrav[2] += ac[2] + q[3]*dr[0] + q[4]*dr[1] + q[5]*dr[2];
-      activepart[j].gpot += cellpot + dphi[0]*dr[0] + dphi[1]*dr[1] + dphi[2]*dr[2];
-    }
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  return;
 }
 
 

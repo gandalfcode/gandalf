@@ -41,6 +41,8 @@
 using namespace std;
 
 
+static const int Noctchild = 8;
+
 
 //=================================================================================================
 //  Struct OctTreeCell
@@ -48,8 +50,7 @@ using namespace std;
 //=================================================================================================
 template <int ndim>
 struct OctTreeCell {
-  int c1;                           ///< First child cell
-  int c2;                           ///< Second child cell
+  int copen;                        ///< ..
   int c2g;                          ///< i.d. of tree-cell c/grid-cell g
   int cnext;                        ///< i.d. of next cell if not opened
   int id;                           ///< Cell id
@@ -60,6 +61,7 @@ struct OctTreeCell {
   int N;                            ///< ..
   int Nactive;                      ///< ..
   int cexit[2][ndim];               ///< Left and right exit cells (per dim)
+  int childof[Noctchild];           ///< ..
   FLOAT cdistsqd;                   ///< ..
   FLOAT mac;                        ///< Multipole-opening criterion value
   FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
@@ -144,31 +146,26 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   bool BoxOverlap(const FLOAT *, const FLOAT *, const FLOAT *, const FLOAT *);
   void ExtrapolateCellProperties(FLOAT);
   void StockTree(TreeCell<ndim> &, ParticleType<ndim> *);
-  void StockCellProperties(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
   int ComputeActiveCellList(TreeCell<ndim> *);
   int ComputeActiveParticleList(TreeCell<ndim> &, ParticleType<ndim> *, int *);
   int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
-                                 const FLOAT, const int, int *) {};
+                                 const FLOAT, const int, int *);
   int ComputeGatherNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
-                                 const FLOAT, const int, int &, int *) {};
+                                 const FLOAT, const int, int &, int *);
   int ComputeNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
-                           const int, int &, int *, ParticleType<ndim> *) {};
+                           const int, int &, int *, ParticleType<ndim> *);
   int ComputeGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
                                     const FLOAT, const int, const int, int &, int &, int &, int &,
-                                    int *, int *, int *, TreeCell<ndim> *, ParticleType<ndim> *) {};
+                                    int *, int *, int *, TreeCell<ndim> *, ParticleType<ndim> *);
   int ComputePeriodicGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
                                             const DomainBox<ndim> &, const FLOAT, const int, const int,
                                             int &, int &, int &, int &, int *, int *, int *,
-                                            TreeCell<ndim> *, ParticleType<ndim> *) {};
+                                            TreeCell<ndim> *, ParticleType<ndim> *) {return 0;}
   int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
                                         const int, const int, int &, int &, int &, int *, int *,
-                                        TreeCell<ndim> *, ParticleType<ndim> *) {};
-  void ComputeCellMonopoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> *);
-  void ComputeCellQuadrupoleForces(FLOAT &, FLOAT *, FLOAT *, int, TreeCell<ndim> *);
-  void ComputeFastMonopoleForces(int, int, TreeCell<ndim> *,
-                                 TreeCell<ndim> &, ParticleType<ndim> *);
+                                        TreeCell<ndim> *, ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
   int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT,
                                            const int, int, TreeCell<ndim> **);
@@ -181,7 +178,8 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
 
   // Additional variables for octal tree
   //-----------------------------------------------------------------------------------------------
-
+  int *firstCell;
+  int *lastCell;
 
 };
 #endif
