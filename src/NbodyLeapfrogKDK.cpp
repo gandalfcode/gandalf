@@ -64,6 +64,7 @@ NbodyLeapfrogKDK<ndim, kernelclass>::NbodyLeapfrogKDK
 template <int ndim, template<int> class kernelclass>
 NbodyLeapfrogKDK<ndim, kernelclass>::~NbodyLeapfrogKDK()
 {
+  //DeallocateMemory();
 }
 
 
@@ -103,13 +104,13 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
       for (k=0; k<ndim; k++) dr[k] = star[j]->r[k] - star[i]->r[k];
       for (k=0; k<ndim; k++) dv[k] = star[j]->v[k] - star[i]->v[k];
-      drsqd = DotProduct(dr,dr,ndim);
-      drmag = sqrt(drsqd) + small_number;
+      drsqd    = DotProduct(dr,dr,ndim);
+      drmag    = sqrt(drsqd) + small_number;
       invdrmag = 1.0/drmag;
       invhmean = 2.0/(star[i]->h + star[j]->h);
-      drdt = DotProduct(dv,dr,ndim)*invdrmag;
-      paux = star[j]->m*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
-      wmean = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
+      drdt     = DotProduct(dv,dr,ndim)*invdrmag;
+      paux     = star[j]->m*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
+      wmean    = kern.w0(drmag*invhmean)*powf(invhmean,ndim);
 
       // Add contribution to main star array
       star[i]->gpot += star[j]->m*invhmean*kern.wpot(drmag*invhmean);
@@ -183,11 +184,10 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSPHForces
     SphParticle<ndim>& part = sph->GetParticleIPointer(j);
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
-    drsqd = DotProduct(dr,dr,ndim);
-    drmag = sqrt(drsqd) + small_number;
+    drsqd    = DotProduct(dr,dr,ndim);
+    drmag    = sqrt(drsqd) + small_number;
     invdrmag = 1.0/drmag;
-
-    paux = part.m*pow(invdrmag,3);
+    paux     = part.m*pow(invdrmag,3);
 
     // Add contribution to main star array
     for (k=0; k<ndim; k++) star->a[k] += paux*dr[k];

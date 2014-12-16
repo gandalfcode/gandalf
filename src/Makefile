@@ -218,7 +218,7 @@ OBJ += MpiNode.o MpiTree.o MpiControl.o
 endif
 
 
-TEST_OBJ = TestScaling.o TestTree.o TestOctTree.o #Parameters.o SimUnits.o Exception.o
+TEST_OBJ = TestScaling.o TestTree.o TestOctTree.o TestSinks.o
 
 .SUFFIXES: .cpp .i .o
 

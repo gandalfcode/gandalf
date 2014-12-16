@@ -61,6 +61,7 @@ KDTree<ndim,ParticleType,TreeCell>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux
   Ntot           = 0;
   Ntotmax        = 0;
   Ntotmaxold     = 0;
+  Ntotold        = -1;
   Nleafmax       = Nleafmaxaux;
   kernrange      = kernrangeaux;
   thetamaxsqd    = thetamaxsqdaux;
@@ -211,8 +212,9 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   // If number of particles remains unchanged, use old id list
   // (nearly sorted list should be faster for quick select).
   if (Ntot > 0) {
-    if (Ntot != Ntotold)
+    if (Ntot != Ntotold) {
       for (i=ifirst; i<=ilast; i++) ids[i] = i;
+    }
 
     // Recursively build tree from root node down
     DivideTreeCell(ifirst,ilast,partdata,celldata[0]);

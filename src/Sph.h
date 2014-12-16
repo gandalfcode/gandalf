@@ -114,14 +114,10 @@ class Sph
   virtual void ReorderParticles(void)=0;
   void SphBoundingBox(FLOAT *, FLOAT *, int);
   void InitialSmoothingLengthGuess(void);
-  void CheckXBoundaryGhostParticle(const int, const FLOAT,
-                                   const DomainBox<ndim> &);
-  void CheckYBoundaryGhostParticle(const int, const FLOAT,
-                                   const DomainBox<ndim> &);
-  void CheckZBoundaryGhostParticle(const int, const FLOAT,
-                                   const DomainBox<ndim> &);
-  void CreateBoundaryGhostParticle(const int, const int, const int,
-                                   const FLOAT, const FLOAT);
+  void CheckXBoundaryGhostParticle(const int, const FLOAT, const DomainBox<ndim> &);
+  void CheckYBoundaryGhostParticle(const int, const FLOAT, const DomainBox<ndim> &);
+  void CheckZBoundaryGhostParticle(const int, const FLOAT, const DomainBox<ndim> &);
+  void CreateBoundaryGhostParticle(const int, const int, const int, const FLOAT, const FLOAT);
   //void CopySphDataToBoundaryGhosts(DomainBox<ndim> *);
 
 
@@ -199,6 +195,7 @@ class Sph
 template <int ndim, template<int> class kernelclass>
 class GradhSph: public Sph<ndim>
 {
+public:
   using Sph<ndim>::allocated;
   using Sph<ndim>::Nsph;
   using Sph<ndim>::Ntot;
@@ -225,7 +222,7 @@ class GradhSph: public Sph<ndim>
   using Sph<ndim>::rsph;
   using Sph<ndim>::sphdata_unsafe;
 
- public:
+ //public:
 
   GradhSph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
            aviscenum, acondenum, tdaviscenum, string, string);

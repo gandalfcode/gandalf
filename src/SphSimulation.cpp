@@ -224,6 +224,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   sinks.alpha_ss            = floatparams["alpha_ss"];
   sinks.smooth_accrete_frac = floatparams["smooth_accrete_frac"];
   sinks.smooth_accrete_dt   = floatparams["smooth_accrete_dt"];
+  sinks.run_id              = stringparams["run_id"];
   sinks.sink_radius_mode    = stringparams["sink_radius_mode"];
   sinks.rho_sink            = floatparams["rho_sink"];
   sinks.rho_sink            /= simunits.rho.outscale/simunits.rho.outcgs;
@@ -248,6 +249,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   dt_litesnap         = floatparams["dt_litesnap"]/simunits.t.outscale;
   dt_python           = floatparams["dt_python"];
   dt_snap             = floatparams["dt_snap"]/simunits.t.outscale;
+  extra_sink_output   = intparams["extra_sink_output"];
   level_diff_max      = intparams["level_diff_max"];
   litesnap            = intparams["litesnap"];
   Nlevels             = intparams["Nlevels"];
@@ -257,8 +259,8 @@ void SphSimulation<ndim>::ProcessParameters(void)
   ntreebuildstep      = intparams["ntreebuildstep"];
   ntreestockstep      = intparams["ntreestockstep"];
   Nstepsmax           = intparams["Nstepsmax"];
-  pruning_level       = intparams["pruning_level"];
   out_file_form       = stringparams["out_file_form"];
+  pruning_level       = intparams["pruning_level"];
   run_id              = stringparams["run_id"];
   sph_single_timestep = intparams["sph_single_timestep"];
   tmax_wallclock      = floatparams["tmax_wallclock"];
@@ -269,8 +271,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   // Set pointers to timing object
   nbody->timing   = timing;
-  if (sim == "sph" || sim == "gradhsph" || sim == "sm2012sph" ||
-      sim == "godunov_sph") {
+  if (sim == "sph" || sim == "gradhsph" || sim == "sm2012sph" || sim == "godunov_sph") {
     sinks.timing    = timing;
     sphint->timing  = timing;
     sphneib->timing = timing;
@@ -819,6 +820,7 @@ void SphSimulation<ndim>::MainLoop(void)
     if (sinks.Nsink > 0) {
       sinks.AccreteMassToSinks(sph,nbody,n,timestep);
       nbody->UpdateStellarProperties();
+      if (extra_sink_output) WriteExtraSinkOutput();
     }
     // If we will output a snapshot (regular or for restarts), then delete all accreted particles
     if ((t >= tsnapnext && sinks.Nsink > 0) || n == nresync || kill_simulation ||
@@ -1397,4 +1399,61 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
   return;
 
+}
+
+
+
+//=================================================================================================
+//  SphSimulation::WriteExtraSinkOutput
+/// For any simulations loaded into memory via a snapshot file, all particle
+/// variables are converted into dimensionless code units here.
+//=================================================================================================
+template <int ndim>
+void SphSimulation<ndim>::WriteExtraSinkOutput(void)
+{
+  int k;                               // ..
+  int s;                               // ..
+  string filename;                     // Output snapshot filename
+  string nostring;                     // String of number of snapshots
+  stringstream ss;                     // Stream object for preparing filename
+  ofstream outfile;                    // Stream of restart file
+
+
+  //-----------------------------------------------------------------------------------------------
+  for (s=0; s<sinks.Nsink; s++) {
+
+    SinkParticle<ndim> &sink = sinks.sink[s];
+    nostring = "";
+    ss << setfill('0') << setw(5) << s;
+    nostring = ss.str();
+    filename = run_id + ".sink." + nostring;
+    ss.str(std::string());
+
+    outfile.open(filename.c_str(), std::ofstream::app);
+    outfile << t << "    ";
+    outfile << Nsteps << "    ";
+    for (k=0; k<ndim; k++) outfile << sink.star->r[k] << "    ";
+    for (k=0; k<ndim; k++) outfile << sink.star->v[k] << "    ";
+    for (k=0; k<ndim; k++) outfile << sink.star->a[k] << "    ";
+    for (k=0; k<3; k++) outfile << sink.angmom[k] << "    ";
+    outfile << sink.star->m  << "    ";
+    outfile << sink.menc     << "    ";
+    outfile << sink.mmax     << "    ";
+    outfile << sink.macctot  << "    ";
+    outfile << sink.dmdt     << "    ";
+    outfile << sink.ketot    << "    ";
+    outfile << sink.gpetot   << "    ";
+    outfile << sink.rotketot << "    ";
+    outfile << sink.utot     << "    ";
+    outfile << sink.taccrete << "    ";
+    outfile << sink.trad     << "    ";
+    outfile << sink.trot     << "    ";
+    outfile << sink.tvisc    << "    ";
+    outfile << endl;
+    outfile.close();
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return;
 }

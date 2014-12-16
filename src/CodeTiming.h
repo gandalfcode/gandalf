@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  CodeTiming.h
 //  Contains class for controlling internal timing routines.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _CODE_TIMING_H_
@@ -36,43 +36,43 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class CodeTiming
 /// \brief   Internal timing control class
 /// \details Internal timing control class
 /// \author  D. A. Hubber
 /// \date    12/02/2014
-//=============================================================================
+//=================================================================================================
 class CodeTiming
 {
  public:
 
   // Constructor and destructor
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   CodeTiming();
   ~CodeTiming();
-  
-  
+
+
   // Other functions
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   void StartTimingSection(string,int);
   void EndTimingSection(string);
   void ComputeTimingStatistics(string);
   double WallClockTime(void);
-  
-  
+
+
   // CodeTiming class variables
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   static const int Nblockmax=256;   ///< Max. no. of code timing blocks
   int Nblock;                       ///< No. of timing blocks
   int Nlevelmax;                    ///< Max. no. of timing levels
-  double tstart_wall;               ///< ..
-  double tend_wall;                 ///< ..
-  DOUBLE ttot;                      ///< ..
-  DOUBLE ttot_wall;                 ///< ..
-  clock_t tstart;                   ///< ..
-  clock_t tend;                     ///< ..
-  map<string,int> blockno;          ///< ..
+  double tstart_wall;               ///< Start of wall clock timing
+  double tend_wall;                 ///< End of wall clock timing
+  DOUBLE ttot;                      ///< Total time
+  DOUBLE ttot_wall;                 ///< Total wall clock time
+  clock_t tstart;                   ///< Start of integer clock
+  clock_t tend;                     ///< End of integer clock
+  map<string,int> blockno;          ///< Map of timing block names
 
 
   struct TimingBlock {
@@ -88,7 +88,7 @@ class CodeTiming
     clock_t tstart;
     clock_t tend;
     string block_name;
-    
+
     TimingBlock()
     {
       timing_flag = false;
@@ -100,10 +100,10 @@ class CodeTiming
       tfraction_wall = 0.0;
       block_name = "";
     }
-    
+
   };
 
   TimingBlock block[Nblockmax];
-    
+
 };
 #endif

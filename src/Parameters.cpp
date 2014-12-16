@@ -320,6 +320,7 @@ void Parameters::SetDefaultValues(void)
   intparams["create_sinks"] = 0;
   intparams["smooth_accretion"] = 0;
   intparams["fixed_sink_mass"] = 0;
+  intparams["extra_sink_output"] = 0;
   floatparams["rho_sink"] = 1.e-12;
   floatparams["alpha_ss"] = 0.01;
   floatparams["sink_radius"] = 3.0;

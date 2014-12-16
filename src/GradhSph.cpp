@@ -56,10 +56,10 @@ GradhSph<ndim, kernelclass>::GradhSph(int hydro_forces_aux, int self_gravity_aux
             gas_eos_aux, KernelName, sizeof(GradhSphParticle<ndim>)),
   kern(kernelclass<ndim>(KernelName))
 {
-  this->kernp = &kern;
-  this->kernfac = (FLOAT) 1.0;
+  this->kernp      = &kern;
+  this->kernfac    = (FLOAT) 1.0;
   this->kernfacsqd = (FLOAT) 1.0;
-  this->kernrange = this->kernp->kernrange;
+  this->kernrange  = this->kernp->kernrange;
 }
 
 
@@ -71,6 +71,7 @@ GradhSph<ndim, kernelclass>::GradhSph(int hydro_forces_aux, int self_gravity_aux
 template <int ndim, template<int> class kernelclass>
 GradhSph<ndim, kernelclass>::~GradhSph()
 {
+  DeallocateMemory();
 }
 
 
@@ -91,13 +92,12 @@ void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
 
     // Set conservative estimate for maximum number of particles, assuming
     // extra space required for periodic ghost particles
-    if (Nsphmax < N)
-      Nsphmax = 10*pow(pow(N,invndim) + 8.0*kernp->kernrange,ndim);
+    if (Nsphmax < N) Nsphmax = 2*pow(pow(N,invndim) + 6.0*kernp->kernrange,ndim);
     //Nsphmax = N;
 
-    iorder = new int[Nsphmax];
-    rsph = new FLOAT[ndim*Nsphmax];
-    sphdata = new struct GradhSphParticle<ndim>[Nsphmax];
+    iorder    = new int[Nsphmax];
+    rsph      = new FLOAT[ndim*Nsphmax];
+    sphdata   = new struct GradhSphParticle<ndim>[Nsphmax];
     allocated = true;
     sphdata_unsafe = sphdata;
   }
@@ -365,6 +365,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
   //parti.invomega = 1.0;
   //parti.zeta = 0.0;
   parti.chi = 0.0;
+
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;

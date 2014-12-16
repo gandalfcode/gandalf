@@ -1,6 +1,6 @@
-//=============================================================================
+//=================================================================================================
 //  CodeTiming.cpp
-//  Contains class functions for recording CPU and wall-clock times for 
+//  Contains class functions for recording CPU and wall-clock times for
 //  marked sections of the code.
 //
 //  This file is part of GANDALF :
@@ -19,7 +19,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <cstdio>
@@ -38,43 +38,42 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  CodeTiming::CodeTiming
 /// Constructor for CodeTiming class
-//=============================================================================
+//=================================================================================================
 CodeTiming::CodeTiming()
 {
-  Nblock = 0;
-  Nlevelmax = 0;
-  ttot = 0.0;
-  tstart = clock();
+  Nblock      = 0;
+  Nlevelmax   = 0;
+  ttot        = 0.0;
+  tstart      = clock();
   tstart_wall = WallClockTime();
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  CodeTiming::~CodeTiming
 /// CodeTiming destructor
-//=============================================================================
+//=================================================================================================
 CodeTiming::~CodeTiming()
 {
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  CodeTiming::StartTimingSection
-/// Start timing a block of code marked by the string 'newblock'.  If block 
-/// is already on record (e.g. from previous timestep), then timing is 
-/// appended to previously recorded times.
-//=============================================================================
+/// Start timing a block of code marked by the string 'newblock'.  If block is already on record
+/// (e.g. from previous timestep), then timing is appended to previously recorded times.
+//=================================================================================================
 void CodeTiming::StartTimingSection
-(string newblock,                   ///< String of new/existing timing block
- int timing_level)                  ///< Timing level of block
+ (string newblock,                     ///< String of new/existing timing block
+  int timing_level)                    ///< Timing level of block
 {
-  int iblock;                       // Integer id of existing timing block
-
+  int iblock;                          // Integer id of existing timing block
+return;
   // If block string not in list, then create new entry to timing block
   if (blockno.find(newblock) == blockno.end()) {
     iblock = Nblock;
@@ -98,16 +97,16 @@ void CodeTiming::StartTimingSection
 
 
 
-//=============================================================================
+//=================================================================================================
 //  CodeTiming::EndTimingSection
-/// Terminate timing a block of code signified by the string 's1' and record 
+/// Terminate timing a block of code signified by the string 's1' and record
 /// time in main timing arrays.
-//=============================================================================
+//=================================================================================================
 void CodeTiming::EndTimingSection
-(string s1)                         ///< String identifying block-end
+ (string s1)                           ///< String identifying block-end
 {
-  int iblock;                       // Integer i.d. of timing block in arrays
-
+  int iblock;                          // Integer i.d. of timing block in arrays
+return;
   // If block not in list, then print error message and return
   if (blockno.find(s1) == blockno.end()) {
     cout << "Error : looking for incorrect timing block : " << s1 << endl;
@@ -119,33 +118,32 @@ void CodeTiming::EndTimingSection
   }
 
   block[iblock].tend = clock();
-  block[iblock].ttot += (double) (block[iblock].tend - block[iblock].tstart) 
-    / (double) CLOCKS_PER_SEC;
+  block[iblock].ttot += (double) (block[iblock].tend - block[iblock].tstart) /
+    (double) CLOCKS_PER_SEC;
 
   block[iblock].tend_wall = WallClockTime();
-  block[iblock].ttot_wall += 
-    (double) (block[iblock].tend_wall - block[iblock].tstart_wall);
-  
+  block[iblock].ttot_wall += (double) (block[iblock].tend_wall - block[iblock].tstart_wall);
+
   return;
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  CodeTiming::ComputeTimingStatistics
-/// Compute all timing statistics of the code and record statistics into an 
+/// Compute all timing statistics of the code and record statistics into an
 /// external file 'run_id.timing'.
-//=============================================================================
+//=================================================================================================
 void CodeTiming::ComputeTimingStatistics
-(string run_id)                     ///< String i.d. of current simulation
+ (string run_id)                       ///< String i.d. of current simulation
 {
-  int iblock;                       // Timing block counter
-  int level;                        // Timing block level
-  DOUBLE tcount = 0.0;              // Total time
-  DOUBLE tcount_wall = 0.0;         // Total wall-clock time
-  string filename;                  // Filename for writing statistics
-  string fileend = "timing";        // Filename ending
-  ofstream outfile;                 // Output file stream object
+  int iblock;                          // Timing block counter
+  int level;                           // Timing block level
+  DOUBLE tcount = 0.0;                 // Total time
+  DOUBLE tcount_wall = 0.0;            // Total wall-clock time
+  string filename;                     // Filename for writing statistics
+  string fileend = "timing";           // Filename ending
+  ofstream outfile;                    // Output file stream object
 
   filename = run_id + "." + fileend;
   outfile.open(filename.c_str());
@@ -178,17 +176,17 @@ void CodeTiming::ComputeTimingStatistics
       block[iblock].tfraction = block[iblock].ttot / ttot;
       block[iblock].tfraction_wall = block[iblock].ttot_wall / ttot_wall;
       outfile << setw(30) << block[iblock].block_name
-	      << setw(12) << block[iblock].ttot
-	      << setw(12) << 100.0*block[iblock].tfraction
-	      << setw(12) << block[iblock].ttot_wall
-	      << setw(12) << 100.0*block[iblock].tfraction_wall << endl;
+              << setw(12) << block[iblock].ttot
+              << setw(12) << 100.0*block[iblock].tfraction
+              << setw(12) << block[iblock].ttot_wall
+              << setw(12) << 100.0*block[iblock].tfraction_wall << endl;
     }
 
     outfile << setw(30) << "REMAINDER"
-	    << setw(12) << ttot - tcount
-	    << setw(12) << 100.0*(ttot - tcount)/ttot
-	    << setw(12) << ttot_wall - tcount_wall
-	    << setw(12) << 100.0*(ttot_wall - tcount_wall)/ttot_wall << endl;
+            << setw(12) << ttot - tcount
+            << setw(12) << 100.0*(ttot - tcount)/ttot
+            << setw(12) << ttot_wall - tcount_wall
+            << setw(12) << 100.0*(ttot_wall - tcount_wall)/ttot_wall << endl;
     outfile << "----------------------------------------------------------------------------" << endl;
   }
 
@@ -200,10 +198,10 @@ void CodeTiming::ComputeTimingStatistics
 
 
 
-//=============================================================================
+//=================================================================================================
 //  CodeTiming::WallClockTime
 /// Returns current world clock time (from set point) in seconds
-//=============================================================================
+//=================================================================================================
 double CodeTiming::WallClockTime(void)
 {
   struct timeval tm;

@@ -136,6 +136,7 @@ class SimulationBase
   // Variables
   //-----------------------------------------------------------------------------------------------
   bool ewaldGravity;                ///< Flag if periodic graivty is being used
+  bool extra_sink_output;           ///< Create extra output files for sink particles
   bool initial_h_provided;          ///< Have initial h values been calculated?
   bool kill_simulation;             ///< Kill simulation flag
   bool ParametersProcessed;         ///< Flag if params are already processed
@@ -247,9 +248,6 @@ class Simulation : public SimulationBase
   virtual void SetComFrame(void);
   virtual void ProcessNbodyParameters(void);
 
-#if defined(VERIFY_ALL)
-  void VerifyBlockTimesteps(void);
-#endif
 
   // Initial conditions routines -> move either to Sph, either to Nbody
   //-----------------------------------------------------------------------------------------------
@@ -273,6 +271,7 @@ class Simulation : public SimulationBase
   void UniformBox(void);
   void UniformSphere(void);
 
+
   // Initial conditions helper routines
   //-----------------------------------------------------------------------------------------------
   void AddAzimuthalDensityPerturbation(int, int, FLOAT, FLOAT *, FLOAT *);
@@ -289,8 +288,7 @@ class Simulation : public SimulationBase
   int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
   void ComputeBondiSolution(int, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
   void GenerateTurbulentVelocityField(int, int, DOUBLE, DOUBLE *);
-  void InterpolateVelocityField(int, int, FLOAT, FLOAT,
-                                FLOAT *, FLOAT *,FLOAT *);
+  void InterpolateVelocityField(int, int, FLOAT, FLOAT, FLOAT *, FLOAT *,FLOAT *);
 
 
   // Input-output routines
@@ -351,6 +349,7 @@ class SphSimulation : public Simulation<ndim>
 {
  public:
   using Simulation<ndim>::ewaldGravity;
+  using Simulation<ndim>::extra_sink_output;
   using Simulation<ndim>::periodicBoundaries;
   using Simulation<ndim>::Nmpi;
   using Simulation<ndim>::pruning_level;
@@ -423,6 +422,7 @@ class SphSimulation : public Simulation<ndim>
   virtual void ComputeGlobalTimestep(void);
   virtual void ComputeBlockTimesteps(void);
   virtual void ProcessParameters(void);
+  virtual void WriteExtraSinkOutput(void);
 
 };
 

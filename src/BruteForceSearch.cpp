@@ -46,10 +46,10 @@ using namespace std;
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 BruteForceSearch<ndim,ParticleType>::BruteForceSearch
-(FLOAT kernrangeaux,
- DomainBox<ndim> *boxaux,
- SphKernel<ndim> *kernaux,
- CodeTiming *timingaux):
+ (FLOAT kernrangeaux,
+  DomainBox<ndim> *boxaux,
+  SphKernel<ndim> *kernaux,
+  CodeTiming *timingaux):
   SphNeighbourSearch<ndim>(kernrangeaux,boxaux,kernaux,timingaux)
 {
 }
@@ -69,7 +69,7 @@ BruteForceSearch<ndim,ParticleType>::~BruteForceSearch()
 
 //=================================================================================================
 //  BruteForceSearch::BuildTree
-/// For Brute Force neighbour searching, there is no tree to construct but we chose to delete any
+/// For Brute Force neighbour searching, there is no tree to construct but we delete any
 /// dead SPH particles here to be consistent with the tree neighbour search.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
@@ -1447,6 +1447,9 @@ void BruteForceSearch<ndim,ParticleType>::UnpackReturnedExportInfo (
 
 
 
+template class BruteForceSearch<1,SphParticle>;
+template class BruteForceSearch<2,SphParticle>;
+template class BruteForceSearch<3,SphParticle>;
 template class BruteForceSearch<1,GradhSphParticle>;
 template class BruteForceSearch<2,GradhSphParticle>;
 template class BruteForceSearch<3,GradhSphParticle>;
