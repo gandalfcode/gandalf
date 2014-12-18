@@ -91,14 +91,14 @@ class CodeTiming
 
     TimingBlock()
     {
-      timing_flag = false;
-      timing_level = 0;
-      Ncalled = 0;
-      ttot = 0.0;
-      ttot_wall = 0.0;
-      tfraction = 0.0;
+      timing_flag    = false;
+      timing_level   = 0;
+      Ncalled        = 0;
+      ttot           = 0.0;
+      ttot_wall      = 0.0;
+      tfraction      = 0.0;
       tfraction_wall = 0.0;
-      block_name = "";
+      block_name     = "";
     }
 
   };

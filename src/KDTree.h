@@ -98,37 +98,35 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
 
   using Tree<ndim,ParticleType,TreeCell>::allocated_tree;
   using Tree<ndim,ParticleType,TreeCell>::celldata;
-  using Tree<ndim,ParticleType,TreeCell>::gravity_mac;
   using Tree<ndim,ParticleType,TreeCell>::gmax;
+  using Tree<ndim,ParticleType,TreeCell>::gravity_mac;
   using Tree<ndim,ParticleType,TreeCell>::gtot;
   using Tree<ndim,ParticleType,TreeCell>::g2c;
+  using Tree<ndim,ParticleType,TreeCell>::hmax;
   using Tree<ndim,ParticleType,TreeCell>::ids;
   using Tree<ndim,ParticleType,TreeCell>::ifirst;
   using Tree<ndim,ParticleType,TreeCell>::ilast;
   using Tree<ndim,ParticleType,TreeCell>::inext;
+  using Tree<ndim,ParticleType,TreeCell>::invthetamaxsqd;
+  using Tree<ndim,ParticleType,TreeCell>::kernrange;
   using Tree<ndim,ParticleType,TreeCell>::lmax;
   using Tree<ndim,ParticleType,TreeCell>::ltot;
   using Tree<ndim,ParticleType,TreeCell>::ltot_old;
+  using Tree<ndim,ParticleType,TreeCell>::macerror;
   using Tree<ndim,ParticleType,TreeCell>::multipole;
   using Tree<ndim,ParticleType,TreeCell>::Ncell;
   using Tree<ndim,ParticleType,TreeCell>::Ncellmax;
-  using Tree<ndim,ParticleType,TreeCell>::Nlevel;
   using Tree<ndim,ParticleType,TreeCell>::Nleafmax;
-  using Tree<ndim,ParticleType,TreeCell>::Nlistmax;
   using Tree<ndim,ParticleType,TreeCell>::Nthreads;
   using Tree<ndim,ParticleType,TreeCell>::Ntot;
-  using Tree<ndim,ParticleType,TreeCell>::Ntotold;
   using Tree<ndim,ParticleType,TreeCell>::Ntotmax;
   using Tree<ndim,ParticleType,TreeCell>::Ntotmaxold;
-  using Tree<ndim,ParticleType,TreeCell>::macerror;
-  using Tree<ndim,ParticleType,TreeCell>::hmax;
-  using Tree<ndim,ParticleType,TreeCell>::kernrange;
+  using Tree<ndim,ParticleType,TreeCell>::Ntotold;
   using Tree<ndim,ParticleType,TreeCell>::theta;
   using Tree<ndim,ParticleType,TreeCell>::thetamaxsqd;
-  using Tree<ndim,ParticleType,TreeCell>::invthetamaxsqd;
 #ifdef MPI_PARALLEL
-  using Tree<ndim,ParticleType,TreeCell>::Nimportedcell;
   using Tree<ndim,ParticleType,TreeCell>::Ncelltot;
+  using Tree<ndim,ParticleType,TreeCell>::Nimportedcell;
 #endif
 
 
@@ -182,8 +180,10 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
 #endif
 
 
-  int gactive;
-  int lactive;
+  // Additional KD-tree variables
+  //-----------------------------------------------------------------------------------------------
+  int gactive;                         ///< No. of active leaf/grid cells
+  int lactive;                         ///< Chosen level for computing active particle loops
 
 };
 #endif

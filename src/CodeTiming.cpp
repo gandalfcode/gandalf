@@ -47,6 +47,7 @@ CodeTiming::CodeTiming()
   Nblock      = 0;
   Nlevelmax   = 0;
   ttot        = 0.0;
+  ttot_wall   = 0.0;
   tstart      = clock();
   tstart_wall = WallClockTime();
 }

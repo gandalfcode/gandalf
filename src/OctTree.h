@@ -113,9 +113,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::multipole;
   using Tree<ndim,ParticleType,TreeCell>::Ncell;
   using Tree<ndim,ParticleType,TreeCell>::Ncellmax;
-  using Tree<ndim,ParticleType,TreeCell>::Nlevel;
   using Tree<ndim,ParticleType,TreeCell>::Nleafmax;
-  using Tree<ndim,ParticleType,TreeCell>::Nlistmax;
   using Tree<ndim,ParticleType,TreeCell>::Nthreads;
   using Tree<ndim,ParticleType,TreeCell>::Ntot;
   using Tree<ndim,ParticleType,TreeCell>::Ntotold;

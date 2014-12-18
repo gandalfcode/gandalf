@@ -49,7 +49,17 @@ using namespace std;
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 OctTree<ndim,ParticleType,TreeCell>::OctTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                                              FLOAT kernrangeaux, FLOAT macerroraux,
-                                             string gravity_mac_aux, string multipole_aux)
+                                             string gravity_mac_aux, string multipole_aux) :
+  Tree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
+                                   macerroraux, gravity_mac_aux, multipole_aux)
+  /*gravity_mac(gravity_mac_aux),
+  multipole(multipole_aux),
+  Nleafmax(Nleafmaxaux),
+  invthetamaxsqd(1.0/thetamaxsqdaux),
+  kernrange(kernrangeaux),
+  macerror(macerroraux),
+  theta(sqrt(thetamaxsqdaux)),
+  thetamaxsqd(thetamaxsqdaux)*/
 {
   allocated_tree = false;
   ltot           = 0;
@@ -59,13 +69,6 @@ OctTree<ndim,ParticleType,TreeCell>::OctTree(int Nleafmaxaux, FLOAT thetamaxsqda
   Ntot           = 0;
   Ntotmax        = 0;
   Ntotmaxold     = 0;
-  Nleafmax       = Nleafmaxaux;
-  kernrange      = kernrangeaux;
-  thetamaxsqd    = thetamaxsqdaux;
-  invthetamaxsqd = 1.0/thetamaxsqdaux;
-  gravity_mac    = gravity_mac_aux;
-  macerror       = macerroraux;
-  multipole      = multipole_aux;
 #if defined _OPENMP
   Nthreads       = omp_get_max_threads();
 #else

@@ -150,19 +150,20 @@ class Sph
   int create_sinks;                   ///< Create new sink particles?
   int fixed_sink_mass;                ///< Fix masses of sink particles
   int Ngather;                        ///< Average no. of gather neighbours
-  int Nsph;                           ///< No. of SPH particles in simulation
   int Nghost;                         ///< No. of ghost SPH particles
+  int Nghostmax;                      ///< Max. allowed no. of ghost particles
+  int NImportedParticles;             ///< No. of imported particles
+                                      ///< (to compute forces on behalf of other processors)
   int Nmpighost;                      ///< No. of MPI ghost particles
   int NPeriodicGhost;                 ///< No. of periodic ghost particles
-  int NImportedParticles;             ///< No. of imported particles (to compute forces on behalf of other processors)
-  int Ntot;                           ///< No. of real + ghost particles
+  int Nsph;                           ///< No. of SPH particles in simulation
   int Nsphmax;                        ///< Max. no. of SPH particles in array
-  int Nghostmax;                      ///< Max. allowed no. of ghost particles
+  int Ntot;                           ///< No. of real + ghost particles
   int riemann_order;                  ///< Order of Riemann solver
   FLOAT alpha_visc_min;               ///< Min. time-dependent viscosity alpha
-  FLOAT kernrange;                    ///< Kernel range
   FLOAT kernfac;                      ///< Kernel range neighbour fraction
   FLOAT kernfacsqd;                   ///< Kernel range neib. fraction squared
+  FLOAT kernrange;                    ///< Kernel range
   FLOAT mmean;                        ///< Mean SPH particle mass
   FLOAT msink_fixed;                  ///< Fixed sink mass value
   FLOAT hmin_sink;                    ///< Minimum smoothing length of sinks

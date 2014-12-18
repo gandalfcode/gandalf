@@ -44,8 +44,8 @@ using namespace std;
 
 //=================================================================================================
 //  Class Tree
-/// \brief   Generic Tree Class for partitioning particles
-/// \details ..
+/// \brief   Generic Tree class for partitioning particles spatially.
+/// \details Generic Tree class for partitioning particles spatially.
 /// \author  D. A. Hubber
 /// \date    12/09/2014
 //=================================================================================================
@@ -54,7 +54,12 @@ class Tree
 {
  public:
 
-  Tree() {};
+  //Tree() {};
+  Tree(int _Nleafmax, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
+       string _gravity_mac, string _multipole):
+    gravity_mac(_gravity_mac), multipole(_multipole), Nleafmax(_Nleafmax),
+    invthetamaxsqd(1.0/_thetamaxsqd), kernrange(_kernrange), macerror(_macerror),
+    theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd){};
 
 
   //-----------------------------------------------------------------------------------------------
@@ -74,13 +79,15 @@ class Tree
   virtual int ComputeNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
                                    const int, int &, int *, ParticleType<ndim> *) = 0;
   virtual int ComputeGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
-                                            const FLOAT, const int, const int,
-                                            int &, int &, int &, int &, int *, int *, int *,
-                                            TreeCell<ndim> *, ParticleType<ndim> *) = 0;
-  virtual int ComputePeriodicGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
-                                                    const DomainBox<ndim> &, const FLOAT, const int, const int,
-                                                    int &, int &, int &, int &, int *, int *, int *,
-                                                    TreeCell<ndim> *, ParticleType<ndim> *) = 0;
+                                            const FLOAT, const int, const int, int &, int &,
+                                            int &, int &, int *, int *, int *, TreeCell<ndim> *,
+                                            ParticleType<ndim> *) = 0;
+  virtual int ComputePeriodicGravityInteractionList(const TreeCell<ndim> &,
+                                                    const ParticleType<ndim> *,
+                                                    const DomainBox<ndim> &, const FLOAT,
+                                                    const int, const int, int &, int &, int &,
+                                                    int &, int *, int *, int *, TreeCell<ndim> *,
+                                                    ParticleType<ndim> *) = 0;
   virtual int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT,
                                                 const int, const int, const int,
                                                 int &, int &, int &, int *, int *,
@@ -99,43 +106,43 @@ class Tree
   virtual void ValidateTree(ParticleType<ndim> *) = 0;
 #endif
 
+  // Const variables for tree class
+  //-----------------------------------------------------------------------------------------------
+  const string gravity_mac;            ///< Multipole-acceptance criteria for tree
+  const string multipole;              ///< Multipole-order for cell gravity
+  const int Nleafmax;                  ///< Max. number of particles per leaf cell
+  const FLOAT invthetamaxsqd;          ///< 1 / thetamaxsqd
+  const FLOAT kernrange;               ///< Extent of employed kernel
+  const FLOAT macerror;                ///< Error tolerance for gravity tree-MAC
+  const FLOAT theta;                   ///< Geometric opening angle
+  const FLOAT thetamaxsqd;             ///< Geometric opening angle squared
+
   // Additional variables for tree class
   //-----------------------------------------------------------------------------------------------
-  string gravity_mac;               ///< Multipole-acceptance criteria for tree
-  string multipole;                 ///< Multipole-order for cell gravity
-  bool allocated_tree;              ///< Are grid arrays allocated?
-  int ifirst;                       ///< i.d. of first particle in tree
-  int ilast;                        ///< i.d. of last particle in tree
-  int lmax;                         ///< Max. no. of levels
-  int ltot;                         ///< Total number of levels in tree
-  int ltot_old;                     ///< Prev. value of ltot
-  int Ncell;                        ///< Current no. of grid cells
-  int Ncellmax;                     ///< Max. allowed no. of grid cells
-  int Nlevel;                       ///< ""
-  int Nleafmax;                     ///< Max. number of particles per leaf cell
-  int Nlistmax;                     ///< Max. length of neighbour list
-  int Nthreads;                     ///< No. of OpenMP threads
-  int Ntot;                         ///< No. of current points in list
-  int Ntotold;                      ///< Prev. no. of particles
-  int Ntotmax;                      ///< Max. no. of points in list
-  int Ntotmaxold;                   ///< Old value of Ntotmax
-  FLOAT macerror;                   ///< Error tolerance for gravity tree-MAC
-  FLOAT hmax;                       ///< Store hmax in the tree
-  FLOAT kernrange;                  ///< Extent of employed kernel
-  FLOAT theta;                      ///< Geometric opening angle
-  FLOAT thetamaxsqd;                ///< Geometric opening angle squared
-  FLOAT invthetamaxsqd;             ///< 1 / thetamaxsqd
-  int *ids;                         ///< Particle ids
-  int *inext;                       ///< Linked list for grid search
-  TreeCell<ndim> *celldata;         ///< ..
-
-  int gmax;                         ///< Max. no. of grid/leaf cells
-  int gtot;                         ///< Total number of grid/leaf cells
-  int *g2c;                         ///< i.d. of leaf(grid) cells
+  bool allocated_tree;                 ///< Are grid arrays allocated?
+  int gmax;                            ///< Max. no. of grid/leaf cells
+  int gtot;                            ///< Total number of grid/leaf cells
+  int ifirst;                          ///< i.d. of first particle in tree
+  int ilast;                           ///< i.d. of last particle in tree
+  int lmax;                            ///< Max. no. of levels
+  int ltot;                            ///< Total number of levels in tree
+  int ltot_old;                        ///< Prev. value of ltot
+  int Ncell;                           ///< Current no. of grid cells
+  int Ncellmax;                        ///< Max. allowed no. of grid cells
+  int Nthreads;                        ///< No. of OpenMP threads
+  int Ntot;                            ///< No. of current points in list
+  int Ntotmax;                         ///< Max. no. of points in list
+  int Ntotmaxold;                      ///< Old value of Ntotmax
+  int Ntotold;                         ///< Prev. no. of particles
+  FLOAT hmax;                          ///< Store hmax in the tree
+  int *g2c;                            ///< i.d. of leaf(grid) cells
+  int *ids;                            ///< Particle ids
+  int *inext;                          ///< Linked list for grid search
+  TreeCell<ndim> *celldata;            ///< Main tree cell data array
 
 #if defined MPI_PARALLEL
-  int Nimportedcell;                ///< No. of imported cells
-  int Ncelltot;                     ///< Total number of cells
+  int Nimportedcell;                   ///< No. of imported cells
+  int Ncelltot;                        ///< Total number of cells
 #endif
 
 };

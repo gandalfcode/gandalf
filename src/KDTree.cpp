@@ -51,24 +51,34 @@ using namespace std;
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 KDTree<ndim,ParticleType,TreeCell>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux,
                                            FLOAT kernrangeaux, FLOAT macerroraux,
-                                           string gravity_mac_aux, string multipole_aux)
+                                           string gravity_mac_aux, string multipole_aux):
+  Tree<ndim,ParticleType,TreeCell>(Nleafmaxaux, thetamaxsqdaux, kernrangeaux,
+                                   macerroraux, gravity_mac_aux, multipole_aux)
+  /*gravity_mac(gravity_mac_aux),
+  multipole(multipole_aux),
+  Nleafmax(Nleafmaxaux),
+  invthetamaxsqd(1.0/thetamaxsqdaux),
+  kernrange(kernrangeaux),
+  macerror(macerroraux),
+  theta(sqrt(thetamaxsqdaux)),
+  thetamaxsqd(thetamaxsqdaux)*/
 {
   allocated_tree = false;
+  gmax           = 0;
+  gtot           = 0;
+  ifirst         = -1;
+  ilast          = -1;
   lactive        = 0;
+  lmax           = 0;
   ltot           = 0;
+  ltot_old       = -1;
   Ncell          = 0;
   Ncellmax       = 0;
   Ntot           = 0;
   Ntotmax        = 0;
   Ntotmaxold     = 0;
   Ntotold        = -1;
-  Nleafmax       = Nleafmaxaux;
-  kernrange      = kernrangeaux;
-  thetamaxsqd    = thetamaxsqdaux;
-  invthetamaxsqd = 1.0/thetamaxsqdaux;
-  gravity_mac    = gravity_mac_aux;
-  macerror       = macerroraux;
-  multipole      = multipole_aux;
+  hmax           = 0.0;
 #if defined _OPENMP
   Nthreads       = omp_get_max_threads();
 #else
@@ -2028,7 +2038,8 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 
       gravcelllist[Ngravcelltemp++] = &(celldata[cc]);
       if (Ngravcelltemp>=Ngravcellmax) {
-        ExceptionHandler::getIstance().raise("Too many interaction cells in disant gravity interaction list!!!");
+        ExceptionHandler::getIstance().raise("Too many interaction cells "
+                                             "in distant gravity interaction list!");
       }
       cc = celldata[cc].cnext;
 

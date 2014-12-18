@@ -224,7 +224,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
   sinks.alpha_ss            = floatparams["alpha_ss"];
   sinks.smooth_accrete_frac = floatparams["smooth_accrete_frac"];
   sinks.smooth_accrete_dt   = floatparams["smooth_accrete_dt"];
-  sinks.run_id              = stringparams["run_id"];
   sinks.sink_radius_mode    = stringparams["sink_radius_mode"];
   sinks.rho_sink            = floatparams["rho_sink"];
   sinks.rho_sink            /= simunits.rho.outscale/simunits.rho.outcgs;
