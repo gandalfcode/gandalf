@@ -1,6 +1,8 @@
 //=================================================================================================
 //  DomainBox.h
-//  ..
+//  Contans basic box and Domain box data structures.  Also contains various
+//  helper routines related to the domain box, boundaries and for
+//  MPI communication.
 //
 //  This file is part of GANDALF :
 //  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -43,8 +45,8 @@ enum boundaryEnum{openBoundary, periodicBoundary, mirrorBoundary, wallBoundary, 
 //=================================================================================================
 template <int ndim>
 struct Box {
-  FLOAT boxmin[ndim];                   ///< Minimum bounding box extent
-  FLOAT boxmax[ndim];                   ///< Maximum bounding box extent
+  FLOAT boxmin[3];                     ///< Minimum bounding box extent
+  FLOAT boxmax[3];                     ///< Maximum bounding box extent
 };
 
 
@@ -73,16 +75,16 @@ MPI_Datatype CreateBoxType (Box<ndim> dummy) {
 //=================================================================================================
 template <int ndim>
 struct DomainBox {
-  boundaryEnum x_boundary_lhs;          ///< x-dimension LHS boundary condition
-  boundaryEnum x_boundary_rhs;          ///< x-dimension RHS boundary condition
-  boundaryEnum y_boundary_lhs;          ///< y-dimension LHS boundary condition
-  boundaryEnum y_boundary_rhs;          ///< y-dimension RHS boundary condition
-  boundaryEnum z_boundary_lhs;          ///< z-dimension LHS boundary condition
-  boundaryEnum z_boundary_rhs;          ///< z-dimension RHS boundary condition
-  FLOAT boxmin[ndim];                   ///< Minimum bounding box extent
-  FLOAT boxmax[ndim];                   ///< Maximum bounding box extent
-  FLOAT boxsize[ndim];                  ///< Side-lengths of bounding box
-  FLOAT boxhalf[ndim];                  ///< Half side-lengths of bounding box
+  boundaryEnum x_boundary_lhs;         ///< x-dimension LHS boundary condition
+  boundaryEnum x_boundary_rhs;         ///< x-dimension RHS boundary condition
+  boundaryEnum y_boundary_lhs;         ///< y-dimension LHS boundary condition
+  boundaryEnum y_boundary_rhs;         ///< y-dimension RHS boundary condition
+  boundaryEnum z_boundary_lhs;         ///< z-dimension LHS boundary condition
+  boundaryEnum z_boundary_rhs;         ///< z-dimension RHS boundary condition
+  FLOAT boxmin[3];                     ///< Minimum bounding box extent
+  FLOAT boxmax[3];                     ///< Maximum bounding box extent
+  FLOAT boxsize[3];                    ///< Side-lengths of bounding box
+  FLOAT boxhalf[3];                    ///< Half side-lengths of bounding box
 };
 
 
@@ -224,6 +226,8 @@ inline bool FractionalBoxOverlap
 
   // Calculate closest position vector to nearest
 
+
+  return false;
 }
 
 

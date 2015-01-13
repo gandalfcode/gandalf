@@ -82,7 +82,7 @@ DOUBLE SphIntegration<ndim>::Timestep
   Sph<ndim> *sph)                      ///< [in] Pointer to main SPH object
 {
   DOUBLE timestep;                     // Minimum value of particle timesteps
-  DOUBLE adotmag;                      // Magnitude of particle jerk
+  //DOUBLE adotmag;                      // Magnitude of particle jerk
   DOUBLE amag;                         // Magnitude of particle acceleration
 
   // Courant condition.  If hydro forces are not used, compute the

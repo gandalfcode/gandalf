@@ -47,7 +47,7 @@ OPT += -O3 -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),PROFILE)
 OPT += -O3 -fPIC -fno-exceptions -fno-rtti -pg
 else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -O3 -g -Wall -fbounds-check -fPIC  #-fprofile-arcs -ftest-coverage
+OPT += -O3 -g -Wall -Wno-unknown-pragmas -fbounds-check -fPIC  #-fprofile-arcs -ftest-coverage
 endif
 ifeq ($(OPENMP),1)
 OPT += -fopenmp
@@ -90,7 +90,7 @@ OPT += -O3 -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),PROFILE)
 OPT += -O3 -fPIC -fno-exceptions -fno-rtti -pg
 else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -g -Wall -fbounds-check -fPIC -O3 #-fprofile-arcs -ftest-coverage
+OPT += -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC -O3 #-fprofile-arcs -ftest-coverage
 endif
 ifeq ($(OPENMP),1)
 OPT += -fopenmp -DOPENMP

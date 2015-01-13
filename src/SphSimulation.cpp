@@ -939,7 +939,6 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   int imin;                             // i.d. of ptcl with minimum timestep
   int imin_aux;                         // ..
   int istep;                            // Aux. variable for changing steps
-  int j;                                // Aux. variable
   int last_level;                       // Previous timestep level
   int level;                            // Particle timestep level
   int level_max_aux;                    // Aux. maximum level variable
@@ -956,7 +955,6 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   DOUBLE dt_min_aux;                    // Aux. minimum timestep variable
   DOUBLE dt_nbody;                      // Aux. minimum N-body timestep
   DOUBLE dt_sph;                        // Aux. minimum SPH timestep
-  DOUBLE dt_old = timestep;             // Previous value of timestep
 
   debug2("[SphSimulation::ComputeBlockTimesteps]");
   timing->StartTimingSection("BLOCK_TIMESTEPS",2);
@@ -1264,10 +1262,12 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
       // Increase maximum timestep level if correctly synchronised
       istep = pow(2,level_step - level_max_old + 1);
-      if (level_max <= level_max_old - 1 && level_max_old > 1 && n%istep == 0)
+      if (level_max <= level_max_old - 1 && level_max_old > 1 && n%istep == 0) {
         level_max = level_max_old - 1;
-      else if (level_max < level_max_old)
+      }
+      else if (level_max < level_max_old) {
         level_max = level_max_old;
+      }
 
       level_step = level_max + integration_step - 1;
 

@@ -1190,7 +1190,7 @@ template <int ndim>
 bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 {
   int dummy;                        // ..
-  int dmdt_range_aux;               // Accretion history array size
+  //int dmdt_range_aux;               // Accretion history array size
   int ndata;                        // No. of data arrays written
   int nunit;                        // No. of unit strings
   int typedata[50][5];              // ..
@@ -1252,7 +1252,7 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     sph->Nsph      = idata[0];
     nbody->Nstar   = idata[1];
     sinks.Nsink    = idata[1];
-    dmdt_range_aux = idata[29];
+    //dmdt_range_aux = idata[29];
     nunit          = idata[19];
     ndata          = idata[20];
   }
@@ -1308,8 +1308,9 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
   //===============================================================================================
   for (int j=0; j<ndata; j++) {
 
-    int ifirst = typedata[j][1];
-    int ilast = typedata[j][2];
+    // Comment these out for now (may need in future for different particle types)
+    //int ifirst = typedata[j][1];
+    //int ilast = typedata[j][2];
 
     // porig
     //---------------------------------------------------------------------------------------------
@@ -1904,11 +1905,11 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Simulation::ConvertToCodeUnits
 /// For any simulations loaded into memory via a snapshot file, all particle
 /// variables are converted into dimensionless code units here.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void Simulation<ndim>::ConvertToCodeUnits(void)
 {
@@ -1918,7 +1919,7 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
   debug2("[Simulation::ConvertToCodeUnits]");
 
   // Rescale all SPH particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<sph->Nsph; i++) {
     SphParticle<ndim>& part = sph->GetParticleIPointer(i);
     for (k=0; k<ndim; k++) part.r[k] /= simunits.r.inscale;
@@ -1932,7 +1933,7 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
 
 
   // Rescale all N-body particles
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<nbody->Nstar; i++) {
     for (k=0; k<ndim; k++) nbody->stardata[i].r[k] /= simunits.r.inscale;
     for (k=0; k<ndim; k++) nbody->stardata[i].v[k] /= simunits.v.inscale;
@@ -1944,7 +1945,7 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
 
 
   // Rescale all sink information
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (i=0; i<sinks.Nsink; i++) {
     sinks.sink[i].radius /= simunits.r.inscale;
   }

@@ -63,10 +63,10 @@ template class SM2012SphSimulation<3>;
 template <int ndim>
 void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
 {
-  aviscenum avisc;                  // Artificial viscosity enum
-  acondenum acond;                  // Artificial conductivity enum
-  eosenum gas_eos;                  // Gas EOS enum
-  tdaviscenum tdavisc;              // Time-dependent viscosity enum
+  aviscenum avisc = noav;              // Artificial viscosity enum
+  acondenum acond = noac;              // Artificial conductivity enum
+  eosenum gas_eos = noeos;             // Gas EOS enum
+  tdaviscenum tdavisc = notdav;        // Time-dependent viscosity enum
 
   // Local references to parameter variables for brevity
   map<string, int> &intparams = simparams->intparams;

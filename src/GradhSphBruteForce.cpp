@@ -81,14 +81,14 @@ void GradhSphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
 {
   int i,j,jj,k;                        // Particle and dimension counters
   int Nneib = 0;                       // No. of (non-dead) neighbours
-  int okflag;                          // Flag valid smoothing length
+  //int okflag;                          // Flag valid smoothing length
   int *neiblist;                       // List of neighbours
   FLOAT dr[ndim];                      // Relative distance vector
   FLOAT rp[ndim];                      // Position of current particle
   FLOAT *drsqd;                        // Distance squared
   FLOAT *gpot;                         // Array of neib. grav. potentials
   FLOAT *m;                            // Array of neib. position vectors
-  FLOAT *mu;                           // Array of neib. mass*u values
+  FLOAT *mu = 0;                       // Array of neib. mass*u values
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[GradhSphBruteForce::UpdateAllSphProperties]");
@@ -132,7 +132,8 @@ void GradhSphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
       //-------------------------------------------------------------------------------------------
 
       // Compute all SPH gather properties
-      okflag = sph->ComputeH(i,Nneib,big_number,m,mu,drsqd,gpot,sphdata[i],nbody);
+      //okflag =
+      sph->ComputeH(i,Nneib,big_number,m,mu,drsqd,gpot,sphdata[i],nbody);
 
     }
     //---------------------------------------------------------------------------------------------

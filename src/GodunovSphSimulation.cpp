@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  GodunovSphSimulation.cpp
 //  Contains all main functions controlling Godunov SPH simulation work-flow.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <iostream>
@@ -51,17 +51,17 @@ template class GodunovSphSimulation<3>;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  GodunovSphSimulation::ProcessSphParameters
 /// Process parameter particular to setting up a Godunov SPH simulation object.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
 {
-  aviscenum avisc;                  // Artificial viscosity enum
-  acondenum acond;                  // Artificial conductivity enum
-  eosenum gas_eos;                  // Gas EOS enum
-  tdaviscenum tdavisc;              // Time-dependent viscosity enum
+  aviscenum avisc = noav;              // Artificial viscosity enum
+  acondenum acond = noac;              // Artificial conductivity enum
+  eosenum gas_eos = noeos;             // Gas EOS enum
+  tdaviscenum tdavisc = notdav;        // Time-dependent viscosity enum
 
   map<string, int> &intparams = simparams->intparams;
   map<string, double> &floatparams = simparams->floatparams;
@@ -69,25 +69,22 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
   string KernelName = stringparams["kernel"];
 
   // Create SPH object based on chosen method in params file
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (intparams["tabulated_kernel"] == 1) {
     sph = new GodunovSph<ndim, TabulatedKernel>
-      (intparams["hydro_forces"], intparams["self_gravity"],
-       floatparams["alpha_visc"], floatparams["beta_visc"],
-       floatparams["h_fac"], floatparams["h_converge"],
+      (intparams["hydro_forces"], intparams["self_gravity"], floatparams["alpha_visc"],
+       floatparams["beta_visc"], floatparams["h_fac"], floatparams["h_converge"],
        avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
   }
   else if (intparams["tabulated_kernel"] == 0) {
     if (KernelName == "gaussian") {
       sph = new GodunovSph<ndim, GaussianKernel>
-        (intparams["hydro_forces"], intparams["self_gravity"],
-         floatparams["alpha_visc"], floatparams["beta_visc"],
-         floatparams["h_fac"], floatparams["h_converge"],
+        (intparams["hydro_forces"], intparams["self_gravity"], floatparams["alpha_visc"],
+         floatparams["beta_visc"], floatparams["h_fac"], floatparams["h_converge"],
          avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
     }
     else {
-      string message = "Unrecognised parameter : kernel = " +
-	simparams->stringparams["kernel"];
+      string message = "Unrecognised parameter : kernel = " + simparams->stringparams["kernel"];
       ExceptionHandler::getIstance().raise(message);
     }
   }
@@ -99,29 +96,27 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
 
 
   // Riemann solver object
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   string riemann = stringparams["riemann_solver"];
   if (riemann == "exact")
     sph->riemann = new ExactRiemannSolver(floatparams["gamma_eos"]);
   else if (riemann == "hllc")
     sph->riemann = new HllcRiemannSolver(floatparams["gamma_eos"]);
   else {
-    string message = "Unrecognised parameter : riemann_solver = "
-      + riemann;
+    string message = "Unrecognised parameter : riemann_solver = " + riemann;
     ExceptionHandler::getIstance().raise(message);
   }
 
 
   // Create SPH particle integration object
-  //---------------------------------------------------------------------------
-  sphint = new SphGodunovIntegration<ndim, GodunovSphParticle>(floatparams["accel_mult"],
-					   floatparams["courant_mult"],
-			               floatparams["energy_mult"],
-					   gas_eos, tdavisc);
+  //-----------------------------------------------------------------------------------------------
+  sphint = new SphGodunovIntegration<ndim, GodunovSphParticle>
+    (floatparams["accel_mult"], floatparams["courant_mult"],
+     floatparams["energy_mult"], gas_eos, tdavisc);
 
 
   // Energy integration object
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   //uint = new EnergyGodunovIntegration<ndim>(floatparams["energy_mult"]);
   uint = new NullEnergy<ndim>(floatparams["energy_mult"]);
 
@@ -132,7 +127,7 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
 #endif
 
   // Create neighbour searching object based on chosen method in params file
-  //-------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (stringparams["neib_search"] == "bruteforce")
     sphneib = new GodunovSphBruteForce<ndim,GodunovSphParticle>
      (sph->kernp->kernrange,&simbox,sph->kernp,this->timing);
@@ -181,10 +176,10 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
 
 //TODO: make this mess more modular (note: initial h computation
 //should be done inside the neighbour search)
-//=============================================================================
+//=================================================================================================
 //  SphSimulation::PostInitialConditionsSetup
 /// ..
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 {

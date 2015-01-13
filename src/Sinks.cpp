@@ -62,6 +62,7 @@ Sinks<ndim>::Sinks()
 template <int ndim>
 Sinks<ndim>::~Sinks()
 {
+  DeallocateMemory();
 }
 
 
@@ -205,7 +206,6 @@ void Sinks<ndim>::CreateNewSinkParticle
 {
   int i;                               // SPH particle counter
   int k;                               // Dimension counter
-  int deadlist[1];                     // List of 'dead' particles
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
 
@@ -278,9 +278,9 @@ void Sinks<ndim>::CreateNewSinkParticle
   cout << "--------------------------------------------------------------------" << endl;
 
   // Remove SPH particle from main arrays
-  part_sink.m = (FLOAT) 0.0;
+  part_sink.m      = (FLOAT) 0.0;
   part_sink.active = false;
-  part_sink.itype = dead;
+  part_sink.itype  = dead;
 
   // Increment star and sink counters
   nbody->Nstar++;
@@ -305,13 +305,11 @@ void Sinks<ndim>::AccreteMassToSinks
   DOUBLE timestep)                     ///< [in] Minimum timestep level
 {
   int i,j,k;                           // Particle and dimension counters
-  int Ndead = 0;                       // No. of 'dead' (i.e. accreted) particles
   int Nlist = 0;                       // Max. no of gas particles inside sink
   int Nlisttot = 0;                    // Total number of gas ptcls inside sinks
   int Nneib;                           // No. of particles inside sink
   int s;                               // Sink counter
   int saux;                            // Aux. sink i.d.
-  int *deadlist;                       // List of 'dead' particles
   int *ilist;                          // List of particle ids
   FLOAT asqd;                          // Acceleration squared
   FLOAT dr[ndim];                      // Relative position vector
@@ -500,7 +498,7 @@ void Sinks<ndim>::AccreteMassToSinks
       // Finally calculate accretion timescale and mass accreted
       // If there's too much mass inside the sink, artificially increase accretion rate to
       // restore equilibrium (between mass entering sink and that being accreted) quicker.
-      sink[s].taccrete = pow(sink[s].trad, (FLOAT)1.0 - efrac)*pow(sink[s].tvisc,efrac);
+      sink[s].taccrete = pow(sink[s].trad, (FLOAT) 1.0 - efrac)*pow(sink[s].tvisc,efrac);
       if (sink[s].mmax > small_number && sink[s].menc > sink[s].mmax) {
         sink[s].taccrete *= pow(sink[s].mmax/sink[s].menc,2);
       }
@@ -513,8 +511,7 @@ void Sinks<ndim>::AccreteMassToSinks
       cout << "macc : " << macc << "     macc/mmean : " << macc/sph->mmean
            << "    " << sink[s].menc << "    mmax : " << sink[s].mmax
            << "    mmax/mmean : " << sink[s].mmax/sph->mmean << "     dmdt : " << macc/dt << endl;
-           */
-
+      */
     }
     else {
       macc = sink[s].menc;
@@ -590,8 +587,11 @@ void Sinks<ndim>::AccreteMassToSinks
     if (ndim == 3) {
       sink[s].angmom[0] += mold*(dr[1]*dv[2] - dr[2]*dv[1]);
       sink[s].angmom[1] += mold*(dr[2]*dv[0] - dr[0]*dv[2]);
+      sink[s].angmom[2] += mold*(dr[0]*dv[1] - dr[1]*dv[0]);
     }
-    sink[s].angmom[2] += mold*(dr[0]*dv[1] - dr[1]*dv[0]);
+    else if (ndim == 2) {
+      sink[s].angmom[2] += mold*(dr[0]*dv[1] - dr[1]*dv[0]);
+    }
 
     /*cout << "New rcom : " << sink[s].star->r[0] << "    " << sink[s].star->r[1] << "    " << sink[s].star->r[2] << endl;
     cout << "New vcom : " << sink[s].star->v[0] << "    " << sink[s].star->v[1] << "    " << sink[s].star->v[2] << endl;
@@ -630,8 +630,11 @@ void Sinks<ndim>::AccreteMassToSinks
       if (ndim == 3) {
         sink[s].angmom[0] += mtemp*(dr[1]*dv[2] - dr[2]*dv[1]);
         sink[s].angmom[1] += mtemp*(dr[2]*dv[0] - dr[0]*dv[2]);
+        sink[s].angmom[2] += mtemp*(dr[0]*dv[1] - dr[1]*dv[0]);
       }
-      sink[s].angmom[2] += mtemp*(dr[0]*dv[1] - dr[1]*dv[0]);
+      else if (ndim == 2) {
+        sink[s].angmom[2] += mtemp*(dr[0]*dv[1] - dr[1]*dv[0]);
+      }
 
       // If we've reached/exceeded the mass limit, do not include more ptcls
       if (macc < small_number) break;

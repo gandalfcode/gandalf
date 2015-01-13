@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  MonochromaticIonisationMonteCarlo.cpp
 //  Class for controlling Monte-Carlo radiation transport algorithms walking
 //  a KD-tree constructed from the gas positions.
@@ -19,7 +19,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <string>
@@ -38,14 +38,14 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  MonochromaticIonisationMonteCarlo::MonochromaticIonisationMonteCarlo()
 /// Constructor for ..
-//=============================================================================
+//=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::MonochromaticIonisationMonteCarlo
-(int Nphotonaux, int Nleafmaxaux, FLOAT tempionaux, DOUBLE NLyCaux,
- RandomNumber *randaux, SimUnits *unitsaux, EOS<ndim> *eosaux)
+ (int Nphotonaux, int Nleafmaxaux, FLOAT tempionaux, DOUBLE NLyCaux,
+  RandomNumber *randaux, SimUnits *unitsaux, EOS<ndim> *eosaux)
 {
   randnumb = randaux;
   units    = unitsaux;
@@ -89,10 +89,10 @@ MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Monochromat
 
 
 
-//=============================================================================
+//=================================================================================================
 //  MonochromaticIonisationMonteCarlo::~MonochromaticIonisationMonteCarlo()
 /// Destructor for KD-tree radiation class
-//=============================================================================
+//=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::~MonochromaticIonisationMonteCarlo()
 {
@@ -100,28 +100,27 @@ MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::~Monochroma
 
 
 
-//=============================================================================
+//=================================================================================================
 //  MonochromaticIonisationMonteCarlo::UpdateRadiationField
 /// Update the radiation field by iterating the MCRT method on the tree
 /// several times until acceptable convergence has been achieved.
-//=============================================================================
+//=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
-(int Nsph,                          ///< No. of SPH particle
- int Nnbody,                        ///< No. of N-body particles
- int Nsink,                         ///< No. of sink particles
- SphParticle<ndim> *sph_gen,        ///< Generic SPH particle data array
- NbodyParticle<ndim> **nbodydata,   ///< N-body data array
- SinkParticle<ndim> *sinkdata)      ///< Sink data array
+ (int Nsph,                            ///< [in] No. of SPH particle
+  int Nnbody,                          ///< [in] No. of N-body particles
+  int Nsink,                           ///< [in] No. of sink particles
+  SphParticle<ndim> *sph_gen,          ///< [in] Generic SPH particle data array
+  NbodyParticle<ndim> **nbodydata,     ///< [in] N-body data array
+  SinkParticle<ndim> *sinkdata)        ///< [in] Sink data array
 {
-  bool converged;                   // Is radiation field converged?
-  int c;                            // Cell counter
-  int i;                            // ..
-  int isource;                      // Radiation source i.d.
-  int it;                           // Iteration counter
-  int k;                            // Dimension counter
-  int level;                        // Level to walk tree on
-  RadiationSource<ndim> source;     // Current radiation source
+  bool converged;                      // Is radiation field converged?
+  int c;                               // Cell counter
+  int i;                               // ..
+  int it;                              // Iteration counter
+  int k;                               // Dimension counter
+  int level;                           // Level to walk tree on
+  RadiationSource<ndim> source;        // Current radiation source
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* >(sph_gen);
 
 
@@ -249,9 +248,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Iterat
  NbodyParticle<ndim> **nbodydata,   ///< N-body data array
  SinkParticle<ndim> *sinkdata)      ///< Sink data array
 {
-  int c;                            // Cell counter
   int iphoton;                      // Photon counter
-  int isource;                      // Radiation source i.d.
   int k;                            // Dimension counter
   int kfreq;                        // Frequency bin counter
   long int Ncellcount = 0;          // Count no. of cells passed through
@@ -260,10 +257,8 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Iterat
   FLOAT rand1;                      // Random number
   FLOAT taumax;                     // Optical depth travelled by photon
   FLOAT tau;                        // Current value of photon optical depth
-  FLOAT theta;                      // Random angle for photon direction
   PhotonPacket<ndim> photon;        // Current photon packet
   RadiationSource<ndim> source;     // Current radiation source
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* >(sph_gen);
 
   if (level < 0 && level > radtree->ltot) {
     cout << "Walking invalid tree level" << endl;
@@ -276,11 +271,6 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Iterat
   source.c = radtree->FindCell(0,level,source.r);
   source.luminosity = 1.0;
   kfreq = 0;
-
-  cout << "Source located at : " << source.c << "   "
-       << radtree->radcell[source.c].r[0] << "   "
-       << radtree->radcell[source.c].r[1] << "   "
-       << radtree->radcell[source.c].r[2] << endl;
 
 
   // Now emit all photons from radiation sources, updating the radiation field
@@ -403,7 +393,6 @@ bool MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Update
 {
   bool converged = true;
   int c;
-  int k;
   int Nconverged = 0;
   FLOAT nfrac;
   MonoIonTreeCell<ndim,nfreq> *cell;
@@ -478,11 +467,12 @@ PhotonPacket<ndim> MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,Cel
 
     // Generate random direction for photon
     theta = pi*(2.0*randnumb->floatrand() - 1.0);
-    photon.eray[2] = 2.0*randnumb->floatrand() - 1.0;
-    photon.eray[0] = sqrt(1.0 - photon.eray[2]*photon.eray[2])*cos(theta);
-    photon.eray[1] = sqrt(1.0 - photon.eray[2]*photon.eray[2])*sin(theta);
-    for (k=0; k<ndim; k++)
-      photon.inveray[k] = 1.0/(photon.eray[k] + small_number);
+    if (ndim == 3) {
+      photon.eray[2] = 2.0*randnumb->floatrand() - 1.0;
+      photon.eray[0] = sqrt(1.0 - photon.eray[2]*photon.eray[2])*cos(theta);
+      photon.eray[1] = sqrt(1.0 - photon.eray[2]*photon.eray[2])*sin(theta);
+    }
+    for (k=0; k<ndim; k++) photon.inveray[k] = 1.0/(photon.eray[k] + small_number);
 
   }
 
@@ -531,11 +521,12 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Scatte
   //theta = pi*(2.0*((FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX) - 1.0);
   //photon.eray[2] = 2.0*((FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX) - 1.0;
   theta = pi*(2.0*randnumb->floatrand() - 1.0);
-  photon.eray[2] = 2.0*randnumb->floatrand() - 1.0;
-  photon.eray[0] = sqrt(1.0 - photon.eray[2]*photon.eray[2])*cos(theta);
-  photon.eray[1] = sqrt(1.0 - photon.eray[2]*photon.eray[2])*sin(theta);
-  for (k=0; k<ndim; k++)
-    photon.inveray[k] = 1.0/(photon.eray[k] + small_number);
+  if (ndim == 3) {
+    photon.eray[2] = 2.0*randnumb->floatrand() - 1.0;
+    photon.eray[0] = sqrt(1.0 - photon.eray[2]*photon.eray[2])*cos(theta);
+    photon.eray[1] = sqrt(1.0 - photon.eray[2]*photon.eray[2])*sin(theta);
+  }
+  for (k=0; k<ndim; k++) photon.inveray[k] = 1.0/(photon.eray[k] + small_number);
 
   return;
 }

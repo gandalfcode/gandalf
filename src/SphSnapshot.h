@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  SphSnapshot.h
 //  Contains definitions for SphSnapshot class
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _SPH_SNAPSHOT_H_
@@ -38,14 +38,14 @@
 using namespace std;
 
 
-//=============================================================================
+//=================================================================================================
 /// Class SphSnapshotBase
 /// \brief   Definition for Sph Snapshot (Base) for recording simulation data.
-/// \details Snapshot class contains a copy of the simulation data, 
+/// \details Snapshot class contains a copy of the simulation data,
 ///          either from main memory or from a loaded file.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 class SphSnapshotBase
 {
  private:
@@ -57,14 +57,14 @@ class SphSnapshotBase
   void DeallocateBufferMemoryStar();
 
  protected:
-  int nneededbinary;        ///< No. of variables needed to store binary orbit
-  int nneededsph;           ///< No. of variables needed to store for sph ptcl
-  int nneededstar;          ///< No. of variables needed to store for star ptcl
-  vector<string> _species;
+  int nneededbinary;                   ///< No. of variables needed to store binary orbit
+  int nneededsph;                      ///< No. of variables needed to store for sph ptcl
+  int nneededstar;                     ///< No. of variables needed to store for star ptcl
+  vector<string> _species;             ///< ..
 
  public:
 
-  static SphSnapshotBase* SphSnapshotFactory(string filename, 
+  static SphSnapshotBase* SphSnapshotFactory(string filename,
                                              SimulationBase* sim, int ndim);
 
   SphSnapshotBase(SimUnits*, string="");
@@ -72,14 +72,14 @@ class SphSnapshotBase
 
 
   // Snapshot function prototypes
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   void AllocateBufferMemory(void);
   void DeallocateBufferMemory(void);
   int CalculateMemoryUsage(void);
   int CalculatePredictedMemoryUsage(void);
   virtual void CopyDataFromSimulation()=0;
   UnitInfo ExtractArray(string, string, float** out_array, int* size_array,
-		    float& scaling_factor, string RequestedUnit);
+                        float& scaling_factor, string RequestedUnit);
   virtual void ReadSnapshot(string)=0;
   int GetNTypes() {return _species.size(); };
   string GetSpecies(int ispecies) { return _species.at(ispecies); };
@@ -87,7 +87,7 @@ class SphSnapshotBase
   int GetNparticlesType(string species);
 
   // All variables
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   bool allocated;                   ///< Is snapshot memory allocated?
   bool allocatedbinary;             ///< Is SPH particle memory allocated?
   bool allocatedsph;                ///< Is SPH particle memory allocated?
@@ -119,9 +119,8 @@ class SphSnapshotBase
   SimUnits* units;                  ///< Pointer to units object
 
 
-  // Pointers for allocating memory required for storing all important
-  // snapshot data
-  //---------------------------------------------------------------------------
+  // Pointers for allocating memory required for storing all important snapshot data
+  //-----------------------------------------------------------------------------------------------
   float *x;                         ///< x-position for SPH particles
   float *y;                         ///< y-position for SPH particles
   float *z;                         ///< z-position for SPH particles
@@ -150,7 +149,7 @@ class SphSnapshotBase
   float *hstar;                     /// Smoothing length for star particles
 
   float *ecc;                       /// Binary orbital eccentricity
-  float *mbin;                      /// Binary total mass 
+  float *mbin;                      /// Binary total mass
   float *period;                    /// Binary orbital period
   float *qbin;                      /// Binary mass ratio
   float *sma;                       /// Binary orbital semi-major axis
@@ -159,14 +158,14 @@ class SphSnapshotBase
 
 
 
-//=============================================================================
+//=================================================================================================
 /// Class SphSnapshot
 /// \brief   Definition for Sph Snapshot for recording simulation data.
-/// \details Snapshot class contains a copy of the simulation data, 
+/// \details Snapshot class contains a copy of the simulation data,
 ///          either from main memory or from a loaded file.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndims>
 class SphSnapshot : public SphSnapshotBase {
 public:

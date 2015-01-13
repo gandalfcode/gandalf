@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  SphSnapshot.cpp
 //  Contains all functions for managing SPH snapshot objects.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <ctime>
@@ -37,32 +37,31 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshotBase::SphSnapshotFactory
 /// Creates and returns a new snapshot object based on dimensionality of sim.
-//=============================================================================
+//=================================================================================================
 SphSnapshotBase* SphSnapshotBase::SphSnapshotFactory
 (string filename,                   ///< Filename containing snapshot data
  SimulationBase* sim,               ///< Simulation object pointer
  int ndim)                          ///< Dimensionality of simulation
 {
-  if (ndim==1)
+  if (ndim == 1)
     return new SphSnapshot<1>(filename, sim);
-  else if (ndim==2)
+  else if (ndim == 2)
     return new SphSnapshot<2>(filename, sim);
-  else if (ndim==3)
+  else if (ndim == 3)
     return new SphSnapshot<3>(filename, sim);
   return NULL;
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshotBase::SphSnapshotBase
 /// Constructor for SphSnapshotBase class.
-//=============================================================================
-SphSnapshotBase::SphSnapshotBase(SimUnits* _units, string auxfilename):
-    units(_units)
+//=================================================================================================
+SphSnapshotBase::SphSnapshotBase(SimUnits* _units, string auxfilename): units(_units)
 {
   allocated        = false;
   allocatedbinary  = false;
@@ -90,16 +89,16 @@ SphSnapshotBase::SphSnapshotBase(SimUnits* _units, string auxfilename):
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshot::SphSnapshot
 /// Constructor for SphSnapshot class.
-//=============================================================================
+//=================================================================================================
 template <int ndims>
 SphSnapshot<ndims>::SphSnapshot
-(string filename,                   ///< Filename containing snapshot data
- SimulationBase* sim):              ///< Simulation object pointer
-SphSnapshotBase(&(sim->simunits), filename),
-simulation(static_cast<Simulation<ndims>* > (sim))
+ (string filename,                     ///< Filename containing snapshot data
+  SimulationBase* sim):                ///< Simulation object pointer
+  SphSnapshotBase(&(sim->simunits), filename),
+  simulation(static_cast<Simulation<ndims>* > (sim))
 {
   this->ndim = ndims;
   this->fileform = sim->GetParam("out_file_form");
@@ -108,7 +107,7 @@ simulation(static_cast<Simulation<ndims>* > (sim))
   nneededsph = 3*ndims + 5;
   nneededstar = 3*ndims + 2;
   nneededbinary = 5;
- 
+
   if (filename != "") {
     HeaderInfo info;
     info = sim->ReadHeaderSnapshotFile(filename, this->fileform);
@@ -120,10 +119,10 @@ simulation(static_cast<Simulation<ndims>* > (sim))
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshotBase::~SphSnapshotBase
 /// Deallocate any heap arrays to avoid leaking memory.
-//=============================================================================
+//=================================================================================================
 SphSnapshotBase::~SphSnapshotBase()
 {
   DeallocateBufferMemory();
@@ -131,12 +130,12 @@ SphSnapshotBase::~SphSnapshotBase()
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshotBase::AllocateBufferMemory
-/// Allocate memory for current snapshot.  Only allocates single precision 
+/// Allocate memory for current snapshot.  Only allocates single precision
 /// to minimise memory use, even if compiled with double precision.
-/// Wrapper around AllocateBufferMemoryStar and AllocateBufferMemorySph
-//=============================================================================
+/// Wrapper around AllocateBufferMemoryStar and AllocateBufferMemorySph.
+//=================================================================================================
 void SphSnapshotBase::AllocateBufferMemory(void)
 {
   debug2("[SphSnapshotBase::AllocateBufferMemory]");
@@ -152,19 +151,21 @@ void SphSnapshotBase::AllocateBufferMemory(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshotBase::AllocateBufferMemoryStar
 /// Allocate memory for stars in current snapshot.
-//=============================================================================
-void SphSnapshotBase::AllocateBufferMemoryStar(void) 
+//=================================================================================================
+void SphSnapshotBase::AllocateBufferMemoryStar(void)
 {
-  // If memory is already allocated and more memory is needed for more 
+  // If memory is already allocated and more memory is needed for more
   // particles, deallocate now before reallocating.
   if (allocatedstar) {
-    if (Nstar > Nstarmax)
+    if (Nstar > Nstarmax) {
       DeallocateBufferMemoryStar();
-    else
+    }
+    else {
       return;
+    }
   }
 
   // Allocate memory for all vector quantities depending on dimensionality
@@ -180,7 +181,6 @@ void SphSnapshotBase::AllocateBufferMemoryStar(void)
     vystar = new float[Nstar];
     axstar = new float[Nstar];
     aystar = new float[Nstar];
-
   }
   else if (ndim == 3) {
     xstar = new float[Nstar];
@@ -192,7 +192,6 @@ void SphSnapshotBase::AllocateBufferMemoryStar(void)
     axstar = new float[Nstar];
     aystar = new float[Nstar];
     azstar = new float[Nstar];
-
   }
 
   // Stars scalar quantities
@@ -201,27 +200,29 @@ void SphSnapshotBase::AllocateBufferMemoryStar(void)
 
   // Record 3 vectors of size ndim (r,v,a) and 2 scalars (m,h)
   nallocatedstar = 3*ndim + 2;
-  allocatedstar = true;
-  Nstarmax = Nstar;
+  allocatedstar  = true;
+  Nstarmax       = Nstar;
 
   return;
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshotBase::AllocateBufferMemorySph
 /// Allocate memory for sph particles in current snapshot.
-//=============================================================================
-void SphSnapshotBase::AllocateBufferMemorySph(void) 
+//=================================================================================================
+void SphSnapshotBase::AllocateBufferMemorySph(void)
 {
   // If memory already allocated and more memory is needed for more particles,
   // deallocate now before reallocating.
   if (allocatedsph) {
-    if (Nsph > Nsphmax)
+    if (Nsph > Nsphmax) {
       DeallocateBufferMemorySph();
-    else
+    }
+    else {
       return;
+    }
   }
 
   // Allocate memory for all vector quantities depending on dimensionality
@@ -251,16 +252,16 @@ void SphSnapshotBase::AllocateBufferMemorySph(void)
   }
 
   // Allocate memory for other scalar quantities
-  m = new float[Nsph];
-  h = new float[Nsph];
-  rho = new float[Nsph];
-  u = new float[Nsph];
+  m    = new float[Nsph];
+  h    = new float[Nsph];
+  rho  = new float[Nsph];
+  u    = new float[Nsph];
   dudt = new float[Nsph];
 
   // Record 3 vectors of size ndim (r,v,a) and 5 scalars (m,h,rho,u,dudt)
   nallocatedsph = 3*ndim + 5;
-  allocatedsph = true;
-  Nsphmax = Nsph;
+  allocatedsph  = true;
+  Nsphmax       = Nsph;
 
   return;
 }
@@ -271,38 +272,40 @@ void SphSnapshotBase::AllocateBufferMemorySph(void)
 //  SphSnapshotBase::AllocateBufferMemoryBinary
 /// Allocate memory for binary orbits in current snapshot.
 //=============================================================================
-void SphSnapshotBase::AllocateBufferMemoryBinary(void) 
+void SphSnapshotBase::AllocateBufferMemoryBinary(void)
 {
   // If memory already allocated and more memory is needed for more particles,
   // deallocate now before reallocating.
   if (allocatedbinary) {
-    if (Norbit > Norbitmax)
+    if (Norbit > Norbitmax) {
       DeallocateBufferMemoryBinary();
-    else
+    }
+    else {
       return;
+    }
   }
 
   // Allocate arrays for orbital quantities
-  ecc = new float[Norbit];
-  mbin = new float[Norbit];
+  ecc    = new float[Norbit];
+  mbin   = new float[Norbit];
   period = new float[Norbit];
-  qbin = new float[Norbit];
-  sma = new float[Norbit];
+  qbin   = new float[Norbit];
+  sma    = new float[Norbit];
 
   // Record 5 floats
   nallocatedbinary = 5;
-  allocatedbinary = true;
-  Norbitmax = Norbit;
+  allocatedbinary  = true;
+  Norbitmax        = Norbit;
 
   return;
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshotBase::DeallocateBufferMemory
 /// Deallocate memory for current snapshot.
-//=============================================================================
+//=================================================================================================
 void SphSnapshotBase::DeallocateBufferMemory(void)
 {
   debug2("[SphSnapshotBase::DeallocateBufferMemory]");
@@ -317,16 +320,15 @@ void SphSnapshotBase::DeallocateBufferMemory(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshotBase::DeallocateBufferMemorySph
 /// Deallocate sph particles memory for current snapshot.
-//=============================================================================
+//=================================================================================================
 void SphSnapshotBase::DeallocateBufferMemorySph(void)
 {
   // If we are not allocated, return immediately,
   // to avoid double deleting a pointer
-  if (!allocatedsph)
-    return;
+  if (!allocatedsph) return;
 
   // Deallocate scalar array memory
   delete[] dudt;
@@ -334,7 +336,7 @@ void SphSnapshotBase::DeallocateBufferMemorySph(void)
   delete[] rho;
   delete[] h;
   delete[] m;
-  
+
   // Deallocate vector array memory
   if (ndim == 1) {
     delete[] ax;
@@ -360,25 +362,24 @@ void SphSnapshotBase::DeallocateBufferMemorySph(void)
     delete[] y;
     delete[] x;
   }
-  
+
   allocatedsph = false;
   nallocatedsph = 0;
-  
+
   return;
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshotBase::DeallocateBufferMemoryStar
 /// Deallocate star particles memory for current snapshot.
-//=============================================================================
+//=================================================================================================
 void SphSnapshotBase::DeallocateBufferMemoryStar(void)
 {
   // If we are not allocated, return immediately,
   // to avoid double deleting a pointer
-  if (!allocatedstar)
-    return;
+  if (!allocatedstar) return;
 
   // Deallocate scalar array memory
   delete[] hstar;
@@ -409,19 +410,19 @@ void SphSnapshotBase::DeallocateBufferMemoryStar(void)
     delete[] ystar;
     delete[] xstar;
   }
-  
+
   allocatedstar = false;
   nallocatedstar = 0;
-  
+
   return;
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshotBase::DeallocateBufferMemoryBinary
 /// Deallocate binary orbit memory for current snapshot.
-//=============================================================================
+//=================================================================================================
 void SphSnapshotBase::DeallocateBufferMemoryBinary(void)
 {
   // If we are not allocated, return immediately,
@@ -443,40 +444,40 @@ void SphSnapshotBase::DeallocateBufferMemoryBinary(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshotBase::CalculateMemoryUsage
 /// Returns no. of bytes allocated for current snapshot.
-//=============================================================================
+//=================================================================================================
 int SphSnapshotBase::CalculateMemoryUsage(void)
 {
-  return Nsph*nallocatedsph*sizeof(float) + 
-    Nstar*nallocatedstar*sizeof(float) + 
+  return Nsph*nallocatedsph*sizeof(float) +
+    Nstar*nallocatedstar*sizeof(float) +
     Norbit*nallocatedbinary*sizeof(float);
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshotBase::CalculatePredictedMemoryUsage
 /// Returns no. of bytes that the current snapshot would use, if allocated.
-//=============================================================================
+//=================================================================================================
 int SphSnapshotBase::CalculatePredictedMemoryUsage(void)
 {
-  return Nsph*nneededsph*sizeof(float) + Nstar*nneededstar*sizeof(float) + 
+  return Nsph*nneededsph*sizeof(float) + Nstar*nneededstar*sizeof(float) +
     Norbit*nneededbinary*sizeof(float);
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshot::CopyDataFromSimulation
 /// Copy particle data from main memory to current snapshot arrays.
-//=============================================================================
+//=================================================================================================
 template <int ndims>
 void SphSnapshot<ndims>::CopyDataFromSimulation()
 {
-  StarParticle<ndims>* staraux;
-  BinaryOrbit *orbitaux;
+  StarParticle<ndims>* staraux = 0;    ///< ..
+  BinaryOrbit *orbitaux = 0;           ///< ..
 
   debug2("[SphSnapshotBase::CopyDataFromSimulation]");
 
@@ -484,16 +485,15 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
   _species.clear();
 
   // Read which species are there
-  if (simulation->sph != NULL && 
-      simulation->sph->GetParticlesArray() != NULL) {
+  if (simulation->sph != NULL && simulation->sph->GetParticlesArray() != NULL) {
     Nsph = simulation->sph->Nsph;
     if (Nsph != 0) _species.push_back("sph");
   }
   if (simulation->nbody != NULL && simulation->nbody->stardata != NULL) {
-    staraux = simulation->nbody->stardata;
+    staraux  = simulation->nbody->stardata;
     orbitaux = simulation->nbodytree.orbit;
-    Nstar = simulation->nbody->Nstar;
-    Norbit = simulation->nbodytree.Norbit;
+    Nstar    = simulation->nbody->Nstar;
+    Norbit   = simulation->nbodytree.Norbit;
     if (Nstar != 0) _species.push_back("star");
     if (Norbit != 0) _species.push_back("binary");
   }
@@ -502,17 +502,16 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
 
 
   // Loop over all SPH particles and record particle data
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (int i=0; i<Nsph; i++) {
     SphParticle<ndims>& part = simulation->sph->GetParticleIPointer(i);
 
-    if (ndim == 1) {
+    if (ndims == 1) {
       x[i] = (float) part.r[0];
       vx[i] = (float) part.v[0];
-      ax[i] = (float) pow(2,simulation->level_step - part.level)*
-	simulation->timestep; //(float) part.a[0];
+      ax[i] = (float) pow(2,simulation->level_step - part.level)*simulation->timestep;
     }
-    else if (ndim == 2) {
+    else if (ndims == 2) {
       x[i] = (float) part.r[0];
       y[i] = (float) part.r[1];
       vx[i] = (float) part.v[0];
@@ -520,7 +519,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       ax[i] = (float) part.a[0];
       ay[i] = (float) part.a[1];
     }
-    else if (ndim == 3) {
+    else if (ndims == 3) {
       x[i] = (float) part.r[0];
       y[i] = (float) part.r[1];
       z[i] = (float) part.r[2];
@@ -531,22 +530,22 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       ay[i] = (float) part.a[1];
       az[i] = (float) part.a[2];
     }
-    m[i] = (float) part.m;
-    h[i] = (float) part.h;
-    rho[i] = (float) part.rho;
-    u[i] = (float) part.u;
-    dudt[i] = part.dudt;
+    m[i]    = (float) part.m;
+    h[i]    = (float) part.h;
+    rho[i]  = (float) part.rho;
+    u[i]    = (float) part.u;
+    dudt[i] = (float) part.dudt;
 
   }
 
   // Loop over star particles and record particle data
   for (int i=0; i<Nstar; i++) {
-    if (ndim == 1) {
+    if (ndims == 1) {
       xstar[i] = (float) staraux[i].r[0];
       vxstar[i] = (float) staraux[i].v[0];
       axstar[i] = (float) staraux[i].a[0];
     }
-    else if (ndim == 2) {
+    else if (ndims == 2) {
       xstar[i] = (float) staraux[i].r[0];
       ystar[i] = (float) staraux[i].r[1];
       vxstar[i] = (float) staraux[i].v[0];
@@ -554,7 +553,7 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
       axstar[i] = (float) staraux[i].a[0];
       aystar[i] = (float) staraux[i].a[1];
     }
-    else if (ndim == 3) {
+    else if (ndims == 3) {
       xstar[i] = (float) staraux[i].r[0];
       ystar[i] = (float) staraux[i].r[1];
       zstar[i] = (float) staraux[i].r[2];
@@ -572,11 +571,11 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
 
   // Loop over all binary orbits and record data
   for (int i=0; i<Norbit; i++) {
-    ecc[i] = (float) orbitaux[i].ecc;
-    mbin[i] = (float) orbitaux[i].m;
+    ecc[i]    = (float) orbitaux[i].ecc;
+    mbin[i]   = (float) orbitaux[i].m;
     period[i] = (float) orbitaux[i].period;
-    qbin[i] = (float) orbitaux[i].q;
-    sma[i] = (float) orbitaux[i].sma;
+    qbin[i]   = (float) orbitaux[i].q;
+    sma[i]    = (float) orbitaux[i].sma;
   }
 
   LastUsed = time(NULL);
@@ -585,12 +584,12 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshotBase::GetRealType
 /// Convert the given type into the 'real' type, meaning, if we pass default,
 /// gives back the true underlying type
-//=============================================================================
-string SphSnapshotBase::GetRealType(string type) 
+//=================================================================================================
+string SphSnapshotBase::GetRealType(string type)
 {
   // Default is: if there is only one species, then we use that one
   // Otherwise, we return sph particles
@@ -610,11 +609,11 @@ string SphSnapshotBase::GetRealType(string type)
 
 
 
-//=============================================================================
+//=================================================================================================
 ///  SphSnapshotBase::GetNparticlesType
 ///  Get the number of particles for the given type
-//=============================================================================
-int SphSnapshotBase::GetNparticlesType(string type) 
+//=================================================================================================
+int SphSnapshotBase::GetNparticlesType(string type)
 {
   type = GetRealType(type);
   if (type == "sph")
@@ -624,8 +623,7 @@ int SphSnapshotBase::GetNparticlesType(string type)
   else if (type == "binary")
     return Norbit;
   else {
-    string message="Error: we do not know the type " + type + 
-      "that you are requesting!!!";
+    string message="Error: we do not know the type " + type + " that you are requesting!!!";
     ExceptionHandler::getIstance().raise(message);
   }
   return 0;
@@ -633,27 +631,27 @@ int SphSnapshotBase::GetNparticlesType(string type)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshotBase::ExtractArray
 /// Returns pointer to required array stored in snapshot buffer memory.
 /// Currently also returns scaling factors for that array.
-//=============================================================================
+//=================================================================================================
 UnitInfo SphSnapshotBase::ExtractArray
-(string name,                       ///< Name of variable to extract
- string type,                       ///< Particle type
- float** out_array,                 ///< Outputted array
- int* size_array,                   ///< No. of elements in outputted array
- float& scaling_factor,             ///< Scaling factor for outputted variable
- string RequestedUnit)              ///< Requested unit for outputted variable
+ (string name,                         ///< Name of variable to extract
+  string type,                         ///< Particle type
+  float** out_array,                   ///< Outputted array
+  int* size_array,                     ///< No. of elements in outputted array
+  float& scaling_factor,               ///< Scaling factor for outputted variable
+  string RequestedUnit)                ///< Requested unit for outputted variable
 {
-  string unitname;                  // Name of unit
-  UnitInfo unitinfo;                // All data for units and scaling
-  SimUnit* unit;                    // Unit object pointer
+  string unitname;                     // Name of unit
+  UnitInfo unitinfo;                   // All data for units and scaling
+  SimUnit* unit;                       // Unit object pointer
 
   // Zero initial array pointers and size
   *out_array = NULL;
   *size_array = 0;
-
+  unit = 0;
 
   // Check that the memory is allocated. If not, fails very rumorously
   if (!allocated){
@@ -765,8 +763,7 @@ UnitInfo SphSnapshotBase::ExtractArray
     unit = &(units->r);
   }
   else {
-    string message = "Warning: the selected array: " + name + 
-      " has not been recognized";
+    string message = "Warning: the selected array: " + name + " has not been recognized";
     ExceptionHandler::getIstance().raise(message);
     *size_array = 0;
   }
@@ -784,21 +781,24 @@ UnitInfo SphSnapshotBase::ExtractArray
   }
 
   // Set the size now that we have the array
-  if (type == "sph")
+  if (type == "sph") {
     *size_array = Nsph;
-  else if (type == "star")
+  }
+  else if (type == "star") {
     *size_array = Nstar;
-  else if (type == "binary")
+  }
+  else if (type == "binary") {
     *size_array = Norbit;
+  }
 
   // If no new unit is requested, pass the default scaling values.
   // Otherwise, calculate new scaling factor plus latex label.
   if (RequestedUnit == "default") {
     unitname = unit->outunit;
-    RequestedUnit=unitname;
+    RequestedUnit = unitname;
   }
   else {
-    unitname=RequestedUnit;
+    unitname = RequestedUnit;
   }
   label = unit->LatexLabel(RequestedUnit);
   scaling_factor = unit->OutputScale(RequestedUnit);
@@ -811,10 +811,10 @@ UnitInfo SphSnapshotBase::ExtractArray
 
 
 
-//=============================================================================
+//=================================================================================================
 //  SphSnapshot::ReadSnapshot
 /// Read snapshot into main memory and then copy into snapshot buffer.
-//=============================================================================
+//=================================================================================================
 template <int ndims>
 void SphSnapshot<ndims>::ReadSnapshot(string format)
 {
@@ -830,7 +830,7 @@ void SphSnapshot<ndims>::ReadSnapshot(string format)
   units->SetupUnits(simulation->simparams);
 
   // Scale particle data to dimensionless code units
-  simulation->ConvertToCodeUnits();  
+  simulation->ConvertToCodeUnits();
 
   // Now copy from main memory to current snapshot
   CopyDataFromSimulation();

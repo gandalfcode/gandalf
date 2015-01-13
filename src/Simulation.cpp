@@ -60,16 +60,14 @@ SimulationBase* SimulationBase::SimulationFactory
   // Check ndim is valid
   if (ndim < 1 || ndim > 3) {
     stringstream msg;
-    msg << "Error: ndim must be either 1, 2, 3; the value "
-        << ndim << "is not allowed!";
+    msg << "Error: ndim must be either 1, 2, 3; the value " << ndim << "is not allowed!";
     ExceptionHandler::getIstance().raise(msg.str());
   }
 
   // Check simulation type is valid
   if (simtype != "sph" && simtype != "gradhsph" && simtype != "sm2012sph" &&
       simtype != "godunov_sph" && simtype != "nbody" ) {
-    string msg = "Error: the simulation type " + simtype +
-      " was not recognized";
+    string msg = "Error: the simulation type " + simtype + " was not recognized";
     ExceptionHandler::getIstance().raise(msg);
   }
 
@@ -1083,17 +1081,16 @@ void Simulation<ndim>::ImportArrayNbody
   int size,                            ///< [in] No. of array elements
   string quantity)                     ///< [in] String id of quantity being imported
 {
-  FLOAT StarParticle<ndim>::*quantityp;            // Pointer to scalar quantity
-  FLOAT (StarParticle<ndim>::*quantitypvec)[ndim]; // Pointer to component of vector quantity
-  int index;                                       // Component index (if quantity is a vector)
-  bool scalar;                                     // Is the requested quantity a scalar?
+  FLOAT StarParticle<ndim>::*quantityp = 0;            // Pointer to scalar quantity
+  FLOAT (StarParticle<ndim>::*quantitypvec)[ndim] = 0; // Pointer to component of vector quantity
+  int index = 0;                                   // Component index (if quantity is a vector)
+  bool scalar = false;                             // Is the requested quantity a scalar?
 
   // Check that the size is correct
   if (size != nbody->Nstar) {
     stringstream message;
-    message << "Error: the array you are passing has a size of "
-	    << size << ", but memory has been allocated for "
-	    << nbody->Nstar << " star particles";
+    message << "Error: the array you are passing has a size of " << size
+            << ", but memory has been allocated for " << nbody->Nstar << " star particles";
     ExceptionHandler::getIstance().raise(message.str());
   }
 
@@ -1173,14 +1170,15 @@ void Simulation<ndim>::ImportArrayNbody
   //-----------------------------------------------------------------------------------------------
   if (scalar) {
     int i=0;
-    for (StarParticle<ndim>* particlep = nbody->stardata; particlep < nbody->stardata+size; particlep++, i++) {
+    for (StarParticle<ndim>* particlep = nbody->stardata;
+         particlep < nbody->stardata+size; particlep++, i++) {
       particlep->*quantityp = input[i];
     }
   }
   else {
     int i=0;
     for (StarParticle<ndim>* particlep = nbody->stardata;
-	 particlep < nbody->stardata+size; particlep++, i++) {
+         particlep < nbody->stardata+size; particlep++, i++) {
       (particlep->*quantitypvec)[index] = input[i];
     }
   }
@@ -1200,19 +1198,20 @@ void Simulation<ndim>::ImportArraySph
   int size,                            ///< [in] No. of elements in array
   string quantity)                     ///< [in] String id of quantity
 {
-  FLOAT SphParticle<ndim>::*quantityp;            // Pointer to scalar quantity
-  FLOAT (SphParticle<ndim>::*quantitypvec)[ndim]; // Pointer to component of vector quantity
-  int index;                                      // If it's a component of a vector
+  FLOAT SphParticle<ndim>::*quantityp = 0;        // Pointer to scalar quantity
+  FLOAT (SphParticle<ndim>::*quantitypvec)[ndim] = 0; // Pointer to component of vector quantity
+  int index = 0;                                  // If it's a component of a vector
                                                   // quantity, we need to know its index
-  bool scalar;                                    // Is the requested quantity a scalar?
+  bool scalar = false;                            // Is the requested quantity a scalar?
 
   // Check that the size is correct
   if (size != sph->Nsph) {
     stringstream message;
     message << "Error: the array you are passing has a size of "
-        << size << ", but memory has been allocated for " << sph->Nsph << " particles";
+            << size << ", but memory has been allocated for " << sph->Nsph << " particles";
     ExceptionHandler::getIstance().raise(message.str());
   }
+
 
   // Now set pointer to the correct value inside the particle data structure
   //-----------------------------------------------------------------------------------------------
@@ -1281,8 +1280,8 @@ void Simulation<ndim>::ImportArraySph
   }
   //-----------------------------------------------------------------------------------------------
   else if (quantity == "u") {
-    //TODO: add some facility for uploading either u, T, or cs, and compute automatically the other ones
-    //depending on the EOS
+    //TODO: add some facility for uploading either u, T, or cs, and compute automatically the
+    //other ones depending on the EOS
     quantityp = &SphParticle<ndim>::u;
     scalar=true;
   }
@@ -1358,8 +1357,8 @@ void Simulation<ndim>::ImportArray
     ImportArrayNbody(input, size, quantity);
   }
   else {
-    string message = "Error: we did not recognize the type " + type + ", the only allowed types are \"sph\""
-        " and \"nbody\"";
+    string message = "Error: we did not recognize the type " + type +
+      ", the only allowed types are \"sph\" and \"nbody\"";
     ExceptionHandler::getIstance().raise(message);
   }
 

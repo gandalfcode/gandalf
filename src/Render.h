@@ -1,6 +1,6 @@
-//=============================================================================
+//=================================================================================================
 //  Render.h
-//  Contains class and function definitions for generating rendered plots in 
+//  Contains class and function definitions for generating rendered plots in
 //  the python front-end.
 //
 //  This file is part of GANDALF :
@@ -19,7 +19,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _RENDER_H_
@@ -43,62 +43,60 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class RenderBase
 /// \brief   Parent class for generating rendered images in python.
 /// \details Parent class for generating rendered images in python.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 class RenderBase
 {
 public:
   static RenderBase* RenderFactory(int ndim, SimulationBase* sim);
 
-  virtual int CreateColumnRenderingGrid(int, int, string, string, string, 
-                                        string, float, float, float, float, 
-                                        float* values, int Ngrid, 
-                                        SphSnapshotBase &, 
-                                        float& scaling_factor)=0;
-  virtual int CreateSliceRenderingGrid(int, int, string, string, string, 
-                                       string, string, float, float, float, 
-                                       float, float, float* values, int Ngrid, 
-                                       SphSnapshotBase &, 
+  virtual int CreateColumnRenderingGrid(const int, const int, const string, const string,
+                                        const string, const string, const float, const float,
+                                        const float, const float, float* values, const int Ngrid,
+                                        SphSnapshotBase &, float& scaling_factor)=0;
+  virtual int CreateSliceRenderingGrid(const int, const int, const string, const string,
+                                       const string, const string, const string, const float,
+                                       const float, const float, const float, const float,
+                                       float* values, const int Ngrid, SphSnapshotBase &,
                                        float& scaling_factor)=0;
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class Render
 /// \brief   Class for generating rendered images in python.
 /// \details Class for generating rendered images in python.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class Render : public RenderBase
 {
  public:
 
   // Constructor and Destructor
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   Render(SimulationBase* sim);
   ~Render();
 
   // Subroutine prototypes
-  //---------------------------------------------------------------------------
-  int CreateColumnRenderingGrid(int, int, string, string, string, string,
-				float, float, float, float, float* values, 
-				int Ngrid, SphSnapshotBase &, 
+  //-----------------------------------------------------------------------------------------------
+  int CreateColumnRenderingGrid(const int, const int, const string, const string, const string,
+                                const string, const float, const float, const float, const float,
+                                float* values, const int Ngrid, SphSnapshotBase &,
                                 float& scaling_factor);
-  int CreateSliceRenderingGrid(int, int, string, string, string, string, 
-                               string, float, float, float, float, float, 
-                               float* values, int Ngrid,
-			       SphSnapshotBase &, float& scaling_factor);
+  int CreateSliceRenderingGrid(const int, const int, const string, const string, const string,
+                               const string, const string, const float, const float, const float,
+                               const float, const float, float* values, const int Ngrid,
+                               SphSnapshotBase &, float& scaling_factor);
 
-
-  Sph<ndim>* sph;                  ///< Pointer to SPH object to be rendered
+  Sph<ndim>* sph;                      ///< Pointer to SPH object to be rendered
 
 
 };

@@ -447,7 +447,6 @@ template <int ndim>
 void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
 {
   int i;                                // Particle counter
-  int imin;                             // i.d. of ptcl with minimum timestep
   int istep;                            // Aux. variable for changing steps
   int level;                            // Particle timestep level
   int last_level;                       // Previous timestep level

@@ -57,7 +57,7 @@ Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux, FLOAT alpha_visc_aux,
   beta_visc(beta_visc_aux),
   h_fac(h_fac_aux),
   h_converge(h_converge_aux),
-  hmin_sink(big_number),
+  //hmin_sink(big_number),
   gas_eos(gas_eos_aux),
   kerntab(TabulatedKernel<ndim>(KernelName)),
   allocated(false),
@@ -75,6 +75,9 @@ Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux, FLOAT alpha_visc_aux,
   size_sph_part(size_sph)
 {
   // Set all SPH particle types here
+
+  // Set other class variables here
+  hmin_sink = big_number;
 }
 
 
@@ -210,22 +213,25 @@ void Sph<ndim>::CheckYBoundaryGhostParticle
 {
   SphParticle<ndim>& part = GetParticleIPointer(i);
 
-  if (part.r[1] + min(0.0,part.v[1]*tghost) < simbox.boxmin[1] + ghost_range*kernrange*part.h) {
-    if (simbox.y_boundary_lhs == periodicBoundary) {
-      CreateBoundaryGhostParticle(i,1,y_lhs_periodic,part.r[1] + simbox.boxsize[1],part.v[1]);
+  if (ndim > 1) {
+    if (part.r[1] + min(0.0,part.v[1]*tghost) < simbox.boxmin[1] + ghost_range*kernrange*part.h) {
+      if (simbox.y_boundary_lhs == periodicBoundary) {
+        CreateBoundaryGhostParticle(i,1,y_lhs_periodic,part.r[1] + simbox.boxsize[1],part.v[1]);
+      }
+      if (simbox.y_boundary_lhs == mirrorBoundary) {
+        CreateBoundaryGhostParticle(i,1,y_lhs_mirror,2.0*simbox.boxmin[1] - part.r[1],-part.v[1]);
+      }
     }
-    if (simbox.y_boundary_lhs == mirrorBoundary) {
-      CreateBoundaryGhostParticle(i,1,y_lhs_mirror,2.0*simbox.boxmin[1] - part.r[1],-part.v[1]);
+    if (part.r[1] + max(0.0,part.v[1]*tghost) > simbox.boxmax[1] - ghost_range*kernrange*part.h) {
+      if (simbox.y_boundary_rhs == periodicBoundary) {
+        CreateBoundaryGhostParticle(i,1,y_rhs_periodic,part.r[1] - simbox.boxsize[1],part.v[1]);
+      }
+      if (simbox.y_boundary_rhs == mirrorBoundary) {
+        CreateBoundaryGhostParticle(i,1,y_rhs_mirror,2.0*simbox.boxmax[1] - part.r[1],-part.v[1]);
+      }
     }
   }
-  if (part.r[1] + max(0.0,part.v[1]*tghost) > simbox.boxmax[1] - ghost_range*kernrange*part.h) {
-    if (simbox.y_boundary_rhs == periodicBoundary) {
-      CreateBoundaryGhostParticle(i,1,y_rhs_periodic,part.r[1] - simbox.boxsize[1],part.v[1]);
-    }
-    if (simbox.y_boundary_rhs == mirrorBoundary) {
-      CreateBoundaryGhostParticle(i,1,y_rhs_mirror,2.0*simbox.boxmax[1] - part.r[1],-part.v[1]);
-    }
-  }
+
   return;
 }
 
@@ -244,22 +250,25 @@ void Sph<ndim>::CheckZBoundaryGhostParticle
 {
   SphParticle<ndim>& part = GetParticleIPointer(i);
 
-  if (part.r[2] + min(0.0,part.v[2]*tghost) < simbox.boxmin[2] + ghost_range*kernrange*part.h) {
-    if (simbox.z_boundary_lhs == periodicBoundary) {
-      CreateBoundaryGhostParticle(i,2,z_lhs_periodic,part.r[2] + simbox.boxsize[2],part.v[2]);
+  if (ndim == 3) {
+    if (part.r[2] + min(0.0,part.v[2]*tghost) < simbox.boxmin[2] + ghost_range*kernrange*part.h) {
+      if (simbox.z_boundary_lhs == periodicBoundary) {
+        CreateBoundaryGhostParticle(i,2,z_lhs_periodic,part.r[2] + simbox.boxsize[2],part.v[2]);
+      }
+      if (simbox.z_boundary_lhs == mirrorBoundary) {
+        CreateBoundaryGhostParticle(i,2,z_lhs_mirror,2.0*simbox.boxmin[2] - part.r[2],-part.v[2]);
+      }
     }
-    if (simbox.z_boundary_lhs == mirrorBoundary) {
-      CreateBoundaryGhostParticle(i,2,z_lhs_mirror,2.0*simbox.boxmin[2] - part.r[2],-part.v[2]);
+    if (part.r[2] + max(0.0,part.v[2]*tghost) > simbox.boxmax[2] - ghost_range*kernrange*part.h) {
+      if (simbox.z_boundary_rhs == periodicBoundary) {
+        CreateBoundaryGhostParticle(i,2,z_rhs_periodic,part.r[2] - simbox.boxsize[2],part.v[2]);
+      }
+      if (simbox.z_boundary_rhs == mirrorBoundary) {
+        CreateBoundaryGhostParticle(i,2,z_rhs_mirror,2.0*simbox.boxmax[2] - part.r[2],-part.v[2]);
+      }
     }
   }
-  if (part.r[2] + max(0.0,part.v[2]*tghost) > simbox.boxmax[2] - ghost_range*kernrange*part.h) {
-    if (simbox.z_boundary_rhs == periodicBoundary) {
-      CreateBoundaryGhostParticle(i,2,z_rhs_periodic,part.r[2] - simbox.boxsize[2],part.v[2]);
-    }
-    if (simbox.z_boundary_rhs == mirrorBoundary) {
-      CreateBoundaryGhostParticle(i,2,z_rhs_mirror,2.0*simbox.boxmax[2] - part.r[2],-part.v[2]);
-    }
-  }
+  
   return;
 }
 

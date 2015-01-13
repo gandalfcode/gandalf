@@ -54,10 +54,10 @@ using namespace std;
 template <int ndim>
 void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 {
-  aviscenum avisc;                  // Artificial viscosity enum
-  acondenum acond;                  // Artificial conductivity enum
-  eosenum gas_eos;                  // Gas EOS enum
-  tdaviscenum tdavisc;              // Time-dependent viscosity enum
+  aviscenum avisc = noav;              // Artificial viscosity enum
+  acondenum acond = noac;              // Artificial conductivity enum
+  eosenum gas_eos = noeos;             // Gas EOS enum
+  tdaviscenum tdavisc = notdav;        // Time-dependent viscosity enum
 
   // Local references to parameter variables for brevity
   map<string, int> &intparams = simparams->intparams;
@@ -87,9 +87,8 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     tdavisc = notdav;
   }
   else {
-    string message = "Unrecognised parameter : avisc = " +
-      simparams->stringparams["avisc"] + "   or time_dependent_avisc : " +
-      simparams->stringparams["time_dependent_avisc"];
+    string message = "Unrecognised parameter : avisc = " + simparams->stringparams["avisc"] +
+      "   or time_dependent_avisc : " + simparams->stringparams["time_dependent_avisc"];
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -101,8 +100,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   else if (stringparams["acond"] == "price2008")
     acond = price2008;
   else {
-    string message = "Unrecognised parameter : acond = " +
-        simparams->stringparams["acond"];
+    string message = "Unrecognised parameter : acond = " + simparams->stringparams["acond"];
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -120,8 +118,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   else if (stringparams["gas_eos"] == "radws")
     gas_eos = radws;
   else {
-    string message = "Unrecognised parameter : gas_eos = " +
-        simparams->stringparams["gas_eos"];
+    string message = "Unrecognised parameter : gas_eos = " + simparams->stringparams["gas_eos"];
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -130,37 +127,32 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   //===============================================================================================
   if (intparams["tabulated_kernel"] == 1) {
     sph = new GradhSph<ndim, TabulatedKernel>
-      (intparams["hydro_forces"], intparams["self_gravity"],
-       floatparams["alpha_visc"], floatparams["beta_visc"],
-       floatparams["h_fac"], floatparams["h_converge"],
+      (intparams["hydro_forces"], intparams["self_gravity"], floatparams["alpha_visc"],
+       floatparams["beta_visc"], floatparams["h_fac"], floatparams["h_converge"],
        avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
   }
   else if (intparams["tabulated_kernel"] == 0) {
     // Depending on the kernel, instantiate a different GradSph object
     if (KernelName == "m4") {
       sph = new GradhSph<ndim, M4Kernel>
-	(intparams["hydro_forces"], intparams["self_gravity"],
-	 floatparams["alpha_visc"], floatparams["beta_visc"],
-	 floatparams["h_fac"], floatparams["h_converge"],
-	 avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
+        (intparams["hydro_forces"], intparams["self_gravity"], floatparams["alpha_visc"],
+         floatparams["beta_visc"], floatparams["h_fac"], floatparams["h_converge"],
+         avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
     }
     else if (KernelName == "quintic") {
       sph = new GradhSph<ndim, QuinticKernel>
-	(intparams["hydro_forces"], intparams["self_gravity"],
-	 floatparams["alpha_visc"], floatparams["beta_visc"],
-	 floatparams["h_fac"], floatparams["h_converge"],
-	 avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
+        (intparams["hydro_forces"], intparams["self_gravity"], floatparams["alpha_visc"],
+         floatparams["beta_visc"], floatparams["h_fac"], floatparams["h_converge"],
+         avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
     }
     else if (KernelName == "gaussian") {
       sph = new GradhSph<ndim, GaussianKernel>
-	(intparams["hydro_forces"], intparams["self_gravity"],
-	 floatparams["alpha_visc"], floatparams["beta_visc"],
-	 floatparams["h_fac"], floatparams["h_converge"],
-	 avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
+        (intparams["hydro_forces"], intparams["self_gravity"], floatparams["alpha_visc"],
+         floatparams["beta_visc"], floatparams["h_fac"], floatparams["h_converge"],
+         avisc, acond, tdavisc, stringparams["gas_eos"], KernelName);
     }
     else {
-      string message = "Unrecognised parameter : kernel = " +
-	simparams->stringparams["kernel"];
+      string message = "Unrecognised parameter : kernel = " + simparams->stringparams["kernel"];
       ExceptionHandler::getIstance().raise(message);
     }
   }
@@ -175,13 +167,13 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   //-----------------------------------------------------------------------------------------------
   if (stringparams["sph_integration"] == "lfkdk") {
     sphint = new SphLeapfrogKDK<ndim, GradhSphParticle>
-      (floatparams["accel_mult"],floatparams["courant_mult"],
-       floatparams["energy_mult"],gas_eos, tdavisc);
+      (floatparams["accel_mult"], floatparams["courant_mult"],
+       floatparams["energy_mult"], gas_eos, tdavisc);
   }
   else if (stringparams["sph_integration"] == "lfdkd") {
     sphint = new SphLeapfrogDKD<ndim, GradhSphParticle>
-      (floatparams["accel_mult"],floatparams["courant_mult"],
-       floatparams["energy_mult"],gas_eos, tdavisc);
+      (floatparams["accel_mult"], floatparams["courant_mult"],
+       floatparams["energy_mult"], gas_eos, tdavisc);
     integration_step = max(integration_step,2);
   }
   else {

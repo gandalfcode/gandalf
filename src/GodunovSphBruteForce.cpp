@@ -1,6 +1,6 @@
 //=============================================================================
 //  GodunovSphBruteForce.cpp
-//  Contains all routines for generating SPH neighbour lists using 
+//  Contains all routines for generating SPH neighbour lists using
 //  brute-force (i.e. direct summation over all particles).
 //
 //  This file is part of GANDALF :
@@ -68,43 +68,44 @@ GodunovSphBruteForce<ndim,ParticleType>::~GodunovSphBruteForce()
 
 //=============================================================================
 //  GodunovSphBruteForce::UpdateAllSphProperties
-/// Routine for computing SPH properties (smoothing lengths, densities and 
-/// forces) for all active SPH particle using neighbour lists generated 
+/// Routine for computing SPH properties (smoothing lengths, densities and
+/// forces) for all active SPH particle using neighbour lists generated
 /// using brute force (i.e. direct summation).
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void GodunovSphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
-(int Nsph,                          ///< [in] No. of SPH particles
- int Ntot,                          ///< [in] No. of SPH + ghost particles
- SphParticle<ndim> *sph_gen,        ///< [inout] Pointer to SPH ptcl array
- Sph<ndim> *sph,                    ///< [in] Pointer to SPH object
- Nbody<ndim> *nbody)                ///< [in] Pointer to N-body object
+ (int Nsph,                            ///< [in] No. of SPH particles
+  int Ntot,                            ///< [in] No. of SPH + ghost particles
+  SphParticle<ndim> *sph_gen,          ///< [inout] Pointer to SPH ptcl array
+  Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
+  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
-  int i,j,jj,k;                     // Particle and dimension counters
-  int Nneib = 0;                    // No. of (non-dead) neighbours
-  int okflag;                       // Flag valid smoothing length
-  int *neiblist;                    // List of neighbours
-  FLOAT dr[ndim];                   // Relative distance vector
-  FLOAT rp[ndim];                   // Position of current particle
-  FLOAT *drsqd;                     // Distance squared
-  FLOAT *gpot;                      // Array of neib. grav. potentials
-  FLOAT *m;                         // Array of neib. position vectors
-  FLOAT *mu;                        // Array of neib. mass*u values
+  int i,j,jj,k;                        // Particle and dimension counters
+  int Nneib = 0;                       // No. of (non-dead) neighbours
+  //int okflag;                          // Flag valid smoothing length
+  int *neiblist;                       // List of neighbours
+  FLOAT dr[ndim];                      // Relative distance vector
+  FLOAT rp[ndim];                      // Position of current particle
+  FLOAT *drsqd;                        // Distance squared
+  FLOAT *gpot;                         // Array of neib. grav. potentials
+  FLOAT *m;                            // Array of neib. position vectors
+  FLOAT *mu;                           // Array of neib. mass*u values
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[GodunovSphBruteForce::UpdateAllSphProperties]");
 
   // Store masses in separate array
-  gpot = new FLOAT[Ntot];
-  m = new FLOAT[Ntot];
-  mu = new FLOAT[Ntot];
+  gpot     = new FLOAT[Ntot];
+  m        = new FLOAT[Ntot];
+  mu       = new FLOAT[Ntot];
   neiblist = new int[Ntot];
+
   for (i=0; i<Ntot; i++) {
     if (sphdata[i].itype == dead) continue;
     neiblist[Nneib] = i;
     gpot[Nneib] = sphdata[i].gpot;
-    m[Nneib] = sphdata[i].m;
-    mu[Nneib] = sphdata[i].m*sphdata[i].u;
+    m[Nneib]    = sphdata[i].m;
+    mu[Nneib]   = sphdata[i].m*sphdata[i].u;
     Nneib++;
   }
 
@@ -125,20 +126,20 @@ void GodunovSphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
 
       for (k=0; k<ndim; k++) rp[k] = sphdata[i].r[k];
 
-      // Compute distances and the reciprical between the current particle 
+      // Compute distances and the reciprical between the current particle
       // and all neighbours here
       //-----------------------------------------------------------------------
-      for (jj=0; jj<Nneib; jj++) { 
-	j = neiblist[jj];
-    	for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - rp[k];
-    	drsqd[jj] = DotProduct(dr,dr,ndim);
+      for (jj=0; jj<Nneib; jj++) {
+        j = neiblist[jj];
+        for (k=0; k<ndim; k++) dr[k] = sphdata[j].r[k] - rp[k];
+        drsqd[jj] = DotProduct(dr,dr,ndim);
       }
       //-----------------------------------------------------------------------
 
       // Compute all SPH gather properties
-      okflag = sph->ComputeH(i,Nneib,big_number,m,mu,drsqd,
-                             gpot,sphdata[i],nbody);
-  
+      //okflag =
+      sph->ComputeH(i,Nneib,big_number,m,mu,drsqd,gpot,sphdata[i],nbody);
+
     }
     //-------------------------------------------------------------------------
 
@@ -160,14 +161,14 @@ void GodunovSphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
 
 //=============================================================================
 //  GodunovSphBruteForce::UpdateAllSphDerivatives
-/// Compute all SPH derivatives required for 2nd-order Riemann solver in 
+/// Compute all SPH derivatives required for 2nd-order Riemann solver in
 /// Godunov SPH method.
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void GodunovSphBruteForce<ndim,ParticleType>::UpdateAllSphDerivatives
 (int Nsph,                            ///< [in] ..
  int Ntot,                            ///< [in] ..
- SphParticle<ndim> *sph_gen, 
+ SphParticle<ndim> *sph_gen,
  Sph<ndim> *sph)                      ///< [inout] Pointer to SPH object
 {
   int i,j,k;                          // Particle and dimension counters
@@ -206,7 +207,7 @@ void GodunovSphBruteForce<ndim,ParticleType>::UpdateAllSphDerivatives
     hrangesqd = pow(kernp->kernrange*sphdata[i].h,2);
     Nneib = 0;
 
-    // Compute distances and the reciprical between the current particle 
+    // Compute distances and the reciprical between the current particle
     // and all neighbours here
     //-------------------------------------------------------------------------
     for (j=0; j<Ntot; j++) {
@@ -288,7 +289,7 @@ void GodunovSphBruteForce<ndim,ParticleType>::UpdateAllSphDudt
     hrangesqdi = pow(kernfac*kernp->kernrange*sphdata[i].h,2);
     Nneib = 0;
 
-    // Compute distances and the reciprical between the current particle 
+    // Compute distances and the reciprical between the current particle
     // and all neighbours here
     //-------------------------------------------------------------------------
     for (j=0; j<Ntot; j++) {

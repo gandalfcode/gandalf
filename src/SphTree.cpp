@@ -65,7 +65,7 @@ SphTree<ndim,ParticleType,TreeCell>::SphTree
   Nleafmax(Nleafmaxaux),
   Nmpi(Nmpiaux),
   thetamaxsqd(thetamaxsqdaux),
-  invthetamaxsqd(1.0/thetamaxsqdaux),
+  invthetamaxsqd((FLOAT) 1.0/thetamaxsqdaux),
   gravity_mac(gravity_mac_aux),
   macerror(macerroraux),
   multipole(multipole_aux)
@@ -87,7 +87,6 @@ SphTree<ndim,ParticleType,TreeCell>::SphTree
   for (int j=0; j<Nmpi; j++) cellexportlist[j] = NULL;
   ids_sent_particles.resize(Nmpi);
 #endif
-
 }
 
 
@@ -198,8 +197,6 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildTree
   Sph<ndim> *sph,                      ///< [inout] Pointer to SPH object
   FLOAT timestep)                      ///< [in] Smallest physical timestep
 {
-  int i;                               // Particle counter
-  int k;                               // Dimension counter
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphTree::BuildTree]");
@@ -234,8 +231,8 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildTree
     AllocateMemory(sph);
 #ifdef MPI_PARALLEL
     if (Ntotmax > Ntotmaxold) {
-      for (i=Nmpi-1; i>=0; i--) delete[] cellexportlist[i];
-      for (i=0; i<Nmpi; i++) cellexportlist[i] = new TreeCell<ndim>*[tree->gmax];
+      for (int i=Nmpi-1; i>=0; i--) delete[] cellexportlist[i];
+      for (int i=0; i<Nmpi; i++) cellexportlist[i] = new TreeCell<ndim>*[tree->gmax];
       assert(tree->gmax > 0);
     }
 #endif
@@ -287,8 +284,6 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostTree
   Sph<ndim> *sph,                      ///< Pointer to SPH object
   FLOAT timestep)                      ///< Smallest physical timestep
 {
-  int i;                               // Particle counter
-  int k;                               // Dimension counter
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   // If no periodic ghosts exist, do not build tree
@@ -397,11 +392,10 @@ void SphTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
   DomainBox<ndim> simbox,              ///< Simulation box structure
   Sph<ndim> *sph)                      ///< Sph object pointer
 {
-  int c;
-  int i;                            // Particle counter
-  const FLOAT grange = ghost_range*kernrange;
-  TreeCell<ndim> *cellptr;           // ..
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
+  int c;                                       // ..
+  int i;                                       // Particle counter
+  const FLOAT grange = ghost_range*kernrange;  // ..
+  TreeCell<ndim> *cellptr;                     // ..
 
   // Set all relevant particle counters
   sph->Nghost         = 0;
@@ -414,8 +408,7 @@ void SphTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
   // If all boundaries are open, immediately return to main loop
   if (simbox.x_boundary_lhs == openBoundary && simbox.x_boundary_rhs == openBoundary &&
       simbox.y_boundary_lhs == openBoundary && simbox.y_boundary_rhs == openBoundary &&
-      simbox.z_boundary_lhs == openBoundary && simbox.z_boundary_rhs == openBoundary)
-    return;
+      simbox.z_boundary_lhs == openBoundary && simbox.z_boundary_rhs == openBoundary) return;
 
 
   debug2("[SphTree::SearchBoundaryGhostParticles]");
@@ -435,9 +428,9 @@ void SphTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
 
       // If x-bounding box overlaps edge of x-domain, open cell
       //-------------------------------------------------------------------------------------------
-      if (cellptr->bbmin[0] + min(0.0,cellptr->v[0]*tghost) <
+      if (cellptr->bbmin[0] + min((FLOAT) 0.0,cellptr->v[0]*tghost) <
           simbox.boxmin[0] + grange*cellptr->hmax ||
-          cellptr->bbmax[0] + max(0.0,cellptr->v[0]*tghost) >
+          cellptr->bbmax[0] + max((FLOAT) 0.0,cellptr->v[0]*tghost) >
           simbox.boxmax[0] - grange*cellptr->hmax) {
 
         // If not a leaf-cell, then open cell to first child cell
@@ -473,7 +466,8 @@ void SphTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
 
   // Create ghost particles in y-dimension
   //===============================================================================================
-  if (ndim >= 2 && (simbox.y_boundary_lhs == openBoundary && simbox.y_boundary_rhs == openBoundary) == 0) {
+  if (ndim >= 2 && (simbox.y_boundary_lhs == openBoundary &&
+                    simbox.y_boundary_rhs == openBoundary) == 0) {
 
     // Start from root-cell
     c = 0;
@@ -484,9 +478,9 @@ void SphTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
 
       // If x-bounding box overlaps edge of x-domain, open cell
       //-------------------------------------------------------------------------------------------
-      if (cellptr->bbmin[1] + min(0.0,cellptr->v[1]*tghost) <
+      if (cellptr->bbmin[1] + min((FLOAT) 0.0,cellptr->v[1]*tghost) <
           simbox.boxmin[1] + grange*cellptr->hmax ||
-          cellptr->bbmax[1] + max(0.0,cellptr->v[1]*tghost) >
+          cellptr->bbmax[1] + max((FLOAT) 0.0,cellptr->v[1]*tghost) >
           simbox.boxmax[1] - grange*cellptr->hmax) {
 
         // If not a leaf-cell, then open cell to first child cell
@@ -520,7 +514,6 @@ void SphTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
     // Check x-ghosts (which are not part of tree) by direct-sum
     for (i=sph->Nsph; i<sph->Ntot; i++) sph->CheckYBoundaryGhostParticle(i,tghost,simbox);
 
-
     sph->Ntot = sph->Nsph + sph->Nghost;
   }
 
@@ -539,9 +532,9 @@ void SphTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
 
       // If x-bounding box overlaps edge of x-domain, open cell
       //-------------------------------------------------------------------------------------------
-      if (cellptr->bbmin[2] + min(0.0,cellptr->v[2]*tghost) <
+      if (cellptr->bbmin[2] + min((FLOAT) 0.0,cellptr->v[2]*tghost) <
           simbox.boxmin[2] + grange*cellptr->hmax ||
-          cellptr->bbmax[2] + max(0.0,cellptr->v[2]*tghost) >
+          cellptr->bbmax[2] + max((FLOAT) 0.0,cellptr->v[2]*tghost) >
           simbox.boxmax[2] - grange*cellptr->hmax) {
 
         // If not a leaf-cell, then open cell to first child cell
@@ -623,7 +616,7 @@ void SphTree<ndim,ParticleType,TreeCell>::ComputeCellMonopoleForces
     mc = cellptr->m;
     for (k=0; k<ndim; k++) dr[k] = cellptr->r[k] - rp[k];
     drsqd    = DotProduct(dr,dr,ndim) + small_number;
-    invdrsqd = 1.0/drsqd;
+    invdrsqd = (FLOAT) 1.0/drsqd;
     invdrmag = sqrt(invdrsqd);
     invdr3   = invdrsqd*invdrmag;
 
@@ -669,10 +662,10 @@ void SphTree<ndim,ParticleType,TreeCell>::ComputeCellQuadrupoleForces
     cellptr = &(gravcell[cc]);
 
     for (k=0; k<ndim; k++) dr[k] = cellptr->r[k] - rp[k];
-    drsqd = DotProduct(dr,dr,ndim) + small_number;
-    invdrsqd = 1.0/drsqd;
+    drsqd    = DotProduct(dr,dr,ndim) + small_number;
+    invdrsqd = (FLOAT) 1.0/drsqd;
     invdrmag = sqrt(invdrsqd);
-    invdr5 = invdrsqd*invdrsqd*invdrmag;
+    invdr5   = invdrsqd*invdrsqd*invdrmag;
 
     // First add monopole term for acceleration
     for (k=0; k<ndim; k++) agrav[k] += cellptr->m*dr[k]*invdrsqd*invdrmag;

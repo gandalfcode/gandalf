@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  EnergyEquation.h
 //  Class definitions of main energy equation class plus inherited children
 //  classes for various energy integration algorithms.
@@ -19,7 +19,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _ENERGY_EQUATION_H_
@@ -34,11 +34,11 @@
 #include "SimUnits.h"
 
 
-//=============================================================================
+//=================================================================================================
 //  EnergyEquation
 /// Main energy equation class, with virtual functions that require full
 /// definitions in the children classes.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class EnergyEquation
 {
@@ -55,18 +55,18 @@ class EnergyEquation
   virtual DOUBLE Timestep(SphParticle<ndim> &) = 0;
 
 
-  const DOUBLE energy_mult;
-  CodeTiming *timing;               ///< Pointer to code timing object
+  const DOUBLE energy_mult;            ///< ..
+  CodeTiming *timing;                  ///< Pointer to code timing object
 
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  EnergyPEC
 /// Class definition for energy equation integration class using a
 /// Predict-Evaluate-Correct (PEC) scheme.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template <int> class ParticleType>
 class EnergyPEC: public EnergyEquation<ndim>
 {
@@ -87,10 +87,10 @@ class EnergyPEC: public EnergyEquation<ndim>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  EnergyRadws
 /// ..
-//=============================================================================
+//=================================================================================================
 template <int ndim, template <int> class ParticleType>
 class EnergyRadws: public EnergyEquation<ndim>
 {
@@ -98,29 +98,29 @@ class EnergyRadws: public EnergyEquation<ndim>
 
    using EnergyEquation<ndim>::timing;
 
-EnergyRadws(DOUBLE, string, FLOAT, SimUnits *);
+  EnergyRadws(DOUBLE, string, FLOAT, SimUnits *);
   ~EnergyRadws();
 
-//  void ReadTable();
-void EnergyIntegration(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
-void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *) {};
-void EndTimestep(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
-void EnergyFindEqui(FLOAT , FLOAT , FLOAT , FLOAT , FLOAT, FLOAT &, FLOAT &);
-void EnergyFindEquiTemp(int, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT &);
+  //  void ReadTable();
+  void EnergyIntegration(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
+  void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *) {};
+  void EndTimestep(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
+  void EnergyFindEqui(FLOAT , FLOAT , FLOAT , FLOAT , FLOAT, FLOAT &, FLOAT &);
+  void EnergyFindEquiTemp(int, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT &);
 
-int GetIDens(FLOAT);
-int GetITemp(FLOAT);
-void GetKappa(int, int, FLOAT, FLOAT, FLOAT &, FLOAT &, FLOAT &);
-FLOAT GetEnergy(int , int , FLOAT , FLOAT );
-DOUBLE Timestep(SphParticle<ndim> &){};
-FLOAT ebalance(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT);
+  int GetIDens(FLOAT);
+  int GetITemp(FLOAT);
+  void GetKappa(int, int, FLOAT, FLOAT, FLOAT &, FLOAT &, FLOAT &);
+  FLOAT GetEnergy(int , int , FLOAT , FLOAT );
+  DOUBLE Timestep(SphParticle<ndim> &) {return big_number_dp;}
+  FLOAT ebalance(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT);
 
 
-int ndens, ntemp;
-FLOAT  *eos_dens, *eos_temp ;
-FLOAT **eos_energy, **eos_mu, **kappa_table, **kappar_table, **kappap_table;
-FLOAT rad_const;
-FLOAT temp_ambient;
+  int ndens, ntemp;
+  FLOAT  *eos_dens, *eos_temp ;
+  FLOAT **eos_energy, **eos_mu, **kappa_table, **kappar_table, **kappap_table;
+  FLOAT rad_const;
+  FLOAT temp_ambient;
 
 };
 
@@ -128,7 +128,7 @@ FLOAT temp_ambient;
 
 //=================================================================================================
 //  NullEnergy
-/// Null (empty) class when no energy option is selected
+/// Null (empty) class when no energy option is selected.
 //=================================================================================================
 template <int ndim>
 class NullEnergy: public EnergyEquation<ndim>
@@ -141,7 +141,7 @@ class NullEnergy: public EnergyEquation<ndim>
   void EnergyIntegration(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *) {};
   void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *) {};
   void EndTimestep(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *) {};
-  DOUBLE Timestep(SphParticle<ndim> &) {};
+  DOUBLE Timestep(SphParticle<ndim> &) {return big_number_dp;}
 
 };
 #endif

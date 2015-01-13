@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  Constants.h
 //  Definitions for all astrophysical and dimensionless constants used
 //  throughout the code.
@@ -19,7 +19,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _CONSTANTS_H_
@@ -30,7 +30,7 @@
 
 
 // Physical constants in SI units (unless stated otherwise)
-//-----------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 static const DOUBLE r_pc            = 3.08568025E16;
 static const DOUBLE r_au            = 1.49597870E11;
 static const DOUBLE r_sun           = 6.955E8;
@@ -56,24 +56,24 @@ static const DOUBLE L_sun           = 3.839E26;
 
 
 // Dimensionless numerical constants
-//-----------------------------------------------------------------------------
-static const FLOAT pi               = 3.14159265358979;
-static const FLOAT twopi            = 6.28318530717959;
-static const FLOAT invpi            = 0.31830988618379;
-static const FLOAT invlogetwo       = 1.44269504088896;
-static const FLOAT invlog10two      = 3.321928095;
-static const FLOAT invsqrttwo       = 0.707106781;
-static const FLOAT sqrttwo          = 1.414213562;
-static const FLOAT onethird         = 0.33333333333333333333333;
-static const FLOAT onesixth         = 0.16666666666666666666666;
-static const FLOAT twothirds        = 0.66666666666666666666666;
-static const FLOAT onetwelfth       = 0.08333333333333333333333;
-static const FLOAT big_number       = 9.9e20;
-static const FLOAT small_number     = 1.0e-20;
+//-------------------------------------------------------------------------------------------------
+static const FLOAT pi               = (FLOAT) 3.14159265358979;
+static const FLOAT twopi            = (FLOAT) 6.28318530717959;
+static const FLOAT invpi            = (FLOAT) 0.31830988618379;
+static const FLOAT invlogetwo       = (FLOAT) 1.44269504088896;
+static const FLOAT invlog10two      = (FLOAT) 3.321928095;
+static const FLOAT invsqrttwo       = (FLOAT) 0.707106781;
+static const FLOAT sqrttwo          = (FLOAT) 1.414213562;
+static const FLOAT onethird         = (FLOAT) 0.33333333333333333333333;
+static const FLOAT onesixth         = (FLOAT) 0.16666666666666666666666;
+static const FLOAT twothirds        = (FLOAT) 0.66666666666666666666666;
+static const FLOAT onetwelfth       = (FLOAT) 0.08333333333333333333333;
+static const FLOAT big_number       = (FLOAT) 9.9e20;
+static const FLOAT small_number     = (FLOAT) 1.0e-20;
 
 
 // Dimensionless numerical constants in double precision
-//-----------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 static const DOUBLE pi_dp           = 3.14159265358979;
 static const DOUBLE twopi_dp        = 6.28318530717959;
 static const DOUBLE invpi_dp        = 0.31830988618379;

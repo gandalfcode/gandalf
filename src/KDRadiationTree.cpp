@@ -82,8 +82,6 @@ KDRadiationTree<ndim,nfreq,ParticleType,CellType>::~KDRadiationTree()
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::AllocateMemory(void)
 {
-  int ithread;                      // Thread id number
-
   debug2("[KDRadiationTree::AllocateMemory]");
 
   if (!allocated_tree || Ntotmax > Ntotmaxold) {
@@ -256,7 +254,6 @@ template <int ndim, int nfreq, template<int> class ParticleType, template<int,in
 void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::CreateTreeStructure(void)
 {
   int c;                            // Dummy id of tree-level, then tree-cell
-  int g;                            // Dummy id of grid-cell
   int k;                            // Frequency bin counter
   int l;                            // Dummy id of level
   int *c2L;                         // Increment to second child-cell
@@ -284,7 +281,6 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::CreateTreeStructure(void
     radcell[c].N = 0;
     for (k=0; k<nfreq; k++) radcell[c].lsum[k] = 0.0;
   }
-  g = 0;
   radcell[0].level = 0;
 
   // Loop over all cells and set all other pointers
@@ -461,7 +457,6 @@ FLOAT KDRadiationTree<ndim,nfreq,ParticleType,CellType>::QuickSelect
  int k,                             ///< Dimension of sort
  ParticleType<ndim> *partdata)      ///< Pointer to main SPH object
 {
-  int i;                            // ..
   int j;                            // Aux.
   int jguess;                       // ..
   int jtemp;                        // ..
@@ -547,8 +542,7 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::StockTree
   // If cell is not leaf, stock child cells
   if (cell.level != ltot) {
     if (pow(2,cell.level) < Nthreads) {
-#pragma omp parallel for default(none) private(i) \
-  shared(cell,partdata) num_threads(2)
+#pragma omp parallel for default(none) private(i) shared(cell,partdata) num_threads(2)
       for (i=0; i<2; i++) {
         if (i == 0) StockTree(radcell[cell.c1],partdata);
         else if (i == 1) StockTree(radcell[cell.c2],partdata);
@@ -580,35 +574,27 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::StockCellProperties
 (CellType<ndim,nfreq> &cell,        ///< Reference to current tree cell
  ParticleType<ndim> *partdata)      ///< Particle data array
 {
-  int cc,ccc;                       // Cell counters
   int i;                            // Particle counter
-  int iaux;                         // Aux. particle i.d. variable
-  int j;                            // ..
   int k;                            // Dimension counter
-  FLOAT dr[ndim];                   // Relative position vector
-  FLOAT drsqd;                      // Distance squared
-  FLOAT mi;                         // Mass of particle i
-  FLOAT p = 0.0;                    // ..
-  FLOAT lambda = 0.0;               // ..
   CellType<ndim,nfreq> &child1 = radcell[cell.c1];
   CellType<ndim,nfreq> &child2 = radcell[cell.c2];
 
 
   // Zero all summation variables for all cells
   cell.uniform = false;
-  cell.N = 0;
+  cell.N       = 0;
   cell.Nphoton = 0;
-  cell.m = 0.0;
-  cell.rho = 0.0;
-  cell.temp = 0.0;
-  for (k=0; k<nfreq; k++) cell.lsum[k] = 0.0;
+  cell.m       = (FLOAT) 0.0;
+  cell.rho     = (FLOAT) 0.0;
+  cell.temp    = (FLOAT) 0.0;
+  for (k=0; k<nfreq; k++) cell.lsum[k] = (FLOAT) 0.0;
   for (k=0; k<nfreq; k++) cell.opacity[k] = small_number;
-  for (k=0; k<ndim; k++) cell.r[k] = 0.0;
-  for (k=0; k<ndim; k++) cell.v[k] = 0.0;
-  for (k=0; k<ndim; k++) cell.rcell[k] = 0.5*(cell.bbmax[k] + cell.bbmin[k]);
+  for (k=0; k<ndim; k++) cell.r[k] = (FLOAT) 0.0;
+  for (k=0; k<ndim; k++) cell.v[k] = (FLOAT) 0.0;
+  for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bbmax[k] + cell.bbmin[k]);
 
   // Calculate cell volume
-  cell.volume = 1.0;
+  cell.volume = (FLOAT) 1.0;
   for (k=0; k<ndim; k++) cell.volume *= (cell.bbmax[k] - cell.bbmin[k]);
 
 
@@ -812,28 +798,28 @@ int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::FindCell
 
 
 
-//=============================================================================
+//=================================================================================================
 //  KDRadiationTree::FindRayExitFace
 /// Find face in current cell that photon packet will intercept first.
 /// Also computes the path length through the cell.
-//=============================================================================
+//=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::FindRayExitFace
-(CellType<ndim,nfreq> &cell,        ///< [in] Reference to cell
- FLOAT rp[ndim],                    ///< [in] Position of point/ray
- FLOAT eray[ndim],                  ///< [in] Unit vector direction of ray
- FLOAT inveray[ndim],               ///< [in] 1/eray
- FLOAT &dpath)                      ///< [out] Length of ray path across cell
+ (CellType<ndim,nfreq> &cell,          ///< [in] Reference to cell
+  FLOAT rp[ndim],                      ///< [in] Position of point/ray
+  FLOAT eray[ndim],                    ///< [in] Unit vector direction of ray
+  FLOAT inveray[ndim],                 ///< [in] 1/eray
+  FLOAT &dpath)                        ///< [out] Length of ray path across cell
 {
-  int cexit;                        // i.d. of cell that ray is travelling to
-  int k;                            // Dimension counter
-  FLOAT daux;                       // Aux. value of face-intersection distance
+  int cexit = -1;                      // i.d. of cell that ray is travelling to
+  int k;                               // Dimension counter
+  FLOAT daux;                          // Aux. value of face-intersection distance
 
   // Initialise variables before finding face
   dpath = big_number;
 
   // Check each cell boundary
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   for (k=0; k<ndim; k++) {
 
     // If radiation if travelling in +ve k-direction
@@ -865,7 +851,7 @@ int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::FindRayExitFace
 #endif
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   return cexit;
 }
@@ -873,7 +859,7 @@ int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::FindRayExitFace
 
 
 //=============================================================================
-//  TreeMonteCarlo::FindAdjacentCell
+//  KDRadiationTree::FindAdjacentCell
 /// Find i.d. of cell adjacent to current cell that the radiation packet is
 /// travelling into.
 //=============================================================================
@@ -930,7 +916,6 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::SumRadiationField
 (int level,                         ///< [in] level to sum radiation field
  CellType<ndim,nfreq> &cell)        ///< [inout] KD radiation tree cell pointer
 {
-  int c,cc,ccc;                     // Cell counters
   int i;                            // Particle counter
   int k;                            // Dimension counter
 
@@ -962,8 +947,7 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::SumRadiationField
 
   // Sum-up radiation values from children cells
   if (cell.level != level) {
-    for (k=0; k<nfreq; k++)
-      cell.lsum[k] = radcell[cell.c1].lsum[k] + radcell[cell.c2].lsum[k];
+    for (k=0; k<nfreq; k++) cell.lsum[k] = radcell[cell.c1].lsum[k] + radcell[cell.c2].lsum[k];
     cell.Nphoton = radcell[cell.c1].Nphoton + radcell[cell.c2].Nphoton;
   }
 

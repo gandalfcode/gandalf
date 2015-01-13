@@ -46,13 +46,12 @@ using namespace std;
 /// Saitoh & Makino (2012) SPH object constructor.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-SM2012Sph<ndim, kernelclass >::SM2012Sph(int hydro_forces_aux,
-	    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
-	    FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux,
-	    acondenum acond_aux, tdaviscenum tdavisc_aux, string gas_eos_aux,
-            string KernelName):
+SM2012Sph<ndim, kernelclass >::SM2012Sph(int hydro_forces_aux, int self_gravity_aux,
+  FLOAT alpha_visc_aux, FLOAT beta_visc_aux, FLOAT h_fac_aux, FLOAT h_converge_aux,
+  aviscenum avisc_aux, acondenum acond_aux, tdaviscenum tdavisc_aux,
+  string gas_eos_aux, string KernelName):
   Sph<ndim>(hydro_forces_aux, self_gravity_aux, alpha_visc_aux, beta_visc_aux,
-	    h_fac_aux, h_converge_aux, avisc_aux, acond_aux, tdavisc_aux,
+            h_fac_aux, h_converge_aux, avisc_aux, acond_aux, tdavisc_aux,
             gas_eos_aux, KernelName, sizeof(SM2012SphParticle<ndim>)),
   kern(kernelclass<ndim>(KernelName))
 {
@@ -134,11 +133,10 @@ void SM2012Sph<ndim, kernelclass>::DeallocateMemory(void)
 template <int ndim, template<int> class kernelclass>
 void SM2012Sph<ndim, kernelclass>::DeleteDeadParticles(void)
 {
-  int i;                            // Particle counter
-  int itype;                        // ..
-  int Ndead = 0;                    // No. of 'dead' particles
-  int Nlive = 0;                    // No. of 'live' particles
-  int ilast = Nsph;                 // Aux. counter of last free slot
+  int i;                               // Particle counter
+  int itype;                           // Type of current particle
+  int Ndead = 0;                       // No. of 'dead' particles
+  int ilast = Nsph;                    // Aux. counter of last free slot
 
   debug2("[SM2012Sph::DeleteDeadParticles]");
 
@@ -153,7 +151,7 @@ void SM2012Sph<ndim, kernelclass>::DeleteDeadParticles(void)
       if (i < ilast) {
         sphdata[i] = sphdata[ilast];
         sphdata[ilast].itype = dead;
-        sphdata[ilast].m = 0.0;
+        sphdata[ilast].m = (FLOAT) 0.0;
       }
       else break;
       itype = sphdata[i].itype;

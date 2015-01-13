@@ -315,7 +315,7 @@ DOUBLE NbodyLeapfrogDKD<ndim, kernelclass>::Timestep
 {
   DOUBLE timestep;                  // Minimum value of particle timesteps
   DOUBLE amag;                      // Magnitude of star acceleration
-  DOUBLE adotmag;                   // Magnitude of star jerk
+  //DOUBLE adotmag;                   // Magnitude of star jerk
 
   // Acceleration condition
   amag = sqrt(DotProduct(star->a,star->a,ndim));

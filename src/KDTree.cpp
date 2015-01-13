@@ -112,8 +112,6 @@ KDTree<ndim,ParticleType,TreeCell>::~KDTree()
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void KDTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
 {
-  int ithread;                      // Thread id number
-
   debug2("[KDTree::AllocateTreeMemory]");
 
   ComputeTreeSize();
@@ -518,10 +516,8 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelectSort
   int k,                               ///< Dimension of sort
   ParticleType<ndim> *partdata)        ///< Pointer to main particle data array
 {
-  int i;                               // ..
   int j;                               // ..
   int jguess;                          // ..
-  int jtemp;                           // ..
   FLOAT rpivot;                        // ..
   ParticleType<ndim> temppart;         // ..
 
@@ -597,7 +593,6 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
   int k,                               ///< Dimension of sort
   ParticleType<ndim> *partdata)        ///< Pointer to main SPH object
 {
-  int i;                               // ..
   int j;                               // ..
   int jguess;                          // ..
   int jtemp;                           // ..
@@ -717,16 +712,14 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
  (TreeCell<ndim> &cell,                ///< Reference to current tree cell
   ParticleType<ndim> *partdata)        ///< Particle data array
 {
-  int cc,ccc;                          // Cell counters
   int i;                               // Particle counter
   int iaux;                            // Aux. particle i.d. variable
-  int j;                               // ..
   int k;                               // Dimension counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
   FLOAT mi;                            // Mass of particle i
-  FLOAT p = 0.0;                       // ..
-  FLOAT lambda = 0.0;                  // ..
+  FLOAT p = (FLOAT) 0.0;               // ..
+  FLOAT lambda = (FLOAT) 0.0;          // ..
   TreeCell<ndim> &child1 = celldata[cell.c1];
   TreeCell<ndim> &child2 = celldata[cell.c2];
 
@@ -734,17 +727,17 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   // Zero all summation variables for all cells
   cell.Nactive  = 0;
   cell.N        = 0;
-  cell.m        = 0.0;
-  cell.hmax     = 0.0;
-  cell.rmax     = 0.0;
-  cell.dhmaxdt  = 0.0;
-  cell.drmaxdt  = 0.0;
-  cell.mac      = 0.0;
+  cell.m        = (FLOAT) 0.0;
+  cell.hmax     = (FLOAT) 0.0;
+  cell.rmax     = (FLOAT) 0.0;
+  cell.dhmaxdt  = (FLOAT) 0.0;
+  cell.drmaxdt  = (FLOAT) 0.0;
+  cell.mac      = (FLOAT) 0.0;
   cell.cdistsqd = big_number;
-  for (k=0; k<5; k++) cell.q[k] = 0.0;
-  for (k=0; k<ndim; k++) cell.r[k] = 0.0;
-  for (k=0; k<ndim; k++) cell.v[k] = 0.0;
-  for (k=0; k<ndim; k++) cell.rcell[k] = 0.0;
+  for (k=0; k<5; k++) cell.q[k] = (FLOAT) 0.0;
+  for (k=0; k<ndim; k++) cell.r[k] = (FLOAT) 0.0;
+  for (k=0; k<ndim; k++) cell.v[k] = (FLOAT) 0.0;
+  for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) cell.bbmin[k] = big_number;
   for (k=0; k<ndim; k++) cell.bbmax[k] = -big_number;
   for (k=0; k<ndim; k++) cell.hboxmin[k] = big_number;
@@ -800,8 +793,8 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     if (cell.N > 0) {
       for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
       for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
-      for (k=0; k<ndim; k++) cell.rcell[k] = 0.5*(cell.bbmin[k] + cell.bbmax[k]);
-      for (k=0; k<ndim; k++) dr[k] = 0.5*(cell.bbmax[k] - cell.bbmin[k]);
+      for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bbmin[k] + cell.bbmax[k]);
+      for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bbmax[k] - cell.bbmin[k]);
       cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
       cell.rmax = sqrt(DotProduct(dr,dr,ndim));
     }
@@ -816,16 +809,16 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
           for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
           drsqd = DotProduct(dr,dr,ndim);
           if (ndim == 3) {
-            cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-            cell.q[1] += mi*3.0*dr[0]*dr[1];
-            cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
-            cell.q[3] += mi*3.0*dr[2]*dr[0];
-            cell.q[4] += mi*3.0*dr[2]*dr[1];
+            cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+            cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
+            cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
+            cell.q[3] += mi*(FLOAT) 3.0*dr[2]*dr[0];
+            cell.q[4] += mi*(FLOAT) 3.0*dr[2]*dr[1];
           }
           else if (ndim == 2) {
-            cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-            cell.q[1] += mi*3.0*dr[0]*dr[1];
-            cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+            cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+            cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
+            cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
           }
         }
         if (i == cell.ilast) break;
@@ -859,8 +852,8 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       cell.m = child1.m + child2.m;
       for (k=0; k<ndim; k++) cell.r[k] = (child1.m*child1.r[k] + child2.m*child2.r[k])/cell.m;
       for (k=0; k<ndim; k++) cell.v[k] = (child1.m*child1.v[k] + child2.m*child2.v[k])/cell.m;
-      for (k=0; k<ndim; k++) cell.rcell[k] = 0.5*(cell.bbmin[k] + cell.bbmax[k]);
-      for (k=0; k<ndim; k++) dr[k] = 0.5*(cell.bbmax[k] - cell.bbmin[k]);
+      for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bbmin[k] + cell.bbmax[k]);
+      for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bbmax[k] - cell.bbmin[k]);
       cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
       cell.rmax = sqrt(DotProduct(dr,dr,ndim));
 #ifdef MPI_PARALLEL
@@ -874,16 +867,16 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       for (k=0; k<ndim; k++) dr[k] = child1.r[k] - cell.r[k];
       drsqd = DotProduct(dr,dr,ndim);
       if (ndim == 3) {
-        cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-        cell.q[1] += mi*3.0*dr[0]*dr[1];
-        cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
-        cell.q[3] += mi*3.0*dr[2]*dr[0];
-        cell.q[4] += mi*3.0*dr[2]*dr[1];
+        cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+        cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
+        cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
+        cell.q[3] += mi*(FLOAT) 3.0*dr[2]*dr[0];
+        cell.q[4] += mi*(FLOAT) 3.0*dr[2]*dr[1];
       }
       else if (ndim == 2) {
-        cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-        cell.q[1] += mi*3.0*dr[0]*dr[1];
-        cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+        cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+        cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
+        cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
       }
     }
 
@@ -892,16 +885,16 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
       for (k=0; k<ndim; k++) dr[k] = child2.r[k] - cell.r[k];
       drsqd = DotProduct(dr,dr,ndim);
       if (ndim == 3) {
-        cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-        cell.q[1] += mi*3.0*dr[0]*dr[1];
-        cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
-        cell.q[3] += mi*3.0*dr[2]*dr[0];
-        cell.q[4] += mi*3.0*dr[2]*dr[1];
+        cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+        cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
+        cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
+        cell.q[3] += mi*(FLOAT) 3.0*dr[2]*dr[0];
+        cell.q[4] += mi*(FLOAT) 3.0*dr[2]*dr[1];
       }
       else if (ndim == 2) {
-        cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-        cell.q[1] += mi*3.0*dr[0]*dr[1];
-        cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+        cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+        cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
+        cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
       }
     }
 
@@ -914,14 +907,14 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
     if (ndim == 3)
       p = cell.q[0]*cell.q[2] - (cell.q[0] + cell.q[2])*(cell.q[0] + cell.q[2]) -
         cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];
-    if (p >= 0.0) cell.mac = 0.0;
+    if (p >= (FLOAT) 0.0) cell.mac = (FLOAT) 0.0;
     else {
-      lambda = 2.0*sqrt(-p/3.0);
-      cell.mac = pow(0.5*lambda/macerror,0.66666666666666);
+      lambda = (FLOAT) 2.0*sqrt(-p/(FLOAT) 3.0);
+      cell.mac = pow((FLOAT) 0.5*lambda/macerror,(FLOAT) 0.66666666666666);
     }
   }
   else {
-    cell.mac = 0.0;
+    cell.mac = (FLOAT) 0.0;
   }
 
 
@@ -975,7 +968,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
  (TreeCell<ndim> &cell,                ///< KD-tree cell
   ParticleType<ndim> *partdata)        ///< SPH particle data array
 {
-  int c,cc,ccc;                        // Cell counters
+  int cc,ccc;                          // Cell counters
   int i;                               // Particle counter
   int k;                               // Dimension counter
 
@@ -1005,7 +998,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateHmaxValues
 
 
   // Zero all summation variables for all cells
-  cell.hmax = 0.0;
+  cell.hmax = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) cell.hboxmin[k] = big_number;
   for (k=0; k<ndim; k++) cell.hboxmax[k] = -big_number;
 
@@ -1179,19 +1172,14 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   const int Nneibmax,                  ///< [in] Max. no. of neighbours
   int *neiblist)                       ///< [out] List of neighbour i.d.s
 {
-  int cc;                              // Cell counter
+  int cc = 0;                          // Cell counter
   int i;                               // Particle id
-  int j;                               // Aux. particle counter
   int k;                               // Neighbour counter
   int Nneib = 0;                       // Neighbour counter
-  int Ntemp = 0;                       // Temporary neighbour counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
-  FLOAT rsearchsqd;                    // Search radius squared
+  FLOAT rsearchsqd = rsearch*rsearch;  // Search radius squared
 
-  // Start with root cell and walk through entire tree
-  cc = 0;
-  rsearchsqd = rsearch*rsearch;
 
   //===============================================================================================
   while (cc < Ncell) {
@@ -1261,7 +1249,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   int &Nneib,                          ///< [inout] No. of neighbours
   int *neiblist)                       ///< [out] List of neighbour i.d.s
 {
-  int cc;                              // Cell counter
+  int cc = 0;                          // Cell counter
   int i;                               // Particle id
   int j;                               // Aux. particle counter
   int k;                               // Neighbour counter
@@ -1280,9 +1268,6 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   for (k=0; k<ndim; k++) gatherboxmin[k] = cell.bbmin[k] - kernrange*hmax;
   for (k=0; k<ndim; k++) gatherboxmax[k] = cell.bbmax[k] + kernrange*hmax;
 
-
-  // Start with root cell and walk through entire tree
-  cc = 0;
 
   //===============================================================================================
   while (cc < Ncell) {
@@ -1822,7 +1807,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
   TreeCell<ndim> *gravcell,            ///< [out] List of cell ids
   ParticleType<ndim> *partdata)        ///< [in] Particle data array
 {
-  int cc;                              // Cell counter
+  int cc = 0;                          // Cell counter
   int i;                               // Particle id
   int k;                               // Neighbour counter
   FLOAT dr[ndim];                      // Relative position vector
@@ -1834,15 +1819,12 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
   for (k=0; k<ndim; k++) rs[k] = star->r[k];
   hrangemax = kernrange*star->h;
 
-  // Start with root cell and walk through entire tree
-  cc = 0;
   Nneib = 0;
   Ndirect = 0;
   Ngravcell = 0;
 
 
-  // Walk through all cells in tree to determine particle and cell
-  // interaction lists
+  // Walk through all cells in tree to determine particle and cell interaction lists
   //===============================================================================================
   while (cc < Ncell) {
 
@@ -1852,7 +1834,8 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
 
     // Check if cells contain SPH neighbours
     //---------------------------------------------------------------------------------------------
-    if (drsqd < pow(0.5*hrangemax + celldata[cc].rmax + 0.5*kernrange*celldata[cc].hmax,2)) {
+    if (drsqd < pow((FLOAT) 0.5*hrangemax +
+        celldata[cc].rmax + 0.5*kernrange*celldata[cc].hmax,2)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].level != ltot)
@@ -2129,13 +2112,11 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
 (ParticleType<ndim> *partdata)      ///< Pointer to SPH class
 {
   bool overlap_flag = false;        // Flag if cell bounding boxes overlap
-  bool hmax_flag = false;           // Flag if ptcls have larger h than hmax
   bool kill_flag = false;           // ..
   int activecount;                  // Active particles in leaf cell
   int c;                            // Cell counter
   int cc;                           // Aux. cell counter
   int i;                            // Particle counter
-  int j;                            // Aux. particle counter
   int l;                            // Tree level
   int leafcount;                    // Leaf cell counter
   int Nactivecount=0;               // Counter for total no. of active ptcls

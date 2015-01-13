@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  GodunovSph.cpp
 //  Contains all functions for calculating Godunov SPH (Inutsuka 2002) terms.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <cstdio>
@@ -41,10 +41,10 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  GodunovSph::GodunovSph
 /// GodunovSph class contructor
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 GodunovSph<ndim, kernelclass >::GodunovSph(int hydro_forces_aux,
 	    int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
@@ -63,22 +63,21 @@ GodunovSph<ndim, kernelclass >::GodunovSph(int hydro_forces_aux,
 
 
 
-//=============================================================================
+//=================================================================================================
 //  GodunovSph::~GodunovSph
 /// GodunovSph class destructor
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 GodunovSph<ndim, kernelclass >::~GodunovSph()
 {
 }
 
 
-//=============================================================================
+//=================================================================================================
 //  GodunovSph::AllocateMemory
-/// Allocate main SPH particle array.  Currently sets the maximum memory to
-/// be 10 times the numbers of particles to allow space for ghost particles
-/// and new particle creation.
-//=============================================================================
+/// Allocate main SPH particle array.  Estimates the maximum number of boundary ghost particles
+/// assuming a roughly uniform depth of ghosts at each boundary.
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void GodunovSph<ndim, kernelclass>::AllocateMemory(int N)
 {
@@ -89,13 +88,13 @@ void GodunovSph<ndim, kernelclass>::AllocateMemory(int N)
 
     // Set conservative estimate for maximum number of particles, assuming
     // extra space required for periodic ghost particles
-    if (Nsphmax < N)
-      Nsphmax = pow(pow(N,invndim) + 8.0*kernp->kernrange,ndim);
-    //Nsphmax = N;
+    if (Nsphmax < N) {
+      Nsphmax = 2*(int) powf(powf((FLOAT) N,invndim) + (FLOAT) 6.0*kernp->kernrange,ndim);
+    }
 
-    iorder = new int[Nsphmax];
-    rsph = new FLOAT[ndim*Nsphmax];
-    sphdata = new struct GodunovSphParticle<ndim>[Nsphmax];
+    iorder    = new int[Nsphmax];
+    rsph      = new FLOAT[ndim*Nsphmax];
+    sphdata   = new struct GodunovSphParticle<ndim>[Nsphmax];
     allocated = true;
     sphdata_unsafe = sphdata;
   }
@@ -105,10 +104,10 @@ void GodunovSph<ndim, kernelclass>::AllocateMemory(int N)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  GodunovSph::DeallocateMemory
 /// Deallocate main array containing SPH particle data.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void GodunovSph<ndim, kernelclass>::DeallocateMemory(void)
 {
@@ -126,21 +125,19 @@ void GodunovSph<ndim, kernelclass>::DeallocateMemory(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  GodunovSph::DeleteDeadParticles
 /// Delete 'dead' (e.g. accreted) SPH particles from the main arrays.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void GodunovSph<ndim, kernelclass>::DeleteDeadParticles(void)
 {
-  int i;                            // Particle counter
-  int itype;
-  int Ndead = 0;                    // No. of 'dead' particles
-  int Nlive = 0;                    // No. of 'live' particles
-  int ilast = Nsph;                 // Aux. counter of last free slot
+  int i;                               // Particle counter
+  int itype;                           // ..
+  int Ndead = 0;                       // No. of 'dead' particles
+  int ilast = Nsph;                    // Aux. counter of last free slot
 
   debug2("[GodunovSph::DeleteDeadParticles]");
-
 
   // Determine new order of particles in arrays.
   // First all live particles and then all dead particles
@@ -150,9 +147,9 @@ void GodunovSph<ndim, kernelclass>::DeleteDeadParticles(void)
       Ndead++;
       ilast--;
       if (i < ilast) {
-    sphdata[i] = sphdata[ilast];
-    sphdata[ilast].itype = dead;
-    sphdata[ilast].m = 0.0;
+        sphdata[i] = sphdata[ilast];
+        sphdata[ilast].itype = dead;
+        sphdata[ilast].m = (FLOAT) 0.0;
       }
       else break;
       itype = sphdata[i].itype;
@@ -174,24 +171,20 @@ void GodunovSph<ndim, kernelclass>::DeleteDeadParticles(void)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  GodunovSph::ReorderParticles
 /// Delete selected SPH particles from the main arrays.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void GodunovSph<ndim, kernelclass>::ReorderParticles(void)
 {
-  int i;                                // Particle counter
-  GodunovSphParticle<ndim> *sphdataaux;        // Aux. SPH particle array
+  int i;                                   // Particle counter
+  GodunovSphParticle<ndim> *sphdataaux;    // Aux. SPH particle array
 
   sphdataaux = new GodunovSphParticle<ndim>[Nsph];
 
-  for (i=0; i<Nsph; i++) {
-    sphdataaux[i] = sphdata[i];
-  }
-  for (i=0; i<Nsph; i++) {
-    sphdata[i] = sphdataaux[iorder[i]];
-  }
+  for (i=0; i<Nsph; i++) sphdataaux[i] = sphdata[i];
+  for (i=0; i<Nsph; i++) sphdata[i] = sphdataaux[iorder[i]];
 
   delete[] sphdataaux;
 
@@ -364,14 +357,14 @@ void GodunovSph<ndim, kernelclass>::ComputeThermalProperties
 //=============================================================================
 template <int ndim, template<int> class kernelclass>
 void GodunovSph<ndim, kernelclass >::ComputeSphHydroForces
-(const int i,                       ///< [in] id of particle
- const int Nneib,                   ///< [in] No. of neins in neibpart array
- const int *neiblist,               ///< [in] id of gather neibs in neibpart
- const FLOAT *drmag,                ///< [in] Distances of gather neighbours
- const FLOAT *invdrmag,             ///< [in] Inverse distances of gather neibs
- const FLOAT *dr,                   ///< [in] Position vector of gather neibs
- SphParticle<ndim> &part,           ///< [inout] Particle i data
- SphParticle<ndim> *neibpart_gen)   ///< [inout] Neighbour particle data
+ (const int i,                         ///< [in] id of particle
+  const int Nneib,                     ///< [in] No. of neins in neibpart array
+  const int *neiblist,                 ///< [in] id of gather neibs in neibpart
+  const FLOAT *drmag,                  ///< [in] Distances of gather neighbours
+  const FLOAT *invdrmag,               ///< [in] Inverse distances of gather neibs
+  const FLOAT *dr,                     ///< [in] Position vector of gather neibs
+  SphParticle<ndim> &part,             ///< [inout] Particle i data
+  SphParticle<ndim> *neibpart_gen)     ///< [inout] Neighbour particle data
 {
   int j;                            // Neighbour list id
   int jj;                           // Aux. neighbour counter
@@ -411,8 +404,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphHydroForces
     j = neiblist[jj];
 
     wkerni = hconv*parti.hfactor*kern.w1(invsqrttwo*drmag[jj]*parti.invh);
-    wkernj = hconv*neibpart[j].hfactor*
-      kern.w1(invsqrttwo*drmag[jj]*neibpart[j].invh);
+    wkernj = hconv*neibpart[j].hfactor*kern.w1(invsqrttwo*drmag[jj]*neibpart[j].invh);
 
     for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
     for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
@@ -427,48 +419,43 @@ void GodunovSph<ndim, kernelclass >::ComputeSphHydroForces
       Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi +
         neibpart[j].h*neibpart[j].h/Vsqdj);
     }
-    else if (interpolation == "cubic") {
+    else { //if (interpolation == "cubic") {
       Vprimei = -DotProduct(parti.gradrho,draux,ndim)*
         parti.invrho*parti.invrho;
       Vprimej = -DotProduct(neibpart[j].gradrho,draux,ndim)*
         neibpart[j].invrho*neibpart[j].invrho;
       if (Vprimei*Vprimej > 0.0) {
-	Aij = -2.0*(neibpart[j].invrho - parti.invrho)*pow(invdrmag[jj],3) +
-	  (Vprimei + Vprimej)*invdrmag[jj]*invdrmag[jj];
-	Bij = 0.5*(Vprimej - Vprimei)*invdrmag[jj];
-	Cij = 1.5*(neibpart[j].invrho - parti.invrho)*invdrmag[jj] -
-	  0.25*(Vprimei + Vprimej);
-	Dij = 0.5*(neibpart[j].invrho + parti.invrho) -
-	  0.125*(Vprimej - Vprimei)*drmag[jj];
-	Vsqdi = 15.0*pow(parti.h,6)*Aij*Aij/64.0 +
-	  3.0*pow(parti.h,4)*(2.0*Aij*Cij + Bij*Bij)/16.0 +
-	  0.25*parti.h*parti.h*(2.0*Bij*Dij + Cij*Cij) + Dij*Dij;
-	Vsqdj = 15.0*pow(neibpart[j].h,6)*Aij*Aij/64.0 +
-	  3.0*pow(neibpart[j].h,4)*(2.0*Aij*Cij + Bij*Bij)/16.0 +
-	  0.25*neibpart[j].h*neibpart[j].h*(2.0*Bij*Dij + Cij*Cij) + Dij*Dij;
-	Sij = 0.5*((15.0*pow(parti.h,6)*Aij*Bij/32.0 +
-		    3.0*pow(parti.h,4)*(Aij*Dij + Bij*Cij)/8.0 +
-		    0.5*parti.h*parti.h*Cij*Dij)/Vsqdi +
-		   (15.0*pow(neibpart[j].h,6)*Aij*Bij/32.0 +
-		    3.0*pow(neibpart[j].h,4)*(Aij*Dij + Bij*Cij)/8.0 +
-		    0.5*neibpart[j].h*neibpart[j].h*Cij*Dij)/Vsqdi);
+        Aij = -2.0*(neibpart[j].invrho - parti.invrho)*pow(invdrmag[jj],3) +
+          (Vprimei + Vprimej)*invdrmag[jj]*invdrmag[jj];
+        Bij = 0.5*(Vprimej - Vprimei)*invdrmag[jj];
+        Cij = 1.5*(neibpart[j].invrho - parti.invrho)*invdrmag[jj] - 0.25*(Vprimei + Vprimej);
+        Dij = 0.5*(neibpart[j].invrho + parti.invrho) - 0.125*(Vprimej - Vprimei)*drmag[jj];
+        Vsqdi = 15.0*pow(parti.h,6)*Aij*Aij/64.0 +
+          3.0*pow(parti.h,4)*(2.0*Aij*Cij + Bij*Bij)/16.0 +
+          0.25*parti.h*parti.h*(2.0*Bij*Dij + Cij*Cij) + Dij*Dij;
+        Vsqdj = 15.0*pow(neibpart[j].h,6)*Aij*Aij/64.0 +
+          3.0*pow(neibpart[j].h,4)*(2.0*Aij*Cij + Bij*Bij)/16.0 +
+          0.25*neibpart[j].h*neibpart[j].h*(2.0*Bij*Dij + Cij*Cij) + Dij*Dij;
+        Sij = 0.5*((15.0*pow(parti.h,6)*Aij*Bij/32.0 +
+          3.0*pow(parti.h,4)*(Aij*Dij + Bij*Cij)/8.0 + 0.5*parti.h*parti.h*Cij*Dij)/Vsqdi +
+          (15.0*pow(neibpart[j].h,6)*Aij*Bij/32.0 +
+           3.0*pow(neibpart[j].h,4)*(Aij*Dij + Bij*Cij)/8.0 +
+           0.5*neibpart[j].h*neibpart[j].h*Cij*Dij)/Vsqdi);
       }
       else {
-	Cij = (neibpart[j].invrho - parti.invrho)*invdrmag[jj];
-	Dij = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
-	Vsqdi = (FLOAT) 0.25*parti.h*parti.h*Cij*Cij + Dij*Dij;
-	Vsqdj = (FLOAT) 0.25*neibpart[j].h*neibpart[j].h*Cij*Cij + Dij*Dij;
-	Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi +
-				  neibpart[j].h*neibpart[j].h/Vsqdj);
+        Cij = (neibpart[j].invrho - parti.invrho)*invdrmag[jj];
+        Dij = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
+        Vsqdi = (FLOAT) 0.25*parti.h*parti.h*Cij*Cij + Dij*Dij;
+        Vsqdj = (FLOAT) 0.25*neibpart[j].h*neibpart[j].h*Cij*Cij + Dij*Dij;
+        Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi + neibpart[j].h*neibpart[j].h/Vsqdj);
       }
     }
     assert(fabs(Sij) < 0.5*drmag[jj]);
     Sij = -Sij;
 
     // Initialise the LHS and RHS of the Riemann problem
-    InitialiseRiemannProblem(parti,neibpart[j],draux,drmag[jj],Sij,
-                             dvdr,parti.sound,neibpart[j].sound,
-                             pl,pr,rhol,rhor,vl,vr);
+    InitialiseRiemannProblem(parti,neibpart[j],draux,drmag[jj],Sij,dvdr,parti.sound,
+                             neibpart[j].sound,pl,pr,rhol,rhor,vl,vr);
 
     // Now solve Riemann problem and return intermediate state variables
     riemann->SolveRiemannProblem(pl,pr,rhol,rhor,parti.sound,
@@ -1022,7 +1009,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
   int j;                            // Neighbour list id
   int jj;                           // Aux. neighbour counter
   int k;                            // Dimension counter
-  FLOAT da[ndim];                   // ..
+  //FLOAT da[ndim];                   // ..
   FLOAT draux[ndim];                // Relative position vector
   FLOAT dv[ndim];                   // Relative velocity vector
   FLOAT dvdr;                       // Dot product of dv and dr
@@ -1066,7 +1053,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
 
     for (k=0; k<ndim; k++) draux[k] = dr[jj*ndim + k];
     for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
-    for (k=0; k<ndim; k++) da[k] = neibpart[j].a[k] - parti.a[k];
+    //for (k=0; k<ndim; k++) da[k] = neibpart[j].a[k] - parti.a[k];
     dvdr = DotProduct(dv,draux,ndim);
     //vhalfi = (FLOAT) 0.5*DotProduct(parti.a,draux,ndim)*parti.dt;
     //vhalfj = dvdr + (FLOAT) 0.5*DotProduct(neibpart[j].a,draux,ndim)*neibpart[j].dt;
@@ -1079,42 +1066,34 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
       Dij = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
       Vsqdi = (FLOAT) 0.25*parti.h*parti.h*Cij*Cij + Dij*Dij;
       Vsqdj = (FLOAT) 0.25*neibpart[j].h*neibpart[j].h*Cij*Cij + Dij*Dij;
-      Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi +
-				  neibpart[j].h*neibpart[j].h/Vsqdj);
+      Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi + neibpart[j].h*neibpart[j].h/Vsqdj);
     }
-    else if (interpolation == "cubic") {
-      Vprimei = -DotProduct(parti.gradrho,draux,ndim)*
-	parti.invrho*parti.invrho;
-      Vprimej = -DotProduct(neibpart[j].gradrho,draux,ndim)*
-	neibpart[j].invrho*neibpart[j].invrho;
+    else { //if (interpolation == "cubic") {
+      Vprimei = -DotProduct(parti.gradrho,draux,ndim)*parti.invrho*parti.invrho;
+      Vprimej = -DotProduct(neibpart[j].gradrho,draux,ndim)*neibpart[j].invrho*neibpart[j].invrho;
       if (Vprimei*Vprimej >= 0.0) {
-	Aij = -2.0*(neibpart[j].invrho - parti.invrho)*pow(invdrmag[jj],3) +
-	  (Vprimei + Vprimej)*invdrmag[jj]*invdrmag[jj];
-	Bij = 0.5*(Vprimej - Vprimei)*invdrmag[jj];
-	Cij = 1.5*(neibpart[j].invrho - parti.invrho)*invdrmag[jj] -
-	  0.25*(Vprimei + Vprimej);
-	Dij = 0.5*(neibpart[j].invrho + parti.invrho) -
-	  0.125*(Vprimej - Vprimei)*drmag[jj];
-	Vsqdi = 15.0*pow(parti.h,6)*Aij*Aij/64.0 +
-	  3.0*pow(parti.h,4)*(2.0*Aij*Cij + Bij*Bij)/16.0 +
-	  0.25*parti.h*parti.h*(2.0*Bij*Dij + Cij*Cij) + Dij*Dij;
-	Vsqdj = 15.0*pow(neibpart[j].h,6)*Aij*Aij/64.0 +
-	  3.0*pow(neibpart[j].h,4)*(2.0*Aij*Cij + Bij*Bij)/16.0 +
-	  0.25*neibpart[j].h*neibpart[j].h*(2.0*Bij*Dij + Cij*Cij) + Dij*Dij;
-	Sij = 0.5*((15.0*pow(parti.h,6)*Aij*Bij/32.0 +
-		    3.0*pow(parti.h,4)*(Aij*Dij + Bij*Cij)/8.0 +
-		    0.5*parti.h*parti.h*Cij*Dij)/Vsqdi +
-		   (15.0*pow(neibpart[j].h,6)*Aij*Bij/32.0 +
-		    3.0*pow(neibpart[j].h,4)*(Aij*Dij + Bij*Cij)/8.0 +
-		    0.5*neibpart[j].h*neibpart[j].h*Cij*Dij)/Vsqdi);
+        Aij = -2.0*(neibpart[j].invrho - parti.invrho)*pow(invdrmag[jj],3) +
+          (Vprimei + Vprimej)*invdrmag[jj]*invdrmag[jj];
+        Bij = 0.5*(Vprimej - Vprimei)*invdrmag[jj];
+        Cij = 1.5*(neibpart[j].invrho - parti.invrho)*invdrmag[jj] - 0.25*(Vprimei + Vprimej);
+        Dij = 0.5*(neibpart[j].invrho + parti.invrho) - 0.125*(Vprimej - Vprimei)*drmag[jj];
+        Vsqdi = 15.0*pow(parti.h,6)*Aij*Aij/64.0 +
+          3.0*pow(parti.h,4)*(2.0*Aij*Cij + Bij*Bij)/16.0 +
+          0.25*parti.h*parti.h*(2.0*Bij*Dij + Cij*Cij) + Dij*Dij;
+        Vsqdj = 15.0*pow(neibpart[j].h,6)*Aij*Aij/64.0 +
+          3.0*pow(neibpart[j].h,4)*(2.0*Aij*Cij + Bij*Bij)/16.0 +
+          0.25*neibpart[j].h*neibpart[j].h*(2.0*Bij*Dij + Cij*Cij) + Dij*Dij;
+        Sij = 0.5*((15.0*pow(parti.h,6)*Aij*Bij/32.0 + 3.0*pow(parti.h,4)*(Aij*Dij + Bij*Cij)/8.0 +
+          0.5*parti.h*parti.h*Cij*Dij)/Vsqdi + (15.0*pow(neibpart[j].h,6)*Aij*Bij/32.0 +
+          3.0*pow(neibpart[j].h,4)*(Aij*Dij + Bij*Cij)/8.0 +
+          0.5*neibpart[j].h*neibpart[j].h*Cij*Dij)/Vsqdi);
       }
       else {
-	Cij = (neibpart[j].invrho - parti.invrho)*invdrmag[jj];
-	Dij = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
-	Vsqdi = (FLOAT) 0.25*parti.h*parti.h*Cij*Cij + Dij*Dij;
-	Vsqdj = (FLOAT) 0.25*neibpart[j].h*neibpart[j].h*Cij*Cij + Dij*Dij;
-	Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi +
-				  neibpart[j].h*neibpart[j].h/Vsqdj);
+        Cij = (neibpart[j].invrho - parti.invrho)*invdrmag[jj];
+        Dij = (FLOAT) 0.5*(parti.invrho + neibpart[j].invrho);
+        Vsqdi = (FLOAT) 0.25*parti.h*parti.h*Cij*Cij + Dij*Dij;
+        Vsqdj = (FLOAT) 0.25*neibpart[j].h*neibpart[j].h*Cij*Cij + Dij*Dij;
+        Sij = (FLOAT) 0.25*Cij*Dij*(parti.h*parti.h/Vsqdi + neibpart[j].h*neibpart[j].h/Vsqdj);
       }
     }
     assert(fabs(Sij) < 0.5*drmag[jj]);
@@ -1122,12 +1101,10 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
 
     // Initialise the LHS and RHS of the Riemann problem
     InitialiseRiemannProblem(parti,neibpart[j],draux,drmag[jj],Sij,dvdr,
-			     parti.sound,neibpart[j].sound,
-			     pl,pr,rhol,rhor,vl,vr);
+                             parti.sound,neibpart[j].sound,pl,pr,rhol,rhor,vl,vr);
 
     // Now solve Riemann problem and return intermediate state variables
-    riemann->SolveRiemannProblem(pl,pr,rhol,rhor,parti.sound,
-				 neibpart[j].sound,vl,vr,pstar,vstar);
+    riemann->SolveRiemannProblem(pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,vl,vr,pstar,vstar);
 
     // Main SPH pressure force term
     uaux = pstar*(Vsqdi*wkerni + Vsqdj*wkernj);

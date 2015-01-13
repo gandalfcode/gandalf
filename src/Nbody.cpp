@@ -349,29 +349,29 @@ void Nbody<ndim>::CalculatePerturberForces
 //=================================================================================================
 template <int ndim>
 void Nbody<ndim>::IntegrateInternalMotion
-(SystemParticle<ndim>* systemi,     ///< [inout] System to integrate the internal motionv for
- const int n,                       ///< [in]    Integer time
- const DOUBLE tstart,               ///< [in]    Initial (local) simulation time
- const DOUBLE tend)                 ///< [in]    Final (current) simulation
+ (SystemParticle<ndim>* systemi,       ///< [inout] System to integrate the internal motionv for
+  const int n,                         ///< [in]    Integer time
+  const DOUBLE tstart,                 ///< [in]    Initial (local) simulation time
+  const DOUBLE tend)                   ///< [in]    Final (current) simulation
 {
-  int i;                            // Particle counter
-  int it;                           // Iteration counter
-  int k;                            // Dimension counter
-  int Nchildren;                    // No. of child systems
-  int Npert;                        // No. of perturbing systems
-  int Nstar;                        // Total no. of stars
-  int nsteps_local=0;               // Local no. of steps
-  DOUBLE aext[ndim];                // Acceleration due to external stars
-  DOUBLE adotext[ndim];             // Jerk due to external stars
-  DOUBLE a2dotext[ndim];            // Snap due to external stars
-  DOUBLE dt;                        // Local timestep
-  DOUBLE gpotext;                   // Grav. potential due to external sources
-  DOUBLE tlocal=tstart;             // Local time counter
-  DOUBLE tpert;                     // Time since beginning of step for perturbing stars
-  DOUBLE *apert;                    // Acceleration for perturbers
-  DOUBLE *adotpert;                 // Jerk for perturbers
-  NbodyParticle<ndim>** children;   // Child systems
-  NbodyParticle<ndim>* perturber;   // Local array of perturber properties
+  int i;                               // Particle counter
+  int it;                              // Iteration counter
+  int k;                               // Dimension counter
+  int Nchildren;                       // No. of child systems
+  int Npert;                           // No. of perturbing systems
+  int Nstar;                           // Total no. of stars
+  int nsteps_local=0;                  // Local no. of steps
+  DOUBLE aext[ndim];                   // Acceleration due to external stars
+  DOUBLE adotext[ndim];                // Jerk due to external stars
+  DOUBLE a2dotext[ndim];               // Snap due to external stars
+  DOUBLE dt;                           // Local timestep
+  DOUBLE gpotext;                      // Grav. potential due to external sources
+  DOUBLE tlocal=tstart;                // Local time counter
+  DOUBLE tpert;                        // Time since beginning of step for perturbing stars
+  DOUBLE *apert;                       // Acceleration for perturbers
+  DOUBLE *adotpert;                    // Jerk for perturbers
+  NbodyParticle<ndim>** children;      // Child systems
+  NbodyParticle<ndim>* perturber;      // Local array of perturber properties
 
   // Only integrate internal motion once COM motion has finished
   if (n - systemi->nlast != systemi->nstep) return;
@@ -380,9 +380,10 @@ void Nbody<ndim>::IntegrateInternalMotion
 
   // Allocate memory for both stars and perturbers
   Nchildren = systemi->Nchildren;
-  Npert = systemi->Npert;
-  Nstar = Nchildren + Npert;
-  children = systemi->children;
+  Npert     = systemi->Npert;
+  Nstar     = Nchildren + Npert;
+  children  = systemi->children;
+  perturber = 0;
 
   // Record total acceleration and jerk terms in order to compute external force
   // (i.e. force due to all object outside system that are not perturbers)
@@ -402,16 +403,16 @@ void Nbody<ndim>::IntegrateInternalMotion
 
     // Create local copies of perturbers
     for (i=0; i<Npert; i++) {
-      perturber[i].m = systemi->perturber[i]->m;
+      perturber[i].m     = systemi->perturber[i]->m;
       perturber[i].nlast = systemi->perturber[i]->nlast;
       perturber[i].tlast = systemi->perturber[i]->tlast;
 
-      for (k=0; k<ndim; k++) perturber[i].apert[k] = 0.0;
+      for (k=0; k<ndim; k++) perturber[i].apert[k]    = 0.0;
       for (k=0; k<ndim; k++) perturber[i].adotpert[k] = 0.0;
-      for (k=0; k<ndim; k++) perturber[i].r0[k] = systemi->perturber[i]->r0[k];
-      for (k=0; k<ndim; k++) perturber[i].v0[k] = systemi->perturber[i]->v0[k];
-      for (k=0; k<ndim; k++) perturber[i].a0[k] = systemi->perturber[i]->a0[k];
-      for (k=0; k<ndim; k++) perturber[i].adot[k] = systemi->perturber[i]->adot0[k];
+      for (k=0; k<ndim; k++) perturber[i].r0[k]       = systemi->perturber[i]->r0[k];
+      for (k=0; k<ndim; k++) perturber[i].v0[k]       = systemi->perturber[i]->v0[k];
+      for (k=0; k<ndim; k++) perturber[i].a0[k]       = systemi->perturber[i]->a0[k];
+      for (k=0; k<ndim; k++) perturber[i].adot[k]     = systemi->perturber[i]->adot0[k];
 
       // Set properties of perturbers at beginning of current step
       tpert = tlocal - perturber[i].tlast;
@@ -442,14 +443,14 @@ void Nbody<ndim>::IntegrateInternalMotion
   if (perturbers == 1 && Npert > 0) {
     this->CalculatePerturberForces(Nchildren, Npert, children, perturber, apert, adotpert);
     for (i=0; i<Nchildren; i++) {
-      for (k=0; k<ndim; k++) aext[k] -= children[i]->m*children[i]->a[k];
-      for (k=0; k<ndim; k++) adotext[k] -= children[i]->m*children[i]->adot[k];
+      for (k=0; k<ndim; k++) aext[k]     -= children[i]->m*children[i]->a[k];
+      for (k=0; k<ndim; k++) adotext[k]  -= children[i]->m*children[i]->adot[k];
       for (k=0; k<ndim; k++) a2dotext[k] -= children[i]->m*children[i]->a2dot[k];
       gpotext -= children[i]->gpe_pert;
     }
   }
-  for (k=0; k<ndim; k++) aext[k] /= systemi->m;
-  for (k=0; k<ndim; k++) adotext[k] /= systemi->m;
+  for (k=0; k<ndim; k++) aext[k]     /= systemi->m;
+  for (k=0; k<ndim; k++) adotext[k]  /= systemi->m;
   for (k=0; k<ndim; k++) a2dotext[k] /= systemi->m;
   gpotext /= systemi->m;
 
@@ -489,9 +490,8 @@ void Nbody<ndim>::IntegrateInternalMotion
     if (perturbers == 1 && Npert > 0) {
       for (i=0; i<Npert; i++) {
         tpert = tlocal - perturber[i].tlast;
-        for (k=0; k<ndim; k++) perturber[i].r[k] = perturber[i].r0[k] +
-          perturber[i].v0[k]*tpert + 0.5*perturber[i].a0[k]*tpert*tpert +
-          onesixth*perturber[i].adot0[k]*tpert*tpert*tpert;
+        for (k=0; k<ndim; k++) perturber[i].r[k] = perturber[i].r0[k] + perturber[i].v0[k]*tpert +
+          0.5*perturber[i].a0[k]*tpert*tpert + onesixth*perturber[i].adot0[k]*tpert*tpert*tpert;
         for (k=0; k<ndim; k++) perturber[i].v[k] = perturber[i].v0[k] +
           perturber[i].a0[k]*tpert + 0.5*perturber[i].adot0[k]*tpert*tpert;
         for (k=0; k<ndim; k++) perturber[i].a[k] = perturber[i].a0[k] +
@@ -506,13 +506,13 @@ void Nbody<ndim>::IntegrateInternalMotion
 
       // Zero all acceleration terms
       for (i=0; i<Nchildren; i++) {
-        children[i]->active = true;
-        children[i]->gpot = gpotext;
+        children[i]->active   = true;
+        children[i]->gpot     = gpotext;
         children[i]->gpe_pert = children[i]->m*gpotext;
-        for (k=0; k<ndim; k++) children[i]->a[k] = aext[k];
-        for (k=0; k<ndim; k++) children[i]->adot[k] = adotext[k];
-        for (k=0; k<ndim; k++) children[i]->a2dot[k] = a2dotext[k];
-        for (k=0; k<ndim; k++) children[i]->apert[k] = 0.0;
+        for (k=0; k<ndim; k++) children[i]->a[k]        = aext[k];
+        for (k=0; k<ndim; k++) children[i]->adot[k]     = adotext[k];
+        for (k=0; k<ndim; k++) children[i]->a2dot[k]    = a2dotext[k];
+        for (k=0; k<ndim; k++) children[i]->apert[k]    = 0.0;
         for (k=0; k<ndim; k++) children[i]->adotpert[k] = 0.0;
       }
 

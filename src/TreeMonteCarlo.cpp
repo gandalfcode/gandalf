@@ -1,6 +1,6 @@
 //=============================================================================
 //  TreeMonteCarlo.cpp
-//  Class for controlling Monte-Carlo radiation transport algorithms walking 
+//  Class for controlling Monte-Carlo radiation transport algorithms walking
 //  a KD-tree constructed from the gas positions.
 //
 //  This file is part of GANDALF :
@@ -65,7 +65,7 @@ TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::~TreeMonteCarlo()
 
 //=============================================================================
 //  TreeMonteCarlo::UpdateRadiationField
-/// Update the radiation field by iterating the MCRT method on the tree 
+/// Update the radiation field by iterating the MCRT method on the tree
 /// several times until acceptable convergence has been achieved.
 //=============================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
@@ -78,7 +78,6 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
  SinkParticle<ndim> *sinkdata)      ///< Sink data array
 {
   int c;                            // Cell counter
-  int isource;                      // Radiation source i.d.
   int k;                            // Dimension counter
   int level;                        // Level to walk tree on
   RadiationSource<ndim> source;     // Current radiation source
@@ -86,17 +85,17 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
 
 
   debug2("[TreeMonteCarlo::UpdateRadiationField]");
- 
+
 
   // Re-build radiation tree from scratch
   timing->StartTimingSection("RADTREE_BUILD",2);
   radtree->BuildTree(Nsph,Nsph,sphdata);
   timing->EndTimingSection("RADTREE_BUILD");
 
-  // Compute maximum radius of cell extent from co-ordinate centre, in order 
+  // Compute maximum radius of cell extent from co-ordinate centre, in order
   // to know where to emit external photons from
   boundaryradius = 0.0;
-  for (k=0; k<ndim; k++) boundaryradius += 
+  for (k=0; k<ndim; k++) boundaryradius +=
     max(pow(radtree->radcell[0].bbmax[k] - radtree->radcell[0].rcell[k],2),
 	pow(radtree->radcell[0].rcell[k] - radtree->radcell[0].bbmin[k],2));
   boundaryradius = 1.1*sqrt(boundaryradius);
@@ -115,7 +114,7 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
 
   // Normalise photon energy density for all cells
   //for (c=0; c<radtree->Ncell; c++)
-  //radtree->radcell[c].uphoton = 
+  //radtree->radcell[c].uphoton =
   //  radtree->radcell[c].lsum/radtree->radcell[c].volume;
 
 
@@ -133,13 +132,13 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
     filename = "uphoton-l" + nostring + ".dat";
     outfile.open(filename.c_str());
     for (c=0; c<radtree->Ncell; c++) {
-      if (radtree->radcell[c].level != l || 
+      if (radtree->radcell[c].level != l ||
 	  radtree->radcell[c].N == 0) continue;
       outfile << sqrt(DotProduct(radtree->radcell[c].rcell,
 				 radtree->radcell[c].rcell,ndim)) << "   "
-	      << radtree->radcell[c].lsum[0]/radtree->radcell[c].volume 
-	      << "    " << radtree->radcell[c].Nphoton << "    " 
-	      << radtree->radcell[c].N << "    " 
+	      << radtree->radcell[c].lsum[0]/radtree->radcell[c].volume
+	      << "    " << radtree->radcell[c].Nphoton << "    "
+	      << radtree->radcell[c].N << "    "
 	      << radtree->radcell[c].volume << endl;
     }
     outfile.close();
@@ -147,13 +146,13 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
   }
 
   return;
-} 
+}
 
 
 
 //=============================================================================
 //  TreeMonteCarlo::IterateRadiationField
-/// Single iteration step for updating the radiation field using the 
+/// Single iteration step for updating the radiation field using the
 /// tree-MCRT method.
 //=============================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
@@ -166,9 +165,7 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
  NbodyParticle<ndim> **nbodydata,   ///< N-body data array
  SinkParticle<ndim> *sinkdata)      ///< Sink data array
 {
-  int c;                            // Cell counter
   int iphoton;                      // Photon counter
-  int isource;                      // Radiation source i.d.
   int k;                            // Dimension counter
   int kfreq;                        // Frequency bin counter
   long int Ncellcount = 0;          // Count no. of cells passed through
@@ -177,10 +174,8 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
   FLOAT rand1;                      // Random number
   FLOAT taumax;                     // Optical depth travelled by photon
   FLOAT tau;                        // Current value of photon optical depth
-  FLOAT theta;                      // Random angle for photon direction
   PhotonPacket<ndim> photon;        // Current photon packet
   RadiationSource<ndim> source;     // Current radiation source
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* >(sph_gen);
 
   if (level < 0 && level > radtree->ltot) {
     cout << "Walking invalid tree level" << endl;
@@ -195,21 +190,16 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
   packetenergy = source.luminosity/(FLOAT) Nphoton;
   kfreq = 0;
 
-  cout << "Source located at : " << source.c << "   " 
-       << radtree->radcell[source.c].r[0] << "   " 
-       << radtree->radcell[source.c].r[1] << "   " 
-       << radtree->radcell[source.c].r[2] << endl;
- 
 
   // Now emit all photons from radiation sources, updating the radiation field
   //===========================================================================
 #pragma omp parallel for default(none) reduction(+:Ncellcount,Nscattercount) \
-  shared(kfreq,level,source) private(dpath,iphoton,k,photon,rand1,tau,taumax) 
+  shared(kfreq,level,source) private(dpath,iphoton,k,photon,rand1,tau,taumax)
   for (iphoton=0; iphoton<Nphoton; iphoton++) {
 
     // Initialise new photon packet from single source (modify later)
     photon = GenerateNewPhotonPacket(source);
-    
+
     // Calculate optical depth to be travelled by photon
     rand1 = randnumb->floatrand();
     taumax = -log(rand1);
@@ -226,10 +216,9 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
 
       // Find i.d. of next (parent) cell the path length in current cell
       photon.cnext = radtree->FindRayExitFace(radtree->radcell[photon.c],
-					      photon.r,photon.eray,
-					      photon.inveray,dpath);
+                                              photon.r,photon.eray,photon.inveray,dpath);
 
-      // Check if maximum optical depth has been reached in order to 
+      // Check if maximum optical depth has been reached in order to
       // scatter or absorb/re-emit photon.
       //-----------------------------------------------------------------------
       if (tau + dpath*radtree->radcell[photon.c].opacity[kfreq] > taumax) {
@@ -245,11 +234,11 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
         // Scatter photon (isotropic scattering for now)
         ScatterPhotonPacket(photon);
 
-	// Calculate new optical depth to be travelled by scattered photon
-	rand1 = randnumb->floatrand();
-	taumax = -log(rand1);
-	tau = 0.0;
-	Nscattercount++;
+        // Calculate new optical depth to be travelled by scattered photon
+        rand1 = randnumb->floatrand();
+        taumax = -log(rand1);
+        tau = 0.0;
+        Nscattercount++;
 
       }
 
@@ -257,7 +246,7 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
       //-----------------------------------------------------------------------
       else {
 
-        // Propagate photon packet to edge of cell and add contribution to 
+        // Propagate photon packet to edge of cell and add contribution to
         // radiation field of cell
         for (k=0; k<ndim; k++) photon.r[k] += dpath*photon.eray[k];
 #pragma omp atomic
@@ -265,24 +254,22 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
 #pragma omp atomic
         radtree->radcell[photon.c].Nphoton++;
         //radtree->radcell[photon.c].uphoton += packetenergy*dpath;
-	tau += dpath*radtree->radcell[photon.c].opacity[kfreq];
+        tau += dpath*radtree->radcell[photon.c].opacity[kfreq];
 
 
 #ifdef OUTPUT_ALL
-	cout << "Found path length : " << dpath << "     cnext : " 
-	     << photon.cnext << endl;
-	cout << "Photon exitting cell at : " << photon.r[0] << "   " 
-	     << photon.r[1] << "   " << photon.r[2] << endl;
-	cout << "Checking distance : " << photon.r[0]/photon.eray[0] 
-	     << "   " << photon.r[1]/photon.eray[1] << "   " 
-	     << photon.r[2]/photon.eray[2] << endl;
+        cout << "Found path length : " << dpath << "     cnext : " << photon.cnext << endl;
+        cout << "Photon exitting cell at : " << photon.r[0] << "   "
+             << photon.r[1] << "   " << photon.r[2] << endl;
+        cout << "Checking distance : " << photon.r[0]/photon.eray[0] << "   "
+             << photon.r[1]/photon.eray[1] << "   " << photon.r[2]/photon.eray[2] << endl;
 #endif
 
-	// Exit loop if we've reached the edge of the computational domain
-	if (photon.cnext == -1) break;
-	
-	// Find i.d. of next cell from the parent cell
-	photon.c = radtree->FindAdjacentCell(photon.cnext,level,photon.r);
+        // Exit loop if we've reached the edge of the computational domain
+        if (photon.cnext == -1) break;
+
+        // Find i.d. of next cell from the parent cell
+        photon.c = radtree->FindAdjacentCell(photon.cnext,level,photon.r);
 
       }
       //-----------------------------------------------------------------------
@@ -290,7 +277,7 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
 
     } while (photon.c != -1);
     //-------------------------------------------------------------------------
-    
+
 
   }
   //===========================================================================
@@ -298,20 +285,20 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
 
   // Normalise photon energy density for all cells
   //for (c=0; c<radtree->Ncell; c++)
-  //radtree->radcell[c].uphoton = 
+  //radtree->radcell[c].uphoton =
   //  radtree->radcell[c].lsum/radtree->radcell[c].volume;
 
 
 #ifdef OUTPUT_ALL
-  cout << "Radiation field : " << radtree->Ntot << "   " << radtree->Ntotmax 
-       << "   " << radtree->Ncell << "   " << radtree->ltot 
+  cout << "Radiation field : " << radtree->Ntot << "   " << radtree->Ntotmax
+       << "   " << radtree->Ncell << "   " << radtree->ltot
        << "   " << radtree->radcell[0].volume << endl;
 #endif
   cout << "No. of photons propagated       : " << Nphoton << endl;
   cout << "Total no. of cells crossed      : " << Ncellcount << endl;
-  cout << "Average no. of cells per photon : " << Ncellcount/Nphoton 
+  cout << "Average no. of cells per photon : " << Ncellcount/Nphoton
        << "    " << pow(radtree->gtot,0.33333333) << endl;
-  cout << "Average no. of scatter events   : " << Nscattercount/Nphoton 
+  cout << "Average no. of scatter events   : " << Nscattercount/Nphoton
        << "    " << pow(radtree->radcell[0].opacity[kfreq],2) << endl;
 
   return;
@@ -319,11 +306,11 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
 
 
 
-//=============================================================================
+//=================================================================================================
 //  TreeMonteCarlo::GenerateNewPhotonPacket
-/// Create a new photon packet for a given radiation source. 
+/// Create a new photon packet for a given radiation source.
 /// Currently only implements point sources.
-//=============================================================================
+//=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 PhotonPacket<ndim> TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::GenerateNewPhotonPacket
 (RadiationSource<ndim> &source)
@@ -331,29 +318,30 @@ PhotonPacket<ndim> TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::GenerateNew
   int k;                            // Dimension counter
   FLOAT theta;                      // Random angle for photon direction
   PhotonPacket<ndim> photon;        // Photon packet type
-  
-  
-  // Initialise new photon packet from chosen source 
+
+
+  // Initialise new photon packet from chosen source
   // (e.g. pick random direction, frequency, etc..)
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (source.sourcetype == "pointsource") {
     photon.c = source.c;
     photon.cnext = source.c;
     photon.energy = packetenergy;
     for (k=0; k<ndim; k++) photon.r[k] = source.r[k];
-    
+
     // Generate random direction for photon
     theta = pi*(2.0*randnumb->floatrand() - 1.0);
-    photon.eray[2] = 2.0*randnumb->floatrand() - 1.0;
-    photon.eray[0] = sqrt(1.0 - photon.eray[2]*photon.eray[2])*cos(theta);
-    photon.eray[1] = sqrt(1.0 - photon.eray[2]*photon.eray[2])*sin(theta);
-    for (k=0; k<ndim; k++) 
-      photon.inveray[k] = 1.0/(photon.eray[k] + small_number);
+    if (ndim == 3) {
+      photon.eray[2] = 2.0*randnumb->floatrand() - 1.0;
+      photon.eray[0] = sqrt(1.0 - photon.eray[2]*photon.eray[2])*cos(theta);
+      photon.eray[1] = sqrt(1.0 - photon.eray[2]*photon.eray[2])*sin(theta);
+    }
+    for (k=0; k<ndim; k++) photon.inveray[k] = 1.0/(photon.eray[k] + small_number);
 
   }
 
   // Isotropic source
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (source.sourcetype == "isotropic") {
     cout << "Isotropic radiation field not yet implemented" << endl;
     exit(0);
@@ -361,21 +349,21 @@ PhotonPacket<ndim> TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::GenerateNew
   }
 
   // Isotropic source
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else if (source.sourcetype == "planar") {
     cout << "Planar radiation field not yet implemented" << endl;
     exit(0);
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
 
 #ifdef OUTPUT_ALL
-  cout << "Emitting photon " << iphoton << " with direction " 
-       << photon.eray[0] << "   " << photon.eray[1] << "   " 
+  cout << "Emitting photon " << iphoton << " with direction "
+       << photon.eray[0] << "   " << photon.eray[1] << "   "
        << photon.eray[2] << endl;
 #endif
-  
+
 
   return photon;
 }
@@ -397,11 +385,12 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::ScatterPhotonPacket
   //theta = pi*(2.0*((FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX) - 1.0);
   //photon.eray[2] = 2.0*((FLOAT)(rand()%RAND_MAX)/(FLOAT)RAND_MAX) - 1.0;
   theta = pi*(2.0*randnumb->floatrand() - 1.0);
-  photon.eray[2] = 2.0*randnumb->floatrand() - 1.0;
-  photon.eray[0] = sqrt(1.0 - photon.eray[2]*photon.eray[2])*cos(theta);
-  photon.eray[1] = sqrt(1.0 - photon.eray[2]*photon.eray[2])*sin(theta);
-  for (k=0; k<ndim; k++) 
-    photon.inveray[k] = 1.0/(photon.eray[k] + small_number);
+  if (ndim == 3) {
+    photon.eray[2] = 2.0*randnumb->floatrand() - 1.0;
+    photon.eray[0] = sqrt(1.0 - photon.eray[2]*photon.eray[2])*cos(theta);
+    photon.eray[1] = sqrt(1.0 - photon.eray[2]*photon.eray[2])*sin(theta);
+  }
+  for (k=0; k<ndim; k++) photon.inveray[k] = 1.0/(photon.eray[k] + small_number);
 
   return;
 }

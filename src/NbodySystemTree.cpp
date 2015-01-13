@@ -262,13 +262,11 @@ void NbodySystemTree<ndim>::BuildSubSystems
   int i,j;                          // Star and system particle counters
   int k;                            // Dimension counter
   int Nsystem;                      // No. of systems
-  DOUBLE angmomsqd;                 // Angular momentum squared
   DOUBLE dr[ndim];                  // Relative position vector
   DOUBLE drsqd;                     // Distance squared
   DOUBLE dv[ndim];                  // Relative velocity vector
   DOUBLE invdrmag;                  // 1 / drmag
   DOUBLE ketot = 0.0;               // Kinetic energy
-  DOUBLE mu;                        // Reduced mass of binary system
   DOUBLE vmean;                     // Average speed of stars in sub-cluster
   NbodyParticle<ndim> *si;          // Pointer to star/system i
   NbodyParticle<ndim> *sj;          // Pointer to star/system j
@@ -449,7 +447,6 @@ void NbodySystemTree<ndim>::BuildSubSystems
           cout << "Adding binary system : " << c << "    " << c1 << "    "
             << c2 << "     " << nbody->system[Nsystem].Ncomp << endl;
           cout << "System no. : " << Nsystem << endl;
-          cout << "r : " << NNtree[c].r[0] << "    " << NNtree[c].r[1] << endl;
 #endif
 
           // Finally, clear list and append newly created system particle.
@@ -502,13 +499,11 @@ void NbodySystemTree<ndim>::BuildSubSystems
   cout << "No. of remaining systems in root node " << c << "  :  " << NNtree[c].Nchildlist << endl;
   cout << "List all main N-body particles : " << nbody->Nnbody << endl;
   for (i=0; i<nbody->Nnbody; i++) {
-    cout << "i : " << i << "    r : " << nbody->nbodydata[i]->r[0] << "    "
-         << nbody->nbodydata[i]->r[1] << "    Ncomp : " << nbody->nbodydata[i]->Ncomp << endl;
+    cout << "i : " << i << "      Ncomp : " << nbody->nbodydata[i]->Ncomp << endl;
   }
   cout << "List all main system particles : " << nbody->Nsystem << endl;
   for (i=0; i<nbody->Nsystem; i++) {
-    cout << "i : " << i << "    r : " << nbody->system[i].r[0] << "    " << nbody->system[i].r[1]
-         << "     Ncomp : " << nbody->system[i].Ncomp << "   Nchildren : "
+    cout << "i : " << i << "      Ncomp : " << nbody->system[i].Ncomp << "   Nchildren : "
          << nbody->system[i].Nchildren << endl;
   }
 #endif
@@ -534,8 +529,8 @@ void NbodySystemTree<ndim>::RestockTreeNodes
   int c2;                           // Child cell 2 id
   int i;                            // Counter
   int k;                            // Dimension counter
-  FLOAT dr[ndim];                   // Relative position vector
-  FLOAT drsqd;                      // Distance squared
+  //FLOAT dr[ndim];                   // Relative position vector
+  //FLOAT drsqd;                      // Distance squared
 
   debug2("[NbodySystemTree::RestockTreeNodes]");
 
@@ -587,9 +582,9 @@ void NbodySystemTree<ndim>::RestockTreeNodes
           (NNtree[c1].m*NNtree[c1].a2dot[k] + NNtree[c2].m*NNtree[c2].a2dot[k])/NNtree[c].m;
         NNtree[c].a3dot[k] =
           (NNtree[c1].m*NNtree[c1].a3dot[k] + NNtree[c2].m*NNtree[c2].a3dot[k])/NNtree[c].m;
-        dr[k] = NNtree[c].rpos[k] - NNtree[c1].rpos[k];
+        //dr[k] = NNtree[c].rpos[k] - NNtree[c1].rpos[k];
       }
-      drsqd = DotProduct(dr,dr,ndim);
+      //drsqd = DotProduct(dr,dr,ndim);
 
       NNtree[c].gpe_internal = 0.0;
 
@@ -620,7 +615,7 @@ void NbodySystemTree<ndim>::ComputeNewBinaryOrbit
  NNTreeCell<ndim> &cell2)           ///< [in] ..
 {
   int k;                            // Dimension counter
-  DOUBLE angmomsqd;                 // Angular momentum squared
+  DOUBLE angmomsqd = 0.0;           // Angular momentum squared
   DOUBLE dr[ndim];                  // Relative position vector
   DOUBLE drsqd;                     // Distance squared
   DOUBLE dv[ndim];                  // Relative velocity vector
@@ -632,7 +627,7 @@ void NbodySystemTree<ndim>::ComputeNewBinaryOrbit
   for (k=0; k<ndim; k++) dv[k] = cell1.v[k] - cell2.v[k];
   for (k=0; k<ndim; k++) dr[k] = cell1.r[k] - cell2.r[k];
   if (ndim == 2) {
-  orbit[Norbit].angmom[2] = mu*(dr[0]*dv[1] - dr[1]*dv[0]);
+    orbit[Norbit].angmom[2] = mu*(dr[0]*dv[1] - dr[1]*dv[0]);
     angmomsqd = orbit[Norbit].angmom[2]*orbit[Norbit].angmom[2];
   }
   else if (ndim == 3) {
@@ -654,10 +649,10 @@ void NbodySystemTree<ndim>::ComputeNewBinaryOrbit
   if (orbit[Norbit].binen >= 0.0) return;
 
   // Compute orbital properties
-  orbit[Norbit].sma = -0.5*cell.m/orbit[Norbit].binen;
+  orbit[Norbit].sma    = -0.5*cell.m/orbit[Norbit].binen;
   orbit[Norbit].period = twopi*sqrt(pow(orbit[Norbit].sma,3)/orbit[Norbit].m);
-  orbit[Norbit].ecc = 1.0 - angmomsqd/(orbit[Norbit].m*orbit[Norbit].sma*mu*mu);
-  orbit[Norbit].ecc = sqrt(max(0.0,orbit[Norbit].ecc));
+  orbit[Norbit].ecc    = 1.0 - angmomsqd/(orbit[Norbit].m*orbit[Norbit].sma*mu*mu);
+  orbit[Norbit].ecc    = sqrt(max(0.0,orbit[Norbit].ecc));
   if (cell1.m > cell2.m) orbit[Norbit].q = cell2.m/cell1.m;
   else orbit[Norbit].q = cell1.m/cell2.m;
 
@@ -693,12 +688,9 @@ void NbodySystemTree<ndim>::FindBinarySystems
   int c,c1,c2;                      // Cell counter
   int i;                            // Star and system particle counters
   int k;                            // Dimension counter
-  DOUBLE angmomsqd;                 // Angular momentum squared
   DOUBLE dr[ndim];                  // Relative position vector
   DOUBLE drsqd;                     // Distance squared
-  DOUBLE dv[ndim];                  // Relative velocity vector
   DOUBLE invdrmag;                  // 1 / drmag
-  DOUBLE mu;                        // Reduced mass of binary system
 
   debug2("[NbodySystemTree::FindBinarySystems]");
 
