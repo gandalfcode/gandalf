@@ -110,7 +110,7 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
 
   // Create parallel threads
   //===============================================================================================
-#pragma omp parallel default(none) private(dr,drsqd,i,j,jj,k,okflag,rp)	\
+#pragma omp parallel default(none) private(dr,drsqd,i,j,jj,k,rp)	\
   shared(gpot,m,mu,nbody,neiblist,Nneib,Nsph,Ntot,sph,sphdata)
   {
     drsqd = new FLOAT[Ntot];
@@ -136,7 +136,7 @@ void SM2012SphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
       //-------------------------------------------------------------------------------------------
 
       // Compute all SPH gather properties
-      //okflag = 
+      //okflag =
       sph->ComputeH(i,Nneib,big_number,m,mu,drsqd,gpot,sphdata[i],nbody);
 
     }

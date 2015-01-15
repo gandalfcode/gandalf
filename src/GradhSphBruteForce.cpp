@@ -107,7 +107,7 @@ void GradhSphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
 
   // Create parallel threads
   //===============================================================================================
-#pragma omp parallel default(none) private(dr,drsqd,i,j,jj,k,okflag,rp)	\
+#pragma omp parallel default(none) private(dr,drsqd,i,j,jj,k,rp)	\
   shared(gpot,m,mu,nbody,neiblist,Nneib,Nsph,Ntot,sph,sphdata)
   {
     drsqd = new FLOAT[Ntot];

@@ -137,7 +137,7 @@ void SphGodunovIntegration<ndim, ParticleType>::EndTimestep
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i,k,nstep) shared(sphdata)
+#pragma omp parallel for default(none) private(i,k) shared(sphdata)
   for (i=0; i<Npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
     //dn = n - part.nlast;
@@ -187,7 +187,7 @@ int SphGodunovIntegration<ndim, ParticleType>::CheckTimesteps
 
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) shared(sphdata)\
-  private(dn,i,k,level_new,nnewstep,nstep) reduction(+:activecount)
+  private(dn,i,level_new,nnewstep,nstep) reduction(+:activecount)
   for (i=0; i<npart; i++) {
     SphParticle<ndim>& part = sphdata[i];
     dn = n - part.nlast;

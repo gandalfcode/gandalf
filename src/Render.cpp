@@ -187,9 +187,8 @@ int Render<ndim>::CreateColumnRenderingGrid
 // Loop over all particles in snapshot
 //=================================================================================================
 #pragma omp parallel for default(none) private(c,dr,drmag,drsqd,i,ii,imax,imin)\
- private(invh,jj,jmax,jmin,wkern,wnorm) shared(cout,dx,dy,invdx,invdy,ixgrid,iygrid,hvalues)\
- shared(mvalues,Ngrid)\
- shared(Nsph,rendernorm,rendervalues,rhovalues,rgrid,values,xmin,xmax,xvalues,ymin,ymax,yvalues)
+ private(invh,jj,jmax,jmin,wkern,wnorm) shared(cout,dx,dy,invdx,invdy,hvalues,mvalues)\
+ shared(Nsph,rendernorm,rendervalues,rhovalues,rgrid,values,xvalues,yvalues)
   for (i=0; i<Nsph; i++) {
     const float hrange = sph->kerntab.kernrange*hvalues[i];
     //const float hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
@@ -346,9 +345,8 @@ int Render<ndim>::CreateSliceRenderingGrid
   // Loop over all particles in snapshot
   //=================================================================================================
 #pragma omp parallel for default(none) private(c,dr,drmag,drsqd,i,ii,imax,imin)\
-   private(invh,jj,jmax,jmin,wkern,wnorm) shared(cout,dx,dy,invdx,invdy,ixgrid,iygrid,hvalues)\
-   shared(mvalues,Ngrid,Nsph,rendernorm,rendervalues,rhovalues,rgrid,values,xmin,xmax,xvalues)\
-   shared(ymin,ymax,yvalues,zvalues,zslice)
+   private(invh,jj,jmax,jmin,wkern,wnorm) shared(cout,dx,dy,invdx,invdy,hvalues,mvalues)\
+   shared(Nsph,rendernorm,rendervalues,rhovalues,rgrid,values,xvalues,yvalues,zvalues)
   for (i=0; i<Nsph; i++) {
     const float hrange = sph->kerntab.kernrange*hvalues[i];
     //const float hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];

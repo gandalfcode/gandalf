@@ -472,7 +472,7 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
     n = 0;
     timestep = big_number_dp;
 
-#pragma omp parallel default(none) shared(dt_min_nbody) private(dt,dt_min_aux,dt_nbody,i,imin)
+#pragma omp parallel default(none) shared(dt_min_nbody) private(dt,dt_min_aux,dt_nbody,i)
     {
       // Initialise all timestep and min/max variables
       dt_min_aux = big_number_dp;
@@ -536,8 +536,7 @@ void NbodySimulation<ndim>::ComputeBlockTimesteps(void)
 
 
 #pragma omp parallel default(none) shared(dt_min,dt_min_nbody,level_max_nbody)\
-  private(dt,dt_min_aux,dt_nbody,i,imin,istep,last_level,level)\
-  private(level_max_aux,level_nbody,nstep,nfactor)
+  private(dt,dt_min_aux,dt_nbody,i,istep,last_level,level,level_max_aux,level_nbody,nstep,nfactor)
     {
       dt_min_aux = big_number_dp;
       dt_nbody = big_number_dp;
