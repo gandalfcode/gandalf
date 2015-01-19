@@ -1401,9 +1401,11 @@ void Simulation<ndim>::TurbulentCore(void)
   xmin = (FLOAT) 9.9e20;
   dxgrid = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) {
-    dxgrid = max(dxgrid,(rmax[k] - rmin[k])/(FLOAT) (gridsize - 1));
     xmin = min(xmin,rmin[k]);
+    dxgrid = max(dxgrid,(rmax[k] - rmin[k])/(FLOAT) (gridsize - 1));
+    //xmin = min(xmin,rmin[k]);
   }
+  dxgrid = max(dxgrid,2.0*fabs(xmin)/(FLOAT) (gridsize - 1));
 
   // Generate gridded velocity field
   GenerateTurbulentVelocityField(field_type,gridsize,power_turb,vfield);

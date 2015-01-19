@@ -328,10 +328,10 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
   //-----------------------------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
     celldata[c].id = c;
-    if (celldata[c].level == ltot) {                    // If on leaf level
-      celldata[c].cnext = c + 1;                        // id of next cell
-      celldata[c].c2g = g;                              // Record leaf id
-      g2c[g++] = c;                                     // Record inverse id
+    if (celldata[c].level == ltot) {                           // If on leaf level
+      celldata[c].cnext = c + 1;                               // id of next cell
+      celldata[c].c2g = g;                                     // Record leaf id
+      g2c[g++] = c;                                            // Record inverse id
     }
     else {
       celldata[c+1].level = celldata[c].level + 1;             // Level of 1st child
@@ -341,8 +341,8 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
       celldata[c].cnext = c + cNL[celldata[c].level];          // Next cell id
     }
     if (celldata[c].level == lactive) {
-      celldata[c].c2g = g;                              // Record leaf id
-      g2c[g++] = c;                                     // Record inverse id
+      celldata[c].c2g = g;                                     // Record leaf id
+      g2c[g++] = c;                                            // Record inverse id
     }
 
     // Some assert statements (for debugging)
@@ -1114,6 +1114,8 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
     i = inext[i];
   };
 
+  assert(Nactive <= Nleafmax);
+
   return Nactive;
 }
 
@@ -1193,11 +1195,13 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
     if (drsqd < (rsearch + celldata[cc].rmax)*(rsearch + celldata[cc].rmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].level != ltot)
+      if (celldata[cc].level != ltot) {
         cc++;
+      }
 
-      else if (celldata[cc].N == 0)
+      else if (celldata[cc].N == 0) {
         cc = celldata[cc].cnext;
+      }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].level == ltot && Nneib + Nleafmax < Nneibmax) {
@@ -1213,15 +1217,17 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].level == ltot && Nneib + Nleafmax >= Nneibmax)
+      else if (celldata[cc].level == ltot && Nneib + Nleafmax >= Nneibmax) {
         return -1;
+      }
 
     }
 
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
-    else
+    else {
       cc = celldata[cc].cnext;
+    }
 
   };
   //===============================================================================================
@@ -1277,11 +1283,13 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
     if (BoxOverlap(gatherboxmin,gatherboxmax,celldata[cc].bbmin,celldata[cc].bbmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].level != ltot)
+      if (celldata[cc].level != ltot) {
         cc++;
+      }
 
-      else if (celldata[cc].N == 0)
+      else if (celldata[cc].N == 0) {
         cc = celldata[cc].cnext;
+      }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].level == ltot && Ntemp + Nleafmax < Nneibmax) {
@@ -1295,15 +1303,17 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].level == ltot && Ntemp + Nleafmax >= Nneibmax)
-    	return -1;
+      else if (celldata[cc].level == ltot && Ntemp + Nleafmax >= Nneibmax) {
+        return -1;
+      }
 
     }
 
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
-    else
+    else {
       cc = celldata[cc].cnext;
+    }
 
   };
   //===============================================================================================
@@ -1376,11 +1386,13 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
         BoxOverlap(cell.hboxmin,cell.hboxmax,celldata[cc].bbmin,celldata[cc].bbmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].level != ltot)
+      if (celldata[cc].level != ltot) {
         cc++;
+      }
 
-      else if (celldata[cc].N == 0)
+      else if (celldata[cc].N == 0) {
         cc = celldata[cc].cnext;
+      }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].level == ltot && Ntemp + Nleafmax < Nneibmax) {
@@ -1395,15 +1407,17 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].level == ltot && Ntemp + Nleafmax >= Nneibmax)
+      else if (celldata[cc].level == ltot && Ntemp + Nleafmax >= Nneibmax) {
         return -1;
+      }
 
     }
 
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
-    else
+    else {
       cc = celldata[cc].cnext;
+    }
 
   };
   //===============================================================================================
@@ -1411,6 +1425,8 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
   // Now, trim the list to remove particles that are definitely not neighbours
   for (j=Nneib; j<Ntemp; j++) {
+    assert(j < Nneibmax);
+    assert(neiblist[j] >= 0);
     i = neiblist[j];
     if (partdata[i].itype == dead) continue;
 
@@ -1492,11 +1508,13 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
         BoxOverlap(cell.hboxmin,cell.hboxmax,celldata[cc].bbmin,celldata[cc].bbmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].level != ltot)
+      if (celldata[cc].level != ltot) {
         cc++;
+      }
 
-      else if (celldata[cc].N == 0)
+      else if (celldata[cc].N == 0) {
         cc = celldata[cc].cnext;
+      }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].level == ltot && Nneib + Nleafmax <= Nneibmax) {
@@ -1512,19 +1530,20 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].level == ltot && Nneib + Nleafmax > Nneibmax)
+      else if (celldata[cc].level == ltot && Nneib + Nleafmax > Nneibmax) {
         return -1;
+      }
 
     }
 
     // Check if cell is far enough away to use the COM approximation
     //---------------------------------------------------------------------------------------------
-    else if (drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor
-              && celldata[cc].N > 0) {
+    else if (drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor &&
+              celldata[cc].N > 0) {
 
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
-      if (celldata[cc].level == ltot && celldata[cc].N == 1 && Ndirect + Nneib < Nneibmax) {
+      if (celldata[cc].level == ltot && celldata[cc].N == 1 && Nneib + Nleafmax < Nneibmax) {
         i = celldata[cc].ifirst;
         directlist[Ndirect++] = Nneib;
         neiblist[Nneib] = i;
@@ -1543,15 +1562,16 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
     // If cell is too close, open cell to interogate children cells.
     // If cell is too close and a leaf cell, then add particles to direct list.
     //---------------------------------------------------------------------------------------------
-    else if (!(drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor )
-	     && celldata[cc].N > 0) {
+    else if (!(drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor) &&
+              celldata[cc].N > 0) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].level != ltot)
+      if (celldata[cc].level != ltot) {
          cc++;
+      }
 
       // If leaf-cell, add particles to list
-      else if (celldata[cc].level == ltot && Ndirect + Nleafmax <= Nneibmax) {
+      else if (celldata[cc].level == ltot && Nneib + Nleafmax <= Nneibmax) {
         i = celldata[cc].ifirst;
         while (i != -1) {
           directlist[Ndirect++] = Nneib;
@@ -1564,15 +1584,17 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].level == ltot && Ndirect + Nleafmax > Nneibmax)
+      else if (celldata[cc].level == ltot && Nneib + Nleafmax > Nneibmax) {
         return -3;
+      }
 
     }
 
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
-    else
+    else {
       cc = celldata[cc].cnext;
+    }
 
   };
   //===============================================================================================
@@ -1581,20 +1603,28 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
   // Now, trim the list to remove particles that are definitely not SPH neighbours.
   // If not an SPH neighbour, then add to direct gravity sum list.
   for (j=Nsphneibtemp; j<Nsphneib; j++) {
+    assert(j < Nleafmax);
     i = sphneiblist[j];
     if (neibpart[i].itype == dead) continue;
     for (k=0; k<ndim; k++) dr[k] = neibpart[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
     if (drsqd < hrangemaxsqd || drsqd <
-        (rmax + kernrange*neibpart[i].h)*(rmax + kernrange*neibpart[i].h))
+        (rmax + kernrange*neibpart[i].h)*(rmax + kernrange*neibpart[i].h)) {
       sphneiblist[Nsphneibtemp++] = i;
-    else if (Ndirect + Nsphneibtemp < Nneibmax)
+    }
+    else if (Ndirect < Nneibmax) {
       directlist[Ndirect++] = i;
-    else
+    }
+    else {
      return -3;
+    }
   }
   Nsphneib = Nsphneibtemp;
 
+  assert(Nsphneib <= Nneibmax);
+  assert(Nneib <= Nneibmax);
+  assert(Ndirect <= Nneibmax);
+  assert(Ngravcell <= Ngravcellmax);
 
   return 1;
 }
@@ -1699,7 +1729,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
 
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
-      if (celldata[cc].level == ltot && celldata[cc].N == 1 && Ndirect + Nneib < Nneibmax) {
+      if (celldata[cc].level == ltot && celldata[cc].N == 1 && Ndirect + Nleafmax < Nneibmax) {
         i = celldata[cc].ifirst;
         directlist[Ndirect++] = Nneib;
         neiblist[Nneib] = i;
@@ -1730,7 +1760,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
          cc++;
 
       // If leaf-cell, add particles to list
-      else if (celldata[cc].level == ltot && Ndirect + Nleafmax <= Nneibmax) {
+      else if (celldata[cc].level == ltot && Nneib + Nleafmax <= Nneibmax) {
         i = celldata[cc].ifirst;
         while (i != -1) {
           directlist[Ndirect++] = Nneib;
@@ -1745,7 +1775,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].level == ltot && Ndirect + Nleafmax > Nneibmax)
+      else if (celldata[cc].level == ltot && Nneib + Nleafmax > Nneibmax)
         return -3;
 
     }
