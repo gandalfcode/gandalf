@@ -1388,7 +1388,16 @@ void Simulation<ndim>::TurbulentCore(void)
 
   // Generate turbulent velocity field for given power spectrum slope
   vfield = new DOUBLE[ndim*gridsize*gridsize*gridsize];
-  sph->SphBoundingBox(rmax,rmin,sph->Nsph);
+
+  // Calculate bounding box of SPH smoothing kernels
+  for (k=0; k<ndim; k++) rmin[k] = big_number;
+  for (k=0; k<ndim; k++) rmax[k] = -big_number;
+  for (i=0; i<Npart; i++) {
+    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (k=0; k<ndim; k++) rmin[k] = min(rmin[k],part.r[k] - sph->kernrange*part.h);
+    for (k=0; k<ndim; k++) rmax[k] = max(rmax[k],part.r[k] + sph->kernrange*part.h);
+  }
+
   xmin = (FLOAT) 9.9e20;
   dxgrid = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) {

@@ -349,13 +349,10 @@ void SimulationBase::Run
        << "    Total no. of steps : " << Nsteps << endl;
 
 
-  // If reached end of simulation, remove restart file
+  // If reached end of simulation, remove 'cont' file to prevent automatic restart
   if (t >= tend || Nsteps >= Ntarget) {
     if (remove("cont") != 0) {
       cout << "Error deleting cont file" << endl;
-    }
-    else {
-      cout << "cont file successfully deleted" << endl;
     }
   }
 
