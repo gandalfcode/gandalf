@@ -312,12 +312,12 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
   // Zero tree cell variables
   for (g=0; g<gmax; g++) g2c[g] = 0;
   for (c=0; c<Ncell; c++) {
-    celldata[c].c2g = 0;
-    celldata[c].c1 = -1;
-    celldata[c].c2 = -1;
-    celldata[c].ifirst = -1;
-    celldata[c].ilast = -1;
-    celldata[c].N = 0;
+    celldata[c].c2g     = 0;
+    celldata[c].c1      = -1;
+    celldata[c].c2      = -1;
+    celldata[c].ifirst  = -1;
+    celldata[c].ilast   = -1;
+    celldata[c].N       = 0;
     celldata[c].Nactive = 0;
   }
   g = 0;
@@ -328,21 +328,23 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
   //-----------------------------------------------------------------------------------------------
   for (c=0; c<Ncell; c++) {
     celldata[c].id = c;
+
     if (celldata[c].level == ltot) {                           // If on leaf level
       celldata[c].cnext = c + 1;                               // id of next cell
       celldata[c].c2g = g;                                     // Record leaf id
       g2c[g++] = c;                                            // Record inverse id
     }
     else {
-      celldata[c+1].level = celldata[c].level + 1;             // Level of 1st child
-      celldata[c].c1 = c + 1;
-      celldata[c].c2 = c + c2L[celldata[c].level];             // id of 2nd child
-      celldata[celldata[c].c2].level = celldata[c].level + 1;  // Level of 2nd child
-      celldata[c].cnext = c + cNL[celldata[c].level];          // Next cell id
+      celldata[c+1].level            = celldata[c].level + 1;        // Level of 1st child
+      celldata[c].c1                 = c + 1;                        // ..
+      celldata[c].c2                 = c + c2L[celldata[c].level];   // id of 2nd child
+      celldata[celldata[c].c2].level = celldata[c].level + 1;        // Level of 2nd child
+      celldata[c].cnext              = c + cNL[celldata[c].level];   // Next cell id
     }
+
     if (celldata[c].level == lactive) {
-      celldata[c].c2g = g;                                     // Record leaf id
-      g2c[g++] = c;                                            // Record inverse id
+      celldata[c].c2g = g;                                           // Record leaf id
+      g2c[g++] = c;                                                  // Record inverse id
     }
 
     // Some assert statements (for debugging)
@@ -403,9 +405,9 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
   }
   for (i=cell.ifirst; i<=cell.ilast; i++) {
     int j = ids[i];
-    for (k=0; k< ndim; k++) {
-      if (cell.bbmin[k]>partdata[j].r[k]) cell.bbmin[k]=partdata[j].r[k];
-      if (cell.bbmax[k]<partdata[j].r[k]) cell.bbmax[k]=partdata[j].r[k];
+    for (k=0; k<ndim; k++) {
+      if (cell.bbmin[k] > partdata[j].r[k]) cell.bbmin[k] = partdata[j].r[k];
+      if (cell.bbmax[k] < partdata[j].r[k]) cell.bbmax[k] = partdata[j].r[k];
     }
   }
 #endif
@@ -423,7 +425,7 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
 
   // Find median value along selected division plane and re-order array
   // so particles reside on correct side of division
-  rdivide = QuickSelect(cell.ifirst,cell.ilast,cell.ifirst+cell.N/2,k_divide,partdata);
+  rdivide = QuickSelect(cell.ifirst, cell.ilast, cell.ifirst+cell.N/2, k_divide, partdata);
 
   // Set properties of first child cell
   for (k=0; k<ndim; k++) celldata[cell.c1].bbmin[k] = cell.bbmin[k];
@@ -451,6 +453,18 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
     celldata[cell.c2].ilast = ilast;
   }
   assert(cell.N == celldata[cell.c1].N + celldata[cell.c2].N);
+
+  // MAYBE NEED TO ADD THESE LINES ??
+  // Set new cell boundaries depending on number of particles in cells
+  /*if (radcell[cell.c1].N > 0 && radcell[cell.c2].N > 0) {
+    radcell[cell.c1].bbmax[k_divide] = rdivide;
+    radcell[cell.c2].bbmin[k_divide] = rdivide;
+    radcell[cell.c1].cexit[1][k_divide] = cell.c2;
+    radcell[cell.c2].cexit[0][k_divide] = cell.c1;
+  }
+  else if (radcell[cell.c2].N > 0) {
+    radcell[cell.c1].bbmax[k_divide] = -big_number;
+  }*/
 
 
   // Now divide the new child cells as a recursive function
@@ -609,9 +623,9 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
     rpivot = partdata[ids[jguess]].r[k];
 
     // ..
-    jtemp = ids[jguess];
+    jtemp       = ids[jguess];
     ids[jguess] = ids[right];
-    ids[right] = jtemp;
+    ids[right]  = jtemp;
 
     // ..
     jguess = left;
@@ -620,8 +634,8 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
     for (j=left; j<right; j++) {
       //assert(j < Ntot);
       if (partdata[ids[j]].r[k] <= rpivot) {
-        jtemp = ids[j];
-        ids[j] = ids[jguess];
+        jtemp       = ids[j];
+        ids[j]      = ids[jguess];
         ids[jguess] = jtemp;
         jguess++;
       }
@@ -631,8 +645,8 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::QuickSelect
 
 
     // Move ?? particle from end of array to index i
-    jtemp = ids[right];
-    ids[right] = ids[jguess];
+    jtemp       = ids[right];
+    ids[right]  = ids[jguess];
     ids[jguess] = jtemp;
 
     //assert(left < Ntot);
@@ -679,6 +693,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
         if (i == 0) StockTree(celldata[cell.c1],partdata);
         else if (i == 1) StockTree(celldata[cell.c2],partdata);
       }
+#pragma omp barrier
     }
     else {
       for (i=0; i<2; i++) {
@@ -1103,8 +1118,8 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
   ParticleType<ndim> *partdata,        ///< [in] Pointer to particle data array
   int *activelist)                     ///< [out] List of active particles in cell
 {
+  const int ilast = cell.ilast;        // i.d. of last particle in cell c
   int i = cell.ifirst;                 // Local particle id (set to first ptcl id)
-  int ilast = cell.ilast;              // i.d. of last particle in cell c
   int Nactive = 0;                     // No. of active particles in cell
 
   // Walk through linked list to obtain list and number of active ptcls.
@@ -1180,7 +1195,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   int Nneib = 0;                       // Neighbour counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
-  FLOAT rsearchsqd = rsearch*rsearch;  // Search radius squared
+  const FLOAT rsearchsqd = rsearch*rsearch;  // Search radius squared
 
 
   //===============================================================================================
@@ -1543,7 +1558,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
 
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
-      if (celldata[cc].level == ltot && celldata[cc].N == 1 && Nneib + Nleafmax < Nneibmax) {
+      if (celldata[cc].level == ltot && celldata[cc].N == 1 && Nneib + 1 <= Nneibmax) {
         i = celldata[cc].ifirst;
         directlist[Ndirect++] = Nneib;
         neiblist[Nneib] = i;

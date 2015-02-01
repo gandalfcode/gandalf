@@ -114,6 +114,8 @@ void Simulation<ndim>::GenerateIC(void)
     ShockTube();
   else if (ic == "soundwave")
     SoundWave();
+  else if (ic == "spitzer")
+    SpitzerExpansion();
   else if (ic == "sphere")
     UniformSphere();
   else if (ic == "triple")
@@ -766,13 +768,14 @@ void Simulation<ndim>::UniformSphere(void)
 
   // Create the sphere depending on the choice of initial particle distribution
   if (particle_dist == "random") {
-    AddRandomSphere(Npart,r,rcentre,radius);
+    AddRandomSphere(Npart, r, rcentre, radius);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
-    if (Nsphere != Npart)
+    Nsphere = AddLatticeSphere(Npart, r, rcentre, radius, particle_dist);
+    if (Nsphere != Npart) {
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
+    }
     Npart = Nsphere;
   }
   else {
@@ -2318,6 +2321,91 @@ void Simulation<ndim>::SoundWave(void)
 
 
 //=================================================================================================
+//  Simulation::SpitzerExpansion
+/// Set-up Spitzer expansion simulation for single ionising source
+//=================================================================================================
+template <int ndim>
+void Simulation<ndim>::SpitzerExpansion(void)
+{
+  int i,k;                             // Particle and dimension counters
+  int Nsphere;                         // Actual number of particles in sphere
+  FLOAT rcentre[ndim];                 // Position of sphere centre
+  FLOAT rhofluid;                      // ..
+  FLOAT volume;                        // Volume of sphere
+  FLOAT *r;                            // Particle position vectors
+
+  // Local copies of important parameters
+  int Npart      = simparams->intparams["Nsph"];
+  FLOAT mcloud   = simparams->floatparams["mcloud"];
+  FLOAT radius   = simparams->floatparams["radius"];
+  FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
+  string particle_dist = simparams->stringparams["particle_distribution"];
+
+  debug2("[Simulation::SpitzerExpansion]");
+
+  mcloud   /= simunits.m.outscale;
+  radius   /= simunits.r.outscale;
+
+
+  r = new FLOAT[ndim*Npart];
+  for (i=0; i<ndim*Npart; i++) r[i] = (FLOAT) 0.0;
+
+  // Add a sphere of random particles with origin 'rcentre' and radius 'radius'
+  for (k=0; k<ndim; k++) rcentre[k] = (FLOAT) 0.0;
+
+  // Create the sphere depending on the choice of initial particle distribution
+  if (particle_dist == "random") {
+    AddRandomSphere(Npart, r, rcentre, radius);
+  }
+  else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
+    Nsphere = AddLatticeSphere(Npart, r, rcentre, radius, particle_dist);
+    if (Nsphere != Npart) {
+      cout << "Warning! Unable to converge to required "
+           << "no. of ptcls due to lattice symmetry" << endl;
+    }
+    Npart = Nsphere;
+  }
+  else {
+    string message = "Invalid particle distribution option";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  sph->Nsph = Npart;
+  AllocateParticleMemory();
+
+  if (ndim == 1) volume = (FLOAT) 2.0*radius;
+  else if (ndim == 2) volume = pi*radius*radius;
+  else if (ndim == 3) volume = (FLOAT) 4.0*onethird*pi*pow(radius,3);
+  rhofluid = mcloud / volume;
+
+
+  // Record particle positions and initialise all other variables
+#pragma omp parallel for default(none)\
+  shared(gammaone,mcloud,Npart,press,r,rhofluid,volume) private(i,k)
+  for (i=0; i<sph->Nsph; i++) {
+    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (k=0; k<ndim; k++) {
+      part.r[k] = r[ndim*i + k];
+      part.v[k] = (FLOAT) 0.0;
+      part.a[k] = (FLOAT) 0.0;
+    }
+    //part.m = rhofluid*volume / (FLOAT) Npart;
+    part.m = mcloud / (FLOAT) Npart;
+    part.h = sph->h_fac*pow(part.m/rhofluid,invndim);
+    part.u = small_number; //press/rhofluid/gammaone;
+    part.iorig = i;
+  }
+
+  initial_h_provided = true;
+
+  delete[] r;
+
+  return;
+}
+
+
+
+//=================================================================================================
 //  Simulation::BinaryStar
 /// Create a simple binary star problem
 //=================================================================================================
@@ -2623,9 +2711,9 @@ void Simulation<ndim>::AddRandomSphere
       for (k=0; k<ndim; k++)
       rpos[k] = (FLOAT) 1.0 - (FLOAT) 2.0*randnumb->floatrand();
       rad = DotProduct(rpos,rpos,ndim);
-    } while (rad > radius);
+    } while (rad > 1.0);
 
-    for (k=0; k<ndim; k++) r[ndim*i + k] = rcentre[k] + rpos[k];
+    for (k=0; k<ndim; k++) r[ndim*i + k] = rcentre[k] + radius*rpos[k];
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -2667,10 +2755,10 @@ int Simulation<ndim>::AddLatticeSphere
 
   // Create a bounding box to hold lattice sphere
   if (particle_dist == "cubic_lattice") {
-    AddCubicLattice(Naux,Nlattice,raux,box1,true);
+    AddCubicLattice(Naux, Nlattice, raux, box1, true);
   }
   else if (particle_dist == "hexagonal_lattice") {
-    AddHexagonalLattice(Naux,Nlattice,raux,box1,true);
+    AddHexagonalLattice(Naux, Nlattice, raux, box1, true);
   }
   else {
     string message = "Invalid particle distribution option";
@@ -2679,18 +2767,29 @@ int Simulation<ndim>::AddLatticeSphere
 
   // Now cut-out sphere from lattice containing exact number of particles
   // (unless lattice structure prevents this).
-  Naux = CutSphere(Npart,Naux,radius,raux,box1,false);
+  Naux = CutSphere(Npart, Naux, raux, box1, false);
 
   // Rotate sphere through random Euler angles (to prevent alignment problems
   // during tree construction)
-  theta = acos(sqrtf(randnumb->floatrand()));
-  phi = twopi*randnumb->floatrand();
-  psi = twopi*randnumb->floatrand();
-  EulerAngleArrayRotation(Naux,phi,theta,psi,raux);
+  if (ndim == 2) {
+    FLOAT rtemp[ndim];
+    theta = twopi*randnumb->floatrand();
+    for (i=0; i<Naux; i++) {
+      for (k=0; k<ndim; k++) rtemp[k] = raux[ndim*i + k];
+      raux[ndim*i] = rtemp[0]*cos(theta) - rtemp[1]*sin(theta);
+      raux[ndim*i + 1] = rtemp[0]*sin(theta) + rtemp[1]*cos(theta);
+    }
+  }
+  else if (ndim == 3) {
+    theta = acos(sqrtf(randnumb->floatrand()));
+    phi   = twopi*randnumb->floatrand();
+    psi   = twopi*randnumb->floatrand();
+    EulerAngleArrayRotation(Naux,phi,theta,psi,raux);
+  }
 
   // Copy particle positions to main position array to be returned
   for (i=0; i<Naux; i++) {
-    for (k=0; k<ndim; k++) r[ndim*i + k] = radius*raux[ndim*i + k];
+    for (k=0; k<ndim; k++) r[ndim*i + k] = rcentre[k] + radius*raux[ndim*i + k];
   }
 
   // Free allocated memory
@@ -2854,7 +2953,6 @@ template <int ndim>
 int Simulation<ndim>::CutSphere
  (int Nsphere,                         ///< [in] Desired np of particles in sphere
   int Npart,                           ///< [in] No. of particles in cube
-  FLOAT radsphere,                     ///< [in] ??
   FLOAT *r,                            ///< [inout] Positions of particles
   DomainBox<ndim> box,                 ///< [in] Bounding box of particles
   bool exact)                          ///< [in] ??

@@ -501,9 +501,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
     // Update the radiation field
-    for (int jj=0; jj<5; jj++)
+    for (int jj=0; jj<10; jj++) {
       radiation->UpdateRadiationField(sph->Nsph, nbody->Nnbody, sinks.Nsink,
                                       partdata, nbody->nbodydata, sinks.sink);
+    }
 
 
     // Update thermal properties (if radiation field has altered them)
@@ -685,7 +686,17 @@ void SphSimulation<ndim>::MainLoop(void)
       sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
 
       // Update the radiation field
-      if (Nsteps%1 == 0) {
+      /*if (Nsteps%1 == 0) {
+        radiation->UpdateRadiationField(sph->Nsph, nbody->Nnbody, sinks.Nsink,
+                                        partdata, nbody->nbodydata, sinks.sink);
+        for (i=0; i<sph->Nsph; i++) {
+          SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+          sph->ComputeThermalProperties(part);
+        }
+      }*/
+
+      // Update the radiation field
+      for (int jj=0; jj<2; jj++) {
         radiation->UpdateRadiationField(sph->Nsph, nbody->Nnbody, sinks.Nsink,
                                         partdata, nbody->nbodydata, sinks.sink);
         for (i=0; i<sph->Nsph; i++) {

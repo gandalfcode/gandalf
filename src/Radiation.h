@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  Radiation.h
 //  Contains definitions for all classes that control the transport of
 //  radiation through the computational domain.
@@ -19,7 +19,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _RADIATION_H_
@@ -51,42 +51,42 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Struct PhotonPacket
 /// Radiation photon packet data structure
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 struct PhotonPacket {
-  int c;                            ///< Current cell of photon packet
-  int cnext;                        ///< Next cell for photon
-  FLOAT energy;                     ///< Total energy carried by packet
-  FLOAT r[ndim];                    ///< Position of ray
-  FLOAT eray[ndim];                 ///< Unit vector direction of ray
-  FLOAT inveray[ndim];              ///< 1/eray
+  int c;                               ///< Current cell of photon packet
+  int cnext;                           ///< Next cell for photon
+  FLOAT energy;                        ///< Total energy carried by packet
+  FLOAT r[ndim];                       ///< Position of ray
+  FLOAT eray[ndim];                    ///< Unit vector direction of ray
+  FLOAT inveray[ndim];                 ///< 1/eray
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Struct RadiationSource
 /// Radiation photon packet data structure
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 struct RadiationSource {
-  string sourcetype;                ///< Type of radiation source
-  int c;                            ///< i.d. of cell containing source
-  FLOAT luminosity;                 ///< Source luminosity
-  FLOAT r[ndim];                    ///< Position of radiation source
-  FLOAT esource[ndim];              ///< Unit vector of radiation from source
-                                    ///< (for uni-directional sources)
+  string sourcetype;                   ///< Type of radiation source
+  int c;                               ///< i.d. of cell containing source
+  FLOAT luminosity;                    ///< Source luminosity
+  FLOAT r[ndim];                       ///< Position of radiation source
+  FLOAT esource[ndim];                 ///< Unit vector of radiation from source
+                                       ///< (for uni-directional sources)
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Struct particle
 /// ..
-//=============================================================================
+//=================================================================================================
 struct ionpar
 {
   int sink;                         // Is particle sink
@@ -110,14 +110,14 @@ struct ionpar
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class Radiation
 /// \brief   Main base radiation class
 /// \details Main base radiation class from which child classes containing
 ///          implementations are inherited.
 /// \author  D. A. Hubber
 /// \date    21/04/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class Radiation
 {
@@ -127,23 +127,22 @@ class Radiation
   ~Radiation() {};
 
   virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
-                                    NbodyParticle<ndim> **,
-                                    SinkParticle<ndim> *) = 0;
+                                    NbodyParticle<ndim> **, SinkParticle<ndim> *) = 0;
 
-  CodeTiming *timing;               ///< Pointer to code timing object
-  SimUnits *units;                  ///< Pointer to code units object
+  CodeTiming *timing;                  ///< Pointer to code timing object
+  SimUnits *units;                     ///< Pointer to code units object
 
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class MultipleSourceIonisiation
 /// \brief   Radiation Scheme to treat ionising radiation for multiple sources
 /// \details ..
 /// \author  S. K. Balfour
 /// \date    24/04/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class ParticleType>
 class MultipleSourceIonisation : public Radiation<ndim>
 {
@@ -173,13 +172,13 @@ class MultipleSourceIonisation : public Radiation<ndim>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class TreeMonteCarlo
 /// \brief   Class that propagates radiation through KD-tree
 /// \details Class that propagates radiation through KD-tree
 /// \author  D. A. Hubber, A. P. Whitworth
 /// \date    25/04/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 class TreeMonteCarlo : public Radiation<ndim>
 {
@@ -189,16 +188,15 @@ class TreeMonteCarlo : public Radiation<ndim>
 
 
   // Constructor and destructor
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   TreeMonteCarlo(int, int, RandomNumber *);
   ~TreeMonteCarlo();
 
 
   // Function prototypes
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
-                                    NbodyParticle<ndim> **,
-                                    SinkParticle<ndim> *) ;
+                                    NbodyParticle<ndim> **, SinkParticle<ndim> *) ;
   void IterateRadiationField(int, int, int, int, SphParticle<ndim> *,
                              NbodyParticle<ndim> **, SinkParticle<ndim> *) ;
   PhotonPacket<ndim> GenerateNewPhotonPacket(RadiationSource<ndim> &);
@@ -206,7 +204,7 @@ class TreeMonteCarlo : public Radiation<ndim>
 
 
   // Variables
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   int Nphoton;                                  // No. of photon packets
   FLOAT boundaryradius;                         // Radius from which isotropic
                                                 // photons are emitted.
@@ -219,13 +217,13 @@ class TreeMonteCarlo : public Radiation<ndim>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class MonochromaticIonisationMonteCarlo
 /// \brief   Class that propagates radiation through KD-tree
 /// \details Class that propagates radiation through KD-tree
 /// \author  D. A. Hubber, A. P. Whitworth
 /// \date    25/04/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 class MonochromaticIonisationMonteCarlo : public Radiation<ndim>
 {
@@ -235,17 +233,17 @@ class MonochromaticIonisationMonteCarlo : public Radiation<ndim>
 
 
   // Constructor and destructor
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   MonochromaticIonisationMonteCarlo(int, int, FLOAT, DOUBLE, RandomNumber *,
                                     SimUnits *, EOS<ndim> *);
   ~MonochromaticIonisationMonteCarlo();
 
 
   // Function prototypes
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
-                                    NbodyParticle<ndim> **,
-                                    SinkParticle<ndim> *) ;
+                                    NbodyParticle<ndim> **, SinkParticle<ndim> *) ;
+  void InterpolateParticleProperties(const int, const int, SphParticle<ndim> *);
   void IterateRadiationField(int, int, int, int, SphParticle<ndim> *,
                              NbodyParticle<ndim> **, SinkParticle<ndim> *) ;
   PhotonPacket<ndim> GenerateNewPhotonPacket(RadiationSource<ndim> &);
@@ -254,22 +252,22 @@ class MonochromaticIonisationMonteCarlo : public Radiation<ndim>
 
 
   // Variables
-  //---------------------------------------------------------------------------
-  int Nphoton;                      // No. of photon packets
-  FLOAT boundaryradius;             // Radius from which isotropic
-                                    // photons are emitted.
-  FLOAT across;                     // Photoionisation cross-section
-  FLOAT arecomb;                    // Recombination coefficient
-  FLOAT Eion;                       // Ionisation energy
-  FLOAT invEion;                    // 1 / Eion
-  FLOAT packetenergy;               // Energy in photon packet
-  FLOAT temp_ion;                   // ..
-  DOUBLE invmh;                     // ..
-  DOUBLE ionconst;                  // ..
-  DOUBLE NLyC;                      // No. of ionising photons per second
-  RandomNumber *randnumb;           // Random number object pointer
-  SimUnits *units;                  // ..
-  EOS<ndim> *eos;                   // Pointer to main EOS object
+  //-----------------------------------------------------------------------------------------------
+  int Nphoton;                         // No. of photon packets
+  FLOAT boundaryradius;                // Radius from which isotropic
+                                       // photons are emitted.
+  FLOAT across;                        // Photoionisation cross-section
+  FLOAT arecomb;                       // Recombination coefficient
+  FLOAT Eion;                          // Ionisation energy
+  FLOAT invEion;                       // 1 / Eion
+  FLOAT packetenergy;                  // Energy in photon packet
+  FLOAT temp_ion;                      // ..
+  DOUBLE invmh;                        // ..
+  DOUBLE ionconst;                     // ..
+  DOUBLE NLyC;                         // No. of ionising photons per second
+  RandomNumber *randnumb;              // Random number object pointer
+  SimUnits *units;                     // ..
+  EOS<ndim> *eos;                      // Pointer to main EOS object
 
   KDRadiationTree<ndim,nfreq,ParticleType,CellType> *radtree;  // Rad. tree
 
@@ -277,15 +275,13 @@ class MonochromaticIonisationMonteCarlo : public Radiation<ndim>
 
 
 
-
-
-//=============================================================================
+//=================================================================================================
 //  Class NullRadiation
 /// \brief   Empty radiation class when no radiation object is selected
 /// \details Empty radiation class when no radiation object is selected
 /// \author  D. A. Hubber
 /// \date    21/04/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class NullRadiation : public Radiation<ndim>
 {
@@ -297,7 +293,6 @@ class NullRadiation : public Radiation<ndim>
 
 
   virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
-                                    NbodyParticle<ndim> **,
-                                    SinkParticle<ndim> *) {};
+                                    NbodyParticle<ndim> **, SinkParticle<ndim> *) {};
 };
 #endif

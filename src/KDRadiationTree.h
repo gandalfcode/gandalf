@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  KDRadiationTree.h
 //  Class for controlling and propagating radiation on a KD-tree.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 
@@ -39,10 +39,10 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Struct KDRadTreeCell
 /// KD radiation-tree cell data structure.
-//=============================================================================
+//=================================================================================================
 template <int ndim, int nfreq>
 struct KDRadTreeCell {
   bool uniform;                     ///< Is cell sufficiently uniform?
@@ -67,16 +67,17 @@ struct KDRadTreeCell {
   FLOAT sigma_rho;                  ///< Variance of density
   FLOAT temp;                       ///< Average temperature in cell
   FLOAT volume;                     ///< Cell volume
+  FLOAT rmax;                       ///< ..
   FLOAT lsum[nfreq];                ///< Summation of photon path lengths
   FLOAT opacity[nfreq];             ///< ...
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Struct MonoIonTreeCell
 /// KD radiation-tree cell data structure.
-//=============================================================================
+//=================================================================================================
 template <int ndim, int nfreq>
 struct MonoIonTreeCell : public KDRadTreeCell<ndim,nfreq>
 {
@@ -92,13 +93,13 @@ struct MonoIonTreeCell : public KDRadTreeCell<ndim,nfreq>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class KDRadiationTree
 /// \brief   Controls propagation of radiation through KD-tree
 /// \details Controls propagation of radiation through KD-tree
 /// \author  D. A. Hubber, A. P. Whitworth
 /// \date    25/04/2014
-//=============================================================================
+//=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 class KDRadiationTree
 {
@@ -106,49 +107,49 @@ class KDRadiationTree
 
 
   // Constructor and destructor
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   KDRadiationTree(int);
   ~KDRadiationTree();
 
 
   // Function prototypes
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   void BuildTree(int, int, ParticleType<ndim> *);
   void AllocateMemory(void);
   void DeallocateMemory(void);
+  int ComputeGatherCellList(const FLOAT *, const FLOAT, const int, int *);
   void ComputeTreeSize(void);
   void CreateTreeStructure(void);
   void DivideTreeCell(int, int, ParticleType<ndim> *, CellType<ndim,nfreq> &);
-  int FindAdjacentCell(int, int, FLOAT *);
-  int FindCell(int, int, FLOAT *);
-  int FindRayExitFace(CellType<ndim,nfreq> &, FLOAT *, 
-                      FLOAT *, FLOAT *, FLOAT &);
+  int FindAdjacentCell(const int, const int, const FLOAT *);
+  int FindCell(const int, const int, const FLOAT *);
+  int FindRayExitFace(CellType<ndim,nfreq> &, const FLOAT *, const FLOAT *, const FLOAT *, FLOAT &);
   void OptimiseTree(void);
   FLOAT QuickSelect(int, int, int, int, ParticleType<ndim> *);
   void StockTree(CellType<ndim,nfreq> &, ParticleType<ndim> *);
   void StockCellProperties(CellType<ndim,nfreq> &, ParticleType<ndim> *);
-  void SumRadiationField(int, CellType<ndim,nfreq> &);
+  void SumRadiationField(const int, CellType<ndim,nfreq> &);
 
 
   // Variables
-  //---------------------------------------------------------------------------
-  bool allocated_tree;              ///< Is tree memory allocated?
-  int gmax;                         ///< Max. no. of leaf cells
-  int gtot;                         ///< Total no. of leaf cells
-  int lmax;                         ///< Max. no. of tree levels
-  int ltot;                         ///< Total. no. of tree levels
-  int ltot_old;                     ///< Previous no. of tree levels
-  int Ncell;                        ///< No. of tree cells
-  int Ncellmax;                     ///< Max. no. of tree cells
-  int Nleafmax;                     ///< Max. no. of particles per leaf cell
-  int Ntot;                         ///< Total no. of particles in tree
-  int Ntotold;                      ///< Previous no. of particles in tree
-  int Ntotmax;                      ///< Max. no. of particles allowed in tree
-  int Ntotmaxold;                   ///< Prev. value of Ntotmax
-  int Nthreads;                     ///< No. of OpenMP threads
-  int *ids;                         ///< Particle ids
-  int *inext;                       ///< Linked list for grid search
-  CellType<ndim,nfreq> *radcell;    ///< Array of tree cells
+  //-----------------------------------------------------------------------------------------------
+  bool allocated_tree;                 ///< Is tree memory allocated?
+  int gmax;                            ///< Max. no. of leaf cells
+  int gtot;                            ///< Total no. of leaf cells
+  int lmax;                            ///< Max. no. of tree levels
+  int ltot;                            ///< Total. no. of tree levels
+  int ltot_old;                        ///< Previous no. of tree levels
+  int Ncell;                           ///< No. of tree cells
+  int Ncellmax;                        ///< Max. no. of tree cells
+  int Nleafmax;                        ///< Max. no. of particles per leaf cell
+  int Ntot;                            ///< Total no. of particles in tree
+  int Ntotold;                         ///< Previous no. of particles in tree
+  int Ntotmax;                         ///< Max. no. of particles allowed in tree
+  int Ntotmaxold;                      ///< Prev. value of Ntotmax
+  int Nthreads;                        ///< No. of OpenMP threads
+  int *ids;                            ///< Particle ids
+  int *inext;                          ///< Linked list for grid search
+  CellType<ndim,nfreq> *radcell;       ///< Array of tree cells
 
 };
 #endif

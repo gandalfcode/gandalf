@@ -1095,7 +1095,7 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
     //---------------------------------------------------------------------------------------------
     for (i=0; i<sph->Nsph; i++) {
       SphParticle<ndim>& part = sph->GetParticleIPointer(i);
-      outfile_format << part.u*simunits.u.outscale << endl;
+      outfile_format << part.ionfrac << endl; //part.u*simunits.u.outscale << endl;
     }
 
 

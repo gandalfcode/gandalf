@@ -266,6 +266,7 @@ class Simulation : public SimulationBase
   void SedovBlastWave(void);
   void ShearFlow(void);
   void SoundWave(void);
+  void SpitzerExpansion(void);
   void TripleStar(void);
   void TurbulentCore(void);
   void UniformBox(void);
@@ -285,7 +286,7 @@ class Simulation : public SimulationBase
   void AddRandomBox(int, FLOAT *, DomainBox<ndim>);
   void AddRandomSphere(int, FLOAT *, FLOAT *, FLOAT);
   void AddSinusoidalDensityPerturbation(int, FLOAT, FLOAT, FLOAT *);
-  int CutSphere(int, int, FLOAT, FLOAT *, DomainBox<ndim>, bool);
+  int CutSphere(int, int, FLOAT *, DomainBox<ndim>, bool);
   void ComputeBondiSolution(int, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
   void GenerateTurbulentVelocityField(int, int, DOUBLE, DOUBLE *);
   void InterpolateVelocityField(int, int, FLOAT, FLOAT, FLOAT *, FLOAT *,FLOAT *);

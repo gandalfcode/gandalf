@@ -440,9 +440,9 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 #pragma omp parallel default(none) shared(cactive,celllist,nbody,sph,sphdata)
   {
 #if defined _OPENMP
-    int ithread = omp_get_thread_num();
+    const int ithread = omp_get_thread_num();
 #else
-    int ithread = 0;
+    const int ithread = 0;
 #endif
     int cc;                                        // Aux. cell counter
     int i;                                         // Particle id

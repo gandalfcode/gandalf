@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  AdiabaticEOS.cpp
 //  Contains all function definitions for the Adiabatic Equation of state.
 //
@@ -18,7 +18,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #include <math.h>
@@ -27,24 +27,22 @@
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Adiabatic::Adiabatic()
-/// Default constructor for perfect gas EOS.  Passes and sets important 
-/// thermal physics variables.
-//=============================================================================
+/// Default constructor for perfect gas EOS.  Passes and sets important thermal physics variables.
+//=================================================================================================
 template <int ndim>
 Adiabatic<ndim>::Adiabatic(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux):
-  EOS<ndim> (gamma_aux)
+  EOS<ndim> (gamma_aux),
+  mu_bar(mu_bar_aux)
 {
-  temp0 = temp0aux;
-  mu_bar = mu_bar_aux;
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Adiabatic::Adiabatic()
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 Adiabatic<ndim>::~Adiabatic()
 {
@@ -52,10 +50,10 @@ Adiabatic<ndim>::~Adiabatic()
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Adiabatic::Pressure
 /// Calculates and returns thermal pressure of referenced particle
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 FLOAT Adiabatic<ndim>::Pressure(SphParticle<ndim> &part)
 {
@@ -64,11 +62,10 @@ FLOAT Adiabatic<ndim>::Pressure(SphParticle<ndim> &part)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Adiabatic::EntropicFunction
-/// Calculates and returns value of Entropic function (= P/rho^gamma) for 
-/// referenced particle
-//=============================================================================
+/// Calculates and returns value of Entropic function (= P/rho^gamma) for referenced particle
+//=================================================================================================
 template <int ndim>
 FLOAT Adiabatic<ndim>::EntropicFunction(SphParticle<ndim> &part)
 {
@@ -77,10 +74,10 @@ FLOAT Adiabatic<ndim>::EntropicFunction(SphParticle<ndim> &part)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Adiabatic::SoundSpeed
 /// Returns adiabatic sound speed of particle
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 FLOAT Adiabatic<ndim>::SoundSpeed(SphParticle<ndim> &part)
 {
@@ -89,10 +86,10 @@ FLOAT Adiabatic<ndim>::SoundSpeed(SphParticle<ndim> &part)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Adiabatic::SpecificInternalEnergy
 /// Returns specific internal energy of particle
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 FLOAT Adiabatic<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
 {
@@ -101,10 +98,10 @@ FLOAT Adiabatic<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Adiabatic::Temperature
 /// Returns temperature of particle
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 FLOAT Adiabatic<ndim>::Temperature(SphParticle<ndim> &part)
 {
