@@ -30,7 +30,7 @@
 #include <math.h>
 #include "Precision.h"
 #include "Constants.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "DomainBox.h"
 using namespace std;
 

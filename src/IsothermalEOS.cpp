@@ -59,7 +59,7 @@ Isothermal<ndim>::~Isothermal()
 /// Calculates and returns thermal pressure of referenced particle
 //=================================================================================================
 template <int ndim>
-FLOAT Isothermal<ndim>::Pressure(SphParticle<ndim> &part)
+FLOAT Isothermal<ndim>::Pressure(Particle<ndim> &part)
 {
   return gammam1*part.rho*part.u;
 }
@@ -71,7 +71,7 @@ FLOAT Isothermal<ndim>::Pressure(SphParticle<ndim> &part)
 /// Calculates and returns value of Entropic function (= P/rho^gamma) for referenced particle
 //=================================================================================================
 template <int ndim>
-FLOAT Isothermal<ndim>::EntropicFunction(SphParticle<ndim> &part)
+FLOAT Isothermal<ndim>::EntropicFunction(Particle<ndim> &part)
 {
   return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
 }
@@ -83,7 +83,7 @@ FLOAT Isothermal<ndim>::EntropicFunction(SphParticle<ndim> &part)
 /// Returns isothermal sound speed of referenced SPH particle
 //=================================================================================================
 template <int ndim>
-FLOAT Isothermal<ndim>::SoundSpeed(SphParticle<ndim> &part)
+FLOAT Isothermal<ndim>::SoundSpeed(Particle<ndim> &part)
 {
   return sqrt(gammam1*part.u);
 }
@@ -95,7 +95,7 @@ FLOAT Isothermal<ndim>::SoundSpeed(SphParticle<ndim> &part)
 /// Returns specific internal energy of referenced SPH particle
 //=================================================================================================
 template <int ndim>
-FLOAT Isothermal<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
+FLOAT Isothermal<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 {
   return temp0/gammam1/mu_bar;
 }
@@ -107,7 +107,7 @@ FLOAT Isothermal<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
 /// Return isothermal temperature, temp0, for referenced SPH particle
 //=================================================================================================
 template <int ndim>
-FLOAT Isothermal<ndim>::Temperature(SphParticle<ndim> &part)
+FLOAT Isothermal<ndim>::Temperature(Particle<ndim> &part)
 {
   return temp0;
 }

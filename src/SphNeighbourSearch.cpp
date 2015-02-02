@@ -25,7 +25,7 @@
 #include "SphNeighbourSearch.h"
 #include "Sph.h"
 #include "Parameters.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "Debug.h"
 #include "InlineFuncs.h"
 using namespace std;
@@ -39,7 +39,7 @@ template <int ndim>
 SphNeighbourSearch<ndim>::SphNeighbourSearch
 (FLOAT kernrangeaux,
  DomainBox<ndim> *boxaux,
- SphKernel<ndim> *kernaux,
+ SmoothingKernel<ndim> *kernaux,
  CodeTiming *timingaux):
   kernrange(kernrangeaux),
   kernrangesqd(kernrangeaux*kernrangeaux),

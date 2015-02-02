@@ -24,7 +24,7 @@
 #include <math.h>
 #include <iostream>
 #include "Constants.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 using namespace std;
 
 
@@ -34,7 +34,7 @@ using namespace std;
 //=============================================================================
 template <int ndim>
 M4Kernel<ndim>::M4Kernel(string kernelname):
-  SphKernel<ndim>()
+  SmoothingKernel<ndim>()
 {
   this->kernrange = (FLOAT) 2.0;
   this->invkernrange = (FLOAT) 0.5;

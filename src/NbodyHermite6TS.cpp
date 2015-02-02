@@ -32,7 +32,7 @@
 #include "StarParticle.h"
 #include "Parameters.h"
 #include "Nbody.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "Debug.h"
 #include "Exception.h"
 #include "InlineFuncs.h"
@@ -229,7 +229,7 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 template <int ndim, template<int> class kernelclass>
 void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSPHForces
 (NbodyParticle<ndim> *star,         ///< [inout] Pointer to star
- int Nsph,                          ///< [in] Number of gas particles
+ int Nhydro,                          ///< [in] Number of gas particles
  int Ndirect,                       ///< [in] ..
  int *sphlist,                      ///< [in] ..
  int *directlist,                   ///< [in] ..
@@ -251,10 +251,10 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSPHForces
 
   // Sum grav. contributions from all neighbouring SPH particles
   //-----------------------------------------------------------------------------------------------
-  for (jj=0; jj<Nsph; jj++) {
+  for (jj=0; jj<Nhydro; jj++) {
 
     j = sphlist[jj];
-    SphParticle<ndim>& part = sph->GetParticleIPointer(j);
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(j);
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
     for (k=0; k<ndim; k++) dv[k] = part.v[k] - star->v[k];
@@ -283,7 +283,7 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSPHForces
   for (jj=0; jj<Ndirect; jj++) {
 
     j = directlist[jj];
-    SphParticle<ndim>& part = sph->GetParticleIPointer(j);
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(j);
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
     for (k=0; k<ndim; k++) dv[k] = part.v[k] - star->v[k];

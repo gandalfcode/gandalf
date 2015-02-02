@@ -28,7 +28,7 @@
 #include <string>
 #include "Precision.h"
 #include "SphNeighbourSearch.h"
-#include "SphParticle.h"
+#include "Particle.h"
 using namespace std;
 
 
@@ -55,14 +55,14 @@ class MpiNode
   //---------------------------------------------------------------------------
   void PackNodeData(void);
   void UnpackNodeData(void);
-  void UpdateBoundingBoxData(int, Sph<ndim> *, SphKernel<ndim> *);
+  void UpdateBoundingBoxData(int, Sph<ndim> *, SmoothingKernel<ndim> *);
 
 
   // MPI node variables
   //---------------------------------------------------------------------------
   int ifirst;                       ///< i.d. of first ghost from node
   int ilast;                        ///< i.d. of last ghost from node
-  int Nsph;                         ///< No. of SPH particles on node
+  int Nhydro;                         ///< No. of SPH particles on node
   int Ntot;                         ///< ..
   int Ntotmax;                      ///< ..
   int Nghost;                       ///< No. of ghost particles originally

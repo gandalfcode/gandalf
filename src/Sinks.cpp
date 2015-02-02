@@ -136,9 +136,9 @@ void Sinks<ndim>::SearchForNewSinkParticles
     // Loop over all SPH particles finding the particle with the highest
     // density that obeys all of the formation criteria, if any do.
     //---------------------------------------------------------------------------------------------
-    for (i=0; i<sph->Nsph; i++) {
+    for (i=0; i<sph->Nhydro; i++) {
       sink_flag = true;
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
 
       // Make sure we don't include dead particles
       if (part.itype == dead) continue;
@@ -175,7 +175,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
     // If all conditions have been met, then create a new sink particle.
     // Also, set minimum sink smoothing lengtha
     if (isink != -1) {
-      SphParticle<ndim>& part_sink = sph->GetParticleIPointer(isink);
+      SphParticle<ndim>& part_sink = sph->GetSphParticlePointer(isink);
       sph->hmin_sink = min(sph->hmin_sink,part_sink.h);
       CreateNewSinkParticle(part_sink,isink,t,sph,nbody);
     }
@@ -263,8 +263,8 @@ void Sinks<ndim>::CreateNewSinkParticle
 
   // Calculate total mass inside sink (direct sum for now since this is not computed that often).
   sink[Nsink].mmax = (FLOAT) 0.0;
-  for (i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+  for (i=0; i<sph->Nhydro; i++) {
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     if (part.itype == dead) continue;
     for (k=0; k<ndim; k++) dr[k] = sink[Nsink].star->r[k] - part.r[k];
     drsqd = DotProduct(dr,dr,ndim);
@@ -333,13 +333,13 @@ void Sinks<ndim>::AccreteMassToSinks
   timing->StartTimingSection("SINK_ACCRETE_MASS",2);
 
   // Allocate local memory and initialise values
-  for (i=0; i<sph->Ntot; i++) sph->GetParticleIPointer(i).sinkid = -1;
+  for (i=0; i<sph->Ntot; i++) sph->GetSphParticlePointer(i).sinkid = -1;
   for (s=0; s<Nsinkmax; s++) sink[s].Ngas = 0;
 
   // Determine which sink each SPH particle accretes to.  If none, flag -1
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+  for (i=0; i<sph->Nhydro; i++) {
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     if (part.itype == dead) continue;
 
     saux = -1;
@@ -412,8 +412,8 @@ void Sinks<ndim>::AccreteMassToSinks
 
 
     // Calculate distances (squared) from sink to all neighbouring particles
-    for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       if (part.itype == dead) continue;
       if (part.sinkid == s) {
         for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
@@ -442,7 +442,7 @@ void Sinks<ndim>::AccreteMassToSinks
     for (j=0; j<Nneib; j++) {
       i = ilist[j];
 
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       if (part.itype == dead) continue;
 
       for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
@@ -536,7 +536,7 @@ void Sinks<ndim>::AccreteMassToSinks
     for (j=0; j<Nneib; j++) {
       i = ilist[j];
 
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       if (part.itype == dead) continue;
 
       mtemp = min(part.m,macc_temp);
@@ -602,7 +602,7 @@ void Sinks<ndim>::AccreteMassToSinks
     for (j=0; j<Nneib; j++) {
       i = ilist[j];
 
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       if (part.itype == dead) continue;
 
       mtemp = min(part.m,macc);

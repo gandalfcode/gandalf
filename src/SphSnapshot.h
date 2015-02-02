@@ -104,8 +104,8 @@ class SphSnapshotBase
   int Norbit;                       ///< No. of orbits in memory
   int Norbitmax;                    ///< Max. no. of orbits
   int Nquadruple;                   ///< No. of quadruple systems
-  int Nsph;                         ///< No. of SPH particles
-  int Nsphmax;                      ///< Max. no. of SPH particles
+  int Nhydro;                         ///< No. of SPH particles
+  int Nhydromax;                      ///< Max. no. of SPH particles
   int Nstar;                        ///< No. of star particles
   int Nstarmax;                     ///< Max. no. of star particles
   int Ntriple;                      ///< No. of triple systems

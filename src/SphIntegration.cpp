@@ -28,9 +28,9 @@
 #include <math.h>
 #include <iostream>
 #include "Sph.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "SphIntegration.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "EOS.h"
 #include "InlineFuncs.h"
 #include "Debug.h"
@@ -135,8 +135,8 @@ void SphIntegration<ndim>::CheckBoundaries
   // If so, then re-position with periodic wrapping.
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) shared(simbox,sph)
-  for (int i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+  for (int i=0; i<sph->Nhydro; i++) {
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
 
 
     if (part.r[0] < simbox.boxmin[0])

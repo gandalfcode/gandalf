@@ -31,12 +31,12 @@
 #include <sstream>
 #include <string>
 #include <math.h>
-#include "SphParticle.h"
+#include "Particle.h"
 #include "Sph.h"
 #include "SphSnapshot.h"
 #include "Exception.h"
 #include "Parameters.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "InlineFuncs.h"
 #include "Debug.h"
 using namespace std;

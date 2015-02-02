@@ -30,9 +30,9 @@
 #include <iostream>
 #include <math.h>
 #include "Sph.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "SphIntegration.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "EOS.h"
 #include "EnergyEquation.h"
 #include "Debug.h"

@@ -30,9 +30,9 @@
 #include <math.h>
 #include "Precision.h"
 #include "Sph.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "Parameters.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "EOS.h"
 #include "Debug.h"
 #include "Exception.h"
@@ -86,18 +86,17 @@ void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
 {
   debug2("[GradhSph::AllocateMemory]");
 
-  if (N > Nsphmax || !allocated) {
+  if (N > Nhydromax || !allocated) {
     if (allocated) DeallocateMemory();
 
     // Set conservative estimate for maximum number of particles, assuming
     // extra space required for periodic ghost particles
-    if (Nsphmax < N) {
-      Nsphmax = 2*(int) powf(powf((FLOAT) N,invndim) + (FLOAT) 6.0*kernp->kernrange,ndim);
+    if (Nhydromax < N) {
+      Nhydromax = 2*(int) powf(powf((FLOAT) N,invndim) + (FLOAT) 6.0*kernp->kernrange,ndim);
     }
 
-    iorder    = new int[Nsphmax];
-    rsph      = new FLOAT[ndim*Nsphmax];
-    sphdata   = new struct GradhSphParticle<ndim>[Nsphmax];
+    iorder    = new int[Nhydromax];
+    sphdata   = new struct GradhSphParticle<ndim>[Nhydromax];
     allocated = true;
     sphdata_unsafe = sphdata;
   }
@@ -118,7 +117,6 @@ void GradhSph<ndim, kernelclass>::DeallocateMemory(void)
 
   if (allocated) {
     delete[] sphdata;
-    delete[] rsph;
     delete[] iorder;
   }
   allocated = false;
@@ -138,14 +136,14 @@ void GradhSph<ndim, kernelclass>::DeleteDeadParticles(void)
   int i;                               // Particle counter
   int itype;                           // Current particle type
   int Ndead = 0;                       // No. of 'dead' particles
-  int ilast = Nsph;                    // Aux. counter of last free slot
+  int ilast = Nhydro;                  // Aux. counter of last free slot
 
   debug2("[GradhSph::DeleteDeadParticles]");
 
 
   // Determine new order of particles in arrays.
   // First all live particles and then all dead particles.
-  for (i=0; i<Nsph; i++) {
+  for (i=0; i<Nhydro; i++) {
     itype = sphdata[i].itype;
     while (itype == dead) {
       Ndead++;
@@ -165,9 +163,9 @@ void GradhSph<ndim, kernelclass>::DeleteDeadParticles(void)
   if (Ndead == 0) return;
 
   // Reduce particle counters once dead particles have been removed
-  Nsph -= Ndead;
+  Nhydro -= Ndead;
   Ntot -= Ndead;
-  for (i=0; i<Nsph; i++) {
+  for (i=0; i<Nhydro; i++) {
     iorder[i] = i;
     assert(sphdata[i].itype != dead);
   }
@@ -184,13 +182,13 @@ void GradhSph<ndim, kernelclass>::DeleteDeadParticles(void)
 template <int ndim, template<int> class kernelclass>
 void GradhSph<ndim, kernelclass>::ReorderParticles(void)
 {
-  int i;                                // Particle counter
-  GradhSphParticle<ndim> *sphdataaux;   // Aux. SPH particle array
+  int i;                               // Particle counter
+  GradhSphParticle<ndim> *sphdataaux;  // Aux. SPH particle array
 
-  sphdataaux = new GradhSphParticle<ndim>[Nsph];
+  sphdataaux = new GradhSphParticle<ndim>[Nhydro];
 
-  for (i=0; i<Nsph; i++) sphdataaux[i] = sphdata[i];
-  for (i=0; i<Nsph; i++) sphdata[i] = sphdataaux[iorder[i]];
+  for (i=0; i<Nhydro; i++) sphdataaux[i] = sphdata[i];
+  for (i=0; i<Nhydro; i++) sphdata[i] = sphdataaux[iorder[i]];
 
   delete[] sphdataaux;
 

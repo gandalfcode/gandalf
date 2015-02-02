@@ -24,7 +24,7 @@
 #include <math.h>
 #include <iostream>
 #include "Constants.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 using namespace std;
 
 
@@ -34,7 +34,7 @@ using namespace std;
 //=============================================================================
 template <int ndim>
 QuinticKernel<ndim>::QuinticKernel(string KernelName):
-  SphKernel<ndim>()
+  SmoothingKernel<ndim>()
 {
   this->kernrange = (FLOAT) 3.0;
   this->invkernrange = onethird;

@@ -26,7 +26,7 @@
 
 #include <math.h>
 #include "EOS.h"
-#include "SphParticle.h"
+#include "Particle.h"
 
 
 //=============================================================================
@@ -63,7 +63,7 @@ Barotropic<ndim>::~Barotropic()
 /// Calculates and returns thermal pressure of referenced particle
 //=============================================================================
 template <int ndim>
-FLOAT Barotropic<ndim>::Pressure(SphParticle<ndim> &part)
+FLOAT Barotropic<ndim>::Pressure(Particle<ndim> &part)
 {
   return gammam1*part.rho*part.u;
 }
@@ -76,7 +76,7 @@ FLOAT Barotropic<ndim>::Pressure(SphParticle<ndim> &part)
 /// referenced particle
 //=============================================================================
 template <int ndim>
-FLOAT Barotropic<ndim>::EntropicFunction(SphParticle<ndim> &part)
+FLOAT Barotropic<ndim>::EntropicFunction(Particle<ndim> &part)
 {
   return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
 }
@@ -88,7 +88,7 @@ FLOAT Barotropic<ndim>::EntropicFunction(SphParticle<ndim> &part)
 /// Returns isothermal sound speed of SPH particle
 //=============================================================================
 template <int ndim>
-FLOAT Barotropic<ndim>::SoundSpeed(SphParticle<ndim> &part)
+FLOAT Barotropic<ndim>::SoundSpeed(Particle<ndim> &part)
 {
   return sqrt(gammam1*part.u);
 }
@@ -100,7 +100,7 @@ FLOAT Barotropic<ndim>::SoundSpeed(SphParticle<ndim> &part)
 /// Returns specific internal energy
 //=============================================================================
 template <int ndim>
-FLOAT Barotropic<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
+FLOAT Barotropic<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 {
   return temp0*(1.0 + pow(part.rho*invrho_bary,gammam1))/gammam1/mu_bar;
 }
@@ -114,7 +114,7 @@ FLOAT Barotropic<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
 /// adiabatic phase (T = const*rho^{gamma - 1} for rho >> rho_bary).
 //=============================================================================
 template <int ndim>
-FLOAT Barotropic<ndim>::Temperature(SphParticle<ndim> &part)
+FLOAT Barotropic<ndim>::Temperature(Particle<ndim> &part)
 {
   return temp0*(1.0 + pow(part.rho*invrho_bary,gammam1));
 }

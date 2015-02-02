@@ -22,15 +22,15 @@
 //=============================================================================
 
 
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 
 
 //=============================================================================
-//  SphKernel::KernelFactory
+//  SmoothingKernel::KernelFactory
 /// Create and return new kernel object selected in parameters file.
 //=============================================================================
 template <int ndim>
-SphKernel<ndim>* SphKernel<ndim>::KernelFactory(string KernelName) 
+SmoothingKernel<ndim>* SmoothingKernel<ndim>::KernelFactory(string KernelName) 
 {
   if (KernelName == "m4")
     return new M4Kernel<ndim>(KernelName);
@@ -53,11 +53,11 @@ SphKernel<ndim>* SphKernel<ndim>::KernelFactory(string KernelName)
 //=============================================================================
 template <int ndim>
 TabulatedKernel<ndim>::TabulatedKernel(string KernelName, int resaux):
-  SphKernel<ndim>()
+  SmoothingKernel<ndim>()
 {
   res = resaux;
 
-  kernel = SphKernel<ndim>::KernelFactory (KernelName);
+  kernel = SmoothingKernel<ndim>::KernelFactory (KernelName);
 
   this->kernrange    = kernel->kernrange;
   this->kernrangesqd = kernel->kernrangesqd;
@@ -79,15 +79,15 @@ TabulatedKernel<ndim>::TabulatedKernel(string KernelName, int resaux):
   tableLOS       = new FLOAT[res];
 
   // Initialize the tables
-  initializeTable(tableW0,&SphKernel<ndim>::w0);
-  initializeTable(tableW1,&SphKernel<ndim>::w1);
-  initializeTable(tableWomega,&SphKernel<ndim>::womega);
-  initializeTable(tableWzeta,&SphKernel<ndim>::wzeta);
-  initializeTable(tableWgrav,&SphKernel<ndim>::wgrav);
-  initializeTable(tableWpot,&SphKernel<ndim>::wpot);
-  initializeTableSqd(tableW0_s2,&SphKernel<ndim>::w0);
-  initializeTableSqd(tableWomega_s2,&SphKernel<ndim>::womega);
-  initializeTableSqd(tableWzeta_s2,&SphKernel<ndim>::wzeta);
+  initializeTable(tableW0,&SmoothingKernel<ndim>::w0);
+  initializeTable(tableW1,&SmoothingKernel<ndim>::w1);
+  initializeTable(tableWomega,&SmoothingKernel<ndim>::womega);
+  initializeTable(tableWzeta,&SmoothingKernel<ndim>::wzeta);
+  initializeTable(tableWgrav,&SmoothingKernel<ndim>::wgrav);
+  initializeTable(tableWpot,&SmoothingKernel<ndim>::wpot);
+  initializeTableSqd(tableW0_s2,&SmoothingKernel<ndim>::w0);
+  initializeTableSqd(tableWomega_s2,&SmoothingKernel<ndim>::womega);
+  initializeTableSqd(tableWzeta_s2,&SmoothingKernel<ndim>::wzeta);
   initializeTableLOS();
 
   // Delete kernel object now that we don't need it anymore

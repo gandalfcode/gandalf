@@ -1010,7 +1010,7 @@ void Simulation<ndim>::AllocateParticleMemory(void)
   //-----------------------------------------------------------------------------------------------
 
   // Allocate SPH memory, if being used
-  if (sph) sph->AllocateMemory(sph->Nsph);
+  if (sph) sph->AllocateMemory(sph->Nhydro);
 
 
   return;
@@ -1202,10 +1202,10 @@ void Simulation<ndim>::ImportArraySph
   bool scalar = false;                            // Is the requested quantity a scalar?
 
   // Check that the size is correct
-  if (size != sph->Nsph) {
+  if (size != sph->Nhydro) {
     stringstream message;
     message << "Error: the array you are passing has a size of "
-            << size << ", but memory has been allocated for " << sph->Nsph << " particles";
+            << size << ", but memory has been allocated for " << sph->Nhydro << " particles";
     ExceptionHandler::getIstance().raise(message.str());
   }
 
@@ -1300,13 +1300,13 @@ void Simulation<ndim>::ImportArraySph
   //-----------------------------------------------------------------------------------------------
   if (scalar) {
     for (int i=0; i<size; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       part.*quantityp = input[i];
     }
   }
   else {
     for (int i=0; i<size; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       (part.*quantitypvec)[index] = input[i];
     }
   }
@@ -1378,8 +1378,8 @@ void Simulation<ndim>::SetComFrame(void)
 
   CalculateDiagnostics();
 
-  for (i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+  for (i=0; i<sph->Nhydro; i++) {
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     for (k=0; k<ndim; k++) part.r[k] -= diag.rcom[k];
     for (k=0; k<ndim; k++) part.v[k] -= diag.vcom[k];
   }

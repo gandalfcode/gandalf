@@ -45,7 +45,7 @@
 #include "Radiation.h"
 #include "RandomNumber.h"
 #include "SimUnits.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "Sph.h"
 #include "SphNeighbourSearch.h"
 #include "SphIntegration.h"

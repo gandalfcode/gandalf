@@ -28,7 +28,7 @@
 #include <math.h>
 #include "Constants.h"
 #include "Precision.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "Debug.h"
 #include "Exception.h"
 #include "InlineFuncs.h"
@@ -46,7 +46,7 @@ MpiNode<ndim>::MpiNode()
 {
   ifirst = -1;
   ilast = -1;
-  Nsph = 0;
+  Nhydro = 0;
   Ntot = 0;
   Ntotmax = 0;
   Nghost = 0;
@@ -99,7 +99,7 @@ template <int ndim>
 void MpiNode<ndim>::UpdateBoundingBoxData
 (int Npart,                        ///< No. of SPH particles
  Sph<ndim> *sph,       ///< Pointer to SPH object
- SphKernel<ndim> *kernptr)         ///< Pointer to kernel object
+ SmoothingKernel<ndim> *kernptr)         ///< Pointer to kernel object
 {
   int i;                           // Particle counter
   int k;                           // Dimension counter
@@ -118,7 +118,7 @@ void MpiNode<ndim>::UpdateBoundingBoxData
 
   for (i=0; i<Npart; i++) {
 
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
 
     hrange = 2.0*kernange*part.h;
     for (k=0; k<ndim; k++) {

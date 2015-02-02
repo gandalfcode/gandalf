@@ -29,9 +29,9 @@
 #include <iostream>
 #include <math.h>
 #include "Sph.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "SphIntegration.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "EOS.h"
 #include "EnergyEquation.h"
 #include "Exception.h"
@@ -72,7 +72,7 @@ EnergyGodunovIntegration<ndim>::~EnergyGodunovIntegration()
 template <int ndim>
 void EnergyGodunovIntegration<ndim>::EnergyIntegration
 (int n,                             ///< [in] Integer time in block time struct
- int Nsph,                          ///< [in] No. of SPH particles
+ int Nhydro,                          ///< [in] No. of SPH particles
  SphParticle<ndim> *sphdata_gen,  ///< [inout] SPH particle data array
  FLOAT timestep)                    ///< [in] Base timestep value
 {
@@ -87,8 +87,8 @@ void EnergyGodunovIntegration<ndim>::EnergyIntegration
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,dt,i,nstep) \
-  shared(n,Nsph,timestep,cout,sphdata)
-  for (i=0; i<Nsph; i++) {
+  shared(n,Nhydro,timestep,cout,sphdata)
+  for (i=0; i<Nhydro; i++) {
     SphParticle<ndim>& part = sphdata[i];
 
     nstep = sphdata[i].nstep;
@@ -134,7 +134,7 @@ void EnergyGodunovIntegration<ndim>::EnergyIntegration
 template <int ndim>
 void EnergyGodunovIntegration<ndim>::EndTimestep
 (int n,                             ///< [in] Integer time in block time struct
- int Nsph,                          ///< [in] No. of SPH particles
+ int Nhydro,                          ///< [in] No. of SPH particles
  FLOAT timestep,                    ///< [in] Base timestep value
  SphParticle<ndim> *sphdata)  ///< [inout] SPH particle data array
 {
@@ -146,8 +146,8 @@ void EnergyGodunovIntegration<ndim>::EndTimestep
 
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i,nstep)	\
-  shared(n,Nsph,sphdata)
-  for (i=0; i<Nsph; i++) {
+  shared(n,Nhydro,sphdata)
+  for (i=0; i<Nhydro; i++) {
     SphParticle<ndim>& part = sphdata[i];
     dn = n - sphdata[i].nlast;
     nstep = sphdata[i].nstep;

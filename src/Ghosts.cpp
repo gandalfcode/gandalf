@@ -32,7 +32,7 @@
 #include "Debug.h"
 #include "Exception.h"
 #include "Simulation.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "Sph.h"
 #include "Ghosts.h"
 using namespace std;
@@ -54,8 +54,8 @@ void PeriodicGhosts<ndim>::CheckBoundaries
   // If so, then re-position with periodic wrapping.
   //---------------------------------------------------------------------------
 #pragma omp parallel for default(none) shared(simbox,sph)
-  for (int i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+  for (int i=0; i<sph->Nhydro; i++) {
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
 
 
     if (part.r[0] < simbox.boxmin[0])
@@ -112,7 +112,7 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopySphDataToGhosts
   int iorig;                        // Original (real) particle id
   int itype;                        // Ghost particle type
   int j;                            // Ghost particle counter
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray());
 
   debug2("[SphSimulation::CopySphDataToGhosts]");
 
@@ -120,7 +120,7 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopySphDataToGhosts
   //---------------------------------------------------------------------------
 //#pragma omp parallel for default(none) private(i,iorig,itype,j) shared(simbox,sph,sphdata)
   for (j=0; j<sph->NPeriodicGhost; j++) {
-    i = sph->Nsph + j;
+    i = sph->Nhydro + j;
     iorig = sphdata[i].iorig;
     itype = sphdata[i].itype;
 
@@ -204,14 +204,14 @@ void MPIGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
   ParticleType<ndim>* ghost_array;
   int Nmpighosts = mpicontrol->SendReceiveGhosts(tghost,sph,&ghost_array);
 
-  if (sph->Ntot + Nmpighosts > sph->Nsphmax) {
+  if (sph->Ntot + Nmpighosts > sph->Nhydromax) {
     cout << "Error: not enough memory for MPI ghosts!!! " << Nmpighosts
-         << " " << sph->Ntot << " " << sph->Nsphmax<<endl;
+         << " " << sph->Ntot << " " << sph->Nhydromax<<endl;
     ExceptionHandler::getIstance().raise("");
   }
 
-  ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
-  int start_index = sph->Nsph + sph->NPeriodicGhost;
+  ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray() );
+  int start_index = sph->Nhydro + sph->NPeriodicGhost;
 
   for (j=0; j<Nmpighosts; j++) {
     i = start_index + j;
@@ -223,9 +223,9 @@ void MPIGhostsSpecific<ndim, ParticleType>::SearchGhostParticles
   sph->Nghost += Nmpighosts;
   sph->Ntot += Nmpighosts;
 
-  if (sph->Nghost > sph->Nghostmax || sph->Ntot > sph->Nsphmax) {
+  if (sph->Nghost > sph->Nghostmax || sph->Ntot > sph->Nhydromax) {
 	cout << "Error: not enough memory for MPI ghosts!!! " << Nmpighosts
-             << " " << sph->Ntot << " " << sph->Nsphmax<<endl;
+             << " " << sph->Ntot << " " << sph->Nhydromax<<endl;
 	ExceptionHandler::getIstance().raise("");
   }
 
@@ -243,9 +243,9 @@ void MPIGhostsSpecific<ndim, ParticleType>::CopySphDataToGhosts
   Sph<ndim> *sph)                      ///< ..
 {
   ParticleType<ndim>* ghost_array;
-  ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+  ParticleType<ndim>* main_array = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray() );
   int Nmpighosts = mpicontrol->UpdateGhostParticles(&ghost_array);
-  int start_index = sph->Nsph + sph->NPeriodicGhost;
+  int start_index = sph->Nhydro + sph->NPeriodicGhost;
 
   for (int j=0; j<Nmpighosts; j++) {
     int i = start_index + j;

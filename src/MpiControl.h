@@ -33,7 +33,7 @@
 #include "Sph.h"
 #include "Nbody.h"
 #include "MpiTree.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "DomainBox.h"
 #include "Diagnostics.h"
 #if defined MPI_PARALLEL
@@ -95,7 +95,7 @@ class MpiControl
   void DeallocateMemory(void);
   void SetNeibSearch(SphNeighbourSearch<ndim>* _neibsearch) {neibsearch=_neibsearch;}
   void CollateDiagnosticsData(Diagnostics<ndim> &);
-  void UpdateAllBoundingBoxes(int, Sph<ndim> *, SphKernel<ndim> *);
+  void UpdateAllBoundingBoxes(int, Sph<ndim> *, SmoothingKernel<ndim> *);
   void CommunicatePrunedTrees() {neibsearch->CommunicatePrunedTrees(my_matches,rank);};
 
   //void ExportMpiGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);

@@ -28,10 +28,10 @@
 #include "SphNeighbourSearch.h"
 #include "Sph.h"
 #include "Parameters.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "Debug.h"
 #include "InlineFuncs.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #if defined MPI_PARALLEL
 #include "MpiNode.h"
 #endif
@@ -47,7 +47,7 @@ template <int ndim, template<int> class ParticleType>
 GodunovSphBruteForce<ndim,ParticleType>::GodunovSphBruteForce
 (FLOAT kernrangeaux,
  DomainBox<ndim> *boxaux,
- SphKernel<ndim> *kernaux,
+ SmoothingKernel<ndim> *kernaux,
  CodeTiming *timingaux):
   BruteForceSearch<ndim,ParticleType>(kernrangeaux,boxaux,kernaux,timingaux)
 {
@@ -74,7 +74,7 @@ GodunovSphBruteForce<ndim,ParticleType>::~GodunovSphBruteForce()
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void GodunovSphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
- (int Nsph,                            ///< [in] No. of SPH particles
+ (int Nhydro,                            ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] No. of SPH + ghost particles
   SphParticle<ndim> *sph_gen,          ///< [inout] Pointer to SPH ptcl array
   Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
@@ -112,14 +112,14 @@ void GodunovSphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
   // Create parallel threads
   //===========================================================================
 #pragma omp parallel default(none) private(dr,drsqd,i,j,jj,k,rp)	\
-  shared(gpot,m,mu,nbody,neiblist,Nneib,Nsph,Ntot,sph,sphdata)
+  shared(gpot,m,mu,nbody,neiblist,Nneib,Nhydro,Ntot,sph,sphdata)
   {
     drsqd = new FLOAT[Ntot];
 
     // Compute smoothing lengths of all SPH particles
     //-------------------------------------------------------------------------
 #pragma omp for
-    for (i=0; i<Nsph; i++) {
+    for (i=0; i<Nhydro; i++) {
 
       // Skip over inactive particles
       if (!sphdata[i].active || sphdata[i].itype == dead) continue;
@@ -166,7 +166,7 @@ void GodunovSphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void GodunovSphBruteForce<ndim,ParticleType>::UpdateAllSphDerivatives
-(int Nsph,                            ///< [in] ..
+(int Nhydro,                            ///< [in] ..
  int Ntot,                            ///< [in] ..
  SphParticle<ndim> *sph_gen,
  Sph<ndim> *sph)                      ///< [inout] Pointer to SPH object
@@ -202,7 +202,7 @@ void GodunovSphBruteForce<ndim,ParticleType>::UpdateAllSphDerivatives
 
   // Compute smoothing lengths of all SPH particles
   //---------------------------------------------------------------------------
-  for (i=0; i<Nsph; i++) {
+  for (i=0; i<Nhydro; i++) {
     for (k=0; k<ndim; k++) rp[k] = sphdata[i].r[k];
     hrangesqd = pow(kernp->kernrange*sphdata[i].h,2);
     Nneib = 0;
@@ -247,7 +247,7 @@ void GodunovSphBruteForce<ndim,ParticleType>::UpdateAllSphDerivatives
 //=============================================================================
 template <int ndim, template<int> class ParticleType>
 void GodunovSphBruteForce<ndim,ParticleType>::UpdateAllSphDudt
-(int Nsph,                            ///< [in] ..
+(int Nhydro,                            ///< [in] ..
  int Ntot,                            ///< [in] ..
  SphParticle<ndim> *sph_gen,          ///< ..
  Sph<ndim> *sph)                      ///< [inout] Pointer to SPH object
@@ -284,7 +284,7 @@ void GodunovSphBruteForce<ndim,ParticleType>::UpdateAllSphDudt
 
   // Compute smoothing lengths of all SPH particles
   //---------------------------------------------------------------------------
-  for (i=0; i<Nsph; i++) {
+  for (i=0; i<Nhydro; i++) {
     for (k=0; k<ndim; k++) rp[k] = sphdata[i].r[k];
     hrangesqdi = pow(kernfac*kernp->kernrange*sphdata[i].h,2);
     Nneib = 0;

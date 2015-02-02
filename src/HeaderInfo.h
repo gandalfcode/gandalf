@@ -11,7 +11,7 @@
 #include "Precision.h"
 
 struct HeaderInfo {
-  int Nsph;
+  int Nhydro;
   int Nstar;
   int ndim;
   DOUBLE t;

@@ -1,5 +1,5 @@
 #include "Precision.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "Debug.h"
 #include "SphNeighbourSearch.h"
 #include "Radiation.h"

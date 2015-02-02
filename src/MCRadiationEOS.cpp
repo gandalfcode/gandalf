@@ -78,7 +78,7 @@ MCRadiationEOS<ndim>::~MCRadiationEOS()
 /// Calculates and returns thermal pressure of referenced particle
 //=================================================================================================
 template <int ndim>
-FLOAT MCRadiationEOS<ndim>::Pressure(SphParticle<ndim> &part)
+FLOAT MCRadiationEOS<ndim>::Pressure(Particle<ndim> &part)
 {
   //return gammam1*part.rho*part.u;
   //;eos->Pressure(part);
@@ -92,7 +92,7 @@ FLOAT MCRadiationEOS<ndim>::Pressure(SphParticle<ndim> &part)
 /// Calculates and returns value of Entropic function (= P/rho^gamma) for referenced particle
 //=================================================================================================
 template <int ndim>
-FLOAT MCRadiationEOS<ndim>::EntropicFunction(SphParticle<ndim> &part)
+FLOAT MCRadiationEOS<ndim>::EntropicFunction(Particle<ndim> &part)
 {
   //return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
   return eos->EntropicFunction(part);
@@ -105,7 +105,7 @@ FLOAT MCRadiationEOS<ndim>::EntropicFunction(SphParticle<ndim> &part)
 /// Returns isothermal sound speed of SPH particle
 //=================================================================================================
 template <int ndim>
-FLOAT MCRadiationEOS<ndim>::SoundSpeed(SphParticle<ndim> &part)
+FLOAT MCRadiationEOS<ndim>::SoundSpeed(Particle<ndim> &part)
 {
   //return sqrt(gammam1*part.u);
   return part.ionfrac*sqrt(gammam1*part.u) + (1.0 - part.ionfrac)*eos->SoundSpeed(part);
@@ -118,7 +118,7 @@ FLOAT MCRadiationEOS<ndim>::SoundSpeed(SphParticle<ndim> &part)
 /// Returns specific internal energy
 //=================================================================================================
 template <int ndim>
-FLOAT MCRadiationEOS<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
+FLOAT MCRadiationEOS<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 {
   //cout << "u : " << part.ionfrac << "  " << temp_ion << "   " << gammam1 << "   " << mu_ion << "  "
   //   << (1.0 - part.ionfrac) << "   " <<  eos->SpecificInternalEnergy(part) << endl;
@@ -133,7 +133,7 @@ FLOAT MCRadiationEOS<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
 /// Returns temperature of particle.
 //=================================================================================================
 template <int ndim>
-FLOAT MCRadiationEOS<ndim>::Temperature(SphParticle<ndim> &part)
+FLOAT MCRadiationEOS<ndim>::Temperature(Particle<ndim> &part)
 {
   return part.ionfrac*temp_ion + (1.0 - part.ionfrac)*eos->Temperature(part);
 }

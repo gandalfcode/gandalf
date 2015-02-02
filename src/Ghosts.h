@@ -33,7 +33,7 @@
 #include "Precision.h"
 #include "Parameters.h"
 #include "SimUnits.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "Sph.h"
 #include "Nbody.h"
 #if defined MPI_PARALLEL

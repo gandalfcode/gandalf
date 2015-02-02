@@ -32,8 +32,8 @@
 #include "Precision.h"
 #include "Exception.h"
 #include "Sph.h"
-#include "SphKernel.h"
-#include "SphParticle.h"
+#include "SmoothingKernel.h"
+#include "Particle.h"
 #include "Parameters.h"
 #include "EOS.h"
 #include "InlineFuncs.h"
@@ -84,18 +84,17 @@ void SM2012Sph<ndim, kernelclass>::AllocateMemory(int N)
 {
   debug2("[SM2012Sph::AllocateMemory]");
 
-  if (N > Nsphmax || !allocated) {
+  if (N > Nhydromax || !allocated) {
     if (allocated) DeallocateMemory();
 
     // Set conservative estimate for maximum number of particles, assuming
     // extra space required for periodic ghost particles
-    if (Nsphmax < N)
-      Nsphmax = pow(pow(N,invndim) + 8.0*kernp->kernrange,ndim);
-    //Nsphmax = N;
+    if (Nhydromax < N)
+      Nhydromax = pow(pow(N,invndim) + 8.0*kernp->kernrange,ndim);
+    //Nhydromax = N;
 
-    iorder = new int[Nsphmax];
-    rsph = new FLOAT[ndim*Nsphmax];
-    sphdata = new struct SM2012SphParticle<ndim>[Nsphmax];
+    iorder = new int[Nhydromax];
+    sphdata = new struct SM2012SphParticle<ndim>[Nhydromax];
     allocated = true;
     sphdata_unsafe = sphdata;
   }
@@ -116,7 +115,6 @@ void SM2012Sph<ndim, kernelclass>::DeallocateMemory(void)
 
   if (allocated) {
     delete[] sphdata;
-    delete[] rsph;
     delete[] iorder;
   }
   allocated = false;
@@ -136,14 +134,14 @@ void SM2012Sph<ndim, kernelclass>::DeleteDeadParticles(void)
   int i;                               // Particle counter
   int itype;                           // Type of current particle
   int Ndead = 0;                       // No. of 'dead' particles
-  int ilast = Nsph;                    // Aux. counter of last free slot
+  int ilast = Nhydro;                    // Aux. counter of last free slot
 
   debug2("[SM2012Sph::DeleteDeadParticles]");
 
 
   // Determine new order of particles in arrays.
   // First all live particles and then all dead particles
-  for (i=0; i<Nsph; i++) {
+  for (i=0; i<Nhydro; i++) {
     itype = sphdata[i].itype;
     while (itype == dead) {
       Ndead++;
@@ -163,9 +161,9 @@ void SM2012Sph<ndim, kernelclass>::DeleteDeadParticles(void)
   if (Ndead == 0) return;
 
   // Reduce particle counters once dead particles have been removed
-  Nsph -= Ndead;
+  Nhydro -= Ndead;
   Ntot -= Ndead;
-  for (i=0; i<Nsph; i++) iorder[i] = i;
+  for (i=0; i<Nhydro; i++) iorder[i] = i;
 
 
   return;
@@ -182,12 +180,12 @@ void SM2012Sph<ndim, kernelclass>::ReorderParticles(void)
   int i;                                // Particle counter
   SM2012SphParticle<ndim> *sphdataaux;  // Aux. SPH particle array
 
-  sphdataaux = new SM2012SphParticle<ndim>[Nsph];
+  sphdataaux = new SM2012SphParticle<ndim>[Nhydro];
 
-  for (i=0; i<Nsph; i++) {
+  for (i=0; i<Nhydro; i++) {
     sphdataaux[i] = sphdata[i];
   }
-  for (i=0; i<Nsph; i++) {
+  for (i=0; i<Nhydro; i++) {
     sphdata[i] = sphdataaux[iorder[i]];
   }
 

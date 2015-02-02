@@ -31,9 +31,9 @@
 #include <vector>
 #include <math.h>
 #include "Sph.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "SphIntegration.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "EOS.h"
 #include "EnergyEquation.h"
 #include "Exception.h"
@@ -471,7 +471,7 @@ void EnergyRadws<ndim,ParticleType>:: EnergyFindEquiTemp(int idens, FLOAT rho, F
   ///===========================================================================
   // Refine the search in between Thigh and Tlow
 
-  while(abs(2.*dtemp/(Thigh+Tlow)) > accuracy){
+  while(fabs(2.*dtemp/(Thigh+Tlow)) > accuracy){
     Tequi_log = log10(Tequi);
     GetKappa(idens,  itemplow,  logrho,  Tequi_log, kappa,  kappar, kappap);
     balance = ebalance(dudt, temp_ambient , Tequi, kappa, kappap, col2);

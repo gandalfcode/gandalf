@@ -183,7 +183,7 @@ endif
 SWIG_HEADERS = Simulation.i
 WRAP_OBJ = Simulation_wrap.o
 OBJ = Parameters.o SimUnits.o
-OBJ += Simulation.o
+OBJ += Simulation.o Hydrodynamics.o
 OBJ += SphSimulation.o Sph.o
 OBJ += GradhSphSimulation.o GradhSph.o
 OBJ += GodunovSphSimulation.o GodunovSph.o

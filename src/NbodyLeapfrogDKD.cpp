@@ -33,7 +33,7 @@
 #include "StarParticle.h"
 #include "Parameters.h"
 #include "Nbody.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "Debug.h"
 #include "Exception.h"
 #include "InlineFuncs.h"
@@ -136,7 +136,7 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 template <int ndim, template<int> class kernelclass>
 void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSPHForces
 (NbodyParticle<ndim> *star,         ///< [inout] Pointer to star
- int Nsph,                          ///< [in] No. of SPH neighbour gas ptcls
+ int Nhydro,                          ///< [in] No. of SPH neighbour gas ptcls
  int Ndirect,                       ///< [in] No. of distant SPH ptcls.
  int *sphlist,                      ///< [in] List of neighbour ids
  int *directlist,                   ///< [in] List of distant ptcl ids
@@ -155,10 +155,10 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSPHForces
 
   // Sum grav. contributions from all neighbouring SPH particles
   //-----------------------------------------------------------------------------------------------
-  for (jj=0; jj<Nsph; jj++) {
+  for (jj=0; jj<Nhydro; jj++) {
     j = sphlist[jj];
 
-    SphParticle<ndim>& part = sph->GetParticleIPointer(j);
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(j);
     assert(part.itype != dead);
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
@@ -182,7 +182,7 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSPHForces
   for (jj=0; jj<Ndirect; jj++) {
     j = directlist[jj];
 
-    SphParticle<ndim>& part = sph->GetParticleIPointer(j);
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(j);
     assert(part.itype != dead);
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];

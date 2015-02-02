@@ -35,8 +35,8 @@
 #include "CodeTiming.h"
 #include "InlineFuncs.h"
 #include "Nbody.h"
-#include "SphKernel.h"
-#include "SphParticle.h"
+#include "SmoothingKernel.h"
+#include "Particle.h"
 #include "Sph.h"
 #include "DomainBox.h"
 #include "Ewald.h"
@@ -81,7 +81,7 @@ protected:
 
   //-----------------------------------------------------------------------------------------------
   SphNeighbourSearch(FLOAT, DomainBox<ndim> *,
-                     SphKernel<ndim> *, CodeTiming *);
+                     SmoothingKernel<ndim> *, CodeTiming *);
   ~SphNeighbourSearch();
 
 
@@ -142,7 +142,7 @@ protected:
   //-----------------------------------------------------------------------------------------------
   CodeTiming *timing;               ///< Pointer to code timing object
   DomainBox<ndim> *box;             ///< Pointer to simulation bounding box
-  SphKernel<ndim> *kernp;           ///< Pointer to SPH kernel object
+  SmoothingKernel<ndim> *kernp;           ///< Pointer to SPH kernel object
 
   bool neibcheck;                   ///< Flag to verify neighbour lists
   FLOAT kernfac;                    ///< ..
@@ -173,7 +173,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
 
 
   //-----------------------------------------------------------------------------------------------
-  BruteForceSearch(FLOAT, DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+  BruteForceSearch(FLOAT, DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
   ~BruteForceSearch();
 
 
@@ -246,7 +246,7 @@ class GradhSphBruteForce: public BruteForceSearch<ndim,ParticleType>
 
 
   //-----------------------------------------------------------------------------------------------
-  GradhSphBruteForce(FLOAT, DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+  GradhSphBruteForce(FLOAT, DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
   ~GradhSphBruteForce();
 
 
@@ -279,7 +279,7 @@ class SM2012SphBruteForce: public BruteForceSearch<ndim,ParticleType>
 
 
   //-----------------------------------------------------------------------------------------------
-  SM2012SphBruteForce(FLOAT, DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+  SM2012SphBruteForce(FLOAT, DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
   ~SM2012SphBruteForce();
 
 
@@ -312,7 +312,7 @@ class GodunovSphBruteForce: public BruteForceSearch<ndim,ParticleType>
 
 
   //-----------------------------------------------------------------------------------------------
-  GodunovSphBruteForce(FLOAT, DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+  GodunovSphBruteForce(FLOAT, DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
   ~GodunovSphBruteForce();
 
 
@@ -354,7 +354,7 @@ protected:
 
   //-----------------------------------------------------------------------------------------------
   SphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
-          DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+          DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
   ~SphTree();
 
 
@@ -503,7 +503,7 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
 
   //-----------------------------------------------------------------------------------------------
   GradhSphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
-               DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+               DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
   ~GradhSphTree();
 
 
@@ -543,7 +543,7 @@ class GradhSphKDTree: public GradhSphTree<ndim,ParticleType,TreeCell>
 
   //-----------------------------------------------------------------------------------------------
   GradhSphKDTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
-                 DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+                 DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };
 
@@ -572,7 +572,7 @@ class GradhSphOctTree: public GradhSphTree<ndim,ParticleType,TreeCell>
 
   //-----------------------------------------------------------------------------------------------
   GradhSphOctTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
-                  DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+                  DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };
 
@@ -623,7 +623,7 @@ class SM2012SphTree: public SphTree<ndim,ParticleType,TreeCell>
 
   //-----------------------------------------------------------------------------------------------
   SM2012SphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
-                DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+                DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
   ~SM2012SphTree();
 
 
@@ -662,7 +662,7 @@ class SM2012SphKDTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
 
   //-----------------------------------------------------------------------------------------------
   SM2012SphKDTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
-                  DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+                  DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };
 
@@ -692,7 +692,7 @@ class SM2012SphOctTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
 
   //-----------------------------------------------------------------------------------------------
   SM2012SphOctTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
-                   DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+                   DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };
 
@@ -743,7 +743,7 @@ class GodunovSphTree: public SphTree<ndim,ParticleType,TreeCell>
 
   //-----------------------------------------------------------------------------------------------
   GodunovSphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
-                 DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+                 DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
   ~GodunovSphTree();
 
 
@@ -784,7 +784,7 @@ class GodunovSphKDTree: public GodunovSphTree<ndim,ParticleType,TreeCell>
 
   //-----------------------------------------------------------------------------------------------
   GodunovSphKDTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
-                  DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+                  DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };
 
@@ -814,7 +814,7 @@ class GodunovSphOctTree: public GodunovSphTree<ndim,ParticleType,TreeCell>
 
   //-----------------------------------------------------------------------------------------------
   GodunovSphOctTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
-                   DomainBox<ndim> *, SphKernel<ndim> *, CodeTiming *);
+                   DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };
 #endif

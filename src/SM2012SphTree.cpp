@@ -33,7 +33,7 @@
 #include "Sph.h"
 #include "Parameters.h"
 #include "InlineFuncs.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "Debug.h"
 #if defined _OPENMP
 #include <omp.h>
@@ -56,7 +56,7 @@ SM2012SphKDTree<ndim,ParticleType,TreeCell>::SM2012SphKDTree
   string gravity_mac_aux,
   string multipole_aux,
   DomainBox<ndim> *boxaux,
-  SphKernel<ndim> *kernaux,
+  SmoothingKernel<ndim> *kernaux,
   CodeTiming *timingaux):
  SM2012SphTree<ndim,ParticleType,TreeCell>(Nleafmaxaux,Nmpiaux,thetamaxsqdaux,kernrangeaux,
                                            macerroraux,gravity_mac_aux,multipole_aux,
@@ -100,7 +100,7 @@ SM2012SphOctTree<ndim,ParticleType,TreeCell>::SM2012SphOctTree
   string gravity_mac_aux,
   string multipole_aux,
   DomainBox<ndim> *boxaux,
-  SphKernel<ndim> *kernaux,
+  SmoothingKernel<ndim> *kernaux,
   CodeTiming *timingaux):
  SM2012SphTree<ndim,ParticleType,TreeCell>(Nleafmaxaux,Nmpiaux,thetamaxsqdaux,kernrangeaux,
                                           macerroraux,gravity_mac_aux,multipole_aux,
@@ -144,7 +144,7 @@ SM2012SphTree<ndim,ParticleType,TreeCell>::SM2012SphTree
  string gravity_mac_aux,
  string multipole_aux,
  DomainBox<ndim> *boxaux,
- SphKernel<ndim> *kernaux,
+ SmoothingKernel<ndim> *kernaux,
  CodeTiming *timingaux):
   SphTree<ndim,ParticleType,TreeCell>(Nleafmaxaux,Nmpiaux,thetamaxsqdaux,kernrangeaux,
                                       macerroraux,gravity_mac_aux,multipole_aux,

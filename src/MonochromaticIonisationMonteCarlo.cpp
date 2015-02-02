@@ -107,7 +107,7 @@ MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::~Monochroma
 //=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
- (int Nsph,                            ///< [in] No. of SPH particle
+ (int Nhydro,                            ///< [in] No. of SPH particle
   int Nnbody,                          ///< [in] No. of N-body particles
   int Nsink,                           ///< [in] No. of sink particles
   SphParticle<ndim> *sph_gen,          ///< [in] Generic SPH particle data array
@@ -130,7 +130,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Update
 
   // Re-build radiation tree from scratch
   timing->StartTimingSection("IONTREE_BUILD",2);
-  radtree->BuildTree(Nsph, Nsph, sphdata);
+  radtree->BuildTree(Nhydro, Nhydro, sphdata);
   timing->EndTimingSection("IONTREE_BUILD");
 
   // Compute maximum radius of cell extent from co-ordinate centre, in order
@@ -161,7 +161,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Update
     for (c=0; c<radtree->Ncell; c++) radtree->radcell[c].lsum[0] = 0.0;
 
     // Perform one iteration step of the radiation field
-    IterateRadiationField(level,Nsph,Nnbody,Nsink,sph_gen,nbodydata,sinkdata);
+    IterateRadiationField(level,Nhydro,Nnbody,Nsink,sph_gen,nbodydata,sinkdata);
 
     // Update the radiation field on all higher cells
     radtree->SumRadiationField(level,radtree->radcell[0]);
@@ -183,7 +183,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Update
 
 
   // Set thermal properties of all particles in leaf cells by interpolation from grid values
-  InterpolateParticleProperties(level, Nsph, sph_gen);
+  InterpolateParticleProperties(level, Nhydro, sph_gen);
 
 
   // Output info to file for plotting
@@ -264,7 +264,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Update
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
  (int level,                           ///< Level to walk tree on
-  int Nsph,                            ///< No. of SPH particle
+  int Nhydro,                            ///< No. of SPH particle
   int Nnbody,                          ///< No. of N-body particles
   int Nsink,                           ///< No. of sink particles
   SphParticle<ndim> *sph_gen,          ///< Generic SPH particle data array
@@ -597,7 +597,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Scatte
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::InterpolateParticleProperties
  (const int level,                     ///< Level to walk tree on
-  const int Nsph,                      ///< No. of SPH particle
+  const int Nhydro,                      ///< No. of SPH particle
   SphParticle<ndim> *sph_gen)          ///< Generic SPH particle data array
 {
   int c;

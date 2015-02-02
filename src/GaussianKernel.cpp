@@ -24,7 +24,7 @@
 #include <math.h>
 #include <iostream>
 #include "Constants.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 using namespace std;
 
 
@@ -35,7 +35,7 @@ using namespace std;
 //=============================================================================
 template <int ndim>
 GaussianKernel<ndim>::GaussianKernel(string kernelname):
-  SphKernel<ndim>()
+  SmoothingKernel<ndim>()
 {
   this->kernrange = (FLOAT) 3.0;
   this->invkernrange = onethird;

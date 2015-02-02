@@ -76,7 +76,7 @@ IonisingRadiation<ndim>::~IonisingRadiation()
 /// Calculates and returns thermal pressure of referenced particle
 //=============================================================================
 template <int ndim>
-FLOAT IonisingRadiation<ndim>::Pressure(SphParticle<ndim> &part)
+FLOAT IonisingRadiation<ndim>::Pressure(Particle<ndim> &part)
 {
   //return gammam1*part.rho*part.u;
   return eos->Pressure(part);
@@ -90,7 +90,7 @@ FLOAT IonisingRadiation<ndim>::Pressure(SphParticle<ndim> &part)
 /// referenced particle
 //=============================================================================
 template <int ndim>
-FLOAT IonisingRadiation<ndim>::EntropicFunction(SphParticle<ndim> &part)
+FLOAT IonisingRadiation<ndim>::EntropicFunction(Particle<ndim> &part)
 {
   //return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
   return eos->EntropicFunction(part);
@@ -103,7 +103,7 @@ FLOAT IonisingRadiation<ndim>::EntropicFunction(SphParticle<ndim> &part)
 /// Returns isothermal sound speed of SPH particle
 //=============================================================================
 template <int ndim>
-FLOAT IonisingRadiation<ndim>::SoundSpeed(SphParticle<ndim> &part)
+FLOAT IonisingRadiation<ndim>::SoundSpeed(Particle<ndim> &part)
 {
   //return sqrt(gammam1*part.u);
   return eos->SoundSpeed(part);
@@ -116,7 +116,7 @@ FLOAT IonisingRadiation<ndim>::SoundSpeed(SphParticle<ndim> &part)
 /// Returns specific internal energy
 //=============================================================================
 template <int ndim>
-FLOAT IonisingRadiation<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
+FLOAT IonisingRadiation<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 {
   FLOAT non_ionised = eos->SpecificInternalEnergy(part);
   if (part.u > non_ionised) return part.u;
@@ -132,7 +132,7 @@ FLOAT IonisingRadiation<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
 /// adiabatic phase (T = const*rho^{gamma - 1} for rho >> rho_bary).
 //=============================================================================
 template <int ndim>
-FLOAT IonisingRadiation<ndim>::Temperature(SphParticle<ndim> &part)
+FLOAT IonisingRadiation<ndim>::Temperature(Particle<ndim> &part)
 {
   return eos->Temperature(part);
 }

@@ -31,7 +31,7 @@
 #include "Precision.h"
 #include "Constants.h"
 #include "Particle.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "NbodyParticle.h"
 #include "Nbody.h"
 #include "Parameters.h"
@@ -44,14 +44,11 @@
 #endif
 using namespace std;
 
+template <int ndim>
+class Hydrodynamics;
 
 template <int ndim>
 class EOS;
-
-
-enum aviscenum{noav, mon97, mon97mm97, mon97cd2010};
-enum acondenum{noac, wadsley2008, price2008};
-enum tdaviscenum{notdav, mm97, cd2010};
 
 static const FLOAT ghost_range = 1.6;
 
@@ -78,8 +75,8 @@ public:
 
   // Constructor
   //-----------------------------------------------------------------------------------------------
-  Hydrodynamics(int hydro_forces_aux, int self_gravity_aux,
-                FLOAT h_fac_aux, string gas_eos_aux, int size_hydro_part);
+  Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux,
+                string gas_eos_aux, string KernelName, int size_hydro_part);
 
 
   // SPH array memory allocation functions
@@ -97,7 +94,7 @@ public:
 
   // Functions needed to hide some implementation details
   //-----------------------------------------------------------------------------------------------
-  Particle<ndim>& GetParticlePointer(int i) {
+  Particle<ndim>& GetParticlePointer(const int i) {
     return *((Particle<ndim>*)((unsigned char*) hydrodata_unsafe + i*size_hydro_part));
   };
   virtual Particle<ndim>* GetParticleArray ()=0;
@@ -131,7 +128,7 @@ public:
 
   int *iorder;                         ///< Array containing particle ordering
   EOS<ndim> *eos;                      ///< Equation-of-state
-  SphKernel<ndim> *kernp;              ///< Pointer to chosen kernel object
+  SmoothingKernel<ndim> *kernp;              ///< Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;       ///< Tabulated version of chosen kernel
   RiemannSolver *riemann;              ///< Riemann solver
   ExternalPotential<ndim> *extpot;     ///< Pointer to external potential object

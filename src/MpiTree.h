@@ -106,7 +106,7 @@ class MpiTree
   int Ncell;                        ///< ..
   int Ncellmax;                     ///< ..
   int Nmpi;                         ///< ..
-  int Nsph;                         ///< ..
+  int Nhydro;                         ///< ..
   int Ntot;                         ///< ..
   int Ntotmax;                      ///< ..
   int Nthreads;                     ///< No. of OpenMP threads

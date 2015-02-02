@@ -31,14 +31,14 @@
 #include "Constants.h"
 #include "Nbody.h"
 #include "Parameters.h"
-#include "SphParticle.h"
-#include "SphNeighbourSearch.h"
+#include "Particle.h"
+//#include "SphNeighbourSearch.h"
 #include "SimUnits.h"
 
 
 // Forward declaration of Sph to break circular dependency
 template <int ndim>
-class Sph;
+class Hydrodynamics;
 
 template <int ndim>
 class SphNeighbourSearch;
@@ -67,11 +67,11 @@ class EOS
     gammaMinusOne(_gamma - (FLOAT) 1.0),
     oneMinusGamma((FLOAT) 1.0 - _gamma){};
 
-  virtual FLOAT Pressure(SphParticle<ndim> &) = 0;
-  virtual FLOAT EntropicFunction(SphParticle<ndim> &) = 0;
-  virtual FLOAT SoundSpeed(SphParticle<ndim> &) = 0;
-  virtual FLOAT Temperature(SphParticle<ndim> &) = 0;
-  virtual FLOAT SpecificInternalEnergy(SphParticle<ndim> &) = 0;
+  virtual FLOAT Pressure(Particle<ndim> &) = 0;
+  virtual FLOAT EntropicFunction(Particle<ndim> &) = 0;
+  virtual FLOAT SoundSpeed(Particle<ndim> &) = 0;
+  virtual FLOAT Temperature(Particle<ndim> &) = 0;
+  virtual FLOAT SpecificInternalEnergy(Particle<ndim> &) = 0;
 
   const FLOAT gamma;
   const FLOAT gammam1;
@@ -102,11 +102,11 @@ class Isothermal: public EOS<ndim>
   Isothermal(FLOAT, FLOAT, FLOAT, SimUnits *);
   ~Isothermal();
 
-  FLOAT Pressure(SphParticle<ndim> &);
-  FLOAT EntropicFunction(SphParticle<ndim> &);
-  FLOAT SoundSpeed(SphParticle<ndim> &);
-  FLOAT Temperature(SphParticle<ndim> &);
-  FLOAT SpecificInternalEnergy(SphParticle<ndim> &);
+  FLOAT Pressure(Particle<ndim> &);
+  FLOAT EntropicFunction(Particle<ndim> &);
+  FLOAT SoundSpeed(Particle<ndim> &);
+  FLOAT Temperature(Particle<ndim> &);
+  FLOAT SpecificInternalEnergy(Particle<ndim> &);
 
   const FLOAT temp0;
   const FLOAT mu_bar;
@@ -133,11 +133,11 @@ class Barotropic: public EOS<ndim>
   Barotropic(FLOAT, FLOAT, FLOAT, FLOAT, SimUnits *);
   ~Barotropic();
 
-  FLOAT Pressure(SphParticle<ndim> &);
-  FLOAT EntropicFunction(SphParticle<ndim> &);
-  FLOAT SoundSpeed(SphParticle<ndim> &);
-  FLOAT Temperature(SphParticle<ndim> &);
-  FLOAT SpecificInternalEnergy(SphParticle<ndim> &);
+  FLOAT Pressure(Particle<ndim> &);
+  FLOAT EntropicFunction(Particle<ndim> &);
+  FLOAT SoundSpeed(Particle<ndim> &);
+  FLOAT Temperature(Particle<ndim> &);
+  FLOAT SpecificInternalEnergy(Particle<ndim> &);
 
   FLOAT temp0;
   FLOAT mu_bar;
@@ -166,11 +166,11 @@ class Barotropic2: public EOS<ndim>
   Barotropic2(FLOAT, FLOAT, FLOAT, FLOAT, SimUnits *);
   ~Barotropic2();
 
-  FLOAT Pressure(SphParticle<ndim> &);
-  FLOAT EntropicFunction(SphParticle<ndim> &);
-  FLOAT SoundSpeed(SphParticle<ndim> &);
-  FLOAT Temperature(SphParticle<ndim> &);
-  FLOAT SpecificInternalEnergy(SphParticle<ndim> &);
+  FLOAT Pressure(Particle<ndim> &);
+  FLOAT EntropicFunction(Particle<ndim> &);
+  FLOAT SoundSpeed(Particle<ndim> &);
+  FLOAT Temperature(Particle<ndim> &);
+  FLOAT SpecificInternalEnergy(Particle<ndim> &);
 
   FLOAT temp0;
   FLOAT mu_bar;
@@ -200,11 +200,11 @@ class Adiabatic: public EOS<ndim>
   Adiabatic(FLOAT, FLOAT, FLOAT);
   ~Adiabatic();
 
-  FLOAT Pressure(SphParticle<ndim> &);
-  FLOAT EntropicFunction(SphParticle<ndim> &);
-  FLOAT SoundSpeed(SphParticle<ndim> &);
-  FLOAT Temperature(SphParticle<ndim> &);
-  FLOAT SpecificInternalEnergy(SphParticle<ndim> &);
+  FLOAT Pressure(Particle<ndim> &);
+  FLOAT EntropicFunction(Particle<ndim> &);
+  FLOAT SoundSpeed(Particle<ndim> &);
+  FLOAT Temperature(Particle<ndim> &);
+  FLOAT SpecificInternalEnergy(Particle<ndim> &);
 
   FLOAT temp0;
   const FLOAT mu_bar;
@@ -232,11 +232,11 @@ class IonisingRadiation: public EOS<ndim>
                     SimUnits *, SphNeighbourSearch<ndim> *);
   ~IonisingRadiation();
 
-  FLOAT Pressure(SphParticle<ndim> &);
-  FLOAT EntropicFunction(SphParticle<ndim> &);
-  FLOAT SoundSpeed(SphParticle<ndim> &);
-  FLOAT Temperature(SphParticle<ndim> &);
-  FLOAT SpecificInternalEnergy(SphParticle<ndim> &);
+  FLOAT Pressure(Particle<ndim> &);
+  FLOAT EntropicFunction(Particle<ndim> &);
+  FLOAT SoundSpeed(Particle<ndim> &);
+  FLOAT Temperature(Particle<ndim> &);
+  FLOAT SpecificInternalEnergy(Particle<ndim> &);
 
   FLOAT temp0;
   FLOAT mu_bar;
@@ -266,11 +266,11 @@ class MCRadiationEOS: public EOS<ndim>
   MCRadiationEOS(string, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, SimUnits *);
   ~MCRadiationEOS();
 
-  FLOAT Pressure(SphParticle<ndim> &);
-  FLOAT EntropicFunction(SphParticle<ndim> &);
-  FLOAT SoundSpeed(SphParticle<ndim> &);
-  FLOAT Temperature(SphParticle<ndim> &);
-  FLOAT SpecificInternalEnergy(SphParticle<ndim> &);
+  FLOAT Pressure(Particle<ndim> &);
+  FLOAT EntropicFunction(Particle<ndim> &);
+  FLOAT SoundSpeed(Particle<ndim> &);
+  FLOAT Temperature(Particle<ndim> &);
+  FLOAT SpecificInternalEnergy(Particle<ndim> &);
 
   FLOAT mu_bar;
   FLOAT mu_ion;

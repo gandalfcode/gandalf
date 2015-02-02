@@ -28,10 +28,10 @@
 #include <math.h>
 #include <cstdio>
 #include <cstring>
-#include "SphParticle.h"
+#include "Particle.h"
 #include "Sph.h"
 #include "SphSnapshot.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "Exception.h"
 #include "Parameters.h"
 #include "InlineFuncs.h"
@@ -118,7 +118,7 @@ int Render<ndim>::CreateColumnRenderingGrid
   int ii,jj;                           // ..
   int idummy;                          // Dummy integer to verify valid arrays
   int imin,imax,jmin,jmax;             // Grid limits for column density interpolation
-  int Nsph = snap.Nsph;                // No. of SPH particles in snap
+  int Nhydro = snap.Nhydro;                // No. of SPH particles in snap
   float dx,dy,invdx,invdy;             // ..
   float dr[2];                         // Rel. position vector on grid plane
   float drsqd;                         // Distance squared on grid plane
@@ -188,8 +188,8 @@ int Render<ndim>::CreateColumnRenderingGrid
 //=================================================================================================
 #pragma omp parallel for default(none) private(c,dr,drmag,drsqd,i,ii,imax,imin)\
  private(invh,jj,jmax,jmin,wkern,wnorm) shared(cout,dx,dy,invdx,invdy,hvalues,mvalues)\
- shared(Nsph,rendernorm,rendervalues,rhovalues,rgrid,values,xvalues,yvalues)
-  for (i=0; i<Nsph; i++) {
+ shared(Nhydro,rendernorm,rendervalues,rhovalues,rgrid,values,xvalues,yvalues)
+  for (i=0; i<Nhydro; i++) {
     const float hrange = sph->kerntab.kernrange*hvalues[i];
     //const float hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
 
@@ -275,7 +275,7 @@ int Render<ndim>::CreateSliceRenderingGrid
   int idummy;                          // Dummy integer to verify correct array
   int ii,jj;                           // ..
   int imin,imax,jmin,jmax;             // Grid limits for column density interpolation
-  int Nsph = snap.Nsph;                // No. of SPH particles in snap
+  int Nhydro = snap.Nhydro;                // No. of SPH particles in snap
   float dx,dy,invdx,invdy;             // ..
   float dr[3];                         // Rel. position vector on grid plane
   float drsqd;                         // Distance squared on grid plane
@@ -346,8 +346,8 @@ int Render<ndim>::CreateSliceRenderingGrid
   //=================================================================================================
 #pragma omp parallel for default(none) private(c,dr,drmag,drsqd,i,ii,imax,imin)\
    private(invh,jj,jmax,jmin,wkern,wnorm) shared(cout,dx,dy,invdx,invdy,hvalues,mvalues)\
-   shared(Nsph,rendernorm,rendervalues,rhovalues,rgrid,values,xvalues,yvalues,zvalues)
-  for (i=0; i<Nsph; i++) {
+   shared(Nhydro,rendernorm,rendervalues,rhovalues,rgrid,values,xvalues,yvalues,zvalues)
+  for (i=0; i<Nhydro; i++) {
     const float hrange = sph->kerntab.kernrange*hvalues[i];
     //const float hrangesqd = sph->kerntab.kernrangesqd*hvalues[i]*hvalues[i];
 

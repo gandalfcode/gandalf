@@ -373,8 +373,8 @@ void Parameters::SetDefaultValues(void)
   intparams["com_frame"] = 0;
   intparams["field_type"] = 1;
   intparams["gridsize"] = 64;
-  intparams["Nsph"] = 0;
-  intparams["Nsphmax"] = -1;
+  intparams["Nhydro"] = 0;
+  intparams["Nhydromax"] = -1;
   intparams["Nstar"] = 0;
   intparams["Nstarmax"] = -1;
   intparams["Nlattice1[0]"] = 1;

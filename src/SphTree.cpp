@@ -35,7 +35,7 @@
 #include "Sph.h"
 #include "Parameters.h"
 #include "InlineFuncs.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "Debug.h"
 #if defined _OPENMP
 #include <omp.h>
@@ -59,7 +59,7 @@ SphTree<ndim,ParticleType,TreeCell>::SphTree
   string gravity_mac_aux,
   string multipole_aux,
   DomainBox<ndim> *boxaux,
-  SphKernel<ndim> *kernaux,
+  SmoothingKernel<ndim> *kernaux,
   CodeTiming *timingaux):
   SphNeighbourSearch<ndim>(kernrangeaux,boxaux,kernaux,timingaux),
   Nleafmax(Nleafmaxaux),
@@ -219,14 +219,14 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildTree
     Ntot       = sph->Ntot;
     Ntotmaxold = Ntotmax;
     Ntotmax    = max(Ntotmax,Ntot);
-    Ntotmax    = max(Ntotmax,sph->Nsphmax);
+    Ntotmax    = max(Ntotmax,sph->Nhydromax);
     assert(Ntotmax >= Ntot);
 
-    tree->Ntot       = sph->Nsph;
+    tree->Ntot       = sph->Nhydro;
     tree->Ntotmaxold = tree->Ntotmax;
     tree->Ntotmax    = max(tree->Ntotmax,tree->Ntot);
-    tree->Ntotmax    = max(tree->Ntotmax,sph->Nsphmax);
-    tree->BuildTree(0, sph->Nsph-1, Npart, Npartmax, sphdata, timestep);
+    tree->Ntotmax    = max(tree->Ntotmax,sph->Nhydromax);
+    tree->BuildTree(0, sph->Nhydro-1, Npart, Npartmax, sphdata, timestep);
 
     AllocateMemory(sph);
 #ifdef MPI_PARALLEL
@@ -305,8 +305,8 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostTree
     ghosttree->Ntot       = sph->NPeriodicGhost;
     ghosttree->Ntotmaxold = ghosttree->Ntotmax;
     ghosttree->Ntotmax    = max(ghosttree->Ntotmax,ghosttree->Ntot);
-    ghosttree->Ntotmax    = max(ghosttree->Ntotmax,sph->Nsphmax);
-    ghosttree->BuildTree(sph->Nsph, sph->Nsph + sph->NPeriodicGhost - 1,
+    ghosttree->Ntotmax    = max(ghosttree->Ntotmax,sph->Nhydromax);
+    ghosttree->BuildTree(sph->Nhydro, sph->Nhydro + sph->NPeriodicGhost - 1,
                          ghosttree->Ntot, ghosttree->Ntotmax, sphdata, timestep);
 
   }
@@ -350,7 +350,7 @@ int SphTree<ndim,ParticleType,TreeCell>::GetGatherNeighbourList
  (FLOAT rp[ndim],                      ///< Position vector
   FLOAT rsearch,                       ///< Gather search radius
   SphParticle<ndim> *sph_gen,          ///< Pointer to SPH particle array
-  int Nsph,                            ///< No. of SPH particles
+  int Nhydro,                            ///< No. of SPH particles
   int Nneibmax,                        ///< Max. no. of neighbours
   int *neiblist)                       ///< List of neighbouring particles
 {
@@ -401,8 +401,8 @@ void SphTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
   sph->Nghost         = 0;
   sph->NPeriodicGhost = 0;
   sph->Nmpighost      = 0;
-  sph->Nghostmax      = sph->Nsphmax - sph->Nsph;
-  sph->Ntot           = sph->Nsph;
+  sph->Nghostmax      = sph->Nhydromax - sph->Nhydro;
+  sph->Ntot           = sph->Nhydro;
 
 
   // If all boundaries are open, immediately return to main loop
@@ -460,7 +460,7 @@ void SphTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
     }
     //---------------------------------------------------------------------------------------------
 
-    sph->Ntot = sph->Nsph + sph->Nghost;
+    sph->Ntot = sph->Nhydro + sph->Nghost;
   }
 
 
@@ -512,9 +512,9 @@ void SphTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
 
 
     // Check x-ghosts (which are not part of tree) by direct-sum
-    for (i=sph->Nsph; i<sph->Ntot; i++) sph->CheckYBoundaryGhostParticle(i,tghost,simbox);
+    for (i=sph->Nhydro; i<sph->Ntot; i++) sph->CheckYBoundaryGhostParticle(i,tghost,simbox);
 
-    sph->Ntot = sph->Nsph + sph->Nghost;
+    sph->Ntot = sph->Nhydro + sph->Nghost;
   }
 
 
@@ -566,14 +566,14 @@ void SphTree<ndim,ParticleType,TreeCell>::SearchBoundaryGhostParticles
 
 
     // Check x- and y-ghosts (which are not part of tree) by direct-sum
-    for (i=sph->Nsph; i<sph->Ntot; i++) sph->CheckZBoundaryGhostParticle(i,tghost,simbox);
+    for (i=sph->Nhydro; i<sph->Ntot; i++) sph->CheckZBoundaryGhostParticle(i,tghost,simbox);
 
-    sph->Ntot = sph->Nsph + sph->Nghost;
+    sph->Ntot = sph->Nhydro + sph->Nghost;
   }
 
 
   // Quit here if we've run out of memory for ghosts
-  if (sph->Ntot > sph->Nsphmax) {
+  if (sph->Ntot > sph->Nhydromax) {
     string message="Not enough memory for ghost particles";
     ExceptionHandler::getIstance().raise(message);
   }
@@ -787,7 +787,7 @@ void SphTree<ndim,ParticleType,TreeCell>::ComputeFastMonopoleForces
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void SphTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
  (int rank,                            ///< [in] MPI rank
-  int Nsph,                            ///< [in] No. of SPH particles
+  int Nhydro,                            ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] No. of SPH + ghost particles
   SphParticle<ndim> *sph_gen,          ///< [inout] Pointer to SPH ptcl array
   Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
@@ -958,7 +958,7 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void SphTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
  (int rank,                            ///< [in] MPI rank
-  int Nsph,                            ///< [in] No. of SPH particles
+  int Nhydro,                            ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] No. of SPH + ghost particles
   SphParticle<ndim> *sph_gen,          ///< [inout] Pointer to SPH ptcl array
   Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
@@ -1201,9 +1201,9 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildMpiGhostTree
     mpighosttree->Ntot       = sph->Nmpighost;
     mpighosttree->Ntotmaxold = mpighosttree->Ntotmax;
     mpighosttree->Ntotmax    = max(mpighosttree->Ntotmax,mpighosttree->Ntot);
-    mpighosttree->Ntotmax    = max(mpighosttree->Ntotmax,sph->Nsphmax);
-    mpighosttree->BuildTree(sph->Nsph + sph->NPeriodicGhost,
-                            sph->Nsph + sph->NPeriodicGhost +sph->Nmpighost - 1,
+    mpighosttree->Ntotmax    = max(mpighosttree->Ntotmax,sph->Nhydromax);
+    mpighosttree->BuildTree(sph->Nhydro + sph->NPeriodicGhost,
+                            sph->Nhydro + sph->NPeriodicGhost +sph->Nmpighost - 1,
                             mpighosttree->Ntot, mpighosttree->Ntotmax, sphdata, timestep);
 
   }
@@ -1376,7 +1376,7 @@ int SphTree<ndim,ParticleType,TreeCell>::SearchHydroExportParticles
   FLOAT scattermax[ndim];                  // ..
   TreeCell<ndim> *cellptr;                  // ..
   const FLOAT grange = ghost_range*kernrange;
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray());
 
 
   // Start from root-cell
@@ -1448,7 +1448,7 @@ void SphTree<ndim,ParticleType,TreeCell>::FindMpiTransferParticles
   int inode;                                 // ..
   int node_number;                           // ..
   TreeCell<ndim> *cellptr;                   // ..
-  ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
+  ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray());
 
 
   // Loop over potential domains and walk the tree for each bounding box
@@ -1585,7 +1585,7 @@ int SphTree<ndim,ParticleType,TreeCell>::GetExportInfo
   int rank,
   int Nmpi)                            ///< [in] Array with information for the other mpi nodes
 {
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray() );
   const bool first_proc = (Nproc==0) || (rank==0 && Nproc==1);
   const bool hydro_only = !sph->self_gravity && sph->hydro_forces;
   int Nactive=0, cactive;
@@ -1601,7 +1601,7 @@ int SphTree<ndim,ParticleType,TreeCell>::GetExportInfo
 //  }
 //  else {
 //
-//    for (int i=0; i<sph->Nsph; i++) {
+//    for (int i=0; i<sph->Nhydro; i++) {
 //      if (sphdata[i].active)
 //        Nactive++;
 //    }
@@ -1679,7 +1679,7 @@ void SphTree<ndim,ParticleType,TreeCell>::UnpackExported
 
   N_imported_part_per_proc.resize(Nbytes_exported_from_proc.size());
 
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray() );
 
   //-----------------------------------------------------------------------------------------------
   for (int Nproc = 0; Nproc<Nbytes_exported_from_proc.size(); Nproc++) {
@@ -1697,7 +1697,7 @@ void SphTree<ndim,ParticleType,TreeCell>::UnpackExported
     copy(&N_received_cells,&received_array[offset+sizeof(int)]);
 
     //Ensure there is enough memory
-    if (sph->Ntot + N_received_particles > sph->Nsphmax) {
+    if (sph->Ntot + N_received_particles > sph->Nhydromax) {
       ExceptionHandler::getIstance().raise("Error while receiving imported particles: not enough memory!");
     }
     if (tree->Ncelltot + N_received_cells > tree->Ncellmax) {
@@ -1767,9 +1767,9 @@ void SphTree<ndim,ParticleType,TreeCell>::GetBackExportInfo
     const int N_received_particles = N_imported_part_per_proc[Nproc];
 
 //    //Copy the accelerations and gravitational potential of the particles
-//    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+//    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray() );
 //    int j=0;
-//    for (int i=sph->Nsph - N_received_particles; i<sph->Nsph; i++) {
+//    for (int i=sph->Nhydro - N_received_particles; i<sph->Nhydro; i++) {
 //      for (int k=0; k<ndim; k++)
 //        send_buffer[removed_particles+j].a[k] = sphdata[i].a[k];
 //      send_buffer[removed_particles+j].gpot = sphdata[i].gpot;
@@ -1777,9 +1777,9 @@ void SphTree<ndim,ParticleType,TreeCell>::GetBackExportInfo
 //    }
 
     //Copy the particles inside the send buffer
-    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray() );
     int j=0;
-    const int start_index = sph->Nsph + sph->Nghost + removed_particles;
+    const int start_index = sph->Nhydro + sph->Nghost + removed_particles;
     for (int i=start_index; i<start_index + N_received_particles; i++) {
       copy (&send_buffer[(removed_particles+j)*sizeof(ParticleType<ndim>)],&sphdata[i]);
       j++;
@@ -1807,7 +1807,7 @@ void SphTree<ndim,ParticleType,TreeCell>::GetBackExportInfo
   tree->Ntot          -= InitialNImportedParticles;
 
   assert(sph->NImportedParticles == 0);
-  assert(sph->Ntot == sph->Nsph + sph->Nghost);
+  assert(sph->Ntot == sph->Nhydro + sph->Nghost);
   assert(send_buffer.size() == removed_particles*sizeof(ParticleType<ndim>));
 
 }
@@ -1826,7 +1826,7 @@ void SphTree<ndim,ParticleType,TreeCell>::UnpackReturnedExportInfo
   int rank)
 {
 
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray() );
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray() );
 
   //For each processor, sum up the received quantities for each particle
   for(int Nproc=0; Nproc<recv_displs.size(); Nproc++ ) {

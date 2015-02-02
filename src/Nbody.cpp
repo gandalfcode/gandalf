@@ -37,7 +37,7 @@
 #include "StarParticle.h"
 #include "SystemParticle.h"
 #include "Parameters.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "Nbody.h"
 
 using namespace std;

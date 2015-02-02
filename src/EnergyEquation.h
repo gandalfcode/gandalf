@@ -30,7 +30,7 @@
 #include "Precision.h"
 #include "Sph.h"
 #include "EOS.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "SimUnits.h"
 
 

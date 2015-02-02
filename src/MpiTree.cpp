@@ -32,7 +32,7 @@
 #include "Exception.h"
 #include "Parameters.h"
 #include "InlineFuncs.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "Debug.h"
 #if defined _OPENMP
 #include <omp.h>

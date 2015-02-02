@@ -43,9 +43,9 @@
 #include "RandomNumber.h"
 #include "SimUnits.h"
 #include "Sinks.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "SphNeighbourSearch.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "NbodyParticle.h"
 using namespace std;
 

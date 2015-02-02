@@ -31,7 +31,7 @@
 #include "Exception.h"
 #include "Parameters.h"
 #include "InlineFuncs.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "Sph.h"
 #include "OctTree.h"
 #include "Debug.h"
@@ -1225,7 +1225,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
   const int Nneibmax,                  ///< [in] Max. no. of SPH neighbours
   const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
   int &Nneib,                          ///< [out] Total no. of neighbours
-  int &Nsphneib,                       ///< [out] No. of SPH neighbours
+  int &Nhydroneib,                       ///< [out] No. of SPH neighbours
   int &Ndirect,                        ///< [out] No. of direct-sum neighbours
   int &Ngravcell,                      ///< [out] No. of cell interactions
   int *neiblist,                       ///< [out] List of all particle ids
@@ -1238,7 +1238,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
   int i;                               // Particle id
   int j;                               // Aux. particle counter
   int k;                               // Neighbour counter
-  int Nsphneibtemp = 0;                // Aux. counter
+  int Nhydroneibtemp = 0;                // Aux. counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
   FLOAT rc[ndim];                      // Position of cell
@@ -1250,7 +1250,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
 
   // Start with root cell and walk through entire tree
   Nneib     = 0;
-  Nsphneib  = 0;
+  Nhydroneib  = 0;
   Ndirect   = 0;
   Ngravcell = 0;
 
@@ -1279,7 +1279,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
       else if (celldata[cc].copen == -1 && Nneib + Nleafmax <= Nneibmax) {
         i = celldata[cc].ifirst;
         while (i != -1) {
-          sphneiblist[Nsphneib++] = Nneib;
+          sphneiblist[Nhydroneib++] = Nneib;
           neiblist[Nneib] = i;
           neibpart[Nneib++] = partdata[i];
           if (i == celldata[cc].ilast) break;
@@ -1357,14 +1357,14 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
 
   // Now, trim the list to remove particles that are definitely not SPH neighbours.
   // If not an SPH neighbour, then add to direct gravity sum list.
-  for (j=Nsphneibtemp; j<Nsphneib; j++) {
+  for (j=Nhydroneibtemp; j<Nhydroneib; j++) {
     i = sphneiblist[j];
     if (neibpart[i].itype == dead) continue;
     for (k=0; k<ndim; k++) dr[k] = neibpart[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
     if (drsqd < hrangemaxsqd || drsqd <
         (rmax + kernrange*neibpart[i].h)*(rmax + kernrange*neibpart[i].h)) {
-      sphneiblist[Nsphneibtemp++] = i;
+      sphneiblist[Nhydroneibtemp++] = i;
     }
     else if (Ndirect < Nneibmax) {
       directlist[Ndirect++] = i;
@@ -1373,7 +1373,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
       return -3;
     }
   }
-  Nsphneib = Nsphneibtemp;
+  Nhydroneib = Nhydroneibtemp;
 
   return 1;
 }

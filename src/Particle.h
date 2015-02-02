@@ -1,5 +1,5 @@
 //=================================================================================================
-//  SphParticle.h
+//  Particle.h
 //  Main particle data structures
 //
 //  This file is part of GANDALF :
@@ -21,8 +21,8 @@
 //=================================================================================================
 
 
-#ifndef _SPH_PARTICLE_H_
-#define _SPH_PARTICLE_H_
+#ifndef _PARTICLE_H_
+#define _PARTICLE_H_
 
 
 #include "Precision.h"
@@ -38,9 +38,9 @@ enum ptype{gas, icm, boundary, cdm, dead,
            x_lhs_periodic, x_lhs_mirror, x_rhs_periodic, x_rhs_mirror,
            y_lhs_periodic, y_lhs_mirror, y_rhs_periodic, y_rhs_mirror,
            z_lhs_periodic, z_lhs_mirror, z_rhs_periodic, z_rhs_mirror,
-           Nsphtypes};
+           Nhydrotypes};
 enum eosenum{noeos, isothermal, barotropic, barotropic2, energy_eqn,
-             constant_temp, radws, Nspheos};
+             constant_temp, radws, Nhydroeos};
 
 
 
@@ -78,6 +78,12 @@ struct Particle
   FLOAT gpe;                        ///< Gravitational potential energy
   DOUBLE dt;                        ///< Particle timestep
   DOUBLE tlast;                     ///< Time at beginning of current step
+  FLOAT ionfrac;                    ///< Ionisation fraction
+  FLOAT mu_bar;                     ///< mean molecular weight
+  FLOAT ueq;                        ///< equilibrium internal energy
+  FLOAT dt_therm;                   ///< thermalization time scale
+  FLOAT adot[ndim];                 ///< 1st time derivative of acceleration
+
 
   Particle() {
     active = false;
@@ -133,11 +139,12 @@ struct SphParticle : public Particle<ndim>
   FLOAT div_v;                      ///< Velocity divergence
   FLOAT alpha;                      ///< Artificial viscosity alpha value
   FLOAT dalphadt;                   ///< Rate of change of alpha
-  FLOAT ionfrac;                    ///< Ionisation fraction
+  /*FLOAT ionfrac;                    ///< Ionisation fraction
   FLOAT mu_bar;                     ///< mean molecular weight
   FLOAT ueq;                        ///< equilibrium internal energy
   FLOAT dt_therm;                   ///< thermalization time scale
   FLOAT adot[ndim];                 ///< 1st time derivative of acceleration
+  */
 
 
   // SPH particle constructor to initialise all values
@@ -156,11 +163,11 @@ struct SphParticle : public Particle<ndim>
     div_v    = (FLOAT) 0.0;
     alpha    = (FLOAT) 0.0;
     dalphadt = (FLOAT) 0.0;
-    ionfrac  = (FLOAT) 0.0;
-    mu_bar   = (FLOAT) 2.35;
-    ueq      = (FLOAT) 0.0;
-    dt_therm = (FLOAT) 0.0;
-    for (int k=0; k<ndim; k++) adot[k] = (FLOAT) 0.0;
+    //ionfrac  = (FLOAT) 0.0;
+    //mu_bar   = (FLOAT) 2.35;
+    //ueq      = (FLOAT) 0.0;
+    //dt_therm = (FLOAT) 0.0;
+    //for (int k=0; k<ndim; k++) adot[k] = (FLOAT) 0.0;
   }
 
 };

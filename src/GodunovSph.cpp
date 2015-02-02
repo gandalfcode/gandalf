@@ -30,8 +30,8 @@
 #include "Precision.h"
 #include "Exception.h"
 #include "Sph.h"
-#include "SphKernel.h"
-#include "SphParticle.h"
+#include "SmoothingKernel.h"
+#include "Particle.h"
 #include "NbodyParticle.h"
 #include "Parameters.h"
 #include "EOS.h"
@@ -83,18 +83,17 @@ void GodunovSph<ndim, kernelclass>::AllocateMemory(int N)
 {
   debug2("[GodunovSph::AllocateMemory]");
 
-  if (N > Nsphmax || !allocated) {
+  if (N > Nhydromax || !allocated) {
     if (allocated) DeallocateMemory();
 
     // Set conservative estimate for maximum number of particles, assuming
     // extra space required for periodic ghost particles
-    if (Nsphmax < N) {
-      Nsphmax = 2*(int) powf(powf((FLOAT) N,invndim) + (FLOAT) 6.0*kernp->kernrange,ndim);
+    if (Nhydromax < N) {
+      Nhydromax = 2*(int) powf(powf((FLOAT) N,invndim) + (FLOAT) 6.0*kernp->kernrange,ndim);
     }
 
-    iorder    = new int[Nsphmax];
-    rsph      = new FLOAT[ndim*Nsphmax];
-    sphdata   = new struct GodunovSphParticle<ndim>[Nsphmax];
+    iorder    = new int[Nhydromax];
+    sphdata   = new struct GodunovSphParticle<ndim>[Nhydromax];
     allocated = true;
     sphdata_unsafe = sphdata;
   }
@@ -115,7 +114,6 @@ void GodunovSph<ndim, kernelclass>::DeallocateMemory(void)
 
   if (allocated) {
     delete[] sphdata;
-    delete[] rsph;
     delete[] iorder;
   }
   allocated = false;
@@ -135,13 +133,13 @@ void GodunovSph<ndim, kernelclass>::DeleteDeadParticles(void)
   int i;                               // Particle counter
   int itype;                           // ..
   int Ndead = 0;                       // No. of 'dead' particles
-  int ilast = Nsph;                    // Aux. counter of last free slot
+  int ilast = Nhydro;                    // Aux. counter of last free slot
 
   debug2("[GodunovSph::DeleteDeadParticles]");
 
   // Determine new order of particles in arrays.
   // First all live particles and then all dead particles
-  for (i=0; i<Nsph; i++) {
+  for (i=0; i<Nhydro; i++) {
     itype = sphdata[i].itype;
     while (itype == dead) {
       Ndead++;
@@ -161,9 +159,9 @@ void GodunovSph<ndim, kernelclass>::DeleteDeadParticles(void)
   if (Ndead == 0) return;
 
   // Reduce particle counters once dead particles have been removed
-  Nsph -= Ndead;
+  Nhydro -= Ndead;
   Ntot -= Ndead;
-  for (i=0; i<Nsph; i++) iorder[i] = i;
+  for (i=0; i<Nhydro; i++) iorder[i] = i;
 
 
   return;
@@ -181,10 +179,10 @@ void GodunovSph<ndim, kernelclass>::ReorderParticles(void)
   int i;                                   // Particle counter
   GodunovSphParticle<ndim> *sphdataaux;    // Aux. SPH particle array
 
-  sphdataaux = new GodunovSphParticle<ndim>[Nsph];
+  sphdataaux = new GodunovSphParticle<ndim>[Nhydro];
 
-  for (i=0; i<Nsph; i++) sphdataaux[i] = sphdata[i];
-  for (i=0; i<Nsph; i++) sphdata[i] = sphdataaux[iorder[i]];
+  for (i=0; i<Nhydro; i++) sphdataaux[i] = sphdata[i];
+  for (i=0; i<Nhydro; i++) sphdata[i] = sphdataaux[iorder[i]];
 
   delete[] sphdataaux;
 

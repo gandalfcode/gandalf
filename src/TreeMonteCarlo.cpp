@@ -70,7 +70,7 @@ TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::~TreeMonteCarlo()
 //=============================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
-(int Nsph,                          ///< No. of SPH particle
+(int Nhydro,                          ///< No. of SPH particle
  int Nnbody,                        ///< No. of N-body particles
  int Nsink,                         ///< No. of sink particles
  SphParticle<ndim> *sph_gen,        ///< Generic SPH particle data array
@@ -89,7 +89,7 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
 
   // Re-build radiation tree from scratch
   timing->StartTimingSection("RADTREE_BUILD",2);
-  radtree->BuildTree(Nsph,Nsph,sphdata);
+  radtree->BuildTree(Nhydro,Nhydro,sphdata);
   timing->EndTimingSection("RADTREE_BUILD");
 
   // Compute maximum radius of cell extent from co-ordinate centre, in order
@@ -104,7 +104,7 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
   // Perform single iteration step on computing radiation field
   timing->StartTimingSection("RADTREE_MONTE_CARLO",2);
   level = radtree->ltot;
-  IterateRadiationField(level,Nsph,Nnbody,Nsink,sph_gen,nbodydata,sinkdata);
+  IterateRadiationField(level,Nhydro,Nnbody,Nsink,sph_gen,nbodydata,sinkdata);
   timing->EndTimingSection("RADTREE_MONTE_CARLO");
 
 
@@ -158,7 +158,7 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::IterateRadiationField
 (int level,                         ///< Level to walk tree on
- int Nsph,                          ///< No. of SPH particle
+ int Nhydro,                          ///< No. of SPH particle
  int Nnbody,                        ///< No. of N-body particles
  int Nsink,                         ///< No. of sink particles
  SphParticle<ndim> *sph_gen,        ///< Generic SPH particle data array

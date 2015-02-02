@@ -33,7 +33,7 @@
 #include "StarParticle.h"
 #include "Parameters.h"
 #include "Nbody.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "Debug.h"
 #include "Exception.h"
 #include "InlineFuncs.h"

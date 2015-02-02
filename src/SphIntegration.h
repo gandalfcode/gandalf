@@ -32,7 +32,7 @@
 #include "Sph.h"
 #include "EOS.h"
 #include "Parameters.h"
-#include "SphParticle.h"
+#include "Particle.h"
 
 
 

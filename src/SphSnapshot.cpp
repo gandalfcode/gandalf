@@ -27,7 +27,7 @@
 #include "Exception.h"
 #include "SphSnapshot.h"
 #include "Sph.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "Simulation.h"
 #include "Debug.h"
 #include "InlineFuncs.h"
@@ -78,8 +78,8 @@ SphSnapshotBase::SphSnapshotBase(SimUnits* _units, string auxfilename): units(_u
   Norbitmax        = 0;
   Nquadruple       = 0;
   Ntriple          = 0;
-  Nsph             = 0;
-  Nsphmax          = 0;
+  Nhydro             = 0;
+  Nhydromax          = 0;
   Nstar            = 0;
   Nstarmax         = 0;
   t                = 0.0;
@@ -113,7 +113,7 @@ SphSnapshot<ndims>::SphSnapshot
     info = sim->ReadHeaderSnapshotFile(filename, this->fileform);
     this->t = info.t;
     this->Nstar = info.Nstar;
-    this->Nsph = info.Nsph;
+    this->Nhydro = info.Nhydro;
   }
 }
 
@@ -217,7 +217,7 @@ void SphSnapshotBase::AllocateBufferMemorySph(void)
   // If memory already allocated and more memory is needed for more particles,
   // deallocate now before reallocating.
   if (allocatedsph) {
-    if (Nsph > Nsphmax) {
+    if (Nhydro > Nhydromax) {
       DeallocateBufferMemorySph();
     }
     else {
@@ -227,41 +227,41 @@ void SphSnapshotBase::AllocateBufferMemorySph(void)
 
   // Allocate memory for all vector quantities depending on dimensionality
   if (ndim == 1) {
-    x = new float[Nsph];
-    vx = new float[Nsph];
-    ax = new float[Nsph];
+    x = new float[Nhydro];
+    vx = new float[Nhydro];
+    ax = new float[Nhydro];
   }
   else if (ndim == 2) {
-    x = new float[Nsph];
-    y = new float[Nsph];
-    vx = new float[Nsph];
-    vy = new float[Nsph];
-    ax = new float[Nsph];
-    ay = new float[Nsph];
+    x = new float[Nhydro];
+    y = new float[Nhydro];
+    vx = new float[Nhydro];
+    vy = new float[Nhydro];
+    ax = new float[Nhydro];
+    ay = new float[Nhydro];
   }
   else if (ndim == 3) {
-    x = new float[Nsph];
-    y = new float[Nsph];
-    z = new float[Nsph];
-    vx = new float[Nsph];
-    vy = new float[Nsph];
-    vz = new float[Nsph];
-    ax = new float[Nsph];
-    ay = new float[Nsph];
-    az = new float[Nsph];
+    x = new float[Nhydro];
+    y = new float[Nhydro];
+    z = new float[Nhydro];
+    vx = new float[Nhydro];
+    vy = new float[Nhydro];
+    vz = new float[Nhydro];
+    ax = new float[Nhydro];
+    ay = new float[Nhydro];
+    az = new float[Nhydro];
   }
 
   // Allocate memory for other scalar quantities
-  m    = new float[Nsph];
-  h    = new float[Nsph];
-  rho  = new float[Nsph];
-  u    = new float[Nsph];
-  dudt = new float[Nsph];
+  m    = new float[Nhydro];
+  h    = new float[Nhydro];
+  rho  = new float[Nhydro];
+  u    = new float[Nhydro];
+  dudt = new float[Nhydro];
 
   // Record 3 vectors of size ndim (r,v,a) and 5 scalars (m,h,rho,u,dudt)
   nallocatedsph = 3*ndim + 5;
   allocatedsph  = true;
-  Nsphmax       = Nsph;
+  Nhydromax       = Nhydro;
 
   return;
 }
@@ -450,7 +450,7 @@ void SphSnapshotBase::DeallocateBufferMemoryBinary(void)
 //=================================================================================================
 int SphSnapshotBase::CalculateMemoryUsage(void)
 {
-  return Nsph*nallocatedsph*sizeof(float) +
+  return Nhydro*nallocatedsph*sizeof(float) +
     Nstar*nallocatedstar*sizeof(float) +
     Norbit*nallocatedbinary*sizeof(float);
 }
@@ -463,7 +463,7 @@ int SphSnapshotBase::CalculateMemoryUsage(void)
 //=================================================================================================
 int SphSnapshotBase::CalculatePredictedMemoryUsage(void)
 {
-  return Nsph*nneededsph*sizeof(float) + Nstar*nneededstar*sizeof(float) +
+  return Nhydro*nneededsph*sizeof(float) + Nstar*nneededstar*sizeof(float) +
     Norbit*nneededbinary*sizeof(float);
 }
 
@@ -485,9 +485,9 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
   _species.clear();
 
   // Read which species are there
-  if (simulation->sph != NULL && simulation->sph->GetParticlesArray() != NULL) {
-    Nsph = simulation->sph->Nsph;
-    if (Nsph != 0) _species.push_back("sph");
+  if (simulation->sph != NULL && simulation->sph->GetSphParticleArray() != NULL) {
+    Nhydro = simulation->sph->Nhydro;
+    if (Nhydro != 0) _species.push_back("sph");
   }
   if (simulation->nbody != NULL && simulation->nbody->stardata != NULL) {
     staraux  = simulation->nbody->stardata;
@@ -503,8 +503,8 @@ void SphSnapshot<ndims>::CopyDataFromSimulation()
 
   // Loop over all SPH particles and record particle data
   //-----------------------------------------------------------------------------------------------
-  for (int i=0; i<Nsph; i++) {
-    SphParticle<ndims>& part = simulation->sph->GetParticleIPointer(i);
+  for (int i=0; i<Nhydro; i++) {
+    SphParticle<ndims>& part = simulation->sph->GetSphParticlePointer(i);
 
     if (ndims == 1) {
       x[i] = (float) part.r[0];
@@ -617,7 +617,7 @@ int SphSnapshotBase::GetNparticlesType(string type)
 {
   type = GetRealType(type);
   if (type == "sph")
-    return Nsph;
+    return Nhydro;
   else if (type == "star")
     return Nstar;
   else if (type == "binary")
@@ -782,7 +782,7 @@ UnitInfo SphSnapshotBase::ExtractArray
 
   // Set the size now that we have the array
   if (type == "sph") {
-    *size_array = Nsph;
+    *size_array = Nhydro;
   }
   else if (type == "star") {
     *size_array = Nstar;

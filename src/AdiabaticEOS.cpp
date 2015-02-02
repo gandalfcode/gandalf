@@ -23,7 +23,7 @@
 
 #include <math.h>
 #include "EOS.h"
-#include "SphParticle.h"
+#include "Particle.h"
 
 
 
@@ -55,7 +55,7 @@ Adiabatic<ndim>::~Adiabatic()
 /// Calculates and returns thermal pressure of referenced particle
 //=================================================================================================
 template <int ndim>
-FLOAT Adiabatic<ndim>::Pressure(SphParticle<ndim> &part)
+FLOAT Adiabatic<ndim>::Pressure(Particle<ndim> &part)
 {
   return gammam1*part.rho*part.u;
 }
@@ -67,7 +67,7 @@ FLOAT Adiabatic<ndim>::Pressure(SphParticle<ndim> &part)
 /// Calculates and returns value of Entropic function (= P/rho^gamma) for referenced particle
 //=================================================================================================
 template <int ndim>
-FLOAT Adiabatic<ndim>::EntropicFunction(SphParticle<ndim> &part)
+FLOAT Adiabatic<ndim>::EntropicFunction(Particle<ndim> &part)
 {
   return gammam1*part.u*pow(part.rho,(FLOAT) 1.0 - gamma);
 }
@@ -79,7 +79,7 @@ FLOAT Adiabatic<ndim>::EntropicFunction(SphParticle<ndim> &part)
 /// Returns adiabatic sound speed of particle
 //=================================================================================================
 template <int ndim>
-FLOAT Adiabatic<ndim>::SoundSpeed(SphParticle<ndim> &part)
+FLOAT Adiabatic<ndim>::SoundSpeed(Particle<ndim> &part)
 {
   return sqrt(gamma*gammam1*part.u);
 }
@@ -91,7 +91,7 @@ FLOAT Adiabatic<ndim>::SoundSpeed(SphParticle<ndim> &part)
 /// Returns specific internal energy of particle
 //=================================================================================================
 template <int ndim>
-FLOAT Adiabatic<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
+FLOAT Adiabatic<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 {
   return part.u;
 }
@@ -103,7 +103,7 @@ FLOAT Adiabatic<ndim>::SpecificInternalEnergy(SphParticle<ndim> &part)
 /// Returns temperature of particle
 //=================================================================================================
 template <int ndim>
-FLOAT Adiabatic<ndim>::Temperature(SphParticle<ndim> &part)
+FLOAT Adiabatic<ndim>::Temperature(Particle<ndim> &part)
 {
   return gammam1*part.u;
 }

@@ -30,8 +30,9 @@
 #include <string>
 #include "Precision.h"
 #include "Constants.h"
-#include "SphParticle.h"
-#include "SphKernel.h"
+#include "Hydrodynamics.h"
+#include "Particle.h"
+#include "SmoothingKernel.h"
 #include "NbodyParticle.h"
 #include "Nbody.h"
 #include "Parameters.h"
@@ -45,15 +46,9 @@
 using namespace std;
 
 
-template <int ndim>
-class EOS;
-
-
 enum aviscenum{noav, mon97, mon97mm97, mon97cd2010};
 enum acondenum{noac, wadsley2008, price2008};
 enum tdaviscenum{notdav, mm97, cd2010};
-
-static const FLOAT ghost_range = 1.6;
 
 
 //=================================================================================================
@@ -66,7 +61,7 @@ static const FLOAT ghost_range = 1.6;
 /// \date    03/04/2013
 //=================================================================================================
 template <int ndim>
-class Sph
+class Sph : public Hydrodynamics<ndim>
 {
  private:
   const int size_sph_part;
@@ -76,11 +71,33 @@ class Sph
 
  public:
 
+  using Hydrodynamics<ndim>::allocated;
+  using Hydrodynamics<ndim>::h_fac;
+  using Hydrodynamics<ndim>::kernfac;
+  using Hydrodynamics<ndim>::kernfacsqd;
+  using Hydrodynamics<ndim>::kernp;
+  using Hydrodynamics<ndim>::kernrange;
+  using Hydrodynamics<ndim>::mmean;
+  using Hydrodynamics<ndim>::Nghost;
+  using Hydrodynamics<ndim>::Nghostmax;
+  using Hydrodynamics<ndim>::NImportedParticles;
+  using Hydrodynamics<ndim>::Nhydro;
+  using Hydrodynamics<ndim>::Nhydromax;
+  using Hydrodynamics<ndim>::Nmpighost;
+  using Hydrodynamics<ndim>::NPeriodicGhost;
+  using Hydrodynamics<ndim>::Ntot;
+
   // Constructor
   //-----------------------------------------------------------------------------------------------
   Sph(int hydro_forces_aux, int self_gravity_aux, FLOAT alpha_visc_aux, FLOAT beta_visc_aux,
       FLOAT h_fac_aux, FLOAT h_converge_aux, aviscenum avisc_aux, acondenum acond_aux,
       tdaviscenum tdavisc_aux, string gas_eos_aux, string KernelName, int size_sph_part);
+
+
+  virtual void AllocateMemory(int) = 0;
+  virtual void DeallocateMemory(void) = 0;
+  virtual void DeleteDeadParticles(void) = 0;
+  virtual void ReorderParticles(void) = 0;
 
 
   // SPH functions for computing SPH sums with neighbouring particles
@@ -89,9 +106,8 @@ class Sph
   virtual int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                        SphParticle<ndim> &, Nbody<ndim> *) = 0;
   virtual void ComputeThermalProperties(SphParticle<ndim> &) = 0;
-  virtual void ComputeSphHydroForces(const int, const int, const int *,
-                                     const FLOAT *, const FLOAT *,
-                                     const FLOAT *, SphParticle<ndim> &,
+  virtual void ComputeSphHydroForces(const int, const int, const int *, const FLOAT *,
+                                     const FLOAT *, const FLOAT *, SphParticle<ndim> &,
                                      SphParticle<ndim> *) = 0;
   virtual void ComputeSphHydroGravForces(const int, const int, int *, SphParticle<ndim> &,
                                          SphParticle<ndim> *) = 0;
@@ -108,77 +124,40 @@ class Sph
 
   // SPH array memory allocation functions
   //-----------------------------------------------------------------------------------------------
-  virtual void AllocateMemory(int)=0;
-  virtual void DeallocateMemory(void)=0;
-  virtual void DeleteDeadParticles(void)=0;
-  virtual void ReorderParticles(void)=0;
-  void SphBoundingBox(FLOAT *, FLOAT *, int);
   void InitialSmoothingLengthGuess(void);
-  void CheckXBoundaryGhostParticle(const int, const FLOAT, const DomainBox<ndim> &);
-  void CheckYBoundaryGhostParticle(const int, const FLOAT, const DomainBox<ndim> &);
-  void CheckZBoundaryGhostParticle(const int, const FLOAT, const DomainBox<ndim> &);
-  void CreateBoundaryGhostParticle(const int, const int, const int, const FLOAT, const FLOAT);
-  //void CopySphDataToBoundaryGhosts(DomainBox<ndim> *);
 
 
   // Functions needed to hide some implementation details
   //-----------------------------------------------------------------------------------------------
-  SphParticle<ndim>& GetParticleIPointer(int i) {
+  SphParticle<ndim>& GetSphParticlePointer(const int i) {
     return *((SphParticle<ndim>*)((unsigned char*)sphdata_unsafe + i*size_sph_part));
   };
-  virtual SphParticle<ndim>* GetParticlesArray ()=0;
+  virtual SphParticle<ndim>* GetSphParticleArray ()=0;
 
 
   // Const variables (read in from parameters file)
   //-----------------------------------------------------------------------------------------------
-  const acondenum acond;              ///< Artificial conductivity enum
-  const aviscenum avisc;              ///< Artificial viscosity enum
-  const tdaviscenum tdavisc;          ///< Time-dependent art. viscosity enum
-  const int hydro_forces;             ///< Compute hydro forces?
-  const int self_gravity;             ///< Compute gravitational forces?
-  const FLOAT alpha_visc;             ///< alpha artificial viscosity parameter
-  const FLOAT beta_visc;              ///< beta artificial viscosity parameter
-  const FLOAT h_fac;                  ///< Smoothing length-density factor
-  const FLOAT h_converge;             ///< h-rho iteration tolerance
-  const string gas_eos;               ///< Gas EOS option
-  static const FLOAT invndim=1./ndim; ///< Copy of 1/ndim
+  const acondenum acond;               ///< Artificial conductivity enum
+  const aviscenum avisc;               ///< Artificial viscosity enum
+  const tdaviscenum tdavisc;           ///< Time-dependent art. viscosity enum
+  const FLOAT alpha_visc;              ///< alpha artificial viscosity parameter
+  const FLOAT beta_visc;               ///< beta artificial viscosity parameter
+  const FLOAT h_converge;              ///< h-rho iteration tolerance
+  static const FLOAT invndim=1./ndim;  ///< Copy of 1/ndim
 
 
   // SPH particle counters and main particle data array
   //-----------------------------------------------------------------------------------------------
-  bool allocated;                     ///< Is SPH memory allocated?
-  int create_sinks;                   ///< Create new sink particles?
-  int fixed_sink_mass;                ///< Fix masses of sink particles
-  int Ngather;                        ///< Average no. of gather neighbours
-  int Nghost;                         ///< No. of ghost SPH particles
-  int Nghostmax;                      ///< Max. allowed no. of ghost particles
-  int NImportedParticles;             ///< No. of imported particles
-                                      ///< (to compute forces on behalf of other processors)
-  int Nmpighost;                      ///< No. of MPI ghost particles
-  int NPeriodicGhost;                 ///< No. of periodic ghost particles
-  int Nsph;                           ///< No. of SPH particles in simulation
-  int Nsphmax;                        ///< Max. no. of SPH particles in array
-  int Ntot;                           ///< No. of real + ghost particles
-  int riemann_order;                  ///< Order of Riemann solver
-  FLOAT alpha_visc_min;               ///< Min. time-dependent viscosity alpha
-  FLOAT kernfac;                      ///< Kernel range neighbour fraction
-  FLOAT kernfacsqd;                   ///< Kernel range neib. fraction squared
-  FLOAT kernrange;                    ///< Kernel range
-  FLOAT mmean;                        ///< Mean SPH particle mass
-  FLOAT msink_fixed;                  ///< Fixed sink mass value
-  FLOAT hmin_sink;                    ///< Minimum smoothing length of sinks
-  string riemann_solver;              ///< Selected Riemann solver
-  string slope_limiter;               ///< Selected slope limiter
-
-  int *iorder;                        ///< Array containing particle ordering
-  FLOAT *rsph;                        ///< Position array (for efficiency)
-  SphType sphtype[Nsphtypes];         ///< Array of SPH types
-
-  SphKernel<ndim> *kernp;             ///< Pointer to chosen kernel object
-  TabulatedKernel<ndim> kerntab;      ///< Tabulated version of chosen kernel
-  EOS<ndim> *eos;                     ///< Equation-of-state
-  RiemannSolver *riemann;             ///< Riemann solver
-  ExternalPotential<ndim> *extpot;    ///< Pointer to external potential object
+  int create_sinks;                    ///< Create new sink particles?
+  int fixed_sink_mass;                 ///< Fix masses of sink particles
+  int Ngather;                         ///< Average no. of gather neighbours
+  int riemann_order;                   ///< Order of Riemann solver
+  FLOAT alpha_visc_min;                ///< Min. time-dependent viscosity alpha
+  FLOAT msink_fixed;                   ///< Fixed sink mass value
+  FLOAT hmin_sink;                     ///< Minimum smoothing length of sinks
+  string riemann_solver;               ///< Selected Riemann solver
+  string slope_limiter;                ///< Selected slope limiter
+  SphType sphtype[Nhydrotypes];        ///< Array of SPH types
 
 };
 
@@ -198,7 +177,7 @@ class GradhSph: public Sph<ndim>
 {
 public:
   using Sph<ndim>::allocated;
-  using Sph<ndim>::Nsph;
+  using Sph<ndim>::Nhydro;
   using Sph<ndim>::Ntot;
   using Sph<ndim>::eos;
   using Sph<ndim>::fixed_sink_mass;
@@ -218,9 +197,8 @@ public:
   using Sph<ndim>::acond;
   using Sph<ndim>::create_sinks;
   using Sph<ndim>::hmin_sink;
-  using Sph<ndim>::Nsphmax;
+  using Sph<ndim>::Nhydromax;
   using Sph<ndim>::iorder;
-  using Sph<ndim>::rsph;
   using Sph<ndim>::sphdata_unsafe;
 
  //public:
@@ -229,7 +207,8 @@ public:
            aviscenum, acondenum, tdaviscenum, string, string);
   ~GradhSph();
 
-  virtual SphParticle<ndim>* GetParticlesArray () {return sphdata;};
+  virtual Particle<ndim>* GetParticleArray() {return sphdata;};
+  virtual SphParticle<ndim>* GetSphParticleArray() {return sphdata;};
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
@@ -271,7 +250,7 @@ template <int ndim, template<int> class kernelclass>
 class SM2012Sph: public Sph<ndim>
 {
   using Sph<ndim>::allocated;
-  using Sph<ndim>::Nsph;
+  using Sph<ndim>::Nhydro;
   using Sph<ndim>::Ntot;
   using Sph<ndim>::eos;
   using Sph<ndim>::h_fac;
@@ -286,10 +265,9 @@ class SM2012Sph: public Sph<ndim>
   using Sph<ndim>::acond;
   using Sph<ndim>::create_sinks;
   using Sph<ndim>::hmin_sink;
-  using Sph<ndim>::Nsphmax;
+  using Sph<ndim>::Nhydromax;
   using Sph<ndim>::kernp;
   using Sph<ndim>::iorder;
-  using Sph<ndim>::rsph;
   using Sph<ndim>::sphdata_unsafe;
 
  public:
@@ -298,7 +276,8 @@ class SM2012Sph: public Sph<ndim>
             aviscenum, acondenum, tdaviscenum, string, string);
   ~SM2012Sph();
 
-  virtual SphParticle<ndim>* GetParticlesArray () {return sphdata;};
+  virtual Particle<ndim>* GetParticleArray() {return sphdata;};
+  virtual SphParticle<ndim>* GetSphParticleArray() {return sphdata;};
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
@@ -341,7 +320,7 @@ template <int ndim, template<int> class kernelclass>
 class GodunovSph: public Sph<ndim>
 {
   using Sph<ndim>::allocated;
-  using Sph<ndim>::Nsph;
+  using Sph<ndim>::Nhydro;
   using Sph<ndim>::Ntot;
   using Sph<ndim>::eos;
   using Sph<ndim>::h_fac;
@@ -359,10 +338,9 @@ class GodunovSph: public Sph<ndim>
   using Sph<ndim>::slope_limiter;
   using Sph<ndim>::create_sinks;
   using Sph<ndim>::hmin_sink;
-  using Sph<ndim>::Nsphmax;
+  using Sph<ndim>::Nhydromax;
   using Sph<ndim>::kernp;
   using Sph<ndim>::iorder;
-  using Sph<ndim>::rsph;
   using Sph<ndim>::sphdata_unsafe;
 
  public:
@@ -371,7 +349,8 @@ class GodunovSph: public Sph<ndim>
              aviscenum, acondenum, tdaviscenum, string, string);
   ~GodunovSph();
 
-  virtual SphParticle<ndim>* GetParticlesArray () {return sphdata;};
+  virtual Particle<ndim>* GetParticleArray() {return sphdata;};
+  virtual SphParticle<ndim>* GetSphParticleArray() {return sphdata;};
 
   virtual void AllocateMemory(int);
   virtual void DeallocateMemory(void);
@@ -416,7 +395,7 @@ template <int ndim>
 class NullSph: public Sph<ndim>
 {
   using Sph<ndim>::allocated;
-  using Sph<ndim>::Nsph;
+  using Sph<ndim>::Nhydro;
   using Sph<ndim>::Ntot;
   using Sph<ndim>::eos;
   using Sph<ndim>::h_fac;
@@ -430,10 +409,9 @@ class NullSph: public Sph<ndim>
   using Sph<ndim>::acond;
   using Sph<ndim>::create_sinks;
   using Sph<ndim>::hmin_sink;
-  using Sph<ndim>::Nsphmax;
+  using Sph<ndim>::Nhydromax;
   using Sph<ndim>::kernp;
   using Sph<ndim>::iorder;
-  using Sph<ndim>::rsph;
   using Sph<ndim>::sphdata_unsafe;
 
  public:
@@ -446,7 +424,8 @@ class NullSph: public Sph<ndim>
               beta_visc_aux, h_fac_aux, h_converge_aux, avisc_aux, acond_aux,
               tdavisc_aux, gas_eos_aux, KernelName, size_sph_part) {};
 
-  virtual SphParticle<ndim>* GetParticlesArray () {return sphdata;};
+  virtual Particle<ndim>* GetParticleArray() {return sphdata;};
+  virtual SphParticle<ndim>* GetSphParticleArray() {return sphdata;};
 
   virtual void AllocateMemory(int) {};
   virtual void DeallocateMemory(void) {};

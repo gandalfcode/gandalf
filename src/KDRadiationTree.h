@@ -34,7 +34,7 @@
 #include "Precision.h"
 #include "Parameters.h"
 #include "SimUnits.h"
-#include "SphParticle.h"
+#include "Particle.h"
 using namespace std;
 
 

@@ -156,8 +156,8 @@ void Simulation<ndim>::CheckInitialConditions(void)
 
   // Check that all particles reside inside any defined boundaries
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+  for (i=0; i<sph->Nhydro; i++) {
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
 
     okflag = true;
 
@@ -304,7 +304,7 @@ void Simulation<ndim>::BinaryAccretion(void)
 
 
   // Allocate main particle memory
-  sph->Nsph = Nbox1 + Nbox2;
+  sph->Nhydro = Nbox1 + Nbox2;
   nbody->Nstar = Nstar;
   AllocateParticleMemory();
 
@@ -330,7 +330,7 @@ void Simulation<ndim>::BinaryAccretion(void)
 
     // Record positions in main memory
     for (i=0; i<Nbox1; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       for (k=0; k<ndim; k++) part.r[k] = r1[ndim*i + k];
       part.r[0] += (FLOAT) 0.25*simbox.boxsize[0];
       if (part.r[0] > simbox.boxmax[0]) part.r[0] -= simbox.boxsize[0];
@@ -365,7 +365,7 @@ void Simulation<ndim>::BinaryAccretion(void)
     // Record positions in main memory
     for (j=0; j<Nbox2; j++) {
       i = Nbox1 + j;
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       for (k=0; k<ndim; k++) part.r[k] = r2[ndim*j + k];
       part.r[0] += (FLOAT) 0.25*simbox.boxsize[0];
       if (part.r[0] > simbox.boxmax[0]) part.r[0] -= simbox.boxsize[0];
@@ -396,7 +396,7 @@ void Simulation<ndim>::BinaryAccretion(void)
   cout << "vbin        : " << vmachbin*sqrt(press1/rhofluid1) << endl;
   cout << "Bondi accretion, dmdt : "
        << (FLOAT) 4.0*pi*rhofluid1*(m1 + m2)*(m1 + m2)/pow(press1/rhofluid1,(FLOAT) 1.5) << endl;
-  cout << "No. of particles      : " << Nbox1 << "   " << Nbox2 << "   " << sph->Nsph << endl;
+  cout << "No. of particles      : " << Nbox1 << "   " << Nbox2 << "   " << sph->Nhydro << endl;
 
   // Set hmin_sink here, since no other sinks will be formed
   sph->hmin_sink = hsink;
@@ -413,7 +413,7 @@ void Simulation<ndim>::BinaryAccretion(void)
     else {
       nbody->stardata[0].r[0] = simbox.boxmin[0] + (FLOAT) 0.0625*simbox.boxsize[0];
     }
-    nbody->stardata[0].v[0] = vmachbin*sph->eos->SoundSpeed(sph->GetParticleIPointer(0));
+    nbody->stardata[0].v[0] = vmachbin*sph->eos->SoundSpeed(sph->GetSphParticlePointer(0));
     nbody->stardata[0].m = m1 + m2;
     nbody->stardata[0].h = hsink;
     nbody->stardata[0].radius = rsink;
@@ -431,7 +431,7 @@ void Simulation<ndim>::BinaryAccretion(void)
     else {
       rbinary[0] = simbox.boxmin[0] + (FLOAT) 0.0625*simbox.boxsize[0];
     }
-    vbinary[0] = vmachbin*sph->eos->SoundSpeed(sph->GetParticleIPointer(0));
+    vbinary[0] = vmachbin*sph->eos->SoundSpeed(sph->GetSphParticlePointer(0));
     AddBinaryStar(abin,ebin,m1,m2,hsink,hsink,phirot,thetarot,psirot,0.0,
                   rbinary,vbinary,nbody->stardata[0],nbody->stardata[1]);
     sinks.sink[0].star = &(nbody->stardata[0]);
@@ -508,14 +508,14 @@ void Simulation<ndim>::ShockTube(void)
     volume = box1.boxmax[0] - box1.boxmin[0];
     Nbox1 = Nlattice1[0];
     Nbox2 = Nlattice2[0];
-    sph->Nsph = Nbox1 + Nbox2;
+    sph->Nhydro = Nbox1 + Nbox2;
 
     // Allocate local and main particle memory
     AllocateParticleMemory();
-    r = new FLOAT[ndim*sph->Nsph];
+    r = new FLOAT[ndim*sph->Nhydro];
 
     // Set pointer to SPH particle data
-    partdata = sph->GetParticlesArray();
+    partdata = sph->GetSphParticleArray();
 
 
     // Add particles for LHS of the shocktube
@@ -524,7 +524,7 @@ void Simulation<ndim>::ShockTube(void)
       AddCubicLattice(Nbox1,Nlattice1,r,box1,false);
 
       for (i=0; i<Nbox1; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
         part.v[0] = vfluid1[0];
@@ -542,7 +542,7 @@ void Simulation<ndim>::ShockTube(void)
 
       for (j=0; j<Nbox2; j++) {
         i = Nbox1 + j;
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*j + k];
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
         part.v[0] = vfluid2[0];
@@ -563,13 +563,13 @@ void Simulation<ndim>::ShockTube(void)
       // Set initial smoothing lengths and create initial ghost particles
       //-------------------------------------------------------------------------------------------
       sph->Nghost = 0;
-      sph->Nghostmax = sph->Nsphmax - sph->Nsph;
-      sph->Ntot = sph->Nsph;
-      for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).active = true;
+      sph->Nghostmax = sph->Nhydromax - sph->Nhydro;
+      sph->Ntot = sph->Nhydro;
+      for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).active = true;
 
       //sph->InitialSmoothingLengthGuess();
       sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                         sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                         sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
 
       // Search ghost particles
       sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0,simbox,sph);
@@ -577,33 +577,33 @@ void Simulation<ndim>::ShockTube(void)
       // Update neighbour tree
       //sph->InitialSmoothingLengthGuess();
       sphneib->BuildGhostTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                              sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                              sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
 
       // Calculate all SPH properties
-      sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+      sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
 
       LocalGhosts->CopySphDataToGhosts(simbox,sph);
       sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                         sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                         sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
       sphneib->BuildGhostTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                              sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                              sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
 
       // Calculate all SPH properties
-      sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+      sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
 
 
-      uaux = new FLOAT[sph->Nsph];
-      vaux = new FLOAT[sph->Nsph*ndim];
+      uaux = new FLOAT[sph->Nhydro];
+      vaux = new FLOAT[sph->Nhydro*ndim];
 
       // Now compute smoothed quantities
 #pragma omp parallel for default(none) shared(uaux,vaux) private(dr,drmag,drsqd,i,j,k,wnorm)
-      for (i=0; i<sph->Nsph; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      for (i=0; i<sph->Nhydro; i++) {
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         uaux[i] = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) vaux[ndim*i + k] = (FLOAT) 0.0;
         wnorm = (FLOAT) 0.0;
         for (j=0; j<sph->Ntot; j++) {
-          SphParticle<ndim>& partj = sph->GetParticleIPointer(j);
+          SphParticle<ndim>& partj = sph->GetSphParticlePointer(j);
           for (k=0; k<ndim; k++) dr[k] = partj.r[k] - part.r[k];
           drsqd = DotProduct(dr,dr,ndim);
           if (drsqd > pow(sph->kernp->kernrange*part.h,2)) continue;
@@ -617,8 +617,8 @@ void Simulation<ndim>::ShockTube(void)
         for (k=0; k<ndim; k++) vaux[ndim*i + k] /= wnorm;
       }
 
-      for (i=0; i<sph->Nsph; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      for (i=0; i<sph->Nhydro; i++) {
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         part.u = uaux[i];
         for (k=0; k<ndim; k++) part.v[k] = vaux[ndim*i + k];
       }
@@ -659,7 +659,7 @@ void Simulation<ndim>::UniformBox(void)
 
   // Local copy of important parameters
   string particle_dist = simparams->stringparams["particle_distribution"];
-  int Npart = simparams->intparams["Nsph"];
+  int Npart = simparams->intparams["Nhydro"];
   //FLOAT rhobox = simparams->intparams["rhofluid1"];
   Nlattice[0] = simparams->intparams["Nlattice1[0]"];
   Nlattice[1] = simparams->intparams["Nlattice1[1]"];
@@ -704,19 +704,19 @@ void Simulation<ndim>::UniformBox(void)
   }
 
   // Allocate global and local memory for all particles
-  sph->Nsph = Npart;
+  sph->Nhydro = Npart;
   AllocateParticleMemory();
 
   // Copy positions to main array and initialise all other variables
-  for (i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+  for (i=0; i<sph->Nhydro; i++) {
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     for (k=0; k<ndim; k++) {
       part.r[k] = r[ndim*i + k];
       part.v[k] = (FLOAT) 0.0;
       part.a[k] = (FLOAT) 0.0;
     }
-    part.m = volume/ (FLOAT) sph->Nsph;
-    part.h = sph->h_fac*pow(volume / (FLOAT) sph->Nsph,invndim);
+    part.m = volume/ (FLOAT) sph->Nhydro;
+    part.h = sph->h_fac*pow(volume / (FLOAT) sph->Nhydro,invndim);
     part.u = (FLOAT) 1.5;
     part.iorig = i;
   }
@@ -738,13 +738,13 @@ template <int ndim>
 void Simulation<ndim>::UniformSphere(void)
 {
   int i,k;                          // Particle and dimension counters
-  int Nsphere;                      // Actual number of particles in sphere
+  int Nhydroere;                      // Actual number of particles in sphere
   FLOAT rcentre[ndim];              // Position of sphere centre
   FLOAT volume;                     // Volume of sphere
   FLOAT *r;                         // Particle position vectors
 
   // Local copies of important parameters
-  int Npart      = simparams->intparams["Nsph"];
+  int Npart      = simparams->intparams["Nhydro"];
   FLOAT mcloud   = simparams->floatparams["mcloud"];
   FLOAT radius   = simparams->floatparams["radius"];
   FLOAT rhofluid = simparams->floatparams["rhofluid1"];
@@ -771,19 +771,19 @@ void Simulation<ndim>::UniformSphere(void)
     AddRandomSphere(Npart, r, rcentre, radius);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart, r, rcentre, radius, particle_dist);
-    if (Nsphere != Npart) {
+    Nhydroere = AddLatticeSphere(Npart, r, rcentre, radius, particle_dist);
+    if (Nhydroere != Npart) {
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
     }
-    Npart = Nsphere;
+    Npart = Nhydroere;
   }
   else {
     string message = "Invalid particle distribution option";
     ExceptionHandler::getIstance().raise(message);
   }
 
-  sph->Nsph = Npart;
+  sph->Nhydro = Npart;
   AllocateParticleMemory();
 
   if (ndim == 1) volume = (FLOAT) 2.0*radius;
@@ -797,8 +797,8 @@ void Simulation<ndim>::UniformSphere(void)
   // Record particle positions and initialise all other variables
 #pragma omp parallel for default(none)\
   shared(gammaone,mcloud,Npart,press,r,rhofluid,volume) private(i,k)
-  for (i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+  for (i=0; i<sph->Nhydro; i++) {
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     for (k=0; k<ndim; k++) {
       part.r[k] = r[ndim*i + k];
       part.v[k] = (FLOAT) 0.0;
@@ -839,7 +839,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
   FLOAT *r;                            // Position vectors
   DomainBox<ndim> box1;                // LHS box
   DomainBox<ndim> box2;                // RHS box
-  SphParticle<ndim> *partdata = sph->GetParticlesArray();
+  SphParticle<ndim> *partdata = sph->GetSphParticleArray();
 
   // Create local copies of all parameters required to set-up problem
   FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
@@ -871,16 +871,16 @@ void Simulation<ndim>::ContactDiscontinuity(void)
     Nbox2 = Nlattice2[0];
 
     // Allocate local and main particle memory
-    sph->Nsph = Nbox1 + Nbox2;
+    sph->Nhydro = Nbox1 + Nbox2;
     AllocateParticleMemory();
-    r = new FLOAT[ndim*sph->Nsph];
+    r = new FLOAT[ndim*sph->Nhydro];
 
     //---------------------------------------------------------------------------------------------
     if (Nbox1 > 0) {
       AddCubicLattice(Nbox1,Nlattice1,r,box1,false);
       volume = box1.boxmax[0] - box1.boxmin[0];
       for (i=0; i<Nbox1; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         part.r[0] = r[i] - (FLOAT) 0.4*simbox.boxsize[0];
         if (part.r[0] < simbox.boxmin[0]) part.r[0] += simbox.boxsize[0];
         part.v[0] = (FLOAT) 0.0;
@@ -901,7 +901,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
       volume = box2.boxmax[0] - box2.boxmin[0];
       for (j=0; j<Nbox2; j++) {
         i = Nbox1 + j;
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         part.r[0] = r[j] - (FLOAT) 0.4*simbox.boxsize[0];
         if (part.r[0] < simbox.boxmin[0]) part.r[0] += simbox.boxsize[0];
         part.v[0] = (FLOAT) 0.0;
@@ -929,33 +929,33 @@ void Simulation<ndim>::ContactDiscontinuity(void)
   // Set initial smoothing lengths and create initial ghost particles
   //-----------------------------------------------------------------------------------------------
   sph->Nghost = 0;
-  sph->Nghostmax = sph->Nsphmax - sph->Nsph;
-  sph->Ntot = sph->Nsph;
-  for (int i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).active = true;
+  sph->Nghostmax = sph->Nhydromax - sph->Nhydro;
+  sph->Ntot = sph->Nhydro;
+  for (int i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).active = true;
 
   initial_h_provided = true;
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                     sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
 
   // Search ghost particles
   sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
 
   // Update neighbour tree
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                     sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+  sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
 
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                     sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
 
-  sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+  sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
 
   LocalGhosts->CopySphDataToGhosts(simbox,sph);
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+  sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
 
 
   return;
@@ -1022,12 +1022,12 @@ void Simulation<ndim>::KHI(void)
     Nbox2 = Nlattice2[0]*Nlattice2[1];
 
     // Allocate local and main particle memory
-    sph->Nsph = Nbox1 + Nbox2;
+    sph->Nhydro = Nbox1 + Nbox2;
     AllocateParticleMemory();
-    r = new FLOAT[ndim*sph->Nsph];
+    r = new FLOAT[ndim*sph->Nhydro];
 
     // Set pointer to SPH particle data
-    partdata = sph->GetParticlesArray();
+    partdata = sph->GetSphParticleArray();
 
 
     // Add particles for LHS of the shocktube
@@ -1036,7 +1036,7 @@ void Simulation<ndim>::KHI(void)
       AddCubicLattice(Nbox1,Nlattice1,r,box1,false);
 
       for (i=0; i<Nbox1; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
         for (k=0; k<ndim; k++) part.v[k] = 0.0;
         part.r[1] -= (FLOAT) 0.25*simbox.boxsize[1];
@@ -1055,7 +1055,7 @@ void Simulation<ndim>::KHI(void)
 
       for (j=0; j<Nbox2; j++) {
         i = Nbox1 + j;
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*j + k];
         for (k=0; k<ndim; k++) part.v[k] = 0.0;
         part.r[1] -= (FLOAT) 0.25*simbox.boxsize[1];
@@ -1070,8 +1070,8 @@ void Simulation<ndim>::KHI(void)
     // Add velocity perturbation here
     //---------------------------------------------------------------------------------------------
     FLOAT sigmapert = (FLOAT) 0.05/sqrt((FLOAT) 2.0);
-    for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       part.v[1] = amp*sin((FLOAT) 2.0*pi*part.r[0]/lambda)*
         (exp(-pow(part.r[1] + (FLOAT) 0.25,2)/(FLOAT) 2.0/sigmapert/sigmapert) +
          exp(-pow(part.r[1] - (FLOAT) 0.25,2)/(FLOAT) 2.0/sigmapert/sigmapert));
@@ -1080,27 +1080,27 @@ void Simulation<ndim>::KHI(void)
     // Set initial smoothing lengths and create initial ghost particles
     //---------------------------------------------------------------------------------------------
     sph->Nghost = 0;
-    sph->Nghostmax = sph->Nsphmax - sph->Nsph;
-    sph->Ntot = sph->Nsph;
-    for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).active = true;
+    sph->Nghostmax = sph->Nhydromax - sph->Nhydro;
+    sph->Ntot = sph->Nhydro;
+    for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).active = true;
 
     initial_h_provided = true;
 
     // Update neighbour tree
     rebuild_tree = true;
     sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                       sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                       sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
 
     // Search ghost particles
     sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0,simbox,sph);
     sphneib->BuildGhostTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                            sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                            sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
 
     // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+    sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
 
-    for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       part.u = press1/part.rho/gammaone;
     }
 
@@ -1128,7 +1128,7 @@ void Simulation<ndim>::NohProblem(void)
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
-  int Nsphere;                      // Actual number of particles in sphere
+  int Nhydroere;                      // Actual number of particles in sphere
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drmag;                      // Distance
   FLOAT drsqd;                      // Distance squared
@@ -1137,7 +1137,7 @@ void Simulation<ndim>::NohProblem(void)
   FLOAT *r;                         // Positions of all particles
 
   // Create local copies of initial conditions parameters
-  int Npart      = simparams->intparams["Nsph"];
+  int Npart      = simparams->intparams["Nhydro"];
   FLOAT rhofluid = simparams->floatparams["rhofluid1"];
   FLOAT press    = simparams->floatparams["press1"];
   FLOAT radius   = simparams->floatparams["radius"];
@@ -1156,10 +1156,10 @@ void Simulation<ndim>::NohProblem(void)
     AddRandomSphere(Npart,r,rcentre,radius);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
-    if (Nsphere != Npart) cout << "Warning! Unable to converge to required "
+    Nhydroere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    if (Nhydroere != Npart) cout << "Warning! Unable to converge to required "
                                << "no. of ptcls due to lattice symmetry" << endl;
-    Npart = Nsphere;
+    Npart = Nhydroere;
   }
   else {
     string message = "Invalid particle distribution option";
@@ -1167,7 +1167,7 @@ void Simulation<ndim>::NohProblem(void)
   }
 
   // Allocate local and main particle memory
-  sph->Nsph = Npart;
+  sph->Nhydro = Npart;
   AllocateParticleMemory();
 
   if (ndim == 1) volume = (FLOAT) 2.0*radius;
@@ -1176,7 +1176,7 @@ void Simulation<ndim>::NohProblem(void)
 
   // Record particle properties in main memory
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
     for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k];
     drsqd = DotProduct(dr,dr,ndim);
@@ -1206,7 +1206,7 @@ void Simulation<ndim>::BossBodenheimer(void)
 {
   int i;                               // Particle counter
   int k;                               // Dimension counter
-  int Nsphere;                         // Actual number of particles in sphere
+  int Nhydroere;                         // Actual number of particles in sphere
   FLOAT mp;                            // Mass of one particle
   FLOAT rcentre[ndim];                 // Position of sphere centre
   FLOAT rho;                           // Fluid density
@@ -1214,7 +1214,7 @@ void Simulation<ndim>::BossBodenheimer(void)
   FLOAT *v;                            // Velocities of all particles
 
   // Create local copies of initial conditions parameters
-  int Npart      = simparams->intparams["Nsph"];
+  int Npart      = simparams->intparams["Nhydro"];
   FLOAT amp      = simparams->floatparams["amp"];
   FLOAT angvel   = simparams->floatparams["angvel"];
   FLOAT mcloud   = simparams->floatparams["mcloud"];
@@ -1245,12 +1245,12 @@ void Simulation<ndim>::BossBodenheimer(void)
     AddRandomSphere(Npart,r,rcentre,radius);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
-    if (Nsphere != Npart) {
+    Nhydroere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    if (Nhydroere != Npart) {
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
     }
-    Npart = Nsphere;
+    Npart = Nhydroere;
   }
   else {
     string message = "Invalid particle distribution option";
@@ -1258,7 +1258,7 @@ void Simulation<ndim>::BossBodenheimer(void)
   }
 
   // Allocate local and main particle memory
-  sph->Nsph = Npart;
+  sph->Nhydro = Npart;
   AllocateParticleMemory();
   mp = mcloud / (FLOAT) Npart;
   rho = (FLOAT) 3.0*mcloud / ((FLOAT)4.0*pi*pow(radius,3));
@@ -1272,7 +1272,7 @@ void Simulation<ndim>::BossBodenheimer(void)
   // Record particle properties in main memory
 #pragma omp parallel for default(none) shared(gammaone,Npart,mp,mu_bar,r,rho,temp0,v) private(i,k)
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
     for (k=0; k<ndim; k++) part.v[k] = v[ndim*i + k];
     part.m = mp;
@@ -1304,7 +1304,7 @@ void Simulation<ndim>::TurbulentCore(void)
 {
   int i;                               // Particle counter
   int k;                               // Dimension counter
-  int Nsphere;                         // Actual number of particles in sphere
+  int Nhydroere;                         // Actual number of particles in sphere
   FLOAT gpecloud;                      // Total grav. potential energy of entire cloud
   FLOAT keturb;                        // Total turbulent kinetic energy of entire cloud
   FLOAT mp;                            // Mass of one particle
@@ -1322,7 +1322,7 @@ void Simulation<ndim>::TurbulentCore(void)
   // Create local copies of initial conditions parameters
   int field_type   = simparams->intparams["field_type"];
   int gridsize     = simparams->intparams["gridsize"];
-  int Npart        = simparams->intparams["Nsph"];
+  int Npart        = simparams->intparams["Nhydro"];
   FLOAT alpha_turb = simparams->floatparams["alpha_turb"];
   FLOAT gammaone   = simparams->floatparams["gamma_eos"] - 1.0;
   FLOAT mcloud     = simparams->floatparams["mcloud"];
@@ -1358,11 +1358,11 @@ void Simulation<ndim>::TurbulentCore(void)
     AddRandomSphere(Npart,r,rcentre,radius);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
-    if (Nsphere != Npart)
+    Nhydroere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    if (Nhydroere != Npart)
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
-    Npart = Nsphere;
+    Npart = Nhydroere;
   }
   else {
     string message = "Invalid particle distribution option";
@@ -1370,7 +1370,7 @@ void Simulation<ndim>::TurbulentCore(void)
   }
 
   // Allocate local and main particle memory
-  sph->Nsph = Npart;
+  sph->Nhydro = Npart;
   AllocateParticleMemory();
   mp = mcloud / (FLOAT) Npart;
   rho = (FLOAT) 3.0*mcloud / ((FLOAT) 4.0*pi*pow(radius,3));
@@ -1378,7 +1378,7 @@ void Simulation<ndim>::TurbulentCore(void)
 
   // Record particle properties in main memory
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
     for (k=0; k<ndim; k++) part.v[k] = v[ndim*i + k];
     part.m = mp;
@@ -1396,7 +1396,7 @@ void Simulation<ndim>::TurbulentCore(void)
   for (k=0; k<ndim; k++) rmin[k] = big_number;
   for (k=0; k<ndim; k++) rmax[k] = -big_number;
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     for (k=0; k<ndim; k++) rmin[k] = min(rmin[k],part.r[k] - sph->kernrange*part.h);
     for (k=0; k<ndim; k++) rmax[k] = max(rmax[k],part.r[k] + sph->kernrange*part.h);
   }
@@ -1414,11 +1414,11 @@ void Simulation<ndim>::TurbulentCore(void)
   GenerateTurbulentVelocityField(field_type,gridsize,power_turb,vfield);
 
   // Now interpolate generated field onto particle positions
-  InterpolateVelocityField(sph->Nsph,gridsize,xmin,dxgrid,r,vfield,v);
+  InterpolateVelocityField(sph->Nhydro,gridsize,xmin,dxgrid,r,vfield,v);
 
   // Finally, copy velocities to main SPH particle array
-  for (i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+  for (i=0; i<sph->Nhydro; i++) {
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     for (k=0; k<ndim; k++) part.v[k] = v[ndim*i + k];
   }
 
@@ -1427,8 +1427,8 @@ void Simulation<ndim>::TurbulentCore(void)
 
   // Calculate total kinetic energy of turbulent velocity field
   keturb = (FLOAT) 0.0;
-  for (i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+  for (i=0; i<sph->Nhydro; i++) {
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     keturb += part.m*DotProduct(part.v,part.v,ndim);
   }
   keturb *= (FLOAT) 0.5;
@@ -1437,8 +1437,8 @@ void Simulation<ndim>::TurbulentCore(void)
   cout << "Scaling factor : " << vfactor << endl;
 
   // Now rescale velocities to give required turbulent energy in cloud
-  for (i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+  for (i=0; i<sph->Nhydro; i++) {
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     for (k=0; k<ndim; k++) part.v[k] *= vfactor;
   }
 
@@ -1463,7 +1463,7 @@ void Simulation<ndim>::BondiAccretion(void)
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
-  int Nsphere;                      // Actual number of particles in sphere
+  int Nhydroere;                      // Actual number of particles in sphere
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drsqd;                      // Distance squared
   FLOAT mp;                         // Mass of one particle
@@ -1475,7 +1475,7 @@ void Simulation<ndim>::BondiAccretion(void)
   FLOAT *w,*x,*y,*z;                // Arrays for numerical Bondi solution
 
   // Create local copies of initial conditions parameters
-  int Npart     = simparams->intparams["Nsph"];
+  int Npart     = simparams->intparams["Nhydro"];
   FLOAT temp0   = simparams->floatparams["temp0"];
   FLOAT mu_bar  = simparams->floatparams["mu_bar"];
   FLOAT mcloud  = simparams->floatparams["mcloud"];
@@ -1508,11 +1508,11 @@ void Simulation<ndim>::BondiAccretion(void)
     AddRandomSphere(Npart,r,rcentre,radius);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
-    if (Nsphere != Npart)
+    Nhydroere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    if (Nhydroere != Npart)
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
-    Npart = Nsphere;
+    Npart = Nhydroere;
   }
   else {
     string message = "Invalid particle distribution option";
@@ -1520,7 +1520,7 @@ void Simulation<ndim>::BondiAccretion(void)
   }
 
   // Allocate local and main particle memory
-  sph->Nsph = Npart;
+  sph->Nhydro = Npart;
   AllocateParticleMemory();
   //mp = mcloud / (FLOAT) Npart;
   //mp = 4.0*pi*powf(rsonic,3)*rhogas*mcloud / (FLOAT) Npart;
@@ -1566,7 +1566,7 @@ void Simulation<ndim>::BondiAccretion(void)
 
 
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k] - rcentre[k];
     FLOAT drmag = sqrtf(DotProduct(dr,dr,ndim)) + small_number;
     FLOAT mint = mcloud*powf(drmag,3);
@@ -1603,7 +1603,7 @@ void Simulation<ndim>::BondiAccretion(void)
 
   // Find total mass inside sink and set to mmax
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - rcentre[k];
     drsqd = DotProduct(dr,dr,ndim);
     if (drsqd > rsink*rsink) continue;
@@ -1683,10 +1683,10 @@ void Simulation<ndim>::EwaldDensity(void)
     if (ndim == 3) {
       Npart = Nlattice1[0]*Nlattice1[1]*Nlattice1[2];
     }
-    sph->Nsph = Npart;
+    sph->Nhydro = Npart;
     //Nlattice1[0] = Npart;
     AllocateParticleMemory();
-    r = new FLOAT[ndim*sph->Nsph];
+    r = new FLOAT[ndim*sph->Nhydro];
 
 
     // 1D sinusoidal density perturbation
@@ -1706,7 +1706,7 @@ void Simulation<ndim>::EwaldDensity(void)
       // Set all other particle quantities
       //-------------------------------------------------------------------------------------------
       for (i=0; i<Npart; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
 
         // Set positions in main array with corresponind velocity perturbation
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
@@ -1738,7 +1738,7 @@ void Simulation<ndim>::EwaldDensity(void)
       // Set all other particle quantities
       //-------------------------------------------------------------------------------------------
       for (i=0; i<Npart; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
 
         // Set positions in main array with corresponind velocity perturbation
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
@@ -1768,7 +1768,7 @@ void Simulation<ndim>::EwaldDensity(void)
       // Set all other particle quantities
       //-------------------------------------------------------------------------------------------
       for (i=0; i<Npart; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
 
         // Set positions in main array with corresponind velocity perturbation
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
@@ -1800,7 +1800,7 @@ void Simulation<ndim>::EwaldDensity(void)
       // Set all other particle quantities
       //-------------------------------------------------------------------------------------------
       for (i=0; i<Npart; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
 
         // Set positions in main array with corresponind velocity perturbation
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
@@ -1854,7 +1854,7 @@ void Simulation<ndim>::PlummerSphere(void)
     FLOAT rad,vm,ve,t1,t2,w,z;           // Other variables
 
     // Local copies of important parameters
-    int Nsph        = simparams->intparams["Nsph"];
+    int Nhydro        = simparams->intparams["Nhydro"];
     int Nstar       = simparams->intparams["Nstar"];
     FLOAT gamma_eos = simparams->floatparams["gamma_eos"];
     FLOAT gasfrac   = simparams->floatparams["gasfrac"];
@@ -1866,8 +1866,8 @@ void Simulation<ndim>::PlummerSphere(void)
 
     debug1("[Simulation::PlummerSphere]");
 
-    sph->Nsph = Nsph;
-    sph->Ntot = Nsph;
+    sph->Nhydro = Nhydro;
+    sph->Ntot = Nhydro;
     nbody->Nstar = Nstar;
     AllocateParticleMemory();
 
@@ -1879,7 +1879,7 @@ void Simulation<ndim>::PlummerSphere(void)
 
     // Loop over all particles (gas and stars)
     //=============================================================================================
-    for (j=0; j<Nsph+Nstar; j++) {
+    for (j=0; j<Nhydro+Nstar; j++) {
 
       do {
         flag = false;
@@ -1897,13 +1897,13 @@ void Simulation<ndim>::PlummerSphere(void)
 
       // Set position depending on particle type
       //-------------------------------------------------------------------------------------------
-      if (j >= Nstar && j < Nstar + Nsph) {
+      if (j >= Nstar && j < Nstar + Nhydro) {
         i = j - Nstar;
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         part.r[2] = z;
         part.r[0] = sqrt(rad*rad - z*z)*cos(twopi*x3);
         part.r[1] = sqrt(rad*rad - z*z)*sin(twopi*x3);
-        part.m = gasfrac / (FLOAT) Nsph;
+        part.m = gasfrac / (FLOAT) Nhydro;
       }
       else {
         i = j;
@@ -1934,9 +1934,9 @@ void Simulation<ndim>::PlummerSphere(void)
 
       // Set velocity depending on particle type
       //-------------------------------------------------------------------------------------------
-      if (j >= Nstar && j < Nstar + Nsph) {
+      if (j >= Nstar && j < Nstar + Nhydro) {
         i = j - Nstar;
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
         part.sound = sqrt((FLOAT) 0.16666666666666666 / sqrt((FLOAT) 1.0 + rad*rad));
         part.rho   = (FLOAT) 1.0;
@@ -1958,14 +1958,14 @@ void Simulation<ndim>::PlummerSphere(void)
     vplummer = sqrt(mplummer/rplummer);
 
     // Now scale variables to required physical size
-    for (i=0; i<Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (i=0; i<Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       for (k=0; k<ndim; k++) {
         part.r[k] = part.r[k]*rplummer;
         part.v[k] = part.v[k]*vplummer;
       }
       part.m = part.m*mplummer;
-      if (i < Nsph) part.u = part.u*(mplummer/rplummer);
+      if (i < Nhydro) part.u = part.u*(mplummer/rplummer);
     }
 
     for (i=0; i<Nstar; i++) {
@@ -2050,13 +2050,13 @@ void Simulation<ndim>::SedovBlastWave(void)
   r_hot = powf(powf((FLOAT) 4.0,ndim)/(FLOAT) Nbox,sph->invndim);
 
   // Allocate local and main particle memory
-  sph->Nsph = Nbox;
+  sph->Nhydro = Nbox;
   AllocateParticleMemory();
-  r = new FLOAT[ndim*sph->Nsph];
-  hotlist = new int[sph->Nsph];
+  r = new FLOAT[ndim*sph->Nhydro];
+  hotlist = new int[sph->Nhydro];
 
   // Set pointer to SPH particle data
-  partdata = sph->GetParticlesArray();
+  partdata = sph->GetSphParticleArray();
 
   // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
@@ -2076,7 +2076,7 @@ void Simulation<ndim>::SedovBlastWave(void)
 
   // Record positions in main memory
   for (i=0; i<Nbox; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
     for (k=0; k<ndim; k++) part.v[k] = 0.0;
     part.m = mbox/(FLOAT) Nbox;
@@ -2087,9 +2087,9 @@ void Simulation<ndim>::SedovBlastWave(void)
   // Set initial smoothing lengths and create initial ghost particles
   //-----------------------------------------------------------------------------------------------
   sph->Nghost = 0;
-  sph->Nghostmax = sph->Nsphmax - sph->Nsph;
-  sph->Ntot = sph->Nsph;
-  for (i=0; i<sph->Nsph; i++) sph->GetParticleIPointer(i).active = true;
+  sph->Nghostmax = sph->Nhydromax - sph->Nhydro;
+  sph->Ntot = sph->Nhydro;
+  for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).active = true;
 
   // Search ghost particles
   sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
@@ -2097,24 +2097,24 @@ void Simulation<ndim>::SedovBlastWave(void)
   initial_h_provided = true;
   rebuild_tree = true;
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                     sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
 
-  sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+  sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
 
   // Update neighbour tre
   rebuild_tree = true;
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                     sph->Ntot,sph->Nsphmax,partdata,sph,timestep);
+                     sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+  sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
 
   // Now calculate which particles are hot
   //-----------------------------------------------------------------------------------------------
   umax = (FLOAT) 0.0;
   utot = (FLOAT) 0.0;
-  for (i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+  for (i=0; i<sph->Nhydro; i++) {
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     drsqd = DotProduct(part.r,part.r,ndim);
     if (drsqd < r_hot*r_hot) {
       hotlist[i] = 1;
@@ -2132,8 +2132,8 @@ void Simulation<ndim>::SedovBlastWave(void)
 
   // Normalise the energies
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+  for (i=0; i<sph->Nhydro; i++) {
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     if (hotlist[i] == 1) {
       drmag = sqrt(DotProduct(part.r,part.r,ndim));
       part.u = part.u/utot/part.m;
@@ -2196,9 +2196,9 @@ void Simulation<ndim>::ShearFlow(void)
     kwave  = twopi/lambda;
 
     // Allocate local and main particle memory
-    sph->Nsph = Nbox;
+    sph->Nhydro = Nbox;
     AllocateParticleMemory();
-    r = new FLOAT[ndim*sph->Nsph];
+    r = new FLOAT[ndim*sph->Nhydro];
 
 
     // Add particles from cubic lattice
@@ -2207,7 +2207,7 @@ void Simulation<ndim>::ShearFlow(void)
       //AddHexagonalLattice(Nbox,Nlattice1,r,simbox,false);
 
       for (i=0; i<Nbox; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
         part.v[0] = amp*sin(kwave*part.r[1]);
@@ -2248,7 +2248,7 @@ void Simulation<ndim>::SoundWave(void)
   FLOAT *r;                         // Particle positions
 
   // Make local copies of parameters for setting up problem
-  int Npart       = simparams->intparams["Nsph"];
+  int Npart       = simparams->intparams["Nhydro"];
   FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
   FLOAT press1    = simparams->floatparams["press1"];
   FLOAT gamma     = simparams->floatparams["gamma_eos"];
@@ -2282,9 +2282,9 @@ void Simulation<ndim>::SoundWave(void)
   // Allocate local and main particle memory
   for (k=0; k<ndim; k++) Nlattice1[k] = 1;
   Nlattice1[0] = Npart;
-  sph->Nsph = Npart;
+  sph->Nhydro = Npart;
   AllocateParticleMemory();
-  r = new FLOAT[ndim*sph->Nsph];
+  r = new FLOAT[ndim*sph->Nhydro];
 
   // Add regular distribution of SPH particles
   AddCubicLattice(Npart,Nlattice1,r,simbox,false);
@@ -2295,7 +2295,7 @@ void Simulation<ndim>::SoundWave(void)
   // Set all other particle quantities
   //----------------------------------------------------------------------------------------------
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
 
     // Set positions in main array with corresponind velocity perturbation
     for (k=0; k<ndim; k++) part.r[k] = r[ndim*i];
@@ -2328,14 +2328,14 @@ template <int ndim>
 void Simulation<ndim>::SpitzerExpansion(void)
 {
   int i,k;                             // Particle and dimension counters
-  int Nsphere;                         // Actual number of particles in sphere
+  int Nhydroere;                         // Actual number of particles in sphere
   FLOAT rcentre[ndim];                 // Position of sphere centre
   FLOAT rhofluid;                      // ..
   FLOAT volume;                        // Volume of sphere
   FLOAT *r;                            // Particle position vectors
 
   // Local copies of important parameters
-  int Npart      = simparams->intparams["Nsph"];
+  int Npart      = simparams->intparams["Nhydro"];
   FLOAT mcloud   = simparams->floatparams["mcloud"];
   FLOAT radius   = simparams->floatparams["radius"];
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
@@ -2358,19 +2358,19 @@ void Simulation<ndim>::SpitzerExpansion(void)
     AddRandomSphere(Npart, r, rcentre, radius);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nsphere = AddLatticeSphere(Npart, r, rcentre, radius, particle_dist);
-    if (Nsphere != Npart) {
+    Nhydroere = AddLatticeSphere(Npart, r, rcentre, radius, particle_dist);
+    if (Nhydroere != Npart) {
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
     }
-    Npart = Nsphere;
+    Npart = Nhydroere;
   }
   else {
     string message = "Invalid particle distribution option";
     ExceptionHandler::getIstance().raise(message);
   }
 
-  sph->Nsph = Npart;
+  sph->Nhydro = Npart;
   AllocateParticleMemory();
 
   if (ndim == 1) volume = (FLOAT) 2.0*radius;
@@ -2382,8 +2382,8 @@ void Simulation<ndim>::SpitzerExpansion(void)
   // Record particle positions and initialise all other variables
 #pragma omp parallel for default(none)\
   shared(gammaone,mcloud,Npart,press,r,rhofluid,volume) private(i,k)
-  for (i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+  for (i=0; i<sph->Nhydro; i++) {
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     for (k=0; k<ndim; k++) {
       part.r[k] = r[ndim*i + k];
       part.v[k] = (FLOAT) 0.0;
@@ -2433,7 +2433,7 @@ void Simulation<ndim>::BinaryStar(void)
   }
 
   // Allocate local and main particle memory
-  //sph->Nsph = 0;
+  //sph->Nhydro = 0;
   //sph->Ntot = 0;
   nbody->Nstar = 2;
   AllocateParticleMemory();
@@ -2481,7 +2481,7 @@ void Simulation<ndim>::TripleStar(void)
   }
 
   // Allocate local and main particle memory
-  //sph->Nsph = 0;
+  //sph->Nhydro = 0;
   //sph->Ntot = 0;
   nbody->Nstar = 3;
   AllocateParticleMemory();
@@ -2535,7 +2535,7 @@ void Simulation<ndim>::QuadrupleStar(void)
   }
 
   // Allocate local and main particle memory
-  //sph->Nsph = 0;
+  //sph->Nhydro = 0;
   //sph->Ntot = 0;
   nbody->Nstar = 4;
   AllocateParticleMemory();
@@ -2947,11 +2947,11 @@ void Simulation<ndim>::AddHexagonalLattice
 
 //=================================================================================================
 //  Simulation::CutSphere
-/// Cut-out a sphere containing exactly 'Nsphere' particles from a uniform box of particles.
+/// Cut-out a sphere containing exactly 'Nhydroere' particles from a uniform box of particles.
 //=================================================================================================
 template <int ndim>
 int Simulation<ndim>::CutSphere
- (int Nsphere,                         ///< [in] Desired np of particles in sphere
+ (int Nhydroere,                         ///< [in] Desired np of particles in sphere
   int Npart,                           ///< [in] No. of particles in cube
   FLOAT *r,                            ///< [inout] Positions of particles
   DomainBox<ndim> box,                 ///< [in] Bounding box of particles
@@ -2963,7 +2963,7 @@ int Simulation<ndim>::CutSphere
   FLOAT drsqd;                         // Distance squared
   FLOAT r_low = 0.0;                   // Lower-bound for bisection iteration
   FLOAT r_high;                        // Upper-bound for bisection iteration
-  FLOAT radius;                        // Current radius containing Nsphere ptcls
+  FLOAT radius;                        // Current radius containing Nhydroere ptcls
   FLOAT rcentre[ndim];                 // Centre of sphere
 
   debug2("[Simulation::CutSphere]");
@@ -2991,14 +2991,14 @@ int Simulation<ndim>::CutSphere
 
     // If it's impossible to converge on the desired number of particles, due
     // to lattice configurations, then exit iteration with approximate number
-    // of particles (must be less than Nsphere due to memory).
-    if (Ninterior < Nsphere && fabs(r_high - r_low)/radius < 1.e-8) break;
+    // of particles (must be less than Nhydroere due to memory).
+    if (Ninterior < Nhydroere && fabs(r_high - r_low)/radius < 1.e-8) break;
 
     // Otherwise, continue bisection iteration to find radius
-    if (Ninterior > Nsphere) r_high = radius;
-    if (Ninterior < Nsphere) r_low = radius;
+    if (Ninterior > Nhydroere) r_high = radius;
+    if (Ninterior < Nhydroere) r_low = radius;
 
-  } while (Ninterior != Nsphere);
+  } while (Ninterior != Nhydroere);
 
 
   // Now that the radius containing require number has been identified,

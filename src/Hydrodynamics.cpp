@@ -28,7 +28,7 @@
 #include <math.h>
 #include "Precision.h"
 #include "Hydrodynamics.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "Particle.h"
 #include "Parameters.h"
 #include "EOS.h"
@@ -47,13 +47,14 @@ const FLOAT Hydrodynamics<ndim>::invndim;
 /// sets important parameters using initialialisation lists.
 //=================================================================================================
 template <int ndim>
-Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux,
-                                   FLOAT h_fac_aux, string gas_eos_aux, int size_hydro):
+Hydrodynamics<ndim>::Hydrodynamics(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux,
+                                   string gas_eos_aux, string KernelName, int size_hydro):
   hydro_forces(hydro_forces_aux),
   self_gravity(self_gravity_aux),
   gas_eos(gas_eos_aux),
   allocated(false),
   h_fac(h_fac_aux),
+  kerntab(TabulatedKernel<ndim>(KernelName)),
   NImportedParticles(0),
   Nmpighost(0),
   NPeriodicGhost(0),
@@ -84,7 +85,7 @@ void Hydrodynamics<ndim>::ComputeBoundingBox
   for (k=0; k<ndim; k++) rmax[k] = -big_number;
 
   for (i=0; i<Nmax; i++) {
-    Particle<ndim>& part = GetParticleIPointer(i);
+    Particle<ndim>& part = GetParticlePointer(i);
     for (k=0; k<ndim; k++) rmin[k] = min(rmin[k],part.r[k]);
     for (k=0; k<ndim; k++) rmax[k] = max(rmax[k],part.r[k]);
   }
@@ -105,7 +106,7 @@ void Hydrodynamics<ndim>::CheckXBoundaryGhostParticle
   const FLOAT tghost,                  ///< Expected lifetime of ghost
   const DomainBox<ndim> &simbox)       ///< Simulation domain box
 {
-  Particle<ndim>& part = GetParticleIPointer(i);
+  Particle<ndim>& part = GetParticlePointer(i);
 
   if (part.r[0] + min(0.0,part.v[0]*tghost) < simbox.boxmin[0] + ghost_range*kernrange*part.h) {
     if (simbox.x_boundary_lhs == periodicBoundary) {
@@ -140,7 +141,7 @@ void Hydrodynamics<ndim>::CheckYBoundaryGhostParticle
   const FLOAT tghost,                  ///< Expected lifetime of ghost
   const DomainBox<ndim> &simbox)       ///< Simulation domain box
 {
-  Particle<ndim>& part = GetParticleIPointer(i);
+  Particle<ndim>& part = GetParticlePointer(i);
 
   if (ndim > 1) {
     if (part.r[1] + min(0.0,part.v[1]*tghost) < simbox.boxmin[1] + ghost_range*kernrange*part.h) {
@@ -177,7 +178,7 @@ void Hydrodynamics<ndim>::CheckZBoundaryGhostParticle
   const FLOAT tghost,                  ///< Expected lifetime of ghost
   const DomainBox<ndim> &simbox)       ///< Simulation domain box
 {
-  Particle<ndim>& part = GetParticleIPointer(i);
+  Particle<ndim>& part = GetParticlePointer(i);
 
   if (ndim == 3) {
     if (part.r[2] + min(0.0,part.v[2]*tghost) < simbox.boxmin[2] + ghost_range*kernrange*part.h) {
@@ -225,8 +226,8 @@ void Hydrodynamics<ndim>::CreateBoundaryGhostParticle
   }
 
   int id_new_ghost = Nhydro + Nghost;
-  Particle<ndim>& origpart  = GetParticleIPointer(i);
-  Particle<ndim>& ghostpart = GetParticleIPointer(id_new_ghost);
+  Particle<ndim>& origpart  = GetParticlePointer(i);
+  Particle<ndim>& ghostpart = GetParticlePointer(id_new_ghost);
 
   // If there's enough memory, create ghost particle in arrays
   ghostpart        = origpart;

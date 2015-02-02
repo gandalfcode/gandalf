@@ -31,7 +31,7 @@
 #include <numeric>
 #include "Constants.h"
 #include "Precision.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "DomainBox.h"
 #include "Diagnostics.h"
 #include "Debug.h"
@@ -353,16 +353,16 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     mpitree = new MpiTree<ndim,ParticleType>(Nmpi);
 
     // Set number of tree members to total no. of SPH particles (inc. ghosts)
-    mpitree->Nsph = sph->Nsph;
-    mpitree->Ntot = sph->Nsph;
-    mpitree->Ntotmax = sph->Nsphmax;
+    mpitree->Nhydro = sph->Nhydro;
+    mpitree->Ntot = sph->Nhydro;
+    mpitree->Ntotmax = sph->Nhydromax;
 
 
     // Create all other MPI node objects
     this->AllocateMemory(mpitree->Ntotmax);
 
     // Get pointer to sph particles and cast it to the right type
-    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
+    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray());
 
 
     // For periodic simulations, set bounding box of root node to be the
@@ -400,14 +400,14 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     mpitree->CreateTreeStructure(mpinode);
 
     // Set properties for root cell before constructing tree
-    mpitree->tree[0].N = sph->Nsph;
+    mpitree->tree[0].N = sph->Nhydro;
     mpitree->tree[0].ifirst = 0;
-    mpitree->tree[0].ilast = sph->Nsph - 1;
+    mpitree->tree[0].ilast = sph->Nhydro - 1;
     for (k=0; k<ndim; k++) mpitree->tree[0].bbmin[k] = mpibox.boxmin[k];
     for (k=0; k<ndim; k++) mpitree->tree[0].bbmax[k] = mpibox.boxmax[k];
-    for (i=0; i<sph->Nsph; i++) mpitree->inext[i] = -1;
-    for (i=0; i<sph->Nsph-1; i++) mpitree->inext[i] = i + 1;
-    for (i=0; i<sph->Nsph; i++) mpitree->ids[i] = i;
+    for (i=0; i<sph->Nhydro; i++) mpitree->inext[i] = -1;
+    for (i=0; i<sph->Nhydro-1; i++) mpitree->inext[i] = i + 1;
+    for (i=0; i<sph->Nhydro; i++) mpitree->ids[i] = i;
 
     // Recursively divide tree up until we've reached bottom level
     mpitree->DivideTreeCell(0,mpitree->Ntot-1,sphdata,mpitree->tree[0]);
@@ -426,17 +426,17 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
            << &mpitree->tree[icell] << endl;
 
       // Copy particle ids to node lists
-      mpinode[inode].Nsph = 0;
+      mpinode[inode].Nhydro = 0;
       i = mpitree->tree[icell].ifirst;
 
       while (i != -1) {
-        mpinode[inode].ids[mpinode[inode].Nsph++] = i;
+        mpinode[inode].ids[mpinode[inode].Nhydro++] = i;
         if (i == mpitree->tree[icell].ilast) break;
         i = mpitree->inext[i];
       };
-      mpinode[inode].Ntot = mpinode[inode].Nsph;
+      mpinode[inode].Ntot = mpinode[inode].Nhydro;
 
-      cout << "MPIDOMAIN : " << inode << "   Nsph : " << mpinode[inode].Nsph
+      cout << "MPIDOMAIN : " << inode << "   Nhydro : " << mpinode[inode].Nhydro
 	         << "    box : " << mpinode[inode].domain.boxmin[0]
 	         << "     " << mpinode[inode].domain.boxmax[0] << endl;
     }
@@ -456,16 +456,16 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
 
     // Send particles to all other domains
     for (inode=1; inode<Nmpi; inode++) {
-      SendParticles(inode,mpinode[inode].Nsph,mpinode[inode].ids,sphdata);
-      cout << "Sent " << mpinode[inode].Nsph << " particles to node " << inode << endl;
+      SendParticles(inode,mpinode[inode].Nhydro,mpinode[inode].ids,sphdata);
+      cout << "Sent " << mpinode[inode].Nhydro << " particles to node " << inode << endl;
     }
     cout << "Sent all particles to other processes" << endl;
 
     // Delete all other particles from local domain
-    sph->Nsph = mpinode[0].Nsph;
-    partbuffer = new ParticleType<ndim>[sph->Nsph];
-    for (i=0; i<sph->Nsph; i++) partbuffer[i] = sphdata[mpinode[0].ids[i]];
-    for (i=0; i<sph->Nsph; i++) sphdata[i] = partbuffer[i];
+    sph->Nhydro = mpinode[0].Nhydro;
+    partbuffer = new ParticleType<ndim>[sph->Nhydro];
+    for (i=0; i<sph->Nhydro; i++) partbuffer[i] = sphdata[mpinode[0].ids[i]];
+    for (i=0; i<sph->Nhydro; i++) sphdata[i] = partbuffer[i];
     delete[] partbuffer;
     cout << "Deleted all other particles from root node" << endl;
 
@@ -476,7 +476,7 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
   else {
 
     // Create MPI node objects
-    this->AllocateMemory(sph->Nsph);
+    this->AllocateMemory(sph->Nhydro);
 
     // Receive bounding box data for domain and unpack data
     MPI_Bcast(boxbuffer,2*ndim*Nmpi,MPI_DOUBLE,0,MPI_COMM_WORLD);
@@ -497,17 +497,17 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     }
 
     // Now, receive particles form main process and copy to local main array
-    ReceiveParticles(0, (sph->Nsph), &partbuffer);
+    ReceiveParticles(0, (sph->Nhydro), &partbuffer);
 
-    sph->AllocateMemory(sph->Nsph);
-    mpinode[rank].Nsph = sph->Nsph;
+    sph->AllocateMemory(sph->Nhydro);
+    mpinode[rank].Nhydro = sph->Nhydro;
 
     // Get pointer to sph particles and cast it to the right type
-    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
+    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray());
 
-    cout << "Received particles on node " << rank << "   Nsph : " << sph->Nsph << endl;
+    cout << "Received particles on node " << rank << "   Nhydro : " << sph->Nhydro << endl;
 
-    for (i=0; i<sph->Nsph; i++) sphdata[i] = partbuffer[i];
+    for (i=0; i<sph->Nhydro; i++) sphdata[i] = partbuffer[i];
     delete[] partbuffer;
     cout << "Deallocated partbuffer" << endl;
 
@@ -528,7 +528,7 @@ template <int ndim>
 void MpiControl<ndim>::UpdateAllBoundingBoxes
 (int Npart,                         ///< No. of SPH particles
  Sph<ndim> *sph,                    ///< Pointer to SPH data
- SphKernel<ndim> *kernptr)          ///< Pointer to kernel object
+ SmoothingKernel<ndim> *kernptr)          ///< Pointer to kernel object
 {
   int inode;                        // MPI node counter
 
@@ -591,7 +591,7 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   if (Nmpi == 1) return;
 
   //Get pointer to sph particles and cast it to the right type
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray());
 
   // Sum-up total work on all MPI nodes
   worktot = 0.0;
@@ -694,9 +694,9 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
         MPI_Get_count(&status, particle_type, &N_to_receive);
         recvbuffer.resize(N_to_receive);
         cout << "Rank " << rank << " receiving " << N_to_receive << " from " << inode << endl;
-        if (sph->Nsph+N_to_receive > sph->Nsphmax) {
-          cout << "Memory problem : " << rank << " " << sph->Nsph
-               << " " << N_to_receive << " " << sph->Nsphmax <<endl;
+        if (sph->Nhydro+N_to_receive > sph->Nhydromax) {
+          cout << "Memory problem : " << rank << " " << sph->Nhydro
+               << " " << N_to_receive << " " << sph->Nhydromax <<endl;
           string message = "Not enough memory for transfering particles";
           ExceptionHandler::getIstance().raise(message);
         }
@@ -708,13 +708,13 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
     }
 
     // Copy particles from receive buffer to main arrays
-    int running_counter = sph->Nsph;
+    int running_counter = sph->Nhydro;
     // TODO: check we have enough memory
     for (int i=0; i< recvbuffer.size(); i++) {
       sphdata[running_counter] = recvbuffer[i];
       running_counter++;
     }
-    sph->Nsph = running_counter;
+    sph->Nhydro = running_counter;
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -849,7 +849,7 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   int inode;                        // MPI node index
   vector<int> overlapping_nodes;    // List of nodes that overlap this domain
   vector<int> ghost_export_list;    // List of particles ids to be exported
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticlesArray());
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray());
 
   if (rank == 0) debug2("[MpiControl::SendReceiveGhosts]");
 
@@ -1076,7 +1076,7 @@ void MpiControl<ndim>::CollateDiagnosticsData(Diagnostics<ndim> &diag)
 
     for (inode=1; inode<Nmpi; inode++) {
       MPI_Recv(&diagaux, 1, diagnostics_type, inode, 0, MPI_COMM_WORLD, &status);
-      diag.Nsph += diagaux.Nsph;
+      diag.Nhydro += diagaux.Nhydro;
       diag.Nstar += diagaux.Nstar;
       diag.Etot += diagaux.Etot;
       diag.utot += diagaux.utot;

@@ -56,7 +56,7 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 
   debug2("[Simulation::CalculateDiagnostics]");
 
-  diag.Nsph  = sph->Nsph;
+  diag.Nhydro  = sph->Nhydro;
   diag.Nstar = nbody->Nstar;
   diag.Ndead = 0;
 
@@ -75,8 +75,8 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   for (k=0; k<3; k++) diag.angmom[k] = 0.0;
 
   // Loop over all SPH particles and add contributions to all quantities
-  for (i=0; i<sph->Nsph; i++) {
-    SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+  for (i=0; i<sph->Nhydro; i++) {
+    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     if (part.itype == dead) {
       diag.Ndead++;
       continue;
@@ -97,15 +97,15 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 
   // Add contributions to angular momentum depending on dimensionality
   if (ndim == 2) {
-    for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       if (part.itype == dead) continue;
       diag.angmom[2] += part.m*(part.r[0]*part.v[1] - part.r[1]*part.v[0]);
     }
   }
   else if (ndim == 3) {
-    for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       if (part.itype == dead) continue;
       diag.angmom[0] += part.m*(part.r[1]*part.v[2] - part.r[2]*part.v[1]);
       diag.angmom[1] += part.m*(part.r[2]*part.v[0] - part.r[0]*part.v[2]);
@@ -192,7 +192,7 @@ void Simulation<ndim>::OutputDiagnostics(void)
 
   if (rank != 0) return;
 
-  cout << "Nsph        : " << diag.Nsph << endl;
+  cout << "Nhydro        : " << diag.Nhydro << endl;
   cout << "Nstar       : " << diag.Nstar << endl;
   if (diag.Ndead > 0)   cout << "Ndead       : " << diag.Ndead << endl;
   cout << "mtot        : " << diag.mtot*simunits.m.outscale << endl;
@@ -277,7 +277,7 @@ void Simulation<ndim>::RecordDiagnostics(void)
   outfile << dt_min_sph << "      ";
   outfile << dt_min_nbody << "      ";
   outfile << level_max << "      ";
-  outfile << diag.Nsph << "     ";
+  outfile << diag.Nhydro << "     ";
   outfile << diag.Nstar << "     ";
   outfile << diag.Ndead << "     ";
   outfile << diag.mtot*simunits.m.outscale << "     ";

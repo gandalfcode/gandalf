@@ -185,7 +185,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
-  SphParticle<ndim> *partdata = sph->GetParticlesArray();
+  SphParticle<ndim> *partdata = sph->GetSphParticleArray();
 
   debug2("[SphSimulation::PostInitialConditionsSetup]");
 
@@ -196,30 +196,30 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Set initial smoothing lengths and create initial ghost particles
   //---------------------------------------------------------------------------
-  if (sph->Nsph > 0) {
+  if (sph->Nhydro > 0) {
 
     // Set all relevant particle counters
     sph->Nghost = 0;
-    sph->Nghostmax = sph->Nsphmax - sph->Nsph;
-    sph->Ntot = sph->Nsph;
-    for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    sph->Nghostmax = sph->Nhydromax - sph->Nhydro;
+    sph->Ntot = sph->Nhydro;
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       part.active = true;
     }
 
     // Compute mean mass
     sph->mmean = 0.0;
-    for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       sph->mmean += part.m;
     }
-    sph->mmean /= (FLOAT) sph->Nsph;
+    sph->mmean /= (FLOAT) sph->Nhydro;
 
     sph->InitialSmoothingLengthGuess();
     //sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
 
     sphneib->neibcheck = false;
-    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+    sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
 
     // Search ghost particles
     sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
@@ -231,13 +231,13 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Zero accelerations (perhaps here)
     for (i=0; i<sph->Ntot; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       part.active = true;
     }
 
     // Calculate all SPH properties
     //sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
-    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+    sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
 
     // Search ghost particles
     sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
@@ -248,8 +248,8 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Update neighbour tre
     //sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,timestep,sph);
     sphneib->neibcheck = true;
-    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
-    sphneib->UpdateAllSphDerivatives(sph->Nsph,sph->Ntot,partdata,sph);
+    sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
+    sphneib->UpdateAllSphDerivatives(sph->Nhydro,sph->Ntot,partdata,sph);
 
   }
 
@@ -274,7 +274,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     nbody->Nnbody = nbody->Nstar;
     nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
-    //nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nsph,
+    //nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nhydro,
     //                              sph->sphdata,nbody->nbodydata);
     nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
 
@@ -283,7 +283,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   // Compute all initial SPH force terms
   //---------------------------------------------------------------------------
-  if (sph->Nsph > 0) {
+  if (sph->Nhydro > 0) {
 
     // Zero accelerations (here for now)
 //    for (i=0; i<sph->Ntot; i++) {
@@ -311,24 +311,24 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)
-      sphneib->UpdateAllSphForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+      sphneib->UpdateAllSphForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
     else if (sph->hydro_forces == 1)
-      sphneib->UpdateAllSphHydroForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+      sphneib->UpdateAllSphHydroForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
     else if (sph->self_gravity == 1)
-      sphneib->UpdateAllSphGravForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+      sphneib->UpdateAllSphGravForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
 
     // Compute contribution to grav. accel from stars
-    for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       if (part.active)
         sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,part);
     }
 
-    sphneib->UpdateAllSphDudt(sph->Nsph,sph->Ntot,partdata,sph);
+    sphneib->UpdateAllSphDudt(sph->Nhydro,sph->Ntot,partdata,sph);
 
     // Add accelerations
-    for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       part.active = false;
       for (k=0; k<ndim; k++)
         part.a[k] += part.agrav[k];
@@ -342,7 +342,7 @@ void GodunovSphSimulation<ndim>::PostInitialConditionsSetup(void)
   }
 
   // Set particle values for initial step (e.g. r0, v0, a0)
-  sphint->EndTimestep(n,sph->Nsph,t,timestep,sph->GetParticlesArray());
+  sphint->EndTimestep(n,sph->Nhydro,t,timestep,sph->GetSphParticleArray());
   nbody->EndTimestep(n,nbody->Nstar,t,timestep,nbody->nbodydata);
 
   // Compute timesteps for all particles
@@ -373,7 +373,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
   int i;                            // Particle loop counter
   int it;                           // Time-symmetric iteration counter
   int k;                            // Dimension counter
-  SphParticle<ndim> *partdata = sph->GetParticlesArray();
+  SphParticle<ndim> *partdata = sph->GetSphParticleArray();
 
   debug2("[GodunovSphSimulation::MainLoop]");
 
@@ -385,14 +385,14 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
   t = t + timestep;
 
   // Advance SPH particles positions and velocities
-  sphint->AdvanceParticles(n,sph->Nsph,t,timestep,sph->GetParticlesArray());
+  sphint->AdvanceParticles(n,sph->Nhydro,t,timestep,sph->GetSphParticleArray());
   nbody->AdvanceParticles(n,nbody->Nstar,t,timestep,nbody->nbodydata);
 
   // Check all boundary conditions
   sphint->CheckBoundaries(simbox,sph);
 
   //---------------------------------------------------------------------------
-  if (sph->Nsph > 0) {
+  if (sph->Nhydro > 0) {
 
     // Reorder particles
 
@@ -409,7 +409,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     sphneib->UpdateActiveParticleCounters(partdata,sph);
 
     // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+    sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
 
     // Compute timesteps for all particles
     if (Nlevels == 1)
@@ -417,7 +417,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     else
       this->ComputeBlockTimesteps();
 
-    sphneib->UpdateAllSphDerivatives(sph->Nsph,sph->Ntot,partdata,sph);
+    sphneib->UpdateAllSphDerivatives(sph->Nhydro,sph->Ntot,partdata,sph);
 
     // Copy properties from original particles to ghost particles
     LocalGhosts->CopySphDataToGhosts(simbox,sph);
@@ -439,15 +439,15 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
     if (sph->hydro_forces == 1 && sph->self_gravity == 1)
-      sphneib->UpdateAllSphForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+      sphneib->UpdateAllSphForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
     else if (sph->hydro_forces == 1)
-      sphneib->UpdateAllSphHydroForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+      sphneib->UpdateAllSphHydroForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
     else if (sph->self_gravity == 1)
-      sphneib->UpdateAllSphGravForces(sph->Nsph,sph->Ntot,partdata,sph,nbody);
+      sphneib->UpdateAllSphGravForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
 
     // Compute contribution to grav. accel from stars
-    for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       if (part.active) {
         sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,part);
       }
@@ -455,8 +455,8 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
 
     // Add accelerations
     if (sph->self_gravity == 1) {
-      for (i=0; i<sph->Nsph; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      for (i=0; i<sph->Nhydro; i++) {
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         if (part.active) {
           for (k=0; k<ndim; k++)
             part.a[k] += part.agrav[k];
@@ -465,9 +465,9 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
     }
 
     // Now update compressional heating rate
-    sphneib->UpdateAllSphDudt(sph->Nsph,sph->Ntot,partdata,sph);
+    sphneib->UpdateAllSphDudt(sph->Nhydro,sph->Ntot,partdata,sph);
 
-    sphint->EndTimestep(n,sph->Nsph,t,timestep,sph->GetParticlesArray());
+    sphint->EndTimestep(n,sph->Nhydro,t,timestep,sph->GetSphParticleArray());
 
   }
   //---------------------------------------------------------------------------
@@ -495,7 +495,7 @@ void GodunovSphSimulation<ndim>::MainLoop(void)
 
       // Calculate forces, force derivatives etc.., for active stars/systems
       nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
-      //nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nsph,
+      //nbody->CalculateDirectSPHForces(nbody->Nnbody,sph->Nhydro,
       //                              sph->sphdata,nbody->nbodydata);
 
       // Calculate correction step for all stars at end of step
@@ -543,8 +543,8 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
     {
       dt = big_number_dp;
 #pragma omp for
-      for (i=0; i<sph->Nsph; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      for (i=0; i<sph->Nhydro; i++) {
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         part.dt = sphint->Timestep(part,sph);
         dt = min(dt,part.dt);
       }
@@ -552,8 +552,8 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
       // If integrating energy equation, include energy timestep
       if (simparams->stringparams["gas_eos"] == "energy_eqn") {
 #pragma omp for
-        for (i=0; i<sph->Nsph; i++) {
-          SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+        for (i=0; i<sph->Nhydro; i++) {
+          SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
           part.dt = min(part.dt,
                                    uint->Timestep(part));
           dt = min(dt,part.dt);
@@ -576,8 +576,8 @@ void GodunovSphSimulation<ndim>::ComputeGlobalTimestep(void)
 
     // Set all particles to same timestep
     timestep = dt_min;
-    for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       part.level = 0;
       part.levelneib = 0;
       part.dt = timestep;
@@ -631,23 +631,23 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
 
     n = 0;
     timestep = big_number_dp;
-    for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       part.dt = big_number_dp;
     }
     for (i=0; i<nbody->Nnbody; i++) nbody->nbodydata[i]->dt = big_number_dp;
 
     // If integrating energy equation, calculate the explicit energy timestep
     if (sph->gas_eos == "energy_eqn") {
-      for (i=0; i<sph->Nsph; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      for (i=0; i<sph->Nhydro; i++) {
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         part.dt = uint->Timestep(part);
       }
     }
 
     // Find minimum timestep from all SPH particles
-    for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       dt = min(part.dt,
 	       sphint->Timestep(part,sph));
       if (dt < timestep) timestep = dt;
@@ -677,14 +677,14 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
     // If enforcing a single SPH timestep, set it here.  Otherwise, populate
     // the timestep levels with SPH particles.
     if (sph_single_timestep == 1)
-      for (i=0; i<sph->Nsph; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      for (i=0; i<sph->Nhydro; i++) {
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         part.level = level_max_sph;
         part.levelneib = level_max_sph;
       }
     else {
-      for (i=0; i<sph->Nsph; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      for (i=0; i<sph->Nhydro; i++) {
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         dt = part.dt;
         level = min((int) (invlogetwo*log(dt_max/dt)) + 1, level_max);
         level = max(level,0);
@@ -721,9 +721,9 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
 
     // Find all SPH particles at the beginning of a new timestep
     //-------------------------------------------------------------------------
-    for (i=0; i<sph->Nsph; i++) {
+    for (i=0; i<sph->Nhydro; i++) {
 
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
 
       // Skip particles that are not at end of step
       if (part.nlast == n) {
@@ -795,8 +795,8 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
 
     // Set fixed SPH timestep level here in case maximum has changed
     if (sph_single_timestep == 1) {
-      for (i=0; i<sph->Nsph; i++) {
-        SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+      for (i=0; i<sph->Nhydro; i++) {
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
         part.level = level_max_sph;
         part.nstep = pow(2,level_step - part.level);
       }
@@ -806,8 +806,8 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
     level_max = max(level_max,level_max_old);
     level_step = level_max + integration_step - 1;
 
-    for (i=0; i<sph->Nsph; i++) {
-      SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       if (part.nlast == n)
         part.nstep = pow(2,level_step - part.level);
     }
@@ -831,8 +831,8 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
       if (level_max > level_max_old) {
 	nfactor = pow(2,level_max - level_max_old);
 	n *= nfactor;
-	for (i=0; i<sph->Nsph; i++) {
-	  SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+	for (i=0; i<sph->Nhydro; i++) {
+	  SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
 	  part.nlast *= nfactor;
 	  part.nstep *= nfactor;
 	}
@@ -842,8 +842,8 @@ void GodunovSphSimulation<ndim>::ComputeBlockTimesteps(void)
       else if (level_max < level_max_old) {
 	nfactor = pow(2,level_max_old - level_max);
 	n /= nfactor;
-	for (i=0; i<sph->Nsph; i++) {
-	  SphParticle<ndim>& part = sph->GetParticleIPointer(i);
+	for (i=0; i<sph->Nhydro; i++) {
+	  SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
 	  part.nlast /= nfactor;
 	  part.nstep /= nfactor;
 	}

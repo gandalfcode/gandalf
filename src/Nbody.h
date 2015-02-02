@@ -31,11 +31,11 @@
 #include "Constants.h"
 #include "ExternalPotential.h"
 #include "Parameters.h"
-#include "SphKernel.h"
+#include "SmoothingKernel.h"
 #include "NbodyParticle.h"
 #include "StarParticle.h"
 #include "SystemParticle.h"
-#include "SphParticle.h"
+#include "Particle.h"
 #include "SimUnits.h"
 using namespace std;
 
@@ -112,7 +112,7 @@ class Nbody
   static const int vdim=ndim;           ///< Local copy of vdim
   static const DOUBLE invndim=1.0/ndim; ///< Copy of 1/ndim
 
-  SphKernel<ndim> *kernp;               ///< Pointer to chosen kernel object
+  SmoothingKernel<ndim> *kernp;               ///< Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;        ///< Tabulated version of chosen kernel
   struct NbodyParticle<ndim> **nbodydata; ///< Generic N-body array of ptrs
   struct StarParticle<ndim> *stardata;  ///< Main star particle data array
