@@ -40,6 +40,7 @@
 #include "DomainBox.h"
 #include "Ewald.h"
 #include "ExternalPotential.h"
+#include "Hydrodynamics.h"
 #include "Precision.h"
 #include "Parameters.h"
 #include "Radiation.h"
@@ -319,6 +320,7 @@ class Simulation : public SimulationBase
   ExternalPotential<ndim> *extpot;    ///< Pointer to external potential object
   Ewald<ndim> *ewald;                 ///< Ewald periodic gravity object
   Ghosts<ndim>* LocalGhosts;          ///< Periodic ghost particle object
+  Hydrodynamics<ndim> *hydro;         ///< Hydrodynamics algorithm pointer
   Nbody<ndim> *nbody;                 ///< N-body algorithm pointer
   Nbody<ndim> *subsystem;             ///< N-body object for sub-systems
   NbodySystemTree<ndim> nbodytree;    ///< N-body tree to create sub-systems
@@ -360,6 +362,7 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::extpot;
   using Simulation<ndim>::ewald;
   using Simulation<ndim>::kill_simulation;
+  using Simulation<ndim>::hydro;
   using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
   using Simulation<ndim>::sinks;
@@ -425,6 +428,8 @@ class SphSimulation : public Simulation<ndim>
   virtual void ProcessParameters(void);
   virtual void WriteExtraSinkOutput(void);
 
+  //Sph<ndim> *sph;                      ///< SPH algorithm pointer
+
 };
 
 
@@ -447,9 +452,7 @@ class GradhSphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::simparams;
   using Simulation<ndim>::timing;
   using Simulation<ndim>::extpot;
-  using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
-  using SphSimulation<ndim>::sinks;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
   using Simulation<ndim>::sphint;
@@ -489,6 +492,8 @@ class GradhSphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
   using SphSimulation<ndim>::radiation;
+  using SphSimulation<ndim>::sinks;
+  using SphSimulation<ndim>::sph;
   using SphSimulation<ndim>::sphneib;
   using SphSimulation<ndim>::tmax_wallclock;
 #ifdef MPI_PARALLEL
@@ -496,8 +501,7 @@ class GradhSphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::MpiGhosts;
 #endif
 
-  GradhSphSimulation (Parameters* parameters):
-    SphSimulation<ndim>(parameters) {};
+  GradhSphSimulation (Parameters* parameters): SphSimulation<ndim>(parameters) {};
   virtual void ProcessSphParameters(void);
 
 };
@@ -522,9 +526,7 @@ class SM2012SphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::simparams;
   using Simulation<ndim>::timing;
   using Simulation<ndim>::extpot;
-  using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
-  using SphSimulation<ndim>::sinks;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
   using Simulation<ndim>::sphint;
@@ -563,6 +565,8 @@ class SM2012SphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::ndiagstep;
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
+  using SphSimulation<ndim>::sinks;
+  using SphSimulation<ndim>::sph;
   using SphSimulation<ndim>::sphneib;
   using SphSimulation<ndim>::tmax_wallclock;
 #ifdef MPI_PARALLEL
@@ -570,8 +574,7 @@ class SM2012SphSimulation: public SphSimulation<ndim>
   using Simulation<ndim>::MpiGhosts;
 #endif
 
-  SM2012SphSimulation (Parameters* parameters):
-    SphSimulation<ndim>(parameters) {};
+  SM2012SphSimulation (Parameters* parameters): SphSimulation<ndim>(parameters) {};
   virtual void ProcessSphParameters(void);
 
 };
@@ -639,8 +642,7 @@ class GodunovSphSimulation: public SphSimulation<ndim>
 
 public:
 
-  GodunovSphSimulation (Parameters* parameters):
-    SphSimulation<ndim>(parameters) {};
+  GodunovSphSimulation (Parameters* parameters): SphSimulation<ndim>(parameters) {};
   virtual void PostInitialConditionsSetup(void);
   virtual void MainLoop(void);
   virtual void ComputeGlobalTimestep(void);

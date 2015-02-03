@@ -196,14 +196,14 @@ bool Simulation<ndim>::ReadColumnSnapshotFile
   ReadColumnHeaderFile(infile, info);
   t = info.t;
 
-  sph->Nhydro = info.Nhydro;
+  hydro->Nhydro = info.Nhydro;
   AllocateParticleMemory();
   i = 0;
 
   // Read in data depending on dimensionality
   //-----------------------------------------------------------------------------------------------
-  while (infile.good() && i < sph->Nhydro) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  while (infile.good() && i < hydro->Nhydro) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (ndim == 1)
       infile >> part.r[0] >> part.v[0] >> part.m >> part.h >> part.rho >> part.u;
     else if (ndim == 2)
@@ -272,7 +272,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   delete[] filename_str;
   //Collect total number of particles
   int Ntotsph;
-  MPI_Allreduce(&sph->Nhydro,&Ntotsph,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+  MPI_Allreduce(&hydro->Nhydro,&Ntotsph,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
   int Ntotstar;
   MPI_Allreduce(&nbody->Nstar,&Ntotstar,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
   //Root node writes header
@@ -285,8 +285,8 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 
   // Write data for SPH particles
   //---------------------------------------------------------------------------
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (ndim == 1)
       outfile << part.r[0]*simunits.r.outscale << "   "
               << part.v[0]*simunits.v.outscale << "   "
@@ -426,15 +426,15 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 
   // Open file and read header information
   outfile.open(filename.c_str());
-  outfile << sph->Nhydro << endl;
+  outfile << hydro->Nhydro << endl;
   outfile << nbody->Nstar << endl;
   outfile << ndim << endl;
   outfile << t*simunits.t.outscale << endl;
 
   // Write data for SPH particles
   //---------------------------------------------------------------------------
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (ndim == 1)
       outfile << part.r[0]*simunits.r.outscale << "   "
 	      << part.v[0]*simunits.v.outscale << "   "
@@ -633,7 +633,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
   for (i=0; i<50; i++) infile >> rdata[i];
   for (i=0; i<50; i++) infile >> ddata[i];
 
-  sph->Nhydro      = idata[0];
+  hydro->Nhydro      = idata[0];
   nbody->Nstar   = idata[1];
   sinks.Nsink    = idata[1];
   //dmdt_range_aux = idata[29];
@@ -647,13 +647,13 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     Noutlitesnap  = ilpdata[10];
     t             = ddata[0];
     tsnaplast     = ddata[1];
-    sph->mmean    = ddata[2];
+    hydro->mmean    = ddata[2];
     tlitesnaplast = ddata[10];
   }
 
-  //sph->h_fac = rdata[0];
+  //hydro->h_fac = rdata[0];
   //sphptr->tlastsnap = ddata[1];
-  //sph->mgas_orig = ddata[2];
+  //hydro->mgas_orig = ddata[2];
 
   // Read in unit data
   if (nunit > 0) {
@@ -711,8 +711,8 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     // porig
     //---------------------------------------------------------------------------------------------
     if (data_id[j] == "porig") {
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         infile >> part.iorig;
       }
     }
@@ -721,20 +721,20 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "r") {
       if (ndim == 1) {
-        for (i=0; i<sph->Nhydro; i++) {
-          SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        for (i=0; i<hydro->Nhydro; i++) {
+          Particle<ndim>& part = hydro->GetParticlePointer(i);
           infile >> part.r[0];
         }
       }
       else if (ndim == 2) {
-        for (i=0; i<sph->Nhydro; i++) {
-          SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        for (i=0; i<hydro->Nhydro; i++) {
+          Particle<ndim>& part = hydro->GetParticlePointer(i);
           infile >> part.r[0] >> part.r[1];
         }
       }
       else if (ndim == 3) {
-        for (i=0; i<sph->Nhydro; i++) {
-          SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        for (i=0; i<hydro->Nhydro; i++) {
+          Particle<ndim>& part = hydro->GetParticlePointer(i);
           infile >> part.r[0] >> part.r[1] >> part.r[2];
         }
       }
@@ -743,8 +743,8 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     // Masses
     //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "m") {
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         infile >> part.m;
         assert(part.m > (FLOAT) 0.0);
       }
@@ -753,8 +753,8 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     // Smoothing lengths
     //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "h") {
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         infile >> part.h;
       }
       initial_h_provided = true;
@@ -764,20 +764,20 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     //--------------------------------------------------------------------------------------------
     else if (data_id[j] == "v") {
       if (ndim == 1) {
-        for (i=0; i<sph->Nhydro; i++) {
-          SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        for (i=0; i<hydro->Nhydro; i++) {
+          Particle<ndim>& part = hydro->GetParticlePointer(i);
           infile >> part.v[0];
         }
       }
       else if (ndim == 2) {
-        for (i=0; i<sph->Nhydro; i++) {
-          SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        for (i=0; i<hydro->Nhydro; i++) {
+          Particle<ndim>& part = hydro->GetParticlePointer(i);
           infile >> part.v[0] >> part.r[1];
         }
       }
       else if (ndim == 3) {
-        for (i=0; i<sph->Nhydro; i++) {
-          SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        for (i=0; i<hydro->Nhydro; i++) {
+          Particle<ndim>& part = hydro->GetParticlePointer(i);
           infile >> part.v[0] >> part.r[1] >> part.r[2];
         }
       }
@@ -786,14 +786,14 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     // Other 1-D redundant information
     //---------------------------------------------------------------------------------------------
     else if(data_id[j] == "temp") {
-      for (i=0; i<sph->Nhydro; i++) infile >> rtemp;
+      for (i=0; i<hydro->Nhydro; i++) infile >> rtemp;
     }
 
     // Densities
     //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "rho") {
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         infile >> part.rho;
       }
     }
@@ -801,8 +801,8 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     // Specific internal energies
     //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "u") {
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         infile >> part.u;
       }
     }
@@ -925,40 +925,40 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
   // Set array ids and array information data if there are any SPH particles
   //-----------------------------------------------------------------------------------------------
-  if (sph->Nhydro > 0) {
+  if (hydro->Nhydro > 0) {
     data_id[ndata] = "porig";
     typedata[ndata][0] = 1;          typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro;  typedata[ndata][3] = 2;
+    typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 2;
     typedata[ndata][4] = 0;          ndata++;
 
     data_id[ndata] = "r";
     typedata[ndata][0] = ndim;       typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro;  typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
     typedata[ndata][4] = 1;          ndata++;
 
     data_id[ndata] = "m";
     typedata[ndata][0] = 1;          typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro;  typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
     typedata[ndata][4] = 2;          ndata++;
 
     data_id[ndata] = "h";
     typedata[ndata][0] = 1;          typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro;  typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
     typedata[ndata][4] = 1;          ndata++;
 
     data_id[ndata] = "v";
     typedata[ndata][0] = ndim;       typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro;  typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
     typedata[ndata][4] = 4;          ndata++;
 
     data_id[ndata] = "rho";
     typedata[ndata][0] = 1;          typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro;  typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
     typedata[ndata][4] = 6;          ndata++;
 
     data_id[ndata] = "u";
     typedata[ndata][0] = 1;          typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro;  typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro;  typedata[ndata][3] = 4;
     typedata[ndata][4] = 20;         ndata++;
   }
 
@@ -970,19 +970,19 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
   }
 
   // Set important header information
-  idata[0]    = sph->Nhydro;
+  idata[0]    = hydro->Nhydro;
   idata[1]    = nbody->Nstar;
-  idata[4]    = sph->Nhydro;
+  idata[4]    = hydro->Nhydro;
   idata[19]   = nunit;
   idata[20]   = ndata;
   ilpdata[0]  = Noutsnap;
   ilpdata[1]  = Nsteps;
   ilpdata[10] = Noutlitesnap;
-  rdata[0]    = sph->h_fac;
+  rdata[0]    = hydro->h_fac;
   rdata[1]    = (FLOAT) 0.0;
   ddata[0]    = t*simunits.t.outscale;
   ddata[1]    = tsnaplast*simunits.t.outscale;
-  ddata[2]    = sph->mmean*simunits.m.outscale;
+  ddata[2]    = hydro->mmean*simunits.m.outscale;
   ddata[10]   = tlitesnaplast*simunits.t.outscale;
 
   // Write header information to file
@@ -1012,32 +1012,32 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
   // Write arrays for SPH particles
   //-----------------------------------------------------------------------------------------------
-  if (sph->Nhydro > 0) {
+  if (hydro->Nhydro > 0) {
 
     // porig
     //---------------------------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       outfile_format << part.iorig << endl;
     }
 
     // Positions
     //---------------------------------------------------------------------------------------------
     if (ndim == 1) {
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         outfile_format << part.r[0]*simunits.r.outscale << endl;
       }
     }
     else if (ndim == 2) {
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         outfile_format << part.r[0]*simunits.r.outscale << part.r[1]*simunits.r.outscale << endl;
       }
     }
     else if (ndim == 3) {
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         outfile_format << part.r[0]*simunits.r.outscale << part.r[1]*simunits.r.outscale
                        << part.r[2]*simunits.r.outscale << endl;
       }
@@ -1045,16 +1045,16 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
     // Masses
     //---------------------------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       outfile_format << part.m*simunits.m.outscale << endl;
     }
 
 
     // Smoothing lengths
     //---------------------------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       outfile_format << part.h*simunits.r.outscale << endl;
     }
 
@@ -1062,21 +1062,21 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
     // Velocities
     //---------------------------------------------------------------------------------------------
     if (ndim == 1) {
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         outfile_format << part.v[0]*simunits.v.outscale << endl;
       }
     }
     else if (ndim == 2) {
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         outfile_format << part.v[0]*simunits.v.outscale
                 << part.v[1]*simunits.v.outscale << endl;
       }
     }
     else if (ndim == 3) {
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         outfile_format << part.v[0]*simunits.v.outscale
                 << part.v[1]*simunits.v.outscale
                 << part.v[2]*simunits.v.outscale << endl;
@@ -1085,16 +1085,16 @@ bool Simulation<ndim>::WriteSerenFormSnapshotFile(string filename)
 
     // Densities
     //---------------------------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       outfile_format << part.rho*simunits.rho.outscale << endl;;
     }
 
 
     // Specific internal energies
     //---------------------------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       outfile_format << part.ionfrac << endl; //part.u*simunits.u.outscale << endl;
     }
 
@@ -1249,7 +1249,7 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
   // Read infile header integer data
   {
     for (int i=0; i<50; i++) reader.read_value(idata[i]);
-    sph->Nhydro      = idata[0];
+    hydro->Nhydro      = idata[0];
     nbody->Nstar   = idata[1];
     sinks.Nsink    = idata[1];
     //dmdt_range_aux = idata[29];
@@ -1275,7 +1275,7 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     Noutlitesnap  = ilpdata[10];
     t             = ddata[0];
     tsnaplast     = ddata[1];
-    sph->mmean    = ddata[2];
+    hydro->mmean    = ddata[2];
     tlitesnaplast = ddata[10];
   }
 
@@ -1315,8 +1315,8 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     // porig
     //---------------------------------------------------------------------------------------------
     if (data_id[j] == "porig") {
-      for (int i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (int i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         reader.read_value(part.iorig);
       }
     }
@@ -1324,8 +1324,8 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     // Positions
     //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "r") {
-      for (int i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (int i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (int k=0; k<ndim; k++)
           reader.read_value(part.r[k]);
       }
@@ -1334,8 +1334,8 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     // Masses
     //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "m") {
-      for (int i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (int i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         reader.read_value(part.m);
         assert(part.m > (FLOAT) 0.0);
       }
@@ -1344,8 +1344,8 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     // Smoothing lengths
     //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "h") {
-      for (int i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (int i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         reader.read_value(part.h);
       }
     }
@@ -1353,8 +1353,8 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     // Velocities
     //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "v") {
-      for (int i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (int i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (int k=0; k< ndim; k++)
           reader.read_value(part.v[k]);
       }
@@ -1363,8 +1363,8 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     // Densities
     //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "rho") {
-      for (int i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (int i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         reader.read_value(part.rho);
       }
     }
@@ -1372,8 +1372,8 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     // Specific internal energies
     //---------------------------------------------------------------------------------------------
     else if (data_id[j] == "u") {
-      for (int i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (int i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         reader.read_value(part.u);
       }
     }
@@ -1381,7 +1381,7 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
     // Skip 1-D redundant information
     //---------------------------------------------------------------------------------------------
     else if(data_id[j] == "temp") {
-      infile.seekg(sizeof(FLOAT)*sph->Nhydro,ios_base::cur);
+      infile.seekg(sizeof(FLOAT)*hydro->Nhydro,ios_base::cur);
     }
 
     // Sinks/stars
@@ -1497,40 +1497,40 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 
   // Set array ids and array information data if there are any SPH particles
   //---------------------------------------------------------------------------
-  if (sph->Nhydro > 0) {
+  if (hydro->Nhydro > 0) {
     data_id[ndata] = "porig";
     typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro; typedata[ndata][3] = 2;
+    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 2;
     typedata[ndata][4] = 0; ndata++;
 
     data_id[ndata] = "r";
     typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro; typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
     typedata[ndata][4] = 1; ndata++;
 
     data_id[ndata] = "m";
     typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro; typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
     typedata[ndata][4] = 2; ndata++;
 
     data_id[ndata] = "h";
     typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro; typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
     typedata[ndata][4] = 1; ndata++;
 
     data_id[ndata] = "v";
     typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro; typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
     typedata[ndata][4] = 4; ndata++;
 
     data_id[ndata] = "rho";
     typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro; typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
     typedata[ndata][4] = 6; ndata++;
 
     data_id[ndata] = "u";
     typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro; typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
     typedata[ndata][4] = 20; ndata++;
   }
 
@@ -1542,19 +1542,19 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
   }
 
   // Set important header information
-  idata[0]    = sph->Nhydro;
+  idata[0]    = hydro->Nhydro;
   idata[1]    = nbody->Nstar;
-  idata[4]    = sph->Nhydro;
+  idata[4]    = hydro->Nhydro;
   idata[19]   = nunit;
   idata[20]   = ndata;
   ilpdata[0]  = Noutsnap;
   ilpdata[1]  = Nsteps;
   ilpdata[10] = Noutlitesnap;
-  rdata[0]    = sph->h_fac;
+  rdata[0]    = hydro->h_fac;
   rdata[1]    = 0.0;
   ddata[0]    = t*simunits.t.outscale;
   ddata[1]    = tsnaplast*simunits.t.outscale;
-  ddata[2]    = sph->mmean*simunits.m.outscale;
+  ddata[2]    = hydro->mmean*simunits.m.outscale;
   ddata[10]   = tlitesnaplast*simunits.t.outscale;
 
 
@@ -1597,56 +1597,56 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 
   // Write arrays for SPH particles
   //---------------------------------------------------------------------------
-  if (sph->Nhydro > 0) {
+  if (hydro->Nhydro > 0) {
 
     // porig
     //-------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       writer.write_value(part.iorig);
     }
 
     // Positions
     //-------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       for (int k=0; k<ndim; k++) writer.write_value(part.r[k]*simunits.r.outscale);
     }
 
     // Masses
     //-------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       writer.write_value(part.m*simunits.m.outscale);
       assert(part.m > 0.0);
     }
 
     // Smoothing lengths
     //-------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       writer.write_value(part.h*simunits.r.outscale);
     }
 
     // Velocities
     //-------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       for (int k=0; k<ndim; k++)
         writer.write_value(part.v[k]*simunits.v.outscale);
     }
 
     // Densities
     //-------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       writer.write_value(part.rho*simunits.rho.outscale);
     }
 
     // Specific internal energies
     //-------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       writer.write_value(part.u*simunits.u.outscale);
     }
 
@@ -1751,31 +1751,31 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
 
   // Set array ids and array information data if there are any SPH particles
   //---------------------------------------------------------------------------
-  if (sph->Nhydro > 0) {
+  if (hydro->Nhydro > 0) {
 
     data_id[ndata] = "r";
     typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro; typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
     typedata[ndata][4] = 1; ndata++;
 
     data_id[ndata] = "m";
     typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro; typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
     typedata[ndata][4] = 2; ndata++;
 
     data_id[ndata] = "h";
     typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro; typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
     typedata[ndata][4] = 1; ndata++;
 
     data_id[ndata] = "rho";
     typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro; typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
     typedata[ndata][4] = 6; ndata++;
 
     data_id[ndata] = "u";
     typedata[ndata][0] = 1; typedata[ndata][1] = 1;
-    typedata[ndata][2] = sph->Nhydro; typedata[ndata][3] = 4;
+    typedata[ndata][2] = hydro->Nhydro; typedata[ndata][3] = 4;
     typedata[ndata][4] = 20; ndata++;
   }
 
@@ -1787,18 +1787,18 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
   }
 
   // Set important header information
-  idata[0] = sph->Nhydro;
+  idata[0] = hydro->Nhydro;
   idata[1] = nbody->Nstar;
-  idata[4] = sph->Nhydro;
+  idata[4] = hydro->Nhydro;
   idata[19] = nunit;
   idata[20] = ndata;
   ilpdata[0] = Noutsnap;
   ilpdata[1] = Nsteps;
-  rdata[0] = sph->h_fac;
+  rdata[0] = hydro->h_fac;
   rdata[1] = 0.0;
   ddata[0] = t*simunits.t.outscale;
   ddata[1] = tsnaplast*simunits.t.outscale;
-  ddata[2] = sph->mmean*simunits.m.outscale;
+  ddata[2] = hydro->mmean*simunits.m.outscale;
 
 
   // Write header information to file
@@ -1834,40 +1834,40 @@ bool Simulation<ndim>::WriteSerenLiteSnapshotFile(string filename)
 
   // Write arrays for SPH particles
   //---------------------------------------------------------------------------
-  if (sph->Nhydro > 0) {
+  if (hydro->Nhydro > 0) {
 
     // Positions
     //-------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       for (int k=0; k<ndim; k++) writer.write_value((float) (part.r[k]*simunits.r.outscale));
     }
 
     // Masses
     //-------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       writer.write_value((float) (part.m*simunits.m.outscale));
     }
 
     // Smoothing lengths
     //-------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       writer.write_value((float) (part.h*simunits.r.outscale));
     }
 
     // Densities
     //-------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       writer.write_value((float) (part.rho*simunits.rho.outscale));
     }
 
     // Specific internal energies
     //-------------------------------------------------------------------------
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       writer.write_value((float) (part.u*simunits.u.outscale));
     }
 
@@ -1920,8 +1920,8 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
 
   // Rescale all SPH particles
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) part.r[k] /= simunits.r.inscale;
     for (k=0; k<ndim; k++) part.v[k] /= simunits.v.inscale;
     part.m /= simunits.m.inscale;
@@ -1955,7 +1955,7 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
   t             /= simunits.t.inscale;
   tsnaplast     /= simunits.t.inscale;
   tlitesnaplast /= simunits.t.inscale;
-  sph->mmean    /= simunits.m.inscale;
+  hydro->mmean    /= simunits.m.inscale;
   if (restart) {
     tsnapnext = tsnaplast + dt_snap;
     tlitesnapnext = tlitesnaplast + dt_litesnap;

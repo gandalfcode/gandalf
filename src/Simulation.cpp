@@ -36,6 +36,7 @@
 #include "Parameters.h"
 #include "InlineFuncs.h"
 #include "Nbody.h"
+#include "Hydrodynamics.h"
 #include "Sph.h"
 #include "RiemannSolver.h"
 #include "SimulationIO.hpp"
@@ -1010,7 +1011,7 @@ void Simulation<ndim>::AllocateParticleMemory(void)
   //-----------------------------------------------------------------------------------------------
 
   // Allocate SPH memory, if being used
-  if (sph) sph->AllocateMemory(sph->Nhydro);
+  if (hydro) hydro->AllocateMemory(hydro->Nhydro);
 
 
   return;
@@ -1029,7 +1030,7 @@ void Simulation<ndim>::DeallocateParticleMemory(void)
 
   sinks.DeallocateMemory();
   nbody->DeallocateMemory();
-  sph->DeallocateMemory();
+  hydro->DeallocateMemory();
 
   return;
 }
@@ -1060,7 +1061,7 @@ void Simulation<ndim>::PreSetupForPython(void)
   // Parse all parameters and set-up all objects required for simulation
   ProcessParameters();
 
-  // Allocate all memory for both SPH and N-body particles
+  // Allocate all memory for both hydro and N-body particles
   AllocateParticleMemory();
 
   return;
@@ -1195,17 +1196,17 @@ void Simulation<ndim>::ImportArraySph
   int size,                            ///< [in] No. of elements in array
   string quantity)                     ///< [in] String id of quantity
 {
-  FLOAT SphParticle<ndim>::*quantityp = 0;        // Pointer to scalar quantity
-  FLOAT (SphParticle<ndim>::*quantitypvec)[ndim] = 0; // Pointer to component of vector quantity
-  int index = 0;                                  // If it's a component of a vector
-                                                  // quantity, we need to know its index
-  bool scalar = false;                            // Is the requested quantity a scalar?
+  FLOAT Particle<ndim>::*quantityp = 0;             // Pointer to scalar quantity
+  FLOAT (Particle<ndim>::*quantitypvec)[ndim] = 0;  // Pointer to component of vector quantity
+  int index = 0;                                    // If it's a component of a vector
+                                                    // quantity, we need to know its index
+  bool scalar = false;                              // Is the requested quantity a scalar?
 
   // Check that the size is correct
-  if (size != sph->Nhydro) {
+  if (size != hydro->Nhydro) {
     stringstream message;
     message << "Error: the array you are passing has a size of "
-            << size << ", but memory has been allocated for " << sph->Nhydro << " particles";
+            << size << ", but memory has been allocated for " << hydro->Nhydro << " particles";
     ExceptionHandler::getIstance().raise(message.str());
   }
 
@@ -1213,7 +1214,7 @@ void Simulation<ndim>::ImportArraySph
   // Now set pointer to the correct value inside the particle data structure
   //-----------------------------------------------------------------------------------------------
   if (quantity == "x") {
-    quantitypvec = &SphParticle<ndim>::r;
+    quantitypvec = &Particle<ndim>::r;
     index = 0;
     scalar = false;
   }
@@ -1223,7 +1224,7 @@ void Simulation<ndim>::ImportArraySph
       string message = "Error: loading y-coordinate array for ndim < 2";
       ExceptionHandler::getIstance().raise(message);
     }
-    quantitypvec = &SphParticle<ndim>::r;
+    quantitypvec = &Particle<ndim>::r;
     index = 1;
     scalar = false;
   }
@@ -1233,13 +1234,13 @@ void Simulation<ndim>::ImportArraySph
       string message = "Error: loading y-coordinate array for ndim < 3";
       ExceptionHandler::getIstance().raise(message);
     }
-    quantitypvec = &SphParticle<ndim>::r;
+    quantitypvec = &Particle<ndim>::r;
     index = 2;
     scalar = false;
   }
   //-----------------------------------------------------------------------------------------------
   else if (quantity == "vx") {
-    quantitypvec = &SphParticle<ndim>::v;
+    quantitypvec = &Particle<ndim>::v;
     index = 0;
     scalar = false;
   }
@@ -1249,7 +1250,7 @@ void Simulation<ndim>::ImportArraySph
       string message = "Error: loading vy array for ndim < 2";
       ExceptionHandler::getIstance().raise(message);
     }
-    quantitypvec = &SphParticle<ndim>::v;
+    quantitypvec = &Particle<ndim>::v;
     index = 1;
     scalar = false;
   }
@@ -1259,7 +1260,7 @@ void Simulation<ndim>::ImportArraySph
       string message = "Error: loading vz array for ndim < 3";
       ExceptionHandler::getIstance().raise(message);
     }
-    quantitypvec = &SphParticle<ndim>::v;
+    quantitypvec = &Particle<ndim>::v;
     index = 2;
     scalar = false;
   }
@@ -1267,24 +1268,24 @@ void Simulation<ndim>::ImportArraySph
   else if (quantity == "rho") {
     //TODO: at the moment, if rho or h are uploaded, they will be just ignored.
     //Add some facility to use them
-    quantityp = &SphParticle<ndim>::rho;
+    quantityp = &Particle<ndim>::rho;
     scalar = true;
   }
   //-----------------------------------------------------------------------------------------------
   else if (quantity == "h") {
-    quantityp = &SphParticle<ndim>::h;
+    quantityp = &Particle<ndim>::h;
     scalar = true;
   }
   //-----------------------------------------------------------------------------------------------
   else if (quantity == "u") {
     //TODO: add some facility for uploading either u, T, or cs, and compute automatically the
     //other ones depending on the EOS
-    quantityp = &SphParticle<ndim>::u;
+    quantityp = &Particle<ndim>::u;
     scalar=true;
   }
   //-----------------------------------------------------------------------------------------------
   else if (quantity == "m") {
-    quantityp = &SphParticle<ndim>::m;
+    quantityp = &Particle<ndim>::m;
     scalar = true;
   }
   //-----------------------------------------------------------------------------------------------
@@ -1300,13 +1301,13 @@ void Simulation<ndim>::ImportArraySph
   //-----------------------------------------------------------------------------------------------
   if (scalar) {
     for (int i=0; i<size; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       part.*quantityp = input[i];
     }
   }
   else {
     for (int i=0; i<size; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       (part.*quantitypvec)[index] = input[i];
     }
   }
@@ -1339,7 +1340,7 @@ void Simulation<ndim>::ImportArray
   // Call the right function depending on the passed in type
   if (type == "sph") {
     // Check sph has been allocated
-    if (sph == NULL) {
+    if (hydro == NULL) {
       string message = "Error: memory for sph was not allocated! Are you sure that this is not a nbody-only simulation?";
       ExceptionHandler::getIstance().raise(message);
     }
@@ -1378,8 +1379,8 @@ void Simulation<ndim>::SetComFrame(void)
 
   CalculateDiagnostics();
 
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) part.r[k] -= diag.rcom[k];
     for (k=0; k<ndim; k++) part.v[k] -= diag.vcom[k];
   }

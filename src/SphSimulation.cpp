@@ -126,6 +126,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   // Set-up main SPH objects depending on which SPH algorithm we are using
   ProcessSphParameters();
+  hydro = sph;
 
   // Process all N-body parameters and set-up main N-body objects
   this->ProcessNbodyParameters();

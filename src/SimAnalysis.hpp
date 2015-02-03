@@ -56,7 +56,7 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 
   debug2("[Simulation::CalculateDiagnostics]");
 
-  diag.Nhydro  = sph->Nhydro;
+  diag.Nhydro  = hydro->Nhydro;
   diag.Nstar = nbody->Nstar;
   diag.Ndead = 0;
 
@@ -75,8 +75,8 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   for (k=0; k<3; k++) diag.angmom[k] = 0.0;
 
   // Loop over all SPH particles and add contributions to all quantities
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (part.itype == dead) {
       diag.Ndead++;
       continue;
@@ -97,15 +97,15 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 
   // Add contributions to angular momentum depending on dimensionality
   if (ndim == 2) {
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       if (part.itype == dead) continue;
       diag.angmom[2] += part.m*(part.r[0]*part.v[1] - part.r[1]*part.v[0]);
     }
   }
   else if (ndim == 3) {
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       if (part.itype == dead) continue;
       diag.angmom[0] += part.m*(part.r[1]*part.v[2] - part.r[2]*part.v[1]);
       diag.angmom[1] += part.m*(part.r[2]*part.v[0] - part.r[0]*part.v[2]);
@@ -158,8 +158,8 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   diag.Etot   = diag.ketot;
   for (k=0; k<ndim; k++) diag.rcom[k] /= diag.mtot;
   for (k=0; k<ndim; k++) diag.vcom[k] /= diag.mtot;
-  if (sph->hydro_forces == 1) diag.Etot += diag.utot;
-  if (sph->self_gravity == 1 || nbody->Nstar > 0) diag.Etot += diag.gpetot;
+  if (hydro->hydro_forces == 1) diag.Etot += diag.utot;
+  if (hydro->self_gravity == 1 || nbody->Nstar > 0) diag.Etot += diag.gpetot;
 
 
   // Calculate binary statistics if required
@@ -198,8 +198,8 @@ void Simulation<ndim>::OutputDiagnostics(void)
   cout << "mtot        : " << diag.mtot*simunits.m.outscale << endl;
   cout << "Etot        : " << diag.Etot*simunits.E.outscale << endl;
   cout << "ketot       : " << diag.ketot*simunits.E.outscale << endl;
-  if (sph->hydro_forces == 1)  cout << "utot        : " << diag.utot*simunits.E.outscale << endl;
-  if (sph->self_gravity == 1 || nbody->Nstar > 0) {
+  if (hydro->hydro_forces == 1)  cout << "utot        : " << diag.utot*simunits.E.outscale << endl;
+  if (hydro->self_gravity == 1 || nbody->Nstar > 0) {
     cout << "gpetot      : " << diag.gpetot*simunits.E.outscale << endl;
   }
   if (ndim == 1) {
@@ -207,9 +207,9 @@ void Simulation<ndim>::OutputDiagnostics(void)
     cout << "vcom        : " << diag.vcom[0] << endl;
     cout << "mom         : " << diag.mom[0] << endl;
     cout << "force       : " << diag.force[0] << endl;
-    if (sph->self_gravity == 1 || nbody->Nstar > 0)
+    if (hydro->self_gravity == 1 || nbody->Nstar > 0)
       cout << "force_grav  : " << diag.force_grav[0] << endl;
-    if (sph->hydro_forces == 1)
+    if (hydro->hydro_forces == 1)
       cout << "force_hydro : " << diag.force_hydro[0] << endl;
   }
   else if (ndim == 2) {
@@ -218,10 +218,10 @@ void Simulation<ndim>::OutputDiagnostics(void)
     cout << "ang mom     : " << diag.angmom[2] << endl;
     cout << "mom         : " << diag.mom[0] << "   " << diag.mom[1] << endl;
     cout << "force       : " << diag.force[0] << "   " << diag.force[1] << endl;
-    if (sph->self_gravity == 1 || nbody->Nstar > 0)
+    if (hydro->self_gravity == 1 || nbody->Nstar > 0)
       cout << "force_grav  : " << diag.force_grav[0] << "   "
 	   << diag.force_grav[1] << endl;
-    if (sph->hydro_forces == 1)
+    if (hydro->hydro_forces == 1)
       cout << "force_hydro : " << diag.force_hydro[0] << "   "
            << diag.force_hydro[1] << endl;
   }
@@ -236,11 +236,11 @@ void Simulation<ndim>::OutputDiagnostics(void)
          << diag.mom[1] << "   " << diag.mom[2] << endl;
     cout << "force       : " << diag.force[0] << "   "
          << diag.force[1] << "   " << diag.force[2] << endl;
-    if (sph->self_gravity == 1 || nbody->Nstar > 0) {
+    if (hydro->self_gravity == 1 || nbody->Nstar > 0) {
       cout << "force_grav  : " << diag.force_grav[0] << "   "
            << diag.force_grav[1] << "   " << diag.force_grav[2] << endl;
     }
-    if (sph->hydro_forces == 1) {
+    if (hydro->hydro_forces == 1) {
       cout << "force_hydro : " << diag.force_hydro[0] << "   "
            << diag.force_hydro[1] << "   " << diag.force_hydro[2] << endl;
     }

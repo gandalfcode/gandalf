@@ -156,8 +156,8 @@ void Simulation<ndim>::CheckInitialConditions(void)
 
   // Check that all particles reside inside any defined boundaries
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
 
     okflag = true;
 
@@ -290,7 +290,7 @@ void Simulation<ndim>::BinaryAccretion(void)
   if (ndim == 2) {
     volume1 = (box1.boxmax[0] - box1.boxmin[0])*(box1.boxmax[1] - box1.boxmin[1]);
     volume2 = (box2.boxmax[0] - box2.boxmin[0])*(box2.boxmax[1] - box2.boxmin[1]);
-    Nneib   = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac,2));
+    Nneib   = (int) (pi*pow(hydro->kernp->kernrange*hydro->h_fac,2));
     hfluid1 = sqrtf((volume1*(FLOAT) Nneib)/((FLOAT) 4.0*(FLOAT) Nbox1));
   }
   else if (ndim == 3) {
@@ -298,13 +298,13 @@ void Simulation<ndim>::BinaryAccretion(void)
       (box1.boxmax[1] - box1.boxmin[1])*(box1.boxmax[2] - box1.boxmin[2]);
     volume2 = (box2.boxmax[0] - box2.boxmin[0])*
       (box2.boxmax[1] - box2.boxmin[1])*(box2.boxmax[2] - box2.boxmin[2]);
-    Nneib = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac,2));
+    Nneib = (int) (pi*pow(hydro->kernp->kernrange*hydro->h_fac,2));
     hfluid1 = powf(((FLOAT) 3.0*volume1*(FLOAT) Nneib)/((FLOAT) 32.0*pi*(FLOAT) Nbox1),onethird);
   }
 
 
   // Allocate main particle memory
-  sph->Nhydro = Nbox1 + Nbox2;
+  hydro->Nhydro = Nbox1 + Nbox2;
   nbody->Nstar = Nstar;
   AllocateParticleMemory();
 
@@ -330,13 +330,13 @@ void Simulation<ndim>::BinaryAccretion(void)
 
     // Record positions in main memory
     for (i=0; i<Nbox1; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       for (k=0; k<ndim; k++) part.r[k] = r1[ndim*i + k];
       part.r[0] += (FLOAT) 0.25*simbox.boxsize[0];
       if (part.r[0] > simbox.boxmax[0]) part.r[0] -= simbox.boxsize[0];
       for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
       part.m = rhofluid1*volume1/(FLOAT) Nbox1;
-      part.h = sph->h_fac*pow(part.m/rhofluid1,invndim);
+      part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
       part.u = press1/rhofluid1/gammaone;
     }
     delete[] r1;
@@ -365,12 +365,12 @@ void Simulation<ndim>::BinaryAccretion(void)
     // Record positions in main memory
     for (j=0; j<Nbox2; j++) {
       i = Nbox1 + j;
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       for (k=0; k<ndim; k++) part.r[k] = r2[ndim*j + k];
       part.r[0] += (FLOAT) 0.25*simbox.boxsize[0];
       if (part.r[0] > simbox.boxmax[0]) part.r[0] -= simbox.boxsize[0];
       for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
-      part.h = sph->h_fac*pow(part.m/rhofluid2,invndim);
+      part.h = hydro->h_fac*pow(part.m/rhofluid2,invndim);
       part.m = rhofluid2*volume2/(FLOAT) Nbox1;
       part.u = press1/rhofluid2/gammaone;
     }
@@ -380,11 +380,11 @@ void Simulation<ndim>::BinaryAccretion(void)
   initial_h_provided = true;
 
   rsonic = (FLOAT) 0.5*(m1 + m2)/(press1/rhofluid1);
-  //hsink = sph->kernp->invkernrange*rsonic;
+  //hsink = hydro->kernp->invkernrange*rsonic;
   //hsink = min(hsink,hfluid1);
   hsink = hfluid1/pow((FLOAT) 4.4817,invndim);
-  rsink = sph->kernp->kernrange*hsink/pow((FLOAT) 4.4817,invndim);
-  FLOAT mmax = (FLOAT) 2.0*rhofluid1*pow(sph->kernp->kernrange*hfluid1,ndim)/(FLOAT) 3.0;
+  rsink = hydro->kernp->kernrange*hsink/pow((FLOAT) 4.4817,invndim);
+  FLOAT mmax = (FLOAT) 2.0*rhofluid1*pow(hydro->kernp->kernrange*hfluid1,ndim)/(FLOAT) 3.0;
 
 
   cout << "Sound speed : " << sqrt(press1/rhofluid1) << endl;
@@ -396,10 +396,10 @@ void Simulation<ndim>::BinaryAccretion(void)
   cout << "vbin        : " << vmachbin*sqrt(press1/rhofluid1) << endl;
   cout << "Bondi accretion, dmdt : "
        << (FLOAT) 4.0*pi*rhofluid1*(m1 + m2)*(m1 + m2)/pow(press1/rhofluid1,(FLOAT) 1.5) << endl;
-  cout << "No. of particles      : " << Nbox1 << "   " << Nbox2 << "   " << sph->Nhydro << endl;
+  cout << "No. of particles      : " << Nbox1 << "   " << Nbox2 << "   " << hydro->Nhydro << endl;
 
   // Set hmin_sink here, since no other sinks will be formed
-  sph->hmin_sink = hsink;
+  hydro->hmin_sink = hsink;
 
 
   // Add star particles to simulation
@@ -413,7 +413,7 @@ void Simulation<ndim>::BinaryAccretion(void)
     else {
       nbody->stardata[0].r[0] = simbox.boxmin[0] + (FLOAT) 0.0625*simbox.boxsize[0];
     }
-    nbody->stardata[0].v[0] = vmachbin*sph->eos->SoundSpeed(sph->GetSphParticlePointer(0));
+    nbody->stardata[0].v[0] = vmachbin*hydro->eos->SoundSpeed(hydro->GetParticlePointer(0));
     nbody->stardata[0].m = m1 + m2;
     nbody->stardata[0].h = hsink;
     nbody->stardata[0].radius = rsink;
@@ -431,7 +431,7 @@ void Simulation<ndim>::BinaryAccretion(void)
     else {
       rbinary[0] = simbox.boxmin[0] + (FLOAT) 0.0625*simbox.boxsize[0];
     }
-    vbinary[0] = vmachbin*sph->eos->SoundSpeed(sph->GetSphParticlePointer(0));
+    vbinary[0] = vmachbin*hydro->eos->SoundSpeed(hydro->GetParticlePointer(0));
     AddBinaryStar(abin,ebin,m1,m2,hsink,hsink,phirot,thetarot,psirot,0.0,
                   rbinary,vbinary,nbody->stardata[0],nbody->stardata[1]);
     sinks.sink[0].star = &(nbody->stardata[0]);
@@ -483,7 +483,7 @@ void Simulation<ndim>::ShockTube(void)
     FLOAT *vaux;                         // Temp. array for x-velocities
     DomainBox<ndim> box1;                // LHS box
     DomainBox<ndim> box2;                // RHS box
-    SphParticle<ndim> *partdata;         // Pointer to main SPH data array
+    Particle<ndim> *partdata;         // Pointer to main SPH data array
 
     // Set local copies of various input parameters for setting-up test
     FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
@@ -508,14 +508,14 @@ void Simulation<ndim>::ShockTube(void)
     volume = box1.boxmax[0] - box1.boxmin[0];
     Nbox1 = Nlattice1[0];
     Nbox2 = Nlattice2[0];
-    sph->Nhydro = Nbox1 + Nbox2;
+    hydro->Nhydro = Nbox1 + Nbox2;
 
     // Allocate local and main particle memory
     AllocateParticleMemory();
-    r = new FLOAT[ndim*sph->Nhydro];
+    r = new FLOAT[ndim*hydro->Nhydro];
 
     // Set pointer to SPH particle data
-    partdata = sph->GetSphParticleArray();
+    partdata = hydro->GetParticleArray();
 
 
     // Add particles for LHS of the shocktube
@@ -524,13 +524,13 @@ void Simulation<ndim>::ShockTube(void)
       AddCubicLattice(Nbox1,Nlattice1,r,box1,false);
 
       for (i=0; i<Nbox1; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
         part.v[0] = vfluid1[0];
         part.m = rhofluid1*volume/(FLOAT) Nbox1;
-        part.h = sph->h_fac*pow(part.m/rhofluid1,invndim);
-        if (sph->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
+        part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
+        if (hydro->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
         else part.u = press1/rhofluid1/gammaone;
       }
     }
@@ -542,13 +542,13 @@ void Simulation<ndim>::ShockTube(void)
 
       for (j=0; j<Nbox2; j++) {
         i = Nbox1 + j;
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*j + k];
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
         part.v[0] = vfluid2[0];
         part.m = rhofluid2*volume/(FLOAT) Nbox2;
-        part.h = sph->h_fac*pow(part.m/rhofluid2,invndim);
-        if (sph->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
+        part.h = hydro->h_fac*pow(part.m/rhofluid2,invndim);
+        if (hydro->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
         else part.u = press2/rhofluid2/gammaone;
       }
     }
@@ -562,63 +562,63 @@ void Simulation<ndim>::ShockTube(void)
 
       // Set initial smoothing lengths and create initial ghost particles
       //-------------------------------------------------------------------------------------------
-      sph->Nghost = 0;
-      sph->Nghostmax = sph->Nhydromax - sph->Nhydro;
-      sph->Ntot = sph->Nhydro;
-      for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).active = true;
+      hydro->Nghost = 0;
+      hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
+      hydro->Ntot = hydro->Nhydro;
+      for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).active = true;
 
-      //sph->InitialSmoothingLengthGuess();
+      //hydro->InitialSmoothingLengthGuess();
       sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                         sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
+                         hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
 
       // Search ghost particles
       sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0,simbox,sph);
 
       // Update neighbour tree
-      //sph->InitialSmoothingLengthGuess();
+      //hydro->InitialSmoothingLengthGuess();
       sphneib->BuildGhostTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                              sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
+                              hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
 
       // Calculate all SPH properties
-      sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
+      sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
 
       LocalGhosts->CopySphDataToGhosts(simbox,sph);
       sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                         sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
+                         hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
       sphneib->BuildGhostTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                              sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
+                              hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
 
       // Calculate all SPH properties
-      sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
+      sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
 
 
-      uaux = new FLOAT[sph->Nhydro];
-      vaux = new FLOAT[sph->Nhydro*ndim];
+      uaux = new FLOAT[hydro->Nhydro];
+      vaux = new FLOAT[hydro->Nhydro*ndim];
 
       // Now compute smoothed quantities
 #pragma omp parallel for default(none) shared(uaux,vaux) private(dr,drmag,drsqd,i,j,k,wnorm)
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         uaux[i] = (FLOAT) 0.0;
         for (k=0; k<ndim; k++) vaux[ndim*i + k] = (FLOAT) 0.0;
         wnorm = (FLOAT) 0.0;
-        for (j=0; j<sph->Ntot; j++) {
-          SphParticle<ndim>& partj = sph->GetSphParticlePointer(j);
+        for (j=0; j<hydro->Ntot; j++) {
+          Particle<ndim>& partj = hydro->GetParticlePointer(j);
           for (k=0; k<ndim; k++) dr[k] = partj.r[k] - part.r[k];
           drsqd = DotProduct(dr,dr,ndim);
-          if (drsqd > pow(sph->kernp->kernrange*part.h,2)) continue;
+          if (drsqd > pow(hydro->kernp->kernrange*part.h,2)) continue;
           drmag = sqrt(drsqd);
-          uaux[i] += partj.m*partj.u*sph->kernp->w0(drmag*part.invh)*pow(part.invh,ndim)*part.invrho;
+          uaux[i] += partj.m*partj.u*hydro->kernp->w0(drmag*part.invh)*pow(part.invh,ndim)*part.invrho;
           for (k=0; k<ndim; k++) vaux[ndim*i + k] +=
-            partj.m*partj.v[k]*sph->kernp->w0(drmag*part.invh)*pow(part.invh,ndim)*part.invrho;
-          wnorm += partj.m*sph->kernp->w0(drmag*part.invh)*pow(part.invh,ndim)*part.invrho;
+            partj.m*partj.v[k]*hydro->kernp->w0(drmag*part.invh)*pow(part.invh,ndim)*part.invrho;
+          wnorm += partj.m*hydro->kernp->w0(drmag*part.invh)*pow(part.invh,ndim)*part.invrho;
         }
         uaux[i] /= wnorm;
         for (k=0; k<ndim; k++) vaux[ndim*i + k] /= wnorm;
       }
 
-      for (i=0; i<sph->Nhydro; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      for (i=0; i<hydro->Nhydro; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         part.u = uaux[i];
         for (k=0; k<ndim; k++) part.v[k] = vaux[ndim*i + k];
       }
@@ -704,19 +704,19 @@ void Simulation<ndim>::UniformBox(void)
   }
 
   // Allocate global and local memory for all particles
-  sph->Nhydro = Npart;
+  hydro->Nhydro = Npart;
   AllocateParticleMemory();
 
   // Copy positions to main array and initialise all other variables
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) {
       part.r[k] = r[ndim*i + k];
       part.v[k] = (FLOAT) 0.0;
       part.a[k] = (FLOAT) 0.0;
     }
-    part.m = volume/ (FLOAT) sph->Nhydro;
-    part.h = sph->h_fac*pow(volume / (FLOAT) sph->Nhydro,invndim);
+    part.m = volume/ (FLOAT) hydro->Nhydro;
+    part.h = hydro->h_fac*pow(volume / (FLOAT) hydro->Nhydro,invndim);
     part.u = (FLOAT) 1.5;
     part.iorig = i;
   }
@@ -783,7 +783,7 @@ void Simulation<ndim>::UniformSphere(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
-  sph->Nhydro = Npart;
+  hydro->Nhydro = Npart;
   AllocateParticleMemory();
 
   if (ndim == 1) volume = (FLOAT) 2.0*radius;
@@ -797,8 +797,8 @@ void Simulation<ndim>::UniformSphere(void)
   // Record particle positions and initialise all other variables
 #pragma omp parallel for default(none)\
   shared(gammaone,mcloud,Npart,press,r,rhofluid,volume) private(i,k)
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) {
       part.r[k] = r[ndim*i + k];
       part.v[k] = (FLOAT) 0.0;
@@ -806,7 +806,7 @@ void Simulation<ndim>::UniformSphere(void)
     }
     //part.m = rhofluid*volume / (FLOAT) Npart;
     part.m = mcloud / (FLOAT) Npart;
-    part.h = sph->h_fac*pow(part.m/rhofluid,invndim);
+    part.h = hydro->h_fac*pow(part.m/rhofluid,invndim);
     part.u = press/rhofluid/gammaone;
     part.iorig = i;
   }
@@ -839,7 +839,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
   FLOAT *r;                            // Position vectors
   DomainBox<ndim> box1;                // LHS box
   DomainBox<ndim> box2;                // RHS box
-  SphParticle<ndim> *partdata = sph->GetSphParticleArray();
+  Particle<ndim> *partdata = hydro->GetParticleArray();
 
   // Create local copies of all parameters required to set-up problem
   FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
@@ -871,22 +871,22 @@ void Simulation<ndim>::ContactDiscontinuity(void)
     Nbox2 = Nlattice2[0];
 
     // Allocate local and main particle memory
-    sph->Nhydro = Nbox1 + Nbox2;
+    hydro->Nhydro = Nbox1 + Nbox2;
     AllocateParticleMemory();
-    r = new FLOAT[ndim*sph->Nhydro];
+    r = new FLOAT[ndim*hydro->Nhydro];
 
     //---------------------------------------------------------------------------------------------
     if (Nbox1 > 0) {
       AddCubicLattice(Nbox1,Nlattice1,r,box1,false);
       volume = box1.boxmax[0] - box1.boxmin[0];
       for (i=0; i<Nbox1; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         part.r[0] = r[i] - (FLOAT) 0.4*simbox.boxsize[0];
         if (part.r[0] < simbox.boxmin[0]) part.r[0] += simbox.boxsize[0];
         part.v[0] = (FLOAT) 0.0;
         part.m = rhofluid1*volume/(FLOAT) Nbox1;
-        part.h = sph->h_fac*pow(part.m/rhofluid1,invndim);
-        if (sph->gas_eos == "isothermal") {
+        part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
+        if (hydro->gas_eos == "isothermal") {
           part.u = temp0/gammaone/mu_bar;
         }
         else {
@@ -901,13 +901,13 @@ void Simulation<ndim>::ContactDiscontinuity(void)
       volume = box2.boxmax[0] - box2.boxmin[0];
       for (j=0; j<Nbox2; j++) {
         i = Nbox1 + j;
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         part.r[0] = r[j] - (FLOAT) 0.4*simbox.boxsize[0];
         if (part.r[0] < simbox.boxmin[0]) part.r[0] += simbox.boxsize[0];
         part.v[0] = (FLOAT) 0.0;
         part.m = rhofluid2*volume/(FLOAT) Nbox2;
-        part.h = sph->h_fac*pow(part.m/rhofluid2,invndim);
-        if (sph->gas_eos == "isothermal")
+        part.h = hydro->h_fac*pow(part.m/rhofluid2,invndim);
+        if (hydro->gas_eos == "isothermal")
           part.u = temp0/gammaone/mu_bar;
         else
           part.u = press2/rhofluid2/gammaone;
@@ -928,34 +928,34 @@ void Simulation<ndim>::ContactDiscontinuity(void)
 
   // Set initial smoothing lengths and create initial ghost particles
   //-----------------------------------------------------------------------------------------------
-  sph->Nghost = 0;
-  sph->Nghostmax = sph->Nhydromax - sph->Nhydro;
-  sph->Ntot = sph->Nhydro;
-  for (int i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).active = true;
+  hydro->Nghost = 0;
+  hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
+  hydro->Ntot = hydro->Nhydro;
+  for (int i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).active = true;
 
   initial_h_provided = true;
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                     sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
+                     hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
 
   // Search ghost particles
   sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
 
   // Update neighbour tree
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                     sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
+                     hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
+  sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
 
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                     sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
+                     hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
 
-  sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
+  sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
 
   LocalGhosts->CopySphDataToGhosts(simbox,sph);
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
+  sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
 
 
   return;
@@ -987,7 +987,7 @@ void Simulation<ndim>::KHI(void)
     FLOAT *r;                         // Array of particle positions
     DomainBox<ndim> box1;             // Bounding box of fluid 1
     DomainBox<ndim> box2;             // Bounding box of fluid 2
-    SphParticle<ndim> *partdata;      // Pointer to main SPH data array
+    Particle<ndim> *partdata;      // Pointer to main SPH data array
 
     // Record local copies of all important parameters
     FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
@@ -1022,12 +1022,12 @@ void Simulation<ndim>::KHI(void)
     Nbox2 = Nlattice2[0]*Nlattice2[1];
 
     // Allocate local and main particle memory
-    sph->Nhydro = Nbox1 + Nbox2;
+    hydro->Nhydro = Nbox1 + Nbox2;
     AllocateParticleMemory();
-    r = new FLOAT[ndim*sph->Nhydro];
+    r = new FLOAT[ndim*hydro->Nhydro];
 
     // Set pointer to SPH particle data
-    partdata = sph->GetSphParticleArray();
+    partdata = hydro->GetParticleArray();
 
 
     // Add particles for LHS of the shocktube
@@ -1036,14 +1036,14 @@ void Simulation<ndim>::KHI(void)
       AddCubicLattice(Nbox1,Nlattice1,r,box1,false);
 
       for (i=0; i<Nbox1; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
         for (k=0; k<ndim; k++) part.v[k] = 0.0;
         part.r[1] -= (FLOAT) 0.25*simbox.boxsize[1];
         if (part.r[1] < simbox.boxmin[1]) part.r[1] += simbox.boxsize[1];
         part.v[0] = vfluid1[0];
         part.m = rhofluid1*volume/(FLOAT) Nbox1;
-        part.h = sph->h_fac*pow(part.m/rhofluid1,invndim);
+        part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
         part.u = press1/rhofluid1/gammaone;
       }
     }
@@ -1055,14 +1055,14 @@ void Simulation<ndim>::KHI(void)
 
       for (j=0; j<Nbox2; j++) {
         i = Nbox1 + j;
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*j + k];
         for (k=0; k<ndim; k++) part.v[k] = 0.0;
         part.r[1] -= (FLOAT) 0.25*simbox.boxsize[1];
         if (part.r[1] < simbox.boxmin[1]) part.r[1] += simbox.boxsize[1];
         part.v[0] = vfluid2[0];
         part.m = rhofluid2*volume/(FLOAT) Nbox2;
-        part.h = sph->h_fac*pow(part.m/rhofluid2,invndim);
+        part.h = hydro->h_fac*pow(part.m/rhofluid2,invndim);
         part.u = press2/rhofluid2/gammaone;
       }
     }
@@ -1070,8 +1070,8 @@ void Simulation<ndim>::KHI(void)
     // Add velocity perturbation here
     //---------------------------------------------------------------------------------------------
     FLOAT sigmapert = (FLOAT) 0.05/sqrt((FLOAT) 2.0);
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       part.v[1] = amp*sin((FLOAT) 2.0*pi*part.r[0]/lambda)*
         (exp(-pow(part.r[1] + (FLOAT) 0.25,2)/(FLOAT) 2.0/sigmapert/sigmapert) +
          exp(-pow(part.r[1] - (FLOAT) 0.25,2)/(FLOAT) 2.0/sigmapert/sigmapert));
@@ -1079,28 +1079,28 @@ void Simulation<ndim>::KHI(void)
 
     // Set initial smoothing lengths and create initial ghost particles
     //---------------------------------------------------------------------------------------------
-    sph->Nghost = 0;
-    sph->Nghostmax = sph->Nhydromax - sph->Nhydro;
-    sph->Ntot = sph->Nhydro;
-    for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).active = true;
+    hydro->Nghost = 0;
+    hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
+    hydro->Ntot = hydro->Nhydro;
+    for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).active = true;
 
     initial_h_provided = true;
 
     // Update neighbour tree
     rebuild_tree = true;
     sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                       sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
+                       hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
 
     // Search ghost particles
     sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0,simbox,sph);
     sphneib->BuildGhostTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                            sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
+                            hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
 
     // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
+    sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
 
-    for (i=0; i<sph->Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       part.u = press1/part.rho/gammaone;
     }
 
@@ -1167,7 +1167,7 @@ void Simulation<ndim>::NohProblem(void)
   }
 
   // Allocate local and main particle memory
-  sph->Nhydro = Npart;
+  hydro->Nhydro = Npart;
   AllocateParticleMemory();
 
   if (ndim == 1) volume = (FLOAT) 2.0*radius;
@@ -1176,14 +1176,14 @@ void Simulation<ndim>::NohProblem(void)
 
   // Record particle properties in main memory
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
     for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k];
     drsqd = DotProduct(dr,dr,ndim);
     drmag = sqrt(drsqd) + small_number;
     for (k=0; k<ndim; k++) part.v[k] = -(FLOAT) 1.0*dr[k]/drmag;
     part.m = rhofluid*volume/(FLOAT) Npart;
-    part.h = sph->h_fac*pow(part.m/rhofluid,invndim);
+    part.h = hydro->h_fac*pow(part.m/rhofluid,invndim);
     part.u = press/rhofluid/gammaone;
   }
 
@@ -1258,7 +1258,7 @@ void Simulation<ndim>::BossBodenheimer(void)
   }
 
   // Allocate local and main particle memory
-  sph->Nhydro = Npart;
+  hydro->Nhydro = Npart;
   AllocateParticleMemory();
   mp = mcloud / (FLOAT) Npart;
   rho = (FLOAT) 3.0*mcloud / ((FLOAT)4.0*pi*pow(radius,3));
@@ -1272,13 +1272,13 @@ void Simulation<ndim>::BossBodenheimer(void)
   // Record particle properties in main memory
 #pragma omp parallel for default(none) shared(gammaone,Npart,mp,mu_bar,r,rho,temp0,v) private(i,k)
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
     for (k=0; k<ndim; k++) part.v[k] = v[ndim*i + k];
     part.m = mp;
-    part.h = sph->h_fac*pow(part.m/rho,invndim);
+    part.h = hydro->h_fac*pow(part.m/rho,invndim);
     part.u = temp0/gammaone/mu_bar;
-    //if (sph->gas_eos == "isothermal" || sph->gas_eos == "barotropic")
+    //if (hydro->gas_eos == "isothermal" || hydro->gas_eos == "barotropic")
     //  part.u = temp0/gammaone/mu_bar;
     //else
     //  part.u = press/rho/gammaone;
@@ -1370,7 +1370,7 @@ void Simulation<ndim>::TurbulentCore(void)
   }
 
   // Allocate local and main particle memory
-  sph->Nhydro = Npart;
+  hydro->Nhydro = Npart;
   AllocateParticleMemory();
   mp = mcloud / (FLOAT) Npart;
   rho = (FLOAT) 3.0*mcloud / ((FLOAT) 4.0*pi*pow(radius,3));
@@ -1378,11 +1378,11 @@ void Simulation<ndim>::TurbulentCore(void)
 
   // Record particle properties in main memory
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
     for (k=0; k<ndim; k++) part.v[k] = v[ndim*i + k];
     part.m = mp;
-    part.h = sph->h_fac*pow(part.m/rho,invndim);
+    part.h = hydro->h_fac*pow(part.m/rho,invndim);
     part.u = temp0/gammaone/mu_bar;
   }
 
@@ -1396,9 +1396,9 @@ void Simulation<ndim>::TurbulentCore(void)
   for (k=0; k<ndim; k++) rmin[k] = big_number;
   for (k=0; k<ndim; k++) rmax[k] = -big_number;
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-    for (k=0; k<ndim; k++) rmin[k] = min(rmin[k],part.r[k] - sph->kernrange*part.h);
-    for (k=0; k<ndim; k++) rmax[k] = max(rmax[k],part.r[k] + sph->kernrange*part.h);
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
+    for (k=0; k<ndim; k++) rmin[k] = min(rmin[k],part.r[k] - hydro->kernrange*part.h);
+    for (k=0; k<ndim; k++) rmax[k] = max(rmax[k],part.r[k] + hydro->kernrange*part.h);
   }
 
   xmin = (FLOAT) 9.9e20;
@@ -1414,11 +1414,11 @@ void Simulation<ndim>::TurbulentCore(void)
   GenerateTurbulentVelocityField(field_type,gridsize,power_turb,vfield);
 
   // Now interpolate generated field onto particle positions
-  InterpolateVelocityField(sph->Nhydro,gridsize,xmin,dxgrid,r,vfield,v);
+  InterpolateVelocityField(hydro->Nhydro,gridsize,xmin,dxgrid,r,vfield,v);
 
   // Finally, copy velocities to main SPH particle array
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) part.v[k] = v[ndim*i + k];
   }
 
@@ -1427,8 +1427,8 @@ void Simulation<ndim>::TurbulentCore(void)
 
   // Calculate total kinetic energy of turbulent velocity field
   keturb = (FLOAT) 0.0;
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     keturb += part.m*DotProduct(part.v,part.v,ndim);
   }
   keturb *= (FLOAT) 0.5;
@@ -1437,8 +1437,8 @@ void Simulation<ndim>::TurbulentCore(void)
   cout << "Scaling factor : " << vfactor << endl;
 
   // Now rescale velocities to give required turbulent energy in cloud
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) part.v[k] *= vfactor;
   }
 
@@ -1520,7 +1520,7 @@ void Simulation<ndim>::BondiAccretion(void)
   }
 
   // Allocate local and main particle memory
-  sph->Nhydro = Npart;
+  hydro->Nhydro = Npart;
   AllocateParticleMemory();
   //mp = mcloud / (FLOAT) Npart;
   //mp = 4.0*pi*powf(rsonic,3)*rhogas*mcloud / (FLOAT) Npart;
@@ -1566,7 +1566,7 @@ void Simulation<ndim>::BondiAccretion(void)
 
 
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) dr[k] = r[ndim*i + k] - rcentre[k];
     FLOAT drmag = sqrtf(DotProduct(dr,dr,ndim)) + small_number;
     FLOAT mint = mcloud*powf(drmag,3);
@@ -1603,7 +1603,7 @@ void Simulation<ndim>::BondiAccretion(void)
 
   // Find total mass inside sink and set to mmax
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - rcentre[k];
     drsqd = DotProduct(dr,dr,ndim);
     if (drsqd > rsink*rsink) continue;
@@ -1664,7 +1664,7 @@ void Simulation<ndim>::EwaldDensity(void)
 
     debug2("[Simulation::EwaldDensity]");
 
-    if (sph->gas_eos == "isothermal") {
+    if (hydro->gas_eos == "isothermal") {
       ugas   = temp0/gammaone/mu_bar;
       press1 = gammaone*rhofluid1*ugas;
       csound = sqrt(press1/rhofluid1);
@@ -1683,10 +1683,10 @@ void Simulation<ndim>::EwaldDensity(void)
     if (ndim == 3) {
       Npart = Nlattice1[0]*Nlattice1[1]*Nlattice1[2];
     }
-    sph->Nhydro = Npart;
+    hydro->Nhydro = Npart;
     //Nlattice1[0] = Npart;
     AllocateParticleMemory();
-    r = new FLOAT[ndim*sph->Nhydro];
+    r = new FLOAT[ndim*hydro->Nhydro];
 
 
     // 1D sinusoidal density perturbation
@@ -1706,16 +1706,16 @@ void Simulation<ndim>::EwaldDensity(void)
       // Set all other particle quantities
       //-------------------------------------------------------------------------------------------
       for (i=0; i<Npart; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
 
         // Set positions in main array with corresponind velocity perturbation
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
         //for (k=0; k<ndim; k++) part.v[k] = csound*amp*sin(kwave*r[ndim*i]);
         part.m = rhofluid1*volume/(FLOAT) Npart;
-        part.h = sph->h_fac*pow(part.m/rhofluid1,invndim);
+        part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
 
-        if (sph->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
+        if (hydro->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
         else part.u = press1/rhofluid1/gammaone;
 
       }
@@ -1738,16 +1738,16 @@ void Simulation<ndim>::EwaldDensity(void)
       // Set all other particle quantities
       //-------------------------------------------------------------------------------------------
       for (i=0; i<Npart; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
 
         // Set positions in main array with corresponind velocity perturbation
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
         for (k=0; k<ndim; k++) part.v[k] = 0.0;
         part.rho = rhofluid1*(1.0+amp*sin(kwave*part.r[0]));
         part.m   = part.rho*volp;
-        part.h   = sph->h_fac*pow(part.m/part.rho,invndim);
+        part.h   = hydro->h_fac*pow(part.m/part.rho,invndim);
 
-        if (sph->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
+        if (hydro->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
         else part.u = press1/rhofluid1/gammaone;
 
       }
@@ -1768,16 +1768,16 @@ void Simulation<ndim>::EwaldDensity(void)
       // Set all other particle quantities
       //-------------------------------------------------------------------------------------------
       for (i=0; i<Npart; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
 
         // Set positions in main array with corresponind velocity perturbation
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
         for (k=0; k<ndim; k++) part.v[k] = 0.0;
         part.rho = rhofluid1/powf(cosh(part.r[2]/h0),2);
         part.m   = part.rho*volp;
-        part.h   = sph->h_fac*pow(part.m/part.rho,invndim);
+        part.h   = hydro->h_fac*pow(part.m/part.rho,invndim);
 
-        if (sph->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
+        if (hydro->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
         else part.u = press1/rhofluid1/gammaone;
 
       }
@@ -1800,16 +1800,16 @@ void Simulation<ndim>::EwaldDensity(void)
       // Set all other particle quantities
       //-------------------------------------------------------------------------------------------
       for (i=0; i<Npart; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
 
         // Set positions in main array with corresponind velocity perturbation
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
         for (k=0; k<ndim; k++) part.v[k] = 0.0;
         part.rho = rhofluid1/pow((1.0+a2inv*(pow(part.r[1],2) + pow(part.r[2],2))),2);
         part.m   = part.rho*volp;
-        part.h   = sph->h_fac*pow(part.m/part.rho,invndim);
+        part.h   = hydro->h_fac*pow(part.m/part.rho,invndim);
 
-        if (sph->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
+        if (hydro->gas_eos == "isothermal") part.u = temp0/gammaone/mu_bar;
         else part.u = press1/rhofluid1/gammaone;
 
       }
@@ -1866,8 +1866,8 @@ void Simulation<ndim>::PlummerSphere(void)
 
     debug1("[Simulation::PlummerSphere]");
 
-    sph->Nhydro = Nhydro;
-    sph->Ntot = Nhydro;
+    hydro->Nhydro = Nhydro;
+    hydro->Ntot = Nhydro;
     nbody->Nstar = Nstar;
     AllocateParticleMemory();
 
@@ -1899,7 +1899,7 @@ void Simulation<ndim>::PlummerSphere(void)
       //-------------------------------------------------------------------------------------------
       if (j >= Nstar && j < Nstar + Nhydro) {
         i = j - Nstar;
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         part.r[2] = z;
         part.r[0] = sqrt(rad*rad - z*z)*cos(twopi*x3);
         part.r[1] = sqrt(rad*rad - z*z)*sin(twopi*x3);
@@ -1936,7 +1936,7 @@ void Simulation<ndim>::PlummerSphere(void)
       //-------------------------------------------------------------------------------------------
       if (j >= Nstar && j < Nstar + Nhydro) {
         i = j - Nstar;
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
         part.sound = sqrt((FLOAT) 0.16666666666666666 / sqrt((FLOAT) 1.0 + rad*rad));
         part.rho   = (FLOAT) 1.0;
@@ -1959,7 +1959,7 @@ void Simulation<ndim>::PlummerSphere(void)
 
     // Now scale variables to required physical size
     for (i=0; i<Nhydro; i++) {
-      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
       for (k=0; k<ndim; k++) {
         part.r[k] = part.r[k]*rplummer;
         part.v[k] = part.v[k]*vplummer;
@@ -2014,7 +2014,7 @@ void Simulation<ndim>::SedovBlastWave(void)
   FLOAT utot;                          // Total internal energy
   FLOAT volume;                        // Volume of box
   FLOAT *r;                            // Positions of all particles
-  SphParticle<ndim> *partdata;         // Pointer to main SPH data array
+  Particle<ndim> *partdata;         // Pointer to main SPH data array
 
   // Create local copies of initial conditions parameters
   Nlattice[0]    = simparams->intparams["Nlattice1[0]"];
@@ -2047,16 +2047,16 @@ void Simulation<ndim>::SedovBlastWave(void)
   ufrac = max((FLOAT) 0.0,(FLOAT) 1.0 - kefrac);
   Ncold = 0;
   Nhot  = 0;
-  r_hot = powf(powf((FLOAT) 4.0,ndim)/(FLOAT) Nbox,sph->invndim);
+  r_hot = powf(powf((FLOAT) 4.0,ndim)/(FLOAT) Nbox,hydro->invndim);
 
   // Allocate local and main particle memory
-  sph->Nhydro = Nbox;
+  hydro->Nhydro = Nbox;
   AllocateParticleMemory();
-  r = new FLOAT[ndim*sph->Nhydro];
-  hotlist = new int[sph->Nhydro];
+  r = new FLOAT[ndim*hydro->Nhydro];
+  hotlist = new int[hydro->Nhydro];
 
   // Set pointer to SPH particle data
-  partdata = sph->GetSphParticleArray();
+  partdata = hydro->GetParticleArray();
 
   // Add a cube of random particles defined by the simulation bounding box and
   // depending on the chosen particle distribution
@@ -2076,20 +2076,20 @@ void Simulation<ndim>::SedovBlastWave(void)
 
   // Record positions in main memory
   for (i=0; i<Nbox; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
     for (k=0; k<ndim; k++) part.v[k] = 0.0;
     part.m = mbox/(FLOAT) Nbox;
-    part.h = sph->h_fac*pow(part.m/rhofluid,invndim);
+    part.h = hydro->h_fac*pow(part.m/rhofluid,invndim);
     part.u = small_number;
   }
 
   // Set initial smoothing lengths and create initial ghost particles
   //-----------------------------------------------------------------------------------------------
-  sph->Nghost = 0;
-  sph->Nghostmax = sph->Nhydromax - sph->Nhydro;
-  sph->Ntot = sph->Nhydro;
-  for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).active = true;
+  hydro->Nghost = 0;
+  hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
+  hydro->Ntot = hydro->Nhydro;
+  for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).active = true;
 
   // Search ghost particles
   sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
@@ -2097,28 +2097,28 @@ void Simulation<ndim>::SedovBlastWave(void)
   initial_h_provided = true;
   rebuild_tree = true;
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                     sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
+                     hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
 
-  sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
+  sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
 
   // Update neighbour tre
   rebuild_tree = true;
   sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                     sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
+                     hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
+  sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
 
   // Now calculate which particles are hot
   //-----------------------------------------------------------------------------------------------
   umax = (FLOAT) 0.0;
   utot = (FLOAT) 0.0;
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     drsqd = DotProduct(part.r,part.r,ndim);
     if (drsqd < r_hot*r_hot) {
       hotlist[i] = 1;
-      if (smooth_ic == 1) part.u = part.m*sph->kernp->w0(sph->kernp->kernrange*sqrt(drsqd)/r_hot);
+      if (smooth_ic == 1) part.u = part.m*hydro->kernp->w0(hydro->kernp->kernrange*sqrt(drsqd)/r_hot);
       else part.u = part.m;
       utot += part.u;
       umax = max(umax,part.u);
@@ -2132,8 +2132,8 @@ void Simulation<ndim>::SedovBlastWave(void)
 
   // Normalise the energies
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (hotlist[i] == 1) {
       drmag = sqrt(DotProduct(part.r,part.r,ndim));
       part.u = part.u/utot/part.m;
@@ -2196,9 +2196,9 @@ void Simulation<ndim>::ShearFlow(void)
     kwave  = twopi/lambda;
 
     // Allocate local and main particle memory
-    sph->Nhydro = Nbox;
+    hydro->Nhydro = Nbox;
     AllocateParticleMemory();
-    r = new FLOAT[ndim*sph->Nhydro];
+    r = new FLOAT[ndim*hydro->Nhydro];
 
 
     // Add particles from cubic lattice
@@ -2207,12 +2207,12 @@ void Simulation<ndim>::ShearFlow(void)
       //AddHexagonalLattice(Nbox,Nlattice1,r,simbox,false);
 
       for (i=0; i<Nbox; i++) {
-        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
         part.v[0] = amp*sin(kwave*part.r[1]);
         part.m    = rhofluid1*volume/(FLOAT) Nbox;
-        part.h    = sph->h_fac*pow(part.m/rhofluid1,invndim);
+        part.h    = hydro->h_fac*pow(part.m/rhofluid1,invndim);
         part.u    = press1/rhofluid1/gammaone;
       }
     }
@@ -2265,7 +2265,7 @@ void Simulation<ndim>::SoundWave(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
-  if (sph->gas_eos == "isothermal") {
+  if (hydro->gas_eos == "isothermal") {
     ugas   = temp0/gammaone/mu_bar;
     press1 = gammaone*rhofluid1*ugas;
     csound = sqrt(press1/rhofluid1);
@@ -2282,9 +2282,9 @@ void Simulation<ndim>::SoundWave(void)
   // Allocate local and main particle memory
   for (k=0; k<ndim; k++) Nlattice1[k] = 1;
   Nlattice1[0] = Npart;
-  sph->Nhydro = Npart;
+  hydro->Nhydro = Npart;
   AllocateParticleMemory();
-  r = new FLOAT[ndim*sph->Nhydro];
+  r = new FLOAT[ndim*hydro->Nhydro];
 
   // Add regular distribution of SPH particles
   AddCubicLattice(Npart,Nlattice1,r,simbox,false);
@@ -2295,15 +2295,15 @@ void Simulation<ndim>::SoundWave(void)
   // Set all other particle quantities
   //----------------------------------------------------------------------------------------------
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
 
     // Set positions in main array with corresponind velocity perturbation
     for (k=0; k<ndim; k++) part.r[k] = r[ndim*i];
     for (k=0; k<ndim; k++) part.v[k] = csound*amp*sin(kwave*r[ndim*i]);
     part.m = rhofluid1*lambda/(FLOAT) Npart;
-    part.h = sph->h_fac*pow(part.m/rhofluid1,invndim);
+    part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
 
-    if (sph->gas_eos == "isothermal") {
+    if (hydro->gas_eos == "isothermal") {
       part.u = temp0/gammaone/mu_bar;
     }
     else {
@@ -2370,7 +2370,7 @@ void Simulation<ndim>::SpitzerExpansion(void)
     ExceptionHandler::getIstance().raise(message);
   }
 
-  sph->Nhydro = Npart;
+  hydro->Nhydro = Npart;
   AllocateParticleMemory();
 
   if (ndim == 1) volume = (FLOAT) 2.0*radius;
@@ -2382,8 +2382,8 @@ void Simulation<ndim>::SpitzerExpansion(void)
   // Record particle positions and initialise all other variables
 #pragma omp parallel for default(none)\
   shared(gammaone,mcloud,Npart,press,r,rhofluid,volume) private(i,k)
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+  for (i=0; i<hydro->Nhydro; i++) {
+    Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) {
       part.r[k] = r[ndim*i + k];
       part.v[k] = (FLOAT) 0.0;
@@ -2391,7 +2391,7 @@ void Simulation<ndim>::SpitzerExpansion(void)
     }
     //part.m = rhofluid*volume / (FLOAT) Npart;
     part.m = mcloud / (FLOAT) Npart;
-    part.h = sph->h_fac*pow(part.m/rhofluid,invndim);
+    part.h = hydro->h_fac*pow(part.m/rhofluid,invndim);
     part.u = small_number; //press/rhofluid/gammaone;
     part.iorig = i;
   }
@@ -2433,8 +2433,8 @@ void Simulation<ndim>::BinaryStar(void)
   }
 
   // Allocate local and main particle memory
-  //sph->Nhydro = 0;
-  //sph->Ntot = 0;
+  //hydro->Nhydro = 0;
+  //hydro->Ntot = 0;
   nbody->Nstar = 2;
   AllocateParticleMemory();
 
@@ -2481,8 +2481,8 @@ void Simulation<ndim>::TripleStar(void)
   }
 
   // Allocate local and main particle memory
-  //sph->Nhydro = 0;
-  //sph->Ntot = 0;
+  //hydro->Nhydro = 0;
+  //hydro->Ntot = 0;
   nbody->Nstar = 3;
   AllocateParticleMemory();
 
@@ -2535,8 +2535,8 @@ void Simulation<ndim>::QuadrupleStar(void)
   }
 
   // Allocate local and main particle memory
-  //sph->Nhydro = 0;
-  //sph->Ntot = 0;
+  //hydro->Nhydro = 0;
+  //hydro->Ntot = 0;
   nbody->Nstar = 4;
   AllocateParticleMemory();
 
