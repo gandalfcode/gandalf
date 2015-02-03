@@ -95,6 +95,7 @@ void GodunovSph<ndim, kernelclass>::AllocateMemory(int N)
     iorder    = new int[Nhydromax];
     sphdata   = new struct GodunovSphParticle<ndim>[Nhydromax];
     allocated = true;
+    hydrodata_unsafe = sphdata;
     sphdata_unsafe = sphdata;
   }
 

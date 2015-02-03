@@ -98,6 +98,7 @@ void GradhSph<ndim, kernelclass>::AllocateMemory(int N)
     iorder    = new int[Nhydromax];
     sphdata   = new struct GradhSphParticle<ndim>[Nhydromax];
     allocated = true;
+    hydrodata_unsafe = sphdata;
     sphdata_unsafe = sphdata;
   }
 

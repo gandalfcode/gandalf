@@ -96,6 +96,7 @@ void SM2012Sph<ndim, kernelclass>::AllocateMemory(int N)
     iorder = new int[Nhydromax];
     sphdata = new struct SM2012SphParticle<ndim>[Nhydromax];
     allocated = true;
+    hydrodata_unsafe = sphdata;
     sphdata_unsafe = sphdata;
   }
 
