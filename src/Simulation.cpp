@@ -1409,3 +1409,8 @@ void Simulation<ndim>::UpdateDiagnostics(void)
     cout << "Eerror : " << diag.Eerror << endl;
   }
 }
+
+template class Simulation<1>;
+template class Simulation<2>;
+template class Simulation<3>;
+

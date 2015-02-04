@@ -212,6 +212,7 @@ OBJ += Sinks.o
 OBJ += Ghosts.o
 OBJ += SphSnapshot.o
 OBJ += CodeTiming.o
+OBJ += IC.o
 
 ifeq ($(MPI),1)
 OBJ += MpiNode.o MpiTree.o MpiControl.o
