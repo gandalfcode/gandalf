@@ -250,49 +250,6 @@ class Simulation : public SimulationBase
   virtual void ProcessNbodyParameters(void);
 
 
-  // Initial conditions routines -> move either to Sph, either to Nbody
-  //-----------------------------------------------------------------------------------------------
-  void BinaryAccretion(void);
-  void BinaryStar(void);
-  void BondiAccretion(void);
-  void BossBodenheimer(void);
-  void CheckInitialConditions(void);
-  void ContactDiscontinuity(void);
-  void EwaldDensity(void);
-  void KHI(void);
-  void NohProblem(void);
-  void PlummerSphere(void);
-  void QuadrupleStar(void);
-  void ShockTube(void);
-  void SedovBlastWave(void);
-  void ShearFlow(void);
-  void SoundWave(void);
-  void SpitzerExpansion(void);
-  void TripleStar(void);
-  void TurbulentCore(void);
-  void UniformBox(void);
-  void UniformSphere(void);
-
-
-  // Initial conditions helper routines
-  //-----------------------------------------------------------------------------------------------
-  void AddAzimuthalDensityPerturbation(int, int, FLOAT, FLOAT *, FLOAT *);
-  void AddBinaryStar(DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE,
-                     DOUBLE, DOUBLE, DOUBLE, DOUBLE, DOUBLE *,DOUBLE *,
-                     NbodyParticle<ndim> &, NbodyParticle<ndim> &);
-  void AddCubicLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
-  void AddHexagonalLattice(int, int *, FLOAT *, DomainBox<ndim>, bool);
-  int AddLatticeSphere(int, FLOAT *, FLOAT *, FLOAT, string);
-  void AddRotationalVelocityField(int, FLOAT, FLOAT *, FLOAT *, FLOAT *);
-  void AddRandomBox(int, FLOAT *, DomainBox<ndim>);
-  void AddRandomSphere(int, FLOAT *, FLOAT *, FLOAT);
-  void AddSinusoidalDensityPerturbation(int, FLOAT, FLOAT, FLOAT *);
-  int CutSphere(int, int, FLOAT *, DomainBox<ndim>, bool);
-  void ComputeBondiSolution(int, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
-  void GenerateTurbulentVelocityField(int, int, DOUBLE, DOUBLE *);
-  void InterpolateVelocityField(int, int, FLOAT, FLOAT, FLOAT *, FLOAT *,FLOAT *);
-
-
   // Input-output routines
   //-----------------------------------------------------------------------------------------------
   virtual void ReadColumnHeaderFile(ifstream& infile, HeaderInfo& info);
