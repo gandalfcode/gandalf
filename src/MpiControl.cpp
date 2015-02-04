@@ -82,12 +82,12 @@ MpiControl<ndim>::MpiControl()
   boxes_buffer.resize(Nmpi);
 
   // Allocate the buffers needed to send and receive particles
-  num_particles_export_per_node.resize(Nmpi);
+  Nexport_per_node.resize(Nmpi);
   displacements_send.resize(Nmpi);
-  num_particles_to_be_received.resize(Nmpi);
+  Nreceive_per_node.resize(Nmpi);
   receive_displs.resize(Nmpi);
-  Nbytes_exported_from_proc.resize(Nmpi);
-  Nbytes_to_each_proc.resize(Nmpi);
+  Nbytes_from_proc.resize(Nmpi);
+  Nbytes_to_proc.resize(Nmpi);
 
   // Create the list of MPI node pair list for communications
   CreateLeagueCalendar();
@@ -207,7 +207,7 @@ void MpiControl<ndim>::CreateLeagueCalendar(void)
 
   //First check that number of processes is even
   if (! Nmpi%2) {
-    std::string error = "The number of MPI processes must be even!";
+    string error = "The number of MPI processes must be even!";
     ExceptionHandler::getIstance().raise(error);
   }
 
@@ -221,17 +221,17 @@ void MpiControl<ndim>::CreateLeagueCalendar(void)
 
     // Create a vector containing the full calendar
     // First index is process
-    std::vector<std::vector<int> > calendar(Nmpi);
+    vector<vector<int> > calendar(Nmpi);
     // And second is turn
     for (int iteam=0; iteam< calendar.size(); iteam++) {
-      std::vector<int>& calendar_team = calendar[iteam];
+      vector<int>& calendar_team = calendar[iteam];
       calendar_team.resize(Nturns);
     }
 
     // Create pairs table
-    std::vector<std::vector<int> > pairs (Nturns);
+    vector<vector<int> > pairs (Nturns);
     for (int iturn=0; iturn< pairs.size(); iturn++) {
-      std::vector<int>& pairs_turn = pairs[iturn];
+      vector<int>& pairs_turn = pairs[iturn];
       pairs_turn.resize(Nmpi);
       // Fill in the pairs table
       pairs_turn[0]=Nturns;
@@ -251,7 +251,7 @@ void MpiControl<ndim>::CreateLeagueCalendar(void)
 
 #if defined VERIFY_ALL
     // Validate the calendar
-    std::vector<bool> other_teams(Nmpi-1);
+    vector<bool> other_teams(Nmpi-1);
 
     for (int iteam=0; iteam<calendar.size();iteam++) {
 
@@ -323,23 +323,23 @@ void MpiControl<ndim>::CreateLeagueCalendar(void)
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
-(Sph<ndim> *sph,                    ///< Pointer to main SPH object
- Nbody<ndim> *nbody,                ///< Pointer to main N-body object
- Parameters *simparams,             ///< Simulation parameters
- DomainBox<ndim> simbox,            ///< Simulation domain box
- bool& initial_h_provided)          ///< Receives from root whether or not initial h was provided
+ (Sph<ndim> *sph,                      ///< Pointer to main SPH object
+  Nbody<ndim> *nbody,                  ///< Pointer to main N-body object
+  Parameters *simparams,               ///< Simulation parameters
+  DomainBox<ndim> simbox,              ///< Simulation domain box
+  bool& initial_h_provided)            ///< Receives from root whether or not initial h was provided
 {
-  int i;                            // Particle counter
-  int inode;                        // Node counter
-  int k;                            // Dimension counter
-  int okflag;                       // ..
-  FLOAT boxbuffer[2*ndim*Nmpi];     // Bounding box buffer
-  ParticleType<ndim> *partbuffer;   // ..
+  int i;                               // Particle counter
+  int inode;                           // Node counter
+  int k;                               // Dimension counter
+  int okflag;                          // ..
+  FLOAT boxbuffer[2*ndim*Nmpi];        // Bounding box buffer
+  ParticleType<ndim> *partbuffer;      // ..
 
   // Broadcast whether or not the initial h was provided
   int initial_h = initial_h_provided;
-  MPI_Bcast(&initial_h,1,MPI_INT,0,MPI_COMM_WORLD);
-  initial_h_provided=initial_h;
+  MPI_Bcast(&initial_h, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  initial_h_provided = initial_h;
 
 
   // For main process, create load balancing tree, transmit information to all
@@ -353,8 +353,8 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     mpitree = new MpiTree<ndim,ParticleType>(Nmpi);
 
     // Set number of tree members to total no. of SPH particles (inc. ghosts)
-    mpitree->Nhydro = sph->Nhydro;
-    mpitree->Ntot = sph->Nhydro;
+    mpitree->Nhydro  = sph->Nhydro;
+    mpitree->Ntot    = sph->Nhydro;
     mpitree->Ntotmax = sph->Nhydromax;
 
 
@@ -365,8 +365,8 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray());
 
 
-    // For periodic simulations, set bounding box of root node to be the
-    // periodic box size.  Otherwise, set to be the particle bounding box.
+    // For periodic simulations, set bounding box of root node to be the periodic box size.
+    // Otherwise, set to extend to infinity.
     if (simbox.x_boundary_lhs == "open") mpibox.boxmin[0] = -big_number;
     else mpibox.boxmin[0] = simbox.boxmin[0];
     if (simbox.x_boundary_rhs == "open") mpibox.boxmax[0] = big_number;
@@ -386,9 +386,9 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     //mpitree->box = &mpibox;
 
     cout << "Simulation bounding box" << endl;
-    for (k=0; k<ndim; k++)
-      cout << "r[" << k << "]  :  " << mpibox.boxmin[k] << "   "
-           << mpibox.boxmax[k] << endl;
+    for (k=0; k<ndim; k++) {
+      cout << "r[" << k << "]  :  " << mpibox.boxmin[k] << "   " << mpibox.boxmax[k] << endl;
+    }
 
     // Compute the size of all tree-related arrays now we know number of points
     mpitree->ComputeTreeSize();
@@ -634,7 +634,7 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   // Prepare lists of particles that now occupy other processor domains that need to be transfered
 
   // First construct the list of nodes that we might be sending particles to
-  std::vector<int> potential_nodes;
+  vector<int> potential_nodes;
   potential_nodes.reserve(Nmpi);
   for (int inode=0; inode<Nmpi; inode++) {
     if (inode == rank) continue;
@@ -643,14 +643,14 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
 
 
   // Find the ptcls that need to be transferred - delegate to NeighbourSearch
-  std::vector<std::vector<int> > particles_to_transfer (Nmpi);
-  std::vector<int> all_particles_to_export;
+  vector<vector<int> > particles_to_transfer (Nmpi);
+  vector<int> all_particles_to_export;
   BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,&mpibox,sph->kernp,timing);
   bruteforce.FindParticlesToTransfer(sph, particles_to_transfer, all_particles_to_export,
                                      potential_nodes, mpinode);
 
   // Send and receive particles from/to all other nodes
-  std::vector<ParticleType<ndim> > sendbuffer, recvbuffer;
+  vector<ParticleType<ndim> > sendbuffer, recvbuffer;
 
   //-----------------------------------------------------------------------------------------------
   for (int iturn = 0; iturn<my_matches.size(); iturn++) {
@@ -747,40 +747,40 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop (Sph<ndim
     if (Nproc == rank) continue;
 
     // Append at the end of send_vector the information we are sending and get how much it is
-    Nbytes_to_each_proc[Nproc] = neibsearch->GetExportInfo(Nproc, sph, send_buffer,
+    Nbytes_to_proc[Nproc] = neibsearch->GetExportInfo(Nproc, sph, send_buffer,
                                                            mpinode[Nproc], rank, Nmpi);
   }
 
   int Nbytes_to_be_exported = send_buffer.size();
-  assert(std::accumulate(Nbytes_to_each_proc.begin(),Nbytes_to_each_proc.end(),0)==Nbytes_to_be_exported);
+  assert(std::accumulate(Nbytes_to_proc.begin(),Nbytes_to_proc.end(),0)==Nbytes_to_be_exported);
 
   //First need to know how many bytes each processor is sending
-  MPI_Alltoall(&Nbytes_to_each_proc[0],1,MPI_INT,&Nbytes_exported_from_proc[0],
+  MPI_Alltoall(&Nbytes_to_proc[0],1,MPI_INT,&Nbytes_from_proc[0],
                1,MPI_INT,MPI_COMM_WORLD);
 
   //Can now compute the displacements
   vector<int> displs_recv(Nmpi), displs_send(Nmpi);
   int running_counter_recv=0, running_counter_send=0;
   for (int inode=1; inode<Nmpi; inode++) {
-    running_counter_recv += Nbytes_exported_from_proc[inode-1];
-    running_counter_send += Nbytes_to_each_proc[inode-1];
+    running_counter_recv += Nbytes_from_proc[inode-1];
+    running_counter_send += Nbytes_to_proc[inode-1];
     displs_recv[inode] = running_counter_recv;
     displs_send[inode] = running_counter_send;
   }
 
   //Compute total number of particles to be received (including the ones from ourselves)
-  int Nbytes_received_exported = std::accumulate(Nbytes_exported_from_proc.begin(),
-                                                 Nbytes_exported_from_proc.end(),0);
+  int Nbytes_received_exported = std::accumulate(Nbytes_from_proc.begin(),
+                                                 Nbytes_from_proc.end(),0);
 
   //Allocate memory to receive all the particles
   vector<char > receive_buffer(Nbytes_received_exported);
 
  //Perform the actual communication
-  MPI_Alltoallv(&send_buffer[0],&Nbytes_to_each_proc[0],&displs_send[0],MPI_CHAR,&receive_buffer[0],
-                &Nbytes_exported_from_proc[0],&displs_recv[0],MPI_CHAR, MPI_COMM_WORLD);
+  MPI_Alltoallv(&send_buffer[0],&Nbytes_to_proc[0],&displs_send[0],MPI_CHAR,&receive_buffer[0],
+                &Nbytes_from_proc[0],&displs_recv[0],MPI_CHAR, MPI_COMM_WORLD);
 
   //Unpack the received arrays
-  neibsearch->UnpackExported(receive_buffer, Nbytes_exported_from_proc, sph);
+  neibsearch->UnpackExported(receive_buffer, Nbytes_from_proc, sph);
 
 }
 
@@ -798,24 +798,24 @@ void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations (Sph<n
   // Get the array with the acceleration for every other processor.
   // Quite confusingly, note that the role of the two arays with the number of bytes from/to
   // each processor is now reversed (from is to send and to is to receive)
-  neibsearch->GetBackExportInfo(send_buffer, Nbytes_exported_from_proc,
-                                Nbytes_to_each_proc, sph, rank);
+  neibsearch->GetBackExportInfo(send_buffer, Nbytes_from_proc,
+                                Nbytes_to_proc, sph, rank);
 
   vector<int> send_displs(Nmpi);
-  compute_displs(send_displs, Nbytes_exported_from_proc);
+  compute_displs(send_displs, Nbytes_from_proc);
 
   // Allocate receive buffer
-  const int Nbytes_to_receive = std::accumulate(Nbytes_to_each_proc.begin(),
-                                                Nbytes_to_each_proc.end(),0);
+  const int Nbytes_to_receive = std::accumulate(Nbytes_to_proc.begin(),
+                                                Nbytes_to_proc.end(),0);
   vector<char > receive_buffer(Nbytes_to_receive);
 
   // Prepare receive counts and displacements
   vector<int> recv_displs(Nmpi);
-  compute_displs (recv_displs, Nbytes_to_each_proc);
+  compute_displs (recv_displs, Nbytes_to_proc);
 
   // Do the actual communication
-  MPI_Alltoallv(&send_buffer[0], &Nbytes_exported_from_proc[0], &send_displs[0], MPI_CHAR,
-                &receive_buffer[0], &Nbytes_to_each_proc[0], &recv_displs[0],
+  MPI_Alltoallv(&send_buffer[0], &Nbytes_from_proc[0], &send_displs[0], MPI_CHAR,
+                &receive_buffer[0], &Nbytes_to_proc[0], &recv_displs[0],
                 MPI_CHAR, MPI_COMM_WORLD);
 
   // Unpack the received information to update accelerations
@@ -889,19 +889,19 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
 
 
   // Prepare arrays with no. of particles to export per node and displacements
-  fill(num_particles_export_per_node.begin(),num_particles_export_per_node.end(),0);
+  fill(Nexport_per_node.begin(),Nexport_per_node.end(),0);
 
   running_counter = 0;
   for (inode=0; inode<Nmpi; inode++) {
     Npart = particles_to_export_per_node[inode].size();
-    num_particles_export_per_node[inode] = Npart;
+    Nexport_per_node[inode] = Npart;
     displacements_send[inode] = running_counter;
     running_counter += Npart;
   }
 
   // Compute total number of particles to export
-  Nexport = std::accumulate(num_particles_export_per_node.begin(),
-                            num_particles_export_per_node.end(),0);
+  Nexport = std::accumulate(Nexport_per_node.begin(),
+                            Nexport_per_node.end(),0);
 
   // Comunicate with all processors the no. of ptcls that everyone is exporting
   vector<int> ones(Nmpi,1);
@@ -909,16 +909,16 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   for (inode=0; inode<displs.size(); inode++) {
     displs[inode] = inode;
   }
-  MPI_Alltoallv(&num_particles_export_per_node[0], &ones[0], &displs[0], MPI_INT,
-                &num_particles_to_be_received[0], &ones[0], &displs[0], MPI_INT, MPI_COMM_WORLD);
+  MPI_Alltoallv(&Nexport_per_node[0], &ones[0], &displs[0], MPI_INT,
+                &Nreceive_per_node[0], &ones[0], &displs[0], MPI_INT, MPI_COMM_WORLD);
 
   // Compute the total number of particles that will be received
-  tot_particles_to_receive = accumulate(num_particles_to_be_received.begin(),
-                                        num_particles_to_be_received.end(),0);
+  Nreceive_tot = accumulate(Nreceive_per_node.begin(),
+                                        Nreceive_per_node.end(),0);
 
   // Allocate receive buffer
   particles_receive.clear();
-  particles_receive.resize(tot_particles_to_receive);
+  particles_receive.resize(Nreceive_tot);
 
   cout << "TOT_PARTICLES_TO_EXPORT : " << Nexport << endl;
 
@@ -927,7 +927,7 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
 
   index = 0;
   for (inode=0; inode<Nmpi; inode++) {
-    std::vector<ParticleType<ndim>* >& particles_on_this_node = particles_to_export_per_node[inode];
+    vector<ParticleType<ndim>* >& particles_on_this_node = particles_to_export_per_node[inode];
     for (iparticle=0; iparticle<particles_on_this_node.size(); iparticle++) {
       particles_to_export[index] = *particles_on_this_node[iparticle];
       index++;
@@ -939,17 +939,17 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   running_counter = 0;
   for (inode=0; inode<receive_displs.size(); inode++) {
     receive_displs[inode] = running_counter;
-    running_counter += num_particles_to_be_received[inode];
+    running_counter += Nreceive_per_node[inode];
   }
 
   // Send and receive particles
-  MPI_Alltoallv(&particles_to_export[0], &num_particles_export_per_node[0], &displacements_send[0],
-                particle_type, &particles_receive[0], &num_particles_to_be_received[0],
+  MPI_Alltoallv(&particles_to_export[0], &Nexport_per_node[0], &displacements_send[0],
+                particle_type, &particles_receive[0], &Nreceive_per_node[0],
                 &receive_displs[0], particle_type, MPI_COMM_WORLD);
 
   *array = &particles_receive[0];
 
-  return tot_particles_to_receive;
+  return Nreceive_tot;
 }
 
 
@@ -978,13 +978,13 @@ int MpiControlType<ndim, ParticleType>::UpdateGhostParticles
   }
 
   // Send and receive particles
-  MPI_Alltoallv(&particles_to_export[0], &num_particles_export_per_node[0], &displacements_send[0],
-                particle_type, &particles_receive[0], &num_particles_to_be_received[0],
+  MPI_Alltoallv(&particles_to_export[0], &Nexport_per_node[0], &displacements_send[0],
+                particle_type, &particles_receive[0], &Nreceive_per_node[0],
                 &receive_displs[0], particle_type, MPI_COMM_WORLD);
 
   *array = &particles_receive[0];
 
-  return tot_particles_to_receive;
+  return Nreceive_tot;
 }
 
 

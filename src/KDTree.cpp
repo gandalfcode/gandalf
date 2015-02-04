@@ -2371,6 +2371,9 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
 
 
 
+template class KDTree<1,Particle,KDTreeCell>;
+template class KDTree<2,Particle,KDTreeCell>;
+template class KDTree<3,Particle,KDTreeCell>;
 template class KDTree<1,SphParticle,KDTreeCell>;
 template class KDTree<2,SphParticle,KDTreeCell>;
 template class KDTree<3,SphParticle,KDTreeCell>;

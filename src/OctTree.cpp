@@ -1812,6 +1812,9 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
 
 
 
+template class OctTree<1,Particle,OctTreeCell>;
+template class OctTree<2,Particle,OctTreeCell>;
+template class OctTree<3,Particle,OctTreeCell>;
 template class OctTree<1,SphParticle,OctTreeCell>;
 template class OctTree<2,SphParticle,OctTreeCell>;
 template class OctTree<3,SphParticle,OctTreeCell>;

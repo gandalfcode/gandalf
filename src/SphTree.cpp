@@ -1668,7 +1668,7 @@ int SphTree<ndim,ParticleType,TreeCell>::GetExportInfo
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void SphTree<ndim,ParticleType,TreeCell>::UnpackExported
  (vector<char >& received_array,
-  vector<int>& Nbytes_exported_from_proc,
+  vector<int>& Nbytes_from_proc,
   Sph<ndim>* sph)
 {
   int offset = 0;
@@ -1677,14 +1677,14 @@ void SphTree<ndim,ParticleType,TreeCell>::UnpackExported
   tree->Nimportedcell=0;
   tree->Ncelltot=tree->Ncell;
 
-  N_imported_part_per_proc.resize(Nbytes_exported_from_proc.size());
+  N_imported_part_per_proc.resize(Nbytes_from_proc.size());
 
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray() );
 
   //-----------------------------------------------------------------------------------------------
-  for (int Nproc = 0; Nproc<Nbytes_exported_from_proc.size(); Nproc++) {
+  for (int Nproc = 0; Nproc<Nbytes_from_proc.size(); Nproc++) {
 
-    int N_received_bytes = Nbytes_exported_from_proc[Nproc];
+    int N_received_bytes = Nbytes_from_proc[Nproc];
     int N_received_particles; int N_received_cells;
 
     if (N_received_bytes == 0) {
@@ -1737,7 +1737,7 @@ void SphTree<ndim,ParticleType,TreeCell>::UnpackExported
 
   }
 
-  assert (offset == std::accumulate(Nbytes_exported_from_proc.begin(), Nbytes_exported_from_proc.end(),0));
+  assert (offset == std::accumulate(Nbytes_from_proc.begin(), Nbytes_from_proc.end(),0));
 
 
 }
@@ -1750,8 +1750,8 @@ void SphTree<ndim,ParticleType,TreeCell>::UnpackExported
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void SphTree<ndim,ParticleType,TreeCell>::GetBackExportInfo
  (vector<char >& send_buffer,              ///< [inout] These arrays will be overwritten with the information to send
-  vector<int>& Nbytes_exported_from_proc,  ///< ..
-  vector<int>& Nbytes_to_each_proc,        ///< ..
+  vector<int>& Nbytes_from_proc,  ///< ..
+  vector<int>& Nbytes_to_proc,        ///< ..
   Sph<ndim>* sph,                          ///< [in] Pointer to the SPH object
   int rank)                                ///< ..
 {
@@ -1794,10 +1794,10 @@ void SphTree<ndim,ParticleType,TreeCell>::GetBackExportInfo
     sph->NImportedParticles -= N_received_particles;
 
     //Update the information about how much data we are sending
-    Nbytes_exported_from_proc[Nproc] = N_received_particles*sizeof(ParticleType<ndim>);
+    Nbytes_from_proc[Nproc] = N_received_particles*sizeof(ParticleType<ndim>);
 
     //Update the information with how much data we are receiving
-    Nbytes_to_each_proc[Nproc] = ids_sent_particles[Nproc].size()*sizeof(ParticleType<ndim>);
+    Nbytes_to_proc[Nproc] = ids_sent_particles[Nproc].size()*sizeof(ParticleType<ndim>);
 
   }
   //-----------------------------------------------------------------------------------------------
