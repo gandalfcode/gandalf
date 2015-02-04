@@ -558,7 +558,7 @@ void Simulation<ndim>::ShockTube(void)
 
     // Smooth the initial conditions
     //---------------------------------------------------------------------------------------------
-    if (smooth_ic) {
+    /*if (smooth_ic) {
 
       // Set initial smoothing lengths and create initial ghost particles
       //-------------------------------------------------------------------------------------------
@@ -626,7 +626,7 @@ void Simulation<ndim>::ShockTube(void)
       delete[] vaux;
       delete[] uaux;
 
-    }
+    }*/
 
     delete[] r;
 
@@ -934,7 +934,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
   for (int i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).active = true;
 
   initial_h_provided = true;
-  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+  /*sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
                      hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
 
   // Search ghost particles
@@ -956,7 +956,7 @@ void Simulation<ndim>::ContactDiscontinuity(void)
 
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
-
+  */
 
   return;
 }
@@ -1088,7 +1088,7 @@ void Simulation<ndim>::KHI(void)
 
     // Update neighbour tree
     rebuild_tree = true;
-    sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+    /*sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
                        hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
 
     // Search ghost particles
@@ -1098,7 +1098,7 @@ void Simulation<ndim>::KHI(void)
 
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
-
+    */
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
       part.u = press1/part.rho/gammaone;
@@ -1938,9 +1938,9 @@ void Simulation<ndim>::PlummerSphere(void)
         i = j - Nstar;
         Particle<ndim>& part = hydro->GetParticlePointer(i);
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
-        part.sound = sqrt((FLOAT) 0.16666666666666666 / sqrt((FLOAT) 1.0 + rad*rad));
+        FLOAT sound = sqrt((FLOAT) 0.16666666666666666 / sqrt((FLOAT) 1.0 + rad*rad));
         part.rho   = (FLOAT) 1.0;
-        part.u     = part.sound*part.sound/(gamma_eos - (FLOAT) 1.0);
+        part.u     = sound*sound/(gamma_eos - (FLOAT) 1.0);
       }
       else {
         i = j;
@@ -2096,18 +2096,18 @@ void Simulation<ndim>::SedovBlastWave(void)
 
   initial_h_provided = true;
   rebuild_tree = true;
-  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                     hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
+  //sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+                     //hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
 
-  sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
+  //sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
 
   // Update neighbour tre
   rebuild_tree = true;
-  sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
-                     hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
+  //sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+                     //hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
 
   // Calculate all SPH properties
-  sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
+  //sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
 
   // Now calculate which particles are hot
   //-----------------------------------------------------------------------------------------------
