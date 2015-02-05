@@ -8,26 +8,26 @@ import numpy as np
 import time
 
 # Set basic parameters for generating initial conditions
-Nsph = 200
+Nhydro = 200
 vfluid = 4.0
 xmin = -1.5
 xmax = 1.5
 
-# Set uniform line of Nsph particles between the limits of xmin and xmax
+# Set uniform line of Nhydro particles between the limits of xmin and xmax
 # in local numpy arrays
-deltax = (xmax - xmin) / Nsph
-x = np.linspace(xmin + 0.5*deltax,xmax - 0.5*deltax,num=Nsph)
-m = np.ones(Nsph)*(xmax - xmin)/Nsph
+deltax = (xmax - xmin) / Nhydro
+x = np.linspace(xmin + 0.5*deltax,xmax - 0.5*deltax,num=Nhydro)
+m = np.ones(Nhydro)*(xmax - xmin)/Nhydro
 
 # Set velocities of shock-tube so v = vfluid for x < 0 and -vfluid for x > 0
-vx = np.ones(Nsph)*vfluid
+vx = np.ones(Nhydro)*vfluid
 vx[x > 0.0] = -vfluid
 
 # Create new 1D simulation object and set parameters
 sim = newsim(ndim=1,sim='sph')
 sim.SetParam('ic','python')
 sim.SetParam('gas_eos','isothermal')
-sim.SetParam('Nsph',Nsph)
+sim.SetParam('Nhydro',Nhydro)
 sim.SetParam('tend',0.2)
 sim.SetParam('dt_snap',0.05)
 sim.SetParam('dimensionless',1)

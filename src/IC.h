@@ -70,8 +70,8 @@ public:
 
   Ic(Simulation<ndim>* sim_aux, Hydrodynamics<ndim>* hydro_aux, FLOAT invndim_aux) :
     sim(sim_aux), hydro(hydro_aux), invndim(invndim_aux),
-    simunits(sim->simunits), simparams(sim->simparams),
-    simbox(sim->simbox), randnumb(sim->randnumb)
+    simunits(sim_aux->simunits), simparams(sim_aux->simparams),
+    simbox(sim_aux->simbox), randnumb(sim_aux->randnumb)
   {
   };
 

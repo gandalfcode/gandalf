@@ -18,7 +18,7 @@ sim.SetParam('sph_integration','lfkdk')
 sim.SetParam('gas_eos','energy_eqn')
 sim.SetParam('energy_integration','PEC')
 sim.SetParam('gamma_eos',1.6666666666666666)
-sim.SetParam('Nsph',200)
+sim.SetParam('Nhydro',200)
 sim.SetParam('tend',0.075)
 sim.SetParam('dt_snap',1.0)
 sim.SetParam('x_boundary_lhs','open')
@@ -27,7 +27,7 @@ sim.SetParam('dimensionless',1)
 
 # Set main initial conditions parameters, plus set parameters needed 
 # to plot analytical solutions.
-Nsph = 200
+Nhydro = 200
 xmin = -2.0
 xmax = 2.0
 vfluid = 8.0
@@ -39,17 +39,17 @@ sim.SetParam('vfluid1[0]',vfluid)
 sim.SetParam('vfluid2[0]',-vfluid)
 sim.SetParam('boxmin[0]',xmin)
 sim.SetParam('boxmax[0]',xmax)
-deltax = (xmax - xmin) / Nsph
+deltax = (xmax - xmin) / Nhydro
 
 # Allocate arrays for particles and set main values
-x = np.linspace(xmin + 0.5*deltax,xmax - 0.5*deltax,num=Nsph)
-vx = np.zeros(Nsph)
-m = np.ones(Nsph)*(xmax - xmin)/Nsph
-u = np.ones(Nsph)*1.5
+x = np.linspace(xmin + 0.5*deltax,xmax - 0.5*deltax,num=Nhydro)
+vx = np.zeros(Nhydro)
+m = np.ones(Nhydro)*(xmax - xmin)/Nhydro
+u = np.ones(Nhydro)*1.5
 
 # Loop over all particles and set properties, depending on whether the 
 # particle is in the LHS shock region or the RHS shock region
-for i in range(Nsph):
+for i in range(Nhydro):
     if x[i] < 0.0:
         vx[i] = vfluid
     else:

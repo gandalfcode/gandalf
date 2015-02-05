@@ -140,7 +140,7 @@ void Ic<ndim>::BinaryAccretion(void)
   Nlattice2[1] = simparams->intparams["Nlattice2[1]"];
   Nlattice2[2] = simparams->intparams["Nlattice2[2]"];
 
-  debug2("[Simulation::BinaryAccretion]");
+  debug2("[Ic::BinaryAccretion]");
 
   // Convert parameters to dimensionless units
   rhofluid1 /= simunits.rho.inscale;
@@ -392,7 +392,7 @@ void Ic<ndim>::ShockTube(void)
     vfluid1[0]      = simparams->floatparams["vfluid1[0]"];
     vfluid2[0]      = simparams->floatparams["vfluid2[0]"];
 
-    debug2("[Simulation::ShockTube]");
+    debug2("[Ic::ShockTube]");
 
     // Compute size and range of fluid bounding boxes
     box1.boxmin[0] = simbox.boxmin[0];
@@ -561,7 +561,7 @@ void Ic<ndim>::UniformBox(void)
   Nlattice[1] = simparams->intparams["Nlattice1[1]"];
   Nlattice[2] = simparams->intparams["Nlattice1[2]"];
 
-  debug2("[Simulation::UniformBox]");
+  debug2("[Ic::UniformBox]");
 
   // Compute volume and number of particles inside box
   if (ndim == 1) {
@@ -648,7 +648,7 @@ void Ic<ndim>::UniformSphere(void)
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
   string particle_dist = simparams->stringparams["particle_distribution"];
 
-  debug2("[Simulation::UniformSphere]");
+  debug2("[Ic::UniformSphere]");
 
   mcloud   /= simunits.m.outscale;
   radius   /= simunits.r.outscale;
@@ -752,7 +752,7 @@ void Ic<ndim>::ContactDiscontinuity(void)
   //vfluid1[0] = simparams->floatparams["vfluid1[0]"];
   //vfluid2[0] = simparams->floatparams["vfluid2[0]"];
 
-  debug2("[Simulation::ContactDiscontinuity]");
+  debug2("[Ic::ContactDiscontinuity]");
 
 
   // 1D simulation
@@ -900,7 +900,7 @@ void Ic<ndim>::KHI(void)
     vfluid1[0]      = simparams->floatparams["vfluid1[0]"];
     vfluid2[0]      = simparams->floatparams["vfluid2[0]"];
 
-    debug2("[Simulation::KHI]");
+    debug2("[Ic::KHI]");
 
 
     // Compute size and range of fluid bounding boxes
@@ -916,6 +916,7 @@ void Ic<ndim>::KHI(void)
     volume = (box1.boxmax[0] - box1.boxmin[0])*(box1.boxmax[1] - box1.boxmin[1]);
     Nbox1 = Nlattice1[0]*Nlattice1[1];
     Nbox2 = Nlattice2[0]*Nlattice2[1];
+
 
     // Allocate local and main particle memory
     hydro->Nhydro = Nbox1 + Nbox2;
@@ -997,8 +998,10 @@ void Ic<ndim>::KHI(void)
     */
     for (i=0; i<hydro->Nhydro; i++) {
       Particle<ndim>& part = hydro->GetParticlePointer(i);
-      part.u = press1/part.rho/gammaone;
+      cout << "r[" << i << "] : " << part.r[0] << "   " << part.r[1] << endl;
+      //part.u = press1/part.rho/gammaone;
     }
+
 
     delete[] r;
 
@@ -1040,7 +1043,7 @@ void Ic<ndim>::NohProblem(void)
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
   string particle_dist = simparams->stringparams["particle_distribution"];
 
-  debug2("[Simulation::NohProblem]");
+  debug2("[Ic::NohProblem]");
 
   r = new FLOAT[ndim*Npart];
 
@@ -1121,7 +1124,7 @@ void Ic<ndim>::BossBodenheimer(void)
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
   string particle_dist = simparams->stringparams["particle_distribution"];
 
-  debug2("[Simulation::BossBodenheimer]");
+  debug2("[Ic::BossBodenheimer]");
 
   // Convert any parameters to code units
   angvel /= simunits.angvel.outscale;
@@ -1233,7 +1236,7 @@ void Ic<ndim>::TurbulentCore(void)
   ExceptionHandler::getIstance().raise(message);
 #endif
 
-  debug2("[Simulation::TurbulentCore]");
+  debug2("[Ic::TurbulentCore]");
 
   // Convert any parameters to code units
   mcloud /= simunits.m.outscale;
@@ -1383,7 +1386,7 @@ void Ic<ndim>::BondiAccretion(void)
   FLOAT rhogas  = simparams->floatparams["rhofluid1"];
   string particle_dist = simparams->stringparams["particle_distribution"];
 
-  debug2("[Simulation::BondiAccretion]");
+  debug2("[Ic::BondiAccretion]");
 
   // Convert any parameters to code units
   temp0  /= simunits.temp.outscale;
@@ -1561,7 +1564,7 @@ void Ic<ndim>::EwaldDensity(void)
     FLOAT mu_bar    = simparams->floatparams["mu_bar"];
     //FLOAT zmax      = simparams->floatparams["zmax"];
 
-    debug2("[Simulation::EwaldDensity]");
+    debug2("[Ic::EwaldDensity]");
 
     if (hydro->gas_eos == "isothermal") {
       ugas   = temp0/gammaone/mu_bar;
@@ -1766,7 +1769,7 @@ void Ic<ndim>::PlummerSphere(void)
     FLOAT radius    = simparams->floatparams["radius"];
     FLOAT rstar     = simparams->floatparams["rstar"];
 
-    debug1("[Simulation::PlummerSphere]");
+    debug1("[Ic::PlummerSphere]");
 
     hydro->Nhydro = Nhydro;
     hydro->Ntot = Nhydro;
@@ -1927,7 +1930,7 @@ void Ic<ndim>::SedovBlastWave(void)
   FLOAT kefrac   = simparams->floatparams["kefrac"];
   string particle_dist = simparams->stringparams["particle_distribution"];
 
-  debug2("[Simulation::SedovBlastWave]");
+  debug2("[Ic::SedovBlastWave]");
 
 
   // Compute size and range of fluid bounding boxes
@@ -2088,7 +2091,7 @@ void Ic<ndim>::ShearFlow(void)
     FLOAT press1    = simparams->floatparams["press1"];
     FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
 
-    debug2("[Simulation::ShearFlow]");
+    debug2("[Ic::ShearFlow]");
 
 
     // Compute size and range of fluid bounding boxes
@@ -2160,7 +2163,7 @@ void Ic<ndim>::SoundWave(void)
   FLOAT mu_bar    = simparams->floatparams["mu_bar"];
   //Nlattice1[0]    = simparams->intparams["Nlattice1[0]"];
 
-  debug2("[Simulation::SoundWave]");
+  debug2("[Ic::SoundWave]");
 
   if (ndim != 1) {
     string message = "Sound wave only available in 1D";
@@ -2243,7 +2246,7 @@ void Ic<ndim>::SpitzerExpansion(void)
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
   string particle_dist = simparams->stringparams["particle_distribution"];
 
-  debug2("[Simulation::SpitzerExpansion]");
+  debug2("[Ic::SpitzerExpansion]");
 
   mcloud   /= simunits.m.outscale;
   radius   /= simunits.r.outscale;
@@ -2329,7 +2332,7 @@ void Ic<ndim>::BinaryStar(void)
 
   Nbody<ndim>* nbody = sim->nbody;
 
-  debug2("[Simulation::BinaryStar]");
+  debug2("[Ic::BinaryStar]");
 
   if (ndim == 1) {
     string message = "Binary test not available in 1D";
@@ -2490,7 +2493,7 @@ void Ic<ndim>::AddBinaryStar
 
   //-----------------------------------------------------------------------------------------------
   if (ndim > 1) {
-    debug2("[Simulation::AddBinaryStar]");
+    debug2("[Ic::AddBinaryStar]");
 
     int k;                               // Dimension counter
     FLOAT mbin = m1 + m2;                // Total binary mass
@@ -2580,7 +2583,7 @@ void Ic<ndim>::AddRandomBox
   FLOAT *r,                            ///< [out] Positions of particles
   DomainBox<ndim> box)                 ///< [in] Bounding box containing particles
 {
-  debug2("[Simulation::AddRandomBox]");
+  debug2("[Ic::AddRandomBox]");
 
   for (int i=0; i<Npart; i++) {
     for (int k=0; k<ndim; k++) {
@@ -2608,7 +2611,7 @@ void Ic<ndim>::AddRandomSphere
   FLOAT rad;                           // Radius of particle
   FLOAT rpos[ndim];                    // Random position of new particle
 
-  debug2("[Simulation::AddRandomSphere]");
+  debug2("[Ic::AddRandomSphere]");
 
   // Loop over all required particles
   //-----------------------------------------------------------------------------------------------
@@ -2651,7 +2654,7 @@ int Ic<ndim>::AddLatticeSphere
   FLOAT *raux;                         // Temp. array to hold particle positions
   DomainBox<ndim> box1;                // Bounding box
 
-  debug2("[Simulation::AddLatticeSphere]");
+  debug2("[Ic::AddLatticeSphere]");
 
   // Set parameters for box and lattice to ensure it contains enough particles
   for (k=0; k<3; k++) Nlattice[k] = 1;
@@ -2725,7 +2728,7 @@ void Ic<ndim>::AddCubicLattice
   int ii,jj,kk;                        // Aux. lattice counters
   FLOAT spacing[ndim];                 // Lattice spacing in each direction
 
-  debug2("[Simulation::AddCubicLattice]");
+  debug2("[Ic::AddCubicLattice]");
 
   // If normalised, ensure equal spacing between all lattice layers.
   // Otherwise set spacing to fit bounding box
@@ -2796,7 +2799,7 @@ void Ic<ndim>::AddHexagonalLattice
   int ii,jj,kk;                        // Aux. lattice counters
   FLOAT rad[ndim];                     // 'Radius' of particle in lattice
 
-  debug2("[Simulation::AddHexagonalLattice]");
+  debug2("[Ic::AddHexagonalLattice]");
 
   // If normalised, ensure equal spacing between all particles.
   // Otherwise set spacing to fit bounding box.
@@ -2874,7 +2877,7 @@ int Ic<ndim>::CutSphere
   FLOAT radius;                        // Current radius containing Nhydroere ptcls
   FLOAT rcentre[ndim];                 // Centre of sphere
 
-  debug2("[Simulation::CutSphere]");
+  debug2("[Ic::CutSphere]");
 
   // Find centre and shortest edge-length of bounding box
   r_high = (FLOAT) big_number;
@@ -2948,7 +2951,7 @@ void Ic<ndim>::AddAzimuthalDensityPerturbation
   FLOAT rpos[3];                       // Random position of new particle
   FLOAT spacing;                       // Table spacing
 
-  debug2("[Simulation::AddAzimuthalDensityPerturbation]");
+  debug2("[Ic::AddAzimuthalDensityPerturbation]");
 
   tabtot = 10000;
   spacing = twopi/(FLOAT)(tabtot - 1);
@@ -3021,7 +3024,7 @@ void Ic<ndim>::AddSinusoidalDensityPerturbation
   FLOAT xnew;                          // New particle position
   FLOAT kwave = twopi/lambda;          // Sine wave-number
 
-  debug2("[Simulation::AddSinusoidalDensityPerturbation]");
+  debug2("[Ic::AddSinusoidalDensityPerturbation]");
 
 
   // Loop over all required particles
@@ -3071,7 +3074,7 @@ void Ic<ndim>::AddRotationalVelocityField
     FLOAT Rsqd;                        // Distance squared from z-axis
     FLOAT dr[3];                       // Relative position vector
 
-    debug2("[Simulation::AddAzimuthalDensityPerturbation]");
+    debug2("[Ic::AddAzimuthalDensityPerturbation]");
 
 
     // Loop over all required particles
@@ -3133,7 +3136,7 @@ void Ic<ndim>::ComputeBondiSolution
   FLOAT z1;                            // ..
   FLOAT *dlnx,*lw,*lx,*ly,*lz;         // ..
 
-  debug2("[Simulation::ComputeBondiSolution]");
+  debug2("[Ic::ComputeBondiSolution]");
 
   dlnx = new FLOAT[Ntable];
   lw   = new FLOAT[Ntable];
@@ -3300,7 +3303,7 @@ void Ic<ndim>::GenerateTurbulentVelocityField
     fftw_complex *incomplexfield;      // ..
     fftw_complex *outcomplexfield;     // ..
 
-    debug2("[Simulation::GenerateTurbulentVelocityField]");
+    debug2("[Ic::GenerateTurbulentVelocityField]");
 
 
     divfree = false;

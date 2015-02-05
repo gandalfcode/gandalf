@@ -15,7 +15,7 @@ Select shocktube initial conditions         : ic = soundwave
 Pressure of LHS fluid                       : press1 = 1.0
 Density of LHS fluid                        : rhofluid1 = 1.0
 Sound wave amplitude                        : amp = 0.001
-No. of particles in wave                    : Nsph = 256
+No. of particles in wave                    : Nhydro = 256
 Use dimensionless units                     : dimensionless = 1
 
 

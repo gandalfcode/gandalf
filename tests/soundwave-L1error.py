@@ -16,7 +16,7 @@ L1values = []
 # Simulation 1, N = 8
 # -----------------------------------------------
 sim1 = newsim("soundwave.dat")
-sim1.SetParam("Nsph",8)
+sim1.SetParam("Nhydro",8)
 setupsim()
 run()
 Nres.append(8)
@@ -28,7 +28,7 @@ plotanalytical("x","rho")
 # Simulation 2, N = 16
 # -----------------------------------------------
 sim2 = newsim("soundwave.dat")
-sim2.SetParam("Nsph",16)
+sim2.SetParam("Nhydro",16)
 setupsim()
 run()
 Nres.append(16)
@@ -39,7 +39,7 @@ addplot("x","rho")
 # Simulation 3, N = 32
 # -----------------------------------------------
 sim3 = newsim("soundwave.dat")
-sim3.SetParam("Nsph",32)
+sim3.SetParam("Nhydro",32)
 setupsim()
 run()
 Nres.append(32)
@@ -50,7 +50,7 @@ addplot("x","rho")
 # Simulation 4, N = 64
 # -----------------------------------------------
 sim4 = newsim("soundwave.dat")
-sim4.SetParam("Nsph",64)
+sim4.SetParam("Nhydro",64)
 setupsim()
 run()
 Nres.append(64)
@@ -61,7 +61,7 @@ addplot("x","rho")
 # Simulation 5, N = 128
 # -----------------------------------------------
 sim5 = newsim("soundwave.dat")
-sim5.SetParam("Nsph",128)
+sim5.SetParam("Nhydro",128)
 setupsim()
 run()
 Nres.append(128)
@@ -72,7 +72,7 @@ addplot("x","rho")
 # Simulation 6, N = 256
 # -----------------------------------------------
 sim6 = newsim("soundwave.dat")
-sim6.SetParam("Nsph",256)
+sim6.SetParam("Nhydro",256)
 sim6.SetupSimulation()
 run()
 Nres.append(256)
