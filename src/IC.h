@@ -28,6 +28,10 @@
 #include "Precision.h"
 #include "Hydrodynamics.h"
 #include "Simulation.h"
+#include "RandomNumber.h"
+#if defined(FFTW_TURBULENCE)
+#include "fftw3.h"
+#endif
 
 
 template <int ndim>
@@ -38,6 +42,7 @@ private:
   Simulation<ndim>* const sim;              ///< Simulation class pointer
   Hydrodynamics<ndim>* const hydro;         ///< Hydrodynamics algorithm pointer
   Parameters* simparams;
+  RandomNumber *randnumb;
   const FLOAT invndim;
   const SimUnits& simunits;
   const DomainBox<ndim>& simbox;
@@ -66,7 +71,7 @@ public:
   Ic(Simulation<ndim>* sim_aux, Hydrodynamics<ndim>* hydro_aux, FLOAT invndim_aux) :
     sim(sim_aux), hydro(hydro_aux), invndim(invndim_aux),
     simunits(sim->simunits), simparams(sim->simparams),
-    simbox(sim->simbox)
+    simbox(sim->simbox), randnumb(sim->randnumb)
   {
   };
 

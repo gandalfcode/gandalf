@@ -1434,9 +1434,6 @@ void BruteForceSearch<ndim,ParticleType>::UnpackReturnedExportInfo
 
 
 
-template class BruteForceSearch<1,Particle>;
-template class BruteForceSearch<2,Particle>;
-template class BruteForceSearch<3,Particle>;
 template class BruteForceSearch<1,SphParticle>;
 template class BruteForceSearch<2,SphParticle>;
 template class BruteForceSearch<3,SphParticle>;
