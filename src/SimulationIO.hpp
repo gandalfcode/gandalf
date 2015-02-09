@@ -1436,6 +1436,340 @@ bool Simulation<ndim>::ReadSerenUnformSnapshotFile(string filename)
 //  Simulation::WriteSerenUnformSnapshotFile
 /// Write SPH and N-body particle data to snapshot file in Seren binary format.
 //=============================================================================
+#ifdef MPI_PARALLEL
+template <int ndim>
+bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
+{
+  int i;                            // Aux. counter
+  int idata[50];                    // Integer data array
+  int ii;                           // Aux. counter
+  int k;                            // Aux. loop counter
+  int typedata[50][5];              // SPH Particle data array information
+  int ndata;                        // No. of data arrays written
+  int nunit;                        // No. of unit strings
+  int sink_data_length = 12+2*ndim; // (+ 2*dmdt_range_aux);
+  long ilpdata[50];                 // Long integer data array
+  FLOAT rdata[50];                  // Real data array
+  FLOAT sdata[sink_data_length];    // Sink data packet
+  DOUBLE ddata[50];                 // Double float data array
+  string unit_data[50];             // String ids of units written
+  string data_id[50];               // String ids of arrays written
+
+  debug2("[Simulation::WriteSerenUnformSnapshotFile]");
+
+  if (rank==0)
+    cout << "Writing snapshot file : " << filename << endl;
+
+  // Total number of particles
+  int Ntot_hydro;
+  MPI_Allreduce(&hydro->Nhydro,&Ntot_hydro,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+
+  // Zero arrays
+  for (i=0; i<50; i++) idata[i] = 0;
+  for (i=0; i<50; i++) ilpdata[i] = 0;
+  for (i=0; i<50; i++) rdata[i] = 0.0;
+  for (i=0; i<50; i++) ddata[i] = 0.0;
+  nunit = 0;
+  ndata = 0;
+
+  // Set units
+  if (!simunits.dimensionless) {
+    unit_data[0] = simunits.r.outunit;
+    unit_data[1] = simunits.m.outunit;
+    unit_data[2] = simunits.t.outunit;
+    unit_data[3] = simunits.v.outunit;
+    unit_data[4] = simunits.a.outunit;
+    unit_data[5] = simunits.rho.outunit;
+    unit_data[6] = simunits.sigma.outunit;
+    unit_data[7] = simunits.press.outunit;
+    unit_data[8] = simunits.f.outunit;
+    unit_data[9] = simunits.E.outunit;
+    unit_data[10] = simunits.mom.outunit;
+    unit_data[11] = simunits.angmom.outunit;
+    unit_data[12] = simunits.angvel.outunit;
+    unit_data[13] = simunits.dmdt.outunit;
+    unit_data[14] = simunits.L.outunit;
+    unit_data[15] = simunits.kappa.outunit;
+    unit_data[16] = simunits.B.outunit;
+    unit_data[17] = simunits.Q.outunit;
+    unit_data[18] = simunits.Jcur.outunit;
+    unit_data[19] = simunits.u.outunit;
+    unit_data[20] = simunits.temp.outunit;
+    nunit = 21;
+  }
+
+  // Set array ids and array information data if there are any SPH particles
+  //---------------------------------------------------------------------------
+  if (Ntot_hydro > 0) {
+    data_id[ndata] = "porig";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = Ntot_hydro; typedata[ndata][3] = 2;
+    typedata[ndata][4] = 0; ndata++;
+
+    data_id[ndata] = "r";
+    typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
+    typedata[ndata][2] = Ntot_hydro; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 1; ndata++;
+
+    data_id[ndata] = "m";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = Ntot_hydro; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 2; ndata++;
+
+    data_id[ndata] = "h";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = Ntot_hydro; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 1; ndata++;
+
+    data_id[ndata] = "v";
+    typedata[ndata][0] = ndim; typedata[ndata][1] = 1;
+    typedata[ndata][2] = Ntot_hydro; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 4; ndata++;
+
+    data_id[ndata] = "rho";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = Ntot_hydro; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 6; ndata++;
+
+    data_id[ndata] = "u";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = Ntot_hydro; typedata[ndata][3] = 4;
+    typedata[ndata][4] = 20; ndata++;
+  }
+
+  if (nbody->Nstar > 0) {
+    data_id[ndata] = "sink_v1";
+    typedata[ndata][0] = 1; typedata[ndata][1] = 1;
+    typedata[ndata][2] = nbody->Nstar; typedata[ndata][3] = 7;
+    typedata[ndata][4] = 0; ndata++;
+  }
+
+  // Set important header information
+  idata[0]    = Ntot_hydro;
+  idata[1]    = nbody->Nstar;
+  idata[4]    = Ntot_hydro;
+  idata[19]   = nunit;
+  idata[20]   = ndata;
+  ilpdata[0]  = Noutsnap;
+  ilpdata[1]  = Nsteps;
+  ilpdata[10] = Noutlitesnap;
+  rdata[0]    = hydro->h_fac;
+  rdata[1]    = 0.0;
+  ddata[0]    = t*simunits.t.outscale;
+  ddata[1]    = tsnaplast*simunits.t.outscale;
+  ddata[2]    = hydro->mmean*simunits.m.outscale;
+  ddata[10]   = tlitesnaplast*simunits.t.outscale;
+
+
+  // Write header information to file
+  // Only cpu 0 does it
+  //---------------------------------------------------------------------------
+
+  if (rank==0) {
+    ofstream outfile(filename.c_str(),ios::binary);
+    BinaryWriter writer(outfile);
+    std::ostringstream stream;
+    stream << std::left << std::setw(string_length) << std::setfill(' ')
+                      << binary_tag;
+    outfile << stream.str();
+
+#if defined GANDALF_DOUBLE_PRECISION
+    writer.write_value(8);
+#else
+    writer.write_value(4);
+#endif
+    writer.write_value(ndim);
+    writer.write_value(ndim);
+    writer.write_value(ndim);
+    for (i=0; i<50; i++) writer.write_value(idata[i]);
+    for (i=0; i<50; i++) writer.write_value(ilpdata[i]);
+    for (i=0; i<50; i++) writer.write_value(rdata[i]);
+    for (i=0; i<50; i++) writer.write_value(ddata[i]);
+    for (i=0; i<nunit; i++) {
+      std::ostringstream stream;
+      stream << std::left << std::setw(string_length) << std::setfill(' ')
+                    << unit_data[i];
+      outfile << stream.str();
+    }
+    for (i=0; i<ndata; i++) {
+      std::ostringstream stream;
+      stream << std::left << std::setw(string_length) << std::setfill(' ')
+                << data_id[i];
+      outfile << stream.str();
+    }
+    for (i=0; i<ndata; i++)
+      for (int j=0; j< 5; j++) writer.write_value(typedata[i][j]);
+
+  }
+
+
+  // Write arrays for SPH particles
+  //---------------------------------------------------------------------------
+  if (Ntot_hydro > 0) {
+
+    // Let's make sure root has finished writing the header before we start writing
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // Now everyone opens the output file
+    MPI_File file;
+    char* filename_str = new char[strlen(filename.c_str())+1];
+    strcpy(filename_str,filename.c_str());
+    MPI_File_open(MPI_COMM_WORLD, filename_str, MPI_MODE_RDWR,MPI_INFO_NULL, &file);
+    delete[] filename_str;
+    MPI_Offset end_header;
+    MPI_File_get_size(file,&end_header);
+    MPI_File_seek(file,end_header,MPI_SEEK_SET);
+
+    // We need to know how much to seek to start writing -
+    // need to know the cumulative number of particles
+    int Nhydro_before;
+    MPI_Exscan(&hydro->Nhydro,&Nhydro_before,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+    if (rank==0) {
+      Nhydro_before = 0;
+    }
+
+    // Starting point - let's remember it
+    MPI_Offset end_previous_write;
+
+    // Buffer
+    void* buffer = malloc(sizeof(FLOAT)*ndim*hydro->Nhydro);
+
+    // porig
+    //-------------------------------------------------------------------------
+    for (i=0; i<hydro->Nhydro; i++) {
+      int* buffer_int = (int*) buffer;
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      buffer_int[i] = part.iorig;
+    }
+    // Seek at the right position in the file
+    MPI_File_seek(file, sizeof(int)*Nhydro_before  ,MPI_SEEK_CUR);
+    // Write date
+    MPI_Status status;
+    MPI_File_write_all (file, buffer, hydro->Nhydro, MPI_INT, &status);
+    // Seek at the end of the porig section
+    end_previous_write = end_header+sizeof(int)*Ntot_hydro;
+    MPI_File_seek(file, end_previous_write, MPI_SEEK_SET);
+
+    // Positions
+    //-------------------------------------------------------------------------
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      FLOAT* buffer_float = (FLOAT*) buffer;
+      for (int k=0; k<ndim; k++) buffer_float[ndim*i+k] = part.r[k]*simunits.r.outscale;
+    }
+    MPI_File_seek(file, sizeof(FLOAT)*ndim*Nhydro_before,MPI_SEEK_CUR);
+    MPI_File_write_all (file, buffer, ndim*hydro->Nhydro, GANDALF_MPI_FLOAT, &status);
+    end_previous_write += sizeof(FLOAT)*ndim*Ntot_hydro;
+    MPI_File_seek(file, end_previous_write, MPI_SEEK_SET);
+
+
+    // Masses
+    //-------------------------------------------------------------------------
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      FLOAT* buffer_float = (FLOAT*) buffer;
+      buffer_float[i] = part.m*simunits.m.outscale;
+      assert(part.m > 0.0);
+    }
+    MPI_File_seek(file, sizeof(FLOAT)*Nhydro_before,MPI_SEEK_CUR);
+    MPI_File_write_all (file, buffer, hydro->Nhydro, GANDALF_MPI_FLOAT, &status);
+    end_previous_write += sizeof(FLOAT)*Ntot_hydro;
+    MPI_File_seek(file, end_previous_write, MPI_SEEK_SET);
+
+    // Smoothing lengths
+    //-------------------------------------------------------------------------
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      FLOAT* buffer_float = (FLOAT*) buffer;
+      buffer_float[i] = part.h*simunits.r.outscale;
+    }
+    MPI_File_seek(file, sizeof(FLOAT)*Nhydro_before,MPI_SEEK_CUR);
+    MPI_File_write_all (file, buffer, hydro->Nhydro, GANDALF_MPI_FLOAT, &status);
+    end_previous_write += sizeof(FLOAT)*Ntot_hydro;
+    MPI_File_seek(file, end_previous_write, MPI_SEEK_SET);
+
+    // Velocities
+    //-------------------------------------------------------------------------
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      FLOAT* buffer_float = (FLOAT*) buffer;
+      for (int k=0; k<ndim; k++)
+        buffer_float[ndim*i+k] = part.v[k]*simunits.v.outscale;
+    }
+    MPI_File_seek(file, sizeof(FLOAT)*ndim*Nhydro_before,MPI_SEEK_CUR);
+    MPI_File_write_all (file, buffer, ndim*hydro->Nhydro, GANDALF_MPI_FLOAT, &status);
+    end_previous_write += sizeof(FLOAT)*ndim*Ntot_hydro;
+    MPI_File_seek(file, end_previous_write, MPI_SEEK_SET);
+
+    // Densities
+    //-------------------------------------------------------------------------
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      FLOAT* buffer_float = (FLOAT*) buffer;
+      buffer_float[i] = part.rho*simunits.rho.outscale;
+    }
+    MPI_File_seek(file, sizeof(FLOAT)*Nhydro_before,MPI_SEEK_CUR);
+    MPI_File_write_all (file, buffer, hydro->Nhydro, GANDALF_MPI_FLOAT, &status);
+    end_previous_write += sizeof(FLOAT)*Ntot_hydro;
+    MPI_File_seek(file, end_previous_write, MPI_SEEK_SET);
+
+    // Specific internal energies
+    //-------------------------------------------------------------------------
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      FLOAT* buffer_float = (FLOAT*) buffer;
+      buffer_float[i] = part.u*simunits.u.outscale;
+    }
+    MPI_File_seek(file, sizeof(FLOAT)*Nhydro_before,MPI_SEEK_CUR);
+    MPI_File_write_all (file, buffer, hydro->Nhydro, GANDALF_MPI_FLOAT, &status);
+    end_previous_write += sizeof(FLOAT)*Ntot_hydro;
+    MPI_File_seek(file, end_previous_write, MPI_SEEK_SET);
+
+    free(buffer);
+
+    MPI_Offset end_file;
+    MPI_File_get_position(file, &end_file);
+    assert(end_file == end_header+(sizeof(FLOAT)*ndim*2+sizeof(FLOAT)*4+sizeof(int)*1 ) *Ntot_hydro );
+
+    MPI_File_close(&file);
+
+
+  }
+
+
+  // Sinks/stars
+  //---------------------------------------------------------------------------
+  if (rank==0 && nbody->Nstar > 0) {
+
+    ofstream outfile(filename.c_str(),ios::binary|ios::ate);
+    BinaryWriter writer(outfile);
+
+    for (k=0; k<sink_data_length; k++) sdata[k] = 0.0;
+    int values[6] = {2,2,0,sink_data_length,0,0};
+    for (i=0; i<6;i++)
+      writer.write_value(values[i]);
+    for (i=0; i<nbody->Nstar; i++) {
+      writer.write_value(true); writer.write_value(true);
+      writer.write_value(i+1); writer.write_value(0);
+      for (k=0; k<ndim; k++)
+        sdata[k+1] = nbody->stardata[i].r[k]*simunits.r.outscale;
+      for (k=0; k<ndim; k++)
+        sdata[k+1+ndim] = nbody->stardata[i].v[k]*simunits.v.outscale;
+      sdata[1+2*ndim] = nbody->stardata[i].m*simunits.m.outscale;
+      sdata[2+2*ndim] = nbody->stardata[i].h*simunits.r.outscale;
+      sdata[3+2*ndim] = nbody->stardata[i].radius*simunits.r.outscale;
+      for (ii=0; ii<sink_data_length; ii++) {
+        writer.write_value(sdata[ii]);
+      }
+    }
+  }
+  //---------------------------------------------------------------------------
+
+
+
+  return true;
+}
+#else
 template <int ndim>
 bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 {
@@ -1681,7 +2015,7 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 
   return true;
 }
-
+#endif
 
 
 //=============================================================================
