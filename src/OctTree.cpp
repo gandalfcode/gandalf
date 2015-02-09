@@ -601,7 +601,7 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
         cell.rmax = sqrt(DotProduct(dr,dr,ndim));
 #ifdef MPI_PARALLEL
-        cell.worktot = child1.worktot + child2.worktot;
+        //cell.worktot = child1.worktot + child2.worktot;
 #endif
 
         // Set limits for children (maximum of 8 but may be less)
@@ -896,7 +896,36 @@ bool OctTree<ndim,ParticleType,TreeCell>::BoxOverlap
 
 }
 
+//=================================================================================================
+//  OctTree::ComputeActiveCellList
+/// Returns the number of cells containing active particles, 'Nactive', and
+/// the i.d. list of cells contains active particles, 'celllist'
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int OctTree<ndim,ParticleType,TreeCell>::ComputeActiveCellPointers
+ (TreeCell<ndim> **celllist)         ///< Cells id array containing active ptcls
+{
+  int c;                            // Cell counter
+  int Nactive = 0;                  // No. of active leaf cells in tree
 
+  for (c=0; c<Ncell; c++) {
+    if (celldata[c].Nactive > 0) {
+      celllist[Nactive++] = &(celldata[c]);
+      if (celllist[Nactive - 1]->copen != -1) {
+        cout << "WTF?? : " << c << "    " << celllist[Nactive - 1]->copen << endl;
+        exit(0);
+      }
+    }
+  }
+
+#ifdef MPI_PARALLEL
+  for (c=Ncell; c<Ncell+Nimportedcell; c++) {
+    if (celldata[c].Nactive > 0) celllist[Nactive++] = &(celldata[c]);
+  }
+#endif
+
+  return Nactive;
+}
 
 //=================================================================================================
 //  OctTree::ComputeActiveCellList
@@ -1531,7 +1560,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
   const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
   const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
   int Ngravcell,                       ///< [in] Current no. of cells in array
-  TreeCell<ndim> **gravcelllist)       ///< [out] Array of pointers to cells
+  TreeCell<ndim> *gravcelllist)       ///< [out] Array of cells
 {
   int cc;                              // Cell counter
   int i;                               // Particle id
@@ -1588,7 +1617,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
     else if (drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor
 	     && celldata[cc].N > 0) {
 
-      gravcelllist[Ngravcelltemp++] = &(celldata[cc]);
+      gravcelllist[Ngravcelltemp++] = celldata[cc];
       cc = celldata[cc].cnext;
 
     }

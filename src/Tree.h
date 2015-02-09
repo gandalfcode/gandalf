@@ -71,6 +71,7 @@ class Tree
   virtual void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *) = 0;
   virtual void UpdateActiveParticleCounters(ParticleType<ndim> *) = 0;
   virtual int ComputeActiveCellList(TreeCell<ndim> *) = 0;
+  virtual int ComputeActiveCellPointers(TreeCell<ndim> **celllist) = 0;
   virtual int ComputeActiveParticleList(TreeCell<ndim> &, ParticleType<ndim> *, int *) = 0;
   virtual int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
                                          const FLOAT, const int, int *) = 0;
@@ -94,7 +95,7 @@ class Tree
                                                 TreeCell<ndim> *, ParticleType<ndim> *) = 0;
 #ifdef MPI_PARALLEL
   virtual int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT,
-                                                   const int, int, TreeCell<ndim> **) = 0;
+                                                   const int, int, TreeCell<ndim> *) = 0;
   virtual bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *) = 0;
 #endif
 #if defined(VERIFY_ALL)

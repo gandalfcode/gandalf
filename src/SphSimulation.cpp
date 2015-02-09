@@ -461,8 +461,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Read-in N-body table here
-  nbody->LoadStellarPropertiesTable(&simunits);
-  nbody->UpdateStellarProperties();
+//  nbody->LoadStellarPropertiesTable(&simunits);
+//  nbody->UpdateStellarProperties();
 
 
   // Compute all initial SPH force terms
@@ -483,11 +483,11 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     // Copy all other data from real SPH particles to ghosts
     LocalGhosts->CopySphDataToGhosts(simbox,sph);
 
-    //sphneib->BuildTree(true,0,ntreebuildstep,ntreestockstep,sph->Ntot,
-    //                   sph->Nhydromax,sph->GetSphParticleArray(),sph,timestep);
-    //sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
-    //sphneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,sph->Ntot,
-    //                        sph->Nhydromax,sph->GetSphParticleArray(),sph,timestep);
+    sphneib->BuildTree(true,0,ntreebuildstep,ntreestockstep,sph->Ntot,
+                       sph->Nhydromax,sph->GetSphParticleArray(),sph,timestep);
+    sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
+    sphneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,sph->Ntot,
+                            sph->Nhydromax,sph->GetSphParticleArray(),sph,timestep);
 
 #ifdef MPI_PARALLEL
     if (sph->self_gravity == 1)

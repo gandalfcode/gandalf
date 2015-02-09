@@ -153,6 +153,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
 
   int ComputeActiveCellList(TreeCell<ndim> *);
+  int ComputeActiveCellPointers(TreeCell<ndim> **celllist);
   int ComputeActiveParticleList(TreeCell<ndim> &, ParticleType<ndim> *, int *);
   int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
                                  const FLOAT, const int, int *);
@@ -172,7 +173,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
                                         TreeCell<ndim> *, ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
   int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT, const int,
-                                           int, TreeCell<ndim> **);
+                                           int, TreeCell<ndim> *);
   bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *);
 #endif
 #if defined(VERIFY_ALL)

@@ -1989,6 +1989,33 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeActiveCellList
   return Nactive;
 }
 
+//=================================================================================================
+//  KDTree::ComputeActiveCellList
+/// Returns the number of cells containing active particles, 'Nactive', and
+/// the i.d. list of cells contains active particles, 'celllist'
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+int KDTree<ndim,ParticleType,TreeCell>::ComputeActiveCellPointers
+ (TreeCell<ndim> **celllist)            ///< Array of pointers to cells that will be filled in
+{
+  int c;                               // Cell counter
+  int Nactive = 0;                     // No. of active leaf cells in tree
+
+  for (c=0; c<Ncell; c++) {
+    if (celldata[c].level == lactive && celldata[c].Nactive > 0) {
+      celllist[Nactive++] = &(celldata[c]);
+    }
+  }
+
+#ifdef MPI_PARALLEL
+    for (c=Ncell; c<Ncell+Nimportedcell; c++) {
+      if (celldata[c].Nactive > 0) celllist[Nactive++] = &(celldata[c]);
+    }
+#endif
+
+  return Nactive;
+}
+
 
 
 #ifdef MPI_PARALLEL
@@ -2007,7 +2034,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
  const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
  const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
  int Ngravcell,                       ///< [in] Current no. of cells in array
- TreeCell<ndim> **gravcelllist)      ///< [out] Array of pointers to cells
+ TreeCell<ndim> *gravcelllist)      ///< [out] Array of cells
 {
   int cc;                             // Cell counter
   int i;                              // Particle id
@@ -2064,7 +2091,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
     else if (drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor
 	     && celldata[cc].N > 0) {
 
-      gravcelllist[Ngravcelltemp++] = &(celldata[cc]);
+      gravcelllist[Ngravcelltemp++] = celldata[cc];
       if (Ngravcelltemp>=Ngravcellmax) {
         ExceptionHandler::getIstance().raise("Too many interaction cells "
                                              "in distant gravity interaction list!");

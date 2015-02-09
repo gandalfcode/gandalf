@@ -382,7 +382,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
   twork = timing->WallClockTime() - twork;
-  for (cc=0; cc<cactive; cc++) {
+  for (int cc=0; cc<cactive; cc++) {
     celllist[cc].worktot += twork*(DOUBLE) celllist[cc].Nactive / (DOUBLE) Nactivetot;
   }
 #endif

@@ -79,6 +79,8 @@ struct OctTreeCell {
   FLOAT q[5];                       ///< Quadrupole moment tensor
 #ifdef MPI_PARALLEL
   double worktot;                   ///< Total work in cell
+  int c1;                           /// Added just to make it compile - do it properly!!!!
+  int c2;
 #endif
 };
 
@@ -147,6 +149,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
   int ComputeActiveCellList(TreeCell<ndim> *);
+  int ComputeActiveCellPointers(TreeCell<ndim> **celllist);
   int ComputeActiveParticleList(TreeCell<ndim> &, ParticleType<ndim> *, int *);
   int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
                                  const FLOAT, const int, int *);
@@ -166,7 +169,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
                                         TreeCell<ndim> *, ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
   int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT,
-                                           const int, int, TreeCell<ndim> **);
+                                           const int, int, TreeCell<ndim> *);
   bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *);
 #endif
 #if defined(VERIFY_ALL)

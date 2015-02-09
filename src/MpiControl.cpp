@@ -85,7 +85,7 @@ MpiControl<ndim>::MpiControl()
   Nexport_per_node.resize(Nmpi);
   displacements_send.resize(Nmpi);
   Nreceive_per_node.resize(Nmpi);
-  receive_displs.resize(Nmpi);
+  displacements_receive.resize(Nmpi);
   Nbytes_from_proc.resize(Nmpi);
   Nbytes_to_proc.resize(Nmpi);
 
@@ -367,20 +367,20 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
 
     // For periodic simulations, set bounding box of root node to be the periodic box size.
     // Otherwise, set to extend to infinity.
-    if (simbox.x_boundary_lhs == "open") mpibox.boxmin[0] = -big_number;
+    if (simbox.x_boundary_lhs == openBoundary) mpibox.boxmin[0] = -big_number;
     else mpibox.boxmin[0] = simbox.boxmin[0];
-    if (simbox.x_boundary_rhs == "open") mpibox.boxmax[0] = big_number;
+    if (simbox.x_boundary_rhs == openBoundary) mpibox.boxmax[0] = big_number;
     else mpibox.boxmax[0] = simbox.boxmax[0];
     if (ndim > 1) {
-      if (simbox.y_boundary_lhs == "open") mpibox.boxmin[1] = -big_number;
+      if (simbox.y_boundary_lhs == openBoundary) mpibox.boxmin[1] = -big_number;
       else mpibox.boxmin[1] = simbox.boxmin[1];
-      if (simbox.y_boundary_rhs == "open") mpibox.boxmax[1] = big_number;
+      if (simbox.y_boundary_rhs == openBoundary) mpibox.boxmax[1] = big_number;
       else mpibox.boxmax[1] = simbox.boxmax[1];
     }
     if (ndim == 3) {
-      if (simbox.z_boundary_lhs == "open") mpibox.boxmin[2] = -big_number;
+      if (simbox.z_boundary_lhs == openBoundary) mpibox.boxmin[2] = -big_number;
       else mpibox.boxmin[2] = simbox.boxmin[2];
-      if (simbox.z_boundary_rhs == "open") mpibox.boxmax[2] = big_number;
+      if (simbox.z_boundary_rhs == openBoundary) mpibox.boxmax[2] = big_number;
       else mpibox.boxmax[2] = simbox.boxmax[2];
     }
     //mpitree->box = &mpibox;
@@ -937,15 +937,15 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
 
   // Compute receive displacements
   running_counter = 0;
-  for (inode=0; inode<receive_displs.size(); inode++) {
-    receive_displs[inode] = running_counter;
+  for (inode=0; inode<displacements_receive.size(); inode++) {
+    displacements_receive[inode] = running_counter;
     running_counter += Nreceive_per_node[inode];
   }
 
   // Send and receive particles
   MPI_Alltoallv(&particles_to_export[0], &Nexport_per_node[0], &displacements_send[0],
                 particle_type, &particles_receive[0], &Nreceive_per_node[0],
-                &receive_displs[0], particle_type, MPI_COMM_WORLD);
+                &displacements_receive[0], particle_type, MPI_COMM_WORLD);
 
   *array = &particles_receive[0];
 
@@ -980,7 +980,7 @@ int MpiControlType<ndim, ParticleType>::UpdateGhostParticles
   // Send and receive particles
   MPI_Alltoallv(&particles_to_export[0], &Nexport_per_node[0], &displacements_send[0],
                 particle_type, &particles_receive[0], &Nreceive_per_node[0],
-                &receive_displs[0], particle_type, MPI_COMM_WORLD);
+                &displacements_receive[0], particle_type, MPI_COMM_WORLD);
 
   *array = &particles_receive[0];
 
