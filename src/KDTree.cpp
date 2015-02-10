@@ -332,7 +332,12 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
     if (celldata[c].level == ltot) {                           // If on leaf level
       celldata[c].cnext = c + 1;                               // id of next cell
       celldata[c].c2g = g;                                     // Record leaf id
+      assert (g<gmax);
       g2c[g++] = c;                                            // Record inverse id
+    }
+    else if (celldata[c].level == lactive) {
+      celldata[c].c2g = g;                                           // Record leaf id
+      g2c[g++] = c;                                                  // Record inverse id
     }
     else {
       celldata[c+1].level            = celldata[c].level + 1;        // Level of 1st child
@@ -342,10 +347,7 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
       celldata[c].cnext              = c + cNL[celldata[c].level];   // Next cell id
     }
 
-    if (celldata[c].level == lactive) {
-      celldata[c].c2g = g;                                           // Record leaf id
-      g2c[g++] = c;                                                  // Record inverse id
-    }
+
 
     // Some assert statements (for debugging)
     assert(c >= celldata[c].level);
