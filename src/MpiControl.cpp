@@ -514,6 +514,16 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
   }
   //===============================================================================================
 
+  // Share the stars with all other domains
+  if (nbody->Nbody > 0) {
+    MPI_Bcast(&(nbody->Nbody),1,MPI_INT,0,MPI_COMM_WORLD);
+
+    nbody->AllocateMemory(nbody->Nbody);
+
+    MPI_Bcast(nbody->stardata,sizeof(StarParticle<ndim>)*nbody->Nbody,MPI_BYTE,0,MPI_COMM_WORLD);
+
+  }
+
 
   return;
 }
