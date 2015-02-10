@@ -76,11 +76,21 @@ GradhSphKDTree<ndim,ParticleType,TreeCell>::GradhSphKDTree
                                                        macerroraux, gravity_mac_aux, multipole_aux);
 
   // Set-up multiple pruned trees, one for each MPI process
+  Nghostpruned = int new[Nmpi];
   KDTree<ndim,ParticleType,TreeCell>** prunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>*[Nmpi];
   prunedtree = (Tree<ndim,ParticleType,TreeCell> **) prunedtree_derived;
+  ghostprunedtree = (Tree<ndim,ParticleType,TreeCell> **) prunedtree_derived;
+
   for (int j=0; j<Nmpi; j++) {
     prunedtree[j] = new KDTree<ndim,ParticleType,TreeCell>
       (1, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
+  }
+
+  for (int j=0; j<Nmpi; j++) {
+    for (int i=0; i<Nghostprunedmax; i++) {
+      ghostprunedtree[j][i] = new KDTree<ndim,ParticleType,TreeCell>
+        (1, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
+    }
   }
 #endif
 }

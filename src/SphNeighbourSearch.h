@@ -384,6 +384,7 @@ protected:
   void UpdateHydroExportList(int, int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void BuildMpiGhostTree(bool, int, int, int, int, int, SphParticle<ndim> *, Sph<ndim> *, FLOAT);
   void BuildPrunedTree(int, int);
+  void BuildGhostPrunedTree(void);
   int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &, Sph<ndim> *, vector<int> &);
   int SearchHydroExportParticles(const Box<ndim> &, Sph<ndim> *, vector<TreeCell<ndim> *> &);
   void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
@@ -391,7 +392,7 @@ protected:
   FLOAT FindLoadBalancingDivision(int, FLOAT, Box<ndim> &);
   virtual int GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>&, int, int);
   virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
-        Sph<ndim>* sph);
+                               Sph<ndim>* sph);
   virtual void GetBackExportInfo(vector<char >& received_array,
     vector<int>& N_exported_particles_from_proc, vector<int>&, Sph<ndim>* sph, int rank);
   virtual void UnpackReturnedExportInfo(vector<char >& received_information,
@@ -445,7 +446,9 @@ protected:
   TreeCell<ndim> **cellbuf;                        ///< ..
 
 #ifdef MPI_PARALLEL
+  static const int Nghostprunedmax = 27;           ///< ..
   int Nprunedcellmax;                              ///< ..
+  int *Nghostpruned;                               ///< ..
   int *Ncellexport;                                ///< ..
   int *Npartexport;                                ///< ..
   TreeCell<ndim> ***cellexportlist;                ///< List of cells
@@ -453,6 +456,8 @@ protected:
                                                    ///< ghosts from other MPI procs.
   Tree<ndim,ParticleType,TreeCell> **prunedtree;   ///< 'Pruned' tree for MPI nodes.
                                                    ///< i.e. only uses top levels
+  Tree<ndim,ParticleType,TreeCell> **ghostprunedtree[Nghostprunedmax]; ///< Tree of periodic ghost cells created
+                                                         ///< from pruned trees
 #endif
 
 };

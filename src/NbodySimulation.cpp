@@ -129,29 +129,29 @@ void NbodySimulation<ndim>::ProcessParameters(void)
 
   // Boundary condition variables
   //-----------------------------------------------------------------------------------------------
-  simbox.x_boundary_lhs = setBoundaryType(stringparams["x_boundary_lhs"]);
-  simbox.x_boundary_rhs = setBoundaryType(stringparams["x_boundary_rhs"]);
+  simbox.boundary_lhs[0] = setBoundaryType(stringparams["boundary_lhs[0]"]);
+  simbox.boundary_rhs[0] = setBoundaryType(stringparams["boundary_rhs[0]"]);
   simbox.boxmin[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
   simbox.boxmax[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
-  //if (simbox.x_boundary_lhs == "open") simbox.boxmin[0] = -big_number;
-  //if (simbox.x_boundary_rhs == "open") simbox.boxmax[0] = big_number;
+  //if (simbox.boundary_lhs[0] == "open") simbox.boxmin[0] = -big_number;
+  //if (simbox.boundary_rhs[0] == "open") simbox.boxmax[0] = big_number;
 
   if (ndim > 1) {
-    simbox.y_boundary_lhs = setBoundaryType(stringparams["y_boundary_lhs"]);
-    simbox.y_boundary_rhs = setBoundaryType(stringparams["y_boundary_rhs"]);
+    simbox.boundary_lhs[1] = setBoundaryType(stringparams["boundary_lhs[1]"]);
+    simbox.boundary_rhs[1] = setBoundaryType(stringparams["boundary_rhs[1]"]);
     simbox.boxmin[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
     simbox.boxmax[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
-    //if (simbox.y_boundary_lhs == "open") simbox.boxmin[1] = -big_number;
-    //if (simbox.y_boundary_rhs == "open") simbox.boxmax[1] = big_number;
+    //if (simbox.boundary_lhs[1] == "open") simbox.boxmin[1] = -big_number;
+    //if (simbox.boundary_rhs[1] == "open") simbox.boxmax[1] = big_number;
   }
 
   if (ndim == 3) {
-    simbox.z_boundary_lhs = setBoundaryType(stringparams["z_boundary_lhs"]);
-    simbox.z_boundary_rhs = setBoundaryType(stringparams["z_boundary_rhs"]);
+    simbox.boundary_lhs[2] = setBoundaryType(stringparams["boundary_lhs[2]"]);
+    simbox.boundary_rhs[2] = setBoundaryType(stringparams["boundary_rhs[2]"]);
     simbox.boxmin[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
     simbox.boxmax[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
-    //if (simbox.z_boundary_lhs == "open") simbox.boxmin[2] = -big_number;
-    //if (simbox.z_boundary_rhs == "open") simbox.boxmax[2] = big_number;
+    //if (simbox.boundary_lhs[2] == "open") simbox.boxmin[2] = -big_number;
+    //if (simbox.boundary_rhs[2] == "open") simbox.boxmax[2] = big_number;
   }
 
   for (int k=0; k<ndim; k++) {

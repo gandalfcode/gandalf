@@ -50,19 +50,19 @@ void Ic<ndim>::CheckInitialConditions(void)
     okflag = true;
 
     if (part.r[0] < simbox.boxmin[0])
-      if (simbox.x_boundary_lhs == periodicBoundary) okflag = false;
+      if (simbox.boundary_lhs[0] == periodicBoundary) okflag = false;
     if (part.r[0] > simbox.boxmax[0])
-      if (simbox.x_boundary_rhs == periodicBoundary) okflag = false;
+      if (simbox.boundary_rhs[0] == periodicBoundary) okflag = false;
 
     if (ndim >= 2 && part.r[1] < simbox.boxmin[1])
-      if (simbox.y_boundary_lhs == periodicBoundary) okflag = false;
+      if (simbox.boundary_lhs[1] == periodicBoundary) okflag = false;
     if (ndim >= 2 && part.r[1] > simbox.boxmax[1])
-      if (simbox.y_boundary_rhs == periodicBoundary) okflag = false;
+      if (simbox.boundary_rhs[1] == periodicBoundary) okflag = false;
 
     if (ndim == 3 && part.r[2] < simbox.boxmin[2])
-      if (simbox.z_boundary_lhs == periodicBoundary) okflag = false;
+      if (simbox.boundary_lhs[2] == periodicBoundary) okflag = false;
     if (ndim == 3 && part.r[2] > simbox.boxmax[2])
-      if (simbox.z_boundary_rhs == periodicBoundary) okflag = false;
+      if (simbox.boundary_rhs[2] == periodicBoundary) okflag = false;
 
     // If flag indicates a problem, print error and quit
     if (!okflag) {

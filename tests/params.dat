@@ -1,9 +1,9 @@
-xlhs : x_boundary_lhs = periodic
-xrhs : x_boundary_rhs = periodic
-xlhs : y_boundary_lhs = periodic
-xrhs : y_boundary_rhs = periodic
-xlhs : z_boundary_lhs = periodic
-xrhs : z_boundary_rhs = periodic
+xlhs : boundary_lhs[0] = periodic
+xrhs : boundary_rhs[0] = periodic
+xlhs : boundary_lhs[1] = periodic
+xrhs : boundary_rhs[1] = periodic
+xlhs : boundary_lhs[2] = periodic
+xrhs : boundary_rhs[2] = periodic
      : boxmin[0] = 0.0
      : boxmin[1] = 0.0
      : boxmin[2] = 0.0
