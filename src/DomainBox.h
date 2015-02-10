@@ -75,12 +75,8 @@ MPI_Datatype CreateBoxType (Box<ndim> dummy) {
 //=================================================================================================
 template <int ndim>
 struct DomainBox {
-  boundaryEnum x_boundary_lhs;         ///< x-dimension LHS boundary condition
-  boundaryEnum x_boundary_rhs;         ///< x-dimension RHS boundary condition
-  boundaryEnum y_boundary_lhs;         ///< y-dimension LHS boundary condition
-  boundaryEnum y_boundary_rhs;         ///< y-dimension RHS boundary condition
-  boundaryEnum z_boundary_lhs;         ///< z-dimension LHS boundary condition
-  boundaryEnum z_boundary_rhs;         ///< z-dimension RHS boundary condition
+  boundaryEnum boundary_lhs[3];        ///< LHS boundary types
+  boundaryEnum boundary_rhs[3];        ///< RHS boundary types
   FLOAT boxmin[3];                     ///< Minimum bounding box extent
   FLOAT boxmax[3];                     ///< Maximum bounding box extent
   FLOAT boxsize[3];                    ///< Side-lengths of bounding box
@@ -103,16 +99,16 @@ bool IsAnyBoundarySpecial(const DomainBox<ndim>& box)
   special.push_back(periodicBoundary);
 
   if (ndim >= 1) {
-    if (std::find(special.begin(), special.end(), box.x_boundary_lhs) != special.end() ) return true;
-    if (std::find(special.begin(), special.end(), box.x_boundary_rhs) != special.end() ) return true;
+    if (std::find(special.begin(), special.end(), box.boundary_lhs[0]) != special.end() ) return true;
+    if (std::find(special.begin(), special.end(), box.boundary_rhs[0]) != special.end() ) return true;
   }
   if (ndim >=2) {
-    if (std::find(special.begin(), special.end(), box.y_boundary_lhs) != special.end() ) return true;
-    if (std::find(special.begin(), special.end(), box.y_boundary_rhs) != special.end() ) return true;
+    if (std::find(special.begin(), special.end(), box.boundary_lhs[1]) != special.end() ) return true;
+    if (std::find(special.begin(), special.end(), box.boundary_rhs[1]) != special.end() ) return true;
   }
   if (ndim ==3) {
-    if (std::find(special.begin(), special.end(), box.z_boundary_lhs) != special.end() ) return true;
-    if (std::find(special.begin(), special.end(), box.z_boundary_rhs) != special.end() ) return true;
+    if (std::find(special.begin(), special.end(), box.boundary_lhs[2]) != special.end() ) return true;
+    if (std::find(special.begin(), special.end(), box.boundary_rhs[2]) != special.end() ) return true;
   }
 
   return false;
@@ -183,18 +179,18 @@ template <int ndim>
 inline void NearestPeriodicVector(const DomainBox<ndim> &box, FLOAT dr[ndim], FLOAT dr_corr[ndim])
 {
   for (int k=0; k<ndim; k++) dr_corr[k] = 0.0;
-  if (box.x_boundary_lhs == periodicBoundary && box.x_boundary_rhs == periodicBoundary) {
+  if (box.boundary_lhs[0] == periodicBoundary && box.boundary_rhs[0] == periodicBoundary) {
     if (dr[0] > box.boxhalf[0]) dr_corr[0] = -box.boxsize[0];
     else if (dr[0] < -box.boxhalf[0]) dr_corr[0] = box.boxsize[0];
   }
   if (ndim > 1) {
-    if (box.y_boundary_lhs == periodicBoundary && box.y_boundary_rhs == periodicBoundary) {
+    if (box.boundary_lhs[1] == periodicBoundary && box.boundary_rhs[1] == periodicBoundary) {
       if (dr[1] > box.boxhalf[1]) dr_corr[1] = -box.boxsize[1];
       else if (dr[1] < -box.boxhalf[1]) dr_corr[1] = box.boxsize[1];
     }
   }
   if (ndim == 3) {
-    if (box.z_boundary_lhs == periodicBoundary && box.z_boundary_rhs == periodicBoundary) {
+    if (box.boundary_lhs[2] == periodicBoundary && box.boundary_rhs[2] == periodicBoundary) {
       if (dr[2] > box.boxhalf[2]) dr_corr[2] = -box.boxsize[2];
       else if (dr[2] < -box.boxhalf[2]) dr_corr[2] = box.boxsize[2];
     }

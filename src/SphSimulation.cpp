@@ -99,21 +99,21 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
   // Boundary condition variables
   //-----------------------------------------------------------------------------------------------
-  simbox.x_boundary_lhs = setBoundaryType(stringparams["x_boundary_lhs"]);
-  simbox.x_boundary_rhs = setBoundaryType(stringparams["x_boundary_rhs"]);
+  simbox.boundary_lhs[0] = setBoundaryType(stringparams["boundary_lhs[0]"]);
+  simbox.boundary_rhs[0] = setBoundaryType(stringparams["boundary_rhs[0]"]);
   simbox.boxmin[0] = floatparams["boxmin[0]"]/simunits.r.outscale;
   simbox.boxmax[0] = floatparams["boxmax[0]"]/simunits.r.outscale;
 
   if (ndim > 1) {
-    simbox.y_boundary_lhs = setBoundaryType(stringparams["y_boundary_lhs"]);
-    simbox.y_boundary_rhs = setBoundaryType(stringparams["y_boundary_rhs"]);
+    simbox.boundary_lhs[1] = setBoundaryType(stringparams["boundary_lhs[1]"]);
+    simbox.boundary_rhs[1] = setBoundaryType(stringparams["boundary_rhs[1]"]);
     simbox.boxmin[1] = floatparams["boxmin[1]"]/simunits.r.outscale;
     simbox.boxmax[1] = floatparams["boxmax[1]"]/simunits.r.outscale;
   }
 
   if (ndim == 3) {
-    simbox.z_boundary_lhs = setBoundaryType(stringparams["z_boundary_lhs"]);
-    simbox.z_boundary_rhs = setBoundaryType(stringparams["z_boundary_rhs"]);
+    simbox.boundary_lhs[2] = setBoundaryType(stringparams["boundary_lhs[2]"]);
+    simbox.boundary_rhs[2] = setBoundaryType(stringparams["boundary_rhs[2]"]);
     simbox.boxmin[2] = floatparams["boxmin[2]"]/simunits.r.outscale;
     simbox.boxmax[2] = floatparams["boxmax[2]"]/simunits.r.outscale;
   }
@@ -430,6 +430,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #ifdef MPI_PARALLEL
     sphneib->BuildPrunedTree(pruning_level,rank);
     mpicontrol->CommunicatePrunedTrees();
+    sphneib->BuildGhostPrunedTree();
 //    exit(0);
 #endif
 
@@ -634,6 +635,7 @@ void SphSimulation<ndim>::MainLoop(void)
     sphneib->BuildPrunedTree(pruning_level,rank);
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
     mpicontrol->CommunicatePrunedTrees();
+    sphneib->BuildGhostPrunedTree();
     mpicontrol->LoadBalancing(sph,nbody);
   }
 #endif
@@ -657,6 +659,7 @@ void SphSimulation<ndim>::MainLoop(void)
 #ifdef MPI_PARALLEL
       sphneib->BuildPrunedTree(pruning_level,rank);
       mpicontrol->CommunicatePrunedTrees();
+      sphneib->BuildGhostPrunedTree();
       mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro+sph->NPeriodicGhost,sph,sph->kernp);
       MpiGhosts->SearchGhostParticles(tghost,simbox,sph);
       sphneib->BuildMpiGhostTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,

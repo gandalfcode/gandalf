@@ -89,13 +89,13 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
 
     // set ewald_periodicity for given type of boundary conditions
     ewald_periodicity = 0;
-    if (simbox.x_boundary_lhs == periodicBoundary && simbox.x_boundary_rhs == periodicBoundary) {
+    if (simbox.boundary_lhs[0] == periodicBoundary && simbox.boundary_rhs[0] == periodicBoundary) {
       ewald_periodicity+=1;
     }
-    if (simbox.y_boundary_lhs == periodicBoundary && simbox.y_boundary_rhs == periodicBoundary) {
+    if (simbox.boundary_lhs[1] == periodicBoundary && simbox.boundary_rhs[1] == periodicBoundary) {
       ewald_periodicity+=2;
     }
-    if (simbox.z_boundary_lhs == periodicBoundary && simbox.z_boundary_rhs == periodicBoundary) {
+    if (simbox.boundary_lhs[2] == periodicBoundary && simbox.boundary_rhs[2] == periodicBoundary) {
       ewald_periodicity+=4;
     }
 

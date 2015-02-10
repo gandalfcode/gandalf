@@ -98,25 +98,25 @@ class MpiTree
 
 
   //-----------------------------------------------------------------------------------------------
-  bool allocated_tree;              ///< ..
-  int gtot;                         ///< ..
-  int gmax;                         ///< ..
-  int lmax;                         ///< ..
-  int ltot;                         ///< ..
-  int Ncell;                        ///< ..
-  int Ncellmax;                     ///< ..
-  int Nmpi;                         ///< ..
-  int Nhydro;                         ///< ..
-  int Ntot;                         ///< ..
-  int Ntotmax;                      ///< ..
-  int Nthreads;                     ///< No. of OpenMP threads
-  int *g2c;                         ///< ..
-  int *ids;                         ///< Particle ids
-  int *inext;                       ///< Linked list for grid search
-  MpiTreeCell<ndim> *tree;          ///< ..
+  bool allocated_tree;                 ///< ..
+  int gtot;                            ///< ..
+  int gmax;                            ///< ..
+  int lmax;                            ///< ..
+  int ltot;                            ///< ..
+  int Ncell;                           ///< ..
+  int Ncellmax;                        ///< ..
+  int Nmpi;                            ///< ..
+  int Nhydro;                          ///< ..
+  int Ntot;                            ///< ..
+  int Ntotmax;                         ///< ..
+  int Nthreads;                        ///< No. of OpenMP threads
+  int *g2c;                            ///< ..
+  int *ids;                            ///< Particle ids
+  int *inext;                          ///< Linked list for grid search
+  MpiTreeCell<ndim> *tree;             ///< ..
 
-  int *klevel;                      ///< ..
-  DomainBox<ndim> *box;             ///< ..
+  int *klevel;                         ///< ..
+  DomainBox<ndim> *box;                ///< ..
 
 };
 #endif

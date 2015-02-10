@@ -883,9 +883,9 @@ void BruteForceSearch<ndim,ParticleType>::SearchBoundaryGhostParticles
 
 
   // If all boundaries are open, immediately return to main loop
-  if (simbox.x_boundary_lhs == openBoundary && simbox.x_boundary_rhs == openBoundary &&
-      simbox.y_boundary_lhs == openBoundary && simbox.y_boundary_rhs == openBoundary &&
-      simbox.z_boundary_lhs == openBoundary && simbox.z_boundary_rhs == openBoundary)
+  if (simbox.boundary_lhs[0] == openBoundary && simbox.boundary_rhs[0] == openBoundary &&
+      simbox.boundary_lhs[1] == openBoundary && simbox.boundary_rhs[1] == openBoundary &&
+      simbox.boundary_lhs[2] == openBoundary && simbox.boundary_rhs[2] == openBoundary)
     return;
 
 
@@ -894,7 +894,7 @@ void BruteForceSearch<ndim,ParticleType>::SearchBoundaryGhostParticles
 
   // Create ghost particles in x-dimension
   //-----------------------------------------------------------------------------------------------
-  if ((simbox.x_boundary_lhs == openBoundary && simbox.x_boundary_rhs == openBoundary) == 0) {
+  if ((simbox.boundary_lhs[0] == openBoundary && simbox.boundary_rhs[0] == openBoundary) == 0) {
 
     for (i=0; i<sph->Ntot; i++) {
       sph->CheckXBoundaryGhostParticle(i,tghost,simbox);
@@ -906,8 +906,8 @@ void BruteForceSearch<ndim,ParticleType>::SearchBoundaryGhostParticles
 
   // Create ghost particles in y-dimension
   //-----------------------------------------------------------------------------------------------
-  if (ndim >= 2 && (simbox.y_boundary_lhs == openBoundary &&
-                    simbox.y_boundary_rhs == openBoundary) == 0) {
+  if (ndim >= 2 && (simbox.boundary_lhs[1] == openBoundary &&
+                    simbox.boundary_rhs[1] == openBoundary) == 0) {
 
     for (i=0; i<sph->Ntot; i++) {
       sph->CheckYBoundaryGhostParticle(i,tghost,simbox);
@@ -919,8 +919,8 @@ void BruteForceSearch<ndim,ParticleType>::SearchBoundaryGhostParticles
 
   // Create ghost particles in z-dimension
   //-----------------------------------------------------------------------------------------------
-  if (ndim == 3 && (simbox.z_boundary_lhs == openBoundary &&
-                    simbox.z_boundary_rhs == openBoundary) == 0) {
+  if (ndim == 3 && (simbox.boundary_lhs[2] == openBoundary &&
+                    simbox.boundary_rhs[2] == openBoundary) == 0) {
 
     for (i=0; i<sph->Ntot; i++) {
       sph->CheckZBoundaryGhostParticle(i,tghost,simbox);

@@ -140,34 +140,34 @@ void SphIntegration<ndim>::CheckBoundaries
 
 
     if (part.r[0] < simbox.boxmin[0])
-      if (simbox.x_boundary_lhs == periodicBoundary) {
+      if (simbox.boundary_lhs[0] == periodicBoundary) {
         part.r[0] += simbox.boxsize[0];
         part.r0[0] += simbox.boxsize[0];
       }
     if (part.r[0] > simbox.boxmax[0])
-      if (simbox.x_boundary_rhs == periodicBoundary) {
+      if (simbox.boundary_rhs[0] == periodicBoundary) {
         part.r[0] -= simbox.boxsize[0];
         part.r0[0] -= simbox.boxsize[0];
       }
 
     if (ndim >= 2 && part.r[1] < simbox.boxmin[1])
-      if (simbox.y_boundary_lhs == periodicBoundary) {
+      if (simbox.boundary_lhs[1] == periodicBoundary) {
         part.r[1] += simbox.boxsize[1];
         part.r0[1] += simbox.boxsize[1];
       }
     if (ndim >= 2 && part.r[1] > simbox.boxmax[1])
-      if (simbox.y_boundary_rhs == periodicBoundary) {
+      if (simbox.boundary_rhs[1] == periodicBoundary) {
         part.r[1] -= simbox.boxsize[1];
         part.r0[1] -= simbox.boxsize[1];
       }
 
     if (ndim == 3 && part.r[2] < simbox.boxmin[2])
-      if (simbox.z_boundary_lhs == periodicBoundary) {
+      if (simbox.boundary_lhs[2] == periodicBoundary) {
         part.r[2] += simbox.boxsize[2];
         part.r0[2] += simbox.boxsize[2];
       }
     if (ndim == 3 && part.r[2] > simbox.boxmax[2])
-      if (simbox.z_boundary_rhs == periodicBoundary) {
+      if (simbox.boundary_rhs[2] == periodicBoundary) {
         part.r[2] -= simbox.boxsize[2];
         part.r0[2] -= simbox.boxsize[2];
       }

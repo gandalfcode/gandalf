@@ -339,12 +339,12 @@ void Parameters::SetDefaultValues(void)
 
   // Boundary conditions parameters
   //-----------------------------------------------------------------------------------------------
-  stringparams["x_boundary_lhs"] = "open";
-  stringparams["x_boundary_rhs"] = "open";
-  stringparams["y_boundary_lhs"] = "open";
-  stringparams["y_boundary_rhs"] = "open";
-  stringparams["z_boundary_lhs"] = "open";
-  stringparams["z_boundary_rhs"] = "open";
+  stringparams["boundary_lhs[0]"] = "open";
+  stringparams["boundary_rhs[0]"] = "open";
+  stringparams["boundary_lhs[1]"] = "open";
+  stringparams["boundary_rhs[1]"] = "open";
+  stringparams["boundary_lhs[2]"] = "open";
+  stringparams["boundary_rhs[2]"] = "open";
   floatparams["boxmin[0]"] = -9.9e30;
   floatparams["boxmin[1]"] = 9.9e30;
   floatparams["boxmin[2]"] = -9.9e30;

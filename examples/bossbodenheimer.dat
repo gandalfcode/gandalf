@@ -45,12 +45,12 @@ LHS position of boundary in y-dimension     : boxmin[1] = 0.0
 RHS position of boundary in y-dimension     : boxmax[1] = 1.0
 LHS position of boundary in z-dimension     : boxmin[2] = 0.0
 RHS position of boundary in z-dimension     : boxmax[2] = 1.0
-LHS boundary type in x-dimension            : x_boundary_lhs = open
-RHS boundary type in x-dimension            : x_boundary_rhs = open
-LHS boundary type in y-dimension            : y_boundary_lhs = open
-RHS boundary type in y-dimension            : y_boundary_rhs = open
-LHS boundary type in z-dimension            : z_boundary_lhs = open
-RHS boundary type in z-dimension            : z_boundary_rhs = open
+LHS boundary type in x-dimension            : boundary_lhs[0] = open
+RHS boundary type in x-dimension            : boundary_rhs[0] = open
+LHS boundary type in y-dimension            : boundary_lhs[1] = open
+RHS boundary type in y-dimension            : boundary_rhs[1] = open
+LHS boundary type in z-dimension            : boundary_lhs[2] = open
+RHS boundary type in z-dimension            : boundary_rhs[2] = open
 
 
 #--------------------------

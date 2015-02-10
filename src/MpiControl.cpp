@@ -124,7 +124,22 @@ MpiControl<ndim>::MpiControl()
 
 //=================================================================================================
 //  MpiControl::~MpiControl()
-/// MPI node class destructor.
+/// ...
+//=================================================================================================
+template <int ndim>
+MpiControl<ndim>::~MpiControl()
+{
+  //MPI_Type_free(&particle_type);
+  MPI_Type_free(&box_type);
+  MPI_Type_free(&diagnostics_type);
+}
+
+
+
+
+//=================================================================================================
+//  MpiControlType::~MpiControlType()
+/// ...
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 MpiControlType<ndim, ParticleType>::MpiControlType() : MpiControl<ndim>()
@@ -137,20 +152,6 @@ MpiControlType<ndim, ParticleType>::MpiControlType() : MpiControl<ndim>()
   MPI_Type_commit(&particle_type);
 
   bruteforce = NULL;
-}
-
-
-
-//=================================================================================================
-//  MpiControl::~MpiControl()
-/// MPI node class destructor.
-//=================================================================================================
-template <int ndim>
-MpiControl<ndim>::~MpiControl()
-{
-  //MPI_Type_free(&particle_type);
-  MPI_Type_free(&box_type);
-  MPI_Type_free(&diagnostics_type);
 }
 
 
@@ -367,20 +368,20 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
 
     // For periodic simulations, set bounding box of root node to be the periodic box size.
     // Otherwise, set to extend to infinity.
-    if (simbox.x_boundary_lhs == openBoundary) mpibox.boxmin[0] = -big_number;
+    if (simbox.boundary_lhs[0] == openBoundary) mpibox.boxmin[0] = -big_number;
     else mpibox.boxmin[0] = simbox.boxmin[0];
-    if (simbox.x_boundary_rhs == openBoundary) mpibox.boxmax[0] = big_number;
+    if (simbox.boundary_rhs[0] == openBoundary) mpibox.boxmax[0] = big_number;
     else mpibox.boxmax[0] = simbox.boxmax[0];
     if (ndim > 1) {
-      if (simbox.y_boundary_lhs == openBoundary) mpibox.boxmin[1] = -big_number;
+      if (simbox.boundary_lhs[1] == openBoundary) mpibox.boxmin[1] = -big_number;
       else mpibox.boxmin[1] = simbox.boxmin[1];
-      if (simbox.y_boundary_rhs == openBoundary) mpibox.boxmax[1] = big_number;
+      if (simbox.boundary_rhs[1] == openBoundary) mpibox.boxmax[1] = big_number;
       else mpibox.boxmax[1] = simbox.boxmax[1];
     }
     if (ndim == 3) {
-      if (simbox.z_boundary_lhs == openBoundary) mpibox.boxmin[2] = -big_number;
+      if (simbox.boundary_lhs[2] == openBoundary) mpibox.boxmin[2] = -big_number;
       else mpibox.boxmin[2] = simbox.boxmin[2];
-      if (simbox.z_boundary_rhs == openBoundary) mpibox.boxmax[2] = big_number;
+      if (simbox.boundary_rhs[2] == openBoundary) mpibox.boxmax[2] = big_number;
       else mpibox.boxmax[2] = simbox.boxmax[2];
     }
     //mpitree->box = &mpibox;
@@ -400,9 +401,9 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     mpitree->CreateTreeStructure(mpinode);
 
     // Set properties for root cell before constructing tree
-    mpitree->tree[0].N = sph->Nhydro;
+    mpitree->tree[0].N      = sph->Nhydro;
     mpitree->tree[0].ifirst = 0;
-    mpitree->tree[0].ilast = sph->Nhydro - 1;
+    mpitree->tree[0].ilast  = sph->Nhydro - 1;
     for (k=0; k<ndim; k++) mpitree->tree[0].bbmin[k] = mpibox.boxmin[k];
     for (k=0; k<ndim; k++) mpitree->tree[0].bbmax[k] = mpibox.boxmax[k];
     for (i=0; i<sph->Nhydro; i++) mpitree->inext[i] = -1;
@@ -410,7 +411,7 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     for (i=0; i<sph->Nhydro; i++) mpitree->ids[i] = i;
 
     // Recursively divide tree up until we've reached bottom level
-    mpitree->DivideTreeCell(0,mpitree->Ntot-1,sphdata,mpitree->tree[0]);
+    mpitree->DivideTreeCell(0, mpitree->Ntot-1, sphdata, mpitree->tree[0]);
 
 
     // Copy details from each tree leaf cell into
@@ -456,7 +457,7 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
 
     // Send particles to all other domains
     for (inode=1; inode<Nmpi; inode++) {
-      SendParticles(inode,mpinode[inode].Nhydro,mpinode[inode].ids,sphdata);
+      SendParticles(inode, mpinode[inode].Nhydro, mpinode[inode].ids, sphdata);
       cout << "Sent " << mpinode[inode].Nhydro << " particles to node " << inode << endl;
     }
     cout << "Sent all particles to other processes" << endl;
@@ -526,11 +527,11 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
 //=================================================================================================
 template <int ndim>
 void MpiControl<ndim>::UpdateAllBoundingBoxes
-(int Npart,                         ///< No. of SPH particles
- Sph<ndim> *sph,                    ///< Pointer to SPH data
- SmoothingKernel<ndim> *kernptr)          ///< Pointer to kernel object
+ (int Npart,                           ///< No. of SPH particles
+  Sph<ndim> *sph,                      ///< Pointer to SPH data
+  SmoothingKernel<ndim> *kernptr)      ///< Pointer to kernel object
 {
-  int inode;                        // MPI node counter
+  int inode;                           // MPI node counter
 
   if (rank == 0) debug2("[MpiControl::UpdateAllBoundingBoxes]");
 
@@ -538,7 +539,7 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
   mpinode[rank].UpdateBoundingBoxData(Npart,sph,kernptr);
 
   // Do an all_gather to receive the new array
-  MPI_Allgather(&mpinode[rank].hbox,1,box_type,&boxes_buffer[0],1,box_type,MPI_COMM_WORLD);
+  MPI_Allgather(&mpinode[rank].hbox, 1, box_type, &boxes_buffer[0], 1, box_type, MPI_COMM_WORLD);
 
   // Save the information inside the nodes
   for (inode=0; inode<Nmpi; inode++) {
@@ -548,7 +549,7 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
   MPI_Barrier(MPI_COMM_WORLD);
 
   // Do an all_gather to receive the new array
-  MPI_Allgather(&mpinode[rank].rbox,1,box_type,&boxes_buffer[0],1,box_type,MPI_COMM_WORLD);
+  MPI_Allgather(&mpinode[rank].rbox, 1, box_type, &boxes_buffer[0], 1, box_type, MPI_COMM_WORLD);
 
   // Save the information inside the nodes
   for (inode=0; inode<Nmpi; inode++) {
@@ -569,23 +570,23 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim, ParticleType >::LoadBalancing
-(Sph<ndim> *sph,                    ///< Pointer to main SPH object
- Nbody<ndim> *nbody)                ///< Pointer to main N-body object
+ (Sph<ndim> *sph,                      ///< Pointer to main SPH object
+  Nbody<ndim> *nbody)                  ///< Pointer to main N-body object
 {
-  int c;                            // MPI tree cell counter
-  int c1;                           // ..
-  int c2;                           // ..
-  int i;                            // Particle counter
-  int inode;                        // MPI node counter
-  int k;                            // Dimension counter
-  int kk;                           // ..
-  int l;                            // ..
-  int okflag;                       // Successful communication flag
-  FLOAT rnew;                       // New boundary position for load balancing
-  FLOAT boxbuffer[2*ndim*Nmpi];     // Bounding box buffer
-  FLOAT workbuffer[1+ndim+Nmpi];    // Node work information buffer
-  DOUBLE worktot = 0.0;             // Total work on all nodes
-  MPI_Status status;                // MPI status flag
+  int c;                               // MPI tree cell counter
+  int c1;                              // ..
+  int c2;                              // ..
+  int i;                               // Particle counter
+  int inode;                           // MPI node counter
+  int k;                               // Dimension counter
+  int kk;                              // ..
+  int l;                               // ..
+  int okflag;                          // Successful communication flag
+  FLOAT rnew;                          // New boundary position for load balancing
+  FLOAT boxbuffer[2*ndim*Nmpi];        // Bounding box buffer
+  FLOAT workbuffer[1+ndim+Nmpi];       // Node work information buffer
+  DOUBLE worktot = 0.0;                // Total work on all nodes
+  MPI_Status status;                   // MPI status flag
 
   // If running on only one MPI node, return immediately
   if (Nmpi == 1) return;
