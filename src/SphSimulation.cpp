@@ -786,6 +786,13 @@ void SphSimulation<ndim>::MainLoop(void)
         }
       }
 
+      if (sph->self_gravity == 1 && sph->Nhydro > 0) {
+        sphneib->UpdateAllStarGasForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
+#if defined MPI_PARALLEL
+        // We need to sum up the contributions from the different domains
+        mpicontrol->ComputeTotalStarGasForces(nbody);
+#endif
+      }
 
       // Calculate forces, force derivatives etc.., for active stars/systems
       if (nbody->nbody_softening == 1) {
@@ -793,10 +800,6 @@ void SphSimulation<ndim>::MainLoop(void)
       }
       else {
         nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
-      }
-
-      if (sph->self_gravity == 1 && sph->Nhydro > 0) {
-        sphneib->UpdateAllStarGasForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
       }
 
       // Calculate correction step for all stars at end of step, except the
