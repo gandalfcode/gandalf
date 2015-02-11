@@ -35,6 +35,34 @@
 using namespace std;
 
 
+  struct TimingBlock {
+    bool timing_flag;
+    int timing_level;
+    int Ncalled;
+    double tstart_wall;
+    double tend_wall;
+    double ttot_wall;
+    double tfraction_wall;
+    DOUBLE ttot;
+    DOUBLE tfraction;
+    clock_t tstart;
+    clock_t tend;
+    string block_name;
+
+    TimingBlock()
+    {
+      timing_flag    = false;
+      timing_level   = 0;
+      Ncalled        = 0;
+      ttot           = 0.0;
+      ttot_wall      = 0.0;
+      tfraction      = 0.0;
+      tfraction_wall = 0.0;
+      block_name     = "";
+    }
+
+  };
+
 
 //=================================================================================================
 //  Class CodeTiming
@@ -75,33 +103,7 @@ class CodeTiming
   map<string,int> blockno;          ///< Map of timing block names
 
 
-  struct TimingBlock {
-    bool timing_flag;
-    int timing_level;
-    int Ncalled;
-    double tstart_wall;
-    double tend_wall;
-    double ttot_wall;
-    double tfraction_wall;
-    DOUBLE ttot;
-    DOUBLE tfraction;
-    clock_t tstart;
-    clock_t tend;
-    string block_name;
 
-    TimingBlock()
-    {
-      timing_flag    = false;
-      timing_level   = 0;
-      Ncalled        = 0;
-      ttot           = 0.0;
-      ttot_wall      = 0.0;
-      tfraction      = 0.0;
-      tfraction_wall = 0.0;
-      block_name     = "";
-    }
-
-  };
 
   TimingBlock block[Nblockmax];
 
