@@ -583,6 +583,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
       // Compute all star forces for active particles
       if (nbody->Nnbody > 0) {
         for (j=0; j<Nactive; j++)
+          if ( activelist[j] < sph->Nhydro )
           sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,activepart[j]);
       }
 
@@ -820,9 +821,10 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
         this->ComputeFastMonopoleForces(Nactive,Ngravcell,gravcell,cell,activepart);
       }
 
-      // Compute all star forces for active particles
+      // Compute all star forces for active particles belonging to this domain
       for (j=0; j<Nactive; j++) {
-        sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,activepart[j]);
+        if ( activelist[j] < sph->Nhydro )
+          sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,activepart[j]);
       }
 
       // Add all active particles contributions to main array
@@ -1064,6 +1066,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 
       // Compute all star forces for active particles
       for (j=0; j<Nactive; j++) {
+        if ( activelist[j] < sph->Nhydro )
         sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,activepart[j]);
       }
 

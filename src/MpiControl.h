@@ -99,6 +99,7 @@ class MpiControl
   void CollateDiagnosticsData(Diagnostics<ndim> &);
   void UpdateAllBoundingBoxes(int, Sph<ndim> *, SmoothingKernel<ndim> *);
   void CommunicatePrunedTrees() {neibsearch->CommunicatePrunedTrees(my_matches,rank);};
+  void ComputeTotalStarGasForces (Nbody<ndim> * nbody);
 
   //void ExportMpiGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
   virtual void ExportParticlesBeforeForceLoop (Sph<ndim>* sph) = 0;

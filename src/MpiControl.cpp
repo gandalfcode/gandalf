@@ -515,6 +515,16 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
   }
   //===============================================================================================
 
+  // Share the stars with all other domains
+  if (nbody->Nbody > 0) {
+    MPI_Bcast(&(nbody->Nbody),1,MPI_INT,0,MPI_COMM_WORLD);
+
+    nbody->AllocateMemory(nbody->Nbody);
+
+    MPI_Bcast(nbody->stardata,sizeof(StarParticle<ndim>)*nbody->Nbody,MPI_BYTE,0,MPI_COMM_WORLD);
+
+  }
+
 
   return;
 }
@@ -557,6 +567,39 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
   }
 
   return;
+}
+
+//=================================================================================================
+//  MpiControl::ComputeTotalStarGasForces
+/// Sums up the forces on the star from each processor to find the total ones
+//=================================================================================================
+
+template <int ndim>
+void MpiControl<ndim>::ComputeTotalStarGasForces (Nbody<ndim> * nbody) {
+
+  // Need to transmit ndim+1 doubles per star (acceleration+gpot)
+  const int number_doubles = (ndim+1)*nbody->Nnbody;
+  const int size_buffer = sizeof(DOUBLE)*number_doubles;
+  NbodyParticle<ndim> **star = nbody->nbodydata;
+
+  DOUBLE* buffer = (DOUBLE*) malloc( size_buffer );
+
+  for (int i=0; i<nbody->Nnbody; i++) {
+      buffer[i*(ndim+1) + 0] = star[i]->gpot;
+      for (int k=0; k<ndim; k++)
+        buffer[i*(ndim+1) +1 +k] = star[i]->a[k];
+  }
+
+  MPI_Allreduce(MPI_IN_PLACE,buffer,number_doubles,GANDALF_MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+
+  for (int i=0; i<nbody->Nnbody; i++) {
+      star[i]->gpot = buffer[i*(ndim+1) + 0];
+      for (int k=0; k<ndim; k++)
+        star[i]->a[k] = buffer[i*(ndim+1) +1 +k];
+  }
+
+  free(buffer);
+
 }
 
 
