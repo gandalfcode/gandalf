@@ -156,8 +156,10 @@ void Simulation<ndim>::CalculateDiagnostics(void)
   diag.ketot  *= 0.5;
   diag.gpetot *= 0.5;
   diag.Etot   = diag.ketot;
-  for (k=0; k<ndim; k++) diag.rcom[k] /= diag.mtot;
-  for (k=0; k<ndim; k++) diag.vcom[k] /= diag.mtot;
+  if (diag.mtot > 0) {
+	  for (k=0; k<ndim; k++) diag.rcom[k] /= diag.mtot;
+	  for (k=0; k<ndim; k++) diag.vcom[k] /= diag.mtot;
+  }
   if (hydro->hydro_forces == 1) diag.Etot += diag.utot;
   if (hydro->self_gravity == 1 || nbody->Nstar > 0) diag.Etot += diag.gpetot;
 
