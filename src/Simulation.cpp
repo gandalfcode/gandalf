@@ -601,9 +601,10 @@ void SimulationBase::SetupSimulation(void)
   if (rank == 0) {
     GenerateIC();
 
-    // Change to COM frame if selected
-    if (simparams->intparams["com_frame"] == 1) SetComFrame();
   }
+
+// Change to COM frame if selected
+  if (simparams->intparams["com_frame"] == 1) SetComFrame();
 
   // Perform the rest of the initialisation, calculating all initial particle
   // quantities and setting up trees.

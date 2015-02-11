@@ -198,7 +198,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
 
   // Set all other SPH parameter variables
-  sph->Nhydro            = intparams["Nhydro"];
+  //sph->Nhydro            = intparams["Nhydro"];
   sph->Nhydromax         = intparams["Nhydromax"];
   sph->create_sinks    = intparams["create_sinks"];
   sph->fixed_sink_mass = intparams["fixed_sink_mass"];
@@ -207,7 +207,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
 
   // Set important variables for N-body objects
-  nbody->Nstar          = intparams["Nstar"];
+  //nbody->Nstar          = intparams["Nstar"];
   nbody->Nstarmax       = intparams["Nstarmax"];
   nbody_single_timestep = intparams["nbody_single_timestep"];
   nbodytree.gpehard     = floatparams["gpehard"];
@@ -303,10 +303,6 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
   debug2("[SphSimulation::PostInitialConditionsSetup]");
 
-
-  // Set pointer to SPH particle data
-  partdata = sph->GetSphParticleArray();
-
   // Set iorig
   if (rank == 0) {
     for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).iorig = i;
@@ -318,6 +314,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #ifdef MPI_PARALLEL
   mpicontrol->CreateInitialDomainDecomposition(sph,nbody,simparams,simbox,this->initial_h_provided);
 #endif
+
+  // Set pointer to SPH particle data
+  partdata = sph->GetSphParticleArray();
 
   // Set time variables here (for now)
   nresync = 0;
