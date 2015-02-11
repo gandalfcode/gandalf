@@ -430,7 +430,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #ifdef MPI_PARALLEL
     sphneib->BuildPrunedTree(pruning_level,rank);
     mpicontrol->CommunicatePrunedTrees();
-    sphneib->BuildGhostPrunedTree();
+    sphneib->BuildGhostPrunedTree(rank,simbox);
 //    exit(0);
 #endif
 
@@ -632,11 +632,11 @@ void SphSimulation<ndim>::MainLoop(void)
   //-----------------------------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    sphneib->BuildPrunedTree(pruning_level,rank);
+    sphneib->BuildPrunedTree(pruning_level, rank);
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
     mpicontrol->CommunicatePrunedTrees();
-    sphneib->BuildGhostPrunedTree();
-    mpicontrol->LoadBalancing(sph,nbody);
+    sphneib->BuildGhostPrunedTree(rank, simbox);
+    mpicontrol->LoadBalancing(sph, nbody);
   }
 #endif
 
@@ -657,20 +657,20 @@ void SphSimulation<ndim>::MainLoop(void)
       sphneib->BuildGhostTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,
                               sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
 #ifdef MPI_PARALLEL
-      sphneib->BuildPrunedTree(pruning_level,rank);
+      sphneib->BuildPrunedTree(pruning_level, rank);
       mpicontrol->CommunicatePrunedTrees();
-      sphneib->BuildGhostPrunedTree();
-      mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro+sph->NPeriodicGhost,sph,sph->kernp);
-      MpiGhosts->SearchGhostParticles(tghost,simbox,sph);
-      sphneib->BuildMpiGhostTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,
-                                 sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
+      sphneib->BuildGhostPrunedTree(rank, simbox);
+      mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
+      MpiGhosts->SearchGhostParticles(tghost, simbox, sph);
+      sphneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+                                 sph->Ntot, sph->Nhydromax, partdata, sph, timestep);
 #endif
     }
     // Otherwise copy properties from original particles to ghost particles
     else {
-      LocalGhosts->CopySphDataToGhosts(simbox,sph);
+      LocalGhosts->CopySphDataToGhosts(simbox, sph);
 #ifdef MPI_PARALLEL
-      MpiGhosts->CopySphDataToGhosts(simbox,sph);
+      MpiGhosts->CopySphDataToGhosts(simbox, sph);
 #endif
     }
 
@@ -684,10 +684,10 @@ void SphSimulation<ndim>::MainLoop(void)
     do {
 
       // Update cells containing active particles
-      if (activecount > 0) sphneib->UpdateActiveParticleCounters(partdata,sph);
+      if (activecount > 0) sphneib->UpdateActiveParticleCounters(partdata, sph);
 
       // Calculate all SPH properties
-      sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
+      sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
 
       // Update the radiation field
       /*if (Nsteps%1 == 0) {
@@ -711,18 +711,20 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
       // Copy properties from original particles to ghost particles
-      LocalGhosts->CopySphDataToGhosts(simbox,sph);
+      LocalGhosts->CopySphDataToGhosts(simbox, sph);
 
       // Calculate gravitational forces from other distant MPI nodes.
       // Also determines particles that must be exported to other nodes
       // if too close to the domain boundaries
 #ifdef MPI_PARALLEL
-      if (sph->self_gravity == 1)
-        sphneib->UpdateGravityExportList(rank,sph->Nhydro,sph->Ntot,
-                                         sph->GetSphParticleArray(),sph,nbody);
-      else
-        sphneib->UpdateHydroExportList(rank,sph->Nhydro,sph->Ntot,
-                                       sph->GetSphParticleArray(),sph,nbody);
+      if (sph->self_gravity == 1) {
+        sphneib->UpdateGravityExportList(rank, sph->Nhydro, sph->Ntot,
+                                         sph->GetSphParticleArray(), sph, nbody);
+      }
+      else {
+        sphneib->UpdateHydroExportList(rank, sph->Nhydro, sph->Ntot,
+                                       sph->GetSphParticleArray(), sph, nbody);
+      }
 
       // If active particles need forces from other domains, export particles
       mpicontrol->ExportParticlesBeforeForceLoop(sph);

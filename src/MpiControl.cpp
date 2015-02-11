@@ -581,6 +581,7 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   int k;                               // Dimension counter
   int kk;                              // ..
   int l;                               // ..
+  int lbalance;                        // Load balance level
   int okflag;                          // Successful communication flag
   FLOAT rnew;                          // New boundary position for load balancing
   FLOAT boxbuffer[2*ndim*Nmpi];        // Bounding box buffer
@@ -603,7 +604,7 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   // equal amounts of work on each side of the divide.  Use the extrapolated cells from each
   // pruned tree to compute work done.
   //-----------------------------------------------------------------------------------------------
-  /*for (l=0; l<mpitree->ltot-1; l++) {
+  for (l=lbalance; l<mpitree->ltot-1; l++) {
 
     // Loop over all MPI tree cells on current balancing level
     for (c=0; c<mpitree->Ncell; c++) {
@@ -611,9 +612,12 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
       c2 = mpitree->tree[c].c2;
 
       // Now find new division between child cells that is load-balanced
+      //mpitree->tree[c].r_divide = neibsearch->FindLoadBalancingDivision
+      //  (mpitree->tree[c].k_divide, mpitree->tree[c].r_divide, mpitree->tree[c].bbmin,
+      //   mpitree->tree[c].bbmax, mpitree->tree[c+1].nodes, mpitree->tree[c2].nodes, mpinode);
       mpitree->tree[c].r_divide = neibsearch->FindLoadBalancingDivision
-        (mpitree->tree[c].k_divide, mpitree->tree[c].r_divide, mpitree->tree[c].bbmin,
-         mpitree->tree[c].bbmax, mpitree->tree[c+1].nodes, mpitree->tree[c2].nodes, mpinode);
+        (mpitree->tree[c].k_divide, mpitree->tree[c].r_divide,
+         mpitree->tree[c].bbmin, mpitree->tree[c].bbmax);
     }
 
     // Update all cell bounding boxes now new divisions have been computed
@@ -628,7 +632,7 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
       for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] = mpitree->tree[icell].bbmax[k];
     }
 
-  }*/
+  }
   //-----------------------------------------------------------------------------------------------
 
 

@@ -1162,20 +1162,24 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void SphTree<ndim,ParticleType,TreeCell>::BuildGhostPrunedTree
- (DomainBox<ndim> &simbox)
+ (const int rank,                                ///< ..
+  const DomainBox<ndim> &simbox)                 ///< ..
 {
   int c;                                         ///< ..
   int i;                                         ///< ..
+  int ighosttree;                                ///< ..
   int j;                                         ///< ..
   int k;                                         ///< ..
   int k_divide;                                  ///< ..
   int Ntreelist;                                 ///< ..
-  Tree<ndim,ParticleType,TreeCell> **treeList;   ///< ..
+  FLOAT boxmin[ndim];                            ///< ..
+  FLOAT boxmax[ndim];                            ///< ..
+  Tree<ndim,ParticleType,TreeCell> **treelist;   ///< ..
 
   debug2("[SphTree::BuildGhostPrunedTree]");
 
 
-  treeList = new Tree<ndim>*[Nghostprunedmax];
+  treelist = new Tree<ndim,ParticleType,TreeCell>*[Nghostprunedmax];
   for (i=0; i<Nmpi; i++) Nghostpruned[i] = 0;
 
 
@@ -1184,7 +1188,7 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostPrunedTree
   for (i=0; i<Nmpi; i++) {
 
     Ntreelist = 0;
-    treeList[0] = prunedtree[i];
+    treelist[0] = prunedtree[i];
 
 
     // Loop through all dimensional divisions and check if a pruned tree copy is needed
@@ -1209,19 +1213,19 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostPrunedTree
         // If replica overlaps with local domain box, then do full tree-copy
         if (BoxOverlap(ndim, boxmin, boxmax, prunedtree[rank]->celldata[0].bbmin,
                        prunedtree[rank]->celldata[0].bbmax)) {
-          ighostTree = Ntreelist++;
-          treeList[ighostTree] = ghostprunedtree[i][Nghostpruned[i]++];
-          treelist[ighostTree]->ctot = prunedtree[rank].ctot;
-          treelist[ighostTree]->cmax = prunedtree[rank].cmax;
+          ighosttree = Ntreelist++;
+          treelist[ighosttree] = ghostprunedtree[i][Nghostpruned[i]++];
+          treelist[ighosttree]->Ncell = prunedtree[rank]->Ncell;
+          treelist[ighosttree]->Ncellmax = prunedtree[rank]->Ncellmax;
 
           for (c=0; c<treelist[j]->Ncell; c++) {
-            treelist[ighostTree]->celldata[c] = treelist[j]->celldata[c];
-            treelist[ighostTree]->celldata[c].r[k_divide] -= simbox.boxsize[k_divide];
-            treelist[ighostTree]->celldata[c].rcell[k_divide] -= simbox.boxsize[k_divide];
-            treelist[ighostTree]->celldata[c].bbmin[k_divide] -= simbox.boxsize[k_divide];
-            treelist[ighostTree]->celldata[c].bbmax[k_divide] -= simbox.boxsize[k_divide];
-            treelist[ighostTree]->celldata[c].hboxmin[k_divide] -= simbox.boxsize[k_divide];
-            treelist[ighostTree]->celldata[c].hboxmax[k_divide] -= simbox.boxsize[k_divide];
+            treelist[ighosttree]->celldata[c] = treelist[j]->celldata[c];
+            treelist[ighosttree]->celldata[c].r[k_divide] -= simbox.boxsize[k_divide];
+            treelist[ighosttree]->celldata[c].rcell[k_divide] -= simbox.boxsize[k_divide];
+            treelist[ighosttree]->celldata[c].bbmin[k_divide] -= simbox.boxsize[k_divide];
+            treelist[ighosttree]->celldata[c].bbmax[k_divide] -= simbox.boxsize[k_divide];
+            treelist[ighosttree]->celldata[c].hboxmin[k_divide] -= simbox.boxsize[k_divide];
+            treelist[ighosttree]->celldata[c].hboxmax[k_divide] -= simbox.boxsize[k_divide];
           }
 
         }
@@ -1239,19 +1243,19 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostPrunedTree
         // If replica overlaps with local domain box, then do full tree-copy
         if (BoxOverlap(ndim, boxmin, boxmax, prunedtree[rank]->celldata[0].bbmin,
                        prunedtree[rank]->celldata[0].bbmax)) {
-          ighostTree = Ntreelist++;
-          treeList[ighostTree] = ghostprunedtree[i][Nghostpruned[i]++];
-          treelist[ighostTree]->ctot = prunedtree[rank].ctot;
-          treelist[ighostTree]->cmax = prunedtree[rank].cmax;
+          ighosttree = Ntreelist++;
+          treelist[ighosttree] = ghostprunedtree[i][Nghostpruned[i]++];
+          treelist[ighosttree]->Ncell = prunedtree[rank]->Ncell;
+          treelist[ighosttree]->Ncellmax = prunedtree[rank]->Ncellmax;
 
           for (c=0; c<treelist[j]->Ncell; c++) {
-            treelist[ighostTree]->celldata[c] = treelist[j]->celldata[c];
-            treelist[ighostTree]->celldata[c].r[k_divide] += simbox.boxsize[k_divide];
-            treelist[ighostTree]->celldata[c].rcell[k_divide] += simbox.boxsize[k_divide];
-            treelist[ighostTree]->celldata[c].bbmin[k_divide] += simbox.boxsize[k_divide];
-            treelist[ighostTree]->celldata[c].bbmax[k_divide] += simbox.boxsize[k_divide];
-            treelist[ighostTree]->celldata[c].hboxmin[k_divide] += simbox.boxsize[k_divide];
-            treelist[ighostTree]->celldata[c].hboxmax[k_divide] += simbox.boxsize[k_divide];
+            treelist[ighosttree]->celldata[c] = treelist[j]->celldata[c];
+            treelist[ighosttree]->celldata[c].r[k_divide] += simbox.boxsize[k_divide];
+            treelist[ighosttree]->celldata[c].rcell[k_divide] += simbox.boxsize[k_divide];
+            treelist[ighosttree]->celldata[c].bbmin[k_divide] += simbox.boxsize[k_divide];
+            treelist[ighosttree]->celldata[c].bbmax[k_divide] += simbox.boxsize[k_divide];
+            treelist[ighosttree]->celldata[c].hboxmin[k_divide] += simbox.boxsize[k_divide];
+            treelist[ighosttree]->celldata[c].hboxmax[k_divide] += simbox.boxsize[k_divide];
           }
 
         }
@@ -1267,7 +1271,7 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostPrunedTree
   //===============================================================================================
 
 
-  delete[] treeList;
+  delete[] treelist;
 
   return;
 }
@@ -1625,52 +1629,65 @@ void SphTree<ndim,ParticleType,TreeCell>::FindMpiTransferParticles
 
 //=================================================================================================
 //  SphTree::FindLoadBalancingDivision
-/// Get the array with the information that needs to be exported to the given processor (NB: Nproc
-/// is ignored at the moment, as we always need to export all particles to the other processors).
+/// ...
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 FLOAT SphTree<ndim,ParticleType,TreeCell>::FindLoadBalancingDivision
  (int k_divide,                        ///< Dimension of cell division
   FLOAT r_old,                         ///< Old position of cell division
-  Box<ndim> &box)                      ///< Parent box to divide
+  FLOAT boxmin[ndim],                  ///< ..
+  FLOAT boxmax[ndim])                  ///< ..
 {
   int i;                               // ..
+  int j;
   int k;                               // ..
   FLOAT r_divide = r_old;              // Cell division location
-  FLOAT r_max = box.boxmax[k_divide];  // Max. for bisection iteration of division
-  FLOAT r_min = box.boxmin[k_divide];  // Min. for bisection iteration of division
+  FLOAT r_max = boxmax[k_divide];      // Max. for bisection iteration of division
+  FLOAT r_min = boxmin[k_divide];      // Min. for bisection iteration of division
   FLOAT workleft;                      // Work computed on LHS of division
   FLOAT workright;                     // Work computed on RHS of division
   FLOAT workfrac;                      // Fraction of work on LHS
   FLOAT worktol = (FLOAT) 0.001;       // Work balance tolerance for iteration
-  Box<ndim> boxleft = box;             // LHS box
-  Box<ndim> boxright = box;            // RHS box
+  FLOAT boxleftmin[ndim];              // ..
+  FLOAT boxleftmax[ndim];              // ..
+  FLOAT boxrightmin[ndim];             // ..
+  FLOAT boxrightmax[ndim];             // ..
+
+  for (k=0; k<ndim; k++) {
+    boxleftmin[k] = boxmin[k];
+    boxleftmax[k] = boxmax[k];
+    boxrightmin[k] = boxmin[k];
+    boxrightmax[k] = boxmax[k];
+  }
 
 
   // Find the work-balance position through bisection iteration
   //-----------------------------------------------------------------------------------------------
   do {
-    workleft = 0.0;
-    workright = 0.0;
-    boxleft.boxmax[k_divide] = r_divide;
-    boxright.boxmin[k_divide] = r_divide;
+    boxleftmax[k_divide] = r_divide;
+    boxrightmin[k_divide] = r_divide;
+    workleft = (FLOAT) 0.0;
+    workright = (FLOAT) 0.0;
 
-
-    // Compute work included in left-hand side
+    // Compute work included in left-hand side from pruned trees of all MPI domains
     for (i=0; i<Nmpi; i++) {
-      workleft += 0.0;
+      workleft += prunedtree[i]->ComputeWorkInBox(boxleftmin, boxleftmax);
+      for (j=0; j<Nghostpruned[i]; j++) {
+        workleft += ghostprunedtree[i][j]->ComputeWorkInBox(boxleftmin, boxleftmax);
+      }
+    }
+
+    // Compute work included in right-hand side from pruned trees of all MPI domains
+    for (i=0; i<Nmpi; i++) {
+      workright += prunedtree[i]->ComputeWorkInBox(boxrightmin, boxrightmax);
+      for (j=0; j<Nghostpruned[i]; j++) {
+        workright += ghostprunedtree[i][j]->ComputeWorkInBox(boxrightmin, boxrightmax);
+      }
     }
 
 
-    // Compute work included in right-hand side
-    for (i=0; i<Nmpi; i++) {
-      workright += 0.0;
-    }
-
-
-    // If fraction of work on either side of division is too inbalanced,
-    // calculate new position of division and perform another iteration.
-    // Otherwise exit iteration loop.
+    // If fraction of work on either side of division is too inbalanced, calculate new position
+    // of division and perform another iteration.  Otherwise exit iteration loop.
     workfrac = workleft / (workleft + workright);
     if (workfrac < 0.5 - worktol) r_min = r_divide;
     else if (workfrac > 0.5 + worktol) r_max = r_divide;

@@ -175,6 +175,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT, const int,
                                            int, TreeCell<ndim> *);
   bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *);
+  FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *);
 #endif
 #if defined(VERIFY_ALL)
   void ValidateTree(ParticleType<ndim> *);

@@ -97,6 +97,7 @@ class Tree
   virtual int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT,
                                                    const int, int, TreeCell<ndim> *) = 0;
   virtual bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *) = 0;
+  virtual FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *) = 0;
 #endif
 #if defined(VERIFY_ALL)
   virtual void ValidateTree(ParticleType<ndim> *) = 0;

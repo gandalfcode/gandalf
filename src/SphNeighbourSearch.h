@@ -114,13 +114,14 @@ protected:
   virtual void UpdateHydroExportList(int, int, int, SphParticle<ndim> *,
                                      Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void BuildPrunedTree(int, int) {};
+  virtual void BuildGhostPrunedTree(const int, const DomainBox<ndim> &) {};
   virtual void BuildMpiGhostTree(bool, int, int, int, int, int,
                                  SphParticle<ndim> *, Sph<ndim> *, FLOAT) = 0;
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                                       Sph<ndim> *, vector<int> &) = 0;
   virtual void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
                                         vector<int>&, const vector<int>&, MpiNode<ndim>*) = 0;
-  virtual FLOAT FindLoadBalancingDivision(int, FLOAT, Box<ndim> &) = 0;
+  virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *) = 0;
   virtual int GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&,
                             MpiNode<ndim>&, int, int) = 0;
   virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
@@ -208,7 +209,7 @@ class BruteForceSearch: public SphNeighbourSearch<ndim>
                                 vector<int>&, const vector<int>&, MpiNode<ndim>*);
   void FindGhostParticlesToExport(Sph<ndim>* sph, vector<vector<ParticleType<ndim>* > >&,
                                   const vector<int>&, MpiNode<ndim>*);
-  FLOAT FindLoadBalancingDivision(int, FLOAT, Box<ndim> &) {};
+  FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *) {};
   void FindParticlesToTransfer(Sph<ndim>* sph, std::vector<std::vector<int> >& particles_to_export,
       std::vector<int>& all_particles_to_export, const std::vector<int>& potential_nodes, MpiNode<ndim>* mpinodes);
   virtual int GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>&, int, int);
@@ -384,12 +385,12 @@ protected:
   void UpdateHydroExportList(int, int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void BuildMpiGhostTree(bool, int, int, int, int, int, SphParticle<ndim> *, Sph<ndim> *, FLOAT);
   void BuildPrunedTree(int, int);
-  void BuildGhostPrunedTree(void);
+  void BuildGhostPrunedTree(const int, const DomainBox<ndim> &);
   int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &, Sph<ndim> *, vector<int> &);
   int SearchHydroExportParticles(const Box<ndim> &, Sph<ndim> *, vector<TreeCell<ndim> *> &);
   void FindMpiTransferParticles(Sph<ndim> *, vector<vector<int> >&,
                                 vector<int>&, const vector<int>&, MpiNode<ndim>*);
-  FLOAT FindLoadBalancingDivision(int, FLOAT, Box<ndim> &);
+  FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *);
   virtual int GetExportInfo(int Nproc, Sph<ndim>* sph, vector<char >&, MpiNode<ndim>&, int, int);
   virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
                                Sph<ndim>* sph);
@@ -500,7 +501,10 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::tree;
   using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
+  using SphTree<ndim,ParticleType,TreeCell>::ghostprunedtree;
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::Nghostpruned;
+  using SphTree<ndim,ParticleType,TreeCell>::Nghostprunedmax;
   using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
   using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
 #endif
@@ -540,7 +544,10 @@ class GradhSphKDTree: public GradhSphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::tree;
   using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
+  using SphTree<ndim,ParticleType,TreeCell>::ghostprunedtree;
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
+  using SphTree<ndim,ParticleType,TreeCell>::Nghostpruned;
+  using SphTree<ndim,ParticleType,TreeCell>::Nghostprunedmax;
   using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
   using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
 #endif

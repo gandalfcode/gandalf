@@ -2032,22 +2032,22 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeActiveCellPointers
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int KDTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
-(const TreeCell<ndim> *cellptr,       ///< [in] Pointer to cell
- const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
- const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
- int Ngravcell,                       ///< [in] Current no. of cells in array
- TreeCell<ndim> *gravcelllist)      ///< [out] Array of cells
+ (const TreeCell<ndim> *cellptr,       ///< [in] Pointer to cell
+  const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
+  const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
+  int Ngravcell,                       ///< [in] Current no. of cells in array
+  TreeCell<ndim> *gravcelllist)        ///< [out] Array of cells
 {
-  int cc;                             // Cell counter
-  int i;                              // Particle id
-  int j;                              // Aux. particle counter
-  int k;                              // Neighbour counter
-  int Ngravcelltemp = Ngravcell;      // ..
-  FLOAT dr[ndim];                     // Relative position vector
-  FLOAT drsqd;                        // Distance squared
-  FLOAT rc[ndim];                     // Position of cell
-  FLOAT hrangemax;                    // Maximum kernel extent
-  FLOAT rmax;                         // Radius of sphere containing particles
+  int cc;                              // Cell counter
+  int i;                               // Particle id
+  int j;                               // Aux. particle counter
+  int k;                               // Neighbour counter
+  int Ngravcelltemp = Ngravcell;       // ..
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT rc[ndim];                      // Position of cell
+  FLOAT hrangemax;                     // Maximum kernel extent
+  FLOAT rmax;                          // Radius of sphere containing particles
 
   // Make local copies of important cell properties
   for (k=0; k<ndim; k++) rc[k] = cellptr->rcell[k];
@@ -2171,6 +2171,57 @@ bool KDTree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
 
   // If we've walked the entire tree wihout any leaf overlaps, flag no overlap
   return false;
+}
+
+
+
+//=================================================================================================
+//  KDTree::ComputeWorkInBox
+/// ...
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+FLOAT KDTree<ndim,ParticleType,TreeCell>::ComputeWorkInBox
+ (const FLOAT boxmin[ndim],
+  const FLOAT boxmax[ndim])
+{
+  int c = 0;                           // Cell counter
+  FLOAT fracoverlap;                   // ..
+  FLOAT worktot = (FLOAT) 0.0;         // ..
+
+  // Walk through all cells in tree to determine particle and cell interaction lists
+  //===============================================================================================
+  while (c < Ncell) {
+
+    fracoverlap = FractionalBoxOverlap(ndim, boxmin, boxmax,
+                                       celldata[c].hboxmin, celldata[c].hboxmax);
+
+    // If there is zero or full overlap, record the value and move to the next cell
+    if (fracoverlap < small_number || fracoverlap > (FLOAT) 1.0 - small_number) {
+      worktot += fracoverlap*celldata[c].worktot;
+      c = celldata[c].cnext;
+    }
+
+    // If there is a parital overlap for a non-leaf cell, then open cell to lower levels
+    else if (celldata[c].level != ltot) {
+      c++;
+    }
+
+    // If there is a partial overlap for a leaf-cell, record overlap value
+    else if (fracoverlap >= small_number && fracoverlap <= (FLOAT) 1.0 - small_number){
+      worktot += fracoverlap*celldata[c].worktot;
+      c = celldata[c].cnext;
+    }
+
+    // Code should not technically reach here (unless there's a problem)
+    else {
+      cout << "Problem with overlap of pruned trees" << endl;
+      exit(0);
+    }
+
+  };
+  //===============================================================================================
+
+  return worktot;
 }
 #endif
 
