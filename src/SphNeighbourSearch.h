@@ -457,7 +457,7 @@ protected:
                                                    ///< ghosts from other MPI procs.
   Tree<ndim,ParticleType,TreeCell> **prunedtree;   ///< 'Pruned' tree for MPI nodes.
                                                    ///< i.e. only uses top levels
-  Tree<ndim,ParticleType,TreeCell> **ghostprunedtree[Nghostprunedmax]; ///< Tree of periodic ghost cells created
+  Tree<ndim,ParticleType,TreeCell> ***ghostprunedtree; ///< Tree of periodic ghost cells created
                                                          ///< from pruned trees
 #endif
 

@@ -85,8 +85,11 @@ GradhSphKDTree<ndim,ParticleType,TreeCell>::GradhSphKDTree
       (1, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
   }
 
+  KDTree<ndim,ParticleType,TreeCell>*** ghostprunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>**[Nmpi];
+  ghostprunedtree = (Tree<ndim,ParticleType,TreeCell> ***) ghostprunedtree_derived;
   for (int i=0; i<Nmpi; i++) {
-    ghostprunedtree[i] = (Tree<ndim,ParticleType,TreeCell> **) prunedtree_derived;
+    KDTree<ndim,ParticleType,TreeCell>** ghostprunedtree_derived2 = new KDTree<ndim,ParticleType,TreeCell>*[Nghostprunedmax];
+    ghostprunedtree[i] = (Tree<ndim,ParticleType,TreeCell> **) ghostprunedtree_derived2;
     for (int j=0; j<Nghostprunedmax; j++) {
       ghostprunedtree[i][j] = new KDTree<ndim,ParticleType,TreeCell>
         (1, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
