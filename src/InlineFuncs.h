@@ -528,8 +528,8 @@ inline bool ParticleBoxOverlap (SphParticle<ndim>& part, Box<ndim>& box) {
 //  ParticleInBox
 //  ..
 //=============================================================================
-template <int ndim>
-inline bool ParticleInBox (SphParticle<ndim>& part, Box<ndim>& box) {
+template <int ndim, template<int> class Particle >
+inline bool ParticleInBox (Particle<ndim>& part, Box<ndim>& box) {
   for (int k=0; k<ndim; k++) {
     if (part.r[k] < box.boxmin[k] || part.r[k] > box.boxmax[k]) return false;
   }
