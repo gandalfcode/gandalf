@@ -170,6 +170,8 @@ void MpiControl<ndim>::AllocateMemory(int _Ntot)
     mpinode[inode].workreceived = new FLOAT[Nmpi];
   }
 
+  allocated_mpi=true;
+
   return;
 }
 
@@ -1125,7 +1127,6 @@ void MpiControl<ndim>::CollateDiagnosticsData(Diagnostics<ndim> &diag)
     for (inode=1; inode<Nmpi; inode++) {
       MPI_Recv(&diagaux, 1, diagnostics_type, inode, 0, MPI_COMM_WORLD, &status);
       diag.Nhydro += diagaux.Nhydro;
-      diag.Nstar += diagaux.Nstar;
       diag.Etot += diagaux.Etot;
       diag.utot += diagaux.utot;
       diag.ketot += diagaux.ketot;

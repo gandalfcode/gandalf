@@ -108,6 +108,8 @@ class MpiControl
                                                 DomainBox<ndim>, bool&) = 0;
   virtual void LoadBalancing(Sph<ndim> *, Nbody<ndim> *) = 0;
 
+  Box<ndim> MyDomain();
+
 
   // MPI control variables
   //-----------------------------------------------------------------------------------------------
@@ -181,5 +183,21 @@ public:
   virtual void ExportParticlesBeforeForceLoop (Sph<ndim>* sph);
   virtual void GetExportedParticlesAccelerations (Sph<ndim>* sph);
 };
+
+
+template <int ndim>
+inline Box<ndim> MpiControl<ndim>::MyDomain() {
+  if (!allocated_mpi) {
+    Box<ndim> result;
+    for (int k=0; k<ndim; k++) {
+	  result.boxmin[k]=-big_number;
+      result.boxmax[k]=big_number;
+    }
+    return result;
+  }
+  else
+	return mpinode[rank].domain;
+}
+
 
 #endif
