@@ -550,6 +550,13 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   // Compute initial N-body forces
   //-----------------------------------------------------------------------------------------------
   if (nbody->Nstar > 0) {
+    if (sph->self_gravity == 1 && sph->Nhydro > 0) {
+      sphneib->UpdateAllStarGasForces(sph->Nhydro,sph->Ntot,sph->GetSphParticleArray(),sph,nbody);
+#if defined MPI_PARALLEL
+        // We need to sum up the contributions from the different domains
+        mpicontrol->ComputeTotalStarGasForces(nbody);
+#endif
+    }
 
     if (nbody->nbody_softening == 1) {
       nbody->CalculateDirectSmoothedGravForces(nbody->Nnbody,nbody->nbodydata);
@@ -557,8 +564,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     else {
       nbody->CalculateDirectGravForces(nbody->Nnbody,nbody->nbodydata);
     }
-    if (sph->self_gravity == 1 && sph->Nhydro > 0)
-      sphneib->UpdateAllStarGasForces(sph->Nhydro,sph->Ntot,sph->GetSphParticleArray(),sph,nbody);
+
     nbody->CalculateAllStartupQuantities(nbody->Nnbody,nbody->nbodydata);
 
   }

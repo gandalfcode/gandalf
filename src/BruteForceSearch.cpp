@@ -305,7 +305,8 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphHydroForces
     sph->ComputeSphHydroForces(i,Nneib,neiblist,drmag,invdrmag,dr,sphdata[i],sphdata);
 
     // Compute all star forces
-    sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sphdata[i]);
+    if ( ipart < Nhydro)
+      sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sphdata[i]);
 
     sphdata[i].active = false;
 
@@ -380,7 +381,8 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphForces
     sph->ComputeSphHydroGravForces(i,Nneib,neiblist,sphdata[i],sphdata);
 
     // Compute all star forces
-    sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sphdata[i]);
+    if ( ipart < Nhydro)
+      sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sphdata[i]);
 
     for (k=0; k<ndim; k++) sphdata[i].a[k] += sphdata[i].agrav[k];
     sphdata[i].active = false;
@@ -451,7 +453,8 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphGravForces
     sph->ComputeSphGravForces(i,Nneib,neiblist,sphdata[i],sphdata);
 
     // Compute all star forces
-    sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sphdata[i]);
+    if ( iparticle < Nhydro)
+      sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,sphdata[i]);
 
     for (k=0; k<ndim; k++) sphdata[i].a[k] += sphdata[i].agrav[k];
     sphdata[i].active = false;

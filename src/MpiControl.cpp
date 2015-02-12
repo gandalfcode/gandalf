@@ -576,24 +576,30 @@ template <int ndim>
 void MpiControl<ndim>::ComputeTotalStarGasForces (Nbody<ndim> * nbody) {
 
   // Need to transmit ndim+1 doubles per star (acceleration+gpot)
-  const int number_doubles = (ndim+1)*nbody->Nnbody;
+  const int number_doubles = (ndim*2+1)*nbody->Nnbody;
   const int size_buffer = sizeof(DOUBLE)*number_doubles;
   NbodyParticle<ndim> **star = nbody->nbodydata;
 
   DOUBLE* buffer = (DOUBLE*) malloc( size_buffer );
 
   for (int i=0; i<nbody->Nnbody; i++) {
-      buffer[i*(ndim+1) + 0] = star[i]->gpot;
+      buffer[i*(2*ndim+1) + 0] = star[i]->gpot;
       for (int k=0; k<ndim; k++)
-        buffer[i*(ndim+1) +1 +k] = star[i]->a[k];
+        buffer[i*(2*ndim+1) +1 +k] = star[i]->a[k];
+      for (int k=0; k<ndim; k++)
+		buffer[i*(2*ndim+1) +1 +ndim +k] = star[i]->adot[k];
   }
 
   MPI_Allreduce(MPI_IN_PLACE,buffer,number_doubles,GANDALF_MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 
   for (int i=0; i<nbody->Nnbody; i++) {
-      star[i]->gpot = buffer[i*(ndim+1) + 0];
+      if (!star[i]->active) continue;
+      star[i]->gpot = buffer[i*(2*ndim+1) + 0];
       for (int k=0; k<ndim; k++)
-        star[i]->a[k] = buffer[i*(ndim+1) +1 +k];
+        star[i]->a[k] = buffer[i*(2*ndim+1) +1 +k];
+      for (int k=0; k<ndim; k++)
+        star[i]->adot[k] = buffer[i*(2*ndim+1) +1 +ndim +k];
+
   }
 
   free(buffer);
