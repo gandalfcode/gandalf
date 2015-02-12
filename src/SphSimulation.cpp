@@ -1030,6 +1030,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     MPI_Allreduce(&dt,&timestep,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
     dt = dt_min_sph;
     MPI_Allreduce(&dt,&dt_min_sph,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
+    dt = dt_min_nbody;
+	MPI_Allreduce(&dt,&dt_min_nbody,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
 #endif
 
 
@@ -1098,6 +1100,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
 
     nresync = pow(2,level_step);
+    assert(nresync>0);
     timestep = dt_max / (DOUBLE) nresync;
 
   }
@@ -1255,9 +1258,12 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     // For MPI, find the global maximum timestep levels for each processor
 #ifdef MPI_PARALLEL
     level = level_max;
-    MPI_Allreduce(&level,&level_max,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
+    MPI_Allreduce(&level,&level_max,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
     level = level_max_sph;
-    MPI_Allreduce(&level,&level_max_sph,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
+    MPI_Allreduce(&level,&level_max_sph,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+    level = level_max_nbody;
+    MPI_Allreduce(&level,&level_max_nbody,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+    assert(level_max_sph>=0);
 #endif
 
 
