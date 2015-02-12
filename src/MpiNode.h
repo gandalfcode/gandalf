@@ -62,7 +62,7 @@ class MpiNode
   //---------------------------------------------------------------------------
   int ifirst;                       ///< i.d. of first ghost from node
   int ilast;                        ///< i.d. of last ghost from node
-  int Nhydro;                         ///< No. of SPH particles on node
+  int Nhydro;                       ///< No. of SPH particles on node
   int Ntot;                         ///< ..
   int Ntotmax;                      ///< ..
   int Nghost;                       ///< No. of ghost particles originally

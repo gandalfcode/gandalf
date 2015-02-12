@@ -67,6 +67,8 @@ struct KDTreeCell {
   FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
   FLOAT hboxmin[ndim];              ///< Minimum extent of bounding box
   FLOAT hboxmax[ndim];              ///< Maximum extent of bounding box
+  FLOAT vboxmin[ndim];
+  FLOAT vboxmax[ndim];
   FLOAT rcell[ndim];                ///< Geometric centre of cell bounding box
   FLOAT r[ndim];                    ///< Position of cell COM
   FLOAT v[ndim];                    ///< Velocity of cell COM

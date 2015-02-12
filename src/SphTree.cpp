@@ -1061,8 +1061,10 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void SphTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
- (int pruning_level,                   ///< ..
-  int rank)                            ///< ..
+ (const int rank,                      ///< ..
+  const int pruning_level,             ///< ..
+  const int Nhydromax,                 ///< ..
+  SphParticle<ndim> *hydro_gen)        ///< [inout] Pointer to SPH ptcl array
 {
   int c;                               // Cell counter
   int cnew;                            // New i.d. of copied cell in pruned tree
@@ -1072,14 +1074,17 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
   int i;                               // Particle counter
   int k;                               // Dimension counter
   int l;                               // ..
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (hydro_gen);
 
   debug2("[SphTree::BuildPrunedTree]");
   timing->StartTimingSection("BUILD_PRUNED_TREE",2);
 
   cnew = 0;
   Nprunedcellmax = 0;
+  cout << "Levels : " << pruning_level << "    " << tree->ltot << endl;
   assert(pruning_level < tree->ltot);
 
+  tree->StockTree(tree->celldata[0], sphdata);
 
   // Set level at which tree will be pruned (for all trees)
   //-----------------------------------------------------------------------------------------------
@@ -1685,6 +1690,9 @@ FLOAT SphTree<ndim,ParticleType,TreeCell>::FindLoadBalancingDivision
       }
     }
 
+    cout << "workleft : " << workleft << "     workright : " << workright
+         << "       workfrac : " << workleft / (workleft + workright)
+         << "    rold : " << r_old << "     r_new : " << r_divide << endl;
 
     // If fraction of work on either side of division is too inbalanced, calculate new position
     // of division and perform another iteration.  Otherwise exit iteration loop.
@@ -2060,6 +2068,19 @@ void SphTree<ndim,ParticleType,TreeCell>::CommunicatePrunedTrees
          << "   " << prunedtree[i]->celldata[0].bbmax[0] << endl;
   }
 
+}
+
+
+
+//=================================================================================================
+//  SphTree::InitialiseCellWorkCounters
+/// ..
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void SphTree<ndim,ParticleType,TreeCell>::InitialiseCellWorkCounters(void)
+{
+  for (int c=0; c<Ncellmax; c++) tree->celldata[c].worktot = (FLOAT) 0.0;
+  return;
 }
 #endif
 

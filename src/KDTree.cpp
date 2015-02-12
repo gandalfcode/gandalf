@@ -722,7 +722,7 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
 //=================================================================================================
 //  KDTree::StockCellProperties
 /// Calculate the physical properties (e.g. total mass, centre-of-mass,
-/// opening-distance, etc..) of all cells in the tree.
+/// MAC opening-distance, etc..) of all given cell in the tree.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
@@ -751,14 +751,16 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   cell.drmaxdt  = (FLOAT) 0.0;
   cell.mac      = (FLOAT) 0.0;
   cell.cdistsqd = big_number;
-  for (k=0; k<5; k++) cell.q[k] = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.r[k] = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.v[k] = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.0;
-  for (k=0; k<ndim; k++) cell.bbmin[k] = big_number;
-  for (k=0; k<ndim; k++) cell.bbmax[k] = -big_number;
+  for (k=0; k<5; k++) cell.q[k]          = (FLOAT) 0.0;
+  for (k=0; k<ndim; k++) cell.r[k]       = (FLOAT) 0.0;
+  for (k=0; k<ndim; k++) cell.v[k]       = (FLOAT) 0.0;
+  for (k=0; k<ndim; k++) cell.rcell[k]   = (FLOAT) 0.0;
+  for (k=0; k<ndim; k++) cell.bbmin[k]   = big_number;
+  for (k=0; k<ndim; k++) cell.bbmax[k]   = -big_number;
   for (k=0; k<ndim; k++) cell.hboxmin[k] = big_number;
   for (k=0; k<ndim; k++) cell.hboxmax[k] = -big_number;
+  for (k=0; k<ndim; k++) cell.vboxmin[k] = big_number;
+  for (k=0; k<ndim; k++) cell.vboxmax[k] = -big_number;
 
 
   // If this is a leaf cell, sum over all particles

@@ -427,7 +427,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Communicate pruned trees for MPI
 #ifdef MPI_PARALLEL
-    sphneib->BuildPrunedTree(pruning_level,rank);
+    sphneib->BuildPrunedTree(rank, pruning_level, sph->Nhydromax, sph->GetSphParticleArray());
     mpicontrol->CommunicatePrunedTrees();
     sphneib->BuildGhostPrunedTree(rank,simbox);
 //    exit(0);
@@ -490,12 +490,14 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
                             sph->Nhydromax,sph->GetSphParticleArray(),sph,timestep);
 
 #ifdef MPI_PARALLEL
-    if (sph->self_gravity == 1)
+    if (sph->self_gravity == 1) {
       sphneib->UpdateGravityExportList(rank,sph->Nhydro,sph->Ntot,
                                        sph->GetSphParticleArray(),sph,nbody);
-    else
+    }
+    else {
       sphneib->UpdateHydroExportList(rank,sph->Nhydro,sph->Ntot,
                                      sph->GetSphParticleArray(),sph,nbody);
+    }
 
     mpicontrol->ExportParticlesBeforeForceLoop(sph);
 #endif
@@ -516,16 +518,21 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
     // Calculate SPH gravity and hydro forces, depending on which are activated
-    if (ewaldGravity && sph->hydro_forces == 1 && sph->self_gravity == 1)
+    if (ewaldGravity && sph->hydro_forces == 1 && sph->self_gravity == 1) {
       sphneib->UpdateAllSphPeriodicForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody,simbox,ewald);
-    else if (ewaldGravity && sph->self_gravity == 1)
+    }
+    else if (ewaldGravity && sph->self_gravity == 1) {
       sphneib->UpdateAllSphPeriodicGravForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody,simbox,ewald);
-    else if (sph->hydro_forces == 1 && sph->self_gravity == 1)
+    }
+    else if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
       sphneib->UpdateAllSphForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
-    else if (sph->hydro_forces == 1)
+    }
+    else if (sph->hydro_forces == 1) {
       sphneib->UpdateAllSphHydroForces(sph->Nhydro,sph->Ntot,sph->GetSphParticleArray(),sph,nbody);
-    else if (sph->self_gravity == 1)
+    }
+    else if (sph->self_gravity == 1) {
       sphneib->UpdateAllSphGravForces(sph->Nhydro,sph->Ntot,sph->GetSphParticleArray(),sph,nbody);
+    }
 
 #if defined MPI_PARALLEL
     mpicontrol->GetExportedParticlesAccelerations(sph);
@@ -637,11 +644,12 @@ void SphSimulation<ndim>::MainLoop(void)
   //-----------------------------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    sphneib->BuildPrunedTree(pruning_level, rank);
+    sphneib->BuildPrunedTree(rank, pruning_level, sph->Nhydromax, sph->GetSphParticleArray());
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
     mpicontrol->CommunicatePrunedTrees();
     sphneib->BuildGhostPrunedTree(rank, simbox);
     mpicontrol->LoadBalancing(sph, nbody);
+    sphneib->InitialiseCellWorkCounters();
   }
 #endif
 
@@ -662,7 +670,7 @@ void SphSimulation<ndim>::MainLoop(void)
       sphneib->BuildGhostTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,
                               sph->Ntot,sph->Nhydromax,partdata,sph,timestep);
 #ifdef MPI_PARALLEL
-      sphneib->BuildPrunedTree(pruning_level, rank);
+      sphneib->BuildPrunedTree(rank, pruning_level, sph->Nhydromax, sph->GetSphParticleArray());
       mpicontrol->CommunicatePrunedTrees();
       sphneib->BuildGhostPrunedTree(rank, simbox);
       mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);

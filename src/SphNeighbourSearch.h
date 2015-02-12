@@ -113,7 +113,7 @@ protected:
                                        Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateHydroExportList(int, int, int, SphParticle<ndim> *,
                                      Sph<ndim> *, Nbody<ndim> *) = 0;
-  virtual void BuildPrunedTree(int, int) {};
+  virtual void BuildPrunedTree(const int, const int, const int, SphParticle<ndim> *) {};
   virtual void BuildGhostPrunedTree(const int, const DomainBox<ndim> &) {};
   virtual void BuildMpiGhostTree(bool, int, int, int, int, int,
                                  SphParticle<ndim> *, Sph<ndim> *, FLOAT) = 0;
@@ -132,6 +132,7 @@ protected:
   virtual void UnpackReturnedExportInfo(vector<char >& received_information,
                                         vector<int>& recv_displs, Sph<ndim>* sph, int rank) = 0;
   virtual void CommunicatePrunedTrees(vector<int>&, int) = 0;
+  virtual void InitialiseCellWorkCounters(void) {};
 #endif
 
 
@@ -384,7 +385,7 @@ protected:
   void UpdateGravityExportList(int, int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateHydroExportList(int, int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void BuildMpiGhostTree(bool, int, int, int, int, int, SphParticle<ndim> *, Sph<ndim> *, FLOAT);
-  void BuildPrunedTree(int, int);
+  void BuildPrunedTree(const int, const int, const int, SphParticle<ndim> *);
   void BuildGhostPrunedTree(const int, const DomainBox<ndim> &);
   int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &, Sph<ndim> *, vector<int> &);
   int SearchHydroExportParticles(const Box<ndim> &, Sph<ndim> *, vector<TreeCell<ndim> *> &);
@@ -399,6 +400,7 @@ protected:
   virtual void UnpackReturnedExportInfo(vector<char >& received_information,
                                         vector<int>& recv_displs, Sph<ndim>* sph, int rank);
   virtual void CommunicatePrunedTrees(vector<int>&, int);
+  virtual void InitialiseCellWorkCounters(void);
 #endif
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(int, int, int, int *, ParticleType<ndim> *, string);

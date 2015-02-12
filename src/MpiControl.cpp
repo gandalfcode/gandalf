@@ -714,6 +714,12 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   }
   //-----------------------------------------------------------------------------------------------
 
+  // Write out 'final' mpinode bounding boxes
+  for (int inode=0; inode<Nmpi; inode++) {
+    cout << "Node " << inode << "     box : " << mpinode[inode].domain.boxmin[0] << "     "
+         << mpinode[inode].domain.boxmax[0] << endl;
+  }
+
 
   // Prepare lists of particles that now occupy other processor domains that need to be transfered
 

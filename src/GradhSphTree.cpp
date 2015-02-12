@@ -396,7 +396,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 #ifdef MPI_PARALLEL
   twork = timing->WallClockTime() - twork;
   for (int cc=0; cc<cactive; cc++) {
-    celllist[cc].worktot += twork*(DOUBLE) celllist[cc].Nactive / (DOUBLE) Nactivetot;
+    int c = celllist[cc].id;
+    tree->celldata[c].worktot += twork*(DOUBLE) celllist[cc].Nactive / (DOUBLE) Nactivetot;
   }
 #endif
 

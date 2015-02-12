@@ -516,7 +516,7 @@ void MpiTree<ndim,ParticleType>::UpdateBoundingBoxes(void)
     // Adjust bounding box of 2nd child
     for (k=0; k<ndim; k++) tree[c2].bbmin[k] = tree[c].bbmin[k];
     for (k=0; k<ndim; k++) tree[c2].bbmax[k] = tree[c].bbmax[k];
-    tree[c1].bbmin[k_divide] = r_divide;
+    tree[c2].bbmin[k_divide] = r_divide;
 
   }
   //-----------------------------------------------------------------------------------------------
