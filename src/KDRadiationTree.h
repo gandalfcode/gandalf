@@ -70,6 +70,7 @@ struct KDRadTreeCell {
   FLOAT rmax;                       ///< ..
   FLOAT lsum[nfreq];                ///< Summation of photon path lengths
   FLOAT opacity[nfreq];             ///< ...
+  FLOAT tau;
 };
 
 
@@ -83,10 +84,12 @@ struct MonoIonTreeCell : public KDRadTreeCell<ndim,nfreq>
 {
   FLOAT Xion;
   FLOAT Xold;
+  //FLOAT tau;
 
   MonoIonTreeCell() {
     Xion = 0.99999;
     Xold = 0.99999;
+    //tau = 0.0;
   }
 
 };

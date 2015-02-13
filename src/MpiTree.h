@@ -44,27 +44,28 @@ using namespace std;
 //=================================================================================================
 template <int ndim>
 struct MpiTreeCell {
-  bool uniform;                     ///< Is cell sufficiently uniform?
-  int id;                           ///< ..
-  int c1;                           ///< First child cell
-  int c2;                           ///< Second child cell
-  int c2g;                          ///< i.d. of tree-cell c/grid-cell g
-  int clevel;                       ///< ..
-  int cnext;                        ///< i.d. of next cell if not opened
-  int k_divide;                     ///< Dimension along which cell is split
-  int level;                        ///< Level of cell on tree
-  int ifirst;                       ///< i.d. of first particle in cell
-  int ilast;                        ///< i.d. of last particle in cell
-  int N;                            ///< No. of particles contained in cell
-  int cexit[2][ndim];               ///< Left and right exit cells (per dim)
-  FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
-  FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
-  FLOAT m;                          ///< Mass contained in cell
-  FLOAT volume;                     ///< Cell volume
-  FLOAT r_divide;                   ///<
-  FLOAT rwork[ndim];                ///< ..
-  FLOAT worktot;                    ///< ..
-  vector<int> nodes;                ///< ..
+  bool uniform;                        ///< Is cell sufficiently uniform?
+  int id;                              ///< ..
+  int c1;                              ///< First child cell
+  int c2;                              ///< Second child cell
+  int c2g;                             ///< i.d. of tree-cell c/grid-cell g
+  int clevel;                          ///< ..
+  int cnext;                           ///< i.d. of next cell if not opened
+  int k_divide;                        ///< Dimension along which cell is split
+  int level;                           ///< Level of cell on tree
+  int ifirst;                          ///< i.d. of first particle in cell
+  int ilast;                           ///< i.d. of last particle in cell
+  int N;                               ///< No. of particles contained in cell
+  int cexit[2][ndim];                  ///< Left and right exit cells (per dim)
+  FLOAT bbmin[ndim];                   ///< Minimum extent of bounding box
+  FLOAT bbmax[ndim];                   ///< Maximum extent of bounding box
+  FLOAT boxmin[ndim];                  ///< ..
+  FLOAT boxmax[ndim];                  ///< ..
+  FLOAT m;                             ///< Mass contained in cell
+  FLOAT volume;                        ///< Cell volume
+  FLOAT r_divide;                      ///< ..
+  FLOAT worktot;                       ///< ..
+  vector<int> nodes;                   ///< ..
 };
 
 

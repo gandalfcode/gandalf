@@ -191,7 +191,7 @@ GradhSphTree<ndim,ParticleType,TreeCell>::~GradhSphTree()
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
- (int Nhydro,                                ///< [in] No. of SPH particles
+ (int Nhydro,                              ///< [in] No. of SPH particles
   int Ntot,                                ///< [in] No. of SPH + ghost particles
   SphParticle<ndim> *sph_gen,              ///< [inout] Pointer to SPH ptcl array
   Sph<ndim> *sph,                          ///< [in] Pointer to SPH object
@@ -371,9 +371,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
       // Once cell is finished, copy all active particles back to main memory
       for (j=0; j<Nactive; j++) sphdata[activelist[j]] = activepart[j];
 
-#ifdef MPI_PARALLEL
-      Nactivetot += Nactive;
-#endif
 
     }
     //=============================================================================================
@@ -395,10 +392,12 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
   twork = timing->WallClockTime() - twork;
+  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
   for (int cc=0; cc<cactive; cc++) {
     int c = celllist[cc].id;
-    tree->celldata[c].worktot += twork*(DOUBLE) celllist[cc].Nactive / (DOUBLE) Nactivetot;
+    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
   }
+  cout << "Time computing smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
 #endif
 
   delete[] celllist;
@@ -419,15 +418,19 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
- (int Nhydro,                            ///< [in] No. of SPH particles
-  int Ntot,                            ///< [in] No. of SPH + ghost particles
-  SphParticle<ndim> *sph_gen,          ///< [inout] Pointer to SPH ptcl array
-  Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
-  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
+ (int Nhydro,                              ///< [in] No. of SPH particles
+  int Ntot,                                ///< [in] No. of SPH + ghost particles
+  SphParticle<ndim> *sph_gen,              ///< [inout] Pointer to SPH ptcl array
+  Sph<ndim> *sph,                          ///< [in] Pointer to SPH object
+  Nbody<ndim> *nbody)                      ///< [in] Pointer to N-body object
 {
-  int cactive;                         // No. of active cells
-  TreeCell<ndim> *celllist;            // List of active tree cells
+  int cactive;                             // No. of active cells
+  TreeCell<ndim> *celllist;                // List of active tree cells
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+#ifdef MPI_PARALLEL
+  int Nactivetot = 0;                      // Total number of active particles
+  double twork = timing->WallClockTime();  // Start time (for load balancing)
+#endif
 
   debug2("[GradhSphTree::UpdateAllSphHydroForces]");
   timing->StartTimingSection("SPH_HYDRO_FORCES",2);
@@ -625,6 +628,18 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
   }
   //===============================================================================================
 
+  // Compute time spent in routine and in each cell for load balancing
+#ifdef MPI_PARALLEL
+  twork = timing->WallClockTime() - twork;
+  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
+  for (int cc=0; cc<cactive; cc++) {
+    int c = celllist[cc].id;
+    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
+  }
+  cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
+
+
   delete[] celllist;
 
   timing->EndTimingSection("SPH_HYDRO_FORCES");
@@ -640,15 +655,19 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
- (int Nhydro,                            ///< [in] No. of SPH particles
-  int Ntot,                            ///< [in] No. of SPH + ghost particles
-  SphParticle<ndim> *sph_gen,          ///< [inout] Pointer to SPH ptcl array
-  Sph<ndim> *sph,                      ///< [in] Pointer to SPH object
-  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
+ (int Nhydro,                              ///< [in] No. of SPH particles
+  int Ntot,                                ///< [in] No. of SPH + ghost particles
+  SphParticle<ndim> *sph_gen,              ///< [inout] Pointer to SPH ptcl array
+  Sph<ndim> *sph,                          ///< [in] Pointer to SPH object
+  Nbody<ndim> *nbody)                      ///< [in] Pointer to N-body object
 {
-  int cactive;                         // No. of active cells
-  TreeCell<ndim> *celllist;            // List of active cells
+  int cactive;                             // No. of active cells
+  TreeCell<ndim> *celllist;                // List of active cells
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+#ifdef MPI_PARALLEL
+  int Nactivetot = 0;                      // Total number of active particles
+  double twork = timing->WallClockTime();  // Start time (for load balancing)
+#endif
 
   debug2("[GradhSphTree::UpdateAllSphForces]");
   timing->StartTimingSection("SPH_ALL_FORCES",2);
@@ -862,6 +881,17 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 
   }
   //===============================================================================================
+
+  // Compute time spent in routine and in each cell for load balancing
+#ifdef MPI_PARALLEL
+  twork = timing->WallClockTime() - twork;
+  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
+  for (int cc=0; cc<cactive; cc++) {
+    int c = celllist[cc].id;
+    tree->celldata[c].worktot += twork*(DOUBLE) celllist[cc].Nactive / (DOUBLE) Nactivetot;
+  }
+#endif
+
 
   delete[] celllist;
 

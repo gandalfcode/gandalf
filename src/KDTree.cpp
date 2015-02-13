@@ -386,6 +386,9 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
 
   // If cell is a leaf cell, do not divide further and set linked lists
   if (cell.level == ltot) {
+#ifdef MPI_PARALLEL
+    cell.worktot = 0.0;
+#endif
     if (cell.N > 0) {
       for (j=cell.ifirst; j<cell.ilast; j++) inext[ids[j]] = ids[j+1];
       cell.ifirst = ids[cell.ifirst];
@@ -935,6 +938,8 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
   else {
     cell.mac = (FLOAT) 0.0;
   }
+
+  //cout << "Work in cell[" << cell.id << "] : " << cell.worktot << "      level : " << cell.level << endl;
 
 
   return;
@@ -2197,6 +2202,9 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::ComputeWorkInBox
     fracoverlap = FractionalBoxOverlap(ndim, boxmin, boxmax,
                                        celldata[c].hboxmin, celldata[c].hboxmax);
 
+    //cout << "Adding work contributions;  work[" << c << "] : " << celldata[c].worktot
+    //     << "      worktot : " << worktot << "    fracoverlap : " << fracoverlap << endl;
+
     // If there is zero or full overlap, record the value and move to the next cell
     if (fracoverlap < small_number || fracoverlap > (FLOAT) 1.0 - small_number) {
       worktot += fracoverlap*celldata[c].worktot;
@@ -2220,10 +2228,73 @@ FLOAT KDTree<ndim,ParticleType,TreeCell>::ComputeWorkInBox
       exit(0);
     }
 
+
   };
   //===============================================================================================
 
   return worktot;
+}
+
+
+
+//=================================================================================================
+//  KDTree::UpdateWorkCounters
+/// Calculate the physical properties (e.g. total mass, centre-of-mass,
+/// opening-distance, etc..) of all cells in the tree.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void KDTree<ndim,ParticleType,TreeCell>::UpdateWorkCounters
+ (TreeCell<ndim> &cell)                ///< KD-tree cell
+{
+  int cc,ccc;                          // Cell counters
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
+
+  // If cell is not leaf, stock child cells
+  if (cell.level != ltot) {
+#if defined _OPENMP
+    if (pow(2,cell.level) < Nthreads) {
+#pragma omp parallel for default(none) private(i) shared(cell,partdata) num_threads(2)
+      for (i=0; i<2; i++) {
+        if (i == 0) UpdateWorkCounters(celldata[cell.c1]);
+        else if (i == 1) UpdateWorkCounters(celldata[cell.c2]);
+      }
+    }
+    else {
+      for (i=0; i<2; i++) {
+        if (i == 0) UpdateWorkCounters(celldata[cell.c1]);
+        else if (i == 1) UpdateWorkCounters(celldata[cell.c2]);
+      }
+    }
+#else
+    for (i=0; i<2; i++) {
+      if (i == 0) UpdateWorkCounters(celldata[cell.c1]);
+      else if (i == 1) UpdateWorkCounters(celldata[cell.c2]);
+    }
+#endif
+  }
+
+
+  // If this is a leaf cell, sum over all particles
+  //-----------------------------------------------------------------------------------------------
+  if (cell.level != ltot) {
+    cell.worktot = 0.0;
+    cc = cell.c1;
+    ccc = cell.c2;
+
+    if (celldata[cc].N > 0) {
+      cell.worktot += celldata[cc].worktot;
+    }
+    if (celldata[ccc].N > 0) {
+      cell.worktot += celldata[ccc].worktot;
+    }
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  //cout << "Work in cell " << cell.id << " : " << cell.worktot << "       level : " << cell.level << endl;
+
+  return;
 }
 #endif
 

@@ -172,6 +172,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
                                            const int, int, TreeCell<ndim> *);
   bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *);
   FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *) {};
+  void UpdateWorkCounters(TreeCell<ndim> &) {};
 #endif
 #if defined(VERIFY_ALL)
   void ValidateTree(ParticleType<ndim> *);

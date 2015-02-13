@@ -244,6 +244,7 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildTree
   else if (n%ntreestockstep == 0) {
 
     tree->StockTree(tree->celldata[0],sphdata);
+    //cout << "Work in local domain : " << tree->celldata[0].worktot << endl;
 
   }
 
@@ -1084,7 +1085,8 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
   cout << "Levels : " << pruning_level << "    " << tree->ltot << endl;
   assert(pruning_level < tree->ltot);
 
-  tree->StockTree(tree->celldata[0], sphdata);
+  // Update all work counters in the tree for load-balancing purposes
+  tree->UpdateWorkCounters(tree->celldata[0]);
 
   // Set level at which tree will be pruned (for all trees)
   //-----------------------------------------------------------------------------------------------
@@ -1143,15 +1145,15 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
   }
   //-----------------------------------------------------------------------------------------------
 
-  //cout << "Pruned tree size : " << prunedtree[rank]->Ncell << "    "
-  //     << prunedtree[rank]->ltot << "    " << pruning_level << endl;
-  /*for (c=0; c<prunedtree[rank]->Ncell; c++) {
+  cout << "Pruned tree size : " << prunedtree[rank]->Ncell << "    "
+       << prunedtree[rank]->ltot << "    " << pruning_level << endl;
+  for (c=0; c<prunedtree[rank]->Ncell; c++) {
     cout << "bb[" << c << "] : " << prunedtree[rank]->celldata[c].bbmin[0]
          << "    " << prunedtree[rank]->celldata[c].bbmax[0]
-         << "    " << prunedtree[rank]->celldata[c].hboxmin[0]
-         << "    " << prunedtree[rank]->celldata[c].hboxmax[0]
-         << "    N : " << prunedtree[rank]->celldata[c].N << endl;
-  }*/
+         << "    N : " << prunedtree[rank]->celldata[c].N
+         << "    worktot : " << prunedtree[rank]->celldata[c].worktot
+         << "    " << tree->celldata[0].worktot << endl;
+  }
 
   //cin >> c;
   MPI_Barrier(MPI_COMM_WORLD);
@@ -1232,6 +1234,7 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostPrunedTree
             treelist[ighosttree]->celldata[c].hboxmin[k_divide] -= simbox.boxsize[k_divide];
             treelist[ighosttree]->celldata[c].hboxmax[k_divide] -= simbox.boxsize[k_divide];
           }
+          cout << "Adding left ghost pruned tree [" << Nghostpruned[i] << "] for tree " << i << endl;
 
         }
 
@@ -1262,6 +1265,7 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostPrunedTree
             treelist[ighosttree]->celldata[c].hboxmin[k_divide] += simbox.boxsize[k_divide];
             treelist[ighosttree]->celldata[c].hboxmax[k_divide] += simbox.boxsize[k_divide];
           }
+          cout << "Adding right ghost pruned tree [" << Nghostpruned[i] << "] for tree " << i << endl;
 
         }
 
@@ -1677,22 +1681,22 @@ FLOAT SphTree<ndim,ParticleType,TreeCell>::FindLoadBalancingDivision
     // Compute work included in left-hand side from pruned trees of all MPI domains
     for (i=0; i<Nmpi; i++) {
       workleft += prunedtree[i]->ComputeWorkInBox(boxleftmin, boxleftmax);
-      for (j=0; j<Nghostpruned[i]; j++) {
+      /*for (j=0; j<Nghostpruned[i]; j++) {
         workleft += ghostprunedtree[i][j]->ComputeWorkInBox(boxleftmin, boxleftmax);
-      }
+      }*/
     }
 
     // Compute work included in right-hand side from pruned trees of all MPI domains
     for (i=0; i<Nmpi; i++) {
       workright += prunedtree[i]->ComputeWorkInBox(boxrightmin, boxrightmax);
-      for (j=0; j<Nghostpruned[i]; j++) {
+      /*for (j=0; j<Nghostpruned[i]; j++) {
         workright += ghostprunedtree[i][j]->ComputeWorkInBox(boxrightmin, boxrightmax);
-      }
+      }*/
     }
 
-    cout << "workleft : " << workleft << "     workright : " << workright
-         << "       workfrac : " << workleft / (workleft + workright)
-         << "    rold : " << r_old << "     r_new : " << r_divide << endl;
+    //cout << "workleft : " << workleft << "     workright : " << workright
+    //     << "       workfrac : " << workleft / (workleft + workright)
+    //     << "    rold : " << r_old << "     r_new : " << r_divide << endl;
 
     // If fraction of work on either side of division is too inbalanced, calculate new position
     // of division and perform another iteration.  Otherwise exit iteration loop.
@@ -1703,7 +1707,7 @@ FLOAT SphTree<ndim,ParticleType,TreeCell>::FindLoadBalancingDivision
 
     r_divide = 0.5*(r_min + r_max);
 
-  } while (fabs(workfrac - 0.5) < worktol);
+  } while (fabs(workfrac - 0.5) > worktol);
   //-----------------------------------------------------------------------------------------------
 
   return r_divide;
@@ -2065,7 +2069,8 @@ void SphTree<ndim,ParticleType,TreeCell>::CommunicatePrunedTrees
     cout << "Ncell : " << prunedtree[i]->Ncell << endl;
     cout << "r : " << prunedtree[i]->celldata[0].r[0]
          << "   box : " << prunedtree[i]->celldata[0].bbmin[0]
-         << "   " << prunedtree[i]->celldata[0].bbmax[0] << endl;
+         << "   " << prunedtree[i]->celldata[0].bbmax[0]
+         << "   worktot : " << prunedtree[i]->celldata[0].worktot << endl;
   }
 
 }

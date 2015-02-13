@@ -599,6 +599,7 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::StockCellProperties
   cell.m       = (FLOAT) 0.0;
   cell.rho     = (FLOAT) 0.0;
   cell.temp    = (FLOAT) 0.0;
+  cell.tau     = (FLOAT) 0.0;
   for (k=0; k<nfreq; k++) cell.lsum[k]    = (FLOAT) 0.0;
   for (k=0; k<nfreq; k++) cell.opacity[k] = small_number;
   for (k=0; k<ndim; k++) cell.r[k]        = (FLOAT) 0.0;
@@ -857,7 +858,6 @@ int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::FindCell
   const FLOAT rp[ndim])                ///< [in] Position of point/ray
 {
   int c = cparent;                     // Cell i.d.
-  int c1;                              // i.d. of 1st cell child
   int k_divide;                        // Dimension of cell division
 
   // Walk back down through tree to bottom level
@@ -868,12 +868,11 @@ int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::FindCell
     cout << "Searching for cell : " << radcell[c].level << "   " << ltot << endl;
 #endif
 
-    c1 = c + 1;
     k_divide = radcell[c].k_divide;
 
     // If point is left of divide, pick 1st child cell.  Else pick 2nd child.
-    if (rp[k_divide] < radcell[c1].bbmax[k_divide]) {
-      c = c1;
+    if (rp[k_divide] < radcell[c + 1].bbmax[k_divide]) {
+      c = c + 1;
     }
     else {
       c = radcell[c].c2;
@@ -881,6 +880,15 @@ int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::FindCell
 
   };
   //-----------------------------------------------------------------------------------------------
+
+  for (int k=0; k<ndim; k++) {
+    if (!(rp[k] >= radcell[c].bbmin[k] && rp[k] <= radcell[c].bbmax[k])) {
+      cout << "Problem finding point in cell; k : " << k << "    r : " << rp[k] << "     bb : "
+           << radcell[c].bbmin[k] << "    " << radcell[c].bbmax[k] << "    c : " << c << endl;
+      exit(0);
+    }
+  }
+  assert(c >= cparent);
 
   return c;
 }
@@ -942,6 +950,8 @@ int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::FindRayExitFace
   }
   //-----------------------------------------------------------------------------------------------
 
+  assert(cexit != cell.id);
+
   return cexit;
 }
 
@@ -953,9 +963,9 @@ int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::FindRayExitFace
 //=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int,int> class CellType>
 int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::FindAdjacentCell
-(const int cparent,                    ///< [in] i.d. of larger parent cell
- const int level,                      ///< [in] level that ray should exit
- const FLOAT rp[ndim])                 ///< [in] Position of point/ray
+ (const int cparent,                   ///< [in] i.d. of larger parent cell
+  const int level,                     ///< [in] level that ray should exit
+  const FLOAT rp[ndim])                ///< [in] Position of point/ray
 {
   int c = cparent;                     // Cell i.d.
   int c1;                              // i.d. of 1st cell child
@@ -978,6 +988,17 @@ int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::FindAdjacentCell
 
   };
   //-----------------------------------------------------------------------------------------------
+
+  /*if (c == cparent) {
+    cout << "rp : " << rp[0] << "   " << rp[1] << endl;
+    cout << "k_divide : " << k_divide << "     c : " << c << endl;
+    cout << "level : " << radcell[cparent].level << endl;
+    cout << "Cell x-range : " << radcell[c].bbmin[0]
+         << "   " << radcell[c].bbmax[0] << endl;
+    cout << "Cell y-range : " << radcell[c].bbmin[1]
+         << "   " << radcell[c].bbmax[1] << endl;
+  }
+  assert(c != cparent);*/
 
 
 #ifdef OUTPUT_ALL

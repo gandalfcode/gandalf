@@ -32,6 +32,7 @@
 #include <math.h>
 #include "Precision.h"
 #include "Constants.h"
+#include "InlineFuncs.h"
 #include "Radiation.h"
 #include "Debug.h"
 using namespace std;
@@ -235,8 +236,8 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Update
             << radtree->radcell[c].rcell[1] << "   "
             << sqrt(DotProduct(radtree->radcell[c].rcell,radtree->radcell[c].rcell,ndim)) << "   "
             << radtree->radcell[c].Xion << "   "
-            << radtree->radcell[c].Xold << "   "
-            << radtree->radcell[c].opacity[0]/(units->r.outscale*units->r.outSI) << "   "
+            << radtree->radcell[c].tau << "   "
+            << radtree->radcell[c].opacity[0] << "   "///(units->r.outscale*units->r.outSI) << "   "
             << pow(units->r.outscale*units->r.outcgs,2)*
               radtree->radcell[c].opacity[0]/radtree->radcell[c].rho/invmh << "   "
             << radtree->radcell[c].lsum[0] << "   "
@@ -283,9 +284,9 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Iterat
 
   // Emit photon packets from single source (for now)
   source.sourcetype = "pointsource";
-  for (int k=0; k<ndim; k++) source.r[k] = 0.0;
+  for (int k=0; k<ndim; k++) source.r[k] = (FLOAT) 0.0;
   source.c = radtree->FindCell(0,level,source.r);
-  source.luminosity = 1.0;
+  source.luminosity = (FLOAT) 1.0;
   kfreq = 0;
 
 
@@ -301,6 +302,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Iterat
     int iphoton;                         // Photon counter
     int k;                               // Dimension counter
     FLOAT dpath;                         // Path to next cell boundary
+    FLOAT dpathtot;                      // Total path left before absorption
     FLOAT rand1;                         // Random number
     FLOAT taumax;                        // Optical depth travelled by photon
     FLOAT tau;                           // Current value of photon optical depth
@@ -320,6 +322,8 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Iterat
       tau    = (FLOAT) 0.0;
       Nscattercount++;
 
+      dpathtot = 0.0;
+      int NcellCross = 0;
 
       // Main photon transmission/scattering/absorption-reemission iteration loop
       //-------------------------------------------------------------------------------------------
@@ -327,6 +331,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Iterat
 
         // Increase cell counter
         Ncellcount++;
+        NcellCross++;
 
         // Find i.d. of next (parent) cell and the maximum path length travelled in current cell
         photon.cnext = radtree->FindRayExitFace(radtree->radcell[photon.c], photon.r,
@@ -339,11 +344,29 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Iterat
 
           // Propagate photon packet until absorption/scattering event
           dpath = (taumax - tau)/radtree->radcell[photon.c].opacity[kfreq];
+          /*cout << "Before propagating;  dpath : " << dpath << "    dpathtot : " << dpathtot
+               << "    tau : " << tau << "    taumax : " << taumax << endl;
+          cout << "                   rbefore : " << photon.r[0] << "   " << photon.r[1]
+               << "     opacity : " << radtree->radcell[photon.c].opacity[kfreq] << endl;*/
           for (k=0; k<ndim; k++) photon.r[k] += dpath*photon.eray[k];
 #pragma omp atomic
           radtree->radcell[photon.c].lsum[kfreq] += dpath;
 #pragma omp atomic
           radtree->radcell[photon.c].Nphoton++;
+
+          tau += dpath*radtree->radcell[photon.c].opacity[kfreq];
+          radtree->radcell[photon.c].tau = tau;
+          dpathtot += dpath;
+          FLOAT drmag = sqrtf(DotProduct(photon.r, photon.r, ndim));
+          if (fabs(drmag - dpathtot) > 1.0e-6) {
+            cout << "Problem with photon path length : " << drmag << "   " << dpathtot << endl;
+            exit(0);
+          }
+          cout << "Absorbing photon;     dpath : " << dpath << "    dpathtot : " << dpathtot
+               << "    tau : " << tau << "    taumax : " << taumax << endl;
+          cout << "                    rafter  : " << photon.r[0] << "   " << photon.r[1]
+               << "     opacity : " << radtree->radcell[photon.c].opacity[kfreq]
+               << "     Xion : " << radtree->radcell[photon.c].Xion << endl;
 
           break;
         }
@@ -352,13 +375,26 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Iterat
         //-----------------------------------------------------------------------------------------
         else {
 
-        // Propagate photon packet to edge of cell and add contribution to radiation field of cell
-        for (k=0; k<ndim; k++) photon.r[k] += dpath*photon.eray[k];
+          /*cout << "Before propagating;  dpath : " << dpath << "    dpathtot : " << dpathtot
+               << "    tau : " << tau << "    taumax : " << taumax << endl;
+          cout << "                   rbefore : " << photon.r[0] << "   " << photon.r[1]
+               << "     opacity : " << radtree->radcell[photon.c].opacity[kfreq] << endl;*/
+
+          // Propagate photon packet to edge of cell and add contribution to radiation field of cell
+          for (k=0; k<ndim; k++) photon.r[k] += dpath*photon.eray[k];
 #pragma omp atomic
           radtree->radcell[photon.c].lsum[kfreq] += dpath;
 #pragma omp atomic
           radtree->radcell[photon.c].Nphoton++;
           tau += dpath*radtree->radcell[photon.c].opacity[kfreq];
+
+          radtree->radcell[photon.c].tau = tau;
+          dpathtot += dpath;
+          cout << "Propagating photon;   dpath : " << dpath << "    dpathtot : " << dpathtot
+               << "    tau : " << tau << "    taumax : " << taumax << endl;
+          cout << "                    rafter  : " << photon.r[0] << "   " << photon.r[1]
+               << "     opacity : " << radtree->radcell[photon.c].opacity[kfreq]
+               << "     Xion : " << radtree->radcell[photon.c].Xion << endl;
 
 
 #ifdef OUTPUT_ALL
@@ -381,6 +417,17 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Iterat
 
       } while (photon.c != -1);
       //-------------------------------------------------------------------------------------------
+
+      //assert(tau <= taumax);
+      //if (tau <= taumax) {
+      if (dpathtot < 0.1 && taumax > 0.5) {
+        cout << "WTF?? : " << tau << "    " << taumax << "      dpathtot : " << dpathtot << endl;
+        cout << "c : " << photon.c << "   " << photon.cnext << endl;
+        cout << "NcellCross : " << NcellCross << endl;
+        exit(0);
+      }
+      cout << "tau : " << tau << "     taumax : " << taumax << endl;
+      assert(tau <= 1.000000001*taumax);
 
     }
     //---------------------------------------------------------------------------------------------
