@@ -1016,6 +1016,10 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
         if (j == rank) continue;
 
         overlapflag = prunedtree[j]->ComputeHydroTreeCellOverlap(cellptr);
+        for (int jj=0; jj<Nghostpruned[jj]; jj++) {
+          bool overlapghostflag = ghostprunedtree[j][jj]->ComputeHydroTreeCellOverlap(cellptr);
+          overlapflag = overlapflag || overlapghostflag;
+        }
 
         // If pruned tree is too close (flagged by -1), then record cell id
         // for exporting to other MPI processes

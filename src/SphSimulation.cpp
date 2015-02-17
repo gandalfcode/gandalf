@@ -503,6 +503,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 #endif
 
 
+    for (i=0; i<sph->Nhydro; i++) {
+      SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+      part.ionfrac = 0.9999999;
+    }
     // Update the radiation field
     for (int jj=0; jj<10; jj++) {
       radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks.Nsink,
@@ -718,9 +722,12 @@ void SphSimulation<ndim>::MainLoop(void)
                                         partdata, nbody->nbodydata, sinks.sink);
         for (i=0; i<sph->Nhydro; i++) {
           SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+          //cout << "Particle before : " << part.u << "    " << part.ionfrac << "    " << part.press << endl;
           sph->ComputeThermalProperties(part);
+          //cout << "Particle after  : " << part.u << "    " << part.ionfrac << "    " << part.press << endl;
         }
       }
+      //cin >> i;
 
 
       // Copy properties from original particles to ghost particles

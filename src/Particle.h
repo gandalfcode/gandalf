@@ -79,6 +79,7 @@ struct Particle
   DOUBLE dt;                        ///< Particle timestep
   DOUBLE tlast;                     ///< Time at beginning of current step
   FLOAT ionfrac;                    ///< Ionisation fraction
+  FLOAT Xion;                       ///< Ionisation fraciton (from tree)
   FLOAT mu_bar;                     ///< mean molecular weight
   FLOAT ueq;                        ///< equilibrium internal energy
   FLOAT dt_therm;                   ///< thermalization time scale
@@ -111,7 +112,8 @@ struct Particle
     gpe       = (FLOAT) 0.0;
     dt        = (DOUBLE) 0.0;
     tlast     = (DOUBLE) 0.0;
-
+    ionfrac   = 0.999;
+    Xion      = 0.999;
   }
 
 };

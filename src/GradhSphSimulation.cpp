@@ -245,17 +245,17 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   //-----------------------------------------------------------------------------------------------
   if (gas_radiation == "ionisation")
     radiation = new MultipleSourceIonisation<ndim,GradhSphParticle>
-      (sphneib,floatparams["mu_bar"],floatparams["mu_ion"],
-       floatparams["temp0"],floatparams["temp_ion"],floatparams["Ndotmin"],
-       floatparams["gamma_eos"],pow(simunits.r.outscale*simunits.r.outcgs,3.)/
+      (sphneib,floatparams["mu_bar"], floatparams["mu_ion"], floatparams["temp0"],
+       floatparams["temp_ion"], floatparams["Ndotmin"], floatparams["gamma_eos"],
+       pow(simunits.r.outscale*simunits.r.outcgs,3.)/
        pow(simunits.m.outscale*simunits.m.outcgs,2.),simunits.temp.outscale);
   else if (gas_radiation == "treemc")
     radiation = new TreeMonteCarlo<ndim,1,GradhSphParticle,KDRadTreeCell>
-      (intparams["Nphoton"],intparams["Nleafmax"],randnumb);
+      (intparams["Nphoton"], intparams["Nleafmax"], randnumb);
   else if (gas_radiation == "monoionisation")
     radiation = new MonochromaticIonisationMonteCarlo<ndim,1,GradhSphParticle,MonoIonTreeCell>
-      (intparams["Nphoton"],intparams["Nleafmax"],floatparams["temp_ion"],
-       floatparams["NLyC"],randnumb,&simunits,sph->eos);
+      (intparams["Nphoton"], intparams["Nleafmax"], floatparams["temp_ion"],
+       floatparams["NLyC"], stringparams["rand_algorithm"], &simunits, sph->eos);
   else if (gas_radiation == "none")
     radiation = new NullRadiation<ndim>();
   else {
@@ -277,12 +277,15 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
   // Depending on the dimensionality, calculate expected neighbour number
   //-----------------------------------------------------------------------------------------------
-  if (ndim == 1)
+  if (ndim == 1) {
     sph->Ngather = (int) (2.0*sph->kernp->kernrange*sph->h_fac);
-  else if (ndim == 2)
+  }
+  else if (ndim == 2) {
     sph->Ngather = (int) (pi*pow(sph->kernp->kernrange*sph->h_fac,2));
-  else if (ndim == 3)
+  }
+  else if (ndim == 3) {
     sph->Ngather = (int) (4.0*pi*pow(sph->kernp->kernrange*sph->h_fac,3)/3.0);
+  }
 
 
   return;

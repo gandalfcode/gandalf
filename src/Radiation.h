@@ -234,8 +234,7 @@ class MonochromaticIonisationMonteCarlo : public Radiation<ndim>
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  MonochromaticIonisationMonteCarlo(int, int, FLOAT, DOUBLE, RandomNumber *,
-                                    SimUnits *, EOS<ndim> *);
+  MonochromaticIonisationMonteCarlo(int, int, FLOAT, DOUBLE, string, SimUnits *, EOS<ndim> *);
   ~MonochromaticIonisationMonteCarlo();
 
 
@@ -246,16 +245,17 @@ class MonochromaticIonisationMonteCarlo : public Radiation<ndim>
   void InterpolateParticleProperties(const int, const int, SphParticle<ndim> *);
   void IterateRadiationField(int, int, int, int, SphParticle<ndim> *,
                              NbodyParticle<ndim> **, SinkParticle<ndim> *) ;
-  PhotonPacket<ndim> GenerateNewPhotonPacket(RadiationSource<ndim> &);
-  void ScatterPhotonPacket(PhotonPacket<ndim> &);
+  PhotonPacket<ndim> GenerateNewPhotonPacket(const RadiationSource<ndim> &, RandomNumber *);
+  void ScatterPhotonPacket(PhotonPacket<ndim> &, RandomNumber *);
   bool UpdateIonisationFraction(void);
+  void UpdateCellOpacity(CellType<ndim,nfreq> &, ParticleType<ndim> *);
 
 
   // Variables
   //-----------------------------------------------------------------------------------------------
   int Nphoton;                         // No. of photon packets
-  FLOAT boundaryradius;                // Radius from which isotropic
-                                       // photons are emitted.
+  int Nthreads;                        // No. of OpenMP threads
+  FLOAT boundaryradius;                // Radius from which isotropic photons are emitted.
   FLOAT across;                        // Photoionisation cross-section
   FLOAT arecomb;                       // Recombination coefficient
   FLOAT Eion;                          // Ionisation energy
@@ -265,7 +265,7 @@ class MonochromaticIonisationMonteCarlo : public Radiation<ndim>
   DOUBLE invmh;                        // ..
   DOUBLE ionconst;                     // ..
   DOUBLE NLyC;                         // No. of ionising photons per second
-  RandomNumber *randnumb;              // Random number object pointer
+  RandomNumber **randNumbArray;        // Random number object array (for OpenMP threads)
   SimUnits *units;                     // ..
   EOS<ndim> *eos;                      // Pointer to main EOS object
 

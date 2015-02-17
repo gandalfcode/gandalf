@@ -150,7 +150,7 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::BuildTree
 #endif
 
   // Set no. of tree members to total number of SPH particles (inc. ghosts)
-  ltot_old = ltot;
+  ltot_old   = ltot;
   Ntotold    = Ntot;
   Ntot       = Npart;
   Ntotmaxold = Ntotmax;
@@ -236,11 +236,13 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::ComputeTreeSize(void)
   gtot = pow(2,ltot);
   Ncell = 2*gtot - 1;
 
+#if defined(VERIFY_ALL)
   cout << "Nleafmax : " << Nleafmax << endl;
   cout << "No. of ptcls in tree  : " << Ntot << "   " << Ntotmax << endl;
   cout << "No. of grid-cells     : " << gtot << "   " << gmax << endl;
   cout << "No. of levels on tree : " << ltot << "   " << lmax << endl;
   cout << "No. of cells in tree  : " << Ncell << "   " << Ncellmax << endl;
+#endif
 
   return;
 }
@@ -363,11 +365,11 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::DivideTreeCell
   rdivide = QuickSelect(cell.ifirst, cell.ilast, cell.ifirst+cell.N/2, k_divide, partdata);
 
 
-  cout << "Cell division : " << cell.id << "   " << rdivide << "    "
+  /*cout << "Cell division : " << cell.id << "   " << rdivide << "    "
        << k_divide << "    " << cell.N << endl;
   cout << "xbox : " << cell.bbmin[0] << "    " << cell.bbmax[0] << endl;
   if (ndim > 1) cout << "ybox : " << cell.bbmin[1] << "    " << cell.bbmax[1] << endl;
-  if (ndim == 3) cout << "zbox : " << cell.bbmin[2] << "    " << cell.bbmax[2] << endl;
+  if (ndim == 3) cout << "zbox : " << cell.bbmin[2] << "    " << cell.bbmax[2] << endl;*/
 
   // Set properties of first child cell
   for (k=0; k<ndim; k++) radcell[cell.c1].bbmin[k] = cell.bbmin[k];
@@ -528,8 +530,8 @@ FLOAT KDRadiationTree<ndim,nfreq,ParticleType,CellType>::QuickSelect
     for (j=jfirst; j<jpivot; j++) {
       rleftmax = max(rleftmax, partdata[ids[j]].r[k]);
     }
-    cout << "Finding division : " << jfirst << "   " << jpivot << "   "
-         << N << "    " << rleftmax << "   " << rpivot << endl;
+    //cout << "Finding division : " << jfirst << "   " << jpivot << "   "
+    //     << N << "    " << rleftmax << "   " << rpivot << endl;
     return 0.5*(rleftmax + rpivot);
   }
   else return rpivot;

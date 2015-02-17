@@ -23,6 +23,7 @@
 
 
 
+#include <assert.h>
 #include <iostream>
 #include <math.h>
 #include <numeric>
@@ -203,7 +204,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
 
       // Compute all SPH gather properties
       okflag = sph->ComputeH(i,Nneib,big_number,m,mu,drsqd,gpot,sphdata[i],nbody);
-      assert(okflag);
+      //assert(okflag);
 
     }
     //---------------------------------------------------------------------------------------------

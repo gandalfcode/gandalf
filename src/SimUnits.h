@@ -85,7 +85,7 @@ class MassUnit: public SimUnit
   MassUnit() : SimUnit() {};
   DOUBLE SIUnit(string);
   string LatexLabel(string);
- 
+
 };
 
 
@@ -218,7 +218,7 @@ class MomentumUnit: public SimUnit
 
 
 //=============================================================================
-//  Class ColumnDensityUnit
+//  Class AngularMomentumUnit
 //=============================================================================
 class AngularMomentumUnit: public SimUnit
 {

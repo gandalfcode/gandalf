@@ -262,7 +262,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
       hmax = cell.hmax;
 
       // Sanity checks
-      assert(cell.Nactive > 0);
+      //assert(cell.Nactive > 0);
 
       // If hmax is too small so the neighbour lists are invalid, make hmax
       // larger and then recompute for the current active cell.
