@@ -104,7 +104,6 @@ class CodeTiming
 
 
 
-
   TimingBlock block[Nblockmax];
 
 };

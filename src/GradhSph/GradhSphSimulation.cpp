@@ -188,7 +188,8 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   if (stringparams["energy_integration"] == "PEC") {
     uint = new EnergyPEC<ndim, GradhSphParticle>(floatparams["energy_mult"]);
   }
-  else if (stringparams["energy_integration"] == "Radws") {
+  else if (stringparams["energy_integration"] == "Radws" ||
+           stringparams["energy_integration"] == "radws") {
     uint = new EnergyRadws<ndim, GradhSphParticle>
       (floatparams["energy_mult"], stringparams["radws_table"],
        floatparams["temp_ambient"], &simunits);

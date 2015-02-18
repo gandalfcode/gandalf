@@ -142,7 +142,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Update
   int it;                              // Iteration counter
   int k;                               // Dimension counter
   int level;                           // Level to walk tree on
-  int Nit = 4;                         // No. of iterations of radiation field
+  int Nit = 2;                         // No. of iterations of radiation field
   RadiationSource<ndim> source;        // Current radiation source
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* >(sph_gen);
 
@@ -211,7 +211,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Update
 
   // Output info to file for plotting
   //-----------------------------------------------------------------------------------------------
-  for (int l=0; l<=level; l++) {
+  /*for (int l=0; l<=level; l++) {
     ofstream outfile;
     string filename;
     string nostring;
@@ -270,7 +270,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Update
             << radtree->radcell[c].volume << endl;
   }
   outfile.close();
-  Nfiles++;
+  Nfiles++;*/
 
 
   //cin >> it;

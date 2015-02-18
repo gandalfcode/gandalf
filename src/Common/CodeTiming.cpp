@@ -74,7 +74,7 @@ void CodeTiming::StartTimingSection
   int timing_level)                    ///< Timing level of block
 {
   int iblock;                          // Integer id of existing timing block
-return;
+
   // If block string not in list, then create new entry to timing block
   if (blockno.find(newblock) == blockno.end()) {
     iblock = Nblock;
@@ -107,7 +107,7 @@ void CodeTiming::EndTimingSection
  (string s1)                           ///< String identifying block-end
 {
   int iblock;                          // Integer i.d. of timing block in arrays
-return;
+
   // If block not in list, then print error message and return
   if (blockno.find(s1) == blockno.end()) {
     cout << "Error : looking for incorrect timing block : " << s1 << endl;
@@ -149,20 +149,19 @@ void CodeTiming::ComputeTimingStatistics
   filename = run_id + "." + fileend;
   outfile.open(filename.c_str());
 
-  tend = clock();
+  tend      = clock();
   tend_wall = WallClockTime();
-
-  ttot = (double) (tend - tstart) / (double) CLOCKS_PER_SEC;
+  ttot      = (double) (tend - tstart) / (double) CLOCKS_PER_SEC;
   ttot_wall = (double) (tend_wall - tstart_wall);
 
   outfile << resetiosflags(ios::adjustfield);
   outfile << setiosflags(ios::left);
-
   outfile << "----------------------------------------------------------------------------" << endl;
   outfile << "Total simulation time : " << ttot << "    " << ttot_wall << endl;
   outfile << "----------------------------------------------------------------------------" << endl;
 
   // Output timing data on each hierarchical level
+  //-----------------------------------------------------------------------------------------------
   for (level=1; level<=Nlevelmax; level++) {
     tcount = 0.0;
     tcount_wall = 0.0;
@@ -190,6 +189,7 @@ void CodeTiming::ComputeTimingStatistics
             << setw(12) << 100.0*(ttot_wall - tcount_wall)/ttot_wall << endl;
     outfile << "----------------------------------------------------------------------------" << endl;
   }
+  //-----------------------------------------------------------------------------------------------
 
   outfile << resetiosflags(ios::adjustfield);
   outfile.close();

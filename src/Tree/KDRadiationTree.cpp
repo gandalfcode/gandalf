@@ -202,7 +202,7 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::BuildTree
     DivideTreeCell(0,Ntot-1,partdata,radcell[0]);
 
     // Calculate more optimal cell quantities for speeding up ray walking on tree
-    //OptimiseTree();
+    OptimiseTree();
   }
 
   return;

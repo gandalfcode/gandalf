@@ -7,12 +7,12 @@
 \usepackage{array}
 \usepackage[colorlinks,final]{hyperref}
 
-\newcommand{\VERNO}{0.2.0 }
+\newcommand{\VERNO}{0.3.0 }
 \newcommand{\var}[1]{\texttt{#1}}
 \newcommand{\singlecommand}[1]{\\ \newline \indent \var{#1} \\ \newline \noindent}
 
 
-\textheight 9.2in 
+\textheight 9.2in
 \textwidth 6.2in
 \oddsidemargin 0pt
 \topmargin -40pt
@@ -49,7 +49,7 @@ GANDALF has been developed as a fully open-source project hosted on the site git
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Installation} \label{S:INSTALL}
-In order to use all features in GANDALF, the following programs and libraries must be installed : 
+In order to use all features in GANDALF, the following programs and libraries must be installed :
 \begin{itemize}
 \item C++ compiler
 \item Python 2.7
@@ -71,9 +71,9 @@ We thank the authors for writing this software and releasing them under the MIT 
 
 
 \subsection{Linux}
-All of these programs/libraries can be found in most standard Linux installations, and if not, will be available to download from most package managers (e.g. apt-get, yum, pacman).  
+All of these programs/libraries can be found in most standard Linux installations, and if not, will be available to download from most package managers (e.g. apt-get, yum, pacman).
 
-\subsection{Mac OS X} 
+\subsection{Mac OS X}
 For Mac users, all programs can be installed with either fink, MacPorts or homebrew.  It is preferable that all (except the Fortran compiler) are downloaded with just the one package manager in order to ensure they are compatible and function together correctly. Other options for installation are the Anaconda or Enthought Python distributions. A good reference which compares the available possibilities is the \href{http://python4astronomers.github.io/installation/recommended_options.html}{Python4Astronomers website}.
 
 
@@ -90,7 +90,7 @@ To compile GANDALF only as a C++ executable to be run from the command line with
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Python code compilation}
-To compile all code elements including the python components, then complete the following steps : 
+To compile all code elements including the python components, then complete the following steps :
 \begin{itemize}
 
 \item Install all python-related programs listed in Section \ref{S:INSTALL}
@@ -112,7 +112,7 @@ To compile all code elements including the python components, then complete the 
 
 \item Set the required version of python and f2py in your Makefile (See Section \ref{S:MAKEFILE}).  Since operating systems usually have more than one version of python installed, it is important to ensure that \var{make} uses the correct version when compiling the code.  These are set using the \var{PYTHON} and \var{F2PY} variables in the Makefile.
 
-Also, \var{make} requires the location of the python and numpy libraries.  In most cases, \var{make} will be able to locate these libraries automatically (see description of Makefile options).  However, if there is a problem, or you wish to use an alternative version of these libraries installed elsewhere on your system, then these can be set by the \var{PYLIB} and \var{NUMPY} variables in the Makefile.  
+Also, \var{make} requires the location of the python and numpy libraries.  In most cases, \var{make} will be able to locate these libraries automatically (see description of Makefile options).  However, if there is a problem, or you wish to use an alternative version of these libraries installed elsewhere on your system, then these can be set by the \var{PYLIB} and \var{NUMPY} variables in the Makefile.
 
 
 \item Finally, to compile all components of the code, including the python libraries with swig, type \\
@@ -126,10 +126,10 @@ Also, \var{make} requires the location of the python and numpy libraries.  In mo
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Basic usage}
-GANDALF can be run in three principle modes.  
-\begin{itemize} 
-\item Command-line mode, where the code is run as a C++ executable via the command line with a parameters file that selects which code options are used, 
-\item via a python script where the code is run in a python environment with various plotting options available as well as running the code, 
+GANDALF can be run in three principle modes.
+\begin{itemize}
+\item Command-line mode, where the code is run as a C++ executable via the command line with a parameters file that selects which code options are used,
+\item via a python script where the code is run in a python environment with various plotting options available as well as running the code,
 \item in interactive mode where all the code and plotting options can be run directly by typing them into an interactive python shell.
 \end{itemize}
 
@@ -207,11 +207,15 @@ clang & : CLANG compiler (Mac OS X only)
 
 \item F2PY : f2py executable name (e.g. f2py,f2py2.7)
 
+\item FFTW : Include FFTW (Fast Fourier transform) library for initial conditions (0 or 1)
+
+\item GSL : Include GSL (GNU Scientific library) for Ewald forces (0 or 1)
+
 \item COMPILER\_MODE : Set compiler flags for production or debug runs \\
 \begin{tabular}{ll}
 DEBUG & : Set all debug compiler options, including flags to use gdb debugger and full warning output (-Wall) \\
 STANDARD & : Standard optimisation options (-O3) \\
-FAST & : -O3 + fast flag options.  Uses 'potentially unsafe' fast maths optimisation.  
+FAST & : -O3 + fast flag options.  Uses 'potentially unsafe' fast maths optimisation.
 \end{tabular}
 
 \item PRECISION : Floating point precision \\
@@ -239,6 +243,8 @@ DOUBLE & : 64-bit precision floating point variables
 \item PYLIB : Path to directory that includes prefered python libraries.  If left blank, {\var make} will use python routines to locate the libraries automatically.
 
 \item NUMPY : Path to directory that includes prefered numpy libraries.  Ase with PYLIB, If left blank, {\var make} will use python routines to locate the library locations automatically.
+
+\item GTEST : Path to directory containing Google test suite library for unit testing (Currently set witu environment variable)
 
 \end{itemize}
 
@@ -282,8 +288,12 @@ file              & = Load initial conditions from external file \\
 bb                & = Boss-Bodenheimer (1979) test \\
 binary            & = Simple binary star test \\
 binaryacc         & = Binary accretion test \\
+bondi             & = Spherically symmetric Bondi accretion test \\
 box               & = Create a uniform box of gas \\
 cdiscontinuity    & = Contact discontinuity test \\
+ewaldcylinder     & = Cylinder for 1D Ewald gravity test \\
+ewaldsine         & = Sinusoidal density for 3D Ewald gravity test \\
+ewaldslab         & = Slab for 2D Ewald gravity test \\
 khi               & = Kelvin-Helmholtz instability test \\
 noh               & = Noh problem initial conditions \\
 plummer           & = Plummer sphere test \\
@@ -293,6 +303,7 @@ shearflow         & = Shear flow test \\
 shocktube         & = Shocktube test \\
 soundwave         & = 1D soundwave perturbation \\
 sphere            & = Uniform density sphere \\
+spitzer           & = Ionised bubble Spitzer expansion test \\
 triple            & = Simple hierachical triple star test \\
 turbcore          & = Turbulent spherical, self-gravitating core \\
 python            & = Generate initial conditions from python
@@ -330,6 +341,8 @@ su/seren\_unform & = SEREN binary format
 
 \item \var{ndiagstep} : No. of complete block steps between diagnostic output
 
+\item \var{nrestartstep} : No. of full block steps before producing restart dump
+
 \item \var{litesnap} : Output `lite' snapshots (for generating movies)? ($0$ or $1$)
 
 \item \var{dt\_litesnap} : Lite snapshot time interval (given in {\var tunit}s)
@@ -361,7 +374,6 @@ m\_sun          & = Solar mass \\
 m\_jup/m\_earth & = Jupiter mass/Earth mass \\
 g/kg            & = gram/kilogram
 \end{tabular}
-
 
 \item \var{toutunit} : Time unit \\
 \begin{tabular}{ll}
@@ -450,7 +462,7 @@ W            & = watts \\
 erg\_s       & = ergs per second
 \end{tabular}
 
-\item \var{kappaoutunit} : Volume opacity unit \\
+\item \var{kappaoutunit} : Mass opacity unit \\
 \begin{tabular}{ll}
 m2\_kg       & = metre squared per kilogram \\
 cm2\_g       & = centimetre squared per gram
@@ -511,9 +523,9 @@ K & = Kelvin
 
 \item \var{level\_diff\_max} : Maximum allowed SPH neighbour timestep difference
 
-\item \var{sph\_single\_timestep} : Constrain all SPH particles to a single timestep level 
+\item \var{sph\_single\_timestep} : Constrain all SPH particles to a single timestep level
 
-\item \var{nbody\_single\_timestep} : Constrain all N-body particles to a single timestep level 
+\item \var{nbody\_single\_timestep} : Constrain all N-body particles to a single timestep level
 
 
 \end{itemize}
@@ -559,7 +571,8 @@ gaussian  & = Gaussian kernel (truncated at 3h)
 energy\_eqn & = Solve energy equation \\
 isothermal  & = Isothermal EOS \\
 barotropic  & = Barotropic EOS (i.e. for mimicing isothermal + adiabatic phase during protostellar collapse) \\
-barotropic2  & = Similar to barotropic, but using discrete power laws rather than smooth change
+barotropic2  & = Similar to barotropic, but using discrete power laws rather than smooth change \\
+rad\_ws     & = EOS relating to Stamatellos et al. (2007) cooling method (to be used with rad\_ws option in energy equation)
 \end{tabular}
 
 %\item \var{cooling\_law} : Cooling law for gas particles (only applicable if solving the energy equation) \\
@@ -568,10 +581,12 @@ barotropic2  & = Similar to barotropic, but using discrete power laws rather tha
 %linear1 & = Simple linear cooling law
 %\end{tabular}
 
-%\item \var{energy\_integration} : Energy integration scheme (only applicable if solving the energy equation) \\
-%\begin{tabular}{ll}
-%PEC         & = Explicit integration using predict-correct-evaluate scheme
-%\end{tabular}
+\item \var{energy\_integration} : Energy integration scheme (only applicable if solving the energy equation) \\
+\begin{tabular}{ll}
+null        & = Energy equation not integrated separately \\
+PEC         & = Explicit integration using predict-correct-evaluate scheme \\
+rad\_ws     & = Integrate energy terms using Stamatellos et al. (2007) method
+\end{tabular}
 
 \item \var{energy\_mult} : Explicit energy integration timestep multiplier
 
@@ -585,10 +600,22 @@ barotropic2  & = Similar to barotropic, but using discrete power laws rather tha
 
 \item \var{eta\_eos}   : Polytropic exponent (for barotropic EOS)
 
+\item \var{radws\_table} : Name of EOS file for Stamatellos et al. (2007) cooling method
+
+\item \var{temp\_ambient} : Ambient temperature (for rad\_ws method)
+
+
 %\item \var{Acool} : Simple cooling rate factor
 
 %\item \var{u\_eq} : Equilibrium internal energy (for simple cooling law)
 
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Artificial viscosity parameters}
+
+\begin{itemize}
 
 \item \var{avisc} : Artificial viscosity options \\
 \begin{tabular}{ll}
@@ -669,7 +696,8 @@ plummer & = Plummer background potential
 \item \var{neib\_search} : Neighbour searching algorithm \vspace{0.1cm} \\
 \begin{tabular}{ll}
 bruteforce & = Brute-force (i.e. summation over all particles) \\
-tree       & = Balanced kd-binary tree
+kdtree     & = Balanced kd-binary tree \\
+octtree    & = Barnes-Hut Octal tree (partially working)
 \end{tabular}
 
 \item \var{gravity\_mac} : Gravity-tree cell-opening criteria (N.B. always defulats to geometric for now) \vspace{0.1cm} \\
@@ -706,7 +734,7 @@ fast\_monopole & = Compute monpoles more efficiently using Taylor expansion abou
 
 \begin{itemize}
 
-\item \var{sub\_systems} : Identify and integrate sub-systems separately? ($1$ or $0$)
+\item \var{sub\_systems} : Identify and integrate sub-systems separately? ($0$ or $1$)
 
 \item \var{sub\_system\_integration} : Main N-body integration algorithm \\
 \begin{tabular}{ll}
@@ -717,9 +745,13 @@ hermite4ts   & = Time-symmetric 4th-order Hermite scheme
 
 \item \var{Npec} : No. of ${\rm P(EC)^n}$ iterations in time-symmetric scheme (if non time-symmetric scheme is used, automatically sets to $1$)
 
-\item \var{nbody\_softening} : Use SPH kernel-softening between star particles? ($1$ or $0$)
+\item \var{nbody\_softening} : Use SPH kernel-softening between star particles? ($0$ or $1$)
 
 %\item \var{perturbers} : Use perturbers when calculating sub-system quantities ($1$ or $0$)
+
+\item \var{binary\_stats} : Output binary statistics? ($1$ or $0$)
+
+\item \var{nsystembuildstep} : Integer steps inbetween re-building the sub-system tree.
 
 \item \var{gpefrac} : Maximum fraction of total gravitational potential energy from external sources to allow sub-system.
 
@@ -744,11 +776,15 @@ hermite4ts   & = Time-symmetric 4th-order Hermite scheme
 
 \item \var{smooth\_accretion} : Use smooth accretion?  ($0$ or $1$)
 
+\item \var{fixed\_sink\_mass} : Fixed sink mass, even when accreting? ($0$ or $1$)
+
+\item \var{extra\_sink\_output} : Extra output of sink particles? ($0$ or $1$)
+
 \item \var{rho\_sink}         : Sink particle creation density (in cgs units)
 
-\item \var{sink\_radius}      : Sink particle radius (in units of smoothing length)
-
 \item \var{alpha\_ss}         : Sunyaev-Shakura alpha for smooth disc accretion
+
+\item \var{sink\_radius}      : Sink particle radius (in units of smoothing length)
 
 \item \var{smooth\_accrete\_frac} : Smooth accretion instantaneous accretion mass frac.
 
@@ -771,15 +807,16 @@ hmult   &= sink radius a multiple of SPH particle smoothing length
 
 \item \var{radiation} : Main radiation algorithm used \\
 \begin{tabular}{ll}
-none       &= No radiation field \\
-ionisation &= Multiple source ionising radiation \\
-treemc     &= Monte-Carlo radiation transport using a kd-tree
+none            &= No radiation field \\
+ionisation      &= Multiple source ionising radiation \\
+monoionisation  &= Monte-Carlo radiation transport using a kd-tree
 \end{tabular}
 
 \item \var{Nphoton}   : No. of photon packets (for Monte-Carlo radiation transport)
 \item \var{mu\_ion}   : Mean-gas particle mass for ionised gas
 \item \var{temp\_ion} : Temperature of ionised gas
 \item \var{Ndotmin}   : No. of ionising photons per second
+\item \var{NLyC}      : No. of ionising photons per second
 
 \end{itemize}
 
@@ -790,12 +827,12 @@ treemc     &= Monte-Carlo radiation transport using a kd-tree
 
 \begin{itemize}
 
-\item \var{x\_boundary\_lhs} : Boundary conditions for LHS of x-dimension
-\item \var{x\_boundary\_rhs} : Boundary conditions for RHS of x-dimension
-\item \var{y\_boundary\_lhs} : Boundary conditions for LHS of y-dimension
-\item \var{y\_boundary\_rhs} : Boundary conditions for RHS of y-dimension
-\item \var{z\_boundary\_lhs} : Boundary conditions for LHS of z-dimension
-\item \var{z\_boundary\_rhs} : Boundary conditions for RHS of z-dimension
+\item \var{boundary\_lhs[0]} : Boundary conditions for LHS of x-dimension
+\item \var{boundary\_rhs[0]} : Boundary conditions for RHS of x-dimension
+\item \var{boundary\_lhs[1]} : Boundary conditions for LHS of y-dimension
+\item \var{boundary\_rhs[1]} : Boundary conditions for RHS of y-dimension
+\item \var{boundary\_lhs[2]} : Boundary conditions for LHS of z-dimension
+\item \var{boundary\_rhs[2]} : Boundary conditions for RHS of z-dimension
 For all boundaries: \\
 \begin{tabular}{ll}
 open     & = open boundaries (i.e. extends to infinity) \\
@@ -816,6 +853,7 @@ wall     & = wall at boundary (i.e. reflection of particles)
 
 
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Initial conditions parameters}
 
@@ -828,12 +866,13 @@ cubic\_lattice &= Particle positions generated on a uniform cubic lattice \\
 hexagonal\_lattice &= Particle positions generated on a hexagonal closed-packed array
 \end{tabular}
 
-
 \item \var{smooth\_ic} : Smooth any particle quantities around discontinuities
 \item \var{com\_frame} : Translate ICs to COM frame before starting simulation
 %\item \var{field\_type} : ..
-\item \var{Nsph} : No. of SPH particles
-\item \var{Nstar} : No. of star particles
+\item \var{Nhydro}       : No. of hydrodynamical particles
+\item \var{Nhydromax}    : Maximum no. of hysrodynamical particles
+\item \var{Nstar}        : No. of star particles
+\item \var{Nstarmax}     : Maximum no. of star particles
 
 \item \var{Nlattice1[0]} : No. of ptcls on lattice 1 in x-dimension
 \item \var{Nlattice1[1]} : No. of ptcls on lattice 1 in y-dimension
@@ -890,6 +929,8 @@ hexagonal\_lattice &= Particle positions generated on a hexagonal closed-packed 
 \item \var{alpha\_turb}  : Turbulent energy (as multiple of gravitational energy)
 \item \var{power\_turb}  : Power spectrum slope of initial turbulent velocity field
 
+\item \var{asound}       : Sound speed
+\item \var{zmax}         : ??
 
 \end{itemize}
 
@@ -907,6 +948,19 @@ xorshift & = Xorshift generator (see Numerical recipes, Ed 3, Chapter 7 for deta
 \end{tabular}
 
 \item \var{randseed}        : Random number seed
+
+\end{itemize}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{MPI parameters}
+
+\begin{itemize}
+
+\item \var{pruning\_level} : Level to prune exported trees down to
 
 \end{itemize}
 
@@ -942,9 +996,12 @@ It is possible to generate initial conditions `on-the-fly' using internal subrou
 \noindent SPH simulations : \\
 \newline
 \begin{tabular}{ll}
+- bb             &: Boss-Bodenheimer test \\
 - binaryacc      &: Binary accretion simulation \\
+- bondi          &: Spherically symmetric Bondi accretion test \\
 - box            &: Create uniform box \\
 - cdiscontinuity &: Contact-discontinuity test \\
+- ewald          &: Several tests of Ewald gravity \\
 - khi            &: Kelvin-helmholtz instability \\
 - noh            &: Noh shock test \\
 - plummer        &: Plummer sphere (stars + gas, or just gas) \\
@@ -954,6 +1011,7 @@ It is possible to generate initial conditions `on-the-fly' using internal subrou
 - shocktube      &: Simple two-fluid shocktube test \\
 - soundwave      &: Simple 1D sound-wave perturbation test \\
 - sphere         &: Create uniform density sphere \\
+- spitzer        &: Spitzer expansion of HII region test \\
 - turbcore       &: Create uniform density core with turbulent velocity field
 \end{tabular}
 \newline
@@ -985,28 +1043,28 @@ GANDALF can generate initial conditions if using python scripts.  The initial co
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{GANDALF Python library} \label{S:PYTHONSCRIPT}
 
-The GANDALF Python library can be used for many purposes, 
+The GANDALF Python library can be used for many purposes,
 \begin{itemize}
 \item To load in previously run simulations for analysis and producing visualisation
 \item To load in multiple previously run simulations for comparisons
-\item To prepare often-run simulations including the analysis in a single script 
+\item To prepare often-run simulations including the analysis in a single script
 \item To run batches of simulations (e.g. a parameter study) with a single controlling script
 \item To run or analyse simulations interactively through the interpreter
 \item To generate initial conditions directly in python (instead of via a file or in C++) and run the simulation
 \end{itemize}
 It can therefore provide an easier entry into using SPH and N-body than other codes which require more investigation of the code mechanics and file formats before even basic simulations can be run.
 
-%While the numerical part of GANDALF  is implemented in C++ for efficiency, we provide bindings to Python to control the simulation and a large set of analysis and plotting tools to inspect the results. Therefore, from Python you are able to set up the simulation (including initial conditions), run it, load existing snapshots and plot quantities. 
+%While the numerical part of GANDALF  is implemented in C++ for efficiency, we provide bindings to Python to control the simulation and a large set of analysis and plotting tools to inspect the results. Therefore, from Python you are able to set up the simulation (including initial conditions), run it, load existing snapshots and plot quantities.
 
 There are two main ways to use the Python side of GANDALF; (a) a python script, and  (b) the interpreter, that works similarly to a shell (e.g. bash, csh).  Both methods understand a specific set of commands to load a simulation and plot quantities, although in principle using a Python script is more powerful %We provide a large set of commands to do standard operations when running and analyzing a simulation, so that this solution can be satisfactory where you need to quickly analyze a simulation.
-% The second way is writing your own python script. You still have access to the same commands available in the interpeter, but combining the power of the python language you are free to do much more. 
+% The second way is writing your own python script. You still have access to the same commands available in the interpeter, but combining the power of the python language you are free to do much more.
 since you can access the raw particle data (via swig) and compute additional particle properties.  The Python files for both the library and the interpreter and contained in the \var{gandalf/analysis} sub-directory.
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Python script usage}
-The GANDALF Python library contains a number of modules that can be imported in to provide the desired functionality.  
+The GANDALF Python library contains a number of modules that can be imported in to provide the desired functionality.
 \begin{itemize}
 \item \var{gandalf.analysis.facade} \\
 \noindent This module is the main front-end to the GANDALF Python library and contains the Python-wrapped C++ executable and all functions required to set-up and run simulations.  This module must always be imported in GANDALF Python scripts.
@@ -1021,7 +1079,7 @@ This module contains routines for exporting data from the C++ code to Python, ge
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Interpreter usage}
 
-%The interpreter is located in the analysis/ folder in the main directory of GANDALF. 
+%The interpreter is located in the analysis/ folder in the main directory of GANDALF.
 To start the interpreter, type \\
 \newline
 \noindent \var{python analysis/gandalf\_interpreter.py}. \\
@@ -1091,7 +1149,7 @@ To be done
 
 %\end{itemize}
 
-\newpage 
+\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{GANDALF Python library tutorial} \label{SS:PYTHONTUTORIAL}
 The GANDALF Python library contains a variety of commands that are used to create and run new simulations, load in old simulations from the disk, analyse and plot results and more.  A full list of all of these commands is given in Appendix A (to be written).  The same information can be found in the source code file \var{gandalf/analysis/facade.py}.  Also, when running the interpreter, information on interactive commands can be obtained by typing \var{help} for a full list of available commands, or \var{help command} for information on that particular command.
@@ -1197,7 +1255,7 @@ In this example, we load in a previously run simulation from the disk and genera
 \var{savefig(`snap12.eps')} \\
 \var{block()} \\
 \end{tabular} \\
-\newline 
+\newline
 
 \noindent Instead of a creating a new simulation with the \var{newsim} function, we will load in a previous run simulation with the command \singlecommand{loadsim(runid)} where \var{runid} is the simulation run identification string.  Note, this assumes that all files from that simulation are present in the folder, including the \var{runid.param} file which contains all the parameters used to run the simulation.  In this case, we load a simulation with the runid \var{ADSOD1} with the command \var{loadsim(`ADSOD1')}.  We can then plot particular snapshots of the simulation using the \var{plot} command with the optional \var{snap} argument.  Therefore to plot the first snapshot, type \var{plot(`x',`y',snap=0)}, to plot the second snapshot, type \var{plot(`x','y',snap=1)}, etc..  Note that Python uses C-style indexing, i.e. starting from zero, unlike other conventions like in FORTRAN where indexing starts from one.  If we wish to overplot one snapshot over another, we first plot the first snapshot and then use the command \singlecommand{addplot(`x',`y',snap=1)} to add the second snapshot plot over the first one.  This behaviour can also be replicated by adding the \var{overplot} optional boolean argument to \var{plot}, i.e. \var{plot(`x',`y',snap=1,overplot=True)}.
 
@@ -1301,7 +1359,7 @@ return NUMPY arrays of size \var{N} with all zeros, all ones, and uniform values
 We then create an undefined 1D simulation object with \var{sim = newsim(ndim=1)} and set various parameters determing the simulation type, integration scheme, equation of state, etc..  We must then inform the code that we intend to generate initial conditions in the python script (and not say from an external file or one of the internal C++ routines) by the command \var{sim.SetParam(`ic',`python')}.  We must also inform the code of the number of SPH particles to be used with the command \var{sim.SetParam(`Nsph',Nsph)}, in order to allocate enough memory for the simulation (N.B. \var{Nsph} is simply a local Python variable in this example.  This can be any other variable, or even simply an integer number).
 
 The last step before importing the arrays to C++, we must initialise various things in the code, including importantly allocating memory for the particles, by calling the function \singlecommand{sim.PreSetupforPython()}
-Next, we can import the array into the C++ arrays by the command \singlecommand{sim.ImportArray(numpyarray,varname)} 
+Next, we can import the array into the C++ arrays by the command \singlecommand{sim.ImportArray(numpyarray,varname)}
 where \var{numpyarray} is the local NUMPY array and \var{varname} is a string containing the C++ variable name.  For example, to import the x-positions, we call the command \var{sim.ImportArray(x,`x')}.  Once all arrays have been called, we can finally call the setup function \var{sim.SetupSimulation()} and plot and run the simulation to completion.
 
 
@@ -1423,7 +1481,7 @@ In this example, we show how to create new formulaic quantities to be plotted as
 \end{tabular} \\
 \newline
 
-\noindent We can create new quantities from existing particle properties using the command \singlecommand{CreateUserQuantity(quantity\_name,quantity\_formula)} where \var{quantity\_name} is the new string name of the derived quantity and \var{quantity\_formula} is string containing an algebraic formula that defines the new quantity.  In our example, we create a new quantity to compute the kinetic energy of a particle with the algebraic formula \var{0.5*m*vx*vx}.  For 2D and 3D simulations, this would become \var{0.5*m*(vx*vx + vy*vy)} and \var{0.5*m*(vx*vx + vy*vy + vz*vz)} respectively.  Note that the algebraic formula can also use parameters by using the same string as defined in the parameters file.  
+\noindent We can create new quantities from existing particle properties using the command \singlecommand{CreateUserQuantity(quantity\_name,quantity\_formula)} where \var{quantity\_name} is the new string name of the derived quantity and \var{quantity\_formula} is string containing an algebraic formula that defines the new quantity.  In our example, we create a new quantity to compute the kinetic energy of a particle with the algebraic formula \var{0.5*m*vx*vx}.  For 2D and 3D simulations, this would become \var{0.5*m*(vx*vx + vy*vy)} and \var{0.5*m*(vx*vx + vy*vy + vz*vz)} respectively.  Note that the algebraic formula can also use parameters by using the same string as defined in the parameters file.
 
 The new quantity can then be plotted as any other regular quantity, e.g. \var{plot(`x',`ke')}.  Two important optional arguments are \var{scaling\_factor}, which defines the string of the unit (e.g. in this case \var{E} since \var{ke} is an energy), and \var{label}, which is a latex string used on the plots (e.g. \var{frac\{1\}\{2\}mv\^2}).
 
@@ -1489,7 +1547,7 @@ GANDALF makes heavy use of the object-oriented features in C++ in order to write
 GANDALF uses a hierarchy of classes using inheritance to structure the code in a logical and maintainable manner.  Although classes permeate the code at almost all levels, we briefly discuss the main classes here.
 
 \subsubsection{Simulation class}
-The \var{Simulation} class is the class that contains every other class, including SPH and N-body classes, in order to fully run the simulation.  The \var{Simulation} class is split into three levels : 
+The \var{Simulation} class is the class that contains every other class, including SPH and N-body classes, in order to fully run the simulation.  The \var{Simulation} class is split into three levels :
 \begin{itemize}
 \item \var{SimulationBase} - Non-templated base class for generating the simulation class.  Provides binding layer between C++ code and Python (since Python cannot link to templated classes).  Contains all subroutines that can be called by Python.
 \item \var{Simulation} - Main parent simulation class that contains all common functions for all possible simulations.  Inherits from \var{SimulationBase}.
@@ -1518,7 +1576,7 @@ Templates are used in C++ to write generic code that can be used by different da
 
 The simplest case of using templates in GANDALF is for dimensionality.  For almost all of the code, we use the template parameter `\var{ndim}' to generate a version of the code for each dimensionality used, i.e. $1$, $2$ and $3$.  In principle, \var{ndim} could simply be a variable which is defined by the user depending on which dimensionality is used for that simulation.  However, the value of \var{ndim} would then need to be accessed in memory very frequently.  By defining \var{ndim} as a template parameter, \var{ndim} will be defined statically and therefore does not require the overhead of accessing the memory address each time.
 
-Throughout the code, the variables that are used as template parameters are : 
+Throughout the code, the variables that are used as template parameters are :
 \begin{itemize}
 \item \var{ndim} : Number of dimensions
 \item \var{SphKernel} : SPH kernel function used

@@ -172,8 +172,8 @@ void Parameters::SetDefaultValues(void)
   stringparams["ic"] = "box";
   stringparams["run_id"] = "";
   stringparams["in_file"] = "";
-  stringparams["in_file_form"] = "sf";
-  stringparams["out_file_form"] = "sf";
+  stringparams["in_file_form"] = "su";
+  stringparams["out_file_form"] = "su";
   floatparams["tend"] = 1.0;
   floatparams["tmax_wallclock"] = 9.99e20;
   floatparams["dt_snap"] = 0.2;
@@ -292,7 +292,7 @@ void Parameters::SetDefaultValues(void)
 
   // Neighbour searching and tree-gravity parameters
   //-----------------------------------------------------------------------------------------------
-  stringparams["neib_search"] = "tree";
+  stringparams["neib_search"] = "kdtree";
   stringparams["gravity_mac"] = "geometric";
   stringparams["multipole"] = "quadrupole";
   intparams["Nleafmax"] = 6;
@@ -351,10 +351,6 @@ void Parameters::SetDefaultValues(void)
   floatparams["boxmax[0]"] = 9.9e30;
   floatparams["boxmax[1]"] = -9.9e30;
   floatparams["boxmax[2]"] = 9.9e30;
-
-  // MPI parameters
-  //-----------------------------------------------------------------------------------------------
-  intparams["pruning_level"] = 6;
 
   // Ewald periodic gravity parameters
   //-----------------------------------------------------------------------------------------------
@@ -425,6 +421,10 @@ void Parameters::SetDefaultValues(void)
   //-----------------------------------------------------------------------------------------------
   stringparams["rand_algorithm"] = "none";
   intparams["randseed"] = 0;
+
+  // MPI parameters
+  //-----------------------------------------------------------------------------------------------
+  intparams["pruning_level"] = 6;
 
   // Python parameters
   //-----------------------------------------------------------------------------------------------

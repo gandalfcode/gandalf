@@ -118,10 +118,10 @@ void Simulation<ndim>::GenerateIC(void)
     icGenerator.ShockTube();
   else if (ic == "soundwave")
     icGenerator.SoundWave();
-  else if (ic == "spitzer")
-    icGenerator.SpitzerExpansion();
   else if (ic == "sphere")
     icGenerator.UniformSphere();
+  else if (ic == "spitzer")
+    icGenerator.SpitzerExpansion();
   else if (ic == "triple")
     icGenerator.TripleStar();
   else if (ic == "turbcore")

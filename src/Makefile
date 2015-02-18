@@ -36,6 +36,11 @@ PYFOLDER = ../analysis/swig_generated
 #GTEST = /Users#/david/astro/code/gtest-1.6.0/include
 
 
+VPATH = $(PWD)/src:$(PWD)/src/Common:$(PWD)/src/GodunovSph:$(PWD)/src/GradhSph:$(PWD)/src/Headers
+VPATH +=$(PWD)/src/Hydrodynamics:$(PWD)/src/MeshlessFV:$(PWD)/src/Mpi:$(PWD)/src/Nbody
+VPATH +=$(PWD)/src/SM2013:$(PWD)/src/Thermal:$(PWD)/src/Tree
+INCLUDE = $(PWD)/src/Headers
+
 
 # Compiler mode flags
 # -------------------------------------------------------------------------------------------------
@@ -225,16 +230,16 @@ TEST_OBJ = TestScaling.o TestTree.o TestOctTree.o TestSinks.o
 
 
 %_wrap.cxx: %.i
-	swig -c++ -python -outdir $(PYFOLDER) $(CFLAGS) $<
+	swig -c++ -python -outdir $(PYFOLDER) $(CFLAGS) -I$(INCLUDE) $<
 
 %_wrap.o: %_wrap.cxx
-	$(CPP) $(OPT) $(CFLAGS) -fexceptions -frtti -c $< -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY)
+	$(CPP) $(OPT) $(CFLAGS) -fexceptions -frtti -c $< -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY) -I$(INCLUDE)
 
 %.o: %.cxx
-	$(CPP) $(CFLAGS) -c $< $(OPT)
+	$(CPP) $(CFLAGS) -c $< $(OPT) -I$(INCLUDE)
 
 %.o: %.cpp
-	$(CPP) $(OPT) $(CFLAGS) -c $< -I$(GTEST)/include
+	$(CPP) $(OPT) $(CFLAGS) -c $< -I$(GTEST)/include -I$(INCLUDE)
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
@@ -256,21 +261,21 @@ all : $(WRAP_OBJ) $(OBJ) Exception.o shocktub.so _SphSim.so executable
 #==================================================================================================
 
 executable : $(OBJ) gandalf.o Exception.o
-	$(CPP) $(CFLAGS) -o gandalf $(OBJ) Exception.o gandalf.o $(OPT)
+	$(CPP) $(CFLAGS) -I$(INCLUDE) -o gandalf $(OBJ) Exception.o gandalf.o $(OPT)
 	cp gandalf ../bin/gandalf
 
 unittests : $(OBJ) $(TEST_OBJ) Exception.o
-	$(CPP) $(CFLAGS) $(OPT) -o testgandalf $(OBJ) $(TEST_OBJ) Exception.o $(GTEST)/make/gtest_main.a
+	$(CPP) $(CFLAGS) -I$(INCLUDE) $(OPT) -o testgandalf $(OBJ) $(TEST_OBJ) Exception.o $(GTEST)/make/gtest_main.a
 	cp testgandalf ../bin/testgandalf
 
 _SphSim.so : $(WRAP_OBJ) $(OBJ) Exception.o Render.o
-	$(CPP) $(CFLAGS) $(OPT) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o Render.o -o _SphSim.so
+	$(CPP) $(CFLAGS) -I$(INCLUDE) $(OPT) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o Render.o -o _SphSim.so
 
 shocktub.so : shocktub.f shocktub.pyf
 	$(F2PY) --quiet -c shocktub.f shocktub.pyf
 
 Exception.o : Exception.cpp
-	$(CPP) $(OPT) $(CFLAGS) -fexceptions -c $<
+	$(CPP) $(OPT) -I$(INCLUDE) $(CFLAGS) -fexceptions -c $<
 
 SphSimulation.o : SimulationIO.hpp SimulationIC.hpp SimAnalysis.hpp
 
