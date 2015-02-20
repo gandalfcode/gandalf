@@ -67,7 +67,7 @@ SimulationBase* SimulationBase::SimulationFactory
 
   // Check simulation type is valid
   if (simtype != "sph" && simtype != "gradhsph" && simtype != "sm2012sph" &&
-      simtype != "godunov_sph" && simtype != "nbody" ) {
+      simtype != "godunov_sph" && simtype != "nbody" && simtype != "meshlessfv") {
     string msg = "Error: the simulation type " + simtype + " was not recognized";
     ExceptionHandler::getIstance().raise(msg);
   }
@@ -87,6 +87,8 @@ SimulationBase* SimulationBase::SimulationFactory
       return new SM2012SphSimulation<1>(params);
     else if (simtype == "godunovsph")
       return new GodunovSphSimulation<1>(params);
+    else if (simtype == "meshlessfv")
+      return new MeshlessFVSimulation<1>(params);
     else if (simtype == "nbody")
       return new NbodySimulation<1>(params);
   }
@@ -97,6 +99,8 @@ SimulationBase* SimulationBase::SimulationFactory
       return new SM2012SphSimulation<2>(params);
     else if (simtype == "godunovsph")
       return new GodunovSphSimulation<2>(params);
+    else if (simtype == "meshlessfv")
+      return new MeshlessFVSimulation<2>(params);
     else if (simtype == "nbody")
       return new NbodySimulation<2>(params);
   }
@@ -107,6 +111,8 @@ SimulationBase* SimulationBase::SimulationFactory
       return new SM2012SphSimulation<3>(params);
     else if (simtype == "godunovsph")
       return new GodunovSphSimulation<3>(params);
+    else if (simtype == "meshlessfv")
+      return new MeshlessFVSimulation<3>(params);
     else if (simtype == "nbody")
       return new NbodySimulation<3>(params);
   }
@@ -1411,7 +1417,8 @@ void Simulation<ndim>::UpdateDiagnostics(void)
   }
 }
 
+
+
 template class Simulation<1>;
 template class Simulation<2>;
 template class Simulation<3>;
-

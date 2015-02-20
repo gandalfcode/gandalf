@@ -112,6 +112,7 @@ public:
   // SPH particle counters and main particle data array
   //-----------------------------------------------------------------------------------------------
   bool allocated;                      ///< Is memory allocated?
+  int Ngather;                         ///< No. of gather neighbours
   int Nghost;                          ///< No. of ghost particles
   int Nghostmax;                       ///< Max. allowed no. of ghost particles
   int NImportedParticles;              ///< No. of imported particles
@@ -129,7 +130,7 @@ public:
 
   int *iorder;                         ///< Array containing particle ordering
   EOS<ndim> *eos;                      ///< Equation-of-state
-  SmoothingKernel<ndim> *kernp;              ///< Pointer to chosen kernel object
+  SmoothingKernel<ndim> *kernp;        ///< Pointer to chosen kernel object
   TabulatedKernel<ndim> kerntab;       ///< Tabulated version of chosen kernel
   RiemannSolver *riemann;              ///< Riemann solver
   ExternalPotential<ndim> *extpot;     ///< Pointer to external potential object

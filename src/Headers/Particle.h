@@ -287,6 +287,55 @@ struct GodunovSphParticle : public SphParticle<ndim>
 
 
 //=================================================================================================
+//  Structure MeshlessFVParticle
+/// \brief  Main base Meshless Finite-Volume particle data structure.
+/// \author D. A. Hubber, J. Ngoumou
+/// \date   19/02/2015
+//=================================================================================================
+template <int ndim>
+struct MeshlessFVParticle : public Particle<ndim>
+{
+  bool potmin;                      ///< Is particle at a potential minima?
+  int levelneib;                    ///< Min. timestep level of neighbours
+  int sinkid;                       ///< i.d. of sink particle
+  FLOAT invh;                       ///< 1 / h
+  FLOAT hfactor;                    ///< invh^(ndim + 1)
+  FLOAT invrho;                     ///< 1 / rho
+  FLOAT press;                      ///< Thermal pressure
+  FLOAT pfactor;                    ///< Pressure factor in SPH EOM
+  FLOAT sound;                      ///< Sound speed
+  FLOAT div_v;                      ///< Velocity divergence
+  FLOAT alpha;                      ///< Artificial viscosity alpha value
+  FLOAT dalphadt;                   ///< Rate of change of alpha
+
+  FLOAT ndens;                        ///< Number density of neighbours
+
+
+  // SPH particle constructor to initialise all values
+  //-----------------------------------------------------------------------------------------------
+  MeshlessFVParticle()
+  {
+    potmin = false;
+    levelneib = 0;
+    sinkid = -1;
+    invh     = (FLOAT) 0.0;
+    hfactor  = (FLOAT) 0.0;
+    invrho   = (FLOAT) 0.0;
+    press    = (FLOAT) 0.0;
+    pfactor  = (FLOAT) 0.0;
+    sound    = (FLOAT) 0.0;
+    div_v    = (FLOAT) 0.0;
+    alpha    = (FLOAT) 0.0;
+    dalphadt = (FLOAT) 0.0;
+
+    ndens = (FLOAT) 0.0;
+  }
+
+};
+
+
+
+//=================================================================================================
 //  Structure SphType
 /// \brief  ..
 /// \author D. A. Hubber, G. Rosotti

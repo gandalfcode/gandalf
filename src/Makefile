@@ -193,6 +193,7 @@ OBJ += SphSimulation.o Sph.o
 OBJ += GradhSphSimulation.o GradhSph.o
 OBJ += GodunovSphSimulation.o GodunovSph.o
 OBJ += SM2012SphSimulation.o SM2012Sph.o
+OBJ += MeshlessFVSimulation.o MeshlessFV.o MeshlessFCBruteForce.o
 OBJ += NbodySimulation.o
 OBJ += M4Kernel.o QuinticKernel.o GaussianKernel.o TabulatedKernel.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o SphLeapfrogDKD.o
