@@ -80,7 +80,6 @@ void Simulation<ndim>::GenerateIC(void)
 
   // If not a restart, generate initial conditions either from external file or created on the fly.
   //-----------------------------------------------------------------------------------------------
-
   Ic<ndim> icGenerator(this, hydro, invndim);
 
   if (ic == "file") {

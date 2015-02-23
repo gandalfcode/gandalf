@@ -206,7 +206,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
 #endif
 
   debug2("[GradhSphTree::UpdateAllSphProperties]");
-  timing->StartTimingSection("SPH_PROPERTIES",2);
+  timing->StartTimingSection("SPH_PROPERTIES");
 
 
   // Find list of all cells that contain active particles
@@ -433,7 +433,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 #endif
 
   debug2("[GradhSphTree::UpdateAllSphHydroForces]");
-  timing->StartTimingSection("SPH_HYDRO_FORCES",2);
+  timing->StartTimingSection("SPH_HYDRO_FORCES");
 
 
   // Find list of all cells that contain active particles
@@ -670,7 +670,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
 #endif
 
   debug2("[GradhSphTree::UpdateAllSphForces]");
-  timing->StartTimingSection("SPH_ALL_FORCES",2);
+  timing->StartTimingSection("SPH_ALL_FORCES");
 
   // Update ghost tree smoothing length values here
   if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0],sphdata);
@@ -922,7 +922,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[GradhSphTree::UpdateAllSphGravForces]");
-  timing->StartTimingSection("SPH_GRAV_FORCES",2);
+  timing->StartTimingSection("SPH_GRAV_FORCES");
 
   // Update ghost tree smoothing length values here
   if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0],sphdata);
@@ -1165,7 +1165,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
 
 
   debug2("[GradhSphTree::UpdateAllStarGasForces]");
-  //timing->StartTimingSection("STAR_GAS_GRAV_FORCES",2);
+  //timing->StartTimingSection("STAR_GAS_GRAV_FORCES");
 
   // Make list of all active stars
   Nactive = 0;
@@ -1277,7 +1277,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicForces
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[GradhSphTree::UpdateAllSphForces]");
-  timing->StartTimingSection("SPH_ALL_PERIODIC_FORCES",2);
+  timing->StartTimingSection("SPH_ALL_PERIODIC_FORCES");
 
   // Update ghost tree smoothing length values here
   if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0],sphdata);

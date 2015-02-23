@@ -78,6 +78,7 @@ class SimulationBase
   // Subroutines only for internal use of the class
   virtual void CalculateDiagnostics(void)=0;
   virtual void OutputDiagnostics(void)=0;
+  virtual void OutputTestDiagnostics(void)=0;
   virtual void RecordDiagnostics(void)=0;
   virtual void UpdateDiagnostics(void)=0;
   virtual void GenerateIC(void)=0;
@@ -143,6 +144,7 @@ class SimulationBase
   bool ParametersProcessed;         ///< Flag if params are already processed
   bool periodicBoundaries;          ///< Flag if periodic boundaries are being used
   bool rebuild_tree;                ///< Flag to rebuild neighbour tree
+  bool recomputeRadiation;          ///< Flag to recompute radiation field from all sources
   bool rescale_particle_data;       ///< Flag to scale data to code units
   bool restart;                     ///< Flag to restart from last snapshot
   bool setup;                       ///< Flag if simulation is setup
@@ -159,6 +161,7 @@ class SimulationBase
                                     ///< of full block timestep steps)
   int nlastrestart;                 ///< Integer time of last restart snapshot
   int noutputstep;                  ///< Output frequency
+  int nradstep;                     ///< Integer time between computing radiation field
   int nrestartstep;                 ///< Integer time between creating temp restart files
   int nresync;                      ///< Integer time for resynchronisation
   int nsystembuildstep;             ///< Integer time between rebuilding N-body system tree
@@ -244,6 +247,7 @@ class Simulation : public SimulationBase
   virtual void PreSetupForPython(void);
   virtual void ProcessParameters(void)=0;
   virtual void OutputDiagnostics(void);
+  virtual void OutputTestDiagnostics(void);
   virtual void RecordDiagnostics(void);
   virtual void UpdateDiagnostics(void);
   virtual void SetComFrame(void);
@@ -364,7 +368,9 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::randnumb;
   using Simulation<ndim>::rank;
   using Simulation<ndim>::rebuild_tree;
+  using Simulation<ndim>::recomputeRadiation;
   using Simulation<ndim>::ndiagstep;
+  using Simulation<ndim>::nradstep;
   using Simulation<ndim>::nrestartstep;
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;

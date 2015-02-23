@@ -123,7 +123,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
   FLOAT rho_max = (FLOAT) 0.0;         // Maximum density of sink candidates
 
   debug2("[Sinks::SearchForNewSinkParticles]");
-  timing->StartTimingSection("SEARCH_NEW_SINKS",2);
+  timing->StartTimingSection("SEARCH_NEW_SINKS");
 
 
   // Continuous loop to search for new sinks.  If a new sink is found, then repeat
@@ -330,7 +330,7 @@ void Sinks<ndim>::AccreteMassToSinks
   FLOAT *rsqdlist;                     // Array of particle-sink distances
 
   debug2("[Sinks::AccreteMassToSinks]");
-  timing->StartTimingSection("SINK_ACCRETE_MASS",2);
+  timing->StartTimingSection("SINK_ACCRETE_MASS");
 
   // Allocate local memory and initialise values
   for (i=0; i<sph->Ntot; i++) sph->GetSphParticlePointer(i).sinkid = -1;

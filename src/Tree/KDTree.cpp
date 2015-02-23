@@ -180,7 +180,7 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   int k;                               // Dimension counter
 
   debug2("[KDTree::BuildTree]");
-  //timing->StartTimingSection("BUILD_TREE",2);
+  //timing->StartTimingSection("BUILD_TREE");
 
   // Activate nested parallelism for tree building routines
 #ifdef _OPENMP
@@ -1085,7 +1085,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
   int ilast;                           // Last particle in linked list
 
   debug2("[KDTree::UpdateActiveParticleCounters]");
-  //timing->StartTimingSection("TREE_UPDATE_COUNTERS",2);
+  //timing->StartTimingSection("TREE_UPDATE_COUNTERS");
 
 
   // Loop through all grid cells in turn

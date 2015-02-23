@@ -200,7 +200,7 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildTree
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphTree::BuildTree]");
-  timing->StartTimingSection("BUILD_TREE",2);
+  timing->StartTimingSection("BUILD_TREE");
 
   // Activate nested parallelism for tree building routines
 #ifdef _OPENMP
@@ -291,7 +291,7 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostTree
   //if (sph->NPeriodicGhost == 0) return;
 
   debug2("[SphTree::BuildGhostTree]");
-  timing->StartTimingSection("BUILD_GHOST_TREE",2);
+  timing->StartTimingSection("BUILD_GHOST_TREE");
 
   // Activate nested parallelism for tree building routines
 #ifdef _OPENMP
@@ -815,7 +815,7 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[GradhSphTree::UpdateDistantSphForces]");
-  timing->StartTimingSection("SPH_DISTANT_FORCES",2);
+  timing->StartTimingSection("SPH_DISTANT_FORCES");
 
 
   // Find list of all cells that contain active particles
@@ -975,7 +975,7 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphTree::UpdateHydroExportList]");
-  timing->StartTimingSection("MPI_HYDRO_EXPORT",2);
+  timing->StartTimingSection("MPI_HYDRO_EXPORT");
 
 
   // Find list of all cells that contain active particles
@@ -1082,7 +1082,7 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (hydro_gen);
 
   debug2("[SphTree::BuildPrunedTree]");
-  timing->StartTimingSection("BUILD_PRUNED_TREE",2);
+  timing->StartTimingSection("BUILD_PRUNED_TREE");
 
   cnew = 0;
   Nprunedcellmax = 0;
@@ -1317,7 +1317,7 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildMpiGhostTree
   //if (sph->Nmpighost == 0) return;
 
   debug2("[SphTree::BuildGhostTree]");
-  timing->StartTimingSection("BUILD_MPIGHOST_TREE",2);
+  timing->StartTimingSection("BUILD_MPIGHOST_TREE");
 
   // Activate nested parallelism for tree building routines
 #ifdef _OPENMP

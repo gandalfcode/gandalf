@@ -51,6 +51,14 @@ using namespace std;
 
 
 
+enum radiationSourceType {
+  isotropicSource,
+  pointSource,
+  planarSource,
+  numRadiationSourceTypes
+};
+
+
 //=================================================================================================
 //  Struct PhotonPacket
 /// Radiation photon packet data structure
@@ -92,20 +100,21 @@ struct ionpar
   int sink;                         // Is particle sink
   int fionised;
   int neighstorcont;
-  double x;  		                    // Particle x,y,z co-ordinates
+  double x;                         // Particle x,y,z co-ordinates
   double y;
   double z;
   double rho;                       // Density
   double t;                         // Temperature
   double h;                         // Smoothing length
   double u;                         // Specific internal energy
+  int *checked;
   int *ionised;                     // Is particle ionised by source?
   int *neigh;                       // Part. neib array (Neibs closest to sources)
   int *neighstor;
+  double *angle;
   double *prob;                     // Prob. of transmition from each source
   double *photons;                  // No. of photons lost up to this point
-  double *angle;
-  int *checked;
+  double *rad_pre_acc;
 };
 
 
@@ -148,25 +157,29 @@ class MultipleSourceIonisation : public Radiation<ndim>
 {
  public:
 
-  MultipleSourceIonisation(SphNeighbourSearch<ndim> *,float,float,
-                           float,float,float,float,float,float);
+  MultipleSourceIonisation(SphNeighbourSearch<ndim> *, float, float,
+                           float, float, double, float, float, float, double);
+  //MultipleSourceIonisation(SphNeighbourSearch<ndim> *,float,float,
+  //                         float,float,float,float,float,float);
   ~MultipleSourceIonisation();
 
   virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
                                     NbodyParticle<ndim> **,
                                     SinkParticle<ndim> *);
 
-  void ionisation_intergration(int,int,NbodyParticle<ndim> **,
-                               SphParticle<ndim> *,double,double,
-                               SphNeighbourSearch<ndim> *,double,double,
-                               double,double,double,double);
+  void ionisation_intergration(int, int, NbodyParticle<ndim> **,
+                               SphParticle<ndim> *, double, double,
+                               SphNeighbourSearch<ndim> *, double, double,
+                               double, double, double, double);
   void photoncount(ionpar *,int *,double *, int &,int &,int &,int &);
   double lost(ionpar *,int *,double *,int &, int &,int &,int &,int &);
-  void probs(int &,ionpar *,int *,int &,double *);
+  void probs(int &, ionpar *, int *, int &, double *);
 
 
   SphNeighbourSearch<ndim> *sphneib;
-  float mu_bar,temp0,mu_ion,temp_ion,Ndotmin,gamma_eos,scale,tempscale;
+  float mu_bar,temp0,mu_ion,temp_ion,gamma_eos,scale,tempscale; //cmscott
+  double rad_cont,Ndotmin; //cmscott
+  //float mu_bar,temp0,mu_ion,temp_ion,Ndotmin,gamma_eos,scale,tempscale;
   vector< vector<int> > ionisation_fraction;
 };
 
@@ -234,33 +247,36 @@ class MonochromaticIonisationMonteCarlo : public Radiation<ndim>
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  MonochromaticIonisationMonteCarlo(int, int, FLOAT, DOUBLE, string, SimUnits *, EOS<ndim> *);
+  MonochromaticIonisationMonteCarlo(int, int, int, FLOAT, FLOAT, FLOAT, DOUBLE,
+                                    string, SimUnits *, EOS<ndim> *);
   ~MonochromaticIonisationMonteCarlo();
 
 
   // Function prototypes
   //-----------------------------------------------------------------------------------------------
   virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
-                                    NbodyParticle<ndim> **, SinkParticle<ndim> *) ;
+                                    NbodyParticle<ndim> **, SinkParticle<ndim> *);
   void InterpolateParticleProperties(const int, const int, SphParticle<ndim> *);
-  void IterateRadiationField(int, int, int, int, SphParticle<ndim> *,
-                             NbodyParticle<ndim> **, SinkParticle<ndim> *) ;
+  void IterateRadiationField(const int, const int, const int, const int, const int,
+                             SphParticle<ndim> *, NbodyParticle<ndim> **, SinkParticle<ndim> *);
   PhotonPacket<ndim> GenerateNewPhotonPacket(const RadiationSource<ndim> &, RandomNumber *);
   void ScatterPhotonPacket(PhotonPacket<ndim> &, RandomNumber *);
-  bool UpdateIonisationFraction(void);
+  bool UpdateIonisationFraction(const int, const int);
   void UpdateCellOpacity(CellType<ndim,nfreq> &, ParticleType<ndim> *);
 
 
   // Variables
   //-----------------------------------------------------------------------------------------------
-  int Nphoton;                         // No. of photon packets
+  FLOAT Nphotonratio;                    // Ratio of photons to radiation cells
+  int Nraditerations;                  // No. of iterations of radiation field
+  int Nradlevels;                      // No. of tree levels to converge over
   int Nthreads;                        // No. of OpenMP threads
   FLOAT boundaryradius;                // Radius from which isotropic photons are emitted.
   FLOAT across;                        // Photoionisation cross-section
   FLOAT arecomb;                       // Recombination coefficient
   FLOAT Eion;                          // Ionisation energy
   FLOAT invEion;                       // 1 / Eion
-  FLOAT packetenergy;                  // Energy in photon packet
+  //FLOAT packetenergy;                  // Energy in photon packet
   FLOAT temp_ion;                      // ..
   DOUBLE invmh;                        // ..
   DOUBLE ionconst;                     // ..
@@ -289,8 +305,7 @@ class NullRadiation : public Radiation<ndim>
 
  public:
 
-  NullRadiation():Radiation<ndim>() {};
-
+  NullRadiation(): Radiation<ndim>() {};
 
   virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
                                     NbodyParticle<ndim> **, SinkParticle<ndim> *) {};

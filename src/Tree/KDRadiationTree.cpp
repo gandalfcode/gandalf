@@ -140,7 +140,7 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::BuildTree
   FLOAT bbmax[ndim];
 
   debug2("[KDRadiationTree::BuildTree]");
-  //timing->StartTimingSection("BUILD_TREE",2);
+  //timing->StartTimingSection("BUILD_TREE");
 
   cout << "Building tree with " << Npart << " particles" << endl;
 

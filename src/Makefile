@@ -284,6 +284,7 @@ force: ;
 
 clean ::
 	\rm -f *_wrap.cxx
+	\rm -f */*_wrap.cxx
 	\rm -f *.o
 	\rm -f *.so
 	\rm -f ../analysis/*.so

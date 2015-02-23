@@ -304,5 +304,93 @@ void Simulation<ndim>::RecordDiagnostics(void)
 
   outfile.close();
 
+  // Now calculate and output any test specific diagnostics
+  OutputTestDiagnostics();
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  Simulation::OutputTestDiagnostics
+/// Output all diagnostic quantities related to specific tests.
+//=================================================================================================
+template <int ndim>
+void Simulation<ndim>::OutputTestDiagnostics(void)
+{
+  int i;
+  int k;
+  ofstream outfile;
+  ofstream solfile;
+  string ic = simparams->stringparams["ic"];
+
+  debug2("[Simulation::OutputTestDiagnostics]");
+
+  if (rank != 0) return;
+
+  //-----------------------------------------------------------------------------------------------
+  if (ic == "spitzer") {
+
+    string filename = run_id + ".ionfront";
+    string solname = run_id + ".spitzer";
+    FLOAT temp_ion   = simparams->floatparams["temp_ion"]/simunits.temp.outscale;
+    FLOAT mu_ion     = simparams->floatparams["mu_ion"];
+    FLOAT cion       = sqrtf(temp_ion/mu_ion);
+    FLOAT radius_ion = 0.0;
+    FLOAT m_ion      = 0.0;
+    FLOAT m_if       = 0.0;
+    FLOAT arecomb    = simparams->floatparams["arecomb"]*
+      simunits.t.outscale*simunits.t.outcgs/pow(simunits.r.outscale*simunits.r.outcgs,3);
+    FLOAT mcloud     = simparams->floatparams["mcloud"]/simunits.m.outscale;
+    FLOAT radius     = simparams->floatparams["radius"]/simunits.r.outscale;
+    FLOAT NLyC       = simparams->floatparams["NLyC"]*simunits.t.outscale*simunits.t.outSI;
+    FLOAT rhoneutral = 3.0*mcloud/(4.0*pi*powf(radius,3.0));
+    FLOAT m_h        = m_hydrogen/simunits.m.outscale/simunits.m.outSI;
+    FLOAT Rstromgren = powf(0.75*m_h*m_h*NLyC/(pi*arecomb*rhoneutral*rhoneutral),onethird);
+
+    cout << "RSTROMGREN : " << Rstromgren*simunits.r.outscale << endl;
+    cout << "Sound speed of ionised gas : " << cion*simunits.v.outscale*simunits.v.outSI << endl;
+
+
+    // Compute location of ionisation front
+    //---------------------------------------------------------------------------------------------
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      FLOAT temp = hydro->eos->Temperature(part);
+      m_ion += part.ionfrac*part.m;
+      if (temp > 0.05*temp_ion && temp < 0.95*temp_ion) {
+        m_if += part.m;
+        radius_ion += part.m*sqrt(DotProduct(part.r, part.r, ndim));
+      }
+    }
+    //---------------------------------------------------------------------------------------------
+
+    // Normalise ionisation front radial position
+    radius_ion /= m_if;
+
+    // Open new file if at beginning of simulation.  Otherwise append new data
+    if (Nsteps == 0) {
+      outfile.open(filename.c_str());
+      solfile.open(solname.c_str());
+    }
+    else {
+      outfile.open(filename.c_str(), std::ofstream::app);
+      solfile.open(solname.c_str(), std::ofstream::app);
+    }
+    outfile << t*simunits.t.outscale << "    " << radius_ion*simunits.r.outscale << "    "
+            << m_ion*simunits.m.outscale << endl;
+    solfile << t*simunits.t.outscale << "   "
+            << Rstromgren*powf(1.0 + 7.0*cion*t/(4.0*Rstromgren),(4.0/7.0))*simunits.r.outscale
+            << "            "
+            << m_h*m_h*NLyC*powf(1.0 + 7.0*cion*t/(4.0*Rstromgren),(6.0/7.0))*
+               simunits.m.outscale/(arecomb*rhoneutral)
+            << endl;
+    solfile.close();
+    outfile.close();
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
   return;
 }

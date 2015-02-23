@@ -2248,8 +2248,8 @@ void Ic<ndim>::SpitzerExpansion(void)
 
   debug2("[Ic::SpitzerExpansion]");
 
-  mcloud   /= simunits.m.outscale;
-  radius   /= simunits.r.outscale;
+  mcloud /= simunits.m.outscale;
+  radius /= simunits.r.outscale;
 
 
   r = new FLOAT[ndim*Npart];

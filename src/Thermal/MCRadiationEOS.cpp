@@ -41,13 +41,13 @@ MCRadiationEOS<ndim>::MCRadiationEOS(string gas_eos, FLOAT temp0aux, FLOAT tempi
 {
   // Set 'internal' EOS for non-ionised gas
   if (gas_eos == "energy_eqn" || gas_eos == "constant_temp") {
-    eos = new Adiabatic<ndim>(temp0aux,mu_bar_aux,gamma_aux);
+    eos = new Adiabatic<ndim>(temp0aux, mu_bar_aux, gamma_aux);
   }
   else if (gas_eos == "isothermal") {
-    eos = new Isothermal<ndim>(temp0aux,mu_bar_aux,gamma_aux,units);
+    eos = new Isothermal<ndim>(temp0aux, mu_bar_aux, gamma_aux, units);
   }
   else if (gas_eos == "barotropic") {
-    eos = new Barotropic<ndim>(temp0aux,mu_bar_aux,gamma_aux,rho_bary_aux,units);
+    eos = new Barotropic<ndim>(temp0aux, mu_bar_aux, gamma_aux, rho_bary_aux, units);
   }
   else {
     string message = "Unrecognised parameter : gas_eos = " + gas_eos;
@@ -108,7 +108,7 @@ template <int ndim>
 FLOAT MCRadiationEOS<ndim>::SoundSpeed(Particle<ndim> &part)
 {
   //return sqrt(gammam1*part.u);
-  return part.ionfrac*sqrt(gammam1*part.u) + (1.0 - part.ionfrac)*eos->SoundSpeed(part);
+  return part.ionfrac*sqrt(temp_ion/mu_ion) + (1.0 - part.ionfrac)*eos->SoundSpeed(part);
 }
 
 

@@ -216,7 +216,7 @@ void EnergyRadws<ndim,ParticleType>::EnergyIntegration
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[EnergyRadws::EnergyIntegration]");
-  timing->StartTimingSection("ENERGY_RADWS_INTEGRATION",2);
+  timing->StartTimingSection("ENERGY_RADWS_INTEGRATION");
 
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dt,i) shared(sphdata)
@@ -254,7 +254,7 @@ void EnergyRadws<ndim,ParticleType>::EndTimestep
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[EnergyRadws::EndTimestep]");
-  timing->StartTimingSection("ENERGY_RADWS_END_TIMESTEP",2);
+  timing->StartTimingSection("ENERGY_RADWS_END_TIMESTEP");
 
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i) shared(sphdata)

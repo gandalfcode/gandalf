@@ -35,33 +35,42 @@
 using namespace std;
 
 
-  struct TimingBlock {
-    bool timing_flag;
-    int timing_level;
-    int Ncalled;
-    double tstart_wall;
-    double tend_wall;
-    double ttot_wall;
-    double tfraction_wall;
-    DOUBLE ttot;
-    DOUBLE tfraction;
-    clock_t tstart;
-    clock_t tend;
-    string block_name;
 
-    TimingBlock()
-    {
-      timing_flag    = false;
-      timing_level   = 0;
-      Ncalled        = 0;
-      ttot           = 0.0;
-      ttot_wall      = 0.0;
-      tfraction      = 0.0;
-      tfraction_wall = 0.0;
-      block_name     = "";
-    }
+//=================================================================================================
+//  Structure TimingBlock
+/// \brief  Data structure for holiding code timing information
+/// \author D. A. Hubber, G. Rosotti
+/// \date   01/10/2013
+//=================================================================================================
+struct TimingBlock
+{
+  bool timing_flag;
+  int timing_level;
+  int Ncalled;
+  double tstart_wall;
+  double tend_wall;
+  double ttot_wall;
+  double tfraction_wall;
+  DOUBLE ttot;
+  DOUBLE tfraction;
+  clock_t tstart;
+  clock_t tend;
+  string block_name;
 
-  };
+  TimingBlock()
+  {
+    timing_flag    = false;
+    timing_level   = 0;
+    Ncalled        = 0;
+    ttot           = 0.0;
+    ttot_wall      = 0.0;
+    tfraction      = 0.0;
+    tfraction_wall = 0.0;
+    block_name     = "";
+  }
+
+};
+
 
 
 //=================================================================================================
@@ -83,7 +92,7 @@ class CodeTiming
 
   // Other functions
   //-----------------------------------------------------------------------------------------------
-  void StartTimingSection(string,int);
+  void StartTimingSection(string);
   void EndTimingSection(string);
   void ComputeTimingStatistics(string);
   double WallClockTime(void);
@@ -91,20 +100,23 @@ class CodeTiming
 
   // CodeTiming class variables
   //-----------------------------------------------------------------------------------------------
-  static const int Nblockmax=256;   ///< Max. no. of code timing blocks
-  int Nblock;                       ///< No. of timing blocks
-  int Nlevelmax;                    ///< Max. no. of timing levels
-  double tstart_wall;               ///< Start of wall clock timing
-  double tend_wall;                 ///< End of wall clock timing
-  DOUBLE ttot;                      ///< Total time
-  DOUBLE ttot_wall;                 ///< Total wall clock time
-  clock_t tstart;                   ///< Start of integer clock
-  clock_t tend;                     ///< End of integer clock
-  map<string,int> blockno;          ///< Map of timing block names
+  static const int Nblockmax=128;          ///< Max. no. of code timing blocks
+  static const int Nlevelmax=8;            ///< Max. no. of timing levels
+  int level;                               ///< Current timing level
+  int Nlevel;                              ///< No. of timing levels
+  //int Nblock;                              ///< No. of timing blocks
+  double tstart_wall;                      ///< Start of wall clock timing
+  double tend_wall;                        ///< End of wall clock timing
+  DOUBLE ttot;                             ///< Total time
+  DOUBLE ttot_wall;                        ///< Total wall clock time
+  clock_t tstart;                          ///< Start of integer clock
+  clock_t tend;                            ///< End of integer clock
 
-
-
-  TimingBlock block[Nblockmax];
+  int Nblock[Nlevelmax];                   ///< ..
+  int timingOrder[Nlevelmax][Nblockmax];   ///< Order (longest to shortest) of timing blocks
+  map<string,int> blockmap[Nlevelmax];     ///< Map of timing block names
+  TimingBlock block[Nlevelmax][Nblockmax]; ///< Array of timing blocks
+  TimingBlock *levelstack[Nlevelmax];      ///< Stack of current blocks being timed
 
 };
 #endif

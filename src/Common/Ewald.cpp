@@ -84,7 +84,7 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
     FILE *fo;                                     // file where Ewald field is printed
 
     debug2("[Ewald::Ewald]");
-    timing->StartTimingSection("EWALD",2);
+    timing->StartTimingSection("EWALD");
 
 
     // set ewald_periodicity for given type of boundary conditions

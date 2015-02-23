@@ -331,9 +331,13 @@ void Parameters::SetDefaultValues(void)
   // Radiation algortihm parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["radiation"] = "none";
-  intparams["Nphoton"] = 10000;
+  intparams["Nraditerations"] = 2;
+  intparams["Nradlevels"] = 1;
+  intparams["nradstep"] = 1;
+  floatparams["Nphotonratio"] = 8;
   floatparams["mu_ion"] = 0.678;
   floatparams["temp_ion"] = 1e4;
+  floatparams["arecomb"] = 2.7e-13;
   floatparams["Ndotmin"] = 1e47;
   floatparams["NLyC"] = 1e49;
 

@@ -251,8 +251,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
     parti.hfactor  = pow(parti.invh,ndim);
     invhsqd        = parti.invh*parti.invh;
 
-    // Loop over all nearest neighbours in list to calculate
-    // density, omega and zeta.
+    // Loop over all nearest neighbours in list to calculate density, omega and zeta.
     //---------------------------------------------------------------------------------------------
     for (j=0; j<Nneib; j++) {
       ssqd           = drsqd[j]*invhsqd;

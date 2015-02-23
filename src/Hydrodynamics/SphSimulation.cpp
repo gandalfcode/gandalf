@@ -255,6 +255,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
   Nlevels             = intparams["Nlevels"];
   ndiagstep           = intparams["ndiagstep"];
   noutputstep         = intparams["noutputstep"];
+  nradstep            = intparams["nradstep"];
   nrestartstep        = intparams["nrestartstep"];
   ntreebuildstep      = intparams["ntreebuildstep"];
   ntreestockstep      = intparams["ntreestockstep"];
@@ -356,13 +357,13 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->neibcheck = false;
     if (!this->initial_h_provided) {
       sph->InitialSmoothingLengthGuess();
-      sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,sph->Ntot,
-                         sph->Nhydromax,sph->GetSphParticleArray(),sph,timestep);
+      sphneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
+                         sph->Nhydromax, sph->GetSphParticleArray(), sph, timestep);
       sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,sph->GetSphParticleArray(),sph,nbody);
     }
     else {
-      sphneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,sph->Ntot,
-                         sph->Nhydromax,sph->GetSphParticleArray(),sph,timestep);
+      sphneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
+                         sph->Nhydromax, sph->GetSphParticleArray(), sph, timestep);
     }
 
 #ifdef MPI_PARALLEL
@@ -461,8 +462,8 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
   // Read-in N-body table here
-//  nbody->LoadStellarPropertiesTable(&simunits);
-//  nbody->UpdateStellarProperties();
+  nbody->LoadStellarPropertiesTable(&simunits);
+  nbody->UpdateStellarProperties();
 
 
   // Compute all initial SPH force terms
@@ -515,7 +516,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
 
     // Update thermal properties (if radiation field has altered them)
-    for (i=0; i<sph->Nhydro;i++) {
+    for (i=0; i<sph->Nhydro; i++) {
       SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       sph->ComputeThermalProperties(part);
     }
@@ -717,17 +718,14 @@ void SphSimulation<ndim>::MainLoop(void)
       }*/
 
       // Update the radiation field
-      for (int jj=0; jj<2; jj++) {
+      if (Nsteps%nradstep == 0 || recomputeRadiation) {
         radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks.Nsink,
                                         partdata, nbody->nbodydata, sinks.sink);
         for (i=0; i<sph->Nhydro; i++) {
           SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-          //cout << "Particle before : " << part.u << "    " << part.ionfrac << "    " << part.press << endl;
           sph->ComputeThermalProperties(part);
-          //cout << "Particle after  : " << part.u << "    " << part.ionfrac << "    " << part.press << endl;
         }
       }
-      //cin >> i;
 
 
       // Copy properties from original particles to ghost particles
@@ -840,6 +838,7 @@ void SphSimulation<ndim>::MainLoop(void)
 
 
   rebuild_tree = false;
+  recomputeRadiation = false;
 
 
   // End-step terms for all SPH particles
@@ -890,7 +889,7 @@ void SphSimulation<ndim>::ComputeGlobalTimestep(void)
   DOUBLE dt_sph;                       // Aux. minimum SPH timestep
 
   debug2("[SphSimulation::ComputeGlobalTimestep]");
-  timing->StartTimingSection("GLOBAL_TIMESTEPS",2);
+  timing->StartTimingSection("GLOBAL_TIMESTEPS");
 
 
   // Only update timestep when all particles are synced at end of last step.
@@ -997,7 +996,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
   DOUBLE dt_sph;                        // Aux. minimum SPH timestep
 
   debug2("[SphSimulation::ComputeBlockTimesteps]");
-  timing->StartTimingSection("BLOCK_TIMESTEPS",2);
+  timing->StartTimingSection("BLOCK_TIMESTEPS");
 
 
   dt_min_nbody = big_number_dp;

@@ -325,7 +325,7 @@ void SimulationBase::Run
   //-----------------------------------------------------------------------------------------------
   while (t < tend && Nsteps < Ntarget) {
 
-    timing->StartTimingSection("RUN",1);
+    timing->StartTimingSection("RUN");
 
     MainLoop();
     Output();
@@ -438,7 +438,7 @@ string SimulationBase::Output(void)
   ofstream outfile;                 // Stream of restart file
 
   debug2("[SimulationBase::Output]");
-  timing->StartTimingSection("OUTPUT",2);
+  timing->StartTimingSection("OUTPUT");
 
 
   // Output time and no of steps for root process
@@ -572,7 +572,7 @@ void SimulationBase::RestartSnapshot(void)
 void SimulationBase::SetupSimulation(void)
 {
   debug1("[SimulationBase::Setup]");
-  timing->StartTimingSection("SETUP",1);
+  timing->StartTimingSection("SETUP");
 
   if (setup) {
     string msg = "This simulation has been already set up";

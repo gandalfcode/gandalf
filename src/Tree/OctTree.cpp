@@ -180,7 +180,7 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   FLOAT cellSize = (FLOAT) 0.0;        // Size of new cell (from centre to edge)
 
   debug2("[OctTree::BuildTree]");
-  //timing->StartTimingSection("BUILD_OCT_TREE",2);
+  //timing->StartTimingSection("BUILD_OCT_TREE");
 
   // Allocate (or reallocate if needed) all tree memory
   AllocateTreeMemory();
@@ -804,7 +804,7 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
   int ilast;                           // Last particle in linked list
 
   debug2("[OctTree::UpdateActiveParticleCounters]");
-  //timing->StartTimingSection("TREE_UPDATE_COUNTERS",2);
+  //timing->StartTimingSection("TREE_UPDATE_COUNTERS");
 
 
   // Loop through all grid cells in turn
