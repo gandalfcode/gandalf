@@ -84,6 +84,9 @@ struct Particle
   FLOAT ueq;                        ///< equilibrium internal energy
   FLOAT dt_therm;                   ///< thermalization time scale
   FLOAT adot[ndim];                 ///< 1st time derivative of acceleration
+  FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
+  int ionstate;	                    ///< States current ionisation state of the particle
+                                    ///< (0 is neutral, 1 is smoothed and 2 is ionised)
 
 
   Particle() {

@@ -118,9 +118,14 @@ FLOAT IonisingRadiation<ndim>::SoundSpeed(Particle<ndim> &part)
 template <int ndim>
 FLOAT IonisingRadiation<ndim>::SpecificInternalEnergy(Particle<ndim> &part)
 {
-  FLOAT non_ionised = eos->SpecificInternalEnergy(part);
-  if (part.u > non_ionised) return part.u;
-  else return non_ionised;
+  // Checks if particle's internal energy has been changed by the ionisation routine
+  // If it has it compares this new internal energy to that of the EOS and chooses the largest.
+  if (part.ionstate != 0) {
+    FLOAT non_ionised = eos->SpecificInternalEnergy(part);
+    if (part.u > non_ionised) return part.u;
+    else return non_ionised;
+  }
+  else return eos->SpecificInternalEnergy(part);
 }
 
 

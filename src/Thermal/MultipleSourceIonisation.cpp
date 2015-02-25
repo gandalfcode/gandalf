@@ -687,11 +687,21 @@ for (ii=0;ii<N;ii++)
 	invmu=(((ionisedsph[ii].t-tn)/mu_ion)+((ti-ionisedsph[ii].t)/mu_bar))/(ti-tn);//Work out corrected inverted mean gas particle mass
 	ionisedsph[ii].u=ionisedsph[ii].t/tempscale/gammam1*invmu;			//Work out the internal energy
 
-	//Change the master ionisedsph paticle u if the temp should not be neutral
-	if(ionisedsph[ii].t!=tn)
+	//Set particle ionisation state
+	if (ionisedsph[ii].t==tn)
 		{
-		sphdata[ii].u=ionisedsph[ii].u;				//Write new internal energy to gandalf
+		sphdata[ii].ionstate=0;
 		}
+	else if (ionisedsph[ii].fionised==1)
+		{
+		sphdata[ii].ionstate=2;
+		}
+	else
+		{
+		sphdata[ii].ionstate=1;
+		}
+
+	sphdata[ii].u=ionisedsph[ii].u;				//Write new internal energy to gandalf
 
 	//Working out radiation pressure (NOT COMPLEATE)
 	photon_acceleration=3.4455561764e-34*rad_cont*ionisedsph[ii].rho/(mu_bar*mu_bar);

@@ -635,7 +635,7 @@ void KDRadiationTree<ndim,nfreq,ParticleType,CellType>::StockCellProperties
     };
 
     // Normalise all cell values
-    if (cell.N > 0) {
+    if (cell.m > 0.0) {
       for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
       for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
       cell.rho /= cell.m;

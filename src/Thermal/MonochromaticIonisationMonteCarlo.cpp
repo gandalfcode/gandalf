@@ -727,7 +727,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Interp
   int i;
   int k;
   int Ngather;
-  int Ngathermax = 512;
+  int Ngathermax = 1024;
   int *celllist = new int[Ngathermax];
   FLOAT xion = 0.0;
   FLOAT xionNorm = 0.0;
@@ -746,6 +746,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Interp
 
   }
 
+  //-----------------------------------------------------------------------------------------------
   for (c=0; c<radtree->Ncell; c++) {
     if (radtree->radcell[c].level == level && radtree->radcell[c].N != 0) {
       i = radtree->radcell[c].ifirst;
@@ -753,9 +754,7 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Interp
       while (i != -1) {
         ParticleType<ndim> &part = sphdata[i];
         do {
-          //cout << "Part : " << part.r[0] << "   " << "   " << part.r[1] << "    " << part.h << endl;
-          Ngather = radtree->ComputeGatherCellList(part.r,2.0*part.h,Ngathermax,celllist);
-          //cout << "Ngather : " << Ngather << endl;
+          Ngather = radtree->ComputeGatherCellList(part.r, 3.0*part.h, Ngathermax, celllist);
           if (Ngather == 0) {
             cout << "Ngather : " << Ngather << endl;
             exit(0);
@@ -766,24 +765,23 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Interp
           celllist = new int[Ngathermax];
         } while (Ngather < 0);
 
-        xion = 0.0;
+        /*xion = 0.0;
         xionNorm = 0.0;
-
         for (int jj=0; jj<Ngather; jj++) {
           int cc = celllist[jj];
           MonoIonTreeCell<ndim,nfreq> &cell = radtree->radcell[cc];
 
           for (k=0; k<ndim; k++) dr[k] = cell.rcell[k] - part.r[k];
           drmag    = sqrt(DotProduct(dr,dr,ndim) + small_number);
-          if (drmag*part.invh < 1.0) {
-            weight = 1.0 - drmag*part.invh;
-            //weight = exp(-drmag*drmag*part.invh*part.invh*1.4*1.4);
+          if (drmag*part.invh < 2.0) {
+            //weight = 1.0 - drmag*part.invh;
+            weight = exp(-drmag*drmag*part.invh*part.invh*2.0*2.0);
           }
           else {
             weight = 0.0;
           }
-          xion     += cell.Xion*weight;   //cell.Xion*cell.volume*sph->kernp->w0(drmag*part.invh);
-          xionNorm += weight;  //cell.volume*sph->kernp->w0(drmag*part.invh);
+          xion     += cell.Xion*weight;
+          xionNorm += weight;
         }
 
         if (xion == 0.0) {
@@ -793,12 +791,45 @@ void MonochromaticIonisationMonteCarlo<ndim,nfreq,ParticleType,CellType>::Interp
           part.ionfrac = xion/xionNorm;
         }
         part.Xion = radtree->radcell[c].Xion;
+        part.ionfrac = part.Xion;*/
+
+        // Use Inverse distance weighting (Shepard's method) to interpolate thermal proeprties
+        xion = 0.0;
+        xionNorm = 0.0;
+        FLOAT pshep = 8.0;
+        for (int jj=0; jj<Ngather; jj++) {
+          int cc = celllist[jj];
+          MonoIonTreeCell<ndim,nfreq> &cell = radtree->radcell[cc];
+
+          for (k=0; k<ndim; k++) dr[k] = cell.rcell[k] - part.r[k];
+          drmag    = sqrt(DotProduct(dr,dr,ndim) + small_number);
+          /*if (drmag*part.invh < 2.0) {
+            weight = max(0.0, 2.0*part.h - drmagh;
+          }
+          else {
+            weight = 0.0;
+          }*/
+          weight = powf(max(0.0, 2.0*part.h - drmag)/(2.0*part.h*(drmag + 0.00001*part.h)), pshep);
+          xion     += cell.Xion*weight;
+          xionNorm += weight;
+        }
+
+        if (xion == 0.0) {
+          part.ionfrac = radtree->radcell[c].Xion;
+        }
+        else {
+          part.ionfrac = xion/xionNorm;
+        }
+        part.Xion = radtree->radcell[c].Xion;
+        part.ionfrac = part.Xion;
+
 
         if (i == radtree->radcell[c].ilast) break;
         i = radtree->inext[i];
       };
     }
   }
+  //-----------------------------------------------------------------------------------------------
 
   return;
 }

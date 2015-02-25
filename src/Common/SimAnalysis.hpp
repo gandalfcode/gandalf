@@ -336,6 +336,7 @@ void Simulation<ndim>::OutputTestDiagnostics(void)
     string solname = run_id + ".spitzer";
     FLOAT temp_ion   = simparams->floatparams["temp_ion"]/simunits.temp.outscale;
     FLOAT mu_ion     = simparams->floatparams["mu_ion"];
+    FLOAT gammam1    = simparams->floatparams["gamma_eos"] - 1.0;
     FLOAT cion       = sqrtf(temp_ion/mu_ion);
     FLOAT radius_ion = 0.0;
     FLOAT m_ion      = 0.0;
@@ -351,6 +352,9 @@ void Simulation<ndim>::OutputTestDiagnostics(void)
 
     cout << "RSTROMGREN : " << Rstromgren*simunits.r.outscale << endl;
     cout << "Sound speed of ionised gas : " << cion*simunits.v.outscale*simunits.v.outSI << endl;
+
+    cout << "Pressure 1 : " << rhoneutral*temp_ion/mu_ion  << endl;
+    cout << "Pressure 2 : " << cion*cion*rhoneutral << endl;
 
 
     // Compute location of ionisation front
@@ -382,9 +386,8 @@ void Simulation<ndim>::OutputTestDiagnostics(void)
             << m_ion*simunits.m.outscale << endl;
     solfile << t*simunits.t.outscale << "   "
             << Rstromgren*powf(1.0 + 7.0*cion*t/(4.0*Rstromgren),(4.0/7.0))*simunits.r.outscale
-            << "            "
-            << m_h*m_h*NLyC*powf(1.0 + 7.0*cion*t/(4.0*Rstromgren),(6.0/7.0))*
-               simunits.m.outscale/(arecomb*rhoneutral)
+            << "    " << m_h*m_h*NLyC*powf(1.0 + 7.0*cion*t/(4.0*Rstromgren),(6.0/7.0))*
+                         simunits.m.outscale/(arecomb*rhoneutral)
             << endl;
     solfile.close();
     outfile.close();
