@@ -457,8 +457,8 @@ void GodunovSph<ndim, kernelclass >::ComputeSphHydroForces
                              neibpart[j].sound,pl,pr,rhol,rhor,vl,vr);
 
     // Now solve Riemann problem and return intermediate state variables
-    riemann->SolveRiemannProblem(pl,pr,rhol,rhor,parti.sound,
-                                 neibpart[j].sound,vl,vr,pstar,vstar);
+    //riemann->SolveRiemannProblem(pl,pr,rhol,rhor,parti.sound,
+    //                             neibpart[j].sound,vl,vr,pstar,vstar);
 
     // Main SPH pressure force term
     paux = pstar*(Vsqdi*wkerni + Vsqdj*wkernj);
@@ -1103,7 +1103,7 @@ void GodunovSph<ndim, kernelclass >::ComputeSphNeibDudt
                              parti.sound,neibpart[j].sound,pl,pr,rhol,rhor,vl,vr);
 
     // Now solve Riemann problem and return intermediate state variables
-    riemann->SolveRiemannProblem(pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,vl,vr,pstar,vstar);
+    //riemann->SolveRiemannProblem(pl,pr,rhol,rhor,parti.sound,neibpart[j].sound,vl,vr,pstar,vstar);
 
     // Main SPH pressure force term
     uaux = pstar*(Vsqdi*wkerni + Vsqdj*wkernj);

@@ -42,6 +42,7 @@
 #include "ExternalPotential.h"
 #include "Hydrodynamics.h"
 #include "MeshlessFV.h"
+#include "NeighbourSearch.h"
 #include "Precision.h"
 #include "Parameters.h"
 #include "Radiation.h"
@@ -684,7 +685,6 @@ class MeshlessFVSimulation : public Simulation<ndim>
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
   using Simulation<ndim>::tmax_wallclock;
-  using Simulation<ndim>::sphneib;
   using Simulation<ndim>::radiation;
 #ifdef MPI_PARALLEL
   using Simulation<ndim>::mpicontrol;
@@ -701,6 +701,7 @@ class MeshlessFVSimulation : public Simulation<ndim>
 
   //MeshlessFV<ndim> *mfv;               ///< Meshless FV hydrodynamics algorithm pointer
   MeshlessFV<ndim> *mfv;
+  MeshlessFVNeighbourSearch<ndim> *mfvneib;    ///<
 
   //Sph<ndim> *sph;                      ///< SPH algorithm pointer
 

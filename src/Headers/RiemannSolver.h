@@ -1,23 +1,6 @@
 //=============================================================================
 //  RiemannSolver.h
 //  Contains all class definitions for Riemann solvers used in Godunov scheme.
-//
-//  This file is part of GANDALF :
-//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
-//  https://github.com/gandalfcode/gandalf
-//  Contact : gandalfcode@gmail.com
-//
-//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
-//
-//  GANDALF is free software: you can redistribute it and/or modify
-//  it under the terms of the GNU General Public License as published by
-//  the Free Software Foundation, either version 2 of the License, or
-//  (at your option) any later version.
-//
-//  GANDALF is distributed in the hope that it will be useful, but
-//  WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//  General Public License (http://www.gnu.org/licenses) for more details.
 //=============================================================================
 
 
@@ -27,33 +10,37 @@
 
 #include "Precision.h"
 #include "Constants.h"
-#include "Parameters.h"
-
+#include "InlineFuncs.h"
 
 
 //=============================================================================
 //  Class RiemannSolver
-/// \brief   Main parent class for Riemann solvers.
-/// \details Main parent class for Riemann solvers.
-/// \author  D. A. Hubber
-/// \date    26/04/2013
 //=============================================================================
 class RiemannSolver
 {
  public:
 
+
   RiemannSolver(FLOAT);
   ~RiemannSolver();
 
-  virtual void SolveRiemannProblem(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,  
-				   FLOAT, FLOAT, FLOAT &, FLOAT &) = 0;
+  virtual void ComputeStarRegion(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
+                                 FLOAT, FLOAT, FLOAT &, FLOAT &) {};
+  virtual void ComputeFluxes(const FLOAT *, const FLOAT *, const FLOAT *, FLOAT *) = 0;
+  //virtual void SolveRiemannProblem(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
+  //                                 FLOAT, FLOAT, FLOAT &, FLOAT &) = 0;
 
   const FLOAT gamma;
+  const FLOAT invgamma;
   const FLOAT g1;
   const FLOAT g2;
   const FLOAT g3;
   const FLOAT g4;
   const FLOAT g5;
+  const FLOAT g6;
+  const FLOAT g7;
+  const FLOAT g8;
+  const FLOAT g9;
 
 };
 
@@ -61,11 +48,8 @@ class RiemannSolver
 
 //=============================================================================
 //  Class ExactRiemannSolver
-/// \brief   Class for exact Riemann solver as described by Toro (19??).
-/// \details Class for exact Riemann solver as described by Toro (19??).
-/// \author  D. A. Hubber
-/// \date    26/04/2013
 //=============================================================================
+template <int ndim>
 class ExactRiemannSolver: public RiemannSolver
 {
   using RiemannSolver::gamma;
@@ -74,14 +58,32 @@ class ExactRiemannSolver: public RiemannSolver
   using RiemannSolver::g3;
   using RiemannSolver::g4;
   using RiemannSolver::g5;
+  using RiemannSolver::g6;
+  using RiemannSolver::g7;
+  using RiemannSolver::g8;
+  using RiemannSolver::invgamma;
+
+  static const int nvar = ndim + 2;
+  static const int ivx = 0;
+  static const int ivy = 1;
+  static const int ivz = 2;
+  static const int irho = ndim;
+  static const int ietot = ndim + 1;
+  static const int ipress = ndim + 1;
 
  public:
 
   ExactRiemannSolver(FLOAT gamma_aux): RiemannSolver(gamma_aux) {};
     //~ExactRiemannSolver() {};
 
-  void SolveRiemannProblem(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, 
-			   FLOAT, FLOAT, FLOAT, FLOAT &, FLOAT &);
+  virtual void ComputeStarRegion(const FLOAT, const FLOAT, const FLOAT,
+                                 const FLOAT, const FLOAT, const FLOAT,
+                                 const FLOAT, const FLOAT, FLOAT &, FLOAT &);
+  virtual void ComputeFluxes(const FLOAT *, const FLOAT *, const FLOAT *, FLOAT *);
+  void SampleExactSolution(const FLOAT, const FLOAT, const FLOAT, const FLOAT,
+                           const FLOAT, const FLOAT, const FLOAT, const FLOAT,
+                           const FLOAT, const FLOAT, const FLOAT,
+                           FLOAT &, FLOAT &, FLOAT &);
 
 };
 
@@ -89,11 +91,8 @@ class ExactRiemannSolver: public RiemannSolver
 
 //=============================================================================
 //  Class HllcRiemannSolver
-/// \brief   Class definition for HLLC Riemann Solver.
-/// \details Class definition for HLLC Riemann Solver.
-/// \author  D. A. Hubber
-/// \date    26/04/2013
 //=============================================================================
+template <int ndim>
 class HllcRiemannSolver: public RiemannSolver
 {
   using RiemannSolver::gamma;
@@ -102,14 +101,25 @@ class HllcRiemannSolver: public RiemannSolver
   using RiemannSolver::g3;
   using RiemannSolver::g4;
   using RiemannSolver::g5;
+  using RiemannSolver::g6;
+  using RiemannSolver::g7;
+  using RiemannSolver::g8;
+  using RiemannSolver::invgamma;
+
+  static const int nvar = ndim + 2;
+  static const int ivx = 0;
+  static const int ivy = 1;
+  static const int ivz = 2;
+  static const int irho = ndim;
+  static const int ietot = ndim + 1;
+  static const int ipress = ndim + 1;
 
  public:
 
   HllcRiemannSolver(FLOAT gamma_aux): RiemannSolver(gamma_aux) {};
     //~HllcRiemannSolver() {};
 
-  void SolveRiemannProblem(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, 
-			   FLOAT, FLOAT, FLOAT, FLOAT &, FLOAT &);
+  virtual void ComputeFluxes(const FLOAT *, const FLOAT *, const FLOAT *, FLOAT *);
 
 };
 #endif

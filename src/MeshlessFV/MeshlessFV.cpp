@@ -28,7 +28,7 @@
 #include <iostream>
 #include <math.h>
 #include "Precision.h"
-#include "Sph.h"
+#include "MeshlessFV.h"
 #include "Particle.h"
 #include "Parameters.h"
 #include "SmoothingKernel.h"
@@ -45,17 +45,18 @@ using namespace std;
 /// MeshlessFV class constructor.  Calls main SPH class constructor and also
 /// sets additional kernel-related quantities
 //=================================================================================================
-template <int ndim, template<int> class kernelclass>
-MeshlessFV<ndim, kernelclass>::MeshlessFV(int hydro_forces_aux, int self_gravity_aux,
-  FLOAT h_fac_aux, FLOAT h_converge_aux, string gas_eos_aux, string KernelName):
+template <int ndim>
+MeshlessFV<ndim>::MeshlessFV(int hydro_forces_aux, int self_gravity_aux,
+  FLOAT h_fac_aux, FLOAT h_converge_aux, string gas_eos_aux, string KernelName, int size_part):
   Hydrodynamics<ndim>(hydro_forces_aux, self_gravity_aux, h_fac_aux,
-                      gas_eos_aux, KernelName, size_sph),
-  kern(kernelclass<ndim>(KernelName))
+                      gas_eos_aux, KernelName, size_part),
+  h_converge(h_converge_aux)
+  //size_hydro_part(size_part)
 {
-  this->kernp      = &kern;
+  /*this->kernp      = &kern;
   this->kernfac    = (FLOAT) 1.0;
   this->kernfacsqd = (FLOAT) 1.0;
-  this->kernrange  = this->kernp->kernrange;
+  this->kernrange  = this->kernp->kernrange;*/
 }
 
 
@@ -64,10 +65,10 @@ MeshlessFV<ndim, kernelclass>::MeshlessFV(int hydro_forces_aux, int self_gravity
 //  MeshlessFV::~MeshlessFV
 /// MeshlessFV class destructor
 //=================================================================================================
-template <int ndim, template<int> class kernelclass>
-MeshlessFV<ndim, kernelclass>::~MeshlessFV()
+template <int ndim>
+MeshlessFV<ndim>::~MeshlessFV()
 {
-  DeallocateMemory();
+  //DeallocateMemory();
 }
 
 
@@ -77,8 +78,8 @@ MeshlessFV<ndim, kernelclass>::~MeshlessFV()
 /// Allocate main SPH particle array.  Estimates the maximum number of boundary ghost particles
 /// assuming a roughly uniform depth of ghosts at each boundary.
 //=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void MeshlessFV<ndim, kernelclass>::AllocateMemory(int N)
+template <int ndim>
+void MeshlessFV<ndim>::AllocateMemory(int N)
 {
   debug2("[MeshlessFV::AllocateMemory]");
 
@@ -106,8 +107,8 @@ void MeshlessFV<ndim, kernelclass>::AllocateMemory(int N)
 //  MeshlessFV::DeallocateMemory
 /// Deallocate main array containing SPH particle data.
 //=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void MeshlessFV<ndim, kernelclass>::DeallocateMemory(void)
+template <int ndim>
+void MeshlessFV<ndim>::DeallocateMemory(void)
 {
   debug2("[MeshlessFV::DeallocateMemory]");
 
@@ -126,8 +127,8 @@ void MeshlessFV<ndim, kernelclass>::DeallocateMemory(void)
 //  MeshlessFV::DeleteDeadParticles
 /// Delete 'dead' (e.g. accreted) SPH particles from the main arrays.
 //=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void MeshlessFV<ndim, kernelclass>::DeleteDeadParticles(void)
+template <int ndim>
+void MeshlessFV<ndim>::DeleteDeadParticles(void)
 {
   int i;                               // Particle counter
   int itype;                           // Current particle type
@@ -175,8 +176,8 @@ void MeshlessFV<ndim, kernelclass>::DeleteDeadParticles(void)
 //  MeshlessFV::ReorderParticles
 /// Delete selected SPH particles from the main arrays.
 //=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void MeshlessFV<ndim, kernelclass>::ReorderParticles(void)
+template <int ndim>
+void MeshlessFV<ndim>::ReorderParticles(void)
 {
   int i;                               // Particle counter
   MeshlessFVParticle<ndim> *hydrodataaux;  // Aux. SPH particle array
@@ -194,141 +195,129 @@ void MeshlessFV<ndim, kernelclass>::ReorderParticles(void)
 
 
 //=================================================================================================
-//  MeshlessFV::ComputeH
-/// Compute the value of the smoothing length of particle 'i' by iterating the relation :
-/// h = h_fac*(m/rho)^(1/ndim).
-/// Uses the previous value of h as a starting guess and then uses either a Newton-Rhapson solver,
-/// or fixed-point iteration, to converge on the correct value of h.  The maximum tolerance used
-/// for deciding whether the iteration has converged is given by the 'h_converge' parameter.
-//=================================================================================================
-template <int ndim, template<int> class kernelclass>
-int MeshlessFV<ndim, kernelclass>::ComputeH
- (const int i,                         ///< [in] id of particle
-  const int Nneib,                     ///< [in] No. of potential neighbours
-  const FLOAT hmax,                    ///< [in] Max. h permitted by neib list
-  FLOAT *m,                            ///< [in] Array of neib. masses
-  FLOAT *mu,                           ///< [in] Array of m*u (not needed here)
-  FLOAT *drsqd,                        ///< [in] Array of neib. distances squared
-  FLOAT *gpot,                         ///< [in] Array of neib. grav. potentials
-  MeshlessFVParticle<ndim> &part,      ///< [inout] Particle i data
-  Nbody<ndim> *nbody)                  ///< [in] Main N-body object
-{
-  int j;                               // Neighbour id
-  int k;                               // Dimension counter
-  int iteration = 0;                   // h-rho iteration counter
-  int iteration_max = 30;              // Max. no of iterations
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT h_lower_bound = (FLOAT) 0.0;   // Lower bound on h
-  FLOAT h_upper_bound = hmax;          // Upper bound on h
-  FLOAT invhsqd;                       // (1 / h)^2
-  FLOAT ssqd;                          // Kernel parameter squared, (r/h)^2
-
-
-  // If there are sink particles present, check if the particle is inside one
-  if (parti.sinkid != -1) {
-    h_lower_bound = hmin_sink;
-    h_upper_bound = max(h_upper_bound, (FLOAT) 1.5*h_lower_bound);
-  }
-
-
-  // Main smoothing length iteration loop
-  //===============================================================================================
-  do {
-
-    // Initialise all variables for this value of h
-    iteration++;
-    parti.invh     = (FLOAT) 1.0/parti.h;
-    parti.ndens    = (FLOAT) 0.0;
-    parti.hfactor  = pow(parti.invh,ndim);
-    invhsqd        = parti.invh*parti.invh;
-
-    // Loop over all nearest neighbours in list to calculate
-    // density, omega and zeta.
-    //---------------------------------------------------------------------------------------------
-    for (j=0; j<Nneib; j++) {
-      ssqd         = drsqd[j]*invhsqd;
-      parti.ndens += kern.w0_s2(ssqd);
-    }
-    //---------------------------------------------------------------------------------------------
-
-    parti.ndens *= parti.hfactor;
-    parti.rho = part.m*part.ndens;
-
-
-    if (parti.rho > (FLOAT) 0.0) parti.invrho = (FLOAT) 1.0/parti.rho;
-
-    // If h changes below some fixed tolerance, exit iteration loop
-    if (parti.rho > (FLOAT) 0.0 && parti.h > h_lower_bound &&
-        fabs(parti.h - h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim)) < h_converge) break;
-
-    // Use fixed-point iteration, i.e. h_new = h_fac*(m/rho_old)^(1/ndim), for now.  If this does
-    // not converge in a reasonable number of iterations (iteration_max), then assume something is
-    // wrong and switch to a bisection method, which should be guaranteed to converge, albeit much
-    // more slowly.  (N.B. will implement Newton-Raphson soon)
-    //---------------------------------------------------------------------------------------------
-    if (iteration < iteration_max) {
-      parti.h = h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim);
-    }
-    else if (iteration == iteration_max) {
-      parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
-    }
-    else if (iteration < 5*iteration_max) {
-      if (parti.rho < small_number || parti.rho*pow(parti.h,ndim) > pow(h_fac,ndim)*parti.m)
-        h_upper_bound = parti.h;
-      else
-        h_lower_bound = parti.h;
-      parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
-    }
-    else {
-      cout << "H ITERATION : " << iteration << "    h : " << parti.h
-           << "   rho : " << parti.rho << "   h_upper " << h_upper_bound << "    hmax :  " << hmax
-           << "   h_lower : " << h_lower_bound << "    " << parti.hfactor << "    m : " << parti.m
-           << "     " << parti.m*parti.hfactor*kern.w0(0.0) << "    " << Nneib << endl;
-      string message = "Problem with convergence of h-rho iteration";
-      ExceptionHandler::getIstance().raise(message);
-    }
-
-    // If the smoothing length is too large for the neighbour list, exit routine and flag neighbour
-    // list error in order to generate a larger neighbour list (not properly implemented yet).
-    if (parti.h > hmax) return 0;
-
-  } while (parti.h > h_lower_bound && parti.h < h_upper_bound);
-  //===============================================================================================
-
-
-  // Normalise all SPH sums correctly
-  parti.h         = max(h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim),h_lower_bound);
-  parti.invh      = (FLOAT) 1.0/parti.h;
-  parti.hfactor   = pow(parti.invh,ndim+1);
-  parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
-  parti.div_v     = (FLOAT) 0.0;
-
-
-  // Set important thermal variables here
-  ComputeThermalProperties(parti);
-
-
-  // If h is invalid (i.e. larger than maximum h), then return error code (0)
-  if (parti.h <= hmax) return 1;
-  else return -1;
-}
-
-
-
-//=================================================================================================
 //  MeshlessFV::ComputeThermalProperties
 /// Compute all thermal properties for grad-h SPH method for given particle.
 //=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void MeshlessFV<ndim, kernelclass>::ComputeThermalProperties
- (SphParticle<ndim> &part_gen)         ///< [inout] Particle i data
+template <int ndim>
+void MeshlessFV<ndim>::ComputeThermalProperties
+ (MeshlessFVParticle<ndim> &part)         ///< [inout] Particle i data
 {
-  MeshlessFVParticle<ndim>& part = static_cast<MeshlessFVParticle<ndim> &> (part_gen);
+  //MeshlessFVParticle<ndim>& part = static_cast<MeshlessFVParticle<ndim> &> (part_gen);
 
   part.u       = eos->SpecificInternalEnergy(part);
   part.sound   = eos->SoundSpeed(part);
   part.press   = eos->Pressure(part);
-  part.pfactor = eos->Pressure(part)*part.invrho*part.invrho*part.invomega;
+  //part.pfactor = eos->Pressure(part)*part.invrho*part.invrho*part.invomega;
+
+  assert(part.u > 0.0);
+  assert(part.sound > 0.0);
+  assert(part.press > 0.0);
+
+  return;
+}
+
+
+
+//=============================================================================
+//  MeshlessFV<ndim>::Timestep
+/// ...
+//=============================================================================
+template <int ndim>
+FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
+{
+  //cout << "Timestep : " << 0.5*part.h/(part.sound + sqrt(DotProduct(part.v, part.v, ndim)))
+  //     << "    " << part.sound << "    " << part.h <<"    "
+  //      << part.v[0] << endl;
+  return 0.5*part.h/(part.sound + sqrt(DotProduct(part.v, part.v, ndim)));
+}
+
+
+
+//=============================================================================
+//  MeshlessFV<ndim>::Timestep
+/// ...
+//=============================================================================
+template <int ndim>
+void MeshlessFV<ndim>::IntegrateConservedVariables
+ (MeshlessFVParticle<ndim> &part,
+  FLOAT timestep)
+{
+  for (int var=0; var<nvar; var++) {
+    part.Qcons[var] += part.flux[var]*timestep;
+  }
+
+  return;
+}
+
+
+
+//=============================================================================
+//  MeshlessFV::UpdatePrimitiveVector
+/// ...
+//=============================================================================
+template <int ndim>
+void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
+{
+  for (int k=0; k<ndim; k++) part.Wprim[k] = part.v[k];
+  part.Wprim[irho] = part.rho;
+  part.Wprim[ipress] = part.press;
+}
+
+
+
+//=============================================================================
+//  MeshlessFV::UpdatePrimitiveVector
+/// ...
+//=============================================================================
+template <int ndim>
+void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
+{
+  part.m = part.Qcons[irho];
+  part.rho = part.m/part.volume; //part.Wprim[irho];
+  for (int k=0; k<ndim; k++) part.v[k] = part.Qcons[k]/part.m;
+
+  FLOAT ekin = 0.0;
+  for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
+  part.u = (part.Qcons[ietot] - 0.5*part.m*ekin)/part.m;
+
+  if (part.u < 0.0) {
+    cout << "Mistake? : " << part.Qcons[ietot] << "    " << 0.5*part.m*ekin << "    " << part.m << "    " << part.u << endl;
+  }
+  assert(part.m > 0.0);
+  assert(part.u > 0.0);
+
+}
+
+
+
+//=============================================================================
+//  MeshlessFV::ConvertConservedToQ
+/// ...
+//=============================================================================
+template <int ndim>
+void MeshlessFV<ndim>::ConvertConservedToQ
+ (const FLOAT volume,
+  const FLOAT Ucons[nvar],
+  FLOAT Qcons[nvar])
+{
+  for (int var=0; var<nvar; var++) Qcons[var] = volume*Ucons[var];
+
+  return;
+}
+
+
+
+//=============================================================================
+//  MeshlessFV::ConvertConservedToQ
+/// ...
+//=============================================================================
+template <int ndim>
+void MeshlessFV<ndim>::ConvertQToConserved
+ (const FLOAT volume,
+  const FLOAT Qcons[nvar],
+  FLOAT Ucons[nvar])
+{
+  for (int var=0; var<nvar; var++) Ucons[var] = Qcons[var]/volume;
 
   return;
 }
@@ -336,136 +325,191 @@ void MeshlessFV<ndim, kernelclass>::ComputeThermalProperties
 
 
 
-//=================================================================================================
-//  MeshlessFV::ComputeDerivatives
-/// Compute SPH neighbour force pairs for
-/// (i) All neighbour interactions of particle i with i.d. j > i,
-/// (ii) Active neighbour interactions of particle j with i.d. j > i
-/// (iii) All inactive neighbour interactions of particle i with i.d. j < i.
-/// This ensures that all particle-particle pair interactions are only
-/// computed once only for efficiency.
-//=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void MeshlessFV<ndim, kernelclass>::ComputePsiFactors
- (const int i,                         ///< [in] id of particle
-  const int Nneib,                     ///< [in] No. of neins in neibpart array
-  const int *neiblist,                 ///< [in] id of gather neibs in neibpart
-  const FLOAT *drmag,                  ///< [in] Distances of gather neighbours
-  const FLOAT *invdrmag,               ///< [in] Inverse distances of gather neibs
-  const FLOAT *dr,                     ///< [in] Position vector of gather neibs
-  MeshlessFVParticle<ndim> &part,      ///< [inout] Particle i data
-  MeshlessFVParticle<ndim> *neibpart)  ///< [inout] Neighbour particle data
+//=============================================================================
+//  MeshlessFV::ConvertConservedToPrimitive
+/// ...
+//=============================================================================
+template <int ndim>
+void MeshlessFV<ndim>::ConvertConservedToPrimitive
+ (const FLOAT Ucons[nvar],
+  FLOAT Wprim[nvar])
 {
-  int j;                               // Neighbour list id
-  int jj;                              // Aux. neighbour counter
-  int k;                               // Dimension counter
-  FLOAT alpha_mean;                    // Mean articial viscosity alpha value
-  FLOAT draux[ndim];                   // Relative position vector
-  FLOAT dvdr;                          // Dot product of dv and dr
-  FLOAT wkerni;                        // Value of w1 kernel function
-  FLOAT wkernj;                        // Value of w1 kernel function
-  FLOAT vsignal;                       // Signal velocity
-  FLOAT paux;                          // Aux. pressure force variable
-  FLOAT winvrho;                       // 0.5*(wkerni + wkernj)*invrhomean
+  int k;
+  FLOAT ekin = 0.0;
 
-  FLOAT E[ndim][ndim];
-
-
+  Wprim[irho] = Ucons[irho];
   for (k=0; k<ndim; k++) {
-    for (int kk=0; kk<ndim; kk++) {
-      E[k][kk] = (FLOAT) 0.0;
-    }
+    Wprim[k] = Ucons[k]/Ucons[irho];
+    ekin += Wprim[k]*Wprim[k];
   }
-
-
-  // Loop over all potential neighbours in the list
-  //-----------------------------------------------------------------------------------------------
-  for (jj=0; jj<Nneib; jj++) {
-
-    for (k=0; k<ndim; k++) dr[k] = neibpart[jj].r[k] - part.r[k];
-    drsqd = DotProduct(dr, dr, ndim);
-
-    for (k=0; k<ndim; k++) {
-      for (int kk=0; kk<ndim; kk++) {
-        E[k][kk] += dr[k]*dr[kk]*kern.w0_s2(drsqd)/neibpart[jj].ndens;
-      }
-    }
-  }
-  //-----------------------------------------------------------------------------------------------
-
+  Wprim[ipress] = (gamma_eos - 1.0)*(Ucons[ietot] - 0.5*Ucons[irho]*ekin);
+  //Wprim[irho] = Ucons[irho]
 
   return;
 }
 
 
 
-
-
-//=================================================================================================
-//  MeshlessFV::ComputeStarGravForces
-/// Computes contribution of gravitational force and potential due to stars.
-//=================================================================================================
-template <int ndim, template<int> class kernelclass>
-void MeshlessFV<ndim, kernelclass>::ComputeStarGravForces
- (const int N,                         ///< [in] No. of stars
-  NbodyParticle<ndim> **nbodydata,     ///< [in] Array of star pointers
-  SphParticle<ndim> &part)             ///< [inout] SPH particle reference
+//=============================================================================
+//  MeshlessFV::ConvertPrimitiveToConserved
+/// ...
+//=============================================================================
+template <int ndim>
+void MeshlessFV<ndim>::ConvertPrimitiveToConserved
+ (const FLOAT Wprim[nvar],
+  FLOAT Ucons[nvar])
 {
-  int j;                               // Star counter
-  int k;                               // Dimension counter
-  FLOAT dr[ndim];                      // Relative position vector
-  FLOAT drmag;                         // Distance
-  FLOAT drsqd;                         // Distance squared
-  FLOAT drdt;                          // Rate of change of relative distance
-  FLOAT dv[ndim];                      // Relative velocity vector
-  FLOAT invdrmag;                      // 1 / drmag
-  FLOAT invhmean;                      // 1 / hmean
-  FLOAT ms;                            // Star mass
-  FLOAT paux;                          // Aux. force variable
-  MeshlessFVParticle<ndim>& parti = static_cast<MeshlessFVParticle<ndim>& > (part);
+  int k;
+  FLOAT ekin = 0.0;
 
-  // Loop over all stars and add each contribution
-  //-----------------------------------------------------------------------------------------------
-  for (j=0; j<N; j++) {
-
-    if (fixed_sink_mass) ms = msink_fixed;
-    else ms = nbodydata[j]->m;
-
-    for (k=0; k<ndim; k++) dr[k] = nbodydata[j]->r[k] - parti.r[k];
-    for (k=0; k<ndim; k++) dv[k] = nbodydata[j]->v[k] - parti.v[k];
-    drsqd    = DotProduct(dr,dr,ndim) + small_number;
-    drmag    = sqrt(drsqd);
-    invdrmag = (FLOAT) 1.0/drmag;
-    invhmean = (FLOAT) 2.0/(parti.h + nbodydata[j]->h);
-    drdt     = DotProduct(dv,dr,ndim)*invdrmag;
-    paux     = ms*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
-
-    // Add total hydro contribution to acceleration for particle i
-    for (k=0; k<ndim; k++) parti.agrav[k] += paux*dr[k];
-    for (k=0; k<ndim; k++) parti.adot[k] += paux*dv[k] - (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] +
-      (FLOAT) 2.0*twopi*ms*drdt*kern.w0(drmag*invhmean)*powf(invhmean,ndim)*invdrmag*dr[k];
-    parti.gpot += ms*invhmean*kern.wpot(drmag*invhmean);
-
-    assert(drmag > (FLOAT) 0.0);
-    assert(drmag*invhmean > (FLOAT) 0.0);
-
+  Ucons[irho] = Wprim[irho];
+  for (k=0; k<ndim; k++) {
+    Ucons[k] = Wprim[k]*Wprim[irho];
+    ekin += Wprim[k]*Wprim[k];
   }
-  //-----------------------------------------------------------------------------------------------
+  Ucons[ietot] = Wprim[ipress]/(gamma_eos - 1.0) + 0.5*Wprim[irho]*ekin;
 
   return;
 }
 
 
 
-template class MeshlessFV<1, M4Kernel>;
-template class MeshlessFV<2, M4Kernel>;
-template class MeshlessFV<3, M4Kernel>;
-template class MeshlessFV<1, QuinticKernel>;
-template class MeshlessFV<2, QuinticKernel>;
-template class MeshlessFV<3, QuinticKernel>;
-template class MeshlessFV<1, GaussianKernel>;
-template class MeshlessFV<2, GaussianKernel>;
-template class MeshlessFV<3, GaussianKernel>;
-template class MeshlessFV<1, TabulatedKernel>;
-template class MeshlessFV<2, TabulatedKernel>;
-template class MeshlessFV<3, TabulatedKernel>;
+//=============================================================================
+//  MeshlessFV::CalculateFluxVector
+/// ...
+//=============================================================================
+template <int ndim>
+void MeshlessFV<ndim>::CalculateConservedFluxFromConserved
+ (int k,
+  FLOAT Ucons[nvar],
+  FLOAT fluxVector[nvar])
+{
+  int kv;
+  FLOAT ekin = 0.0;
+  FLOAT press;
+
+  for (kv=0; kv<ndim; kv++) {
+    ekin += Ucons[kv]*Ucons[kv];
+  }
+  press = (gamma_eos - 1.0)*(Ucons[ietot] - 0.5*ekin/Ucons[irho]);
+
+  // Calculate fluxes from conserved variables (NOT Riemann solver) to compute evolved boundary values
+  for (kv=0; kv<ndim; kv++) fluxVector[kv] = Ucons[k]*Ucons[kv]/Ucons[irho];
+  fluxVector[k]     = Ucons[k]*Ucons[k]/Ucons[irho] + press;
+  fluxVector[irho]  = Ucons[k];
+  fluxVector[ietot] = Ucons[k]*(Ucons[ietot] + press)/Ucons[irho];
+
+  return;
+}
+
+
+
+//=============================================================================
+//  MeshlessFV::CalculateFluxVector
+/// ...
+//=============================================================================
+template <int ndim>
+void MeshlessFV<ndim>::CalculateConservedFluxFromPrimitive
+ (int k,
+  FLOAT Wprim[nvar],
+  FLOAT fluxVector[nvar])
+{
+  int kv;
+  FLOAT ekin = 0.0;
+
+  for (kv=0; kv<ndim; kv++) {
+    ekin += Wprim[kv]*Wprim[kv];
+  }
+
+  // Calculate fluxes from conserved variables (NOT Riemann solver) to compute evolved boundary values
+  for (kv=0; kv<ndim; kv++) fluxVector[kv] = Wprim[irho]*Wprim[k]*Wprim[kv];
+  fluxVector[k]     = Wprim[irho]*Wprim[k]*Wprim[k] + Wprim[ipress];
+  fluxVector[irho]  = Wprim[irho]*Wprim[k];
+  fluxVector[ietot] =
+    Wprim[k]*(Wprim[ipress]/(gamma_eos - 1.0) + 0.5*Wprim[irho]*ekin + Wprim[ipress]);
+
+  return;
+}
+
+
+
+//=============================================================================
+//  MeshlessFV::CalculateFluxVector
+/// ...
+//=============================================================================
+template <int ndim>
+void MeshlessFV<ndim>::CalculatePrimitiveFluxFromPrimitive
+ (int k,
+  FLOAT Wprim[nvar],
+  FLOAT fluxVector[nvar])
+{
+  int kv;
+
+  // Calculate fluxes from conserved variables (NOT Riemann solver) to compute evolved boundary values
+  for (kv=0; kv<ndim; kv++) fluxVector[kv] = Wprim[k]*Wprim[kv];
+  fluxVector[k]     = Wprim[k]*Wprim[k] + Wprim[ipress]/Wprim[irho];
+  fluxVector[irho]  = 2.0*Wprim[irho]*Wprim[k];
+  fluxVector[ietot] = Wprim[k]*Wprim[ipress]*(gamma_eos + 1.0);
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  MeshlessFV::InitialSmoothingLengthGuess
+/// Perform initial guess of smoothing.  In the abscence of more sophisticated techniques, we guess
+/// the smoothing length assuming a uniform density medium with the same volume and total mass.
+//=================================================================================================
+template <int ndim>
+void MeshlessFV<ndim>::InitialSmoothingLengthGuess(void)
+{
+  int i;                           // Particle counter
+  FLOAT h_guess;                   // Global guess of smoothing length
+  FLOAT volume;                    // Volume of global bounding box
+  FLOAT rmin[ndim];                // Min. extent of bounding box
+  FLOAT rmax[ndim];                // Max. extent of bounding box
+
+  debug2("[Sph::InitialSmoothingLengthGuess]");
+
+  // Calculate bounding box containing all SPH particles
+  this->ComputeBoundingBox(rmax,rmin,Nhydro);
+
+  // Depending on the dimensionality, calculate the average smoothing
+  // length assuming a uniform density distribution filling the bounding box.
+  //-----------------------------------------------------------------------------------------------
+  if (ndim == 1) {
+    Ngather = (int) (2.0*kernp->kernrange*h_fac);
+    volume = rmax[0] - rmin[0];
+    h_guess = (volume*(FLOAT) Ngather)/(4.0*(FLOAT) Nhydro);
+  }
+  //-----------------------------------------------------------------------------------------------
+  else if (ndim == 2) {
+    Ngather = (int) (pi*pow(kernp->kernrange*h_fac,2));
+    volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1]);
+    h_guess = sqrtf((volume*(FLOAT) Ngather)/(4.0*(FLOAT) Nhydro));
+  }
+  //-----------------------------------------------------------------------------------------------
+  else if (ndim == 3) {
+    Ngather = (int) (4.0*pi*pow(kernp->kernrange*h_fac,3)/3.0);
+    volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1])*(rmax[2] - rmin[2]);
+    h_guess = powf((3.0*volume*(FLOAT) Ngather)/(32.0*pi*(FLOAT) Nhydro),onethird);
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  // Set all smoothing lengths equal to average value
+  for (i=0; i<Nhydro; i++) {
+    MeshlessFVParticle<ndim>& part = GetMeshlessFVParticlePointer(i);
+    part.h         = h_guess;
+    part.invh      = 1.0/h_guess;
+    part.hrangesqd = kernfacsqd*kernp->kernrangesqd*part.h*part.h;
+  }
+
+  return;
+}
+
+
+
+template class MeshlessFV<1>;
+template class MeshlessFV<2>;
+template class MeshlessFV<3>;

@@ -99,9 +99,9 @@ void GodunovSphSimulation<ndim>::ProcessSphParameters(void)
   //-----------------------------------------------------------------------------------------------
   string riemann = stringparams["riemann_solver"];
   if (riemann == "exact")
-    sph->riemann = new ExactRiemannSolver(floatparams["gamma_eos"]);
+    sph->riemann = new ExactRiemannSolver<ndim>(floatparams["gamma_eos"]);
   else if (riemann == "hllc")
-    sph->riemann = new HllcRiemannSolver(floatparams["gamma_eos"]);
+    sph->riemann = new HllcRiemannSolver<ndim>(floatparams["gamma_eos"]);
   else {
     string message = "Unrecognised parameter : riemann_solver = " + riemann;
     ExceptionHandler::getIstance().raise(message);

@@ -65,10 +65,8 @@ static const FLOAT ghost_range = 1.6;
 template <int ndim>
 class Hydrodynamics
 {
-private:
-  const int size_hydro_part;
-
 protected:
+  const int size_hydro_part;
   void* hydrodata_unsafe;
 
 public:

@@ -308,7 +308,14 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT alpha;                      ///< Artificial viscosity alpha value
   FLOAT dalphadt;                   ///< Rate of change of alpha
 
-  FLOAT ndens;                        ///< Number density of neighbours
+  FLOAT ndens;                      ///< Number density of neighbours
+  FLOAT volume;                     ///< 'Volume' of particle
+  FLOAT B[ndim][ndim];              ///< Inverse matrix for gradient calculations
+  FLOAT Wprim[ndim+2];
+  FLOAT Ucons[ndim+2];
+  FLOAT Qcons[ndim+2];
+  FLOAT grad[ndim][ndim+2];
+  FLOAT flux[ndim+2];
 
 
   // SPH particle constructor to initialise all values
@@ -328,7 +335,7 @@ struct MeshlessFVParticle : public Particle<ndim>
     alpha    = (FLOAT) 0.0;
     dalphadt = (FLOAT) 0.0;
 
-    ndens = (FLOAT) 0.0;
+    ndens    = (FLOAT) 0.0;
   }
 
 };
