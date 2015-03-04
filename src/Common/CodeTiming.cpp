@@ -169,7 +169,7 @@ void CodeTiming::ComputeTimingStatistics
   outfile << resetiosflags(ios::adjustfield);
   outfile << setiosflags(ios::left);
   outfile << "----------------------------------------------------------------------------" << endl;
-  outfile << "Total simulation time : " << ttot << "    " << ttot_wall << endl;
+  outfile << "Total simulation wall clock time : " << ttot_wall << endl;
   outfile << "----------------------------------------------------------------------------" << endl;
 
   // Output timing data on each hierarchical level
@@ -178,26 +178,32 @@ void CodeTiming::ComputeTimingStatistics
     tcount = 0.0;
     tcount_wall = 0.0;
     outfile << "Level : " << l << endl;
-    outfile << "Block                         Time        %time       Wall time   %time" << endl;
+    outfile << "Block                                          Wall time       %time" << endl;
     outfile << "----------------------------------------------------------------------------" << endl;
 
     for (iblock=0; iblock<Nblock[l]; iblock++) {
-      tcount += block[l][iblock].ttot;
+      tcount      += block[l][iblock].ttot;
       tcount_wall += block[l][iblock].ttot_wall;
-      block[l][iblock].tfraction = block[l][iblock].ttot / ttot;
+      block[l][iblock].tfraction      = block[l][iblock].ttot / ttot;
       block[l][iblock].tfraction_wall = block[l][iblock].ttot_wall / ttot_wall;
-      outfile << setw(30) << block[l][iblock].block_name
+      outfile << setw(47) << block[l][iblock].block_name
+              << setw(16) << block[l][iblock].ttot_wall
+              << setw(15) << 100.0*block[l][iblock].tfraction_wall << endl;
+      /*outfile << setw(30) << block[l][iblock].block_name
               << setw(12) << block[l][iblock].ttot
               << setw(12) << 100.0*block[iblock][l].tfraction
               << setw(12) << block[l][iblock].ttot_wall
-              << setw(12) << 100.0*block[l][iblock].tfraction_wall << endl;
+              << setw(12) << 100.0*block[l][iblock].tfraction_wall << endl;*/
     }
+    outfile << setw(47) << "REMAINDER"
+            << setw(16) << ttot_wall - tcount_wall
+            << setw(15) << 100.0*(ttot_wall - tcount_wall)/ttot_wall << endl;
 
-    outfile << setw(30) << "REMAINDER"
+    /*outfile << setw(30) << "REMAINDER"
             << setw(12) << ttot - tcount
             << setw(12) << 100.0*(ttot - tcount)/ttot
             << setw(12) << ttot_wall - tcount_wall
-            << setw(12) << 100.0*(ttot_wall - tcount_wall)/ttot_wall << endl;
+            << setw(12) << 100.0*(ttot_wall - tcount_wall)/ttot_wall << endl;*/
     outfile << "----------------------------------------------------------------------------" << endl;
   }
   //-----------------------------------------------------------------------------------------------

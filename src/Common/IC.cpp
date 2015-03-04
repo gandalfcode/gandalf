@@ -633,27 +633,26 @@ void Ic<ndim>::UniformBox(void)
 template <int ndim>
 void Ic<ndim>::UniformSphere(void)
 {
-  int i,k;                          // Particle and dimension counters
-  int Nhydroere;                      // Actual number of particles in sphere
-  FLOAT rcentre[ndim];              // Position of sphere centre
-  FLOAT volume;                     // Volume of sphere
-  FLOAT *r;                         // Particle position vectors
+  int i,k;                             // Particle and dimension counters
+  int Nsphere;                       // Actual number of particles in sphere
+  FLOAT rcentre[ndim];                 // Position of sphere centre
+  FLOAT rhofluid;                      // Density of fluid
+  FLOAT volume;                        // Volume of sphere
+  FLOAT *r;                            // Particle position vectors
 
   // Local copies of important parameters
   int Npart      = simparams->intparams["Nhydro"];
   FLOAT mcloud   = simparams->floatparams["mcloud"];
   FLOAT radius   = simparams->floatparams["radius"];
-  FLOAT rhofluid = simparams->floatparams["rhofluid1"];
   FLOAT press    = simparams->floatparams["press1"];
   FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
   string particle_dist = simparams->stringparams["particle_distribution"];
 
   debug2("[Ic::UniformSphere]");
 
-  mcloud   /= simunits.m.outscale;
-  radius   /= simunits.r.outscale;
-  rhofluid /= simunits.rho.outscale;
-  press    /= simunits.press.outscale;
+  mcloud /= simunits.m.outscale;
+  radius /= simunits.r.outscale;
+  press  /= simunits.press.outscale;
 
 
   r = new FLOAT[ndim*Npart];
@@ -667,12 +666,12 @@ void Ic<ndim>::UniformSphere(void)
     AddRandomSphere(Npart, r, rcentre, radius);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nhydroere = AddLatticeSphere(Npart, r, rcentre, radius, particle_dist);
-    if (Nhydroere != Npart) {
+    Nsphere = AddLatticeSphere(Npart, r, rcentre, radius, particle_dist);
+    if (Nsphere != Npart) {
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
     }
-    Npart = Nhydroere;
+    Npart = Nsphere;
   }
   else {
     string message = "Invalid particle distribution option";
@@ -1027,7 +1026,7 @@ void Ic<ndim>::NohProblem(void)
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
-  int Nhydroere;                      // Actual number of particles in sphere
+  int Nsphere;                      // Actual number of particles in sphere
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drmag;                      // Distance
   FLOAT drsqd;                      // Distance squared
@@ -1055,10 +1054,10 @@ void Ic<ndim>::NohProblem(void)
     AddRandomSphere(Npart,r,rcentre,radius);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nhydroere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
-    if (Nhydroere != Npart) cout << "Warning! Unable to converge to required "
+    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    if (Nsphere != Npart) cout << "Warning! Unable to converge to required "
                                << "no. of ptcls due to lattice symmetry" << endl;
-    Npart = Nhydroere;
+    Npart = Nsphere;
   }
   else {
     string message = "Invalid particle distribution option";
@@ -1105,7 +1104,7 @@ void Ic<ndim>::BossBodenheimer(void)
 {
   int i;                               // Particle counter
   int k;                               // Dimension counter
-  int Nhydroere;                         // Actual number of particles in sphere
+  int Nsphere;                         // Actual number of particles in sphere
   FLOAT mp;                            // Mass of one particle
   FLOAT rcentre[ndim];                 // Position of sphere centre
   FLOAT rho;                           // Fluid density
@@ -1144,12 +1143,12 @@ void Ic<ndim>::BossBodenheimer(void)
     AddRandomSphere(Npart,r,rcentre,radius);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nhydroere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
-    if (Nhydroere != Npart) {
+    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    if (Nsphere != Npart) {
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
     }
-    Npart = Nhydroere;
+    Npart = Nsphere;
   }
   else {
     string message = "Invalid particle distribution option";
@@ -1203,7 +1202,7 @@ void Ic<ndim>::TurbulentCore(void)
 {
   int i;                               // Particle counter
   int k;                               // Dimension counter
-  int Nhydroere;                         // Actual number of particles in sphere
+  int Nsphere;                         // Actual number of particles in sphere
   FLOAT gpecloud;                      // Total grav. potential energy of entire cloud
   FLOAT keturb;                        // Total turbulent kinetic energy of entire cloud
   FLOAT mp;                            // Mass of one particle
@@ -1257,11 +1256,11 @@ void Ic<ndim>::TurbulentCore(void)
     AddRandomSphere(Npart,r,rcentre,radius);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nhydroere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
-    if (Nhydroere != Npart)
+    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    if (Nsphere != Npart)
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
-    Npart = Nhydroere;
+    Npart = Nsphere;
   }
   else {
     string message = "Invalid particle distribution option";
@@ -1362,7 +1361,7 @@ void Ic<ndim>::BondiAccretion(void)
 {
   int i;                            // Particle counter
   int k;                            // Dimension counter
-  int Nhydroere;                      // Actual number of particles in sphere
+  int Nsphere;                      // Actual number of particles in sphere
   FLOAT dr[ndim];                   // Relative position vector
   FLOAT drsqd;                      // Distance squared
   FLOAT mp;                         // Mass of one particle
@@ -1410,11 +1409,11 @@ void Ic<ndim>::BondiAccretion(void)
     AddRandomSphere(Npart,r,rcentre,radius);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nhydroere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
-    if (Nhydroere != Npart)
+    Nsphere = AddLatticeSphere(Npart,r,rcentre,radius,particle_dist);
+    if (Nsphere != Npart)
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
-    Npart = Nhydroere;
+    Npart = Nsphere;
   }
   else {
     string message = "Invalid particle distribution option";
@@ -2233,7 +2232,7 @@ template <int ndim>
 void Ic<ndim>::SpitzerExpansion(void)
 {
   int i,k;                             // Particle and dimension counters
-  int Nhydroere;                         // Actual number of particles in sphere
+  int Nsphere;                         // Actual number of particles in sphere
   FLOAT rcentre[ndim];                 // Position of sphere centre
   FLOAT rhofluid;                      // ..
   FLOAT volume;                        // Volume of sphere
@@ -2263,12 +2262,12 @@ void Ic<ndim>::SpitzerExpansion(void)
     AddRandomSphere(Npart, r, rcentre, radius);
   }
   else if (particle_dist == "cubic_lattice" || particle_dist == "hexagonal_lattice") {
-    Nhydroere = AddLatticeSphere(Npart, r, rcentre, radius, particle_dist);
-    if (Nhydroere != Npart) {
+    Nsphere = AddLatticeSphere(Npart, r, rcentre, radius, particle_dist);
+    if (Nsphere != Npart) {
       cout << "Warning! Unable to converge to required "
            << "no. of ptcls due to lattice symmetry" << endl;
     }
-    Npart = Nhydroere;
+    Npart = Nsphere;
   }
   else {
     string message = "Invalid particle distribution option";
@@ -2858,11 +2857,11 @@ void Ic<ndim>::AddHexagonalLattice
 
 //=================================================================================================
 //  Simulation::CutSphere
-/// Cut-out a sphere containing exactly 'Nhydroere' particles from a uniform box of particles.
+/// Cut-out a sphere containing exactly 'Nsphere' particles from a uniform box of particles.
 //=================================================================================================
 template <int ndim>
 int Ic<ndim>::CutSphere
- (int Nhydroere,                         ///< [in] Desired np of particles in sphere
+ (int Nsphere,                         ///< [in] Desired np of particles in sphere
   int Npart,                           ///< [in] No. of particles in cube
   FLOAT *r,                            ///< [inout] Positions of particles
   DomainBox<ndim> box,                 ///< [in] Bounding box of particles
@@ -2874,7 +2873,7 @@ int Ic<ndim>::CutSphere
   FLOAT drsqd;                         // Distance squared
   FLOAT r_low = 0.0;                   // Lower-bound for bisection iteration
   FLOAT r_high;                        // Upper-bound for bisection iteration
-  FLOAT radius;                        // Current radius containing Nhydroere ptcls
+  FLOAT radius;                        // Current radius containing Nsphere ptcls
   FLOAT rcentre[ndim];                 // Centre of sphere
 
   debug2("[Ic::CutSphere]");
@@ -2902,14 +2901,14 @@ int Ic<ndim>::CutSphere
 
     // If it's impossible to converge on the desired number of particles, due
     // to lattice configurations, then exit iteration with approximate number
-    // of particles (must be less than Nhydroere due to memory).
-    if (Ninterior < Nhydroere && fabs(r_high - r_low)/radius < 1.e-8) break;
+    // of particles (must be less than Nsphere due to memory).
+    if (Ninterior < Nsphere && fabs(r_high - r_low)/radius < 1.e-8) break;
 
     // Otherwise, continue bisection iteration to find radius
-    if (Ninterior > Nhydroere) r_high = radius;
-    if (Ninterior < Nhydroere) r_low = radius;
+    if (Ninterior > Nsphere) r_high = radius;
+    if (Ninterior < Nsphere) r_low = radius;
 
-  } while (Ninterior != Nhydroere);
+  } while (Ninterior != Nsphere);
 
 
   // Now that the radius containing require number has been identified,
