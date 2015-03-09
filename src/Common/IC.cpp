@@ -29,7 +29,7 @@ using namespace std;
 
 
 //=================================================================================================
-//  Simulation::CheckInitialConditions
+//  Ic::CheckInitialConditions
 /// Performs some simple sanity checks on all initial conditions
 //=================================================================================================
 template <int ndim>
@@ -88,7 +88,7 @@ void Ic<ndim>::CheckInitialConditions(void)
 
 
 //=================================================================================================
-//  Simulation::BinaryAccretion
+//  Ic::BinaryAccretion
 /// Create initial conditions for binary accretion simulation.
 //=================================================================================================
 template <int ndim>
@@ -345,7 +345,7 @@ void Ic<ndim>::BinaryAccretion(void)
 
 
 //=================================================================================================
-//  Simulation::ShockTube
+//  Ic::ShockTube
 /// Generate 1D shock-tube test problem.
 //=================================================================================================
 template <int ndim>
@@ -539,7 +539,7 @@ void Ic<ndim>::ShockTube(void)
 
 
 //=================================================================================================
-//  Simulation::UniformBox
+//  Ic::UniformBox
 /// Populate the simulation bounding box with random particles.
 //=================================================================================================
 template <int ndim>
@@ -627,7 +627,7 @@ void Ic<ndim>::UniformBox(void)
 
 
 //=================================================================================================
-//  Simulation::UniformSphere
+//  Ic::UniformSphere
 /// Create a uniform-density sphere of particles of given origin and radius.
 //=================================================================================================
 template <int ndim>
@@ -716,7 +716,7 @@ void Ic<ndim>::UniformSphere(void)
 
 
 //=================================================================================================
-//  Simulation::ContactDiscontinuity
+//  Ic::ContactDiscontinuity
 /// Set-up contact discontinuity problem.
 //=================================================================================================
 template <int ndim>
@@ -859,7 +859,7 @@ void Ic<ndim>::ContactDiscontinuity(void)
 
 
 //=================================================================================================
-//  Simulation::KHI
+//  Ic::KHI
 /// Set-up 2D Kelvin-Helmholtz instability test.
 //=================================================================================================
 template <int ndim>
@@ -1018,7 +1018,7 @@ void Ic<ndim>::KHI(void)
 
 
 //=================================================================================================
-//  Simulation::NohProblem
+//  Ic::NohProblem
 /// Set-up Noh Problem initial conditions
 //=================================================================================================
 template <int ndim>
@@ -1095,7 +1095,7 @@ void Ic<ndim>::NohProblem(void)
 
 
 //=================================================================================================
-//  Simulation::BossBodenheimer
+//  Ic::BossBodenheimer
 /// Set-up Boss-Bodenheimer (1979) initial conditions for collapse of a
 /// rotating uniform sphere with an imposed m=2 azimuthal density perturbation.
 //=================================================================================================
@@ -1193,7 +1193,7 @@ void Ic<ndim>::BossBodenheimer(void)
 
 
 //=================================================================================================
-//  Simulation::TurbulentCore
+//  Ic::TurbulentCore
 /// Set-up Boss-Bodenheimer (1979) initial conditions for collapse of a
 /// rotating uniform sphere with an imposed m=2 azimuthal density perturbation.
 //=================================================================================================
@@ -1350,7 +1350,7 @@ void Ic<ndim>::TurbulentCore(void)
 
 
 //=================================================================================================
-//  Simulation::BondiAccretion
+//  Ic::BondiAccretion
 /// Set-up spherically symmetric Bondi accretion test problem.  First, numerically solve Bondi's
 /// differential equations about the sonic point to obtain the numerical solution.  Next stretch
 /// a uniform particle distribution to the correct radial profile.  Finally add a sink of the
@@ -1526,7 +1526,7 @@ void Ic<ndim>::BondiAccretion(void)
 
 
 //=================================================================================================
-//  Simulation::EwaldDensity
+//  Ic::EwaldDensity
 /// Set-up simple density distributions to test Ewald periodic gravity field.
 //=================================================================================================
 template <int ndim>
@@ -1735,7 +1735,7 @@ void Ic<ndim>::EwaldDensity(void)
 
 
 //=================================================================================================
-//  Simulation::PlummerSphere
+//  Ic::PlummerSphere
 /// Generate a Plummer sphere containing either stars, gas or a mixture of both.
 /// Uses the algorithm described by Aarseth et al. (197?).  Only valid for 3 dimensions.
 //=================================================================================================
@@ -1896,7 +1896,7 @@ void Ic<ndim>::PlummerSphere(void)
 
 
 //=================================================================================================
-//  Simulation::SedovBlastWave
+//  Ic::SedovBlastWave
 /// Set-up Sedov blast wave test
 //=================================================================================================
 template <int ndim>
@@ -2063,7 +2063,7 @@ void Ic<ndim>::SedovBlastWave(void)
 
 
 //=================================================================================================
-//  Simulation::ShearFlow
+//  Ic::ShearFlow
 /// Create shear-flow to test effective shear viscosity.
 //=================================================================================================
 template <int ndim>
@@ -2136,7 +2136,7 @@ void Ic<ndim>::ShearFlow(void)
 
 
 //=================================================================================================
-//  Simulation::SoundWave
+//  Ic::SoundWave
 /// Set-up isothermal sound-wave test.
 //=================================================================================================
 template <int ndim>
@@ -2225,7 +2225,7 @@ void Ic<ndim>::SoundWave(void)
 
 
 //=================================================================================================
-//  Simulation::SpitzerExpansion
+//  Ic::SpitzerExpansion
 /// Set-up Spitzer expansion simulation for single ionising source
 //=================================================================================================
 template <int ndim>
@@ -2310,7 +2310,7 @@ void Ic<ndim>::SpitzerExpansion(void)
 
 
 //=================================================================================================
-//  Simulation::BinaryStar
+//  Ic::BinaryStar
 /// Create a simple binary star problem
 //=================================================================================================
 template <int ndim>
@@ -2356,7 +2356,7 @@ void Ic<ndim>::BinaryStar(void)
 
 
 //=================================================================================================
-//  Simulation::TripleStar
+//  Ic::TripleStar
 /// Create a simple triple star problem
 //=================================================================================================
 template <int ndim>
@@ -2381,7 +2381,7 @@ void Ic<ndim>::TripleStar(void)
 
   Nbody<ndim>* nbody = sim->nbody;
 
-  debug2("[SphSimulation::TripleStar]");
+  debug2("[SphIc::TripleStar]");
 
   if (ndim == 1) {
     string message = "Quadruple test not available in 1D";
@@ -2410,7 +2410,7 @@ void Ic<ndim>::TripleStar(void)
 
 
 //=================================================================================================
-//  Simulation::QuadrupleStar
+//  Ic::QuadrupleStar
 /// Create a simple quadruple star problem
 //=================================================================================================
 template <int ndim>
@@ -2437,7 +2437,7 @@ void Ic<ndim>::QuadrupleStar(void)
 
   Nbody<ndim>* nbody = sim->nbody;
 
-  debug2("[SphSimulation::QuadrupleStar]");
+  debug2("[SphIc::QuadrupleStar]");
 
   if (ndim == 1) {
     string message = "Quadruple test not available in 1D";
@@ -2468,7 +2468,7 @@ void Ic<ndim>::QuadrupleStar(void)
 
 
 //=================================================================================================
-//  Simulation::AddBinaryStar
+//  Ic::AddBinaryStar
 /// Add a binary star of given mass, eccentricity and separation.
 /// (Code provided courtesy of S. P. Goodwin; 29/09/2013)
 //=================================================================================================
@@ -2573,7 +2573,7 @@ void Ic<ndim>::AddBinaryStar
 
 
 //=================================================================================================
-//  Simulation::AddRandomBox
+//  Ic::AddRandomBox
 /// Populate given bounding box with random particles.
 //=================================================================================================
 template <int ndim>
@@ -2596,7 +2596,7 @@ void Ic<ndim>::AddRandomBox
 
 
 //=================================================================================================
-//  Simulation::AddRandomSphere
+//  Ic::AddRandomSphere
 /// Add random sphere of particles
 //=================================================================================================
 template <int ndim>
@@ -2633,7 +2633,7 @@ void Ic<ndim>::AddRandomSphere
 
 
 //=================================================================================================
-//  Simulation::AddLatticeSphere
+//  Ic::AddLatticeSphere
 /// Add sphere of particles cut-out of regular lattice
 //=================================================================================================
 template <int ndim>
@@ -2712,7 +2712,7 @@ int Ic<ndim>::AddLatticeSphere
 
 
 //=================================================================================================
-//  Simulation::AddCubicLattice
+//  Ic::AddCubicLattice
 /// Add regular (cubic) lattice of particles
 //=================================================================================================
 template <int ndim>
@@ -2782,7 +2782,7 @@ void Ic<ndim>::AddCubicLattice
 
 
 //=================================================================================================
-//  Simulation::AddHexagonalLattice
+//  Ic::AddHexagonalLattice
 /// Create simple hexagonal-packed lattice using A-B-A-B pattern in z-direction
 /// N.B. the box is scaled to fit to the x-boxsize.
 //=================================================================================================
@@ -2856,7 +2856,7 @@ void Ic<ndim>::AddHexagonalLattice
 
 
 //=================================================================================================
-//  Simulation::CutSphere
+//  Ic::CutSphere
 /// Cut-out a sphere containing exactly 'Nsphere' particles from a uniform box of particles.
 //=================================================================================================
 template <int ndim>
@@ -2930,7 +2930,7 @@ int Ic<ndim>::CutSphere
 
 
 //=================================================================================================
-//  Simulation::AddAzimuthalDensityPerturbation
+//  Ic::AddAzimuthalDensityPerturbation
 /// Add an azimuthal density perturbation for implementing Boss-Bodenheimer-type initial conditions
 //=================================================================================================
 template <int ndim>
@@ -3007,7 +3007,7 @@ void Ic<ndim>::AddAzimuthalDensityPerturbation
 
 
 //=================================================================================================
-//  Simulation::AddSinusoidalDensityPerturbation
+//  Ic::AddSinusoidalDensityPerturbation
 /// Add a 1D sinusoidal density perturbation (in x-direction) to given uniform density field.
 //=================================================================================================
 template <int ndim>
@@ -3053,7 +3053,7 @@ void Ic<ndim>::AddSinusoidalDensityPerturbation
 
 
 //=================================================================================================
-//  Simulation::AddRotationalVelocityField
+//  Ic::AddRotationalVelocityField
 /// Add a solid-body rotational velocity field
 //=================================================================================================
 template <int ndim>
@@ -3108,7 +3108,7 @@ void Ic<ndim>::AddRotationalVelocityField
 
 
 //=================================================================================================
-//  Simulation::ComputeBondiSolution
+//  Ic::ComputeBondiSolution
 /// Compute the numerical solution to the Bondi accretion problem.
 /// Translated from F90 subroutine written by A. P. Whitworth.
 //=================================================================================================
@@ -3266,7 +3266,7 @@ void Ic<ndim>::ComputeBondiSolution
 
 
 //=================================================================================================
-//  Simulation::GenerateTurbulentVelocityField
+//  Ic::GenerateTurbulentVelocityField
 /// ..
 /// Based on original code by A. McLeod.
 //=================================================================================================
@@ -3503,7 +3503,7 @@ void Ic<ndim>::GenerateTurbulentVelocityField
 
 
 //=================================================================================================
-//  Simulation::InterpolateVelocityField
+//  Ic::InterpolateVelocityField
 /// Calculate Interpolated velocity from uniform grid onto particle positions.
 //=================================================================================================
 template <int ndim>
