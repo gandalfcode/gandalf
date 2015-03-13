@@ -20,16 +20,16 @@
 #==================================================================================================
 
 
-CPP                = icpc
-PYTHON             = python
-F2PY               = f2py
+CPP                = g++-4
+PYTHON             = python2.7
+F2PY               = f2py2.7
 FFTW               = 1
 GSL                = 0
-COMPILER_MODE      = FAST
+COMPILER_MODE      = DEBUG
 PRECISION          = DOUBLE
-OPENMP             = 1
-OUTPUT_LEVEL       = 1
-DEBUG_LEVEL        = 0
+OPENMP             = 0
+OUTPUT_LEVEL       = 2
+DEBUG_LEVEL        = 1
 REORDER_PARTICLES  = 0
 
 

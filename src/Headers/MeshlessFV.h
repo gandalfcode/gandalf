@@ -89,14 +89,13 @@ public:
   static const int irho = ndim;
   static const int ietot = ndim + 1;
   static const int ipress = ndim + 1;
-  static const FLOAT gamma_eos = 1.666666666;
 
 
 
   // Constructor
   //-----------------------------------------------------------------------------------------------
   MeshlessFV(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux, FLOAT h_converge_aux,
-             string gas_eos_aux, string KernelName, int size_mfv_part);
+             FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_mfv_part);
   ~MeshlessFV();
 
 
@@ -118,7 +117,7 @@ public:
                                     MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
   virtual void ComputeGodunovFlux(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
                                   MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
-
+  virtual void CopyDataToGhosts(DomainBox<ndim> &, MeshlessFVParticle<ndim> *) = 0;
 
   // MeshlessFV array memory allocation functions
   //-----------------------------------------------------------------------------------------------
@@ -151,6 +150,8 @@ public:
 
   // Const variables (read in from parameters file)
   //-----------------------------------------------------------------------------------------------
+  const FLOAT gamma_eos;               ///< ..
+  const FLOAT gammam1;                 ///< ..
   const FLOAT h_converge;              ///< h-rho iteration tolerance
 
 
@@ -185,6 +186,8 @@ class LV2008MFV : public MeshlessFV<ndim>
  public:
 
   using MeshlessFV<ndim>::allocated;
+  using MeshlessFV<ndim>::gamma_eos;
+  using MeshlessFV<ndim>::gammam1;
   using MeshlessFV<ndim>::h_converge;
   using MeshlessFV<ndim>::h_fac;
   using MeshlessFV<ndim>::hydrodata;
@@ -214,14 +217,13 @@ class LV2008MFV : public MeshlessFV<ndim>
   static const int irho = ndim;
   static const int ietot = ndim + 1;
   static const int ipress = ndim + 1;
-  static const FLOAT gamma_eos = 1.666666666;
 
 
 
   // Constructor
   //-----------------------------------------------------------------------------------------------
   LV2008MFV(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux, FLOAT h_converge_aux,
-            string gas_eos_aux, string KernelName, int size_MeshlessFV_part);
+            FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_MeshlessFV_part);
   ~LV2008MFV();
 
 
@@ -238,6 +240,7 @@ class LV2008MFV : public MeshlessFV<ndim>
                                     MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
   void ComputeGodunovFlux(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
                           MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+  void CopyDataToGhosts(DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
 
   kernelclass<ndim> kern;                  ///< SPH kernel
 

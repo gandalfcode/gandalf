@@ -237,10 +237,10 @@ TEST_OBJ = TestScaling.o TestTree.o TestOctTree.o TestSinks.o
 	$(CPP) $(OPT) $(CFLAGS) -fexceptions -frtti -c $< -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY) -I$(INCLUDE)
 
 %.o: %.cxx
-	$(CPP) $(CFLAGS) -c $< $(OPT) -I$(INCLUDE)
+	$(CPP) $(CFLAGS) -I$(INCLUDE) -c $< $(OPT)
 
 %.o: %.cpp
-	$(CPP) $(OPT) $(CFLAGS) -c $< -I$(GTEST)/include -I$(INCLUDE)
+	$(CPP) $(OPT) $(CFLAGS) -I$(GTEST)/include -I$(INCLUDE) -c $<
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)

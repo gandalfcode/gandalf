@@ -46,11 +46,13 @@ using namespace std;
 /// sets additional kernel-related quantities
 //=================================================================================================
 template <int ndim>
-MeshlessFV<ndim>::MeshlessFV(int hydro_forces_aux, int self_gravity_aux,
-  FLOAT h_fac_aux, FLOAT h_converge_aux, string gas_eos_aux, string KernelName, int size_part):
+MeshlessFV<ndim>::MeshlessFV(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux,
+  FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_part):
   Hydrodynamics<ndim>(hydro_forces_aux, self_gravity_aux, h_fac_aux,
                       gas_eos_aux, KernelName, size_part),
-  h_converge(h_converge_aux)
+  h_converge(h_converge_aux),
+  gamma_eos(gamma_aux),
+  gammam1(gamma_aux - 1.0)
   //size_hydro_part(size_part)
 {
   /*this->kernp      = &kern;
@@ -204,10 +206,9 @@ void MeshlessFV<ndim>::ComputeThermalProperties
 {
   //MeshlessFVParticle<ndim>& part = static_cast<MeshlessFVParticle<ndim> &> (part_gen);
 
-  part.u       = eos->SpecificInternalEnergy(part);
-  part.sound   = eos->SoundSpeed(part);
-  part.press   = eos->Pressure(part);
-  //part.pfactor = eos->Pressure(part)*part.invrho*part.invrho*part.invomega;
+  part.u     = eos->SpecificInternalEnergy(part);
+  part.sound = eos->SoundSpeed(part);
+  part.press = eos->Pressure(part);
 
   assert(part.u > 0.0);
   assert(part.sound > 0.0);
@@ -266,7 +267,7 @@ void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
 
 
 //=============================================================================
-//  MeshlessFV::UpdatePrimitiveVector
+//  MeshlessFV::UpdateArrayVariables
 /// ...
 //=============================================================================
 template <int ndim>
@@ -279,10 +280,13 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
   FLOAT ekin = 0.0;
   for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
   part.u = (part.Qcons[ietot] - 0.5*part.m*ekin)/part.m;
+  part.press = (gamma_eos - 1.0)*part.rho*part.u;
 
-  if (part.u < 0.0) {
+  if (part.u < 0.0 || part.m < 0.0) {
     cout << "Mistake? : " << part.Qcons[ietot] << "    " << 0.5*part.m*ekin << "    " << part.m << "    " << part.u << endl;
+    cout << "r : " << part.r[0] << "     v : " << part.v[0] << endl;
   }
+
   assert(part.m > 0.0);
   assert(part.u > 0.0);
 

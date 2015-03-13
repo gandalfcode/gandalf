@@ -342,8 +342,8 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
   const FLOAT pl = Wleft[2];           // ..
   const FLOAT pr = Wright[2];          // ..
   */
-  const FLOAT ul = DotProduct(Wleft, runit, ndim);
-  const FLOAT ur = DotProduct(Wright, runit, ndim);
+  const FLOAT ul = Wleft[0]; //*runit[0];  //DotProduct(Wleft, runit, ndim);
+  const FLOAT ur = Wright[0]; //*runit[0]; //DotProduct(Wright, runit, ndim);
   const FLOAT cl = sqrt(gamma*Wleft[ipress]/Wleft[irho]);    // ..
   const FLOAT cr = sqrt(gamma*Wright[ipress]/Wright[irho]);  // ..
   FLOAT pstar;                         // Pressure in star region
@@ -359,9 +359,9 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
 
   // Compute fluxes
   etot        = p/(gamma - 1.0) + 0.5*d*u*u;
-  flux[irho]  = d*u;
+  flux[irho]  = 1.0*d*u;
   //flux[ivx]   = p + d*u*u;
-  flux[ietot] = u*(etot + p);
+  flux[ietot] = 1.0*u*(etot + p);
   for (int k=0; k<ndim; k++) flux[k] = (p + d*u*u); //*runit[k];
 
 

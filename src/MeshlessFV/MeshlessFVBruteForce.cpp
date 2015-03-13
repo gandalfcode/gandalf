@@ -341,6 +341,90 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
 
 
 
+//=================================================================================================
+//  MeshlessFVBruteForce::SearchBoundaryGhostParticles
+/// Search domain to create any required ghost particles near any boundaries.
+/// Currently only searches to create periodic or mirror ghost particles.
+//=================================================================================================
+template <int ndim, template <int> class ParticleType>
+void MeshlessFVBruteForce<ndim,ParticleType>::SearchBoundaryGhostParticles
+ (FLOAT tghost,                        ///< Ghost particle 'lifetime'
+  DomainBox<ndim> &simbox,              ///< Simulation box structure
+  MeshlessFV<ndim> *mfv)          ///< Sph object pointer
+{
+  int i;                               // Particle counter
+
+  cout << "Nhydro : " << mfv->Nhydro << endl;
+  cout << "Nhydromax : " << mfv->Nhydromax << endl;
+
+  // Set all relevant particle counters
+  mfv->Nghost         = 0;
+  mfv->NPeriodicGhost = 0;
+  mfv->Nghostmax      = mfv->Nhydromax - mfv->Nhydro;
+  mfv->Ntot           = mfv->Nhydro;
+
+
+  // If all boundaries are open, immediately return to main loop
+  if (simbox.boundary_lhs[0] == openBoundary && simbox.boundary_rhs[0] == openBoundary &&
+      simbox.boundary_lhs[1] == openBoundary && simbox.boundary_rhs[1] == openBoundary &&
+      simbox.boundary_lhs[2] == openBoundary && simbox.boundary_rhs[2] == openBoundary)
+    return;
+
+
+  debug2("[BruteForceSearch::SearchBoundaryGhostParticles]");
+
+
+  // Create ghost particles in x-dimension
+  //-----------------------------------------------------------------------------------------------
+  if ((simbox.boundary_lhs[0] == openBoundary && simbox.boundary_rhs[0] == openBoundary) == 0) {
+
+    for (i=0; i<mfv->Ntot; i++) {
+      mfv->CheckXBoundaryGhostParticle(i,tghost,simbox);
+    }
+
+    mfv->Ntot = mfv->Nhydro + mfv->Nghost;
+  }
+
+
+  // Create ghost particles in y-dimension
+  //-----------------------------------------------------------------------------------------------
+  if (ndim >= 2 && (simbox.boundary_lhs[1] == openBoundary &&
+                    simbox.boundary_rhs[1] == openBoundary) == 0) {
+
+    for (i=0; i<mfv->Ntot; i++) {
+      mfv->CheckYBoundaryGhostParticle(i,tghost,simbox);
+    }
+
+    mfv->Ntot = mfv->Nhydro + mfv->Nghost;
+  }
+
+
+  // Create ghost particles in z-dimension
+  //-----------------------------------------------------------------------------------------------
+  if (ndim == 3 && (simbox.boundary_lhs[2] == openBoundary &&
+                    simbox.boundary_rhs[2] == openBoundary) == 0) {
+
+    for (i=0; i<mfv->Ntot; i++) {
+      mfv->CheckZBoundaryGhostParticle(i,tghost,simbox);
+    }
+
+    mfv->Ntot = mfv->Nhydro + mfv->Nghost;
+  }
+
+
+  // Quit here if we've run out of memory for ghosts
+  if (mfv->Ntot > mfv->Nhydromax) {
+    string message="Not enough memory for ghost particles";
+    ExceptionHandler::getIstance().raise(message);
+  }
+
+  mfv->NPeriodicGhost = mfv->Nghost;
+
+  return;
+}
+
+
+
 template class MeshlessFVBruteForce<1,MeshlessFVParticle>;
 template class MeshlessFVBruteForce<2,MeshlessFVParticle>;
 template class MeshlessFVBruteForce<3,MeshlessFVParticle>;

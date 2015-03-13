@@ -132,23 +132,27 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   if (intparams["tabulated_kernel"] == 1) {
     mfv = new LV2008MFV<ndim, TabulatedKernel>
       (intparams["hydro_forces"], intparams["self_gravity"], floatparams["h_fac"],
-       floatparams["h_converge"], stringparams["gas_eos"], KernelName, sizeof(MeshlessFVParticle<ndim>));
+       floatparams["h_converge"], floatparams["gamma_eos"], stringparams["gas_eos"],
+       KernelName, sizeof(MeshlessFVParticle<ndim>));
   }
   else if (intparams["tabulated_kernel"] == 0) {
     if (KernelName == "m4") {
       mfv = new LV2008MFV<ndim, M4Kernel>
         (intparams["hydro_forces"], intparams["self_gravity"], floatparams["h_fac"],
-         floatparams["h_converge"], stringparams["gas_eos"], KernelName, sizeof(MeshlessFVParticle<ndim>));
+         floatparams["h_converge"], floatparams["gamma_eos"], stringparams["gas_eos"],
+         KernelName, sizeof(MeshlessFVParticle<ndim>));
     }
     else if (KernelName == "quintic") {
       mfv = new LV2008MFV<ndim, QuinticKernel>
         (intparams["hydro_forces"], intparams["self_gravity"], floatparams["h_fac"],
-         floatparams["h_converge"], stringparams["gas_eos"], KernelName, sizeof(MeshlessFVParticle<ndim>));
+         floatparams["h_converge"], floatparams["gamma_eos"], stringparams["gas_eos"],
+         KernelName, sizeof(MeshlessFVParticle<ndim>));
     }
     else if (KernelName == "gaussian") {
       mfv = new LV2008MFV<ndim, GaussianKernel>
         (intparams["hydro_forces"], intparams["self_gravity"], floatparams["h_fac"],
-         floatparams["h_converge"], stringparams["gas_eos"], KernelName, sizeof(MeshlessFVParticle<ndim>));
+         floatparams["h_converge"], floatparams["gamma_eos"], stringparams["gas_eos"],
+         KernelName, sizeof(MeshlessFVParticle<ndim>));
     }
     else {
       string message = "Unrecognised parameter : kernel = " + simparams->stringparams["kernel"];
@@ -216,7 +220,14 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
     mfv->Ngather = (int) (4.0*pi*pow(mfv->kernp->kernrange*mfv->h_fac,3)/3.0);
   }
 
-
+  // Create ghost particle object
+  //-----------------------------------------------------------------------------------------------
+  /*if (IsAnyBoundarySpecial(simbox)) {
+    LocalGhosts = new PeriodicGhostsSpecific<ndim,MeshlessFVParticle >();
+  }
+  else {
+    LocalGhosts = new NullGhosts<ndim>();
+  }*/
 
   // Process all N-body parameters and set-up main N-body objects
   this->ProcessNbodyParameters();
@@ -382,7 +393,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     }
 
     // Search ghost particles
-    //mfvneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
+    mfvneib->SearchBoundaryGhostParticles(0.0,simbox,mfv);
     //mfvneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
     //                        mfv->Nhydromax,mfv->GetMeshlessFVParticleArray(),sph,timestep);
 
@@ -404,7 +415,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     mfvneib->UpdateAllProperties(mfv->Nhydro,mfv->Ntot,mfv->GetMeshlessFVParticleArray(),mfv,nbody);
 
     // Search ghost particles
-    //mfvneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
+    mfvneib->SearchBoundaryGhostParticles(0.0,simbox,mfv);
     //mfvneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
     //                        mfv->Nhydromax,mfv->GetMeshlessFVParticleArray(),sph,timestep);
 
@@ -441,7 +452,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
     mfvneib->BuildTree(true,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
                        mfv->Nhydromax,mfv->GetMeshlessFVParticleArray(),mfv,timestep);
-    //mfvneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
+    mfvneib->SearchBoundaryGhostParticles(0.0,simbox,mfv);
     //mfvneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
     //                        mfv->Nhydromax,mfv->GetMeshlessFVParticleArray(),sph,timestep);
 
@@ -455,13 +466,14 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       part.active = true;
     }
 
-    //LocalGhosts->CopySphDataToGhosts(simbox,sph);
+    mfv->CopyDataToGhosts(simbox, partdata);
 #ifdef MPI_PARALLEL
 //    MpiGhosts->CopySphDataToGhosts(simbox,sph);
 #endif
 
     // Update the primitive vectors for all particles
-    for (i=0; i<mfv->Nhydro; i++) {
+    for (i=0; i<mfv->Ntot; i++) {
+      mfv->ComputeThermalProperties(partdata[i]);
       mfv->UpdatePrimitiveVector(partdata[i]);
       mfv->ConvertPrimitiveToConserved(partdata[i].Wprim, partdata[i].Ucons);
       mfv->ConvertConservedToQ(partdata[i].volume, partdata[i].Ucons, partdata[i].Qcons);
@@ -501,7 +513,7 @@ void MeshlessFVSimulation<ndim>::MainLoop(void)
 
   debug2("[MeshlessFVSimulation::MainLoop]");
 
-
+//cin >> i;
   // Set pointer for SPH data array
   partdata = mfv->GetMeshlessFVParticleArray();
 
@@ -538,12 +550,12 @@ void MeshlessFVSimulation<ndim>::MainLoop(void)
 
 
     // Search for new ghost particles and create on local processor
-    /*if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+    //if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
       tghost = timestep*(FLOAT)(ntreebuildstep - 1);
-      mfvneib->SearchBoundaryGhostParticles(tghost,simbox,sph);
-      mfvneib->BuildGhostTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,
-                              mfv->Ntot,mfv->Nhydromax,partdata,mfv,timestep);
-    }*/
+      mfvneib->SearchBoundaryGhostParticles(tghost,simbox,mfv);
+      //mfvneib->BuildGhostTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,
+        //                      mfv->Ntot,mfv->Nhydromax,partdata,mfv,timestep);
+    //}
     // Otherwise copy properties from original particles to ghost particles
     /*else {
       LocalGhosts->CopySphDataToGhosts(simbox, sph);
@@ -557,21 +569,28 @@ void MeshlessFVSimulation<ndim>::MainLoop(void)
       part.active = true;
     }
 
-
     // Calculate all properties
     mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
 
+    mfv->CopyDataToGhosts(simbox, partdata);
+
     mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
+
+    mfv->CopyDataToGhosts(simbox, partdata);
 
     mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
 
     // Integrate all conserved variables to end of timestep
-    for (i=0; i<mfv->Nhydro; i++) {
+    for (i=0; i<mfv->Ntot; i++) {
       mfv->IntegrateConservedVariables(partdata[i], timestep);
       mfv->ConvertQToConserved(partdata[i].volume, partdata[i].Qcons, partdata[i].Ucons);
       mfv->ConvertConservedToPrimitive(partdata[i].Ucons, partdata[i].Wprim);
       mfv->UpdateArrayVariables(partdata[i]);
     }
+
+    this->CalculateDiagnostics();
+    this->OutputDiagnostics();
+    this->UpdateDiagnostics();
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -586,7 +605,6 @@ void MeshlessFVSimulation<ndim>::MainLoop(void)
     uint->EndTimestep(n,mfv->Nhydro,(FLOAT) t,(FLOAT) timestep,mfv->GetMeshlessFVParticleArray());
     sphint->EndTimestep(n,mfv->Nhydro,(FLOAT) t,(FLOAT) timestep,mfv->GetMeshlessFVParticleArray());
   }*/
-
 
   return;
 }

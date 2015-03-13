@@ -91,6 +91,7 @@ protected:
   virtual void UpdateAllProperties(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateGradientMatrices(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateGodunovFluxes(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *) = 0;
+  virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, MeshlessFV<ndim> *) = 0;
 
 
   //-----------------------------------------------------------------------------------------------
@@ -143,6 +144,7 @@ class MeshlessFVBruteForce: public MeshlessFVNeighbourSearch<ndim>
   void UpdateAllProperties(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
   void UpdateGradientMatrices(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
   void UpdateGodunovFluxes(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
+  void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, MeshlessFV<ndim> *);
 
 };
 #endif

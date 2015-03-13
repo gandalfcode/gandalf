@@ -46,10 +46,10 @@ using namespace std;
 /// sets additional kernel-related quantities
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-LV2008MFV<ndim, kernelclass>::LV2008MFV(int hydro_forces_aux, int self_gravity_aux,
-  FLOAT h_fac_aux, FLOAT h_converge_aux, string gas_eos_aux, string KernelName, int size_sph):
+LV2008MFV<ndim, kernelclass>::LV2008MFV(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux,
+  FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_sph):
   MeshlessFV<ndim>(hydro_forces_aux, self_gravity_aux, h_fac_aux, h_converge_aux,
-                   gas_eos_aux, KernelName, size_sph),
+                   gamma_aux, gas_eos_aux, KernelName, size_sph),
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp      = &kern;
@@ -132,7 +132,7 @@ int LV2008MFV<ndim, kernelclass>::ComputeH
 
     // If h changes below some fixed tolerance, exit iteration loop
     if (part.rho > (FLOAT) 0.0 && part.h > h_lower_bound &&
-        fabs(part.h - h_fac*pow(part.m*part.invrho,MeshlessFV<ndim>::invndim)) < h_converge) break;
+        fabs(part.h - h_fac*pow(part.volume,MeshlessFV<ndim>::invndim)) < h_converge) break;
 
     // Use fixed-point iteration, i.e. h_new = h_fac*(m/rho_old)^(1/ndim), for now.  If this does
     // not converge in a reasonable number of iterations (iteration_max), then assume something is
@@ -170,7 +170,7 @@ int LV2008MFV<ndim, kernelclass>::ComputeH
 
 
   // Normalise all SPH sums correctly
-  //part.h         = max(h_fac*pow(part.m*part.invrho,MeshlessFV<ndim>::invndim),h_lower_bound);
+  part.h         = max(h_fac*pow(part.volume,MeshlessFV<ndim>::invndim),h_lower_bound);
   part.invh      = (FLOAT) 1.0/part.h;
   part.hfactor   = pow(part.invh,ndim+1);
   part.hrangesqd = kernfacsqd*kern.kernrangesqd*part.h*part.h;
@@ -374,11 +374,13 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
 
   for (var=0; var<nvar; var++) part.flux[var] = 0.0;
 
+  //cout << "Particle " << i << "    Nneib : " << Nneib << endl;
+
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
-    if (j == jj) continue;
+    //if (j == jj) continue;
 
     for (k=0; k<ndim; k++) draux[k] = part.r[k] - neibpart[j].r[k];
     drsqd = DotProduct(draux, draux, ndim);
@@ -395,28 +397,97 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
       }
     }
 
-    // ..
-    riemann->ComputeFluxes(neibpart[j].Wprim, part.Wprim, dr_unit, flux);
-
-
-    for (var=0; var<nvar; var++) {
-      part.flux[var] += flux[var]*(part.volume*psitildaj[0] - neibpart[j].volume*psitildai[0]);
+    if (part.r[0] > neibpart[j].r[0]) {
+      riemann->ComputeFluxes(neibpart[j].Wprim, part.Wprim, dr_unit, flux);
+    }
+    else {
+      riemann->ComputeFluxes(part.Wprim, neibpart[j].Wprim, dr_unit, flux);
     }
 
-    /*cout << "Part " << i << "     flux : " << flux[0] << "   " << flux[1] << "   " << flux[2]
-          << "    psitilda : " << psitildai[0] << "  " << psitildaj[0] << endl;
-    cout << "B : " << part.B[0][0] << "    " << neibpart[j].B[0][0] << endl;
-    cout << "ndens : " << part.ndens << "    " << neibpart[j].ndens << "     flux[0] : " << part.flux[0] << endl;
+
+    FLOAT fluxi[nvar], fluxj[nvar], fluxgizmo[nvar];
+    /*fluxi[ivx]   = part.rho*part.v[0]*part.v[0] + part.press;
+    fluxi[irho]  = part.rho*part.v[0];
+    fluxi[ietot] = (part.rho*(part.u + part.v[0]*part.v[0]) + part.press)*part.v[0];
+    fluxj[ivx]   = neibpart[j].rho*neibpart[j].v[0]*neibpart[j].v[0] + neibpart[j].press;
+    fluxj[irho]  = neibpart[j].rho*neibpart[j].v[0];
+    fluxj[ietot] = (neibpart[j].rho*(neibpart[j].u + neibpart[j].v[0]*neibpart[j].v[0]) + neibpart[j].press)*neibpart[j].v[0];
 */
+    //for (var=0; var<nvar; var++) flux[var] = fluxi[var] - fluxj[var];
+
+    for (var=0; var<nvar; var++) {
+      fluxgizmo[var] = flux[var]*(part.volume*psitildaj[0] - neibpart[j].volume*psitildai[0]);
+      part.flux[var] -= flux[var]*(part.volume*psitildaj[0] - neibpart[j].volume*psitildai[0]);
+      //part.flux[var] += fluxi[var]*part.volume*psitildaj[0] - fluxj[var]*neibpart[j].volume*psitildai[0];
+    }
+
+    /*cout << "Neib " << j << "    psitilda : " << psitildai[0] << "  " << psitildaj[0] << endl;
+    cout << "Godunov flux[irho]  : " << fluxgizmo[irho]  << "    flux[irho]  : " << fluxi[irho] - fluxj[irho] << endl;
+    cout << "Godunov flux[ivx]   : " << fluxgizmo[ivx]   << "    flux[ivx]   : " << fluxi[ivx] - fluxj[ivx] << endl;
+    cout << "Godunov flux[ietot] : " << fluxgizmo[ietot] << "    flux[ietot] : " << fluxi[ietot] - fluxj[ietot] << endl;
+    cout << "B : " << part.B[0][0] << "    " << neibpart[j].B[0][0] << "     ndens : "
+         << part.ndens << "    " << neibpart[j].ndens << endl;*/
+
   }
   //-----------------------------------------------------------------------------------------------
 
-  /*cout << "Flux[" << i << "] : " << part.flux[0] << "   " << part.flux[1] << "   " << part.flux[2] << endl;
-  cout << "Nneib : " << Nneib << "      B : " << part.B[0][0] << endl;
-  cin >> k;*/
+  //cout << "Flux[" << i << "] : " << part.flux[0] << "   " << part.flux[1] << "   " << part.flux[2] << endl;
+  //cin >> k;
 
   return;
 }
+
+
+
+//=============================================================================
+//  Ghosts::CopySphDataToGhosts
+/// Copy any newly calculated data from original SPH particles to ghosts.
+//=============================================================================
+template <int ndim, template<int> class kernelclass>
+void LV2008MFV<ndim, kernelclass>::CopyDataToGhosts
+ (DomainBox<ndim> &simbox,
+  MeshlessFVParticle<ndim> *partdata)  ///< [inout] Neighbour particle data
+{
+  int i;                            // Particle id
+  int iorig;                        // Original (real) particle id
+  int itype;                        // Ghost particle type
+  int j;                            // Ghost particle counter
+
+  debug2("[SphSimulation::CopySphDataToGhosts]");
+
+
+  //---------------------------------------------------------------------------
+//#pragma omp parallel for default(none) private(i,iorig,itype,j) shared(simbox,sph,partdata)
+  for (j=0; j<this->NPeriodicGhost; j++) {
+    i = this->Nhydro + j;
+    iorig = partdata[i].iorig;
+    itype = partdata[i].itype;
+
+    partdata[i] = partdata[iorig];
+    partdata[i].iorig = iorig;
+    partdata[i].itype = itype;
+    partdata[i].active = false;
+
+    // Modify ghost position based on ghost type
+    if (itype == x_lhs_periodic)
+      partdata[i].r[0] += simbox.boxsize[0];
+    else if (itype == x_rhs_periodic)
+      partdata[i].r[0] -= simbox.boxsize[0];
+    else if (itype == y_lhs_periodic && ndim > 1)
+      partdata[i].r[1] += simbox.boxsize[1];
+    else if (itype == y_rhs_periodic && ndim > 1)
+      partdata[i].r[1] -= simbox.boxsize[1];
+    else if (itype == z_lhs_periodic && ndim == 3)
+      partdata[i].r[2] += simbox.boxsize[2];
+    else if (itype == z_rhs_periodic && ndim == 3)
+      partdata[i].r[2] -= simbox.boxsize[2];
+
+  }
+  //---------------------------------------------------------------------------
+
+  return;
+}
+
 
 
 
