@@ -65,9 +65,14 @@ class Ghosts
 //  DomainBox<ndim> simbox;               ///< Simulation boundary data
 //  Sph<ndim> *sph;                       ///< SPH algorithm pointer
 
-  static const FLOAT ghost_range = 1.6;
+  static const FLOAT ghost_range; //= 1.6;
 
 };
+
+// Declare ghost_range constant here (prevents warnings with some compilers)
+template <int ndim>
+const FLOAT Ghosts<ndim>::ghost_range = 1.6;
+
 
 
 

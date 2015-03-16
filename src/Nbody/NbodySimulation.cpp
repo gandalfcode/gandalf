@@ -106,6 +106,10 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   if (stringparams["external_potential"] == "none") {
     extpot = new NullPotential<ndim>();
   }
+  else if (stringparams["external_potential"] == "vertical") {
+    extpot = new VerticalPotential<ndim>
+      (intparams["kgrav"], floatparams["avert"], simbox.boxmin[intparams["kgrav"]]);
+  }
   else if (stringparams["external_potential"] == "plummer") {
     extpot = new PlummerPotential<ndim>(floatparams["mplummer"],floatparams["rplummer"]);
   }

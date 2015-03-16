@@ -288,7 +288,7 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostTree
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   // If no periodic ghosts exist, do not build tree
-  //if (sph->NPeriodicGhost == 0) return;
+  if (sph->NPeriodicGhost == 0) return;
 
   debug2("[SphTree::BuildGhostTree]");
   timing->StartTimingSection("BUILD_GHOST_TREE");
@@ -305,8 +305,8 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostTree
 
     ghosttree->Ntot       = sph->NPeriodicGhost;
     ghosttree->Ntotmaxold = ghosttree->Ntotmax;
-    ghosttree->Ntotmax    = max(ghosttree->Ntotmax,ghosttree->Ntot);
-    ghosttree->Ntotmax    = max(ghosttree->Ntotmax,sph->Nhydromax);
+    ghosttree->Ntotmax    = max(ghosttree->Ntotmax, ghosttree->Ntot);
+    ghosttree->Ntotmax    = max(ghosttree->Ntotmax, sph->Nhydromax);
     ghosttree->BuildTree(sph->Nhydro, sph->Nhydro + sph->NPeriodicGhost - 1,
                          ghosttree->Ntot, ghosttree->Ntotmax, sphdata, timestep);
 
@@ -316,7 +316,7 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostTree
   //-----------------------------------------------------------------------------------------------
   else if (n%ntreestockstep == 0) {
 
-    ghosttree->StockTree(ghosttree->celldata[0],sphdata);
+    ghosttree->StockTree(ghosttree->celldata[0], sphdata);
 
   }
 
@@ -336,7 +336,6 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostTree
 
   timing->EndTimingSection("BUILD_GHOST_TREE");
 
-
   return;
 }
 
@@ -348,12 +347,12 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostTree
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int SphTree<ndim,ParticleType,TreeCell>::GetGatherNeighbourList
- (FLOAT rp[ndim],                      ///< Position vector
-  FLOAT rsearch,                       ///< Gather search radius
-  SphParticle<ndim> *sph_gen,          ///< Pointer to SPH particle array
-  int Nhydro,                            ///< No. of SPH particles
-  int Nneibmax,                        ///< Max. no. of neighbours
-  int *neiblist)                       ///< List of neighbouring particles
+ (FLOAT rp[ndim],                      ///< [in] Position vector
+  FLOAT rsearch,                       ///< [in] Gather search radius
+  SphParticle<ndim> *sph_gen,          ///< [in] Pointer to SPH particle array
+  int Nhydro,                          ///< [in] No. of SPH particles
+  int Nneibmax,                        ///< [in] Max. no. of neighbours
+  int *neiblist)                       ///< [out] List of neighbouring particles
 {
   int Nneib = 0;                       // No. of (non-dead) neighbours
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
@@ -2157,7 +2156,8 @@ void SphTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
       cout << "Could not find neighbour " << j << "   " << trueneiblist[j] << "     " << i
            << "      " << sqrt(drsqd)/kernrange/partdata[i].h << "     "
            << sqrt(drsqd)/kernrange/partdata[trueneiblist[j]].h << "    "
-           << partdata[trueneiblist[j]].r[0] << endl;
+           << partdata[trueneiblist[j]].r[0] << "   type : "
+           << partdata[trueneiblist[j]].itype << endl;
       invalid_flag = true;
     }
 
@@ -2173,7 +2173,7 @@ void SphTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
     InsertionSort(Nneib,neiblist);
     PrintArray("neiblist     : ",Nneib,neiblist);
     PrintArray("trueneiblist : ",Ntrueneib,trueneiblist);
-    string message = "Problem with neighbour lists in grid search";
+    string message = "Problem with neighbour lists in tree search";
     ExceptionHandler::getIstance().raise(message);
   }
 

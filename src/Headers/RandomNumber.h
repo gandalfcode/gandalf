@@ -47,7 +47,7 @@ class RandomNumber
  public:
 
   RandomNumber() {};
-  ~RandomNumber() {};
+  virtual ~RandomNumber() {};
 
   virtual int intrand(void) = 0;
   virtual long int longintrand(void) = 0;
@@ -70,7 +70,8 @@ class RandomNumber
 //=================================================================================================
 class XorshiftRand : public RandomNumber
 {
- private:
+public:
+ //private:
 
   // Selected full-period triple (ID:A1 from Numerical Recipes)
   // and MLCG modulo 2^64 mapping (ID:D3 from Numerical Recipes)
@@ -81,7 +82,7 @@ class XorshiftRand : public RandomNumber
   static const FLOAT invrandmax = 1.0/1.84467440737095e19;
 
 
- public:
+ //public:
 
   // Internal variables for algorithm
   unsigned long int x;
@@ -91,7 +92,7 @@ class XorshiftRand : public RandomNumber
     {
       for (int k=0; k<10; k++) xorshiftrand();
     };
-  ~XorshiftRand() {};
+  //~XorshiftRand() {};
 
 
   inline unsigned long int xorshiftrand(void)
@@ -127,6 +128,10 @@ class XorshiftRand : public RandomNumber
 
 };
 
+// Declare invrandmax constant here (prevents warnings with some compilers)
+//const FLOAT XorshiftRand::invrandmax = 1.0/1.84467440737095e19;
+
+
 
 
 //=================================================================================================
@@ -143,7 +148,7 @@ class DefaultSystemRand : public RandomNumber
 
   // Constructor and destructor
   DefaultSystemRand(int _seed) : RandomNumber() {};
-  ~DefaultSystemRand();
+  //~DefaultSystemRand();
 
   inline int intrand(void) {return (int) rand()%RAND_MAX;}
   inline long int longintrand(void) {return (long int) rand()%RAND_MAX;}

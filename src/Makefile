@@ -38,7 +38,7 @@ PYFOLDER = ../analysis/swig_generated
 
 VPATH = $(PWD)/src:$(PWD)/src/Common:$(PWD)/src/GodunovSph:$(PWD)/src/GradhSph:$(PWD)/src/Headers
 VPATH +=$(PWD)/src/Hydrodynamics:$(PWD)/src/MeshlessFV:$(PWD)/src/Mpi:$(PWD)/src/Nbody
-VPATH +=$(PWD)/src/SM2013:$(PWD)/src/Thermal:$(PWD)/src/Tree
+VPATH +=$(PWD)/src/SM2013:$(PWD)/src/Thermal:$(PWD)/src/Tree:$(PWD)/src/UnitTesting
 INCLUDE = $(PWD)/src/Headers
 
 
@@ -52,7 +52,7 @@ OPT += -O3 -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),PROFILE)
 OPT += -O3 -fPIC -fno-exceptions -fno-rtti -pg
 else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -O3 -g -Wall -Wno-unknown-pragmas -fbounds-check -fPIC  #-fprofile-arcs -ftest-coverage
+OPT += -O3 -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  #-fprofile-arcs -ftest-coverage
 endif
 ifeq ($(OPENMP),1)
 OPT += -fopenmp
@@ -236,10 +236,10 @@ TEST_OBJ = TestScaling.o TestTree.o TestOctTree.o TestSinks.o
 	$(CPP) $(OPT) $(CFLAGS) -fexceptions -frtti -c $< -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY) -I$(INCLUDE)
 
 %.o: %.cxx
-	$(CPP) $(CFLAGS) -c $< $(OPT) -I$(INCLUDE)
+	$(CPP) $(CFLAGS) -I$(INCLUDE) -c $< $(OPT)
 
 %.o: %.cpp
-	$(CPP) $(OPT) $(CFLAGS) -c $< -I$(GTEST)/include -I$(INCLUDE)
+	$(CPP) $(OPT) $(CFLAGS) -I$(GTEST)/include -I$(INCLUDE) -c $<
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)

@@ -47,52 +47,71 @@ using namespace std;
 //=============================================================================
 template <int ndim>
 void PeriodicGhosts<ndim>::CheckBoundaries
-(DomainBox<ndim> simbox,
- Sph<ndim> *sph)
+ (DomainBox<ndim> simbox,
+  Sph<ndim> *sph)
 {
+  debug2("[PeriodicGhosts::CheckBoundaries]");
+
   // Loop over all particles and check if any lie outside the periodic box.
   // If so, then re-position with periodic wrapping.
-  //---------------------------------------------------------------------------
+  //===============================================================================================
 #pragma omp parallel for default(none) shared(simbox,sph)
   for (int i=0; i<sph->Nhydro; i++) {
     SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
 
+    // --------------------------------------------------------------------------------------------
+    for (int k=0; k<ndim; k++) {
 
-    if (part.r[0] < simbox.boxmin[0])
-      if (simbox.boundary_lhs[0] == periodicBoundary) {
-        part.r[0] += simbox.boxsize[0];
-        part.r0[0] += simbox.boxsize[0];
-      }
-    if (part.r[0] > simbox.boxmax[0])
-      if (simbox.boundary_rhs[0] == periodicBoundary) {
-        part.r[0] -= simbox.boxsize[0];
-        part.r0[0] -= simbox.boxsize[0];
+      // Check if particle has crossed LHS boundary
+      //-------------------------------------------------------------------------------------------
+      if (part.r[k] < simbox.boxmin[k]) {
+
+        // Check if periodic boundary
+        if (simbox.boundary_lhs[k] == periodicBoundary) {
+          part.r[k]  += simbox.boxsize[k];
+          part.r0[k] += simbox.boxsize[k];
+        }
+
+        // Check if wall or mirror boundary
+        if (simbox.boundary_lhs[k] == mirrorBoundary || simbox.boundary_lhs[k] == wallBoundary) {
+          part.r[k]  = (FLOAT) 2.0*simbox.boxmin[k] - part.r[k];
+          part.r0[k] = (FLOAT) 2.0*simbox.boxmin[k] - part.r0[k];
+          part.v[k]  = -part.v[k];
+          part.v0[k] = -part.v0[k];
+          part.a[k]  = -part.a[k];
+          part.a0[k] = -part.a0[k];
+        }
+
       }
 
-    if (ndim >= 2 && part.r[1] < simbox.boxmin[1])
-      if (simbox.boundary_lhs[1] == periodicBoundary) {
-        part.r[1] += simbox.boxsize[1];
-        part.r0[1] += simbox.boxsize[1];
-      }
-    if (ndim >= 2 && part.r[1] > simbox.boxmax[1])
-      if (simbox.boundary_rhs[1] == periodicBoundary) {
-        part.r[1] -= simbox.boxsize[1];
-        part.r0[1] -= simbox.boxsize[1];
+      // Check if particle has crossed RHS boundary
+      //-------------------------------------------------------------------------------------------
+      if (part.r[k] > simbox.boxmax[k]) {
+
+        // Check if periodic boundary
+        if (simbox.boundary_rhs[k] == periodicBoundary) {
+          part.r[k]  -= simbox.boxsize[k];
+          part.r0[k] -= simbox.boxsize[k];
+        }
+
+        // Check if wall or mirror boundary
+        if (simbox.boundary_rhs[k] == mirrorBoundary || simbox.boundary_rhs[k] == wallBoundary) {
+          part.r[k]  = (FLOAT) 2.0*simbox.boxmax[k] - part.r[k];
+          part.r0[k] = (FLOAT) 2.0*simbox.boxmax[k] - part.r0[k];
+          part.v[k]  = -part.v[k];
+          part.v0[k] = -part.v0[k];
+          part.a[k]  = -part.a[k];
+          part.a0[k] = -part.a0[k];
+        }
+
       }
 
-    if (ndim == 3 && part.r[2] < simbox.boxmin[2])
-      if (simbox.boundary_lhs[2] == periodicBoundary) {
-        part.r[2] += simbox.boxsize[2];
-        part.r0[2] += simbox.boxsize[2];
-      }
-    if (ndim == 3 && part.r[2] > simbox.boxmax[2])
-      if (simbox.boundary_rhs[2] == periodicBoundary) {
-        part.r[2] -= simbox.boxsize[2];
-        part.r0[2] -= simbox.boxsize[2];
-      }
+
+    }
+    //---------------------------------------------------------------------------------------------
 
   }
-  //---------------------------------------------------------------------------
+  //===============================================================================================
 
   return;
 }
@@ -130,18 +149,42 @@ void PeriodicGhostsSpecific<ndim, ParticleType >::CopySphDataToGhosts
     sphdata[i].active = false;
 
     // Modify ghost position based on ghost type
-    if (itype == x_lhs_periodic)
+    if (itype == x_lhs_periodic) {
       sphdata[i].r[0] += simbox.boxsize[0];
-    else if (itype == x_rhs_periodic)
+    }
+    else if (itype == x_rhs_periodic) {
       sphdata[i].r[0] -= simbox.boxsize[0];
-    else if (itype == y_lhs_periodic && ndim > 1)
+    }
+    else if (itype == x_lhs_mirror) {
+      sphdata[i].r[0] = 2.0*simbox.boxmin[0] - sphdata[i].r[0];
+    }
+    else if (itype == x_rhs_mirror) {
+      sphdata[i].r[0] = 2.0*simbox.boxmax[0] - sphdata[i].r[0];
+    }
+    else if (ndim > 1 && itype == y_lhs_periodic) {
       sphdata[i].r[1] += simbox.boxsize[1];
-    else if (itype == y_rhs_periodic && ndim > 1)
+    }
+    else if (ndim > 1 && itype == y_rhs_periodic) {
       sphdata[i].r[1] -= simbox.boxsize[1];
-    else if (itype == z_lhs_periodic && ndim == 3)
+    }
+    else if (ndim > 1 && itype == y_lhs_mirror) {
+      sphdata[i].r[1] = 2.0*simbox.boxmin[1] - sphdata[i].r[1];
+    }
+    else if (ndim > 1 && itype == y_rhs_mirror) {
+      sphdata[i].r[1] = 2.0*simbox.boxmax[1] - sphdata[i].r[1];
+    }
+    else if (ndim == 3 && itype == z_lhs_periodic) {
       sphdata[i].r[2] += simbox.boxsize[2];
-    else if (itype == z_rhs_periodic && ndim == 3)
+    }
+    else if (ndim == 3 && itype == z_rhs_periodic) {
       sphdata[i].r[2] -= simbox.boxsize[2];
+    }
+    else if (ndim == 3 && itype == z_lhs_mirror) {
+      sphdata[i].r[2] = 2.0*simbox.boxmin[2] - sphdata[i].r[2];
+    }
+    else if (ndim == 3 && itype == z_rhs_mirror) {
+      sphdata[i].r[2] = 2.0*simbox.boxmax[2] - sphdata[i].r[2];
+    }
 
   }
   //---------------------------------------------------------------------------
@@ -168,7 +211,8 @@ void NullGhosts<ndim>::CheckBoundaries(DomainBox<ndim> simbox, Sph<ndim> *sph)
 /// Empty function when no ghost particles are required.
 //=============================================================================
 template <int ndim>
-void NullGhosts<ndim>::CopySphDataToGhosts(DomainBox<ndim> simbox, Sph<ndim> *sph) {
+void NullGhosts<ndim>::CopySphDataToGhosts(DomainBox<ndim> simbox, Sph<ndim> *sph)
+{
   return;
 }
 

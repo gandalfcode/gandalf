@@ -1080,8 +1080,8 @@ void Simulation<ndim>::ImportArrayNbody
   int size,                            ///< [in] No. of array elements
   string quantity)                     ///< [in] String id of quantity being imported
 {
-  FLOAT StarParticle<ndim>::*quantityp = 0;            // Pointer to scalar quantity
-  FLOAT (StarParticle<ndim>::*quantitypvec)[ndim] = 0; // Pointer to component of vector quantity
+  DOUBLE StarParticle<ndim>::*quantityp = 0;            // Pointer to scalar quantity
+  DOUBLE (StarParticle<ndim>::*quantitypvec)[ndim] = 0; // Pointer to component of vector quantity
   int index = 0;                                   // Component index (if quantity is a vector)
   bool scalar = false;                             // Is the requested quantity a scalar?
 
@@ -1414,4 +1414,3 @@ void Simulation<ndim>::UpdateDiagnostics(void)
 template class Simulation<1>;
 template class Simulation<2>;
 template class Simulation<3>;
-

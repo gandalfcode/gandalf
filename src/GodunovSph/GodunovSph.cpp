@@ -298,8 +298,7 @@ int GodunovSph<ndim, kernelclass >::ComputeH
 
 
   // Normalise all SPH sums correctly
-  parti.h = max(h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim),
-                h_lower_bound);
+  parti.h = max(h_fac*powf(parti.m*parti.invrho,Sph<ndim>::invndim), h_lower_bound);
   parti.invh = (FLOAT) 1.0/parti.h;
   parti.hfactor = pow(parti.invh,ndim+1);
   parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;

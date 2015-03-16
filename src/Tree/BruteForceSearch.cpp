@@ -149,7 +149,6 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
 {
   int i,j,jj,k;                        // Particle and dimension counters
   int Nneib = 0;                       // No. of (non-dead) neighbours
-  int okflag;                          // Flag valid smoothing length
   int *neiblist;                       // List of neighbours
   FLOAT dr[ndim];                      // Relative distance vector
   FLOAT rp[ndim];                      // Position of current particle
@@ -203,7 +202,7 @@ void BruteForceSearch<ndim,ParticleType>::UpdateAllSphProperties
       //-------------------------------------------------------------------------------------------
 
       // Compute all SPH gather properties
-      okflag = sph->ComputeH(i,Nneib,big_number,m,mu,drsqd,gpot,sphdata[i],nbody);
+      sph->ComputeH(i,Nneib,big_number,m,mu,drsqd,gpot,sphdata[i],nbody);
       //assert(okflag);
 
     }

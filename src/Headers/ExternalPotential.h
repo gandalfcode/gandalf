@@ -32,6 +32,7 @@
 using namespace std;
 
 
+
 //=================================================================================================
 //  Class ExternalPotential
 /// \brief   Class to compute and return all terms of external potential fields
@@ -47,7 +48,7 @@ class ExternalPotential
   ExternalPotential() {};
   ~ExternalPotential() {};
 
-  virtual void AddExternalPotential(DOUBLE *, DOUBLE *, DOUBLE *, DOUBLE *, DOUBLE &) = 0;
+  virtual void AddExternalPotential(FLOAT *, FLOAT *, FLOAT *, FLOAT *, FLOAT &) = 0;
 
 };
 
@@ -67,7 +68,47 @@ class NullPotential : public ExternalPotential<ndim>
 
   NullPotential() {};
   ~NullPotential() {};
+
   void AddExternalPotential(DOUBLE *, DOUBLE *, DOUBLE *, DOUBLE *, DOUBLE &) {}
+
+};
+
+
+
+//=================================================================================================
+//  Class VerticalPotential
+/// \brief   Add simple constant gravitational field potential
+/// \details ...
+/// \author  D. A. Hubber
+/// \date    14/03/2015
+//=================================================================================================
+template <int ndim>
+class VerticalPotential : public ExternalPotential<ndim>
+{
+ public:
+
+  VerticalPotential(int _kgrav, DOUBLE _avert, DOUBLE _rzero) :
+    kgrav(_kgrav), avert(_avert), rzero(_rzero) {}
+  ~VerticalPotential();
+
+  const int kgrav;                     ///< ..
+  const DOUBLE avert;                  ///< ..
+  const DOUBLE rzero;                  ///< ..
+
+
+  void AddExternalPotential
+   (DOUBLE rp[ndim],                   ///< Position of particle
+    DOUBLE vp[ndim],                   ///< Velocity of particle
+    DOUBLE ap[ndim],                   ///< Acceleration of particle
+    DOUBLE adotp[ndim],                ///< 'Jerk' of particle
+    DOUBLE &potp)                      ///< Potential of particle
+  {
+    ap[kgrav]    += (FLOAT) avert;
+    adotp[kgrav] += 0.0;
+    potp         += (rp[kgrav] - (FLOAT) rzero)*(FLOAT) avert;
+
+    return;
+  }
 
 };
 

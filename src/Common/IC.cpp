@@ -374,7 +374,7 @@ void Ic<ndim>::ShockTube(void)
     FLOAT *vaux;                         // Temp. array for x-velocities
     DomainBox<ndim> box1;                // LHS box
     DomainBox<ndim> box2;                // RHS box
-    Particle<ndim> *partdata;         // Pointer to main SPH data array
+    Particle<ndim> *partdata;            // Pointer to main SPH data array
 
     Parameters* simparams = sim->simparams;
     DomainBox<ndim>& simbox = sim->simbox;
@@ -734,7 +734,6 @@ void Ic<ndim>::ContactDiscontinuity(void)
   FLOAT *r;                            // Position vectors
   DomainBox<ndim> box1;                // LHS box
   DomainBox<ndim> box2;                // RHS box
-  Particle<ndim> *partdata = hydro->GetParticleArray();
 
   // Create local copies of all parameters required to set-up problem
   FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
@@ -852,6 +851,101 @@ void Ic<ndim>::ContactDiscontinuity(void)
   // Calculate all SPH properties
   sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
   */
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  Ic::GreshoVortex
+/// Set-up Gresho & Chan (1990) vortex test problem.
+//=================================================================================================
+template <int ndim>
+void Ic<ndim>::GreshoVortex(void)
+{
+  // Only compile for 2 dimensional case
+  //-----------------------------------------------------------------------------------------------
+  if (ndim == 2) {
+
+    int i;                             // Particle counter
+    int j;                             // Aux. particle counter
+    int k;                             // Dimension counter
+    int Nbox;                          // No. of particles in fluid box 1
+    int Nlattice[ndim];                // Lattice particles in fluid box 1
+    FLOAT dr_unit[ndim];               // ..
+    FLOAT drmag;                       // ..
+    FLOAT drsqd;                       // ..
+    FLOAT invdrmag;                    // ..
+    FLOAT press;
+    FLOAT rhofluid;                    // Density of fluid
+    FLOAT rotspeed;
+    FLOAT volume;                      // Volume of fluid box
+    FLOAT *r;                          // Array of particle positions
+    Particle<ndim> *partdata;          // Pointer to main SPH data array
+
+    // Record local copies of all important parameters
+    FLOAT gammaone  = simparams->floatparams["gamma_eos"] - (FLOAT) 1.0;
+    Nlattice[0] = simparams->intparams["Nlattice1[0]"];
+    Nlattice[1] = simparams->intparams["Nlattice1[1]"];
+
+    debug2("[Ic::GreshoVortex]");
+
+
+    // Compute size and range of fluid bounding boxes
+    //---------------------------------------------------------------------------------------------
+    rhofluid = 1.0;
+    volume = (simbox.boxmax[0] - simbox.boxmin[0])*(simbox.boxmax[1] - simbox.boxmin[1]);
+    Nbox = Nlattice[0]*Nlattice[1];
+
+
+    // Allocate local and main particle memory
+    hydro->Nhydro = Nbox;
+    sim->AllocateParticleMemory();
+    r = new FLOAT[ndim*hydro->Nhydro];
+
+    // Set pointer to SPH particle data
+    partdata = hydro->GetParticleArray();
+
+    AddCubicLattice(Nbox, Nlattice, r, simbox, false);
+
+    for (i=0; i<Nbox; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
+      drsqd = DotProduct(part.r, part.r, ndim);
+      drmag = sqrt(drsqd) + small_number;
+      invdrmag = 1.0/drmag;
+      for (k=0; k<ndim; k++) dr_unit[k] = part.r[k]/drmag;
+
+      // Set velocity and pressure/internal energy depending on radial position
+      if (drmag < 0.2) {
+        rotspeed = 5.0*drmag;
+        press = 5.0 + 12.5*drsqd;
+      }
+      else if (drmag < 0.4) {
+        rotspeed = 2.0 - 5.0*drmag;
+        press = 9.0 + 12.5*drsqd - 20.0*drmag + 4.0*log(drmag/0.2);
+      }
+      else {
+        rotspeed = 0.0;
+        press = 3.0 + 4.0*log(2.0);
+      }
+      part.v[0] = -rotspeed*dr_unit[1];
+      part.v[1] = rotspeed*dr_unit[0];
+
+      part.m = rhofluid*volume/(FLOAT) Nbox;
+      part.h = hydro->h_fac*pow(part.m/rhofluid,invndim);
+      part.u = press/rhofluid/gammaone;
+    }
+
+  }
+  //-----------------------------------------------------------------------------------------------
+  else {
+    string message = "Gresho vortex only available in 2D";
+    ExceptionHandler::getIstance().raise(message);
+  }
+  //-----------------------------------------------------------------------------------------------
+
 
   return;
 }
@@ -1088,6 +1182,165 @@ void Ic<ndim>::NohProblem(void)
   sim->initial_h_provided = true;
 
   delete[] r;
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  Ic::RTI
+/// Set-up 2D Rayleigh-Taylor instability test.
+//=================================================================================================
+template <int ndim>
+void Ic<ndim>::RTI(void)
+{
+  // Only compile for 2 dimensional case
+  //-----------------------------------------------------------------------------------------------
+  if (ndim == 2) {
+
+    int i;                             // Particle counter
+    int j;                             // Aux. particle counter
+    int k;                             // Dimension counter
+    int Nbox1;                         // No. of particles in fluid box 1
+    int Nbox2;                         // No. of particles in fluid box 2
+    int Nlattice1[ndim];               // Lattice particles in fluid box 1
+    int Nlattice2[ndim];               // Lattice particles in fluid box 2
+    FLOAT rho;                         // Density
+    FLOAT volume;                      // Volume of fluid box
+    FLOAT *r;                          // Array of particle positions
+    DomainBox<ndim> box1;              // Bounding box of fluid 1
+    DomainBox<ndim> box2;              // Bounding box of fluid 2
+    Particle<ndim> *partdata;          // Pointer to main SPH data array
+
+    // Record local copies of all important parameters
+    FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
+    FLOAT rhofluid2 = simparams->floatparams["rhofluid2"];
+    FLOAT press1    = simparams->floatparams["press1"];
+    FLOAT press2    = simparams->floatparams["press2"];
+    FLOAT gammaone  = simparams->floatparams["gamma_eos"] - 1.0;
+    FLOAT amp       = simparams->floatparams["amp"];
+    Nlattice1[0]    = simparams->intparams["Nlattice1[0]"];
+    Nlattice1[1]    = simparams->intparams["Nlattice1[1]"];
+    Nlattice2[0]    = simparams->intparams["Nlattice2[0]"];
+    Nlattice2[1]    = simparams->intparams["Nlattice2[1]"];
+
+    debug2("[Ic::RTI]");
+
+
+    // Compute size and range of fluid bounding boxes
+    //---------------------------------------------------------------------------------------------
+    box1.boxmin[0] = simbox.boxmin[0];
+    box1.boxmax[0] = simbox.boxmax[0];
+    box1.boxmin[1] = simbox.boxmin[1];
+    box1.boxmax[1] = simbox.boxmin[1] + simbox.boxhalf[1];
+    box2.boxmin[0] = simbox.boxmin[0];
+    box2.boxmax[0] = simbox.boxmax[0];
+    box2.boxmin[1] = simbox.boxmin[1] + simbox.boxhalf[1];
+    box2.boxmax[1] = simbox.boxmax[1];
+    volume = (box1.boxmax[0] - box1.boxmin[0])*(box1.boxmax[1] - box1.boxmin[1]);
+    Nbox1 = Nlattice1[0]*Nlattice1[1];
+    Nbox2 = Nlattice2[0]*Nlattice2[1];
+
+
+    // Allocate local and main particle memory
+    hydro->Nhydro = Nbox1 + Nbox2;
+    sim->AllocateParticleMemory();
+    r = new FLOAT[ndim*hydro->Nhydro];
+
+    // Set pointer to SPH particle data
+    partdata = hydro->GetParticleArray();
+
+
+    // Add particles for LHS of the shocktube
+    //---------------------------------------------------------------------------------------------
+    if (Nbox1 > 0) {
+      AddCubicLattice(Nbox1,Nlattice1,r,box1,false);
+
+      for (i=0; i<Nbox1; i++) {
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
+        for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
+        for (k=0; k<ndim; k++) part.v[k] = 0.0;
+
+        FLOAT delta = 0.025;
+        rho = rhofluid1 + (rhofluid2 - rhofluid1)/
+          ((FLOAT) 1.0 + exp(-(part.r[1] - (FLOAT) 0.5)/delta));
+
+        part.m = rho*volume/(FLOAT) Nbox1;
+        part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
+        part.u = press1/rhofluid1/gammaone;
+      }
+    }
+
+    // Add particles for RHS of the shocktube
+    //-----------------------------------------------------------------------------------------------
+    if (Nbox2 > 0) {
+      AddCubicLattice(Nbox2,Nlattice2,r,box2,false);
+
+      for (j=0; j<Nbox2; j++) {
+        i = Nbox1 + j;
+        Particle<ndim>& part = hydro->GetParticlePointer(i);
+        for (k=0; k<ndim; k++) part.r[k] = r[ndim*j + k];
+        for (k=0; k<ndim; k++) part.v[k] = 0.0;
+
+        FLOAT delta = 0.025;
+        rho = rhofluid1 + (rhofluid2 - rhofluid1)/
+          ((FLOAT) 1.0 + exp(-(part.r[1] - (FLOAT) 0.5)/delta));
+
+        part.m = rho*volume/(FLOAT) Nbox2;
+        part.h = hydro->h_fac*pow(part.m/rhofluid2,invndim);
+        part.u = press2/rhofluid2/gammaone;
+      }
+    }
+
+    // Add velocity perturbation here
+    //---------------------------------------------------------------------------------------------
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      if (part.r[1] >= 0.3 && part.r[2] <= 0.7) {
+        part.v[1] = amp*((FLOAT) 1.0 + cos((FLOAT) 8.0*pi*(part.r[0] + (FLOAT) 0.25)))*
+          ((FLOAT) 1.0 + cos((FLOAT) 5.0*pi*(part.r[1] - (FLOAT) 0.5)));
+      }
+    }
+
+    // Set initial smoothing lengths and create initial ghost particles
+    //---------------------------------------------------------------------------------------------
+    hydro->Nghost = 0;
+    hydro->Nghostmax = hydro->Nhydromax - hydro->Nhydro;
+    hydro->Ntot = hydro->Nhydro;
+    for (i=0; i<hydro->Nhydro; i++) hydro->GetParticlePointer(i).active = true;
+
+    sim->initial_h_provided = true;
+
+    // Update neighbour tree
+    sim->rebuild_tree = true;
+    /*sphneib->BuildTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+                       hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
+
+    // Search ghost particles
+    sphneib->SearchBoundaryGhostParticles((FLOAT) 0.0,simbox,sph);
+    sphneib->BuildGhostTree(rebuild_tree,n,ntreebuildstep,ntreestockstep,
+                            hydro->Ntot,hydro->Nhydromax,partdata,sph,timestep);
+
+    // Calculate all SPH properties
+    sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
+    */
+    for (i=0; i<hydro->Nhydro; i++) {
+      Particle<ndim>& part = hydro->GetParticlePointer(i);
+      //cout << "r[" << i << "] : " << part.r[0] << "   " << part.r[1] << endl;
+      //part.u = press1/part.rho/gammaone;
+    }
+
+
+    delete[] r;
+
+  }
+  //-----------------------------------------------------------------------------------------------
+  else {
+    string message = "Kelvin-Helmholtz instability only in 2D";
+    ExceptionHandler::getIstance().raise(message);
+  }
+  //-----------------------------------------------------------------------------------------------
 
   return;
 }
@@ -2242,7 +2495,6 @@ void Ic<ndim>::SpitzerExpansion(void)
   int Npart      = simparams->intparams["Nhydro"];
   FLOAT mcloud   = simparams->floatparams["mcloud"];
   FLOAT radius   = simparams->floatparams["radius"];
-  FLOAT gammaone = simparams->floatparams["gamma_eos"] - 1.0;
   string particle_dist = simparams->stringparams["particle_distribution"];
 
   debug2("[Ic::SpitzerExpansion]");

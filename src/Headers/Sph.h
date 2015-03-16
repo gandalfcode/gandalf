@@ -74,6 +74,7 @@ class Sph : public Hydrodynamics<ndim>
   using Hydrodynamics<ndim>::allocated;
   using Hydrodynamics<ndim>::h_fac;
   using Hydrodynamics<ndim>::hydrodata_unsafe;
+  using Hydrodynamics<ndim>::invndim;
   using Hydrodynamics<ndim>::kernfac;
   using Hydrodynamics<ndim>::kernfacsqd;
   using Hydrodynamics<ndim>::kernp;
@@ -144,7 +145,6 @@ class Sph : public Hydrodynamics<ndim>
   const FLOAT alpha_visc;              ///< alpha artificial viscosity parameter
   const FLOAT beta_visc;               ///< beta artificial viscosity parameter
   const FLOAT h_converge;              ///< h-rho iteration tolerance
-  static const FLOAT invndim=1./ndim;  ///< Copy of 1/ndim
 
 
   // SPH particle counters and main particle data array
@@ -161,6 +161,7 @@ class Sph : public Hydrodynamics<ndim>
   SphType sphtype[Nhydrotypes];        ///< Array of SPH types
 
 };
+
 
 
 

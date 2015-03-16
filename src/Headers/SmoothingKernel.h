@@ -1,4 +1,4 @@
-//=============================================================================
+//=================================================================================================
 //  SmoothingKernel.h
 //  Contains all routines for computing kernel functions, calculatiung and
 //  storing kernel tables for quick look-up of values.
@@ -19,7 +19,7 @@
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  General Public License (http://www.gnu.org/licenses) for more details.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _SMOOTHING_KERNEL_H_
@@ -34,7 +34,7 @@ using namespace std;
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class SmoothingKernel
 /// \brief   Parent class for all SPH kernel options.
 /// \details Contains all (virtual) SPH kernel functions.  All functions
@@ -42,7 +42,7 @@ using namespace std;
 ///          (i.e. M4, Quintic or Gaussian kernels).
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class SmoothingKernel
 {
@@ -89,13 +89,13 @@ class SmoothingKernel
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class M4Kernel
 /// \brief   M4 kernel class including functions
 /// \details Contains all SPH kernel function definitions for M4 kernel.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class M4Kernel: public SmoothingKernel<ndim>
 {
@@ -117,10 +117,10 @@ class M4Kernel: public SmoothingKernel<ndim>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  M4Kernel::w0
 /// Main SPH smoothing kernel function, $W(s=r/h)$, for M4 kernel.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT M4Kernel<ndim>::w0(const FLOAT s)  ///< [in] Kernel parameter, r/h
 {
@@ -134,10 +134,10 @@ inline FLOAT M4Kernel<ndim>::w0(const FLOAT s)  ///< [in] Kernel parameter, r/h
 
 
 
-//=============================================================================
+//=================================================================================================
 //  M4Kernel::w1
 /// First spatial derivative of main smoothing kernel, dWdr, for M4 kernel.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT M4Kernel<ndim>::w1(const FLOAT s)  ///< [in] Kernel parameter, r/h
 {
@@ -151,11 +151,11 @@ inline FLOAT M4Kernel<ndim>::w1(const FLOAT s)  ///< [in] Kernel parameter, r/h
 
 
 
-//=============================================================================
+//=================================================================================================
 //  M4Kernel::womega
 /// Partial derivative of kernel with respect to smoothing length, $dW/dh$,
 /// to compute omega/f correction term for M4 kernel.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT M4Kernel<ndim>::womega(const FLOAT s)  ///< [in] Kernel parameter, r/h
 {
@@ -175,11 +175,11 @@ inline FLOAT M4Kernel<ndim>::womega(const FLOAT s)  ///< [in] Kernel parameter, 
 
 
 
-//=============================================================================
+//=================================================================================================
 //  M4Kernel::wzeta
 /// Partial derivative of potential kernel with respect to h.  Used to compute
 /// gravitational zeta correction term when using grad-h SPH and M4 kernel.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT M4Kernel<ndim>::wzeta(const FLOAT s)  ///< [in] Kernel parameter, r/h
 {
@@ -195,11 +195,11 @@ inline FLOAT M4Kernel<ndim>::wzeta(const FLOAT s)  ///< [in] Kernel parameter, r
 
 
 
-//=============================================================================
+//=================================================================================================
 //  M4Kernel::wgrav
 /// Volume intergated kernel function to compute kernel-softened gravitational
 /// force for M4 kernel.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT M4Kernel<ndim>::wgrav(const FLOAT s)  ///< [in] Kernel parameter, r/h
 {
@@ -214,11 +214,11 @@ inline FLOAT M4Kernel<ndim>::wgrav(const FLOAT s)  ///< [in] Kernel parameter, r
 
 
 
-//=============================================================================
+//=================================================================================================
 //  M4Kernel::wpot
 /// Volume integrated kernel function for computing softened gravitational
 /// potential using M4 kernel.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT M4Kernel<ndim>::wpot(const FLOAT s)  ///< [in] Kernel parameter, r/h
 {
@@ -234,13 +234,13 @@ inline FLOAT M4Kernel<ndim>::wpot(const FLOAT s)  ///< [in] Kernel parameter, r/
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class QuinticKernel
 /// \brief   Quintic kernel class including functions
 /// \details Contains all SPH kernel function definitions for Quintic kernel.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class QuinticKernel: public SmoothingKernel<ndim>
 {
@@ -262,10 +262,10 @@ class QuinticKernel: public SmoothingKernel<ndim>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  QuinticKernel::w0
 /// Main SPH smoothing kernel function, $W(s=r/h)$, for quintic kernel.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT QuinticKernel<ndim>::w0(const FLOAT s)
 {
@@ -283,10 +283,10 @@ inline FLOAT QuinticKernel<ndim>::w0(const FLOAT s)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  QuinticKernel::w1
 /// First spatial derivative of smoothing kernel, dWdr, for Quintic kernel.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT QuinticKernel<ndim>::w1(const FLOAT s)
 {
@@ -302,10 +302,10 @@ inline FLOAT QuinticKernel<ndim>::w1(const FLOAT s)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  QuinticKernel::womega
 /// Derivative of main kernel function w.r.t the smoothing length.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT QuinticKernel<ndim>::womega(const FLOAT s)
 {
@@ -329,10 +329,10 @@ inline FLOAT QuinticKernel<ndim>::womega(const FLOAT s)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  QuinticKernel::wzeta
 /// Derivative of potential kernel w.r.t. smoothing length.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT QuinticKernel<ndim>::wzeta(const FLOAT s)
 {
@@ -354,10 +354,10 @@ inline FLOAT QuinticKernel<ndim>::wzeta(const FLOAT s)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  QuinticKernel::wgrav
 /// Gravitational force kernel.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT QuinticKernel<ndim>::wgrav(const FLOAT s)
 {
@@ -375,10 +375,10 @@ inline FLOAT QuinticKernel<ndim>::wgrav(const FLOAT s)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  QuinticKernel::wpot
 /// Gravitational potential kernel
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT QuinticKernel<ndim>::wpot(const FLOAT s)
 {
@@ -397,7 +397,7 @@ inline FLOAT QuinticKernel<ndim>::wpot(const FLOAT s)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class GaussianKernel
 /// \brief   Gaussian kernel class including functions
 /// \details Contains all SPH kernel function definitions for Gaussian kernel.
@@ -405,7 +405,7 @@ inline FLOAT QuinticKernel<ndim>::wpot(const FLOAT s)
 ///          computational efficiency, this kernel only extends to 3h.
 /// \author  D. A. Hubber, G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class GaussianKernel: public SmoothingKernel<ndim>
 {
@@ -427,10 +427,10 @@ class GaussianKernel: public SmoothingKernel<ndim>
 
 
 
-//=============================================================================
+//=================================================================================================
 //  GaussianKernel::w0
 /// Main SPH smoothing kernel function, $W(s=r/h)$, for Gaussian kernel.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT GaussianKernel<ndim>::w0(const FLOAT s)
 {
@@ -442,10 +442,10 @@ inline FLOAT GaussianKernel<ndim>::w0(const FLOAT s)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  GaussianKernel::w1
 /// First spatial derivative of smoothing kernel, dWdr, for Gaussian kernel.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT GaussianKernel<ndim>::w1(const FLOAT s)
 {
@@ -457,10 +457,10 @@ inline FLOAT GaussianKernel<ndim>::w1(const FLOAT s)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  GaussianKernel::womega
 /// Derivative of main SPH kernel w.r.t. smoothing length.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT GaussianKernel<ndim>::womega(const FLOAT s)
 {
@@ -473,10 +473,10 @@ inline FLOAT GaussianKernel<ndim>::womega(const FLOAT s)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  GaussianKernel::wzeta
 /// Derivative of gravitational potential kernel w.r.t. smoothing length.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT GaussianKernel<ndim>::wzeta(const FLOAT s)
 {
@@ -488,10 +488,10 @@ inline FLOAT GaussianKernel<ndim>::wzeta(const FLOAT s)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  GaussianKernel::wgrav
 /// Gravitational force kernel
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT GaussianKernel<ndim>::wgrav(const FLOAT s)
 {
@@ -503,10 +503,10 @@ inline FLOAT GaussianKernel<ndim>::wgrav(const FLOAT s)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  GaussianKernel::wpot
 /// Gravitational potential kernel.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 inline FLOAT GaussianKernel<ndim>::wpot(const FLOAT s)
 {
@@ -518,7 +518,7 @@ inline FLOAT GaussianKernel<ndim>::wpot(const FLOAT s)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class TabulatedKernel
 /// \brief   Class to tabulate arbitrary kernel function for quick look-up.
 /// \details Tabulates all functions of any arbitrary kernel choice.
@@ -526,36 +526,36 @@ inline FLOAT GaussianKernel<ndim>::wpot(const FLOAT s)
 ///          relatively expensive polynomial (with/without divisions).
 /// \author  G. Rosotti
 /// \date    03/04/2013
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 class TabulatedKernel: public SmoothingKernel<ndim>
 {
  private:
 
-  SmoothingKernel<ndim>* kernel;          ///< Pointer to kernel object
+  SmoothingKernel<ndim>* kernel;       ///< Pointer to kernel object
 
-  int res;                          ///< 'Resolution' of kernel table
-  FLOAT resinvkernrange;            ///< ??
-  FLOAT resinvkernrangesqd;         ///< ??
-  FLOAT* tableW0;                   ///< Tabulated W (main kernel)
-  FLOAT* tableW1;                   ///< Tabulated dW/dr kernel
-  FLOAT* tableWomega;               ///< Tabulated dW/dh kernel
-  FLOAT* tableWzeta;                ///< Tabulated zeta kernel
-  FLOAT* tableWgrav;                ///< Tabulated smoothed gravity kernel
-  FLOAT* tableWpot;                 ///< Tabulated smoothed potential kernel
-  FLOAT* tableW0_s2;                ///< Tabulated W with ssqd argument
-  FLOAT* tableWomega_s2;            ///< Tabulated Womega with ssqd argument
-  FLOAT* tableWzeta_s2;             ///< Tabulated Wzeta with ssqd argument
-  FLOAT* tableLOS;                  ///< Tabulated Line-of-sight kernel
+  int res;                             ///< 'Resolution' of kernel table
+  FLOAT resinvkernrange;               ///< ??
+  FLOAT resinvkernrangesqd;            ///< ??
+  FLOAT* tableW0;                      ///< Tabulated W (main kernel)
+  FLOAT* tableW1;                      ///< Tabulated dW/dr kernel
+  FLOAT* tableWomega;                  ///< Tabulated dW/dh kernel
+  FLOAT* tableWzeta;                   ///< Tabulated zeta kernel
+  FLOAT* tableWgrav;                   ///< Tabulated smoothed gravity kernel
+  FLOAT* tableWpot;                    ///< Tabulated smoothed potential kernel
+  FLOAT* tableW0_s2;                   ///< Tabulated W with ssqd argument
+  FLOAT* tableWomega_s2;               ///< Tabulated Womega with ssqd argument
+  FLOAT* tableWzeta_s2;                ///< Tabulated Wzeta with ssqd argument
+  FLOAT* tableLOS;                     ///< Tabulated Line-of-sight kernel
 
   void initializeTableLOS();
 
 
 
-  //===========================================================================
+  //===============================================================================================
   //  TabulatedKernel::initializeTable
   /// Initialise kernel table
-  //===========================================================================
+  //===============================================================================================
   void initializeTable(FLOAT* table, FLOAT (SmoothingKernel<ndim>::*function) (const FLOAT s)) {
     const FLOAT step = kernel->kernrange/res;
     for (int i=0; i< res; i++) {
@@ -564,10 +564,10 @@ class TabulatedKernel: public SmoothingKernel<ndim>
   }
 
 
-  //===========================================================================
+  //===============================================================================================
   //  TabulatedKernel::initializeTable
   /// Initialise kernel table
-  //===========================================================================
+  //===============================================================================================
   void initializeTableSqd(FLOAT* table, FLOAT (SmoothingKernel<ndim>::*function) (const FLOAT s)) {
     const FLOAT step = kernel->kernrangesqd/res;
     for (int i=0; i< res; i++) {
@@ -576,11 +576,11 @@ class TabulatedKernel: public SmoothingKernel<ndim>
   }
 
 
-  //===========================================================================
+  //===============================================================================================
   //  TabulatedKernel::tableLookup
   /// ..
-  //===========================================================================
-  FLOAT tableLookup (FLOAT* table, const FLOAT s) {
+  //===============================================================================================
+  FLOAT tableLookup(FLOAT* table, const FLOAT s) {
     if (s >= (this->kernrange)) return (FLOAT) 0.0;
     FLOAT indexf = s*resinvkernrange;
     int index = (int) indexf;
@@ -589,10 +589,10 @@ class TabulatedKernel: public SmoothingKernel<ndim>
 
 
 
-  //===========================================================================
+  //===============================================================================================
   //  TabulatedKernel::tableLookupSqd
   /// ..
-  //===========================================================================
+  //===============================================================================================
   FLOAT tableLookupSqd(FLOAT* table, const FLOAT s) {
     if (s >= (this->kernrangesqd)) return (FLOAT) 0.0;
     FLOAT indexf = s*resinvkernrangesqd;
@@ -602,11 +602,11 @@ class TabulatedKernel: public SmoothingKernel<ndim>
 
 
 
-  //===========================================================================
+  //===============================================================================================
   //  TabulatedKernel::GravTableLookup
   /// ..
-  //===========================================================================
-  FLOAT GravTableLookup (FLOAT* table, const FLOAT s) {
+  //===============================================================================================
+  FLOAT GravTableLookup(FLOAT* table, const FLOAT s) {
     if (s >= (this->kernrange)) return (FLOAT) 1.0/(s*s);
     FLOAT indexf = s*resinvkernrange;
     int index = (int) indexf;
@@ -615,11 +615,11 @@ class TabulatedKernel: public SmoothingKernel<ndim>
 
 
 
-  //===========================================================================
+  //===============================================================================================
   //  TabulatedKernel::GravPotTableLookup
   /// ..
-  //===========================================================================
-  FLOAT GravPotTableLookup (FLOAT* table, const FLOAT s) {
+  //===============================================================================================
+  FLOAT GravPotTableLookup(FLOAT* table, const FLOAT s) {
     if (s >= (this->kernrange)) return (FLOAT) 1.0/s;
     FLOAT indexf = s*resinvkernrange;
     int index = (int) indexf;
@@ -660,7 +660,7 @@ class TabulatedKernel: public SmoothingKernel<ndim>
 
 
 // Templated functions for tabulated kernel look-up
-//-----------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 template <int ndim>
 inline FLOAT TabulatedKernel<ndim>::w0 (const FLOAT s) {
   return tableLookup(tableW0, s);

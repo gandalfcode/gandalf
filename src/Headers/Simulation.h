@@ -272,7 +272,7 @@ class Simulation : public SimulationBase
   // Variables
   //-----------------------------------------------------------------------------------------------
   static const int vdim=ndim;
-  static const FLOAT invndim=1.0/ndim;
+  static const FLOAT invndim; //=1.0/ndim;
 
   DomainBox<ndim> simbox;             ///< Simulation boundary data
   Diagnostics<ndim> diag0;            ///< Initial diagnostic state
@@ -297,6 +297,12 @@ class Simulation : public SimulationBase
 #endif
 
 };
+
+
+// Declare invndim constant here (prevents warnings with some compilers)
+template <int ndim>
+const FLOAT Simulation<ndim>::invndim = 1.0/ndim;
+
 
 
 

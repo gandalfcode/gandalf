@@ -729,8 +729,8 @@ void KDTree<ndim,ParticleType,TreeCell>::StockTree
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
- (TreeCell<ndim> &cell,                ///< Reference to current tree cell
-  ParticleType<ndim> *partdata)        ///< Particle data array
+ (TreeCell<ndim> &cell,                ///< [inout] Reference to current tree cell
+  ParticleType<ndim> *partdata)        ///< [in] Particle data array
 {
   int i;                               // Particle counter
   int iaux;                            // Aux. particle i.d. variable
@@ -801,10 +801,12 @@ void KDTree<ndim,ParticleType,TreeCell>::StockCellProperties
         for (k=0; k<ndim; k++) {
           if (partdata[i].r[k] < cell.bbmin[k]) cell.bbmin[k] = partdata[i].r[k];
           if (partdata[i].r[k] > cell.bbmax[k]) cell.bbmax[k] = partdata[i].r[k];
-          if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hboxmin[k])
+          if (partdata[i].r[k] - kernrange*partdata[i].h < cell.hboxmin[k]) {
             cell.hboxmin[k] = partdata[i].r[k] - kernrange*partdata[i].h;
-          if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hboxmax[k])
+          }
+          if (partdata[i].r[k] + kernrange*partdata[i].h > cell.hboxmax[k]) {
             cell.hboxmax[k] = partdata[i].r[k] + kernrange*partdata[i].h;
+          }
         }
       }
       if (i == cell.ilast) break;

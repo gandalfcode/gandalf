@@ -265,7 +265,16 @@ int GradhSph<ndim, kernelclass>::ComputeH
     parti.invomega *= parti.hfactor;
     parti.zeta     *= invhsqd;
 
+    // Density must at least equal its self-contribution
+    // (failure could indicate neighbour list problem)
+    assert(parti.rho >= parti.m*parti.hfactor*kern.w0(0.0));
+
     if (parti.rho > (FLOAT) 0.0) parti.invrho = (FLOAT) 1.0/parti.rho;
+
+    /*cout << "iteration : " << iteration << "      Checking h : " << parti.h << "   "
+         << h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim) << "    "
+         << h_lower_bound << "    " << h_upper_bound << "    rho : " << parti.rho
+         << "   m : " << parti.m << endl;*/
 
     // If h changes below some fixed tolerance, exit iteration loop
     if (parti.rho > (FLOAT) 0.0 && parti.h > h_lower_bound &&
@@ -283,10 +292,12 @@ int GradhSph<ndim, kernelclass>::ComputeH
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
     else if (iteration < 5*iteration_max) {
-      if (parti.rho < small_number || parti.rho*pow(parti.h,ndim) > pow(h_fac,ndim)*parti.m)
+      if (parti.rho < small_number || parti.rho*pow(parti.h,ndim) > pow(h_fac,ndim)*parti.m) {
         h_upper_bound = parti.h;
-      else
+      }
+      else {
         h_lower_bound = parti.h;
+      }
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
     else {
@@ -307,7 +318,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
 
   // Normalise all SPH sums correctly
-  parti.h         = max(h_fac*pow(parti.m*parti.invrho,Sph<ndim>::invndim),h_lower_bound);
+  parti.h         = max(h_fac*powf(parti.m*parti.invrho,Sph<ndim>::invndim), h_lower_bound);
   parti.invh      = (FLOAT) 1.0/parti.h;
   parti.hfactor   = pow(parti.invh,ndim+1);
   parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
@@ -384,9 +395,9 @@ void GradhSph<ndim, kernelclass>::ComputeThermalProperties
 {
   GradhSphParticle<ndim>& part = static_cast<GradhSphParticle<ndim> &> (part_gen);
 
-  part.u = eos->SpecificInternalEnergy(part);
-  part.sound = eos->SoundSpeed(part);
-  part.press = eos->Pressure(part);
+  part.u       = eos->SpecificInternalEnergy(part);
+  part.sound   = eos->SoundSpeed(part);
+  part.press   = eos->Pressure(part);
   part.pfactor = eos->Pressure(part)*part.invrho*part.invrho*part.invomega;
 
   return;

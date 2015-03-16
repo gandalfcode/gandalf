@@ -23,6 +23,7 @@
 
 #include <math.h>
 #include "Constants.h"
+#include "Hydrodynamics.h"
 #include "Nbody.h"
 #include "Parameters.h"
 #include "RandomNumber.h"
@@ -132,8 +133,8 @@ void SinkTest::SetUp(void)
 
   // Calculate smoothing lengths of all particles
   sph->InitialSmoothingLengthGuess();
-  sphneib->UpdateAllSphProperties(Npart,Npart,sph->GetParticleArray(),sph,nbody);
-  sphneib->UpdateAllSphProperties(Npart,Npart,sph->GetParticleArray(),sph,nbody);
+  sphneib->UpdateAllSphProperties(Npart,Npart,sph->GetSphParticleArray(),sph,nbody);
+  sphneib->UpdateAllSphProperties(Npart,Npart,sph->GetSphParticleArray(),sph,nbody);
 
   // Calculate forces of all particles
   for (int i=0; i<Npart; i++) {
@@ -144,10 +145,10 @@ void SinkTest::SetUp(void)
       part.adot[k] = 0.0;
     }
   }
-  sphneib->UpdateAllSphForces(Npart,Npart,sph->GetParticleArray(),sph,nbody);
+  sphneib->UpdateAllSphForces(Npart,Npart,sph->GetSphParticleArray(),sph,nbody);
 
   // Calculate smoothing lengths of all particles
-  sphneib->UpdateAllSphProperties(Npart,Npart,sph->GetParticleArray(),sph,nbody);
+  sphneib->UpdateAllSphProperties(Npart,Npart,sph->GetSphParticleArray(),sph,nbody);
 
   // Calculate forces of all particles
   for (int i=0; i<Npart; i++) {
@@ -158,7 +159,7 @@ void SinkTest::SetUp(void)
       part.adot[k] = 0.0;
     }
   }
-  sphneib->UpdateAllSphForces(Npart,Npart,sph->GetParticleArray(),sph,nbody);
+  sphneib->UpdateAllSphForces(Npart,Npart,sph->GetSphParticleArray(),sph,nbody);
 
   return;
 }

@@ -154,8 +154,8 @@ void Simulation<ndim>::CalculateDiagnostics(void)
 	if (!ParticleInBox(nbody->stardata[sinks.sink[i].istar], mydomain )  ) continue;
 #endif
     for (k=0; k<3; k++) diag.angmom[k]      += sinks.sink[i].angmom[k];
-    for (k=0; k<3; k++) diag.force_grav[k]  -= sinks.sink[i].fhydro[k];
-    for (k=0; k<3; k++) diag.force_hydro[k] += sinks.sink[i].fhydro[k];
+    for (k=0; k<ndim; k++) diag.force_grav[k]  -= sinks.sink[i].fhydro[k];
+    for (k=0; k<ndim; k++) diag.force_hydro[k] += sinks.sink[i].fhydro[k];
   }
 
   // Normalise all quantities and sum all contributions to total energy
@@ -320,7 +320,6 @@ template <int ndim>
 void Simulation<ndim>::OutputTestDiagnostics(void)
 {
   int i;
-  int k;
   ofstream outfile;
   ofstream solfile;
   string ic = simparams->stringparams["ic"];
@@ -336,7 +335,6 @@ void Simulation<ndim>::OutputTestDiagnostics(void)
     string solname = run_id + ".spitzer";
     FLOAT temp_ion   = simparams->floatparams["temp_ion"]/simunits.temp.outscale;
     FLOAT mu_ion     = simparams->floatparams["mu_ion"];
-    FLOAT gammam1    = simparams->floatparams["gamma_eos"] - 1.0;
     FLOAT cion       = sqrtf(temp_ion/mu_ion);
     FLOAT radius_ion = 0.0;
     FLOAT m_ion      = 0.0;

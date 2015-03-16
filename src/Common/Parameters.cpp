@@ -285,8 +285,10 @@ void Parameters::SetDefaultValues(void)
   // Gravity parameters
   //-----------------------------------------------------------------------------------------------
   intparams["self_gravity"] = 0;
+  intparams["kgrav"] = 1;
   stringparams["grav_kernel"] = "mean_h";
   stringparams["external_potential"] = "none";
+  floatparams["avert"] = -0.5;
   floatparams["rplummer_extpot"] = 1.0;
   floatparams["mplummer_extpot"] = 1.0;
 
