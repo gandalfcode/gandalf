@@ -222,9 +222,10 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
     for (k=0; k<ndim; k++) celldata[0].bbmax[k] = max(celldata[0].bbmax[k],partdata[i].r[k]);
   }
   for (k=0; k<ndim; k++) {
-    celldata[0].r[k] = 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
+    celldata[0].rcell[k] = 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
     cellSize = max(cellSize, celldata[0].bbmax[k] - celldata[0].rcell[k]);
   }
+  rootCellSize = 2.0*cellSize;
 
   //cout << "Bounding box : " << celldata[0].bbmin[0] << "    " << celldata[0].bbmax[0] << endl;
 
@@ -896,6 +897,8 @@ bool OctTree<ndim,ParticleType,TreeCell>::BoxOverlap
 
 }
 
+
+
 //=================================================================================================
 //  OctTree::ComputeActiveCellList
 /// Returns the number of cells containing active particles, 'Nactive', and
@@ -926,6 +929,8 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeActiveCellPointers
 
   return Nactive;
 }
+
+
 
 //=================================================================================================
 //  OctTree::ComputeActiveCellList

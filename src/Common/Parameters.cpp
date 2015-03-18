@@ -343,6 +343,21 @@ void Parameters::SetDefaultValues(void)
   floatparams["Ndotmin"] = 1e47;
   floatparams["NLyC"] = 1e49;
 
+  // TreeRay algorithm parameters
+  //-----------------------------------------------------------------------------------------------
+  intparams["on_the_spot"] = 0;
+  intparams["nside"] = 4;
+  intparams["ilNR"] = 1;
+  intparams["ilNTheta"] = 16;
+  intparams["ilNPhi"] = 16;
+  intparams["ilNNS"] = 1;
+  intparams["ilFinePix"] = 1;
+  floatparams["maxDist"] = 1.0;
+  floatparams["rayRadRes"] = 1.0;
+  floatparams["relErr"] = 0.1;
+  stringparams["errControl"] = "null";
+
+
   // Boundary conditions parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["boundary_lhs[0]"] = "open";

@@ -729,15 +729,6 @@ void SphSimulation<ndim>::MainLoop(void)
       // Calculate all SPH properties
       sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
 
-      // Update the radiation field
-      /*if (Nsteps%1 == 0) {
-        radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks.Nsink,
-                                        partdata, nbody->nbodydata, sinks.sink);
-        for (i=0; i<sph->Nhydro; i++) {
-          SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-          sph->ComputeThermalProperties(part);
-        }
-      }*/
 
       // Update the radiation field
       if (Nsteps%nradstep == 0 || recomputeRadiation) {

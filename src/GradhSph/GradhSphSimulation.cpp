@@ -213,9 +213,10 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
   // Create neighbour searching object based on chosen method in params file
   //-----------------------------------------------------------------------------------------------
-  if (stringparams["neib_search"] == "bruteforce")
+  if (stringparams["neib_search"] == "bruteforce") {
     sphneib = new GradhSphBruteForce<ndim,GradhSphParticle>
       (sph->kernp->kernrange,&simbox,sph->kernp,timing);
+  }
   else if (stringparams["neib_search"] == "kdtree") {
     sphneib = new GradhSphKDTree<ndim,GradhSphParticle,KDTreeCell>
      (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
@@ -244,7 +245,13 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
 
   // Radiation transport object
   //-----------------------------------------------------------------------------------------------
-  if (gas_radiation == "ionisation") {
+  if (gas_radiation == "treeray" && ndim == 3) {
+    radiation = new TreeRay<ndim,1,GradhSphParticle,OsTreeRayCell>
+      (intparams["on_the_spot"], intparams["nside"], intparams["ilNR"], intparams["ilNTheta"],
+       intparams["ilNPhi"], intparams["ilNNS"], intparams["ilFinePix"], floatparams["maxDist"],
+       floatparams["rayRadRes"], floatparams["relErr"], stringparams["errControl"]);
+  }
+  else if (gas_radiation == "ionisation") {
     radiation = new MultipleSourceIonisation<ndim,GradhSphParticle>
       (sphneib, floatparams["mu_bar"], floatparams["mu_ion"], floatparams["temp0"],
        floatparams["temp_ion"], floatparams["Ndotmin"], floatparams["gamma_eos"],
@@ -253,18 +260,15 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
        simunits.temp.outscale, pow(simunits.r.outscale*simunits.r.outcgs,-4)*
        pow(simunits.t.outscale*simunits.t.outcgs,+2)/simunits.m.outscale*simunits.m.outcgs);
   }
-  else if (gas_radiation == "treemc") {
-    radiation = new TreeMonteCarlo<ndim,1,GradhSphParticle,KDRadTreeCell>
-      (intparams["Nphoton"], intparams["Nleafmax"], randnumb);
-  }
   else if (gas_radiation == "monoionisation") {
     radiation = new MonochromaticIonisationMonteCarlo<ndim,1,GradhSphParticle,MonoIonTreeCell>
       (intparams["Nleafmax"], intparams["Nraditerations"], intparams["Nradlevels"],
        floatparams["Nphotonratio"], floatparams["temp_ion"], floatparams["arecomb"],
        floatparams["NLyC"], stringparams["rand_algorithm"], &simunits, sph->eos);
   }
-  else if (gas_radiation == "none")
+  else if (gas_radiation == "none") {
     radiation = new NullRadiation<ndim>();
+  }
   else {
     string message = "Unrecognised parameter : radiation = " + gas_radiation;
     ExceptionHandler::getIstance().raise(message);

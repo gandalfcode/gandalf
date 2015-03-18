@@ -50,6 +50,7 @@
 #include "Sph.h"
 #include "SphNeighbourSearch.h"
 #include "SphIntegration.h"
+#include "TreeRay.h"
 #include "EnergyEquation.h"
 #include "Nbody.h"
 #include "NbodySystemTree.h"

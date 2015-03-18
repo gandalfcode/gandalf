@@ -183,6 +183,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   //-----------------------------------------------------------------------------------------------
   int *firstCell;
   int *lastCell;
+  FLOAT rootCellSize;
 
 };
 #endif

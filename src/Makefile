@@ -38,7 +38,8 @@ PYFOLDER = ../analysis/swig_generated
 
 VPATH = $(PWD)/src:$(PWD)/src/Common:$(PWD)/src/GodunovSph:$(PWD)/src/GradhSph:$(PWD)/src/Headers
 VPATH +=$(PWD)/src/Hydrodynamics:$(PWD)/src/MeshlessFV:$(PWD)/src/Mpi:$(PWD)/src/Nbody
-VPATH +=$(PWD)/src/SM2013:$(PWD)/src/Thermal:$(PWD)/src/Tree:$(PWD)/src/UnitTesting
+VPATH +=$(PWD)/src/Radiation:$(PWD)/src/SM2013:$(PWD)/src/Thermal:$(PWD)/src/Tree
+VPATH +=$(PWD)/src/UnitTesting
 INCLUDE = $(PWD)/src/Headers
 
 
@@ -143,15 +144,6 @@ OPT += -I/usr/local/include -L/usr/local/lib -lgsl -lgslcblas
 endif
 
 
-# HEALPix linkage
-#--------------------------------------------------------------------------------------------------
-ifeq ($(HEALPIX),1)
-CFLAGS += -DGANDALF_HEALPIX
-OPT += -I/Users/dah/code/Healpix_3.11/src/cxx/basic_gcc/include
-OPT += -L/Users/dah/code/Healpix_3.11/src/cxx/basic_gcc/lib -lhealpix_cxx
-endif
-
-
 # Debug output flags
 # -------------------------------------------------------------------------------------------------
 ifeq ($(OUTPUT_LEVEL),1)
@@ -207,6 +199,7 @@ OBJ += IonisingRadiationEOS.o MCRadiationEOS.o
 OBJ += MultipleSourceIonisation.o
 OBJ += KDRadiationTree.o TreeMonteCarlo.o
 OBJ += MonochromaticIonisationMonteCarlo.o
+OBJ += TreeRay.o chealpix.o
 OBJ += EnergyPEC.o EnergyRadws.o
 #OBJ += SimGhostParticles.o
 #OBJ += Render.o
@@ -239,6 +232,9 @@ TEST_OBJ = TestScaling.o TestTree.o TestOctTree.o TestSinks.o
 	$(CPP) $(CFLAGS) -I$(INCLUDE) -c $< $(OPT)
 
 %.o: %.cpp
+	$(CPP) $(OPT) $(CFLAGS) -I$(GTEST)/include -I$(INCLUDE) -c $<
+
+%.o: %.c
 	$(CPP) $(OPT) $(CFLAGS) -I$(GTEST)/include -I$(INCLUDE) -c $<
 
 UNAME_S := $(shell uname -s)
