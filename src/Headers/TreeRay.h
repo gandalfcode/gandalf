@@ -53,7 +53,7 @@
 using namespace std;
 
 
-static const int nfreq=1;
+/*static const int nfreq=1;
 
 
 //=================================================================================================
@@ -65,25 +65,6 @@ struct TreeRayCell : public OctTreeCell<ndim>
 {
   FLOAT volume;
 };
-/*struct TreeRayCell
-{
-  int copen;                        ///< ..
-  int cnext;                        ///< i.d. of next cell if not opened
-  int id;                           ///< Cell id
-  int level;                        ///< Level of cell on tree
-  int ifirst;                       ///< i.d. of first particle in cell
-  int ilast;                        ///< i.d. of last particle in cell
-  int N;                            ///< ..
-  int Nactive;                      ///< ..
-  int childof[Noctchild];           ///< ..
-  FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
-  FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
-  FLOAT rcell[ndim];                ///< ..
-  FLOAT r[ndim];                    ///< Position of cell
-  FLOAT m;                          ///< Mass contained in cell
-  FLOAT rmax;                       ///< Radius of bounding sphere
-  FLOAT volume;                     ///< Volume of cell
-};*/
 
 
 
@@ -99,7 +80,7 @@ struct OsTreeRayCell : public TreeRayCell<ndim>
   FLOAT erdEUVold[nfreq];                     ///< ..
   FLOAT erdEUV[nfreq];                        ///< Radiation energy density
 };
-
+*/
 
 
 //=================================================================================================
@@ -130,8 +111,8 @@ class TreeRay : public Radiation<ndim>
 {
  public:
 
-#define IIL(i,iNS,iPhi,iTheta) (i + iNS*ilNI + iPhi*ilNI*ilNNS + iTheta*iNS*ilNNS*(ilNPhi + 1))
-#define IRNM(iR,iFR,iL) (iR + iFR*ilNR + iL*ilNR*ilNR*nFineR)
+#define IIL(i,iNS,iPhi,iTheta) (i + iNS*ilNI + iPhi*ilNI*ilNNS + iTheta*ilNI*ilNNS*(ilNPhi + 1))
+#define IRNM(iR,iFR,iL) (iR + iFR*bhNR + iL*bhNR*bhNR*nFineR)
 #define NINT(a) ((a) >= 0.0 ? (int)((a)+0.5) : (int)((a)-0.5))
 
   static const int nFineR = 10;        // Richard's MAGIC number!!
@@ -156,11 +137,17 @@ class TreeRay : public Radiation<ndim>
   int NTBLevels;                       ///< ..
   FLOAT ilNSSampFac;                   ///< ???
   FLOAT ilNSSampFacI;                  ///< ..
+  FLOAT max_ray_length;
   FLOAT minCellSize;                   ///< ..
+  FLOAT bhLocRelErr, bhMaxRelEradErr, bhLocEradTot, bhLocMionTot;
 
   int *radNodeMapIndex;                ///< ..
   FLOAT *intersectList;                ///< ..
   FLOAT *radNodeMapValue;              ///< ..
+  FLOAT *rayR;
+  FLOAT *rayR2;
+  FLOAT *rayRi;
+  FLOAT *rayR2i;
 
   OctTree<ndim,ParticleType,TreeCell> *tree;    ///< ..
   //Rays<nfreq> **rays;                  ///< ..
@@ -168,8 +155,9 @@ class TreeRay : public Radiation<ndim>
 
 
   //-----------------------------------------------------------------------------------------------
-  TreeRay(bool, int, int, int, int, int, int, FLOAT, FLOAT, FLOAT, string);
-  ~TreeRay() {};
+  TreeRay(bool, int, int, int, int, int, int, FLOAT, FLOAT, FLOAT, string,
+          DomainBox<ndim> &, SimUnits *, Parameters *);
+  ~TreeRay();
 
   virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
                                     NbodyParticle<ndim> **, SinkParticle<ndim> *);

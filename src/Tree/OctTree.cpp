@@ -63,7 +63,7 @@ OctTree<ndim,ParticleType,TreeCell>::OctTree(int Nleafmaxaux, FLOAT thetamaxsqda
 {
   allocated_tree = false;
   ltot           = 0;
-  lmax           = 40;
+  lmax           = 5;
   Ncell          = 0;
   Ncellmax       = 0;
   Ntot           = 0;
@@ -1861,3 +1861,5 @@ template class OctTree<3,SM2012SphParticle,OctTreeCell>;
 template class OctTree<1,GodunovSphParticle,OctTreeCell>;
 template class OctTree<2,GodunovSphParticle,OctTreeCell>;
 template class OctTree<3,GodunovSphParticle,OctTreeCell>;
+
+template class OctTree<3,GradhSphParticle,OsTreeRayCell>;

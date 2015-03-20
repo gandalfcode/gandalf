@@ -8,8 +8,6 @@
 #include "TreeRay.h"
 #include "chealpix.h"
 
-// NEED PIX2ANG_NEST HEALPIX FUNCTION.  FIND WHICH HEADER TO USE!!
-
 
 
 //=================================================================================================
@@ -17,18 +15,11 @@
 //  ...
 //=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int> class TreeCell>
-TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeRay
- (bool _ots,
-  int _nSide,
-  int _ilNR,
-  int _ilNTheta,
-  int _ilNPhi,
-  int _ilNNS,
-  int _ilFinePix,
-  FLOAT _maxDist,
-  FLOAT _rayRadRes,
-  FLOAT _relErr,
-  string _errControl):
+TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeRay(bool _ots, int _nSide, int _ilNR, int _ilNTheta,
+                                                   int _ilNPhi, int _ilNNS, int _ilFinePix,
+                                                   FLOAT _maxDist, FLOAT _rayRadRes, FLOAT _relErr,
+                                                   string _errControl, DomainBox<ndim> &simbox,
+                                                   SimUnits *units, Parameters *params):
   Radiation<ndim>(),
   onTheSpot(_ots),
   nSide(_nSide),
@@ -42,8 +33,95 @@ TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeRay
   relErr(_relErr),
   errControl(_errControl)
 {
+  debug2("[TreeRay::TreeRay]");
+
+  // Create tree object
+  tree = new OctTree<ndim,ParticleType,TreeCell>(params->intparams["Nleafmax"],
+                                                 params->floatparams["thetamaxsqd"],
+                                                 (FLOAT) 2.0,
+                                                 params->floatparams["macerror"],
+                                                 params->stringparams["gravity_mac"],
+                                                 params->stringparams["multipole"]);
+
+  // Set important variables
+  NTBLevels = tree->lmax + 1;
+  nPix      = 12*nSide*nSide;
+  ilNI      = nPix;
+  ilNSSampFac = 1.6;
+
+  // Generate intersection list
+  GenerateIntersectList();
 
 
+  // Initialise On-the-spot variables
+  //-----------------------------------------------------------------------------------------------
+  if (onTheSpot) {
+
+    // conversion between eint and T
+    /*tr_osTH2ToEint = tr_boltz*tr_osTH2 / (tr_osAbarH2*tr_mH*(tr_osGammaH2-1.0))
+    tr_osTHpToEint = tr_boltz*tr_osTHp / (tr_osAbarHp*tr_mH*(tr_osGammaHp-1.0))
+
+    // recombination constant
+    tr_osRecombConst = tr_osAlphaStar * (tr_osXhydro / tr_mH)**2 / 3.0
+
+    // constant for converting photon flux to  energy density
+    tr_osEflx2Erad = tr_osUVPhotonE / (tr_lightSpeed)
+    tr_osErad2Eflx = 1.0 / tr_osEflx2Erad*/
+
+    // DAVID : More things in tr_isInit such as reading in sources.  Ask Richard
+  }
+
+
+  // Allocate arrays for rays
+  //call Grid_getMinCellSize(tr_bhMinCellSize)
+  minCellSize = 0.0f;
+  for (int k=0; k<ndim; k++) minCellSize = max(minCellSize, simbox.boxsize[k]);
+  minCellSize = minCellSize/powf(2.0, tree->lmax);
+  max_ray_length = sqrtf(DotProduct(simbox.boxsize, simbox.boxsize, ndim));
+  bhNR = rayRadRes*((int) (sqrtf(2.0*max_ray_length / minCellSize)) + 1);
+
+  cout << "boxsize : " << simbox.boxsize[0] << "   " << simbox.boxsize[1] << "   " << simbox.boxsize[2] << endl;
+  cout << "minCellSize : " << minCellSize << "    max_ray_length : " << max_ray_length
+       << "     bhNR : " << bhNR << endl;
+
+  rays = new Rays*[nPix];
+  for (int i=0; i<nPix; i++) rays[i] = new Rays[bhNR+1];
+
+
+  rayR   = new FLOAT[bhNR+1];
+  rayR2  = new FLOAT[bhNR+1];
+  rayRi  = new FLOAT[bhNR+1];
+  rayR2i = new FLOAT[bhNR+1];
+
+  for (int ir=0; ir<bhNR+1; ir++) {
+    rayR[ir]   = 0.5*minCellSize*(FLOAT) ir*(FLOAT) ir/(rayRadRes*rayRadRes);
+    rayR2[ir]  = rayR[ir]*rayR[ir];
+    rayRi[ir]  = 1.0/(rayR[ir] + 1.0e-99);
+    rayR2i[ir] = 1.0/(rayR2[ir] + 1.0e-99);
+  }
+  // DAVID Add extra arrays here later perhaps!!??
+
+  // ..
+  GenerateRadNodeMapping();
+
+}
+
+
+
+//=================================================================================================
+//  TreeRay::~TreeRay
+/// ...
+//=================================================================================================
+template <int ndim, int nfreq, template<int> class ParticleType, template<int> class TreeCell>
+TreeRay<ndim,nfreq,ParticleType,TreeCell>::~TreeRay()
+{
+  delete[] rayR2i;
+  delete[] rayRi;
+  delete[] rayR2;
+  delete[] rayR;
+
+  for (int i=nPix-1; i>= 0; i--) delete[] rays[i];
+  delete[] rays;
 }
 
 
@@ -61,7 +139,9 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::UpdateRadiationField
   NbodyParticle<ndim> **nbodydata,     ///< [in] N-body data array
   SinkParticle<ndim> *sinkdata)        ///< [in] Sink data array
 {
+  int it;
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* >(sph_gen);
+
 
   debug2("[TreeRay::UpdateRadiationField]");
 
@@ -76,6 +156,38 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::UpdateRadiationField
 
   // Now compute all tree cell properties, including point sources (i.e. sinks)
   tree->StockTree(tree->celldata[0], partdata);
+
+
+
+  //-----------------------------------------------------------------------------------------------
+  for (it=0; it<Nitmax; it++) {
+
+    // reset variables to store error - for iterations (From TreeRay_bhInitFieldVar)
+    bhLocRelErr = 0.0;
+    bhMaxRelEradErr = 0.0;
+    bhLocEradTot = 0.0;
+    bhLocMionTot = 0.0;
+
+
+    for (c=0; c<tree->Ncell; c++) {
+      OsTreeRayCell<ndim> &cell = tree->celldata[c];
+      cell.erdEUVold[0] = cell.erdEUV[0];
+      cell.erdEUV[0] = 0.0;
+
+      TreeWalk(cell);
+    }
+
+    // Need to add exit conditions (total energy or individual cells; TreeRay_bhTreeWalkEnd.F90)
+
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  for (c=0; c<tree->Ncell; c++) {
+    OsTreeRayCell<ndim> &cell = tree->celldata[c];
+
+  }
+
 
 
 
@@ -121,6 +233,7 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::GenerateIntersectList(void)
 
 
   //-----------------------------------------------------------------------------------------------
+#pragma omp parallel for default(none) private(i1d,ins,iph,ith,rnode,theta)
   for (int ith=0; ith<ilNTheta + 1; ith++) {
     theta = pi*(FLOAT) ith/(FLOAT) ilNTheta;
 
@@ -151,8 +264,8 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::GenerateIntersectList(void)
               r[1] = rad*sin(thfpix)*sin(phfpix);
               r[2] = rad*cos(thfpix);
 
-              if (fabs(r[0] - rnode[0]) < nshalf && fabs(r[1] - rnode[1]) < nshalf &&
-                  fabs(r[2] - rnode[2])) {
+              if ((fabs(r[0] - rnode[0]) < nshalf) && (fabs(r[1] - rnode[1]) < nshalf) &&
+                  (fabs(r[2] - rnode[2]) < nshalf)) {
                 node_count++;
                 ray_count[ipix]++;
               }
@@ -204,7 +317,35 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::GenerateIntersectList(void)
   //-----------------------------------------------------------------------------------------------
 
   // Write table to file (for debugging)
+  FILE * pFile;
+  pFile = fopen ("gandalfTreeRay.dat","w");
 
+  fprintf(pFile, "# %d %d %d\n", ilNNS, ilNTheta, ilNPhi);
+  for (int ins=0; ins<ilNNS; ins++) {
+    FLOAT ns = ilNSSampFac*(FLOAT) (ins + 1)/(FLOAT) ilNNS;
+
+    for (int ith=0; ith<ilNTheta+1; ith++) {
+      theta = pi*(FLOAT) ith/(FLOAT) ilNTheta;
+
+      for (int iph=0; iph<ilNPhi+1; iph++) {
+        phi = twopi*(FLOAT) iph/(FLOAT) ilNPhi;
+
+        rnode[0] = sin(theta)*cos(phi);
+        rnode[1] = sin(theta)*sin(phi);
+        rnode[2] = cos(theta);
+        fprintf(pFile, "%12.5e  %12.5e  %12.5e  %12.5e  %12.5e  %12.5e  ",
+                ns, theta, phi, rnode[0], rnode[1], rnode[2]);
+        for (int il=0; il<ilNI; il++) {
+          fprintf(pFile, "%15.8e  ",intersectList[IIL(il, ins, iph, ith)]);
+        }
+        fprintf(pFile, "\n");
+      }
+      fprintf(pFile, "\n");
+
+    }
+    fprintf(pFile, "\n");
+  }
+  fclose(pFile);
 
   return;
 }
@@ -280,6 +421,15 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::GenerateRadNodeMapping(void)
         if (radNodeMapIndex[IRNM(ir,irf,il)] > 0) {
           radNodeMapValue[IRNM(ir,irf,il)] = radNodeMapValue[IRNM(ir,irf,il)] / totWeight;
         }
+      }
+
+
+      for (int ir=0; ir<bhNR; ir++) {
+        FLOAT r = 0.5*rayRadRes*minCellSize*powf(radNodeMapIndex[IRNM(ir,irf,il)],2);
+        cout << "RNM: " << il << "   " << ndSize << "   " << irf << "   " << rNodeCen
+             << "    " << ir << "    " << r << "    " << radNodeMapIndex[IRNM(ir,irf,il)]
+             << "    " << radNodeMapValue[IRNM(ir,irf,il)] << "   " << totWeight << endl;
+        if (radNodeMapIndex[IRNM(ir,irf,il)] < 0) break;
       }
 
     }
@@ -551,9 +701,35 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::NodeContribution
   }
   //if (abs(tot_weight - 1.0) > 1.e-3) print *, "NC tw = ", tot_weight, tr_intersectList(:,ins,iph,ith)
 
-#ifdef TR_ONTHESPOT
-  call tr_osNodeContrib(node, ii, jj, kk, ins, iph, ith, irf, iNodeSize)
-#endif
+
+  // Sum all contributions for on-the-spot approximation
+  //-----------------------------------------------------------------------------------------------
+  if (onTheSpot) {
+
+    // DAVID : What are these?
+    FLOAT node_srcf = 0.0;
+    FLOAT node_erad = 0.0;
+
+    for (int i=0; i<ilNI; i++) {
+
+      // Check if the node intersect with the ray
+      if (intersectList[IIL(i,ins,iph,ith)] < 0) break;
+
+      // Determine the ray index (ipix) and the weight of the intersection
+      ipix = (int) (intersectList[IIL(i,ins,iph,ith)]);
+      weight = (intersectList[IIL(i,ins,iph,ith)] - (FLOAT) ipix)/0.999;
+
+      for (int j=0; j<bhNR; j++) {
+        ir = radNodeMapIndex[IRNM(j,irf,iNodeSize)];
+        if (ir < 0) break;
+        rays[ipix][ir].srcF[0] += node_srcf*weight*radNodeMapValue[IRNM(j,irf,iNodeSize)];
+        rays[ipix][ir].Erad[0] += node_erad*weight*radNodeMapValue[IRNM(j,irf,iNodeSize)];
+      }
+    }
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
 
   return;
 }
@@ -733,9 +909,32 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::FinaliseCell
   FLOAT **eflux,
   FLOAT **cdMaps)
 {
+  FLOAT phFluxInt[nfreq];
+
+  for (int k=0; k<nfreq; k++) {
+    phFluxInt[k] = 0.0;
+    for (int i=0; i<nPix; i++) {
+      phFluxInt[k] += eflux[ipix][k];
+    }
+  }
+
+
+  if (onTheSpot) {
+    cell.erdEUV[0] = Eflx2Erad*phFluxInt[0];
+
+    tr_bhLocEradTot = tr_bhLocEradTot + solnPoint(EUVE_VAR)
+    tr_bhLocMionTot = tr_bhLocMionTot + solnPoint(DENS_VAR)*solnPoint(IHP_SPEC)*vol_poc
+    EradErr = 2.0*abs(solnPoint(EUVE_VAR) - solnPoint(EUVO_VAR)) &
+    &       / (solnPoint(EUVE_VAR) + solnPoint(EUVO_VAR) + 1d-99)
+
+    if (EradErr > tr_bhLocRelErr) tr_bhLocRelErr = EradErr
+  }
+
+
   return;
 }
 
 
 
+//template class OctTree<3,GradhSphParticle,OsTreeRayCell>;
 template class TreeRay<3,1,GradhSphParticle,OsTreeRayCell>;

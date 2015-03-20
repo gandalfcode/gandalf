@@ -86,6 +86,57 @@ struct OctTreeCell {
 
 
 
+
+static const int nfreq=1;
+
+
+//=================================================================================================
+//  Struct TreeRayCell
+/// TreeRay cell data structure
+//=================================================================================================
+template <int ndim>
+struct TreeRayCell : public OctTreeCell<ndim>
+{
+  FLOAT volume;
+};
+/*struct TreeRayCell
+{
+  int copen;                        ///< ..
+  int cnext;                        ///< i.d. of next cell if not opened
+  int id;                           ///< Cell id
+  int level;                        ///< Level of cell on tree
+  int ifirst;                       ///< i.d. of first particle in cell
+  int ilast;                        ///< i.d. of last particle in cell
+  int N;                            ///< ..
+  int Nactive;                      ///< ..
+  int childof[Noctchild];           ///< ..
+  FLOAT bbmin[ndim];                ///< Minimum extent of bounding box
+  FLOAT bbmax[ndim];                ///< Maximum extent of bounding box
+  FLOAT rcell[ndim];                ///< ..
+  FLOAT r[ndim];                    ///< Position of cell
+  FLOAT m;                          ///< Mass contained in cell
+  FLOAT rmax;                       ///< Radius of bounding sphere
+  FLOAT volume;                     ///< Volume of cell
+};*/
+
+
+
+//=================================================================================================
+//  Struct ..
+/// TreeRay cell data structure
+//=================================================================================================
+//template <int ndim, int nfreq>
+template <int ndim>
+struct OsTreeRayCell : public TreeRayCell<ndim>
+{
+  FLOAT srcEUV[nfreq];                        ///< Source function of EUV radiation
+  FLOAT erdEUVold[nfreq];                     ///< ..
+  FLOAT erdEUV[nfreq];                        ///< Radiation energy density
+};
+
+
+
+
 //=================================================================================================
 //  Class OctTree
 /// \brief   Class containing binary tree

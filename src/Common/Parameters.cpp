@@ -347,16 +347,15 @@ void Parameters::SetDefaultValues(void)
   //-----------------------------------------------------------------------------------------------
   intparams["on_the_spot"] = 0;
   intparams["nside"] = 4;
-  intparams["ilNR"] = 1;
-  intparams["ilNTheta"] = 16;
-  intparams["ilNPhi"] = 16;
-  intparams["ilNNS"] = 1;
-  intparams["ilFinePix"] = 1;
-  floatparams["maxDist"] = 1.0;
+  intparams["ilNR"] = 50;
+  intparams["ilNTheta"] = 25;
+  intparams["ilNPhi"] = 50;
+  intparams["ilNNS"] = 20;
+  intparams["ilFinePix"] = 4;
+  floatparams["maxDist"] = 1.0e99;
   floatparams["rayRadRes"] = 1.0;
-  floatparams["relErr"] = 0.1;
-  stringparams["errControl"] = "null";
-
+  floatparams["relErr"] = 0.01;
+  stringparams["errControl"] = "erad_tot";
 
   // Boundary conditions parameters
   //-----------------------------------------------------------------------------------------------

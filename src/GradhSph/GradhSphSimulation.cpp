@@ -249,7 +249,8 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
     radiation = new TreeRay<ndim,1,GradhSphParticle,OsTreeRayCell>
       (intparams["on_the_spot"], intparams["nside"], intparams["ilNR"], intparams["ilNTheta"],
        intparams["ilNPhi"], intparams["ilNNS"], intparams["ilFinePix"], floatparams["maxDist"],
-       floatparams["rayRadRes"], floatparams["relErr"], stringparams["errControl"]);
+       floatparams["rayRadRes"], floatparams["relErr"], stringparams["errControl"],
+       simbox, &simunits, simparams);
   }
   else if (gas_radiation == "ionisation") {
     radiation = new MultipleSourceIonisation<ndim,GradhSphParticle>
