@@ -153,7 +153,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllProperties
 
 
 //=================================================================================================
-//  BruteForceSearch::UpdateAllSphHydroForces
+//  BruteForceSearch::UpdateGradientMatrices
 /// Routine for computing SPH properties (smoothing lengths, densities and
 /// forces) for all active SPH particle using neighbour lists generated
 /// using brute force (i.e. direct summation).
@@ -250,15 +250,16 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
 
 
 //=================================================================================================
-//  BruteForceSearch::UpdateAllSphHydroForces
+//  BruteForceSearch::UpdateGodunovFluxes
 /// Routine for computing SPH properties (smoothing lengths, densities and
 /// forces) for all active SPH particle using neighbour lists generated
 /// using brute force (i.e. direct summation).
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
- (int Nhydro,                          ///< [in] No. of SPH particles
-  int Ntot,                            ///< [in] No. of SPH + ghost particles
+ (const int Nhydro,                    ///< [in] No. of SPH particles
+  const int Ntot,                      ///< [in] No. of SPH + ghost particles
+  const FLOAT timestep,                ///< [in] ..
   MeshlessFVParticle<ndim> *mfvdata,   ///< [inout] Pointer to SPH ptcl array
   MeshlessFV<ndim> *mfv,               ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
@@ -321,7 +322,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
     //cout << "Computing fluxes for " << i << "     Nneib : " << Nneib << endl;
 
     // Compute all SPH hydro forces
-    mfv->ComputeGodunovFlux(i,Nneib,neiblist,drmag,invdrmag,dr,mfvdata[i],mfvdata);
+    mfv->ComputeGodunovFlux(i, Nneib, timestep, neiblist, drmag, invdrmag, dr, mfvdata[i], mfvdata);
 
     //sphdata[i].active = false;
 

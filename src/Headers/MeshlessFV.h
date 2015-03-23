@@ -115,7 +115,7 @@ public:
                                  MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
   virtual void ComputeGradients(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
                                     MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
-  virtual void ComputeGodunovFlux(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
+  virtual void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
                                   MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
   virtual void CopyDataToGhosts(DomainBox<ndim> &, MeshlessFVParticle<ndim> *) = 0;
 
@@ -238,7 +238,7 @@ class LV2008MFV : public MeshlessFV<ndim>
                          MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
   void ComputeGradients(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
                                     MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
-  void ComputeGodunovFlux(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
+  void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
                           MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
   void CopyDataToGhosts(DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
 

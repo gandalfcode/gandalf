@@ -578,7 +578,7 @@ void MeshlessFVSimulation<ndim>::MainLoop(void)
 
     mfv->CopyDataToGhosts(simbox, partdata);
 
-    mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
+    mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody);
 
     // Integrate all conserved variables to end of timestep
     for (i=0; i<mfv->Ntot; i++) {

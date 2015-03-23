@@ -299,6 +299,10 @@ void LV2008MFV<ndim, kernelclass>::ComputeGradients
       part.grad[k][var] = 0.0;
     }
   }
+  for (var=0; var<nvar; var++) {
+    part.Wmin[var] = part.Wprim[var];
+    part.Wmax[var] = part.Wprim[var];
+  }
 
 
   // Loop over all potential neighbours in the list
@@ -329,6 +333,12 @@ void LV2008MFV<ndim, kernelclass>::ComputeGradients
       }
     }
 
+    // Calculate min and max values of primitives for slope limiters
+    for (var=0; var<nvar; var++) {
+      part.Wmin[var] = min(part.Wmin[var], neibpart[j].Wprim[var]);
+      part.Wmax[var] = max(part.Wmax[var], neibpart[j].Wprim[var]);
+    }
+
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -352,6 +362,7 @@ template <int ndim, template<int> class kernelclass>
 void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
  (const int i,                         ///< [in] id of particle
   const int Nneib,                     ///< [in] No. of neins in neibpart array
+  const FLOAT timestep,                ///< ..
   int *neiblist,                       ///< [in] id of gather neibs in neibpart
   FLOAT *drmag,                        ///< [in] Distances of gather neighbours
   FLOAT *invdrmag,                     ///< [in] Inverse distances of gather neibs
@@ -363,6 +374,7 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
   int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
   int var;
+  FLOAT alpha;
   FLOAT draux[ndim];                   // Position vector of part relative to neighbour
   FLOAT dr_unit[ndim];                 // Unit vector from neighbour to part
   FLOAT drsqd;
@@ -370,7 +382,11 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
   FLOAT invdrmagaux;
   FLOAT psitildai[ndim];
   FLOAT psitildaj[ndim];
+  FLOAT rface[ndim];
   FLOAT flux[nvar];
+  FLOAT Wleft[nvar];
+  FLOAT Wright[nvar];
+  FLOAT slope[nvar];
 
   for (var=0; var<nvar; var++) part.flux[var] = 0.0;
 
@@ -381,6 +397,48 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
     //if (j == jj) continue;
+
+    for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
+
+    // Compute left-state for Riemann solver (using slope limiters)
+    for (k=0; k<ndim; k++) draux[k] = rface[k] - part.r[k];
+    for (var=0; var<nvar; var++) {
+      slope[var] = part.grad[0][var]*draux[0];
+      if (slope[var] > 0.0) alpha = (part.Wmax[var] - part.Wprim[var])/slope[var];
+      else if (slope[var] < 0.0) alpha = (part.Wmin[var] - part.Wprim[var])/slope[var];
+      else alpha = 1.0;
+      alpha = min(1.0, alpha);
+      slope[var] = alpha*slope[var];
+      Wleft[var] = part.Wprim[var] + slope[var];
+      //Wleft[var] = part.Wprim[var];
+      //cout << "Left limit  : " << Wleft[var] << "    Wprim : " << part.Wmin[var] << "   "
+      //     << part.Wprim[var] << "    " << part.Wmax[var] << "      alpha : " << alpha << endl;
+      assert(alpha >= 0.0);
+    }
+
+    // Compute right-hand state for Riemann solver (using slope limiters)
+    for (k=0; k<ndim; k++) draux[k] = rface[k] - neibpart[j].r[k];
+    for (var=0; var<nvar; var++) {
+      slope[var] = neibpart[j].grad[0][var]*draux[0];
+      if (slope[var] > 0.0) alpha = (neibpart[j].Wmax[var] - neibpart[j].Wprim[var])/slope[var];
+      else if (slope[var] < 0.0) alpha = (neibpart[j].Wmin[var] - neibpart[j].Wprim[var])/slope[var];
+      else alpha = 1.0;
+      alpha = min(1.0, alpha);
+      slope[var] = alpha*slope[var];
+      Wright[var] = neibpart[j].Wprim[var] + slope[var];
+      //Wright[var] = neibpart[j].Wprim[var];
+      //cout << "Right limit : " << Wright[var] << "    Wprim : " << neibpart[j].Wmin[var] << "   "
+      //     << neibpart[j].Wprim[var] << "    " << neibpart[j].Wmax[var] << "      alpha : " << alpha << endl;
+      assert(alpha >= 0.0);
+    }
+    //cin >> k;
+
+    if (part.r[0] > neibpart[j].r[0]) {
+      riemann->ComputeFluxes(Wright, Wleft, dr_unit, flux);
+    }
+    else {
+      riemann->ComputeFluxes(Wleft, Wright, dr_unit, flux);
+    }
 
     for (k=0; k<ndim; k++) draux[k] = part.r[k] - neibpart[j].r[k];
     drsqd = DotProduct(draux, draux, ndim);
@@ -395,13 +453,6 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
         psitildai[k] += neibpart[j].B[k][kk]*draux[kk]*neibpart[j].hfactor*kern.w0_s2(drsqd*neibpart[j].invh*neibpart[j].invh)/neibpart[j].ndens;
         psitildaj[k] -= part.B[k][kk]*draux[kk]*part.hfactor*kern.w0_s2(drsqd*part.invh*part.invh)/part.ndens;
       }
-    }
-
-    if (part.r[0] > neibpart[j].r[0]) {
-      riemann->ComputeFluxes(neibpart[j].Wprim, part.Wprim, dr_unit, flux);
-    }
-    else {
-      riemann->ComputeFluxes(part.Wprim, neibpart[j].Wprim, dr_unit, flux);
     }
 
 
@@ -439,21 +490,21 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Ghosts::CopySphDataToGhosts
 /// Copy any newly calculated data from original SPH particles to ghosts.
-//=============================================================================
+//=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void LV2008MFV<ndim, kernelclass>::CopyDataToGhosts
  (DomainBox<ndim> &simbox,
   MeshlessFVParticle<ndim> *partdata)  ///< [inout] Neighbour particle data
 {
-  int i;                            // Particle id
-  int iorig;                        // Original (real) particle id
-  int itype;                        // Ghost particle type
-  int j;                            // Ghost particle counter
+  int i;                               // Particle id
+  int iorig;                           // Original (real) particle id
+  int itype;                           // Ghost particle type
+  int j;                               // Ghost particle counter
 
-  debug2("[SphSimulation::CopySphDataToGhosts]");
+  debug2("[LV2008MFV::CopySphDataToGhosts]");
 
 
   //---------------------------------------------------------------------------
@@ -463,24 +514,30 @@ void LV2008MFV<ndim, kernelclass>::CopyDataToGhosts
     iorig = partdata[i].iorig;
     itype = partdata[i].itype;
 
-    partdata[i] = partdata[iorig];
-    partdata[i].iorig = iorig;
-    partdata[i].itype = itype;
+    partdata[i]        = partdata[iorig];
+    partdata[i].iorig  = iorig;
+    partdata[i].itype  = itype;
     partdata[i].active = false;
 
     // Modify ghost position based on ghost type
-    if (itype == x_lhs_periodic)
+    if (itype == x_lhs_periodic) {
       partdata[i].r[0] += simbox.boxsize[0];
-    else if (itype == x_rhs_periodic)
+    }
+    else if (itype == x_rhs_periodic) {
       partdata[i].r[0] -= simbox.boxsize[0];
-    else if (itype == y_lhs_periodic && ndim > 1)
+    }
+    else if (itype == y_lhs_periodic && ndim > 1) {
       partdata[i].r[1] += simbox.boxsize[1];
-    else if (itype == y_rhs_periodic && ndim > 1)
+    }
+    else if (itype == y_rhs_periodic && ndim > 1) {
       partdata[i].r[1] -= simbox.boxsize[1];
-    else if (itype == z_lhs_periodic && ndim == 3)
+    }
+    else if (itype == z_lhs_periodic && ndim == 3) {
       partdata[i].r[2] += simbox.boxsize[2];
-    else if (itype == z_rhs_periodic && ndim == 3)
+    }
+    else if (itype == z_rhs_periodic && ndim == 3) {
       partdata[i].r[2] -= simbox.boxsize[2];
+    }
 
   }
   //---------------------------------------------------------------------------
