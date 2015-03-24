@@ -383,10 +383,13 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
   FLOAT psitildai[ndim];
   FLOAT psitildaj[ndim];
   FLOAT rface[ndim];
+  FLOAT vface[ndim];
   FLOAT flux[nvar];
   FLOAT Wleft[nvar];
   FLOAT Wright[nvar];
-  FLOAT slope[nvar];
+  FLOAT Wdot[nvar];
+  FLOAT gradW[nvar];
+  FLOAT dW[nvar];
 
   for (var=0; var<nvar; var++) part.flux[var] = 0.0;
 
@@ -397,41 +400,30 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
     //if (j == jj) continue;
-
     for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
+    for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.5*(part.v[k] + neibpart[j].v[k]);
 
-    // Compute left-state for Riemann solver (using slope limiters)
+    // Compute slope-limited values for LHS
     for (k=0; k<ndim; k++) draux[k] = rface[k] - part.r[k];
-    for (var=0; var<nvar; var++) {
-      slope[var] = part.grad[0][var]*draux[0];
-      if (slope[var] > 0.0) alpha = (part.Wmax[var] - part.Wprim[var])/slope[var];
-      else if (slope[var] < 0.0) alpha = (part.Wmin[var] - part.Wprim[var])/slope[var];
-      else alpha = 1.0;
-      alpha = min(1.0, alpha);
-      slope[var] = alpha*slope[var];
-      Wleft[var] = part.Wprim[var] + slope[var];
-      //Wleft[var] = part.Wprim[var];
-      //cout << "Left limit  : " << Wleft[var] << "    Wprim : " << part.Wmin[var] << "   "
-      //     << part.Wprim[var] << "    " << part.Wmax[var] << "      alpha : " << alpha << endl;
-      assert(alpha >= 0.0);
-    }
+    limiter.ComputeLimitedSlopes(part, draux, gradW, dW);
+    for (var=0; var<nvar; var++) Wleft[var] = part.Wprim[var] + dW[var];
+    for (k=0; k<ndim; k++) Wleft[k] -= vface[k];
 
-    // Compute right-hand state for Riemann solver (using slope limiters)
+    // Time-integrate LHS state to half-timestep value
+    this->CalculatePrimitiveTimeDerivative(0, Wleft, gradW, Wdot);
+    for (var=0; var<nvar; var++) Wleft[var] -= (FLOAT) 0.5*timestep*Wdot[var];
+
+
+    // Compute slope-limited values for RHS
     for (k=0; k<ndim; k++) draux[k] = rface[k] - neibpart[j].r[k];
-    for (var=0; var<nvar; var++) {
-      slope[var] = neibpart[j].grad[0][var]*draux[0];
-      if (slope[var] > 0.0) alpha = (neibpart[j].Wmax[var] - neibpart[j].Wprim[var])/slope[var];
-      else if (slope[var] < 0.0) alpha = (neibpart[j].Wmin[var] - neibpart[j].Wprim[var])/slope[var];
-      else alpha = 1.0;
-      alpha = min(1.0, alpha);
-      slope[var] = alpha*slope[var];
-      Wright[var] = neibpart[j].Wprim[var] + slope[var];
-      //Wright[var] = neibpart[j].Wprim[var];
-      //cout << "Right limit : " << Wright[var] << "    Wprim : " << neibpart[j].Wmin[var] << "   "
-      //     << neibpart[j].Wprim[var] << "    " << neibpart[j].Wmax[var] << "      alpha : " << alpha << endl;
-      assert(alpha >= 0.0);
-    }
-    //cin >> k;
+    limiter.ComputeLimitedSlopes(neibpart[j], draux, gradW, dW);
+    for (var=0; var<nvar; var++) Wright[var] = neibpart[j].Wprim[var] + dW[var];
+    for (k=0; k<ndim; k++) Wright[k] -= vface[k];
+
+    // Time-integrate RHS state to half-timestep value
+    this->CalculatePrimitiveTimeDerivative(0, Wright, gradW, Wdot);
+    for (var=0; var<nvar; var++) Wright[var] -= (FLOAT) 0.5*timestep*Wdot[var];
+
 
     if (part.r[0] > neibpart[j].r[0]) {
       riemann->ComputeFluxes(Wright, Wleft, dr_unit, flux);
@@ -439,6 +431,10 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
     else {
       riemann->ComputeFluxes(Wleft, Wright, dr_unit, flux);
     }
+
+    // Now boost back into main coordinate frame
+    flux[ipress] += (FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho] + vface[0]*flux[0];
+    flux[0] += vface[0]*flux[irho];
 
     for (k=0; k<ndim; k++) draux[k] = part.r[k] - neibpart[j].r[k];
     drsqd = DotProduct(draux, draux, ndim);
@@ -456,34 +452,14 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
     }
 
 
-    FLOAT fluxi[nvar], fluxj[nvar], fluxgizmo[nvar];
-    /*fluxi[ivx]   = part.rho*part.v[0]*part.v[0] + part.press;
-    fluxi[irho]  = part.rho*part.v[0];
-    fluxi[ietot] = (part.rho*(part.u + part.v[0]*part.v[0]) + part.press)*part.v[0];
-    fluxj[ivx]   = neibpart[j].rho*neibpart[j].v[0]*neibpart[j].v[0] + neibpart[j].press;
-    fluxj[irho]  = neibpart[j].rho*neibpart[j].v[0];
-    fluxj[ietot] = (neibpart[j].rho*(neibpart[j].u + neibpart[j].v[0]*neibpart[j].v[0]) + neibpart[j].press)*neibpart[j].v[0];
-*/
-    //for (var=0; var<nvar; var++) flux[var] = fluxi[var] - fluxj[var];
-
     for (var=0; var<nvar; var++) {
-      fluxgizmo[var] = flux[var]*(part.volume*psitildaj[0] - neibpart[j].volume*psitildai[0]);
       part.flux[var] -= flux[var]*(part.volume*psitildaj[0] - neibpart[j].volume*psitildai[0]);
-      //part.flux[var] += fluxi[var]*part.volume*psitildaj[0] - fluxj[var]*neibpart[j].volume*psitildai[0];
     }
 
-    /*cout << "Neib " << j << "    psitilda : " << psitildai[0] << "  " << psitildaj[0] << endl;
-    cout << "Godunov flux[irho]  : " << fluxgizmo[irho]  << "    flux[irho]  : " << fluxi[irho] - fluxj[irho] << endl;
-    cout << "Godunov flux[ivx]   : " << fluxgizmo[ivx]   << "    flux[ivx]   : " << fluxi[ivx] - fluxj[ivx] << endl;
-    cout << "Godunov flux[ietot] : " << fluxgizmo[ietot] << "    flux[ietot] : " << fluxi[ietot] - fluxj[ietot] << endl;
-    cout << "B : " << part.B[0][0] << "    " << neibpart[j].B[0][0] << "     ndens : "
-         << part.ndens << "    " << neibpart[j].ndens << endl;*/
 
   }
   //-----------------------------------------------------------------------------------------------
 
-  //cout << "Flux[" << i << "] : " << part.flux[0] << "   " << part.flux[1] << "   " << part.flux[2] << endl;
-  //cin >> k;
 
   return;
 }

@@ -460,6 +460,26 @@ void MeshlessFV<ndim>::CalculatePrimitiveFluxFromPrimitive
 
 
 
+//=============================================================================
+//  MeshlessFV::CalculatePrimitiveTimeDerivative
+/// ...
+//=============================================================================
+template <int ndim>
+void MeshlessFV<ndim>::CalculatePrimitiveTimeDerivative
+ (int k,
+  FLOAT Wprim[nvar],
+  FLOAT gradW[nvar],
+  FLOAT Wdot[nvar])
+{
+  Wdot[irho]   = Wprim[0]*gradW[irho] + Wprim[irho]*gradW[0];
+  Wdot[0]      = Wprim[0]*gradW[0] + gradW[ipress]/Wprim[irho];
+  Wdot[ipress] = gamma_eos*Wprim[ipress]*gradW[0] + Wprim[0]*gradW[ipress];
+
+  return;
+}
+
+
+
 //=================================================================================================
 //  MeshlessFV::InitialSmoothingLengthGuess
 /// Perform initial guess of smoothing.  In the abscence of more sophisticated techniques, we guess

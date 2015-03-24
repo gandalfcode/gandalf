@@ -39,6 +39,7 @@
 #include "DomainBox.h"
 #include "EOS.h"
 #include "RiemannSolver.h"
+#include "SlopeLimiter.h"
 #include "ExternalPotential.h"
 #if defined _OPENMP
 #include "omp.h"
@@ -136,7 +137,10 @@ public:
   void CalculateConservedFluxFromConserved(int k, FLOAT Ucons[nvar], FLOAT flux[nvar]);
   void CalculateConservedFluxFromPrimitive(int k, FLOAT Wprim[nvar], FLOAT flux[nvar]);
   void CalculatePrimitiveFluxFromPrimitive(int k, FLOAT Wprim[nvar], FLOAT flux[nvar]);
+  void CalculatePrimitiveTimeDerivative(int k, FLOAT Wprim[nvar], FLOAT gradW[nvar], FLOAT Wdot[nvar]);
   void IntegrateConservedVariables(MeshlessFVParticle<ndim> &, FLOAT);
+
+  //void IntegrateParticlePosition(MeshlessFVParticles<ndim> &, FLOAT);
 
 
   // Functions needed to hide some implementation details
@@ -243,6 +247,7 @@ class LV2008MFV : public MeshlessFV<ndim>
   void CopyDataToGhosts(DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
 
   kernelclass<ndim> kern;                  ///< SPH kernel
+  SlopeLimiter<ndim,MeshlessFVParticle> limiter;
 
 };
 #endif

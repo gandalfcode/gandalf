@@ -477,6 +477,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       mfv->UpdatePrimitiveVector(partdata[i]);
       mfv->ConvertPrimitiveToConserved(partdata[i].Wprim, partdata[i].Ucons);
       mfv->ConvertConservedToQ(partdata[i].volume, partdata[i].Ucons, partdata[i].Qcons);
+      //for (k=0; k<ndim; k++) partdata[i].v0[k] = partdata[i].v[k];
     }
 
   }
@@ -581,11 +582,27 @@ void MeshlessFVSimulation<ndim>::MainLoop(void)
     mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody);
 
     // Integrate all conserved variables to end of timestep
-    for (i=0; i<mfv->Ntot; i++) {
+    for (i=0; i<mfv->Nhydro; i++) {
       mfv->IntegrateConservedVariables(partdata[i], timestep);
       mfv->ConvertQToConserved(partdata[i].volume, partdata[i].Qcons, partdata[i].Ucons);
       mfv->ConvertConservedToPrimitive(partdata[i].Ucons, partdata[i].Wprim);
       mfv->UpdateArrayVariables(partdata[i]);
+
+      //for (int k=0; k<ndim; k++) partdata[i].r[k] += partdata[i].v[k]*timestep;
+      for (k=0; k<ndim; k++) {
+        //partdata[i].r[k] += (FLOAT) 0.5*(partdata[i].v0[k] + partdata[i].v[k])*timestep;
+        //partdata[i].v0[k] = partdata[i].v[k];
+        partdata[i].r[k] += partdata[i].v[k]*timestep;
+      }
+      if (partdata[i].r[0] < simbox.boxmin[0])
+        if (simbox.boundary_lhs[0] == periodicBoundary) {
+          partdata[i].r[0] += simbox.boxsize[0];
+        }
+      if (partdata[i].r[0] > simbox.boxmax[0])
+        if (simbox.boundary_rhs[0] == periodicBoundary) {
+          partdata[i].r[0] -= simbox.boxsize[0];
+        }
+
     }
 
     this->CalculateDiagnostics();
