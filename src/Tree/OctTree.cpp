@@ -218,8 +218,8 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   for (k=0; k<ndim; k++) celldata[0].bbmin[k] = +big_number;
   for (k=0; k<ndim; k++) celldata[0].bbmax[k] = -big_number;
   for (i=ifirst; i<=ilast; i++) {
-    for (k=0; k<ndim; k++) celldata[0].bbmin[k] = min(celldata[0].bbmin[k],partdata[i].r[k]);
-    for (k=0; k<ndim; k++) celldata[0].bbmax[k] = max(celldata[0].bbmax[k],partdata[i].r[k]);
+    for (k=0; k<ndim; k++) celldata[0].bbmin[k] = min(celldata[0].bbmin[k], partdata[i].r[k]);
+    for (k=0; k<ndim; k++) celldata[0].bbmax[k] = max(celldata[0].bbmax[k], partdata[i].r[k]);
   }
   for (k=0; k<ndim; k++) {
     celldata[0].rcell[k] = 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
@@ -227,7 +227,6 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   }
   rootCellSize = 2.0*cellSize;
 
-  //cout << "Bounding box : " << celldata[0].bbmin[0] << "    " << celldata[0].bbmax[0] << endl;
 
   // Build tree if there are any particles
   //-----------------------------------------------------------------------------------------------
@@ -335,6 +334,8 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
           if (Nincell[k] == 0) continue;
           ckid = cell.childof[k];
           celldata[ckid].level = ltot + 1;
+          for (k=0; k<ndim; k++) celldata[ckid].bbmin[k] = cell.bbmin[k];
+          for (k=0; k<ndim; k++) celldata[ckid].bbmax[k] = cell.bbmax[k];
 
           // If a leaf cell, flag it and store children ids (NOT NEEDED HERE??)
 
@@ -342,24 +343,30 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
           // Assign positions of child cells
           if (k == 0 || k == 2 || k == 4 || k == 6) {
             celldata[ckid].r[0] = cell.r[0] - cellSize;
+            celldata[ckid].bbmax[0] = cell.r[0];
           }
           else {
             celldata[ckid].r[0] = cell.r[0] + cellSize;
+            celldata[ckid].bbmin[0] = cell.r[0];
           }
           if (ndim > 1) {
             if (k == 0 || k == 1 || k == 4 || k == 5) {
               celldata[ckid].r[1] = cell.r[1] - cellSize;
+              celldata[ckid].bbmax[1] = cell.r[1];
             }
             else {
               celldata[ckid].r[1] = cell.r[1] + cellSize;
+              celldata[ckid].bbmin[1] = cell.r[1];
             }
           }
           if (ndim == 3) {
             if (k < 4) {
               celldata[ckid].r[2] = cell.r[2] - cellSize;
+              celldata[ckid].bbmax[2] = cell.r[2];
             }
             else {
               celldata[ckid].r[2] = cell.r[2] + cellSize;
+              celldata[ckid].r[2] = cell.r[2];
             }
           }
 

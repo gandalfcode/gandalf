@@ -1,7 +1,25 @@
 //=================================================================================================
 //  TreeRay.cpp
-//  ...
+//  Contains main TreeRay algoritm subroutines.
+//  Translated from original Fortran code written by R. Wunsch (2015)
 //
+//  This file is part of GANDALF :
+//  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
+//  https://github.com/gandalfcode/gandalf
+//  Contact : gandalfcode@gmail.com
+//
+//  Copyright (C) 2013  D. A. Hubber, G. Rosotti
+//            (C) 2015  R. Wunsch
+//
+//  GANDALF is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 2 of the License, or
+//  (at your option) any later version.
+//
+//  GANDALF is distributed in the hope that it will be useful, but
+//  WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//  General Public License (http://www.gnu.org/licenses) for more details.
 //=================================================================================================
 
 
@@ -9,10 +27,9 @@
 #include "chealpix.h"
 
 
-
 //=================================================================================================
 //  TreeRay::TreeRay
-//  ...
+/// Constructor for main TreeRay object
 //=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int> class TreeCell>
 TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeRay(bool _ots, int _nSide, int _ilNR, int _ilNTheta,
@@ -44,12 +61,13 @@ TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeRay(bool _ots, int _nSide, int _i
                                                  params->stringparams["multipole"]);
 
   // Set important variables
-  NTBLevels = tree->lmax + 1;
-  nPix      = 12*nSide*nSide;
-  ilNI      = nPix;
-  ilNSSampFac = 1.6;
+  NTBLevels   = tree->lmax + 1;
+  nPix        = 12*nSide*nSide;
+  ilNI        = nPix;
+  ilNSSampFac = (FLOAT) 1.6;
 
-  // Generate intersection list
+
+  // Generate intersection list tables
   GenerateIntersectList();
 
 
@@ -73,21 +91,20 @@ TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeRay(bool _ots, int _nSide, int _i
 
 
   // Allocate arrays for rays
-  //call Grid_getMinCellSize(tr_bhMinCellSize)
-  minCellSize = 0.0f;
+  minCellSize = (FLOAT) 0.0;
   for (int k=0; k<ndim; k++) minCellSize = max(minCellSize, simbox.boxsize[k]);
-  minCellSize = minCellSize/powf(2.0, tree->lmax);
+  minCellSize    = minCellSize/powf(2.0, tree->lmax);
   max_ray_length = sqrtf(DotProduct(simbox.boxsize, simbox.boxsize, ndim));
-  bhNR = rayRadRes*((int) (sqrtf(2.0*max_ray_length / minCellSize)) + 1);
+  bhNR           = rayRadRes*((int) (sqrtf(2.0*max_ray_length / minCellSize)) + 1);
 
-  cout << "boxsize : " << simbox.boxsize[0] << "   " << simbox.boxsize[1] << "   " << simbox.boxsize[2] << endl;
+  cout << "boxsize : " << simbox.boxsize[0] << "   " << simbox.boxsize[1]
+       << "   " << simbox.boxsize[2] << endl;
   cout << "minCellSize : " << minCellSize << "    max_ray_length : " << max_ray_length
        << "     bhNR : " << bhNR << endl;
 
+  // Allocate main ray arrays
   rays = new Rays*[nPix];
   for (int i=0; i<nPix; i++) rays[i] = new Rays[bhNR+1];
-
-
   rayR   = new FLOAT[bhNR+1];
   rayR2  = new FLOAT[bhNR+1];
   rayRi  = new FLOAT[bhNR+1];
@@ -110,7 +127,7 @@ TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeRay(bool _ots, int _nSide, int _i
 
 //=================================================================================================
 //  TreeRay::~TreeRay
-/// ...
+/// Destructor for TreeRay object
 //=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int> class TreeCell>
 TreeRay<ndim,nfreq,ParticleType,TreeCell>::~TreeRay()
@@ -139,7 +156,9 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::UpdateRadiationField
   NbodyParticle<ndim> **nbodydata,     ///< [in] N-body data array
   SinkParticle<ndim> *sinkdata)        ///< [in] Sink data array
 {
-  int it;
+  int c;                               // ..
+  int it;                              // ..
+  int Nitmax = 10;                     // ..
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* >(sph_gen);
 
 
@@ -152,27 +171,27 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::UpdateRadiationField
   tree->BuildTree(0, Nhydro - 1, Nhydro, tree->Ntotmax, partdata, 0.0);
 
   // Add sink particles to the tree
-  AddRadiationSources(Nsink, sinkdata);
+  for (int i=0; i<Nsink; i++) AddRadiationSource(sinkdata[i]);
 
   // Now compute all tree cell properties, including point sources (i.e. sinks)
   tree->StockTree(tree->celldata[0], partdata);
 
 
-
+  // Main iteration loop
   //-----------------------------------------------------------------------------------------------
   for (it=0; it<Nitmax; it++) {
 
-    // reset variables to store error - for iterations (From TreeRay_bhInitFieldVar)
-    bhLocRelErr = 0.0;
-    bhMaxRelEradErr = 0.0;
-    bhLocEradTot = 0.0;
-    bhLocMionTot = 0.0;
+    // Reset variables to store error - for iterations (From TreeRay_bhInitFieldVar)
+    bhLocRelErr     = (FLOAT) 0.0;
+    bhMaxRelEradErr = (FLOAT) 0.0;
+    bhLocEradTot    = (FLOAT) 0.0;
+    bhLocMionTot    = (FLOAT) 0.0;
 
-
+    // Walk over all (active) cells with TreeRay algorithm
     for (c=0; c<tree->Ncell; c++) {
       OsTreeRayCell<ndim> &cell = tree->celldata[c];
       cell.erdEUVold[0] = cell.erdEUV[0];
-      cell.erdEUV[0] = 0.0;
+      cell.erdEUV[0] = (FLOAT) 0.0;
 
       TreeWalk(cell);
     }
@@ -183,12 +202,12 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::UpdateRadiationField
   }
   //-----------------------------------------------------------------------------------------------
 
+
+  // Map from cells to particles??
   for (c=0; c<tree->Ncell; c++) {
     OsTreeRayCell<ndim> &cell = tree->celldata[c];
 
   }
-
-
 
 
   return;
@@ -317,6 +336,7 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::GenerateIntersectList(void)
   //-----------------------------------------------------------------------------------------------
 
   // Write table to file (for debugging)
+  //-----------------------------------------------------------------------------------------------
   FILE * pFile;
   pFile = fopen ("gandalfTreeRay.dat","w");
 
@@ -373,8 +393,8 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::GenerateRadNodeMapping(void)
   radNodeMapIndex = new int[bhNR*nFineR*bhNR*NL];
   radNodeMapValue = new FLOAT[bhNR*nFineR*bhNR*NL];
 
-
   for (int i=0; i<bhNR*nFineR*bhNR*NL; i++) radNodeMapIndex[i] = -1;
+
 
   // DAVID : What is NTBLevels???  nint??
   //-----------------------------------------------------------------------------------------------
@@ -457,8 +477,8 @@ FLOAT TreeRay<ndim,nfreq,ParticleType,TreeCell>::NodeKernel
 {
   static const FLOAT a1 = 1.21;
   static const FLOAT a2 = -6.35;
-  static const FLOAT M = 1.184;
-  static const FLOAT A = 0.40802854426;
+  static const FLOAT M  = 1.184;
+  static const FLOAT A  = 0.40802854426;
 
   const FLOAT rnorm = fabs((r - rNodeCen)/ndSize);
 
@@ -478,8 +498,28 @@ FLOAT TreeRay<ndim,nfreq,ParticleType,TreeCell>::NodeKernel
 
 
 //=================================================================================================
+//  TreeRay::AddRadiationSource
+/// ...
+//=================================================================================================
+template <int ndim, int nfreq, template<int> class ParticleType, template<int> class TreeCell>
+void TreeRay<ndim,nfreq,ParticleType,TreeCell>::AddRadiationSource
+ (SinkParticle<ndim> &sink)
+  //const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
+{
+  // Write code to find leaf cell containing sink
+
+
+  
+
+
+  return;
+}
+
+
+
+//=================================================================================================
 //  TreeRay::TreeWalk
-//  ...
+/// Walk the octal tree for a given cell adding all node contributions in different ray directions.
 //=================================================================================================
 template <int ndim, int nfreq, template<int> class ParticleType, template<int> class TreeCell>
 void TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeWalk
@@ -497,9 +537,7 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeWalk
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
   FLOAT rc[ndim];                      // Position of cell
-
-
-  FLOAT **eflux;
+  FLOAT **eflux;                       // ..
 
 
   eflux = new FLOAT*[nPix];
@@ -508,13 +546,13 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeWalk
 
   for (ipix=0; ipix<nPix; ipix++) {
     for (iR=0; iR<ilNR; iR++) {
-      rays[ipix][iR].rho    = 0.0;
-      rays[ipix][iR].mass   = 0.0;
-      rays[ipix][iR].volume = 0.0;
+      rays[ipix][iR].rho    = (FLOAT) 0.0;
+      rays[ipix][iR].mass   = (FLOAT) 0.0;
+      rays[ipix][iR].volume = (FLOAT) 0.0;
       for (iF=0; iF<nfreq; iF++) {
-        rays[ipix][iR].srcF[iF] = 0.0;
-        rays[ipix][iR].erad[iF] = 0.0;
-        rays[ipix][iR].Erad[iF] = 0.0;
+        rays[ipix][iR].srcF[iF] = (FLOAT) 0.0;
+        rays[ipix][iR].erad[iF] = (FLOAT) 0.0;
+        rays[ipix][iR].Erad[iF] = (FLOAT) 0.0;
       }
     }
   }
@@ -577,7 +615,7 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::TreeWalk
 
   for (ipix=0; ipix<nPix; ipix++) {
     FixRay(rays[ipix]);
-    IntegrateRay(rays[ipix],eflux[ipix]);
+    IntegrateRay(rays[ipix], eflux[ipix]);
   }
 
   FLOAT **cdMaps;  // DEFINE THIS SAME AS RAYS
@@ -769,8 +807,7 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::FixRay
         }
       }
 
-      // Worst case scenarion: no valid point found
-      // Just copy into ir the last valid point
+      // Worst case scenarion: no valid point found.  Just copy into ir the last valid point
       if (irh == -1) {
         ray[ir].volume = ray[ir-1].volume;
         ray[ir].mass   = ray[ir-1].mass;
@@ -780,12 +817,10 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::FixRay
         for (kfreq=0; kfreq<nfreq; kfreq++) ray[ir].Erad[kfreq] = 0.0;
       }
 
-      // Linear interpolation between the last valid point and the
-      // first valid point at larger r
+      // Linear interpolation between the last valid point and the first valid point at larger r
       else {
 
-        // DAVID : What is tr_bhRayR??  Radial position?
-        //q = (tr_bhRayR(irh) - tr_bhRayR(ir)) / (tr_bhRayR(irh) - tr_bhRayR(ir-1))
+        q = (rayR[irh] - rayR[ir]) / (rayR[irh] - rayR[ir-1]);
         ray[ir].volume = (1.0 - q)*ray[ir-1].volume + q*ray[irh].volume;
         ray[ir].mass   = (1.0 - q)*ray[ir-1].volume + q*ray[irh].mass;
         ray[ir].rho    = ray[ir].mass/ray[ir].volume;
@@ -913,22 +948,25 @@ void TreeRay<ndim,nfreq,ParticleType,TreeCell>::FinaliseCell
 
   for (int k=0; k<nfreq; k++) {
     phFluxInt[k] = 0.0;
-    for (int i=0; i<nPix; i++) {
+    for (int ipix=0; ipix<nPix; ipix++) {
       phFluxInt[k] += eflux[ipix][k];
     }
   }
 
 
+  //-----------------------------------------------------------------------------------------------
   if (onTheSpot) {
-    cell.erdEUV[0] = Eflx2Erad*phFluxInt[0];
+    //cell.erdEUV[0] = Eflx2Erad*phFluxInt[0];
 
-    tr_bhLocEradTot = tr_bhLocEradTot + solnPoint(EUVE_VAR)
+    // DAVID : Forgot what these are
+    /*tr_bhLocEradTot = tr_bhLocEradTot + solnPoint(EUVE_VAR)
     tr_bhLocMionTot = tr_bhLocMionTot + solnPoint(DENS_VAR)*solnPoint(IHP_SPEC)*vol_poc
-    EradErr = 2.0*abs(solnPoint(EUVE_VAR) - solnPoint(EUVO_VAR)) &
-    &       / (solnPoint(EUVE_VAR) + solnPoint(EUVO_VAR) + 1d-99)
+    EradErr = 2.0*abs(solnPoint(EUVE_VAR) - solnPoint(EUVO_VAR)) /
+      (solnPoint(EUVE_VAR) + solnPoint(EUVO_VAR) + 1d-99)*/
 
-    if (EradErr > tr_bhLocRelErr) tr_bhLocRelErr = EradErr
+    //if (EradErr > tr_bhLocRelErr) tr_bhLocRelErr = EradErr;
   }
+  //-----------------------------------------------------------------------------------------------
 
 
   return;

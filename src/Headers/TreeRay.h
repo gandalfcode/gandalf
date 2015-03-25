@@ -32,6 +32,7 @@
 #include <iostream>
 #include <ostream>
 #include "CodeTiming.h"
+#include "Constants.h"
 #include "Debug.h"
 #include "EnergyEquation.h"
 #include "EOS.h"
@@ -133,24 +134,26 @@ class TreeRay : public Radiation<ndim>
 
   int bhNR;                            ///< ..
   int ilNI;                            ///< ..
-  long int nPix;                       ///< ..
   int NTBLevels;                       ///< ..
+  long int nPix;                       ///< ..
+  FLOAT bhLocRelErr;                   ///< ..
+  FLOAT bhMaxRelEradErr;               ///< ..
+  FLOAT bhLocEradTot;                  ///< ..
+  FLOAT bhLocMionTot;                  ///< ..
   FLOAT ilNSSampFac;                   ///< ???
   FLOAT ilNSSampFacI;                  ///< ..
-  FLOAT max_ray_length;
+  FLOAT max_ray_length;                ///< ..
   FLOAT minCellSize;                   ///< ..
-  FLOAT bhLocRelErr, bhMaxRelEradErr, bhLocEradTot, bhLocMionTot;
 
   int *radNodeMapIndex;                ///< ..
   FLOAT *intersectList;                ///< ..
   FLOAT *radNodeMapValue;              ///< ..
-  FLOAT *rayR;
-  FLOAT *rayR2;
-  FLOAT *rayRi;
-  FLOAT *rayR2i;
+  FLOAT *rayR;                         ///< ..
+  FLOAT *rayR2;                        ///< ..
+  FLOAT *rayRi;                        ///< ..
+  FLOAT *rayR2i;                       ///< ..
 
-  OctTree<ndim,ParticleType,TreeCell> *tree;    ///< ..
-  //Rays<nfreq> **rays;                  ///< ..
+  OctTree<ndim,ParticleType,TreeCell> *tree;   ///< ..
   Rays **rays;                         ///< ..
 
 
@@ -162,7 +165,7 @@ class TreeRay : public Radiation<ndim>
   virtual void UpdateRadiationField(int, int, int, SphParticle<ndim> *,
                                     NbodyParticle<ndim> **, SinkParticle<ndim> *);
 
-  void AddRadiationSources(int, SinkParticle<ndim> *) {};
+  void AddRadiationSource(SinkParticle<ndim> &);
   void FixRay(Rays *ray);
   void FinaliseCell(TreeCell<ndim> &, FLOAT **eflux, FLOAT **cdMaps);
   void FinaliseIteration(void);

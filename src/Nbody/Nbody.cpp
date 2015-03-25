@@ -125,10 +125,10 @@ template<int ndim>
 void Nbody<ndim>::LoadStellarPropertiesTable
 (SimUnits *simunits)
 {
-  string filename = "stellar.dat";  // Stellar table filename
-  string dummystring;               // Dummy string to skip unimportant lines
-  ifstream infile;                  // Input stream object
-  int i;                            // Table element counter
+  string filename = "stellar.dat";     // Stellar table filename
+  string dummystring;                  // Dummy string to skip unimportant lines
+  ifstream infile;                     // Input stream object
+  int i;                               // Table element counter
 
   debug2("[Nbody::LoadStellarPropertiesTable]");
 
@@ -147,6 +147,7 @@ void Nbody<ndim>::LoadStellarPropertiesTable
            >> stellartable[i].Teff >> stellartable[i].mdot >> stellartable[i].vwind;
     stellartable[i].mass       /= simunits->m.inscale;
     stellartable[i].luminosity /= simunits->L.inscale;
+    //stellartable[i].NLyC       /= simunits->t.inscale;
     stellartable[i].Teff       /= simunits->temp.inscale;
     stellartable[i].mdot       /= simunits->dmdt.inscale;
     stellartable[i].vwind      /= simunits->v.inscale;
