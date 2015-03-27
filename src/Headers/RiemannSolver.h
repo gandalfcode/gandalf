@@ -1,7 +1,7 @@
-//=============================================================================
+//=================================================================================================
 //  RiemannSolver.h
 //  Contains all class definitions for Riemann solvers used in Godunov scheme.
-//=============================================================================
+//=================================================================================================
 
 
 #ifndef _RIEMANN_SOLVER_H_
@@ -13,22 +13,13 @@
 #include "InlineFuncs.h"
 
 
-//=============================================================================
+//=================================================================================================
 //  Class RiemannSolver
-//=============================================================================
+//=================================================================================================
+template <int ndim>
 class RiemannSolver
 {
  public:
-
-
-  RiemannSolver(FLOAT);
-  ~RiemannSolver();
-
-  virtual void ComputeStarRegion(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
-                                 FLOAT, FLOAT, FLOAT &, FLOAT &) {};
-  virtual void ComputeFluxes(const FLOAT *, const FLOAT *, const FLOAT *, FLOAT *) = 0;
-  //virtual void SolveRiemannProblem(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
-  //                                 FLOAT, FLOAT, FLOAT &, FLOAT &) = 0;
 
   const FLOAT gamma;
   const FLOAT invgamma;
@@ -42,26 +33,45 @@ class RiemannSolver
   const FLOAT g8;
   const FLOAT g9;
 
+  static const int nvar = ndim + 2;
+  static const int ivx = 0;
+  static const int ivy = 1;
+  static const int ivz = 2;
+  static const int irho = ndim;
+  static const int ietot = ndim + 1;
+  static const int ipress = ndim + 1;
+
+
+  RiemannSolver(FLOAT);
+  ~RiemannSolver();
+
+  virtual void ComputeStarRegion(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
+                                 FLOAT, FLOAT, FLOAT &, FLOAT &) {};
+  virtual void ComputeFluxes(const FLOAT [ndim+2], const FLOAT [ndim+2],
+                             const FLOAT [ndim], FLOAT [ndim+2][ndim]) = 0;
+
+  void ComputeRotationMatrices(FLOAT dr[ndim], FLOAT rotMat[ndim][ndim], FLOAT invRotMat[ndim][ndim]);
+
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class ExactRiemannSolver
-//=============================================================================
+//=================================================================================================
 template <int ndim>
-class ExactRiemannSolver: public RiemannSolver
+class ExactRiemannSolver: public RiemannSolver<ndim>
 {
-  using RiemannSolver::gamma;
-  using RiemannSolver::g1;
-  using RiemannSolver::g2;
-  using RiemannSolver::g3;
-  using RiemannSolver::g4;
-  using RiemannSolver::g5;
-  using RiemannSolver::g6;
-  using RiemannSolver::g7;
-  using RiemannSolver::g8;
-  using RiemannSolver::invgamma;
+  using RiemannSolver<ndim>::gamma;
+  using RiemannSolver<ndim>::g1;
+  using RiemannSolver<ndim>::g2;
+  using RiemannSolver<ndim>::g3;
+  using RiemannSolver<ndim>::g4;
+  using RiemannSolver<ndim>::g5;
+  using RiemannSolver<ndim>::g6;
+  using RiemannSolver<ndim>::g7;
+  using RiemannSolver<ndim>::g8;
+  using RiemannSolver<ndim>::invgamma;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
@@ -73,38 +83,37 @@ class ExactRiemannSolver: public RiemannSolver
 
  public:
 
-  ExactRiemannSolver(FLOAT gamma_aux): RiemannSolver(gamma_aux) {};
+  ExactRiemannSolver(FLOAT gamma_aux) : RiemannSolver<ndim>(gamma_aux) {};
     //~ExactRiemannSolver() {};
 
-  virtual void ComputeStarRegion(const FLOAT, const FLOAT, const FLOAT,
-                                 const FLOAT, const FLOAT, const FLOAT,
-                                 const FLOAT, const FLOAT, FLOAT &, FLOAT &);
-  virtual void ComputeFluxes(const FLOAT *, const FLOAT *, const FLOAT *, FLOAT *);
-  void SampleExactSolution(const FLOAT, const FLOAT, const FLOAT, const FLOAT,
-                           const FLOAT, const FLOAT, const FLOAT, const FLOAT,
-                           const FLOAT, const FLOAT, const FLOAT,
-                           FLOAT &, FLOAT &, FLOAT &);
+  virtual void ComputeStarRegion(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
+                                 const FLOAT, const FLOAT, const FLOAT, FLOAT &, FLOAT &);
+  virtual void ComputeFluxes(const FLOAT [ndim+2], const FLOAT [ndim+2],
+                             const FLOAT [ndim], FLOAT [ndim+2][ndim]);
+  void SampleExactSolution(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
+                           const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
+                           const FLOAT, FLOAT &, FLOAT &, FLOAT &);
 
 };
 
 
 
-//=============================================================================
+//=================================================================================================
 //  Class HllcRiemannSolver
-//=============================================================================
+//=================================================================================================
 template <int ndim>
-class HllcRiemannSolver: public RiemannSolver
+class HllcRiemannSolver: public RiemannSolver<ndim>
 {
-  using RiemannSolver::gamma;
-  using RiemannSolver::g1;
-  using RiemannSolver::g2;
-  using RiemannSolver::g3;
-  using RiemannSolver::g4;
-  using RiemannSolver::g5;
-  using RiemannSolver::g6;
-  using RiemannSolver::g7;
-  using RiemannSolver::g8;
-  using RiemannSolver::invgamma;
+  using RiemannSolver<ndim>::gamma;
+  using RiemannSolver<ndim>::g1;
+  using RiemannSolver<ndim>::g2;
+  using RiemannSolver<ndim>::g3;
+  using RiemannSolver<ndim>::g4;
+  using RiemannSolver<ndim>::g5;
+  using RiemannSolver<ndim>::g6;
+  using RiemannSolver<ndim>::g7;
+  using RiemannSolver<ndim>::g8;
+  using RiemannSolver<ndim>::invgamma;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
@@ -116,10 +125,11 @@ class HllcRiemannSolver: public RiemannSolver
 
  public:
 
-  HllcRiemannSolver(FLOAT gamma_aux): RiemannSolver(gamma_aux) {};
+  HllcRiemannSolver(FLOAT gamma_aux) : RiemannSolver<ndim>(gamma_aux) {};
     //~HllcRiemannSolver() {};
 
-  virtual void ComputeFluxes(const FLOAT *, const FLOAT *, const FLOAT *, FLOAT *);
+  virtual void ComputeFluxes(const FLOAT [ndim+2], const FLOAT [ndim+2],
+                             const FLOAT [ndim], FLOAT [ndim+2][ndim]);
 
 };
 #endif

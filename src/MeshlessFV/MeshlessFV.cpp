@@ -219,32 +219,32 @@ void MeshlessFV<ndim>::ComputeThermalProperties
 
 
 
-//=============================================================================
+//=================================================================================================
 //  MeshlessFV<ndim>::Timestep
 /// ...
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
 {
   //cout << "Timestep : " << 0.5*part.h/(part.sound + sqrt(DotProduct(part.v, part.v, ndim)))
   //     << "    " << part.sound << "    " << part.h <<"    "
   //      << part.v[0] << endl;
-  return 0.5*part.h/(part.sound + sqrt(DotProduct(part.v, part.v, ndim)));
+  return 0.2*part.h/(part.sound + sqrt(DotProduct(part.v, part.v, ndim)));
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  MeshlessFV<ndim>::Timestep
 /// ...
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::IntegrateConservedVariables
  (MeshlessFVParticle<ndim> &part,
   FLOAT timestep)
 {
   for (int var=0; var<nvar; var++) {
-    part.Qcons[var] += part.flux[var]*timestep;
+    part.Qcons[var] += part.dQdt[var]*timestep;
   }
 
   return;
@@ -252,10 +252,10 @@ void MeshlessFV<ndim>::IntegrateConservedVariables
 
 
 
-//=============================================================================
+//=================================================================================================
 //  MeshlessFV::UpdatePrimitiveVector
 /// ...
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
 {
@@ -266,10 +266,10 @@ void MeshlessFV<ndim>::UpdatePrimitiveVector(MeshlessFVParticle<ndim> &part)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  MeshlessFV::UpdateArrayVariables
 /// ...
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
 {
@@ -460,20 +460,29 @@ void MeshlessFV<ndim>::CalculatePrimitiveFluxFromPrimitive
 
 
 
-//=============================================================================
+//=================================================================================================
 //  MeshlessFV::CalculatePrimitiveTimeDerivative
 /// ...
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::CalculatePrimitiveTimeDerivative
- (int k,
-  FLOAT Wprim[nvar],
-  FLOAT gradW[nvar],
+ (FLOAT Wprim[nvar],
+  FLOAT gradW[nvar][ndim],
   FLOAT Wdot[nvar])
 {
-  Wdot[irho]   = Wprim[0]*gradW[irho] + Wprim[irho]*gradW[0];
-  Wdot[0]      = Wprim[0]*gradW[0] + gradW[ipress]/Wprim[irho];
-  Wdot[ipress] = gamma_eos*Wprim[ipress]*gradW[0] + Wprim[0]*gradW[ipress];
+  if (ndim == 1) {
+    Wdot[irho]   = Wprim[ivx]*gradW[irho][0] + Wprim[irho]*gradW[ivx][0];
+    Wdot[ivx]    = Wprim[ivx]*gradW[ivx][0] + gradW[ipress][0]/Wprim[irho];
+    Wdot[ipress] = gamma_eos*Wprim[ipress]*gradW[ivx][0] + Wprim[ivx]*gradW[ipress][0];
+  }
+  else if (ndim == 2) {
+    Wdot[irho]   = Wprim[ivx]*gradW[irho][0] + Wprim[ivy]*gradW[irho][1] +
+      Wprim[irho]*(gradW[ivx][0] + gradW[ivy][1]);
+    Wdot[ivx]    = Wprim[ivx]*gradW[ivx][0] + Wprim[ivy]*gradW[ivx][1] + gradW[ipress][0]/Wprim[irho];
+    Wdot[ivy]    = Wprim[ivx]*gradW[ivy][0] + Wprim[ivy]*gradW[ivy][1] + gradW[ipress][1]/Wprim[irho];
+    Wdot[ipress] = Wprim[ivx]*gradW[ipress][0] + Wprim[ivy]*gradW[ipress][1] +
+      gamma_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1]);
+  }
 
   return;
 }

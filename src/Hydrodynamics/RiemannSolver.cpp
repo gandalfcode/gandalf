@@ -1,7 +1,7 @@
-//=============================================================================
+//=================================================================================================
 //  RiemannSolver.cpp
 //  Contains all available Riemann solver functions.
-//=============================================================================
+//=================================================================================================
 
 
 #include <cstdio>
@@ -19,11 +19,12 @@ static const int Niterationmax = 100;            // ..
 static const FLOAT tolerance = 1.0e-6;           // Iteration tolerance
 
 
-//=============================================================================
+//=================================================================================================
 //  RiemannSolver::RiemannSolver
 /// Constructor for RiemannSolver class.
-//=============================================================================
-RiemannSolver::RiemannSolver(FLOAT gamma_aux):
+//=================================================================================================
+template <int ndim>
+RiemannSolver<ndim>::RiemannSolver(FLOAT gamma_aux):
   gamma(gamma_aux),
   invgamma(1.0/gamma_aux),
   g1(0.5*(gamma_aux - 1.0)/gamma_aux),
@@ -40,10 +41,25 @@ RiemannSolver::RiemannSolver(FLOAT gamma_aux):
 
 
 
-//=============================================================================
+//=================================================================================================
+//  RiemannSolver::ComputeRotationMatrices
+/// ...
+//=================================================================================================
+template <int ndim>
+void RiemannSolver<ndim>::ComputeRotationMatrices
+ (FLOAT dr[ndim],
+  FLOAT rotMat[ndim][ndim],
+  FLOAT invRotMat[ndim][ndim])
+{
+  return;
+}
+
+
+
+//=================================================================================================
 //  ExactRiemannSolver::SolveRiemannProblem
 /// Exact Riemann solver, based on approach outlined by Toro (1999).
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void ExactRiemannSolver<ndim>::ComputeStarRegion
  (const FLOAT pl,                      ///< LHS pressure
@@ -117,7 +133,7 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
 
 
   // Main iteration loop
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   do {
     iteration++;
 
@@ -159,8 +175,8 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
     }
 
 
-  } while (iteration < Niterationmax); //This is very dangerous. Normaly one would set a maximum number of iterations
-  //---------------------------------------------------------------------------
+  } while (iteration < Niterationmax);
+  //-----------------------------------------------------------------------------------------------
 
   // Compute velocity of star region
   ustar = 0.5*(ul + ur) + 0.5*(fr - fl);
@@ -170,9 +186,9 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
 
 
 
-//=============================================================================
+//=================================================================================================
 //  ExactRiemannSolver::SampleExactSolution
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void ExactRiemannSolver<ndim>::SampleExactSolution
  (const FLOAT pstar,                   ///< ..
@@ -198,11 +214,11 @@ void ExactRiemannSolver<ndim>::SampleExactSolution
 
 
   // If sampling point lies to the left of the contact discontinuity
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   if (s <= ustar) {
 
     // Left rarefaction
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     if (pstar <= pl) {
       sh = ul - cl;
 
@@ -235,7 +251,7 @@ void ExactRiemannSolver<ndim>::SampleExactSolution
     }
 
     // left shock
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else {
       FLOAT pml = pstar/pl;
       sl = ul - cl*sqrt(g2*pml + g1);
@@ -253,15 +269,15 @@ void ExactRiemannSolver<ndim>::SampleExactSolution
         p = pstar;
       }
     }
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
 
   }
   // Sampling point lies to the right of the contact discontinuity
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
   else {
 
     // Right shock
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     if (pstar >= pr) {
 
       FLOAT pmr = pstar/pr;
@@ -282,7 +298,7 @@ void ExactRiemannSolver<ndim>::SampleExactSolution
 
     }
     // Right rarefaction
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else {
 
       sh = ur + cr;
@@ -316,23 +332,23 @@ void ExactRiemannSolver<ndim>::SampleExactSolution
     }
 
   }
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   return;
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  ExactRiemannSolver::ComputeFluxes
 /// Exact Riemann solver, based on approach outlined by Toro (1999).
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void ExactRiemannSolver<ndim>::ComputeFluxes
  (const FLOAT Wleft[nvar],             ///< LHS primitive state
   const FLOAT Wright[nvar],            ///< RHS primitive state
   const FLOAT runit[ndim],             ///< ..
-  FLOAT flux[nvar])                    ///< flux vector
+  FLOAT flux[nvar][ndim])              ///< flux vector
 {
   //// State variables
   /*const FLOAT dl = Wleft[0];           // ..
@@ -358,11 +374,10 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
                       Wright[irho], cl, cr, ul, ur, p, d, u);
 
   // Compute fluxes
-  etot        = p/(gamma - 1.0) + 0.5*d*u*u;
-  flux[irho]  = 1.0*d*u;
-  //flux[ivx]   = p + d*u*u;
-  flux[ietot] = 1.0*u*(etot + p);
-  for (int k=0; k<ndim; k++) flux[k] = (p + d*u*u); //*runit[k];
+  etot           = p/(gamma - 1.0) + 0.5*d*u*u;
+  flux[irho][0]  = d*u;
+  flux[ivx][0]   = p + d*u*u;
+  flux[ietot][0] = u*(etot + p);
 
 
   /*if (flux[0] != flux[0] || flux[1] != flux[1] || flux[2] != flux[2]) {
@@ -371,23 +386,21 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
   }*/
 
 
-  //---------------------------------------------------------------------------
-
   return;
 }
 
 
 
-//=============================================================================
+//=================================================================================================
 //  HllcRiemannSolver::SolveRiemannProblem
 /// HLLc Riemann solver for pstar and ustar.
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void HllcRiemannSolver<ndim>::ComputeFluxes
- (const FLOAT Wleft[nvar],                ///< LHS primitive state
-  const FLOAT Wright[nvar],               ///< RHS primitive state
-  const FLOAT runit[ndim],             ///< ..
-  FLOAT flux[nvar])                       ///< flux vector
+ (const FLOAT Wleft[nvar],               ///< LHS primitive state
+  const FLOAT Wright[nvar],              ///< RHS primitive state
+  const FLOAT runit[ndim],               ///< ..
+  FLOAT flux[nvar][ndim])                ///< flux vector
 {
   //// State variables
   const FLOAT dl = Wleft[irho];    //qleft[0];
@@ -484,9 +497,9 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
   }
 
   // Compute the conservative fluxes
-  flux[irho]  = df*uf;
+  /*flux[irho]  = df*uf;
   flux[ivx]   = df*uf*uf + pf;
-  flux[ietot] = (etotf + pf)*uf;
+  flux[ietot] = (etotf + pf)*uf;*/
 /*#if NDIM>1
   do(ivar=3; ivar<nvar; ivar++) {
     if( flux[0] > 0.0d0) {
@@ -504,6 +517,9 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
 
 
 
+template class RiemannSolver<1>;
+template class RiemannSolver<2>;
+template class RiemannSolver<3>;
 template class ExactRiemannSolver<1>;
 template class ExactRiemannSolver<2>;
 template class ExactRiemannSolver<3>;

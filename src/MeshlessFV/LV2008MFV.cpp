@@ -199,22 +199,23 @@ int LV2008MFV<ndim, kernelclass>::ComputeH
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
 void LV2008MFV<ndim, kernelclass>::ComputePsiFactors
- (const int i,                         ///< [in] id of particle
-  const int Nneib,                     ///< [in] No. of neins in neibpart array
-  int *neiblist,                       ///< [in] id of gather neibs in neibpart
-  FLOAT *drmag,                        ///< [in] Distances of gather neighbours
-  FLOAT *invdrmag,                     ///< [in] Inverse distances of gather neibs
-  FLOAT *dr,                           ///< [in] Position vector of gather neibs
-  MeshlessFVParticle<ndim> &part,      ///< [inout] Particle i data
-  MeshlessFVParticle<ndim> *neibpart)  ///< [inout] Neighbour particle data
+ (const int i,                                 ///< [in] id of particle
+  const int Nneib,                             ///< [in] No. of neins in neibpart array
+  int *neiblist,                               ///< [in] id of gather neibs in neibpart
+  FLOAT *drmag,                                ///< [in] Distances of gather neighbours
+  FLOAT *invdrmag,                             ///< [in] Inverse distances of gather neibs
+  FLOAT *dr,                                   ///< [in] Position vector of gather neibs
+  MeshlessFVParticle<ndim> &part,              ///< [inout] Particle i data
+  MeshlessFVParticle<ndim> *neibpart)          ///< [inout] Neighbour particle data
 {
-  int j;                               // Neighbour list id
-  int jj;
-  int k;                               // Dimension counter
-  FLOAT draux[ndim];                   // Relative position vector
-  FLOAT drsqd;
-  FLOAT E[ndim][ndim];
-  const FLOAT invhsqd = part.invh*part.invh;
+  int j;                                       // Neighbour list id
+  int jj;                                      // ..
+  int k;                                       // Dimension counter
+  FLOAT invdet;                                // Determinant
+  FLOAT draux[ndim];                           // Relative position vector
+  FLOAT drsqd;                                 // ..
+  FLOAT E[ndim][ndim];                         // ..
+  const FLOAT invhsqd = part.invh*part.invh;   // ..
 
 
   for (k=0; k<ndim; k++) {
@@ -236,20 +237,23 @@ void LV2008MFV<ndim, kernelclass>::ComputePsiFactors
     for (k=0; k<ndim; k++) {
       for (int kk=0; kk<ndim; kk++) {
         E[k][kk] += draux[k]*draux[kk]*part.hfactor*kern.w0_s2(drsqd*invhsqd)/part.ndens;
-        //E[k][kk] += draux[k]*draux[kk]*part.hfactor*kern.w0_s2(drsqd*invhsqd)/neibpart[j].ndens;
-        //cout << "checking E : " << E[k][kk] << "   " << drsqd*invhsqd << "   "
-        //     << draux[k]*draux[kk]*part.hfactor*kern.w0_s2(drsqd*invhsqd)/neibpart[j].ndens << endl;
       }
     }
   }
   //-----------------------------------------------------------------------------------------------
 
-  // Invert the matrix
+  // Invert the matrix (depending on dimensionality)
   if (ndim == 1) {
     part.B[0][0] = 1.0/E[0][0];
   }
+  else if (ndim == 2) {
+    invdet = 1.0/(E[0][0]*E[1][1] - E[0][1]*E[1][0]);
+    part.B[0][0] = invdet*E[1][1];
+    part.B[0][1] = -invdet*E[0][1];
+    part.B[1][0] = -invdet*E[1][0];
+    part.B[1][1] = invdet*E[0][0];
+  }
 
-  //cout << "B[" << i << "] : " << part.B[0][0] << endl;
 
   return;
 }
@@ -302,6 +306,8 @@ void LV2008MFV<ndim, kernelclass>::ComputeGradients
   for (var=0; var<nvar; var++) {
     part.Wmin[var] = part.Wprim[var];
     part.Wmax[var] = part.Wprim[var];
+    part.Wmidmin[var] = big_number;
+    part.Wmidmax[var] = -big_number;
   }
 
 
@@ -310,17 +316,14 @@ void LV2008MFV<ndim, kernelclass>::ComputeGradients
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
 
-    for (k=0; k<ndim; k++) psitilda[k] = 0.0;
-
     for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
     drsqd = DotProduct(draux, draux, ndim);
 
     // Calculate psitilda values
+    for (k=0; k<ndim; k++) psitilda[k] = 0.0;
     for (k=0; k<ndim; k++) {
       for (int kk=0; kk<ndim; kk++) {
-        psitilda[k] += part.B[k][kk]*draux[kk]*part.hfactor*kern.w0_s2(drsqd*invhsqd)/part.ndens; //neibpart[j].ndens;
-        //cout << "psitilda : " << part.B[k][kk] << draux[kk] << "   " << part.hfactor << "   "
-        //     << sqrt(drsqd*invhsqd) << "   " << "    " << kern.w0_s2(drsqd*invhsqd) << "    " << part.ndens << "   " << psitilda[k] << endl;
+        psitilda[k] += part.B[k][kk]*draux[kk]*part.hfactor*kern.w0_s2(drsqd*invhsqd)/part.ndens;
       }
     }
 
@@ -328,26 +331,36 @@ void LV2008MFV<ndim, kernelclass>::ComputeGradients
     for (var=0; var<ndim+2; var++) {
       for (k=0; k<ndim; k++) {
         part.grad[k][var] += (neibpart[j].Wprim[var] - part.Wprim[var])*psitilda[k];
-        //cout << "grad contribution : " << part.Wprim[var] << "   " << neibpart[j].Wprim[var]
-        //     << "   " << psitilda[k] << "    " << 1.0/(part.r[0] - neibpart[j].r[0] + small_number) << endl;
       }
     }
+
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+
+  // Find all max and min values for meshless slope limiters
+  //-----------------------------------------------------------------------------------------------
+  for (jj=0; jj<Nneib; jj++) {
+    j = neiblist[jj];
+
+    for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
+    drsqd = DotProduct(draux, draux, ndim);
 
     // Calculate min and max values of primitives for slope limiters
     for (var=0; var<nvar; var++) {
       part.Wmin[var] = min(part.Wmin[var], neibpart[j].Wprim[var]);
       part.Wmax[var] = max(part.Wmax[var], neibpart[j].Wprim[var]);
+      part.Wmidmin[var] = min(part.Wmidmin[var], part.Wprim[var] + 0.5*part.grad[var][0]*draux[0]);
+      part.Wmidmax[var] = max(part.Wmidmax[var], part.Wprim[var] + 0.5*part.grad[var][0]*draux[0]);
+      assert(part.Wmidmax[var] >= part.Wmidmin[var]);
+      assert(part.Wmax[var] >= part.Wmin[var]);
     }
 
   }
   //-----------------------------------------------------------------------------------------------
 
-  /*FLOAT amp = 0.001;
-  FLOAT kwave = twopi;
-  FLOAT gradient = kwave*amp*cos(kwave*part.r[0]);
-  cout << "Gradient[" << i << "] : " << part.grad[0][irho] << "    analytical : "
-       << gradient << "      rho : " << part.rho << endl;
-  cin >> j;*/
+
 
   return;
 }
@@ -373,58 +386,62 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
   int j;                               // Neighbour list id
   int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
-  int var;
-  FLOAT alpha;
+  int var;                             // ..
+  FLOAT Aij[ndim];                     // ..
+  FLOAT alpha;                         // ..
   FLOAT draux[ndim];                   // Position vector of part relative to neighbour
   FLOAT dr_unit[ndim];                 // Unit vector from neighbour to part
-  FLOAT drsqd;
+  FLOAT drsqd;                         // ..
   FLOAT dvdr;                          // Dot product of dv and dr
   FLOAT invdrmagaux;
   FLOAT psitildai[ndim];
   FLOAT psitildaj[ndim];
   FLOAT rface[ndim];
   FLOAT vface[ndim];
-  FLOAT flux[nvar];
+  FLOAT flux[nvar][ndim];
   FLOAT Wleft[nvar];
   FLOAT Wright[nvar];
   FLOAT Wdot[nvar];
-  FLOAT gradW[nvar];
+  FLOAT gradW[nvar][ndim];
   FLOAT dW[nvar];
 
-  for (var=0; var<nvar; var++) part.flux[var] = 0.0;
 
-  //cout << "Particle " << i << "    Nneib : " << Nneib << endl;
+  // Initialise all particle flux variables
+  for (var=0; var<nvar; var++) part.dQdt[var] = 0.0;
+
 
   // Loop over all potential neighbours in the list
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
-    //if (j == jj) continue;
+
+    // Calculate position and velocity of the face
     for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
     for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.5*(part.v[k] + neibpart[j].v[k]);
 
     // Compute slope-limited values for LHS
     for (k=0; k<ndim; k++) draux[k] = rface[k] - part.r[k];
-    limiter.ComputeLimitedSlopes(part, draux, gradW, dW);
+    limiter.ComputeLimitedSlopes(part, neibpart[j], draux, gradW, dW);
     for (var=0; var<nvar; var++) Wleft[var] = part.Wprim[var] + dW[var];
     for (k=0; k<ndim; k++) Wleft[k] -= vface[k];
 
     // Time-integrate LHS state to half-timestep value
-    this->CalculatePrimitiveTimeDerivative(0, Wleft, gradW, Wdot);
+    this->CalculatePrimitiveTimeDerivative(Wleft, gradW, Wdot);
     for (var=0; var<nvar; var++) Wleft[var] -= (FLOAT) 0.5*timestep*Wdot[var];
 
 
     // Compute slope-limited values for RHS
     for (k=0; k<ndim; k++) draux[k] = rface[k] - neibpart[j].r[k];
-    limiter.ComputeLimitedSlopes(neibpart[j], draux, gradW, dW);
+    limiter.ComputeLimitedSlopes(neibpart[j], part, draux, gradW, dW);
     for (var=0; var<nvar; var++) Wright[var] = neibpart[j].Wprim[var] + dW[var];
     for (k=0; k<ndim; k++) Wright[k] -= vface[k];
 
     // Time-integrate RHS state to half-timestep value
-    this->CalculatePrimitiveTimeDerivative(0, Wright, gradW, Wdot);
+    this->CalculatePrimitiveTimeDerivative(Wright, gradW, Wdot);
     for (var=0; var<nvar; var++) Wright[var] -= (FLOAT) 0.5*timestep*Wdot[var];
 
 
+    // Calculate Godunov flux using the selected Riemann solver
     if (part.r[0] > neibpart[j].r[0]) {
       riemann->ComputeFluxes(Wright, Wleft, dr_unit, flux);
     }
@@ -433,8 +450,8 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
     }
 
     // Now boost back into main coordinate frame
-    flux[ipress] += (FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho] + vface[0]*flux[0];
-    flux[0] += vface[0]*flux[irho];
+    flux[ipress][0] += (FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho][0] + vface[0]*flux[ivx][0];
+    flux[ivx][0] += vface[0]*flux[irho][0];
 
     for (k=0; k<ndim; k++) draux[k] = part.r[k] - neibpart[j].r[k];
     drsqd = DotProduct(draux, draux, ndim);
@@ -443,19 +460,21 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
 
     // Calculate psitilda values
     for (k=0; k<ndim; k++) {
-      psitildai[k] = 0.0;
-      psitildaj[k] = 0.0;
+      psitildai[k] = (FLOAT) 0.0;
+      psitildaj[k] = (FLOAT) 0.0;
       for (int kk=0; kk<ndim; kk++) {
-        psitildai[k] += neibpart[j].B[k][kk]*draux[kk]*neibpart[j].hfactor*kern.w0_s2(drsqd*neibpart[j].invh*neibpart[j].invh)/neibpart[j].ndens;
-        psitildaj[k] -= part.B[k][kk]*draux[kk]*part.hfactor*kern.w0_s2(drsqd*part.invh*part.invh)/part.ndens;
+        psitildai[k] += neibpart[j].B[k][kk]*draux[kk]*neibpart[j].hfactor*
+          kern.w0_s2(drsqd*neibpart[j].invh*neibpart[j].invh)/neibpart[j].ndens;
+        psitildaj[k] -= part.B[k][kk]*draux[kk]*part.hfactor*
+          kern.w0_s2(drsqd*part.invh*part.invh)/part.ndens;
       }
+      Aij[k] = part.volume*psitildaj[k] - neibpart[j].volume*psitildai[k];
     }
 
-
+    // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {
-      part.flux[var] -= flux[var]*(part.volume*psitildaj[0] - neibpart[j].volume*psitildai[0]);
+      part.dQdt[var] -= DotProduct(flux[var], Aij, ndim);
     }
-
 
   }
   //-----------------------------------------------------------------------------------------------

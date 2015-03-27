@@ -137,7 +137,7 @@ public:
   void CalculateConservedFluxFromConserved(int k, FLOAT Ucons[nvar], FLOAT flux[nvar]);
   void CalculateConservedFluxFromPrimitive(int k, FLOAT Wprim[nvar], FLOAT flux[nvar]);
   void CalculatePrimitiveFluxFromPrimitive(int k, FLOAT Wprim[nvar], FLOAT flux[nvar]);
-  void CalculatePrimitiveTimeDerivative(int k, FLOAT Wprim[nvar], FLOAT gradW[nvar], FLOAT Wdot[nvar]);
+  void CalculatePrimitiveTimeDerivative(FLOAT Wprim[nvar], FLOAT gradW[nvar][ndim], FLOAT Wdot[nvar]);
   void IntegrateConservedVariables(MeshlessFVParticle<ndim> &, FLOAT);
 
   //void IntegrateParticlePosition(MeshlessFVParticles<ndim> &, FLOAT);
@@ -247,7 +247,9 @@ class LV2008MFV : public MeshlessFV<ndim>
   void CopyDataToGhosts(DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
 
   kernelclass<ndim> kern;                  ///< SPH kernel
-  SlopeLimiter<ndim,MeshlessFVParticle> limiter;
+  //Balsara2004Limiter<ndim,MeshlessFVParticle> limiter;
+  Springel2009Limiter<ndim,MeshlessFVParticle> limiter;
+  //TESS2011Limiter<ndim,MeshlessFVParticle> limiter;
 
 };
 #endif
