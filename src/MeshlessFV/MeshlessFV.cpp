@@ -294,10 +294,10 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
 
 
 
-//=============================================================================
+//=================================================================================================
 //  MeshlessFV::ConvertConservedToQ
 /// ...
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::ConvertConservedToQ
  (const FLOAT volume,
@@ -311,10 +311,10 @@ void MeshlessFV<ndim>::ConvertConservedToQ
 
 
 
-//=============================================================================
-//  MeshlessFV::ConvertConservedToQ
+//=================================================================================================
+//  MeshlessFV::ConvertQToConserved
 /// ...
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::ConvertQToConserved
  (const FLOAT volume,
@@ -329,10 +329,10 @@ void MeshlessFV<ndim>::ConvertQToConserved
 
 
 
-//=============================================================================
+//=================================================================================================
 //  MeshlessFV::ConvertConservedToPrimitive
 /// ...
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::ConvertConservedToPrimitive
  (const FLOAT Ucons[nvar],
@@ -354,10 +354,10 @@ void MeshlessFV<ndim>::ConvertConservedToPrimitive
 
 
 
-//=============================================================================
+//=================================================================================================
 //  MeshlessFV::ConvertPrimitiveToConserved
 /// ...
-//=============================================================================
+//=================================================================================================
 template <int ndim>
 void MeshlessFV<ndim>::ConvertPrimitiveToConserved
  (const FLOAT Wprim[nvar],
@@ -378,11 +378,11 @@ void MeshlessFV<ndim>::ConvertPrimitiveToConserved
 
 
 
-//=============================================================================
-//  MeshlessFV::CalculateFluxVector
+//=================================================================================================
+//  MeshlessFV::CalculateConservedFluxFromConserved
 /// ...
-//=============================================================================
-template <int ndim>
+//=================================================================================================
+/*template <int ndim>
 void MeshlessFV<ndim>::CalculateConservedFluxFromConserved
  (int k,
   FLOAT Ucons[nvar],
@@ -404,20 +404,20 @@ void MeshlessFV<ndim>::CalculateConservedFluxFromConserved
   fluxVector[ietot] = Ucons[k]*(Ucons[ietot] + press)/Ucons[irho];
 
   return;
-}
+}*/
 
 
 
-//=============================================================================
+//=================================================================================================
 //  MeshlessFV::CalculateFluxVector
 /// ...
-//=============================================================================
+//=================================================================================================
 template <int ndim>
-void MeshlessFV<ndim>::CalculateConservedFluxFromPrimitive
- (int k,
-  FLOAT Wprim[nvar],
-  FLOAT fluxVector[nvar])
+void MeshlessFV<ndim>::CalculateFluxVectorFromPrimitive
+ (FLOAT Wprim[nvar],
+  FLOAT fluxVector[nvar][ndim])
 {
+  int k;
   int kv;
   FLOAT ekin = 0.0;
 
@@ -425,35 +425,13 @@ void MeshlessFV<ndim>::CalculateConservedFluxFromPrimitive
     ekin += Wprim[kv]*Wprim[kv];
   }
 
-  // Calculate fluxes from conserved variables (NOT Riemann solver) to compute evolved boundary values
-  for (kv=0; kv<ndim; kv++) fluxVector[kv] = Wprim[irho]*Wprim[k]*Wprim[kv];
-  fluxVector[k]     = Wprim[irho]*Wprim[k]*Wprim[k] + Wprim[ipress];
-  fluxVector[irho]  = Wprim[irho]*Wprim[k];
-  fluxVector[ietot] =
-    Wprim[k]*(Wprim[ipress]/(gamma_eos - 1.0) + 0.5*Wprim[irho]*ekin + Wprim[ipress]);
-
-  return;
-}
-
-
-
-//=============================================================================
-//  MeshlessFV::CalculateFluxVector
-/// ...
-//=============================================================================
-template <int ndim>
-void MeshlessFV<ndim>::CalculatePrimitiveFluxFromPrimitive
- (int k,
-  FLOAT Wprim[nvar],
-  FLOAT fluxVector[nvar])
-{
-  int kv;
-
-  // Calculate fluxes from conserved variables (NOT Riemann solver) to compute evolved boundary values
-  for (kv=0; kv<ndim; kv++) fluxVector[kv] = Wprim[k]*Wprim[kv];
-  fluxVector[k]     = Wprim[k]*Wprim[k] + Wprim[ipress]/Wprim[irho];
-  fluxVector[irho]  = 2.0*Wprim[irho]*Wprim[k];
-  fluxVector[ietot] = Wprim[k]*Wprim[ipress]*(gamma_eos + 1.0);
+  for (k=0; k<ndim; k++) {
+    for (kv=0; kv<ndim; kv++) fluxVector[kv][k] = Wprim[irho]*Wprim[k]*Wprim[kv];
+    fluxVector[k][k]     = Wprim[irho]*Wprim[k]*Wprim[k] + Wprim[ipress];
+    fluxVector[irho][k]  = Wprim[irho]*Wprim[k];
+    fluxVector[ietot][k] =
+      Wprim[k]*(Wprim[ipress]/(gamma_eos - 1.0) + 0.5*Wprim[irho]*ekin + Wprim[ipress]);
+  }
 
   return;
 }

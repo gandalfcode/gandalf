@@ -48,9 +48,10 @@ class RiemannSolver
   virtual void ComputeStarRegion(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
                                  FLOAT, FLOAT, FLOAT &, FLOAT &) {};
   virtual void ComputeFluxes(const FLOAT [ndim+2], const FLOAT [ndim+2],
-                             const FLOAT [ndim], FLOAT [ndim+2][ndim]) = 0;
+                             const FLOAT [ndim], FLOAT [ndim], FLOAT [ndim+2][ndim]) = 0;
 
-  void ComputeRotationMatrices(FLOAT dr[ndim], FLOAT rotMat[ndim][ndim], FLOAT invRotMat[ndim][ndim]);
+  void ComputeRotationMatrices(const FLOAT dr[ndim], FLOAT rotMat[ndim][ndim], FLOAT invRotMat[ndim][ndim]);
+  void RotateVector(FLOAT rotMat[ndim][ndim], FLOAT vec[ndim]);
 
 };
 
@@ -89,7 +90,7 @@ class ExactRiemannSolver: public RiemannSolver<ndim>
   virtual void ComputeStarRegion(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                                  const FLOAT, const FLOAT, const FLOAT, FLOAT &, FLOAT &);
   virtual void ComputeFluxes(const FLOAT [ndim+2], const FLOAT [ndim+2],
-                             const FLOAT [ndim], FLOAT [ndim+2][ndim]);
+                             const FLOAT [ndim], FLOAT [ndim], FLOAT [ndim+2][ndim]);
   void SampleExactSolution(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                            const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                            const FLOAT, FLOAT &, FLOAT &, FLOAT &);
@@ -129,7 +130,7 @@ class HllcRiemannSolver: public RiemannSolver<ndim>
     //~HllcRiemannSolver() {};
 
   virtual void ComputeFluxes(const FLOAT [ndim+2], const FLOAT [ndim+2],
-                             const FLOAT [ndim], FLOAT [ndim+2][ndim]);
+                             const FLOAT [ndim], FLOAT [ndim], FLOAT [ndim+2][ndim]);
 
 };
 #endif

@@ -440,23 +440,21 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
     this->CalculatePrimitiveTimeDerivative(Wright, gradW, Wdot);
     for (var=0; var<nvar; var++) Wright[var] -= (FLOAT) 0.5*timestep*Wdot[var];
 
-
-    // Calculate Godunov flux using the selected Riemann solver
-    if (part.r[0] > neibpart[j].r[0]) {
-      riemann->ComputeFluxes(Wright, Wleft, dr_unit, flux);
-    }
-    else {
-      riemann->ComputeFluxes(Wleft, Wright, dr_unit, flux);
-    }
-
-    // Now boost back into main coordinate frame
-    flux[ipress][0] += (FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho][0] + vface[0]*flux[ivx][0];
-    flux[ivx][0] += vface[0]*flux[irho][0];
-
     for (k=0; k<ndim; k++) draux[k] = part.r[k] - neibpart[j].r[k];
     drsqd = DotProduct(draux, draux, ndim);
     invdrmagaux = 1.0/sqrt(drsqd + small_number);
     for (k=0; k<ndim; k++) dr_unit[k] = draux[k]*invdrmagaux;
+
+
+    // Calculate Godunov flux using the selected Riemann solver
+    riemann->ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
+    /*if (part.r[0] > neibpart[j].r[0]) {
+      riemann->ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
+    }
+    else {
+      riemann->ComputeFluxes(Wleft, Wright, dr_unit, vface, flux);
+    }*/
+
 
     // Calculate psitilda values
     for (k=0; k<ndim; k++) {
@@ -470,6 +468,14 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
       }
       Aij[k] = part.volume*psitildaj[k] - neibpart[j].volume*psitildai[k];
     }
+
+
+    // Now boost back into main coordinate frame
+    /*for (k=0; k<ndim; k++) {
+      flux[ietot][k] += (FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho][k] + vface[k]*flux[ivx][k];
+      flux[ivx][k] += vface[k]*flux[irho][k];
+    }*/
+    
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {

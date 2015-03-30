@@ -47,10 +47,52 @@ RiemannSolver<ndim>::RiemannSolver(FLOAT gamma_aux):
 //=================================================================================================
 template <int ndim>
 void RiemannSolver<ndim>::ComputeRotationMatrices
- (FLOAT dr[ndim],
+ (const FLOAT runit[ndim],
   FLOAT rotMat[ndim][ndim],
   FLOAT invRotMat[ndim][ndim])
 {
+  if (ndim == 1) {
+    rotMat[0][0]    = runit[0];
+    invRotMat[0][0] = runit[0];
+  }
+  else if (ndim == 2) {
+    FLOAT theta = atan2(runit[1], runit[0]);
+    rotMat[0][0] = cos(theta);
+    rotMat[0][1] = -sin(theta);
+    rotMat[1][0] = sin(theta);
+    rotMat[1][1] = cos(theta);
+    invRotMat[0][0] = cos(theta);
+    invRotMat[0][1] = sin(theta);
+    invRotMat[1][0] = -sin(theta);
+    invRotMat[1][1] = cos(theta);
+  }
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  RiemannSolver::RotateVector
+/// ...
+//=================================================================================================
+template <int ndim>
+void RiemannSolver<ndim>::RotateVector
+ (FLOAT rotMat[ndim][ndim],
+  FLOAT vec[ndim])
+{
+  if (ndim == 1) {
+    //cout << "Before : " << vec[0] << "    " << rotMat[0][0] << endl;
+    vec[0] = rotMat[0][0]*vec[0];
+    //cout << "After  : " << vec[0] << endl;
+  }
+  else if (ndim == 2) {
+    FLOAT oldVec[ndim];
+    for (int k=0; k<ndim; k++) oldVec[k] = vec[k];
+    vec[0] = rotMat[0][0]*oldVec[0] + rotMat[0][1]*oldVec[1];
+    vec[1] = rotMat[1][0]*oldVec[0] + rotMat[1][1]*oldVec[1];
+  }
+
   return;
 }
 
@@ -348,41 +390,105 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
  (const FLOAT Wleft[nvar],             ///< LHS primitive state
   const FLOAT Wright[nvar],            ///< RHS primitive state
   const FLOAT runit[ndim],             ///< ..
+  FLOAT vface[ndim],                   ///< ..
   FLOAT flux[nvar][ndim])              ///< flux vector
 {
-  //// State variables
-  /*const FLOAT dl = Wleft[0];           // ..
-  const FLOAT dr = Wright[0];          // ..
-  const FLOAT ul = Wleft[1];           // ..
-  const FLOAT ur = Wright[1];          // ..
-  const FLOAT pl = Wleft[2];           // ..
-  const FLOAT pr = Wright[2];          // ..
-  */
-  const FLOAT ul = Wleft[0]; //*runit[0];  //DotProduct(Wleft, runit, ndim);
-  const FLOAT ur = Wright[0]; //*runit[0]; //DotProduct(Wright, runit, ndim);
   const FLOAT cl = sqrt(gamma*Wleft[ipress]/Wleft[irho]);    // ..
   const FLOAT cr = sqrt(gamma*Wright[ipress]/Wright[irho]);  // ..
+
+  int k,kv;
   FLOAT pstar;                         // Pressure in star region
   FLOAT ustar;                         // Velocity in star region
   FLOAT etot;                          // Total specific energy
   FLOAT p,d,u;                         // Primitive variables at s=0 from Riemann solver
+  FLOAT rotMat[ndim][ndim];
+  FLOAT invRotMat[ndim][ndim];
+  FLOAT uleft[ndim];
+  FLOAT uright[ndim];
+  FLOAT Wface[ndim];
+
+  // Compute rotation matrices
+  this->ComputeRotationMatrices(runit, rotMat, invRotMat);
+
+  for (k=0; k<ndim; k++) uleft[k] = Wleft[k];
+  for (k=0; k<ndim; k++) uright[k] = Wright[k];
+
+  this->RotateVector(invRotMat, uleft);
+  this->RotateVector(invRotMat, uright);
+
+  //cout << "ul : " << Wleft[0] << "   " << uleft[0] << "    ur : " << Wright[0] << "   " << uright[0] << endl;
+  //cout << "Rotation matrix : " << rotMat[0][0] << "   " << invRotMat[0][0] << endl;
+
+  //const FLOAT ul = DotProduct(Wleft, runit, ndim);
+  //const FLOAT ur = DotProduct(Wright, runit, ndim);
 
   // Compute p and u values at interface (in star region)
   ComputeStarRegion(Wleft[ipress], Wright[ipress], Wleft[irho], Wright[irho],
-                    cl, cr, ul, ur, pstar, ustar);
+                    cl, cr, uleft[0], uright[0], pstar, ustar);
   SampleExactSolution(pstar, ustar, 0.0, Wleft[ipress], Wright[ipress], Wleft[irho],
-                      Wright[irho], cl, cr, ul, ur, p, d, u);
+                      Wright[irho], cl, cr, uleft[0], uright[0], p, d, u);
+
+  for (kv=0; kv<ndim; kv++) Wface[kv] = 0.0;
+  Wface[irho]   = d;
+  Wface[ivx]    = u;
+  Wface[ipress] = p;
+
+  // Rotate velocity to original frame
+  this->RotateVector(rotMat, Wface);
+  //cout << "ul : " << Wleft[0] << "   " << Wright[0] << "   " << Wface[0] << endl;
 
   // Compute fluxes
-  etot           = p/(gamma - 1.0) + 0.5*d*u*u;
+  /*etot           = p/(gamma - 1.0) + 0.5*d*u*u;
   flux[irho][0]  = d*u;
   flux[ivx][0]   = p + d*u*u;
-  flux[ietot][0] = u*(etot + p);
+  flux[ietot][0] = u*(etot + p);*/
+
+  // Compute fluxes in moving frame
+  FLOAT ekin = 0.0;
+  for (kv=0; kv<ndim; kv++) ekin += Wface[kv]*Wface[kv];
+  for (k=0; k<ndim; k++) {
+    for (kv=0; kv<ndim; kv++) flux[kv][k] = Wface[irho]*Wface[k]*Wface[kv];
+    flux[k][k]     = Wface[irho]*Wface[k]*Wface[k] + Wface[ipress];
+    flux[irho][k]  = Wface[irho]*(Wface[k]);
+    flux[ietot][k] = (Wface[ipress]/(gamma - 1.0) + 0.5*Wface[irho]*ekin)*(Wface[k])
+      + Wface[ipress]*Wface[k];
+  }
+
+  // Add corrections for transforming back to original lab frame
+  /*for (k=0; k<ndim; k++) {
+    flux[ietot][k] += (FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho][k] + vface[k]*flux[ivx][k];
+    flux[ivx][k] += vface[k]*flux[irho][k];
+  }*/
+
+  // Add corrections for transforming back to original lab frame
+  for (k=0; k<ndim; k++) {
+    flux[ietot][k] += (FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho][k] + DotProduct(vface, flux[k], ndim);
+  }
+  for (k=0; k<ndim; k++) {
+    for (kv=0; kv<ndim; kv++) flux[kv][k] += vface[kv]*flux[irho][k];
+  }
 
 
-  /*if (flux[0] != flux[0] || flux[1] != flux[1] || flux[2] != flux[2]) {
-    cout << "Problem with fluxes : " << flux[0] << "   "
-         << flux[1] << "   " << flux[2] << endl;
+  /*FLOAT ekin = 0.0;
+  for (kv=0; kv<ndim; kv++) ekin += Wface[kv]*Wface[kv];
+  for (k=0; k<ndim; k++) {
+    for (kv=0; kv<ndim; kv++) flux[kv][k] = Wface[irho]*(Wface[k]*Wface[kv] - vface[k]*Wface[kv]);
+    flux[k][k]     = Wface[irho]*(Wface[k]*Wface[k] - Wface[k]*vface[k]) + Wface[ipress];
+    flux[irho][k]  = Wface[irho]*(Wface[k] - vface[k]);
+    flux[ietot][k] = (Wface[ipress]/(gamma - 1.0) + 0.5*Wface[irho]*ekin)*(Wface[k] - vface[k])
+      + Wface[ipress]*Wface[k];
+  }*/
+
+  /*if (ndim == 1) {
+    etot           = Wface[ipress]/(gamma - 1.0) + 0.5*Wface[irho]*Wface[ivx]*Wface[ivx];
+    flux[irho][0]  = Wface[irho]*Wface[ivx];
+    flux[ivx][0]   = Wface[ipress] + Wface[irho]*Wface[ivx]*Wface[ivx];
+    flux[ietot][0] = Wface[ivx]*(etot + Wface[ipress]);
+  }*/
+
+
+  /*for (int var=0; var<nvar; var++) {
+    this->RotateVector(rotMat, flux[var]);
   }*/
 
 
@@ -400,6 +506,7 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
  (const FLOAT Wleft[nvar],               ///< LHS primitive state
   const FLOAT Wright[nvar],              ///< RHS primitive state
   const FLOAT runit[ndim],               ///< ..
+  FLOAT vface[ndim],                     ///< ..
   FLOAT flux[nvar][ndim])                ///< flux vector
 {
   //// State variables

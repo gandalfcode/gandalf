@@ -134,9 +134,8 @@ public:
 
   void ConvertConservedToPrimitive(const FLOAT Ucons[nvar], FLOAT Wprim[nvar]);
   void ConvertPrimitiveToConserved(const FLOAT Wprim[nvar], FLOAT Ucons[nvar]);
-  void CalculateConservedFluxFromConserved(int k, FLOAT Ucons[nvar], FLOAT flux[nvar]);
-  void CalculateConservedFluxFromPrimitive(int k, FLOAT Wprim[nvar], FLOAT flux[nvar]);
-  void CalculatePrimitiveFluxFromPrimitive(int k, FLOAT Wprim[nvar], FLOAT flux[nvar]);
+  //void CalculateConservedFluxFromConserved(int k, FLOAT Ucons[nvar], FLOAT flux[nvar]);
+  void CalculateFluxVectorFromPrimitive(FLOAT Wprim[nvar], FLOAT flux[nvar][ndim]);
   void CalculatePrimitiveTimeDerivative(FLOAT Wprim[nvar], FLOAT gradW[nvar][ndim], FLOAT Wdot[nvar]);
   void IntegrateConservedVariables(MeshlessFVParticle<ndim> &, FLOAT);
 

@@ -590,9 +590,9 @@ void MeshlessFVSimulation<ndim>::MainLoop(void)
 
       //for (int k=0; k<ndim; k++) partdata[i].r[k] += partdata[i].v[k]*timestep;
       for (k=0; k<ndim; k++) {
-        //partdata[i].r[k] += (FLOAT) 0.5*(partdata[i].v0[k] + partdata[i].v[k])*timestep;
-        //partdata[i].v0[k] = partdata[i].v[k];
-        partdata[i].r[k] += partdata[i].v[k]*timestep;
+        partdata[i].r[k] += (FLOAT) 0.5*(partdata[i].v0[k] + partdata[i].v[k])*timestep;
+        partdata[i].v0[k] = partdata[i].v[k];
+        //partdata[i].r[k] += partdata[i].v[k]*timestep;
       }
       if (partdata[i].r[0] < simbox.boxmin[0])
         if (simbox.boundary_lhs[0] == periodicBoundary) {
