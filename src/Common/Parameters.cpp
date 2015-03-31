@@ -367,6 +367,7 @@ void Parameters::SetDefaultValues(void)
   floatparams["ewald_mult"] = 1.0;
   floatparams["ixmin"] = 1.0e-8;
   floatparams["ixmax"] = 5.0;
+  floatparams["EFratio"] = 1.0;
 
   // Initial conditions parameters
   //-----------------------------------------------------------------------------------------------

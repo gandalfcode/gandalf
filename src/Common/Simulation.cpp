@@ -193,11 +193,13 @@ void SimulationBase::SplashScreen(void)
   cout << "*         *****    *    *   *     *   *****    *    *   *****  *             *" << endl;
   cout << "*                                                                            *" << endl;
   cout << "*   Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids    *" << endl;
-  cout << "*                        Version 0.2.0 - 19/05/2014                          *" << endl;
+  cout << "*                        Version 0.3.0 - 31/03/2015                          *" << endl;
   cout << "*                                                                            *" << endl;
   cout << "*                 Original code : D. A. Hubber & G. Rosotti                  *" << endl;
   cout << "*                                                                            *" << endl;
-  cout << "*              Contributions by : O. Lomax, A. P. Whitworth                  *" << endl;
+  cout << "*              Contributions by : S. Balfour, F. Dinnbier,                   *" << endl;
+  cout << "*                                 O. Lomax, S. Walch,                        *" << endl;
+  cout << "*                                 A. P. Whitworth, R. Wunsch                 *" << endl;
   cout << "*                                                                            *" << endl;
   cout << "*                  https://github.com/gandalfcode/gandalf                    *" << endl;
   cout << "*                                                                            *" << endl;

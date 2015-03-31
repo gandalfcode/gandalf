@@ -54,7 +54,7 @@ class Ewald
 
   // Constructor and destructor
   //-----------------------------------------------------------------------------------------------
-  Ewald(DomainBox<ndim> &, int, int, int, DOUBLE, DOUBLE, DOUBLE, CodeTiming *);
+  Ewald(DomainBox<ndim> &, int, int, int, DOUBLE, DOUBLE, DOUBLE, DOUBLE, CodeTiming *);
   ~Ewald();
 
 
@@ -107,6 +107,7 @@ class Ewald
   const DOUBLE ewald_mult;
   const DOUBLE ixmin;
   const DOUBLE ixmax;
+  const DOUBLE EFratio;
   const DOUBLE lx_per;
   const DOUBLE ly_per;
   const DOUBLE lz_per;

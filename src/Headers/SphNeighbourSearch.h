@@ -526,6 +526,8 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
   void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                   Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
+  void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
+                                  Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
 
 };
 
