@@ -2595,8 +2595,7 @@ void Ic<ndim>::SpitzerExpansion(void)
 
 
   // Record particle positions and initialise all other variables
-#pragma omp parallel for default(none)\
-  shared(gammaone,mcloud,Npart,r,rhofluid,volume) private(i,k)
+#pragma omp parallel for default(none) shared(mcloud,Npart,r,rhofluid,volume) private(i,k)
   for (i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) {
