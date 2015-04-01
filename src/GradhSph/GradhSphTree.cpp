@@ -605,7 +605,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
         sphdata[i].dudt     = activepart[j].dudt;
         sphdata[i].dalphadt = activepart[j].dalphadt;
         sphdata[i].div_v    = activepart[j].div_v;
-        sphdata[i].active   = false;
         levelneib[i]        = max(levelneib[i],activepart[j].levelneib);
       }
 
@@ -859,7 +858,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphForces
         sphdata[i].gpot   = activepart[j].gpot;
         sphdata[i].dudt   = activepart[j].dudt;
         sphdata[i].div_v  = activepart[j].div_v;
-        sphdata[i].active = false;
         levelneib[i]      = max(levelneib[i],activepart[j].levelneib);
       }
 
@@ -1113,7 +1111,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
         sphdata[i].gpot   = activepart[j].gpot;
         sphdata[i].dudt   = activepart[j].dudt;
         sphdata[i].div_v  = activepart[j].div_v;
-        sphdata[i].active = false;
         levelneib[i]      = max(levelneib[i],activepart[j].levelneib);
       }
 
@@ -1483,7 +1480,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicForces
         sphdata[i].gpot   = activepart[j].gpot;
         sphdata[i].dudt   = activepart[j].dudt;
         sphdata[i].div_v  = activepart[j].div_v;
-        sphdata[i].active = false;
         levelneib[i]      = max(levelneib[i],activepart[j].levelneib);
       }
 
@@ -1516,8 +1512,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicForces
 
 
 //=================================================================================================
-//  GradhSphTree::UpdateAllSphPeriodicForces
-/// Compute all forces on active SPH particles (hydro + gravity) for periodic boundary conditions.
+//  GradhSphTree::UpdateAllSphPeriodicGravForces
+/// Compute all gravitational forces on active SPH particles for periodic boundary conditions.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicGravForces
@@ -1703,8 +1699,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicGravForces
         // Add the periodic correction force for SPH and direct-sum neighbours
         for (jj=0; jj<Nneib; jj++) {
           for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - activepart[j].r[k];
-//       std::cout << "Positions : " << neibpart[jj].r[0] << "   " << neibpart[jj].r[1] << "  "  << neibpart[jj].r[2] <<
-//       "  " <<  activepart[j].r[0] << "  " <<  activepart[j].r[1] << "  " <<  activepart[j].r[2] <<  endl;
           ewald->CalculatePeriodicCorrection(neibpart[jj].m,draux,aperiodic,potperiodic);
           for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
           activepart[j].gpot += potperiodic;
@@ -1713,8 +1707,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicGravForces
         // Now add the periodic correction force for all cell COMs
         for (jj=0; jj<Ngravcell; jj++) {
           for (k=0; k<ndim; k++) draux[k] = gravcell[jj].r[k] - activepart[j].r[k];
-//          std::cout << "Positions : " << gravcell[jj].r[0] << "   " << gravcell[jj].r[1] << "  "  << gravcell[jj].r[2] <<
-//          "  " <<  activepart[j].r[0] << "  " <<  activepart[j].r[1] << "  " <<  activepart[j].r[2] <<  endl;
           ewald->CalculatePeriodicCorrection(gravcell[jj].m,draux,aperiodic,potperiodic);
           for (k=0; k<ndim; k++) activepart[j].agrav[k] += aperiodic[k];
           activepart[j].gpot += potperiodic;
@@ -1743,7 +1735,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicGravForces
         sphdata[i].gpot   = activepart[j].gpot;
         sphdata[i].dudt   = activepart[j].dudt;
         sphdata[i].div_v  = activepart[j].div_v;
-        sphdata[i].active = false;
         levelneib[i]      = max(levelneib[i],activepart[j].levelneib);
       }
 

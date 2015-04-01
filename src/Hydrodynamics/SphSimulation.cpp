@@ -204,7 +204,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
 
   // Set all other SPH parameter variables
-  //sph->Nhydro          = intparams["Nhydro"];
   sph->Nhydromax       = intparams["Nhydromax"];
   sph->create_sinks    = intparams["create_sinks"];
   sph->fixed_sink_mass = intparams["fixed_sink_mass"];
@@ -213,7 +212,6 @@ void SphSimulation<ndim>::ProcessParameters(void)
 
 
   // Set important variables for N-body objects
-  //nbody->Nstar          = intparams["Nstar"];
   nbody->Nstarmax       = intparams["Nstarmax"];
   nbody_single_timestep = intparams["nbody_single_timestep"];
   nbodytree.gpehard     = floatparams["gpehard"];
@@ -730,15 +728,6 @@ void SphSimulation<ndim>::MainLoop(void)
       // Calculate all SPH properties
       sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
 
-      // Update the radiation field
-      /*if (Nsteps%1 == 0) {
-        radiation->UpdateRadiationField(sph->Nhydro, nbody->Nnbody, sinks.Nsink,
-                                        partdata, nbody->nbodydata, sinks.sink);
-        for (i=0; i<sph->Nhydro; i++) {
-          SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-          sph->ComputeThermalProperties(part);
-        }
-      }*/
 
       // Update the radiation field
       if (Nsteps%nradstep == 0 || recomputeRadiation) {
@@ -798,11 +787,21 @@ void SphSimulation<ndim>::MainLoop(void)
         }
       }
 
-      // Check if all neighbouring timesteps are acceptable
-      if (Nlevels > 1)
-        activecount = sphint->CheckTimesteps(level_diff_max,level_step,n,
-                                             sph->Nhydro,sph->GetSphParticleArray());
-      else activecount = 0;
+      // Zero all active flags once accelerations have been computed
+      for (i=0; i<sph->Nhydro; i++) {
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        part.active = false;
+      }
+
+      // Check if all neighbouring timesteps are acceptable.  If not, then set any
+      // invalid particles to active to recompute forces immediately.
+      if (Nlevels > 1) {
+        activecount = sphint->CheckTimesteps(level_diff_max, level_step,n,
+                                             sph->Nhydro, sph->GetSphParticleArray());
+      }
+      else {
+        activecount = 0;
+      }
       //activecount = 0;
 
 #if defined MPI_PARALLEL
@@ -1437,11 +1436,9 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     exit(0);
   }
 
-
   timing->EndTimingSection("BLOCK_TIMESTEPS");
 
   return;
-
 
 
   // Some validations

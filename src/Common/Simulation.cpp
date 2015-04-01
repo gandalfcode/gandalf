@@ -192,14 +192,13 @@ void SimulationBase::SplashScreen(void)
   cout << "*        *     *   *    *   *    **   *    *   *    *   *      *             *" << endl;
   cout << "*         *****    *    *   *     *   *****    *    *   *****  *             *" << endl;
   cout << "*                                                                            *" << endl;
-  cout << "*   Graphical Astrophysics code for N-body Dynamics and Lagrangian Fluids    *" << endl;
+  cout << "*   Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids    *" << endl;
   cout << "*                        Version 0.3.0 - 31/03/2015                          *" << endl;
   cout << "*                                                                            *" << endl;
-  cout << "*                 Original code : D. A. Hubber & G. Rosotti                  *" << endl;
+  cout << "*         Original code : D. A. Hubber & G. Rosotti                          *" << endl;
   cout << "*                                                                            *" << endl;
-  cout << "*              Contributions by : S. Balfour, F. Dinnbier,                   *" << endl;
-  cout << "*                                 O. Lomax, S. Walch,                        *" << endl;
-  cout << "*                                 A. P. Whitworth, R. Wunsch                 *" << endl;
+  cout << "*      Contributions by : S. Balfour, F. Dinnbier, O. Lomax,                 *" << endl;
+  cout << "*                         S. Walch, A. P. Whitworth, R. Wunsch               *" << endl;
   cout << "*                                                                            *" << endl;
   cout << "*                  https://github.com/gandalfcode/gandalf                    *" << endl;
   cout << "*                                                                            *" << endl;
@@ -284,8 +283,7 @@ string SimulationBase::GetParam(string key)
 //=================================================================================================
 std::list<string>* SimulationBase::GetIntAndFloatParameterKeys()
 {
-  if (! keys.empty())
-    return &keys;
+  if (! keys.empty()) return &keys;
 
   for (std::map<string, int>::iterator it=simparams->intparams.begin() ;
        it != simparams->intparams.end(); it++) {
@@ -602,7 +600,6 @@ void SimulationBase::SetupSimulation(void)
   // Generate initial conditions for simulation on root process (for MPI jobs)
   if (rank == 0) {
     GenerateIC();
-
   }
 
 // Change to COM frame if selected
