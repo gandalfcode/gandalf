@@ -95,7 +95,8 @@ public:
 
   // Constructor
   //-----------------------------------------------------------------------------------------------
-  MeshlessFV(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux, FLOAT h_converge_aux,
+  MeshlessFV(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
+             FLOAT h_fac_aux, FLOAT h_converge_aux,
              FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_mfv_part);
   ~MeshlessFV();
 
@@ -153,6 +154,8 @@ public:
 
   // Const variables (read in from parameters file)
   //-----------------------------------------------------------------------------------------------
+  const FLOAT accel_mult;              ///< ..
+  const FLOAT courant_mult;            ///< ..
   const FLOAT gamma_eos;               ///< ..
   const FLOAT gammam1;                 ///< ..
   const FLOAT h_converge;              ///< h-rho iteration tolerance
@@ -225,7 +228,8 @@ class LV2008MFV : public MeshlessFV<ndim>
 
   // Constructor
   //-----------------------------------------------------------------------------------------------
-  LV2008MFV(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux, FLOAT h_converge_aux,
+  LV2008MFV(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
+            FLOAT h_fac_aux, FLOAT h_converge_aux,
             FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_MeshlessFV_part);
   ~LV2008MFV();
 
@@ -247,8 +251,8 @@ class LV2008MFV : public MeshlessFV<ndim>
 
   kernelclass<ndim> kern;                  ///< SPH kernel
   //Balsara2004Limiter<ndim,MeshlessFVParticle> limiter;
-  Springel2009Limiter<ndim,MeshlessFVParticle> limiter;
-  //TESS2011Limiter<ndim,MeshlessFVParticle> limiter;
+  //Springel2009Limiter<ndim,MeshlessFVParticle> limiter;
+  TESS2011Limiter<ndim,MeshlessFVParticle> limiter;
 
 };
 #endif

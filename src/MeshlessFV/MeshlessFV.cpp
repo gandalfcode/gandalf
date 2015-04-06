@@ -46,10 +46,13 @@ using namespace std;
 /// sets additional kernel-related quantities
 //=================================================================================================
 template <int ndim>
-MeshlessFV<ndim>::MeshlessFV(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux,
-  FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_part):
+MeshlessFV<ndim>::MeshlessFV(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult,
+                             FLOAT _courant_mult, FLOAT h_fac_aux, FLOAT h_converge_aux,
+                             FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_part):
   Hydrodynamics<ndim>(hydro_forces_aux, self_gravity_aux, h_fac_aux,
                       gas_eos_aux, KernelName, size_part),
+  accel_mult(_accel_mult),
+  courant_mult(_courant_mult),
   h_converge(h_converge_aux),
   gamma_eos(gamma_aux),
   gammam1(gamma_aux - 1.0)
@@ -229,7 +232,9 @@ FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
   //cout << "Timestep : " << 0.5*part.h/(part.sound + sqrt(DotProduct(part.v, part.v, ndim)))
   //     << "    " << part.sound << "    " << part.h <<"    "
   //      << part.v[0] << endl;
-  return 0.2*part.h/(part.sound + sqrt(DotProduct(part.v, part.v, ndim)));
+  //cout << "Timestep : " << courant_mult*part.h/part.vsig_max << "   " << courant_mult << "   " << part.h << "    " << part.vsig_max << endl;
+  return courant_mult*part.h/part.vsig_max;
+  return courant_mult*part.h/(part.sound + sqrt(DotProduct(part.v, part.v, ndim)));
 }
 
 

@@ -305,6 +305,7 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT pfactor;                       ///< Pressure factor in SPH EOM
   FLOAT sound;                         ///< Sound speed
   FLOAT div_v;                         ///< Velocity divergence
+  FLOAT vsig_max;                      ///< Maximum signal velocity to all neighbours
   FLOAT ndens;                         ///< Number density of neighbours
   FLOAT volume;                        ///< 'Volume' of particle
   FLOAT B[ndim][ndim];                 ///< Inverse matrix for gradient calculations
@@ -335,6 +336,7 @@ struct MeshlessFVParticle : public Particle<ndim>
     div_v     = (FLOAT) 0.0;
     ndens     = (FLOAT) 0.0;
     volume    = (FLOAT) 0.0;
+    vsig_max  = (FLOAT) 0.0;
   }
 
 };

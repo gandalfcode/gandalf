@@ -433,6 +433,14 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
   Wface[ivx]    = u;
   Wface[ipress] = p;
 
+  // Calculate transverse velocity fluxes from upwind direction
+  if (u > 0.0) {
+    for (k=1; k<ndim; k++) Wface[k] = uleft[k];
+  }
+  else if (u < 0.0) {
+    for (k=1; k<ndim; k++) Wface[k] = uright[k];
+  }
+
   // Rotate velocity to original frame
   this->RotateVector(rotMat, Wface);
   //cout << "ul : " << Wleft[0] << "   " << Wright[0] << "   " << Wface[0] << endl;

@@ -46,10 +46,12 @@ using namespace std;
 /// sets additional kernel-related quantities
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-LV2008MFV<ndim, kernelclass>::LV2008MFV(int hydro_forces_aux, int self_gravity_aux, FLOAT h_fac_aux,
-  FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_sph):
-  MeshlessFV<ndim>(hydro_forces_aux, self_gravity_aux, h_fac_aux, h_converge_aux,
-                   gamma_aux, gas_eos_aux, KernelName, size_sph),
+LV2008MFV<ndim, kernelclass>::LV2008MFV
+  (int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
+   FLOAT h_fac_aux, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux, string KernelName,
+   int size_sph):
+  MeshlessFV<ndim>(hydro_forces_aux, self_gravity_aux, _accel_mult, _courant_mult,
+                   h_fac_aux, h_converge_aux, gamma_aux, gas_eos_aux, KernelName, size_sph),
   kern(kernelclass<ndim>(KernelName))
 {
   this->kernp      = &kern;
@@ -170,9 +172,9 @@ int LV2008MFV<ndim, kernelclass>::ComputeH
 
 
   // Normalise all SPH sums correctly
-  part.h         = max(h_fac*pow(part.volume,MeshlessFV<ndim>::invndim),h_lower_bound);
+  part.h         = max(h_fac*pow(part.volume,MeshlessFV<ndim>::invndim), h_lower_bound);
   part.invh      = (FLOAT) 1.0/part.h;
-  part.hfactor   = pow(part.invh,ndim+1);
+  part.hfactor   = pow(part.invh, ndim+1);
   part.hrangesqd = kernfacsqd*kern.kernrangesqd*part.h*part.h;
   part.div_v     = (FLOAT) 0.0;
 
@@ -283,10 +285,11 @@ void LV2008MFV<ndim, kernelclass>::ComputeGradients
   int j;                               // Neighbour list id
   int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
-  int var;
+  int var;                             // ..
   FLOAT alpha_mean;                    // Mean articial viscosity alpha value
   FLOAT draux[ndim];                   // Relative position vector
-  FLOAT drsqd;
+  FLOAT drsqd;                         // ..
+  FLOAT dv[ndim];                      // ..
   FLOAT dvdr;                          // Dot product of dv and dr
   FLOAT wkerni;                        // Value of w1 kernel function
   FLOAT wkernj;                        // Value of w1 kernel function
@@ -297,10 +300,11 @@ void LV2008MFV<ndim, kernelclass>::ComputeGradients
   const FLOAT invhsqd = part.invh*part.invh;
 
 
-  // Zero gradients
+  // Initialise/zero all variables to be updated in this routine
+  part.vsig_max = (FLOAT) 0.0;
   for (k=0; k<ndim; k++) {
-    for (var=0; var<ndim+2; var++) {
-      part.grad[k][var] = 0.0;
+    for (var=0; var<nvar; var++) {
+      part.grad[var][k] = 0.0;
     }
   }
   for (var=0; var<nvar; var++) {
@@ -317,6 +321,8 @@ void LV2008MFV<ndim, kernelclass>::ComputeGradients
     j = neiblist[jj];
 
     for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
+    for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - part.v[k];
+    dvdr = DotProduct(dv, draux, ndim);
     drsqd = DotProduct(draux, draux, ndim);
 
     // Calculate psitilda values
@@ -328,12 +334,15 @@ void LV2008MFV<ndim, kernelclass>::ComputeGradients
     }
 
     // Calculate contribution to gradient from neighbour
-    for (var=0; var<ndim+2; var++) {
+    for (var=0; var<nvar; var++) {
       for (k=0; k<ndim; k++) {
-        part.grad[k][var] += (neibpart[j].Wprim[var] - part.Wprim[var])*psitilda[k];
+        part.grad[var][k] += (neibpart[j].Wprim[var] - part.Wprim[var])*psitilda[k];
       }
     }
 
+    // Calculate maximum signal velocity
+    part.vsig_max = max(part.vsig_max, part.sound + neibpart[j].sound -
+                                       min((FLOAT) 0.0, dvdr/(sqrt(drsqd) + small_number)));
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -344,8 +353,9 @@ void LV2008MFV<ndim, kernelclass>::ComputeGradients
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
 
-    for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
-    drsqd = DotProduct(draux, draux, ndim);
+    //for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
+    //drsqd = DotProduct(draux, draux, ndim);
+
 
     // Calculate min and max values of primitives for slope limiters
     for (var=0; var<nvar; var++) {
@@ -360,7 +370,9 @@ void LV2008MFV<ndim, kernelclass>::ComputeGradients
   }
   //-----------------------------------------------------------------------------------------------
 
-
+  //cout << "vsig : " << part.vsig_max << "    " << part.sound << endl;
+  assert(part.vsig_max >= part.sound);
+  //cin >> j;
 
   return;
 }
@@ -415,9 +427,31 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
 
+    for (k=0; k<ndim; k++) draux[k] = part.r[k] - neibpart[j].r[k];
+    drsqd = DotProduct(draux, draux, ndim);
+    invdrmagaux = 1.0/sqrt(drsqd + small_number);
+    for (k=0; k<ndim; k++) dr_unit[k] = draux[k]*invdrmagaux;
+
+    // Calculate psitilda values
+    for (k=0; k<ndim; k++) {
+      psitildai[k] = (FLOAT) 0.0;
+      psitildaj[k] = (FLOAT) 0.0;
+      for (int kk=0; kk<ndim; kk++) {
+        psitildai[k] += neibpart[j].B[k][kk]*draux[kk]*neibpart[j].hfactor*
+          kern.w0_s2(drsqd*neibpart[j].invh*neibpart[j].invh)/neibpart[j].ndens;
+        psitildaj[k] -= part.B[k][kk]*draux[kk]*part.hfactor*
+          kern.w0_s2(drsqd*part.invh*part.invh)/part.ndens;
+      }
+      Aij[k] = part.volume*psitildaj[k] - neibpart[j].volume*psitildai[k];
+    }
+
     // Calculate position and velocity of the face
     for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
     for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.5*(part.v[k] + neibpart[j].v[k]);
+    //for (k=0; k<ndim; k++) rface[k] = part.h*(part.r[k] + neibpart[j].r[k])/(part.h + neibpart[j].h);
+    //for (k=0; k<ndim; k++) draux[k] = part.r[k] - rface[k];
+    //for (k=0; k<ndim; k++) vface[k] = part.v[k] +
+    //  (neibpart[j].v[k] - part.v[k])*DotProduct(draux, dr_unit, ndim)*invdrmagaux;
 
     // Compute slope-limited values for LHS
     for (k=0; k<ndim; k++) draux[k] = rface[k] - part.r[k];
@@ -440,46 +474,15 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
     this->CalculatePrimitiveTimeDerivative(Wright, gradW, Wdot);
     for (var=0; var<nvar; var++) Wright[var] -= (FLOAT) 0.5*timestep*Wdot[var];
 
-    for (k=0; k<ndim; k++) draux[k] = part.r[k] - neibpart[j].r[k];
-    drsqd = DotProduct(draux, draux, ndim);
-    invdrmagaux = 1.0/sqrt(drsqd + small_number);
-    for (k=0; k<ndim; k++) dr_unit[k] = draux[k]*invdrmagaux;
-
 
     // Calculate Godunov flux using the selected Riemann solver
     riemann->ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
-    /*if (part.r[0] > neibpart[j].r[0]) {
-      riemann->ComputeFluxes(Wright, Wleft, dr_unit, vface, flux);
-    }
-    else {
-      riemann->ComputeFluxes(Wleft, Wright, dr_unit, vface, flux);
-    }*/
 
-
-    // Calculate psitilda values
-    for (k=0; k<ndim; k++) {
-      psitildai[k] = (FLOAT) 0.0;
-      psitildaj[k] = (FLOAT) 0.0;
-      for (int kk=0; kk<ndim; kk++) {
-        psitildai[k] += neibpart[j].B[k][kk]*draux[kk]*neibpart[j].hfactor*
-          kern.w0_s2(drsqd*neibpart[j].invh*neibpart[j].invh)/neibpart[j].ndens;
-        psitildaj[k] -= part.B[k][kk]*draux[kk]*part.hfactor*
-          kern.w0_s2(drsqd*part.invh*part.invh)/part.ndens;
-      }
-      Aij[k] = part.volume*psitildaj[k] - neibpart[j].volume*psitildai[k];
-    }
-
-
-    // Now boost back into main coordinate frame
-    /*for (k=0; k<ndim; k++) {
-      flux[ietot][k] += (FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho][k] + vface[k]*flux[ivx][k];
-      flux[ivx][k] += vface[k]*flux[irho][k];
-    }*/
-    
 
     // Finally calculate flux terms for all quantities based on Lanson & Vila gradient operators
     for (var=0; var<nvar; var++) {
       part.dQdt[var] -= DotProduct(flux[var], Aij, ndim);
+      neibpart[j].dQdt[var] += DotProduct(flux[var], Aij, ndim);
     }
 
   }

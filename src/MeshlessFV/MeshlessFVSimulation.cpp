@@ -131,27 +131,31 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   //===============================================================================================
   if (intparams["tabulated_kernel"] == 1) {
     mfv = new LV2008MFV<ndim, TabulatedKernel>
-      (intparams["hydro_forces"], intparams["self_gravity"], floatparams["h_fac"],
-       floatparams["h_converge"], floatparams["gamma_eos"], stringparams["gas_eos"],
+      (intparams["hydro_forces"], intparams["self_gravity"], floatparams["accel_mult"],
+       floatparams["courant_mult"], floatparams["h_fac"], floatparams["h_converge"],
+       floatparams["gamma_eos"], stringparams["gas_eos"],
        KernelName, sizeof(MeshlessFVParticle<ndim>));
   }
   else if (intparams["tabulated_kernel"] == 0) {
     if (KernelName == "m4") {
       mfv = new LV2008MFV<ndim, M4Kernel>
-        (intparams["hydro_forces"], intparams["self_gravity"], floatparams["h_fac"],
-         floatparams["h_converge"], floatparams["gamma_eos"], stringparams["gas_eos"],
+        (intparams["hydro_forces"], intparams["self_gravity"], floatparams["accel_mult"],
+         floatparams["courant_mult"], floatparams["h_fac"], floatparams["h_converge"],
+         floatparams["gamma_eos"], stringparams["gas_eos"],
          KernelName, sizeof(MeshlessFVParticle<ndim>));
     }
     else if (KernelName == "quintic") {
       mfv = new LV2008MFV<ndim, QuinticKernel>
-        (intparams["hydro_forces"], intparams["self_gravity"], floatparams["h_fac"],
-         floatparams["h_converge"], floatparams["gamma_eos"], stringparams["gas_eos"],
+        (intparams["hydro_forces"], intparams["self_gravity"], floatparams["accel_mult"],
+         floatparams["courant_mult"], floatparams["h_fac"], floatparams["h_converge"],
+         floatparams["gamma_eos"], stringparams["gas_eos"],
          KernelName, sizeof(MeshlessFVParticle<ndim>));
     }
     else if (KernelName == "gaussian") {
       mfv = new LV2008MFV<ndim, GaussianKernel>
-        (intparams["hydro_forces"], intparams["self_gravity"], floatparams["h_fac"],
-         floatparams["h_converge"], floatparams["gamma_eos"], stringparams["gas_eos"],
+        (intparams["hydro_forces"], intparams["self_gravity"], floatparams["accel_mult"],
+         floatparams["courant_mult"], floatparams["h_fac"], floatparams["h_converge"],
+         floatparams["gamma_eos"], stringparams["gas_eos"],
          KernelName, sizeof(MeshlessFVParticle<ndim>));
     }
     else {
@@ -357,7 +361,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
   partdata = mfv->GetMeshlessFVParticleArray();
 
   // Set time variables here (for now)
-  nresync = 0;
+  nresync = 1;   // DAVID : Need to adapt this for block timesteps3
   n = 0;
   integration_step = 1;
 
@@ -518,17 +522,6 @@ void MeshlessFVSimulation<ndim>::MainLoop(void)
   // Set pointer for SPH data array
   partdata = mfv->GetMeshlessFVParticleArray();
 
-  // Compute timesteps for all particles
-  this->ComputeGlobalTimestep();
-  //if (Nlevels == 1) this->ComputeGlobalTimestep();
-  //else this->ComputeBlockTimesteps();
-
-  // Advance time variables
-  n = n + 1;
-  Nsteps = Nsteps + 1;
-  t = t + timestep;
-  if (n == nresync) Nblocksteps = Nblocksteps + 1;
-  if (n%integration_step == 0) Nfullsteps = Nfullsteps + 1;
 
   // Advance SPH and N-body particles' positions and velocities
   /*uint->EnergyIntegration(n,mfv->Nhydro,(FLOAT) t,(FLOAT) timestep,mfv->GetMeshlessFVParticleArray());
@@ -541,19 +534,15 @@ void MeshlessFVSimulation<ndim>::MainLoop(void)
   //if (Nsteps%ntreebuildstep == 0 || rebuild_tree) sphint->CheckBoundaries(simbox,sph);
 
 
-  // Compute all SPH quantities
-  //-----------------------------------------------------------------------------------------------
-  if (mfv->Nhydro > 0) {
-
-    // Rebuild or update local neighbour and gravity tree
-    mfvneib->BuildTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,
-                       mfv->Ntot,mfv->Nhydromax,partdata,mfv,timestep);
+  // Rebuild or update local neighbour and gravity tree
+  mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
+                     mfv->Ntot, mfv->Nhydromax, partdata, mfv, timestep);
 
 
-    // Search for new ghost particles and create on local processor
-    //if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-      tghost = timestep*(FLOAT)(ntreebuildstep - 1);
-      mfvneib->SearchBoundaryGhostParticles(tghost,simbox,mfv);
+  // Search for new ghost particles and create on local processor
+  //if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
+  tghost = timestep*(FLOAT)(ntreebuildstep - 1);
+  mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
       //mfvneib->BuildGhostTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,
         //                      mfv->Ntot,mfv->Nhydromax,partdata,mfv,timestep);
     //}
@@ -565,53 +554,63 @@ void MeshlessFVSimulation<ndim>::MainLoop(void)
 #endif
     }*/
 
-    for (i=0; i<mfv->Nhydro; i++) {
-      MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
-      part.active = true;
+  for (i=0; i<mfv->Nhydro; i++) {
+    MeshlessFVParticle<ndim>& part = mfv->GetMeshlessFVParticlePointer(i);
+    part.active = true;
+  }
+
+  // Calculate all properties
+  mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
+
+  mfv->CopyDataToGhosts(simbox, partdata);
+
+  mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
+
+  mfv->CopyDataToGhosts(simbox, partdata);
+
+
+  // Compute timesteps for all particles
+  this->ComputeGlobalTimestep();
+  //if (Nlevels == 1) this->ComputeGlobalTimestep();
+  //else this->ComputeBlockTimesteps();
+
+  // Advance time variables
+  n = n + 1;
+  Nsteps = Nsteps + 1;
+  t = t + timestep;
+  if (n == nresync) Nblocksteps = Nblocksteps + 1;
+  if (n%integration_step == 0) Nfullsteps = Nfullsteps + 1;
+
+
+  mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody);
+
+  // Integrate all conserved variables to end of timestep
+  for (i=0; i<mfv->Nhydro; i++) {
+    mfv->IntegrateConservedVariables(partdata[i], timestep);
+    mfv->ConvertQToConserved(partdata[i].volume, partdata[i].Qcons, partdata[i].Ucons);
+    mfv->ConvertConservedToPrimitive(partdata[i].Ucons, partdata[i].Wprim);
+    mfv->UpdateArrayVariables(partdata[i]);
+
+    for (k=0; k<ndim; k++) {
+      //partdata[i].r[k] += (FLOAT) 0.5*(partdata[i].v0[k] + partdata[i].v[k])*timestep;
+      //partdata[i].v0[k] = partdata[i].v[k];
+      partdata[i].r[k] += partdata[i].v[k]*timestep;
     }
-
-    // Calculate all properties
-    mfvneib->UpdateAllProperties(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
-
-    mfv->CopyDataToGhosts(simbox, partdata);
-
-    mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
-
-    mfv->CopyDataToGhosts(simbox, partdata);
-
-    mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody);
-
-    // Integrate all conserved variables to end of timestep
-    for (i=0; i<mfv->Nhydro; i++) {
-      mfv->IntegrateConservedVariables(partdata[i], timestep);
-      mfv->ConvertQToConserved(partdata[i].volume, partdata[i].Qcons, partdata[i].Ucons);
-      mfv->ConvertConservedToPrimitive(partdata[i].Ucons, partdata[i].Wprim);
-      mfv->UpdateArrayVariables(partdata[i]);
-
-      //for (int k=0; k<ndim; k++) partdata[i].r[k] += partdata[i].v[k]*timestep;
-      for (k=0; k<ndim; k++) {
-        partdata[i].r[k] += (FLOAT) 0.5*(partdata[i].v0[k] + partdata[i].v[k])*timestep;
-        partdata[i].v0[k] = partdata[i].v[k];
-        //partdata[i].r[k] += partdata[i].v[k]*timestep;
+    if (partdata[i].r[0] < simbox.boxmin[0])
+      if (simbox.boundary_lhs[0] == periodicBoundary) {
+        partdata[i].r[0] += simbox.boxsize[0];
       }
-      if (partdata[i].r[0] < simbox.boxmin[0])
-        if (simbox.boundary_lhs[0] == periodicBoundary) {
-          partdata[i].r[0] += simbox.boxsize[0];
-        }
-      if (partdata[i].r[0] > simbox.boxmax[0])
-        if (simbox.boundary_rhs[0] == periodicBoundary) {
-          partdata[i].r[0] -= simbox.boxsize[0];
-        }
+    if (partdata[i].r[0] > simbox.boxmax[0])
+      if (simbox.boundary_rhs[0] == periodicBoundary) {
+        partdata[i].r[0] -= simbox.boxsize[0];
+      }
 
-    }
-
-    this->CalculateDiagnostics();
-    this->OutputDiagnostics();
-    this->UpdateDiagnostics();
 
   }
-  //-----------------------------------------------------------------------------------------------
 
+  /*this->CalculateDiagnostics();
+  this->OutputDiagnostics();
+  this->UpdateDiagnostics();*/
 
 
   rebuild_tree = false;
