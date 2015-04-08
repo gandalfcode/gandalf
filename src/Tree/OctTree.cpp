@@ -410,6 +410,7 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
     }
     //---------------------------------------------------------------------------------------------
 
+    delete[] whichChild;
     delete[] celllist;
 
   }

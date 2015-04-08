@@ -602,7 +602,7 @@ void SimulationBase::SetupSimulation(void)
     GenerateIC();
   }
 
-// Change to COM frame if selected
+  // Change to COM frame if selected
   if (simparams->intparams["com_frame"] == 1) SetComFrame();
 
   // Perform the rest of the initialisation, calculating all initial particle
@@ -673,34 +673,33 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
       nbody = new NbodyLeapfrogDKD<ndim, TabulatedKernel>
-	(intparams["nbody_softening"], intparams["sub_systems"],
-	 floatparams["nbody_mult"], KernelName);
+        (intparams["nbody_softening"], intparams["sub_systems"],
+         floatparams["nbody_mult"], KernelName);
     }
     else if (intparams["tabulated_kernel"] == 0) {
       if (KernelName == "m4") {
-	nbody = new NbodyLeapfrogDKD<ndim, M4Kernel>
-	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["nbody_mult"], KernelName);
+        nbody = new NbodyLeapfrogDKD<ndim, M4Kernel>
+          (intparams["nbody_softening"], intparams["sub_systems"],
+           floatparams["nbody_mult"], KernelName);
       }
       else if (KernelName == "quintic") {
-	nbody = new NbodyLeapfrogDKD<ndim, QuinticKernel>
-	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["nbody_mult"], KernelName);
+        nbody = new NbodyLeapfrogDKD<ndim, QuinticKernel>
+          (intparams["nbody_softening"], intparams["sub_systems"],
+           floatparams["nbody_mult"], KernelName);
       }
       else if (KernelName == "gaussian") {
-	nbody = new NbodyLeapfrogDKD<ndim, GaussianKernel>
-	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["nbody_mult"], KernelName);
+        nbody = new NbodyLeapfrogDKD<ndim, GaussianKernel>
+          (intparams["nbody_softening"], intparams["sub_systems"],
+           floatparams["nbody_mult"], KernelName);
       }
       else {
-	string message = "Unrecognised parameter : kernel = " +
-	  simparams->stringparams["kernel"];
-	ExceptionHandler::getIstance().raise(message);
+        string message = "Unrecognised parameter : kernel = " + simparams->stringparams["kernel"];
+        ExceptionHandler::getIstance().raise(message);
       }
     }
     else {
       string message = "Invalid option for the tabulated_kernel parameter: " +
-	stringparams["tabulated_kernel"];
+        stringparams["tabulated_kernel"];
       ExceptionHandler::getIstance().raise(message);
     }
     integration_step = max(integration_step,2);
@@ -710,34 +709,34 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
       nbody = new NbodyHermite4<ndim, TabulatedKernel>
-	(intparams["nbody_softening"], intparams["sub_systems"],
-	 floatparams["nbody_mult"], KernelName);
+        (intparams["nbody_softening"], intparams["sub_systems"],
+         floatparams["nbody_mult"], KernelName);
     }
     else if (intparams["tabulated_kernel"] == 0) {
       if (KernelName == "m4") {
-	nbody = new NbodyHermite4<ndim, M4Kernel>
-	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["nbody_mult"], KernelName);
+        nbody = new NbodyHermite4<ndim, M4Kernel>
+          (intparams["nbody_softening"], intparams["sub_systems"],
+           floatparams["nbody_mult"], KernelName);
       }
       else if (KernelName == "quintic") {
-	nbody = new NbodyHermite4<ndim, QuinticKernel>
-	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["nbody_mult"], KernelName);
+        nbody = new NbodyHermite4<ndim, QuinticKernel>
+          (intparams["nbody_softening"], intparams["sub_systems"],
+           floatparams["nbody_mult"], KernelName);
       }
       else if (KernelName == "gaussian") {
-	nbody = new NbodyHermite4<ndim, GaussianKernel>
-	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["nbody_mult"], KernelName);
+        nbody = new NbodyHermite4<ndim, GaussianKernel>
+          (intparams["nbody_softening"], intparams["sub_systems"],
+           floatparams["nbody_mult"], KernelName);
       }
       else {
-	string message = "Unrecognised parameter : kernel = " +
-	  simparams->stringparams["kernel"];
-	ExceptionHandler::getIstance().raise(message);
+        string message = "Unrecognised parameter : kernel = " +
+          simparams->stringparams["kernel"];
+        ExceptionHandler::getIstance().raise(message);
       }
     }
     else {
       string message = "Invalid option for the tabulated_kernel parameter: " +
-	stringparams["tabulated_kernel"];
+        stringparams["tabulated_kernel"];
       ExceptionHandler::getIstance().raise(message);
     }
   }
@@ -746,34 +745,33 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
     string KernelName = stringparams["kernel"];
     if (intparams["tabulated_kernel"] == 1) {
       nbody = new NbodyHermite4TS<ndim, TabulatedKernel>
-	(intparams["nbody_softening"], intparams["sub_systems"],
-	 floatparams["nbody_mult"], KernelName, intparams["Npec"]);
+        (intparams["nbody_softening"], intparams["sub_systems"],
+         floatparams["nbody_mult"], KernelName, intparams["Npec"]);
     }
     else if (intparams["tabulated_kernel"] == 0) {
       if (KernelName == "m4") {
-	nbody = new NbodyHermite4TS<ndim, M4Kernel>
-	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["nbody_mult"], KernelName, intparams["Npec"]);
+        nbody = new NbodyHermite4TS<ndim, M4Kernel>
+          (intparams["nbody_softening"], intparams["sub_systems"],
+           floatparams["nbody_mult"], KernelName, intparams["Npec"]);
       }
       else if (KernelName == "quintic") {
-	nbody = new NbodyHermite4TS<ndim, QuinticKernel>
-	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["nbody_mult"], KernelName, intparams["Npec"]);
+        nbody = new NbodyHermite4TS<ndim, QuinticKernel>
+          (intparams["nbody_softening"], intparams["sub_systems"],
+           floatparams["nbody_mult"], KernelName, intparams["Npec"]);
       }
       else if (KernelName == "gaussian") {
-	nbody = new NbodyHermite4TS<ndim, GaussianKernel>
-	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["nbody_mult"], KernelName, intparams["Npec"]);
+        nbody = new NbodyHermite4TS<ndim, GaussianKernel>
+          (intparams["nbody_softening"], intparams["sub_systems"],
+           floatparams["nbody_mult"], KernelName, intparams["Npec"]);
       }
       else {
-	string message = "Unrecognised parameter : kernel = " +
-	  simparams->stringparams["kernel"];
-	ExceptionHandler::getIstance().raise(message);
+        string message = "Unrecognised parameter : kernel = " + simparams->stringparams["kernel"];
+        ExceptionHandler::getIstance().raise(message);
       }
     }
     else {
       string message = "Invalid option for the tabulated_kernel parameter: " +
-	stringparams["tabulated_kernel"];
+        stringparams["tabulated_kernel"];
       ExceptionHandler::getIstance().raise(message);
     }
   }
@@ -829,72 +827,70 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
     if (stringparams["sub_system_integration"] == "lfkdk") {
       string KernelName = stringparams["kernel"];
       if (intparams["tabulated_kernel"] == 1) {
-	subsystem = new NbodyLeapfrogKDK<ndim, TabulatedKernel>
-	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["subsys_mult"], KernelName);
+        subsystem = new NbodyLeapfrogKDK<ndim, TabulatedKernel>
+          (intparams["nbody_softening"], intparams["sub_systems"],
+           floatparams["subsys_mult"], KernelName);
       }
       else if (intparams["tabulated_kernel"] == 0) {
-	if (KernelName == "m4") {
-	  subsystem = new NbodyLeapfrogKDK<ndim, M4Kernel>
-	    (intparams["nbody_softening"], intparams["sub_systems"],
-	     floatparams["subsys_mult"], KernelName);
-	}
-	else if (KernelName == "quintic") {
-	  subsystem = new NbodyLeapfrogKDK<ndim, QuinticKernel>
-	    (intparams["nbody_softening"], intparams["sub_systems"],
-	     floatparams["subsys_mult"], KernelName);
-	}
-	else if (KernelName == "gaussian") {
-	  subsystem = new NbodyLeapfrogKDK<ndim, GaussianKernel>
-	    (intparams["nbody_softening"], intparams["sub_systems"],
-	     floatparams["subsys_mult"], KernelName);
-	}
-	else {
-	  string message = "Unrecognised parameter : kernel = " +
-	    simparams->stringparams["kernel"];
-	  ExceptionHandler::getIstance().raise(message);
-	}
+        if (KernelName == "m4") {
+          subsystem = new NbodyLeapfrogKDK<ndim, M4Kernel>
+            (intparams["nbody_softening"], intparams["sub_systems"],
+             floatparams["subsys_mult"], KernelName);
+        }
+        else if (KernelName == "quintic") {
+          subsystem = new NbodyLeapfrogKDK<ndim, QuinticKernel>
+            (intparams["nbody_softening"], intparams["sub_systems"],
+             floatparams["subsys_mult"], KernelName);
+        }
+        else if (KernelName == "gaussian") {
+          subsystem = new NbodyLeapfrogKDK<ndim, GaussianKernel>
+            (intparams["nbody_softening"], intparams["sub_systems"],
+             floatparams["subsys_mult"], KernelName);
+        }
+        else {
+          string message = "Unrecognised parameter : kernel = " + simparams->stringparams["kernel"];
+          ExceptionHandler::getIstance().raise(message);
+        }
       }
       else {
-	string message = "Invalid option for the tabulated_kernel parameter: "
-	  + stringparams["tabulated_kernel"];
-	ExceptionHandler::getIstance().raise(message);
+        string message = "Invalid option for the tabulated_kernel parameter: "
+          + stringparams["tabulated_kernel"];
+        ExceptionHandler::getIstance().raise(message);
       }
     }
     //---------------------------------------------------------------------------------------------
     else if (stringparams["sub_system_integration"] == "hermite4") {
       string KernelName = stringparams["kernel"];
       if (intparams["tabulated_kernel"] == 1) {
-	subsystem = new NbodyHermite4<ndim, TabulatedKernel>
-	  (intparams["nbody_softening"], intparams["sub_systems"],
-	   floatparams["subsys_mult"], KernelName);
+        subsystem = new NbodyHermite4<ndim, TabulatedKernel>
+          (intparams["nbody_softening"], intparams["sub_systems"],
+           floatparams["subsys_mult"], KernelName);
       }
       else if (intparams["tabulated_kernel"] == 0) {
-	if (KernelName == "m4") {
-	  subsystem = new NbodyHermite4<ndim, M4Kernel>
-	    (intparams["nbody_softening"], intparams["sub_systems"],
-	     floatparams["subsys_mult"], KernelName);
-	}
-	else if (KernelName == "quintic") {
-	  subsystem = new NbodyHermite4<ndim, QuinticKernel>
-	    (intparams["nbody_softening"], intparams["sub_systems"],
-	     floatparams["subsys_mult"], KernelName);
-	}
-	else if (KernelName == "gaussian") {
-	  subsystem = new NbodyHermite4<ndim, GaussianKernel>
-	    (intparams["nbody_softening"], intparams["sub_systems"],
-	     floatparams["subsys_mult"], KernelName);
-	}
-	else {
-	string message = "Unrecognised parameter : kernel = " +
-	  simparams->stringparams["kernel"];
-	ExceptionHandler::getIstance().raise(message);
-	}
+        if (KernelName == "m4") {
+          subsystem = new NbodyHermite4<ndim, M4Kernel>
+            (intparams["nbody_softening"], intparams["sub_systems"],
+             floatparams["subsys_mult"], KernelName);
+        }
+        else if (KernelName == "quintic") {
+          subsystem = new NbodyHermite4<ndim, QuinticKernel>
+            (intparams["nbody_softening"], intparams["sub_systems"],
+             floatparams["subsys_mult"], KernelName);
+        }
+        else if (KernelName == "gaussian") {
+          subsystem = new NbodyHermite4<ndim, GaussianKernel>
+            (intparams["nbody_softening"], intparams["sub_systems"],
+             floatparams["subsys_mult"], KernelName);
+        }
+        else {
+          string message = "Unrecognised parameter : kernel = " + simparams->stringparams["kernel"];
+          ExceptionHandler::getIstance().raise(message);
+        }
       }
       else {
-	string message = "Invalid option for the tabulated_kernel parameter: "
-	  + stringparams["tabulated_kernel"];
-	ExceptionHandler::getIstance().raise(message);
+        string message = "Invalid option for the tabulated_kernel parameter: "
+          + stringparams["tabulated_kernel"];
+        ExceptionHandler::getIstance().raise(message);
       }
     }
     //---------------------------------------------------------------------------------------------
@@ -970,7 +966,7 @@ void Simulation<ndim>::ProcessNbodyParameters(void)
     //---------------------------------------------------------------------------------------------
     else {
       string message = "Unrecognised parameter : sub_system_integration = "
-	+ simparams->stringparams["sub_system_integration"];
+        + simparams->stringparams["sub_system_integration"];
       ExceptionHandler::getIstance().raise(message);
     }
     //---------------------------------------------------------------------------------------------
