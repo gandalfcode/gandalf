@@ -1919,7 +1919,7 @@ void Ic<ndim>::SedovBlastWave(void)
   FLOAT utot;                          // Total internal energy
   FLOAT volume;                        // Volume of box
   FLOAT *r;                            // Positions of all particles
-  Particle<ndim> *partdata;         // Pointer to main SPH data array
+  Particle<ndim> *partdata;            // Pointer to main SPH data array
 
   // Create local copies of initial conditions parameters
   Nlattice[0]    = simparams->intparams["Nlattice1[0]"];
@@ -1952,7 +1952,7 @@ void Ic<ndim>::SedovBlastWave(void)
   ufrac = max((FLOAT) 0.0,(FLOAT) 1.0 - kefrac);
   Ncold = 0;
   Nhot  = 0;
-  r_hot = powf(powf((FLOAT) 4.0,ndim)/(FLOAT) Nbox,hydro->invndim);
+  r_hot = hydro->h_fac*hydro->kernrange*simbox.boxsize[0]/Nlattice[0];  //powf(powf((FLOAT) 4.0,ndim)/(FLOAT) Nbox,hydro->invndim);
 
   // Allocate local and main particle memory
   hydro->Nhydro = Nbox;
@@ -1987,6 +1987,7 @@ void Ic<ndim>::SedovBlastWave(void)
     part.m = mbox/(FLOAT) Nbox;
     part.h = hydro->h_fac*pow(part.m/rhofluid,invndim);
     part.u = small_number;
+    //part.v[0] = 0.1*part.r[0] + 0.2*part.r[1] - 0.7*part.r[2];
   }
 
   // Set initial smoothing lengths and create initial ghost particles
@@ -2043,15 +2044,13 @@ void Ic<ndim>::SedovBlastWave(void)
       drmag = sqrt(DotProduct(part.r,part.r,ndim));
       part.u = part.u/utot/part.m;
       //,1.0e-6*umax/part.m);
-      for (k=0; k<ndim; k++) part.v[k] =
-    sqrt(2.0*kefrac*part.u)*
-    part.r[k]/(drmag + small_number);
+      for (k=0; k<ndim; k++) part.v[k] = sqrt(2.0*kefrac*part.u)*part.r[k]/(drmag + small_number);
       part.u = ufrac*part.u;
       //,1.0e-6*umax/part.m);
     }
     else {
       part.u = 1.0e-6/part.m;
-      for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
+      //for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
     }
   }
 

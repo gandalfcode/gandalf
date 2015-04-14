@@ -248,6 +248,9 @@ void MeshlessFV<ndim>::IntegrateConservedVariables
  (MeshlessFVParticle<ndim> &part,
   FLOAT timestep)
 {
+  FLOAT dUdt = part.dQdt[ietot] - DotProduct(part.v, part.dQdt, ndim) +
+    0.5*DotProduct(part.v, part.v, ndim)*part.dQdt[irho];
+  part.Utot += dUdt*timestep;
   for (int var=0; var<nvar; var++) {
     part.Qcons[var] += part.dQdt[var]*timestep;
   }
@@ -285,11 +288,13 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
   FLOAT ekin = 0.0;
   for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
   part.u = (part.Qcons[ietot] - 0.5*part.m*ekin)/part.m;
+  //part.u = part.U/part.m;
   part.press = (gamma_eos - 1.0)*part.rho*part.u;
 
   if (part.u < 0.0 || part.m < 0.0) {
     cout << "Mistake? : " << part.Qcons[ietot] << "    " << 0.5*part.m*ekin << "    " << part.m << "    " << part.u << endl;
     cout << "r : " << part.r[0] << "     v : " << part.v[0] << endl;
+    cout << "Internal energy : " << part.u << "     " << part.Utot/part.m << endl;
   }
 
   assert(part.m > 0.0);
@@ -465,6 +470,19 @@ void MeshlessFV<ndim>::CalculatePrimitiveTimeDerivative
     Wdot[ivy]    = Wprim[ivx]*gradW[ivy][0] + Wprim[ivy]*gradW[ivy][1] + gradW[ipress][1]/Wprim[irho];
     Wdot[ipress] = Wprim[ivx]*gradW[ipress][0] + Wprim[ivy]*gradW[ipress][1] +
       gamma_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1]);
+  }
+  else if (ndim == 3) {
+    Wdot[irho]   = Wprim[ivx]*gradW[irho][0] + Wprim[ivy]*gradW[irho][1] +
+      Wprim[ivz]*gradW[irho][2] + Wprim[irho]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
+    Wdot[ivx]    = Wprim[ivx]*gradW[ivx][0] + Wprim[ivy]*gradW[ivx][1] +
+      Wprim[ivz]*gradW[ivx][2] + gradW[ipress][0]/Wprim[irho];
+    Wdot[ivy]    = Wprim[ivx]*gradW[ivy][0] + Wprim[ivy]*gradW[ivy][1] +
+      Wprim[ivz]*gradW[ivy][2] + gradW[ipress][1]/Wprim[irho];
+    Wdot[ivz]    = Wprim[ivx]*gradW[ivz][0] + Wprim[ivy]*gradW[ivz][1] +
+      Wprim[ivz]*gradW[ivz][2] + gradW[ipress][2]/Wprim[irho];
+    Wdot[ipress] = Wprim[ivx]*gradW[ipress][0] + Wprim[ivy]*gradW[ipress][1] +
+      Wprim[ivz]*gradW[ipress][2] +
+      gamma_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
   }
 
   return;

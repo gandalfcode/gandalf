@@ -481,6 +481,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
       mfv->UpdatePrimitiveVector(partdata[i]);
       mfv->ConvertPrimitiveToConserved(partdata[i].Wprim, partdata[i].Ucons);
       mfv->ConvertConservedToQ(partdata[i].volume, partdata[i].Ucons, partdata[i].Qcons);
+      partdata[i].Utot = partdata[i].u*partdata[i].m;
       //for (k=0; k<ndim; k++) partdata[i].v0[k] = partdata[i].v[k];
     }
 
@@ -565,7 +566,7 @@ void MeshlessFVSimulation<ndim>::MainLoop(void)
   mfv->CopyDataToGhosts(simbox, partdata);
 
   mfvneib->UpdateGradientMatrices(mfv->Nhydro, mfv->Ntot, partdata, mfv, nbody);
-
+//cin >> i;
   mfv->CopyDataToGhosts(simbox, partdata);
 
 
@@ -595,15 +596,15 @@ void MeshlessFVSimulation<ndim>::MainLoop(void)
       //partdata[i].r[k] += (FLOAT) 0.5*(partdata[i].v0[k] + partdata[i].v[k])*timestep;
       //partdata[i].v0[k] = partdata[i].v[k];
       partdata[i].r[k] += partdata[i].v[k]*timestep;
+      if (partdata[i].r[k] < simbox.boxmin[k])
+        if (simbox.boundary_lhs[k] == periodicBoundary) {
+          partdata[i].r[k] += simbox.boxsize[k];
+        }
+      if (partdata[i].r[k] > simbox.boxmax[k])
+        if (simbox.boundary_rhs[k] == periodicBoundary) {
+          partdata[i].r[k] -= simbox.boxsize[k];
+        }
     }
-    if (partdata[i].r[0] < simbox.boxmin[0])
-      if (simbox.boundary_lhs[0] == periodicBoundary) {
-        partdata[i].r[0] += simbox.boxsize[0];
-      }
-    if (partdata[i].r[0] > simbox.boxmax[0])
-      if (simbox.boundary_rhs[0] == periodicBoundary) {
-        partdata[i].r[0] -= simbox.boxsize[0];
-      }
 
 
   }

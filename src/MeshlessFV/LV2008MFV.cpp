@@ -251,9 +251,23 @@ void LV2008MFV<ndim, kernelclass>::ComputePsiFactors
   else if (ndim == 2) {
     invdet = 1.0/(E[0][0]*E[1][1] - E[0][1]*E[1][0]);
     part.B[0][0] = invdet*E[1][1];
-    part.B[0][1] = -invdet*E[0][1];
-    part.B[1][0] = -invdet*E[1][0];
+    part.B[0][1] = -1.0*invdet*E[0][1];
+    part.B[1][0] = -1.0*invdet*E[1][0];
     part.B[1][1] = invdet*E[0][0];
+  }
+  else if (ndim == 3) {
+    invdet = 1.0/(E[0][0]*(E[1][1]*E[2][2] - E[2][1]*E[1][2]) -
+                  E[0][1]*(E[1][0]*E[2][2] - E[1][2]*E[2][0]) +
+                  E[0][2]*(E[1][0]*E[2][1] - E[1][1]*E[2][0]));
+    part.B[0][0] = (E[1][1]*E[2][2] - E[2][1]*E[1][2])*invdet;
+    part.B[0][1] = (E[0][2]*E[2][1] - E[0][1]*E[2][2])*invdet;
+    part.B[0][2] = (E[0][1]*E[1][2] - E[0][2]*E[1][1])*invdet;
+    part.B[1][0] = (E[1][2]*E[2][0] - E[1][0]*E[2][2])*invdet;
+    part.B[1][1] = (E[0][0]*E[2][2] - E[0][2]*E[2][0])*invdet;
+    part.B[1][2] = (E[1][0]*E[0][2] - E[0][0]*E[1][2])*invdet;
+    part.B[2][0] = (E[1][0]*E[2][1] - E[2][0]*E[1][1])*invdet;
+    part.B[2][1] = (E[2][0]*E[0][1] - E[0][0]*E[2][1])*invdet;
+    part.B[2][2] = (E[0][0]*E[1][1] - E[1][0]*E[0][1])*invdet;
   }
 
 
@@ -353,7 +367,7 @@ void LV2008MFV<ndim, kernelclass>::ComputeGradients
   for (jj=0; jj<Nneib; jj++) {
     j = neiblist[jj];
 
-    //for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
+    for (k=0; k<ndim; k++) draux[k] = neibpart[j].r[k] - part.r[k];
     //drsqd = DotProduct(draux, draux, ndim);
 
 
@@ -361,8 +375,8 @@ void LV2008MFV<ndim, kernelclass>::ComputeGradients
     for (var=0; var<nvar; var++) {
       part.Wmin[var] = min(part.Wmin[var], neibpart[j].Wprim[var]);
       part.Wmax[var] = max(part.Wmax[var], neibpart[j].Wprim[var]);
-      part.Wmidmin[var] = min(part.Wmidmin[var], part.Wprim[var] + 0.5*part.grad[var][0]*draux[0]);
-      part.Wmidmax[var] = max(part.Wmidmax[var], part.Wprim[var] + 0.5*part.grad[var][0]*draux[0]);
+      part.Wmidmin[var] = min(part.Wmidmin[var], part.Wprim[var] + 0.5*DotProduct(part.grad[var], draux, ndim));
+      part.Wmidmax[var] = max(part.Wmidmax[var], part.Wprim[var] + 0.5*DotProduct(part.grad[var], draux, ndim));
       assert(part.Wmidmax[var] >= part.Wmidmin[var]);
       assert(part.Wmax[var] >= part.Wmin[var]);
     }
@@ -372,6 +386,9 @@ void LV2008MFV<ndim, kernelclass>::ComputeGradients
 
   //cout << "vsig : " << part.vsig_max << "    " << part.sound << endl;
   assert(part.vsig_max >= part.sound);
+
+  //cout << "r : " << part.r[0] << "   " << part.r[1] << "   " << part.r[2] << "    vx gradient : "
+  //     << part.grad[ivx][0] << "    " << part.grad[ivx][1] << "   " << part.grad[ivx][2] << endl;
   //cin >> j;
 
   return;
@@ -446,12 +463,12 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
     }
 
     // Calculate position and velocity of the face
-    for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
-    for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.5*(part.v[k] + neibpart[j].v[k]);
-    //for (k=0; k<ndim; k++) rface[k] = part.h*(part.r[k] + neibpart[j].r[k])/(part.h + neibpart[j].h);
-    //for (k=0; k<ndim; k++) draux[k] = part.r[k] - rface[k];
-    //for (k=0; k<ndim; k++) vface[k] = part.v[k] +
-    //  (neibpart[j].v[k] - part.v[k])*DotProduct(draux, dr_unit, ndim)*invdrmagaux;
+    //for (k=0; k<ndim; k++) rface[k] = (FLOAT) 0.5*(part.r[k] + neibpart[j].r[k]);
+    //for (k=0; k<ndim; k++) vface[k] = (FLOAT) 0.5*(part.v[k] + neibpart[j].v[k]);
+    for (k=0; k<ndim; k++) rface[k] = part.r[k] + part.h*(neibpart[j].r[k] - part.r[k])/(part.h + neibpart[j].h);
+    for (k=0; k<ndim; k++) draux[k] = part.r[k] - rface[k];
+    for (k=0; k<ndim; k++) vface[k] = part.v[k] +
+      (neibpart[j].v[k] - part.v[k])*DotProduct(draux, dr_unit, ndim)*invdrmagaux;
 
     // Compute slope-limited values for LHS
     for (k=0; k<ndim; k++) draux[k] = rface[k] - part.r[k];
@@ -461,6 +478,8 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
 
     // Time-integrate LHS state to half-timestep value
     this->CalculatePrimitiveTimeDerivative(Wleft, gradW, Wdot);
+    assert(Wleft[irho] > 0.0);
+    assert(Wleft[ipress] > 0.0);
     for (var=0; var<nvar; var++) Wleft[var] -= (FLOAT) 0.5*timestep*Wdot[var];
 
 
@@ -472,7 +491,20 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
 
     // Time-integrate RHS state to half-timestep value
     this->CalculatePrimitiveTimeDerivative(Wright, gradW, Wdot);
+    assert(Wright[irho] > 0.0);
+    assert(Wright[ipress] > 0.0);
     for (var=0; var<nvar; var++) Wright[var] -= (FLOAT) 0.5*timestep*Wdot[var];
+
+    if (Wright[ipress] <= 0.0) {
+      cout << "press   : " << part.Wprim[ipress] << "   " << Wleft[ipress] << "   " << Wright[ipress] << "   " << neibpart[j].Wprim[ipress] << endl;
+      cout << "gradW,j : " << DotProduct(neibpart[j].grad[ipress], draux, ndim) << "   " << DotProduct(gradW[ipress], draux, ndim) << endl;
+    }
+
+
+    assert(Wleft[irho] > 0.0);
+    assert(Wleft[ipress] > 0.0);
+    assert(Wright[irho] > 0.0);
+    assert(Wright[ipress] > 0.0);
 
 
     // Calculate Godunov flux using the selected Riemann solver
@@ -548,8 +580,6 @@ void LV2008MFV<ndim, kernelclass>::CopyDataToGhosts
 
   return;
 }
-
-
 
 
 

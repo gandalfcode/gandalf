@@ -66,6 +66,7 @@ struct Particle
   FLOAT v0[ndim];                   ///< Velocity at beginning of step
   FLOAT a0[ndim];                   ///< Acceleration at beginning of step
   FLOAT agrav[ndim];                ///< Gravitational acceleration
+  FLOAT adot[ndim];                 ///< 1st time derivative of acceleration
   FLOAT m;                          ///< Particle mass
   FLOAT h;                          ///< SPH smoothing length
   FLOAT hrangesqd;                  ///< Kernel extent (squared)
@@ -83,7 +84,6 @@ struct Particle
   FLOAT mu_bar;                     ///< mean molecular weight
   FLOAT ueq;                        ///< equilibrium internal energy
   FLOAT dt_therm;                   ///< thermalization time scale
-  FLOAT adot[ndim];                 ///< 1st time derivative of acceleration
 
 
   Particle() {
@@ -141,12 +141,6 @@ struct SphParticle : public Particle<ndim>
   FLOAT div_v;                      ///< Velocity divergence
   FLOAT alpha;                      ///< Artificial viscosity alpha value
   FLOAT dalphadt;                   ///< Rate of change of alpha
-  /*FLOAT ionfrac;                    ///< Ionisation fraction
-  FLOAT mu_bar;                     ///< mean molecular weight
-  FLOAT ueq;                        ///< equilibrium internal energy
-  FLOAT dt_therm;                   ///< thermalization time scale
-  FLOAT adot[ndim];                 ///< 1st time derivative of acceleration
-  */
 
 
   // SPH particle constructor to initialise all values
@@ -165,11 +159,6 @@ struct SphParticle : public Particle<ndim>
     div_v    = (FLOAT) 0.0;
     alpha    = (FLOAT) 0.0;
     dalphadt = (FLOAT) 0.0;
-    //ionfrac  = (FLOAT) 0.0;
-    //mu_bar   = (FLOAT) 2.35;
-    //ueq      = (FLOAT) 0.0;
-    //dt_therm = (FLOAT) 0.0;
-    //for (int k=0; k<ndim; k++) adot[k] = (FLOAT) 0.0;
   }
 
 };
@@ -318,6 +307,7 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT Qcons[ndim+2];                 ///< ..
   FLOAT grad[ndim+2][ndim];            ///< ..
   FLOAT dQdt[ndim+2];                  ///< Time derivative of conserved variables
+  FLOAT Utot;                          ///< ..
 
 
   // SPH particle constructor to initialise all values
