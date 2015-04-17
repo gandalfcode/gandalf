@@ -403,6 +403,3 @@ template class TreeMonteCarlo<3,1,GradhSphParticle,KDRadTreeCell>;
 //template class TreeMonteCarlo<1,SM2012SphParticle>;
 //template class TreeMonteCarlo<2,SM2012SphParticle>;
 //template class TreeMonteCarlo<3,SM2012SphParticle>;
-//template class TreeMonteCarlo<1,GodunovSphParticle>;
-//template class TreeMonteCarlo<2,GodunovSphParticle>;
-//template class TreeMonteCarlo<3,GodunovSphParticle>;

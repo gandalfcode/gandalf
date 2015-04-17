@@ -66,8 +66,7 @@ SimulationBase* SimulationBase::SimulationFactory
   }
 
   // Check simulation type is valid
-  if (simtype != "sph" && simtype != "gradhsph" && simtype != "sm2012sph" &&
-      simtype != "godunov_sph" && simtype != "nbody" ) {
+  if (simtype != "sph" && simtype != "gradhsph" && simtype != "sm2012sph" && simtype != "nbody" ) {
     string msg = "Error: the simulation type " + simtype + " was not recognized";
     ExceptionHandler::getIstance().raise(msg);
   }
@@ -85,8 +84,6 @@ SimulationBase* SimulationBase::SimulationFactory
       return new GradhSphSimulation<1>(params);
     else if (simtype == "sm2012sph")
       return new SM2012SphSimulation<1>(params);
-    else if (simtype == "godunovsph")
-      return new GodunovSphSimulation<1>(params);
     else if (simtype == "nbody")
       return new NbodySimulation<1>(params);
   }
@@ -95,8 +92,6 @@ SimulationBase* SimulationBase::SimulationFactory
       return new GradhSphSimulation<2>(params);
     else if (simtype == "sm2012sph")
       return new SM2012SphSimulation<2>(params);
-    else if (simtype == "godunovsph")
-      return new GodunovSphSimulation<2>(params);
     else if (simtype == "nbody")
       return new NbodySimulation<2>(params);
   }
@@ -105,8 +100,6 @@ SimulationBase* SimulationBase::SimulationFactory
       return new GradhSphSimulation<3>(params);
     else if (simtype == "sm2012sph")
       return new SM2012SphSimulation<3>(params);
-    else if (simtype == "godunovsph")
-      return new GodunovSphSimulation<3>(params);
     else if (simtype == "nbody")
       return new NbodySimulation<3>(params);
   }
@@ -195,10 +188,10 @@ void SimulationBase::SplashScreen(void)
   cout << "*   Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids    *" << endl;
   cout << "*                        Version 0.3.0 - 31/03/2015                          *" << endl;
   cout << "*                                                                            *" << endl;
-  cout << "*         Original code : D. A. Hubber & G. Rosotti                          *" << endl;
+  cout << "*                 Original code : D. A. Hubber & G. Rosotti                  *" << endl;
   cout << "*                                                                            *" << endl;
-  cout << "*      Contributions by : S. Balfour, F. Dinnbier, O. Lomax,                 *" << endl;
-  cout << "*                         S. Walch, A. P. Whitworth, R. Wunsch               *" << endl;
+  cout << "*              Contributions by : S. Balfour, F. Dinnbier, O. Lomax,         *" << endl;
+  cout << "*                                 S. Walch, A. P. Whitworth, R. Wunsch       *" << endl;
   cout << "*                                                                            *" << endl;
   cout << "*                  https://github.com/gandalfcode/gandalf                    *" << endl;
   cout << "*                                                                            *" << endl;

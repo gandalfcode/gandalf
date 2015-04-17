@@ -526,6 +526,3 @@ template class MpiTree<3,GradhSphParticle>;
 template class MpiTree<1,SM2012SphParticle>;
 template class MpiTree<2,SM2012SphParticle>;
 template class MpiTree<3,SM2012SphParticle>;
-template class MpiTree<1,GodunovSphParticle>;
-template class MpiTree<2,GodunovSphParticle>;
-template class MpiTree<3,GodunovSphParticle>;

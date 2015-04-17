@@ -1216,12 +1216,12 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   const FLOAT rp[ndim],                ///< [in] Search position
   const FLOAT rsearch,                 ///< [in] Maximum smoothing length
   const int Nneibmax,                  ///< [in] Max. no. of neighbours
+  int &Nneib,                          ///< [inout] No. of neighbours
   int *neiblist)                       ///< [out] List of neighbour i.d.s
 {
   int cc = 0;                          // Cell counter
   int i;                               // Particle id
   int k;                               // Neighbour counter
-  int Nneib = 0;                       // Neighbour counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
   const FLOAT rsearchsqd = rsearch*rsearch;  // Search radius squared
@@ -2562,6 +2562,3 @@ template class KDTree<3,GradhSphParticle,KDTreeCell>;
 template class KDTree<1,SM2012SphParticle,KDTreeCell>;
 template class KDTree<2,SM2012SphParticle,KDTreeCell>;
 template class KDTree<3,SM2012SphParticle,KDTreeCell>;
-template class KDTree<1,GodunovSphParticle,KDTreeCell>;
-template class KDTree<2,GodunovSphParticle,KDTreeCell>;
-template class KDTree<3,GodunovSphParticle,KDTreeCell>;

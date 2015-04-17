@@ -6,7 +6,6 @@
 //  - SphSimulation
 //  - GradhSphSimulation
 //  - SM2012SphSimulation
-//  - GodunovSphSimulation
 //  - NbodySimulation
 //
 //  This file is part of GANDALF :
@@ -244,14 +243,16 @@ class Simulation : public SimulationBase
   virtual void ComputeBlockTimesteps(void)=0;
   virtual void GenerateIC(void);
   virtual void ImportArray(double* input, int size, string quantity, string type="sph");
-  virtual void PreSetupForPython(void);
-  virtual void ProcessParameters(void)=0;
   virtual void OutputDiagnostics(void);
   virtual void OutputTestDiagnostics(void);
-  virtual void RecordDiagnostics(void);
-  virtual void UpdateDiagnostics(void);
-  virtual void SetComFrame(void);
+  virtual void PreSetupForPython(void);
   virtual void ProcessNbodyParameters(void);
+  virtual void ProcessParameters(void)=0;
+  virtual void RecordDiagnostics(void);
+  virtual void RegulariseParticleDistribution(const int) {};
+  virtual void SetComFrame(void);
+  virtual void SmoothParticleQuantity(const int, FLOAT *) {};
+  virtual void UpdateDiagnostics(void);
 
 
   // Input-output routines
@@ -396,6 +397,8 @@ class SphSimulation : public Simulation<ndim>
   virtual void ComputeBlockTimesteps(void);
   virtual void ProcessParameters(void);
   virtual void WriteExtraSinkOutput(void);
+  virtual void RegulariseParticleDistribution(const int);
+  virtual void SmoothParticleQuantity(const int, FLOAT *);
 
   //Sph<ndim> *sph;                      ///< SPH algorithm pointer
 
@@ -544,78 +547,6 @@ class SM2012SphSimulation: public SphSimulation<ndim>
 #endif
 
   SM2012SphSimulation (Parameters* parameters): SphSimulation<ndim>(parameters) {};
-  virtual void ProcessSphParameters(void);
-
-};
-
-
-
-//=================================================================================================
-//  Class GodunovSphSimulation
-/// \brief   Main GodunovSphSimulation class.
-/// \details Main GodunovSphSimulation class definition, inherited from Simulation, which
-///          controls the main program flow for Godunov SPH simulations (Inutsuka 2002).
-/// \author  D. A. Hubber, G. Rosotti
-/// \date    03/04/2013
-//=================================================================================================
-template <int ndim>
-class GodunovSphSimulation: public SphSimulation<ndim>
-{
-  using Simulation<ndim>::Nmpi;
-  using SphSimulation<ndim>::restart;
-  using Simulation<ndim>::simparams;
-  using SphSimulation<ndim>::timing;
-  using SphSimulation<ndim>::sph;
-  using SphSimulation<ndim>::nbody;
-  using SphSimulation<ndim>::sinks;
-  using SphSimulation<ndim>::subsystem;
-  using SphSimulation<ndim>::nbodytree;
-  using SphSimulation<ndim>::sphint;
-  using SphSimulation<ndim>::uint;
-  using SphSimulation<ndim>::sphneib;
-  using SphSimulation<ndim>::LocalGhosts;
-  using SphSimulation<ndim>::simbox;
-  using SphSimulation<ndim>::simunits;
-  using SphSimulation<ndim>::Nstepsmax;
-  using SphSimulation<ndim>::run_id;
-  using SphSimulation<ndim>::out_file_form;
-  using SphSimulation<ndim>::tend;
-  using SphSimulation<ndim>::noutputstep;
-  using SphSimulation<ndim>::nbody_single_timestep;
-  using SphSimulation<ndim>::ParametersProcessed;
-  using SphSimulation<ndim>::n;
-  using SphSimulation<ndim>::Nblocksteps;
-  using SphSimulation<ndim>::Nlevels;
-  using SphSimulation<ndim>::Nsteps;
-  using SphSimulation<ndim>::t;
-  using SphSimulation<ndim>::timestep;
-  using SphSimulation<ndim>::level_step;
-  using SphSimulation<ndim>::Noutsnap;
-  using SphSimulation<ndim>::tsnapnext;
-  using SphSimulation<ndim>::dt_snap;
-  using SphSimulation<ndim>::dt_python;
-  using SphSimulation<ndim>::level_diff_max;
-  using SphSimulation<ndim>::level_max;
-  using SphSimulation<ndim>::integration_step;
-  using SphSimulation<ndim>::nresync;
-  using SphSimulation<ndim>::dt_max;
-  using SphSimulation<ndim>::sph_single_timestep;
-  using SphSimulation<ndim>::sink_particles;
-  using SphSimulation<ndim>::rebuild_tree;
-  using SphSimulation<ndim>::ntreebuildstep;
-  using SphSimulation<ndim>::ntreestockstep;
-#ifdef MPI_PARALLEL
-  using Simulation<ndim>::mpicontrol;
-  using SphSimulation<ndim>::MpiGhosts;
-#endif
-
-public:
-
-  GodunovSphSimulation (Parameters* parameters): SphSimulation<ndim>(parameters) {};
-  virtual void PostInitialConditionsSetup(void);
-  virtual void MainLoop(void);
-  virtual void ComputeGlobalTimestep(void);
-  virtual void ComputeBlockTimesteps(void);
   virtual void ProcessSphParameters(void);
 
 };

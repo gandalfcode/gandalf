@@ -66,6 +66,7 @@ struct Particle
   FLOAT v0[ndim];                   ///< Velocity at beginning of step
   FLOAT a0[ndim];                   ///< Acceleration at beginning of step
   FLOAT agrav[ndim];                ///< Gravitational acceleration
+  //FLOAT adot[ndim];                 ///< 1st time derivative of acceleration
   FLOAT m;                          ///< Particle mass
   FLOAT h;                          ///< SPH smoothing length
   FLOAT hrangesqd;                  ///< Kernel extent (squared)
@@ -75,7 +76,6 @@ struct Particle
   FLOAT dudt0;                      ///< dudt at beginning of step
   FLOAT dudt;                       ///< Compressional heating rate
   FLOAT gpot;                       ///< Gravitational potential
-  FLOAT gpe;                        ///< Gravitational potential energy
   DOUBLE dt;                        ///< Particle timestep
   DOUBLE tlast;                     ///< Time at beginning of current step
   FLOAT ionfrac;                    ///< Ionisation fraction
@@ -83,9 +83,8 @@ struct Particle
   FLOAT mu_bar;                     ///< mean molecular weight
   FLOAT ueq;                        ///< equilibrium internal energy
   FLOAT dt_therm;                   ///< thermalization time scale
-  FLOAT adot[ndim];                 ///< 1st time derivative of acceleration
   FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
-  int ionstate;	                    ///< States current ionisation state of the particle
+  int ionstate;                     ///< States current ionisation state of the particle
                                     ///< (0 is neutral, 1 is smoothed and 2 is ionised)
 
 
@@ -103,6 +102,7 @@ struct Particle
     for (int k=0; k<ndim; k++) v0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) a0[k] = (FLOAT) 0.0;
     for (int k=0; k<ndim; k++) agrav[k] = (FLOAT) 0.0;
+    //for (int k=0; k<ndim; k++) adot[k] = (FLOAT) 0.0;
     m         = (FLOAT) 0.0;
     h         = (FLOAT) 0.0;
     hrangesqd = (FLOAT) 0.0;
@@ -112,7 +112,6 @@ struct Particle
     dudt      = (FLOAT) 0.0;
     dudt0     = (FLOAT) 0.0;
     gpot      = (FLOAT) 0.0;
-    gpe       = (FLOAT) 0.0;
     dt        = (DOUBLE) 0.0;
     tlast     = (DOUBLE) 0.0;
     ionfrac   = 0.999;
@@ -138,22 +137,13 @@ struct SphParticle : public Particle<ndim>
   FLOAT invh;                       ///< 1 / h
   FLOAT hfactor;                    ///< invh^(ndim + 1)
   FLOAT invrho;                     ///< 1 / rho
-  FLOAT press;                      ///< Thermal pressure
   FLOAT pfactor;                    ///< Pressure factor in SPH EOM
   FLOAT sound;                      ///< Sound speed
   FLOAT div_v;                      ///< Velocity divergence
   FLOAT alpha;                      ///< Artificial viscosity alpha value
   FLOAT dalphadt;                   ///< Rate of change of alpha
-  /*FLOAT ionfrac;                    ///< Ionisation fraction
-  FLOAT mu_bar;                     ///< mean molecular weight
-  FLOAT ueq;                        ///< equilibrium internal energy
-  FLOAT dt_therm;                   ///< thermalization time scale
-  FLOAT adot[ndim];                 ///< 1st time derivative of acceleration
-  */
 
 
-  // SPH particle constructor to initialise all values
-  //-----------------------------------------------------------------------------------------------
   SphParticle()
   {
     potmin = false;
@@ -162,17 +152,11 @@ struct SphParticle : public Particle<ndim>
     invh     = (FLOAT) 0.0;
     hfactor  = (FLOAT) 0.0;
     invrho   = (FLOAT) 0.0;
-    press    = (FLOAT) 0.0;
     pfactor  = (FLOAT) 0.0;
     sound    = (FLOAT) 0.0;
     div_v    = (FLOAT) 0.0;
     alpha    = (FLOAT) 0.0;
     dalphadt = (FLOAT) 0.0;
-    //ionfrac  = (FLOAT) 0.0;
-    //mu_bar   = (FLOAT) 2.35;
-    //ueq      = (FLOAT) 0.0;
-    //dt_therm = (FLOAT) 0.0;
-    //for (int k=0; k<ndim; k++) adot[k] = (FLOAT) 0.0;
   }
 
 };
@@ -190,12 +174,12 @@ struct GradhSphParticle : public SphParticle<ndim>
 {
   FLOAT invomega;                   ///< grad-h omega/f correction term
   FLOAT zeta;                       ///< grad-h gravity correction term
-  FLOAT chi;                        ///< grad-h star-gravity correction term
+  //FLOAT chi;                        ///< grad-h star-gravity correction term
 
   GradhSphParticle () {
     invomega = (FLOAT) 1.0;
     zeta = (FLOAT) 0.0;
-    chi = (FLOAT) 0.0;
+    //chi = (FLOAT) 0.0;
   }
 
 #ifdef MPI_PARALLEL
@@ -238,46 +222,6 @@ struct SM2012SphParticle : public SphParticle<ndim>
     MPI_Datatype types[1] = {MPI_BYTE};
     MPI_Aint offsets[1] = {0};
     int blocklen[1] = {sizeof(SM2012SphParticle<ndim>)};
-
-    MPI_Type_create_struct(1,blocklen,offsets,types,&particle_type);
-
-    return particle_type;
-  }
-#endif
-
-};
-
-
-
-//=================================================================================================
-//  Structure GodunovSphParticle
-/// \brief  Godunov SPH particle data structure.
-/// \author D. A. Hubber, G. Rosotti
-/// \date   01/10/2013
-//=================================================================================================
-template <int ndim>
-struct GodunovSphParticle : public SphParticle<ndim>
-{
-  FLOAT gradrho[ndim];              ///< Density gradient
-  FLOAT gradP[ndim];                ///< Pressure gradient
-  FLOAT gradv[ndim][ndim];          ///< Velocity gradient matrix
-
-  GodunovSphParticle() {
-    for (int k=0; k<ndim; k++) gradrho[k] = (FLOAT) 0.0;
-    for (int k=0; k<ndim; k++) gradP[k] = (FLOAT) 0.0;
-    for (int k=0; k<ndim; k++) {
-      for (int kk=0; kk<ndim; kk++) {
-        gradv[k][kk] = (FLOAT) 0.0;
-      }
-    }
-  }
-
-#ifdef MPI_PARALLEL
-  static MPI_Datatype CreateMpiDataType() {
-    MPI_Datatype particle_type;
-    MPI_Datatype types[1] = {MPI_BYTE};
-    MPI_Aint offsets[1] = {0};
-    int blocklen[1] = {sizeof(GodunovSphParticle<ndim>)};
 
     MPI_Type_create_struct(1,blocklen,offsets,types,&particle_type);
 

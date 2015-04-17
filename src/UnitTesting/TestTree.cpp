@@ -226,7 +226,7 @@ TEST_F(TreeTest, StructureTest)
             cell.bbmax[1] > kdtree->celldata[cc].bbmin[1] &&
             cell.bbmin[2] < kdtree->celldata[cc].bbmax[2] &&
             cell.bbmax[2] > kdtree->celldata[cc].bbmin[2]) {
-            overlap_flag = true;
+          overlap_flag = true;
         }
       }
       ASSERT_EQ(false, overlap_flag);
@@ -282,7 +282,7 @@ TEST_F(TreeTest, GatherTest)
   int j;
   int k;
   int Nneib;
-  int Nneibtree;
+  int Nneibtree = 0;
   int *neiblist;
   FLOAT dr[3];
   FLOAT drsqd;
@@ -298,9 +298,10 @@ TEST_F(TreeTest, GatherTest)
       drsqd = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
       if (drsqd < hrange*hrange) Nneib++;
     }
-    Nneibtree = kdtree->ComputeGatherNeighbourList(partdata,partdata[i].r,hrange,Npart,neiblist);
+    Nneibtree = kdtree->ComputeGatherNeighbourList
+      (partdata, partdata[i].r, hrange, Npart, Nneibtree, neiblist);
 
-    ASSERT_EQ(Nneib,Nneibtree);
+    ASSERT_EQ(Nneib, Nneibtree);
   }
 
 }
@@ -327,6 +328,6 @@ TEST_F(TreeTest, PeriodicWalkTest)
     ASSERT_EQ(false, overlap_flag);
   }
   bool okflag = kdtree->ComputePeriodicGravityInteractionList
-    (cell,sphdata,simbox,macfactor,Nneibmax,Ngravcellmax,Nneib,Nhydroneib,Ndirect,
-     Ngravcell,neiblist,sphlist,directlist,gravcell,neibpart);
+    (cell, sphdata, simbox, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
+     Ndirect, Ngravcell, neiblist, sphlist, directlist, gravcell, neibpart);
 }

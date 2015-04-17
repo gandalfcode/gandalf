@@ -247,7 +247,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
     parti.rho      = (FLOAT) 0.0;
     parti.invomega = (FLOAT) 0.0;
     parti.zeta     = (FLOAT) 0.0;
-    parti.chi      = (FLOAT) 0.0;
     parti.hfactor  = pow(parti.invh,ndim);
     invhsqd        = parti.invh*parti.invh;
 
@@ -324,17 +323,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
   parti.hrangesqd = kernfacsqd*kern.kernrangesqd*parti.h*parti.h;
   parti.div_v     = (FLOAT) 0.0;
 
-  // Compute standard grad-h terms for SPH particles not inside any sink/star.
-  if (part.sinkid == -1) {
-    parti.invomega  = (FLOAT) 1.0 + Sph<ndim>::invndim*parti.h*parti.invomega*parti.invrho;
-    parti.invomega  = (FLOAT) 1.0/parti.invomega;
-    parti.zeta      = -Sph<ndim>::invndim*parti.h*parti.zeta*parti.invrho*parti.invomega;
-  }
-  // If particle is inside sink, deactivate any grad-h terms to prevent spurious effects
-  else {
-    parti.invomega = (FLOAT) 1.0;
-    parti.zeta     = (FLOAT) 0.0;
-  }
 
   // Set important thermal variables here
   ComputeThermalProperties(parti);
@@ -348,7 +336,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
     }
   }
 
-  // If there are star particles, compute N-body chi correction term
+  // If there are star particles, compute N-body zeta correction term
   //-----------------------------------------------------------------------------------------------
   if (part.sinkid == -1) {
     if (nbody->nbody_softening == 1) {
@@ -356,7 +344,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
         invhsqd = pow((FLOAT) 2.0 / (parti.h + nbody->stardata[j].h),2);
         for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
         ssqd = DotProduct(dr,dr,ndim)*invhsqd;
-        parti.chi += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
+        parti.zeta += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
       }
     }
     else {
@@ -364,18 +352,17 @@ int GradhSph<ndim, kernelclass>::ComputeH
       for (j=0; j<nbody->Nstar; j++) {
         for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
         ssqd = DotProduct(dr,dr,ndim)*invhsqd;
-        parti.chi += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
+        parti.zeta += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
       }
     }
-    parti.chi = -Sph<ndim>::invndim*parti.h*parti.chi*parti.invrho*parti.invomega;
+    parti.invomega  = (FLOAT) 1.0 + Sph<ndim>::invndim*parti.h*parti.invomega*parti.invrho;
+    parti.invomega  = (FLOAT) 1.0/parti.invomega;
+    parti.zeta = -Sph<ndim>::invndim*parti.h*parti.zeta*parti.invrho*parti.invomega;
   }
   else {
-    parti.chi = (FLOAT) 0.0;
+    parti.invomega = (FLOAT) 1.0;
+    parti.zeta     = (FLOAT) 0.0;
   }
-
-  //parti.invomega = 1.0;
-  //parti.zeta = 0.0;
-  parti.chi = (FLOAT) 0.0;
 
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
@@ -397,7 +384,7 @@ void GradhSph<ndim, kernelclass>::ComputeThermalProperties
 
   part.u       = eos->SpecificInternalEnergy(part);
   part.sound   = eos->SoundSpeed(part);
-  part.press   = eos->Pressure(part);
+  //part.press   = eos->Pressure(part);
   part.pfactor = eos->Pressure(part)*part.invrho*part.invrho*part.invomega;
 
   return;
@@ -612,9 +599,8 @@ void GradhSph<ndim, kernelclass>::ComputeSphHydroGravForces
     // Main SPH gravity terms
     //---------------------------------------------------------------------------------------------
     paux = (FLOAT) 0.5*(invhsqdi*kern.wgrav(drmag*parti.invh) +
-                        (parti.zeta + parti.chi)*wkerni + neibpart[j].invh*neibpart[j].invh*
-                        kern.wgrav(drmag*neibpart[j].invh) +
-                        (neibpart[j].zeta + neibpart[j].chi)*wkernj);
+                        parti.zeta*wkerni + neibpart[j].invh*neibpart[j].invh*
+                        kern.wgrav(drmag*neibpart[j].invh) + neibpart[j].zeta*wkernj);
     gaux = (FLOAT) 0.5*(parti.invh*kern.wpot(drmag*parti.invh) +
                         neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));
 
@@ -686,10 +672,9 @@ void GradhSph<ndim, kernelclass>::ComputeSphGravForces
     // Main SPH gravity terms
     //---------------------------------------------------------------------------------------------
     paux = (FLOAT) 0.5*(parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) +
-                        (parti.zeta + parti.chi)*parti.hfactor*kern.w1(drmag*parti.invh) +
+                        parti.zeta*parti.hfactor*kern.w1(drmag*parti.invh) +
                         neibpart[j].invh*neibpart[j].invh*kern.wgrav(drmag*neibpart[j].invh) +
-                        (neibpart[j].zeta + neibpart[j].chi)*neibpart[j].hfactor*
-                        kern.w1(drmag*neibpart[j].invh));
+                        neibpart[j].zeta*neibpart[j].hfactor*kern.w1(drmag*neibpart[j].invh));
     gaux = (FLOAT) 0.5*(parti.invh*kern.wpot(drmag*parti.invh) +
                         neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));
 
@@ -794,8 +779,8 @@ void GradhSph<ndim, kernelclass>::ComputeStarGravForces
 
     // Add total hydro contribution to acceleration for particle i
     for (k=0; k<ndim; k++) parti.agrav[k] += paux*dr[k];
-    for (k=0; k<ndim; k++) parti.adot[k] += paux*dv[k] - (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] +
-      (FLOAT) 2.0*twopi*ms*drdt*kern.w0(drmag*invhmean)*powf(invhmean,ndim)*invdrmag*dr[k];
+    //for (k=0; k<ndim; k++) parti.adot[k] += paux*dv[k] - (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] +
+    //  (FLOAT) 2.0*twopi*ms*drdt*kern.w0(drmag*invhmean)*powf(invhmean,ndim)*invdrmag*dr[k];
     parti.gpot += ms*invhmean*kern.wpot(drmag*invhmean);
 
     assert(drmag > (FLOAT) 0.0);

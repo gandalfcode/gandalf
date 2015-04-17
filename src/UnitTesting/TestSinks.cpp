@@ -140,11 +140,8 @@ void SinkTest::SetUp(void)
   // Calculate forces of all particles
   for (int i=0; i<Npart; i++) {
     SphParticle<3> &part = sph->GetSphParticlePointer(i);
-    part.gpot = 0.0;
-    for (int k=0; k<3; k++) {
-      part.a[k]  = 0.0;
-      part.adot[k] = 0.0;
-    }
+    part.gpot = (FLOAT) 0.0;
+    for (int k=0; k<3; k++) part.a[k] = (FLOAT) 0.0;
   }
   sphneib->UpdateAllSphForces(Npart,Npart,sph->GetSphParticleArray(),sph,nbody);
 
@@ -154,11 +151,8 @@ void SinkTest::SetUp(void)
   // Calculate forces of all particles
   for (int i=0; i<Npart; i++) {
     SphParticle<3> &part = sph->GetSphParticlePointer(i);
-    part.gpot = 0.0;
-    for (int k=0; k<3; k++) {
-      part.a[k]  = 0.0;
-      part.adot[k] = 0.0;
-    }
+    part.gpot = (FLOAT) 0.0;
+    for (int k=0; k<3; k++) part.a[k] = (FLOAT) 0.0;
   }
   sphneib->UpdateAllSphForces(Npart,Npart,sph->GetSphParticleArray(),sph,nbody);
 

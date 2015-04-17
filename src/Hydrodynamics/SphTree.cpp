@@ -359,7 +359,11 @@ int SphTree<ndim,ParticleType,TreeCell>::GetGatherNeighbourList
 
   debug2("[SphTree::GetGatherNeighbourList]");
 
-  Nneib = tree->ComputeGatherNeighbourList(sphdata,rp,rsearch,Nneibmax,neiblist);
+  Nneib = tree->ComputeGatherNeighbourList(sphdata, rp, rsearch, Nneibmax, Nneib, neiblist);
+  Nneib = ghosttree->ComputeGatherNeighbourList(sphdata, rp, rsearch, Nneibmax, Nneib, neiblist);
+#ifdef MPI_PARALLEL
+  Nneib = mpighosttree->ComputeGatherNeighbourList(sphdata, rp, rsearch, Nneibmax, Nneib, neiblist);
+#endif
 
   return Nneib;
 }
@@ -2004,7 +2008,6 @@ void SphTree<ndim,ParticleType,TreeCell>::UnpackReturnedExportInfo
         sphdata[j].agrav[k] += received_particle->agrav[k];
       }
       sphdata[j].gpot += received_particle->gpot;
-      sphdata[j].gpe += received_particle->gpe;
       sphdata[j].dudt += received_particle->dudt;
       sphdata[j].div_v += received_particle->div_v;
       sphdata[j].levelneib = max(sphdata[j].levelneib, received_particle->levelneib);
@@ -2205,10 +2208,3 @@ template class SphTree<3,SM2012SphParticle,KDTreeCell>;
 template class SphTree<1,SM2012SphParticle,OctTreeCell>;
 template class SphTree<2,SM2012SphParticle,OctTreeCell>;
 template class SphTree<3,SM2012SphParticle,OctTreeCell>;
-
-template class SphTree<1,GodunovSphParticle,KDTreeCell>;
-template class SphTree<2,GodunovSphParticle,KDTreeCell>;
-template class SphTree<3,GodunovSphParticle,KDTreeCell>;
-template class SphTree<1,GodunovSphParticle,OctTreeCell>;
-template class SphTree<2,GodunovSphParticle,OctTreeCell>;
-template class SphTree<3,GodunovSphParticle,OctTreeCell>;

@@ -74,7 +74,7 @@ class Tree
   virtual int ComputeActiveCellPointers(TreeCell<ndim> **celllist) = 0;
   virtual int ComputeActiveParticleList(TreeCell<ndim> &, ParticleType<ndim> *, int *) = 0;
   virtual int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
-                                         const FLOAT, const int, int *) = 0;
+                                         const FLOAT, const int, int &, int *) = 0;
   virtual int ComputeGatherNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
                                          const FLOAT, const int, int &, int *) = 0;
   virtual int ComputeNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,

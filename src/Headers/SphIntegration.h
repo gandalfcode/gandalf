@@ -133,37 +133,4 @@ class SphLeapfrogDKD: public SphIntegration<ndim>
   int CheckTimesteps(const int, const int, const int, const int, SphParticle<ndim> *);
 
 };
-
-
-
-//=================================================================================================
-//  Class SphGodunovIntegration
-/// \brief   Inutsuka (2002) Godunov SPH conservative SPH integration scheme.
-/// \details Class definition for Inutsuka (2002) Godunov SPH conservative
-///          SPH integration scheme.  Algorithm conserves energy to
-///          machine precision (for direct summation and global timesteps).
-/// \author  D. A. Hubber, G. Rosotti
-/// \date    03/04/2013
-//=================================================================================================
-template <int ndim, template <int> class ParticleType>
-class SphGodunovIntegration: public SphIntegration<ndim>
-{
- public:
-
-  using SphIntegration<ndim>::gas_eos;
-  using SphIntegration<ndim>::tdavisc;
-  using SphIntegration<ndim>::timing;
-
-  SphGodunovIntegration(DOUBLE, DOUBLE, DOUBLE, eosenum, tdaviscenum);
-  ~SphGodunovIntegration();
-
-  void AdvanceParticles(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
-  void CorrectionTerms(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *) {};
-  void EndTimestep(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
-  int CheckTimesteps(const int, const int, const int, const int, SphParticle<ndim> *);
-  DOUBLE Timestep(SphParticle<ndim> &, Sph<ndim> *);
-
-  static const int vdim = ndim;
-
-};
 #endif
