@@ -38,7 +38,7 @@ PYFOLDER = ../analysis/swig_generated
 
 VPATH = $(PWD)/src:$(PWD)/src/Common:$(PWD)/src/GodunovSph:$(PWD)/src/GradhSph:$(PWD)/src/Headers
 VPATH +=$(PWD)/src/Hydrodynamics:$(PWD)/src/MeshlessFV:$(PWD)/src/Mpi:$(PWD)/src/Nbody
-VPATH +=$(PWD)/src/SM2013:$(PWD)/src/Thermal:$(PWD)/src/Tree
+VPATH +=$(PWD)/src/SM2013:$(PWD)/src/Thermal:$(PWD)/src/Tree:$(PWD)/src/UnitTesting
 INCLUDE = $(PWD)/src/Headers
 
 
@@ -52,7 +52,7 @@ OPT += -O3 -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),PROFILE)
 OPT += -O3 -fPIC -fno-exceptions -fno-rtti -pg
 else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -O3 -g -Wall -Wno-unknown-pragmas -fbounds-check -fPIC  #-fprofile-arcs -ftest-coverage
+OPT += -O3 -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  #-fprofile-arcs -ftest-coverage
 endif
 ifeq ($(OPENMP),1)
 OPT += -fopenmp
@@ -191,17 +191,15 @@ OBJ = Parameters.o SimUnits.o
 OBJ += Simulation.o Hydrodynamics.o
 OBJ += SphSimulation.o Sph.o
 OBJ += GradhSphSimulation.o GradhSph.o
-OBJ += GodunovSphSimulation.o GodunovSph.o
 OBJ += SM2012SphSimulation.o SM2012Sph.o
 OBJ += MeshlessFVSimulation.o MeshlessFV.o LV2008MFV.o MeshlessFVBruteForce.o
 OBJ += NbodySimulation.o
 OBJ += M4Kernel.o QuinticKernel.o GaussianKernel.o TabulatedKernel.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o SphLeapfrogDKD.o
-OBJ += SphGodunovIntegration.o RiemannSolver.o
+OBJ += RiemannSolver.o
 OBJ += SphNeighbourSearch.o BruteForceSearch.o KDTree.o OctTree.o SphTree.o
 OBJ += GradhSphBruteForce.o GradhSphTree.o
 OBJ += SM2012SphBruteForce.o SM2012SphTree.o
-OBJ += GodunovSphBruteForce.o GodunovSphTree.o
 OBJ += Ewald.o
 OBJ += AdiabaticEOS.o IsothermalEOS.o BarotropicEOS.o Barotropic2EOS.o
 OBJ += IonisingRadiationEOS.o MCRadiationEOS.o
@@ -285,6 +283,7 @@ force: ;
 
 clean ::
 	\rm -f *_wrap.cxx
+	\rm -f */*_wrap.cxx
 	\rm -f *.o
 	\rm -f *.so
 	\rm -f ../analysis/*.so

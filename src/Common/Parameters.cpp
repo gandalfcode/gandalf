@@ -285,8 +285,10 @@ void Parameters::SetDefaultValues(void)
   // Gravity parameters
   //-----------------------------------------------------------------------------------------------
   intparams["self_gravity"] = 0;
+  intparams["kgrav"] = 1;
   stringparams["grav_kernel"] = "mean_h";
   stringparams["external_potential"] = "none";
+  floatparams["avert"] = -0.5;
   floatparams["rplummer_extpot"] = 1.0;
   floatparams["mplummer_extpot"] = 1.0;
 
@@ -331,9 +333,13 @@ void Parameters::SetDefaultValues(void)
   // Radiation algortihm parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["radiation"] = "none";
-  intparams["Nphoton"] = 10000;
+  intparams["Nraditerations"] = 2;
+  intparams["Nradlevels"] = 1;
+  intparams["nradstep"] = 1;
+  floatparams["Nphotonratio"] = 8;
   floatparams["mu_ion"] = 0.678;
   floatparams["temp_ion"] = 1e4;
+  floatparams["arecomb"] = 2.7e-13;
   floatparams["Ndotmin"] = 1e47;
   floatparams["NLyC"] = 1e49;
 
@@ -361,12 +367,15 @@ void Parameters::SetDefaultValues(void)
   floatparams["ewald_mult"] = 1.0;
   floatparams["ixmin"] = 1.0e-8;
   floatparams["ixmax"] = 5.0;
+  floatparams["EFratio"] = 1.0;
 
   // Initial conditions parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["particle_distribution"] = "cubic_lattice";
   intparams["smooth_ic"] = 0;
   intparams["com_frame"] = 0;
+  intparams["regularise_particle_ics"] = 0;
+  intparams["Nreg"] = 1;
   intparams["field_type"] = 1;
   intparams["gridsize"] = 64;
   intparams["Nhydro"] = 0;
@@ -586,22 +595,13 @@ void Parameters::CheckInvalidParameters(void)
 
   debug2("[Parameters::CheckInvalidParameters]");
 
-  // SPH simulation specific errors
+  // SM2012 SPH simulation specific errors
   //-----------------------------------------------------------------------------------------------
-  if (stringparams["sim"] == "sph" || stringparams["sim"] == "godunov_sph") {
+  if (stringparams["sim"] == "sm2012sph") {
 
     // Saitoh & Makino (2012) currently deactivated while development of MPI
-    // and other related features are underway.
-    if (stringparams["sim"] == "sph" && stringparams["sph"] == "sm2012") {
-      cout << "Saitoh & Makino (2012) SPH algorithm currently disabled" << endl;
-      errorflag = true;
-    }
-
-    // Godunov SPH (Inutsuka 2002) with 2nd-order Riemann solver currently deactivated
-    if (stringparams["sim"] == "godunov_sph" && intparams["riemann_order"] == 2) {
-      cout << "Godunov SPH with 2nd-order Riemann solver currently disabled" << endl;
-      errorflag = true;
-    }
+    cout << "Saitoh & Makino (2012) SPH algorithm currently disabled" << endl;
+    errorflag = true;
 
   }
   //-----------------------------------------------------------------------------------------------

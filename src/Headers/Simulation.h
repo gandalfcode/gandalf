@@ -6,7 +6,6 @@
 //  - SphSimulation
 //  - GradhSphSimulation
 //  - SM2012SphSimulation
-//  - GodunovSphSimulation
 //  - NbodySimulation
 //
 //  This file is part of GANDALF :
@@ -80,6 +79,7 @@ class SimulationBase
   // Subroutines only for internal use of the class
   virtual void CalculateDiagnostics(void)=0;
   virtual void OutputDiagnostics(void)=0;
+  virtual void OutputTestDiagnostics(void)=0;
   virtual void RecordDiagnostics(void)=0;
   virtual void UpdateDiagnostics(void)=0;
   virtual void GenerateIC(void)=0;
@@ -145,6 +145,7 @@ class SimulationBase
   bool ParametersProcessed;         ///< Flag if params are already processed
   bool periodicBoundaries;          ///< Flag if periodic boundaries are being used
   bool rebuild_tree;                ///< Flag to rebuild neighbour tree
+  bool recomputeRadiation;          ///< Flag to recompute radiation field from all sources
   bool rescale_particle_data;       ///< Flag to scale data to code units
   bool restart;                     ///< Flag to restart from last snapshot
   bool setup;                       ///< Flag if simulation is setup
@@ -161,6 +162,7 @@ class SimulationBase
                                     ///< of full block timestep steps)
   int nlastrestart;                 ///< Integer time of last restart snapshot
   int noutputstep;                  ///< Output frequency
+  int nradstep;                     ///< Integer time between computing radiation field
   int nrestartstep;                 ///< Integer time between creating temp restart files
   int nresync;                      ///< Integer time for resynchronisation
   int nsystembuildstep;             ///< Integer time between rebuilding N-body system tree
@@ -243,13 +245,16 @@ class Simulation : public SimulationBase
   virtual void ComputeBlockTimesteps(void)=0;
   virtual void GenerateIC(void);
   virtual void ImportArray(double* input, int size, string quantity, string type="sph");
-  virtual void PreSetupForPython(void);
-  virtual void ProcessParameters(void)=0;
   virtual void OutputDiagnostics(void);
-  virtual void RecordDiagnostics(void);
-  virtual void UpdateDiagnostics(void);
-  virtual void SetComFrame(void);
+  virtual void OutputTestDiagnostics(void);
+  virtual void PreSetupForPython(void);
   virtual void ProcessNbodyParameters(void);
+  virtual void ProcessParameters(void)=0;
+  virtual void RecordDiagnostics(void);
+  virtual void RegulariseParticleDistribution(const int) {};
+  virtual void SetComFrame(void);
+  virtual void SmoothParticleQuantity(const int, FLOAT *) {};
+  virtual void UpdateDiagnostics(void);
 
 
   // Input-output routines
@@ -270,7 +275,7 @@ class Simulation : public SimulationBase
   // Variables
   //-----------------------------------------------------------------------------------------------
   static const int vdim=ndim;
-  static const FLOAT invndim=1.0/ndim;
+  static const FLOAT invndim; //=1.0/ndim;
 
   DomainBox<ndim> simbox;             ///< Simulation boundary data
   Diagnostics<ndim> diag0;            ///< Initial diagnostic state
@@ -295,6 +300,12 @@ class Simulation : public SimulationBase
 #endif
 
 };
+
+
+// Declare invndim constant here (prevents warnings with some compilers)
+template <int ndim>
+const FLOAT Simulation<ndim>::invndim = 1.0/ndim;
+
 
 
 
@@ -366,7 +377,9 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::randnumb;
   using Simulation<ndim>::rank;
   using Simulation<ndim>::rebuild_tree;
+  using Simulation<ndim>::recomputeRadiation;
   using Simulation<ndim>::ndiagstep;
+  using Simulation<ndim>::nradstep;
   using Simulation<ndim>::nrestartstep;
   using Simulation<ndim>::ntreebuildstep;
   using Simulation<ndim>::ntreestockstep;
@@ -386,6 +399,8 @@ class SphSimulation : public Simulation<ndim>
   virtual void ComputeBlockTimesteps(void);
   virtual void ProcessParameters(void);
   virtual void WriteExtraSinkOutput(void);
+  virtual void RegulariseParticleDistribution(const int);
+  virtual void SmoothParticleQuantity(const int, FLOAT *);
 
   //Sph<ndim> *sph;                      ///< SPH algorithm pointer
 
@@ -541,84 +556,11 @@ class SM2012SphSimulation: public SphSimulation<ndim>
 
 
 //=================================================================================================
-//  Class GodunovSphSimulation
-/// \brief   Main GodunovSphSimulation class.
-/// \details Main GodunovSphSimulation class definition, inherited from Simulation, which
-///          controls the main program flow for Godunov SPH simulations (Inutsuka 2002).
+//  Class MeshlessFVSimulation
+/// \brief   Main MeshlessFV Simulation class.
+/// \details ...
 /// \author  D. A. Hubber, G. Rosotti
-/// \date    03/04/2013
-//=================================================================================================
-template <int ndim>
-class GodunovSphSimulation: public SphSimulation<ndim>
-{
-  using Simulation<ndim>::Nmpi;
-  using SphSimulation<ndim>::restart;
-  using Simulation<ndim>::simparams;
-  using SphSimulation<ndim>::timing;
-  using SphSimulation<ndim>::sph;
-  using SphSimulation<ndim>::nbody;
-  using SphSimulation<ndim>::sinks;
-  using SphSimulation<ndim>::subsystem;
-  using SphSimulation<ndim>::nbodytree;
-  using SphSimulation<ndim>::sphint;
-  using SphSimulation<ndim>::uint;
-  using SphSimulation<ndim>::sphneib;
-  using SphSimulation<ndim>::LocalGhosts;
-  using SphSimulation<ndim>::simbox;
-  using SphSimulation<ndim>::simunits;
-  using SphSimulation<ndim>::Nstepsmax;
-  using SphSimulation<ndim>::run_id;
-  using SphSimulation<ndim>::out_file_form;
-  using SphSimulation<ndim>::tend;
-  using SphSimulation<ndim>::noutputstep;
-  using SphSimulation<ndim>::nbody_single_timestep;
-  using SphSimulation<ndim>::ParametersProcessed;
-  using SphSimulation<ndim>::n;
-  using SphSimulation<ndim>::Nblocksteps;
-  using SphSimulation<ndim>::Nlevels;
-  using SphSimulation<ndim>::Nsteps;
-  using SphSimulation<ndim>::t;
-  using SphSimulation<ndim>::timestep;
-  using SphSimulation<ndim>::level_step;
-  using SphSimulation<ndim>::Noutsnap;
-  using SphSimulation<ndim>::tsnapnext;
-  using SphSimulation<ndim>::dt_snap;
-  using SphSimulation<ndim>::dt_python;
-  using SphSimulation<ndim>::level_diff_max;
-  using SphSimulation<ndim>::level_max;
-  using SphSimulation<ndim>::integration_step;
-  using SphSimulation<ndim>::nresync;
-  using SphSimulation<ndim>::dt_max;
-  using SphSimulation<ndim>::sph_single_timestep;
-  using SphSimulation<ndim>::sink_particles;
-  using SphSimulation<ndim>::rebuild_tree;
-  using SphSimulation<ndim>::ntreebuildstep;
-  using SphSimulation<ndim>::ntreestockstep;
-#ifdef MPI_PARALLEL
-  using Simulation<ndim>::mpicontrol;
-  using SphSimulation<ndim>::MpiGhosts;
-#endif
-
-public:
-
-  GodunovSphSimulation (Parameters* parameters): SphSimulation<ndim>(parameters) {};
-  virtual void PostInitialConditionsSetup(void);
-  virtual void MainLoop(void);
-  virtual void ComputeGlobalTimestep(void);
-  virtual void ComputeBlockTimesteps(void);
-  virtual void ProcessSphParameters(void);
-
-};
-
-
-
-//=================================================================================================
-//  Class SphSimulation
-/// \brief   Main SphSimulation class.
-/// \details Main SphSimulation class definition, inherited from Simulation,
-///          which controls the main program flow for SPH simulations.
-/// \author  D. A. Hubber, G. Rosotti
-/// \date    03/04/2013
+/// \date    17/04/2015
 //=================================================================================================
 template <int ndim>
 class MeshlessFVSimulation : public Simulation<ndim>

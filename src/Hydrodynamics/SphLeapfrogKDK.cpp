@@ -89,7 +89,7 @@ void SphLeapfrogKDK<ndim, ParticleType >::AdvanceParticles
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphLeapfrogKDK::AdvanceParticles]");
-  timing->StartTimingSection("SPH_LFKDK_ADVANCE_PARTICLES",2);
+  timing->StartTimingSection("SPH_LFKDK_ADVANCE_PARTICLES");
 
 
   // Advance positions and velocities of all SPH particles
@@ -152,7 +152,7 @@ void SphLeapfrogKDK<ndim, ParticleType>::CorrectionTerms
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphLeapfrogKDK::CorrectionTerms]");
-  timing->StartTimingSection("SPH_LFKDK_CORRECTION_TERMS",2);
+  timing->StartTimingSection("SPH_LFKDK_CORRECTION_TERMS");
 
 
   //-----------------------------------------------------------------------------------------------
@@ -203,7 +203,7 @@ void SphLeapfrogKDK<ndim, ParticleType>::EndTimestep
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphLeapfrogKDK::EndTimestep]");
-  timing->StartTimingSection("SPH_LFKDK_END_TIMESTEP",2);
+  timing->StartTimingSection("SPH_LFKDK_END_TIMESTEP");
 
 
   //-----------------------------------------------------------------------------------------------
@@ -264,7 +264,7 @@ int SphLeapfrogKDK<ndim, ParticleType>::CheckTimesteps
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphLeapfrogKDK::CheckTimesteps]");
-  timing->StartTimingSection("SPH_LFKDK_CHECK_TIMESTEPS",2);
+  timing->StartTimingSection("SPH_LFKDK_CHECK_TIMESTEPS");
 
 
   //-----------------------------------------------------------------------------------------------

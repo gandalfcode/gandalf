@@ -114,7 +114,7 @@ void EnergyPEC<ndim,ParticleType>::EnergyIntegration
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[EnergyPEC::EnergyIntegration]");
-  timing->StartTimingSection("ENERGY_PEC_INTEGRATION",2);
+  timing->StartTimingSection("ENERGY_PEC_INTEGRATION");
 
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dt,i) shared(sphdata)
@@ -154,7 +154,7 @@ void EnergyPEC<ndim,ParticleType>::EnergyCorrectionTerms
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[EnergyPEC::EnergyCorrectionTerms]");
-  timing->StartTimingSection("ENERGY_PEC_CORRECTION_TERMS",2);
+  timing->StartTimingSection("ENERGY_PEC_CORRECTION_TERMS");
 
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i) shared(sphdata)
@@ -196,7 +196,7 @@ void EnergyPEC<ndim,ParticleType>::EndTimestep
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[EnergyPEC::EndTimestep]");
-  timing->StartTimingSection("ENERGY_PEC_END_TIMESTEP",2);
+  timing->StartTimingSection("ENERGY_PEC_END_TIMESTEP");
 
   //-----------------------------------------------------------------------------------------------
 #pragma omp parallel for default(none) private(dn,i) shared(sphdata)

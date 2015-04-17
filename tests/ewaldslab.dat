@@ -1,6 +1,6 @@
 #------------------------------------------------------------------
 # Sound wave test
-# Generates and propagates a small linear density perturbation as a 
+# Generates and propagates a small linear density perturbation as a
 # sound-wave along a uniform density gas.
 #------------------------------------------------------------------
 
@@ -86,10 +86,10 @@ No. of block timestep levels                : Nlevels = 1
 # Optimisation options
 #---------------------
 Tabulate SPH kernel                         : tabulated_kernel = 0
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = kdtree
 
 
 #--------------
 # Misc. options
 #--------------
-Switch-off self-gravity of gas              : self_gravity = 0
+Switch-off self-gravity of gas              : self_gravity = 1

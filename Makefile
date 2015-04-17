@@ -1,5 +1,5 @@
 #==================================================================================================
-#  GANDALF v0.1.0 Makefile frontend
+#  GANDALF v0.3.0 Makefile frontend
 #
 #  This file is part of GANDALF :
 #  Graphical Astrophysics code for N-body Dynamics And Lagrangian Fluids
@@ -28,8 +28,8 @@ GSL                = 0
 COMPILER_MODE      = DEBUG
 PRECISION          = DOUBLE
 OPENMP             = 0
-OUTPUT_LEVEL       = 2
-DEBUG_LEVEL        = 1
+OUTPUT_LEVEL       = 1
+DEBUG_LEVEL        = 0
 REORDER_PARTICLES  = 0
 
 

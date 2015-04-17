@@ -80,7 +80,6 @@ void Simulation<ndim>::GenerateIC(void)
 
   // If not a restart, generate initial conditions either from external file or created on the fly.
   //-----------------------------------------------------------------------------------------------
-
   Ic<ndim> icGenerator(this, hydro, invndim);
 
   if (ic == "file") {
@@ -88,46 +87,72 @@ void Simulation<ndim>::GenerateIC(void)
     rescale_particle_data = true;
   }
   //-----------------------------------------------------------------------------------------------
-  else if (ic == "bb")
+  else if (ic == "bb") {
     icGenerator.BossBodenheimer();
-  else if (ic == "binary")
+  }
+  else if (ic == "binary") {
     icGenerator.BinaryStar();
-  else if (ic == "binaryacc")
+  }
+  else if (ic == "binaryacc") {
     icGenerator.BinaryAccretion();
-  else if (ic == "bondi")
+  }
+  else if (ic == "bondi") {
     icGenerator.BondiAccretion();
-  else if (ic == "box")
+  }
+  else if (ic == "box") {
     icGenerator.UniformBox();
-  else if (ic == "cdiscontinuity")
+  }
+  else if (ic == "cdiscontinuity") {
     icGenerator.ContactDiscontinuity();
-  else if (ic == "ewaldsine" || ic == "ewaldsine2" || ic == "ewaldslab" ||  ic == "ewaldcylinder")
+  }
+  else if (ic == "ewaldsine" || ic == "ewaldsine2" || ic == "ewaldslab" ||  ic == "ewaldcylinder") {
     icGenerator.EwaldDensity();
-  else if (ic == "khi")
+  }
+  else if (ic == "gresho") {
+    icGenerator.GreshoVortex();
+  }
+  else if (ic == "khi") {
     icGenerator.KHI();
-  else if (ic == "noh")
+  }
+  else if (ic == "noh") {
     icGenerator.NohProblem();
-  else if (ic == "plummer")
+  }
+  else if (ic == "plummer") {
     icGenerator.PlummerSphere();
-  else if (ic == "quadruple")
+  }
+  else if (ic == "quadruple") {
     icGenerator.QuadrupleStar();
-  else if (ic == "sedov")
+  }
+  else if (ic == "rti") {
+    icGenerator.RTI();
+  }
+  else if (ic == "sedov") {
     icGenerator.SedovBlastWave();
-  else if (ic == "shearflow")
+  }
+  else if (ic == "shearflow") {
     icGenerator.ShearFlow();
-  else if (ic == "shocktube")
+  }
+  else if (ic == "shocktube") {
     icGenerator.ShockTube();
-  else if (ic == "soundwave")
+  }
+  else if (ic == "soundwave") {
     icGenerator.SoundWave();
-  else if (ic == "sphere")
+  }
+  else if (ic == "sphere") {
     icGenerator.UniformSphere();
-  else if (ic == "spitzer")
+  }
+  else if (ic == "spitzer") {
     icGenerator.SpitzerExpansion();
-  else if (ic == "triple")
+  }
+  else if (ic == "triple") {
     icGenerator.TripleStar();
-  else if (ic == "turbcore")
+  }
+  else if (ic == "turbcore") {
     icGenerator.TurbulentCore();
-  else if (ic == "python")
+  }
+  else if (ic == "python") {
     return;
+  }
   //-----------------------------------------------------------------------------------------------
   else {
     string message = "Unrecognised parameter : ic = " + ic;

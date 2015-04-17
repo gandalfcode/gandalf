@@ -200,7 +200,7 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildTree
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphTree::BuildTree]");
-  timing->StartTimingSection("BUILD_TREE",2);
+  timing->StartTimingSection("BUILD_TREE");
 
   // Activate nested parallelism for tree building routines
 #ifdef _OPENMP
@@ -288,10 +288,10 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostTree
   ParticleType<ndim> *sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   // If no periodic ghosts exist, do not build tree
-  //if (sph->NPeriodicGhost == 0) return;
+  if (sph->NPeriodicGhost == 0) return;
 
   debug2("[SphTree::BuildGhostTree]");
-  timing->StartTimingSection("BUILD_GHOST_TREE",2);
+  timing->StartTimingSection("BUILD_GHOST_TREE");
 
   // Activate nested parallelism for tree building routines
 #ifdef _OPENMP
@@ -305,8 +305,8 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostTree
 
     ghosttree->Ntot       = sph->NPeriodicGhost;
     ghosttree->Ntotmaxold = ghosttree->Ntotmax;
-    ghosttree->Ntotmax    = max(ghosttree->Ntotmax,ghosttree->Ntot);
-    ghosttree->Ntotmax    = max(ghosttree->Ntotmax,sph->Nhydromax);
+    ghosttree->Ntotmax    = max(ghosttree->Ntotmax, ghosttree->Ntot);
+    ghosttree->Ntotmax    = max(ghosttree->Ntotmax, sph->Nhydromax);
     ghosttree->BuildTree(sph->Nhydro, sph->Nhydro + sph->NPeriodicGhost - 1,
                          ghosttree->Ntot, ghosttree->Ntotmax, sphdata, timestep);
 
@@ -316,7 +316,7 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostTree
   //-----------------------------------------------------------------------------------------------
   else if (n%ntreestockstep == 0) {
 
-    ghosttree->StockTree(ghosttree->celldata[0],sphdata);
+    ghosttree->StockTree(ghosttree->celldata[0], sphdata);
 
   }
 
@@ -336,7 +336,6 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostTree
 
   timing->EndTimingSection("BUILD_GHOST_TREE");
 
-
   return;
 }
 
@@ -348,19 +347,23 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildGhostTree
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int SphTree<ndim,ParticleType,TreeCell>::GetGatherNeighbourList
- (FLOAT rp[ndim],                      ///< Position vector
-  FLOAT rsearch,                       ///< Gather search radius
-  SphParticle<ndim> *sph_gen,          ///< Pointer to SPH particle array
-  int Nhydro,                            ///< No. of SPH particles
-  int Nneibmax,                        ///< Max. no. of neighbours
-  int *neiblist)                       ///< List of neighbouring particles
+ (FLOAT rp[ndim],                      ///< [in] Position vector
+  FLOAT rsearch,                       ///< [in] Gather search radius
+  SphParticle<ndim> *sph_gen,          ///< [in] Pointer to SPH particle array
+  int Nhydro,                          ///< [in] No. of SPH particles
+  int Nneibmax,                        ///< [in] Max. no. of neighbours
+  int *neiblist)                       ///< [out] List of neighbouring particles
 {
   int Nneib = 0;                       // No. of (non-dead) neighbours
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphTree::GetGatherNeighbourList]");
 
-  Nneib = tree->ComputeGatherNeighbourList(sphdata,rp,rsearch,Nneibmax,neiblist);
+  Nneib = tree->ComputeGatherNeighbourList(sphdata, rp, rsearch, Nneibmax, Nneib, neiblist);
+  Nneib = ghosttree->ComputeGatherNeighbourList(sphdata, rp, rsearch, Nneibmax, Nneib, neiblist);
+#ifdef MPI_PARALLEL
+  Nneib = mpighosttree->ComputeGatherNeighbourList(sphdata, rp, rsearch, Nneibmax, Nneib, neiblist);
+#endif
 
   return Nneib;
 }
@@ -815,7 +818,7 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[GradhSphTree::UpdateDistantSphForces]");
-  timing->StartTimingSection("SPH_DISTANT_FORCES",2);
+  timing->StartTimingSection("SPH_DISTANT_FORCES");
 
 
   // Find list of all cells that contain active particles
@@ -975,7 +978,7 @@ void SphTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
 
   debug2("[SphTree::UpdateHydroExportList]");
-  timing->StartTimingSection("MPI_HYDRO_EXPORT",2);
+  timing->StartTimingSection("MPI_HYDRO_EXPORT");
 
 
   // Find list of all cells that contain active particles
@@ -1082,7 +1085,7 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (hydro_gen);
 
   debug2("[SphTree::BuildPrunedTree]");
-  timing->StartTimingSection("BUILD_PRUNED_TREE",2);
+  timing->StartTimingSection("BUILD_PRUNED_TREE");
 
   cnew = 0;
   Nprunedcellmax = 0;
@@ -1317,7 +1320,7 @@ void SphTree<ndim,ParticleType,TreeCell>::BuildMpiGhostTree
   //if (sph->Nmpighost == 0) return;
 
   debug2("[SphTree::BuildGhostTree]");
-  timing->StartTimingSection("BUILD_MPIGHOST_TREE",2);
+  timing->StartTimingSection("BUILD_MPIGHOST_TREE");
 
   // Activate nested parallelism for tree building routines
 #ifdef _OPENMP
@@ -2005,7 +2008,6 @@ void SphTree<ndim,ParticleType,TreeCell>::UnpackReturnedExportInfo
         sphdata[j].agrav[k] += received_particle->agrav[k];
       }
       sphdata[j].gpot += received_particle->gpot;
-      sphdata[j].gpe += received_particle->gpe;
       sphdata[j].dudt += received_particle->dudt;
       sphdata[j].div_v += received_particle->div_v;
       sphdata[j].levelneib = max(sphdata[j].levelneib, received_particle->levelneib);
@@ -2157,7 +2159,8 @@ void SphTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
       cout << "Could not find neighbour " << j << "   " << trueneiblist[j] << "     " << i
            << "      " << sqrt(drsqd)/kernrange/partdata[i].h << "     "
            << sqrt(drsqd)/kernrange/partdata[trueneiblist[j]].h << "    "
-           << partdata[trueneiblist[j]].r[0] << endl;
+           << partdata[trueneiblist[j]].r[0] << "   type : "
+           << partdata[trueneiblist[j]].itype << endl;
       invalid_flag = true;
     }
 
@@ -2173,7 +2176,7 @@ void SphTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
     InsertionSort(Nneib,neiblist);
     PrintArray("neiblist     : ",Nneib,neiblist);
     PrintArray("trueneiblist : ",Ntrueneib,trueneiblist);
-    string message = "Problem with neighbour lists in grid search";
+    string message = "Problem with neighbour lists in tree search";
     ExceptionHandler::getIstance().raise(message);
   }
 
@@ -2205,10 +2208,3 @@ template class SphTree<3,SM2012SphParticle,KDTreeCell>;
 template class SphTree<1,SM2012SphParticle,OctTreeCell>;
 template class SphTree<2,SM2012SphParticle,OctTreeCell>;
 template class SphTree<3,SM2012SphParticle,OctTreeCell>;
-
-template class SphTree<1,GodunovSphParticle,KDTreeCell>;
-template class SphTree<2,GodunovSphParticle,KDTreeCell>;
-template class SphTree<3,GodunovSphParticle,KDTreeCell>;
-template class SphTree<1,GodunovSphParticle,OctTreeCell>;
-template class SphTree<2,GodunovSphParticle,OctTreeCell>;
-template class SphTree<3,GodunovSphParticle,OctTreeCell>;

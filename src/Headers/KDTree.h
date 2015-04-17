@@ -158,7 +158,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   int ComputeActiveCellPointers(TreeCell<ndim> **celllist);
   int ComputeActiveParticleList(TreeCell<ndim> &, ParticleType<ndim> *, int *);
   int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
-                                 const FLOAT, const int, int *);
+                                 const FLOAT, const int, int &, int *);
   int ComputeGatherNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
                                  const FLOAT, const int, int &, int *);
   int ComputeNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,

@@ -39,13 +39,14 @@ using namespace std;
 //=================================================================================================
 template <int ndim>
 Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int _nEwaldGrid,
-                   DOUBLE _ewald_mult, DOUBLE _ixmin, DOUBLE _ixmax, CodeTiming* _timing):
+                   DOUBLE _ewald_mult, DOUBLE _ixmin, DOUBLE _ixmax, DOUBLE _EFratio, CodeTiming* _timing):
   gr_bhewaldseriesn(_gr_bhewaldseriesn),
   in(_in),
   nEwaldGrid(_nEwaldGrid),
   ewald_mult(_ewald_mult),
   ixmin(_ixmin),
   ixmax(_ixmax),
+  EFratio(_EFratio),
   lx_per(simbox.boxsize[0]),
   ly_per(simbox.boxsize[1]),
   lz_per(simbox.boxsize[2]),
@@ -84,7 +85,7 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
     FILE *fo;                                     // file where Ewald field is printed
 
     debug2("[Ewald::Ewald]");
-    timing->StartTimingSection("EWALD",2);
+    timing->StartTimingSection("EWALD");
 
 
     // set ewald_periodicity for given type of boundary conditions
@@ -99,11 +100,6 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
       ewald_periodicity+=4;
     }
 
-    // kill in the case of no periodic boundary conditions
-    if ((ewald_periodicity != 1) && (ewald_periodicity != 3) && (ewald_periodicity != 7)) {
-      printf("Set normal to the plane in z direction or axis of the cylinder in x direction or periodic BCs");
-      exit(0);
-    }
 
     // prepare useful constants for generating Ewald field
     es_nrx = gr_bhewaldseriesn;
@@ -124,11 +120,19 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
 
     // set sizes and number of cells for the Ewald field
     for (k=0; k<ndim; k++) {
-      Lewald[k] = simbox.boxhalf[k];
+      Lewald[k] = EFratio*simbox.boxhalf[k];
       Ncells[k] = nEwaldGrid - 1;
     }
 
+    // terminate instead of creating Ewald field too far away from origin
+    if (EFratio > 1.5) {
+      printf("Use lower value of EFratio !\n");
+      printf("Current value of EFratio is %4.2f \n",EFratio);
+      exit(0);
+    }
+
     switch (ewald_periodicity) {
+    // axial symmetry
       case 1:
         linv = 1.0/(lx_per);
         es_nry = 0;
@@ -140,6 +144,29 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
         Ncells[1] = 4*(nEwaldGrid - 2)+1;
         Ncells[2] = Ncells[1];
         break;
+      case 2:
+        linv = 1.0/(ly_per);
+        es_nrx = 0;
+        es_nrz = 0;
+        es_nfx = 0;
+        es_nfz = 0;
+        Lewald[0] = 4*simbox.boxhalf[1];
+        Lewald[2] = Lewald[0];
+        Ncells[0] = 4*(nEwaldGrid - 2)+1;
+        Ncells[2] = Ncells[0];
+        break;
+      case 4:
+        linv = 1.0/(lz_per);
+        es_nrx = 0;
+        es_nry = 0;
+        es_nfx = 0;
+        es_nfy = 0;
+        Lewald[0] = 4*simbox.boxhalf[2];
+        Lewald[1] = Lewald[0];
+        Ncells[0] = 4*(nEwaldGrid - 2)+1;
+        Ncells[1] = Ncells[0];
+        break;
+    // planar symmetry
       case 3:
         linv = 1.0/(lx_per);
         ratio_p = (ly_per)/(lx_per);
@@ -152,6 +179,31 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
         Lewald[2] = 4*simbox.boxhalf[0];
         Ncells[2] = 4*(nEwaldGrid - 2)+1;
         break;
+      case 5:
+        linv = 1.0/(lz_per);
+        ratio_p = (lx_per)/(lz_per);
+        es_nrx = (int) (1+(gr_bhewaldseriesn)/ratio_p);
+        es_nry = 0;
+        es_nfx = (int) (1+(gr_bhewaldseriesn)*ratio_p);
+        es_nfy = 0;
+        cr1 = pow(ratio_p,2);
+        cf1 = 1.0/cr1;
+        Lewald[1] = 4*simbox.boxhalf[2];
+        Ncells[1] = 4*(nEwaldGrid - 2)+1;
+        break;
+      case 6:
+        linv = 1.0/(ly_per);
+        ratio_p = (lz_per)/(ly_per);
+        es_nrx = 0;
+        es_nrz = (int) (1+(gr_bhewaldseriesn)/ratio_p);
+        es_nfx = 0;
+        es_nfz = (int) (1+(gr_bhewaldseriesn)*ratio_p);
+        cr3 = pow(ratio_p,2);
+        cf3 = 1.0/cr1;
+        Lewald[0] = 4*simbox.boxhalf[1];
+        Ncells[0] = 4*(nEwaldGrid - 2)+1;
+        break;
+      // full periodic BCs
       case 7:
         linv = 1.0/(lx_per);
         ratio_p1 = (ly_per)/(lx_per);
@@ -196,16 +248,16 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
       Ngrid[k] = Ncells[k]+1;
     }
     one_component = Ngrid[0]*Ngrid[1]*Ngrid[2];
-    printf("Ewald test %8d %8d %8d %16.10e %16.10e %16.10e %16.10e %16.10e %16.10e \n",
-           Ngrid[0],Ngrid[1],Ngrid[2],Lewald[0],Lewald[1],Lewald[2],dI[0],dI[1],dI[2]);
+    //printf("Ewald test %8d %8d %8d %16.10e %16.10e %16.10e %16.10e %16.10e %16.10e \n",
+    //       Ngrid[0],Ngrid[1],Ngrid[2],Lewald[0],Lewald[1],Lewald[2],dI[0],dI[1],dI[2]);
 
     // generate the Ewald field
     // from 0 to one_component-1 is stored potential,
     // from one_component*jj to one_component*(jj+1)-1 is stored
     // the jj component of acceleration (jj=1 is x, 2 is y, 3 is z)
     ewald_field = new DOUBLE[4*one_component];
-    ewald_fields = new DOUBLE[4*one_component];
-    ewald_fieldl = new DOUBLE[4*one_component];
+//    ewald_fields = new DOUBLE[4*one_component];
+//    ewald_fieldl = new DOUBLE[4*one_component];
     //  ewald_coord = new DOUBLE[3*one_component];
 
     //---------------------------------------------------------------------------------------------
@@ -264,14 +316,53 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
                     ewald_field[ewald_index + 3*one_component] = ewald_field[ewald_index + 3*one_component] +
                       linv_acc*(AccLong1p2iIso(hi, ewald_dzeta, linv, x, z, y));
                   }
+                  else if (ewald_periodicity==2) {
+                    ewald_field[ewald_index] = ewald_field[ewald_index] + PotLong1p2i(hj, ewald_dzeta, linv, y, x, z);
+                    ewald_field[ewald_index+one_component] = ewald_field[ewald_index+one_component] +
+                      linv_acc*(AccLong1p2iIso(hj, ewald_dzeta, linv, y, x, z));
+                    ewald_field[ewald_index + 2*one_component] = ewald_field[ewald_index + 2*one_component] +
+                      linv_acc*(AccLong1p2iPer(hj, ewald_dzeta, linv, y, x, z));
+                    ewald_field[ewald_index + 3*one_component] = ewald_field[ewald_index + 3*one_component] +
+                      linv_acc*(AccLong1p2iIso(hj, ewald_dzeta, linv, y, z, x));
+                  }
+                  else if (ewald_periodicity==4) {
+                    ewald_field[ewald_index] = ewald_field[ewald_index] + PotLong1p2i(hk, ewald_dzeta, linv, z, x, y);
+                    ewald_field[ewald_index+one_component] = ewald_field[ewald_index+one_component] +
+                      linv_acc*(AccLong1p2iIso(hk, ewald_dzeta, linv, z, x, y));
+                    ewald_field[ewald_index + 2*one_component] = ewald_field[ewald_index + 2*one_component] +
+                      linv_acc*(AccLong1p2iIso(hk, ewald_dzeta, linv, z, y, x));
+                    ewald_field[ewald_index + 3*one_component] = ewald_field[ewald_index + 3*one_component] +
+                      linv_acc*(AccLong1p2iPer(hk, ewald_dzeta, linv, z, x, y));
+                  }
                   else if (ewald_periodicity==3) {
-                    ewald_field[ewald_index] = ewald_field[ewald_index] + PotLong2p1i(ewald_dzeta, linv, ratio_pinv, x, y, z, hi, hj, ewc1, ewc2);
+                    ewald_field[ewald_index] = ewald_field[ewald_index] + PotLong2p1i(ewald_dzeta, linv,
+                      ratio_pinv, x, y, z, hi, hj, ewc1, ewc2);
                     ewald_field[ewald_index+one_component] = ewald_field[ewald_index+one_component] +
                       hi*(AccLong2p1iPer(ewald_dzeta, linv, ratio_pinv, x, y, z, hi, hj, ewc1, ewc2));
                     ewald_field[ewald_index + 2*one_component] = ewald_field[ewald_index + 2*one_component] +
                       hj*ratio_pinv*(AccLong2p1iPer(ewald_dzeta, linv, ratio_pinv, x, y, z, hi, hj, ewc1, ewc2));
                     ewald_field[ewald_index + 3*one_component] = ewald_field[ewald_index + 3*one_component] +
                       AccLong2p1iIso(ewald_dzeta, linv, ratio_pinv, x, y, z, hi, hj, ewc1, ewc2);
+                  }
+                  else if (ewald_periodicity==5) {
+                    ewald_field[ewald_index] = ewald_field[ewald_index] + PotLong2p1i(ewald_dzeta, linv,
+                      ratio_pinv, z, x, y, hi, hk, ewc1, ewc2);
+                    ewald_field[ewald_index+one_component] = ewald_field[ewald_index+one_component] +
+                      hk*ratio_pinv*(AccLong2p1iPer(ewald_dzeta, linv, ratio_pinv, z, x, y, hi, hk, ewc1, ewc2));
+                    ewald_field[ewald_index + 2*one_component] = ewald_field[ewald_index + 2*one_component] +
+                      AccLong2p1iIso(ewald_dzeta, linv, ratio_pinv, z, x, y, hi, hk, ewc1, ewc2);
+                    ewald_field[ewald_index + 3*one_component] = ewald_field[ewald_index + 3*one_component] +
+                      hi*(AccLong2p1iPer(ewald_dzeta, linv, ratio_pinv, z, x, y, hi, hk, ewc1, ewc2));
+                  }
+                  else if (ewald_periodicity==6) {
+                    ewald_field[ewald_index] = ewald_field[ewald_index] + PotLong2p1i(ewald_dzeta, linv,
+                      ratio_pinv, y, z, x, hk, hj, ewc1, ewc2);
+                    ewald_field[ewald_index+one_component] = ewald_field[ewald_index+one_component] +
+                      AccLong2p1iIso(ewald_dzeta, linv, ratio_pinv, y, z, x, hk, hj, ewc1, ewc2);
+                    ewald_field[ewald_index + 2*one_component] = ewald_field[ewald_index + 2*one_component] +
+                      hk*(AccLong2p1iPer(ewald_dzeta, linv, ratio_pinv, y, z, x, hk, hj, ewc1, ewc2));
+                    ewald_field[ewald_index + 3*one_component] = ewald_field[ewald_index + 3*one_component] +
+                      hj*ratio_pinv*(AccLong2p1iPer(ewald_dzeta, linv, ratio_pinv, y, z, x, hk, hj, ewc1, ewc2));
                   }
                   else if (ewald_periodicity==7) {
                     if ((pow(hi,2)+pow(hj,2)+pow(hk,2)) > 0) {
@@ -318,7 +409,7 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
           x = i*Lewald[0]/(Ncells[0]-1);
           y = j*Lewald[1]/(Ncells[1]-1);
           z = k*Lewald[2]/(Ncells[2]-1);
-          fprintf(fo,"%16.10e %16.10e %16.10e %10d %16.10e %16.10e %16.10e %16.10e \n",
+          fprintf(fo,"%18.10e %18.10e %18.10e %10d %18.10e %18.10e %18.10e %18.10e \n",
             x, y, z, ewald_index, ewald_field[ewald_index], ewald_field[ewald_index + one_component],
             ewald_field[ewald_index + 2*one_component], ewald_field[ewald_index + 3*one_component]);
         }
@@ -336,12 +427,23 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
     //    potC1p2i = 2.0*linv*log(2*ly_per) +
     //  } else if (ewald_periodicity==4) {
     //    potC1p2i = 2.0*linv*log(2*lz_per) +
+
+      potC1p2i = -(potC1p2i + 0.5/lx_per);
+      printf("potC1p2i %16.10lf %16.10lf %16.10lf %16.10lf %8d\n",potC1p2i,2.0*linv*log(2*lx_per),
+        ewald_field[Ngrid[0]*(Ngrid[1]-2)],ewald_field[Ngrid[0]*(Ngrid[1]-1)]+0.5/lx_per,Ngrid[0]*(Ngrid[1]-2));
+
+    } else if (ewald_periodicity==2) {
+      potC1p2i = 2.0*linv*log(2*ly_per) + ewald_field[Ngrid[0]-2];
+      potC1p2i = -(potC1p2i + 0.5/ly_per);
+      printf("potC1p2i %16.10lf %16.10lf %16.10lf %16.10lf %8d\n",potC1p2i,2.0*linv*log(2*ly_per),
+        ewald_field[Ngrid[0]-2],ewald_field[Ngrid[0]-2]+0.5/ly_per,Ngrid[0]-2);
+
+    } else if (ewald_periodicity==4) {
+      potC1p2i = 2.0*linv*log(2*lz_per) + ewald_field[Ngrid[0]-2];
+      potC1p2i = -(potC1p2i + 0.5/lz_per);
+      printf("potC1p2i %16.10lf %16.10lf %16.10lf %16.10lf %8d\n",potC1p2i,2.0*linv*log(2*lz_per),
+        ewald_field[Ngrid[0]-2],ewald_field[Ngrid[0]-2]+0.5/lz_per,Ngrid[0]-2);
     }
-
-    potC1p2i = -(potC1p2i + 0.5/lx_per);
-
-    printf("potC1p2i %16.10lf %16.10lf %16.10lf %16.10lf %8d\n",potC1p2i,2.0*linv*log(2*lx_per),
-      ewald_field[Ngrid[0]*(Ngrid[1]-2)],ewald_field[Ngrid[0]*(Ngrid[1]-1)]+0.5/lx_per,Ngrid[0]*(Ngrid[1]-2));
 
     timing->EndTimingSection("EWALD");
 
@@ -390,6 +492,12 @@ void Ewald<ndim>::CalculatePeriodicCorrection
     double a[3];
     double grEwald[4];                   // array for potential and acceleration
     double wf[8];                        // weighting factors used for interpolation
+    static double dr1=0.0, dr2=0.0, dr3=0.0;
+    static int basemax;
+
+    if (fabs(dr[0]) > 0.55*lx_per || fabs(dr[1]) > 0.55*ly_per || fabs(dr[2]) > 0.55*lz_per) {
+      cout << "Ewald problem : " << dr[0]/lx_per << "   " << dr[1]/ly_per << "   " << dr[2]/lz_per << endl;
+    }
 
     // find edges of the ewald_field cuboid around dr
     for (k=0; k<ndim; k++) {
@@ -398,6 +506,14 @@ void Ewald<ndim>::CalculatePeriodicCorrection
       ip[k] = il[k] + 1;
       a[k] = b - il[k];
     }
+
+// debug for ewald_periodicity == 7
+// if ((max3(ip[0],ip[1],ip[2]) > nEwaldGrid) && (ewald_periodicity == 7)) {
+if ((ip[0] > nEwaldGrid) && (ewald_periodicity == 3)) {
+  printf("wrong integer %6d  %6d %6d %16.8lf %16.8lf %16.8lf \n",ip[0],ip[1],ip[2],dr[0],dr[1],dr[2]);
+//  exit(0);
+}
+
 
     // in isolated direction(s) at distance longer than 2*(the size of comp. domain in
     // periodic direction) is Ewald field approximated by analytical formula
@@ -412,16 +528,44 @@ void Ewald<ndim>::CalculatePeriodicCorrection
           case 1:
             c = pow(dr[1],2)+pow(dr[2],2);
             d = 2.0/(lx_per*c);
-            gpotcorr = -m*(log(c)/lx_per+potC1p2i + drAbsInv);
+            gpotcorr = -m*(log(c)/lx_per + potC1p2i + drAbsInv);
             acorr[0] = -m*dr[0]*pow(drAbsInv,3);
             acorr[1] = m*(dr[1]*d - dr[1]*pow(drAbsInv,3));
             acorr[2] = m*(dr[2]*d - dr[2]*pow(drAbsInv,3));
+            break;
+          case 2:
+            c = pow(dr[0],2)+pow(dr[2],2);
+            d = 2.0/(ly_per*c);
+            gpotcorr = -m*(log(c)/ly_per + potC1p2i + drAbsInv);
+            acorr[0] = m*(dr[0]*d - dr[0]*pow(drAbsInv,3));
+            acorr[1] = -m*dr[1]*pow(drAbsInv,3);
+            acorr[2] = m*(dr[2]*d - dr[2]*pow(drAbsInv,3));
+            break;
+          case 4:
+            c = pow(dr[0],2)+pow(dr[1],2);
+            d = 2.0/(lz_per*c);
+            gpotcorr = -m*(log(c)/lz_per + potC1p2i + drAbsInv);
+            acorr[0] = m*(dr[0]*d - dr[0]*pow(drAbsInv,3));
+            acorr[1] = m*(dr[1]*d - dr[1]*pow(drAbsInv,3));
+            acorr[2] = -m*dr[2]*pow(drAbsInv,3);
             break;
           case 3:
             gpotcorr = -m*(abs(dr[2])*accPlane + drAbsInv);
             acorr[0] = -m*dr[0]*pow(drAbsInv,3);
             acorr[1] = -m*dr[1]*pow(drAbsInv,3);
             acorr[2] = m*(accPlane*sgn(dr[2]) - pow(drAbsInv,3)*dr[2]);
+            break;
+          case 5:
+            gpotcorr = -m*(abs(dr[1])*accPlane + drAbsInv);
+            acorr[0] = -m*dr[0]*pow(drAbsInv,3);
+            acorr[1] = m*(accPlane*sgn(dr[1]) - pow(drAbsInv,3)*dr[1]);
+            acorr[2] = -m*dr[2]*pow(drAbsInv,3);
+            break;
+          case 6:
+            gpotcorr = -m*(abs(dr[0])*accPlane + drAbsInv);
+            acorr[0] = m*(accPlane*sgn(dr[0]) - pow(drAbsInv,3)*dr[0]);
+            acorr[1] = -m*dr[1]*pow(drAbsInv,3);
+            acorr[2] = -m*dr[2]*pow(drAbsInv,3);
             break;
 
         }
@@ -441,9 +585,31 @@ void Ewald<ndim>::CalculatePeriodicCorrection
 
     indexBase0 = il[0] + il[1]*Ngrid[0] + il[2]*Ngrid[0]*Ngrid[1];
     indexBase1 = indexBase0 + Ngrid[0]*Ngrid[1];
+
+if (abs(dr[0]) > dr1) {
+  dr1=abs(dr[0]);
+  //printf("max pos %10.4lf %10.4lf %10.4lf %10.4lf %10.4lf %10.4lf %6d %6d \n",dr1,dr2,dr3,dr[0],dr[1],dr[2],indexBase0,indexBase1);
+}
+
+if (abs(dr[1]) > dr2) {
+  dr2=abs(dr[1]);
+  //printf("max pos %10.4lf %10.4lf %10.4lf %10.4lf %10.4lf %10.4lf %6d %6d \n",dr1,dr2,dr3,dr[0],dr[1],dr[2],indexBase0,indexBase1);
+}
+
+if (abs(dr[2]) > dr3) {
+  dr3=abs(dr[2]);
+  //printf("max pos %10.4lf %10.4lf %10.4lf %10.4lf %10.4lf %10.4lf %6d %6d \n",dr1,dr2,dr3,dr[0],dr[1],dr[2],indexBase0,indexBase1);
+}
+
+if (indexBase1 > basemax) {
+  basemax=indexBase1;
+  //printf("basemax %10.4lf %10.4lf %10.4lf %6d  %16.9lf \n",dr[0],dr[1],dr[2],basemax,ewald_field[basemax]);
+}
+
     for (k=0; k<=ndim; k++) {
       indexBase2 = indexBase0 + k*one_component;
       indexBase3 = indexBase1 + k*one_component;
+//      printf("interpol %16.8lf %16.8lf %16.8lf %6d  %6d %6d %9d %9d\n",dr[0],dr[1],dr[2],il[0],il[1],il[2],indexBase0,indexBase1);
       grEwald[k] =
         wf[0]*ewald_field[indexBase2] + wf[1] * ewald_field[indexBase2 + 1] +
         wf[2]*ewald_field[indexBase2 + Ngrid[0]] + wf[3] * ewald_field[indexBase2 + Ngrid[0] + 1] +

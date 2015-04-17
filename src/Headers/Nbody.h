@@ -108,18 +108,18 @@ class Nbody
   const int sub_systems;                ///< Create sub-systems?
   const int Npec;                       ///< No. of iterations if using time-symmetric integrator
   const DOUBLE nbody_mult;              ///< N-body timestep multiplier
-
   static const int vdim=ndim;           ///< Local copy of vdim
-  static const DOUBLE invndim=1.0/ndim; ///< Copy of 1/ndim
+  //static const DOUBLE invndim=1.0/ndim; ///< Copy of 1/ndim
+  static const DOUBLE invndim;
 
-  SmoothingKernel<ndim> *kernp;               ///< Pointer to chosen kernel object
-  TabulatedKernel<ndim> kerntab;        ///< Tabulated version of chosen kernel
-  struct NbodyParticle<ndim> **nbodydata; ///< Generic N-body array of ptrs
-  struct StarParticle<ndim> *stardata;  ///< Main star particle data array
-  struct SystemParticle<ndim> *system;  ///< Main system particle array
+  NbodyParticle<ndim> **nbodydata;      ///< Generic N-body array of ptrs
+  StarParticle<ndim> *stardata;         ///< Main star particle data array
+  SystemParticle<ndim> *system;         ///< Main system particle array
 
   CodeTiming *timing;                   ///< Pointer to code timing object
   ExternalPotential<ndim> *extpot;      ///< Pointer to external potential object
+  SmoothingKernel<ndim> *kernp;         ///< Pointer to chosen kernel object
+  TabulatedKernel<ndim> kerntab;        ///< Tabulated version of chosen kernel
 
 
   // Data structures and array for storing stellar property data
@@ -138,6 +138,11 @@ class Nbody
 };
 
 
+// Declare invndim constant here (prevents warnings with some compilers)
+template <int ndim>
+const DOUBLE Nbody<ndim>::invndim = 1.0/ndim;
+
+
 
 //=================================================================================================
 //  Class NbodyLeapfrogKDK
@@ -149,6 +154,7 @@ class NbodyLeapfrogKDK : public Nbody<ndim>
 {
 public:
   using Nbody<ndim>::allocated;
+  using Nbody<ndim>::invndim;
   using Nbody<ndim>::nbody_mult;
   using Nbody<ndim>::Nstar;
   using Nbody<ndim>::Nsystem;
@@ -169,7 +175,7 @@ public:
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;             ///< Local copy of vdim
-  static const DOUBLE invndim=1.0/ndim;   ///< Copy of 1/ndim
+  //static const DOUBLE invndim=1.0/ndim;   ///< Copy of 1/ndim
   kernelclass<ndim> kern;                 ///< SPH kernel
 
 };
@@ -185,6 +191,7 @@ class NbodyLeapfrogDKD : public Nbody<ndim>
 {
 public:
   using Nbody<ndim>::allocated;
+  using Nbody<ndim>::invndim;
   using Nbody<ndim>::nbody_mult;
   using Nbody<ndim>::Nstar;
   using Nbody<ndim>::Nsystem;
@@ -205,7 +212,7 @@ public:
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;             ///< Local copy of vdim
-  static const DOUBLE invndim=1.0/ndim;   ///< Copy of 1/ndim
+  //static const DOUBLE invndim=1.0/ndim;   ///< Copy of 1/ndim
   kernelclass<ndim> kern;                 ///< SPH kernel
 
 };
@@ -222,6 +229,7 @@ class NbodyHermite4 : public Nbody<ndim>
 public:
 
   using Nbody<ndim>::allocated;
+  using Nbody<ndim>::invndim;
   using Nbody<ndim>::nbody_mult;
   using Nbody<ndim>::Nstar;
   using Nbody<ndim>::Nsystem;
@@ -243,7 +251,7 @@ public:
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;             ///< Local copy of vdim
-  static const DOUBLE invndim=1.0/ndim;   ///< Copy of 1/ndim
+  //static const DOUBLE invndim=1.0/ndim;   ///< Copy of 1/ndim
   kernelclass<ndim> kern;                 ///< SPH kernel
 
 };
@@ -293,6 +301,7 @@ class NbodyHermite6TS : public Nbody<ndim>
 public:
 
   using Nbody<ndim>::allocated;
+  using Nbody<ndim>::invndim;
   using Nbody<ndim>::nbody_mult;
   using Nbody<ndim>::Nstar;
   using Nbody<ndim>::Nsystem;
@@ -315,7 +324,7 @@ public:
   DOUBLE Timestep(NbodyParticle<ndim> *);
 
   static const int vdim=ndim;             ///< Local copy of vdim
-  static const DOUBLE invndim=1.0/ndim;   ///< Copy of 1/ndim
+  //static const DOUBLE invndim=1.0/ndim;   ///< Copy of 1/ndim
   kernelclass<ndim> kern;                 ///< SPH kernel
 
 };

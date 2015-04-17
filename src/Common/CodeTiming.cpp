@@ -44,8 +44,9 @@ using namespace std;
 //=================================================================================================
 CodeTiming::CodeTiming()
 {
-  Nblock      = 0;
-  Nlevelmax   = 0;
+  for (int i=0; i<Nlevelmax; i++) Nblock[i] = 0;
+  level       = 0;
+  Nlevel      = 0;
   ttot        = 0.0;
   ttot_wall   = 0.0;
   tstart      = clock();
@@ -70,28 +71,31 @@ CodeTiming::~CodeTiming()
 /// (e.g. from previous timestep), then timing is appended to previously recorded times.
 //=================================================================================================
 void CodeTiming::StartTimingSection
- (string newblock,                     ///< String of new/existing timing block
-  int timing_level)                    ///< Timing level of block
+ (const string newblock)               ///< [in] String of new/existing timing block
 {
   int iblock;                          // Integer id of existing timing block
 
   // If block string not in list, then create new entry to timing block
-  if (blockno.find(newblock) == blockno.end()) {
-    iblock = Nblock;
-    blockno[newblock] = iblock;
-    block[iblock].timing_level = timing_level;
-    block[iblock].block_name = newblock;
-    Nblock++;
-    Nlevelmax = max(Nlevelmax,timing_level);
+  if (blockmap[level].find(newblock) == blockmap[level].end()) {
+    iblock                            = Nblock[level];
+    blockmap[level][newblock]         = iblock;
+    block[level][iblock].timing_level = level;
+    block[level][iblock].block_name   = newblock;
+    Nblock[level]++;
   }
   // Else, look-up existing timing block
   else {
-    iblock = blockno[newblock];
+    iblock = blockmap[level][newblock];
   }
 
   // Now record timein arrays
-  block[iblock].tstart = clock();
-  block[iblock].tstart_wall = WallClockTime();
+  block[level][iblock].tstart      = clock();
+  block[level][iblock].tstart_wall = WallClockTime();
+
+  // Add block to stack for book-keeping and error checking
+  levelstack[level] = &(block[level][iblock]);
+  level++;
+  Nlevel = max(Nlevel, level);
 
   return;
 }
@@ -104,26 +108,34 @@ void CodeTiming::StartTimingSection
 /// time in main timing arrays.
 //=================================================================================================
 void CodeTiming::EndTimingSection
- (string s1)                           ///< String identifying block-end
+ (const string s1)                     ///< [in] String identifying block-end
 {
   int iblock;                          // Integer i.d. of timing block in arrays
 
+  // Check level is valid
+  if (level <= 0) {
+    cout << "Error with timing levels" << endl;
+    return;
+  }
+  level--;
+
   // If block not in list, then print error message and return
-  if (blockno.find(s1) == blockno.end()) {
+  if (blockmap[level].find(s1) == blockmap[level].end()) {
     cout << "Error : looking for incorrect timing block : " << s1 << endl;
     return;
   }
   // Else, look-up existing timing block
   else {
-    iblock = blockno[s1];
+    iblock = blockmap[level][s1];
   }
 
-  block[iblock].tend = clock();
-  block[iblock].ttot += (double) (block[iblock].tend - block[iblock].tstart) /
-    (double) CLOCKS_PER_SEC;
+  block[level][iblock].tend = clock();
+  block[level][iblock].ttot +=
+    (double) (block[level][iblock].tend - block[level][iblock].tstart) / (double) CLOCKS_PER_SEC;
 
-  block[iblock].tend_wall = WallClockTime();
-  block[iblock].ttot_wall += (double) (block[iblock].tend_wall - block[iblock].tstart_wall);
+  block[level][iblock].tend_wall = WallClockTime();
+  block[level][iblock].ttot_wall +=
+    (double) (block[level][iblock].tend_wall - block[level][iblock].tstart_wall);
 
   return;
 }
@@ -139,7 +151,7 @@ void CodeTiming::ComputeTimingStatistics
  (string run_id)                       ///< String i.d. of current simulation
 {
   int iblock;                          // Timing block counter
-  int level;                           // Timing block level
+  int l;                               // Timing block level
   DOUBLE tcount = 0.0;                 // Total time
   DOUBLE tcount_wall = 0.0;            // Total wall-clock time
   string filename;                     // Filename for writing statistics
@@ -157,36 +169,41 @@ void CodeTiming::ComputeTimingStatistics
   outfile << resetiosflags(ios::adjustfield);
   outfile << setiosflags(ios::left);
   outfile << "----------------------------------------------------------------------------" << endl;
-  outfile << "Total simulation time : " << ttot << "    " << ttot_wall << endl;
+  outfile << "Total simulation wall clock time : " << ttot_wall << endl;
   outfile << "----------------------------------------------------------------------------" << endl;
 
   // Output timing data on each hierarchical level
   //-----------------------------------------------------------------------------------------------
-  for (level=1; level<=Nlevelmax; level++) {
+  for (l=0; l<Nlevel; l++) {
     tcount = 0.0;
     tcount_wall = 0.0;
-    //outfile << "Level : " << level << endl;
-    outfile << "Block                         Time        %time       Wall time   %time" << endl;
+    outfile << "Level : " << l << endl;
+    outfile << "Block                                          Wall time       %time" << endl;
     outfile << "----------------------------------------------------------------------------" << endl;
 
-    for (iblock=0; iblock<Nblock; iblock++) {
-      if (block[iblock].timing_level != level) continue;
-      tcount += block[iblock].ttot;
-      tcount_wall += block[iblock].ttot_wall;
-      block[iblock].tfraction = block[iblock].ttot / ttot;
-      block[iblock].tfraction_wall = block[iblock].ttot_wall / ttot_wall;
-      outfile << setw(30) << block[iblock].block_name
-              << setw(12) << block[iblock].ttot
-              << setw(12) << 100.0*block[iblock].tfraction
-              << setw(12) << block[iblock].ttot_wall
-              << setw(12) << 100.0*block[iblock].tfraction_wall << endl;
+    for (iblock=0; iblock<Nblock[l]; iblock++) {
+      tcount      += block[l][iblock].ttot;
+      tcount_wall += block[l][iblock].ttot_wall;
+      block[l][iblock].tfraction      = block[l][iblock].ttot / ttot;
+      block[l][iblock].tfraction_wall = block[l][iblock].ttot_wall / ttot_wall;
+      outfile << setw(47) << block[l][iblock].block_name
+              << setw(16) << block[l][iblock].ttot_wall
+              << setw(15) << 100.0*block[l][iblock].tfraction_wall << endl;
+      /*outfile << setw(30) << block[l][iblock].block_name
+              << setw(12) << block[l][iblock].ttot
+              << setw(12) << 100.0*block[iblock][l].tfraction
+              << setw(12) << block[l][iblock].ttot_wall
+              << setw(12) << 100.0*block[l][iblock].tfraction_wall << endl;*/
     }
+    outfile << setw(47) << "REMAINDER"
+            << setw(16) << ttot_wall - tcount_wall
+            << setw(15) << 100.0*(ttot_wall - tcount_wall)/ttot_wall << endl;
 
-    outfile << setw(30) << "REMAINDER"
+    /*outfile << setw(30) << "REMAINDER"
             << setw(12) << ttot - tcount
             << setw(12) << 100.0*(ttot - tcount)/ttot
             << setw(12) << ttot_wall - tcount_wall
-            << setw(12) << 100.0*(ttot_wall - tcount_wall)/ttot_wall << endl;
+            << setw(12) << 100.0*(ttot_wall - tcount_wall)/ttot_wall << endl;*/
     outfile << "----------------------------------------------------------------------------" << endl;
   }
   //-----------------------------------------------------------------------------------------------

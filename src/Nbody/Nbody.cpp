@@ -84,9 +84,9 @@ void Nbody<ndim>::AllocateMemory(int N)
     Nstarmax   = N;
     Nsystemmax = N;
     Nnbodymax  = Nstarmax + Nsystemmax;
-    nbodydata  = new struct NbodyParticle<ndim>*[Nnbodymax];
-    stardata   = new struct StarParticle<ndim>[Nstarmax];
-    system     = new struct SystemParticle<ndim>[Nsystemmax];
+    nbodydata  = new NbodyParticle<ndim>*[Nnbodymax];
+    stardata   = new StarParticle<ndim>[Nstarmax];
+    system     = new SystemParticle<ndim>[Nsystemmax];
     allocated  = true;
   }
 

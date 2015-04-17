@@ -180,7 +180,7 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   FLOAT cellSize = (FLOAT) 0.0;        // Size of new cell (from centre to edge)
 
   debug2("[OctTree::BuildTree]");
-  //timing->StartTimingSection("BUILD_OCT_TREE",2);
+  //timing->StartTimingSection("BUILD_OCT_TREE");
 
   // Allocate (or reallocate if needed) all tree memory
   AllocateTreeMemory();
@@ -410,6 +410,7 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
     }
     //---------------------------------------------------------------------------------------------
 
+    delete[] whichChild;
     delete[] celllist;
 
   }
@@ -804,7 +805,7 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
   int ilast;                           // Last particle in linked list
 
   debug2("[OctTree::UpdateActiveParticleCounters]");
-  //timing->StartTimingSection("TREE_UPDATE_COUNTERS",2);
+  //timing->StartTimingSection("TREE_UPDATE_COUNTERS");
 
 
   // Loop through all grid cells in turn
@@ -896,6 +897,8 @@ bool OctTree<ndim,ParticleType,TreeCell>::BoxOverlap
 
 }
 
+
+
 //=================================================================================================
 //  OctTree::ComputeActiveCellList
 /// Returns the number of cells containing active particles, 'Nactive', and
@@ -926,6 +929,8 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeActiveCellPointers
 
   return Nactive;
 }
+
+
 
 //=================================================================================================
 //  OctTree::ComputeActiveCellList
@@ -974,12 +979,12 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   const FLOAT rp[ndim],                ///< [in] Search position
   const FLOAT rsearch,                 ///< [in] Maximum smoothing length
   const int Nneibmax,                  ///< [in] Max. no. of neighbours
+  int &Nneib,                          ///< [inout] No. of neighbours
   int *neiblist)                       ///< [out] List of neighbour i.d.s
 {
   int cc;                              // Cell counter
   int i;                               // Particle id
   int k;                               // Neighbour counter
-  int Nneib = 0;                       // Neighbour counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
   FLOAT rsearchsqd;                    // Search radius squared
@@ -1853,6 +1858,3 @@ template class OctTree<3,GradhSphParticle,OctTreeCell>;
 template class OctTree<1,SM2012SphParticle,OctTreeCell>;
 template class OctTree<2,SM2012SphParticle,OctTreeCell>;
 template class OctTree<3,SM2012SphParticle,OctTreeCell>;
-template class OctTree<1,GodunovSphParticle,OctTreeCell>;
-template class OctTree<2,GodunovSphParticle,OctTreeCell>;
-template class OctTree<3,GodunovSphParticle,OctTreeCell>;

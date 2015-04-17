@@ -88,7 +88,7 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
 
 
   // Re-build radiation tree from scratch
-  timing->StartTimingSection("RADTREE_BUILD",2);
+  timing->StartTimingSection("RADTREE_BUILD");
   radtree->BuildTree(Nhydro,Nhydro,sphdata);
   timing->EndTimingSection("RADTREE_BUILD");
 
@@ -102,7 +102,7 @@ void TreeMonteCarlo<ndim,nfreq,ParticleType,CellType>::UpdateRadiationField
 
 
   // Perform single iteration step on computing radiation field
-  timing->StartTimingSection("RADTREE_MONTE_CARLO",2);
+  timing->StartTimingSection("RADTREE_MONTE_CARLO");
   level = radtree->ltot;
   IterateRadiationField(level,Nhydro,Nnbody,Nsink,sph_gen,nbodydata,sinkdata);
   timing->EndTimingSection("RADTREE_MONTE_CARLO");
@@ -403,6 +403,3 @@ template class TreeMonteCarlo<3,1,GradhSphParticle,KDRadTreeCell>;
 //template class TreeMonteCarlo<1,SM2012SphParticle>;
 //template class TreeMonteCarlo<2,SM2012SphParticle>;
 //template class TreeMonteCarlo<3,SM2012SphParticle>;
-//template class TreeMonteCarlo<1,GodunovSphParticle>;
-//template class TreeMonteCarlo<2,GodunovSphParticle>;
-//template class TreeMonteCarlo<3,GodunovSphParticle>;

@@ -4,12 +4,14 @@
 #include "SphNeighbourSearch.h"
 #include "Radiation.h"
 #include "Sinks.h"
+#include <sys/stat.h>
+#include <iostream>
+#include <fstream>
 using namespace std;
 
-
 //===================================================================
-//  MultipleSourceIonisation::MultipleSourceIonisation
-/// MultipleSourceIonisation class constructor
+//	MultipleSourceIonisation::MultipleSourceIonisation
+//	MultipleSourceIonisation class constructor
 //====================================================================
 
 template <int ndim, template<int> class ParticleType>
@@ -19,10 +21,11 @@ MultipleSourceIonisation<ndim,ParticleType>::MultipleSourceIonisation(
 	float mu_ionaux,
 	float temp0aux,
 	float temp_ionaux,
-        float Ndotminaux,
+        double Ndotminaux,
 	float gamma_eosaux,
 	float scaleaux,
-	float tempscaleaux)
+	float tempscaleaux,
+	double rad_contaux)
 {
   sphneib = sphneibaux;
   mu_bar=mu_baraux;
@@ -33,12 +36,12 @@ MultipleSourceIonisation<ndim,ParticleType>::MultipleSourceIonisation(
   gamma_eos=gamma_eosaux;
   scale=scaleaux;
   tempscale=tempscaleaux;
-
+  rad_cont=rad_contaux;
 }
 
 //====================================================================
-//  MultipleSourceIonisation::~MultipleSourceIonisation
-/// MultipleSourceIonisation class destructor
+//	MultipleSourceIonisation::~MultipleSourceIonisation
+//	MultipleSourceIonisation class destructor
 //====================================================================
 
 template <int ndim, template<int> class ParticleType>
@@ -49,9 +52,9 @@ MultipleSourceIonisation<ndim,ParticleType>::~MultipleSourceIonisation()
 
 
 //====================================================================
-//  MultipleSourceIonisation::UpdateRadiationFieldMMS
-/// Calculates the internal energy of particles due to ionising
-/// radiation.
+//	MultipleSourceIonisation::UpdateRadiationFieldMMS
+//	Calculates the internal energy of particles due to ionising
+//	radiation.
 //====================================================================
 
 template <int ndim, template<int> class ParticleType>
@@ -66,7 +69,7 @@ SinkParticle<ndim> * sphaux)
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sphgen);
 
   ionisation_intergration(nos,N,ndata,sphdata,scale,tempscale,sphneib,
-                          temp0,mu_bar,mu_ion,temp_ion,Ndotmin,1./gamma_eos);
+			  temp0,mu_bar,mu_ion,temp_ion,Ndotmin,1./gamma_eos);
 
   return;
 }
@@ -220,7 +223,7 @@ void MultipleSourceIonisation<ndim, ParticleType>::photoncount(
 //////////////////////////
 template <int ndim, template<int> class ParticleType>
 void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration(
-	int nos,				//Number of ionising sources
+	int newnos,				//Number of ionising sources
 	int N,					//Number of SPH particles
 	NbodyParticle<ndim> ** ndata,           //Source Data
 	SphParticle<ndim> * sphgen,		//SPH particle data
@@ -235,25 +238,56 @@ void MultipleSourceIonisation<ndim, ParticleType>::ionisation_intergration(
 	double gammam1)				//1/gamma
 {
 
-//////////TEMP/////////
-Ndotmin=1e49;
-
 //Casts particle arrays
 ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sphgen);
 
 struct timeval start, end;
 gettimeofday(&start, NULL);
 
+int ii,jj,kk,pp,tt; //Integer allocation for loops
+int debug=2,maxneigh=N; //Debug mode controler and maximum number of neighbours allowed
+float delta=0;
+
+//Check that the stellar.dat file is present
+bool check;
+struct stat buf;
+stat("stellar.dat", &buf);
+check=S_ISREG(buf.st_mode);
+if(check==0)
+	{
+	cout<<"Stellar.dat is not present in run directory, ionisation will not be included"<<endl;
+	return;
+	}
+
 //Checks if there are currently any sinks in gandalf and if not exits
+if (newnos==0)
+	{
+	cout<<"No stars"<<endl;
+	return;
+	}
+
+int nos=0; //Alocation of nos variable
+int *newnosid=new int[newnos]; //Alocation to store which sinks are active sources
+
+//Deturmines which sinks are active sources based on user choices
+for(ii=0;ii<newnos;ii++)
+	{
+	if(ndata[ii]->NLyC>=Ndotmin)
+		{
+		nos=nos+1;
+		newnosid[nos-1]=ii;
+		}
+	}
+
+//Checks if the sinks are of large enough size
 if (nos==0)
 {
-cout<<"No stars"<<endl;
+cout<<"No stars of suitable mass"<<endl;
 return;
 }
 
-int ii,jj,kk,pp,tt; //Integer allocation for loops
-int debug=0,maxneigh=N; //Debug mode controler and maximum number of neighbours allowed
-float delta=0;
+cout<<"# of sources followed is "<<nos<<". ";
+
 N=N+nos;	 //Inreases N to accomidate sinks
 
 if (debug==1){
@@ -277,7 +311,7 @@ ionpar *ionisedsph=new ionpar[N+1];
 if(ionisation_fraction.size()==0){
 	ionisation_fraction.resize(N+1);
 	for (ii;ii<N+1;ii++){
-		ionisation_fraction[ii].resize(nos);
+		ionisation_fraction[ii].resize(newnos);
 		for (pp=0;pp<nos;pp++){
 			ionisation_fraction[ii][pp]=0;
 			}
@@ -306,13 +340,21 @@ for (ii=0;ii<N-nos;ii++)
 	ionisedsph[ii].prob=new double[nos];
 	ionisedsph[ii].checked=new int[nos];
 	ionisedsph[ii].ionised=new int[nos];
-	for(jj=0;jj<ionisation_fraction[ii].size();jj++)
+	ionisedsph[ii].rad_pre_acc=new double[ndim];
+	for(jj=0;jj<ndim;jj++)
 		{
-		ionisedsph[ii].ionised[jj]=ionisation_fraction[ii][jj];
+		ionisedsph[ii].rad_pre_acc[jj]=0;
 		}
-	for(jj=0;jj<(nos-ionisation_fraction[ii].size());jj++)
+	ionisation_fraction[ii].resize(newnos); //Resize operation
+	//Correctly filling new spaces with 0
+	for(jj=0;jj<(newnos-ionisation_fraction[ii].size());jj++)
 		{
 		ionisedsph[ii].ionised[ionisation_fraction[ii].size()+jj-1]=0;
+		}
+	//Copying in current values for active sources
+	for(jj=0;jj<nos;jj++)
+		{
+		ionisedsph[ii].ionised[jj]=ionisation_fraction[ii][newnosid[jj]];
 		}
 	for(jj=0;jj<nos;jj++)
 		{
@@ -325,6 +367,7 @@ for (ii=0;ii<N-nos;ii++)
 		{
 		ionisedsph[ii].neighstor[jj]=N;
 		}
+
 	}
 //Add sink propertys to sink particles
 #pragma omp parallel for private(ii,jj)
@@ -332,20 +375,25 @@ for (ii=0;ii<nos;ii++)
 	{
 	ionisedsph[N-nos+ii].t=ti;						//Set stars to ionised gas temp for smoothing
 	ionisedsph[N-nos+ii].sink=1;						//Is the particle a sink
-	ionisedsph[N-nos+ii].x=ndata[ii]->r[0];				//Source x from gandalf
-	ionisedsph[N-nos+ii].y=ndata[ii]->r[1];				//Source y from gandalf
-	ionisedsph[N-nos+ii].z=ndata[ii]->r[2];				//Source z from gandalf
+	ionisedsph[N-nos+ii].x=ndata[newnosid[ii]]->r[0];				//Source x from gandalf
+	ionisedsph[N-nos+ii].y=ndata[newnosid[ii]]->r[1];				//Source y from gandalf
+	ionisedsph[N-nos+ii].z=ndata[newnosid[ii]]->r[2];				//Source z from gandalf
 	ionisedsph[N-nos+ii].fionised=1;					//As this is source it is marked as ionised
 	ionisedsph[N-nos+ii].neighstorcont=0;					//Controle varible for building of neighstore
 	ionisedsph[N-nos+ii].neighstor=new int[200];				//Array containing references to all particles that consider this one a neighbour
 	sinkid[ii]=N-nos+ii;
-	ndot[ii]=pow(2.4e-24,2.)*Ndotmin/(4.*pi*2.6e-13)*scale; 	//Ndot table s^-1
+	ndot[ii]=pow(2.4e-24,2.)*ndata[newnosid[ii]]->NLyC/(4.*pi*2.6e-13)*scale; 	//Ndot table s^-1
 	ionisedsph[N-nos+ii].angle=new double[nos];
 	ionisedsph[N-nos+ii].neigh=new int[nos];
 	ionisedsph[N-nos+ii].photons=new double[nos];
 	ionisedsph[N-nos+ii].checked=new int[nos];
 	ionisedsph[N-nos+ii].prob=new double[nos];
 	ionisedsph[N-nos+ii].ionised=new int[nos];
+	ionisedsph[N-nos+ii].rad_pre_acc=new double[3];
+	for(jj=0;jj<3;jj++)
+		{
+		ionisedsph[N-nos+ii].rad_pre_acc[jj]=0;
+		}
 	for(jj=0;jj<nos;jj++)
 		{
 		ionisedsph[N-nos+ii].angle[jj]=2.*pi;
@@ -374,6 +422,11 @@ ionisedsph[N].photons=new double[nos];
 ionisedsph[N].checked=new int[nos];
 ionisedsph[N].prob=new double[nos];
 ionisedsph[N].ionised=new int[nos];
+ionisedsph[N].rad_pre_acc=new double[ndim];
+for(jj=0;jj<ndim;jj++)
+	{
+	ionisedsph[N].rad_pre_acc[jj]=0;
+	}
 for(jj=0;jj<nos;jj++)
 	{
 	ionisedsph[N].angle[jj]=2.*pi;
@@ -555,6 +608,7 @@ while (change!=0 or finalcheck==0)	//loop until no changes are made (We have con
 		//Call fucntion to deturmine if test particle is ionised
 		photoncount(ionisedsph,sinkid,ndot,N,nos,ii,change);
 		}
+	#pragma omp parallel for private(ii,pp)
 	for (ii=1;ii<N;ii++)
 		{
 		for(pp=0;pp<nos;pp++)
@@ -581,38 +635,45 @@ for (ii=0;ii<N;ii++)								//For each particle
 	{
 	if (ionisedsph[ii].fionised==1)
 		{
-		Nneigb = sphneib->GetGatherNeighbourList(sphdata[ii].r,sphdata[ii].h*2.,sphgen,N,maxneigh,current_paricle_nn); //Find NNnumber nearest neighbours
+		Nneigb = sphneib->GetGatherNeighbourList(sphdata[ii].r,sphdata[ii].h*3.,sphgen,N,maxneigh,current_paricle_nn); //Find NNnumber nearest neighbours
 
 		for (jj=0;jj<Nneigb;jj++)			//For each of the neighbours
 			{
 			if (ionisedsph[current_paricle_nn[jj]].fionised==0)
 				{
 				rad=(sqrt(pow(ionisedsph[current_paricle_nn[jj]].x-ionisedsph[ii].x,2.)+pow(ionisedsph[current_paricle_nn[jj]].y-ionisedsph[ii].y,2.)+pow(ionisedsph[current_paricle_nn[jj]].z-ionisedsph[ii].z,2.)));  //Ditance between particles
-				s=rad/(ionisedsph[ii].h*2.);						//Work out s for smoothing kernal
+				s=rad/(ionisedsph[ii].h*1.5);						//Work out s for smoothing kernal
 
 				//Work out w for the kernal
 				if (s<1) w=1-(3./2.)*pow(s,2.)+(3./4.)*pow(s,3.);
 				else if (s<2) w=(1./4.)*pow(2-s,3.);
 				else w=0;
 
-				if(ionisedsph[current_paricle_nn[jj]].t!=10)
-					{
-					ionisedsph[current_paricle_nn[jj]].t=(ti*w+ionisedsph[current_paricle_nn[jj]].t)/2.;
-					}
-				else
+				if(ionisedsph[current_paricle_nn[jj]].t<ti*w)
 					{
 					ionisedsph[current_paricle_nn[jj]].t=ti*w;
 					}
 				}
-			else
+				else
 				{
-				ionisedsph[current_paricle_nn[jj]].t=ti;
+					ionisedsph[current_paricle_nn[jj]].t=ti;
 				}
 			}
 		}
 	}
 
-#pragma omp parallel for private(jj,ii,t,rad,s,w,invmu,current_paricle_nn,Nneigb) //Initalise openmp
+if (debug==1){
+gettimeofday(&end, NULL);
+
+delta = (((end.tv_sec  - start.tv_sec) * 1000000u +
+         end.tv_usec - start.tv_usec) / 1.e6)-delta;
+
+cout<<delta<<"s to ";
+cout<<"Temperatures smoothed"<<endl;
+}
+
+double theta,thi,photon_acceleration;
+#pragma omp parallel for private(jj,ii,t,rad,s,w,invmu,current_paricle_nn,Nneigb,theta,thi,photon_acceleration) //Initalise openmp
 for (ii=0;ii<N;ii++)
 	{
 	//If the particle is ionised then its temperature must be the ionised temperature
@@ -626,15 +687,42 @@ for (ii=0;ii<N;ii++)
 	invmu=(((ionisedsph[ii].t-tn)/mu_ion)+((ti-ionisedsph[ii].t)/mu_bar))/(ti-tn);//Work out corrected inverted mean gas particle mass
 	ionisedsph[ii].u=ionisedsph[ii].t/tempscale/gammam1*invmu;			//Work out the internal energy
 
-	//Change the master ionisedsph paticle u if the temp should not be neutral
-	if(ionisedsph[ii].t!=tn)
+	//Set particle ionisation state
+	if (ionisedsph[ii].t==tn)
 		{
-		sphdata[ii].u=ionisedsph[ii].u;				//Write new internal energy to gandalf
+		sphdata[ii].ionstate=0;
 		}
+	else if (ionisedsph[ii].fionised==1)
+		{
+		sphdata[ii].ionstate=2;
+		}
+	else
+		{
+		sphdata[ii].ionstate=1;
+		}
+
+	sphdata[ii].u=ionisedsph[ii].u;				//Write new internal energy to gandalf
+
+	//Working out radiation pressure (NOT COMPLEATE)
+	photon_acceleration=3.4455561764e-34*rad_cont*ionisedsph[ii].rho/(mu_bar*mu_bar);
+
 	for(jj=0;jj<nos;jj++)
 		{
-		ionisation_fraction[ii][jj]=ionisedsph[ii].ionised[jj];
+		//Copying ionised state over to holding array
+		ionisation_fraction[ii][newnosid[jj]]=ionisedsph[ii].ionised[jj];
+		if(ionisedsph[ii].fionised==1)
+			{
+			theta=atan((ionisedsph[ii].y-ionisedsph[sinkid[jj]].y)/(ionisedsph[ii].z-ionisedsph[sinkid[jj]].z));
+			thi=atan((ionisedsph[ii].y-ionisedsph[sinkid[jj]].y)/(ionisedsph[ii].x-ionisedsph[sinkid[jj]].x));
+			ionisedsph[ii].rad_pre_acc[0]=ionisedsph[ii].rad_pre_acc[0]+ionisedsph[ii].prob[jj]*photon_acceleration*sin(theta)*cos(thi);
+			ionisedsph[ii].rad_pre_acc[1]=ionisedsph[ii].rad_pre_acc[1]+ionisedsph[ii].prob[jj]*photon_acceleration*sin(theta)*sin(thi);
+			ionisedsph[ii].rad_pre_acc[2]=ionisedsph[ii].rad_pre_acc[2]+ionisedsph[ii].prob[jj]*photon_acceleration*cos(theta);
+			}
 		}
+
+	//sphdata[ii].rad_pres[0]=0;//ionisedsph[ii].rad_pre_acc[0];
+	//sphdata[ii].rad_pres[1]=0;//ionisedsph[ii].rad_pre_acc[1];
+	//sphdata[ii].rad_pres[2]=0;//ionisedsph[ii].rad_pre_acc[2];
 	}
 
 
@@ -652,25 +740,24 @@ for(ii=0;ii<N;ii++)
 	delete [] ionisedsph[ii].checked;
 	delete [] ionisedsph[ii].prob;
 	delete [] ionisedsph[ii].ionised;
+	delete [] ionisedsph[ii].rad_pre_acc;
 	}
 
 delete [] ionisedsph;
-
-if (debug==1){
-gettimeofday(&end, NULL);
-
-delta = (((end.tv_sec  - start.tv_sec) * 1000000u +
-         end.tv_usec - start.tv_usec) / 1.e6)-delta;
-
-cout<<delta<<"s to ";
-cout<<"Temperatures smoothed"<<endl;
-}
 
 gettimeofday(&end, NULL);
 
 delta = ((end.tv_sec  - start.tv_sec) * 1000000u +
          end.tv_usec - start.tv_usec) / 1.e6;
 cout<<"The time taken to calculate ionisation temperatures = "<<delta<<" s"<<endl;
+
+if (debug==1 or debug==2)
+	{
+	ofstream myfile;
+	myfile.open ("timing.dat",ios::app);
+	myfile <<delta<<"\n";
+	}
+
 }
 
 
@@ -680,6 +767,3 @@ template class MultipleSourceIonisation<3,GradhSphParticle>;
 template class MultipleSourceIonisation<1,SM2012SphParticle>;
 template class MultipleSourceIonisation<2,SM2012SphParticle>;
 template class MultipleSourceIonisation<3,SM2012SphParticle>;
-template class MultipleSourceIonisation<1,GodunovSphParticle>;
-template class MultipleSourceIonisation<2,GodunovSphParticle>;
-template class MultipleSourceIonisation<3,GodunovSphParticle>;

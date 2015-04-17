@@ -104,7 +104,7 @@ public:
   const int self_gravity;              ///< Compute gravitational forces?
   const string gas_eos;                ///< Gas EOS option
   const FLOAT h_fac;                   ///< Smoothing length-density factor
-  static const FLOAT invndim=1./ndim;  ///< Copy of 1/ndim
+  static const FLOAT invndim; //=1./ndim;  ///< Copy of 1/ndim
 
 
   // SPH particle counters and main particle data array
@@ -134,4 +134,10 @@ public:
   ExternalPotential<ndim> *extpot;     ///< Pointer to external potential object
 
 };
+
+
+// Declare invndim constant here (prevents warnings with some compilers)
+template <int ndim>
+const FLOAT Hydrodynamics<ndim>::invndim = 1.0/ndim;
+
 #endif

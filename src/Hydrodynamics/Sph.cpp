@@ -36,9 +36,6 @@
 #include "InlineFuncs.h"
 using namespace std;
 
-template <int ndim>
-const FLOAT Sph<ndim>::invndim;
-
 
 
 //=================================================================================================

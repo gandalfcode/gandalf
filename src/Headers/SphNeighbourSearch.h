@@ -293,41 +293,6 @@ class SM2012SphBruteForce: public BruteForceSearch<ndim,ParticleType>
 
 
 //=================================================================================================
-//  Class GodunovSphBruteForce
-/// \brief   ..
-/// \details Class for computing SPH neighbour lists using brute force only
-///          (i.e. direct summation over all particles).
-/// \author  D. A. Hubber, G. Rosotti
-/// \date    12/05/2014
-//=================================================================================================
-template <int ndim, template<int> class ParticleType>
-class GodunovSphBruteForce: public BruteForceSearch<ndim,ParticleType>
-{
- public:
-
-  using SphNeighbourSearch<ndim>::neibcheck;
-  using SphNeighbourSearch<ndim>::timing;
-  using SphNeighbourSearch<ndim>::kernp;
-  using SphNeighbourSearch<ndim>::kernfac;
-  using SphNeighbourSearch<ndim>::kernrange;
-  using SphNeighbourSearch<ndim>::kernrangesqd;
-
-
-  //-----------------------------------------------------------------------------------------------
-  GodunovSphBruteForce(FLOAT, DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
-  ~GodunovSphBruteForce();
-
-
-  //-----------------------------------------------------------------------------------------------
-  void UpdateAllSphProperties(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
-  void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *);
-  void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *);
-
-};
-
-
-
-//=================================================================================================
 //  Class SphTree
 /// \brief   Class containing tree for efficient neighbour searching and gravity calculations.
 /// \details ..
@@ -526,6 +491,8 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
   void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                   Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
+  void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
+                                  Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
 
 };
 
@@ -706,128 +673,6 @@ class SM2012SphOctTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
 
   //-----------------------------------------------------------------------------------------------
   SM2012SphOctTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
-                   DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
-
-};
-
-
-
-//=================================================================================================
-//  Class GodunovSphTree
-/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
-/// \details kd-tree data structure used for efficient neighbour searching
-///          and computation of gravitational forces for grad-h SPH.
-/// \author  D. A. Hubber
-/// \date    08/01/2014
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-class GodunovSphTree: public SphTree<ndim,ParticleType,TreeCell>
-{
- public:
-
-  using SphTree<ndim,ParticleType,TreeCell>::activelistbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::activepartbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::allocated_buffer;
-  using SphTree<ndim,ParticleType,TreeCell>::box;
-  using SphTree<ndim,ParticleType,TreeCell>::cellbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::gravity_mac;
-  using SphTree<ndim,ParticleType,TreeCell>::kernp;
-  using SphTree<ndim,ParticleType,TreeCell>::kernrange;
-  using SphTree<ndim,ParticleType,TreeCell>::kernrangesqd;
-  using SphTree<ndim,ParticleType,TreeCell>::levelneibbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::multipole;
-  using SphTree<ndim,ParticleType,TreeCell>::neibcheck;
-  using SphTree<ndim,ParticleType,TreeCell>::neibpartbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::Ngravcellmaxbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::Nleafmax;
-  using SphTree<ndim,ParticleType,TreeCell>::Nneibmaxbuf;
-  using SphTree<ndim,ParticleType,TreeCell>::Ntot;
-  using SphTree<ndim,ParticleType,TreeCell>::Ntotmax;
-  using SphTree<ndim,ParticleType,TreeCell>::Ntotmaxold;
-  using SphTree<ndim,ParticleType,TreeCell>::Ntotold;
-  using SphTree<ndim,ParticleType,TreeCell>::timing;
-  using SphTree<ndim,ParticleType,TreeCell>::tree;
-  using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
-#ifdef MPI_PARALLEL
-  using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
-  using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
-#endif
-
-
-  //-----------------------------------------------------------------------------------------------
-  GodunovSphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
-                 DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
-  ~GodunovSphTree();
-
-
-  //-----------------------------------------------------------------------------------------------
-  void UpdateAllSphProperties(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
-  void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
-  void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
-  void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
-  void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
-  void UpdateAllSphDudt(int, int, SphParticle<ndim> *, Sph<ndim> *) {};
-  void UpdateAllSphDerivatives(int, int, SphParticle<ndim> *, Sph<ndim> *) {};
-
-};
-
-
-
-//=================================================================================================
-//  Class GodunovSphKDTree
-/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
-/// \details kd-tree data structure used for efficient neighbour searching
-///          and computation of gravitational forces for grad-h SPH.
-/// \author  D. A. Hubber
-/// \date    17/09/2014
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-class GodunovSphKDTree: public GodunovSphTree<ndim,ParticleType,TreeCell>
-{
- public:
-
-  using SphTree<ndim,ParticleType,TreeCell>::tree;
-  using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
-#ifdef MPI_PARALLEL
-  using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
-  using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
-#endif
-
-
-  //-----------------------------------------------------------------------------------------------
-  GodunovSphKDTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
-                  DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
-
-};
-
-
-
-//=================================================================================================
-//  Class GodunovSphOctTree
-/// \brief   Class containing kd-tree for computing grad-h SPH force loops.
-/// \details kd-tree data structure used for efficient neighbour searching
-///          and computation of gravitational forces for grad-h SPH.
-/// \author  D. A. Hubber
-/// \date    17/09/2014
-//=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-class GodunovSphOctTree: public GodunovSphTree<ndim,ParticleType,TreeCell>
-{
- public:
-
-  using SphTree<ndim,ParticleType,TreeCell>::tree;
-  using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
-#ifdef MPI_PARALLEL
-  using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
-  using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
-#endif
-
-
-  //-----------------------------------------------------------------------------------------------
-  GodunovSphOctTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
                    DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };

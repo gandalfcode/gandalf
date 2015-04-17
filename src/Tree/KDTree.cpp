@@ -178,9 +178,11 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
 {
   int i;                               // Particle counter
   int k;                               // Dimension counter
+  FLOAT bbmin[ndim];
+  FLOAT bbmax[ndim];
 
   debug2("[KDTree::BuildTree]");
-  //timing->StartTimingSection("BUILD_TREE",2);
+  //timing->StartTimingSection("BUILD_TREE");
 
   // Activate nested parallelism for tree building routines
 #ifdef _OPENMP
@@ -202,6 +204,20 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   // including linked lists and cell pointers
   if (ltot != ltot_old) CreateTreeStructure();
 
+  // Create bounding box of SPH particles
+  for (k=0; k<ndim; k++) bbmin[k] = big_number;
+  for (k=0; k<ndim; k++) bbmax[k] = -big_number;
+  for (i=0; i<Ntot; i++) {
+    for (k=0; k<ndim; k++) {
+      if (partdata[i].r[k] + 2.0*partdata[i].h > bbmax[k]) {
+        bbmax[k] = partdata[i].r[k] + 2.0*partdata[i].h;
+      }
+      if (partdata[i].r[k] - 2.0*partdata[i].h < bbmin[k]) {
+        bbmin[k] = partdata[i].r[k] - 2.0*partdata[i].h;
+      }
+    }
+  }
+
 
   // Set properties for root cell before constructing tree
   ifirst = _ifirst;
@@ -210,8 +226,8 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
   celldata[0].ifirst = ifirst;
   celldata[0].ilast  = ilast;
   celldata[0].cnext  = Ncellmax;
-  for (k=0; k<ndim; k++) celldata[0].bbmin[k] = -big_number;
-  for (k=0; k<ndim; k++) celldata[0].bbmax[k] = big_number;
+  for (k=0; k<ndim; k++) celldata[0].bbmin[k] = bbmin[k]; //-big_number;
+  for (k=0; k<ndim; k++) celldata[0].bbmax[k] = bbmax[k]; //big_number;
   for (k=0; k<ndim; k++) celldata[0].cexit[0][k] = -1;
   for (k=0; k<ndim; k++) celldata[0].cexit[1][k] = -1;
   for (i=ifirst; i<ilast; i++) inext[i] = i+1;
@@ -225,7 +241,7 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
     }
 
     // Recursively build tree from root node down
-    DivideTreeCell(ifirst,ilast,partdata,celldata[0]);
+    DivideTreeCell(ifirst, ilast, partdata, celldata[0]);
 #if defined(VERIFY_ALL)
     ValidateTree(partdata);
 #endif
@@ -348,7 +364,6 @@ void KDTree<ndim,ParticleType,TreeCell>::CreateTreeStructure(void)
     }
 
 
-
     // Some assert statements (for debugging)
     assert(c >= celldata[c].level);
 
@@ -390,6 +405,7 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
     cell.worktot = 0.0;
 #endif
     if (cell.N > 0) {
+      assert(cell.ilast - cell.ifirst == cell.N - 1);
       for (j=cell.ifirst; j<cell.ilast; j++) inext[ids[j]] = ids[j+1];
       cell.ifirst = ids[cell.ifirst];
       cell.ilast = ids[cell.ilast];
@@ -423,9 +439,11 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
     if (cell.bbmax[k] - cell.bbmin[k] > rkmax) {
       rkmax = cell.bbmax[k] - cell.bbmin[k];
       k_divide = k;
+      //cout << "Division? : " << k_divide << "    " << rkmax << endl;
     }
   }
-  cell.k_divide = k_divide;
+  //cell.k_divide = k_divide;
+  //cin >> i;
 
 
   // Find median value along selected division plane and re-order array
@@ -443,6 +461,7 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
   if (celldata[cell.c1].N != 0) {
     celldata[cell.c1].ifirst = ifirst;
     celldata[cell.c1].ilast = ifirst + cell.N/2 - 1;
+    assert(celldata[cell.c1].ilast - celldata[cell.c1].ifirst == celldata[cell.c1].N - 1);
   }
 
   // Set properties of second child cell
@@ -456,6 +475,7 @@ void KDTree<ndim,ParticleType,TreeCell>::DivideTreeCell
   if (celldata[cell.c2].N != 0) {
     celldata[cell.c2].ifirst = ifirst + cell.N/2;
     celldata[cell.c2].ilast = ilast;
+    assert(celldata[cell.c2].ilast - celldata[cell.c2].ifirst == celldata[cell.c2].N - 1);
   }
   assert(cell.N == celldata[cell.c1].N + celldata[cell.c2].N);
 
@@ -1085,7 +1105,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
   int ilast;                           // Last particle in linked list
 
   debug2("[KDTree::UpdateActiveParticleCounters]");
-  //timing->StartTimingSection("TREE_UPDATE_COUNTERS",2);
+  //timing->StartTimingSection("TREE_UPDATE_COUNTERS");
 
 
   // Loop through all grid cells in turn
@@ -1196,12 +1216,12 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   const FLOAT rp[ndim],                ///< [in] Search position
   const FLOAT rsearch,                 ///< [in] Maximum smoothing length
   const int Nneibmax,                  ///< [in] Max. no. of neighbours
+  int &Nneib,                          ///< [inout] No. of neighbours
   int *neiblist)                       ///< [out] List of neighbour i.d.s
 {
   int cc = 0;                          // Cell counter
   int i;                               // Particle id
   int k;                               // Neighbour counter
-  int Nneib = 0;                       // Neighbour counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
   const FLOAT rsearchsqd = rsearch*rsearch;  // Search radius squared
@@ -1673,7 +1693,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
   const int Nneibmax,                  ///< [in] Max. no. of SPH neighbours
   const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
   int &Nneib,                          ///< [out] Total no. of neighbours
-  int &Nhydroneib,                       ///< [out] No. of SPH neighbours
+  int &Nhydroneib,                     ///< [out] No. of SPH neighbours
   int &Ndirect,                        ///< [out] No. of direct-sum neighbours
   int &Ngravcell,                      ///< [out] No. of cell interactions
   int *neiblist,                       ///< [out] List of all particle ids
@@ -1682,11 +1702,11 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
   TreeCell<ndim> *gravcell,            ///< [out] Array of local copies of tree cells
   ParticleType<ndim> *neibpart)        ///< [out] Array of local copies of neighbour particles
 {
-  int cc;                              // Cell counter
+  int cc = 0;                          // Cell counter
   int i;                               // Particle id
   int j;                               // Aux. particle counter
   int k;                               // Neighbour counter
-  int Nhydroneibtemp = 0;                // Aux. counter
+  int Nhydroneibtemp = 0;              // Aux. counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT dr_corr[ndim];                 // Periodic correction vector
   FLOAT drsqd;                         // Distance squared
@@ -1698,11 +1718,10 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
   for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
 
   // Start with root cell and walk through entire tree
-  cc        = 0;
-  Nneib     = 0;
-  Nhydroneib  = 0;
-  Ndirect   = 0;
-  Ngravcell = 0;
+  Nneib      = 0;
+  Nhydroneib = 0;
+  Ndirect    = 0;
+  Ngravcell  = 0;
 
 
   // Walk through all cells in tree to determine particle and cell interaction lists
@@ -1711,8 +1730,8 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
 
     // Calculate closest periodic replica of cell
     for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
-    NearestPeriodicVector(simbox,dr,dr_corr);
-    drsqd = DotProduct(dr,dr,ndim);
+    NearestPeriodicVector(simbox, dr, dr_corr);
+    drsqd = DotProduct(dr, dr, ndim);
 
     // Check if bounding spheres overlap with each other (for potential SPH neibs)
     if (drsqd <= pow(celldata[cc].rmax + cell.rmax + kernrange*cell.hmax,2) ||
@@ -1732,6 +1751,8 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
           sphneiblist[Nhydroneib++] = Nneib;
           neiblist[Nneib] = i;
           neibpart[Nneib] = partdata[i];
+          for (k=0; k<ndim; k++) dr[k] = neibpart[Nneib].r[k] - rc[k];
+          NearestPeriodicVector(simbox, dr, dr_corr);
           for (k=0; k<ndim; k++) neibpart[Nneib].r[k] += dr_corr[k];
           Nneib++;
           if (i == celldata[cc].ilast) break;
@@ -1758,12 +1779,15 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
         directlist[Ndirect++] = Nneib;
         neiblist[Nneib] = i;
         neibpart[Nneib] = partdata[i];
+        for (k=0; k<ndim; k++) dr[k] = neibpart[Nneib].r[k] - rc[k];
+        NearestPeriodicVector(simbox, dr, dr_corr);
         for (k=0; k<ndim; k++) neibpart[Nneib].r[k] += dr_corr[k];
         Nneib++;
       }
       else if (Ngravcell < Ngravcellmax) {
         gravcell[Ngravcell] = celldata[cc];
         for (k=0; k<ndim; k++) gravcell[Ngravcell].r[k] += dr_corr[k];
+        for (k=0; k<ndim; k++) gravcell[Ngravcell].rcell[k] += dr_corr[k];
         Ngravcell++;
       }
       else {
@@ -1790,6 +1814,8 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
           directlist[Ndirect++] = Nneib;
           neiblist[Nneib] = i;
           neibpart[Nneib] = partdata[i];
+          for (k=0; k<ndim; k++) dr[k] = neibpart[Nneib].r[k] - rc[k];
+          NearestPeriodicVector(simbox,dr,dr_corr);
           for (k=0; k<ndim; k++) neibpart[Nneib].r[k] += dr_corr[k];
           Nneib++;
           if (i == celldata[cc].ilast) break;
@@ -2536,6 +2562,3 @@ template class KDTree<3,GradhSphParticle,KDTreeCell>;
 template class KDTree<1,SM2012SphParticle,KDTreeCell>;
 template class KDTree<2,SM2012SphParticle,KDTreeCell>;
 template class KDTree<3,SM2012SphParticle,KDTreeCell>;
-template class KDTree<1,GodunovSphParticle,KDTreeCell>;
-template class KDTree<2,GodunovSphParticle,KDTreeCell>;
-template class KDTree<3,GodunovSphParticle,KDTreeCell>;
