@@ -251,8 +251,8 @@ class LV2008MFV : public MeshlessFV<ndim>
 
   kernelclass<ndim> kern;                  ///< SPH kernel
   //Balsara2004Limiter<ndim,MeshlessFVParticle> limiter;
-  Springel2009Limiter<ndim,MeshlessFVParticle> limiter;
-  //TESS2011Limiter<ndim,MeshlessFVParticle> limiter;
+  //Springel2009Limiter<ndim,MeshlessFVParticle> limiter;
+  TESS2011Limiter<ndim,MeshlessFVParticle> limiter;
   //GizmoLimiter<ndim,MeshlessFVParticle> limiter;
 };
 #endif

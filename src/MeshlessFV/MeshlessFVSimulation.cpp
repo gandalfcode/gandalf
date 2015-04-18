@@ -643,7 +643,7 @@ void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
   DOUBLE dt_sph;                       // Aux. minimum SPH timestep
 
   debug2("[MeshlessFVSimulation::ComputeGlobalTimestep]");
-  timing->StartTimingSection("GLOBAL_TIMESTEPS",2);
+  timing->StartTimingSection("GLOBAL_TIMESTEPS");
 
 
   // Only update timestep when all particles are synced at end of last step.

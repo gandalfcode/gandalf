@@ -92,7 +92,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllProperties
   //ParticleType<ndim>* mfvdata = static_cast<ParticleType<ndim>* > (mfv_gen);
 
   debug2("[MeshlessFVBruteForce::UpdateAllProperties]");
-  timing->StartTimingSection("MFV_COMPUTE_H",2);
+  timing->StartTimingSection("MFV_COMPUTE_H");
 
   // Store masses in separate array
   gpot = new FLOAT[Ntot];
@@ -170,7 +170,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
   Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
   debug2("[MeshlessFVBruteForce::UpdateGradientMatrices]");
-  timing->StartTimingSection("MFV_UPDATE_GRADIENTS",2);
+  timing->StartTimingSection("MFV_UPDATE_GRADIENTS");
 
   // Compute forces of real and imported particles
   //-----------------------------------------------------------------------------------------------
@@ -277,7 +277,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
   Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
   debug2("[MeshlessFVBruteForce::UpdateGodunovFluxes]");
-  timing->StartTimingSection("MFV_UPDATE_FLUXES",2);
+  timing->StartTimingSection("MFV_UPDATE_FLUXES");
 
 
   // Compute forces of real and imported particles

@@ -698,7 +698,7 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
   FLOAT uleft[ndim];
   FLOAT uright[ndim];
   FLOAT Wface[ndim];
-  const bool mfmFlag = true;
+  const bool mfmFlag = false;
 
   // Compute rotation matrices
   this->ComputeRotationMatrices(runit, rotMat, invRotMat);

@@ -95,7 +95,7 @@ public:
   Particle<ndim>& GetParticlePointer(const int i) {
     return *((Particle<ndim>*)((unsigned char*) hydrodata_unsafe + i*size_hydro_part));
   };
-  virtual Particle<ndim>* GetParticleArray ()=0;
+  virtual Particle<ndim>* GetParticleArray() = 0;
 
 
   // Const variables (read in from parameters file)
@@ -104,7 +104,7 @@ public:
   const int self_gravity;              ///< Compute gravitational forces?
   const string gas_eos;                ///< Gas EOS option
   const FLOAT h_fac;                   ///< Smoothing length-density factor
-  static const FLOAT invndim; //=1./ndim;  ///< Copy of 1/ndim
+  static const FLOAT invndim;          ///< Copy of 1/ndim
 
 
   // SPH particle counters and main particle data array
@@ -120,11 +120,12 @@ public:
   int Nhydro;                          ///< No. of hydro particles in simulation
   int Nhydromax;                       ///< Max. no. of hydro particles in array
   int Ntot;                            ///< No. of real + ghost particles
+  FLOAT hmin_sink;                     ///< Minimum smoothing length for sinks
   FLOAT kernfac;                       ///< Kernel range neighbour fraction
   FLOAT kernfacsqd;                    ///< Kernel range neib. fraction squared
   FLOAT kernrange;                     ///< Kernel range
   FLOAT mmean;                         ///< Mean SPH particle mass
-  FLOAT hmin_sink;
+
 
   int *iorder;                         ///< Array containing particle ordering
   EOS<ndim> *eos;                      ///< Equation-of-state

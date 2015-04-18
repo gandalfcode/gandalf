@@ -66,7 +66,8 @@ SimulationBase* SimulationBase::SimulationFactory
   }
 
   // Check simulation type is valid
-  if (simtype != "sph" && simtype != "gradhsph" && simtype != "sm2012sph" && simtype != "nbody" ) {
+  if (simtype != "sph" && simtype != "gradhsph" && simtype != "sm2012sph" &&
+      simtype != "meshlessfv" && simtype != "nbody" ) {
     string msg = "Error: the simulation type " + simtype + " was not recognized";
     ExceptionHandler::getIstance().raise(msg);
   }
