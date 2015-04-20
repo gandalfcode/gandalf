@@ -48,13 +48,13 @@ using namespace std;
 //=================================================================================================
 template <int ndim>
 FV<ndim>::FV(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult,
-                             FLOAT _courant_mult, FLOAT h_fac_aux, FLOAT h_converge_aux,
-                             FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_part):
+             FLOAT _courant_mult, FLOAT h_fac_aux, FLOAT h_converge_aux,
+             FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_part):
   Hydrodynamics<ndim>(hydro_forces_aux, self_gravity_aux, h_fac_aux,
                       gas_eos_aux, KernelName, size_part),
-  accel_mult(_accel_mult),
-  courant_mult(_courant_mult),
-  h_converge(h_converge_aux),
+  //accel_mult(_accel_mult),
+  //courant_mult(_courant_mult),
+  //h_converge(h_converge_aux),
   gamma_eos(gamma_aux),
   gammam1(gamma_aux - 1.0)
 {
@@ -74,36 +74,6 @@ template <int ndim>
 FV<ndim>::~FV()
 {
   //DeallocateMemory();
-}
-
-
-
-//=================================================================================================
-//  FV::UpdateArrayVariables
-/// ...
-//=================================================================================================
-template <int ndim>
-void FV<ndim>::UpdateArrayVariables(FVParticle<ndim> &part)
-{
-  part.m = part.Qcons[irho];
-  part.rho = part.m/part.volume; //part.Wprim[irho];
-  for (int k=0; k<ndim; k++) part.v[k] = part.Qcons[k]/part.m;
-
-  FLOAT ekin = 0.0;
-  for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
-  part.u = (part.Qcons[ietot] - 0.5*part.m*ekin)/part.m;
-  //part.u = part.U/part.m;
-  part.press = (gamma_eos - 1.0)*part.rho*part.u;
-
-  if (part.u < 0.0 || part.m < 0.0) {
-    cout << "Mistake? : " << part.Qcons[ietot] << "    " << 0.5*part.m*ekin << "    " << part.m << "    " << part.u << endl;
-    cout << "r : " << part.r[0] << "     v : " << part.v[0] << endl;
-    cout << "Internal energy : " << part.u << "     " << part.Utot/part.m << endl;
-  }
-
-  assert(part.m > 0.0);
-  assert(part.u > 0.0);
-
 }
 
 
@@ -287,60 +257,6 @@ void FV<ndim>::CalculatePrimitiveTimeDerivative
     Wdot[ipress] = Wprim[ivx]*gradW[ipress][0] + Wprim[ivy]*gradW[ipress][1] +
       Wprim[ivz]*gradW[ipress][2] +
       gamma_eos*Wprim[ipress]*(gradW[ivx][0] + gradW[ivy][1] + gradW[ivz][2]);
-  }
-
-  return;
-}
-
-
-
-//=================================================================================================
-//  FV::InitialSmoothingLengthGuess
-/// Perform initial guess of smoothing.  In the abscence of more sophisticated techniques, we guess
-/// the smoothing length assuming a uniform density medium with the same volume and total mass.
-//=================================================================================================
-template <int ndim>
-void FV<ndim>::InitialSmoothingLengthGuess(void)
-{
-  int i;                           // Particle counter
-  FLOAT h_guess;                   // Global guess of smoothing length
-  FLOAT volume;                    // Volume of global bounding box
-  FLOAT rmin[ndim];                // Min. extent of bounding box
-  FLOAT rmax[ndim];                // Max. extent of bounding box
-
-  debug2("[Sph::InitialSmoothingLengthGuess]");
-
-  // Calculate bounding box containing all SPH particles
-  this->ComputeBoundingBox(rmax,rmin,Nhydro);
-
-  // Depending on the dimensionality, calculate the average smoothing
-  // length assuming a uniform density distribution filling the bounding box.
-  //-----------------------------------------------------------------------------------------------
-  if (ndim == 1) {
-    Ngather = (int) (2.0*kernp->kernrange*h_fac);
-    volume = rmax[0] - rmin[0];
-    h_guess = (volume*(FLOAT) Ngather)/(4.0*(FLOAT) Nhydro);
-  }
-  //-----------------------------------------------------------------------------------------------
-  else if (ndim == 2) {
-    Ngather = (int) (pi*pow(kernp->kernrange*h_fac,2));
-    volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1]);
-    h_guess = sqrtf((volume*(FLOAT) Ngather)/(4.0*(FLOAT) Nhydro));
-  }
-  //-----------------------------------------------------------------------------------------------
-  else if (ndim == 3) {
-    Ngather = (int) (4.0*pi*pow(kernp->kernrange*h_fac,3)/3.0);
-    volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1])*(rmax[2] - rmin[2]);
-    h_guess = powf((3.0*volume*(FLOAT) Ngather)/(32.0*pi*(FLOAT) Nhydro),onethird);
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  // Set all smoothing lengths equal to average value
-  for (i=0; i<Nhydro; i++) {
-    FVParticle<ndim>& part = GetFVParticlePointer(i);
-    part.h         = h_guess;
-    part.invh      = 1.0/h_guess;
-    part.hrangesqd = kernfacsqd*kernp->kernrangesqd*part.h*part.h;
   }
 
   return;

@@ -91,6 +91,9 @@ public:
   static const int ietot = ndim + 1;
   static const int ipress = ndim + 1;
 
+  const FLOAT gamma_eos;               ///< ..
+  const FLOAT gammam1;                 ///< ..
+
 
   // Constructor
   //-----------------------------------------------------------------------------------------------
@@ -104,6 +107,7 @@ public:
   virtual void DeallocateMemory(void) = 0;
   virtual void DeleteDeadParticles(void) = 0;
   virtual void ReorderParticles(void) = 0;
+
 
   void CalculateFluxVectorFromPrimitive(FLOAT Wprim[nvar], FLOAT flux[nvar][ndim]);
   void CalculatePrimitiveTimeDerivative(FLOAT Wprim[nvar], FLOAT gradW[nvar][ndim], FLOAT Wdot[nvar]);

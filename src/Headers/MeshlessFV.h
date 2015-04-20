@@ -28,19 +28,20 @@
 
 #include <assert.h>
 #include <string>
-#include "Precision.h"
 #include "Constants.h"
+#include "DomainBox.h"
+#include "EOS.h"
+#include "ExternalPotential.h"
+#include "FV.h"
 #include "Hydrodynamics.h"
-#include "Particle.h"
-#include "SmoothingKernel.h"
 #include "NbodyParticle.h"
 #include "Nbody.h"
 #include "Parameters.h"
-#include "DomainBox.h"
-#include "EOS.h"
+#include "Particle.h"
+#include "Precision.h"
 #include "RiemannSolver.h"
 #include "SlopeLimiter.h"
-#include "ExternalPotential.h"
+#include "SmoothingKernel.h"
 #if defined _OPENMP
 #include "omp.h"
 #endif
@@ -56,7 +57,7 @@ using namespace std;
 //=================================================================================================
 //template <int ndim>
 template <int ndim>
-class MeshlessFV : public Hydrodynamics<ndim>
+class MeshlessFV : public FV<ndim>
 {
 public:
 
@@ -81,6 +82,8 @@ public:
   using Hydrodynamics<ndim>::Ntot;
   using Hydrodynamics<ndim>::riemann;
   using Hydrodynamics<ndim>::size_hydro_part;
+  using FV<ndim>::gamma_eos;
+  using FV<ndim>::gammam1;
 
   static const FLOAT invndim=1./ndim;  ///< Copy of 1/ndim
   static const int nvar = ndim + 2;
@@ -92,11 +95,10 @@ public:
   static const int ipress = ndim + 1;
 
 
-
   // Constructor
   //-----------------------------------------------------------------------------------------------
-  MeshlessFV(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
-             FLOAT h_fac_aux, FLOAT h_converge_aux,
+  MeshlessFV(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult,
+             FLOAT _courant_mult, FLOAT h_fac_aux, FLOAT h_converge_aux,
              FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_mfv_part);
   ~MeshlessFV();
 
@@ -121,6 +123,7 @@ public:
                                   MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
   virtual void CopyDataToGhosts(DomainBox<ndim> &, MeshlessFVParticle<ndim> *) = 0;
 
+
   // MeshlessFV array memory allocation functions
   //-----------------------------------------------------------------------------------------------
   void InitialSmoothingLengthGuess(void);
@@ -129,18 +132,7 @@ public:
   FLOAT Timestep(MeshlessFVParticle<ndim> &);
   void UpdatePrimitiveVector(MeshlessFVParticle<ndim> &);
   void UpdateArrayVariables(MeshlessFVParticle<ndim> &);
-
-  void ConvertQToConserved(const FLOAT, const FLOAT Qcons[nvar], FLOAT Ucons[nvar]);
-  void ConvertConservedToQ(const FLOAT, const FLOAT Ucons[nvar], FLOAT Qcons[nvar]);
-
-  void ConvertConservedToPrimitive(const FLOAT Ucons[nvar], FLOAT Wprim[nvar]);
-  void ConvertPrimitiveToConserved(const FLOAT Wprim[nvar], FLOAT Ucons[nvar]);
-  //void CalculateConservedFluxFromConserved(int k, FLOAT Ucons[nvar], FLOAT flux[nvar]);
-  void CalculateFluxVectorFromPrimitive(FLOAT Wprim[nvar], FLOAT flux[nvar][ndim]);
-  void CalculatePrimitiveTimeDerivative(FLOAT Wprim[nvar], FLOAT gradW[nvar][ndim], FLOAT Wdot[nvar]);
   void IntegrateConservedVariables(MeshlessFVParticle<ndim> &, FLOAT);
-
-  //void IntegrateParticlePosition(MeshlessFVParticles<ndim> &, FLOAT);
 
 
   // Functions needed to hide some implementation details
@@ -156,8 +148,8 @@ public:
   //-----------------------------------------------------------------------------------------------
   const FLOAT accel_mult;              ///< ..
   const FLOAT courant_mult;            ///< ..
-  const FLOAT gamma_eos;               ///< ..
-  const FLOAT gammam1;                 ///< ..
+  //const FLOAT gamma_eos;               ///< ..
+  //const FLOAT gammam1;                 ///< ..
   const FLOAT h_converge;              ///< h-rho iteration tolerance
 
 
