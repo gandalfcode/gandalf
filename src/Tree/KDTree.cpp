@@ -1150,6 +1150,8 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
   const int ilast = cell.ilast;        // i.d. of last particle in cell c
   int i = cell.ifirst;                 // Local particle id (set to first ptcl id)
   int Nactive = 0;                     // No. of active particles in cell
+  
+  assert(activelist != NULL);
 
   // Walk through linked list to obtain list and number of active ptcls.
   while (i != -1) {
@@ -2562,3 +2564,6 @@ template class KDTree<3,GradhSphParticle,KDTreeCell>;
 template class KDTree<1,SM2012SphParticle,KDTreeCell>;
 template class KDTree<2,SM2012SphParticle,KDTreeCell>;
 template class KDTree<3,SM2012SphParticle,KDTreeCell>;
+template class KDTree<1,MeshlessFVParticle,KDTreeCell>;
+template class KDTree<2,MeshlessFVParticle,KDTreeCell>;
+template class KDTree<3,MeshlessFVParticle,KDTreeCell>;

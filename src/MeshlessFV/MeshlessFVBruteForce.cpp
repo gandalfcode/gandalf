@@ -25,6 +25,7 @@
 
 #include <iostream>
 #include <math.h>
+#include "MfvNeighbourSearch.h"
 #include "NeighbourSearch.h"
 #include "Sph.h"
 #include "Parameters.h"
@@ -49,7 +50,9 @@ MeshlessFVBruteForce<ndim,ParticleType>::MeshlessFVBruteForce
  DomainBox<ndim> *boxaux,
  SmoothingKernel<ndim> *kernaux,
  CodeTiming *timingaux):
- MeshlessFVNeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux)
+ NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
+ MeshlessFVNeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
+ BruteForceSearch<ndim,ParticleType>(kernrangeaux, boxaux, kernaux, timingaux)
 {
 }
 
@@ -92,7 +95,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllProperties
   //ParticleType<ndim>* mfvdata = static_cast<ParticleType<ndim>* > (mfv_gen);
 
   debug2("[MeshlessFVBruteForce::UpdateAllProperties]");
-  timing->StartTimingSection("MFV_COMPUTE_H");
+  //timing->StartTimingSection("MFV_COMPUTE_H");
 
   // Store masses in separate array
   gpot = new FLOAT[Ntot];
@@ -148,7 +151,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllProperties
   delete[] m;
   delete[] gpot;
 
-  timing->EndTimingSection("MFV_COMPUTE_H");
+  //timing->EndTimingSection("MFV_COMPUTE_H");
 
   return;
 }
@@ -156,7 +159,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllProperties
 
 
 //=================================================================================================
-//  BruteForceSearch::UpdateGradientMatrices
+//  MeshlessFVBruteForceSearch::UpdateGradientMatrices
 /// Routine for computing SPH properties (smoothing lengths, densities and
 /// forces) for all active SPH particle using neighbour lists generated
 /// using brute force (i.e. direct summation).
@@ -208,7 +211,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
       if (!mfvdata[i].active || mfvdata[i].itype == dead) continue;
 
       for (k=0; k<ndim; k++) rp[k] = mfvdata[i].r[k];
-      hrangesqdi = pow(kernfac*kernp->kernrange*mfvdata[i].h,2);
+      hrangesqdi = mfvdata[i].hrangesqd; //pow(kernfac*kernp->kernrange*mfvdata[i].h,2);
       Nneib = 0;
 
       //cout << "kern : " << kernfac << "   " << kernp->kernrange << endl;
@@ -219,7 +222,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
       //-------------------------------------------------------------------------------------------
       for (j=0; j<mfv->Nhydro + mfv->NPeriodicGhost; j++) {
         if (mfvdata[j].itype == dead) continue;
-        hrangesqdj = pow(kernfac*kernp->kernrange*mfvdata[j].h,2);
+        hrangesqdj = mfvdata[j].hrangesqd; //pow(kernfac*kernp->kernrange*mfvdata[j].h,2);
         for (k=0; k<ndim; k++) draux[k] = mfvdata[j].r[k] - rp[k];
         drsqd = DotProduct(draux,draux,ndim);
 
@@ -236,8 +239,8 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
       //-------------------------------------------------------------------------------------------
 
       // Compute all SPH hydro forces
-      mfv->ComputePsiFactors(i,Nneib,neiblist,drmag,invdrmag,dr,mfvdata[i],mfvdata);
-      mfv->ComputeGradients(i,Nneib,neiblist,drmag,invdrmag,dr,mfvdata[i],mfvdata);
+      mfv->ComputePsiFactors(i, Nneib, neiblist, drmag, invdrmag, dr, mfvdata[i], mfvdata);
+      mfv->ComputeGradients(i, Nneib, neiblist, drmag, invdrmag, dr, mfvdata[i], mfvdata);
 
       //sphdata[i].active = false;
 
@@ -324,7 +327,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
       if (!mfvdata[i].active || mfvdata[i].itype == dead) continue;
 
       for (k=0; k<ndim; k++) rp[k] = mfvdata[i].r[k];
-      hrangesqdi = pow(kernfac*kernp->kernrange*mfvdata[i].h,2);
+      hrangesqdi = mfvdata[i].hrangesqd; //pow(kernfac*kernp->kernrange*mfvdata[i].h,2);
       Nneib = 0;
       for (j=0; j<Ntot; j++) {
         for (k=0; k<ndim+2; k++) neibdata[j].dQdt[k] = (FLOAT) 0.0;
@@ -335,7 +338,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
       //-------------------------------------------------------------------------------------------
       for (j=0; j<mfv->Nhydro + mfv->NPeriodicGhost; j++) {
         if (mfvdata[j].itype == dead) continue;
-        hrangesqdj = pow(kernfac*kernp->kernrange*mfvdata[j].h,2);
+        hrangesqdj = mfvdata[j].hrangesqd; //pow(kernfac*kernp->kernrange*mfvdata[j].h,2);
         for (k=0; k<ndim; k++) draux[k] = mfvdata[j].r[k] - rp[k];
         drsqd = DotProduct(draux,draux,ndim);
 
@@ -366,6 +369,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
     //---------------------------------------------------------------------------------------------
 
     // Add all buffers back to main arrays
+#pragma omp barrier
 #pragma omp critical
     {
       for (i=0; i<Nhydro; i++) {
@@ -396,11 +400,11 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
 /// Search domain to create any required ghost particles near any boundaries.
 /// Currently only searches to create periodic or mirror ghost particles.
 //=================================================================================================
-template <int ndim, template <int> class ParticleType>
+/*template <int ndim, template <int> class ParticleType>
 void MeshlessFVBruteForce<ndim,ParticleType>::SearchBoundaryGhostParticles
  (FLOAT tghost,                        ///< Ghost particle 'lifetime'
-  DomainBox<ndim> &simbox,              ///< Simulation box structure
-  MeshlessFV<ndim> *mfv)          ///< Sph object pointer
+  DomainBox<ndim> &simbox,             ///< Simulation box structure
+  MeshlessFV<ndim> *mfv)               ///< Sph object pointer
 {
   int i;                               // Particle counter
 
@@ -468,7 +472,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::SearchBoundaryGhostParticles
   mfv->NPeriodicGhost = mfv->Nghost;
 
   return;
-}
+}*/
 
 
 

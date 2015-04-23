@@ -58,6 +58,7 @@ GradhSphKDTree<ndim,ParticleType,TreeCell>::GradhSphKDTree
   DomainBox<ndim> *boxaux,
   SmoothingKernel<ndim> *kernaux,
   CodeTiming *timingaux):
+ NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
  GradhSphTree<ndim,ParticleType,TreeCell>(Nleafmaxaux,Nmpiaux,thetamaxsqdaux,kernrangeaux,
                                           macerroraux,gravity_mac_aux,multipole_aux,
                                           boxaux,kernaux,timingaux)
@@ -116,6 +117,7 @@ GradhSphOctTree<ndim,ParticleType,TreeCell>::GradhSphOctTree
   DomainBox<ndim> *boxaux,
   SmoothingKernel<ndim> *kernaux,
   CodeTiming *timingaux):
+ NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
  GradhSphTree<ndim,ParticleType,TreeCell>(Nleafmaxaux, Nmpiaux, thetamaxsqdaux, kernrangeaux,
                                           macerroraux, gravity_mac_aux, multipole_aux,
                                           boxaux, kernaux, timingaux)
@@ -160,6 +162,7 @@ GradhSphTree<ndim,ParticleType,TreeCell>::GradhSphTree
   DomainBox<ndim> *boxaux,
   SmoothingKernel<ndim> *kernaux,
   CodeTiming *timingaux):
+ NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
  SphTree<ndim,ParticleType,TreeCell>(Nleafmaxaux, Nmpiaux, thetamaxsqdaux, kernrangeaux,
                                      macerroraux, gravity_mac_aux, multipole_aux,
                                      boxaux, kernaux, timingaux)

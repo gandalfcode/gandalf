@@ -1858,3 +1858,6 @@ template class OctTree<3,GradhSphParticle,OctTreeCell>;
 template class OctTree<1,SM2012SphParticle,OctTreeCell>;
 template class OctTree<2,SM2012SphParticle,OctTreeCell>;
 template class OctTree<3,SM2012SphParticle,OctTreeCell>;
+template class OctTree<1,MeshlessFVParticle,OctTreeCell>;
+template class OctTree<2,MeshlessFVParticle,OctTreeCell>;
+template class OctTree<3,MeshlessFVParticle,OctTreeCell>;

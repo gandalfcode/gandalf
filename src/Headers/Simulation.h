@@ -41,7 +41,7 @@
 #include "ExternalPotential.h"
 #include "Hydrodynamics.h"
 #include "MeshlessFV.h"
-#include "NeighbourSearch.h"
+#include "MfvNeighbourSearch.h"
 #include "Precision.h"
 #include "Parameters.h"
 #include "Radiation.h"

@@ -211,22 +211,24 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   Nmpi = mpicontrol->Nmpi;
 #endif
 
+
   // Create neighbour searching object based on chosen method in params file
   //-----------------------------------------------------------------------------------------------
-  if (stringparams["neib_search"] == "bruteforce")
+  if (stringparams["neib_search"] == "bruteforce") {
     sphneib = new GradhSphBruteForce<ndim,GradhSphParticle>
-      (sph->kernp->kernrange,&simbox,sph->kernp,timing);
+      (sph->kernp->kernrange, &simbox, sph->kernp, timing);
+  }
   else if (stringparams["neib_search"] == "kdtree") {
     sphneib = new GradhSphKDTree<ndim,GradhSphParticle,KDTreeCell>
-     (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
-      floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
-      &simbox,sph->kernp,timing);
+     (intparams["Nleafmax"], Nmpi, floatparams["thetamaxsqd"], sph->kernp->kernrange,
+      floatparams["macerror"], stringparams["gravity_mac"], stringparams["multipole"],
+      &simbox, sph->kernp, timing);
   }
   else if (stringparams["neib_search"] == "octtree") {
     sphneib = new GradhSphOctTree<ndim,GradhSphParticle,OctTreeCell>
-     (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
-      floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
-      &simbox,sph->kernp,timing);
+     (intparams["Nleafmax"], Nmpi, floatparams["thetamaxsqd"], sph->kernp->kernrange,
+      floatparams["macerror"], stringparams["gravity_mac"], stringparams["multipole"],
+      &simbox, sph->kernp, timing);
   }
   else {
     string message = "Unrecognised parameter : neib_search = "
@@ -236,6 +238,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   //sphneib->kernp = sph->kernp;
   sphneib->kernfac = sph->kernfac;
   //sphneib->kernrange = sph->kernp->kernrange;
+
 
 #if defined MPI_PARALLEL
   mpicontrol->SetNeibSearch(sphneib);

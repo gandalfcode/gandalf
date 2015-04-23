@@ -174,34 +174,36 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   // Riemann solver object
   //-----------------------------------------------------------------------------------------------
   string riemann = stringparams["riemann_solver"];
-  if (riemann == "exact")
+  if (riemann == "exact") {
     mfv->riemann = new ExactRiemannSolver<ndim>(floatparams["gamma_eos"]);
-  else if (riemann == "hllc")
+  }
+  else if (riemann == "hllc") {
     mfv->riemann = new HllcRiemannSolver<ndim>(floatparams["gamma_eos"]);
+  }
   else {
     string message = "Unrecognised parameter : riemann_solver = " + riemann;
     ExceptionHandler::getIstance().raise(message);
   }
 
 
-
   // Create neighbour searching object based on chosen method in params file
   //-----------------------------------------------------------------------------------------------
-  if (stringparams["neib_search"] == "bruteforce")
+  if (stringparams["neib_search"] == "bruteforce") {
     mfvneib = new MeshlessFVBruteForce<ndim,MeshlessFVParticle>
       (mfv->kernp->kernrange, &simbox, mfv->kernp, timing);
-  /*else if (stringparams["neib_search"] == "kdtree") {
-    mfvneib = new GradhSphKDTree<ndim,GradhMeshlessFVParticle,KDTreeCell>
-     (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],mfv->kernp->kernrange,
-      floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
-      &simbox,mfv->kernp,timing);
+  }
+  else if (stringparams["neib_search"] == "kdtree") {
+    mfvneib = new MeshlessFVKDTree<ndim,MeshlessFVParticle,KDTreeCell>
+     (intparams["Nleafmax"], Nmpi, floatparams["thetamaxsqd"], mfv->kernp->kernrange,
+      floatparams["macerror"], stringparams["gravity_mac"], stringparams["multipole"],
+      &simbox, mfv->kernp, timing);
   }
   else if (stringparams["neib_search"] == "octtree") {
-    mfvneib = new GradhSphOctTree<ndim,GradhMeshlessFVParticle,OctTreeCell>
-     (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],mfv->kernp->kernrange,
-      floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
-      &simbox,mfv->kernp,timing);
-  }*/
+    mfvneib = new MeshlessFVOctTree<ndim,MeshlessFVParticle,OctTreeCell>
+     (intparams["Nleafmax"], Nmpi, floatparams["thetamaxsqd"], mfv->kernp->kernrange,
+      floatparams["macerror"], stringparams["gravity_mac"], stringparams["multipole"],
+      &simbox, mfv->kernp, timing);
+  }
   else {
     string message = "Unrecognised parameter : neib_search = "
       + simparams->stringparams["neib_search"];
@@ -348,7 +350,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 {
   int i;                               // Particle counter
   int k;                               // Dimension counter
-  MeshlessFVParticle<ndim> *partdata;         // Pointer to main SPH data array
+  MeshlessFVParticle<ndim> *partdata;  // Pointer to main SPH data array
 
   debug2("[MeshlessFVSimulation::PostInitialConditionsSetup]");
 
@@ -387,19 +389,19 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     mfvneib->neibcheck = false;
     if (!this->initial_h_provided) {
       mfv->InitialSmoothingLengthGuess();
-      mfvneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
-                         mfv->Nhydromax,mfv->GetMeshlessFVParticleArray(),mfv,timestep);
+      mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
+                         mfv->Nhydromax, timestep, mfv->GetMeshlessFVParticleArray(), mfv);
       mfvneib->UpdateAllProperties(mfv->Nhydro,mfv->Ntot,mfv->GetMeshlessFVParticleArray(),mfv,nbody);
     }
     else {
-      mfvneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
-                         mfv->Nhydromax,mfv->GetMeshlessFVParticleArray(),mfv,timestep);
+      mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
+                         mfv->Nhydromax, timestep, mfv->GetMeshlessFVParticleArray(), mfv);
     }
 
     // Search ghost particles
     mfvneib->SearchBoundaryGhostParticles(0.0,simbox,mfv);
-    //mfvneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
-    //                        mfv->Nhydromax,mfv->GetMeshlessFVParticleArray(),sph,timestep);
+    mfvneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
+                            mfv->Nhydromax,timestep,mfv->GetMeshlessFVParticleArray(),mfv);
 
 
     // Zero accelerations
@@ -408,7 +410,7 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     // Update neighbour tree
     rebuild_tree = true;
     mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
-                       mfv->Nhydromax, mfv->GetMeshlessFVParticleArray(), mfv, timestep);
+                       mfv->Nhydromax, timestep, mfv->GetMeshlessFVParticleArray(), mfv);
     level_step = 1;
 
 
@@ -420,16 +422,16 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Search ghost particles
     mfvneib->SearchBoundaryGhostParticles(0.0,simbox,mfv);
-    //mfvneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
-    //                        mfv->Nhydromax,mfv->GetMeshlessFVParticleArray(),sph,timestep);
+    mfvneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
+                            mfv->Nhydromax,timestep,mfv->GetMeshlessFVParticleArray(),mfv);
 
     // Update neighbour tree
     rebuild_tree = true;
-    mfvneib->BuildTree(rebuild_tree,0,ntreebuildstep,ntreestockstep,
-                       mfv->Ntot,mfv->Nhydromax,mfv->GetMeshlessFVParticleArray(),mfv,timestep);
-    //mfvneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
-    //mfvneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
-    //                        mfv->Nhydromax,mfv->GetMeshlessFVParticleArray(),sph,timestep);
+    mfvneib->BuildTree(rebuild_tree, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
+                       mfv->Nhydromax, timestep, mfv->GetMeshlessFVParticleArray(), mfv);
+    mfvneib->SearchBoundaryGhostParticles(0.0,simbox,mfv);
+    mfvneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
+                            mfv->Nhydromax,timestep,mfv->GetMeshlessFVParticleArray(),mfv);
     mfvneib->neibcheck = true;
 
 
@@ -454,11 +456,11 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
     // Copy all other data from real SPH particles to ghosts
     //LocalGhosts->CopySphDataToGhosts(simbox,sph);
 
-    mfvneib->BuildTree(true,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
-                       mfv->Nhydromax,mfv->GetMeshlessFVParticleArray(),mfv,timestep);
+    mfvneib->BuildTree(true, 0, ntreebuildstep, ntreestockstep, mfv->Ntot,
+                       mfv->Nhydromax, timestep, mfv->GetMeshlessFVParticleArray(), mfv);
     mfvneib->SearchBoundaryGhostParticles(0.0,simbox,mfv);
-    //mfvneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
-    //                        mfv->Nhydromax,mfv->GetMeshlessFVParticleArray(),sph,timestep);
+    mfvneib->BuildGhostTree(true,0,ntreebuildstep,ntreestockstep,mfv->Ntot,
+                            mfv->Nhydromax,timestep,mfv->GetMeshlessFVParticleArray(),mfv);
 
 
     // Set initial accelerations
@@ -537,15 +539,15 @@ void MeshlessFVSimulation<ndim>::MainLoop(void)
 
   // Rebuild or update local neighbour and gravity tree
   mfvneib->BuildTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
-                     mfv->Ntot, mfv->Nhydromax, partdata, mfv, timestep);
+                     mfv->Ntot, mfv->Nhydromax, timestep, partdata, mfv);
 
 
   // Search for new ghost particles and create on local processor
   //if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
   tghost = timestep*(FLOAT)(ntreebuildstep - 1);
   mfvneib->SearchBoundaryGhostParticles(tghost, simbox, mfv);
-      //mfvneib->BuildGhostTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,
-        //                      mfv->Ntot,mfv->Nhydromax,partdata,mfv,timestep);
+  mfvneib->BuildGhostTree(rebuild_tree,Nsteps,ntreebuildstep,ntreestockstep,
+                          mfv->Ntot,mfv->Nhydromax,timestep,partdata,mfv);
     //}
     // Otherwise copy properties from original particles to ghost particles
     /*else {

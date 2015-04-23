@@ -22,6 +22,7 @@
 
 
 #include <iostream>
+#include "NeighbourSearch.h"
 #include "SphNeighbourSearch.h"
 #include "Sph.h"
 #include "Parameters.h"
@@ -31,36 +32,11 @@
 using namespace std;
 
 
-//=============================================================================
-// SphNeighbourSearch::SphNeighbourSearch
-// Empty default constructor
-//=============================================================================
-template <int ndim>
-SphNeighbourSearch<ndim>::SphNeighbourSearch
-(FLOAT kernrangeaux,
- DomainBox<ndim> *boxaux,
- SmoothingKernel<ndim> *kernaux,
- CodeTiming *timingaux):
-  kernrange(kernrangeaux),
-  kernrangesqd(kernrangeaux*kernrangeaux),
-  box(boxaux),
-  kernp(kernaux),
-  timing(timingaux)
-{
-}
 
 
-
-//=============================================================================
-// SphNeighbourSearch::~SphNeighbourSearch
-// Empty default destructor
-//=============================================================================
-template <int ndim>
-SphNeighbourSearch<ndim>::~SphNeighbourSearch()
-{
-}
-
-
+template class NeighbourSearch<1>;
+template class NeighbourSearch<2>;
+template class NeighbourSearch<3>;
 
 template class SphNeighbourSearch<1>;
 template class SphNeighbourSearch<2>;
