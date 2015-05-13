@@ -299,21 +299,24 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
     FLOAT *drmag;                          // Array of neib. distances
     FLOAT *invdrmag;                       // Array of neib. inverse distances
     FLOAT (*fluxBuffer)[ndim+2];           // ..
+    FLOAT (*rdmdtBuffer)[ndim];            // ..
     MeshlessFVParticle<ndim> *neibdata;    // ..
     const int offset_imported = 0; //mfv->Nghost;
 
     // Allocate memory for storing neighbour ids and position data
-    neiblist   = new int[Ntot];
-    dr         = new FLOAT[ndim*Ntot];
-    drmag      = new FLOAT[Ntot];
-    invdrmag   = new FLOAT[Ntot];
-    fluxBuffer = new FLOAT[Ntot][ndim+2];
-    neibdata   = new MeshlessFVParticle<ndim>[Ntot];
+    neiblist    = new int[Ntot];
+    dr          = new FLOAT[ndim*Ntot];
+    drmag       = new FLOAT[Ntot];
+    invdrmag    = new FLOAT[Ntot];
+    fluxBuffer  = new FLOAT[Ntot][ndim+2];
+    rdmdtBuffer = new FLOAT[Ntot][ndim];
+    neibdata    = new MeshlessFVParticle<ndim>[Ntot];
 
     // ..
     for (i=0; i<Ntot; i++) neibdata[i] = mfvdata[i];
     for (i=0; i<Ntot; i++) {
       for (k=0; k<ndim+2; k++) fluxBuffer[i][k] = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++) rdmdtBuffer[i][k] = (FLOAT) 0.0;
     }
 
     //---------------------------------------------------------------------------------------------
@@ -356,13 +359,14 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
 
 
       // Compute all flux terms
-      mfv->ComputeGodunovFlux(i, Nneib, timestep, neiblist, drmag, invdrmag, dr,
-                              mfvdata[i], neibdata);
+      mfv->ComputeGodunovFlux(i, Nneib, timestep, neiblist, drmag,
+                              invdrmag, dr, mfvdata[i], neibdata);
 
-      // Accumlate fluxes
+      // Accumulate fluxes
       for (int jj=0; jj<Nneib; jj++) {
         j = neiblist[jj];
         for (k=0; k<ndim+2; k++) fluxBuffer[j][k] += neibdata[j].dQdt[k];
+        for (k=0; k<ndim; k++) rdmdtBuffer[j][k] += neibdata[j].rdmdt[k];
       }
 
     }
@@ -374,11 +378,13 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
     {
       for (i=0; i<Nhydro; i++) {
         for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
+        for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
       }
     }
 
     // Free all allocated memory
     delete[] neibdata;
+    delete[] rdmdtBuffer;
     delete[] fluxBuffer;
     delete[] invdrmag;
     delete[] drmag;
@@ -396,83 +402,72 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
 
 
 //=================================================================================================
-//  MeshlessFVBruteForce::SearchBoundaryGhostParticles
-/// Search domain to create any required ghost particles near any boundaries.
-/// Currently only searches to create periodic or mirror ghost particles.
+//  MeshlessFVBruteForce::UpdateAllGravForces
+/// ...
 //=================================================================================================
-/*template <int ndim, template <int> class ParticleType>
-void MeshlessFVBruteForce<ndim,ParticleType>::SearchBoundaryGhostParticles
- (FLOAT tghost,                        ///< Ghost particle 'lifetime'
-  DomainBox<ndim> &simbox,             ///< Simulation box structure
-  MeshlessFV<ndim> *mfv)               ///< Sph object pointer
+template <int ndim, template<int> class ParticleType>
+void MeshlessFVBruteForce<ndim,ParticleType>::UpdateAllGravForces
+ (int Nhydro,                          ///< [in] ..
+  int Ntot,                            ///< [in] ..
+  MeshlessFVParticle<ndim> *part_gen,  ///< [in] ..
+  MeshlessFV<ndim> *mfv,               ///< [inout] Pointer to SPH object
+  Nbody<ndim> *nbody)                  ///< [in] Pointer to N-body object
 {
-  int i;                               // Particle counter
+  int i,j,k;                           // Particle and dimension counters
+  int Nneib;                           // No. of neighbours
+  int *neiblist;                       // List of neighbour ids
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
+  const int offset_imported = mfv->Nghost;
 
-  // Set all relevant particle counters
-  mfv->Nghost         = 0;
-  mfv->NPeriodicGhost = 0;
-  mfv->Nghostmax      = mfv->Nhydromax - mfv->Nhydro;
-  mfv->Ntot           = mfv->Nhydro;
+  debug2("[MeshlessFVBruteForce::UpdateAllSphGravForces]");
 
-
-  // If all boundaries are open, immediately return to main loop
-  if (simbox.boundary_lhs[0] == openBoundary && simbox.boundary_rhs[0] == openBoundary &&
-      simbox.boundary_lhs[1] == openBoundary && simbox.boundary_rhs[1] == openBoundary &&
-      simbox.boundary_lhs[2] == openBoundary && simbox.boundary_rhs[2] == openBoundary)
-    return;
+  // Allocate memory for storing neighbour ids and position data
+  neiblist = new int[Ntot];
 
 
-  debug2("[BruteForceSearch::SearchBoundaryGhostParticles]");
-
-
-  // Create ghost particles in x-dimension
+  // Compute forces for real and imported particles
   //-----------------------------------------------------------------------------------------------
-  if ((simbox.boundary_lhs[0] == openBoundary && simbox.boundary_rhs[0] == openBoundary) == 0) {
+  for (int iparticle=0; iparticle<Nhydro+mfv->NImportedParticles; iparticle++) {
 
-    for (i=0; i<mfv->Ntot; i++) {
-      mfv->CheckXBoundaryGhostParticle(i,tghost,simbox);
+    if (iparticle < Nhydro) i = iparticle;
+    else i = iparticle + offset_imported;
+
+    // Skip over inactive particles
+    if (!partdata[i].active || partdata[i].itype == dead) continue;
+
+    // Zero all arrays to be updated
+    for (k=0; k<ndim; k++) partdata[i].a[k] = (FLOAT) 0.0;
+    for (k=0; k<ndim; k++) partdata[i].agrav[k] = (FLOAT) 0.0;
+    partdata[i].gpot      = (FLOAT) 0.0;
+    partdata[i].dudt      = (FLOAT) 0.0;
+    partdata[i].levelneib = 0;
+
+    // Add self-contribution to gravitational potential
+    partdata[i].gpot += partdata[i].m*partdata[i].invh*kernp->wpot(0.0);
+
+    // Determine interaction list (to ensure we don't compute pair-wise
+    // forces twice)
+    Nneib = 0;
+    for (j=0; j<Nhydro; j++) {
+      if (i != j && partdata[j].itype != dead) neiblist[Nneib++] = j;
     }
 
-    mfv->Ntot = mfv->Nhydro + mfv->Nghost;
+    // Compute forces between SPH neighbours (hydro and gravity)
+    mfv->ComputeSmoothedGravForces(i, Nneib, neiblist, partdata[i], partdata);
+
+    // Compute all star forces
+    if (iparticle < Nhydro) mfv->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,partdata[i]);
+
+    for (k=0; k<ndim; k++) partdata[i].a[k] += partdata[i].agrav[k];
+    partdata[i].active = false;
+
   }
-
-
-  // Create ghost particles in y-dimension
   //-----------------------------------------------------------------------------------------------
-  if (ndim >= 2 && (simbox.boundary_lhs[1] == openBoundary &&
-                    simbox.boundary_rhs[1] == openBoundary) == 0) {
 
-    for (i=0; i<mfv->Ntot; i++) {
-      mfv->CheckYBoundaryGhostParticle(i,tghost,simbox);
-    }
-
-    mfv->Ntot = mfv->Nhydro + mfv->Nghost;
-  }
-
-
-  // Create ghost particles in z-dimension
-  //-----------------------------------------------------------------------------------------------
-  if (ndim == 3 && (simbox.boundary_lhs[2] == openBoundary &&
-                    simbox.boundary_rhs[2] == openBoundary) == 0) {
-
-    for (i=0; i<mfv->Ntot; i++) {
-      mfv->CheckZBoundaryGhostParticle(i,tghost,simbox);
-    }
-
-    mfv->Ntot = mfv->Nhydro + mfv->Nghost;
-  }
-
-
-  // Quit here if we've run out of memory for ghosts
-  if (mfv->Ntot > mfv->Nhydromax) {
-    string message="Not enough memory for ghost particles";
-    ExceptionHandler::getIstance().raise(message);
-  }
-
-  mfv->NPeriodicGhost = mfv->Nghost;
+  delete[] neiblist;
 
   return;
-}*/
+}
 
 
 

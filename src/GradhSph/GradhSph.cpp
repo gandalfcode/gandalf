@@ -730,6 +730,8 @@ void GradhSph<ndim, kernelclass>::ComputeDirectGravForces
     for (k=0; k<ndim; k++) parti.agrav[k] += sphdata[j].m*dr[k]*invdr3;
     parti.gpot += sphdata[j].m*invdrmag;
 
+    assert(drsqd >= parti.hrangesqd && drsqd >= sphdata[j].hrangesqd);
+
   }
   //-----------------------------------------------------------------------------------------------
 

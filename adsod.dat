@@ -7,8 +7,8 @@ comment				   : out_file_form = column
 #-----------------------------
 # Initial conditions variables
 #-----------------------------
-Simulation run id string                    : run_id = ADSOD5
-Select SPH simulation                       : sim = meshlessfv
+Simulation run id string                    : run_id = ADSOD-HLLC-MUSCL
+Select SPH simulation                       : sim = mfvmuscl
 Select shocktube initial conditions         : ic = shocktube
 1D shocktube test                           : ndim = 1
 x-velocity of LHS fluid                     : vfluid1[0] = 0.0
@@ -69,7 +69,8 @@ Minimum value of avisc                      : alpha_visc_min = 0.1
 Artificial viscosity beta value             : beta_visc = 2.0
 Riemann solver                              : riemann_solver = exact
 Order of Riemann solver                     : riemann_order = 2
-Slope limiter                               : slope_limiter = simple
+Slope limiter                               : slope_limiter = gizmo
+Finite mass scheme?                         : zero_mass_flux = 0
 
 
 #-------------------------
@@ -77,7 +78,7 @@ Slope limiter                               : slope_limiter = simple
 #-------------------------
 SPH particle integration option             : sph_integration = lfkdk
 Integration of gas thermal energy           : energy_integration = PEC
-SPH Courant timestep condition multiplier   : courant_mult = 0.4
+SPH Courant timestep condition multiplier   : courant_mult = 0.2
 SPH acceleration condition multiplier       : accel_mult = 0.2
 SPH energy equation timestep multiplier     : energy_mult = 0.5
 No. of block timestep levels                : Nlevels = 1
@@ -90,6 +91,7 @@ Tabulate SPH kernel                         : tabulated_kernel = 0
 SPH neighbour search algorithm              : neib_search = bruteforce
 Build tree every step                       : ntreebuildstep = 1
 Stock tree every step                       : ntreestockstep = 1
+Particle per leafcell                       : Nleafmax = 6
 
 #--------------
 # Misc. options

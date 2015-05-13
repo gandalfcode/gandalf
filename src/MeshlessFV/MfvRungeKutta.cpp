@@ -1,5 +1,5 @@
 //=================================================================================================
-//  LV2008MFV.cpp
+//  MfvRungeKutta.cpp
 //  Contains all functions for calculating Meshless Finite-Volume Hydrodynamics quantities.
 //
 //  This file is part of GANDALF :
@@ -41,12 +41,12 @@ using namespace std;
 
 
 //=================================================================================================
-//  LV2008MFV::LV2008MFV
-/// LV2008MFV class constructor.  Calls main SPH class constructor and also
+//  MfvRungeKutta::MfvRungeKutta
+/// MfvRungeKutta class constructor.  Calls main SPH class constructor and also
 /// sets additional kernel-related quantities
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-LV2008MFV<ndim, kernelclass>::LV2008MFV
+MfvRungeKutta<ndim, kernelclass>::MfvRungeKutta
   (int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
    FLOAT h_fac_aux, FLOAT h_converge_aux, FLOAT gamma_aux, string gas_eos_aux, string KernelName,
    int size_sph):
@@ -63,11 +63,11 @@ LV2008MFV<ndim, kernelclass>::LV2008MFV
 
 
 //=================================================================================================
-//  LV2008MFV::~LV2008MFV
-/// LV2008MFV class destructor
+//  MfvRungeKutta::~MfvRungeKutta
+/// MfvRungeKutta class destructor
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-LV2008MFV<ndim, kernelclass>::~LV2008MFV()
+MfvRungeKutta<ndim, kernelclass>::~MfvRungeKutta()
 {
   //DeallocateMemory();
 }
@@ -75,7 +75,61 @@ LV2008MFV<ndim, kernelclass>::~LV2008MFV()
 
 
 //=================================================================================================
-//  LV2008MFV::ComputeH
+//  MfvRungeKutta::InitialSmoothingLengthGuess
+/// Perform initial guess of smoothing.  In the abscence of more sophisticated techniques, we guess
+/// the smoothing length assuming a uniform density medium with the same volume and total mass.
+//=================================================================================================
+/*template <int ndim>
+void MfvRungeKutta<ndim>::InitialSmoothingLengthGuess(void)
+{
+  int i;                           // Particle counter
+  FLOAT h_guess;                   // Global guess of smoothing length
+  FLOAT volume;                    // Volume of global bounding box
+  FLOAT rmin[ndim];                // Min. extent of bounding box
+  FLOAT rmax[ndim];                // Max. extent of bounding box
+
+  debug2("[Sph::InitialSmoothingLengthGuess]");
+
+  // Calculate bounding box containing all SPH particles
+  this->ComputeBoundingBox(rmax,rmin,Nhydro);
+
+  // Depending on the dimensionality, calculate the average smoothing
+  // length assuming a uniform density distribution filling the bounding box.
+  //-----------------------------------------------------------------------------------------------
+  if (ndim == 1) {
+    Ngather = (int) (2.0*kernp->kernrange*h_fac);
+    volume = rmax[0] - rmin[0];
+    h_guess = (volume*(FLOAT) Ngather)/(4.0*(FLOAT) Nhydro);
+  }
+  //-----------------------------------------------------------------------------------------------
+  else if (ndim == 2) {
+    Ngather = (int) (pi*pow(kernp->kernrange*h_fac,2));
+    volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1]);
+    h_guess = sqrtf((volume*(FLOAT) Ngather)/(4.0*(FLOAT) Nhydro));
+  }
+  //-----------------------------------------------------------------------------------------------
+  else if (ndim == 3) {
+    Ngather = (int) (4.0*pi*pow(kernp->kernrange*h_fac,3)/3.0);
+    volume = (rmax[0] - rmin[0])*(rmax[1] - rmin[1])*(rmax[2] - rmin[2]);
+    h_guess = powf((3.0*volume*(FLOAT) Ngather)/(32.0*pi*(FLOAT) Nhydro),onethird);
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  // Set all smoothing lengths equal to average value
+  for (i=0; i<Nhydro; i++) {
+    MeshlessFVParticle<ndim>& part = GetMeshlessFVParticlePointer(i);
+    part.h         = h_guess;
+    part.invh      = 1.0/h_guess;
+    part.hrangesqd = kernfacsqd*kernp->kernrangesqd*part.h*part.h;
+  }
+
+  return;
+}*/
+
+
+
+//=================================================================================================
+//  MfvRungeKutta::ComputeH
 /// Compute the value of the smoothing length of particle 'i' by iterating the relation :
 /// h = h_fac*(m/rho)^(1/ndim).
 /// Uses the previous value of h as a starting guess and then uses either a Newton-Rhapson solver,
@@ -83,7 +137,7 @@ LV2008MFV<ndim, kernelclass>::~LV2008MFV()
 /// for deciding whether the iteration has converged is given by the 'h_converge' parameter.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-int LV2008MFV<ndim, kernelclass>::ComputeH
+int MfvRungeKutta<ndim, kernelclass>::ComputeH
  (const int i,                         ///< [in] id of particle
   const int Nneib,                     ///< [in] No. of potential neighbours
   const FLOAT hmax,                    ///< [in] Max. h permitted by neib list
@@ -91,7 +145,7 @@ int LV2008MFV<ndim, kernelclass>::ComputeH
   FLOAT *mu,                           ///< [in] Array of m*u (not needed here)
   FLOAT *drsqd,                        ///< [in] Array of neib. distances squared
   FLOAT *gpot,                         ///< [in] Array of neib. grav. potentials
-  MeshlessFVParticle<ndim> &part,      ///< [inout] Particle i data
+  MeshlessFVParticle<ndim> &part,   ///< [inout] Particle i data
   Nbody<ndim> *nbody)                  ///< [in] Main N-body object
 {
   int j;                               // Neighbour id
@@ -191,7 +245,7 @@ int LV2008MFV<ndim, kernelclass>::ComputeH
 
 
 //=================================================================================================
-//  LV2008MFV::ComputeDerivatives
+//  MfvRungeKutta::ComputeDerivatives
 /// Compute SPH neighbour force pairs for
 /// (i) All neighbour interactions of particle i with i.d. j > i,
 /// (ii) Active neighbour interactions of particle j with i.d. j > i
@@ -200,7 +254,7 @@ int LV2008MFV<ndim, kernelclass>::ComputeH
 /// computed once only for efficiency.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-void LV2008MFV<ndim, kernelclass>::ComputePsiFactors
+void MfvRungeKutta<ndim, kernelclass>::ComputePsiFactors
  (const int i,                                 ///< [in] id of particle
   const int Nneib,                             ///< [in] No. of neins in neibpart array
   int *neiblist,                               ///< [in] id of gather neibs in neibpart
@@ -277,7 +331,7 @@ void LV2008MFV<ndim, kernelclass>::ComputePsiFactors
 
 
 //=================================================================================================
-//  LV2008MFV::ComputeDerivatives
+//  MfvRungeKutta::ComputeDerivatives
 /// Compute SPH neighbour force pairs for
 /// (i) All neighbour interactions of particle i with i.d. j > i,
 /// (ii) Active neighbour interactions of particle j with i.d. j > i
@@ -286,7 +340,7 @@ void LV2008MFV<ndim, kernelclass>::ComputePsiFactors
 /// computed once only for efficiency.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-void LV2008MFV<ndim, kernelclass>::ComputeGradients
+void MfvRungeKutta<ndim, kernelclass>::ComputeGradients
  (const int i,                         ///< [in] id of particle
   const int Nneib,                     ///< [in] No. of neins in neibpart array
   int *neiblist,                       ///< [in] id of gather neibs in neibpart
@@ -397,11 +451,69 @@ void LV2008MFV<ndim, kernelclass>::ComputeGradients
 
 
 //=================================================================================================
-//  LV2008MFV::ComputeGodunovFlux
+//  ...
+/// Copy any newly calculated data from original SPH particles to ghosts.
+//=================================================================================================
+template <int ndim, template<int> class kernelclass>
+void MfvRungeKutta<ndim, kernelclass>::CopyDataToGhosts
+ (DomainBox<ndim> &simbox,
+  MeshlessFVParticle<ndim> *partdata)  ///< [inout] Neighbour particle data
+{
+  int i;                               // Particle id
+  int iorig;                           // Original (real) particle id
+  int itype;                           // Ghost particle type
+  int j;                               // Ghost particle counter
+
+  debug2("[MfvRungeKutta::CopySphDataToGhosts]");
+
+
+  //---------------------------------------------------------------------------
+//#pragma omp parallel for default(none) private(i,iorig,itype,j) shared(simbox,sph,partdata)
+  for (j=0; j<this->NPeriodicGhost; j++) {
+    i = this->Nhydro + j;
+    iorig = partdata[i].iorig;
+    itype = partdata[i].itype;
+
+    partdata[i]        = partdata[iorig];
+    partdata[i].iorig  = iorig;
+    partdata[i].itype  = itype;
+    partdata[i].active = false;
+
+    // Modify ghost position based on ghost type
+    if (itype == x_lhs_periodic) {
+      partdata[i].r[0] += simbox.boxsize[0];
+    }
+    else if (itype == x_rhs_periodic) {
+      partdata[i].r[0] -= simbox.boxsize[0];
+    }
+    else if (itype == y_lhs_periodic && ndim > 1) {
+      partdata[i].r[1] += simbox.boxsize[1];
+    }
+    else if (itype == y_rhs_periodic && ndim > 1) {
+      partdata[i].r[1] -= simbox.boxsize[1];
+    }
+    else if (itype == z_lhs_periodic && ndim == 3) {
+      partdata[i].r[2] += simbox.boxsize[2];
+    }
+    else if (itype == z_rhs_periodic && ndim == 3) {
+      partdata[i].r[2] -= simbox.boxsize[2];
+    }
+
+  }
+  //---------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+
+//=================================================================================================
+//  MfvRungeKutta::ComputeGodunovFlux
 /// ...
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
+void MfvRungeKutta<ndim, kernelclass>::ComputeGodunovFlux
  (const int i,                         ///< [in] id of particle
   const int Nneib,                     ///< [in] No. of neins in neibpart array
   const FLOAT timestep,                ///< ..
@@ -472,28 +584,15 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
 
     // Compute slope-limited values for LHS
     for (k=0; k<ndim; k++) draux[k] = rface[k] - part.r[k];
-    limiter.ComputeLimitedSlopes(part, neibpart[j], draux, gradW, dW);
+    limiter->ComputeLimitedSlopes(part, neibpart[j], draux, gradW, dW);
     for (var=0; var<nvar; var++) Wleft[var] = part.Wprim[var] + dW[var];
     for (k=0; k<ndim; k++) Wleft[k] -= vface[k];
 
-    // Time-integrate LHS state to half-timestep value
-    this->CalculatePrimitiveTimeDerivative(Wleft, gradW, Wdot);
-    assert(Wleft[irho] > 0.0);
-    assert(Wleft[ipress] > 0.0);
-    for (var=0; var<nvar; var++) Wleft[var] -= (FLOAT) 0.5*timestep*Wdot[var];
-
-
     // Compute slope-limited values for RHS
     for (k=0; k<ndim; k++) draux[k] = rface[k] - neibpart[j].r[k];
-    limiter.ComputeLimitedSlopes(neibpart[j], part, draux, gradW, dW);
+    limiter->ComputeLimitedSlopes(neibpart[j], part, draux, gradW, dW);
     for (var=0; var<nvar; var++) Wright[var] = neibpart[j].Wprim[var] + dW[var];
     for (k=0; k<ndim; k++) Wright[k] -= vface[k];
-
-    // Time-integrate RHS state to half-timestep value
-    this->CalculatePrimitiveTimeDerivative(Wright, gradW, Wdot);
-    assert(Wright[irho] > 0.0);
-    assert(Wright[ipress] > 0.0);
-    for (var=0; var<nvar; var++) Wright[var] -= (FLOAT) 0.5*timestep*Wdot[var];
 
     if (Wright[ipress] <= 0.0) {
       cout << "press   : " << part.Wprim[ipress] << "   " << Wleft[ipress] << "   " << Wright[ipress] << "   " << neibpart[j].Wprim[ipress] << endl;
@@ -527,71 +626,183 @@ void LV2008MFV<ndim, kernelclass>::ComputeGodunovFlux
 
 
 //=================================================================================================
-//  Ghosts::CopySphDataToGhosts
-/// Copy any newly calculated data from original SPH particles to ghosts.
+//  MfvRungeKutta::ComputeSmoothedGravForces
+/// Compute SPH neighbour force pairs for
+/// (i) All neighbour interactions of particle i with i.d. j > i,
+/// (ii) Active neighbour interactions of particle j with i.d. j > i
+/// (iii) All inactive neighbour interactions of particle i with i.d. j < i.
+/// This ensures that particle-particle pair interactions are computed once only for efficiency.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-void LV2008MFV<ndim, kernelclass>::CopyDataToGhosts
- (DomainBox<ndim> &simbox,
-  MeshlessFVParticle<ndim> *partdata)  ///< [inout] Neighbour particle data
+void MfvRungeKutta<ndim, kernelclass>::ComputeSmoothedGravForces
+ (const int i,                         ///< [in] id of particle
+  const int Nneib,                     ///< [in] No. of neins in neibpart array
+  int *neiblist,                       ///< [in] id of gather neibs in neibpart
+  MeshlessFVParticle<ndim> &part,             ///< [inout] Particle i data
+  MeshlessFVParticle<ndim> *neibpart_gen)     ///< [inout] Neighbour particle data
 {
-  int i;                               // Particle id
-  int iorig;                           // Original (real) particle id
-  int itype;                           // Ghost particle type
-  int j;                               // Ghost particle counter
+  int j;                               // Neighbour list id
+  int jj;                              // Aux. neighbour counter
+  int k;                               // Dimension counter
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drmag;                         // Distance
+  //FLOAT dv[ndim];                      // Relative velocity vector
+  //FLOAT dvdr;                          // Dot product of dv and dr
+  FLOAT invdrmag;                      // 1 / distance
+  FLOAT gaux;                          // Aux. grav. potential variable
+  FLOAT paux;                          // Aux. pressure force variable
+  MeshlessFVParticle<ndim>& parti = static_cast<MeshlessFVParticle<ndim>& > (part);
+  MeshlessFVParticle<ndim>* neibpart = static_cast<MeshlessFVParticle<ndim>* > (neibpart_gen);
 
-  debug2("[LV2008MFV::CopySphDataToGhosts]");
 
+  // Loop over all potential neighbours in the list
+  //-----------------------------------------------------------------------------------------------
+  for (jj=0; jj<Nneib; jj++) {
+    j = neiblist[jj];
+    assert(neibpart[j].itype != dead);
 
-  //---------------------------------------------------------------------------
-//#pragma omp parallel for default(none) private(i,iorig,itype,j) shared(simbox,sph,partdata)
-  for (j=0; j<this->NPeriodicGhost; j++) {
-    i = this->Nhydro + j;
-    iorig = partdata[i].iorig;
-    itype = partdata[i].itype;
+    for (k=0; k<ndim; k++) dr[k] = neibpart[j].r[k] - parti.r[k];
+    //for (k=0; k<ndim; k++) dv[k] = neibpart[j].v[k] - parti.v[k];
+    //dvdr = DotProduct(dv,dr,ndim);
+    drmag = sqrt(DotProduct(dr,dr,ndim) + small_number);
+    invdrmag = (FLOAT) 1.0/drmag;
+    for (k=0; k<ndim; k++) dr[k] *= invdrmag;
 
-    partdata[i]        = partdata[iorig];
-    partdata[i].iorig  = iorig;
-    partdata[i].itype  = itype;
-    partdata[i].active = false;
+    // Main SPH gravity terms
+    //---------------------------------------------------------------------------------------------
+    paux = (FLOAT) 0.5*(parti.invh*parti.invh*kern.wgrav(drmag*parti.invh) +
+                        parti.zeta*parti.hfactor*kern.w1(drmag*parti.invh) +
+                        neibpart[j].invh*neibpart[j].invh*kern.wgrav(drmag*neibpart[j].invh) +
+                        neibpart[j].zeta*neibpart[j].hfactor*kern.w1(drmag*neibpart[j].invh));
+    gaux = (FLOAT) 0.5*(parti.invh*kern.wpot(drmag*parti.invh) +
+                        neibpart[j].invh*kern.wpot(drmag*neibpart[j].invh));
 
-    // Modify ghost position based on ghost type
-    if (itype == x_lhs_periodic) {
-      partdata[i].r[0] += simbox.boxsize[0];
-    }
-    else if (itype == x_rhs_periodic) {
-      partdata[i].r[0] -= simbox.boxsize[0];
-    }
-    else if (itype == y_lhs_periodic && ndim > 1) {
-      partdata[i].r[1] += simbox.boxsize[1];
-    }
-    else if (itype == y_rhs_periodic && ndim > 1) {
-      partdata[i].r[1] -= simbox.boxsize[1];
-    }
-    else if (itype == z_lhs_periodic && ndim == 3) {
-      partdata[i].r[2] += simbox.boxsize[2];
-    }
-    else if (itype == z_rhs_periodic && ndim == 3) {
-      partdata[i].r[2] -= simbox.boxsize[2];
-    }
+    // Add total hydro contribution to acceleration for particle i
+    for (k=0; k<ndim; k++) parti.agrav[k] += neibpart[j].m*dr[k]*paux;
+    parti.gpot += neibpart[j].m*gaux;
 
   }
-  //---------------------------------------------------------------------------
+
+  //===============================================================================================
 
   return;
 }
 
 
 
-template class LV2008MFV<1, M4Kernel>;
-template class LV2008MFV<2, M4Kernel>;
-template class LV2008MFV<3, M4Kernel>;
-template class LV2008MFV<1, QuinticKernel>;
-template class LV2008MFV<2, QuinticKernel>;
-template class LV2008MFV<3, QuinticKernel>;
-template class LV2008MFV<1, GaussianKernel>;
-template class LV2008MFV<2, GaussianKernel>;
-template class LV2008MFV<3, GaussianKernel>;
-template class LV2008MFV<1, TabulatedKernel>;
-template class LV2008MFV<2, TabulatedKernel>;
-template class LV2008MFV<3, TabulatedKernel>;
+//=================================================================================================
+//  GradhSph::ComputeDirectGravForces
+/// Compute the contribution to the total gravitational force of particle 'i'
+/// due to 'Nneib' neighbouring particles in the list 'neiblist'.
+//=================================================================================================
+template <int ndim, template<int> class kernelclass>
+void MfvRungeKutta<ndim, kernelclass>::ComputeDirectGravForces
+ (const int i,                         ///< id of particle
+  const int Ndirect,                   ///< No. of nearby 'gather' neighbours
+  int *directlist,                     ///< id of gather neighbour in neibpart
+  MeshlessFVParticle<ndim> &part,      ///< Particle i data
+  MeshlessFVParticle<ndim> *neib_gen)  ///< Neighbour particle data
+{
+  int j;                               // Neighbour particle id
+  int jj;                              // Aux. neighbour loop counter
+  int k;                               // Dimension counter
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drsqd;                         // Distance squared
+  FLOAT invdrmag;                      // 1 / distance
+  FLOAT invdr3;                        // 1 / dist^3
+  MeshlessFVParticle<ndim>& parti = static_cast<MeshlessFVParticle<ndim>& > (part);
+  MeshlessFVParticle<ndim>* neibdata = static_cast<MeshlessFVParticle<ndim>* > (neib_gen);
+
+
+  // Loop over all neighbouring particles in list
+  //-----------------------------------------------------------------------------------------------
+  for (jj=0; jj<Ndirect; jj++) {
+    j = directlist[jj];
+    assert(neibdata[j].itype != dead);
+
+    for (k=0; k<ndim; k++) dr[k] = neibdata[j].r[k] - parti.r[k];
+    drsqd    = DotProduct(dr,dr,ndim) + small_number;
+    invdrmag = (FLOAT) 1.0/sqrt(drsqd);
+    invdr3   = invdrmag*invdrmag*invdrmag;
+
+    // Add contribution to current particle
+    for (k=0; k<ndim; k++) parti.agrav[k] += neibdata[j].m*dr[k]*invdr3;
+    parti.gpot += neibdata[j].m*invdrmag;
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  MfvRungeKutta::ComputeStarGravForces
+/// Computes contribution of gravitational force and potential due to stars.
+//=================================================================================================
+template <int ndim, template<int> class kernelclass>
+void MfvRungeKutta<ndim, kernelclass>::ComputeStarGravForces
+ (const int N,                         ///< [in] No. of stars
+  NbodyParticle<ndim> **nbodydata,     ///< [in] Array of star pointers
+  MeshlessFVParticle<ndim> &part)      ///< [inout] SPH particle reference
+{
+  int j;                               // Star counter
+  int k;                               // Dimension counter
+  FLOAT dr[ndim];                      // Relative position vector
+  FLOAT drmag;                         // Distance
+  FLOAT drsqd;                         // Distance squared
+  FLOAT drdt;                          // Rate of change of relative distance
+  FLOAT dv[ndim];                      // Relative velocity vector
+  FLOAT invdrmag;                      // 1 / drmag
+  FLOAT invhmean;                      // 1 / hmean
+  FLOAT ms;                            // Star mass
+  FLOAT paux;                          // Aux. force variable
+  MeshlessFVParticle<ndim>& parti = static_cast<MeshlessFVParticle<ndim>& > (part);
+
+  // Loop over all stars and add each contribution
+  //-----------------------------------------------------------------------------------------------
+  for (j=0; j<N; j++) {
+
+    //if (fixed_sink_mass) ms = msink_fixed;
+    //else
+    ms = nbodydata[j]->m;
+
+    for (k=0; k<ndim; k++) dr[k] = nbodydata[j]->r[k] - parti.r[k];
+    for (k=0; k<ndim; k++) dv[k] = nbodydata[j]->v[k] - parti.v[k];
+    drsqd    = DotProduct(dr,dr,ndim) + small_number;
+    drmag    = sqrt(drsqd);
+    invdrmag = (FLOAT) 1.0/drmag;
+    invhmean = (FLOAT) 2.0/(parti.h + nbodydata[j]->h);
+    drdt     = DotProduct(dv,dr,ndim)*invdrmag;
+    paux     = ms*invhmean*invhmean*kern.wgrav(drmag*invhmean)*invdrmag;
+
+    // Add total hydro contribution to acceleration for particle i
+    for (k=0; k<ndim; k++) parti.agrav[k] += paux*dr[k];
+    //for (k=0; k<ndim; k++) parti.adot[k] += paux*dv[k] - (FLOAT) 3.0*paux*drdt*invdrmag*dr[k] +
+    //  (FLOAT) 2.0*twopi*ms*drdt*kern.w0(drmag*invhmean)*powf(invhmean,ndim)*invdrmag*dr[k];
+    parti.gpot += ms*invhmean*kern.wpot(drmag*invhmean);
+
+    assert(drmag > (FLOAT) 0.0);
+    assert(drmag*invhmean > (FLOAT) 0.0);
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  return;
+}
+
+
+
+template class MfvRungeKutta<1, M4Kernel>;
+template class MfvRungeKutta<2, M4Kernel>;
+template class MfvRungeKutta<3, M4Kernel>;
+template class MfvRungeKutta<1, QuinticKernel>;
+template class MfvRungeKutta<2, QuinticKernel>;
+template class MfvRungeKutta<3, QuinticKernel>;
+template class MfvRungeKutta<1, GaussianKernel>;
+template class MfvRungeKutta<2, GaussianKernel>;
+template class MfvRungeKutta<3, GaussianKernel>;
+template class MfvRungeKutta<1, TabulatedKernel>;
+template class MfvRungeKutta<2, TabulatedKernel>;
+template class MfvRungeKutta<3, TabulatedKernel>;

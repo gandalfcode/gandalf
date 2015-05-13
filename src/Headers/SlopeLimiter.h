@@ -227,7 +227,7 @@ class GizmoLimiter : public SlopeLimiter<ndim,ParticleType>
       const FLOAT phimax = max(parti.Wprim[var], partj.Wprim[var]);
       const FLOAT phibar = parti.Wprim[var] + (partj.Wprim[var] - parti.Wprim[var])*
         sqrt(DotProduct(draux, draux, ndim))/drmag;
-      const FLOAT phimid0 = parti.Wprim[var] + DotProduct(gradW[var], draux, ndim);
+      const FLOAT phimid0 = parti.Wprim[var] + dW[var]; //DotProduct(gradW[var], draux, ndim);
 
       if (sgn(phimin - delta1) == sgn(phimin)) {
         phiminus = phimin - delta1;

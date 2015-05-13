@@ -1150,7 +1150,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
   const int ilast = cell.ilast;        // i.d. of last particle in cell c
   int i = cell.ifirst;                 // Local particle id (set to first ptcl id)
   int Nactive = 0;                     // No. of active particles in cell
-  
+
   assert(activelist != NULL);
 
   // Walk through linked list to obtain list and number of active ptcls.
@@ -1509,20 +1509,20 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
   const int Nneibmax,                  ///< [in] Max. no. of SPH neighbours
   const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
   int &Nneib,                          ///< [out] Total no. of neighbours
-  int &Nhydroneib,                       ///< [out] No. of SPH neighbours
+  int &Nhydroneib,                     ///< [out] No. of SPH neighbours
   int &Ndirect,                        ///< [out] No. of direct-sum neighbours
   int &Ngravcell,                      ///< [out] No. of cell interactions
   int *neiblist,                       ///< [out] List of all particle ids
-  int *sphneiblist,                    ///< [out] List of SPH neibpart ids
+  int *hydroneiblist,                  ///< [out] List of SPH neibpart ids
   int *directlist,                     ///< [out] List of direct-sum neibpart ids
   TreeCell<ndim> *gravcell,            ///< [out] Array of local copies of tree cells
   ParticleType<ndim> *neibpart)        ///< [out] Array of local copies of neighbour particles
 {
-  int cc;                              // Cell counter
+  int cc = 0;                          // Cell counter
   int i;                               // Particle id
   int j;                               // Aux. particle counter
   int k;                               // Neighbour counter
-  int Nhydroneibtemp = 0;                // Aux. counter
+  int Nhydroneibtemp = 0;              // Aux. counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
   FLOAT rc[ndim];                      // Position of cell
@@ -1532,12 +1532,14 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
   const FLOAT rmax = cell.rmax;
   for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
 
+  //cout << "rc : " << rc[0] << "   " << rc[1] << "   " << rc[2] << endl;
+  //cout << "Nneibmax : " << Nneibmax << endl;
+
   // Start with root cell and walk through entire tree
-  cc        = 0;
-  Nneib     = 0;
-  Nhydroneib  = 0;
-  Ndirect   = 0;
-  Ngravcell = 0;
+  Nneib      = 0;
+  Nhydroneib = 0;
+  Ndirect    = 0;
+  Ngravcell  = 0;
 
 
   // Walk through all cells in tree to determine particle and cell interaction lists
@@ -1545,13 +1547,13 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
   while (cc < Ncell) {
 
     for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
-    drsqd = DotProduct(dr,dr,ndim);
+    drsqd = DotProduct(dr, dr, ndim);
 
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(cell.bbmin,cell.bbmax,celldata[cc].hboxmin,celldata[cc].hboxmax) ||
-        BoxOverlap(cell.hboxmin,cell.hboxmax,celldata[cc].bbmin,celldata[cc].bbmax)) {
+    if (BoxOverlap(cell.bbmin, cell.bbmax, celldata[cc].hboxmin, celldata[cc].hboxmax) ||
+        BoxOverlap(cell.hboxmin, cell.hboxmax, celldata[cc].bbmin, celldata[cc].bbmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].level != ltot) {
@@ -1566,7 +1568,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
       else if (celldata[cc].level == ltot && Nneib + Nleafmax <= Nneibmax) {
         i = celldata[cc].ifirst;
         while (i != -1) {
-          sphneiblist[Nhydroneib++] = Nneib;
+          hydroneiblist[Nhydroneib++] = Nneib;
           neiblist[Nneib] = i;
           neibpart[Nneib++] = partdata[i];
           if (i == celldata[cc].ilast) break;
@@ -1585,7 +1587,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
     // Check if cell is far enough away to use the COM approximation
     //---------------------------------------------------------------------------------------------
     else if (drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor &&
-              celldata[cc].N > 0) {
+             celldata[cc].N > 0) {
 
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
@@ -1649,14 +1651,15 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
   // Now, trim the list to remove particles that are definitely not SPH neighbours.
   // If not an SPH neighbour, then add to direct gravity sum list.
   for (j=Nhydroneibtemp; j<Nhydroneib; j++) {
+    //cout << j << "    " << Nneibmax << "    " << Nhydroneib << "    " << Ndirect << "    " << Nhydroneibtemp <<  endl;
     assert(j < Nneibmax);
-    i = sphneiblist[j];
+    i = hydroneiblist[j];
     if (neibpart[i].itype == dead) continue;
     for (k=0; k<ndim; k++) dr[k] = neibpart[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
     if (drsqd < hrangemaxsqd || drsqd <
         (rmax + kernrange*neibpart[i].h)*(rmax + kernrange*neibpart[i].h)) {
-      sphneiblist[Nhydroneibtemp++] = i;
+      hydroneiblist[Nhydroneibtemp++] = i;
     }
     else if (Ndirect < Nneibmax) {
       directlist[Ndirect++] = i;
@@ -1671,6 +1674,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
   assert(Nneib <= Nneibmax);
   assert(Ndirect <= Nneibmax);
   assert(Ngravcell <= Ngravcellmax);
+  assert(VerifyUniqueIds(Nneib, Ntot, neiblist));
 
   return 1;
 }
@@ -1699,7 +1703,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
   int &Ndirect,                        ///< [out] No. of direct-sum neighbours
   int &Ngravcell,                      ///< [out] No. of cell interactions
   int *neiblist,                       ///< [out] List of all particle ids
-  int *sphneiblist,                    ///< [out] List of SPH neibpart ids
+  int *hydroneiblist,                  ///< [out] List of SPH neibpart ids
   int *directlist,                     ///< [out] List of direct-sum neibpart ids
   TreeCell<ndim> *gravcell,            ///< [out] Array of local copies of tree cells
   ParticleType<ndim> *neibpart)        ///< [out] Array of local copies of neighbour particles
@@ -1750,7 +1754,7 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
       else if (celldata[cc].level == ltot && Nneib + Nleafmax <= Nneibmax) {
         i = celldata[cc].ifirst;
         while (i != -1) {
-          sphneiblist[Nhydroneib++] = Nneib;
+          hydroneiblist[Nhydroneib++] = Nneib;
           neiblist[Nneib] = i;
           neibpart[Nneib] = partdata[i];
           for (k=0; k<ndim; k++) dr[k] = neibpart[Nneib].r[k] - rc[k];
@@ -1844,13 +1848,13 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputePeriodicGravityInteractionList
   // Now, trim the list to remove particles that are definitely not SPH neighbours.
   // If not an SPH neighbour, then add to direct gravity sum list.
   for (j=Nhydroneibtemp; j<Nhydroneib; j++) {
-    i = sphneiblist[j];
+    i = hydroneiblist[j];
     if (neibpart[i].itype == dead) continue;
     for (k=0; k<ndim; k++) dr[k] = neibpart[i].r[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
     if (drsqd < hrangemaxsqd || drsqd <
         (rmax + kernrange*neibpart[i].h)*(rmax + kernrange*neibpart[i].h))
-      sphneiblist[Nhydroneibtemp++] = i;
+      hydroneiblist[Nhydroneibtemp++] = i;
     else if (Ndirect + Nhydroneibtemp < Nneibmax)
       directlist[Ndirect++] = i;
     else

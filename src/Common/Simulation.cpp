@@ -67,7 +67,8 @@ SimulationBase* SimulationBase::SimulationFactory
 
   // Check simulation type is valid
   if (simtype != "sph" && simtype != "gradhsph" && simtype != "sm2012sph" &&
-      simtype != "meshlessfv" && simtype != "nbody" ) {
+      simtype != "meshlessfv" && simtype != "mfvmuscl" && simtype != "mfvrk" &&
+      simtype != "nbody" ) {
     string msg = "Error: the simulation type " + simtype + " was not recognized";
     ExceptionHandler::getIstance().raise(msg);
   }
@@ -85,8 +86,10 @@ SimulationBase* SimulationBase::SimulationFactory
       return new GradhSphSimulation<1>(params);
     else if (simtype == "sm2012sph")
       return new SM2012SphSimulation<1>(params);
-    else if (simtype == "meshlessfv")
-      return new MeshlessFVSimulation<1>(params);
+    else if (simtype == "meshlessfv" || simtype == "mfvmuscl")
+      return new MfvMusclSimulation<1>(params);
+    else if (simtype == "mfvrk")
+      return new MfvRungeKuttaSimulation<1>(params);
     else if (simtype == "nbody")
       return new NbodySimulation<1>(params);
   }
@@ -95,8 +98,10 @@ SimulationBase* SimulationBase::SimulationFactory
       return new GradhSphSimulation<2>(params);
     else if (simtype == "sm2012sph")
       return new SM2012SphSimulation<2>(params);
-    else if (simtype == "meshlessfv")
-      return new MeshlessFVSimulation<2>(params);
+    else if (simtype == "meshlessfv" || simtype == "mfvmuscl")
+      return new MfvMusclSimulation<2>(params);
+    else if (simtype == "mfvrk")
+      return new MfvRungeKuttaSimulation<2>(params);
     else if (simtype == "nbody")
       return new NbodySimulation<2>(params);
   }
@@ -105,8 +110,10 @@ SimulationBase* SimulationBase::SimulationFactory
       return new GradhSphSimulation<3>(params);
     else if (simtype == "sm2012sph")
       return new SM2012SphSimulation<3>(params);
-    else if (simtype == "meshlessfv")
-      return new MeshlessFVSimulation<3>(params);
+    else if (simtype == "meshlessfv" || simtype == "mfvmuscl")
+      return new MfvMusclSimulation<3>(params);
+    else if (simtype == "mfvrk")
+      return new MfvRungeKuttaSimulation<3>(params);
     else if (simtype == "nbody")
       return new NbodySimulation<3>(params);
   }

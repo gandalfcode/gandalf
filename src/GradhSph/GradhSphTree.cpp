@@ -1071,10 +1071,10 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphGravForces
 
 
         // Compute forces between SPH neighbours (hydro and gravity)
-        sph->ComputeSphGravForces(i,Nhydroaux,sphauxlist,activepart[j],neibpart);
+        sph->ComputeSphGravForces(i, Nhydroaux, sphauxlist, activepart[j], neibpart);
 
         // Compute direct gravity forces between distant particles
-        sph->ComputeDirectGravForces(i,Ndirectaux,directlist,activepart[j],sphdata);
+        sph->ComputeDirectGravForces(i, Ndirectaux, directlist, activepart[j], neibpart);
 
         // Compute gravitational force due to distant cells
         if (multipole == "monopole") {

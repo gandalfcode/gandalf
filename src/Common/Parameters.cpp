@@ -279,8 +279,9 @@ void Parameters::SetDefaultValues(void)
   // Riemann solver parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["riemann_solver"] = "exact";
-  stringparams["slope_limiter"] = "mine";
+  stringparams["slope_limiter"] = "springel2009";
   intparams["riemann_order"] = 1;
+  intparams["zero_mass_flux"] = 0;
 
   // Gravity parameters
   //-----------------------------------------------------------------------------------------------

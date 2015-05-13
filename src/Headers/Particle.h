@@ -248,6 +248,7 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT invh;                          ///< 1 / h
   FLOAT hfactor;                       ///< invh^(ndim + 1)
   FLOAT invrho;                        ///< 1 / rho
+  FLOAT invomega;                      ///< ..
   FLOAT press;                         ///< Thermal pressure
   FLOAT pfactor;                       ///< Pressure factor in SPH EOM
   FLOAT sound;                         ///< Sound speed
@@ -255,6 +256,7 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT vsig_max;                      ///< Maximum signal velocity to all neighbours
   FLOAT ndens;                         ///< Number density of neighbours
   FLOAT volume;                        ///< 'Volume' of particle
+  FLOAT zeta;                          ///< ..
   FLOAT B[ndim][ndim];                 ///< Inverse matrix for gradient calculations
   FLOAT Wprim[ndim+2];                 ///< ..
   FLOAT Wmin[ndim+2];                  ///< ..
@@ -263,9 +265,12 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT Wmidmin[ndim+2];               ///< ..
   FLOAT Ucons[ndim+2];                 ///< ..
   FLOAT Qcons[ndim+2];                 ///< ..
+  FLOAT Qcons0[ndim+2];                ///< ..
   FLOAT grad[ndim+2][ndim];            ///< ..
   FLOAT dQdt[ndim+2];                  ///< Time derivative of conserved variables
   FLOAT Utot;                          ///< ..
+  FLOAT rdmdt[ndim];
+  FLOAT rdmdt0[ndim];
 
 
   // SPH particle constructor to initialise all values
@@ -278,6 +283,7 @@ struct MeshlessFVParticle : public Particle<ndim>
     invh      = (FLOAT) 0.0;
     hfactor   = (FLOAT) 0.0;
     invrho    = (FLOAT) 0.0;
+    invomega  = (FLOAT) 1.0;
     press     = (FLOAT) 0.0;
     pfactor   = (FLOAT) 0.0;
     sound     = (FLOAT) 0.0;
@@ -285,6 +291,7 @@ struct MeshlessFVParticle : public Particle<ndim>
     ndens     = (FLOAT) 0.0;
     volume    = (FLOAT) 0.0;
     vsig_max  = (FLOAT) 0.0;
+    zeta      = (FLOAT) 0.0;
   }
 
 };

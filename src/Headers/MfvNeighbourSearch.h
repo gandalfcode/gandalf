@@ -82,6 +82,7 @@ protected:
   virtual void UpdateAllProperties(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateGradientMatrices(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateGodunovFluxes(const int, const int, const FLOAT, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateAllGravForces(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *) = 0;
   //virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, MeshlessFV<ndim> *) = 0;
 
 };
@@ -118,6 +119,7 @@ class MeshlessFVBruteForce : public MeshlessFVNeighbourSearch<ndim>, public Brut
   void UpdateGradientMatrices(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
   void UpdateGodunovFluxes(const int, const int, const FLOAT,
                            MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
+  void UpdateAllGravForces(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
 
 };
 
@@ -190,6 +192,7 @@ protected:
   void UpdateGradientMatrices(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
   void UpdateGodunovFluxes(const int, const int, const FLOAT,
                            MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
+  void UpdateAllGravForces(int, int, MeshlessFVParticle<ndim> *, MeshlessFV<ndim> *, Nbody<ndim> *);
 
 };
 

@@ -32,6 +32,7 @@ class RiemannSolver
   const FLOAT g7;
   const FLOAT g8;
   const FLOAT g9;
+  const bool zeroMassFlux;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
@@ -42,7 +43,7 @@ class RiemannSolver
   static const int ipress = ndim + 1;
 
 
-  RiemannSolver(FLOAT);
+  RiemannSolver(FLOAT, bool);
   ~RiemannSolver();
 
   virtual void ComputeStarRegion(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT,
@@ -72,7 +73,9 @@ class ExactRiemannSolver: public RiemannSolver<ndim>
   using RiemannSolver<ndim>::g6;
   using RiemannSolver<ndim>::g7;
   using RiemannSolver<ndim>::g8;
+  using RiemannSolver<ndim>::g9;
   using RiemannSolver<ndim>::invgamma;
+  using RiemannSolver<ndim>::zeroMassFlux;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
@@ -84,7 +87,7 @@ class ExactRiemannSolver: public RiemannSolver<ndim>
 
  public:
 
-  ExactRiemannSolver(FLOAT gamma_aux) : RiemannSolver<ndim>(gamma_aux) {};
+  ExactRiemannSolver(FLOAT gamma_aux, bool _zeroMassFlux) : RiemannSolver<ndim>(gamma_aux, _zeroMassFlux) {};
     //~ExactRiemannSolver() {};
 
   virtual void ComputeStarRegion(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
@@ -118,7 +121,9 @@ class HllcRiemannSolver: public RiemannSolver<ndim>
   using RiemannSolver<ndim>::g6;
   using RiemannSolver<ndim>::g7;
   using RiemannSolver<ndim>::g8;
+  using RiemannSolver<ndim>::g9;
   using RiemannSolver<ndim>::invgamma;
+  using RiemannSolver<ndim>::zeroMassFlux;
 
   static const int nvar = ndim + 2;
   static const int ivx = 0;
@@ -130,7 +135,7 @@ class HllcRiemannSolver: public RiemannSolver<ndim>
 
  public:
 
-  HllcRiemannSolver(FLOAT gamma_aux) : RiemannSolver<ndim>(gamma_aux) {};
+  HllcRiemannSolver(FLOAT gamma_aux, bool _zeroMassFlux) : RiemannSolver<ndim>(gamma_aux, zeroMassFlux) {};
     //~HllcRiemannSolver() {};
 
   virtual void ComputeFluxes(const FLOAT [ndim+2], const FLOAT [ndim+2],

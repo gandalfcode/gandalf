@@ -573,4 +573,39 @@ inline void compute_displs (std::vector<int>& displs, std::vector<int>& counts) 
 
 
 
+//=============================================================================
+//  VerifyUniqueIds
+/// ...
+//=============================================================================
+inline bool VerifyUniqueIds(const int N, const int Nrange, const int *values)
+{
+  int i,j,k;
+  int *counter = new int[Nrange];
+  for (i=0; i<Nrange; i++) counter[i] = 0;
+
+  for (int j=0; j<N; j++) {
+    i = values[j];
+    if (!(i >= 0 && i < Nrange)) {
+      cout << "i : " << i << "     Nrange : " << Nrange << "    N : " << N << endl;
+      return false;
+    }
+    //assert(i >= 0 && i < Nrange);
+    counter[i]++;
+  }
+
+  for (j=0; j<N; j++) {
+    if (!(counter[i] == 0 || counter[i] == 1)) {
+      cout << "Invalid counter : " << i << "    count : " << counter[i] << endl;
+      return false;
+    }
+    //assert(counter[i] == 1);
+  }
+
+  delete[] counter;
+
+  return true;
+}
+
+
+
 #endif

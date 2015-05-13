@@ -24,7 +24,7 @@ static const FLOAT tolerance = 1.0e-6;           // Iteration tolerance
 /// Constructor for RiemannSolver class.
 //=================================================================================================
 template <int ndim>
-RiemannSolver<ndim>::RiemannSolver(FLOAT gamma_aux):
+RiemannSolver<ndim>::RiemannSolver(FLOAT gamma_aux, bool _zeroMassFlux):
   gamma(gamma_aux),
   invgamma(1.0/gamma_aux),
   g1(0.5*(gamma_aux - 1.0)/gamma_aux),
@@ -35,7 +35,8 @@ RiemannSolver<ndim>::RiemannSolver(FLOAT gamma_aux):
   g6((gamma_aux - 1.0)/(gamma_aux + 1.0)),
   g7(0.5*(gamma_aux - 1.0)),
   g8(gamma_aux - 1.0),
-  g9(1.0/(gamma_aux - 1.0))
+  g9(1.0/(gamma_aux - 1.0)),
+  zeroMassFlux(_zeroMassFlux)
 {
 }
 
@@ -503,177 +504,6 @@ void ExactRiemannSolver<ndim>::SampleExactSolution
 
 
 //=================================================================================================
-//  ExactRiemannSolver::SampleExactVacuumSolution
-//=================================================================================================
-template <int ndim>
-void ExactRiemannSolver<ndim>::SampleExactVacuumSolution
- (const FLOAT pstar,                   ///< ..
-  const FLOAT ustar,                   ///< ..
-  const FLOAT s,                       ///< ..
-  const FLOAT pl,                      ///< ..
-  const FLOAT pr,                      ///< ..
-  const FLOAT dl,                      ///< ..
-  const FLOAT dr,                      ///< ..
-  const FLOAT cl,                      ///< ..
-  const FLOAT cr,                      ///< ..
-  const FLOAT ul,                      ///< ..
-  const FLOAT ur,                      ///< ..
-  FLOAT &p,                            ///< ..
-  FLOAT &d,                            ///< ..
-  FLOAT &u)                            ///< ..
-{
-
-  FLOAT cm;                            // ..
-  FLOAT sl,sr;                         // ..
-  FLOAT sh, st;                        // Rarefaction head and tail speed
-  FLOAT c;                             // Parameter to determine fan position
-
-
-  // If sampling point lies to the left of the contact discontinuity
-  //-----------------------------------------------------------------------------------------------
-  if (s <= ustar) {
-
-    // Left rarefaction
-    //---------------------------------------------------------------------------------------------
-    if (pstar <= pl) {
-      sh = ul - cl;
-
-      //cout << "Left rarefaction" << endl;
-      //cout << "s : " << s << "   " << sh << endl;
-
-      // Sampled point is left data state
-      if (s <= sh) {
-        d = dl;
-        u = ul;
-        p = pl;
-      }
-      else {
-        cm = cl*pow(pstar/pl,g1);
-        st = ustar - cm;
-
-        //cout << "cm : " << cm << "    st : " << st << endl;
-
-        // Sample point is star left state
-        if (s > st) {
-          d = dl*pow(pstar/pl,invgamma);
-          u = ustar;
-          p = pstar;
-        }
-        // Sampled point is inside left fan
-        else {
-          u = g5*(cl + g7*ul + s);
-          c = g5*(cl + g7*(ul - s));
-          d = dl*pow(c/cl,g4);
-          p = pl*pow(c/cl,g3);
-          //cout << "c/cl : " << c/cl << "    g4 : " << g4 << "    g3 : " << g3 << endl;
-        }
-
-      }
-
-    }
-
-    // left shock
-    //---------------------------------------------------------------------------------------------
-    else {
-      FLOAT pml = pstar/pl;
-      sl = ul - cl*sqrt(g2*pml + g1);
-
-      //cout << "Left shock" << endl;
-
-      // Sampled point is left data state
-      if (s <= sl) {
-        d = dl;
-        u = ul;
-        p = pl;
-      }
-      // Sampled point is star left state
-      else {
-        d = dl*(pml + g6)/(pml*g6 + 1.0);
-        u = ustar;
-        p = pstar;
-      }
-    }
-    //---------------------------------------------------------------------------------------------
-
-  }
-  // Sampling point lies to the right of the contact discontinuity
-  //-----------------------------------------------------------------------------------------------
-  else {
-
-    // Right shock
-    //---------------------------------------------------------------------------------------------
-    if (pstar >= pr) {
-
-      FLOAT pmr = pstar/pr;
-      sr = ur + cr*sqrt(g2*pmr + g1);
-
-      //cout << "Right shock" << endl;
-
-      // Sampled point is right data state
-      if (s >= sr) {
-        d = dr;
-        u = ur;
-        p = pr;
-      }
-      // Sampled point is star right state
-      else {
-        d = dr*(pmr + g6)/(pmr*g6 + 1.0);
-        u = ustar;
-        p = pstar;
-      }
-
-    }
-    // Right rarefaction
-    //---------------------------------------------------------------------------------------------
-    else {
-
-      sh = ur + cr;
-
-      //cout << "Right rarefaction" << endl;
-
-      // Sampled point is left data state
-      if (s >= sh) {
-        d = dr;
-        u = ur;
-        p = pr;
-      }
-      else {
-        cm = cr*pow(pstar/pr,g1);
-        st = ustar + cm;
-
-        // Sample point is star right state
-        if (s <= st) {
-          d = dr*pow(pstar/pr,invgamma);
-          u = ustar;
-          p = pstar;
-        }
-        // Sampled point is inside left fan
-        else {
-          u = g5*(-cr + g7*ur + s);
-          c = g5*(cr - g7*(ur - s));
-          d = dr*pow(c/cr,g4);
-          p = pr*pow(c/cr,g3);
-        }
-
-      }
-
-    }
-
-  }
-  //-----------------------------------------------------------------------------------------------
-
-  if (p < 0.0) {
-    cout << "s : " << s << "   " << ustar << "   " << pstar << "   " << pl << "    " << pr << endl;
-    cout << "p : " << p << "    d : " << d << "    c : " << c << "    u : " << u << endl;
-    exit(0);
-  }
-
-  return;
-}
-
-
-
-//=================================================================================================
 //  ExactRiemannSolver::ComputeFluxes
 /// Exact Riemann solver, based on approach outlined by Toro (1999).
 //=================================================================================================
@@ -698,7 +528,6 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
   FLOAT uleft[ndim];
   FLOAT uright[ndim];
   FLOAT Wface[ndim];
-  const bool mfmFlag = false;
 
   // Compute rotation matrices
   this->ComputeRotationMatrices(runit, rotMat, invRotMat);
@@ -744,7 +573,7 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
     assert(d >= 0.0);
 
 
-    if (mfmFlag) {
+    if (zeroMassFlux) {
 
       Wface[ivx] = 0.0;
       for (k=0; k<ndim; k++) vface[k] += u*runit[k];
@@ -807,126 +636,189 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
 
 
 //=================================================================================================
-//  HllcRiemannSolver::SolveRiemannProblem
-/// HLLc Riemann solver for pstar and ustar.
+//  HllcRiemannSolver::ComputeFluxes
+/// Hllc Riemann solver.
 //=================================================================================================
 template <int ndim>
 void HllcRiemannSolver<ndim>::ComputeFluxes
- (const FLOAT Wleft[nvar],               ///< LHS primitive state
-  const FLOAT Wright[nvar],              ///< RHS primitive state
-  const FLOAT runit[ndim],               ///< ..
-  FLOAT vface[ndim],                     ///< ..
-  FLOAT flux[nvar][ndim])                ///< flux vector
+ (const FLOAT Wleft[nvar],             ///< LHS primitive state
+  const FLOAT Wright[nvar],            ///< RHS primitive state
+  const FLOAT runit[ndim],             ///< ..
+  FLOAT vface[ndim],                   ///< ..
+  FLOAT flux[nvar][ndim])              ///< flux vector
 {
-  //// State variables
-  const FLOAT dl = Wleft[irho];    //qleft[0];
-  const FLOAT dr = Wright[irho];   //qright[0];
-  const FLOAT ul = DotProduct(Wleft, runit, ndim);
-  const FLOAT ur = DotProduct(Wright, runit, ndim);
-  //const FLOAT ul = Wleft[k];       //qleft[1];
-  //const FLOAT ur = Wright[k];      //qright[1];
-  const FLOAT pl = Wleft[ipress];  //qleft[2];
-  const FLOAT pr = Wright[ipress]; //qright[2];
-  const FLOAT cl = sqrt(gamma*pl/dl);
-  const FLOAT cr = sqrt(gamma*pr/dr);
+  const FLOAT cl = sqrt(gamma*Wleft[ipress]/Wleft[irho]);    // ..
+  const FLOAT cr = sqrt(gamma*Wright[ipress]/Wright[irho]);  // ..
 
-  FLOAT ekin;                            // Kinetic energy
-  FLOAT etotl;                           // Left total energy
-  FLOAT etotr;                           // Right total energy
-  FLOAT Sl;                              // LHS wave speed estimator
-  FLOAT Sr;                              // RHS wave speed estimator
-  FLOAT pstar;                           // Pressure in star region
-  FLOAT ustar;                           // Velocity in star region
-  FLOAT ddu;
-  FLOAT dstarl;                          // Left star region density
-  FLOAT etotstarl;                       // Left star region total energy
-  FLOAT dstarr;                          // Right star region density
-  FLOAT etotstarr;                       // Right star region total energy
-  FLOAT df;                              // Flux density
-  FLOAT uf;                              // Flux velocity
-  FLOAT pf;                              // Flux pressure
-  FLOAT etotf;                           // Flux total energy
-  int k;
+  int k,kv;
+  FLOAT pstar;                         // Pressure in star region
+  FLOAT ustar;                         // Velocity in star region
+  FLOAT etot;                          // Total specific energy
+  FLOAT p,d,u;                         // Primitive variables at s=0 from Riemann solver
+  FLOAT rotMat[ndim][ndim];
+  FLOAT invRotMat[ndim][ndim];
+  FLOAT uleft[ndim];
+  FLOAT uright[ndim];
+  FLOAT Wface[ndim];
+
+  // Compute rotation matrices
+  this->ComputeRotationMatrices(runit, rotMat, invRotMat);
+
+  for (k=0; k<ndim; k++) uleft[k] = Wleft[k];
+  for (k=0; k<ndim; k++) uright[k] = Wright[k];
+
+  this->RotateVector(invRotMat, uleft);
+  this->RotateVector(invRotMat, uright);
+
+
+  /*FLOAT runit2[ndim];
+  for (k=0; k<ndim; k++) runit2[k] = runit[k];
+  this->RotateVector(invRotMat, runit2);
+  cout << "runit (rotated) : " << runit2[0] << "   " << runit2[1] << "   " << runit2[2] << endl;*/
+
+
+  assert(Wleft[ipress] > 0.0);
+  assert(Wleft[irho] > 0.0);
+  assert(Wright[ipress] > 0.0);
+  assert(Wright[irho] > 0.0);
+
 
   // Compute total energy
-  ekin = 0.5*dl*ul*ul;
-#if NDIM>1
-  ekin = ekin + 0.5*dl*qleft[4]*qleft[4];
-#endif
-#if NDIM>2
-  ekin = ekin + 0.5*dl*qleft[5]*qleft[5];
-#endif
-  etotl = pl/(gamma - 1.0) + ekin;
+  FLOAT ekin, etotl, etotr, Sl, Sr, ddu, dstarl, dstarr, etotstarl, etotstarr, df, uf, pf, etotf;
+  ekin = 0.0;
+  for (int kv=0; kv<ndim; kv++) ekin += 0.5*Wleft[irho]*Wleft[kv]*Wleft[kv];
+  etotl = Wleft[ipress]/(gamma - 1.0) + ekin;
 
-  ekin = 0.5*dr*ur*ur;
-#if NDIM>1
-  ekin = ekin + 0.5*dr*qright[4]*qright[4];
-#endif
-#if NDIM>2
-  ekin = ekin + 0.5*dr*qright[5]*qright[5];
-#endif
-  etotr = pr/(gamma - 1.0) + ekin;
+  ekin = 0.0;
+  for (int kv=0; kv<ndim; kv++) ekin += 0.5*Wright[irho]*Wright[kv]*Wright[kv];
+  etotr = Wright[ipress]/(gamma - 1.0) + ekin;
 
   // Compute HLL wave speed
-  Sl = min(ul,ur) - max(cl,cr);
-  Sr = max(ul,ur) + max(cl,cr);
+  //Sl = min(ul,ur) - max(cl,cr);
+  //Sr = max(ul,ur) + max(cl,cr);
+  //Sl = min(ul - cl, ur - cr);
+  //Sr = max(ul + cl, ur + cr);
+  FLOAT ul = uleft[0];
+  FLOAT ur = uright[0];
+  FLOAT dl = Wleft[irho];
+  FLOAT dr = Wright[irho];
+  FLOAT pl = Wleft[ipress];
+  FLOAT pr = Wright[ipress];
+  Sl = ul - cl;
+  Sr = ur + cr;
 
   ddu = dl*(Sl - ul) - dr*(Sr - ur);
 
   // Compute intermediate ('star') velocity and pressure
   ustar = ((pr - pl) + dl*ul*(Sl - ul) - dr*ur*(Sr - ur))/ddu;
-  pstar = (dl*(Sl - ul)*pr - dr*(Sr - ur)*pr + dl*dr*(Sr - ur)*(Sl - ul)*(ul - ur))
-          /ddu;
+  pstar = (dl*(Sl - ul)*pr - dr*(Sr - ur)*pl + dl*dr*(Sr - ur)*(Sl - ul)*(ul - ur)) / ddu;
 
-  // Left star region variables
-  dstarl = dl*(Sl - ul)/(Sl - ustar);
-  etotstarl = dstarl*(etotl/dl + (ustar - ul)*(ustar + pl/(dl*(Sl - ul))));
 
-  // Right star region variables
-  dstarr = dr*(Sr - ur)/(Sr - ustar);
-  etotstarr = dstarr*(etotr/dr + (ustar - ur)*(ustar + pr/(dr*(Sr - ur))));
+  // If not a vacuum state (i.e. pstar > 0), then sample solution
+  //-----------------------------------------------------------------------------------------------
+  if (pstar > 0.0) {
 
-  // Sample solution at x/t=0
-  if( Sl > 0.0 ) {
-    df = dl;
-    uf = ul;
-    pf = pl;
-    etotf = etotl;
-  }
-  else if( ustar > 0.0 ) {
-    df = dstarl;
-    uf = ustar;
-    pf = pstar;
-    etotf = etotstarl;
-  }
-  else if( Sr > 0.0 ) {
-    df = dstarr;
-    uf = ustar;
-    pf = pstar;
-    etotf = etotstarr;
-  }
-  else {
-    df = dr;
-    uf = ur;
-    pf = pr;
-    etotf = etotr;
-  }
+    // Left star region variables
+    dstarl = dl*(Sl - ul)/(Sl - ustar);
+    etotstarl = dstarl*(etotl/dl + (ustar - ul)*(ustar + pl/(dl*(Sl - ul))));
 
-  // Compute the conservative fluxes
-  /*flux[irho]  = df*uf;
-  flux[ivx]   = df*uf*uf + pf;
-  flux[ietot] = (etotf + pf)*uf;*/
-/*#if NDIM>1
-  do(ivar=3; ivar<nvar; ivar++) {
-    if( flux[0] > 0.0d0) {
-      flux[ivar] = flux[0]*qleft[ivar];
+    // Right star region variables
+    dstarr = dr*(Sr - ur)/(Sr - ustar);
+    etotstarr = dstarr*(etotr/dr + (ustar - ur)*(ustar + pr/(dr*(Sr - ur))));
+
+    // Sample solution at x/t=0
+    if( Sl > 0.0 ) {
+      df = dl;
+      uf = ul;
+      pf = pl;
+      etotf = etotl;
+    }
+    else if( ustar > 0.0 ) {
+      df = dstarl;
+      uf = ustar;
+      pf = pstar;
+      etotf = etotstarl;
+    }
+    else if( Sr > 0.0 ) {
+      df = dstarr;
+      uf = ustar;
+      pf = pstar;
+      etotf = etotstarr;
     }
     else {
-      flux[ivar] = flux[0]*qright[ivar];
+      df = dr;
+      uf = ur;
+      pf = pr;
+      etotf = etotr;
+    }
+
+
+    for (kv=0; kv<ndim; kv++) Wface[kv] = 0.0;
+    Wface[irho]   = df;
+    Wface[ivx]    = uf;
+    Wface[ipress] = pf;
+
+    //cout << "p : " << p << endl;
+    assert(pf >= 0.0);
+    assert(df >= 0.0);
+
+
+    if (zeroMassFlux) {
+
+      Wface[ivx] = 0.0;
+      for (k=0; k<ndim; k++) vface[k] += uf*runit[k];
+
+    }
+    else {
+
+      // Calculate transverse velocity fluxes from upwind direction
+      if (uf > 0.0) {
+        for (k=1; k<ndim; k++) Wface[k] = uleft[k];
+      }
+      else if (uf < 0.0) {
+        for (k=1; k<ndim; k++) Wface[k] = uright[k];
+      }
+    }
+
+
+    // Rotate velocity to original frame
+    this->RotateVector(rotMat, Wface);
+
+
+    // Compute fluxes in moving frame
+    FLOAT ekin = 0.0;
+    for (kv=0; kv<ndim; kv++) ekin += Wface[kv]*Wface[kv];
+    for (k=0; k<ndim; k++) {
+      for (kv=0; kv<ndim; kv++) flux[kv][k] = Wface[irho]*Wface[k]*Wface[kv];
+      flux[k][k]     = Wface[irho]*Wface[k]*Wface[k] + Wface[ipress];
+      flux[irho][k]  = Wface[irho]*(Wface[k]);
+      flux[ietot][k] = (Wface[ipress]/(gamma - 1.0) + 0.5*Wface[irho]*ekin)*(Wface[k])
+        + Wface[ipress]*Wface[k];
+    }
+
+    // Add corrections for transforming back to original lab frame
+    for (k=0; k<ndim; k++) {
+      flux[ietot][k] += (FLOAT) 0.5*DotProduct(vface, vface, ndim)*flux[irho][k] + DotProduct(vface, flux[k], ndim);
+    }
+    for (k=0; k<ndim; k++) {
+      for (kv=0; kv<ndim; kv++) flux[kv][k] += vface[kv]*flux[irho][k];
+    }
+
+  }
+  // Otherwise assume vacuum state conditions
+  //-----------------------------------------------------------------------------------------------
+  else {
+    d = 0.0;
+    u = 0.0;
+    p = 0.0;
+
+    for (kv=0; kv<ndim; kv++) Wface[kv] = (FLOAT) 0.0;
+    for (int var=0; var<ndim+2; var++) {
+      for (k=0; k<ndim; k++) flux[var][k] = (FLOAT) 0.0;
     }
   }
-#endif
-*/
+  //-----------------------------------------------------------------------------------------------
+
 
   return;
 }

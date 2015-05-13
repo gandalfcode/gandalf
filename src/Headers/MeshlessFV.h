@@ -65,6 +65,7 @@ public:
   using Hydrodynamics<ndim>::eos;
   using Hydrodynamics<ndim>::h_fac;
   using Hydrodynamics<ndim>::hydrodata_unsafe;
+  using Hydrodynamics<ndim>::hydro_forces;
   using Hydrodynamics<ndim>::iorder;
   using Hydrodynamics<ndim>::kernfac;
   using Hydrodynamics<ndim>::kernfacsqd;
@@ -81,6 +82,7 @@ public:
   using Hydrodynamics<ndim>::NPeriodicGhost;
   using Hydrodynamics<ndim>::Ntot;
   using Hydrodynamics<ndim>::riemann;
+  using Hydrodynamics<ndim>::self_gravity;
   using Hydrodynamics<ndim>::size_hydro_part;
   using FV<ndim>::gamma_eos;
   using FV<ndim>::gammam1;
@@ -113,14 +115,18 @@ public:
   // (fully coded in each separate MeshlessFV implementation, and not in MeshlessFV.cpp)
   //-----------------------------------------------------------------------------------------------
   virtual int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
-               MeshlessFVParticle<ndim> &, Nbody<ndim> *) = 0;
-  //virtual void ComputeThermalProperties(MeshlessFVParticle<ndim> &) = 0;
+                       MeshlessFVParticle<ndim> &, Nbody<ndim> *) = 0;
   virtual void ComputePsiFactors(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
                                  MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
   virtual void ComputeGradients(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                                    MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
+                                MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
   virtual void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
                                   MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *) = 0;
+  virtual void ComputeSmoothedGravForces(const int, const int, int *, MeshlessFVParticle<ndim> &,
+                                         MeshlessFVParticle<ndim> *) = 0;
+  virtual void ComputeDirectGravForces(const int, const int, int *, MeshlessFVParticle<ndim> &,
+                                       MeshlessFVParticle<ndim> *) = 0;
+  virtual void ComputeStarGravForces(const int, NbodyParticle<ndim> **, MeshlessFVParticle<ndim> &) = 0;
   virtual void CopyDataToGhosts(DomainBox<ndim> &, MeshlessFVParticle<ndim> *) = 0;
 
 
@@ -164,6 +170,7 @@ public:
   string slope_limiter;                ///< Selected slope limiter
   //MeshlessFVType MeshlessFVtype[Nhydrotypes];        ///< Array of MeshlessFV types
 
+  SlopeLimiter<ndim,MeshlessFVParticle> *limiter;
   MeshlessFVParticle<ndim> *hydrodata;
 
 };
@@ -171,7 +178,7 @@ public:
 
 
 //=================================================================================================
-//  Class LV2008MFV
+//  Class MfvMuscl
 /// \brief   Meshless Finite-Volume scheme described by Lanson & Vila (2008)
 /// \details Meshless Finite-Volume scheme described by Lanson & Vila (2008).
 /// \author  D. A. Hubber, J. Ngoumou
@@ -179,7 +186,7 @@ public:
 //=================================================================================================
 //template <int ndim>
 template <int ndim, template<int> class kernelclass>
-class LV2008MFV : public MeshlessFV<ndim>
+class MfvMuscl : public MeshlessFV<ndim>
 {
  public:
 
@@ -194,6 +201,7 @@ class LV2008MFV : public MeshlessFV<ndim>
   using MeshlessFV<ndim>::kernfacsqd;
   using MeshlessFV<ndim>::kernp;
   using MeshlessFV<ndim>::kernrange;
+  using MeshlessFV<ndim>::limiter;
   using MeshlessFV<ndim>::mmean;
   using MeshlessFV<ndim>::Ngather;
   using MeshlessFV<ndim>::Nghost;
@@ -220,10 +228,10 @@ class LV2008MFV : public MeshlessFV<ndim>
 
   // Constructor
   //-----------------------------------------------------------------------------------------------
-  LV2008MFV(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
+  MfvMuscl(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
             FLOAT h_fac_aux, FLOAT h_converge_aux,
             FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_MeshlessFV_part);
-  ~LV2008MFV();
+  ~MfvMuscl();
 
 
 
@@ -232,7 +240,6 @@ class LV2008MFV : public MeshlessFV<ndim>
   //-----------------------------------------------------------------------------------------------
   int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
                MeshlessFVParticle<ndim> &, Nbody<ndim> *);
-  //void ComputeThermalProperties(MeshlessFVParticle<ndim> &);
   void ComputePsiFactors(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
                          MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
   void ComputeGradients(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
@@ -240,11 +247,101 @@ class LV2008MFV : public MeshlessFV<ndim>
   void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
                           MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
   void CopyDataToGhosts(DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
+  void ComputeSmoothedGravForces(const int, const int, int *,
+                                 MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+  void ComputeDirectGravForces(const int, const int, int *,
+                               MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+  void ComputeStarGravForces(const int, NbodyParticle<ndim> **, MeshlessFVParticle<ndim> &);
 
   kernelclass<ndim> kern;                  ///< SPH kernel
   //Balsara2004Limiter<ndim,MeshlessFVParticle> limiter;
   //Springel2009Limiter<ndim,MeshlessFVParticle> limiter;
-  TESS2011Limiter<ndim,MeshlessFVParticle> limiter;
+  //TESS2011Limiter<ndim,MeshlessFVParticle> limiter;
+  //GizmoLimiter<ndim,MeshlessFVParticle> limiter;
+};
+
+
+
+//=================================================================================================
+//  Class MfvRungeKutta
+/// \brief   Meshless Finite-Volume scheme described by Lanson & Vila (2008)
+/// \details Meshless Finite-Volume scheme described by Lanson & Vila (2008).
+/// \author  D. A. Hubber, J. Ngoumou
+/// \date    25/02/2015
+//=================================================================================================
+//template <int ndim>
+template <int ndim, template<int> class kernelclass>
+class MfvRungeKutta : public MeshlessFV<ndim>
+{
+ public:
+
+  using MeshlessFV<ndim>::allocated;
+  using MeshlessFV<ndim>::gamma_eos;
+  using MeshlessFV<ndim>::gammam1;
+  using MeshlessFV<ndim>::h_converge;
+  using MeshlessFV<ndim>::h_fac;
+  using MeshlessFV<ndim>::hydrodata;
+  using MeshlessFV<ndim>::hydrodata_unsafe;
+  using MeshlessFV<ndim>::kernfac;
+  using MeshlessFV<ndim>::kernfacsqd;
+  using MeshlessFV<ndim>::kernp;
+  using MeshlessFV<ndim>::kernrange;
+  using MeshlessFV<ndim>::limiter;
+  using MeshlessFV<ndim>::mmean;
+  using MeshlessFV<ndim>::Ngather;
+  using MeshlessFV<ndim>::Nghost;
+  using MeshlessFV<ndim>::Nghostmax;
+  using MeshlessFV<ndim>::NImportedParticles;
+  using MeshlessFV<ndim>::Nhydro;
+  using MeshlessFV<ndim>::Nhydromax;
+  using MeshlessFV<ndim>::Nmpighost;
+  using MeshlessFV<ndim>::NPeriodicGhost;
+  using MeshlessFV<ndim>::Ntot;
+  using MeshlessFV<ndim>::riemann;
+  using MeshlessFV<ndim>::size_hydro_part;
+
+  static const FLOAT invndim=1./ndim;  ///< Copy of 1/ndim
+  static const int nvar = ndim + 2;
+  static const int ivx = 0;
+  static const int ivy = 1;
+  static const int ivz = 2;
+  static const int irho = ndim;
+  static const int ietot = ndim + 1;
+  static const int ipress = ndim + 1;
+
+
+
+  // Constructor
+  //-----------------------------------------------------------------------------------------------
+  MfvRungeKutta(int hydro_forces_aux, int self_gravity_aux, FLOAT _accel_mult, FLOAT _courant_mult,
+                FLOAT h_fac_aux, FLOAT h_converge_aux,
+                FLOAT gamma_aux, string gas_eos_aux, string KernelName, int size_MeshlessFV_part);
+  ~MfvRungeKutta();
+
+
+
+  // MeshlessFV functions for computing MeshlessFV sums with neighbouring particles
+  // (fully coded in each separate MeshlessFV implementation, and not in MeshlessFV.cpp)
+  //-----------------------------------------------------------------------------------------------
+  int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
+               MeshlessFVParticle<ndim> &, Nbody<ndim> *);
+  void ComputePsiFactors(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
+                         MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+  void ComputeGradients(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
+                                    MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+  void ComputeGodunovFlux(const int, const int, const FLOAT, int *, FLOAT *, FLOAT *, FLOAT *,
+                          MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+  void CopyDataToGhosts(DomainBox<ndim> &, MeshlessFVParticle<ndim> *);
+  void ComputeSmoothedGravForces(const int, const int, int *,
+                                 MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+  void ComputeDirectGravForces(const int, const int, int *,
+                               MeshlessFVParticle<ndim> &, MeshlessFVParticle<ndim> *);
+  void ComputeStarGravForces(const int, NbodyParticle<ndim> **, MeshlessFVParticle<ndim> &);
+
+  kernelclass<ndim> kern;                  ///< SPH kernel
+  //Balsara2004Limiter<ndim,MeshlessFVParticle> limiter;
+  //Springel2009Limiter<ndim,MeshlessFVParticle> limiter;
+  //TESS2011Limiter<ndim,MeshlessFVParticle> limiter;
   //GizmoLimiter<ndim,MeshlessFVParticle> limiter;
 };
 #endif

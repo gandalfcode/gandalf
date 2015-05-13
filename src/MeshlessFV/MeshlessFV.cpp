@@ -229,12 +229,16 @@ void MeshlessFV<ndim>::ComputeThermalProperties
 template <int ndim>
 FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
 {
-  //cout << "Timestep : " << 0.5*part.h/(part.sound + sqrt(DotProduct(part.v, part.v, ndim)))
-  //     << "    " << part.sound << "    " << part.h <<"    "
-  //      << part.v[0] << endl;
-  //cout << "Timestep : " << courant_mult*part.h/part.vsig_max << "   " << courant_mult << "   " << part.h << "    " << part.vsig_max << endl;
-  return courant_mult*part.h/part.vsig_max;
-  return courant_mult*part.h/(part.sound + sqrt(DotProduct(part.v, part.v, ndim)));
+  const FLOAT dt_cfl = courant_mult*part.h/part.vsig_max;
+  const FLOAT dt_grav = accel_mult*
+    sqrtf(part.h/sqrt(DotProduct(part.a0, part.a0, ndim) + small_number));
+
+  if (hydro_forces && self_gravity) return min(dt_cfl, dt_grav);
+  else if (hydro_forces) return dt_cfl;
+  else if (self_gravity) return dt_grav;
+
+  //return courant_mult*part.h/part.vsig_max;
+  //return courant_mult*part.h/(part.sound + sqrt(DotProduct(part.v, part.v, ndim)));
 }
 
 
@@ -305,7 +309,7 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
 
 
 //=================================================================================================
-//  MeshlessFV::InitialSmoothingLengthGuess
+//  MfvMuscl::InitialSmoothingLengthGuess
 /// Perform initial guess of smoothing.  In the abscence of more sophisticated techniques, we guess
 /// the smoothing length assuming a uniform density medium with the same volume and total mass.
 //=================================================================================================
