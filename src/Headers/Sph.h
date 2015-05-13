@@ -80,6 +80,7 @@ class Sph : public Hydrodynamics<ndim>
   using Hydrodynamics<ndim>::kernp;
   using Hydrodynamics<ndim>::kernrange;
   using Hydrodynamics<ndim>::mmean;
+  using Hydrodynamics<ndim>::Ngather;
   using Hydrodynamics<ndim>::Nghost;
   using Hydrodynamics<ndim>::Nghostmax;
   using Hydrodynamics<ndim>::NImportedParticles;
@@ -151,7 +152,7 @@ class Sph : public Hydrodynamics<ndim>
   //-----------------------------------------------------------------------------------------------
   int create_sinks;                    ///< Create new sink particles?
   int fixed_sink_mass;                 ///< Fix masses of sink particles
-  int Ngather;                         ///< Average no. of gather neighbours
+  //int Ngather;                         ///< Average no. of gather neighbours
   int riemann_order;                   ///< Order of Riemann solver
   FLOAT alpha_visc_min;                ///< Min. time-dependent viscosity alpha
   FLOAT msink_fixed;                   ///< Fixed sink mass value
@@ -313,83 +314,6 @@ class SM2012Sph: public Sph<ndim>
 
 
 //=================================================================================================
-//  Class GodunovSph
-/// \brief   Class definition for Godunov SPH (Inutsuka 2002) algorithm.
-/// \details Class definition for Godunov SPH (Inutsuka 2002) algorithm.  Full code for each of
-///          these class functions written in 'GodunovSph.cpp'.
-/// \author  D. A. Hubber, G. Rosotti
-/// \date    03/04/2013
-//=================================================================================================
-template <int ndim, template<int> class kernelclass>
-class GodunovSph: public Sph<ndim>
-{
-  using Sph<ndim>::allocated;
-  using Sph<ndim>::Nhydro;
-  using Sph<ndim>::Ntot;
-  using Sph<ndim>::eos;
-  using Sph<ndim>::h_fac;
-  using Sph<ndim>::kernfacsqd;
-  using Sph<ndim>::invndim;
-  using Sph<ndim>::h_converge;
-  using Sph<ndim>::hydrodata_unsafe;
-  using Sph<ndim>::hydro_forces;
-  using Sph<ndim>::avisc;
-  using Sph<ndim>::beta_visc;
-  using Sph<ndim>::alpha_visc;
-  using Sph<ndim>::acond;
-  using Sph<ndim>::riemann;
-  using Sph<ndim>::riemann_solver;
-  using Sph<ndim>::riemann_order;
-  using Sph<ndim>::slope_limiter;
-  using Sph<ndim>::create_sinks;
-  using Sph<ndim>::hmin_sink;
-  using Sph<ndim>::Nhydromax;
-  using Sph<ndim>::kernp;
-  using Sph<ndim>::iorder;
-  using Sph<ndim>::sphdata_unsafe;
-
- public:
-
-  GodunovSph(int, int, FLOAT, FLOAT, FLOAT, FLOAT,
-             aviscenum, acondenum, tdaviscenum, string, string);
-  ~GodunovSph();
-
-  virtual Particle<ndim>* GetParticleArray() {return sphdata;};
-  virtual SphParticle<ndim>* GetSphParticleArray() {return sphdata;};
-
-  virtual void AllocateMemory(int);
-  virtual void DeallocateMemory(void);
-  virtual void DeleteDeadParticles(void);
-  virtual void ReorderParticles(void);
-
-  int ComputeH(const int, const int, const FLOAT, FLOAT *, FLOAT *, FLOAT *, FLOAT *,
-               SphParticle<ndim> &, Nbody<ndim> *);
-  void ComputeThermalProperties(SphParticle<ndim> &);
-  void ComputeSphHydroForces(const int, const int, const int *, const FLOAT *, const FLOAT *,
-                             const FLOAT *, SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeSphHydroGravForces(const int, const int, int *,
-                                 SphParticle<ndim> &, SphParticle<ndim> *) {};
-  void ComputeSphGravForces(const int, const int, int *,
-                            SphParticle<ndim> &, SphParticle<ndim> *) {};
-  void ComputeSphNeibDudt(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                          SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeSphDerivatives(const int, const int, int *, FLOAT *, FLOAT *, FLOAT *,
-                             SphParticle<ndim> &, SphParticle<ndim> *);
-  void ComputeDirectGravForces(const int, const int, int *,
-                               SphParticle<ndim> &, SphParticle<ndim> *) {};
-  void InitialiseRiemannProblem(GodunovSphParticle<ndim>&, GodunovSphParticle<ndim>&, FLOAT *,
-                                FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT &,
-                                FLOAT &, FLOAT &, FLOAT &, FLOAT &, FLOAT &);
-  void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &) {};
-
-  kernelclass<ndim> kern;               ///< SPH kernel
-  GodunovSphParticle<ndim> *sphdata;    ///< Pointer to particle data
-
-};
-
-
-
-//=================================================================================================
 //  Class NullSph
 /// \brief   Class definition for empty SPH class (needed in NbodySimulation).
 /// \details Class definition for empty SPH class (needed in NbodySimulation).
@@ -452,9 +376,6 @@ class NullSph: public Sph<ndim>
                              SphParticle<ndim> &, SphParticle<ndim> *) {};
   void ComputeDirectGravForces(const int, const int, int *,
                                SphParticle<ndim> &, SphParticle<ndim> *) {};
-  void InitialiseRiemannProblem(GodunovSphParticle<ndim>&, GodunovSphParticle<ndim>&,
-                                FLOAT *, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT &,
-                                FLOAT &, FLOAT &, FLOAT &, FLOAT &, FLOAT &) {};
   void ComputeStarGravForces(int, NbodyParticle<ndim> **, SphParticle<ndim> &) {};
 
   //kernelclass<ndim> kern;               ///< SPH kernel

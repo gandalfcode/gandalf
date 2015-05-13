@@ -58,6 +58,7 @@ SM2012SphKDTree<ndim,ParticleType,TreeCell>::SM2012SphKDTree
   DomainBox<ndim> *boxaux,
   SmoothingKernel<ndim> *kernaux,
   CodeTiming *timingaux):
+ NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
  SM2012SphTree<ndim,ParticleType,TreeCell>(Nleafmaxaux,Nmpiaux,thetamaxsqdaux,kernrangeaux,
                                            macerroraux,gravity_mac_aux,multipole_aux,
                                            boxaux,kernaux,timingaux)
@@ -102,6 +103,7 @@ SM2012SphOctTree<ndim,ParticleType,TreeCell>::SM2012SphOctTree
   DomainBox<ndim> *boxaux,
   SmoothingKernel<ndim> *kernaux,
   CodeTiming *timingaux):
+ NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
  SM2012SphTree<ndim,ParticleType,TreeCell>(Nleafmaxaux,Nmpiaux,thetamaxsqdaux,kernrangeaux,
                                           macerroraux,gravity_mac_aux,multipole_aux,
                                           boxaux,kernaux,timingaux)
@@ -146,6 +148,7 @@ SM2012SphTree<ndim,ParticleType,TreeCell>::SM2012SphTree
  DomainBox<ndim> *boxaux,
  SmoothingKernel<ndim> *kernaux,
  CodeTiming *timingaux):
+  NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
   SphTree<ndim,ParticleType,TreeCell>(Nleafmaxaux,Nmpiaux,thetamaxsqdaux,kernrangeaux,
                                       macerroraux,gravity_mac_aux,multipole_aux,
                                       boxaux,kernaux,timingaux)
@@ -158,14 +161,14 @@ SM2012SphTree<ndim,ParticleType,TreeCell>::SM2012SphTree
 //  SM2012SphTree::~SM2012SphTree
 /// SM2012SphTree destructor.  Deallocates tree memory upon object destruction.
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+/*template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 SM2012SphTree<ndim,ParticleType,TreeCell>::~SM2012SphTree()
 {
   if (tree->allocated_tree) {
     this->DeallocateMemory();
     tree->DeallocateTreeMemory();
   }
-}
+}*/
 
 
 

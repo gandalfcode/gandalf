@@ -1792,6 +1792,7 @@ void Ic<ndim>::EwaldDensity(void)
     int i,k;                             // Particle and dimension counters
     int Nlattice1[3];                    // Lattice size
     int Npart;                           // No. of particles in lattice
+    int periodicity;                     // orientation of the axis of symmetry
     FLOAT csound;                        // (Isothermal) sound speed
     FLOAT h0;                            // Slab scale height
     FLOAT a2inv;                         // Squared inverse scale height for cylinder
@@ -1806,6 +1807,12 @@ void Ic<ndim>::EwaldDensity(void)
     Nlattice1[0]    = simparams->intparams["Nlattice1[0]"];
     Nlattice1[1]    = simparams->intparams["Nlattice1[1]"];
     Nlattice1[2]    = simparams->intparams["Nlattice1[2]"];
+    string x_boundary_lhs   = simparams->stringparams["boundary_lhs[0]"];
+    string x_boundary_rhs   = simparams->stringparams["boundary_rhs[0]"];
+    string y_boundary_lhs   = simparams->stringparams["boundary_lhs[1]"];
+    string y_boundary_rhs   = simparams->stringparams["boundary_rhs[1]"];
+    string z_boundary_lhs   = simparams->stringparams["boundary_lhs[2]"];
+    string z_boundary_rhs   = simparams->stringparams["boundary_rhs[2]"];
     string ic       = simparams->stringparams["ic"];
     FLOAT rhofluid1 = simparams->floatparams["rhofluid1"];
     FLOAT press1    = simparams->floatparams["press1"];
@@ -1842,6 +1849,21 @@ void Ic<ndim>::EwaldDensity(void)
     sim->AllocateParticleMemory();
     r = new FLOAT[ndim*hydro->Nhydro];
 
+    // determine orientation of the problem (variable periodicity)
+    // controls orientation of density structure in the case of
+    // mixed boundary conditions (i.e. normal to the plane or axis
+    // of the cylinder)
+    periodicity = 0;
+    if (x_boundary_lhs == "periodic" && x_boundary_rhs == "periodic") {
+       periodicity+=1;
+    }
+    if (y_boundary_lhs == "periodic" && y_boundary_rhs == "periodic") {
+      periodicity+=2;
+    }
+    if (z_boundary_lhs == "periodic" && z_boundary_rhs == "periodic") {
+      periodicity+=4;
+    }
+
 
     // 1D sinusoidal density perturbation
     //=============================================================================================
@@ -1853,6 +1875,7 @@ void Ic<ndim>::EwaldDensity(void)
 
       // Add regular distribution of SPH particles
       AddCubicLattice(Npart,Nlattice1,r,simbox,false);
+      //AddRandomBox(Npart,r,simbox);
 
       // Add sinusoidal density perturbation to particle distribution
       AddSinusoidalDensityPerturbation(Npart,amp,lambda,r);
@@ -1865,7 +1888,6 @@ void Ic<ndim>::EwaldDensity(void)
         // Set positions in main array with corresponind velocity perturbation
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
         for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
-        //for (k=0; k<ndim; k++) part.v[k] = csound*amp*sin(kwave*r[ndim*i]);
         part.m = rhofluid1*volume/(FLOAT) Npart;
         part.h = hydro->h_fac*pow(part.m/rhofluid1,invndim);
 
@@ -1911,6 +1933,13 @@ void Ic<ndim>::EwaldDensity(void)
     //=============================================================================================
     else if (ic == "ewaldslab") {
 
+      // it is assumed that the slab is selfgravitating, so boundary conditions for gravity
+      // must be set properly
+      if ((periodicity != 3) && (periodicity != 5) && (periodicity != 6)) {
+        printf("For this test boundary conditions must be periodic in two directions");
+        exit(0);
+      }
+
       h0 = csound/sqrtf(twopi*rhofluid1);
 
       // Add regular distribution of SPH particles
@@ -1927,7 +1956,19 @@ void Ic<ndim>::EwaldDensity(void)
         // Set positions in main array with corresponind velocity perturbation
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
         for (k=0; k<ndim; k++) part.v[k] = 0.0;
-        part.rho = rhofluid1/powf(cosh(part.r[2]/h0),2);
+
+        // normal to the slab depends on chosen BCs
+        switch (periodicity) {
+          case 3:
+            part.rho = rhofluid1/powf(cosh(part.r[2]/h0),2);
+            break;
+          case 5:
+            part.rho = rhofluid1/powf(cosh(part.r[1]/h0),2);
+            break;
+          case 6:
+            part.rho = rhofluid1/powf(cosh(part.r[0]/h0),2);
+            break;
+        }
         part.m   = part.rho*volp;
         part.h   = hydro->h_fac*pow(part.m/part.rho,invndim);
 
@@ -1935,12 +1976,20 @@ void Ic<ndim>::EwaldDensity(void)
         else part.u = press1/rhofluid1/gammaone;
 
       }
+
       //-------------------------------------------------------------------------------------------
 
 
     }
     //=============================================================================================
     else if (ic == "ewaldcylinder") {
+
+      // it is assumed that cylinder is selfgravitating, so boundary conditions for gravity
+      // must be set properly
+      if ((periodicity != 1) && (periodicity != 2) && (periodicity != 4)) {
+        printf("For this test boundary conditions must be periodic in one direction");
+        exit(0);
+      }
 
       a2inv = pi*rhofluid1*0.5/pow(csound,2);
 
@@ -1950,7 +1999,6 @@ void Ic<ndim>::EwaldDensity(void)
       volume = simbox.boxsize[0]*simbox.boxsize[1]*simbox.boxsize[2];
       FLOAT volp = volume/(FLOAT) Npart;
 
-
       // Set all other particle quantities
       //-------------------------------------------------------------------------------------------
       for (i=0; i<Npart; i++) {
@@ -1959,7 +2007,17 @@ void Ic<ndim>::EwaldDensity(void)
         // Set positions in main array with corresponind velocity perturbation
         for (k=0; k<ndim; k++) part.r[k] = r[ndim*i + k];
         for (k=0; k<ndim; k++) part.v[k] = 0.0;
-        part.rho = rhofluid1/pow((1.0+a2inv*(pow(part.r[1],2) + pow(part.r[2],2))),2);
+        switch (periodicity) {
+          case 1:
+            part.rho = rhofluid1/pow((1.0+a2inv*(pow(part.r[1],2) + pow(part.r[2],2))),2);
+            break;
+          case 2:
+            part.rho = rhofluid1/pow((1.0+a2inv*(pow(part.r[0],2) + pow(part.r[2],2))),2);
+            break;
+          case 4:
+            part.rho = rhofluid1/pow((1.0+a2inv*(pow(part.r[0],2) + pow(part.r[1],2))),2);
+            break;
+        }
         part.m   = part.rho*volp;
         part.h   = hydro->h_fac*pow(part.m/part.rho,invndim);
 
@@ -1967,6 +2025,7 @@ void Ic<ndim>::EwaldDensity(void)
         else part.u = press1/rhofluid1/gammaone;
 
       }
+
       //-------------------------------------------------------------------------------------------
 
     }
@@ -2171,7 +2230,7 @@ void Ic<ndim>::SedovBlastWave(void)
   FLOAT utot;                          // Total internal energy
   FLOAT volume;                        // Volume of box
   FLOAT *r;                            // Positions of all particles
-  Particle<ndim> *partdata;         // Pointer to main SPH data array
+  Particle<ndim> *partdata;            // Pointer to main SPH data array
 
   // Create local copies of initial conditions parameters
   Nlattice[0]    = simparams->intparams["Nlattice1[0]"];
@@ -2204,7 +2263,7 @@ void Ic<ndim>::SedovBlastWave(void)
   ufrac = max((FLOAT) 0.0,(FLOAT) 1.0 - kefrac);
   Ncold = 0;
   Nhot  = 0;
-  r_hot = powf(powf((FLOAT) 4.0,ndim)/(FLOAT) Nbox,hydro->invndim);
+  r_hot = hydro->h_fac*hydro->kernrange*simbox.boxsize[0]/Nlattice[0];  //powf(powf((FLOAT) 4.0,ndim)/(FLOAT) Nbox,hydro->invndim);
 
   // Allocate local and main particle memory
   hydro->Nhydro = Nbox;
@@ -2239,6 +2298,7 @@ void Ic<ndim>::SedovBlastWave(void)
     part.m = mbox/(FLOAT) Nbox;
     part.h = hydro->h_fac*pow(part.m/rhofluid,invndim);
     part.u = small_number;
+    //part.v[0] = 0.1*part.r[0] + 0.2*part.r[1] - 0.7*part.r[2];
   }
 
   // Set initial smoothing lengths and create initial ghost particles
@@ -2295,15 +2355,13 @@ void Ic<ndim>::SedovBlastWave(void)
       drmag = sqrt(DotProduct(part.r,part.r,ndim));
       part.u = part.u/utot/part.m;
       //,1.0e-6*umax/part.m);
-      for (k=0; k<ndim; k++) part.v[k] =
-    sqrt(2.0*kefrac*part.u)*
-    part.r[k]/(drmag + small_number);
+      for (k=0; k<ndim; k++) part.v[k] = sqrt(2.0*kefrac*part.u)*part.r[k]/(drmag + small_number);
       part.u = ufrac*part.u;
       //,1.0e-6*umax/part.m);
     }
     else {
       part.u = 1.0e-6/part.m;
-      for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
+      //for (k=0; k<ndim; k++) part.v[k] = (FLOAT) 0.0;
     }
   }
 
@@ -2536,8 +2594,7 @@ void Ic<ndim>::SpitzerExpansion(void)
 
 
   // Record particle positions and initialise all other variables
-#pragma omp parallel for default(none)\
-  shared(gammaone,mcloud,Npart,r,rhofluid,volume) private(i,k)
+#pragma omp parallel for default(none) shared(mcloud,Npart,r,rhofluid,volume) private(i,k)
   for (i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) {

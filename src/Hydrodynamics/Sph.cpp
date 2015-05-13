@@ -55,7 +55,6 @@ Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux, FLOAT alpha_visc_aux,
   h_converge(h_converge_aux),
   create_sinks(0),
   fixed_sink_mass(0),
-  Ngather(0),
   avisc(avisc_aux),
   acond(acond_aux),
   tdavisc(tdavisc_aux),
@@ -64,6 +63,7 @@ Sph<ndim>::Sph(int hydro_forces_aux, int self_gravity_aux, FLOAT alpha_visc_aux,
   // Set all SPH particle types here
 
   // Set other class variables here
+  Ngather = 0;
   hmin_sink = big_number;
 }
 

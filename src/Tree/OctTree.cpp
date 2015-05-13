@@ -418,6 +418,7 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
     }
     //---------------------------------------------------------------------------------------------
 
+    delete[] whichChild;
     delete[] celllist;
 
   }
@@ -986,12 +987,12 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   const FLOAT rp[ndim],                ///< [in] Search position
   const FLOAT rsearch,                 ///< [in] Maximum smoothing length
   const int Nneibmax,                  ///< [in] Max. no. of neighbours
+  int &Nneib,                          ///< [inout] No. of neighbours
   int *neiblist)                       ///< [out] List of neighbour i.d.s
 {
   int cc;                              // Cell counter
   int i;                               // Particle id
   int k;                               // Neighbour counter
-  int Nneib = 0;                       // Neighbour counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
   FLOAT rsearchsqd;                    // Search radius squared
@@ -1856,17 +1857,21 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
 template class OctTree<1,Particle,OctTreeCell>;
 template class OctTree<2,Particle,OctTreeCell>;
 template class OctTree<3,Particle,OctTreeCell>;
+
 template class OctTree<1,SphParticle,OctTreeCell>;
 template class OctTree<2,SphParticle,OctTreeCell>;
 template class OctTree<3,SphParticle,OctTreeCell>;
+
 template class OctTree<1,GradhSphParticle,OctTreeCell>;
 template class OctTree<2,GradhSphParticle,OctTreeCell>;
 template class OctTree<3,GradhSphParticle,OctTreeCell>;
+
 template class OctTree<1,SM2012SphParticle,OctTreeCell>;
 template class OctTree<2,SM2012SphParticle,OctTreeCell>;
 template class OctTree<3,SM2012SphParticle,OctTreeCell>;
-template class OctTree<1,GodunovSphParticle,OctTreeCell>;
-template class OctTree<2,GodunovSphParticle,OctTreeCell>;
-template class OctTree<3,GodunovSphParticle,OctTreeCell>;
+
+template class OctTree<1,MeshlessFVParticle,OctTreeCell>;
+template class OctTree<2,MeshlessFVParticle,OctTreeCell>;
+template class OctTree<3,MeshlessFVParticle,OctTreeCell>;
 
 template class OctTree<3,GradhSphParticle,OsTreeRayCell>;

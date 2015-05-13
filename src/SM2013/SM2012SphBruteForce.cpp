@@ -45,11 +45,12 @@ using namespace std;
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 SM2012SphBruteForce<ndim,ParticleType>::SM2012SphBruteForce
-(FLOAT kernrangeaux,
- DomainBox<ndim> *boxaux,
- SmoothingKernel<ndim> *kernaux,
- CodeTiming *timingaux):
-  BruteForceSearch<ndim,ParticleType>(kernrangeaux,boxaux,kernaux,timingaux)
+ (FLOAT kernrangeaux,
+  DomainBox<ndim> *boxaux,
+  SmoothingKernel<ndim> *kernaux,
+  CodeTiming *timingaux):
+  NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
+  SphBruteForceSearch<ndim,ParticleType>(kernrangeaux, boxaux, kernaux, timingaux)
 {
 }
 

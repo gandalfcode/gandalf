@@ -88,7 +88,7 @@ OPT += -fopenmp
 endif
 endif
 
-ifeq ($(CPP),g++-4)
+ifeq ($(CPP),g++-5)
 ifeq ($(COMPILER_MODE),FAST)
 OPT += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),STANDARD)
@@ -183,16 +183,20 @@ OBJ = Parameters.o SimUnits.o
 OBJ += Simulation.o Hydrodynamics.o
 OBJ += SphSimulation.o Sph.o
 OBJ += GradhSphSimulation.o GradhSph.o
-OBJ += GodunovSphSimulation.o GodunovSph.o
 OBJ += SM2012SphSimulation.o SM2012Sph.o
+OBJ += MeshlessFVSimulation.o FV.o MeshlessFV.o
+OBJ += MfvMusclSimulation.o MfvMuscl.o
+OBJ += MfvRungeKuttaSimulation.o MfvRungeKutta.o
 OBJ += NbodySimulation.o
 OBJ += M4Kernel.o QuinticKernel.o GaussianKernel.o TabulatedKernel.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o SphLeapfrogDKD.o
-OBJ += SphGodunovIntegration.o RiemannSolver.o
-OBJ += SphNeighbourSearch.o BruteForceSearch.o KDTree.o OctTree.o SphTree.o
+OBJ += RiemannSolver.o
+OBJ += SphNeighbourSearch.o
+OBJ += BruteForceSearch.o HydroTree.o KDTree.o OctTree.o
+OBJ += SphBruteForceSearch.o
+OBJ += MeshlessFVBruteForce.o MeshlessFVTree.o
 OBJ += GradhSphBruteForce.o GradhSphTree.o
 OBJ += SM2012SphBruteForce.o SM2012SphTree.o
-OBJ += GodunovSphBruteForce.o GodunovSphTree.o
 OBJ += Ewald.o
 OBJ += AdiabaticEOS.o IsothermalEOS.o BarotropicEOS.o Barotropic2EOS.o
 OBJ += IonisingRadiationEOS.o MCRadiationEOS.o

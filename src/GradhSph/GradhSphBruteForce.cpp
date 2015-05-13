@@ -45,11 +45,13 @@ using namespace std;
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 GradhSphBruteForce<ndim,ParticleType>::GradhSphBruteForce
-(FLOAT kernrangeaux,
- DomainBox<ndim> *boxaux,
- SmoothingKernel<ndim> *kernaux,
- CodeTiming *timingaux):
-  BruteForceSearch<ndim,ParticleType>(kernrangeaux,boxaux,kernaux,timingaux)
+ (FLOAT kernrangeaux,
+  DomainBox<ndim> *boxaux,
+  SmoothingKernel<ndim> *kernaux,
+  CodeTiming *timingaux):
+  NeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
+  //SphNeighbourSearch<ndim>(kernrangeaux, boxaux, kernaux, timingaux),
+  SphBruteForceSearch<ndim,ParticleType>(kernrangeaux, boxaux, kernaux, timingaux)
 {
 }
 
@@ -73,7 +75,7 @@ GradhSphBruteForce<ndim,ParticleType>::~GradhSphBruteForce()
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void GradhSphBruteForce<ndim,ParticleType>::UpdateAllSphProperties
- (int Nhydro,                            ///< [in] No. of SPH particles
+ (int Nhydro,                          ///< [in] No. of SPH particles
   int Ntot,                            ///< [in] No. of SPH + ghost particles
   SphParticle<ndim> *sph_gen,          ///< [inout] Pointer to SPH ptcl array
   Sph<ndim> *sph,                      ///< [in] Pointer to SPH object

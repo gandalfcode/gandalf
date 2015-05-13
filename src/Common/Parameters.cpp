@@ -279,8 +279,9 @@ void Parameters::SetDefaultValues(void)
   // Riemann solver parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["riemann_solver"] = "exact";
-  stringparams["slope_limiter"] = "mine";
+  stringparams["slope_limiter"] = "springel2009";
   intparams["riemann_order"] = 1;
+  intparams["zero_mass_flux"] = 0;
 
   // Gravity parameters
   //-----------------------------------------------------------------------------------------------
@@ -325,7 +326,7 @@ void Parameters::SetDefaultValues(void)
   intparams["extra_sink_output"] = 0;
   floatparams["rho_sink"] = 1.e-12;
   floatparams["alpha_ss"] = 0.01;
-  floatparams["sink_radius"] = 3.0;
+  floatparams["sink_radius"] = 2.0;
   floatparams["smooth_accrete_frac"] = 0.01;
   floatparams["smooth_accrete_dt"] = 0.01;
   stringparams["sink_radius_mode"] = "hmult";
@@ -381,12 +382,15 @@ void Parameters::SetDefaultValues(void)
   floatparams["ewald_mult"] = 1.0;
   floatparams["ixmin"] = 1.0e-8;
   floatparams["ixmax"] = 5.0;
+  floatparams["EFratio"] = 1.0;
 
   // Initial conditions parameters
   //-----------------------------------------------------------------------------------------------
   stringparams["particle_distribution"] = "cubic_lattice";
   intparams["smooth_ic"] = 0;
   intparams["com_frame"] = 0;
+  intparams["regularise_particle_ics"] = 0;
+  intparams["Nreg"] = 1;
   intparams["field_type"] = 1;
   intparams["gridsize"] = 64;
   intparams["Nhydro"] = 0;
@@ -606,22 +610,13 @@ void Parameters::CheckInvalidParameters(void)
 
   debug2("[Parameters::CheckInvalidParameters]");
 
-  // SPH simulation specific errors
+  // SM2012 SPH simulation specific errors
   //-----------------------------------------------------------------------------------------------
-  if (stringparams["sim"] == "sph" || stringparams["sim"] == "godunov_sph") {
+  if (stringparams["sim"] == "sm2012sph") {
 
     // Saitoh & Makino (2012) currently deactivated while development of MPI
-    // and other related features are underway.
-    if (stringparams["sim"] == "sph" && stringparams["sph"] == "sm2012") {
-      cout << "Saitoh & Makino (2012) SPH algorithm currently disabled" << endl;
-      errorflag = true;
-    }
-
-    // Godunov SPH (Inutsuka 2002) with 2nd-order Riemann solver currently deactivated
-    if (stringparams["sim"] == "godunov_sph" && intparams["riemann_order"] == 2) {
-      cout << "Godunov SPH with 2nd-order Riemann solver currently disabled" << endl;
-      errorflag = true;
-    }
+    cout << "Saitoh & Makino (2012) SPH algorithm currently disabled" << endl;
+    errorflag = true;
 
   }
   //-----------------------------------------------------------------------------------------------

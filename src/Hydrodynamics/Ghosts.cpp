@@ -310,12 +310,10 @@ template class NullGhosts<3>;
 template class PeriodicGhostsSpecific<1, GradhSphParticle>;
 template class PeriodicGhostsSpecific<2, GradhSphParticle>;
 template class PeriodicGhostsSpecific<3, GradhSphParticle>;
-template class PeriodicGhostsSpecific<1, GodunovSphParticle>;
-template class PeriodicGhostsSpecific<2, GodunovSphParticle>;
-template class PeriodicGhostsSpecific<3, GodunovSphParticle>;
 template class PeriodicGhostsSpecific<1, SM2012SphParticle>;
 template class PeriodicGhostsSpecific<2, SM2012SphParticle>;
 template class PeriodicGhostsSpecific<3, SM2012SphParticle>;
+
 #ifdef MPI_PARALLEL
 template class MPIGhosts<1>;
 template class MPIGhosts<2>;
@@ -323,9 +321,6 @@ template class MPIGhosts<3>;
 template class MPIGhostsSpecific<1, GradhSphParticle>;
 template class MPIGhostsSpecific<2, GradhSphParticle>;
 template class MPIGhostsSpecific<3, GradhSphParticle>;
-template class MPIGhostsSpecific<1, GodunovSphParticle>;
-template class MPIGhostsSpecific<2, GodunovSphParticle>;
-template class MPIGhostsSpecific<3, GodunovSphParticle>;
 template class MPIGhostsSpecific<1, SM2012SphParticle>;
 template class MPIGhostsSpecific<2, SM2012SphParticle>;
 template class MPIGhostsSpecific<3, SM2012SphParticle>;

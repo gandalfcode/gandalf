@@ -102,6 +102,7 @@ void SinkTest::SetUp(void)
   sinks.create_sinks = 1;
   sph->create_sinks = 1;
   sinks.smooth_accretion = 0;
+  sinks.timing = &timing;
 
 
   // Create some simple particle configuration (random population of a cube)
@@ -139,11 +140,8 @@ void SinkTest::SetUp(void)
   // Calculate forces of all particles
   for (int i=0; i<Npart; i++) {
     SphParticle<3> &part = sph->GetSphParticlePointer(i);
-    part.gpot = 0.0;
-    for (int k=0; k<3; k++) {
-      part.a[k]  = 0.0;
-      part.adot[k] = 0.0;
-    }
+    part.gpot = (FLOAT) 0.0;
+    for (int k=0; k<3; k++) part.a[k] = (FLOAT) 0.0;
   }
   sphneib->UpdateAllSphForces(Npart,Npart,sph->GetSphParticleArray(),sph,nbody);
 
@@ -153,11 +151,8 @@ void SinkTest::SetUp(void)
   // Calculate forces of all particles
   for (int i=0; i<Npart; i++) {
     SphParticle<3> &part = sph->GetSphParticlePointer(i);
-    part.gpot = 0.0;
-    for (int k=0; k<3; k++) {
-      part.a[k]  = 0.0;
-      part.adot[k] = 0.0;
-    }
+    part.gpot = (FLOAT) 0.0;
+    for (int k=0; k<3; k++) part.a[k] = (FLOAT) 0.0;
   }
   sphneib->UpdateAllSphForces(Npart,Npart,sph->GetSphParticleArray(),sph,nbody);
 
@@ -261,28 +256,13 @@ TEST_F(SinkTest, CreateNewSinkTest)
   EXPECT_FLOAT_EQ(acom1[1],acom2[1]);
   EXPECT_FLOAT_EQ(acom1[2],acom2[2]);
 
-}
-
-
-
-//=================================================================================================
-//  AccretionTest
-//=================================================================================================
-TEST_F(SinkTest, AccretionTest)
-{
-  FLOAT mtot1, mtot2;
-  FLOAT acom1[3],rcom1[3],vcom1[3];
-  FLOAT acom2[3],rcom2[3],vcom2[3];
-
-  // Calculate COM before sink is created
-  CalculateCom(mtot1, rcom1, vcom1, acom1, sph, nbody);
 
   // Accrete mass to sinks
   sinks.AccreteMassToSinks(sph, nbody, 0, 0.0);
   cout << "Nhydro : " << sph->Nhydro << " particle(s)" << endl;
   sph->DeleteDeadParticles();
 
-  // Calculate COM after sink is created
+  // Calculate COM after sink accretes
   CalculateCom(mtot2, rcom2, vcom2, acom2, sph, nbody);
 
   EXPECT_FLOAT_EQ(mtot1,mtot2);

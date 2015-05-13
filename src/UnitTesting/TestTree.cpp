@@ -53,6 +53,7 @@ public:
   Parameters params;
   KDTree<3,SphParticle,KDTreeCell> *kdtree;
   RandomNumber *randnumb;
+  DomainBox<3> simbox;
 
 };
 
@@ -75,6 +76,12 @@ void TreeTest::SetUp(void)
     partdata[i].m = 1.0 / (FLOAT) Npart;
     partdata[i].h = 0.2*randnumb->floatrand();
   }
+  for (int k=0; k<3; k++) {
+    simbox.boxmin[k] = -1.0;
+    simbox.boxmax[k] = 1.0;
+    simbox.boxsize = 2.0;
+    simbox.boxhalf = 1.0;
+  }
 
   // Now build the tree using the particle configuration
   kdtree->Ntot       = Npart;
@@ -82,8 +89,8 @@ void TreeTest::SetUp(void)
   kdtree->Ntotmax    = Npart;
   kdtree->ifirst     = 0;
   kdtree->ilast      = Npart - 1;
-  kdtree->BuildTree(0,Npart-1,Npart,Npart,partdata,0.0);
-  kdtree->StockTree(kdtree->celldata[0],partdata);
+  kdtree->BuildTree(0, Npart-1, Npart, Npart, partdata, 0.0);
+  kdtree->StockTree(kdtree->celldata[0], partdata);
 
   return;
 }
@@ -115,6 +122,7 @@ TEST_F(TreeTest, StructureTest)
   int cc;                              // Aux. cell counter
   int i;                               // Particle counter
   int j;                               // Aux. particle counter
+  int k;                               // ..
   int l;                               // Tree level
   int activecount;                     // ..
   int Nactivecount=0;                  // Counter for total no. of active ptcls
@@ -145,7 +153,7 @@ TEST_F(TreeTest, StructureTest)
 
   // Now check we enter all cells once and once only
   for (c=0; c<kdtree->Ncell; c++) {
-    ASSERT_EQ(ccount[c],1);
+    ASSERT_EQ(ccount[c], 1);
   }
 
   // Verify linked lists are valid for all levels of tree
@@ -170,7 +178,7 @@ TEST_F(TreeTest, StructureTest)
 
     // Check particles are included in the tree once and once only
     for (i=0; i<Npart; i++) {
-      ASSERT_EQ(pcount[i],1);
+      ASSERT_EQ(pcount[i], 1);
     }
 
   }
@@ -196,12 +204,16 @@ TEST_F(TreeTest, StructureTest)
         Ncount++;
         if (partdata[i].active) activecount++;
         if (partdata[i].active) Nactivecount++;
-        ASSERT_LE(partdata[i].h,cell.hmax);
+        ASSERT_LE(partdata[i].h, cell.hmax);
+        for (k=0; k<3; k++) ASSERT_LE(partdata[i].r[k], cell.bbmax[k]);
+        for (k=0; k<3; k++) ASSERT_GE(partdata[i].r[k], cell.bbmin[k]);
         if (i == cell.ilast) break;
         i = kdtree->inext[i];
       }
       //ASSERT_LE(leafcount,Nleafmax);
-      ASSERT_LE(activecount,leafcount);
+      ASSERT_LE(activecount, leafcount);
+      for (k=0; k<3; k++) ASSERT_LE(cell.rcell[k], cell.bbmax[k]);
+      for (k=0; k<3; k++) ASSERT_GE(cell.rcell[k], cell.bbmin[k]);
     }
 
     // Check that bounding boxes of cells on each level do not overlap each other
@@ -214,10 +226,10 @@ TEST_F(TreeTest, StructureTest)
             cell.bbmax[1] > kdtree->celldata[cc].bbmin[1] &&
             cell.bbmin[2] < kdtree->celldata[cc].bbmax[2] &&
             cell.bbmax[2] > kdtree->celldata[cc].bbmin[2]) {
-            overlap_flag = true;
+          overlap_flag = true;
         }
       }
-      ASSERT_EQ(false,overlap_flag);
+      ASSERT_EQ(false, overlap_flag);
     }
   }
   //-----------------------------------------------------------------------------------------------
@@ -250,13 +262,13 @@ TEST_F(TreeTest, ComTest)
   for (int k=0; k<3; k++) rcom[k] /= mtot;
   for (int k=0; k<3; k++) vcom[k] /= mtot;
 
-  EXPECT_FLOAT_EQ(mtot,kdtree->celldata[0].m);
-  EXPECT_FLOAT_EQ(rcom[0],kdtree->celldata[0].r[0]);
-  EXPECT_FLOAT_EQ(rcom[1],kdtree->celldata[0].r[1]);
-  EXPECT_FLOAT_EQ(rcom[2],kdtree->celldata[0].r[2]);
-  EXPECT_FLOAT_EQ(vcom[0],kdtree->celldata[0].v[0]);
-  EXPECT_FLOAT_EQ(vcom[1],kdtree->celldata[0].v[1]);
-  EXPECT_FLOAT_EQ(vcom[2],kdtree->celldata[0].v[2]);
+  EXPECT_FLOAT_EQ(mtot, kdtree->celldata[0].m);
+  EXPECT_FLOAT_EQ(rcom[0], kdtree->celldata[0].r[0]);
+  EXPECT_FLOAT_EQ(rcom[1], kdtree->celldata[0].r[1]);
+  EXPECT_FLOAT_EQ(rcom[2], kdtree->celldata[0].r[2]);
+  EXPECT_FLOAT_EQ(vcom[0], kdtree->celldata[0].v[0]);
+  EXPECT_FLOAT_EQ(vcom[1], kdtree->celldata[0].v[1]);
+  EXPECT_FLOAT_EQ(vcom[2], kdtree->celldata[0].v[2]);
 }
 
 
@@ -270,7 +282,7 @@ TEST_F(TreeTest, GatherTest)
   int j;
   int k;
   int Nneib;
-  int Nneibtree;
+  int Nneibtree = 0;
   int *neiblist;
   FLOAT dr[3];
   FLOAT drsqd;
@@ -286,9 +298,36 @@ TEST_F(TreeTest, GatherTest)
       drsqd = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
       if (drsqd < hrange*hrange) Nneib++;
     }
-    Nneibtree = kdtree->ComputeGatherNeighbourList(partdata,partdata[i].r,hrange,Npart,neiblist);
+    Nneibtree = kdtree->ComputeGatherNeighbourList
+      (partdata, partdata[i].r, hrange, Npart, Nneibtree, neiblist);
 
-    ASSERT_EQ(Nneib,Nneibtree);
+    ASSERT_EQ(Nneib, Nneibtree);
   }
 
+}
+
+
+
+//=================================================================================================
+//  PeriodicWalkTest
+//=================================================================================================
+TEST_F(TreeTest, PeriodicWalkTest)
+{
+  for (int cc=0; cc<kdtree->Ncell; cc++) {
+    overlap_flag = false;
+    if (c != cc && kdtree->celldata[cc].level == cell.level) {
+      if (cell.bbmin[0] < kdtree->celldata[cc].bbmax[0] &&
+          cell.bbmax[0] > kdtree->celldata[cc].bbmin[0] &&
+          cell.bbmin[1] < kdtree->celldata[cc].bbmax[1] &&
+          cell.bbmax[1] > kdtree->celldata[cc].bbmin[1] &&
+          cell.bbmin[2] < kdtree->celldata[cc].bbmax[2] &&
+          cell.bbmax[2] > kdtree->celldata[cc].bbmin[2]) {
+          overlap_flag = true;
+      }
+    }
+    ASSERT_EQ(false, overlap_flag);
+  }
+  bool okflag = kdtree->ComputePeriodicGravityInteractionList
+    (cell, sphdata, simbox, macfactor, Nneibmax, Ngravcellmax, Nneib, Nhydroneib,
+     Ndirect, Ngravcell, neiblist, sphlist, directlist, gravcell, neibpart);
 }

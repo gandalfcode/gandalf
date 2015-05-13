@@ -767,6 +767,3 @@ template class MultipleSourceIonisation<3,GradhSphParticle>;
 template class MultipleSourceIonisation<1,SM2012SphParticle>;
 template class MultipleSourceIonisation<2,SM2012SphParticle>;
 template class MultipleSourceIonisation<3,SM2012SphParticle>;
-template class MultipleSourceIonisation<1,GodunovSphParticle>;
-template class MultipleSourceIonisation<2,GodunovSphParticle>;
-template class MultipleSourceIonisation<3,GodunovSphParticle>;

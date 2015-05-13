@@ -1218,6 +1218,3 @@ template class MpiControlType<3, GradhSphParticle>;
 template class MpiControlType<1, SM2012SphParticle>;
 template class MpiControlType<2, SM2012SphParticle>;
 template class MpiControlType<3, SM2012SphParticle>;
-template class MpiControlType<1, GodunovSphParticle>;
-template class MpiControlType<2, GodunovSphParticle>;
-template class MpiControlType<3, GodunovSphParticle>;
