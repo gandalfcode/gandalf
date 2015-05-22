@@ -28,13 +28,12 @@
 #include <string>
 #include <math.h>
 #include "Precision.h"
+#include "Debug.h"
 #include "Exception.h"
 #include "Parameters.h"
 #include "InlineFuncs.h"
 #include "Particle.h"
-#include "Sph.h"
 #include "OctTree.h"
-#include "Debug.h"
 #if defined _OPENMP
 #include <omp.h>
 #endif
@@ -108,7 +107,7 @@ void OctTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
     if (allocated_tree) DeallocateTreeMemory();
     Ntotmax = max(Ntotmax,Ntot);
     Ntotmaxold = Ntotmax;
-    Ncellmax = max((int) (1.5*(FLOAT) Ncellmax), 2*Ntotmax);
+    Ncellmax = max((int) ((FLOAT) 1.5*(FLOAT) Ncellmax), 2*Ntotmax);
     gmax = Ntotmax;
     gtot = Ntotmax;
 
@@ -222,7 +221,7 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
     for (k=0; k<ndim; k++) celldata[0].bbmax[k] = max(celldata[0].bbmax[k],partdata[i].r[k]);
   }
   for (k=0; k<ndim; k++) {
-    celldata[0].r[k] = 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
+    celldata[0].r[k] = (FLOAT) 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
     cellSize = max(cellSize, celldata[0].bbmax[k] - celldata[0].rcell[k]);
   }
 
@@ -447,8 +446,8 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
   FLOAT mi;                            // Mass of particle i
-  FLOAT p = 0.0;                       // ..
-  FLOAT lambda = 0.0;                  // ..
+  FLOAT p = (FLOAT) 0.0;               // ..
+  FLOAT lambda = (FLOAT) 0.0;          // ..
 
   debug2("[OctTree::StockTree]");
 
@@ -466,21 +465,21 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
       // Zero all summation variables for all cells
       cell.Nactive  = 0;
       //cell.N        = 0;
-      cell.m        = 0.0;
-      cell.hmax     = 0.0;
-      cell.rmax     = 0.0;
-      cell.dhmaxdt  = 0.0;
-      cell.drmaxdt  = 0.0;
-      cell.mac      = 0.0;
+      cell.m        = (FLOAT) 0.0;
+      cell.hmax     = (FLOAT) 0.0;
+      cell.rmax     = (FLOAT) 0.0;
+      cell.dhmaxdt  = (FLOAT) 0.0;
+      cell.drmaxdt  = (FLOAT) 0.0;
+      cell.mac      = (FLOAT) 0.0;
       cell.cdistsqd = big_number;
-      for (k=0; k<ndim; k++) cell.r[k] = 0.0;
-      for (k=0; k<ndim; k++) cell.v[k] = 0.0;
-      for (k=0; k<ndim; k++) cell.rcell[k] = 0.0;
+      for (k=0; k<ndim; k++) cell.r[k] = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++) cell.v[k] = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.0;
       for (k=0; k<ndim; k++) cell.bbmin[k] = big_number;
       for (k=0; k<ndim; k++) cell.bbmax[k] = -big_number;
       for (k=0; k<ndim; k++) cell.hboxmin[k] = big_number;
       for (k=0; k<ndim; k++) cell.hboxmax[k] = -big_number;
-      for (k=0; k<5; k++) cell.q[k] = 0.0;
+      for (k=0; k<5; k++) cell.q[k] = (FLOAT) 0.0;
 
 
       // If this is a leaf cell, sum over all particles
@@ -533,8 +532,8 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         if (cell.N > 0) {
           for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
           for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
-          for (k=0; k<ndim; k++) cell.rcell[k] = 0.5*(cell.bbmin[k] + cell.bbmax[k]);
-          for (k=0; k<ndim; k++) dr[k] = 0.5*(cell.bbmax[k] - cell.bbmin[k]);
+          for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bbmin[k] + cell.bbmax[k]);
+          for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bbmax[k] - cell.bbmin[k]);
           cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
           cell.rmax = sqrt(DotProduct(dr,dr,ndim));
         }
@@ -549,16 +548,16 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
               for (k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - cell.r[k];
               drsqd = DotProduct(dr,dr,ndim);
               if (ndim == 3) {
-                cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-                cell.q[1] += mi*3.0*dr[0]*dr[1];
-                cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
-                cell.q[3] += mi*3.0*dr[2]*dr[0];
-                cell.q[4] += mi*3.0*dr[2]*dr[1];
+                cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+                cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
+                cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
+                cell.q[3] += mi*(FLOAT) 3.0*dr[2]*dr[0];
+                cell.q[4] += mi*(FLOAT) 3.0*dr[2]*dr[1];
               }
               else if (ndim == 2) {
-                cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-                cell.q[1] += mi*3.0*dr[0]*dr[1];
-                cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+                cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+                cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
+                cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
               }
             }
             if (i == cell.ilast) break;
@@ -597,8 +596,8 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
           for (k=0; k<ndim; k++) cell.r[k] /= cell.m;
           for (k=0; k<ndim; k++) cell.v[k] /= cell.m;
         }
-        for (k=0; k<ndim; k++) cell.rcell[k] = 0.5*(cell.bbmin[k] + cell.bbmax[k]);
-        for (k=0; k<ndim; k++) dr[k] = 0.5*(cell.bbmax[k] - cell.bbmin[k]);
+        for (k=0; k<ndim; k++) cell.rcell[k] = (FLOAT) 0.5*(cell.bbmin[k] + cell.bbmax[k]);
+        for (k=0; k<ndim; k++) dr[k] = (FLOAT) 0.5*(cell.bbmax[k] - cell.bbmin[k]);
         cell.cdistsqd = max(DotProduct(dr,dr,ndim),cell.hmax*cell.hmax)/thetamaxsqd;
         cell.rmax = sqrt(DotProduct(dr,dr,ndim));
 #ifdef MPI_PARALLEL
@@ -619,16 +618,16 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
             for (k=0; k<ndim; k++) dr[k] = child.r[k] - cell.r[k];
             drsqd = DotProduct(dr,dr,ndim);
             if (ndim == 3) {
-              cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-              cell.q[1] += mi*3.0*dr[0]*dr[1];
-              cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
-              cell.q[3] += mi*3.0*dr[2]*dr[0];
-              cell.q[4] += mi*3.0*dr[2]*dr[1];
+              cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+              cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
+              cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
+              cell.q[3] += mi*(FLOAT) 3.0*dr[2]*dr[0];
+              cell.q[4] += mi*(FLOAT) 3.0*dr[2]*dr[1];
             }
             else if (ndim == 2) {
-              cell.q[0] += mi*(3.0*dr[0]*dr[0] - drsqd);
-              cell.q[1] += mi*3.0*dr[0]*dr[1];
-              cell.q[2] += mi*(3.0*dr[1]*dr[1] - drsqd);
+              cell.q[0] += mi*((FLOAT) 3.0*dr[0]*dr[0] - drsqd);
+              cell.q[1] += mi*(FLOAT) 3.0*dr[0]*dr[1];
+              cell.q[2] += mi*((FLOAT) 3.0*dr[1]*dr[1] - drsqd);
             }
           }
 
@@ -645,14 +644,15 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         if (ndim == 3)
           p = cell.q[0]*cell.q[2] - (cell.q[0] + cell.q[2])*(cell.q[0] + cell.q[2])
             - cell.q[1]*cell.q[1] - cell.q[3]*cell.q[3] - cell.q[4]*cell.q[4];
-        if (p >= 0.0) cell.mac = 0.0;
+        if (p >= (FLOAT) 0.0) cell.mac = (FLOAT) 0.0;
         else {
-          lambda = 2.0*sqrt(-p/3.0);
-          cell.mac = pow(0.5*lambda/macerror,0.66666666666666);
+          lambda = (FLOAT) 2.0*sqrt(-onethird*p);
+          cell.mac = pow((FLOAT) 0.5*lambda/macerror, twothirds);
         }
       }
-      else
-        cell.mac = 0.0;
+      else {
+        cell.mac = (FLOAT) 0.0;
+      }
 
     }
     //---------------------------------------------------------------------------------------------
@@ -842,12 +842,12 @@ void OctTree<ndim,ParticleType,TreeCell>::UpdateActiveParticleCounters
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int OctTree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
- (TreeCell<ndim> &cell,             ///< [in] Pointer to cell
+ (TreeCell<ndim> &cell,                ///< [in] Pointer to cell
   ParticleType<ndim> *partdata,        ///< [in] Pointer to particle data array
   int *activelist)                     ///< [out] List of active particles in cell
 {
-  int i = cell.ifirst;             // Local particle id (set to first ptcl id)
-  int ilast = cell.ilast;          // i.d. of last particle in cell c
+  int i = cell.ifirst;                 // Local particle id (set to first ptcl id)
+  int ilast = cell.ilast;              // i.d. of last particle in cell c
   int Nactive = 0;                     // No. of active particles in cell
 
   // Walk through linked list to obtain list and number of active ptcls.
@@ -1259,7 +1259,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
   const int Nneibmax,                  ///< [in] Max. no. of SPH neighbours
   const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
   int &Nneib,                          ///< [out] Total no. of neighbours
-  int &Nhydroneib,                       ///< [out] No. of SPH neighbours
+  int &Nhydroneib,                     ///< [out] No. of SPH neighbours
   int &Ndirect,                        ///< [out] No. of direct-sum neighbours
   int &Ngravcell,                      ///< [out] No. of cell interactions
   int *neiblist,                       ///< [out] List of all particle ids
@@ -1283,10 +1283,10 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
   for (k=0; k<ndim; k++) rc[k] = cell.rcell[k];
 
   // Start with root cell and walk through entire tree
-  Nneib     = 0;
-  Nhydroneib  = 0;
-  Ndirect   = 0;
-  Ngravcell = 0;
+  Nneib      = 0;
+  Nhydroneib = 0;
+  Ndirect    = 0;
+  Ngravcell  = 0;
 
 
   // Walk through all cells in tree to determine particle and cell interaction lists
@@ -1438,7 +1438,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
   TreeCell<ndim> *gravcell,            ///< [out] List of cell ids
   ParticleType<ndim> *partdata)        ///< [in] Particle data array
 {
-  int cc;                              // Cell counter
+  int cc = 0;                          // Cell counter
   int i;                               // Particle id
   int k;                               // Neighbour counter
   FLOAT dr[ndim];                      // Relative position vector
@@ -1451,7 +1451,6 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
   hrangemax = kernrange*star->h;
 
   // Start with root cell and walk through entire tree
-  cc = 0;
   Nneib = 0;
   Ndirect = 0;
   Ngravcell = 0;
@@ -1468,7 +1467,8 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
 
     // Check if cells contain SPH neighbours
     //---------------------------------------------------------------------------------------------
-    if (drsqd < pow(0.5*hrangemax + celldata[cc].rmax + 0.5*kernrange*celldata[cc].hmax,2)) {
+    if (drsqd < pow((FLOAT) 0.5*hrangemax + celldata[cc].rmax +
+                    (FLOAT) 0.5*kernrange*celldata[cc].hmax,2)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1)
@@ -1498,8 +1498,9 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
       // If cell is a leaf-cell with only one particle, more efficient to
       // compute the gravitational contribution from the particle than the cell
       if (celldata[cc].copen == -1 && celldata[cc].N == 1 && Ndirect + Nneib < Ndirectmax) {
-        if (partdata[celldata[cc].ifirst].itype != dead)
-        directlist[Ndirect++] = celldata[cc].ifirst;
+        if (partdata[celldata[cc].ifirst].itype != dead) {
+          directlist[Ndirect++] = celldata[cc].ifirst;
+        }
       }
       else if (Ngravcell < Ngravcellmax && celldata[cc].N > 0)
         gravcell[Ngravcell++] = celldata[cc];
@@ -1565,7 +1566,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
   const FLOAT macfactor,               ///< [in] Gravity MAC particle factor
   const int Ngravcellmax,              ///< [in] Max. no. of cell interactions
   int Ngravcell,                       ///< [in] Current no. of cells in array
-  TreeCell<ndim> *gravcelllist)       ///< [out] Array of cells
+  TreeCell<ndim> *gravcelllist)        ///< [out] Array of cells
 {
   int cc;                              // Cell counter
   int i;                               // Particle id
@@ -1589,7 +1590,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 
   // Walk through all cells in tree to determine particle and cell
   // interaction lists
-  //===========================================================================
+  //===============================================================================================
   while (cc < Ncell) {
 
     for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
@@ -1597,7 +1598,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 
 
     // Check if bounding boxes overlap with each other
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     if (BoxOverlap(cellptr->bbmin,cellptr->bbmax,
                    celldata[cc].hboxmin,celldata[cc].hboxmax) ||
         BoxOverlap(cellptr->hboxmin,cellptr->hboxmax,
@@ -1618,9 +1619,9 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
     }
 
     // Check if cell is far enough away to use the COM approximation
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor
-	     && celldata[cc].N > 0) {
+             && celldata[cc].N > 0) {
 
       gravcelllist[Ngravcelltemp++] = celldata[cc];
       cc = celldata[cc].cnext;
@@ -1629,7 +1630,7 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 
     // If cell is too close, open cell to interogate children cells.
     // If cell is too close and a leaf cell, then add particles to direct list.
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else if (!(drsqd > celldata[cc].cdistsqd &&
 	       drsqd > celldata[cc].mac*macfactor) && celldata[cc].N > 0) {
 
@@ -1644,12 +1645,12 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
     }
 
     // If not in range, then open next cell
-    //-------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
     else
       cc = celldata[cc].cnext;
 
   };
-  //===========================================================================
+  //===============================================================================================
 
   return Ngravcelltemp;
 }
