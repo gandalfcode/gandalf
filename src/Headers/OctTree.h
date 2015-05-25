@@ -61,7 +61,6 @@ struct OctTreeCell {
   int N;                            ///< ..
   int Nactive;                      ///< ..
   int cexit[2][ndim];               ///< Left and right exit cells (per dim)
-  int childof[Noctchild];           ///< ..
   FLOAT cdistsqd;                   ///< ..
   FLOAT mac;                        ///< Multipole-opening criterion value
   FLOAT bbmin[ndim];                ///< Minimum extent of bounding box

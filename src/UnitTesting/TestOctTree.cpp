@@ -82,7 +82,7 @@ void OctTreeTest::SetUp(void)
   octtree->Ntotmax    = Npart;
   octtree->ifirst     = 0;
   octtree->ilast      = Npart - 1;
-  octtree->BuildTree(0,Npart-1,Npart,Npart,partdata,0.0);
+  octtree->BuildTree(0, Npart-1, Npart, Npart, partdata, 0.0);
   //octtree->StockTree(octtree->celldata[0],partdata);
 
   return;
@@ -242,7 +242,9 @@ TEST_F(OctTreeTest, GatherTest)
       drsqd = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
       if (drsqd < hrange*hrange) Nneib++;
     }
-    Nneibtree = octtree->ComputeGatherNeighbourList(partdata,partdata[i].r,hrange,Npart,neiblist);
+    Nneibtree = 0;
+    Nneibtree = octtree->ComputeGatherNeighbourList
+      (partdata, partdata[i].r, hrange, Npart, Nneibtree, neiblist);
 
     ASSERT_EQ(Nneib,Nneibtree);
   }

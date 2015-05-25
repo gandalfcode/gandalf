@@ -168,9 +168,11 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   int cc;                              // Child cell counter
   int ckid;                            // ..
   int clist[Noctchild];                // ..
+  int cnew;                            // ..
   int ilast;                           // ..
   int i;                               // Particle counter
   int k;                               // Dimension counter
+  int kk;                              // ..
   int Nlist;                           // ..
   int Nincell[Noctchild];              // ..
   int Nkids;                           // ..
@@ -202,7 +204,7 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
     celldata[c].copen  = -1;
     celldata[c].cnext  = Ncellmax;
     celldata[c].id     = c;
-    for (k=0; k<Noctchild; k++) celldata[c].childof[k] = -2;
+    //for (k=0; k<Noctchild; k++) celldata[c].childof[k] = -2;
   }
 
   // Return now if tree contains no particles
@@ -212,13 +214,14 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   celldata[0].ifirst = ifirst;
   celldata[0].ilast  = ilast;
   celldata[0].level  = 0;
+  celldata[0].copen   = -1;
 
   // Compute the bounding box of all particles in root cell and the root cell size
   for (k=0; k<ndim; k++) celldata[0].bbmin[k] = +big_number;
   for (k=0; k<ndim; k++) celldata[0].bbmax[k] = -big_number;
   for (i=ifirst; i<=ilast; i++) {
-    for (k=0; k<ndim; k++) celldata[0].bbmin[k] = min(celldata[0].bbmin[k],partdata[i].r[k]);
-    for (k=0; k<ndim; k++) celldata[0].bbmax[k] = max(celldata[0].bbmax[k],partdata[i].r[k]);
+    for (k=0; k<ndim; k++) celldata[0].bbmin[k] = min(celldata[0].bbmin[k], partdata[i].r[k]);
+    for (k=0; k<ndim; k++) celldata[0].bbmax[k] = max(celldata[0].bbmax[k], partdata[i].r[k]);
   }
   for (k=0; k<ndim; k++) {
     celldata[0].r[k] = (FLOAT) 0.5*(celldata[0].bbmin[k] + celldata[0].bbmax[k]);
@@ -256,13 +259,57 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
         c = celllist[cc];
         TreeCell<ndim> &cell = celldata[c];
 
+        // Create 8 child cells (N.B. different to SEREN; creates child cells even if empty
+        // in order to fill all volume at all levels)
+        //-----------------------------------------------------------------------------------------
+        for (k=0; k<Noctchild; k++) {
+          cnew = Ncell + cc*Noctchild + k;
+          assert(cnew < Ncellmax);
+
+          celldata[cnew].level  = ltot + 1;
+          for (kk=0; kk<ndim; kk++) celldata[cnew].bbmin[kk] = cell.bbmin[kk];
+          for (kk=0; kk<ndim; kk++) celldata[cnew].bbmax[kk] = cell.bbmax[kk];
+
+
+          // Assign positions of child cells
+          if (k == 0 || k == 2 || k == 4 || k == 6) {
+            celldata[cnew].r[0] = cell.r[0] - cellSize;
+            celldata[cnew].bbmax[0] = cell.r[0];
+          }
+          else {
+            celldata[cnew].r[0] = cell.r[0] + cellSize;
+            celldata[cnew].bbmin[0] = cell.r[0];
+          }
+          if (ndim > 1) {
+            if (k == 0 || k == 1 || k == 4 || k == 5) {
+              celldata[cnew].r[1] = cell.r[1] - cellSize;
+              celldata[cnew].bbmax[1] = cell.r[1];
+            }
+            else {
+              celldata[cnew].r[1] = cell.r[1] + cellSize;
+              celldata[cnew].bbmin[1] = cell.r[1];
+            }
+          }
+          if (ndim == 3) {
+            if (k < 4) {
+              celldata[cnew].r[2] = cell.r[2] - cellSize;
+              celldata[cnew].bbmax[2] = cell.r[2];
+            }
+            else {
+              celldata[cnew].r[2] = cell.r[2] + cellSize;
+              celldata[cnew].bbmin[2] = cell.r[2];
+            }
+          }
+
+        }
+        //-----------------------------------------------------------------------------------------
+
+
         i = cell.ifirst;
         ilast = cell.ilast;
 
-        //cout << "Investigating cell : " << c << "    r : " << cell.r[0]
-        //     << "    N : " << cell.N << endl;
-
         // Walk through linked list of all particles to find new child cells
+        //-----------------------------------------------------------------------------------------
         while (i != -1) {
           ckid = 0;
 
@@ -276,113 +323,39 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
           }
           assert(ckid >= 0 && ckid < Noctchild);
 
-          whichChild[i] = ckid;
-          cell.childof[ckid] = -1;
+          cnew = Ncell + cc*Noctchild + ckid;
 
+          // Walk through linked list of all particles to find new child cells
+          if (celldata[cnew].ifirst == -1) {
+            celldata[cnew].ifirst = i;
+          }
+          else {
+            inext[celldata[cnew].ilast] = i;
+          }
+          celldata[cnew].ilast = i;
+          celldata[cnew].N++;
           if (i == ilast) break;
           i = inext[i];
         };
+        //-----------------------------------------------------------------------------------------
 
-      }
-      //-------------------------------------------------------------------------------------------
 
-      // Find and create all new child cells (must be done in serial)
-      //-------------------------------------------------------------------------------------------
-      for (cc=0; cc<Nlist; cc++) {
-        c = celllist[cc];
-        TreeCell<ndim> &cell = celldata[c];
-
+        // Set up linked lists from parent to children cells (avoiding empty cells)
+        cell.copen = Ncell + cc*Noctchild;
         for (k=0; k<Noctchild; k++) {
-          if (cell.childof[k] == -1) {
-            assert(Ncell < Ncellmax);
-            cell.childof[k] = Ncell++;
-          }
+          cnew = Ncell + cc*Noctchild + k;
+          //if (cell.copen == -1 && celldata[cnew].N > 0) cell.copen = cnew;
+          celldata[cnew].cnext = cnew + 1;
         }
+        celldata[Ncell + cc*Noctchild + (Noctchild - 1)].cnext = cell.cnext;
+
       }
       //-------------------------------------------------------------------------------------------
 
 
-      // Find number of particles in each new child cell
-      //-------------------------------------------------------------------------------------------
-      for (cc=0; cc<Nlist; cc++) {
-        c = celllist[cc];
-        TreeCell<ndim> &cell = celldata[c];
-        for (k=0; k<Noctchild; k++) Nincell[k] = 0;
-        i = cell.ifirst;
-        ilast = cell.ilast;
-
-        // Walk through linked list of all particles to find new child cells
-        while (i != -1) {
-          ckid = cell.childof[whichChild[i]];
-          if (celldata[ckid].ifirst == -1) {
-            celldata[ckid].ifirst = i;
-          }
-          else {
-            inext[celldata[ckid].ilast] = i;
-          }
-          celldata[ckid].ilast = i;
-          celldata[ckid].N++;
-          Nincell[whichChild[i]]++;
-          if (i == ilast) break;
-          i = inext[i];
-        };
-
-        // Create child cell properties
-        Nkids = 0;
-        for (k=0; k<Noctchild; k++) {
-          if (Nincell[k] == 0) continue;
-          ckid = cell.childof[k];
-          celldata[ckid].level = ltot + 1;
-
-          // If a leaf cell, flag it and store children ids (NOT NEEDED HERE??)
-
-
-          // Assign positions of child cells
-          if (k == 0 || k == 2 || k == 4 || k == 6) {
-            celldata[ckid].r[0] = cell.r[0] - cellSize;
-          }
-          else {
-            celldata[ckid].r[0] = cell.r[0] + cellSize;
-          }
-          if (ndim > 1) {
-            if (k == 0 || k == 1 || k == 4 || k == 5) {
-              celldata[ckid].r[1] = cell.r[1] - cellSize;
-            }
-            else {
-              celldata[ckid].r[1] = cell.r[1] + cellSize;
-            }
-          }
-          if (ndim == 3) {
-            if (k < 4) {
-              celldata[ckid].r[2] = cell.r[2] - cellSize;
-            }
-            else {
-              celldata[ckid].r[2] = cell.r[2] + cellSize;
-            }
-          }
-
-          //cout << "Creating new cell " << ckid << "   " << k << " at " << celldata[ckid].r[0]
-          //     << "  with " << Nincell[k] << " particles" << endl;
-          /*if (Nincell[k] > 0 && Nincell[k] <= Nleafmax) {
-            cout << "Found new leaf cell : " << ckid << "     N : " << Nincell[k]
-                 << "      r : " << celldata[ckid].r[0] << "     ifirst : " << celldata[ckid].ifirst << endl;
-          }*/
-          clist[Nkids++] = ckid;
-
-        }
-
-        // Set up linked lists from parent to children cells
-        cell.copen = clist[0];
-        for (k=0; k<Nkids-1; k++) {
-          ckid = clist[k];
-          celldata[ckid].cnext = clist[k+1];
-        }
-        celldata[clist[Nkids-1]].cnext = cell.cnext;
-
-      }
-      //-------------------------------------------------------------------------------------------
 
       // Record first and last cells in newly created level
+      Ncell += Noctchild*Nlist;
       ltot++;
       firstCell[ltot] = lastCell[ltot-1] + 1;
       lastCell[ltot] = Ncell - 1;
@@ -490,9 +463,9 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         // from the linked list.  If cell no longer contains any live particles,
         // then set N = 0 to ensure cell is not included in future tree-walks.
         i           = cell.ifirst;
+        iaux        = -1;
         cell.ifirst = -1;
         cell.N      = 0;
-        iaux        = -1;
         while (i != -1) {
           if (partdata[i].itype != dead) {
             if (iaux == -1) cell.ifirst = i;
@@ -573,6 +546,8 @@ void OctTree<ndim,ParticleType,TreeCell>::StockTree
         // Set limits for children (maximum of 8 but may be less)
         cfirst = cell.copen;
         cend   = cell.cnext;
+
+        //cout << "c : " << cfirst << "   " << cend << endl;
 
         cc = cfirst;
         while (cc != cend) {
@@ -1005,11 +980,13 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
     if (drsqd < (rsearch + celldata[cc].rmax)*(rsearch + celldata[cc].rmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].copen != -1)
+      if (celldata[cc].copen != -1) {
         cc = celldata[cc].copen;
+      }
 
-      else if (celldata[cc].N == 0)
+      else if (celldata[cc].N == 0) {
         cc = celldata[cc].cnext;
+      }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1 && Nneib + Nleafmax < Nneibmax) {
@@ -1025,15 +1002,17 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].copen == -1 && Nneib + Nleafmax >= Nneibmax)
+      else if (celldata[cc].copen == -1 && Nneib + Nleafmax >= Nneibmax) {
         return -1;
+      }
 
     }
 
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
-    else
+    else {
       cc = celldata[cc].cnext;
+    }
 
   };
   //===============================================================================================
@@ -1080,6 +1059,9 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   for (k=0; k<ndim; k++) gatherboxmin[k] = cell.bbmin[k] - kernrange*hmax;
   for (k=0; k<ndim; k++) gatherboxmax[k] = cell.bbmax[k] + kernrange*hmax;
 
+  //cout << "Checking gather;  rc: " << rc[0] << "   " << rc[1] << "   " << rc[2] << endl;
+  //cout << "rmax : " << cell.rmax << "   " << hmax << "    N : " << cell.N << "    " << cell.Nactive << endl;
+
 
   // Start with root cell and walk through entire tree
   //===============================================================================================
@@ -1087,20 +1069,23 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(gatherboxmin,gatherboxmax,celldata[cc].bbmin,celldata[cc].bbmax)) {
+    if (BoxOverlap(gatherboxmin, gatherboxmax, celldata[cc].bbmin, celldata[cc].bbmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].copen != -1)
+      if (celldata[cc].copen != -1) {
         cc = celldata[cc].copen;
+      }
 
-      else if (celldata[cc].N == 0)
+      else if (celldata[cc].N == 0) {
         cc = celldata[cc].cnext;
+      }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1 && Ntemp + Nleafmax < Nneibmax) {
         i = celldata[cc].ifirst;
         while (i != -1) {
           neiblist[Ntemp++] = i;
+          //cout << "Found neighbour : " << i << "    Nneib : " << Ntemp << "   " << Nneibmax << endl;
           if (i == celldata[cc].ilast) break;
           i = inext[i];
         };
@@ -1108,8 +1093,9 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].copen == -1 && Ntemp + Nleafmax >= Nneibmax)
+      else if (celldata[cc].copen == -1 && Ntemp + Nleafmax >= Nneibmax) {
         return -1;
+      }
 
     }
 
@@ -1184,15 +1170,17 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(cell.bbmin,cell.bbmax,celldata[cc].hboxmin,celldata[cc].hboxmax) ||
-        BoxOverlap(cell.hboxmin,cell.hboxmax,celldata[cc].bbmin,celldata[cc].bbmax)) {
+    if (BoxOverlap(cell.bbmin, cell.bbmax, celldata[cc].hboxmin, celldata[cc].hboxmax) ||
+        BoxOverlap(cell.hboxmin, cell.hboxmax, celldata[cc].bbmin, celldata[cc].bbmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].copen != -1)
+      if (celldata[cc].copen != -1) {
         cc = celldata[cc].copen;
+      }
 
-      else if (celldata[cc].N == 0)
+      else if (celldata[cc].N == 0) {
         cc = celldata[cc].cnext;
+      }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1 && Ntemp + Nleafmax < Nneibmax) {
@@ -1207,15 +1195,17 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].copen  == -1 && Ntemp + Nleafmax >= Nneibmax)
+      else if (celldata[cc].copen  == -1 && Ntemp + Nleafmax >= Nneibmax) {
         return -1;
+      }
 
     }
 
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
-    else
+    else {
       cc = celldata[cc].cnext;
+    }
 
   };
   //===============================================================================================
@@ -1299,15 +1289,17 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(cell.bbmin,cell.bbmax,celldata[cc].hboxmin,celldata[cc].hboxmax) ||
-        BoxOverlap(cell.hboxmin,cell.hboxmax,celldata[cc].bbmin,celldata[cc].bbmax)) {
+    if (BoxOverlap(cell.bbmin, cell.bbmax, celldata[cc].hboxmin, celldata[cc].hboxmax) ||
+        BoxOverlap(cell.hboxmin, cell.hboxmax, celldata[cc].bbmin, celldata[cc].bbmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].copen != -1)
+      if (celldata[cc].copen != -1) {
         cc = celldata[cc].copen;
+      }
 
-      else if (celldata[cc].N == 0)
+      else if (celldata[cc].N == 0) {
         cc = celldata[cc].cnext;
+      }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1 && Nneib + Nleafmax <= Nneibmax) {
@@ -1323,8 +1315,9 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].copen == -1 && Nneib + Nleafmax > Nneibmax)
+      else if (celldata[cc].copen == -1 && Nneib + Nleafmax > Nneibmax) {
         return -1;
+      }
 
     }
 
@@ -1358,8 +1351,9 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
               celldata[cc].N > 0) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].copen != -1)
+      if (celldata[cc].copen != -1) {
         cc = celldata[cc].copen;
+      }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1 && Nneib + Nleafmax <= Nneibmax) {
@@ -1375,15 +1369,17 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].copen == -1 && Nneib + Nleafmax > Nneibmax)
+      else if (celldata[cc].copen == -1 && Nneib + Nleafmax > Nneibmax) {
         return -3;
+      }
 
     }
 
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
-    else
+    else {
       cc = celldata[cc].cnext;
+    }
 
   };
   //===============================================================================================
@@ -1471,8 +1467,9 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
                     (FLOAT) 0.5*kernrange*celldata[cc].hmax,2)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].copen != -1)
+      if (celldata[cc].copen != -1) {
         cc = celldata[cc].copen;
+      }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1 && Nneib + Nleafmax <= Nneibmax) {
@@ -1486,8 +1483,9 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].copen == -1 && Nneib + Nleafmax > Nneibmax)
+      else if (celldata[cc].copen == -1 && Nneib + Nleafmax > Nneibmax) {
         return -1;
+      }
 
     }
 
@@ -1502,10 +1500,12 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
           directlist[Ndirect++] = celldata[cc].ifirst;
         }
       }
-      else if (Ngravcell < Ngravcellmax && celldata[cc].N > 0)
+      else if (Ngravcell < Ngravcellmax && celldata[cc].N > 0) {
         gravcell[Ngravcell++] = celldata[cc];
-      else
+      }
+      else {
         return -1;
+      }
       cc = celldata[cc].cnext;
 
     }
@@ -1516,8 +1516,9 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
     else if (drsqd <= celldata[cc].cdistsqd && celldata[cc].N > 0) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].copen != -1)
+      if (celldata[cc].copen != -1) {
         cc = celldata[cc].copen;
+      }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1 && Ndirect + Nleafmax <= Ndirectmax) {
@@ -1531,15 +1532,17 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeStarGravityInteractionList
       }
 
       // If leaf-cell, but we've run out of memory, return with error-code (-1)
-      else if (celldata[cc].copen == -1 && Ndirect + Nleafmax > Ndirectmax)
+      else if (celldata[cc].copen == -1 && Ndirect + Nleafmax > Ndirectmax) {
         return -1;
+      }
 
     }
 
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
-    else
+    else {
       cc = celldata[cc].cnext;
+    }
 
   };
   //===============================================================================================
@@ -1709,13 +1712,13 @@ bool OctTree<ndim,ParticleType,TreeCell>::ComputeHydroTreeCellOverlap
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
- (ParticleType<ndim> *partdata)        ///< Pointer to SPH class
+ (ParticleType<ndim> *partdata)        ///< [in] Pointer to SPH class
 {
-  bool kill_flag = false;              // ..
+  bool kill_flag = false;              // Flag if tree is invalid to terminate program
   int activecount;                     // Active particles in leaf cell
   int c;                               // Cell counter
   int i;                               // Particle counter
-  int k;                               // ..
+  int k;                               // Dimension counter
   int leafcount;                       // Leaf cell counter
   int Nactivecount=0;                  // Counter for total no. of active ptcls
   int Ncount=0;                        // Total particle counter
@@ -1847,18 +1850,18 @@ void OctTree<ndim,ParticleType,TreeCell>::ValidateTree
 
 
 
-template class OctTree<1,Particle,OctTreeCell>;
-template class OctTree<2,Particle,OctTreeCell>;
-template class OctTree<3,Particle,OctTreeCell>;
-template class OctTree<1,SphParticle,OctTreeCell>;
-template class OctTree<2,SphParticle,OctTreeCell>;
-template class OctTree<3,SphParticle,OctTreeCell>;
-template class OctTree<1,GradhSphParticle,OctTreeCell>;
-template class OctTree<2,GradhSphParticle,OctTreeCell>;
-template class OctTree<3,GradhSphParticle,OctTreeCell>;
-template class OctTree<1,SM2012SphParticle,OctTreeCell>;
-template class OctTree<2,SM2012SphParticle,OctTreeCell>;
-template class OctTree<3,SM2012SphParticle,OctTreeCell>;
-template class OctTree<1,MeshlessFVParticle,OctTreeCell>;
-template class OctTree<2,MeshlessFVParticle,OctTreeCell>;
-template class OctTree<3,MeshlessFVParticle,OctTreeCell>;
+template class OctTree<1, Particle, OctTreeCell>;
+template class OctTree<2, Particle, OctTreeCell>;
+template class OctTree<3, Particle, OctTreeCell>;
+template class OctTree<1, SphParticle, OctTreeCell>;
+template class OctTree<2, SphParticle, OctTreeCell>;
+template class OctTree<3, SphParticle, OctTreeCell>;
+template class OctTree<1, GradhSphParticle, OctTreeCell>;
+template class OctTree<2, GradhSphParticle, OctTreeCell>;
+template class OctTree<3, GradhSphParticle, OctTreeCell>;
+template class OctTree<1, SM2012SphParticle, OctTreeCell>;
+template class OctTree<2, SM2012SphParticle, OctTreeCell>;
+template class OctTree<3, SM2012SphParticle, OctTreeCell>;
+template class OctTree<1, MeshlessFVParticle, OctTreeCell>;
+template class OctTree<2, MeshlessFVParticle, OctTreeCell>;
+template class OctTree<3, MeshlessFVParticle, OctTreeCell>;
