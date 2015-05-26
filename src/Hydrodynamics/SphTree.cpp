@@ -1498,7 +1498,7 @@ int SphTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
 //  SphTree::SearchHydroExportParticles
 /// ...
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+/*template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int SphTree<ndim,ParticleType,TreeCell>::SearchHydroExportParticles
  (const Box<ndim> &mpibox,                 ///< [in] Bounding box of MPI domain
   Sph<ndim> *sph,                          ///< [in] Pointer to SPH object
@@ -1560,7 +1560,7 @@ int SphTree<ndim,ParticleType,TreeCell>::SearchHydroExportParticles
 
   return Nexport;
 
-}
+}*/
 
 
 

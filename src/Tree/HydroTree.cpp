@@ -1300,15 +1300,15 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildGhostPrunedTree
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void HydroTree<ndim,ParticleType,TreeCell>::BuildMpiGhostTree
- (bool rebuild_tree,                   ///< Flag to rebuild tree
-  int n,                               ///< Integer time
-  int ntreebuildstep,                  ///< Tree build frequency
-  int ntreestockstep,                  ///< Tree stocking frequency
-  int Npart,                           ///< No. of particles
-  int Npartmax,                        ///< Max. no. of particles
+ (const bool rebuild_tree,             ///< Flag to rebuild tree
+  const int n,                         ///< Integer time
+  const int ntreebuildstep,            ///< Tree build frequency
+  const int ntreestockstep,            ///< Tree stocking frequency
+  const int Npart,                     ///< No. of particles
+  const int Npartmax,                  ///< Max. no. of particles
+  const FLOAT timestep,                ///< Smallest physical timestep
   Particle<ndim> *part_gen,            ///< Particle data array
-  Hydrodynamics<ndim> *hydro,          ///< Pointer to Hydrodynamics object
-  FLOAT timestep)                      ///< Smallest physical timestep
+  Hydrodynamics<ndim> *hydro)          ///< Pointer to Hydrodynamics object
 {
   int i;                               // Particle counter
   int k;                               // Dimension counter
@@ -1496,7 +1496,7 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
 //  HydroTree::SearchHydroExportParticles
 /// ...
 //=================================================================================================
-template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+/*template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 int HydroTree<ndim,ParticleType,TreeCell>::SearchHydroExportParticles
  (const Box<ndim> &mpibox,                 ///< [in] Bounding box of MPI domain
   Hydrodynamics<ndim> *hydro,              ///< [in] Pointer to Hydrodynamics object
@@ -1558,7 +1558,7 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchHydroExportParticles
 
   return Nexport;
 
-}
+}*/
 
 
 
@@ -1737,7 +1737,7 @@ int HydroTree<ndim,ParticleType,TreeCell>::GetExportInfo
 {
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
   const bool first_proc = (Nproc==0) || (rank==0 && Nproc==1);
-  const bool hydro_only = !hydroself_gravity && hydro->hydro_forces;
+  const bool hydro_only = !hydro->self_gravity && hydro->hydro_forces;
   int Nactive=0, cactive;
 
   assert(tree->Nimportedcell==0);

@@ -3833,8 +3833,8 @@ void Ic<ndim>::InterpolateVelocityField
     int i,j,k;                           // Grid coordinates
     int kk;                              // Dimension counter
     int p;                               // Particle counter
-    FLOAT dx[ndim];                      // Position relative to grid point
-    FLOAT vint[ndim];                    // Interpolated velocity
+    FLOAT dx[3];                         // Position relative to grid point
+    FLOAT vint[8];                       // Interpolated velocity
 
 
     // Now interpolate velocity field onto particle positions

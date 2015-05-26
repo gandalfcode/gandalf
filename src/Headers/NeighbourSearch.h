@@ -93,36 +93,39 @@ protected:
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *) {};
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) {};
 #ifdef MPI_PARALLEL
-  virtual void BuildPrunedTree(const int, const int, const int, ParticleType<ndim> *);
-  virtual void BuildGhostPrunedTree(const int, const DomainBox<ndim> &);
-  virtual void BuildMpiGhostTree(bool, int, int, int, int, int,
-                                 ParticleType<ndim> *, Hydrodynamics<ndim> *, FLOAT);
-  virtual void CommunicatePrunedTrees(vector<int>&, int);
-  virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *);
+  virtual void BuildPrunedTree(const int, const int, const int, Particle<ndim> *) {};
+  virtual void BuildGhostPrunedTree(const int, const DomainBox<ndim> &) {};
+  virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
+                                 const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
+  virtual void CommunicatePrunedTrees(vector<int>&, int) {};
+  virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *) {};
   virtual void FindMpiTransferParticles(Hydrodynamics<ndim> *, vector<vector<int> >&,
-                                        vector<int>&, const vector<int>&, MpiNode<ndim>*);
+                                        vector<int>&, const vector<int>&, MpiNode<ndim>*) {};
   virtual void GetBackExportInfo(vector<char >& received_array,
                                  vector<int>& N_exported_particles_from_proc,
-                                 vector<int>&, Hydrodynamics<ndim> *hydro, int rank);
+                                 vector<int>&, Hydrodynamics<ndim> *hydro, int rank) {};
   virtual int GetExportInfo(int Nproc, Hydrodynamics<ndim> *, vector<char >&,
-                            MpiNode<ndim>&, int, int);
-  virtual void InitialiseCellWorkCounters(void);
+                            MpiNode<ndim>&, int, int) {};
+  virtual void InitialiseCellWorkCounters(void) {};
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
-                                      Hydrodynamics<ndim> *, vector<int> &);
-  virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
-                               Hydrodynamics<ndim> *);
-  virtual void UpdateGravityExportList(int, int, int, ParticleType<ndim> *,
-                                       Hydrodynamics<ndim> *, Nbody<ndim> *);
-  virtual void UpdateHydroExportList(int, int, int, ParticleType<ndim> *,
-                                     Hydrodynamics<ndim> *, Nbody<ndim> *);
+                                      Hydrodynamics<ndim> *, vector<int> &) {};
+  virtual void UnpackExported(vector<char >& arrays, vector<int>& N_received_particles_from_proc,
+                              Hydrodynamics<ndim> *) {};
+  virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *,
+                                       Hydrodynamics<ndim> *, Nbody<ndim> *) {};
+  virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *,
+                                     Hydrodynamics<ndim> *, Nbody<ndim> *) {};
   virtual void UnpackReturnedExportInfo(vector<char >& received_information,
-                                        vector<int>& recv_displs, Hydrodynamics<ndim>* hydro, int rank);
+                                        vector<int>& recv_displs, Hydrodynamics<ndim>* hydro,
+                                        int rank) {};
 #endif
 
 
   //-----------------------------------------------------------------------------------------------
-  FLOAT kernrange;               ///< Kernel extent (in units of h)
-  FLOAT kernrangesqd;            ///< Kernel extent (squared)
+  bool neibcheck;                      ///< Flag to verify neighbour lists
+  FLOAT kernfac;                       ///< ..
+  FLOAT kernrange;                     ///< Kernel extent (in units of h)
+  FLOAT kernrangesqd;                  ///< Kernel extent (squared)
 
 
   //-----------------------------------------------------------------------------------------------
@@ -130,8 +133,6 @@ protected:
   DomainBox<ndim> *box;                ///< Pointer to simulation bounding box
   SmoothingKernel<ndim> *kernp;        ///< Pointer to SPH kernel object
 
-  bool neibcheck;                      ///< Flag to verify neighbour lists
-  FLOAT kernfac;                       ///< ..
 
 };
 
@@ -156,6 +157,9 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
   using NeighbourSearch<ndim>::kernfac;
   using NeighbourSearch<ndim>::kernrange;
   using NeighbourSearch<ndim>::kernrangesqd;
+#if defined MPI_PARALLEL
+  using NeighbourSearch<ndim>::ids_active_particles;
+#endif
 
 
   //-----------------------------------------------------------------------------------------------
@@ -174,12 +178,12 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) {};
 #ifdef MPI_PARALLEL
-  virtual void BuildPrunedTree(const int, const int, const int, ParticleType<ndim> *) {};
+  virtual void BuildPrunedTree(const int, const int, const int, Particle<ndim> *) {};
   virtual void BuildGhostPrunedTree(const int, const DomainBox<ndim> &) {};
-  virtual void BuildMpiGhostTree(bool, int, int, int, int, int,
-                                 ParticleType<ndim> *, Hydrodynamics<ndim> *, FLOAT);
-  virtual void CommunicatePrunedTrees(vector<int>&, int);
-  virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *);
+  virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
+                                 const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
+  virtual void CommunicatePrunedTrees(vector<int>&, int) {};
+  virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *) {};
   virtual void FindMpiTransferParticles(Hydrodynamics<ndim> *, vector<vector<int> >&,
                                         vector<int>&, const vector<int>&, MpiNode<ndim>*);
   virtual void GetBackExportInfo(vector<char >& received_array,
@@ -190,14 +194,16 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
   virtual void InitialiseCellWorkCounters(void) {};
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                                       Hydrodynamics<ndim> *, vector<int> &);
-  virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
-                               Hydrodynamics<ndim> *);
-  virtual void UpdateGravityExportList(int, int, int, ParticleType<ndim> *,
+  virtual void UnpackExported(vector<char>& arrays, vector<int>& N_received_particles_from_proc,
+                              Hydrodynamics<ndim> *);
+  virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *,
                                        Hydrodynamics<ndim> *, Nbody<ndim> *);
-  virtual void UpdateHydroExportList(int, int, int, ParticleType<ndim> *,
+  virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *,
                                      Hydrodynamics<ndim> *, Nbody<ndim> *);
   virtual void UnpackReturnedExportInfo(vector<char >& received_information,
                                         vector<int>& recv_displs, Hydrodynamics<ndim>* hydro, int rank);
+  void FindParticlesToTransfer(Hydrodynamics<ndim> *, vector<vector<int> >& ,
+                               vector<int> &, const vector<int> &, MpiNode<ndim> *);
 #endif
 
 };
@@ -246,10 +252,10 @@ protected:
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *);
 #ifdef MPI_PARALLEL
-  virtual void BuildPrunedTree(const int, const int, const int, ParticleType<ndim> *);
+  virtual void BuildPrunedTree(const int, const int, const int, Particle<ndim> *);
   virtual void BuildGhostPrunedTree(const int, const DomainBox<ndim> &);
-  virtual void BuildMpiGhostTree(bool, int, int, int, int, int,
-                                 ParticleType<ndim> *, Hydrodynamics<ndim> *, FLOAT);
+  virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
+                                 const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
   virtual void CommunicatePrunedTrees(vector<int>&, int);
   virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *);
   virtual void FindMpiTransferParticles(Hydrodynamics<ndim> *, vector<vector<int> >&,
@@ -259,20 +265,20 @@ protected:
                                  vector<int>&, Hydrodynamics<ndim> *hydro, int rank);
   virtual int GetExportInfo(int Nproc, Hydrodynamics<ndim> *, vector<char >&,
                             MpiNode<ndim>&, int, int);
-  virtual void InitialiseCellWorkCounters(void) {};
+  virtual void InitialiseCellWorkCounters(void);
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                                       Hydrodynamics<ndim> *, vector<int> &);
   virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
                                Hydrodynamics<ndim> *);
-  virtual void UpdateGravityExportList(int, int, int, ParticleType<ndim> *,
+  virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *,
                                        Hydrodynamics<ndim> *, Nbody<ndim> *);
-  virtual void UpdateHydroExportList(int, int, int, ParticleType<ndim> *,
+  virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *,
                                      Hydrodynamics<ndim> *, Nbody<ndim> *);
   virtual void UnpackReturnedExportInfo(vector<char >& received_information,
                                         vector<int>& recv_displs, Hydrodynamics<ndim>* hydro, int rank);
 #endif
 #if defined(VERIFY_ALL)
-  void CheckValidNeighbourList(int, int, int, int *, ParticleType<ndim> *, string);
+  void CheckValidNeighbourList(int, int, int, int *, Particle<ndim> *, string);
 #endif
 
 
@@ -333,7 +339,7 @@ protected:
   Tree<ndim,ParticleType,TreeCell> **prunedtree;   ///< 'Pruned' tree for MPI nodes.
                                                    ///< i.e. only uses top levels
   Tree<ndim,ParticleType,TreeCell> ***ghostprunedtree; ///< Tree of periodic ghost cells created
-                                                         ///< from pruned trees
+                                                       ///< from pruned trees
 #endif
 
 };

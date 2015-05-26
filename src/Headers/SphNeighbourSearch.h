@@ -74,10 +74,10 @@ class MpiNode;
 template <int ndim>
 class SphNeighbourSearch : public virtual NeighbourSearch<ndim>
 {
-#if defined MPI_PARALLEL
+/*#if defined MPI_PARALLEL
 protected:
   vector<int> ids_active_particles;
-#endif
+#endif*/
  public:
 
   using NeighbourSearch<ndim>::neibcheck;
