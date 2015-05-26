@@ -93,7 +93,7 @@ SimulationBase* SimulationBase::SimulationFactory
     else if (simtype == "nbody")
       return new NbodySimulation<1>(params);
   }
-  else if (ndim==2) {
+  else if (ndim == 2) {
     if (simtype == "gradhsph" || simtype == "sph")
       return new GradhSphSimulation<2>(params);
     else if (simtype == "sm2012sph")
@@ -105,7 +105,7 @@ SimulationBase* SimulationBase::SimulationFactory
     else if (simtype == "nbody")
       return new NbodySimulation<2>(params);
   }
-  else if (ndim==3) {
+  else if (ndim == 3) {
     if (simtype == "gradhsph" || simtype == "sph")
       return new GradhSphSimulation<3>(params);
     else if (simtype == "sm2012sph")

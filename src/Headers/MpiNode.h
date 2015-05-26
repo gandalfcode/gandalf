@@ -27,8 +27,9 @@
 
 #include <string>
 #include "Precision.h"
-#include "SphNeighbourSearch.h"
+#include "Hydrodynamics.h"
 #include "Particle.h"
+#include "SmoothingKernel.h"
 using namespace std;
 
 
@@ -55,7 +56,7 @@ class MpiNode
   //-----------------------------------------------------------------------------------------------
   void PackNodeData(void);
   void UnpackNodeData(void);
-  void UpdateBoundingBoxData(int, Sph<ndim> *, SmoothingKernel<ndim> *);
+  void UpdateBoundingBoxData(int, Hydrodynamics<ndim> *, SmoothingKernel<ndim> *);
 
 
   // MPI node variables

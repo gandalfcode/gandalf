@@ -29,14 +29,14 @@
 
 #include <string>
 #include "Precision.h"
-#include "MpiNode.h"
-#include "Hydrodynamics.h"
-#include "Sph.h"
-#include "Nbody.h"
-#include "MpiTree.h"
-#include "Particle.h"
-#include "DomainBox.h"
 #include "Diagnostics.h"
+#include "DomainBox.h"
+#include "Hydrodynamics.h"
+#include "Nbody.h"
+#include "MpiNode.h"
+#include "MpiTree.h"
+#include "NeighbourSearch.h"
+#include "Particle.h"
 #if defined MPI_PARALLEL
 #include "mpi.h"
 #endif
@@ -78,7 +78,7 @@ class MpiControl
   vector<int> Nbytes_from_proc;            ///< Bytes received from each processor
   vector<int> Nbytes_to_proc;              ///< Bytes sent to each processor
   vector<Box<ndim> > boxes_buffer;         ///< Buffer needed by UpdateAllBoundingBoxes routine
-  SphNeighbourSearch<ndim>* neibsearch;    ///< Neighbour search class
+  NeighbourSearch<ndim>* neibsearch;       ///< Neighbour search class
 
   void CreateLeagueCalendar();
 
@@ -95,18 +95,18 @@ class MpiControl
   //-----------------------------------------------------------------------------------------------
   void AllocateMemory(int);
   void DeallocateMemory(void);
-  void SetNeibSearch(SphNeighbourSearch<ndim>* _neibsearch) {neibsearch=_neibsearch;}
+  void SetNeibSearch(NeighbourSearch<ndim>* _neibsearch) {neibsearch = _neibsearch;}
   void CollateDiagnosticsData(Diagnostics<ndim> &);
-  void UpdateAllBoundingBoxes(int, Sph<ndim> *, SmoothingKernel<ndim> *);
+  void UpdateAllBoundingBoxes(int, Hydrodynamics<ndim> *, SmoothingKernel<ndim> *);
   void CommunicatePrunedTrees() {neibsearch->CommunicatePrunedTrees(my_matches,rank);};
-  void ComputeTotalStarGasForces (Nbody<ndim> * nbody);
+  void ComputeTotalStarGasForces(Nbody<ndim> * nbody);
 
-  //void ExportMpiGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
-  virtual void ExportParticlesBeforeForceLoop (Sph<ndim>* sph) = 0;
-  virtual void GetExportedParticlesAccelerations (Sph<ndim>* sph) = 0;
-  virtual void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters*,
-                                                DomainBox<ndim>, bool&) = 0;
-  virtual void LoadBalancing(Sph<ndim> *, Nbody<ndim> *) = 0;
+  //void ExportMpiGhostParticles(FLOAT, DomainBox<ndim>, Hydrodynamics<ndim> *);
+  virtual void ExportParticlesBeforeForceLoop(Hydrodynamics<ndim> *) = 0;
+  virtual void GetExportedParticlesAccelerations(Hydrodynamics<ndim> *) = 0;
+  virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *,
+                                                Parameters*, DomainBox<ndim>, bool&) = 0;
+  virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
 
   Box<ndim> MyDomain();
 
@@ -175,13 +175,13 @@ public:
   MpiControlType ();
   ~MpiControlType () {delete bruteforce;};
 
-  virtual void CreateInitialDomainDecomposition(Sph<ndim> *, Nbody<ndim> *, Parameters*,
+  virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *, Parameters*,
                                                 DomainBox<ndim>, bool&);
-  virtual void LoadBalancing(Sph<ndim> *, Nbody<ndim> *);
-  int SendReceiveGhosts(const FLOAT, Sph<ndim> *,ParticleType<ndim>**);
+  virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *);
+  int SendReceiveGhosts(const FLOAT, Hydrodynamics<ndim> *,ParticleType<ndim>**);
   int UpdateGhostParticles(ParticleType<ndim>** array);
-  virtual void ExportParticlesBeforeForceLoop (Sph<ndim>* sph);
-  virtual void GetExportedParticlesAccelerations (Sph<ndim>* sph);
+  virtual void ExportParticlesBeforeForceLoop (Hydrodynamics<ndim> *);
+  virtual void GetExportedParticlesAccelerations (Hydrodynamics<ndim> *);
 };
 
 

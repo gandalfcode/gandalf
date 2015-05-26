@@ -30,11 +30,11 @@
 #include <list>
 #include "Diagnostics.h"
 #include "DomainBox.h"
+#include "Hydrodynamics.h"
 #include "Precision.h"
 #include "Parameters.h"
 #include "SimUnits.h"
 #include "SmoothingKernel.h"
-#include "Sph.h"
 #include "Nbody.h"
 #if defined MPI_PARALLEL
 #include "MpiControl.h"
@@ -58,12 +58,12 @@ class Ghosts
 
   // Main ghost particle functions
   //---------------------------------------------------------------------------
-  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *)=0;
-  virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *)=0;
-  virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *)=0;
+  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Hydrodynamics<ndim> *)=0;
+  virtual void CopySphDataToGhosts(DomainBox<ndim>, Hydrodynamics<ndim> *)=0;
+  virtual void CheckBoundaries(DomainBox<ndim>, Hydrodynamics<ndim> *)=0;
 
 //  DomainBox<ndim> simbox;               ///< Simulation boundary data
-//  Sph<ndim> *sph;                       ///< SPH algorithm pointer
+//  Hydrodynamics<ndim> *sph;                       ///< SPH algorithm pointer
 
   static const FLOAT ghost_range; //= 1.6;
 
@@ -89,7 +89,7 @@ class PeriodicGhosts : public Ghosts<ndim>
 public:
   using Ghosts<ndim>::ghost_range;
 
-  virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
+  virtual void CheckBoundaries(DomainBox<ndim>, Hydrodynamics<ndim> *);
 };
 
 template <int ndim, template <int> class ParticleType>
@@ -97,8 +97,8 @@ class PeriodicGhostsSpecific : public PeriodicGhosts<ndim>
 {
 public:
   using Ghosts<ndim>::ghost_range;
-  virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
-  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *) {};
+  virtual void CopySphDataToGhosts(DomainBox<ndim>, Hydrodynamics<ndim> *);
+  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Hydrodynamics<ndim> *) {};
 };
 
 
@@ -108,9 +108,9 @@ class NullGhosts : public Ghosts<ndim>
 public:
   using Ghosts<ndim>::ghost_range;
 
-  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *) {};
-  virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
-  virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
+  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Hydrodynamics<ndim> *) {};
+  virtual void CopySphDataToGhosts(DomainBox<ndim>, Hydrodynamics<ndim> *);
+  virtual void CheckBoundaries(DomainBox<ndim>, Hydrodynamics<ndim> *);
 };
 
 #if defined MPI_PARALLEL
@@ -123,7 +123,7 @@ public:
   //MPIGhosts(MpiControl<ndim>* mpicontrol_aux): mpicontrol(mpicontrol_aux) {};
   MPIGhosts(){};
 
-  virtual void CheckBoundaries(DomainBox<ndim>, Sph<ndim> *);
+  virtual void CheckBoundaries(DomainBox<ndim>, Hydrodynamics<ndim> *);
 };
 
 
@@ -133,8 +133,8 @@ class MPIGhostsSpecific : public MPIGhosts<ndim> {
   MpiControlType<ndim,ParticleType>* mpicontrol;
   //using MPIGhosts<ndim>::mpicontrol;
 public:
-  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Sph<ndim> *);
-  virtual void CopySphDataToGhosts(DomainBox<ndim>, Sph<ndim> *);
+  virtual void SearchGhostParticles(FLOAT, DomainBox<ndim>, Hydrodynamics<ndim> *);
+  virtual void CopySphDataToGhosts(DomainBox<ndim>, Hydrodynamics<ndim> *);
 
   MPIGhostsSpecific(MpiControl<ndim>* mpicontrol_aux): mpicontrol(static_cast<MpiControlType<ndim,ParticleType> *> (mpicontrol_aux)) {};
 

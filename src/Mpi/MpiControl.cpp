@@ -326,7 +326,7 @@ void MpiControl<ndim>::CreateLeagueCalendar(void)
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
- (Sph<ndim> *sph,                      ///< Pointer to main SPH object
+ (Hydrodynamics<ndim> *hydro,          ///< Pointer to main SPH object
   Nbody<ndim> *nbody,                  ///< Pointer to main N-body object
   Parameters *simparams,               ///< Simulation parameters
   DomainBox<ndim> simbox,              ///< Simulation domain box
@@ -382,15 +382,15 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
   if (rank == 0) {
 
     // Set number of tree members to total no. of SPH particles (inc. ghosts)
-    mpitree->Nhydro  = sph->Nhydro;
-    mpitree->Ntot    = sph->Nhydro;
-    mpitree->Ntotmax = sph->Nhydromax;
+    mpitree->Nhydro  = hydro->Nhydro;
+    mpitree->Ntot    = hydro->Nhydro;
+    mpitree->Ntotmax = hydro->Nhydromax;
 
     // Create all other MPI node objects
     this->AllocateMemory(mpitree->Ntotmax);
 
     // Get pointer to sph particles and cast it to the right type
-    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray());
+    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
     // Compute the size of all tree-related arrays now we know number of points
     mpitree->ComputeTreeSize();
@@ -402,14 +402,14 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     mpitree->CreateTreeStructure(mpinode);
 
     // Set properties for root cell before constructing tree
-    mpitree->tree[0].N      = sph->Nhydro;
+    mpitree->tree[0].N      = hydro->Nhydro;
     mpitree->tree[0].ifirst = 0;
-    mpitree->tree[0].ilast  = sph->Nhydro - 1;
+    mpitree->tree[0].ilast  = hydro->Nhydro - 1;
     for (k=0; k<ndim; k++) mpitree->tree[0].boxmin[k] = mpibox.boxmin[k];
     for (k=0; k<ndim; k++) mpitree->tree[0].boxmax[k] = mpibox.boxmax[k];
-    for (i=0; i<sph->Nhydro; i++) mpitree->inext[i] = -1;
-    for (i=0; i<sph->Nhydro-1; i++) mpitree->inext[i] = i + 1;
-    for (i=0; i<sph->Nhydro; i++) mpitree->ids[i] = i;
+    for (i=0; i<hydro->Nhydro; i++) mpitree->inext[i] = -1;
+    for (i=0; i<hydro->Nhydro-1; i++) mpitree->inext[i] = i + 1;
+    for (i=0; i<hydro->Nhydro; i++) mpitree->ids[i] = i;
 
     // Recursively divide tree up until we've reached bottom level
     mpitree->DivideTreeCell(0, mpitree->Ntot-1, sphdata, mpitree->tree[0]);
@@ -463,10 +463,10 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     cout << "Sent all particles to other processes" << endl;
 
     // Delete all other particles from local domain
-    sph->Nhydro = mpinode[0].Nhydro;
-    partbuffer = new ParticleType<ndim>[sph->Nhydro];
-    for (i=0; i<sph->Nhydro; i++) partbuffer[i] = sphdata[mpinode[0].ids[i]];
-    for (i=0; i<sph->Nhydro; i++) sphdata[i] = partbuffer[i];
+    hydro->Nhydro = mpinode[0].Nhydro;
+    partbuffer = new ParticleType<ndim>[hydro->Nhydro];
+    for (i=0; i<hydro->Nhydro; i++) partbuffer[i] = sphdata[mpinode[0].ids[i]];
+    for (i=0; i<hydro->Nhydro; i++) sphdata[i] = partbuffer[i];
     delete[] partbuffer;
     cout << "Deleted all other particles from root node" << endl;
 
@@ -490,8 +490,7 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     cout << "Tree[" << rank << "] : " << mpitree->ltot << "    " << mpitree->Ncell << endl;
 
     // Now receive all data from tree nodes
-    MPI_Bcast(mpitree->tree, mpitree->Ncell*sizeof(MpiTreeCell<ndim>),
-              MPI_BYTE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(mpitree->tree, mpitree->Ncell*sizeof(MpiTreeCell<ndim>), MPI_BYTE, 0, MPI_COMM_WORLD);
 
     // Update all MPI node bounding boxes
     for (inode=0; inode<Nmpi; inode++) {
@@ -503,16 +502,16 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     }
 
     //cout << "CHECKING SENDPARTICLES : " << mpinode[inode].ids << "   " << sphdata << endl;
-    cout << "Memory allocated?    Nhydromax : " << sph->Nhydromax << endl;
+    cout << "Memory allocated?    Nhydromax : " << hydro->Nhydromax << endl;
 
     // Now, receive particles form main process and copy to local main array
-    ReceiveParticles(0, (sph->Nhydro), &partbuffer);
+    ReceiveParticles(0, (hydro->Nhydro), &partbuffer);
 
-    sph->AllocateMemory(sph->Nhydro);
-    mpinode[rank].Nhydro = sph->Nhydro;
+    hydro->AllocateMemory(hydro->Nhydro);
+    mpinode[rank].Nhydro = hydro->Nhydro;
 
     // Get pointer to sph particles and cast it to the right type
-    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray());
+    ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
 
     // Update all MPI node bounding boxes
@@ -530,9 +529,9 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
     //---------------------------------------------------------------------------------------------
 
 
-    cout << "Received particles on node " << rank << "   Nhydro : " << sph->Nhydro << endl;
+    cout << "Received particles on node " << rank << "   Nhydro : " << hydro->Nhydro << endl;
 
-    for (i=0; i<sph->Nhydro; i++) sphdata[i] = partbuffer[i];
+    for (i=0; i<hydro->Nhydro; i++) sphdata[i] = partbuffer[i];
     delete[] partbuffer;
     cout << "Deallocated partbuffer" << endl;
 
@@ -541,7 +540,7 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
 
 
   // Update all bounding boxes
-  this->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
+  this->UpdateAllBoundingBoxes(hydro->Nhydro, hydro, hydro->kernp);
 
 
   // Share the stars with all other domains
@@ -565,7 +564,7 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
 template <int ndim>
 void MpiControl<ndim>::UpdateAllBoundingBoxes
  (int Npart,                           ///< No. of SPH particles
-  Sph<ndim> *sph,                      ///< Pointer to SPH data
+  Hydrodynamics<ndim> *hydro,          ///< Pointer to SPH data
   SmoothingKernel<ndim> *kernptr)      ///< Pointer to kernel object
 {
   int inode;                           // MPI node counter
@@ -573,7 +572,7 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
   if (rank == 0) debug2("[MpiControl::UpdateAllBoundingBoxes]");
 
   // Update local bounding boxes
-  mpinode[rank].UpdateBoundingBoxData(Npart,sph,kernptr);
+  mpinode[rank].UpdateBoundingBoxData(Npart, hydro, kernptr);
 
   // Do an all_gather to receive the new array
   MPI_Allgather(&mpinode[rank].hbox, 1, box_type, &boxes_buffer[0], 1, box_type, MPI_COMM_WORLD);
@@ -602,7 +601,6 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
 //  MpiControl::ComputeTotalStarGasForces
 /// Sums up the forces on the star from each processor to find the total ones
 //=================================================================================================
-
 template <int ndim>
 void MpiControl<ndim>::ComputeTotalStarGasForces (Nbody<ndim> * nbody) {
 
@@ -648,7 +646,7 @@ void MpiControl<ndim>::ComputeTotalStarGasForces (Nbody<ndim> * nbody) {
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim, ParticleType >::LoadBalancing
- (Sph<ndim> *sph,                      ///< Pointer to main SPH object
+ (Hydrodynamics<ndim> *hydro,                      ///< Pointer to main SPH object
   Nbody<ndim> *nbody)                  ///< Pointer to main N-body object
 {
   int c;                               // MPI tree cell counter
@@ -672,7 +670,7 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   debug2("[MpiControl::LoadBalancing]");
 
   //Get pointer to sph particles and cast it to the right type
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray());
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
   // Sum-up total work on all MPI nodes
   worktot = 0.0;
@@ -724,7 +722,7 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
 
 
   // Update all node bounding boxes now domains have been reset
-  this->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
+  this->UpdateAllBoundingBoxes(hydro->Nhydro, hydro, hydro->kernp);
 
 
 
@@ -742,8 +740,8 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   // Find the ptcls that need to be transferred - delegate to NeighbourSearch
   vector<vector<int> > particles_to_transfer (Nmpi);
   vector<int> all_particles_to_export;
-  BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,&mpibox,sph->kernp,timing);
-  bruteforce.FindParticlesToTransfer(sph, particles_to_transfer, all_particles_to_export,
+  BruteForceSearch<ndim,ParticleType> bruteforce(hydro->kernp->kernrange,&mpibox,hydro->kernp,timing);
+  bruteforce.FindParticlesToTransfer(hydro, particles_to_transfer, all_particles_to_export,
                                      potential_nodes, mpinode);
 
   // Send and receive particles from/to all other nodes
@@ -791,9 +789,9 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
         MPI_Get_count(&status, particle_type, &N_to_receive);
         recvbuffer.resize(N_to_receive);
         cout << "Rank " << rank << " receiving " << N_to_receive << " from " << inode << endl;
-        if (sph->Nhydro+N_to_receive > sph->Nhydromax) {
-          cout << "Memory problem : " << rank << " " << sph->Nhydro
-               << " " << N_to_receive << " " << sph->Nhydromax <<endl;
+        if (hydro->Nhydro+N_to_receive > hydro->Nhydromax) {
+          cout << "Memory problem : " << rank << " " << hydro->Nhydro
+               << " " << N_to_receive << " " << hydro->Nhydromax <<endl;
           string message = "Not enough memory for transfering particles";
           ExceptionHandler::getIstance().raise(message);
         }
@@ -805,13 +803,13 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
     }
 
     // Copy particles from receive buffer to main arrays
-    int running_counter = sph->Nhydro;
+    int running_counter = hydro->Nhydro;
     // TODO: check we have enough memory
     for (int i=0; i< recvbuffer.size(); i++) {
       sphdata[running_counter] = recvbuffer[i];
       running_counter++;
     }
-    sph->Nhydro = running_counter;
+    hydro->Nhydro = running_counter;
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -821,7 +819,7 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   for (int i=0; i<all_particles_to_export.size(); i++) {
     sphdata[all_particles_to_export[i]].itype = dead;
   }
-  sph->DeleteDeadParticles();
+  hydro->DeleteDeadParticles();
 
   return;
 }
@@ -833,7 +831,9 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
 /// Export the particles that need force contribution from other processors
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop (Sph<ndim>* sph) {
+void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
+ (Hydrodynamics<ndim>* hydro)
+{
 
   //Get the information to send to the other processors
   vector<char> send_buffer;
@@ -844,8 +844,8 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop (Sph<ndim
     if (Nproc == rank) continue;
 
     // Append at the end of send_vector the information we are sending and get how much it is
-    Nbytes_to_proc[Nproc] = neibsearch->GetExportInfo(Nproc, sph, send_buffer,
-                                                           mpinode[Nproc], rank, Nmpi);
+    Nbytes_to_proc[Nproc] = neibsearch->GetExportInfo(Nproc, hydro, send_buffer,
+                                                      mpinode[Nproc], rank, Nmpi);
   }
 
   int Nbytes_to_be_exported = send_buffer.size();
@@ -877,7 +877,7 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop (Sph<ndim
                 &Nbytes_from_proc[0],&displs_recv[0],MPI_CHAR, MPI_COMM_WORLD);
 
   //Unpack the received arrays
-  neibsearch->UnpackExported(receive_buffer, Nbytes_from_proc, sph);
+  neibsearch->UnpackExported(receive_buffer, Nbytes_from_proc, hydro);
 
 }
 
@@ -888,15 +888,15 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop (Sph<ndim
 /// Get back the information about the exported particles from the other processors
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations (Sph<ndim>* sph)
+void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations
+ (Hydrodynamics<ndim>* hydro)
 {
   vector<char> send_buffer;
 
   // Get the array with the acceleration for every other processor.
   // Quite confusingly, note that the role of the two arays with the number of bytes from/to
   // each processor is now reversed (from is to send and to is to receive)
-  neibsearch->GetBackExportInfo(send_buffer, Nbytes_from_proc,
-                                Nbytes_to_proc, sph, rank);
+  neibsearch->GetBackExportInfo(send_buffer, Nbytes_from_proc, Nbytes_to_proc, hydro, rank);
 
   vector<int> send_displs(Nmpi);
   compute_displs(send_displs, Nbytes_from_proc);
@@ -912,11 +912,10 @@ void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations (Sph<n
 
   // Do the actual communication
   MPI_Alltoallv(&send_buffer[0], &Nbytes_from_proc[0], &send_displs[0], MPI_CHAR,
-                &receive_buffer[0], &Nbytes_to_proc[0], &recv_displs[0],
-                MPI_CHAR, MPI_COMM_WORLD);
+                &receive_buffer[0], &Nbytes_to_proc[0], &recv_displs[0], MPI_CHAR, MPI_COMM_WORLD);
 
   // Unpack the received information to update accelerations
-  neibsearch->UnpackReturnedExportInfo(receive_buffer, recv_displs, sph, rank);
+  neibsearch->UnpackReturnedExportInfo(receive_buffer, recv_displs, hydro, rank);
 
 }
 
@@ -932,7 +931,7 @@ void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations (Sph<n
 template <int ndim, template<int> class ParticleType>
 int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
 (const FLOAT tghost,                ///< Ghost 'lifetime'
- Sph<ndim>* sph,                    ///< Main SPH object pointer
+ Hydrodynamics<ndim>* hydro,        ///< Main SPH object pointer
  ParticleType<ndim>** array)        ///< Main SPH particle array
 {
   int i;                            // Particle counter
@@ -946,7 +945,7 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   int inode;                        // MPI node index
   vector<int> overlapping_nodes;    // List of nodes that overlap this domain
   vector<int> ghost_export_list;    // List of particles ids to be exported
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetSphParticleArray());
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
   if (rank == 0) debug2("[MpiControl::SendReceiveGhosts]");
 
@@ -970,8 +969,8 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   for (iaux=0; iaux<overlapping_nodes.size(); iaux++) {
     inode = overlapping_nodes[iaux];
     ghost_export_list.clear();
-    Nexport = neibsearch->SearchMpiGhostParticles(tghost,mpinode[inode].domain,
-  						  sph,ghost_export_list);
+    Nexport = neibsearch->SearchMpiGhostParticles(tghost, mpinode[inode].domain,
+                                                  hydro, ghost_export_list);
     for (j=0; j<ghost_export_list.size(); j++) {
       i = ghost_export_list[j];
       particles_to_export_per_node[inode].push_back(&sphdata[i]);
@@ -979,8 +978,8 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   }
 
 
-  //BruteForceSearch<ndim,ParticleType> bruteforce(sph->kernp->kernrange,
-  //			                 &mpibox,sph->kernp,timing);
+  //BruteForceSearch<ndim,ParticleType> bruteforce(hydro->kernp->kernrange,
+  //			                 &mpibox,hydro->kernp,timing);
   //bruteforce.FindGhostParticlesToExport(sph,particles_to_export_per_node,
   //                                overlapping_nodes,mpinode);
 
