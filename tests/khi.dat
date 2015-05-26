@@ -1,6 +1,6 @@
 #------------------------------------------------------------------------------
 # Kelvin-Helmholtz instability test
-# Generate 2-1 Kelvin-Helmholtz instability test based on initial conditions 
+# Generate 2-1 Kelvin-Helmholtz instability test based on initial conditions
 # given by Springel (2009).
 #------------------------------------------------------------------------------
 
@@ -29,15 +29,15 @@ Dimensionless units                         : dimensionless = 1
 
 #------------------------------
 # Simulation boundary variables
-#-----------------------------
+#------------------------------
 LHS position of boundary in x-dimension     : boxmin[0] = -0.5
 RHS position of boundary in x-dimension     : boxmax[0] = 0.5
 LHS position of boundary in y-dimension     : boxmin[1] = -0.5
 RHS position of boundary in y-dimension     : boxmax[1] = 0.5
-LHS boundary type in x-dimension            : x_boundary_lhs = periodic
-RHS boundary type in x-dimension            : x_boundary_rhs = periodic
-LHS boundary type in y-dimension            : y_boundary_lhs = periodic
-RHS boundary type in y-dimension            : y_boundary_rhs = periodic
+LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
+RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
+LHS boundary type in y-dimension            : boundary_lhs[1] = periodic
+RHS boundary type in y-dimension            : boundary_rhs[1] = periodic
 
 
 #--------------------------
@@ -52,7 +52,7 @@ Output snapshot format                      : out_file_form = su
 
 
 #------------------------
-# Thermal physics options
+#ï¿½Thermal physics options
 #------------------------
 Switch-on hydrodynamical forces             : hydro_forces = 1
 Main gas thermal physics treatment          : gas_eos = energy_eqn
@@ -64,7 +64,7 @@ Ratio of specific heats of gas              : gamma_eos = 1.66666666666666666
 #----------------------------------------
 SPH algorithm choice                        : sph = gradh
 SPH smoothing kernel choice                 : kernel = quintic
-SPH smoothing length iteration tolerance    : h_converge = 0.01
+SPH smoothing length iteration tolerance    : h_converge = 0.02
 
 
 #---------------------------------

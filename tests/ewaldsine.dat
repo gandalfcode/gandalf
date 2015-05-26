@@ -1,7 +1,6 @@
 #------------------------------------------------------------------
-# Sound wave test
-# Generates and propagates a small linear density perturbation as a 
-# sound-wave along a uniform density gas.
+# Ewald sine wave test
+# ..
 #------------------------------------------------------------------
 
 
@@ -15,9 +14,9 @@ Select shocktube initial conditions         : ic = ewaldsine
 Pressure of LHS fluid                       : press1 = 1.0
 Density of LHS fluid                        : rhofluid1 = 1.0
 Sound wave amplitude                        : amp = 0.1
-No. of particles in LHS fluid               : Nlattice1[0] = 64
-No. of particles in LHS fluid               : Nlattice1[1] = 64
-No. of particles in LHS fluid               : Nlattice1[2] = 64
+No. of particles in LHS fluid               : Nlattice1[0] = 32
+No. of particles in LHS fluid               : Nlattice1[1] = 32
+No. of particles in LHS fluid               : Nlattice1[2] = 32
 Use dimensionless units                     : dimensionless = 1
 
 
@@ -30,12 +29,12 @@ LHS position of boundary in y-dimension     : boxmin[1] = 0.0
 RHS position of boundary in y-dimension     : boxmax[1] = 1.0
 LHS position of boundary in z-dimension     : boxmin[2] = 0.0
 RHS position of boundary in z-dimension     : boxmax[2] = 1.0
-LHS boundary type in x-dimension            : x_boundary_lhs = periodic
-RHS boundary type in x-dimension            : x_boundary_rhs = periodic
-LHS boundary type in y-dimension            : y_boundary_lhs = periodic
-RHS boundary type in y-dimension            : y_boundary_rhs = periodic
-LHS boundary type in z-dimension            : z_boundary_lhs = periodic
-RHS boundary type in z-dimension            : z_boundary_rhs = periodic
+LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
+RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
+LHS boundary type in y-dimension            : boundary_lhs[1] = periodic
+RHS boundary type in y-dimension            : boundary_rhs[1] = periodic
+LHS boundary type in z-dimension            : boundary_lhs[2] = periodic
+RHS boundary type in z-dimension            : boundary_rhs[2] = periodic
 
 
 #--------------------------
@@ -85,10 +84,15 @@ No. of block timestep levels                : Nlevels = 1
 # Optimisation options
 #---------------------
 Tabulate SPH kernel                         : tabulated_kernel = 0
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = kdtree
+Opening angle                               : thetamaxsqd = 0.05
+Maximum number of leaf particles            : Nleafmax = 4
 
 
 #--------------
 # Misc. options
 #--------------
-Switch-off self-gravity of gas              : self_gravity = 0
+Switch-off self-gravity of gas              : self_gravity = 1
+Number of points on the Ewald grid          : nEwaldGrid = 17
+                                            : EFratio = 1.4
+                                            : Nstepsmax = 1

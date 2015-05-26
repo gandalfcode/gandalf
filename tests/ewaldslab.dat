@@ -1,6 +1,6 @@
 #------------------------------------------------------------------
 # Sound wave test
-# Generates and propagates a small linear density perturbation as a 
+# Generates and propagates a small linear density perturbation as a
 # sound-wave along a uniform density gas.
 #------------------------------------------------------------------
 
@@ -30,12 +30,12 @@ LHS position of boundary in y-dimension     : boxmin[1] = 0.0
 RHS position of boundary in y-dimension     : boxmax[1] = 1.0
 LHS position of boundary in z-dimension     : boxmin[2] = -8.0
 RHS position of boundary in z-dimension     : boxmax[2] = 8.0
-LHS boundary type in x-dimension            : x_boundary_lhs = periodic
-RHS boundary type in x-dimension            : x_boundary_rhs = periodic
-LHS boundary type in y-dimension            : y_boundary_lhs = periodic
-RHS boundary type in y-dimension            : y_boundary_rhs = periodic
-LHS boundary type in z-dimension            : z_boundary_lhs = open
-RHS boundary type in z-dimension            : z_boundary_rhs = open
+LHS boundary type in x-dimension            : boundary_lhs[0] = periodic
+RHS boundary type in x-dimension            : boundary_rhs[0] = periodic
+LHS boundary type in y-dimension            : boundary_lhs[1] = periodic
+RHS boundary type in y-dimension            : boundary_rhs[1] = periodic
+LHS boundary type in z-dimension            : boundary_lhs[2] = open
+RHS boundary type in z-dimension            : boundary_rhs[2] = open
 
 
 #--------------------------
@@ -86,10 +86,10 @@ No. of block timestep levels                : Nlevels = 1
 # Optimisation options
 #---------------------
 Tabulate SPH kernel                         : tabulated_kernel = 0
-SPH neighbour search algorithm              : neib_search = tree
+SPH neighbour search algorithm              : neib_search = kdtree
 
 
 #--------------
 # Misc. options
 #--------------
-Switch-off self-gravity of gas              : self_gravity = 0
+Switch-off self-gravity of gas              : self_gravity = 1

@@ -21,8 +21,8 @@ sim.SetParam('gamma_eos',1.6666666666666666)
 sim.SetParam('Nhydro',200)
 sim.SetParam('tend',0.075)
 sim.SetParam('dt_snap',1.0)
-sim.SetParam('x_boundary_lhs','open')
-sim.SetParam('x_boundary_rhs','open')
+sim.SetParam('boundary_lhs[0]','open')
+sim.SetParam('boundary_rhs[0]','open')
 sim.SetParam('dimensionless',1)
 
 # Set main initial conditions parameters, plus set parameters needed 

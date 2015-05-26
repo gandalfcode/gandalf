@@ -36,6 +36,11 @@ PYFOLDER = ../analysis/swig_generated
 #GTEST = /Users#/david/astro/code/gtest-1.6.0/include
 
 
+VPATH = $(PWD)/src:$(PWD)/src/Common:$(PWD)/src/GodunovSph:$(PWD)/src/GradhSph:$(PWD)/src/Headers
+VPATH +=$(PWD)/src/Hydrodynamics:$(PWD)/src/MeshlessFV:$(PWD)/src/Mpi:$(PWD)/src/Nbody
+VPATH +=$(PWD)/src/SM2013:$(PWD)/src/Thermal:$(PWD)/src/Tree:$(PWD)/src/UnitTesting
+INCLUDE = $(PWD)/src/Headers
+
 
 # Compiler mode flags
 # -------------------------------------------------------------------------------------------------
@@ -47,7 +52,7 @@ OPT += -O3 -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),PROFILE)
 OPT += -O3 -fPIC -fno-exceptions -fno-rtti -pg
 else ifeq ($(COMPILER_MODE),DEBUG)
-OPT += -O3 -g -Wall -Wno-unknown-pragmas -fbounds-check -fPIC  #-fprofile-arcs -ftest-coverage
+OPT += -O3 -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  #-fprofile-arcs -ftest-coverage
 endif
 ifeq ($(OPENMP),1)
 OPT += -fopenmp
@@ -82,7 +87,7 @@ OPT += -fopenmp
 endif
 endif
 
-ifeq ($(CPP),g++-4)
+ifeq ($(CPP),g++-5)
 ifeq ($(COMPILER_MODE),FAST)
 OPT += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),STANDARD)
@@ -97,6 +102,20 @@ OPT += -fopenmp -DOPENMP
 endif
 endif
 
+ifeq ($(CPP),g++-4)
+ifeq ($(COMPILER_MODE),FAST)
+OPT += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
+else ifeq ($(COMPILER_MODE),STANDARD)
+OPT += -O3 -fPIC -fno-exceptions -fno-rtti
+else ifeq ($(COMPILER_MODE),PROFILE)
+OPT += -O3 -fPIC -fno-exceptions -fno-rtti -pg
+else ifeq ($(COMPILER_MODE),DEBUG)
+OPT += -g -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC -O3 #-fprofile-arcs -ftest-coverage
+endif
+ifeq ($(OPENMP),1)
+OPT += -fopenmp -DOPENMP
+endif
+endif
 
 ifeq ($(CPP),clang)
 ifeq ($(COMPILER_MODE),FAST)
@@ -186,16 +205,20 @@ OBJ = Parameters.o SimUnits.o
 OBJ += Simulation.o Hydrodynamics.o
 OBJ += SphSimulation.o Sph.o
 OBJ += GradhSphSimulation.o GradhSph.o
-OBJ += GodunovSphSimulation.o GodunovSph.o
 OBJ += SM2012SphSimulation.o SM2012Sph.o
+OBJ += MeshlessFVSimulation.o FV.o MeshlessFV.o
+OBJ += MfvMusclSimulation.o MfvMuscl.o
+OBJ += MfvRungeKuttaSimulation.o MfvRungeKutta.o
 OBJ += NbodySimulation.o
 OBJ += M4Kernel.o QuinticKernel.o GaussianKernel.o TabulatedKernel.o
 OBJ += SphIntegration.o SphLeapfrogKDK.o SphLeapfrogDKD.o
-OBJ += SphGodunovIntegration.o RiemannSolver.o
-OBJ += SphNeighbourSearch.o BruteForceSearch.o KDTree.o OctTree.o SphTree.o
+OBJ += RiemannSolver.o
+OBJ += SphNeighbourSearch.o
+OBJ += BruteForceSearch.o HydroTree.o KDTree.o OctTree.o
+OBJ += SphBruteForceSearch.o
+OBJ += MeshlessFVBruteForce.o MeshlessFVTree.o
 OBJ += GradhSphBruteForce.o GradhSphTree.o
 OBJ += SM2012SphBruteForce.o SM2012SphTree.o
-OBJ += GodunovSphBruteForce.o GodunovSphTree.o
 OBJ += Ewald.o
 OBJ += AdiabaticEOS.o IsothermalEOS.o BarotropicEOS.o Barotropic2EOS.o
 OBJ += IonisingRadiationEOS.o MCRadiationEOS.o
@@ -225,16 +248,16 @@ TEST_OBJ = TestScaling.o TestTree.o TestOctTree.o TestSinks.o
 
 
 %_wrap.cxx: %.i
-	swig -c++ -python -outdir $(PYFOLDER) $(CFLAGS) $<
+	swig -c++ -python -outdir $(PYFOLDER) $(CFLAGS) -I$(INCLUDE) $<
 
 %_wrap.o: %_wrap.cxx
-	$(CPP) $(OPT) $(CFLAGS) -fexceptions -frtti -c $< -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY)
+	$(CPP) $(OPT) $(CFLAGS) -fexceptions -frtti -c $< -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY) -I$(INCLUDE)
 
 %.o: %.cxx
-	$(CPP) $(CFLAGS) -c $< $(OPT)
+	$(CPP) $(CFLAGS) -I$(INCLUDE) -c $< $(OPT)
 
 %.o: %.cpp
-	$(CPP) $(OPT) $(CFLAGS) -c $< -I$(GTEST)/include
+	$(CPP) $(OPT) $(CFLAGS) -I$(GTEST)/include -I$(INCLUDE) -c $<
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
@@ -256,21 +279,21 @@ all : $(WRAP_OBJ) $(OBJ) Exception.o shocktub.so _SphSim.so executable
 #==================================================================================================
 
 executable : $(OBJ) gandalf.o Exception.o
-	$(CPP) $(CFLAGS) -o gandalf $(OBJ) Exception.o gandalf.o $(OPT)
+	$(CPP) $(CFLAGS) -I$(INCLUDE) -o gandalf $(OBJ) Exception.o gandalf.o $(OPT)
 	cp gandalf ../bin/gandalf
 
 unittests : $(OBJ) $(TEST_OBJ) Exception.o
-	$(CPP) $(CFLAGS) $(OPT) -o testgandalf $(OBJ) $(TEST_OBJ) Exception.o $(GTEST)/make/gtest_main.a
+	$(CPP) $(CFLAGS) -I$(INCLUDE) $(OPT) -o testgandalf $(OBJ) $(TEST_OBJ) Exception.o $(GTEST)/make/gtest_main.a
 	cp testgandalf ../bin/testgandalf
 
 _SphSim.so : $(WRAP_OBJ) $(OBJ) Exception.o Render.o
-	$(CPP) $(CFLAGS) $(OPT) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o Render.o -o _SphSim.so
+	$(CPP) $(CFLAGS) -I$(INCLUDE) $(OPT) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o Render.o -o _SphSim.so
 
 shocktub.so : shocktub.f shocktub.pyf
 	$(F2PY) --quiet -c shocktub.f shocktub.pyf
 
 Exception.o : Exception.cpp
-	$(CPP) $(OPT) $(CFLAGS) -fexceptions -c $<
+	$(CPP) $(OPT) -I$(INCLUDE) $(CFLAGS) -fexceptions -c $<
 
 SphSimulation.o : SimulationIO.hpp SimulationIC.hpp SimAnalysis.hpp
 
@@ -279,6 +302,7 @@ force: ;
 
 clean ::
 	\rm -f *_wrap.cxx
+	\rm -f */*_wrap.cxx
 	\rm -f *.o
 	\rm -f *.so
 	\rm -f ../analysis/*.so
