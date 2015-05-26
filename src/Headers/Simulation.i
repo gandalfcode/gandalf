@@ -27,6 +27,7 @@
 %include "std_list.i"
 %include exception.i
 
+
 %{
 #define SWIG_FILE_WITH_INIT
 #include <signal.h>
@@ -49,6 +50,14 @@ signal(SIGINT, catch_alarm);
 throw StopError("CTRL-C received");
 }
 %}
+
+%exception {
+  try {        $action    }
+   catch (GandalfError e) {
+    	PyErr_SetString(PyExc_Exception,e.msg.c_str());
+		return NULL;
+   }
+}
 
 %exception SimulationBase::InteractiveRun {
 	signal(SIGINT, catch_alarm);

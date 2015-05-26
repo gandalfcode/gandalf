@@ -636,6 +636,87 @@ void MpiControl<ndim>::ComputeTotalStarGasForces (Nbody<ndim> * nbody) {
 }
 
 
+//=================================================================================================
+//  MpiControl::UpdateMpiGhostParents
+/// If the MPI ghosts have been modified locally (e.g. because of accretion), need to propagate
+/// the changes to their owner process (where the particles are "real")
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+void MpiControlType<ndim, ParticleType >::UpdateMpiGhostParents (list<int>& ids_ghosts, Hydrodynamics<ndim>* sph)  {
+  // Work out how many ghosts we need to update per each processor
+  vector<int> N_updates_per_proc(Nmpi);
+
+  // This vector holds for each processor where its ghosts start in the main hydro array
+  vector<int> i_start_ghost(Nmpi);
+
+  std::partial_sum(Nreceive_per_node.begin(),Nreceive_per_node.end(),i_start_ghost.begin() );
+
+  for (vector<int>::iterator it = i_start_ghost.begin(); it != i_start_ghost.end(); it++) {
+    *it += sph->Nhydro+sph->NPeriodicGhost;
+  }
+
+  const int size_particle = sizeof(FLOAT)+sizeof(bool)+sizeof(int);
+  vector<vector< FLOAT > > buffer_proc(Nmpi);
+  vector<vector< int > > buffer_proc_iorig(Nmpi);
+
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph->GetParticleArray());
+
+  for (list<int>::iterator it = ids_ghosts.begin(); it != ids_ghosts.end(); it++) {
+	const int index = *it;
+	// Find to which processor we should send the particle
+    const int proc = std::upper_bound(i_start_ghost.begin(), i_start_ghost.end(), index) - i_start_ghost.begin();
+    N_updates_per_proc[proc]++;
+    assert(N_updates_per_proc[proc]<=Nreceive_per_node[proc]);
+    buffer_proc[proc].push_back(sphdata[index].m);
+    buffer_proc_iorig[proc].push_back(sphdata[index].iorig);
+  }
+
+  // Now that we know how many ghosts we need to send to each processor, can fill the buffer
+  vector<FLOAT> buffer(ids_ghosts.size());
+  vector<int> buffer_iorig(ids_ghosts.size());
+
+  // Partial sum of the numbers
+  vector<int> displs_ghosts(Nmpi);
+  compute_displs (displs_ghosts, N_updates_per_proc);
+
+  // Copy from the buffer of each processor to the total buffer
+  for (int iproc=0; iproc<Nmpi; iproc++) {
+	std::copy( buffer_proc[iproc].begin()  ,  buffer_proc[iproc].end(), buffer.begin()+displs_ghosts[iproc]);
+    std::copy( buffer_proc_iorig[iproc].begin(), buffer_proc_iorig[iproc].end(), buffer_iorig.begin()+displs_ghosts[iproc]);
+  }
+  
+  // Tell everybody how many ghosts we have to update remotely
+  vector<int> N_updates_from_proc(Nmpi);
+  MPI_Alltoall(&N_updates_per_proc[0],1,MPI_INT,&N_updates_from_proc[0],1,MPI_INT,MPI_COMM_WORLD);
+
+  vector<int> displs_ghosts_receive(Nmpi);
+  compute_displs (displs_ghosts_receive, N_updates_from_proc);
+
+  const int total_ghost_receive = std::accumulate( N_updates_from_proc.begin(), N_updates_from_proc.end(), 0);
+  vector<FLOAT> buffer_receive(total_ghost_receive);
+  vector<int> buffer_receive_iorig(total_ghost_receive);
+
+  // Send the updated masses and the iorigs (to retrieve the parent particles)
+  MPI_Alltoallv(&buffer[0], &N_updates_per_proc[0], &displs_ghosts[0],
+                GANDALF_MPI_FLOAT, &buffer_receive[0], &N_updates_from_proc[0], &displs_ghosts_receive[0], GANDALF_MPI_FLOAT, MPI_COMM_WORLD);
+
+  MPI_Alltoallv(&buffer_iorig[0], &N_updates_per_proc[0], &displs_ghosts[0],
+				MPI_INT, &buffer_receive_iorig[0], &N_updates_from_proc[0], &displs_ghosts_receive[0], MPI_INT, MPI_COMM_WORLD);
+
+
+  // Update the real particles from the received data
+  for (int i=0; i< total_ghost_receive; i++) {
+    const int iorig_ghost = buffer_receive_iorig[i];
+    assert(iorig_ghost < sph->Nhydro+sph->NPeriodicGhost);
+    const FLOAT received_mass = buffer_receive[i];
+    sphdata[iorig_ghost].m= received_mass ;
+    if (received_mass == 0.0) {
+		sphdata[iorig_ghost].active=false;
+		sphdata[iorig_ghost].itype=dead;
+	}
+  }
+}
+
 
 //=================================================================================================
 //  MpiControl::LoadBalancing
@@ -1026,6 +1107,8 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
     vector<ParticleType<ndim>* >& particles_on_this_node = particles_to_export_per_node[inode];
     for (iparticle=0; iparticle<particles_on_this_node.size(); iparticle++) {
       particles_to_export[index] = *particles_on_this_node[iparticle];
+	  // Record in iorig the location in memory of the particle
+	  particles_to_export[index].iorig = particles_on_this_node[iparticle] - sphdata;
       index++;
     }
   }

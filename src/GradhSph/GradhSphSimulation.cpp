@@ -209,6 +209,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   mpicontrol->timing = timing;
   rank = mpicontrol->rank;
   Nmpi = mpicontrol->Nmpi;
+  sinks.SetMpiControl(mpicontrol);
 #endif
 
 

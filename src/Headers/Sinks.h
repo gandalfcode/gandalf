@@ -37,6 +37,9 @@
 #include "Sph.h"
 #include "StarParticle.h"
 #include "SystemParticle.h"
+#if defined MPI_PARALLEL
+#include "MpiControl.h"
+#endif
 using namespace std;
 
 
@@ -117,6 +120,9 @@ class SinkParticle
 template<int ndim>
 class Sinks
 {
+#if defined MPI_PARALLEL
+ MpiControl<ndim>* mpicontrol;
+#endif
  public:
 
   // Constructor and destructor
@@ -124,6 +130,9 @@ class Sinks
   Sinks();
   ~Sinks();
 
+#if defined MPI_PARALLEL
+  void SetMpiControl(MpiControl<ndim>* mpicontrol_aux) {mpicontrol=mpicontrol_aux;};
+#endif
 
   // Function prototypes
   //-----------------------------------------------------------------------------------------------
