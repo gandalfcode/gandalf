@@ -182,7 +182,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
 			if (rho_max < global_rho_max)
 				// A sink is being created, but not on this processor - mark it
 				isink=-2;
-		}	
+		}
 #endif
 
 
@@ -372,7 +372,9 @@ void Sinks<ndim>::AccreteMassToSinks
   for (i=0; i<sph->Ntot; i++) sph->GetSphParticlePointer(i).sinkid = -1;
   for (s=0; s<Nsinkmax; s++) sink[s].Ngas = 0;
 
+#ifdef MPI_PARALLEL
   Box<ndim> mydomain = mpicontrol->MyDomain();
+#endif
 
   // Determine which sink each SPH particle accretes to.  If none, flag -1
   // (note we should really use the tree to compute this)
@@ -422,7 +424,7 @@ void Sinks<ndim>::AccreteMassToSinks
   }
   //-----------------------------------------------------------------------------------------------
 
-  
+
 #if defined MPI_PARALLEL
   // In MPI case, we need to know if other processors found something to accrete
   MPI_Allreduce(MPI_IN_PLACE,&Nlist,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);

@@ -503,6 +503,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
                             sph->Nhydromax, timestep, sph->GetSphParticleArray(), sph);
 
+    // Calculate all SPH properties
+    sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,sph->GetSphParticleArray(),sph,nbody);
+
+
 #ifdef MPI_PARALLEL
     if (sph->self_gravity == 1) {
       sphneib->UpdateGravityExportList(rank,sph->Nhydro,sph->Ntot,
