@@ -107,6 +107,7 @@ class MpiControl
   virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *,
                                                 Parameters*, DomainBox<ndim>, bool&) = 0;
   virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateMpiGhostParents (list<int>& ids, Hydrodynamics<ndim>* sph)=0;
 
   Box<ndim> MyDomain();
 
@@ -182,6 +183,7 @@ public:
   int UpdateGhostParticles(ParticleType<ndim>** array);
   virtual void ExportParticlesBeforeForceLoop (Hydrodynamics<ndim> *);
   virtual void GetExportedParticlesAccelerations (Hydrodynamics<ndim> *);
+  virtual void UpdateMpiGhostParents (list<int>& ids, Hydrodynamics<ndim>* sph);
 };
 
 

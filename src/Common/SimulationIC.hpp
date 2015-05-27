@@ -85,6 +85,7 @@ void Simulation<ndim>::GenerateIC(void)
   if (ic == "file") {
     ReadSnapshotFile(simparams->stringparams["in_file"], simparams->stringparams["in_file_form"]);
     rescale_particle_data = true;
+	this->initial_h_provided = false;
   }
   //-----------------------------------------------------------------------------------------------
   else if (ic == "bb") {

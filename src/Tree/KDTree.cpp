@@ -1651,7 +1651,6 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionList
   // Now, trim the list to remove particles that are definitely not SPH neighbours.
   // If not an SPH neighbour, then add to direct gravity sum list.
   for (j=Nhydroneibtemp; j<Nhydroneib; j++) {
-    //cout << j << "    " << Nneibmax << "    " << Nhydroneib << "    " << Ndirect << "    " << Nhydroneibtemp <<  endl;
     assert(j < Nneibmax);
     i = hydroneiblist[j];
     if (neibpart[i].itype == dead) continue;

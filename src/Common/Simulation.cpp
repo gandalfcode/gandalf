@@ -476,10 +476,9 @@ string SimulationBase::Output(void)
   }
   //-----------------------------------------------------------------------------------------------
 
-
   // Output a data snapshot if reached required time
   //-----------------------------------------------------------------------------------------------
-  if (t >= tsnapnext) {
+  if (t >= tsnapnext ) {
 
     // Prepare filename for new snapshot
     Noutsnap++;
@@ -515,6 +514,7 @@ string SimulationBase::Output(void)
 
 
   }
+//if (Noutsnap>4) exit(-3);//MPI_Abort(MPI_COMM_WORLD,-3);
   //-----------------------------------------------------------------------------------------------
 
 

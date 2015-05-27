@@ -132,6 +132,7 @@ void Sinks<ndim>::SearchForNewSinkParticles
   //===============================================================================================
   do {
     isink = -1;
+		rho_max = (FLOAT) 0.0;
 
     // Loop over all SPH particles finding the particle with the highest
     // density that obeys all of the formation criteria, if any do.
@@ -171,14 +172,70 @@ void Sinks<ndim>::SearchForNewSinkParticles
     }
     //---------------------------------------------------------------------------------------------
 
+#if defined MPI_PARALLEL
+    // We need to know what the other processors have found
+		vector<FLOAT> rho_maxs(mpicontrol->Nmpi);
+		MPI_Allgather(&rho_max,1,GANDALF_MPI_FLOAT,&rho_maxs[0],1,GANDALF_MPI_FLOAT,MPI_COMM_WORLD);
+		  const int proc_max = std::max_element(rho_maxs.begin(),rho_maxs.end()) - rho_maxs.begin();
+		const FLOAT global_rho_max = rho_maxs[proc_max];
+		if (global_rho_max > 0.0) {
+			if (rho_max < global_rho_max)
+				// A sink is being created, but not on this processor - mark it
+				isink=-2;
+		}	
+#endif
+
 
     // If all conditions have been met, then create a new sink particle.
     // Also, set minimum sink smoothing lengtha
-    if (isink != -1) {
+    if (isink >= 0) {
       SphParticle<ndim>& part_sink = sph->GetSphParticlePointer(isink);
       sph->hmin_sink = min(sph->hmin_sink,part_sink.h);
       CreateNewSinkParticle(part_sink,isink,t,sph,nbody);
+
     }
+#if defined MPI_PARALLEL
+    if (isink != -1) {
+			// The owner of the new sink broadcasts it to everyone
+			MPI_Bcast(&sink[Nsink],sizeof(SinkParticle<ndim>),MPI_BYTE,proc_max,MPI_COMM_WORLD);
+			MPI_Bcast(&nbody->stardata[nbody->Nstar],sizeof(StarParticle<ndim>),MPI_BYTE,proc_max,MPI_COMM_WORLD);
+			if (isink == -2) {
+					sink[Nsink].star = &(nbody->stardata[nbody->Nstar]);
+					nbody->nbodydata[nbody->Nnbody] = &(nbody->stardata[nbody->Nstar]);
+			}
+    }
+#endif
+
+  // Calculate total mass inside sink (direct sum for now since this is not computed that often).
+		if (isink != -1) {
+			sink[Nsink].mmax = (FLOAT) 0.0;
+			for (i=0; i<sph->Nhydro; i++) {
+				SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+				if (part.itype == dead) continue;
+				for (k=0; k<ndim; k++) dr[k] = sink[Nsink].star->r[k] - part.r[k];
+				drsqd = DotProduct(dr,dr,ndim);
+				if (drsqd < pow(sink[Nsink].radius,2)) sink[Nsink].mmax += part.m;
+			}
+#if defined MPI_PARALLEL
+  	MPI_Allreduce(MPI_IN_PLACE,&(sink[Nsink].mmax),1,GANDALF_MPI_FLOAT,MPI_SUM,MPI_COMM_WORLD);
+#endif
+		}
+
+		if (isink >=0) {
+			SphParticle<ndim>& part_sink = sph->GetSphParticlePointer(isink);
+			cout << "--------------------------------------------------------------------" << endl;
+			cout << "Created new sink particle : " << isink << "     Nsink : " << Nsink+1  << endl;
+			cout << "radius : " << sink[Nsink].radius << "    " << part_sink.h << endl;
+			cout << "m : " << sink[Nsink].star->m << "    mmax : " << sink[Nsink].mmax << endl;
+			cout << "r : " << sink[Nsink].star->r[0] << "   " << sink[Nsink].star->r[0] << endl;
+			cout << "--------------------------------------------------------------------" << endl;
+		}
+
+  if (isink != -1) {
+			nbody->Nstar++;
+		  nbody->Nnbody++;
+			Nsink++;
+  }
 
   } while (isink != -1);
   //===============================================================================================
@@ -261,31 +318,10 @@ void Sinks<ndim>::CreateNewSinkParticle
   for (k=0; k<ndim; k++) sink[Nsink].star->adot0[k] = (FLOAT) 0.0; //part_sink.adot0[k];
   for (k=0; k<3; k++) sink[Nsink].angmom[k]         = (FLOAT) 0.0;
 
-  // Calculate total mass inside sink (direct sum for now since this is not computed that often).
-  sink[Nsink].mmax = (FLOAT) 0.0;
-  for (i=0; i<sph->Nhydro; i++) {
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-    if (part.itype == dead) continue;
-    for (k=0; k<ndim; k++) dr[k] = sink[Nsink].star->r[k] - part.r[k];
-    drsqd = DotProduct(dr,dr,ndim);
-    if (drsqd < pow(sink[Nsink].radius,2)) sink[Nsink].mmax += part.m;
-  }
-  cout << "--------------------------------------------------------------------" << endl;
-  cout << "Created new sink particle : " << isink << "     Nsink : " << Nsink + 1 << endl;
-  cout << "radius : " << sink[Nsink].radius << "    " << part_sink.h << endl;
-  cout << "m : " << sink[Nsink].star->m << "    mmax : " << sink[Nsink].mmax << endl;
-  cout << "r : " << sink[Nsink].star->r[0] << "   " << sink[Nsink].star->r[0] << endl;
-  cout << "--------------------------------------------------------------------" << endl;
-
   // Remove SPH particle from main arrays
   part_sink.m      = (FLOAT) 0.0;
   part_sink.active = false;
   part_sink.itype  = dead;
-
-  // Increment star and sink counters
-  nbody->Nstar++;
-  nbody->Nnbody++;
-  Nsink++;
 
   return;
 }
@@ -336,9 +372,20 @@ void Sinks<ndim>::AccreteMassToSinks
   for (i=0; i<sph->Ntot; i++) sph->GetSphParticlePointer(i).sinkid = -1;
   for (s=0; s<Nsinkmax; s++) sink[s].Ngas = 0;
 
+  Box<ndim> mydomain = mpicontrol->MyDomain();
+
   // Determine which sink each SPH particle accretes to.  If none, flag -1
+  // (note we should really use the tree to compute this)
   //-----------------------------------------------------------------------------------------------
-  for (i=0; i<sph->Nhydro; i++) {
+  for (int ipart=0; ipart<sph->Nhydro + sph->Nmpighost; ipart++) {
+
+    // The loop is over real and MPI ghosts, so need to modify the index accordingly
+    if (ipart > sph->Nhydro)
+		i = ipart + sph->NPeriodicGhost;
+    else
+		i = ipart;
+
+
     SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
     if (part.itype == dead) continue;
 
@@ -350,7 +397,13 @@ void Sinks<ndim>::AccreteMassToSinks
       for (k=0; k<ndim; k++) dr[k] = part.r[k] - sink[s].star->r[k];
       drsqd = DotProduct(dr,dr,ndim);
       if (drsqd <= powf(sink[s].radius + sph->kernrange*part.h,2) && drsqd < rsqdmin) {
-        saux = s;
+#if defined MPI_PARALLEL
+        // If the sink is NOT local, then we should not accrete locally this SPH particle
+		if (!ParticleInBox(*(sink[s].star), mydomain))
+          saux = -1;
+        else
+#endif
+          saux = s;
         rsqdmin = drsqd; //*part.m;
       }
 
@@ -369,7 +422,14 @@ void Sinks<ndim>::AccreteMassToSinks
   }
   //-----------------------------------------------------------------------------------------------
 
+  
+#if defined MPI_PARALLEL
+  // In MPI case, we need to know if other processors found something to accrete
+  MPI_Allreduce(MPI_IN_PLACE,&Nlist,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+  // Declare the list that will hold the indices of the ghosts we accreted (to communicate it to their owners)
+  list<int> ghosts_accreted;
 
+#endif
   // If there are no particles inside any sink, return to main loop.
   if (Nlist == 0) return;
 
@@ -382,6 +442,11 @@ void Sinks<ndim>::AccreteMassToSinks
   private(dv,dvtang,efrac,i,ilist,ilist2,j,k,macc,macc_temp,mold,mtemp)\
   private(Nneib,rold,rsqdlist,s,vold,wnorm)*/
   for (s=0; s<Nsink; s++) {
+
+#if defined MPI_PARALLEL
+    // Only accrete from local sinks
+    if (!ParticleInBox(*(sink[s].star), mydomain)) continue;
+#endif
 
     /*cout << "Accreting?? : " << s << "   " << Nsink << "   " << sink[s].Ngas << "    " << n
          << "    " << sink[s].star->nlast << endl;
@@ -412,7 +477,14 @@ void Sinks<ndim>::AccreteMassToSinks
 
 
     // Calculate distances (squared) from sink to all neighbouring particles
-    for (i=0; i<sph->Nhydro; i++) {
+    for (int ipart=0; ipart<sph->Nhydro+sph->Nmpighost; ipart++) {
+
+			// The loop is over real and MPI ghosts, so need to modify the index accordingly
+			if (ipart > sph->Nhydro)
+				i = ipart + sph->NPeriodicGhost;
+			else
+				i = ipart;
+
       SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
       if (part.itype == dead) continue;
       if (part.sinkid == s) {
@@ -621,6 +693,13 @@ void Sinks<ndim>::AccreteMassToSinks
         part.active = false;
       }
       else part.m -= mtemp;
+#if defined MPI_PARALLEL
+		 if (i > sph->Nhydro) {
+			 // We are accreting a MPI ghost, so we need to record that to transmit it to the owner
+#pragma omp critical (ghost_accreted)
+			 ghosts_accreted.push_back(i);
+		 }
+#endif
       macc -= mtemp;
 
 
@@ -654,6 +733,9 @@ void Sinks<ndim>::AccreteMassToSinks
   }
   //===============================================================================================
 
+#if defined MPI_PARALLEL
+  mpicontrol->UpdateMpiGhostParents(ghosts_accreted,sph);
+#endif
 
   timing->EndTimingSection("SINK_ACCRETE_MASS");
 

@@ -319,6 +319,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
   //-----------------------------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
   mpicontrol->CreateInitialDomainDecomposition(sph,nbody,simparams,simbox,this->initial_h_provided);
+  this->AllocateParticleMemory();
 #endif
 
   // Set pointer to SPH particle data
@@ -813,6 +814,7 @@ void SphSimulation<ndim>::MainLoop(void)
 
 #if defined MPI_PARALLEL
       mpicontrol->GetExportedParticlesAccelerations(sph);
+	  MPI_Allreduce(MPI_IN_PLACE,&activecount,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
 #endif
 
 
@@ -1266,6 +1268,14 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
       }
 #pragma omp barrier
 
+#if defined MPI_PARALLEL
+#pragma omp master
+{
+    level = level_max_sph;
+    MPI_Allreduce(&level,&level_max_sph,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+}
+#pragma omp barrier
+#endif
 
       // Now find all N-body particles at the beginning of a new timestep
       //-------------------------------------------------------------------------------------------
@@ -1279,6 +1289,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
           // Compute new timestep value and level number
           dt    = nbody->Timestep(nbody->nbodydata[i]);
+		  cout << "star " <<  i  << " dt " << dt << endl;
           level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
           level = max(level,level_max_sph);
 
@@ -1333,8 +1344,6 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 #ifdef MPI_PARALLEL
     level = level_max;
     MPI_Allreduce(&level,&level_max,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
-    level = level_max_sph;
-    MPI_Allreduce(&level,&level_max_sph,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
     level = level_max_nbody;
     MPI_Allreduce(&level,&level_max_nbody,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
     assert(level_max_sph>=0);
@@ -1439,7 +1448,7 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     assert(nbody->nbodydata[i]->tlast <= t);
   }
   if (timestep <= 0.0) {
-    cout << "Timestep fallen to zero : " << timestep << endl;
+    cout << "Timestep fallen to zero : " << timestep << " dtmax: " << dt_max << " nresync " << nresync << endl;
     exit(0);
   }
 

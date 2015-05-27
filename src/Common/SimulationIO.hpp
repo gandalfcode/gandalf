@@ -203,21 +203,26 @@ bool Simulation<ndim>::ReadColumnSnapshotFile
   // Read in data depending on dimensionality
   //-----------------------------------------------------------------------------------------------
   while (infile.good() && i < hydro->Nhydro) {
+	FLOAT temp;
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     if (ndim == 1)
       infile >> part.r[0] >> part.v[0] >> part.m >> part.h >> part.rho >> part.u;
     else if (ndim == 2)
-      infile >> part.r[0] >> part.r[1] >> part.v[0] >> part.v[1]
-             >> part.m >> part.h >> part.rho >> part.u;
+      infile >> part.r[0] >> part.r[1] >> temp >> part.v[0] >> part.v[1] >> temp
+             >> part.u;
     else if (ndim == 3)
       infile >> part.r[0] >> part.r[1] >> part.r[2] >> part.v[0] >> part.v[1] >> part.v[2]
-             >> part.m >> part.h >> part.rho >> part.u;
+             >> part.u;
+    part.m = .1/hydro->Nhydro;
     i++;
   }
+
+  cout << "i is "<< i << endl;
 
   nbody->Nstar = info.Nstar;
   sinks.Nsink = info.Nstar;
   nbody->AllocateMemory(nbody->Nstar);
+  sinks.AllocateMemory(nbody->Nstar);
   i = 0;
 
   // Read in data depending on dimensionality
@@ -227,14 +232,16 @@ bool Simulation<ndim>::ReadColumnSnapshotFile
       infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].v[0] >> nbody->stardata[i].m
              >> nbody->stardata[i].h >> raux >> raux;
     else if (ndim == 2)
-      infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].r[1] >> nbody->stardata[i].v[0]
-             >> nbody->stardata[i].v[1] >> nbody->stardata[i].m >> nbody->stardata[i].h
-             >> raux >> raux;
+      infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].r[1] >> raux
+             >> nbody->stardata[i].v[0] >> nbody->stardata[i].v[1] >> raux >>
+             raux;
     else if (ndim == 3)
       infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].r[1] >> nbody->stardata[i].r[2]
-             >> nbody->stardata[i].v[0] >> nbody->stardata[i].v[1] >> nbody->stardata[i].v[2]
-             >> nbody->stardata[i].m >> nbody->stardata[i].h >> raux >> raux;
-    sinks.sink[i].radius = nbody->kernp->kernrange*nbody->stardata[i].h;
+             >> nbody->stardata[i].v[0] >> nbody->stardata[i].v[1] >> nbody->stardata[i].v[2] >>
+             raux;
+	nbody->stardata[i].h=.5;
+	nbody->stardata[i].m=1;
+    sinks.sink[i].radius = 1;
     sinks.sink[i].star = &(nbody->stardata[i]);
     i++;
   }
@@ -1744,9 +1751,11 @@ bool Simulation<ndim>::WriteSerenUnformSnapshotFile(string filename)
 
   // Sinks/stars
   //---------------------------------------------------------------------------
+  if (rank==0)
+	cout << "about to write stars, nstar: " << nbody->Nstar << endl;
   if (rank==0 && nbody->Nstar > 0) {
 
-    ofstream outfile(filename.c_str(),ios::binary|ios::ate);
+    ofstream outfile(filename.c_str(),ios::binary|ios::app);
     BinaryWriter writer(outfile);
 
     for (k=0; k<sink_data_length; k++) sdata[k] = 0.0;
