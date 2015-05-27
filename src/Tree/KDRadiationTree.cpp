@@ -685,12 +685,11 @@ int KDRadiationTree<ndim,nfreq,ParticleType,CellType>::ComputeGatherCellList
   int *neiblist)                       ///< [out] List of neighbour i.d.s
 {
   int cc = 0;                          // Cell counter
-  int i;                               // Particle id
   int k;                               // Neighbour counter
   int Nneib = 0;                       // Neighbour counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
-  const FLOAT rsearchsqd = rsearch*rsearch;  // Search radius squared
+  //const FLOAT rsearchsqd = rsearch*rsearch;  // Search radius squared
 
 
   //===============================================================================================

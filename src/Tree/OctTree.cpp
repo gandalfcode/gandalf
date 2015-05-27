@@ -167,15 +167,12 @@ void OctTree<ndim,ParticleType,TreeCell>::BuildTree
   int c;                               // Cell counter
   int cc;                              // Child cell counter
   int ckid;                            // ..
-  int clist[Noctchild];                // ..
   int cnew;                            // ..
   int ilast;                           // ..
   int i;                               // Particle counter
   int k;                               // Dimension counter
   int kk;                              // ..
   int Nlist;                           // ..
-  int Nincell[Noctchild];              // ..
-  int Nkids;                           // ..
   int *celllist;                       // ..
   int *whichChild;                     // ..
   FLOAT cellSize = (FLOAT) 0.0;        // Size of new cell (from centre to edge)
@@ -1572,8 +1569,6 @@ int OctTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
   TreeCell<ndim> *gravcelllist)        ///< [out] Array of cells
 {
   int cc;                              // Cell counter
-  int i;                               // Particle id
-  int j;                               // Aux. particle counter
   int k;                               // Neighbour counter
   int Ngravcelltemp = Ngravcell;       // ..
   FLOAT dr[ndim];                      // Relative position vector

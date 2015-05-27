@@ -2078,10 +2078,8 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
   TreeCell<ndim> *gravcelllist)        ///< [out] Array of cells
 {
   int cc;                              // Cell counter
-  int i;                               // Particle id
-  int j;                               // Aux. particle counter
-  int k;                               // Neighbour counter
-  int Ngravcelltemp = Ngravcell;       // ..
+  int k;                               // Dimension counter
+  int Ngravcelltemp = Ngravcell;       // Aux. cell counter
   FLOAT dr[ndim];                      // Relative position vector
   FLOAT drsqd;                         // Distance squared
   FLOAT rc[ndim];                      // Position of cell
@@ -2108,17 +2106,17 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(cellptr->bbmin,cellptr->bbmax,
-                   celldata[cc].hboxmin,celldata[cc].hboxmax) ||
-        BoxOverlap(cellptr->hboxmin,cellptr->hboxmax,
-                   celldata[cc].bbmin,celldata[cc].bbmax)) {
+    if (BoxOverlap(cellptr->bbmin, cellptr->bbmax, celldata[cc].hboxmin, celldata[cc].hboxmax) ||
+        BoxOverlap(cellptr->hboxmin, cellptr->hboxmax, celldata[cc].bbmin, celldata[cc].bbmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].level != ltot)
+      if (celldata[cc].level != ltot) {
         cc++;
+      }
 
-      else if (celldata[cc].N == 0)
+      else if (celldata[cc].N == 0) {
         cc = celldata[cc].cnext;
+      }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].level == ltot) {
@@ -2148,19 +2146,22 @@ int KDTree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 	       drsqd > celldata[cc].mac*macfactor) && celldata[cc].N > 0) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (celldata[cc].level != ltot)
+      if (celldata[cc].level != ltot) {
          cc++;
+      }
 
       // If leaf-cell, add particles to list
-      else
-       	return -1;
+      else {
+        return -1;
+      }
 
     }
 
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
-    else
+    else {
       cc = celldata[cc].cnext;
+    }
 
   };
   //===============================================================================================
@@ -2280,7 +2281,6 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateWorkCounters
 {
   int cc,ccc;                          // Cell counters
   int i;                               // Particle counter
-  int k;                               // Dimension counter
 
   // If cell is not leaf, stock child cells
   if (cell.level != ltot) {

@@ -42,7 +42,6 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
                    DOUBLE _ewald_mult, DOUBLE _ixmin, DOUBLE _ixmax, DOUBLE _EFratio, CodeTiming* _timing):
   gr_bhewaldseriesn(_gr_bhewaldseriesn),
   in(_in),
-  nEwaldGrid(_nEwaldGrid),
   ewald_mult(_ewald_mult),
   ixmin(_ixmin),
   ixmax(_ixmax),
@@ -50,7 +49,8 @@ Ewald<ndim>::Ewald(DomainBox<ndim> &simbox, int _gr_bhewaldseriesn, int _in, int
   lx_per(simbox.boxsize[0]),
   ly_per(simbox.boxsize[1]),
   lz_per(simbox.boxsize[2]),
-  timing(_timing)
+  timing(_timing),
+  nEwaldGrid(_nEwaldGrid)
 {
   // Only create object (and run) for 3 dimensions.  Otherwise, throw an exception
   //-----------------------------------------------------------------------------------------------

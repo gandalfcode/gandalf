@@ -69,8 +69,9 @@ void NbodySimulation<ndim>::ProcessParameters(void)
 
   // Sanity check for valid dimensionality
   if (ndim < 1 || ndim > 3) {
-    string message = "Invalid dimensionality chosen : ndim = " + ndim;
-    ExceptionHandler::getIstance().raise(message);
+    std::ostringstream message;
+    message << "Invalid dimensionality chosen : ndim = " << ndim;
+    ExceptionHandler::getIstance().raise(message.str());
   }
 
   // Set-up random number generator object

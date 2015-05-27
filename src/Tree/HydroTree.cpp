@@ -65,8 +65,8 @@ HydroTree<ndim,ParticleType,TreeCell>::HydroTree
   Nmpi(Nmpiaux),
   thetamaxsqd(thetamaxsqdaux),
   invthetamaxsqd((FLOAT) 1.0/thetamaxsqdaux),
-  gravity_mac(gravity_mac_aux),
   macerror(macerroraux),
+  gravity_mac(gravity_mac_aux),
   multipole(multipole_aux)
 {
   allocated_buffer = false;
@@ -799,9 +799,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
   int i;                               // Particle id
   int ithread;                         // OpenMP thread i.d.
   int j;                               // Aux. particle counter
-  int jj;                              // Aux. particle counter
   int k;                               // Dimension counter
-  int okflag;                          // Flag if h-rho iteration is valid
   int Nactive;                         // No. of active particles in current cell
   int Ngravcell=0;                     // No. of gravity cells
   int Ngravcellmax;                    // Max. size of gravity cell pointer array
@@ -813,7 +811,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
   TreeCell<ndim> **celllist;         // List of pointers to binary tree cells
   TreeCell<ndim> *gravcelllist;     // List of pointers to grav. cells
   ParticleType<ndim> *activepart;      // Local copies of active particles
-  ParticleType<ndim> *neibpart;        // Local copies of neighbouring particles
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[GradhHydroTree::UpdateGravityExportForces]");
@@ -967,10 +964,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
   bool overlapflag;                    // Flag if cells overlap
   int cactive;                         // No. of active cells
   int cc;                              // Aux. cell counter
-  int i;                               // Particle id
   int ithread;                         // OpenMP thread i.d.
   int j;                               // Aux. particle counter
-  int jj;                              // Aux. particle counter
   TreeCell<ndim> *cellptr;             // Pointer to binary tree cell
   TreeCell<ndim> **celllist;           // List of pointers to binary tree cells
   int *activelist;                     // List of active particles
@@ -1079,9 +1074,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
   int c1;                              // i.d. of first child cell
   int c2;                              // i.d. of second child cell
   int i;                               // Particle counter
-  int k;                               // Dimension counter
   int l;                               // ..
-  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro_gen);
+  //ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro_gen);
 
   debug2("[HydroTree::BuildPrunedTree]");
   timing->StartTimingSection("BUILD_PRUNED_TREE");
@@ -1310,8 +1304,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildMpiGhostTree
   Particle<ndim> *part_gen,            ///< Particle data array
   Hydrodynamics<ndim> *hydro)          ///< Pointer to Hydrodynamics object
 {
-  int i;                               // Particle counter
-  int k;                               // Dimension counter
   ParticleType<ndim> *partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
 
@@ -1392,8 +1384,9 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
   const FLOAT grange = ghost_range*kernrange;
 
 
-  // Start from root-cell
+  // Start from root-cell of tree
   c = 0;
+
 
   //-----------------------------------------------------------------------------------------------
   while (c < tree->Ncell) {
@@ -1411,11 +1404,13 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
     if (BoxOverlap(ndim, scattermin, scattermax, mpibox.boxmin, mpibox.boxmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (cellptr->level != tree->ltot)
+      if (cellptr->level != tree->ltot) {
         c++;
+      }
 
-      else if (cellptr->N == 0)
+      else if (cellptr->N == 0) {
         c = cellptr->cnext;
+      }
 
       // If leaf-cell, check through particles in turn to find ghosts and
       // add to list to be exported
@@ -1433,8 +1428,9 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
 
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
-    else
+    else {
       c = cellptr->cnext;
+    }
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -1458,11 +1454,13 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
     if (BoxOverlap(ndim, scattermin, scattermax, mpibox.boxmin, mpibox.boxmax)) {
 
       // If not a leaf-cell, then open cell to first child cell
-      if (cellptr->level != ghosttree->ltot)
+      if (cellptr->level != ghosttree->ltot) {
         c++;
+      }
 
-      else if (cellptr->N == 0)
+      else if (cellptr->N == 0) {
         c = cellptr->cnext;
+      }
 
       // If leaf-cell, check through particles in turn to find ghosts and
       // add to list to be exported
@@ -1480,8 +1478,9 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
 
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
-    else
+    else {
       c = cellptr->cnext;
+    }
 
   }
   //-----------------------------------------------------------------------------------------------
@@ -1654,7 +1653,6 @@ FLOAT HydroTree<ndim,ParticleType,TreeCell>::FindLoadBalancingDivision
   FLOAT boxmax[ndim])                  ///< ..
 {
   int i;                               // ..
-  int j;
   int k;                               // ..
   FLOAT r_divide = r_old;              // Cell division location
   FLOAT r_max = boxmax[k_divide];      // Max. for bisection iteration of division
@@ -1736,8 +1734,8 @@ int HydroTree<ndim,ParticleType,TreeCell>::GetExportInfo
   int Nmpi)                            ///< [in] Array with information for the other mpi nodes
 {
   ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray() );
-  const bool first_proc = (Nproc==0) || (rank==0 && Nproc==1);
-  const bool hydro_only = !hydro->self_gravity && hydro->hydro_forces;
+  //const bool first_proc = (Nproc==0) || (rank==0 && Nproc==1);
+  //const bool hydro_only = !hydro->self_gravity && hydro->hydro_forces;
   int Nactive=0, cactive;
 
   assert(tree->Nimportedcell==0);

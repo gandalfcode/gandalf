@@ -236,6 +236,7 @@ FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
   if (hydro_forces && self_gravity) return min(dt_cfl, dt_grav);
   else if (hydro_forces) return dt_cfl;
   else if (self_gravity) return dt_grav;
+  else return (FLOAT) 0.0;
 
   //return courant_mult*part.h/part.vsig_max;
   //return courant_mult*part.h/(part.sound + sqrt(DotProduct(part.v, part.v, ndim)));

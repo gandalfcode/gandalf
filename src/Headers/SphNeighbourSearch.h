@@ -152,11 +152,11 @@ class SphBruteForceSearch : public SphNeighbourSearch<ndim>, public BruteForceSe
                                       Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
   void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
 
-#ifdef MPI_PARALLEL
+/*#ifdef MPI_PARALLEL
   using NeighbourSearch<ndim>::ids_active_particles;
   void UpdateGravityExportList(int, int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateHydroExportList(int, int, int, SphParticle<ndim> *,  Sph<ndim> *, Nbody<ndim> *);
-#endif
+#endif*/
 
 };
 

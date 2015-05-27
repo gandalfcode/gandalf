@@ -170,7 +170,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT,
                                            const int, int, TreeCell<ndim> *);
   bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *);
-  FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *) {};
+  FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *) {return (FLOAT) 0.0;};
   void UpdateWorkCounters(TreeCell<ndim> &) {};
 #endif
 #if defined(VERIFY_ALL)

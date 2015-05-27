@@ -32,11 +32,10 @@
 /// thermal physics variables, as well as scaling to dimensionless units.
 //=================================================================================================
 template <int ndim>
-Isothermal<ndim>::Isothermal(FLOAT temp0aux, FLOAT mu_bar_aux,
-                             FLOAT gamma_aux, SimUnits *units):
+Isothermal<ndim>::Isothermal(FLOAT temp0aux, FLOAT mu_bar_aux, FLOAT gamma_aux, SimUnits *units):
   EOS<ndim>(gamma_aux),
-  mu_bar(mu_bar_aux),
-  temp0(temp0aux/units->temp.outscale)
+  temp0(temp0aux/units->temp.outscale),
+  mu_bar(mu_bar_aux)
 {
   //temp0 = temp0aux/units->temp.outscale;
 }

@@ -34,6 +34,14 @@
 #endif
 
 
+
+//=================================================================================================
+//  Class Ic
+/// \brief   Class containing functions for generating initial conditions
+/// \details ...
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    02/02/2015
+//=================================================================================================
 template <int ndim>
 class Ic
 {
@@ -69,11 +77,8 @@ private:
 public:
 
   Ic(Simulation<ndim>* sim_aux, Hydrodynamics<ndim>* hydro_aux, FLOAT invndim_aux) :
-    sim(sim_aux), hydro(hydro_aux), invndim(invndim_aux),
-    simunits(sim_aux->simunits), simparams(sim_aux->simparams),
-    simbox(sim_aux->simbox), randnumb(sim_aux->randnumb)
-  {
-  };
+    sim(sim_aux), hydro(hydro_aux), simparams(sim_aux->simparams), randnumb(sim_aux->randnumb), 
+    invndim(invndim_aux), simunits(sim_aux->simunits), simbox(sim_aux->simbox) {};
 
 
   // Initial conditions routines

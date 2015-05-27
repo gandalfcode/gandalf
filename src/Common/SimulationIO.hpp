@@ -393,18 +393,18 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
     std::string content = outfile.str();
     int offset;
     int length_char = content.length();
-    MPI_Exscan(&length_char,&offset,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
-    if (rank==0) {
-      offset = 0;
-    }
+    MPI_Exscan(&length_char, &offset, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+    if (rank == 0) offset = 0;
     MPI_Offset offset_mpi = offset;
+    
     //Offset the position by the end of the sph information
     offset_mpi += end_sph_mpi;
-    MPI_File_seek(file,offset_mpi,MPI_SEEK_SET);
+    MPI_File_seek(file, offset_mpi, MPI_SEEK_SET);
     //Now we can do the actual writing. Extract information from the string and pass it to MPI
     char* data = new char[strlen(content.c_str())+1];
     strcpy(data, content.c_str());
-    MPI_Status status;
+//    MPI_Status status;
 //    MPI_File_write(file, data, length_char, MPI_CHAR, &status);
     delete[] data;
   }

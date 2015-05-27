@@ -78,8 +78,9 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
 
   // Sanity check for valid dimensionality
   if (ndim < 1 || ndim > 3) {
-    string message = "Invalid dimensionality chosen : ndim = " + ndim;
-    ExceptionHandler::getIstance().raise(message);
+    std::ostringstream message;
+    message << "Invalid dimensionality chosen : ndim = " << ndim;
+    ExceptionHandler::getIstance().raise(message.str());
   }
 
   // Set-up random number generator object
@@ -591,9 +592,8 @@ void MeshlessFVSimulation<ndim>::PostInitialConditionsSetup(void)
 template <int ndim>
 void MeshlessFVSimulation<ndim>::MainLoop(void)
 {
-  int activecount = 0;                 // Flag if we need to recompute particles
+  //int activecount = 0;                 // Flag if we need to recompute particles
   int i;                               // Particle loop counter
-  int it;                              // Time-symmetric iteration counter
   int k;                               // Dimension counter
   FLOAT tghost;                        // Approx. ghost particle lifetime
   MeshlessFVParticle<ndim> *partdata;         // Pointer to main SPH data array
@@ -718,10 +718,10 @@ template <int ndim>
 void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
 {
   int i;                               // Particle counter
-  DOUBLE dt;                           // Particle timestep
+  //DOUBLE dt;                           // Particle timestep
   DOUBLE dt_min = big_number_dp;       // Local copy of minimum timestep
-  DOUBLE dt_nbody;                     // Aux. minimum N-body timestep
-  DOUBLE dt_sph;                       // Aux. minimum SPH timestep
+  //DOUBLE dt_nbody;                     // Aux. minimum N-body timestep
+  //DOUBLE dt_sph;                       // Aux. minimum SPH timestep
 
   debug2("[MeshlessFVSimulation::ComputeGlobalTimestep]");
   timing->StartTimingSection("GLOBAL_TIMESTEPS");
@@ -731,16 +731,15 @@ void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
   //-----------------------------------------------------------------------------------------------
   if (n == nresync) {
 
-    n            = 0;
-    level_max    = 0;
-    level_step   = level_max + integration_step - 1;
-    nresync      = integration_step;
-    dt_min_sph   = big_number_dp;
+    n          = 0;
+    level_max  = 0;
+    level_step = level_max + integration_step - 1;
+    nresync    = integration_step;
+    dt_min_sph = big_number_dp;
 
     // Find minimum timestep from all SPH particles
     //---------------------------------------------------------------------------------------------
-#pragma omp parallel default(none) private(i,dt,dt_nbody,dt_sph) \
-  shared(dt_min) //,dt_min_nbody,dt_min_sph)
+#pragma omp parallel default(none) private(i,dt) shared(dt_min) //,dt_min_nbody,dt_min_sph)
     {
 
 #pragma omp for

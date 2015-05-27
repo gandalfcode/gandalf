@@ -336,8 +336,6 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
   int initial_h = initial_h_provided;  // ..
   int inode;                           // Node counter
   int k;                               // Dimension counter
-  int okflag;                          // ..
-  //FLOAT boxbuffer[2*ndim*Nmpi];        // Bounding box buffer
   ParticleType<ndim> *partbuffer;      // ..
 
   debug2("[MpiControl::CreateInitialDomainDecomposition]");
@@ -646,24 +644,16 @@ void MpiControl<ndim>::ComputeTotalStarGasForces (Nbody<ndim> * nbody) {
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim, ParticleType >::LoadBalancing
- (Hydrodynamics<ndim> *hydro,                      ///< Pointer to main SPH object
+ (Hydrodynamics<ndim> *hydro,          ///< Pointer to main SPH object
   Nbody<ndim> *nbody)                  ///< Pointer to main N-body object
 {
   int c;                               // MPI tree cell counter
-  int c1;                              // ..
   int c2;                              // ..
-  int i;                               // Particle counter
   int inode;                           // MPI node counter
   int k;                               // Dimension counter
-  int kk;                              // ..
   int l;                               // ..
-  int lbalance;                        // Load balance level
-  int okflag;                          // Successful communication flag
-  FLOAT rnew;                          // New boundary position for load balancing
-  FLOAT boxbuffer[2*ndim*Nmpi];        // Bounding box buffer
-  FLOAT workbuffer[1+ndim+Nmpi];       // Node work information buffer
+  int lbalance = 0;                    // Load balance level
   DOUBLE worktot = 0.0;                // Total work on all nodes
-  MPI_Status status;                   // MPI status flag
 
   // If running on only one MPI node, return immediately
   if (Nmpi == 1) return;
@@ -673,9 +663,7 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (hydro->GetParticleArray());
 
   // Sum-up total work on all MPI nodes
-  worktot = 0.0;
   for (inode=0; inode<Nmpi; inode++) worktot += 0.0;
-  lbalance = 0;
 
 
   // Starting with the highest MpiTree division, start adjusting divisional positions to achieve
@@ -834,9 +822,7 @@ template <int ndim, template<int> class ParticleType>
 void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
  (Hydrodynamics<ndim>* hydro)
 {
-
-  //Get the information to send to the other processors
-  vector<char> send_buffer;
+  vector<char> send_buffer;            // ..
 
   for (int Nproc=0; Nproc<Nmpi; Nproc++) {
 
@@ -849,13 +835,12 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
   }
 
   int Nbytes_to_be_exported = send_buffer.size();
-  assert(std::accumulate(Nbytes_to_proc.begin(),Nbytes_to_proc.end(),0)==Nbytes_to_be_exported);
+  assert(std::accumulate(Nbytes_to_proc.begin(),Nbytes_to_proc.end(),0) == Nbytes_to_be_exported);
 
-  //First need to know how many bytes each processor is sending
-  MPI_Alltoall(&Nbytes_to_proc[0],1,MPI_INT,&Nbytes_from_proc[0],
-               1,MPI_INT,MPI_COMM_WORLD);
+  // First need to know how many bytes each processor is sending
+  MPI_Alltoall(&Nbytes_to_proc[0], 1, MPI_INT, &Nbytes_from_proc[0], 1, MPI_INT, MPI_COMM_WORLD);
 
-  //Can now compute the displacements
+  // Can now compute the displacements
   vector<int> displs_recv(Nmpi), displs_send(Nmpi);
   int running_counter_recv=0, running_counter_send=0;
   for (int inode=1; inode<Nmpi; inode++) {
@@ -867,14 +852,14 @@ void MpiControlType<ndim,ParticleType>::ExportParticlesBeforeForceLoop
 
   //Compute total number of particles to be received (including the ones from ourselves)
   int Nbytes_received_exported = std::accumulate(Nbytes_from_proc.begin(),
-                                                 Nbytes_from_proc.end(),0);
+                                                 Nbytes_from_proc.end(), 0);
 
   //Allocate memory to receive all the particles
   vector<char > receive_buffer(Nbytes_received_exported);
 
  //Perform the actual communication
-  MPI_Alltoallv(&send_buffer[0],&Nbytes_to_proc[0],&displs_send[0],MPI_CHAR,&receive_buffer[0],
-                &Nbytes_from_proc[0],&displs_recv[0],MPI_CHAR, MPI_COMM_WORLD);
+  MPI_Alltoallv(&send_buffer[0], &Nbytes_to_proc[0], &displs_send[0], MPI_CHAR, &receive_buffer[0],
+                &Nbytes_from_proc[0], &displs_recv[0], MPI_CHAR, MPI_COMM_WORLD);
 
   //Unpack the received arrays
   neibsearch->UnpackExported(receive_buffer, Nbytes_from_proc, hydro);
@@ -975,6 +960,8 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
       i = ghost_export_list[j];
       particles_to_export_per_node[inode].push_back(&sphdata[i]);
     }
+    cout << "Nexport : " << Nexport << "     size : " << ghost_export_list.size() << endl;
+    assert(Nexport == ghost_export_list.size());
   }
 
 
@@ -1158,7 +1145,6 @@ template <int ndim>
 void MpiControl<ndim>::CollateDiagnosticsData(Diagnostics<ndim> &diag)
 {
   int inode;
-  int j;
   int k;
   Diagnostics<ndim> diagaux;
   MPI_Status status;

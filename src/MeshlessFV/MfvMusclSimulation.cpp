@@ -55,9 +55,8 @@ using namespace std;
 template <int ndim>
 void MfvMusclSimulation<ndim>::MainLoop(void)
 {
-  int activecount = 0;                 // Flag if we need to recompute particles
+  //int activecount = 0;                 // Flag if we need to recompute particles
   int i;                               // Particle loop counter
-  int it;                              // Time-symmetric iteration counter
   int k;                               // Dimension counter
   FLOAT tghost;                        // Approx. ghost particle lifetime
   MeshlessFVParticle<ndim> *partdata;         // Pointer to main SPH data array

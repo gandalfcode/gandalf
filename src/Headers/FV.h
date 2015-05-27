@@ -82,7 +82,6 @@ public:
   using Hydrodynamics<ndim>::riemann;
   using Hydrodynamics<ndim>::size_hydro_part;
 
-  static const FLOAT invndim=1./ndim;  ///< Copy of 1/ndim
   static const int nvar = ndim + 2;
   static const int ivx = 0;
   static const int ivy = 1;

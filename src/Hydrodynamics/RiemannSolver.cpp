@@ -123,12 +123,8 @@ void RiemannSolver<ndim>::RotateVector
  (FLOAT rotMat[ndim][ndim],
   FLOAT vec[ndim])
 {
-  FLOAT oldVec[ndim];
-
   if (ndim == 1) {
-    //cout << "Before : " << vec[0] << "    " << rotMat[0][0] << endl;
     vec[0] = rotMat[0][0]*vec[0];
-    //cout << "After  : " << vec[0] << endl;
   }
   else if (ndim == 2) {
     FLOAT oldVec[ndim];
@@ -255,7 +251,7 @@ void ExactRiemannSolver<ndim>::ComputeStarRegion
     ptl   = 1.0 + g7*(ul - um)/cl;
     ptr   = 1.0 + g7*(um - ur)/cr;
     pstar = 0.5*(pl*pow(ptl,g3) + pr*pow(ptr,g3));
-    FLOAT pstar2 = pow((cl + cr - g7*(ur - ul))/(cl/pow(pl,g1) + cr/pow(pr,g1)), g3);
+    //FLOAT pstar2 = pow((cl + cr - g7*(ur - ul))/(cl/pow(pl,g1) + cr/pow(pr,g1)), g3);
     /*if (pstar < 0.0) {
       cout << "pstar : " << pstar << "   " << pstar2 << endl;
     }*/
@@ -521,13 +517,12 @@ void ExactRiemannSolver<ndim>::ComputeFluxes
   int k,kv;
   FLOAT pstar;                         // Pressure in star region
   FLOAT ustar;                         // Velocity in star region
-  FLOAT etot;                          // Total specific energy
   FLOAT p,d,u;                         // Primitive variables at s=0 from Riemann solver
   FLOAT rotMat[ndim][ndim];
   FLOAT invRotMat[ndim][ndim];
   FLOAT uleft[ndim];
   FLOAT uright[ndim];
-  FLOAT Wface[ndim];
+  FLOAT Wface[nvar];
 
   // Compute rotation matrices
   this->ComputeRotationMatrices(runit, rotMat, invRotMat);
@@ -653,13 +648,12 @@ void HllcRiemannSolver<ndim>::ComputeFluxes
   int k,kv;
   FLOAT pstar;                         // Pressure in star region
   FLOAT ustar;                         // Velocity in star region
-  FLOAT etot;                          // Total specific energy
   FLOAT p,d,u;                         // Primitive variables at s=0 from Riemann solver
   FLOAT rotMat[ndim][ndim];
   FLOAT invRotMat[ndim][ndim];
   FLOAT uleft[ndim];
   FLOAT uright[ndim];
-  FLOAT Wface[ndim];
+  FLOAT Wface[nvar];
 
   // Compute rotation matrices
   this->ComputeRotationMatrices(runit, rotMat, invRotMat);

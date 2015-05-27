@@ -22,6 +22,7 @@
 
 
 #include <fstream>
+#include <sstream>
 #include "Precision.h"
 #include "Debug.h"
 #include "IC.h"
@@ -363,15 +364,13 @@ void Ic<ndim>::ShockTube(void)
     int Nlattice1[ndim];                 // Particles per dimension for LHS lattice
     int Nlattice2[ndim];                 // Particles per dimension for RHS lattice
     FLOAT dr[ndim];                      // Relative position vector
-    FLOAT drmag;                         // Distance
-    FLOAT drsqd;                         // Distance squared
     FLOAT volume;                        // Volume of box
     FLOAT vfluid1[ndim];                 // Velocity vector of LHS fluid
     FLOAT vfluid2[ndim];                 // Velocity vector of RHS fluid
-    FLOAT wnorm;                         // Kernel normalisation
+    //FLOAT wnorm;                         // Kernel normalisation
     FLOAT *r;                            // Position vectors
-    FLOAT *uaux;                         // Temp. array for internal energy
-    FLOAT *vaux;                         // Temp. array for x-velocities
+    //FLOAT *uaux;                         // Temp. array for internal energy
+    //FLOAT *vaux;                         // Temp. array for x-velocities
     DomainBox<ndim> box1;                // LHS box
     DomainBox<ndim> box2;                // RHS box
     Particle<ndim> *partdata;            // Pointer to main SPH data array
@@ -448,7 +447,7 @@ void Ic<ndim>::ShockTube(void)
     }
 
     sim->initial_h_provided = true;
-    bool smooth_ic = true;
+    //bool smooth_ic = true;
 
     // Smooth the initial conditions
     //---------------------------------------------------------------------------------------------
@@ -527,8 +526,9 @@ void Ic<ndim>::ShockTube(void)
   }
   //-----------------------------------------------------------------------------------------------
   else {
-    string message = "Wrong dimensionality : " + ndim;
-    ExceptionHandler::getIstance().raise(message);
+    std::ostringstream message;
+    message << "Invalid dimensionality chosen for Shocktube ICs : ndim = " << ndim;
+    ExceptionHandler::getIstance().raise(message.str());
   }
   //-----------------------------------------------------------------------------------------------
 
@@ -869,7 +869,6 @@ void Ic<ndim>::GreshoVortex(void)
   if (ndim == 2) {
 
     int i;                             // Particle counter
-    int j;                             // Aux. particle counter
     int k;                             // Dimension counter
     int Nbox;                          // No. of particles in fluid box 1
     int Nlattice[ndim];                // Lattice particles in fluid box 1

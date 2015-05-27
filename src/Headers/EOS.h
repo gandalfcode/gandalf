@@ -65,7 +65,7 @@ class EOS
     gamma(_gamma),
     gammam1(_gamma - (FLOAT) 1.0),
     gammaMinusOne(_gamma - (FLOAT) 1.0),
-    oneMinusGamma((FLOAT) 1.0 - _gamma){};
+    oneMinusGamma((FLOAT) 1.0 - _gamma) {};
 
   virtual FLOAT Pressure(Particle<ndim> &) = 0;
   virtual FLOAT EntropicFunction(Particle<ndim> &) = 0;

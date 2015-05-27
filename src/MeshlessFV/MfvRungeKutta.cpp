@@ -149,10 +149,8 @@ int MfvRungeKutta<ndim, kernelclass>::ComputeH
   Nbody<ndim> *nbody)                  ///< [in] Main N-body object
 {
   int j;                               // Neighbour id
-  int k;                               // Dimension counter
   int iteration = 0;                   // h-rho iteration counter
   int iteration_max = 30;              // Max. no of iterations
-  FLOAT dr[ndim];                      // Relative position vector
   FLOAT h_lower_bound = (FLOAT) 0.0;   // Lower bound on h
   FLOAT h_upper_bound = hmax;          // Upper bound on h
   FLOAT invhsqd;                       // (1 / h)^2
@@ -354,16 +352,10 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGradients
   int jj;                              // Aux. neighbour counter
   int k;                               // Dimension counter
   int var;                             // ..
-  FLOAT alpha_mean;                    // Mean articial viscosity alpha value
   FLOAT draux[ndim];                   // Relative position vector
   FLOAT drsqd;                         // ..
   FLOAT dv[ndim];                      // ..
   FLOAT dvdr;                          // Dot product of dv and dr
-  FLOAT wkerni;                        // Value of w1 kernel function
-  FLOAT wkernj;                        // Value of w1 kernel function
-  FLOAT vsignal;                       // Signal velocity
-  FLOAT paux;                          // Aux. pressure force variable
-  FLOAT winvrho;                       // 0.5*(wkerni + wkernj)*invrhomean
   FLOAT psitilda[ndim];
   const FLOAT invhsqd = part.invh*part.invh;
 
@@ -529,11 +521,9 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGodunovFlux
   int k;                               // Dimension counter
   int var;                             // ..
   FLOAT Aij[ndim];                     // ..
-  FLOAT alpha;                         // ..
   FLOAT draux[ndim];                   // Position vector of part relative to neighbour
   FLOAT dr_unit[ndim];                 // Unit vector from neighbour to part
   FLOAT drsqd;                         // ..
-  FLOAT dvdr;                          // Dot product of dv and dr
   FLOAT invdrmagaux;
   FLOAT psitildai[ndim];
   FLOAT psitildaj[ndim];
@@ -542,7 +532,6 @@ void MfvRungeKutta<ndim, kernelclass>::ComputeGodunovFlux
   FLOAT flux[nvar][ndim];
   FLOAT Wleft[nvar];
   FLOAT Wright[nvar];
-  FLOAT Wdot[nvar];
   FLOAT gradW[nvar][ndim];
   FLOAT dW[nvar];
 
