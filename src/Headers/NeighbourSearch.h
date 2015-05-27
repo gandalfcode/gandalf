@@ -276,7 +276,7 @@ protected:
                                         vector<int>& recv_displs, Hydrodynamics<ndim>* hydro, int rank);
 #endif
 #if defined(VERIFY_ALL)
-  void CheckValidNeighbourList(int, int, int, int *, Particle<ndim> *, string);
+  void CheckValidNeighbourList(int, int, int, int *, ParticleType<ndim> *, string);
 #endif
 
 

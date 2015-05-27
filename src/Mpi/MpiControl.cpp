@@ -100,22 +100,22 @@ MpiControl<ndim>::MpiControl()
     printf("%d is running too!!\n",this->rank);
   }
 
-  if (Nmpi > 1) {
+  /*if (Nmpi > 1) {
     if (rank == 0) {
       SphParticle<ndim> particle;
-      particle.gradrho[ndim-1]=-1;
-      MPI_Send(&particle,1,particle_type,1,0,MPI_COMM_WORLD);
+      particle.rho = -1.0;
+      MPI_Send(&particle, 1, particle_type, 1, 0, MPI_COMM_WORLD);
     }
     else if (rank ==1) {
       SphParticle<ndim> particle;
       MPI_Status status;
       MPI_Recv(&particle,1,particle_type,0,0,MPI_COMM_WORLD,&status);
-      if (particle.gradrho[ndim-1] != -1) {
+      if (particle.rho != -1.0) {
         cerr << "Error in transmitting particles: "
                 "the last field has not been received correctly!" << endl;
       }
     }
-  }
+  }*/
 #endif
 
 }
@@ -495,8 +495,8 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
       int icell = mpitree->g2c[inode];
 
       // Create bounding boxes containing particles in each sub-tree
-      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] = mpitree->tree[icell].bbmin[k];
-      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] = mpitree->tree[icell].bbmax[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmin[k] = mpitree->tree[icell].boxmin[k]; //bbmin[k];
+      for (k=0; k<ndim; k++) mpinode[inode].domain.boxmax[k] = mpitree->tree[icell].boxmax[k]; //bbmax[k];
     }
 
     //cout << "CHECKING SENDPARTICLES : " << mpinode[inode].ids << "   " << sphdata << endl;
@@ -682,7 +682,7 @@ void MpiControlType<ndim, ParticleType >::UpdateMpiGhostParents (list<int>& ids_
 	std::copy( buffer_proc[iproc].begin()  ,  buffer_proc[iproc].end(), buffer.begin()+displs_ghosts[iproc]);
     std::copy( buffer_proc_iorig[iproc].begin(), buffer_proc_iorig[iproc].end(), buffer_iorig.begin()+displs_ghosts[iproc]);
   }
-  
+
   // Tell everybody how many ghosts we have to update remotely
   vector<int> N_updates_from_proc(Nmpi);
   MPI_Alltoall(&N_updates_per_proc[0],1,MPI_INT,&N_updates_from_proc[0],1,MPI_INT,MPI_COMM_WORLD);
@@ -761,11 +761,11 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
       FLOAT rold = mpitree->tree[c].r_divide;
 
       // Now find new division between child cells that is load-balanced
-      mpitree->tree[c].r_divide = neibsearch->FindLoadBalancingDivision
+      /*mpitree->tree[c].r_divide = neibsearch->FindLoadBalancingDivision
         (mpitree->tree[c].k_divide, mpitree->tree[c].r_divide,
          mpitree->tree[c].boxmin, mpitree->tree[c].boxmax);
       cout << "Moved load balancing division for " << c << "    rold : " << rold
-           << "     rnew : " << mpitree->tree[c].r_divide << endl;
+           << "     rnew : " << mpitree->tree[c].r_divide << endl;*/
     }
 
     // Update all cell bounding boxes now new divisions have been computed
@@ -970,7 +970,7 @@ void MpiControlType<ndim,ParticleType>::GetExportedParticlesAccelerations
   // Allocate receive buffer
   const int Nbytes_to_receive = std::accumulate(Nbytes_to_proc.begin(),
                                                 Nbytes_to_proc.end(),0);
-  vector<char > receive_buffer(Nbytes_to_receive);
+  vector<char> receive_buffer(Nbytes_to_receive);
 
   // Prepare receive counts and displacements
   vector<int> recv_displs(Nmpi);

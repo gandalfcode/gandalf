@@ -1145,7 +1145,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
   }
   //-----------------------------------------------------------------------------------------------
 
-  cout << "Pruned tree size : " << prunedtree[rank]->Ncell << "    "
+  /*cout << "Pruned tree size : " << prunedtree[rank]->Ncell << "    "
        << prunedtree[rank]->ltot << "    " << pruning_level << endl;
   for (c=0; c<prunedtree[rank]->Ncell; c++) {
     cout << "bb[" << c << "] : " << prunedtree[rank]->celldata[c].bbmin[0]
@@ -1153,7 +1153,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
          << "    N : " << prunedtree[rank]->celldata[c].N
          << "    worktot : " << prunedtree[rank]->celldata[c].worktot
          << "    " << tree->celldata[0].worktot << endl;
-  }
+  }*/
 
   //cin >> c;
   MPI_Barrier(MPI_COMM_WORLD);
@@ -1381,11 +1381,14 @@ int HydroTree<ndim,ParticleType,TreeCell>::SearchMpiGhostParticles
   FLOAT scattermin[ndim];              // ..
   FLOAT scattermax[ndim];              // ..
   TreeCell<ndim> *cellptr;             // ..
-  const FLOAT grange = ghost_range*kernrange;
+  const FLOAT grange = 2.0*ghost_range*kernrange;
 
 
   // Start from root-cell of tree
   c = 0;
+
+  /*cout << "MPIBOX : " << mpibox.boxmin[0] << "    " << mpibox.boxmax[0] << endl;
+  exit(0);*/
 
 
   //-----------------------------------------------------------------------------------------------
@@ -2122,6 +2125,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
   // Allocate array to store local copy of potential neighbour ids
   trueneiblist = new int[Ntot];
 
+
   // First, create list of 'true' neighbours by looping over all particles
   if (neibtype == "gather") {
     for (j=0; j<Ntot; j++) {
@@ -2136,8 +2140,9 @@ void HydroTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
       drsqd = DotProduct(dr,dr,ndim);
       if (drsqd < kernrangesqd*partdata[i].h*partdata[i].h ||
           drsqd < kernrangesqd*partdata[j].h*partdata[j].h) trueneiblist[Ntrueneib++] = j;
-     }
-   }
+    }
+  }
+
 
   // Now compare each given neighbour with true neighbour list for validation
   for (j=0; j<Ntrueneib; j++) {
@@ -2162,6 +2167,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::CheckValidNeighbourList
     }
 
   }
+
 
   // If the true neighbour is not in the list, or included multiple times,
   // then output to screen and terminate program

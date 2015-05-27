@@ -57,8 +57,8 @@ struct MpiTreeCell {
   int ilast;                           ///< i.d. of last particle in cell
   int N;                               ///< No. of particles contained in cell
   int cexit[2][ndim];                  ///< Left and right exit cells (per dim)
-  FLOAT bbmin[ndim];                   ///< Minimum extent of bounding box
-  FLOAT bbmax[ndim];                   ///< Maximum extent of bounding box
+  //FLOAT bbmin[ndim];                   ///< Minimum extent of bounding box
+  //FLOAT bbmax[ndim];                   ///< Maximum extent of bounding box
   FLOAT boxmin[ndim];                  ///< ..
   FLOAT boxmax[ndim];                  ///< ..
   FLOAT m;                             ///< Mass contained in cell

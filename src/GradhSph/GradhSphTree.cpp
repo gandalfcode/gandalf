@@ -217,6 +217,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
   cactive = tree->ComputeActiveCellList(celllist);
 
 
+
   // Set-up all OMP threads
   //===============================================================================================
 #pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,sph,sphdata)
@@ -449,7 +450,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
   if (cactive == 0) return;
 
   // Update ghost tree smoothing length values here
-  //tree->UpdateHmaxValues(tree->celldata[0],sphdata);
+  tree->UpdateHmaxValues(tree->celldata[0],sphdata);
   if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0],sphdata);
 
 
@@ -553,7 +554,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 
         // Validate that gather neighbour list is correct
 #if defined(VERIFY_ALL)
-        if (neibcheck) this->CheckValidNeighbourList(i,Ntot,Nneib,neiblist,sphdata,"all");
+        if (neibcheck) this->CheckValidNeighbourList(i,sph->Nhydro+sph->NPeriodicGhost,Nneib,neiblist,sphdata,"all");
 #endif
 
         // Compute distances and the inverse between the current particle and all neighbours here,
