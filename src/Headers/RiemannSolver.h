@@ -92,8 +92,8 @@ class ExactRiemannSolver: public RiemannSolver<ndim>
 
   virtual void ComputeStarRegion(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                                  const FLOAT, const FLOAT, const FLOAT, FLOAT &, FLOAT &);
-  virtual void ComputeFluxes(const FLOAT [ndim+2], const FLOAT [ndim+2],
-                             const FLOAT [ndim], FLOAT [ndim], FLOAT [ndim+2][ndim]);
+  virtual void ComputeFluxes(const FLOAT [nvar], const FLOAT [nvar],
+                             const FLOAT [ndim], FLOAT [ndim], FLOAT [nvar][ndim]);
   void SampleExactSolution(const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                            const FLOAT, const FLOAT, const FLOAT, const FLOAT, const FLOAT,
                            const FLOAT, FLOAT &, FLOAT &, FLOAT &);
@@ -138,8 +138,8 @@ class HllcRiemannSolver: public RiemannSolver<ndim>
   HllcRiemannSolver(FLOAT gamma_aux, bool _zeroMassFlux) : RiemannSolver<ndim>(gamma_aux, zeroMassFlux) {};
     //~HllcRiemannSolver() {};
 
-  virtual void ComputeFluxes(const FLOAT [ndim+2], const FLOAT [ndim+2],
-                             const FLOAT [ndim], FLOAT [ndim], FLOAT [ndim+2][ndim]);
+  virtual void ComputeFluxes(const FLOAT [nvar], const FLOAT [nvar],
+                             const FLOAT [ndim], FLOAT [ndim], FLOAT [nvar][ndim]);
 
 };
 #endif
