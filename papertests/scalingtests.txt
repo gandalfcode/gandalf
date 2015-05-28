@@ -1,0 +1,8 @@
+freefall, both with and without hydro
+boss-bodenheimer (tests hydro+gravity+sinks)
+khi (pure hydro test)
+
+all of this on c2pap, 1-16 cores openMP only, and then up to 64 or even 128 cores with MPI only and hybrid
+we do two kinds of tests:
+1)keep the same problem size and change the number of cores
+2)keep the number of cores fixed and change the problem size 
