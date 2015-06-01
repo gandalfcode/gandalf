@@ -54,6 +54,8 @@ int main(int argc, char** argv)
   // Initialise all MPI processes (if activated in Makefile)
   MPI_Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  int n_mpi_cpus;
+  MPI_Comm_size(MPI_COMM_WORLD,&n_mpi_cpus);
 
   // Tell exception handler to call MPI_Abort on error
   ExceptionHandler::set_mpi(1);
@@ -101,6 +103,16 @@ int main(int argc, char** argv)
 
   // Print out splash screen
   if (rank == 0) sim->SplashScreen();
+
+#if defined MPI_PARALLEL
+  cout << "Running with MPI, using " << n_mpi_cpus << " tasks" << endl;
+#endif
+#if defined _OPENMP
+  cout << "Running with OPENMP, using " << omp_get_max_threads() << " threads" << endl;
+#if defined MPI_PARALLEL
+  cout << "Hybrid OpenMP/MPI parallelization currently in use, for a total of " << n_mpi_cpus*omp_get_max_threads() << " cores" << endl;
+#endif
+#endif
 
   // Perform all set-up procedures
   sim->SetupSimulation();
