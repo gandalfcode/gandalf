@@ -434,7 +434,8 @@ void Parameters::SetDefaultValues(void)
 
   // MPI parameters
   //-----------------------------------------------------------------------------------------------
-  intparams["pruning_level"] = 6;
+  intparams["pruning_level_min"] = 6;
+  intparams["pruning_level_max"] = 999;
 
   // Python parameters
   //-----------------------------------------------------------------------------------------------

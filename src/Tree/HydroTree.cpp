@@ -1064,7 +1064,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
  (const int rank,                      ///< ..
-  const int pruning_level,             ///< ..
+  const int pruning_level_min,         ///< ..
+  const int pruning_level_max,         ///< ..
   const int Nhydromax,                 ///< ..
   Particle<ndim> *hydro_gen)           ///< [inout] Pointer to Hydrodynamics ptcl array
 {
@@ -1082,78 +1083,100 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
 
   cnew = 0;
   Nprunedcellmax = 0;
-  cout << "Levels : " << pruning_level << "    " << tree->ltot << endl;
-  assert(pruning_level < tree->ltot);
+  cout << "Levels : " << pruning_level_min << "    " << tree->ltot << endl;
+  assert(pruning_level_min < tree->ltot);
 
   // Update all work counters in the tree for load-balancing purposes
   tree->UpdateWorkCounters(tree->celldata[0]);
 
-  // Set level at which tree will be pruned (for all trees)
-  //-----------------------------------------------------------------------------------------------
-  for (i=0; i<Nmpi; i++) {
-    prunedtree[i]->ltot_old = prunedtree[i]->ltot;
-    prunedtree[i]->ltot     = pruning_level;
-    prunedtree[i]->gmax     = pow(2,pruning_level);
-    prunedtree[i]->Ncellmax = 2*prunedtree[i]->gmax - 1;
-    prunedtree[i]->Ncell    = 2*prunedtree[i]->gmax - 1;
-    prunedtree[i]->Ntotmax  = prunedtree[i]->gmax;
-    prunedtree[i]->Ntot     = prunedtree[i]->gmax;
 
-    // Allocate (or reallocate if needed) all tree memory
-    prunedtree[i]->AllocateTreeMemory();
-    Nprunedcellmax += prunedtree[i]->Ncellmax;
+  // If creating an adaptive pruned tree
+  //===============================================================================================
+  if (pruning_level_min < pruning_level_max) {
 
-    // Sanity-check to ensure pruned tree is not deeper than real local tree
-    assert(prunedtree[i]->gmax == pow(2,pruning_level));
-    assert(prunedtree[i]->ltot == pruning_level);
-    if (pruning_level > tree->ltot) {
-      string message = "Invalid pruned tree; pruning_level > ltot";
-      ExceptionHandler::getIstance().raise(message);
+
+  }
+  // Else use a flat pruned tree for each processor
+  //===============================================================================================
+  else if (pruning_level_min == pruning_level_max) {
+
+    // Set level at which tree will be pruned (for all trees)
+    //---------------------------------------------------------------------------------------------
+    for (i=0; i<Nmpi; i++) {
+      prunedtree[i]->ltot_old = prunedtree[i]->ltot;
+      prunedtree[i]->ltot     = pruning_level_min;
+      prunedtree[i]->gmax     = pow(2,pruning_level_min);
+      prunedtree[i]->Ncellmax = 2*prunedtree[i]->gmax - 1;
+      prunedtree[i]->Ncell    = 2*prunedtree[i]->gmax - 1;
+      prunedtree[i]->Ntotmax  = prunedtree[i]->gmax;
+      prunedtree[i]->Ntot     = prunedtree[i]->gmax;
+
+      // Allocate (or reallocate if needed) all tree memory
+      prunedtree[i]->AllocateTreeMemory();
+      Nprunedcellmax += prunedtree[i]->Ncellmax;
+
+      // Sanity-check to ensure pruned tree is not deeper than real local tree
+      assert(prunedtree[i]->gmax == pow(2,pruning_level_min));
+      assert(prunedtree[i]->ltot == pruning_level_min);
+      if (pruning_level_min > tree->ltot) {
+        string message = "Invalid pruned tree; pruning_level_min > ltot";
+        ExceptionHandler::getIstance().raise(message);
+      }
+
     }
+    //---------------------------------------------------------------------------------------------
+
+
+    // Now walk through main tree cell-by-cell and copy all important data to pruned tree cells
+    //---------------------------------------------------------------------------------------------
+    for (c=0; c<tree->Ncell; c++) {
+
+      // If cell is on a lower level, skip over
+      if (tree->celldata[c].level > pruning_level_min) continue;
+
+      // Otherwise, record all data from cell, except for cell links which
+      // are maintained to ensure a valid tree
+      c1    = prunedtree[rank]->celldata[cnew].c1;
+      c2    = prunedtree[rank]->celldata[cnew].c2;
+      cnext = prunedtree[rank]->celldata[cnew].cnext;
+      l     = prunedtree[rank]->celldata[cnew].level;
+
+      prunedtree[rank]->celldata[cnew] = tree->celldata[c];
+      prunedtree[rank]->celldata[cnew].c1 = c1;
+      prunedtree[rank]->celldata[cnew].c2 = c2;
+      prunedtree[rank]->celldata[cnew].cnext = cnext;
+
+      if (c < pruning_level_min) assert (l == cnew);
+      assert(cnext >= 0);
+      assert(prunedtree[rank]->celldata[cnew].level <= pruning_level_min);
+      if (prunedtree[rank]->celldata[cnew].level < pruning_level_min) assert(c1 == cnew + 1);
+      if (c1 == -1) assert(prunedtree[rank]->celldata[cnew].level == pruning_level_min);
+
+      cnew++;
+
+    }
+    //---------------------------------------------------------------------------------------------
+
+    /*cout << "Pruned tree size : " << prunedtree[rank]->Ncell << "    "
+         << prunedtree[rank]->ltot << "    " << pruning_level << endl;
+    for (c=0; c<prunedtree[rank]->Ncell; c++) {
+      cout << "bb[" << c << "] : " << prunedtree[rank]->celldata[c].bbmin[0]
+           << "    " << prunedtree[rank]->celldata[c].bbmax[0]
+           << "    N : " << prunedtree[rank]->celldata[c].N
+           << "    worktot : " << prunedtree[rank]->celldata[c].worktot
+           << "    " << tree->celldata[0].worktot << endl;
+    }*/
 
   }
-  //-----------------------------------------------------------------------------------------------
+  //===============================================================================================
+  else {
 
-
-  // Now walk through main tree cell-by-cell and copy all important data to pruned tree cells
-  //-----------------------------------------------------------------------------------------------
-  for (c=0; c<tree->Ncell; c++) {
-
-    // If cell is on a lower level, skip over
-    if (tree->celldata[c].level > pruning_level) continue;
-
-    // Otherwise, record all data from cell, except for cell links which
-    // are maintained to ensure a valid tree
-    c1 = prunedtree[rank]->celldata[cnew].c1;
-    c2 = prunedtree[rank]->celldata[cnew].c2;
-    cnext = prunedtree[rank]->celldata[cnew].cnext;
-    l = prunedtree[rank]->celldata[cnew].level;
-
-    prunedtree[rank]->celldata[cnew] = tree->celldata[c];
-    prunedtree[rank]->celldata[cnew].c1 = c1;
-    prunedtree[rank]->celldata[cnew].c2 = c2;
-    prunedtree[rank]->celldata[cnew].cnext = cnext;
-
-    if (c < pruning_level) assert (l == cnew);
-    assert(cnext >= 0);
-    assert(prunedtree[rank]->celldata[cnew].level <= pruning_level);
-    if (prunedtree[rank]->celldata[cnew].level < pruning_level) assert(c1 == cnew + 1);
-    if (c1 == -1) assert(prunedtree[rank]->celldata[cnew].level == pruning_level);
-
-    cnew++;
+    string message = "Invalid pruned tree; pruning_level_min > ltot";
+    ExceptionHandler::getIstance().raise(message);
 
   }
-  //-----------------------------------------------------------------------------------------------
+  //===============================================================================================
 
-  /*cout << "Pruned tree size : " << prunedtree[rank]->Ncell << "    "
-       << prunedtree[rank]->ltot << "    " << pruning_level << endl;
-  for (c=0; c<prunedtree[rank]->Ncell; c++) {
-    cout << "bb[" << c << "] : " << prunedtree[rank]->celldata[c].bbmin[0]
-         << "    " << prunedtree[rank]->celldata[c].bbmax[0]
-         << "    N : " << prunedtree[rank]->celldata[c].N
-         << "    worktot : " << prunedtree[rank]->celldata[c].worktot
-         << "    " << tree->celldata[0].worktot << endl;
-  }*/
 
   //cin >> c;
   MPI_Barrier(MPI_COMM_WORLD);

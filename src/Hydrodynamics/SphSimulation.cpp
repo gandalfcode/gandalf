@@ -265,7 +265,8 @@ void SphSimulation<ndim>::ProcessParameters(void)
   ntreestockstep      = intparams["ntreestockstep"];
   Nstepsmax           = intparams["Nstepsmax"];
   out_file_form       = stringparams["out_file_form"];
-  pruning_level       = intparams["pruning_level"];
+  pruning_level_min   = intparams["pruning_level_min"];
+  pruning_level_max   = intparams["pruning_level_max"];
   run_id              = stringparams["run_id"];
   sph_single_timestep = intparams["sph_single_timestep"];
   tmax_wallclock      = floatparams["tmax_wallclock"];
@@ -441,9 +442,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Communicate pruned trees for MPI
 #ifdef MPI_PARALLEL
-    sphneib->BuildPrunedTree(rank, pruning_level, sph->Nhydromax, sph->GetSphParticleArray());
+    sphneib->BuildPrunedTree(rank, pruning_level_min, pruning_level_max,
+                             sph->Nhydromax, sph->GetSphParticleArray());
     mpicontrol->CommunicatePrunedTrees();
-    sphneib->BuildGhostPrunedTree(rank,simbox);
+    sphneib->BuildGhostPrunedTree(rank, simbox);
 //    exit(0);
 #endif
 
@@ -680,7 +682,8 @@ void SphSimulation<ndim>::MainLoop(void)
   //-----------------------------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    sphneib->BuildPrunedTree(rank, pruning_level, sph->Nhydromax, sph->GetSphParticleArray());
+    sphneib->BuildPrunedTree(rank, pruning_level_min, pruning_level_max,
+                             sph->Nhydromax, sph->GetSphParticleArray());
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
     mpicontrol->CommunicatePrunedTrees();
     sphneib->BuildGhostPrunedTree(rank, simbox);
@@ -706,7 +709,8 @@ void SphSimulation<ndim>::MainLoop(void)
       sphneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                               sph->Ntot, sph->Nhydromax, timestep, partdata, sph);
 #ifdef MPI_PARALLEL
-      sphneib->BuildPrunedTree(rank, pruning_level, sph->Nhydromax, sph->GetSphParticleArray());
+      sphneib->BuildPrunedTree(rank, pruning_level_min, pruning_level_max,
+                               sph->Nhydromax, sph->GetSphParticleArray());
       mpicontrol->CommunicatePrunedTrees();
       sphneib->BuildGhostPrunedTree(rank, simbox);
       mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);

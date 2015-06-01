@@ -383,7 +383,8 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   ntreestockstep      = intparams["ntreestockstep"];
   Nstepsmax           = intparams["Nstepsmax"];
   out_file_form       = stringparams["out_file_form"];
-  pruning_level       = intparams["pruning_level"];
+  pruning_level_min   = intparams["pruning_level_min"];
+  pruning_level_max   = intparams["pruning_level_max"];
   run_id              = stringparams["run_id"];
   sph_single_timestep = intparams["sph_single_timestep"];
   tmax_wallclock      = floatparams["tmax_wallclock"];

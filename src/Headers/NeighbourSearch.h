@@ -93,7 +93,7 @@ protected:
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *) {};
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) {};
 #ifdef MPI_PARALLEL
-  virtual void BuildPrunedTree(const int, const int, const int, Particle<ndim> *) {};
+  virtual void BuildPrunedTree(const int, const int, const int, const int, Particle<ndim> *) {};
   virtual void BuildGhostPrunedTree(const int, const DomainBox<ndim> &) {};
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
                                  const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
@@ -178,7 +178,7 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) {};
 #ifdef MPI_PARALLEL
-  virtual void BuildPrunedTree(const int, const int, const int, Particle<ndim> *) {};
+  virtual void BuildPrunedTree(const int, const int, const int, const int, Particle<ndim> *) {};
   virtual void BuildGhostPrunedTree(const int, const DomainBox<ndim> &) {};
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
                                  const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
@@ -251,7 +251,7 @@ protected:
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *);
 #ifdef MPI_PARALLEL
-  virtual void BuildPrunedTree(const int, const int, const int, Particle<ndim> *);
+  virtual void BuildPrunedTree(const int, const int, const int, const int, Particle<ndim> *);
   virtual void BuildGhostPrunedTree(const int, const DomainBox<ndim> &);
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
                                  const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
