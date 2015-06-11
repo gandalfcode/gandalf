@@ -1195,9 +1195,11 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     level_max_sph   = 0;
 
 
-#pragma omp parallel default(none) private(dt,dt_nbody,dt_sph,i,imin_aux) \
-  private(istep,last_level,level,level_max_aux,level_nbody,level_sph,nstep,nfactor) \
-  shared(dt_min,imin,level_max_nbody,level_max_sph,level_min_sph)
+#pragma omp parallel default(shared) \
+     private(dt,dt_nbody,dt_sph,i,imin_aux) \
+     private(istep,last_level,level,level_max_aux,level_nbody,level_sph,nstep,nfactor)
+    //shared(dt_min,imin,level_max_nbody,level_max_sph,level_min_sph)
+    //shared(cout)
     {
       dt_sph        = big_number_dp;
       dt_nbody      = big_number_dp;

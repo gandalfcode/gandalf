@@ -55,7 +55,7 @@ void PeriodicGhosts<ndim>::CheckBoundaries
   // Loop over all particles and check if any lie outside the periodic box.
   // If so, then re-position with periodic wrapping.
   //===============================================================================================
-#pragma omp parallel for default(none) shared(simbox,sph)
+#pragma omp parallel for default(none) shared(simbox,hydro)
   for (int i=0; i<hydro->Nhydro; i++) {
     Particle<ndim>& part = hydro->GetParticlePointer(i);
 

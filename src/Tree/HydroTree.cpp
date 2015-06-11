@@ -831,9 +831,10 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
   // Set-up all OMP threads
   //===============================================================================================
 #pragma omp parallel default(none) shared(celllist,cactive,hydro,partdata,cout) \
-  private(activepart,activelist,cc,cellptr,directlist,draux,drsqd,gravcelllist,hrangesqdi,i)\
-  private(interactlist,ithread,j,jj,k,levelneib,macfactor,neiblist,neibpart,Nactive,Ndirect)\
-  private(Ndirectaux,Ndirectmax,Ngravcell,Ngravcellmax,Ninteract,Nneib,Nneibmax,okflag,rp)
+  private(activepart,activelist,cc,cellptr,gravcelllist,i)\
+  private(ithread,j,k,macfactor,Nactive)\
+  private(Ngravcell,Ngravcellmax, Ngravcelltemp) \
+  shared(rank)
   {
 #if defined _OPENMP
     ithread = omp_get_thread_num();
@@ -886,7 +887,13 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
         // If pruned tree is too close (flagged by -1), then record cell id
         // for exporting to other MPI processes
         if (Ngravcelltemp == -1) {
-          cellexportlist[j][Ncellexport[j]++] = cellptr;
+          int index_cell;
+#pragma omp critical
+          {
+            index_cell = Ncellexport[j]++;
+          }
+          cellexportlist[j][index_cell] = cellptr;
+#pragma omp atomic
           Npartexport[j] += Nactive;
         }
         else Ngravcell = Ngravcelltemp;
@@ -990,7 +997,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
   // Set-up all OMP threads
   //===============================================================================================
 #pragma omp parallel default(none) shared(celllist,cactive,cout) \
-  private(cc,cellptr,i,ithread,j,jj,overlapflag)
+  private(cc,cellptr,ithread,j,overlapflag, activelist) \
+  shared(rank, partdata)
   {
 #if defined _OPENMP
     ithread = omp_get_thread_num();
@@ -1021,8 +1029,14 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
         // If pruned tree is too close (flagged by -1), then record cell id
         // for exporting to other MPI processes
         if (overlapflag) {
-          cellexportlist[j][Ncellexport[j]++] = cellptr;
+          int index_cell;
+#pragma omp critical
+          {
+            index_cell = Ncellexport[j]++;
+          }
+          cellexportlist[j][index_cell] = cellptr;
           const int Nactive = tree->ComputeActiveParticleList(cell,partdata,activelist);
+#pragma omp atomic
           Npartexport[j] += Nactive;
           assert(Ncellexport[j] <= tree->gmax);
           cout << "Found overlap : " << cc << "   " << j << "   " << Nactive << "    " << cellptr->N

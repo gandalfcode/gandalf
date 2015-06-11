@@ -52,7 +52,12 @@ int main(int argc, char** argv)
 
 #ifdef MPI_PARALLEL
   // Initialise all MPI processes (if activated in Makefile)
-  MPI_Init(&argc,&argv);
+  int mpi_thread_support;
+  int required_mpi_thread_support=MPI_THREAD_SINGLE;
+#ifdef _OPENMP
+  required_mpi_thread_support=MPI_THREAD_FUNNELED;
+#endif
+  MPI_Init_thread(&argc,&argv,required_mpi_thread_support,&mpi_thread_support);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   int n_mpi_cpus;
   MPI_Comm_size(MPI_COMM_WORLD,&n_mpi_cpus);
@@ -62,11 +67,19 @@ int main(int argc, char** argv)
 
 #ifdef _OPENMP
   // Check that OpenMP and MPI can work together
-  int mpi_thread_support;
-  MPI_Query_thread(&mpi_thread_support);
   if (mpi_thread_support == MPI_THREAD_SINGLE)
     ExceptionHandler::getIstance().raise("This implementation of MPI is not interoperable with OpenMP, aborting!"
         "Refer to your system administrator to know how to solve this problem");
+  else {
+    string message;
+    if (mpi_thread_support == MPI_THREAD_FUNNELED)
+      message="MPI_THREAD_FUNNELED";
+    else if (mpi_thread_support == MPI_THREAD_SERIALIZED)
+      message="MPI_THREAD_SERIALIZED";
+    else if (mpi_thread_support == MPI_THREAD_MULTIPLE)
+      message="MPI_THREAD_MULTIPLE";
+    cout << "The level of MPI thread support is " << message << endl;
+  }
 #endif
 #endif
 

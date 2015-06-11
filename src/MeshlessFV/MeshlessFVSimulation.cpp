@@ -739,7 +739,7 @@ void MeshlessFVSimulation<ndim>::ComputeGlobalTimestep(void)
 
     // Find minimum timestep from all SPH particles
     //---------------------------------------------------------------------------------------------
-#pragma omp parallel default(none) private(i,dt) shared(dt_min) //,dt_min_nbody,dt_min_sph)
+#pragma omp parallel default(none) private(i) shared(dt_min) //,dt_min_nbody,dt_min_sph)
     {
 
 #pragma omp for
