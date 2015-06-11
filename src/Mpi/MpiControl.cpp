@@ -649,7 +649,7 @@ void MpiControl<ndim>::ComputeTotalStarGasForces (Nbody<ndim> * nbody) {
 template <int ndim>
 void MpiControl<ndim>::UpdateSinksAfterAccretion(Sinks<ndim>* sink) {
 
-  //Find out how many stars we have locally
+  //Find out how many stars we have locally and for each processor; also store the owner of each sink
   int local_sinks = 0;
   Box<ndim> mydomain = this->MyDomain();
   vector<int> owner(sink->Nsink);
@@ -663,14 +663,14 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion(Sinks<ndim>* sink) {
   N_sinks_per_rank[rank]=local_sinks;
 
   //Send around the owner vector
-  MPI_Allreduce (MPI_IN_PLACE,&owner[0],Nmpi,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+  MPI_Allreduce (MPI_IN_PLACE,&owner[0],sink->Nsink,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
   //Send around the number of sinks per node
   MPI_Allreduce (MPI_IN_PLACE,&N_sinks_per_rank[0],Nmpi,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
 
   //Allocate buffers
-  const int number_variables = ndim*7+14;
+  const int number_variables = ndim*8+11;
   const int size_send_buffer = sizeof(DOUBLE)*local_sinks*number_variables;
-  const int size_receive_buffer = sizeof(DOUBLE)*sink->Nsink;
+  const int size_receive_buffer = sizeof(DOUBLE)*sink->Nsink*number_variables;
 
   DOUBLE* sendbuffer = (DOUBLE*) malloc( size_send_buffer );
   DOUBLE* receivebuffer = (DOUBLE*) malloc (size_receive_buffer);
@@ -715,6 +715,10 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion(Sinks<ndim>* sink) {
 
   vector<int> displ(Nmpi);
   compute_displs(displ,N_sinks_per_rank);
+  for (int i=0; i<N_sinks_per_rank.size(); i++) {
+    displ[i] *= number_variables;
+    N_sinks_per_rank[i] *= number_variables;
+  }
 
   MPI_Allgatherv (sendbuffer,local_sinks*number_variables,GANDALF_MPI_DOUBLE,receivebuffer,&N_sinks_per_rank[0],&displ[0],GANDALF_MPI_DOUBLE,MPI_COMM_WORLD);
 
@@ -730,35 +734,36 @@ void MpiControl<ndim>::UpdateSinksAfterAccretion(Sinks<ndim>* sink) {
 
     //Extract the data from receivebuffer[displ[origin]+consumed[origin];
     int offset=0;
-    sink->sink[s].menc=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
-    sink->sink[s].trad=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
-    sink->sink[s].tvisc=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
-    sink->sink[s].ketot=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
-    sink->sink[s].rotketot=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
-    sink->sink[s].gpetot=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
-    sink->sink[s].taccrete=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
-    sink->sink[s].trot=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
+    int offset_rank = consumed[origin]*number_variables;
+    sink->sink[s].menc=receivebuffer[displ[origin]+offset_rank + offset++ ];
+    sink->sink[s].trad=receivebuffer[displ[origin]+offset_rank + offset++ ];
+    sink->sink[s].tvisc=receivebuffer[displ[origin]+offset_rank + offset++ ];
+    sink->sink[s].ketot=receivebuffer[displ[origin]+offset_rank + offset++ ];
+    sink->sink[s].rotketot=receivebuffer[displ[origin]+offset_rank + offset++ ];
+    sink->sink[s].gpetot=receivebuffer[displ[origin]+offset_rank + offset++ ];
+    sink->sink[s].taccrete=receivebuffer[displ[origin]+offset_rank + offset++ ];
+    sink->sink[s].trot=receivebuffer[displ[origin]+offset_rank + offset++ ];
     for (int k=0; k<ndim; k++)
-      sink->sink[s].fhydro[k]=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
-    sink->sink[s].utot=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
+      sink->sink[s].fhydro[k]=receivebuffer[displ[origin]+offset_rank + offset++ ];
+    sink->sink[s].utot=receivebuffer[displ[origin]+offset_rank + offset++ ];
     for (int k=0; k<3; k++)
-      sink->sink[s].angmom[k]=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
+      sink->sink[s].angmom[k]=receivebuffer[displ[origin]+offset_rank + offset++ ];
 
     StarParticle<ndim>& star = *(sink->sink[s].star);
     for (int k=0; k<ndim; k++)
-      star.r[k]=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
+      star.r[k]=receivebuffer[displ[origin]+offset_rank + offset++ ];
     for (int k=0; k<ndim; k++)
-      star.v[k]=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
+      star.v[k]=receivebuffer[displ[origin]+offset_rank + offset++ ];
     for (int k=0; k<ndim; k++)
-      star.a[k]=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
-    star.m=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
+      star.a[k]=receivebuffer[displ[origin]+offset_rank + offset++ ];
+    star.m=receivebuffer[displ[origin]+offset_rank + offset++ ];
     for (int k=0; k<ndim; k++)
-      star.r0[k]=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
+      star.r0[k]=receivebuffer[displ[origin]+offset_rank + offset++ ];
     for (int k=0; k<ndim; k++)
-      star.v0[k]=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
+      star.v0[k]=receivebuffer[displ[origin]+offset_rank + offset++ ];
     for (int k=0; k<ndim; k++)
-      star.a0[k]=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
-    star.dt_internal=receivebuffer[displ[origin]+consumed[origin] + offset++ ];
+      star.a0[k]=receivebuffer[displ[origin]+offset_rank + offset++ ];
+    star.dt_internal=receivebuffer[displ[origin]+offset_rank + offset++ ];
 
 
     consumed[origin]++;
