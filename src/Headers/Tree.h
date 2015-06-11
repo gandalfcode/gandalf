@@ -63,46 +63,55 @@ class Tree
 
 
   //-----------------------------------------------------------------------------------------------
+  void ExtrapolateCellProperties(FLOAT);
+  bool BoxOverlap(const FLOAT *, const FLOAT *, const FLOAT *, const FLOAT *);
+  int ComputeActiveParticleList(TreeCell<ndim> &, ParticleType<ndim> *, int *);
+  int ComputeActiveCellList(TreeCell<ndim> *);
+  int ComputeActiveCellPointers(TreeCell<ndim> **celllist);
+  int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
+                                 const FLOAT, const int, int &, int *);
+  int ComputeGatherNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+                                 const FLOAT, const int, int &, int *);
+  int ComputeNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+                           const int, int &, int *, ParticleType<ndim> *);
+  int ComputePeriodicNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+                                   const DomainBox<ndim> &, const int, int &,
+                                   int *, ParticleType<ndim> *);
+  int ComputeGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+                                    const FLOAT, const int, const int, int &, int &, int &, int &,
+                                    int *, int *, int *, TreeCell<ndim> *, ParticleType<ndim> *);
+  int ComputePeriodicGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
+                                            const DomainBox<ndim> &, const FLOAT, const int,
+                                            const int, int &, int &, int &, int &, int *, int *,
+                                            int *, TreeCell<ndim> *, ParticleType<ndim> *);
+  int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
+                                        const int, const int, int &, int &, int &, int *, int *,
+                                        TreeCell<ndim> *, ParticleType<ndim> *);
+#ifdef MPI_PARALLEL
+  int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &,
+                                 const FLOAT, const int, int *);
+  int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT,
+                                           const int, int, TreeCell<ndim> *);
+  bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *);
+  FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *);
+#endif
+
+
+  //-----------------------------------------------------------------------------------------------
   virtual void BuildTree(int, int, int, int, ParticleType<ndim> *, FLOAT) = 0;
   virtual void AllocateTreeMemory(void) = 0;
   virtual void DeallocateTreeMemory(void) = 0;
-  virtual void ExtrapolateCellProperties(FLOAT) = 0;
   virtual void StockTree(TreeCell<ndim> &, ParticleType<ndim> *) = 0;
   virtual void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *) = 0;
   virtual void UpdateActiveParticleCounters(ParticleType<ndim> *) = 0;
-  virtual int ComputeActiveCellList(TreeCell<ndim> *) = 0;
-  virtual int ComputeActiveCellPointers(TreeCell<ndim> **celllist) = 0;
-  virtual int ComputeActiveParticleList(TreeCell<ndim> &, ParticleType<ndim> *, int *) = 0;
-  virtual int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
-                                         const FLOAT, const int, int &, int *) = 0;
-  virtual int ComputeGatherNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
-                                         const FLOAT, const int, int &, int *) = 0;
-  virtual int ComputeNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
-                                   const int, int &, int *, ParticleType<ndim> *) = 0;
-  virtual int ComputeGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
-                                            const FLOAT, const int, const int, int &, int &,
-                                            int &, int &, int *, int *, int *, TreeCell<ndim> *,
-                                            ParticleType<ndim> *) = 0;
-  virtual int ComputePeriodicGravityInteractionList(const TreeCell<ndim> &,
-                                                    const ParticleType<ndim> *,
-                                                    const DomainBox<ndim> &, const FLOAT,
-                                                    const int, const int, int &, int &, int &,
-                                                    int &, int *, int *, int *, TreeCell<ndim> *,
-                                                    ParticleType<ndim> *) = 0;
-  virtual int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT,
-                                                const int, const int, const int,
-                                                int &, int &, int &, int *, int *,
-                                                TreeCell<ndim> *, ParticleType<ndim> *) = 0;
 #ifdef MPI_PARALLEL
-  virtual int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT,
-                                                   const int, int, TreeCell<ndim> *) = 0;
-  virtual bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *) = 0;
-  virtual FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *) = 0;
   virtual void UpdateWorkCounters(TreeCell<ndim> &) = 0;
+  virtual int GetMaxCellNumber(const int) = 0;
 #endif
 #if defined(VERIFY_ALL)
   virtual void ValidateTree(ParticleType<ndim> *) = 0;
 #endif
+
 
   // Const variables for tree class
   //-----------------------------------------------------------------------------------------------
@@ -122,6 +131,7 @@ class Tree
   int gtot;                            ///< Total number of grid/leaf cells
   int ifirst;                          ///< i.d. of first particle in tree
   int ilast;                           ///< i.d. of last particle in tree
+  int lactive;                         ///< ..
   int lmax;                            ///< Max. no. of levels
   int ltot;                            ///< Total number of levels in tree
   int ltot_old;                        ///< Prev. value of ltot

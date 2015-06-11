@@ -442,11 +442,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Communicate pruned trees for MPI
 #ifdef MPI_PARALLEL
-    sphneib->BuildPrunedTree(rank, pruning_level_min, pruning_level_max,
-                             sph->Nhydromax, sph->GetSphParticleArray());
+    sphneib->BuildPrunedTree(rank, pruning_level_min, pruning_level_max, sph->Nhydromax,
+                             simbox, mpicontrol->mpinode, sph->GetSphParticleArray());
     mpicontrol->CommunicatePrunedTrees();
-    sphneib->BuildGhostPrunedTree(rank, simbox);
-//    exit(0);
 #endif
 
   }
@@ -547,6 +545,9 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     }
     else if (ewaldGravity && sph->self_gravity == 1) {
       sphneib->UpdateAllSphPeriodicGravForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody,simbox,ewald);
+    }
+    else if (periodicBoundaries && sph->hydro_forces == 1) {
+      sphneib->UpdateAllSphPeriodicHydroForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody,simbox);
     }
     else if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
       sphneib->UpdateAllSphForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
@@ -682,11 +683,10 @@ void SphSimulation<ndim>::MainLoop(void)
   //-----------------------------------------------------------------------------------------------
 #ifdef MPI_PARALLEL
   if (Nsteps%ntreebuildstep == 0 || rebuild_tree) {
-    sphneib->BuildPrunedTree(rank, pruning_level_min, pruning_level_max,
-                             sph->Nhydromax, sph->GetSphParticleArray());
+    sphneib->BuildPrunedTree(rank, pruning_level_min, pruning_level_max, sph->Nhydromax,
+                             simbox, mpicontrol->mpinode, sph->GetSphParticleArray());
     mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro, sph, sph->kernp);
     mpicontrol->CommunicatePrunedTrees();
-    sphneib->BuildGhostPrunedTree(rank, simbox);
     mpicontrol->LoadBalancing(sph, nbody);
     sphneib->InitialiseCellWorkCounters();
   }
@@ -709,10 +709,9 @@ void SphSimulation<ndim>::MainLoop(void)
       sphneib->BuildGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
                               sph->Ntot, sph->Nhydromax, timestep, partdata, sph);
 #ifdef MPI_PARALLEL
-      sphneib->BuildPrunedTree(rank, pruning_level_min, pruning_level_max,
-                               sph->Nhydromax, sph->GetSphParticleArray());
+      sphneib->BuildPrunedTree(rank, pruning_level_min, pruning_level_max, sph->Nhydromax,
+                               simbox, mpicontrol->mpinode, sph->GetSphParticleArray());
       mpicontrol->CommunicatePrunedTrees();
-      sphneib->BuildGhostPrunedTree(rank, simbox);
       mpicontrol->UpdateAllBoundingBoxes(sph->Nhydro + sph->NPeriodicGhost, sph, sph->kernp);
       MpiGhosts->SearchGhostParticles(tghost, simbox, sph);
       sphneib->BuildMpiGhostTree(rebuild_tree, Nsteps, ntreebuildstep, ntreestockstep,
@@ -784,6 +783,9 @@ void SphSimulation<ndim>::MainLoop(void)
       else if (ewaldGravity && sph->self_gravity == 1) {
         sphneib->UpdateAllSphPeriodicGravForces(sph->Nhydro,sph->Ntot,partdata,
                                                 sph,nbody,simbox,ewald);
+      }
+      else if (periodicBoundaries && sph->hydro_forces == 1) {
+        sphneib->UpdateAllSphPeriodicHydroForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody,simbox);
       }
       else if (sph->hydro_forces == 1 && sph->self_gravity == 1) {
         sphneib->UpdateAllSphForces(sph->Nhydro,sph->Ntot,partdata,sph,nbody);
@@ -1297,7 +1299,6 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
 
           // Compute new timestep value and level number
           dt    = nbody->Timestep(nbody->nbodydata[i]);
-		  cout << "star " <<  i  << " dt " << dt << endl;
           level = max((int) (invlogetwo*log(dt_max/dt)) + 1, 0);
           level = max(level,level_max_sph);
 
@@ -1456,7 +1457,8 @@ void SphSimulation<ndim>::ComputeBlockTimesteps(void)
     assert(nbody->nbodydata[i]->tlast <= t);
   }
   if (timestep <= 0.0) {
-    cout << "Timestep fallen to zero : " << timestep << " dtmax: " << dt_max << " nresync " << nresync << endl;
+    cout << "Timestep fallen to zero : " << timestep << "    dtmax: " << dt_max
+         << "    nresync " << nresync << endl;
     exit(0);
   }
 

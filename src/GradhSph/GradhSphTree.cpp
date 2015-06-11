@@ -77,24 +77,12 @@ GradhSphKDTree<ndim,ParticleType,TreeCell>::GradhSphKDTree
                                                        macerroraux, gravity_mac_aux, multipole_aux);
 
   // Set-up multiple pruned trees, one for each MPI process
-  Nghostpruned = new int[Nmpi];
   KDTree<ndim,ParticleType,TreeCell>** prunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>*[Nmpi];
   prunedtree = (Tree<ndim,ParticleType,TreeCell> **) prunedtree_derived;
 
   for (int i=0; i<Nmpi; i++) {
     prunedtree[i] = new KDTree<ndim,ParticleType,TreeCell>
       (1, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
-  }
-
-  KDTree<ndim,ParticleType,TreeCell>*** ghostprunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>**[Nmpi];
-  ghostprunedtree = (Tree<ndim,ParticleType,TreeCell> ***) ghostprunedtree_derived;
-  for (int i=0; i<Nmpi; i++) {
-    KDTree<ndim,ParticleType,TreeCell>** ghostprunedtree_derived2 = new KDTree<ndim,ParticleType,TreeCell>*[Nghostprunedmax];
-    ghostprunedtree[i] = (Tree<ndim,ParticleType,TreeCell> **) ghostprunedtree_derived2;
-    for (int j=0; j<Nghostprunedmax; j++) {
-      ghostprunedtree[i][j] = new KDTree<ndim,ParticleType,TreeCell>
-        (1, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
-    }
   }
 #endif
 }
@@ -276,7 +264,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
         celldone = 1;
 
         // Find list of active particles in current cell
-        Nactive = tree->ComputeActiveParticleList(cell,sphdata,activelist);
+        Nactive = tree->ComputeActiveParticleList(cell, sphdata, activelist);
         for (j=0; j<Nactive; j++) activepart[j] = sphdata[activelist[j]];
 
         // Compute neighbour list for cell from particles on all trees
@@ -513,8 +501,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
 
       // Compute neighbour list for cell from real and periodic ghost particles
       Nneib = 0;
-      Nneib = tree->ComputeNeighbourList(cell,sphdata,Nneibmax,Nneib,neiblist,neibpart);
-      Nneib = ghosttree->ComputeNeighbourList(cell,sphdata,Nneibmax,Nneib,neiblist,neibpart);
+      Nneib = tree->ComputeNeighbourList(cell, sphdata, Nneibmax, Nneib, neiblist, neibpart);
+      Nneib = ghosttree->ComputeNeighbourList(cell, sphdata, Nneibmax, Nneib, neiblist, neibpart);
 
       // If there are too many neighbours, reallocate the arrays and
       // recompute the neighbour list.
@@ -536,8 +524,8 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
         neibpartbuf[ithread]      = new ParticleType<ndim>[Nneibmax];
         neibpart                  = neibpartbuf[ithread];
         Nneib = 0;
-        Nneib = tree->ComputeNeighbourList(cell,sphdata,Nneibmax,Nneib,neiblist,neibpart);
-        Nneib = ghosttree->ComputeNeighbourList(cell,sphdata,Nneibmax,Nneib,neiblist,neibpart);
+        Nneib = tree->ComputeNeighbourList(cell, sphdata, Nneibmax, Nneib, neiblist, neibpart);
+        Nneib = ghosttree->ComputeNeighbourList(cell, sphdata, Nneibmax, Nneib, neiblist, neibpart);
       };
 
       //for (j=0; j<Nneib; j++) neibpart[j] = sphdata[neiblist[j]];
@@ -602,7 +590,7 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
         i = activelist[j];
         for (k=0; k<ndim; k++) sphdata[i].a[k]     = activepart[j].a[k];
         for (k=0; k<ndim; k++) sphdata[i].agrav[k] = activepart[j].agrav[k];
-        for (k=0; k<ndim; k++) sphdata[i].a[k]     += sphdata[i].agrav[k];
+        for (k=0; k<ndim; k++) sphdata[i].a[k]    += sphdata[i].agrav[k];
         sphdata[i].gpot     = activepart[j].gpot;
         sphdata[i].dudt     = activepart[j].dudt;
         sphdata[i].dalphadt = activepart[j].dalphadt;
@@ -1249,6 +1237,245 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllStarGasForces
   delete[] activelist;
 
   //timing->EndTimingSection("STAR_GAS_GRAV_FORCES");
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  GradhSphTree::UpdateAllSphPeriodicHydroForces
+/// Compute hydro forces for all active SPH particles.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphPeriodicHydroForces
+ (int Nhydro,                              ///< [in] No. of SPH particles
+  int Ntot,                                ///< [in] No. of SPH + ghost particles
+  SphParticle<ndim> *sph_gen,              ///< [inout] Pointer to SPH ptcl array
+  Sph<ndim> *sph,                          ///< [in] Pointer to SPH object
+  Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
+  DomainBox<ndim> &simbox)                 ///< [in] Simulation domain box
+{
+  int cactive;                             // No. of active cells
+  TreeCell<ndim> *celllist;                // List of active tree cells
+  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+#ifdef MPI_PARALLEL
+  int Nactivetot = 0;                      // Total number of active particles
+  double twork = timing->WallClockTime();  // Start time (for load balancing)
+#endif
+
+  debug2("[GradhSphTree::UpdateAllSphPeriodicHydroForces]");
+  timing->StartTimingSection("SPH_PERIODIC_HYDRO_FORCES");
+
+
+  // Find list of all cells that contain active particles
+#if defined (MPI_PARALLEL)
+  celllist = new TreeCell<ndim>[tree->Ncellmax];
+#else
+  celllist = new TreeCell<ndim>[tree->gtot];
+#endif
+  cactive = tree->ComputeActiveCellList(celllist);
+
+  // If there are no active cells, return to main loop
+  if (cactive == 0) return;
+
+  // Update ghost tree smoothing length values here
+  tree->UpdateHmaxValues(tree->celldata[0],sphdata);
+  //if (ghosttree->Ntot > 0) ghosttree->UpdateHmaxValues(ghosttree->celldata[0],sphdata);
+
+
+  // Set-up all OMP threads
+  //===============================================================================================
+#pragma omp parallel default(none) shared(cactive,celllist,nbody,sph,sphdata)
+  {
+#if defined _OPENMP
+    const int ithread = omp_get_thread_num();
+#else
+    const int ithread = 0;
+#endif
+    int cc;                                        // Aux. cell counter
+    int i;                                         // Particle id
+    int j;                                         // Aux. particle counter
+    int jj;                                        // Aux. particle counter
+    int k;                                         // Dimension counter
+    int Nactive;                                   // ..
+    int Nneib;                                     // ..
+    int Nhydroaux;                                   // ..
+    FLOAT draux[ndim];                             // Aux. relative position vector
+    FLOAT drsqd;                                   // Distance squared
+    FLOAT hrangesqdi;                              // Kernel gather extent
+    FLOAT rp[ndim];                                // Local copy of particle position
+    int Nneibmax      = Nneibmaxbuf[ithread];      // ..
+    int* activelist   = activelistbuf[ithread];    // ..
+    int* levelneib    = levelneibbuf[ithread];     // ..
+    int* neiblist     = new int[Nneibmax];         // ..
+    int* sphlist      = new int[Nneibmax];         // ..
+    FLOAT* dr         = new FLOAT[Nneibmax*ndim];  // ..
+    FLOAT* drmag      = new FLOAT[Nneibmax];       // ..
+    FLOAT* invdrmag   = new FLOAT[Nneibmax];       //..
+    ParticleType<ndim>* activepart = activepartbuf[ithread];   // ..
+    ParticleType<ndim>* neibpart   = neibpartbuf[ithread];     // ..
+
+    for (i=0; i<sph->Nhydro; i++) levelneib[i] = 0;
+
+
+    // Loop over all active cells
+    //=============================================================================================
+#pragma omp for schedule(guided)
+    for (cc=0; cc<cactive; cc++) {
+      TreeCell<ndim>& cell = celllist[cc];
+
+      // Find list of active particles in current cell
+      Nactive = tree->ComputeActiveParticleList(cell,sphdata,activelist);
+
+      // Make local copies of active particles
+      for (j=0; j<Nactive; j++) {
+        activepart[j] = sphdata[activelist[j]];
+        activepart[j].div_v     = (FLOAT) 0.0;
+        activepart[j].dudt      = (FLOAT) 0.0;
+        activepart[j].dalphadt  = (FLOAT) 0.0;
+        activepart[j].gpot      = (FLOAT) 0.0;
+        activepart[j].levelneib = 0;
+        for (k=0; k<ndim; k++) activepart[j].a[k] = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) activepart[j].agrav[k] = (FLOAT) 0.0;
+      }
+
+
+      // Compute neighbour list for cell from real and periodic ghost particles
+      Nneib = 0;
+      Nneib = tree->ComputePeriodicNeighbourList
+        (cell, sphdata, simbox, Nneibmax, Nneib, neiblist, neibpart);
+      //Nneib = ghosttree->ComputeNeighbourList(cell,sphdata,Nneibmax,Nneib,neiblist,neibpart);
+
+      // If there are too many neighbours, reallocate the arrays and
+      // recompute the neighbour list.
+      while (Nneib == -1) {
+        delete[] neibpartbuf[ithread];
+        delete[] invdrmag;
+        delete[] drmag;
+        delete[] dr;
+        delete[] sphlist;
+        delete[] neiblist;
+        Nneibmax                  = 2*Nneibmax;
+        Nneibmaxbuf[ithread]      = Nneibmax;
+        Ngravcellmaxbuf[ithread] *= 2;
+        neiblist                  = new int[Nneibmax];
+        sphlist                   = new int[Nneibmax];
+        dr                        = new FLOAT[Nneibmax*ndim];
+        drmag                     = new FLOAT[Nneibmax];
+        invdrmag                  = new FLOAT[Nneibmax];
+        neibpartbuf[ithread]      = new ParticleType<ndim>[Nneibmax];
+        neibpart                  = neibpartbuf[ithread];
+        Nneib = 0;
+        Nneib = tree->ComputePeriodicNeighbourList
+          (cell, sphdata, simbox, Nneibmax, Nneib, neiblist, neibpart);
+        //Nneib = ghosttree->ComputeNeighbourList(cell,sphdata,Nneibmax,Nneib,neiblist,neibpart);
+      };
+
+      //for (j=0; j<Nneib; j++) neibpart[j] = sphdata[neiblist[j]];
+
+
+      // Loop over all active particles in the cell
+      //-------------------------------------------------------------------------------------------
+      for (j=0; j<Nactive; j++) {
+        i = activelist[j];
+
+        for (k=0; k<ndim; k++) rp[k] = activepart[j].r[k];
+        hrangesqdi = activepart[j].hrangesqd;
+        Nhydroaux = 0;
+
+        // Validate that gather neighbour list is correct
+#if defined(VERIFY_ALL)
+        if (neibcheck) this->CheckValidNeighbourList(i,sph->Nhydro+sph->NPeriodicGhost,Nneib,neiblist,sphdata,"all");
+#endif
+
+        // Compute distances and the inverse between the current particle and all neighbours here,
+        // for both gather and inactive scatter neibs.  Only consider particles with j > i to
+        // compute pair forces once unless particle j is inactive.
+        //-----------------------------------------------------------------------------------------
+        for (jj=0; jj<Nneib; jj++) {
+
+          // Skip current active particle
+          if (neiblist[jj] == i) continue;
+
+          for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
+          drsqd = DotProduct(draux,draux,ndim) + small_number;
+
+          // Compute relative position and distance quantities for pair
+          if (drsqd <= hrangesqdi || drsqd <= neibpart[jj].hrangesqd) {
+            drmag[Nhydroaux] = sqrt(drsqd);
+            invdrmag[Nhydroaux] = (FLOAT) 1.0/drmag[Nhydroaux];
+            for (k=0; k<ndim; k++) dr[Nhydroaux*ndim + k] = draux[k]*invdrmag[Nhydroaux];
+            levelneib[neiblist[jj]] = max(levelneib[neiblist[jj]],activepart[j].level);
+            sphlist[Nhydroaux] = jj;
+            Nhydroaux++;
+          }
+
+        }
+        //-----------------------------------------------------------------------------------------
+
+        // Compute all neighbour contributions to hydro forces
+        sph->ComputeSphHydroForces(i,Nhydroaux,sphlist,drmag,invdrmag,dr,activepart[j],neibpart);
+
+      }
+      //-------------------------------------------------------------------------------------------
+
+
+      // Compute all star forces for active particles
+      /*if (nbody->Nnbody > 0) {
+        for (j=0; j<Nactive; j++)
+          if (activelist[j] < sph->Nhydro)
+          sph->ComputeStarGravForces(nbody->Nnbody,nbody->nbodydata,activepart[j]);
+      }*/
+
+
+      // Add all active particles contributions to main array
+      for (j=0; j<Nactive; j++) {
+        i = activelist[j];
+        for (k=0; k<ndim; k++) sphdata[i].a[k]     = activepart[j].a[k];
+        for (k=0; k<ndim; k++) sphdata[i].agrav[k] = activepart[j].agrav[k];
+        for (k=0; k<ndim; k++) sphdata[i].a[k]    += sphdata[i].agrav[k];
+        sphdata[i].gpot     = activepart[j].gpot;
+        sphdata[i].dudt     = activepart[j].dudt;
+        sphdata[i].dalphadt = activepart[j].dalphadt;
+        sphdata[i].div_v    = activepart[j].div_v;
+        levelneib[i]        = max(levelneib[i],activepart[j].levelneib);
+      }
+
+    }
+    //=============================================================================================
+
+
+    // Finally, add all contributions from distant pair-wise forces to arrays
+#pragma omp critical
+    for (i=0; i<sph->Nhydro; i++) sphdata[i].levelneib = max(sphdata[i].levelneib,levelneib[i]);
+
+
+    // Free-up local memory for OpenMP thread
+    delete[] invdrmag;
+    delete[] drmag;
+    delete[] dr;
+    delete[] sphlist;
+    delete[] neiblist;
+
+  }
+  //===============================================================================================
+
+  // Compute time spent in routine and in each cell for load balancing
+#ifdef MPI_PARALLEL
+  twork = timing->WallClockTime() - twork;
+  for (int cc=0; cc<cactive; cc++) Nactivetot += celllist[cc].Nactive;
+  for (int cc=0; cc<cactive; cc++) {
+    int c = celllist[cc].id;
+    tree->celldata[c].worktot += twork*(DOUBLE) tree->celldata[c].Nactive / (DOUBLE) Nactivetot;
+  }
+  cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
+
+
+  delete[] celllist;
+
+  timing->EndTimingSection("SPH_PERIODIC_HYDRO_FORCES");
 
   return;
 }

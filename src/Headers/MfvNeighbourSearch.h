@@ -167,10 +167,7 @@ protected:
   using HydroTree<ndim,ParticleType,TreeCell>::tree;
   using HydroTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
-  using HydroTree<ndim,ParticleType,TreeCell>::ghostprunedtree;
   using HydroTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using HydroTree<ndim,ParticleType,TreeCell>::Nghostpruned;
-  using HydroTree<ndim,ParticleType,TreeCell>::Nghostprunedmax;
   using HydroTree<ndim,ParticleType,TreeCell>::Nmpi;
   using HydroTree<ndim,ParticleType,TreeCell>::prunedtree;
 #endif
@@ -213,10 +210,7 @@ class MeshlessFVKDTree: public MeshlessFVTree<ndim,ParticleType,TreeCell>
   using MeshlessFVTree<ndim,ParticleType,TreeCell>::tree;
   using MeshlessFVTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::ghostprunedtree;
   using MeshlessFVTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::Nghostpruned;
-  using MeshlessFVTree<ndim,ParticleType,TreeCell>::Nghostprunedmax;
   using MeshlessFVTree<ndim,ParticleType,TreeCell>::Nmpi;
   using MeshlessFVTree<ndim,ParticleType,TreeCell>::prunedtree;
 #endif

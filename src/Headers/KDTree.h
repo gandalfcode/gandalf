@@ -53,6 +53,7 @@ struct KDTreeCell {
   int c2;                           ///< Second child cell
   int c2g;                          ///< i.d. of tree-cell c/grid-cell g
   int cnext;                        ///< i.d. of next cell if not opened
+  int copen;                        ///< i.d. of first child cell
   int id;                           ///< Cell id
   int k_divide;                     ///< Dimension along which cell is split
   int level;                        ///< Level of cell on tree
@@ -142,7 +143,6 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   void BuildTree(int, int, int, int, ParticleType<ndim> *, FLOAT);
   void AllocateTreeMemory(void);
   void DeallocateTreeMemory(void);
-  bool BoxOverlap(const FLOAT *, const FLOAT *, const FLOAT *, const FLOAT *);
   void ComputeTreeSize(void);
   void CreateTreeStructure(void);
   void DivideTreeCell(int, int, ParticleType<ndim> *, TreeCell<ndim> &);
@@ -153,32 +153,9 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   void StockCellProperties(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateHmaxValues(TreeCell<ndim> &, ParticleType<ndim> *);
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
-
-  int ComputeActiveCellList(TreeCell<ndim> *);
-  int ComputeActiveCellPointers(TreeCell<ndim> **celllist);
-  int ComputeActiveParticleList(TreeCell<ndim> &, ParticleType<ndim> *, int *);
-  int ComputeGatherNeighbourList(const ParticleType<ndim> *, const FLOAT *,
-                                 const FLOAT, const int, int &, int *);
-  int ComputeGatherNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
-                                 const FLOAT, const int, int &, int *);
-  int ComputeNeighbourList(const TreeCell<ndim> &, const ParticleType<ndim> *,
-                           const int, int & ,int *, ParticleType<ndim> *);
-  int ComputeGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
-                                    const FLOAT, const int, const int, int &, int &, int &, int &,
-                                    int *, int *, int *, TreeCell<ndim> *, ParticleType<ndim> *);
-  int ComputePeriodicGravityInteractionList(const TreeCell<ndim> &, const ParticleType<ndim> *,
-                                            const DomainBox<ndim> &, const FLOAT, const int,
-                                            const int, int &, int &, int &, int &, int *, int *,
-                                            int *, TreeCell<ndim> *, ParticleType<ndim> *);
-  int ComputeStarGravityInteractionList(const NbodyParticle<ndim> *, const FLOAT, const int,
-                                        const int, const int, int &, int &, int &, int *, int *,
-                                        TreeCell<ndim> *, ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
-  int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT, const int,
-                                           int, TreeCell<ndim> *);
-  bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *);
-  FLOAT ComputeWorkInBox(const FLOAT *, const FLOAT *);
   void UpdateWorkCounters(TreeCell<ndim> &);
+  int GetMaxCellNumber(const int level) {return pow(2,level);};
 #endif
 #if defined(VERIFY_ALL)
   void ValidateTree(ParticleType<ndim> *);

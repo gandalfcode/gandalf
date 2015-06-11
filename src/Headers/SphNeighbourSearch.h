@@ -104,6 +104,8 @@ protected:
                                        Sph<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateAllSphGravForces(int, int, SphParticle<ndim> *,
                                       Sph<ndim> *, Nbody<ndim> *) = 0;
+  virtual void UpdateAllSphPeriodicHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
+                                              Nbody<ndim> *, DomainBox<ndim> &) {};
   virtual void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                           Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) = 0;
   virtual void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
@@ -236,7 +238,7 @@ class SM2012SphBruteForce: public SphBruteForceSearch<ndim,ParticleType>
 /// \date    08/01/2014
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
-class SphTree: public SphNeighbourSearch<ndim>, public HydroTree<ndim,ParticleType,TreeCell>
+class SphTree : public SphNeighbourSearch<ndim>, public HydroTree<ndim,ParticleType,TreeCell>
 {
 #if defined MPI_PARALLEL
   vector<vector<int> > ids_sent_particles;
@@ -270,10 +272,7 @@ protected:
   using HydroTree<ndim,ParticleType,TreeCell>::tree;
   using HydroTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
-  using HydroTree<ndim,ParticleType,TreeCell>::ghostprunedtree;
   using HydroTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using HydroTree<ndim,ParticleType,TreeCell>::Nghostpruned;
-  using HydroTree<ndim,ParticleType,TreeCell>::Nghostprunedmax;
   using HydroTree<ndim,ParticleType,TreeCell>::Nmpi;
   using HydroTree<ndim,ParticleType,TreeCell>::prunedtree;
 #endif
@@ -295,6 +294,8 @@ protected:
   void UpdateAllSphForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
   void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
   void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *) {};
+  void UpdateAllSphPeriodicHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
+                                       Nbody<ndim> *, DomainBox<ndim> &) {};
   void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                   Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *) {};
   void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
@@ -341,10 +342,7 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::tree;
   using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
-  using SphTree<ndim,ParticleType,TreeCell>::ghostprunedtree;
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using SphTree<ndim,ParticleType,TreeCell>::Nghostpruned;
-  using SphTree<ndim,ParticleType,TreeCell>::Nghostprunedmax;
   using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
   using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
 #endif
@@ -362,6 +360,8 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
   void UpdateAllSphHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllSphGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
   void UpdateAllStarGasForces(int, int, SphParticle<ndim> *, Sph<ndim> *, Nbody<ndim> *);
+  void UpdateAllSphPeriodicHydroForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
+                                       Nbody<ndim> *, DomainBox<ndim> &);
   void UpdateAllSphPeriodicForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
                                   Nbody<ndim> *, DomainBox<ndim> &, Ewald<ndim> *);
   void UpdateAllSphPeriodicGravForces(int, int, SphParticle<ndim> *, Sph<ndim> *,
@@ -386,10 +386,7 @@ class GradhSphKDTree: public GradhSphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::tree;
   using SphTree<ndim,ParticleType,TreeCell>::ghosttree;
 #ifdef MPI_PARALLEL
-  using SphTree<ndim,ParticleType,TreeCell>::ghostprunedtree;
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
-  using SphTree<ndim,ParticleType,TreeCell>::Nghostpruned;
-  using SphTree<ndim,ParticleType,TreeCell>::Nghostprunedmax;
   using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
   using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
 #endif

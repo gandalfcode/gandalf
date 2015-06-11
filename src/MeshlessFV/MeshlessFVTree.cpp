@@ -77,24 +77,12 @@ MeshlessFVKDTree<ndim,ParticleType,TreeCell>::MeshlessFVKDTree
                                                        macerroraux, gravity_mac_aux, multipole_aux);
 
   // Set-up multiple pruned trees, one for each MPI process
-  Nghostpruned = new int[Nmpi];
   KDTree<ndim,ParticleType,TreeCell>** prunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>*[Nmpi];
   prunedtree = (Tree<ndim,ParticleType,TreeCell> **) prunedtree_derived;
 
   for (int i=0; i<Nmpi; i++) {
     prunedtree[i] = new KDTree<ndim,ParticleType,TreeCell>
       (1, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
-  }
-
-  KDTree<ndim,ParticleType,TreeCell>*** ghostprunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>**[Nmpi];
-  ghostprunedtree = (Tree<ndim,ParticleType,TreeCell> ***) ghostprunedtree_derived;
-  for (int i=0; i<Nmpi; i++) {
-    KDTree<ndim,ParticleType,TreeCell>** ghostprunedtree_derived2 = new KDTree<ndim,ParticleType,TreeCell>*[Nghostprunedmax];
-    ghostprunedtree[i] = (Tree<ndim,ParticleType,TreeCell> **) ghostprunedtree_derived2;
-    for (int j=0; j<Nghostprunedmax; j++) {
-      ghostprunedtree[i][j] = new KDTree<ndim,ParticleType,TreeCell>
-        (1, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
-    }
   }
 #endif
 }

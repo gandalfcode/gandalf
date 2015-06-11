@@ -93,8 +93,8 @@ protected:
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *) {};
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) {};
 #ifdef MPI_PARALLEL
-  virtual void BuildPrunedTree(const int, const int, const int, const int, Particle<ndim> *) {};
-  virtual void BuildGhostPrunedTree(const int, const DomainBox<ndim> &) {};
+  virtual void BuildPrunedTree(const int, const int, const int, const int,
+                               const DomainBox<ndim> &, MpiNode<ndim> *, Particle<ndim> *) {};
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
                                  const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
   virtual void CommunicatePrunedTrees(vector<int>&, int) {};
@@ -178,8 +178,8 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) {};
 #ifdef MPI_PARALLEL
-  virtual void BuildPrunedTree(const int, const int, const int, const int, Particle<ndim> *) {};
-  virtual void BuildGhostPrunedTree(const int, const DomainBox<ndim> &) {};
+  virtual void BuildPrunedTree(const int, const int, const int, const int,
+                               const DomainBox<ndim> &, MpiNode<ndim> *, Particle<ndim> *) {};
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
                                  const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
   virtual void CommunicatePrunedTrees(vector<int>&, int) {};
@@ -251,29 +251,27 @@ protected:
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *);
 #ifdef MPI_PARALLEL
-  virtual void BuildPrunedTree(const int, const int, const int, const int, Particle<ndim> *);
-  virtual void BuildGhostPrunedTree(const int, const DomainBox<ndim> &);
+  virtual void BuildPrunedTree(const int, const int, const int, const int,
+                               const DomainBox<ndim> &, const MpiNode<ndim> *, Particle<ndim> *);
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
                                  const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
-  virtual void CommunicatePrunedTrees(vector<int>&, int);
+  virtual void CommunicatePrunedTrees(vector<int> &, int);
   virtual FLOAT FindLoadBalancingDivision(int, FLOAT, FLOAT *, FLOAT *);
   virtual void FindMpiTransferParticles(Hydrodynamics<ndim> *, vector<vector<int> >&,
                                         vector<int>&, const vector<int>&, MpiNode<ndim>*);
-  virtual void GetBackExportInfo(vector<char >& received_array,
-                                 vector<int>& N_exported_particles_from_proc,
-                                 vector<int>&, Hydrodynamics<ndim> *hydro, int rank);
+  virtual void GetBackExportInfo(vector<char > &, vector<int> &,
+                                 vector<int> &, Hydrodynamics<ndim> *, int);
   virtual int GetExportInfo(int, Hydrodynamics<ndim> *, vector<char >&, MpiNode<ndim>&, int, int);
   virtual void InitialiseCellWorkCounters(void);
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                                       Hydrodynamics<ndim> *, vector<int> &);
-  virtual void UnpackExported (vector<char >& arrays, vector<int>& N_received_particles_from_proc,
-                               Hydrodynamics<ndim> *);
+  virtual void UnpackExported (vector<char > &, vector<int> &, Hydrodynamics<ndim> *);
   virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *,
                                        Hydrodynamics<ndim> *, Nbody<ndim> *);
   virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *,
                                      Hydrodynamics<ndim> *, Nbody<ndim> *);
-  virtual void UnpackReturnedExportInfo(vector<char >& received_information,
-                                        vector<int>& recv_displs, Hydrodynamics<ndim>* hydro, int rank);
+  virtual void UnpackReturnedExportInfo(vector<char > &, vector<int> &,
+                                        Hydrodynamics<ndim> *, int);
 #endif
 #if defined(VERIFY_ALL)
   void CheckValidNeighbourList(int, int, int, int *, ParticleType<ndim> *, string);
@@ -315,29 +313,25 @@ protected:
   Tree<ndim,ParticleType,TreeCell> *ghosttree;     ///< Pointer to tree containing ghosts
                                                    ///< on local domain
 
-  bool allocated_buffer;                           ///< ..
-  int Nthreads;                                    ///< ..
-  int *Nneibmaxbuf;                                ///< ..
-  int *Ngravcellmaxbuf;                            ///< ..
-  int **activelistbuf;                             ///< ..
-  int **levelneibbuf;                              ///< ..
+  bool allocated_buffer;                           ///< Is buffer memory allocated?
+  int Nthreads;                                    ///< No. of OpenMP threads
+  int *Nneibmaxbuf;                                ///< Size of neighbour buffers (for each thread)
+  int *Ngravcellmaxbuf;                            ///< Size of tree-cell buffers (for each thread)
+  int **activelistbuf;                             ///< Arrays of active particle ids
+  int **levelneibbuf;                              ///< Arrays of neighbour timestep levels
   ParticleType<ndim> **neibpartbuf;                ///< Local copy of neighbouring ptcls
   ParticleType<ndim> **activepartbuf;              ///< Local copy of SPH particle
-  TreeCell<ndim> **cellbuf;                        ///< ..
+  TreeCell<ndim> **cellbuf;                        ///< Buffers of tree-cell copies
 
 #ifdef MPI_PARALLEL
-  static const int Nghostprunedmax = 27;           ///< ..
-  int Nprunedcellmax;                              ///< ..
-  int *Nghostpruned;                               ///< ..
-  int *Ncellexport;                                ///< ..
-  int *Npartexport;                                ///< ..
+  int Nprunedcellmax;                              ///< Max. number of cells in pruned tree
+  int *Ncellexport;                                ///< No. of cells to be exported (per MPI node)
+  int *Npartexport;                                ///< No. of ptcls to be exported (per MPI node)
   TreeCell<ndim> ***cellexportlist;                ///< List of cells
   Tree<ndim,ParticleType,TreeCell> *mpighosttree;  ///< Pointer to tree containing
                                                    ///< ghosts from other MPI procs.
   Tree<ndim,ParticleType,TreeCell> **prunedtree;   ///< 'Pruned' tree for MPI nodes.
                                                    ///< i.e. only uses top levels
-  Tree<ndim,ParticleType,TreeCell> ***ghostprunedtree; ///< Tree of periodic ghost cells created
-                                                       ///< from pruned trees
 #endif
 
 };

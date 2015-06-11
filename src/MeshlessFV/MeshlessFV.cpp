@@ -21,10 +21,11 @@
 //=================================================================================================
 
 
+#include <assert.h>
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
-#include <cassert>
+//#include <cassert>
 #include <iostream>
 #include <math.h>
 #include "Precision.h"
@@ -293,12 +294,12 @@ void MeshlessFV<ndim>::UpdateArrayVariables(MeshlessFVParticle<ndim> &part)
   FLOAT ekin = 0.0;
   for (int k=0; k<ndim; k++) ekin += part.v[k]*part.v[k];
   part.u = (part.Qcons[ietot] - 0.5*part.m*ekin)/part.m;
-  //part.u = part.U/part.m;
+  //part.u = part.Utot/part.m;
   part.press = (gamma_eos - 1.0)*part.rho*part.u;
 
   if (part.u < 0.0 || part.m < 0.0) {
     cout << "Mistake? : " << part.Qcons[ietot] << "    " << 0.5*part.m*ekin << "    " << part.m << "    " << part.u << endl;
-    cout << "r : " << part.r[0] << "     v : " << part.v[0] << endl;
+    cout << "r : " << part.r[0] << "    " << part.r[1] << "     v : " << part.v[0] << endl;
     cout << "Internal energy : " << part.u << "     " << part.Utot/part.m << endl;
   }
 

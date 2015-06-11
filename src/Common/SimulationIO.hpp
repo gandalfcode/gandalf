@@ -184,10 +184,10 @@ template <int ndim>
 bool Simulation<ndim>::ReadColumnSnapshotFile
  (string filename)                     ///< Filename of column data snapshot file
 {
-  int i;
-  FLOAT raux;
-  ifstream infile;
-  HeaderInfo info;
+  int i;                               // ..
+  FLOAT raux;                          // ..
+  ifstream infile;                     // ..
+  HeaderInfo info;                     // ..
 
   debug2("[Simulation::ReadColumnSnapshotFile]");
 
@@ -195,6 +195,7 @@ bool Simulation<ndim>::ReadColumnSnapshotFile
 
   ReadColumnHeaderFile(infile, info);
   t = info.t;
+  tsnaplast = t;
 
   hydro->Nhydro = info.Nhydro;
   AllocateParticleMemory();
@@ -203,21 +204,21 @@ bool Simulation<ndim>::ReadColumnSnapshotFile
   // Read in data depending on dimensionality
   //-----------------------------------------------------------------------------------------------
   while (infile.good() && i < hydro->Nhydro) {
-	FLOAT temp;
     Particle<ndim>& part = hydro->GetParticlePointer(i);
-    if (ndim == 1)
+    if (ndim == 1) {
       infile >> part.r[0] >> part.v[0] >> part.m >> part.h >> part.rho >> part.u;
-    else if (ndim == 2)
-      infile >> part.r[0] >> part.r[1] >> temp >> part.v[0] >> part.v[1] >> temp
-             >> part.u;
-    else if (ndim == 3)
+    }
+    else if (ndim == 2) {
+      infile >> part.r[0] >> part.r[1] >> part.v[0] >> part.v[1]
+             >> part.m >> part.h >> part.rho >> part.u;
+    }
+    else if (ndim == 3) {
       infile >> part.r[0] >> part.r[1] >> part.r[2] >> part.v[0] >> part.v[1] >> part.v[2]
-             >> part.u;
-    part.m = .1/hydro->Nhydro;
+             >> part.m >> part.h >> part.rho >> part.u;
+    }
     i++;
   }
 
-  cout << "i is "<< i << endl;
 
   nbody->Nstar = info.Nstar;
   sinks.Nsink = info.Nstar;
@@ -228,20 +229,21 @@ bool Simulation<ndim>::ReadColumnSnapshotFile
   // Read in data depending on dimensionality
   //-----------------------------------------------------------------------------------------------
   while (infile.good() && i < nbody->Nstar) {
-    if (ndim == 1)
+    if (ndim == 1) {
       infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].v[0] >> nbody->stardata[i].m
              >> nbody->stardata[i].h >> raux >> raux;
-    else if (ndim == 2)
-      infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].r[1] >> raux
-             >> nbody->stardata[i].v[0] >> nbody->stardata[i].v[1] >> raux >>
-             raux;
-    else if (ndim == 3)
+    }
+    else if (ndim == 2) {
+      infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].r[1] >> nbody->stardata[i].v[0]
+             >> nbody->stardata[i].v[1] >> nbody->stardata[i].m >> nbody->stardata[i].h
+             >> raux >> raux;
+    }
+    else if (ndim == 3) {
       infile >> nbody->stardata[i].r[0] >> nbody->stardata[i].r[1] >> nbody->stardata[i].r[2]
-             >> nbody->stardata[i].v[0] >> nbody->stardata[i].v[1] >> nbody->stardata[i].v[2] >>
-             raux;
-	nbody->stardata[i].h=.5;
-	nbody->stardata[i].m=1;
-    sinks.sink[i].radius = 1;
+             >> nbody->stardata[i].v[0] >> nbody->stardata[i].v[1] >> nbody->stardata[i].v[2]
+             >> nbody->stardata[i].m >> nbody->stardata[i].h >> raux >> raux;
+    }
+    sinks.sink[i].radius = nbody->kernp->kernrange*nbody->stardata[i].h;
     sinks.sink[i].star = &(nbody->stardata[i]);
     i++;
   }
@@ -254,11 +256,11 @@ bool Simulation<ndim>::ReadColumnSnapshotFile
 
 
 
-//=============================================================================
-//  Simulation::WriteColumnSnapshotFile
-/// Write SPH and N-body particle data to column data snapshot file.
-//=============================================================================
 #ifdef MPI_PARALLEL
+//=================================================================================================
+//  Simulation::WriteColumnSnapshotFile
+/// Write SPH and N-body particle data to column data snapshot file (MPI parallelised version)
+//=================================================================================================
 template <int ndim>
 bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 {
@@ -404,7 +406,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 
     if (rank == 0) offset = 0;
     MPI_Offset offset_mpi = offset;
-    
+
     //Offset the position by the end of the sph information
     offset_mpi += end_sph_mpi;
     MPI_File_seek(file, offset_mpi, MPI_SEEK_SET);
@@ -420,7 +422,14 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 
   return true;
 }
+
+
+
 #else
+//=================================================================================================
+//  Simulation::WriteColumnSnapshotFile
+/// Write SPH and N-body particle data to column data snapshot file.
+//=================================================================================================
 template <int ndim>
 bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 {
@@ -448,7 +457,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 	      << part.m*simunits.m.outscale << "   "
 	      << part.h*simunits.r.outscale << "   "
 	      << part.rho*simunits.rho.outscale << "   "
-	      << part.u*simunits.u.outscale
+	      << part.u*simunits.u.outscale << "   "
 	      << endl;
     else if (ndim == 2)
       outfile << part.r[0]*simunits.r.outscale << "   "
@@ -519,6 +528,7 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
   return true;
 }
 #endif
+
 
 
 //=================================================================================================
@@ -659,7 +669,7 @@ bool Simulation<ndim>::ReadSerenFormSnapshotFile(string filename)
     Noutlitesnap  = ilpdata[10];
     t             = ddata[0];
     tsnaplast     = ddata[1];
-    hydro->mmean    = ddata[2];
+    hydro->mmean  = ddata[2];
     tlitesnaplast = ddata[10];
   }
 
@@ -2272,10 +2282,10 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
     Particle<ndim>& part = hydro->GetParticlePointer(i);
     for (k=0; k<ndim; k++) part.r[k] /= simunits.r.inscale;
     for (k=0; k<ndim; k++) part.v[k] /= simunits.v.inscale;
-    part.m /= simunits.m.inscale;
-    part.h /= simunits.r.inscale;
-    part.u /= simunits.u.inscale;
-    part.rho /= simunits.rho.inscale;
+    part.m    /= simunits.m.inscale;
+    part.h    /= simunits.r.inscale;
+    part.u    /= simunits.u.inscale;
+    part.rho  /= simunits.rho.inscale;
     part.dudt /= simunits.dudt.inscale;
   }
 
@@ -2285,10 +2295,10 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
   for (i=0; i<nbody->Nstar; i++) {
     for (k=0; k<ndim; k++) nbody->stardata[i].r[k] /= simunits.r.inscale;
     for (k=0; k<ndim; k++) nbody->stardata[i].v[k] /= simunits.v.inscale;
-    nbody->stardata[i].m /= simunits.m.inscale;
-    nbody->stardata[i].h /= simunits.r.inscale;
+    nbody->stardata[i].m      /= simunits.m.inscale;
+    nbody->stardata[i].h      /= simunits.r.inscale;
     nbody->stardata[i].radius /= simunits.r.inscale;
-    nbody->stardata[i].invh = 1.0/nbody->stardata[i].h;
+    nbody->stardata[i].invh    = 1.0/nbody->stardata[i].h;
   }
 
 
@@ -2303,7 +2313,7 @@ void Simulation<ndim>::ConvertToCodeUnits(void)
   t             /= simunits.t.inscale;
   tsnaplast     /= simunits.t.inscale;
   tlitesnaplast /= simunits.t.inscale;
-  hydro->mmean    /= simunits.m.inscale;
+  hydro->mmean  /= simunits.m.inscale;
   if (restart) {
     tsnapnext = tsnaplast + dt_snap;
     tlitesnapnext = tlitesnaplast + dt_litesnap;

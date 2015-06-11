@@ -55,11 +55,11 @@ using namespace std;
 template <int ndim>
 void MfvMusclSimulation<ndim>::MainLoop(void)
 {
-  //int activecount = 0;                 // Flag if we need to recompute particles
+  //int activecount = 0;               // Flag if we need to recompute particles
   int i;                               // Particle loop counter
   int k;                               // Dimension counter
   FLOAT tghost;                        // Approx. ghost particle lifetime
-  MeshlessFVParticle<ndim> *partdata;         // Pointer to main SPH data array
+  MeshlessFVParticle<ndim> *partdata;  // Pointer to main SPH data array
 
   debug2("[MfvMusclSimulation::MainLoop]");
 
@@ -105,6 +105,7 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
   mfv->CopyDataToGhosts(simbox, partdata);
 
 
+
   // Compute timesteps for all particles
   this->ComputeGlobalTimestep();
   //if (Nlevels == 1) this->ComputeGlobalTimestep();
@@ -119,6 +120,29 @@ void MfvMusclSimulation<ndim>::MainLoop(void)
 
 
   mfvneib->UpdateGodunovFluxes(mfv->Nhydro, mfv->Ntot, timestep, partdata, mfv, nbody);
+
+
+  if (Nsteps%1 == 0) {
+  stringstream ss;
+  string nostring = "";
+  ss << setfill('0') << setw(5) << Nsteps;
+  nostring = ss.str();
+  string filename = run_id + ".SLOPES." + nostring;
+  ss.str(std::string());
+  ofstream outfile;
+  outfile.open(filename.c_str());
+  for (i=0; i<mfv->Nhydro; i++) {
+    for (k=0; k<ndim; k++) outfile << partdata[i].r[k] << "    ";
+    for (k=0; k<ndim+2; k++) outfile << partdata[i].Wprim[k] << "    ";
+    for (k=0; k<ndim+2; k++) {
+      for (int kk=0; kk<ndim; kk++) outfile << partdata[i].grad[k][kk] << "    ";
+    }
+    for (k=0; k<ndim+2; k++) outfile << partdata[i].dQdt[k] << "    ";
+    outfile << endl;
+  }
+  outfile.close();
+  cout << "WROTE FILE : " << filename << endl;
+}
 
 
   // Integrate all conserved variables to end of timestep
