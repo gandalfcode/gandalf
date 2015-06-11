@@ -229,8 +229,9 @@ class Simulation : public SimulationBase
  public:
   Simulation(Parameters* parameters) :
     SimulationBase(parameters),
-    nbody(NULL),
-    sph(NULL) {this->ndims=ndim;};
+    hydro(NULL),
+    nbody(NULL)
+    {this->ndims=ndim;};
 
 
   // Memory allocation routines
@@ -292,7 +293,6 @@ class Simulation : public SimulationBase
   Radiation<ndim> *radiation;         ///< Radiation field object
   RandomNumber *randnumb;             ///< Random number object (pointer)
   Sinks<ndim> sinks;                  ///< Sink particle object
-  Sph<ndim> *sph;                     ///< SPH algorithm pointer
   SphIntegration<ndim> *sphint;       ///< SPH Integration scheme pointer
   SphNeighbourSearch<ndim> *sphneib;  ///< SPH Neighbour scheme pointer
 #ifdef MPI_PARALLEL
@@ -334,7 +334,6 @@ class SphSimulation : public Simulation<ndim>
   using Simulation<ndim>::ewald;
   using Simulation<ndim>::kill_simulation;
   using Simulation<ndim>::hydro;
-  using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
   using Simulation<ndim>::sinks;
   using Simulation<ndim>::subsystem;
@@ -403,7 +402,7 @@ class SphSimulation : public Simulation<ndim>
   virtual void RegulariseParticleDistribution(const int);
   virtual void SmoothParticleQuantity(const int, FLOAT *);
 
-  //Sph<ndim> *sph;                      ///< SPH algorithm pointer
+  Sph<ndim> *sph;                     ///< SPH algorithm pointer
 
 };
 
@@ -579,7 +578,6 @@ class MeshlessFVSimulation : public Simulation<ndim>
   using Simulation<ndim>::ewald;
   using Simulation<ndim>::kill_simulation;
   using Simulation<ndim>::hydro;
-  using Simulation<ndim>::sph;
   using Simulation<ndim>::nbody;
   using Simulation<ndim>::sinks;
   using Simulation<ndim>::subsystem;
@@ -858,6 +856,7 @@ class NbodySimulation : public Simulation<ndim>
   using Simulation<ndim>::nbody;
   using Simulation<ndim>::subsystem;
   using Simulation<ndim>::nbodytree;
+  using Simulation<ndim>::hydro;
   using Simulation<ndim>::LocalGhosts;
   using Simulation<ndim>::simbox;
   using Simulation<ndim>::simunits;
@@ -876,7 +875,6 @@ class NbodySimulation : public Simulation<ndim>
   using Simulation<ndim>::Nsteps;
   using Simulation<ndim>::ndiagstep;
   using Simulation<ndim>::randnumb;
-  using Simulation<ndim>::sph;
   using Simulation<ndim>::tmax_wallclock;
   using Simulation<ndim>::t;
   using Simulation<ndim>::timestep;
@@ -888,6 +886,7 @@ class NbodySimulation : public Simulation<ndim>
   using Simulation<ndim>::level_max;
   using Simulation<ndim>::integration_step;
   using Simulation<ndim>::nresync;
+  using Simulation<ndim>::nrestartstep;
   using Simulation<ndim>::dt_max;
 
 public:

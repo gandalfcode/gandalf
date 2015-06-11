@@ -614,7 +614,7 @@ void SphBruteForceSearch<ndim,ParticleType>::UpdateAllStarGasForces
     if (!nbody->nbodydata[i]->active) continue;
 
     // Compute forces between SPH neighbours (hydro and gravity)
-    nbody->CalculateDirectSPHForces(nbody->nbodydata[i],Nneib,0,neiblist,dummy,sph);
+    nbody->CalculateDirectHydroForces(nbody->nbodydata[i],Nneib,0,neiblist,dummy,sph);
 
   }
   //-----------------------------------------------------------------------------------------------

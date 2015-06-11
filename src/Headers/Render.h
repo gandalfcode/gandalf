@@ -31,8 +31,8 @@
 #include <sstream>
 #include <string>
 #include <math.h>
+#include "Hydrodynamics.h"
 #include "Particle.h"
-#include "Sph.h"
 #include "SphSnapshot.h"
 #include "Exception.h"
 #include "Parameters.h"
@@ -96,7 +96,7 @@ class Render : public RenderBase
                                const float, const float, float* values, const int Ngrid,
                                SphSnapshotBase &, float& scaling_factor);
 
-  Sph<ndim>* sph;                      ///< Pointer to SPH object to be rendered
+  Hydrodynamics<ndim>* hydro;          ///< Pointer to Hydrodynamics object to be rendered
 
 
 };

@@ -30,6 +30,7 @@
 #include "CodeTiming.h"
 #include "Constants.h"
 #include "ExternalPotential.h"
+#include "Hydrodynamics.h"
 #include "Parameters.h"
 #include "SmoothingKernel.h"
 #include "NbodyParticle.h"
@@ -39,8 +40,8 @@
 #include "SimUnits.h"
 using namespace std;
 
-
-template <int ndim> class Sph;
+template <int ndim>
+class Hydrodynamics;
 
 
 //=================================================================================================
@@ -58,8 +59,7 @@ class Nbody
 
   // Constructor and destructor functions
   //-----------------------------------------------------------------------------------------------
-  Nbody(int nbody_softening_aux, int sub_systems_aux, DOUBLE nbody_mult_aux,
-        string KernelName, int);
+  Nbody(int, int, DOUBLE, string, int);
 
 
   // N-body array memory allocation functions
@@ -80,8 +80,8 @@ class Nbody
   virtual void AdvanceParticles(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **) = 0;
   virtual void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **) = 0;
   virtual void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **) = 0;
-  virtual void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int,
-                                        int *, int *, Sph<ndim> *) = 0;
+  virtual void CalculateDirectHydroForces(NbodyParticle<ndim> *, int, int,
+                                          int *, int *, Hydrodynamics<ndim> *) = 0;
   virtual void CalculatePerturberForces(int, int, NbodyParticle<ndim> **,
                                         NbodyParticle<ndim> *, DOUBLE *, DOUBLE *);
   virtual void PerturberCorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **) = 0;
@@ -168,7 +168,8 @@ public:
   void AdvanceParticles(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **) {};
   void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **);
-  void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int, int *, int *, Sph<ndim> *);
+  void CalculateDirectHydroForces(NbodyParticle<ndim> *, int, int,
+                                  int *, int *, Hydrodynamics<ndim> *);
   void CorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
   void EndTimestep(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
   void PerturberCorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
@@ -205,7 +206,8 @@ public:
   void AdvanceParticles(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **) {};
   void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **);
-  void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int, int *, int *, Sph<ndim> *);
+  void CalculateDirectHydroForces(NbodyParticle<ndim> *, int, int,
+                                  int *, int *, Hydrodynamics<ndim> *);
   void CorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **) {};
   void EndTimestep(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
   void PerturberCorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **) {};
@@ -244,7 +246,8 @@ public:
   void AdvanceParticles(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
   void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **);
-  void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int, int *, int *, Sph<ndim> *);
+  void CalculateDirectHydroForces(NbodyParticle<ndim> *, int, int,
+                                  int *, int *, Hydrodynamics<ndim> *);
   void CorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
   void EndTimestep(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
   void PerturberCorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
@@ -317,7 +320,8 @@ public:
   void AdvanceParticles(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
   void CalculateAllStartupQuantities(int, NbodyParticle<ndim> **);
   void CalculateDirectSmoothedGravForces(int, NbodyParticle<ndim> **);
-  void CalculateDirectSPHForces(NbodyParticle<ndim> *, int, int, int *, int *, Sph<ndim> *);
+  void CalculateDirectHydroForces(NbodyParticle<ndim> *, int, int,
+                                  int *, int *, Hydrodynamics<ndim> *);
   void CorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
   void EndTimestep(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);
   void PerturberCorrectionTerms(int, int, DOUBLE, DOUBLE, NbodyParticle<ndim> **);

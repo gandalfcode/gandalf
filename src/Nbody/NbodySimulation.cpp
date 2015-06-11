@@ -32,11 +32,11 @@
 #include "Precision.h"
 #include "Exception.h"
 #include "Debug.h"
+#include "Hydrodynamics.h"
 #include "InlineFuncs.h"
 #include "Simulation.h"
 #include "Parameters.h"
 #include "Nbody.h"
-#include "Sph.h"
 #include "Ghosts.h"
 using namespace std;
 
@@ -90,12 +90,9 @@ void NbodySimulation<ndim>::ProcessParameters(void)
 
 
   // Set-up dummy SPH object in order to have valid pointers in N-body object
-  sph = new NullSph<ndim>
-    (intparams["hydro_forces"], intparams["self_gravity"],
-     floatparams["alpha_visc"], floatparams["beta_visc"],
-     floatparams["h_fac"], floatparams["h_converge"],
-     noav, noac, notdav, stringparams["gas_eos"],
-     KernelName, sizeof(SphParticle<ndim>));
+  hydro = new NullHydrodynamics<ndim>
+    (intparams["hydro_forces"], intparams["self_gravity"], floatparams["h_fac"],
+     stringparams["gas_eos"], KernelName, sizeof(Particle<ndim>));
 
 
   // Process all N-body parameters and set-up main N-body objects
@@ -170,6 +167,7 @@ void NbodySimulation<ndim>::ProcessParameters(void)
   Nlevels          = intparams["Nlevels"];
   ndiagstep        = intparams["ndiagstep"];
   noutputstep      = intparams["noutputstep"];
+  nrestartstep     = intparams["nrestartstep"];
   nsystembuildstep = intparams["nsystembuildstep"];
   Nstepsmax        = intparams["Nstepsmax"];
   out_file_form    = stringparams["out_file_form"];

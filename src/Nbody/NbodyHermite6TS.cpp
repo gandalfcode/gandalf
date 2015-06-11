@@ -223,17 +223,17 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
 
 //=================================================================================================
-//  NbodyHermite6TS::CalculateDirectSPHForces
+//  NbodyHermite6TS::CalculateDirectHydroForces
 /// Calculate all ..
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSPHForces
-(NbodyParticle<ndim> *star,         ///< [inout] Pointer to star
- int Nhydro,                          ///< [in] Number of gas particles
- int Ndirect,                       ///< [in] ..
- int *sphlist,                      ///< [in] ..
- int *directlist,                   ///< [in] ..
- Sph<ndim> *sph)                    ///< [in] SPH object
+void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectHydroForces
+ (NbodyParticle<ndim> *star,           ///< [inout] Pointer to star
+  int Nhydro,                          ///< [in] Number of gas particles
+  int Ndirect,                         ///< [in] ..
+  int *hydrolist,                      ///< [in] ..
+  int *directlist,                     ///< [in] ..
+  Hydrodynamics<ndim> *hydro)          ///< [in] Hydrodynamics object
 {
   int j,jj,k;                       // Star and dimension counters
   DOUBLE dr[ndim];                  // Relative position vector
@@ -246,15 +246,15 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSPHForces
   DOUBLE paux;                      // Aux. force variable
   DOUBLE wkern;                     // SPH kernel value
 
-  debug2("[NbodyHermite6TS::CalculateDirectSPHForces]");
+  debug2("[NbodyHermite6TS::CalculateDirectHydroForces]");
 
 
   // Sum grav. contributions from all neighbouring SPH particles
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nhydro; jj++) {
 
-    j = sphlist[jj];
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(j);
+    j = hydrolist[jj];
+    Particle<ndim>& part = hydro->GetParticlePointer(j);
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
     for (k=0; k<ndim; k++) dv[k] = part.v[k] - star->v[k];
@@ -283,7 +283,7 @@ void NbodyHermite6TS<ndim, kernelclass>::CalculateDirectSPHForces
   for (jj=0; jj<Ndirect; jj++) {
 
     j = directlist[jj];
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(j);
+    Particle<ndim>& part = hydro->GetParticlePointer(j);
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
     for (k=0; k<ndim; k++) dv[k] = part.v[k] - star->v[k];

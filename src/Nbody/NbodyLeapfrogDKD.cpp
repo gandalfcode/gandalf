@@ -130,35 +130,35 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
 
 //=================================================================================================
-//  NbodyLeapfrogDKD::CalculateDirectSPHForces
+//  NbodyLeapfrogDKD::CalculateDirectHydroForces
 /// Calculate all forces due to SPH neighbours and distant SPH particles due to direct-sum gravity.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSPHForces
-(NbodyParticle<ndim> *star,         ///< [inout] Pointer to star
- int Nhydro,                          ///< [in] No. of SPH neighbour gas ptcls
- int Ndirect,                       ///< [in] No. of distant SPH ptcls.
- int *sphlist,                      ///< [in] List of neighbour ids
- int *directlist,                   ///< [in] List of distant ptcl ids
- Sph<ndim> * sph)                   ///< [in] Array of SPH particles
+void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectHydroForces
+ (NbodyParticle<ndim> *star,           ///< [inout] Pointer to star
+  int Nhydro,                          ///< [in] No. of SPH neighbour gas ptcls
+  int Ndirect,                         ///< [in] No. of distant SPH ptcls.
+  int *hydrolist,                      ///< [in] List of neighbour ids
+  int *directlist,                     ///< [in] List of distant ptcl ids
+  Hydrodynamics<ndim> *hydro)          ///< [in] Array of SPH particles
 {
-  int j,jj,k;                       // Star and dimension counters
-  DOUBLE dr[ndim];                  // Relative position vector
-  DOUBLE drmag;                     // Distance
-  DOUBLE drsqd;                     // Distance squared
-  DOUBLE invhmean;                  // 1 / hmean
-  DOUBLE invdrmag;                  // 1 / drmag
-  DOUBLE paux;                      // Aux. force variable
+  int j,jj,k;                          // Star and dimension counters
+  DOUBLE dr[ndim];                     // Relative position vector
+  DOUBLE drmag;                        // Distance
+  DOUBLE drsqd;                        // Distance squared
+  DOUBLE invhmean;                     // 1 / hmean
+  DOUBLE invdrmag;                     // 1 / drmag
+  DOUBLE paux;                         // Aux. force variable
 
-  debug2("[NbodyLeapfrogDKD::CalculateDirectSPHForces]");
+  debug2("[NbodyLeapfrogDKD::CalculateDirectHydroForces]");
 
 
   // Sum grav. contributions from all neighbouring SPH particles
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nhydro; jj++) {
-    j = sphlist[jj];
+    j = hydrolist[jj];
 
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(j);
+    Particle<ndim>& part = hydro->GetParticlePointer(j);
     assert(part.itype != dead);
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
@@ -182,7 +182,7 @@ void NbodyLeapfrogDKD<ndim, kernelclass>::CalculateDirectSPHForces
   for (jj=0; jj<Ndirect; jj++) {
     j = directlist[jj];
 
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(j);
+    Particle<ndim>& part = hydro->GetParticlePointer(j);
     assert(part.itype != dead);
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];

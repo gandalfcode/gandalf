@@ -130,17 +130,17 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSmoothedGravForces
 
 
 //=================================================================================================
-//  NbodyLeapfrogKDK::CalculateDirectSPHForces
+//  NbodyLeapfrogKDK::CalculateDirectHydroForces
 /// Calculate all forces on star due to neighbouring and direct-sum gas ptcls.
 //=================================================================================================
 template <int ndim, template<int> class kernelclass>
-void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSPHForces
+void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectHydroForces
  (NbodyParticle<ndim> *star,           ///< [inout] Pointer to star
-  int Nhydro,                            ///< [in] Number of SPH gas particles
+  int Nhydro,                          ///< [in] Number of SPH gas particles
   int Ndirect,                         ///< [in] No. of direct sum gas particles
-  int *sphlist,                        ///< [in] List of SPH neib. particles
+  int *hydrolist,                      ///< [in] List of SPH neib. particles
   int *directlist,                     ///< [in] List of direct cum gas particles
-  Sph<ndim> *sph)                      ///< [in] Array of SPH particles
+  Hydrodynamics<ndim> *hydro)          ///< [in] Array of SPH particles
 {
   int j,jj,k;                          // SPH particle and dimension counters
   DOUBLE dr[ndim];                     // Relative position vector
@@ -150,15 +150,15 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSPHForces
   DOUBLE invdrmag;                     // 1 / drmag
   DOUBLE paux;                         // Aux. force variable
 
-  debug2("[NbodyLeapfrogKDK::CalculateDirectSPHForces]");
+  debug2("[NbodyLeapfrogKDK::CalculateDirectHydroForces]");
 
 
   // Sum grav. contributions from all neighbouring SPH particles
   //-----------------------------------------------------------------------------------------------
   for (jj=0; jj<Nhydro; jj++) {
 
-    j = sphlist[jj];
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(j);
+    j = hydrolist[jj];
+    Particle<ndim>& part = hydro->GetParticlePointer(j);
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
     drsqd    = DotProduct(dr,dr,ndim);
@@ -181,7 +181,7 @@ void NbodyLeapfrogKDK<ndim, kernelclass>::CalculateDirectSPHForces
   for (jj=0; jj<Ndirect; jj++) {
 
     j = directlist[jj];
-    SphParticle<ndim>& part = sph->GetSphParticlePointer(j);
+    Particle<ndim>& part = hydro->GetParticlePointer(j);
 
     for (k=0; k<ndim; k++) dr[k] = part.r[k] - star->r[k];
     drsqd    = DotProduct(dr,dr,ndim);
