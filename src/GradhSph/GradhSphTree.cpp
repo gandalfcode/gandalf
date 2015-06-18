@@ -446,7 +446,10 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphHydroForces
   cactive = tree->ComputeActiveCellList(celllist);
 
   // If there are no active cells, return to main loop
-  if (cactive == 0) return;
+  if (cactive == 0) {
+    timing->EndTimingSection("SPH_HYDRO_FORCES");
+    return;
+  }
 
   // Update ghost tree smoothing length values here
   //tree->UpdateHmaxValues(tree->celldata[0],sphdata);
