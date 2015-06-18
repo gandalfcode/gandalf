@@ -1171,7 +1171,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
 
   //cin >> c;
   MPI_Barrier(MPI_COMM_WORLD);
-
+  timing->EndTimingSection("BUILD_PRUNED_TREE");
   return;
 }
 
