@@ -47,6 +47,8 @@ static const int tag_srpart = 1;
 static const int tag_league = 2;
 static const int tag_bal = 3;
 
+template <int ndim>
+class Sinks;
 
 //=================================================================================================
 //  Class MpiControl
@@ -108,6 +110,7 @@ class MpiControl
                                                 Parameters*, DomainBox<ndim>, bool&) = 0;
   virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
   virtual void UpdateMpiGhostParents (list<int>& ids, Hydrodynamics<ndim>* sph)=0;
+  void UpdateSinksAfterAccretion(Sinks<ndim>* sink);
 
   Box<ndim> MyDomain();
 
