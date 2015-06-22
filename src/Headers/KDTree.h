@@ -119,6 +119,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   using Tree<ndim,ParticleType,TreeCell>::multipole;
   using Tree<ndim,ParticleType,TreeCell>::Ncell;
   using Tree<ndim,ParticleType,TreeCell>::Ncellmax;
+  using Tree<ndim,ParticleType,TreeCell>::Ncellmaxold;
   using Tree<ndim,ParticleType,TreeCell>::Nleafmax;
   using Tree<ndim,ParticleType,TreeCell>::Nthreads;
   using Tree<ndim,ParticleType,TreeCell>::Ntot;
@@ -155,7 +156,7 @@ class KDTree : public Tree<ndim,ParticleType,TreeCell>
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
   void UpdateWorkCounters(TreeCell<ndim> &);
-  int GetMaxCellNumber(const int level) {return pow(2,level);};
+  int GetMaxCellNumber(const int _level) {return pow(2,_level);};
 #endif
 #if defined(VERIFY_ALL)
   void ValidateTree(ParticleType<ndim> *);

@@ -38,6 +38,9 @@
 #include "Nbody.h"
 #include "DomainBox.h"
 #include "Parameters.h"
+#ifdef MPI_PARALLEL
+#include "MpiNode.h"
+#endif
 using namespace std;
 
 
@@ -58,12 +61,12 @@ class Tree
   Tree(int _Nleafmax, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
        string _gravity_mac, string _multipole):
     gravity_mac(_gravity_mac), multipole(_multipole), Nleafmax(_Nleafmax),
-    invthetamaxsqd(1.0/_thetamaxsqd), kernrange(_kernrange), macerror(_macerror),
+    invthetamaxsqd(1.0/_thetamaxsqd), kernrange(2.0*_kernrange), macerror(_macerror),
     theta(sqrt(_thetamaxsqd)), thetamaxsqd(_thetamaxsqd){};
 
 
   //-----------------------------------------------------------------------------------------------
-  void ExtrapolateCellProperties(FLOAT);
+  void ExtrapolateCellProperties(const FLOAT);
   bool BoxOverlap(const FLOAT *, const FLOAT *, const FLOAT *, const FLOAT *);
   int ComputeActiveParticleList(TreeCell<ndim> &, ParticleType<ndim> *, int *);
   int ComputeActiveCellList(TreeCell<ndim> *);
@@ -88,8 +91,8 @@ class Tree
                                         const int, const int, int &, int &, int &, int *, int *,
                                         TreeCell<ndim> *, ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
-  int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &,
-                                 const FLOAT, const int, int *);
+  int CreatePrunedTreeForMpiNode(const MpiNode<ndim> &, const DomainBox<ndim> &, const FLOAT,
+                                 const bool, const int, const int, const int, TreeCell<ndim> *);
   int ComputeDistantGravityInteractionList(const TreeCell<ndim> *, const FLOAT,
                                            const int, int, TreeCell<ndim> *);
   bool ComputeHydroTreeCellOverlap(const TreeCell<ndim> *);
@@ -137,6 +140,7 @@ class Tree
   int ltot_old;                        ///< Prev. value of ltot
   int Ncell;                           ///< Current no. of grid cells
   int Ncellmax;                        ///< Max. allowed no. of grid cells
+  int Ncellmaxold;                     ///< Old value of Ncellmax
   int Nthreads;                        ///< No. of OpenMP threads
   int Ntot;                            ///< No. of current points in list
   int Ntotmax;                         ///< Max. no. of points in list

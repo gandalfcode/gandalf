@@ -74,6 +74,7 @@ KDTree<ndim,ParticleType,TreeCell>::KDTree(int Nleafmaxaux, FLOAT thetamaxsqdaux
   ltot_old       = -1;
   Ncell          = 0;
   Ncellmax       = 0;
+  Ncellmaxold    = 0;
   Ntot           = 0;
   Ntotmax        = 0;
   Ntotmaxold     = 0;
@@ -114,12 +115,13 @@ void KDTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
 {
   debug2("[KDTree::AllocateTreeMemory]");
 
-  ComputeTreeSize();
+  //ComputeTreeSize();
 
-  if (!allocated_tree || Ntotmax > Ntotmaxold) {
+  if (!allocated_tree || Ntotmax > Ntotmaxold || Ntot > Ntotmax || Ncellmax > Ncellmaxold) {
     if (allocated_tree) DeallocateTreeMemory();
-    Ntotmax = max(Ntotmax,Ntot);
+    Ntotmax = max(Ntotmax, Ntot);
     Ntotmaxold = Ntotmax;
+    Ncellmaxold = Ncellmax;
 
     g2c = new int[gmax];
     ids = new int[Ntotmax];
@@ -132,7 +134,7 @@ void KDTree<ndim,ParticleType,TreeCell>::AllocateTreeMemory(void)
 
   }
 
-  CreateTreeStructure();
+  //CreateTreeStructure();
 
   return;
 }
@@ -198,6 +200,8 @@ void KDTree<ndim,ParticleType,TreeCell>::BuildTree
 
   // Allocate (or reallocate if needed) all tree memory
   AllocateTreeMemory();
+
+  CreateTreeStructure();
 
   // If the number of levels in the tree has changed (due to destruction or
   // creation of new particles) then re-create tree data structure
@@ -1244,7 +1248,7 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
   c = 0;
   while (c < Ncell) {
     ccount[c]++;
-    if (celldata[c].c1 != -1) c = celldata[c].c1;
+    if (celldata[c].copen != -1) c = celldata[c].copen;
     else c = celldata[c].cnext;
   }
 
@@ -1361,21 +1365,28 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
     // Check that bounding boxes of cells on each level do not overlap each other
     for (cc=0; cc<Ncell; cc++) {
       if (c != cc && celldata[cc].level == cell.level) {
-        if (ndim == 2) {
+        if (ndim == 1) {
+          if (cell.bbmin[0] < celldata[cc].bbmax[0] &&
+              cell.bbmax[0] > celldata[cc].bbmin[0]) {
+            overlap_flag = true;
+          }
+        }
+        else if (ndim == 2) {
           if (cell.bbmin[0] < celldata[cc].bbmax[0] &&
               cell.bbmax[0] > celldata[cc].bbmin[0] &&
               cell.bbmin[1] < celldata[cc].bbmax[1] &&
               cell.bbmax[1] > celldata[cc].bbmin[1]) {
             overlap_flag = true;
           }
-          else if (ndim == 3) {
-            if (cell.bbmin[0] < celldata[cc].bbmax[0] &&
-                cell.bbmax[0] > celldata[cc].bbmin[0] &&
-                cell.bbmin[1] < celldata[cc].bbmax[1] &&
-                cell.bbmax[1] > celldata[cc].bbmin[1] &&
-                cell.bbmin[2] < celldata[cc].bbmax[2] &&
-                cell.bbmax[2] > celldata[cc].bbmin[2])
-              overlap_flag = true;
+        }
+        else if (ndim == 3) {
+          if (cell.bbmin[0] < celldata[cc].bbmax[0] &&
+              cell.bbmax[0] > celldata[cc].bbmin[0] &&
+              cell.bbmin[1] < celldata[cc].bbmax[1] &&
+              cell.bbmax[1] > celldata[cc].bbmin[1] &&
+              cell.bbmin[2] < celldata[cc].bbmax[2] &&
+              cell.bbmax[2] > celldata[cc].bbmin[2]) {
+            overlap_flag = true;
           }
         }
       }
@@ -1427,22 +1438,6 @@ void KDTree<ndim,ParticleType,TreeCell>::ValidateTree
 }
 #endif
 
-
-/*template class Tree<1,Particle,KDTreeCell>;
-template class Tree<2,Particle,KDTreeCell>;
-template class Tree<3,Particle,KDTreeCell>;
-template class Tree<1,SphParticle,KDTreeCell>;
-template class Tree<2,SphParticle,KDTreeCell>;
-template class Tree<3,SphParticle,KDTreeCell>;
-template class Tree<1,GradhSphParticle,KDTreeCell>;
-template class Tree<2,GradhSphParticle,KDTreeCell>;
-template class Tree<3,GradhSphParticle,KDTreeCell>;
-template class Tree<1,SM2012SphParticle,KDTreeCell>;
-template class Tree<2,SM2012SphParticle,KDTreeCell>;
-template class Tree<3,SM2012SphParticle,KDTreeCell>;
-template class Tree<1,MeshlessFVParticle,KDTreeCell>;
-template class Tree<2,MeshlessFVParticle,KDTreeCell>;
-template class Tree<3,MeshlessFVParticle,KDTreeCell>;*/
 
 
 template class KDTree<1,Particle,KDTreeCell>;

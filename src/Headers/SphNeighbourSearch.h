@@ -275,6 +275,7 @@ protected:
   using HydroTree<ndim,ParticleType,TreeCell>::mpighosttree;
   using HydroTree<ndim,ParticleType,TreeCell>::Nmpi;
   using HydroTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using HydroTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 
@@ -345,6 +346,7 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
   using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
   using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using SphTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 
@@ -389,6 +391,7 @@ class GradhSphKDTree: public GradhSphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
   using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
   using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using SphTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 
@@ -418,6 +421,7 @@ class GradhSphOctTree: public GradhSphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
   using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
   using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using SphTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 
@@ -469,6 +473,7 @@ class SM2012SphTree: public SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
   using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
   using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using SphTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 
@@ -507,6 +512,7 @@ class SM2012SphKDTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
   using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
   using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using SphTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 
@@ -537,6 +543,7 @@ class SM2012SphOctTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
   using SphTree<ndim,ParticleType,TreeCell>::mpighosttree;
   using SphTree<ndim,ParticleType,TreeCell>::Nmpi;
   using SphTree<ndim,ParticleType,TreeCell>::prunedtree;
+  using SphTree<ndim,ParticleType,TreeCell>::sendprunedtree;
 #endif
 
 

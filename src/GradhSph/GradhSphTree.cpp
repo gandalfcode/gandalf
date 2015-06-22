@@ -79,9 +79,15 @@ GradhSphKDTree<ndim,ParticleType,TreeCell>::GradhSphKDTree
   // Set-up multiple pruned trees, one for each MPI process
   KDTree<ndim,ParticleType,TreeCell>** prunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>*[Nmpi];
   prunedtree = (Tree<ndim,ParticleType,TreeCell> **) prunedtree_derived;
+  KDTree<ndim,ParticleType,TreeCell>** sendprunedtree_derived = new KDTree<ndim,ParticleType,TreeCell>*[Nmpi];
+  sendprunedtree = (Tree<ndim,ParticleType,TreeCell> **) sendprunedtree_derived;
 
   for (int i=0; i<Nmpi; i++) {
     prunedtree[i] = new KDTree<ndim,ParticleType,TreeCell>
+      (1, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
+  }
+  for (int i=0; i<Nmpi; i++) {
+    sendprunedtree[i] = new KDTree<ndim,ParticleType,TreeCell>
       (1, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
   }
 #endif
@@ -124,10 +130,20 @@ GradhSphOctTree<ndim,ParticleType,TreeCell>::GradhSphOctTree
                                                          macerroraux, gravity_mac_aux, multipole_aux);
 
   // Set-up multiple pruned trees, one for each MPI process
-  *(prunedtree) = *(new OctTree<ndim,ParticleType,TreeCell>*[Nmpi]);
+  //*(prunedtree) = *(new OctTree<ndim,ParticleType,TreeCell>*[Nmpi]);
+  // Set-up multiple pruned trees, one for each MPI process
+  OctTree<ndim,ParticleType,TreeCell>** prunedtree_derived = new OctTree<ndim,ParticleType,TreeCell>*[Nmpi];
+  prunedtree = (Tree<ndim,ParticleType,TreeCell> **) prunedtree_derived;
+  OctTree<ndim,ParticleType,TreeCell>** sendprunedtree_derived = new OctTree<ndim,ParticleType,TreeCell>*[Nmpi];
+  sendprunedtree = (Tree<ndim,ParticleType,TreeCell> **) sendprunedtree_derived;
+
   for (int j=0; j<Nmpi; j++) {
     prunedtree[j] = new OctTree<ndim,ParticleType,TreeCell>
       (Nleafmaxaux, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
+  }
+  for (int i=0; i<Nmpi; i++) {
+    sendprunedtree[i] = new OctTree<ndim,ParticleType,TreeCell>
+      (1, thetamaxsqdaux, kernrangeaux, macerroraux, gravity_mac_aux, multipole_aux);
   }
 #endif
 }
@@ -203,7 +219,6 @@ void GradhSphTree<ndim,ParticleType,TreeCell>::UpdateAllSphProperties
   // Find list of all cells that contain active particles
   celllist = new TreeCell<ndim>[tree->gtot];
   cactive = tree->ComputeActiveCellList(celllist);
-
 
 
   // Set-up all OMP threads

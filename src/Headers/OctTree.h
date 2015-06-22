@@ -150,7 +150,7 @@ class OctTree : public Tree<ndim,ParticleType,TreeCell>
   void UpdateActiveParticleCounters(ParticleType<ndim> *);
 #ifdef MPI_PARALLEL
   void UpdateWorkCounters(TreeCell<ndim> &) {};
-  int GetMaxCellNumber(const int level) {return pow(pow(2,ndim),level);};
+  int GetMaxCellNumber(const int _level) {return pow(pow(2,ndim),_level);};
 #endif
 #if defined(VERIFY_ALL)
   void ValidateTree(ParticleType<ndim> *);

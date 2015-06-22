@@ -442,8 +442,10 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     // Communicate pruned trees for MPI
 #ifdef MPI_PARALLEL
+cout << "PRUNEDTREE??" << endl;
     sphneib->BuildPrunedTree(rank, pruning_level_min, pruning_level_max, sph->Nhydromax,
                              simbox, mpicontrol->mpinode, sph->GetSphParticleArray());
+cout << "BUILT PRUNED TREE" << endl;
     mpicontrol->CommunicatePrunedTrees();
 #endif
 
@@ -495,26 +497,26 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
     for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).active = true;
 
     // Copy all other data from real SPH particles to ghosts
-    LocalGhosts->CopySphDataToGhosts(simbox,sph);
+    LocalGhosts->CopySphDataToGhosts(simbox, sph);
 
-    sphneib->BuildTree(true, 0, ntreebuildstep, ntreestockstep,
-                       sph->Ntot, sph->Nhydromax, timestep, sph->GetSphParticleArray(), sph);
-    sphneib->SearchBoundaryGhostParticles(0.0,simbox,sph);
+    sphneib->BuildTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
+                       sph->Nhydromax, timestep, sph->GetSphParticleArray(), sph);
+    sphneib->SearchBoundaryGhostParticles(0.0, simbox, sph);
     sphneib->BuildGhostTree(true, 0, ntreebuildstep, ntreestockstep, sph->Ntot,
                             sph->Nhydromax, timestep, sph->GetSphParticleArray(), sph);
 
     // Calculate all SPH properties
-    sphneib->UpdateAllSphProperties(sph->Nhydro,sph->Ntot,sph->GetSphParticleArray(),sph,nbody);
+    sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, sph->GetSphParticleArray(), sph, nbody);
 
 
 #ifdef MPI_PARALLEL
     if (sph->self_gravity == 1) {
-      sphneib->UpdateGravityExportList(rank,sph->Nhydro,sph->Ntot,
-                                       sph->GetSphParticleArray(),sph,nbody);
+      sphneib->UpdateGravityExportList(rank, sph->Nhydro, sph->Ntot,
+                                       sph->GetSphParticleArray(), sph, nbody);
     }
     else {
-      sphneib->UpdateHydroExportList(rank,sph->Nhydro,sph->Ntot,
-                                     sph->GetSphParticleArray(),sph,nbody);
+      sphneib->UpdateHydroExportList(rank, sph->Nhydro, sph->Ntot,
+                                     sph->GetSphParticleArray(), sph, nbody);
     }
 
     mpicontrol->ExportParticlesBeforeForceLoop(sph);
@@ -580,7 +582,7 @@ void SphSimulation<ndim>::PostInitialConditionsSetup(void)
 
     LocalGhosts->CopySphDataToGhosts(simbox,sph);
 #ifdef MPI_PARALLEL
-//    MpiGhosts->CopySphDataToGhosts(simbox,sph);
+    MpiGhosts->CopySphDataToGhosts(simbox,sph);
 #endif
 
   }
@@ -824,7 +826,7 @@ void SphSimulation<ndim>::MainLoop(void)
 
 #if defined MPI_PARALLEL
       mpicontrol->GetExportedParticlesAccelerations(sph);
-	  MPI_Allreduce(MPI_IN_PLACE,&activecount,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE, &activecount, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
 

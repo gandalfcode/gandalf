@@ -561,9 +561,9 @@ void MpiControlType<ndim, ParticleType>::CreateInitialDomainDecomposition
 //=================================================================================================
 template <int ndim>
 void MpiControl<ndim>::UpdateAllBoundingBoxes
- (int Npart,                           ///< No. of SPH particles
-  Hydrodynamics<ndim> *hydro,          ///< Pointer to SPH data
-  SmoothingKernel<ndim> *kernptr)      ///< Pointer to kernel object
+ (int Npart,                           ///< [in] No. of SPH particles
+  Hydrodynamics<ndim> *hydro,          ///< [in] Pointer to SPH data
+  SmoothingKernel<ndim> *kernptr)      ///< [in] Pointer to kernel object
 {
   int inode;                           // MPI node counter
 
@@ -573,7 +573,7 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
   mpinode[rank].UpdateBoundingBoxData(Npart, hydro, kernptr);
 
   // Do an all_gather to receive the new array
-  MPI_Allgather(&mpinode[rank].hbox, 1, box_type, &boxes_buffer[0], 1, box_type, MPI_COMM_WORLD);
+  MPI_Allgather(&(mpinode[rank].hbox), 1, box_type, &boxes_buffer[0], 1, box_type, MPI_COMM_WORLD);
 
   // Save the information inside the nodes
   for (inode=0; inode<Nmpi; inode++) {
@@ -583,7 +583,7 @@ void MpiControl<ndim>::UpdateAllBoundingBoxes
   MPI_Barrier(MPI_COMM_WORLD);
 
   // Do an all_gather to receive the new array
-  MPI_Allgather(&mpinode[rank].rbox, 1, box_type, &boxes_buffer[0], 1, box_type, MPI_COMM_WORLD);
+  MPI_Allgather(&(mpinode[rank].rbox), 1, box_type, &boxes_buffer[0], 1, box_type, MPI_COMM_WORLD);
 
   // Save the information inside the nodes
   for (inode=0; inode<Nmpi; inode++) {
@@ -784,10 +784,12 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
   //-----------------------------------------------------------------------------------------------
 
   // Write out 'final' mpinode bounding boxes
+#ifdef VERIFY_ALL
   for (int inode=0; inode<Nmpi; inode++) {
     cout << "Node " << inode << "     box : " << mpinode[inode].domain.boxmin[0] << "     "
          << mpinode[inode].domain.boxmax[0] << endl;
   }
+#endif
 
 
   // Update all node bounding boxes now domains have been reset
@@ -821,8 +823,8 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
     int inode = my_matches[iturn];
 
     int N_to_transfer = particles_to_transfer[inode].size();
-    cout << "Transfer!!  Rank : " << rank << "    N_to_transfer : "
-         << N_to_transfer << "    dest : " << inode << endl;
+    //cout << "Transfer!!  Rank : " << rank << "    N_to_transfer : "
+    //     << N_to_transfer << "    dest : " << inode << endl;
     sendbuffer.clear(); sendbuffer.resize(N_to_transfer);
     recvbuffer.clear();
 
@@ -846,10 +848,9 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
     //Do the actual communication, sending and receiving in the right order
     for (int i=0; i < 2; i++) {
       if (send_turn) {
-        cout << "Sending " << N_to_transfer << " from " << rank << " to " << inode << endl;
+        //cout << "Sending " << N_to_transfer << " from " << rank << " to " << inode << endl;
         MPI_Send(&sendbuffer[0], N_to_transfer, particle_type, inode, tag_bal, MPI_COMM_WORLD);
         send_turn = false;
-        cout << "Sent " << N_to_transfer << " from " << rank << " to " << inode << endl;
       }
       else {
         int N_to_receive;
@@ -857,7 +858,7 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
         MPI_Probe(inode, tag_bal, MPI_COMM_WORLD, &status);
         MPI_Get_count(&status, particle_type, &N_to_receive);
         recvbuffer.resize(N_to_receive);
-        cout << "Rank " << rank << " receiving " << N_to_receive << " from " << inode << endl;
+        //cout << "Rank " << rank << " receiving " << N_to_receive << " from " << inode << endl;
         if (hydro->Nhydro+N_to_receive > hydro->Nhydromax) {
           cout << "Memory problem : " << rank << " " << hydro->Nhydro
                << " " << N_to_receive << " " << hydro->Nhydromax <<endl;
@@ -867,7 +868,6 @@ void MpiControlType<ndim, ParticleType >::LoadBalancing
         MPI_Recv(&recvbuffer[0], N_to_receive, particle_type, inode,
                  tag_bal, MPI_COMM_WORLD, &status);
         send_turn = true;
-        cout << "Rank " << rank << " received " << N_to_receive << " from " << inode << endl;
       }
     }
 
@@ -1045,15 +1045,8 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
     assert(Nexport == ghost_export_list.size());
   }
 
-
-  //BruteForceSearch<ndim,ParticleType> bruteforce(hydro->kernp->kernrange,
-  //			                 &mpibox,hydro->kernp,timing);
-  //bruteforce.FindGhostParticlesToExport(sph,particles_to_export_per_node,
-  //                                overlapping_nodes,mpinode);
-
-
   // Prepare arrays with no. of particles to export per node and displacements
-  fill(Nexport_per_node.begin(),Nexport_per_node.end(),0);
+  fill(Nexport_per_node.begin(), Nexport_per_node.end(), 0);
 
   running_counter = 0;
   for (inode=0; inode<Nmpi; inode++) {
@@ -1064,8 +1057,7 @@ int MpiControlType<ndim, ParticleType>::SendReceiveGhosts
   }
 
   // Compute total number of particles to export
-  Nexport = std::accumulate(Nexport_per_node.begin(),
-                            Nexport_per_node.end(),0);
+  Nexport = std::accumulate(Nexport_per_node.begin(), Nexport_per_node.end(), 0);
 
   // Comunicate with all processors the no. of ptcls that everyone is exporting
   vector<int> ones(Nmpi,1);
@@ -1207,7 +1199,7 @@ void MpiControlType<ndim, ParticleType>::ReceiveParticles
   // Get the number of elements
   MPI_Get_count(&status, particle_type, &Nparticles);
 
-  cout << "NPARTICLES : " << Nparticles << "   node : " << Node << endl;
+  cout << "RECEIVING NPARTICLES : " << Nparticles << "   node : " << Node << endl;
 
   // Allocate enough memory to hold the particles
   *array = new ParticleType<ndim> [Nparticles];

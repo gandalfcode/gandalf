@@ -93,8 +93,8 @@ protected:
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *) {};
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) {};
 #ifdef MPI_PARALLEL
-  virtual void BuildPrunedTree(const int, const int, const int, const int,
-                               const DomainBox<ndim> &, MpiNode<ndim> *, Particle<ndim> *) {};
+  virtual void BuildPrunedTree(const int, const int, const int, const int, const DomainBox<ndim> &,
+                               const MpiNode<ndim> *, Particle<ndim> *) {};
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
                                  const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
   virtual void CommunicatePrunedTrees(vector<int>&, int) {};
@@ -179,7 +179,7 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) {};
 #ifdef MPI_PARALLEL
   virtual void BuildPrunedTree(const int, const int, const int, const int,
-                               const DomainBox<ndim> &, MpiNode<ndim> *, Particle<ndim> *) {};
+                               const DomainBox<ndim> &, const MpiNode<ndim> *, Particle<ndim> *) {};
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
                                  const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
   virtual void CommunicatePrunedTrees(vector<int>&, int) {};
@@ -331,7 +331,8 @@ protected:
   Tree<ndim,ParticleType,TreeCell> *mpighosttree;  ///< Pointer to tree containing
                                                    ///< ghosts from other MPI procs.
   Tree<ndim,ParticleType,TreeCell> **prunedtree;   ///< 'Pruned' tree for MPI nodes.
-                                                   ///< i.e. only uses top levels
+  Tree<ndim,ParticleType,TreeCell> **sendprunedtree;  ///< 'Pruned' tree for MPI nodes.
+
 #endif
 
 };

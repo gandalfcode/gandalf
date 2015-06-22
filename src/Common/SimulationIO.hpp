@@ -470,11 +470,6 @@ bool Simulation<ndim>::WriteColumnSnapshotFile(string filename)
 	      << part.u*simunits.u.outscale
 	      << endl;
     else if (ndim == 3)
-    /*outfile << part.r[0]*simunits.r.outscale*simunits.r.outcgs << "   "
-            << part.r[1]*simunits.r.outscale*simunits.r.outcgs << "   "
-            << part.r[2]*simunits.r.outscale*simunits.r.outcgs << "   "
-            << part.m*simunits.m.outscale*simunits.m.outcgs << "   "
-            << endl;*/
       outfile << part.r[0]*simunits.r.outscale << "   "
 	      << part.r[1]*simunits.r.outscale << "   "
 	      << part.r[2]*simunits.r.outscale << "   "

@@ -120,14 +120,15 @@ void MpiNode<ndim>::UpdateBoundingBoxData
 
     hrange = 2.0*kernange*part.h;
     for (k=0; k<ndim; k++) {
-      rbox.boxmin[k] = min(rbox.boxmin[k],part.r[k]);
-      rbox.boxmax[k] = max(rbox.boxmax[k],part.r[k]);
-      hbox.boxmin[k] = min(hbox.boxmin[k],part.r[k] - hrange);
-      hbox.boxmax[k] = max(hbox.boxmax[k],part.r[k] + hrange);
+      rbox.boxmin[k] = min(rbox.boxmin[k], part.r[k]);
+      rbox.boxmax[k] = max(rbox.boxmax[k], part.r[k]);
+      hbox.boxmin[k] = min(hbox.boxmin[k], part.r[k] - hrange);
+      hbox.boxmax[k] = max(hbox.boxmax[k], part.r[k] + hrange);
     }
   }
 
   cout << "RBOX : " << rbox.boxmin[0] << "    " << rbox.boxmax[0] << endl;
+  cout << "HBOX : " << hbox.boxmin[0] << "    " << hbox.boxmax[0] << endl;
   cout << "DOMAIN : " << domain.boxmin[0] << "    " << domain.boxmax[0] << endl;
 
   return;
