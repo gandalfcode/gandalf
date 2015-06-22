@@ -2285,7 +2285,7 @@ void KDTree<ndim,ParticleType,TreeCell>::UpdateWorkCounters
   if (cell.level != ltot) {
 #if defined _OPENMP
     if (pow(2,cell.level) < Nthreads) {
-#pragma omp parallel for default(none) private(i) shared(cell,partdata) num_threads(2)
+#pragma omp parallel for default(none) private(i) shared(cell) num_threads(2)
       for (i=0; i<2; i++) {
         if (i == 0) UpdateWorkCounters(celldata[cell.c1]);
         else if (i == 1) UpdateWorkCounters(celldata[cell.c2]);

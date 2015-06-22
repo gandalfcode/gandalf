@@ -737,6 +737,7 @@ void Sinks<ndim>::AccreteMassToSinks
 
 #if defined MPI_PARALLEL
   mpicontrol->UpdateMpiGhostParents(ghosts_accreted,sph);
+  mpicontrol->UpdateSinksAfterAccretion(this);
 #endif
 
   timing->EndTimingSection("SINK_ACCRETE_MASS");
