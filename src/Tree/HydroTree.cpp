@@ -842,8 +842,8 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 #endif
 
     Ngravcellmax = Nprunedcellmax;
-    activelist = activelistbuf[ithread];
-    activepart = activepartbuf[ithread];
+    activelist   = activelistbuf[ithread];
+    activepart   = activepartbuf[ithread];
     gravcelllist = new TreeCell<ndim>[Ngravcellmax];
 
 
@@ -857,7 +857,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
       Ngravcell = 0;
 
       // Find list of active particles in current cell
-      Nactive = tree->ComputeActiveParticleList(cell,partdata,activelist);
+      Nactive = tree->ComputeActiveParticleList(cell, partdata, activelist);
 
       // Make local copies of active particles
       for (j=0; j<Nactive; j++) activepart[j] = partdata[activelist[j]];
@@ -881,7 +881,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
         if (j == rank) continue;
 
         Ngravcelltemp = prunedtree[j]->ComputeDistantGravityInteractionList
-          (cellptr,macfactor,Ngravcellmax,Ngravcell,gravcelllist);
+          (cellptr, macfactor, Ngravcellmax, Ngravcell, gravcelllist);
 
         // If pruned tree is too close (flagged by -1), then record cell id
         // for exporting to other MPI processes
@@ -902,12 +902,12 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
 
         // Compute gravitational force due to distant cells
         if (multipole == "monopole") {
-          this->ComputeCellMonopoleForces(activepart[j].gpot,activepart[j].agrav,
-                                          activepart[j].r,Ngravcell,gravcelllist);
+          this->ComputeCellMonopoleForces(activepart[j].gpot, activepart[j].agrav,
+                                          activepart[j].r, Ngravcell, gravcelllist);
         }
         else if (multipole == "quadrupole") {
-          this->ComputeCellQuadrupoleForces(activepart[j].gpot,activepart[j].agrav,
-                                            activepart[j].r,Ngravcell,gravcelllist);
+          this->ComputeCellQuadrupoleForces(activepart[j].gpot, activepart[j].agrav,
+                                            activepart[j].r, Ngravcell, gravcelllist);
         }
 
       }
@@ -922,10 +922,9 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateGravityExportList
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
-        for (k=0; k<ndim; k++) partdata[i].a[k] = activepart[j].a[k];
-        for (k=0; k<ndim; k++) partdata[i].agrav[k] = activepart[j].agrav[k];
-        for (k=0; k<ndim; k++) partdata[i].a[k] += partdata[i].agrav[k];
-        partdata[i].gpot = activepart[j].gpot;
+        for (k=0; k<ndim; k++) partdata[i].a[k]     += activepart[j].a[k] + activepart[j].agrav[k];
+        for (k=0; k<ndim; k++) partdata[i].agrav[k] += activepart[j].agrav[k];
+        partdata[i].gpot += activepart[j].gpot;
       }
 
     }
@@ -1063,35 +1062,26 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
- (const int rank,                      ///< ..
-  const int pruning_level_min,         ///< ..
-  const int pruning_level_max,         ///< ..
-  const int Nhydromax,                 ///< ..
+ (const int rank,                      ///< [in] ..
+  const int pruning_level_min,         ///< [in] ..
+  const int pruning_level_max,         ///< [in] ..
+  const int Nhydromax,                 ///< [in] ..
   const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box object
-  const MpiNode<ndim> *mpinode,        ///< [in]
+  const MpiNode<ndim> *mpinode,        ///< [in] ..
   Particle<ndim> *hydro_gen)           ///< [inout] Pointer to Hydrodynamics ptcl array
 {
   bool localNode;
   int c;                               // Cell counter
-  int cnew;                            // New i.d. of copied cell in pruned tree
-  int cnext;                           // i.d. of next cell in pruned tree
-  int c1;                              // i.d. of first child cell
-  int c2;                              // i.d. of second child cell
   int i;                               // Particle counter
   int k;
-  int l;                               // ..
-  FLOAT rnode[ndim];
-  FLOAT rmin[ndim];
-  FLOAT rmax[ndim];
-  //ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (hydro_gen);
+
 
   debug2("[HydroTree::BuildPrunedTree]");
   timing->StartTimingSection("BUILD_PRUNED_TREE");
 
-  cnew = 0;
+
   Nprunedcellmax = 0;
   cout << "Levels : " << pruning_level_min << "    " << tree->ltot << endl;
-  //assert(pruning_level_min < tree->ltot);
 
   // Update all work counters in the tree for load-balancing purposes
   tree->UpdateWorkCounters(tree->celldata[0]);

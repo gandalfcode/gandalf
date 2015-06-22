@@ -1228,8 +1228,6 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
   //===============================================================================================
   while (c < Ncell) {
 
-    //cout << "Checking pruned memory : " << Nprunedcell << "   " << Nprunedcellmax << endl;
-
     // Return with error message if we've run out of memory for the pruned tree
     if (Nprunedcell == Nprunedcellmax) {
       delete[] newCellIds;
@@ -1239,13 +1237,7 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     // Add cell to pruned tree
     newCellIds[c] = Nprunedcell;
     prunedcells[Nprunedcell] = celldata[c];
-    assert(newCellIds[c] == Nprunedcell);
     assert(Nprunedcell <= Nprunedcellmax);
-    /*for (int cc=0; cc<Ncell; cc++) {
-      if (newCellIds[cc] > Ncellmax)
-        cout << "Already a problem with newCellIds : " << c << "   " << cc << "   " << newCellIds[cc] << endl;
-      assert(newCellIds[cc] <= Ncellmax);
-    }*/
 
 
     // Calculate closest periodic replica of cell
@@ -1277,14 +1269,14 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     // If tree has reached maximum pruning level, or cell is a leaf cell, then record cell
     // and then move to next cell on same or lower level
     //---------------------------------------------------------------------------------------------
-    else if (celldata[c].level == pruning_level_max || celldata[c].N <= Nleafmax) {
+    else if (celldata[c].level == pruning_level_max || celldata[c].copen == -1) {
       prunedcells[Nprunedcell].copen = -1;
       c = celldata[c].cnext;
     }
 
     // If tree has not reached minimum pruning level, then enforce opening to lower level
     //---------------------------------------------------------------------------------------------
-    else if (celldata[c].level < pruning_level_min) {
+    else if (celldata[c].level < pruning_level_min && celldata[c].copen != -1) {
       c = celldata[c].copen;
     }
 
@@ -1309,20 +1301,15 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
   };
   //===============================================================================================
 
+
   newCellIds[Ncell] = Nprunedcell;
   newCellIds[Ncellmax] = Nprunedcell;
 
 
-
   // Change all cell pointers to new ids in pruned tree
-  //cout << "Changing pruned tree pointers; Nprunedcell : " << Nprunedcell << "   " << Nprunedcellmax << endl;
   for (c=0; c<Nprunedcell; c++) {
-    //cout << "Old pointers for cell " << c << "    copen : " << prunedcells[c].copen
-    //     << "    cnext : " << prunedcells[c].cnext << endl;
     if (prunedcells[c].copen != -1) prunedcells[c].copen = newCellIds[prunedcells[c].copen];
     prunedcells[c].cnext = newCellIds[prunedcells[c].cnext];
-    //cout << "New pointers for cell " << c << "    copen : " << prunedcells[c].copen
-    //     << "    cnext : " << prunedcells[c].cnext << endl;
     if (prunedcells[c].cnext <= 0 || prunedcells[c].copen >= prunedcells[c].cnext) {
       cout << "Problem with new pointers : " << c << "    " << Nprunedcell << "   "
            << "    " << Nprunedcellmax << "    copen : " << prunedcells[c].copen
@@ -1332,8 +1319,6 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     assert(prunedcells[c].cnext > 0);
     assert(prunedcells[c].copen < prunedcells[c].cnext);
   }
-
-  //cout << "Nprunedcell : " << Nprunedcell << "     Nprunedcellmax : " << Nprunedcellmax << endl;
 
 
   // If selected, verify that pruned tree pointers are correctly set-up
@@ -1349,7 +1334,6 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     assert(prunedcells[c].level <= pruning_level_max);
     assert(prunedcells[c].cnext > 0);
     assert(prunedcells[c].copen < prunedcells[c].cnext);
-    //assert(prunedcells[c].N <= Nleafmax);
   }
 //#endif
 
@@ -1400,7 +1384,7 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
 
     for (k=0; k<ndim; k++) dr[k] = celldata[cc].rcell[k] - rc[k];
     drsqd = DotProduct(dr,dr,ndim);
-
+int cold = cc;
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
@@ -1441,8 +1425,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
     // If cell is too close, open cell to interogate children cells.
     // If cell is too close and a leaf cell, then add particles to direct list.
     //---------------------------------------------------------------------------------------------
-    else if (!(drsqd > celldata[cc].cdistsqd &&
-               drsqd > celldata[cc].mac*macfactor) && celldata[cc].N > 0) {
+    else if (!(drsqd > celldata[cc].cdistsqd && drsqd > celldata[cc].mac*macfactor) &&
+             celldata[cc].N > 0) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -1461,6 +1445,13 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeDistantGravityInteractionList
     else {
       cc = celldata[cc].cnext;
     }
+
+    //cout << "Gravity list;   Ngravcell : " << Ngravcelltemp << "    m : " << celldata[cold].m << "   "
+    //     << cold << "    " << cc <<  "   " << Ncell << endl;
+    assert(celldata[cold].m > 0.0);
+    assert(cold != -1);
+    assert(cc != -1);
+    assert(cc <= Ncell);
 
   };
   //===============================================================================================

@@ -488,11 +488,17 @@ cout << "BUILT PRUNED TREE" << endl;
     // Zero accelerations (here for now)
     for (i=0; i<sph->Ntot; i++) {
       SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
-      part.level  = 0;
-      part.nstep  = 0;
-      part.nlast  = 0;
-      part.tlast  = t;
-      part.active = false;
+      part.tlast     = t;
+      part.active    = false;
+      part.level     = 0;
+      part.levelneib = 0;
+      part.nstep     = 0;
+      part.nlast     = 0;
+      part.div_v     = (FLOAT) 0.0;
+      part.dudt      = (FLOAT) 0.0;
+      part.gpot      = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
+      for (k=0; k<ndim; k++) part.agrav[k] = (FLOAT) 0.0;
     }
     for (i=0; i<sph->Nhydro; i++) sph->GetSphParticlePointer(i).active = true;
 
@@ -741,6 +747,19 @@ void SphSimulation<ndim>::MainLoop(void)
 
       // Update cells containing active particles
       if (activecount > 0) sphneib->UpdateActiveParticleCounters(partdata, sph);
+
+      // Zero accelerations (here for now)
+      for (i=0; i<sph->Nhydro; i++) {
+        SphParticle<ndim>& part = sph->GetSphParticlePointer(i);
+        if (part.active) {
+          part.levelneib = 0;
+          part.div_v     = (FLOAT) 0.0;
+          part.dudt      = (FLOAT) 0.0;
+          part.gpot      = (FLOAT) 0.0;
+          for (k=0; k<ndim; k++) part.a[k] = (FLOAT) 0.0;
+          for (k=0; k<ndim; k++) part.agrav[k] = (FLOAT) 0.0;
+        }
+      }
 
       // Calculate all SPH properties
       sphneib->UpdateAllSphProperties(sph->Nhydro, sph->Ntot, partdata, sph, nbody);
