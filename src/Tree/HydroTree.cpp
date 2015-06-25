@@ -50,24 +50,19 @@ using namespace std;
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 HydroTree<ndim,ParticleType,TreeCell>::HydroTree
- (int Nleafmaxaux,
-  int Nmpiaux,
-  FLOAT thetamaxsqdaux,
-  FLOAT kernrangeaux,
-  FLOAT macerroraux,
-  string gravity_mac_aux,
-  string multipole_aux,
-  DomainBox<ndim> *boxaux,
-  SmoothingKernel<ndim> *kernaux,
-  CodeTiming *timingaux):
-  NeighbourSearch<ndim>(kernrangeaux,boxaux,kernaux,timingaux),
-  Nleafmax(Nleafmaxaux),
-  Nmpi(Nmpiaux),
-  thetamaxsqd(thetamaxsqdaux),
-  invthetamaxsqd((FLOAT) 1.0/thetamaxsqdaux),
-  macerror(macerroraux),
-  gravity_mac(gravity_mac_aux),
-  multipole(multipole_aux)
+ (int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max, FLOAT _thetamaxsqd,
+  FLOAT _kernrange, FLOAT _macerror, string _gravity_mac, string _multipole,
+  DomainBox<ndim>* _box, SmoothingKernel<ndim>* _kern, CodeTiming* _timing):
+  NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
+  Nleafmax(_Nleafmax),
+  Nmpi(_Nmpi),
+  pruning_level_min(_pruning_level_min),
+  pruning_level_max(_pruning_level_max),
+  thetamaxsqd(_thetamaxsqd),
+  invthetamaxsqd((FLOAT) 1.0/_thetamaxsqd),
+  macerror(_macerror),
+  gravity_mac(_gravity_mac),
+  multipole(_multipole)
 {
   allocated_buffer = false;
   neibcheck        = true;
@@ -112,10 +107,8 @@ HydroTree<ndim,ParticleType,TreeCell>::~HydroTree()
 //=================================================================================================
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void HydroTree<ndim,ParticleType,TreeCell>::AllocateMemory
- (const int Ngather)                   ///< [in] ..
+ (const int Ngather)                   ///< [in] Average no. of gather neighbours
 {
-  int ithread;                         // Thread id number
-
   debug2("[HydroTree::AllocateMemory]");
 
   if (!allocated_buffer) {
@@ -128,7 +121,7 @@ void HydroTree<ndim,ParticleType,TreeCell>::AllocateMemory
     neibpartbuf     = new ParticleType<ndim>*[Nthreads];
     cellbuf         = new TreeCell<ndim>*[Nthreads];
 
-    for (ithread=0; ithread<Nthreads; ithread++) {
+    for (int ithread=0; ithread<Nthreads; ithread++) {
       Nneibmaxbuf[ithread]     = max(1,4*Ngather);
       Ngravcellmaxbuf[ithread] = max(1,4*Ngather);
       levelneibbuf[ithread]    = new int[Ntotmax];
@@ -1074,8 +1067,6 @@ void HydroTree<ndim,ParticleType,TreeCell>::UpdateHydroExportList
 template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
 void HydroTree<ndim,ParticleType,TreeCell>::BuildPrunedTree
  (const int rank,                      ///< [in] ..
-  const int pruning_level_min,         ///< [in] ..
-  const int pruning_level_max,         ///< [in] ..
   const int Nhydromax,                 ///< [in] ..
   const DomainBox<ndim> &simbox,       ///< [in] Simulation domain box object
   const MpiNode<ndim> *mpinode,        ///< [in] ..
@@ -1434,17 +1425,11 @@ FLOAT HydroTree<ndim,ParticleType,TreeCell>::FindLoadBalancingDivision
     // Compute work included in left-hand side from pruned trees of all MPI domains
     for (i=0; i<Nmpi; i++) {
       workleft += prunedtree[i]->ComputeWorkInBox(boxleftmin, boxleftmax);
-      /*for (j=0; j<Nghostpruned[i]; j++) {
-        workleft += ghostprunedtree[i][j]->ComputeWorkInBox(boxleftmin, boxleftmax);
-      }*/
     }
 
     // Compute work included in right-hand side from pruned trees of all MPI domains
     for (i=0; i<Nmpi; i++) {
       workright += prunedtree[i]->ComputeWorkInBox(boxrightmin, boxrightmax);
-      /*for (j=0; j<Nghostpruned[i]; j++) {
-        workright += ghostprunedtree[i][j]->ComputeWorkInBox(boxrightmin, boxrightmax);
-      }*/
     }
 
     //cout << "workleft : " << workleft << "     workright : " << workright

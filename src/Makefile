@@ -208,7 +208,7 @@ OBJ += CodeTiming.o
 OBJ += IC.o
 
 ifeq ($(MPI),1)
-OBJ += MpiNode.o MpiTree.o MpiControl.o
+OBJ += MpiNode.o MpiTree.o MpiControl.o MpiKDTreeDecomposition.o
 endif
 
 

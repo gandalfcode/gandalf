@@ -141,6 +141,7 @@ class MpiControl
 template <int ndim, template<int> class ParticleType>
 class MpiControlType : public MpiControl<ndim>
 {
+public:
   using MpiControl<ndim>::balance_level;
   using MpiControl<ndim>::Nmpi;
   using MpiControl<ndim>::mpinode;
@@ -166,43 +167,91 @@ class MpiControlType : public MpiControl<ndim>
   vector<ParticleType<ndim> > particles_to_export;     ///< ..
   vector<ParticleType<ndim> > particles_receive;       ///< ..
   vector<ParticleType<ndim> > sendbuffer;              ///< Used by the SendParticles routine
-  MpiTree<ndim,ParticleType> *mpitree;                 ///< Main MPI load balancing tree
   MPI_Datatype particle_type;                          ///< Datatype for the particles
   BruteForceSearch<ndim,ParticleType>* bruteforce;     ///< Temp bruteforce object (REMOVE?)
 
-  void SendParticles(int Node, int Nparticles, int* list, ParticleType<ndim>*);
-  void ReceiveParticles(int Node, int& Nparticles, ParticleType<ndim>** array);
 
-
-public:
-
-  MpiControlType ();
-  ~MpiControlType () {delete bruteforce;};
+  MpiControlType();
+  ~MpiControlType() {delete bruteforce;};
 
   virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *, Parameters*,
-                                                DomainBox<ndim>, bool&);
-  virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *);
-  int SendReceiveGhosts(const FLOAT, Hydrodynamics<ndim> *,ParticleType<ndim>**);
-  int UpdateGhostParticles(ParticleType<ndim>** array);
+                                                DomainBox<ndim>, bool&) = 0;
+  virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *) = 0;
   virtual void ExportParticlesBeforeForceLoop (Hydrodynamics<ndim> *);
   virtual void GetExportedParticlesAccelerations (Hydrodynamics<ndim> *);
-  virtual void UpdateMpiGhostParents (list<int>& ids, Hydrodynamics<ndim>* sph);
+  virtual void UpdateMpiGhostParents (list<int>& ids, Hydrodynamics<ndim>*);
+
+  void SendParticles(int Node, int Nparticles, int* list, ParticleType<ndim>*);
+  void ReceiveParticles(int Node, int& Nparticles, ParticleType<ndim>** array);
+  int SendReceiveGhosts(const FLOAT, Hydrodynamics<ndim> *,ParticleType<ndim>**);
+  int UpdateGhostParticles(ParticleType<ndim>**);
+
 };
 
 
 template <int ndim>
-inline Box<ndim> MpiControl<ndim>::MyDomain() {
+inline Box<ndim> MpiControl<ndim>::MyDomain()
+{
   if (!allocated_mpi) {
     Box<ndim> result;
     for (int k=0; k<ndim; k++) {
-	  result.boxmin[k]=-big_number;
-      result.boxmax[k]=big_number;
+      result.boxmin[k] = -big_number;
+      result.boxmax[k] = big_number;
     }
     return result;
   }
-  else
-	return mpinode[rank].domain;
+  else {
+    return mpinode[rank].domain;
+  }
 }
 
 
+
+//=================================================================================================
+//  Class MpiKDTreeDecomposition
+/// \brief   ..
+/// \details ..
+/// \author  D. A. Hubber, G. Rosotti
+/// \date    23/06/2015
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+class MpiKDTreeDecomposition : public MpiControlType<ndim,ParticleType>
+{
+public:
+  using MpiControl<ndim>::balance_level;
+  using MpiControl<ndim>::Nmpi;
+  using MpiControl<ndim>::mpinode;
+  using MpiControl<ndim>::mpibox;
+  using MpiControl<ndim>::rank;
+  using MpiControl<ndim>::Nloadbalance;
+  using MpiControl<ndim>::timing;
+  using MpiControl<ndim>::my_matches;
+  using MpiControl<ndim>::Nexport_per_node;
+  using MpiControl<ndim>::displacements_send;
+  using MpiControl<ndim>::Nreceive_per_node;
+  using MpiControl<ndim>::displacements_receive;
+  using MpiControl<ndim>::Nreceive_tot;
+  using MpiControl<ndim>::Nbytes_from_proc;
+  using MpiControl<ndim>::Nbytes_to_proc;
+  using MpiControl<ndim>::ExportParticleType;
+  using MpiControl<ndim>::ExportBackParticleType;
+  using MpiControl<ndim>::neibsearch;
+  using MpiControlType<ndim,ParticleType>::particles_to_export_per_node;
+  using MpiControlType<ndim,ParticleType>::particles_to_export;
+  using MpiControlType<ndim,ParticleType>::particles_receive;
+  using MpiControlType<ndim,ParticleType>::sendbuffer;
+  using MpiControlType<ndim,ParticleType>::particle_type;
+  using MpiControlType<ndim,ParticleType>::bruteforce;
+
+
+  MpiTree<ndim,ParticleType> *mpitree;                 ///< Main MPI load balancing tree
+
+
+  MpiKDTreeDecomposition();
+  //virtual ~MpiKDTreeDecomposition();
+
+  virtual void CreateInitialDomainDecomposition(Hydrodynamics<ndim> *, Nbody<ndim> *, Parameters*,
+                                                DomainBox<ndim>, bool&);
+  virtual void LoadBalancing(Hydrodynamics<ndim> *, Nbody<ndim> *);
+};
 #endif

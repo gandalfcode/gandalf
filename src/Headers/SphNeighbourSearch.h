@@ -280,13 +280,15 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  SphTree(int _Nleafmax, int _Nmpi, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
-          string _gravity_mac, string _multipole, DomainBox<ndim> *_box,
-          SmoothingKernel<ndim> *_kern, CodeTiming *_timing) :
+  SphTree(int _Nleafmax, int _Nmpi, int _pruning_level_min, int _pruning_level_max,
+          FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,
+          string _gravity_mac, string _multipole,
+          DomainBox<ndim> *_box, SmoothingKernel<ndim> *_kern, CodeTiming *_timing) :
     NeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
     SphNeighbourSearch<ndim>(_kernrange, _box, _kern, _timing),
-    HydroTree<ndim,ParticleType,TreeCell>(_Nleafmax, _Nmpi, _thetamaxsqd, _kernrange, _macerror,
-                                          _gravity_mac, _multipole, _box, _kern, _timing) {};
+    HydroTree<ndim,ParticleType,TreeCell>(_Nleafmax, _Nmpi, _pruning_level_min, _pruning_level_max,
+                                          _thetamaxsqd, _kernrange, _macerror, _gravity_mac,
+                                          _multipole, _box, _kern, _timing) {};
   virtual ~SphTree() {};
 
 
@@ -351,7 +353,7 @@ class GradhSphTree: public SphTree<ndim,ParticleType,TreeCell>
 
 
   //-----------------------------------------------------------------------------------------------
-  GradhSphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+  GradhSphTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
   virtual ~GradhSphTree();
 
@@ -396,7 +398,7 @@ class GradhSphKDTree: public GradhSphTree<ndim,ParticleType,TreeCell>
 
 
   //-----------------------------------------------------------------------------------------------
-  GradhSphKDTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+  GradhSphKDTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                  DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };
@@ -426,7 +428,7 @@ class GradhSphOctTree: public GradhSphTree<ndim,ParticleType,TreeCell>
 
 
   //-----------------------------------------------------------------------------------------------
-  GradhSphOctTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+  GradhSphOctTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                   DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };
@@ -478,7 +480,7 @@ class SM2012SphTree: public SphTree<ndim,ParticleType,TreeCell>
 
 
   //-----------------------------------------------------------------------------------------------
-  SM2012SphTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+  SM2012SphTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                 DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 
@@ -517,7 +519,7 @@ class SM2012SphKDTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
 
 
   //-----------------------------------------------------------------------------------------------
-  SM2012SphKDTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+  SM2012SphKDTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                   DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };
@@ -548,7 +550,7 @@ class SM2012SphOctTree: public SM2012SphTree<ndim,ParticleType,TreeCell>
 
 
   //-----------------------------------------------------------------------------------------------
-  SM2012SphOctTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+  SM2012SphOctTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
                    DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
 
 };

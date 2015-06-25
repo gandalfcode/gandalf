@@ -93,7 +93,7 @@ protected:
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *) {};
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) {};
 #ifdef MPI_PARALLEL
-  virtual void BuildPrunedTree(const int, const int, const int, const int, const DomainBox<ndim> &,
+  virtual void BuildPrunedTree(const int, const int, const DomainBox<ndim> &,
                                const MpiNode<ndim> *, Particle<ndim> *) {};
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
                                  const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
@@ -178,8 +178,8 @@ class BruteForceSearch : public virtual NeighbourSearch<ndim>
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *) {};
 #ifdef MPI_PARALLEL
-  virtual void BuildPrunedTree(const int, const int, const int, const int,
-                               const DomainBox<ndim> &, const MpiNode<ndim> *, Particle<ndim> *) {};
+  virtual void BuildPrunedTree(const int, const int, const DomainBox<ndim> &,
+                               const MpiNode<ndim> *, Particle<ndim> *) {};
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
                                  const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *) {};
   virtual void CommunicatePrunedTrees(vector<int>&, int) {};
@@ -237,7 +237,7 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
-  HydroTree(int, int, FLOAT, FLOAT, FLOAT, string, string,
+  HydroTree(int, int, int, int, FLOAT, FLOAT, FLOAT, string, string,
             DomainBox<ndim> *, SmoothingKernel<ndim> *, CodeTiming *);
   virtual ~HydroTree();
 
@@ -251,8 +251,8 @@ protected:
   virtual void SearchBoundaryGhostParticles(FLOAT, DomainBox<ndim> &, Hydrodynamics<ndim> *);
   virtual void UpdateActiveParticleCounters(Particle<ndim> *, Hydrodynamics<ndim> *);
 #ifdef MPI_PARALLEL
-  virtual void BuildPrunedTree(const int, const int, const int, const int,
-                               const DomainBox<ndim> &, const MpiNode<ndim> *, Particle<ndim> *);
+  virtual void BuildPrunedTree(const int, const int, const DomainBox<ndim> &,
+                               const MpiNode<ndim> *, Particle<ndim> *);
   virtual void BuildMpiGhostTree(const bool, const int, const int, const int, const int, const int,
                                  const FLOAT, Particle<ndim> *, Hydrodynamics<ndim> *);
   virtual void CommunicatePrunedTrees(vector<int> &, int);
@@ -265,7 +265,7 @@ protected:
   virtual void InitialiseCellWorkCounters(void);
   virtual int SearchMpiGhostParticles(const FLOAT, const Box<ndim> &,
                                       Hydrodynamics<ndim> *, vector<int> &);
-  virtual void UnpackExported (vector<char > &, vector<int> &, Hydrodynamics<ndim> *);
+  virtual void UnpackExported(vector<char> &, vector<int> &, Hydrodynamics<ndim> *);
   virtual void UpdateGravityExportList(int, int, int, Particle<ndim> *,
                                        Hydrodynamics<ndim> *, Nbody<ndim> *);
   virtual void UpdateHydroExportList(int, int, int, Particle<ndim> *,
@@ -288,8 +288,10 @@ protected:
                                  TreeCell<ndim> &, ParticleType<ndim> *);
 
 
-  // Additional variables for grid
+  // Const variables
   //-----------------------------------------------------------------------------------------------
+  const int pruning_level_min;                     ///< Minimum pruned tree level
+  const int pruning_level_max;                     ///< Maximum pruned tree level
   const int Nleafmax;                              ///< Max. number of particles per leaf cell
   const int Nmpi;                                  ///< No. of MPI processes
   const FLOAT thetamaxsqd;                         ///< Geometric opening angle squared

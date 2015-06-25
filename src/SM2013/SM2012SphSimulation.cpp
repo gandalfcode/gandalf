@@ -228,7 +228,7 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
 
 #if defined MPI_PARALLEL
 
-  mpicontrol = new MpiControlType<ndim, SM2012SphParticle>;
+  //mpicontrol = new MpiControlType<ndim, SM2012SphParticle>;
 
 #endif
 
@@ -239,15 +239,15 @@ void SM2012SphSimulation<ndim>::ProcessSphParameters(void)
      (sph->kernp->kernrange,&simbox,sph->kernp,this->timing);
   else if (stringparams["neib_search"] == "kdtree") {
     sphneib = new SM2012SphKDTree<ndim,SM2012SphParticle,KDTreeCell>
-     (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
-      floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
-      &simbox,sph->kernp,timing);
+     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+      floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing);
   }
   else if (stringparams["neib_search"] == "octtree") {
     sphneib = new SM2012SphOctTree<ndim,SM2012SphParticle,OctTreeCell>
-     (intparams["Nleafmax"],Nmpi,floatparams["thetamaxsqd"],sph->kernp->kernrange,
-      floatparams["macerror"],stringparams["gravity_mac"],stringparams["multipole"],
-      &simbox,sph->kernp,timing);
+     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+      floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, sph->kernp, timing);
   }
   else {
     string message = "Unrecognised parameter : neib_search = "

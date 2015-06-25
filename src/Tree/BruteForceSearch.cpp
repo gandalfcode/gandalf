@@ -418,12 +418,14 @@ void BruteForceSearch<ndim,ParticleType>::FindParticlesToTransfer
   for (int i=0; i<hydro->Nhydro; i++) {
     ParticleType<ndim>& part = partdata[i];
 
-    //Loop over potential domains and see if we need to transfer this particle to them
+    // Loop over potential domains and see if we need to transfer this particle to them
     for (int inode=0; inode<potential_nodes.size(); inode++) {
       int node_number = potential_nodes[inode];
-      if (ParticleInBox(part,mpinodes[node_number].domain)) {
+
+      if (ParticleInBox(part, mpinodes[node_number].domain)) {
         id_export_buffers[node_number].push_back(i);
         all_ids_export_buffer.push_back(i);
+
         // The particle can belong only to one domain, so we can break from this loop
         break;
       }

@@ -266,15 +266,16 @@ void MeshlessFVSimulation<ndim>::ProcessParameters(void)
   }
   else if (stringparams["neib_search"] == "kdtree") {
     mfvneib = new MeshlessFVKDTree<ndim,MeshlessFVParticle,KDTreeCell>
-     (intparams["Nleafmax"], Nmpi, floatparams["thetamaxsqd"], mfv->kernp->kernrange,
-      floatparams["macerror"], stringparams["gravity_mac"], stringparams["multipole"],
-      &simbox, mfv->kernp, timing);
+     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+      floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing);
   }
   else if (stringparams["neib_search"] == "octtree") {
     mfvneib = new MeshlessFVOctTree<ndim,MeshlessFVParticle,OctTreeCell>
-     (intparams["Nleafmax"], Nmpi, floatparams["thetamaxsqd"], mfv->kernp->kernrange,
-      floatparams["macerror"], stringparams["gravity_mac"], stringparams["multipole"],
-      &simbox, mfv->kernp, timing);
+     (intparams["Nleafmax"], Nmpi, intparams["pruning_level_min"], intparams["pruning_level_max"],
+      floatparams["thetamaxsqd"], sph->kernp->kernrange, floatparams["macerror"],
+      stringparams["gravity_mac"], stringparams["multipole"], &simbox, mfv->kernp, timing);
+;
   }
   else {
     string message = "Unrecognised parameter : neib_search = "
