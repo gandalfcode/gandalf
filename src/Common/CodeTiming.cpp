@@ -31,6 +31,7 @@
 #include <string>
 #include <time.h>
 #include <sys/time.h>
+#include <vector>
 #include "Exception.h"
 #include "CodeTiming.h"
 #include "Debug.h"
@@ -51,6 +52,11 @@ CodeTiming::CodeTiming()
   ttot_wall   = 0.0;
   tstart      = clock();
   tstart_wall = WallClockTime();
+#if defined MPI_PARALLEL
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  CPU_Master = rank==0 ? true : false;
+#endif
 }
 
 
@@ -74,7 +80,6 @@ void CodeTiming::StartTimingSection
  (const string newblock)               ///< [in] String of new/existing timing block
 {
   int iblock;                          // Integer id of existing timing block
-return;
   // If block string not in list, then create new entry to timing block
   if (blockmap[level].find(newblock) == blockmap[level].end()) {
     iblock                            = Nblock[level];
@@ -111,18 +116,20 @@ void CodeTiming::EndTimingSection
  (const string s1)                     ///< [in] String identifying block-end
 {
   int iblock;                          // Integer i.d. of timing block in arrays
-return;
   // Check level is valid
   if (level <= 0) {
-    cout << "Error with timing levels" << endl;
-    return;
+    ExceptionHandler::getIstance().raise("Error with timing levels");
   }
   level--;
 
   // If block not in list, then print error message and return
   if (blockmap[level].find(s1) == blockmap[level].end()) {
-    cout << "Error : looking for incorrect timing block : " << s1 << endl;
-    return;
+    string message = "Error : looking for incorrect timing block : " + s1;
+    for (map<string, int>::iterator it = blockmap[level].begin(); it != blockmap[level].end(); it++) {
+      cout << it->first << " ";
+    }
+    cout <<endl;
+    ExceptionHandler::getIstance().raise(message);
   }
   // Else, look-up existing timing block
   else {
@@ -159,18 +166,58 @@ void CodeTiming::ComputeTimingStatistics
   ofstream outfile;                    // Output file stream object
 
   filename = run_id + "." + fileend;
-  outfile.open(filename.c_str());
 
   tend      = clock();
   tend_wall = WallClockTime();
   ttot      = (double) (tend - tstart) / (double) CLOCKS_PER_SEC;
+#if defined MPI_PARALLEL
+  // In this case, clock measures the cpu time on the local processor. We need to sum
+  // the cpu time of ALL processors to get the cpu time of the simulation
+  if (CPU_Master)
+    MPI_Reduce(MPI_IN_PLACE,&ttot,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+  else
+    MPI_Reduce(&ttot,&ttot,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+
+  // Now we do the same for all the blocks. Saves the ttot of each single block
+  // inside the temporary array ttot_temp (so that we call MPI_Reduce only once)
+  int Nblocks=0;
+  for (l=0; l<Nlevel; l++) {
+    Nblocks += Nblock[l];
+  }
+
+  vector<double> ttot_temp(Nblocks);
+  int counter=0;
+  for (l=0; l< Nlevel; l++) {
+    for (iblock=0; iblock<Nblock[l]; iblock++) {
+      ttot_temp[counter]=block[l][iblock].ttot;
+      counter++;
+    }
+  }
+
+  if (CPU_Master)
+    MPI_Reduce(MPI_IN_PLACE,&ttot_temp[0],Nblocks,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+  else
+    MPI_Reduce(&ttot_temp[0],&ttot_temp[0],Nblocks,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+
+  if (!CPU_Master) return;
+
+  counter=0;
+  for (l=0; l< Nlevel; l++) {
+    for (iblock=0; iblock<Nblock[l]; iblock++) {
+      block[l][iblock].ttot=ttot_temp[counter];
+      counter++;
+    }
+  }
+#endif
   ttot_wall = (double) (tend_wall - tstart_wall);
 
+  outfile.open(filename.c_str());
   outfile << resetiosflags(ios::adjustfield);
   outfile << setiosflags(ios::left);
-  outfile << "----------------------------------------------------------------------------" << endl;
+  std::string dashes(95,'-');
+  outfile << dashes << endl;
   outfile << "Total simulation wall clock time : " << ttot_wall << endl;
-  outfile << "----------------------------------------------------------------------------" << endl;
+  outfile << dashes << endl;
 
   // Output timing data on each hierarchical level
   //-----------------------------------------------------------------------------------------------
@@ -178,8 +225,11 @@ void CodeTiming::ComputeTimingStatistics
     tcount = 0.0;
     tcount_wall = 0.0;
     outfile << "Level : " << l << endl;
-    outfile << "Block                                          Wall time       %time" << endl;
-    outfile << "----------------------------------------------------------------------------" << endl;
+    outfile << "Block";
+    outfile << std::string( 42, ' ' );
+    outfile << "Wall time" << std::string(3,' ') << "%time";
+    outfile << std::string(7,' ') << "CPU Time" << std::string(4,' ') << "%time"<<endl;
+    outfile << dashes << endl;
 
     for (iblock=0; iblock<Nblock[l]; iblock++) {
       tcount      += block[l][iblock].ttot;
@@ -187,24 +237,20 @@ void CodeTiming::ComputeTimingStatistics
       block[l][iblock].tfraction      = block[l][iblock].ttot / ttot;
       block[l][iblock].tfraction_wall = block[l][iblock].ttot_wall / ttot_wall;
       outfile << setw(47) << block[l][iblock].block_name
-              << setw(16) << block[l][iblock].ttot_wall
-              << setw(15) << 100.0*block[l][iblock].tfraction_wall << endl;
-      /*outfile << setw(30) << block[l][iblock].block_name
-              << setw(12) << block[l][iblock].ttot
-              << setw(12) << 100.0*block[iblock][l].tfraction
               << setw(12) << block[l][iblock].ttot_wall
-              << setw(12) << 100.0*block[l][iblock].tfraction_wall << endl;*/
+              << setw(12) << 100.0*block[l][iblock].tfraction_wall;
+      outfile << setw(12) << block[l][iblock].ttot
+              << setw(12) << 100.0*block[l][iblock].tfraction
+              << endl;
     }
     outfile << setw(47) << "REMAINDER"
-            << setw(16) << ttot_wall - tcount_wall
-            << setw(15) << 100.0*(ttot_wall - tcount_wall)/ttot_wall << endl;
-
-    /*outfile << setw(30) << "REMAINDER"
-            << setw(12) << ttot - tcount
-            << setw(12) << 100.0*(ttot - tcount)/ttot
             << setw(12) << ttot_wall - tcount_wall
-            << setw(12) << 100.0*(ttot_wall - tcount_wall)/ttot_wall << endl;*/
-    outfile << "----------------------------------------------------------------------------" << endl;
+            << setw(12) << 100.0*(ttot_wall - tcount_wall)/ttot_wall;
+
+    outfile << setw(12) << ttot - tcount
+            << setw(12) << 100.0*(ttot - tcount)/ttot
+            << endl;
+    outfile << dashes << endl;
   }
   //-----------------------------------------------------------------------------------------------
 

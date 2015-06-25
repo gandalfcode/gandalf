@@ -82,6 +82,9 @@ struct TimingBlock
 //=================================================================================================
 class CodeTiming
 {
+#if defined MPI_PARALLEL
+  bool CPU_Master;
+#endif
  public:
 
   // Constructor and destructor
