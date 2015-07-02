@@ -214,8 +214,6 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
       hrangesqdi = mfvdata[i].hrangesqd; //pow(kernfac*kernp->kernrange*mfvdata[i].h,2);
       Nneib = 0;
 
-      //cout << "kern : " << kernfac << "   " << kernp->kernrange << endl;
-      //cin >> j;
 
       // Compute distances and the reciprical between the current particle
       // and all neighbours here
@@ -225,8 +223,6 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
         hrangesqdj = mfvdata[j].hrangesqd; //pow(kernfac*kernp->kernrange*mfvdata[j].h,2);
         for (k=0; k<ndim; k++) draux[k] = mfvdata[j].r[k] - rp[k];
         drsqd = DotProduct(draux,draux,ndim);
-
-        //cout << "drsqd : " << drsqd << "   " << hrangesqdi << "   " << hrangesqdj << endl;
 
         if ((drsqd < hrangesqdi || drsqd < hrangesqdj) && i != j) {
           neiblist[Nneib] = j;
@@ -238,11 +234,10 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGradientMatrices
       }
       //-------------------------------------------------------------------------------------------
 
+
       // Compute all SPH hydro forces
       mfv->ComputePsiFactors(i, Nneib, neiblist, drmag, invdrmag, dr, mfvdata[i], mfvdata);
       mfv->ComputeGradients(i, Nneib, neiblist, drmag, invdrmag, dr, mfvdata[i], mfvdata);
-
-      //sphdata[i].active = false;
 
     }
     //---------------------------------------------------------------------------------------------
@@ -312,7 +307,7 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
     rdmdtBuffer = new FLOAT[Ntot][ndim];
     neibdata    = new MeshlessFVParticle<ndim>[Ntot];
 
-    // ..
+    // Copy all data to temp. neighbour array and zero buffers
     for (i=0; i<Ntot; i++) neibdata[i] = mfvdata[i];
     for (i=0; i<Ntot; i++) {
       for (k=0; k<ndim+2; k++) fluxBuffer[i][k] = (FLOAT) 0.0;
@@ -330,24 +325,31 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
       if (!mfvdata[i].active || mfvdata[i].itype == dead) continue;
 
       for (k=0; k<ndim; k++) rp[k] = mfvdata[i].r[k];
-      hrangesqdi = mfvdata[i].hrangesqd; //pow(kernfac*kernp->kernrange*mfvdata[i].h,2);
+      hrangesqdi = mfvdata[i].hrangesqd;
       Nneib = 0;
       for (j=0; j<Ntot; j++) {
         for (k=0; k<ndim+2; k++) neibdata[j].dQdt[k] = (FLOAT) 0.0;
+        for (k=0; k<ndim+2; k++) neibdata[j].dQ[k] = (FLOAT) 0.0;
       }
 
-      // Compute distances and the reciprical between the current particle
-      // and all neighbours here
+      // Compute distances and the reciprical between the current particle and all neighbours here
       //-------------------------------------------------------------------------------------------
       for (j=0; j<mfv->Nhydro + mfv->NPeriodicGhost; j++) {
-        if (mfvdata[j].itype == dead) continue;
-        hrangesqdj = mfvdata[j].hrangesqd; //pow(kernfac*kernp->kernrange*mfvdata[j].h,2);
+
+        // Skip if (i) neighbour is a dead(e.g. accreted) particle (ii) same i.d. as current
+        // active particle, (iii) neighbour is on lower timestep level (i.e. timestep is shorter),
+        // or (iv) neighbour is on same level as current particle but has larger id. value
+        // (to only calculate each pair once).
+        if (mfvdata[j].itype == dead || j == i || mfvdata[i].level < mfvdata[j].level ||
+            (j < i && mfvdata[i].level == mfvdata[j].level)) continue;
+
+        hrangesqdj = mfvdata[j].hrangesqd;
         for (k=0; k<ndim; k++) draux[k] = mfvdata[j].r[k] - rp[k];
         drsqd = DotProduct(draux,draux,ndim);
 
-        //if ((drsqd < hrangesqdi || drsqd < hrangesqdj) && i != j) {
-        if ((drsqd < hrangesqdi || drsqd < hrangesqdj) && i != j  &&
-            (!neibdata[j].active || j > i)) {
+        // Only include neighbours which are within either the gather or scatter kernel, and
+        // are either on a longer timestep or with a larger i.d. (to prevent repeating each face)
+        if (drsqd < hrangesqdi || drsqd < hrangesqdj) {
           neiblist[Nneib] = j;
           drmag[Nneib]    = sqrt(drsqd) + small_number;
           invdrmag[Nneib] = (FLOAT) 1.0/drmag[Nneib];
@@ -365,7 +367,8 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
       // Accumulate fluxes
       for (int jj=0; jj<Nneib; jj++) {
         j = neiblist[jj];
-        for (k=0; k<ndim+2; k++) fluxBuffer[j][k] += neibdata[j].dQdt[k];
+        //for (k=0; k<ndim+2; k++) fluxBuffer[j][k] += neibdata[j].dQdt[k]*(FLOAT) mfvdata[i].nstep;
+        for (k=0; k<ndim+2; k++) fluxBuffer[j][k] += neibdata[j].dQ[k];
         for (k=0; k<ndim; k++) rdmdtBuffer[j][k] += neibdata[j].rdmdt[k];
       }
 
@@ -377,7 +380,8 @@ void MeshlessFVBruteForce<ndim,ParticleType>::UpdateGodunovFluxes
 #pragma omp critical
     {
       for (i=0; i<Nhydro; i++) {
-        for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
+        for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[i][k];
+        //for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[i][k];
         for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
       }
     }

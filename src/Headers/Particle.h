@@ -267,10 +267,11 @@ struct MeshlessFVParticle : public Particle<ndim>
   FLOAT Qcons[ndim+2];                 ///< ..
   FLOAT Qcons0[ndim+2];                ///< ..
   FLOAT grad[ndim+2][ndim];            ///< ..
+  FLOAT dQ[ndim+2];                    ///< ..
   FLOAT dQdt[ndim+2];                  ///< Time derivative of conserved variables
   FLOAT Utot;                          ///< ..
-  FLOAT rdmdt[ndim];
-  FLOAT rdmdt0[ndim];
+  FLOAT rdmdt[ndim];                   ///< ..
+  FLOAT rdmdt0[ndim];                  ///< ..
 
 
   // SPH particle constructor to initialise all values

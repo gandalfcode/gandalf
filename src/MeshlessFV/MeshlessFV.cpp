@@ -244,7 +244,90 @@ FLOAT MeshlessFV<ndim>::Timestep(MeshlessFVParticle<ndim> &part)
 
 
 //=================================================================================================
-//  MeshlessFV<ndim>::Timestep
+//  MeshlessFV<ndim>::EndStep
+/// ...
+//=================================================================================================
+template <int ndim>
+void MeshlessFV<ndim>::EndTimestep
+ (const int n,                         ///< [in] Integer time in block time struct
+  const int Npart,                     ///< [in] Number of particles
+  const FLOAT t,                       ///< [in] Current simulation time
+  const FLOAT timestep,                ///< [in] Base timestep value
+  MeshlessFVParticle<ndim> *partdata)  ///< [inout] Pointer to SPH particle array
+{
+  int dn;                              // Integer time since beginning of step
+  int i;                               // Particle counter
+  int k;                               // Dimension counter
+  int nstep;                           // Particle (integer) step size
+
+  debug2("[MeshlessFV::EndTimestep]");
+  //timing->StartTimingSection("MFV_END_TIMESTEP");
+
+
+  //-----------------------------------------------------------------------------------------------
+#pragma omp parallel for default(none) private(dn,i,k,nstep) shared(partdata)
+  for (i=0; i<Npart; i++) {
+    MeshlessFVParticle<ndim> &part = partdata[i];
+    if (part.itype == dead) continue;
+
+    dn    = n - part.nlast;
+    nstep = part.nstep;
+
+    // If particle is at the end of its timestep
+    //---------------------------------------------------------------------------------------------
+    if (dn == nstep) {
+
+      // Integrate all conserved quantities to end of the step (adding sums from neighbours)
+      for (int var=0; var<nvar; var++) {
+        part.Qcons[var] += part.dQ[var]; //+ part.dQdt[var]*timestep*(FLOAT) nstep;
+      }
+
+      // Further update conserved quantities if computing gravitational contributions
+      if (self_gravity == 1) {
+        for (k=0; k<ndim; k++) part.Qcons[k] += (FLOAT) 0.5*timestep*
+          (part.Qcons0[irho]*part.a0[k] + part.Qcons[irho]*part.a[k]);
+        part.Qcons[ietot] += (FLOAT) 0.5*timestep*
+          (part.Qcons0[irho]*DotProduct(part.v0, part.a0, ndim) +
+           part.Qcons[irho]*DotProduct(part.v, part.a, ndim)); //+
+             //DotProduct(part.a0, part.rdmdt0, ndim) +
+             //DotProduct(part.a, part.rdmdt, ndim));
+      }
+
+      // Calculate Ucons variables from conserved quantities
+      for (int var=0; var<nvar; var++) part.Ucons[var] = part.Qcons[var]/part.volume;
+
+      // Compute primtive values and update all main array quantities
+      this->ConvertConservedToPrimitive(part.Ucons, part.Wprim);
+      this->UpdateArrayVariables(part);
+
+      // Update all values to the beginning of the next step
+      part.nlast  = n;
+      part.tlast  = t;
+      part.active = true;
+      for (k=0; k<ndim; k++) part.r0[k] = part.r[k];
+      for (k=0; k<ndim; k++) part.v0[k] = part.v[k];
+      for (k=0; k<ndim; k++) part.a0[k] = part.a[k];
+      for (k=0; k<ndim; k++) part.rdmdt0[k] = part.rdmdt[k];
+      for (k=0; k<nvar; k++) part.Qcons0[k] = part.Qcons[k];
+      for (k=0; k<nvar; k++) part.dQ[k] = (FLOAT) 0.0;
+    }
+    //---------------------------------------------------------------------------------------------
+    else {
+      part.active = false;
+    }
+
+  }
+  //-----------------------------------------------------------------------------------------------
+
+  //timing->EndTimingSection("MFV_END_TIMESTEP");
+
+  return;
+}
+
+
+
+//=================================================================================================
+//  MeshlessFV<ndim>::IntegrateConservedVariables
 /// ...
 //=================================================================================================
 template <int ndim>

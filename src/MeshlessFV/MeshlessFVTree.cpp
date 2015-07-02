@@ -725,8 +725,12 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
       Nactive = tree->ComputeActiveParticleList(cell,mfvdata,activelist);
 
       // Make local copies of active particles
-      for (j=0; j<Nactive; j++) activepart[j] = mfvdata[activelist[j]];
-
+      for (j=0; j<Nactive; j++) {
+        activepart[j] = mfvdata[activelist[j]];
+        for (k=0; k<ndim+2; k++) activepart[j].dQ[k]   = (FLOAT) 0.0;
+        for (k=0; k<ndim+2; k++) activepart[j].dQdt[k] = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) activepart[j].rdmdt[k]  = (FLOAT) 0.0;
+      }
 
       // Compute neighbour list for cell from real and periodic ghost particles
       Nneib = 0;
@@ -758,8 +762,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
       };
 
       for (j=0; j<Nneibmax; j++) {
+        for (k=0; k<ndim+2; k++) neibpart[j].dQ[k]   = (FLOAT) 0.0;
         for (k=0; k<ndim+2; k++) neibpart[j].dQdt[k] = (FLOAT) 0.0;
-        for (k=0; k<ndim; k++) neibpart[j].rdmdt[k] = (FLOAT) 0.0;
+        for (k=0; k<ndim; k++) neibpart[j].rdmdt[k]  = (FLOAT) 0.0;
       }
 
 
@@ -783,18 +788,24 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
         //-----------------------------------------------------------------------------------------
         for (jj=0; jj<Nneib; jj++) {
 
-          // Skip current active particle
-          if (neiblist[jj] == i || (neiblist[jj] > i && neibpart[jj].active)) continue;
-
-          for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
-          drsqd = DotProduct(draux,draux,ndim) + small_number;
+          // Skip if (i) neighbour is a dead(e.g. accreted) particle (ii) same i.d. as current
+          // active particle, (iii) neighbour is on lower timestep level (i.e. timestep is shorter),
+          // or (iv) neighbour is on same level as current particle but has larger id. value
+          // (to only calculate each pair once).
+          if (neibpart[jj].itype == dead || neiblist[jj] == i ||
+              activepart[j].level < neibpart[jj].level ||
+              (neiblist[jj] < i && neibpart[jj].level == activepart[j].level)) continue;
 
           // Compute relative position and distance quantities for pair
-          if (drsqd <= hrangesqdi || drsqd <= neibpart[jj].hrangesqd) {
+          for (k=0; k<ndim; k++) draux[k] = neibpart[jj].r[k] - rp[k];
+          drsqd = DotProduct(draux, draux, ndim) + small_number;
+
+          // Only include gather or scatter neighbours
+          if (drsqd < hrangesqdi || drsqd < neibpart[jj].hrangesqd) {
             drmag[Nhydroaux] = sqrt(drsqd);
             invdrmag[Nhydroaux] = (FLOAT) 1.0/drmag[Nhydroaux];
             for (k=0; k<ndim; k++) dr[Nhydroaux*ndim + k] = draux[k]*invdrmag[Nhydroaux];
-            levelneib[neiblist[jj]] = max(levelneib[neiblist[jj]],activepart[j].level);
+            levelneib[neiblist[jj]] = max(levelneib[neiblist[jj]], activepart[j].level);
             mfvlist[Nhydroaux] = jj;
             Nhydroaux++;
           }
@@ -813,15 +824,17 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
       // Accumulate fluxes for neighbours
       for (int jj=0; jj<Nneib; jj++) {
         j = neiblist[jj];
-        for (k=0; k<ndim+2; k++) fluxBuffer[j][k] += neibpart[jj].dQdt[k];
+        for (k=0; k<ndim+2; k++) fluxBuffer[j][k] += neibpart[jj].dQ[k];
         for (k=0; k<ndim; k++) rdmdtBuffer[j][k] += neibpart[jj].rdmdt[k];
       }
 
       // Add all active particles contributions to main array
       for (j=0; j<Nactive; j++) {
         i = activelist[j];
+        for (k=0; k<ndim+2; k++) fluxBuffer[i][k] += activepart[j].dQ[k];
+        for (k=0; k<ndim; k++) rdmdtBuffer[i][k] += activepart[j].rdmdt[k];
         for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] = activepart[j].dQdt[k];
-        for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] = activepart[j].rdmdt[k];
+        //for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] = activepart[j].rdmdt[k];
       }
 
     }
@@ -833,7 +846,9 @@ void MeshlessFVTree<ndim,ParticleType,TreeCell>::UpdateGodunovFluxes
 #pragma omp critical
     {
       for (i=0; i<Nhydro; i++) {
-        for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
+        //for (k=0; k<ndim+2; k++) mfvdata[i].dQdt[k] += fluxBuffer[i][k];
+        //for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
+        for (k=0; k<ndim+2; k++) mfvdata[i].dQ[k] += fluxBuffer[i][k];
         for (k=0; k<ndim; k++) mfvdata[i].rdmdt[k] += rdmdtBuffer[i][k];
       }
     }

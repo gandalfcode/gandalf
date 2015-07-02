@@ -634,7 +634,7 @@ class MeshlessFVSimulation : public Simulation<ndim>
 
   MeshlessFVSimulation (Parameters* parameters): Simulation<ndim>(parameters) {};
   virtual void PostInitialConditionsSetup(void);
-  virtual void MainLoop(void);
+  virtual void MainLoop(void) = 0;
   virtual void ComputeGlobalTimestep(void);
   virtual void ComputeBlockTimesteps(void);
   virtual void ProcessParameters(void);
@@ -642,6 +642,7 @@ class MeshlessFVSimulation : public Simulation<ndim>
 
   MeshlessFV<ndim> *mfv;                       ///< Meshless FV hydrodynamics algorithm pointer
   MeshlessFVNeighbourSearch<ndim> *mfvneib;    ///< ..
+  DOUBLE dt_min_hydro;
 
 };
 
