@@ -141,7 +141,7 @@ void SphSimulation<ndim>::ProcessParameters(void)
        gas_eos == "barotropic2") && gas_radiation == "ionisation") {
     sph->eos = new IonisingRadiation<ndim>
       (gas_eos, floatparams["temp0"], floatparams["mu_bar"],
-      floatparams["gamma_eos"], floatparams["rho_bary"], &simunits, sphneib);
+       floatparams["gamma_eos"], floatparams["rho_bary"], &simunits, sphneib);
   }
   else if ((gas_eos == "energy_eqn" || gas_eos == "constant_temp" ||
              gas_eos == "isothermal" || gas_eos == "barotropic" ||
@@ -160,11 +160,14 @@ void SphSimulation<ndim>::ProcessParameters(void)
   }
   else if (gas_eos == "barotropic") {
     sph->eos = new Barotropic<ndim>(floatparams["temp0"], floatparams["mu_bar"],
-                                    floatparams["gamma_eos"], floatparams["rho_bary"], &simunits);
+                               floatparams["gamma_eos"], floatparams["rho_bary"], &simunits);
   }
   else if (gas_eos == "barotropic2") {
     sph->eos = new Barotropic2<ndim>(floatparams["temp0"], floatparams["mu_bar"],
-                                     floatparams["gamma_eos"], floatparams["rho_bary"], &simunits);
+                                floatparams["gamma_eos"], floatparams["rho_bary"], &simunits);
+  }
+  if (gas_eos == "rad_ws") {
+    sph->eos = new Radws<ndim>(floatparams["temp0"], floatparams["mu_bar"], floatparams["gamma_eos"]);
   }
   else {
     string message = "Unrecognised parameter : gas_eos = " + gas_eos;
@@ -892,8 +895,8 @@ void SphSimulation<ndim>::MainLoop(void)
 
   // End-step terms for all SPH particles
   if (sph->Nhydro > 0) {
-    uint->EndTimestep(n,sph->Nhydro,(FLOAT) t,(FLOAT) timestep,sph->GetSphParticleArray());
-    sphint->EndTimestep(n,sph->Nhydro,(FLOAT) t,(FLOAT) timestep,sph->GetSphParticleArray());
+    uint->EndTimestep(n, sph->Nhydro, (FLOAT) t, (FLOAT) timestep, sph->GetSphParticleArray());
+    sphint->EndTimestep(n, sph->Nhydro, (FLOAT) t, (FLOAT) timestep, sph->GetSphParticleArray());
   }
 
   // End-step terms for all star particles

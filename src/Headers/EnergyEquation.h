@@ -48,14 +48,14 @@ class EnergyEquation
   ~EnergyEquation();
 
   virtual void EnergyIntegration(const int, const int, const FLOAT, const FLOAT,
-                                SphParticle<ndim> *) = 0;
+                                 Particle<ndim> *) = 0;
   virtual void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT,
-                                     SphParticle<ndim> *) = 0;
-  virtual void EndTimestep(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *) = 0;
-  virtual DOUBLE Timestep(SphParticle<ndim> &) = 0;
+                                     Particle<ndim> *) = 0;
+  virtual void EndTimestep(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *) = 0;
+  virtual DOUBLE Timestep(Particle<ndim> &) = 0;
 
 
-  const DOUBLE energy_mult;            ///< ..
+  const DOUBLE energy_mult;            ///< Explicit integration timestep multiplier
   CodeTiming *timing;                  ///< Pointer to code timing object
 
 };
@@ -64,11 +64,10 @@ class EnergyEquation
 
 //=================================================================================================
 //  EnergyPEC
-/// Class definition for energy equation integration class using a
-/// Predict-Evaluate-Correct (PEC) scheme.
+/// Energy equation integration class using a Predict-Evaluate-Correct (PEC) scheme.
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
-class EnergyPEC: public EnergyEquation<ndim>
+class EnergyPEC : public EnergyEquation<ndim>
 {
  public:
 
@@ -77,10 +76,10 @@ class EnergyPEC: public EnergyEquation<ndim>
   EnergyPEC(DOUBLE);
   ~EnergyPEC();
 
-  void EnergyIntegration(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
-  void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
-  void EndTimestep(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
-  DOUBLE Timestep(SphParticle<ndim> &);
+  void EnergyIntegration(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *);
+  void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *);
+  void EndTimestep(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *);
+  DOUBLE Timestep(Particle<ndim> &);
 
 };
 
@@ -89,38 +88,43 @@ class EnergyPEC: public EnergyEquation<ndim>
 
 //=================================================================================================
 //  EnergyRadws
-/// ..
+/// Energy equation class using Stamatellos et al. (2007) radiation cooling scheme.
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
-class EnergyRadws: public EnergyEquation<ndim>
+class EnergyRadws : public EnergyEquation<ndim>
 {
  public:
 
-   using EnergyEquation<ndim>::timing;
+  using EnergyEquation<ndim>::timing;
 
-  EnergyRadws(DOUBLE, string, FLOAT, SimUnits *);
+  EnergyRadws(DOUBLE, string, FLOAT, SimUnits *, EOS<ndim> *);
   ~EnergyRadws();
 
   //  void ReadTable();
-  void EnergyIntegration(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
-  void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *) {};
-  void EndTimestep(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *);
-  void EnergyFindEqui(FLOAT , FLOAT , FLOAT , FLOAT , FLOAT, FLOAT &, FLOAT &);
-  void EnergyFindEquiTemp(int, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT &);
+  void EnergyIntegration(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *);
+  void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
+  void EndTimestep(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *);
+  void EnergyFindEqui(const FLOAT, const FLOAT, const FLOAT, const FLOAT,
+                      const FLOAT, FLOAT &,  FLOAT &, FLOAT &);
+  void EnergyFindEquiTemp(const int, const FLOAT, const FLOAT, const FLOAT,
+                          const FLOAT, FLOAT &, FLOAT &);
 
   int GetIDens(FLOAT);
   int GetITemp(FLOAT);
   void GetKappa(int, int, FLOAT, FLOAT, FLOAT &, FLOAT &, FLOAT &);
   FLOAT GetEnergy(int , int , FLOAT , FLOAT );
-  DOUBLE Timestep(SphParticle<ndim> &) {return big_number_dp;}
+  FLOAT GetMuBar(int, int, FLOAT, FLOAT);
+  DOUBLE Timestep(Particle<ndim> &) {return big_number_dp;}
   FLOAT ebalance(FLOAT, FLOAT, FLOAT, FLOAT, FLOAT, FLOAT);
 
-
-  int ndens, ntemp;
-  FLOAT  *eos_dens, *eos_temp ;
-  FLOAT **eos_energy, **eos_mu, **kappa_table, **kappar_table, **kappap_table;
+  //-----------------------------------------------------------------------------------------------
+  int ndens;
+  int ntemp;
   FLOAT rad_const;
   FLOAT temp_ambient;
+  FLOAT *eos_dens, *eos_temp ;
+  FLOAT **eos_energy, **eos_mu, **kappa_table, **kappar_table, **kappap_table;
+  EOS<ndim> *eos;
 
 };
 
@@ -131,17 +135,17 @@ class EnergyRadws: public EnergyEquation<ndim>
 /// Null (empty) class when no energy option is selected.
 //=================================================================================================
 template <int ndim>
-class NullEnergy: public EnergyEquation<ndim>
+class NullEnergy : public EnergyEquation<ndim>
 {
  public:
 
   NullEnergy(DOUBLE dt_mult) : EnergyEquation<ndim>(dt_mult) {};
   ~NullEnergy();
 
-  void EnergyIntegration(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *) {};
-  void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *) {};
-  void EndTimestep(const int, const int, const FLOAT, const FLOAT, SphParticle<ndim> *) {};
-  DOUBLE Timestep(SphParticle<ndim> &) {return big_number_dp;}
+  void EnergyIntegration(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
+  void EnergyCorrectionTerms(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
+  void EndTimestep(const int, const int, const FLOAT, const FLOAT, Particle<ndim> *) {};
+  DOUBLE Timestep(Particle<ndim> &) {return big_number_dp;}
 
 };
 #endif

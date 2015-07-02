@@ -34,6 +34,14 @@
 #endif
 
 
+
+//=================================================================================================
+//  Class Ic
+/// \brief   Class to contain all generic initial conditions functions.
+/// \details ...
+/// \author  D. A. Hubber & G. Rosotti
+/// \date    15/04/2013
+//=================================================================================================
 template <int ndim>
 class Ic
 {
@@ -59,6 +67,7 @@ private:
   void AddRotationalVelocityField(int, FLOAT, FLOAT *, FLOAT *, FLOAT *);
   void AddRandomBox(int, FLOAT *, DomainBox<ndim>);
   void AddRandomSphere(int, FLOAT *, FLOAT *, FLOAT);
+  void Addr2Sphere(int, FLOAT *, FLOAT *, FLOAT);
   void AddSinusoidalDensityPerturbation(int, FLOAT, FLOAT, FLOAT *);
   int CutSphere(int, int, FLOAT *, DomainBox<ndim>, bool);
   void ComputeBondiSolution(int, FLOAT *, FLOAT *, FLOAT *, FLOAT *);
@@ -100,7 +109,9 @@ public:
   void TurbulentCore(void);
   void UniformBox(void);
   void UniformSphere(void);
+  void IsothermSphere(void);
+  void RotIsothermSphere(void);
+  void TurbIsothermSphere(void);
+  
 };
-
-
 #endif

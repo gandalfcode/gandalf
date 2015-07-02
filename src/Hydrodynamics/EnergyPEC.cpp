@@ -107,19 +107,19 @@ void EnergyPEC<ndim,ParticleType>::EnergyIntegration
   const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
-  SphParticle<ndim>* sph_gen)          ///< [inout] Pointer to SPH particle array
+  Particle<ndim>* part_gen)           ///< [inout] Pointer to SPH particle array
 {
   int i;                               // Particle counter
   FLOAT dt;                            // Timestep since start of step
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[EnergyPEC::EnergyIntegration]");
   timing->StartTimingSection("ENERGY_PEC_INTEGRATION");
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dt,i) shared(sphdata)
+#pragma omp parallel for default(none) private(dt,i) shared(partdata)
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sphdata[i];
+    ParticleType<ndim>& part = partdata[i];
     if (part.itype == dead) continue;
 
     // Compute time since beginning of current step
@@ -147,19 +147,19 @@ void EnergyPEC<ndim,ParticleType>::EnergyCorrectionTerms
   const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
-  SphParticle<ndim>* sph_gen)          ///< [inout] Pointer to SPH particle array
+  Particle<ndim>* part_gen)            ///< [inout] Pointer to SPH particle array
 {
-  int dn;                           // Integer time since beginning of step
-  int i;                            // Particle counter
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+  int dn;                              // Integer time since beginning of step
+  int i;                               // Particle counter
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[EnergyPEC::EnergyCorrectionTerms]");
   timing->StartTimingSection("ENERGY_PEC_CORRECTION_TERMS");
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i) shared(sphdata)
+#pragma omp parallel for default(none) private(dn,i) shared(partdata)
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sphdata[i];
+    ParticleType<ndim>& part = partdata[i];
     if (part.itype == dead) continue;
 
     // Compute time since beginning of current step
@@ -189,24 +189,24 @@ void EnergyPEC<ndim,ParticleType>::EndTimestep
   const int Npart,                     ///< [in] Number of particles
   const FLOAT t,                       ///< [in] Current simulation time
   const FLOAT timestep,                ///< [in] Base timestep value
-  SphParticle<ndim>* sph_gen)          ///< [inout] Pointer to SPH particle array
+  Particle<ndim>* part_gen)            ///< [inout] Pointer to SPH particle array
 {
-  int dn;                           // Integer time since beginning of step
-  int i;                            // Particle counter
-  ParticleType<ndim>* sphdata = static_cast<ParticleType<ndim>* > (sph_gen);
+  int dn;                              // Integer time since beginning of step
+  int i;                               // Particle counter
+  ParticleType<ndim>* partdata = static_cast<ParticleType<ndim>* > (part_gen);
 
   debug2("[EnergyPEC::EndTimestep]");
   timing->StartTimingSection("ENERGY_PEC_END_TIMESTEP");
 
   //-----------------------------------------------------------------------------------------------
-#pragma omp parallel for default(none) private(dn,i) shared(sphdata)
+#pragma omp parallel for default(none) private(dn,i) shared(partdata)
   for (i=0; i<Npart; i++) {
-    SphParticle<ndim>& part = sphdata[i];
+    ParticleType<ndim>& part = partdata[i];
     if (part.itype == dead) continue;
     dn = n - part.nlast;
 
     if (dn == part.nstep) {
-      part.u     += 0.5*(part.dudt - part.dudt0)*(t - part.tlast); //timestep*(FLOAT) nstep;
+      part.u    += 0.5*(part.dudt - part.dudt0)*(t - part.tlast); //timestep*(FLOAT) nstep;
       part.u0    = part.u;
       part.dudt0 = part.dudt;
     }
@@ -228,7 +228,7 @@ void EnergyPEC<ndim,ParticleType>::EndTimestep
 //=================================================================================================
 template <int ndim, template <int> class ParticleType>
 DOUBLE EnergyPEC<ndim,ParticleType>::Timestep
-(SphParticle<ndim> &part)           ///< [inout] SPH particle reference
+(Particle<ndim> &part)                 ///< [inout] SPH particle reference
 {
   return this->energy_mult*(DOUBLE) (part.u/(fabs(part.dudt) + small_number));
 }
