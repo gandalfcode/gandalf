@@ -1065,6 +1065,7 @@ void Simulation<ndim>::PreSetupForPython(void)
   ProcessParameters();
 
   // Allocate all memory for both hydro and N-body particles
+  hydro->Nhydro = simparams->intparams["Nhydro"];
   AllocateParticleMemory();
 
   return;

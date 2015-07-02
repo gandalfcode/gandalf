@@ -371,7 +371,10 @@ void Sinks<ndim>::AccreteMassToSinks
 
 
   // If there are no particles inside any sink, return to main loop.
-  if (Nlist == 0) return;
+  if (Nlist == 0) {
+    timing->EndTimingSection("SINK_ACCRETE_MASS");
+    return;
+  }
 
 
   // Calculate the accretion timescale and the total mass accreted from all
