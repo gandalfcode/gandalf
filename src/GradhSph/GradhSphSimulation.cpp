@@ -118,7 +118,7 @@ void GradhSphSimulation<ndim>::ProcessSphParameters(void)
   else if (stringparams["gas_eos"] == "radws")
     eos_type = radws;
   else {
-    string message = "Unrecognised parameter : gas_eos = " + simparams->stringparams["gas_eos"];
+    string message = "Unrecognised eos parameter : gas_eos = " + simparams->stringparams["gas_eos"];
     ExceptionHandler::getIstance().raise(message);
   }
 

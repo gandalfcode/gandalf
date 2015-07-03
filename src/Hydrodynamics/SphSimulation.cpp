@@ -144,8 +144,8 @@ void SphSimulation<ndim>::ProcessParameters(void)
        floatparams["gamma_eos"], floatparams["rho_bary"], &simunits, sphneib);
   }
   else if ((gas_eos == "energy_eqn" || gas_eos == "constant_temp" ||
-             gas_eos == "isothermal" || gas_eos == "barotropic" ||
-             gas_eos == "barotropic2") && gas_radiation == "monoionisation") {
+            gas_eos == "isothermal" || gas_eos == "barotropic" ||
+            gas_eos == "barotropic2") && gas_radiation == "monoionisation") {
     sph->eos = new MCRadiationEOS<ndim>
       (gas_eos, floatparams["temp0"], floatparams["temp_ion"], floatparams["mu_bar"],
        floatparams["mu_ion"], floatparams["gamma_eos"], floatparams["rho_bary"], &simunits);
@@ -160,13 +160,13 @@ void SphSimulation<ndim>::ProcessParameters(void)
   }
   else if (gas_eos == "barotropic") {
     sph->eos = new Barotropic<ndim>(floatparams["temp0"], floatparams["mu_bar"],
-                               floatparams["gamma_eos"], floatparams["rho_bary"], &simunits);
+                                    floatparams["gamma_eos"], floatparams["rho_bary"], &simunits);
   }
   else if (gas_eos == "barotropic2") {
     sph->eos = new Barotropic2<ndim>(floatparams["temp0"], floatparams["mu_bar"],
-                                floatparams["gamma_eos"], floatparams["rho_bary"], &simunits);
+                                     floatparams["gamma_eos"], floatparams["rho_bary"], &simunits);
   }
-  if (gas_eos == "rad_ws") {
+  else if (gas_eos == "rad_ws") {
     sph->eos = new Radws<ndim>(floatparams["temp0"], floatparams["mu_bar"], floatparams["gamma_eos"]);
   }
   else {

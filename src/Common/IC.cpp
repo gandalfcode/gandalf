@@ -1089,11 +1089,10 @@ void Ic<ndim>::KHI(void)
     // Calculate all SPH properties
     sphneib->UpdateAllSphProperties(hydro->Nhydro,hydro->Ntot,partdata,sph,nbody);
     */
-    for (i=0; i<hydro->Nhydro; i++) {
-      Particle<ndim>& part = hydro->GetParticlePointer(i);
-      cout << "r[" << i << "] : " << part.r[0] << "   " << part.r[1] << endl;
-      //part.u = press1/part.rho/gammaone;
-    }
+    //for (i=0; i<hydro->Nhydro; i++) {
+    //  Particle<ndim>& part = hydro->GetParticlePointer(i);
+    //  //part.u = press1/part.rho/gammaone;
+    //}
 
 
     delete[] r;
